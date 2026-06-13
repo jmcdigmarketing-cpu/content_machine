@@ -10,7 +10,7 @@
       "searchKeywords": "{query}",
       "maxResults": 30,
       "maxResultsShorts": 0,
-      "sortVideosBy": "RELEVANCE",
+      "sortVideosBy": "POPULAR",
       "dateFilter": "month",
       "videoType": "video"
     }

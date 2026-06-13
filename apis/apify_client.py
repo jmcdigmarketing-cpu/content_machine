@@ -84,7 +84,8 @@ def run_actor(
         if resp.status_code == 402:
             logger.warning("Apify: out of credits for actor %s", actor_id)
             return None
-        if resp.status_code != 200:
+        # run-sync-get-dataset-items returns 200 OR 201 (Created) with the items.
+        if resp.status_code not in (200, 201):
             logger.warning(
                 "Apify actor %s returned %s: %s", actor_id, resp.status_code, resp.text[:200]
             )

@@ -28,8 +28,9 @@ from core.logging import get_logger
 
 logger = get_logger("apis.tiktok_signal")
 
-# Primary actor (BENABLE_BOT key) — bebity TikTok scraper
-_PRIMARY_ACTOR = "bebity/tiktok-scraper"
+# Primary actor (BENABLE_BOT key) — clockworks is the maintained TikTok scraper.
+# (bebity/tiktok-scraper was retired and now 404s.)
+_PRIMARY_ACTOR = "clockworks/tiktok-scraper"
 # Fallback actor (CONTENT_MACHINE_KEY)
 _FALLBACK_ACTOR = "clockworks/tiktok-scraper"
 

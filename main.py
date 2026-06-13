@@ -112,6 +112,28 @@ def main():
     _run_new_video_flow(channel_id)
 
 
+def _drain_stdin() -> None:
+    """
+    Discard any input still buffered from a multi-line paste so leftover lines
+    (e.g. idea-generator scaffolding after a blank line) don't hijack the next
+    prompts. Best-effort and platform-aware; a no-op if it can't run.
+    """
+    try:
+        import msvcrt  # Windows console
+
+        while msvcrt.kbhit():
+            msvcrt.getwch()
+        return
+    except Exception:
+        pass
+    try:
+        import termios
+
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except Exception:
+        pass
+
+
 def _read_multiline(prompt: str) -> str:
     """Read possibly-multiline pasted input; finish on a blank line or EOF."""
     print(prompt)
@@ -144,6 +166,9 @@ def _run_idea_intake_flow(channel_id: str) -> None:
     raw = _read_multiline(
         "  Paste a video idea, a topic, or a YouTube link (watch/shorts/youtu.be):"
     )
+    # Drop any scaffolding still buffered from the paste (e.g. "Develop idea",
+    # "Why this could fit…") so it can't auto-answer the upcoming prompts.
+    _drain_stdin()
     if not raw.strip():
         print("  Nothing entered — returning.")
         return
@@ -275,7 +300,8 @@ def _run_new_video_flow(
     except Exception:
         pass
 
-    length_choice = input(f"  Select 1-4 [{length_default}]: ").strip() or length_default
+    _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
+    length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
     section("Content")
     result = run_pipeline(

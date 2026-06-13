@@ -96,7 +96,7 @@ python -m unittest discover -s tests       # tests (pytest also works: `pytest`)
 
 Tooling is configured in [`pyproject.toml`](pyproject.toml) (canonical deps +
 ruff/mypy/pytest config). CI runs lint, format-check, a type-check baseline, and
-the test suite on Python 3.11–3.12 — see [.github/workflows/ci.yml](.github/workflows/ci.yml).
+the test suite on Python 3.11 (the version the pinned deps are validated on) — see [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## Project layout
 

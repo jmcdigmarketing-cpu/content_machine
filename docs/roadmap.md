@@ -2,9 +2,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: Domain expansion playbook (2026-06).
+Last updated: 2026-06-13 — closed-loop recommenders, Apify data layer, idea-intake mode, engineering-quality baseline.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
+
+**Where we are:** the discovery → script → render → publish pipeline is complete and the **learning loop is closed** — real YouTube engagement now feeds topic, length, and post-time recommendations. Current focus is widening data intake (Apify), tightening automation, and engineering hygiene. See "Next — current focus" below.
 
 ---
 
@@ -64,7 +66,7 @@ Last updated: Domain expansion playbook (2026-06).
 
 ---
 
-## Next — Intelligence phase (H → K)
+## Intelligence phase (H → K) — complete
 
 *Principle: **generation before measurement**. Full spec: [intelligence_phase.md](intelligence_phase.md).*
 
@@ -112,6 +114,70 @@ Last updated: Domain expansion playbook (2026-06).
 - [x] YouTube `thumbnails.set` after `videos.insert` (`youtube/thumbnails.py`, `YOUTUBE_THUMBNAIL_UPLOAD=auto|off`)
 - [ ] Pillow remains fallback
 
+### Phase L — Closed-loop recommenders (2026-06)
+
+*All three share one pattern: `analytics` source when enough engagement history exists, sensible default otherwise, each with a rationale string.*
+
+- [x] **Best Bet (topic)** — `core/best_bet.py`; `source="analytics"` path live once metrics sync working (engaged-rate by domain)
+- [x] **Recommended post time** — `analytics/post_timing.py` (`get_recommended_time`); engagement bucketed by weekday/hour, domain-aware; surfaced in `main.py`, `auto_generate`, ops `recommend-time`
+- [x] **Recommended length** — `core/length_recommender.py`; engaged-rate by length preset (uses `timings_json.length_preset`); `auto_generate --length auto`; ops `recommend-length`
+- [x] YouTube Analytics sync hardened — validating probe query, clear "enable API"/scope guidance (`analytics/sync_metrics.py`)
+- [ ] Backtest recommender accuracy vs. realised engagement once volume grows
+- [ ] Confidence thresholds / minimum-sample surfacing in the UI
+
+### Phase L2 — Apify data layer (2026-06)
+
+*Catalog-driven external signals. Single source of truth: `config/apify_sources.json` (`apis/apify_catalog.py`).*
+
+- [x] Apify client with key routing + local cache (`apis/apify_client.py`); `~`-form actor ids
+- [x] `youtube_competitors` — top videos by **view velocity** (`apis/youtube_apify_signal.py`)
+- [x] `twitter` — breaking news weighted by domain authority accounts (`apis/twitter_signal.py`)
+- [x] `reddit`, `tiktok_trends` — community sentiment + viral angles
+- [x] Per-domain targeting (`domain_targets`); fact formatting keeps competitor titles as context, not verified facts
+- [x] Docs: [apify-data-sources.md](apify-data-sources.md)
+- [ ] `youtube_comments` / `instagram_figures` — templated in catalog, not yet wired as signals
+- [ ] Live-run tuning of actor inputs once observed against real topics
+
+### Phase L3 — Idea intake (2026-06)
+
+- [x] `py main.py` menu **option 5** — generate from a user idea or a **YouTube link** (`watch`/`shorts`/`youtu.be`)
+- [x] `apis/youtube_api.extract_youtube_video_id` + `fetch_video_metadata` (title/channel for the seed)
+- [x] Shared `_run_new_video_flow(seed_topic=...)`; best-bet skipped when idea supplied
+- [x] Tests: `tests/test_youtube_idea_intake.py`
+
+### Engineering quality baseline (2026-06)
+
+- [x] `pyproject.toml` — canonical deps + tool config; `[dev]` and `[sports]` extras
+- [x] `ruff` lint + format across the tree (clean); `python-dotenv` replaces hand-rolled `.env` parser
+- [x] CI: lint + format-check + type baseline + tests on Python 3.10/3.11/3.12
+- [x] `.pre-commit-config.yaml`; `.gitignore` covers tool caches
+- [x] `youtube.readonly` scope added for publisher dup-check / OAuth reads
+- [ ] **git remote** — repo initialised locally; create **private** GitHub remote and push
+- [ ] Tighten the mypy baseline (~94 errors → fix the real ones, e.g. `timings` value type)
+- [ ] Annotate/retire the remaining best-effort broad `except Exception` handlers
+- [ ] Raise test coverage on render + publish paths
+
+---
+
+## Next — current focus
+
+*Prioritised, near-term. Top of list first.*
+
+1. **Ship the repo** — create the **private** GitHub remote and push (`gh repo create content_machine --private --source=. --push`). Never commit `.env`/tokens.
+2. **Re-auth for `youtube.readonly`** — `py -m youtube.oauth_setup --channel tapin` so the publisher's duplicate-upload recovery check works (currently 403s, fails safe).
+3. **Exercise the new data layer live** — run discovery on real topics; tune `config/apify_sources.json` actor inputs from observed results; confirm Reddit/TikTok/Twitter/competitor signals return useful data.
+4. **Validate recommenders against reality** — as publish volume grows, compare recommended topic/length/time picks to realised engagement; add confidence/min-sample cues in the UI.
+5. **Automation hardening** — `scripts/auto_generate.py` + Task Scheduler dry-runs; make `--length auto` the default everywhere and verify the daily unattended path end-to-end.
+
+### Phase M — Multi-platform distribution (next major)
+
+*Repurpose one rendered vertical to several surfaces. Publisher contract already exists (`publishing/`).*
+
+- [ ] **TikTok publisher** — `TIKTOK_CLIENT_KEY`/`SECRET` present; `TikTokPublisher` still unimplemented (in `DEFERRED_PLATFORMS`)
+- [ ] Instagram Reels / Meta — `META_APP_ID`/`SECRET`, `INSTAGRAM_*` (keys still empty)
+- [ ] Per-platform caption/hashtag shaping from existing SEO + TikTok-trend signal
+- [ ] Cross-platform performance back into the learning loop (unify with YouTube engaged-rate)
+
 ---
 
 ## Deferred (volume-gated)
@@ -143,6 +209,12 @@ Last updated: Domain expansion playbook (2026-06).
 5. `py -m youtube.check_setup --channel tapin`
 6. Add clips to `video/backgrounds/` for hybrid mode
 7. `YOUTUBE_UPLOAD_ENABLED=true` + `py -m jobs.worker --loop 30`
+
+**`py main.py` menu:** 1) new video · 2) queue manager · 3) intelligence report · 4) sync analytics · 5) make a video from your own idea / a YouTube link
+
+**Recommendation helpers:** `py -m scripts.ops recommend-time --channel tapin` · `recommend-length` · best-bet shown at startup
+
+**Developer setup:** `pip install -e ".[dev]"` then `pre-commit install`; `ruff check .` · `ruff format .` · `mypy analytics apis core config storage`. Tooling config lives in `pyproject.toml`.
 
 **Troubleshooting:** [debugging.md](debugging.md)
 

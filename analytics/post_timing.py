@@ -44,6 +44,12 @@ DEFAULT_DOMAIN_SLOTS = {
         (6, 10, 0),  # Sun morning
         (0, 19, 0),  # Mon evening recap
     ),
+    "finance": (
+        (0, 8, 30),  # Mon pre-market
+        (2, 8, 30),  # Wed pre-market
+        (4, 8, 30),  # Fri pre-market
+        (6, 18, 0),  # Sun "week ahead"
+    ),
 }
 
 

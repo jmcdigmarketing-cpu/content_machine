@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -c ' *)",
+      "Bash(py -c \"import config.settings; from apis.signals_bootstrap import get_signal_registry; r=get_signal_registry\\(\\).get_registered_signals\\(\\); print\\('twitter' in r, 'youtube_competitors' in r\\); from apis.apify_catalog import get_source, build_input, domain_targets; print\\(get_source\\('youtube_competitors'\\)['actor']\\); print\\(build_input\\('twitter_breaking','Marvel Rivals'\\)['searchTerms']\\); print\\(domain_targets\\('ufc'\\)['twitter_accounts'][:3]\\)\")",
+      "Bash(python -c \"import sys; print\\(sys.stdin.read\\(\\).encode\\('ascii','replace'\\).decode\\(\\)\\)\")",
+      "Bash(python -c \"import sys;print\\(sys.stdin.read\\(\\).encode\\('ascii','replace'\\).decode\\(\\)\\)\")",
+      "Bash(py -m scripts.ops recommend-time --channel tapin --topic \"Marvel Rivals season predictions\")",
+      "Bash(py -m pytest tests/test_post_timing.py -q)",
+      "Bash(py -m unittest tests.test_post_timing -v)",
+      "Bash(py -m scripts.ops recommend-length --channel tapin --topic \"Marvel Rivals meta\")",
+      "Bash(grep -E \"pass$|pass *#\")"
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from config.paths import LUFFY_ASCII_FILE
+from core.ascii_art import (
+    luffy_ascii_path,
+    luffy_mascot_lines,
+    merge_columns,
+    merge_columns_right,
+    startup_banner_lines,
+    startup_panel_lines,
+)
+
+
+class TestAsciiArt(unittest.TestCase):
+    def test_luffy_path_is_bundled_data(self):
+        self.assertEqual(luffy_ascii_path(), Path(LUFFY_ASCII_FILE))
+        self.assertTrue(
+            str(luffy_ascii_path()).replace("\\", "/").endswith("core/data/luffy_ascii.txt")
+        )
+
+    def test_luffy_art_loaded_preserves_content(self):
+        luffy_mascot_lines.cache_clear()
+        lines = luffy_mascot_lines()
+        self.assertGreaterEqual(len(lines), 40)
+        self.assertGreaterEqual(max(len(line) for line in lines), 40)
+        self.assertLessEqual(max(len(line) for line in lines), 130)
+        self.assertTrue(lines[0].startswith("\u2800"))
+        self.assertIn("\u28c0", lines[0])
+
+    def test_luffy_missing_file_returns_empty(self):
+        luffy_mascot_lines.cache_clear()
+        missing = Path(LUFFY_ASCII_FILE).with_name("no_such_luffy.txt")
+        with patch("core.ascii_art.luffy_ascii_path", return_value=missing):
+            self.assertEqual(luffy_mascot_lines(), ())
+        luffy_mascot_lines.cache_clear()
+
+    def test_merge_columns_aligns_left_block(self):
+        merged = merge_columns(["ab", "longer"], ["1", "22"], gap=2)
+        self.assertTrue(merged[0].startswith("ab"))
+        self.assertTrue(merged[0].endswith("1"))
+        self.assertTrue(merged[1].startswith("longer"))
+        self.assertTrue(merged[1].endswith("22"))
+
+    def test_merge_columns_right_flushes_to_edge(self):
+        merged = merge_columns_right(["ab"], ["ZZ"], cols=20, gap=2)
+        self.assertTrue(merged[0].endswith("ZZ"))
+        self.assertTrue(merged[0].startswith("ab"))
+        self.assertGreaterEqual(len(merged[0]), 18)
+
+    def test_startup_panel_skips_mascot_when_terminal_too_narrow(self):
+        import os
+
+        os.environ["CONTENT_UI_ASCII"] = "true"
+        os.environ["CONTENT_UI_MASCOT"] = "luffy"
+        left = startup_banner_lines("tapin")
+        with patch(
+            "core.ascii_art.shutil.get_terminal_size", return_value=os.terminal_size((60, 40))
+        ):
+            panel = startup_panel_lines("tapin")
+        self.assertEqual(len(panel), len(left))
+
+    def test_startup_panel_includes_mascot_when_wide(self):
+        import os
+
+        luffy_mascot_lines.cache_clear()
+        os.environ["CONTENT_UI_ASCII"] = "true"
+        os.environ["CONTENT_UI_MASCOT"] = "luffy"
+        left = startup_banner_lines("tapin")
+        mascot = luffy_mascot_lines()
+        mascot_w = max(len(line) for line in mascot)
+        min_cols = 50 + mascot_w + 12
+        with patch(
+            "core.ascii_art.shutil.get_terminal_size",
+            return_value=os.terminal_size((max(min_cols, 160), 60)),
+        ):
+            panel = startup_panel_lines("tapin")
+        self.assertGreater(len(panel), len(left))
+        self.assertTrue(any("CONTENT MACHINE" in line for line in panel))
+        tagline_idx = next(i for i, line in enumerate(panel) if "TapIn Media" in line)
+        self.assertEqual(panel[tagline_idx - 1], "")
+        self.assertNotIn("\u2800", panel[tagline_idx])
+
+
+if __name__ == "__main__":
+    unittest.main()

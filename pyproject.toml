@@ -1,0 +1,146 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "content-machine"
+version = "0.1.0"
+description = "CLI for short-form sports/gaming video: signal discovery, LLM scripting, TTS, FFmpeg render, and YouTube publishing."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "TapIn Media" }]
+
+dependencies = [
+    "openai==2.33.0",
+    "google-api-python-client==2.196.0",
+    "google-auth==2.52.0",
+    "google-auth-oauthlib==1.2.2",
+    "google-auth-httplib2==0.2.0",
+    "requests==2.32.3",
+    "beautifulsoup4==4.14.3",
+    "moviepy==1.0.3",
+    "imageio-ffmpeg==0.6.0",
+    "elevenlabs==2.45.0",
+    "Pillow==9.5.0",
+    "numpy==2.4.4",
+    "sqlalchemy==2.0.41",
+    "psycopg2-binary==2.9.10",
+    "alembic==1.16.1",
+    "python-dotenv==1.0.1",
+    "tzdata>=2024.1; platform_system == 'Windows'",
+]
+
+[project.optional-dependencies]
+# Developer tooling — install with: pip install -e ".[dev]"
+dev = [
+    "ruff==0.8.4",
+    "mypy==1.13.0",
+    "pytest==8.3.4",
+    "pre-commit==4.0.1",
+    "types-requests",
+    "types-beautifulsoup4",
+]
+# Optional sports stats providers (NFL/MLB stat lines)
+sports = [
+    "nfl_data_py>=0.3.0",
+    "pybaseball>=2.2.7",
+]
+
+[project.scripts]
+content-machine = "main:main"
+
+[tool.setuptools]
+# This is an application, not a library: list the package dirs explicitly
+# rather than auto-discovering (which would choke on data/, output/, etc.).
+packages = [
+    "analytics",
+    "apis",
+    "config",
+    "core",
+    "jobs",
+    "publishing",
+    "sports",
+    "storage",
+    "video",
+    "youtube",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff — linter + formatter (replaces flake8 + isort + black)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = [".venv", "alembic/versions", "data", "output", "assets"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes (real bugs: undefined names, unused imports)
+    "W",    # pycodestyle warnings
+    "I",    # isort (import ordering)
+    "B",    # flake8-bugbear (real bug patterns)
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific
+]
+# NOTE: flake8-blind-except (BLE) is intentionally NOT enabled. It flags every
+# broad `except Exception`, including the many that correctly log-and-continue
+# for signal/API resilience (one failing provider must not crash discovery).
+# The real smell — *silent* swallows — is addressed case-by-case in code.
+# Re-enabling BLE is a reasonable future ratchet once those are annotated.
+ignore = [
+    "E501",    # line length is enforced by the formatter, not as a hard error
+    "B008",    # function calls in argument defaults — intentional in some CLIs
+    "SIM105",  # contextlib.suppress vs try/except/pass — readability preference
+    "SIM102",  # nested-if collapse — sometimes clearer left expanded
+    "SIM117",  # combine with-statements — readability preference
+    "RUF001",  # ambiguous unicode in strings — intentional UI glyphs (• → ✓)
+    "RUF002",  # ambiguous unicode in docstrings — same
+    "RUF003",  # ambiguous unicode in comments — same
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may use unused imports for fixtures and reach into internals.
+"tests/**" = ["F401", "B011", "E402"]
+# main.py loads config.settings (which reads .env) before any other project
+# import, so module-level imports legitimately follow that statement.
+"main.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "analytics", "apis", "config", "core", "jobs",
+    "publishing", "sports", "storage", "video", "youtube",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ---------------------------------------------------------------------------
+# mypy — static type checking (lenient baseline; tighten over time)
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.10"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+ignore_missing_imports = true       # 3rd-party libs without stubs
+check_untyped_defs = true
+no_implicit_optional = true
+exclude = ['^(\.venv|alembic|data|output|assets)/']
+
+# Start lenient on the noisiest modules; remove overrides as they get typed.
+[[tool.mypy.overrides]]
+module = ["video.*", "publishing.*"]
+disallow_untyped_defs = false
+
+# ---------------------------------------------------------------------------
+# Pytest — test runner (compatible with existing unittest TestCases)
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"

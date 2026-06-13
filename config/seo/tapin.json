@@ -1,0 +1,56 @@
+{
+  "channel_id": "tapin",
+  "niche": "gaming and UFC short-form",
+  "default_tags": [
+    "TapIn",
+    "gaming",
+    "UFC",
+    "MMA",
+    "shorts",
+    "esports"
+  ],
+  "title_rules": [
+    "Under 70 characters when possible",
+    "Lead with fighter names, game title, or hot take — no clickbait lies",
+    "Include UFC event number when topic references a numbered card"
+  ],
+  "description_rules": [
+    "First line: hook matching the video opening",
+    "2-3 short lines of context from FACTS only",
+    "End with: Subscribe for daily gaming & UFC takes.",
+    "No hashtags in description body (tags field is separate)"
+  ],
+  "tag_rules": [
+    "8-15 tags mixing broad (UFC, gaming) and specific (fighter names, game titles from topic)",
+    "No spaces in multi-word tags use CamelCase or single words",
+    "Never invent fighter names not in FACTS or TOPIC"
+  ],
+  "rss_feeds": [
+    {
+      "name": "MMA Fighting",
+      "url": "https://www.mmafighting.com/rss/current"
+    },
+    {
+      "name": "Dexerto",
+      "url": "https://www.dexerto.com/feed"
+    },
+    {
+      "name": "IGN",
+      "url": "https://feeds.feedburner.com/ign/all"
+    },
+    {
+      "name": "Polygon",
+      "url": "https://www.polygon.com/rss/index.xml"
+    },
+    {
+      "name": "ESPN MMA",
+      "url": "https://www.espn.com/espn/rss/mma/news"
+    }
+  ],
+  "seo_refresh_queries": [
+    "UFC highlights",
+    "MMA news",
+    "gaming news",
+    "esports"
+  ]
+}

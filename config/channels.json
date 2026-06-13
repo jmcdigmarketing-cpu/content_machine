@@ -1,0 +1,68 @@
+{
+  "channels": {
+    "default": {
+      "name": "Default",
+      "domain": "neutral",
+      "tts": {
+        "voice_pool": {
+          "nPczCjzI2devNBz1zQrb": 3,
+          "XjLkpWUlnhS8i7gGz3lZ": 2,
+          "r1KmysJdVYZjJCm4mL3b": 1
+        },
+        "model_id": "eleven_multilingual_v2"
+      }
+    },
+    "tapin": {
+      "name": "TapIn Media",
+      "domain": "gaming",
+      "background_mode": "hybrid",
+      "hybrid_local_ratio": 0.45,
+      "asset_provider_order": ["local", "pexels", "pixabay"],
+      "output_subdir": "tapin",
+      "intro_video_file": "video/intro/channel_intro.mp4",
+      "publishers_enabled": ["youtube"],
+      "youtube_oauth_token_file": "config/secrets/youtube_token_tapin.json",
+      "privacy_status_default": "private",
+      "tts": {
+        "voice_id": "nPczCjzI2devNBz1zQrb",
+        "model_id": "eleven_multilingual_v2"
+      },
+      "weight_overrides": {
+        "youtube": 0.28,
+        "blog_rss": 0.2,
+        "rawg": 0.18,
+        "steam": 0.1,
+        "odds": 0.1,
+        "trends": 0.06,
+        "news": 0.04,
+        "autocomplete": 0.04,
+        "sports": 0.0,
+        "live_scores": 0.0
+      },
+      "post_schedule": {
+        "timezone": "America/New_York",
+        "comment": "Gaming/UFC audience — evenings + weekends ET; UFC topics use domain_slots",
+        "default_slots": [
+          {"weekday": 3, "hour": 18, "minute": 0},
+          {"weekday": 4, "hour": 17, "minute": 0},
+          {"weekday": 5, "hour": 11, "minute": 0},
+          {"weekday": 5, "hour": 19, "minute": 0},
+          {"weekday": 6, "hour": 12, "minute": 0},
+          {"weekday": 6, "hour": 18, "minute": 0}
+        ],
+        "domain_slots": {
+          "ufc": [
+            {"weekday": 3, "hour": 17, "minute": 0},
+            {"weekday": 4, "hour": 18, "minute": 0},
+            {"weekday": 5, "hour": 18, "minute": 0}
+          ],
+          "gaming": [
+            {"weekday": 4, "hour": 18, "minute": 0},
+            {"weekday": 5, "hour": 12, "minute": 0},
+            {"weekday": 6, "hour": 19, "minute": 0}
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "description": "Extra RSS and reference sources merged with config/seo/{channel}.json",
+  "global_rss": [
+    {
+      "name": "BBC Sport",
+      "url": "https://feeds.bbci.co.uk/sport/rss.xml"
+    },
+    {
+      "name": "The Athletic RSS (headlines)",
+      "url": "https://theathletic.com/rss/"
+    }
+  ],
+  "domain_rss": {
+    "nba": [
+      {
+        "name": "ESPN NBA",
+        "url": "https://www.espn.com/espn/rss/nba/news"
+      },
+      {
+        "name": "CBS Sports NBA",
+        "url": "https://www.cbssports.com/rss/headlines/nba/"
+      },
+      {
+        "name": "RealGM NBA",
+        "url": "https://basketball.realgm.com/rss/wiretap/0/0.xml"
+      }
+    ],
+    "nfl": [
+      {
+        "name": "ESPN NFL",
+        "url": "https://www.espn.com/espn/rss/nfl/news"
+      },
+      {
+        "name": "CBS Sports NFL",
+        "url": "https://www.cbssports.com/rss/headlines/nfl/"
+      },
+      {
+        "name": "PFT (ProFootballTalk)",
+        "url": "https://profootballtalk.nbcsports.com/feed/"
+      }
+    ],
+    "ufc": [
+      {
+        "name": "MMA Junkie",
+        "url": "https://mmajunkie.usatoday.com/feed"
+      },
+      {
+        "name": "Sherdog",
+        "url": "https://www.sherdog.com/rss/news.xml"
+      }
+    ],
+    "gaming": [
+      {
+        "name": "Kotaku",
+        "url": "https://kotaku.com/rss"
+      },
+      {
+        "name": "PC Gamer",
+        "url": "https://www.pcgamer.com/rss/"
+      },
+      {
+        "name": "Rock Paper Shotgun",
+        "url": "https://www.rockpapershotgun.com/feed"
+      },
+      {
+        "name": "Dot Esports",
+        "url": "https://dotesports.com/feed"
+      },
+      {
+        "name": "IGN Games",
+        "url": "https://feeds.ign.com/ign/games"
+      },
+      {
+        "name": "Game Rant",
+        "url": "https://gamerant.com/feed/"
+      }
+    ],
+    "finance": [
+      {
+        "name": "Reuters Business",
+        "url": "https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best"
+      },
+      {
+        "name": "MarketWatch",
+        "url": "https://feeds.marketwatch.com/marketwatch/topstories/"
+      },
+      {
+        "name": "CoinDesk",
+        "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"
+      }
+    ],
+    "anime": [
+      {
+        "name": "Anime News Network",
+        "url": "https://www.animenewsnetwork.com/news/rss.xml"
+      },
+      {
+        "name": "Crunchyroll News",
+        "url": "https://www.crunchyroll.com/newsrss"
+      }
+    ],
+    "popculture": [
+      {
+        "name": "Variety",
+        "url": "https://variety.com/feed/"
+      },
+      {
+        "name": "Hollywood Reporter",
+        "url": "https://www.hollywoodreporter.com/feed/"
+      },
+      {
+        "name": "Deadline",
+        "url": "https://deadline.com/feed/"
+      }
+    ],
+    "music": [
+      {
+        "name": "Pitchfork",
+        "url": "https://pitchfork.com/rss/news/"
+      },
+      {
+        "name": "Rolling Stone",
+        "url": "https://www.rollingstone.com/feed/"
+      },
+      {
+        "name": "Billboard",
+        "url": "https://www.billboard.com/feed/"
+      }
+    ],
+    "neutral": [
+      {
+        "name": "Reuters Sports",
+        "url": "https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best"
+      }
+    ]
+  },
+  "reference_sites": {
+    "nba": ["basketball-reference.com", "site.api.espn.com"],
+    "nfl": ["pro-football-reference.com", "site.api.espn.com"],
+    "mma": ["tapology.com", "espn.com/mma"]
+  },
+  "optional_apis": {
+    "notes": "Add keys in .env — see docs/data-sources.md and docs/domain-expansion.md",
+    "sportsdata": "SPORTSDATA_API_KEY",
+    "balldontlie": "BALLDONTLIE_API_KEY",
+    "api_sports": "API_SPORTS_KEY",
+    "fred": "FRED_API_KEY",
+    "finnhub": "FINNHUB_API_KEY",
+    "tmdb": "TMDB_API_KEY",
+    "lastfm": "LASTFM_API_KEY",
+    "igdb": "IGDB_CLIENT_ID",
+    "twitch": "TWITCH_CLIENT_ID",
+    "tavily": "TAVILY_API_KEY"
+  }
+}

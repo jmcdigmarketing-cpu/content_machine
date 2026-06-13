@@ -1,0 +1,57 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Local credentials and keys
+*.pem
+*.key
+credentials.json
+secrets.json
+config/secrets/*
+!config/secrets/README.md
+
+# Legacy root paths (migrated to config/secrets/ or data/)
+client_secrets.json
+youtube_token.json
+youtube_token_*.json
+token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+
+# Build / runtime artifacts
+output/
+*.mp3
+*.mp4
+!video/intro/channel_intro.mp4
+*.mov
+*.srt
+
+# Local caches and channel data (may contain strategy/performance data)
+data/
+assets/cache/
+assets/catalog.json
+
+# Tooling caches and packaging artifacts
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.backup_pre_ruff/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

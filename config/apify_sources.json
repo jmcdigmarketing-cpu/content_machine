@@ -1,0 +1,116 @@
+{
+  "_comment": "Curated catalog of the highest-value Apify actors for the Content Machine. This is the single source of truth for which actors run, what they pull, and how their input is shaped. Signals read templates from here so you can retune targets without touching code. 'key' selects which env credential is used: 'main' = APIFY_CONTENT_MACHINE_KEY, 'tiktok' = APIFY_BENABLE_BOT.",
+
+  "youtube_competitors": {
+    "actor": "streamers/youtube-scraper",
+    "key": "main",
+    "ttl_seconds": 10800,
+    "value": "Top-ranking videos on a topic with view counts, upload dates, durations, channels. Compute views/day velocity to find what is hot NOW. Feeds topic discovery, title patterns, optimal duration, and verified facts (real titles = real events).",
+    "input_template": {
+      "searchKeywords": "{query}",
+      "maxResults": 30,
+      "maxResultsShorts": 0,
+      "sortVideosBy": "RELEVANCE",
+      "dateFilter": "month",
+      "videoType": "video"
+    }
+  },
+
+  "youtube_comments": {
+    "actor": "streamers/youtube-comments-scraper",
+    "key": "main",
+    "ttl_seconds": 21600,
+    "value": "Top comments on the best videos for a topic. Surfaces audience questions, disagreements, and content gaps competitors are NOT answering — the richest source of new video angles.",
+    "input_template": {
+      "startUrls": [],
+      "maxComments": 50,
+      "sortBy": "top"
+    }
+  },
+
+  "twitter_breaking": {
+    "actor": "apidojo/tweet-scraper",
+    "key": "main",
+    "ttl_seconds": 5400,
+    "value": "Real-time breaking news and viral moments. UFC fight announcements, results, fighter beef; gaming patch reactions and controversy. Highest timeliness of any source — primary fact-grounding for 'just happened' topics.",
+    "input_template": {
+      "searchTerms": ["{query}"],
+      "sort": "Top",
+      "maxItems": 25,
+      "tweetLanguage": "en",
+      "onlyVerifiedUsers": false
+    }
+  },
+
+  "reddit_community": {
+    "actor": "trudax/reddit-scraper-lite",
+    "key": "main",
+    "ttl_seconds": 14400,
+    "value": "Hot posts + engagement from domain subreddits. Community sentiment, the debates people care about, and the language fans actually use.",
+    "input_template": {
+      "searches": [],
+      "subreddits": [],
+      "maxItems": 30,
+      "sort": "hot",
+      "proxy": { "useApifyProxy": true }
+    }
+  },
+
+  "tiktok_trends": {
+    "actor": "clockworks/tiktok-scraper",
+    "key": "tiktok",
+    "fallback_actor": "clockworks/tiktok-scraper",
+    "ttl_seconds": 10800,
+    "value": "Viral angles, hooks, and hashtag patterns. Shows which framings of a topic are already winning attention in short-form.",
+    "input_template": {
+      "searchQueries": ["{query}"],
+      "resultsPerPage": 30,
+      "shouldDownloadVideos": false,
+      "shouldDownloadCovers": false
+    }
+  },
+
+  "instagram_figures": {
+    "actor": "apify/instagram-scraper",
+    "key": "main",
+    "ttl_seconds": 21600,
+    "value": "Posts from UFC fighters and gaming creators. Fighters announce fights/injuries on IG first; creators tease drops. Optional — enable when chasing athlete/creator-driven stories.",
+    "enabled": false,
+    "input_template": {
+      "search": "{query}",
+      "searchType": "hashtag",
+      "resultsLimit": 20,
+      "resultsType": "posts"
+    }
+  },
+
+  "domain_targets": {
+    "gaming": {
+      "subreddits": ["marvelrivals", "gaming", "pcgaming", "Games", "FortNiteBR", "CallOfDuty", "valorant"],
+      "youtube_channels": [],
+      "twitter_accounts": ["Dexerto", "IGN", "ESLCS", "PlayStation", "Xbox"],
+      "instagram_hashtags": ["marvelrivals", "callofduty", "fortnite", "gamingclips"]
+    },
+    "ufc": {
+      "subreddits": ["ufc", "MMA", "mmafighting", "Boxing"],
+      "youtube_channels": [],
+      "twitter_accounts": ["ufc", "espnmma", "arielhelwani", "danawhite", "MMAFighting"],
+      "instagram_hashtags": ["ufc", "mma", "ufcfightnight"]
+    },
+    "nba": {
+      "subreddits": ["nba", "basketball", "nbadiscussion"],
+      "twitter_accounts": ["wojespn", "ShamsCharania", "NBA"],
+      "instagram_hashtags": ["nba", "basketball"]
+    },
+    "nfl": {
+      "subreddits": ["nfl", "fantasyfootball"],
+      "twitter_accounts": ["AdamSchefter", "RapSheet", "NFL"],
+      "instagram_hashtags": ["nfl", "football"]
+    },
+    "neutral": {
+      "subreddits": ["gaming", "sports"],
+      "twitter_accounts": ["BleacherReport"],
+      "instagram_hashtags": ["sports"]
+    }
+  }
+}

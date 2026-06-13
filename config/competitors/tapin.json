@@ -1,0 +1,14 @@
+{
+  "channel_id": "tapin",
+  "youtube_channels": [
+    {
+      "id": "UCq-Fj5jknLsUf-MWSik4vhQ",
+      "label": "The Pat McAfee Show (sports culture)"
+    },
+    {
+      "id": "UCBJycsmduvYEL83R_U4JriQ",
+      "label": "Marques Brownlee (tech/gaming adjacent)"
+    }
+  ],
+  "comment": "Add niche Shorts competitors you track; run py -m analytics.competitor_sync --channel tapin"
+}

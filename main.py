@@ -320,6 +320,10 @@ def _run_new_video_flow(
     preset = get_length_preset(length_choice)
     print(f"  Length: {format_length_report(result.script, preset)}")
 
+    from core.hook_score import display_hook_score, score_script_hook
+
+    display_hook_score(score_script_hook(result.script))
+
     if result.run_id:
         print(f"  Run id: {result.run_id}")
 

@@ -161,6 +161,10 @@ def main(argv=None) -> int:
     print(f"  Length: {length_report}")
     print(f"  Run id: {result.run_id}")
 
+    from core.hook_score import display_hook_score, score_script_hook
+
+    display_hook_score(score_script_hook(result.script))
+
     # Authenticity / monetisation-safety gate (Phase O)
     from core.authenticity import (
         display_authenticity_report,

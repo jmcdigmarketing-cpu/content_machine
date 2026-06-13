@@ -249,6 +249,44 @@ def _call_content_llm(
     return _parse_json_payload(raw)
 
 
+def _maybe_improve_hook(script: str) -> str:
+    """
+    Opt-in (HOOK_REGEN_ENABLED=true): rewrite a weak opening line into a stronger
+    hook. Only swaps in the rewrite if it actually scores higher; otherwise the
+    original script is returned untouched.
+    """
+    from core.hook_score import hook_regen_enabled, score_script_hook
+
+    if not hook_regen_enabled():
+        return script
+    current = score_script_hook(script)
+    if current.passed or not current.hook:
+        return script
+
+    system_prompt = (
+        "You rewrite ONLY the first sentence of a short-form video script into a "
+        "stronger hook: a specific fact, number, or contradiction, under 12 words. "
+        "Never open with 'Today', 'Let's', 'In this video', 'Welcome', or a question. "
+        "Do not invent facts not already implied by the script. Keep the rest of the "
+        "script identical."
+    )
+    user_prompt = (
+        f"SCRIPT:\n{script}\n\nReturn JSON only with the full script, first sentence "
+        'replaced:\n{"script": "..."}'
+    )
+    try:
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.7)
+    except Exception as exc:
+        logger.debug("hook regen failed: %s", exc)
+        return script
+    if isinstance(payload, dict) and payload.get("script"):
+        candidate = str(payload["script"])
+        if score_script_hook(candidate).score > current.score:
+            logger.info("Improved hook via regeneration")
+            return candidate
+    return script
+
+
 def _expand_script(
     *,
     script: str,
@@ -385,6 +423,8 @@ def generate_content_package(
             length_choice=length_choice,
         )
         attempts += 1
+
+    script = _maybe_improve_hook(script)
 
     llm_tags = payload.get("tags") or []
     if isinstance(llm_tags, str):

@@ -5,7 +5,7 @@
 #     pip install -e .           # runtime
 #     pip install -e ".[dev]"    # + ruff/mypy/pytest/pre-commit
 #
-# System dependency (not pip): ffmpeg on PATH. Python: 3.10+.
+# System dependency (not pip): ffmpeg on PATH. Python: 3.11+ (pinned numpy needs >=3.11).
 python-dotenv==1.0.1
 
 openai==2.33.0

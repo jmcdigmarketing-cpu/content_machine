@@ -3,6 +3,7 @@ import re
 from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
+from core.description_extras import apply_description_extras
 from core.fact_enrichment import _fact_line_count, enrich_facts
 from core.llm_client import get_model, get_openai_client
 from core.logging import get_logger
@@ -357,7 +358,7 @@ def generate_content_package(
         return {
             "title": topic,
             "script": payload if isinstance(payload, str) else "",
-            "description": "",
+            "description": apply_description_extras("", channel_id),
             "tags": normalize_youtube_tags(
                 default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
             ),
@@ -396,7 +397,7 @@ def generate_content_package(
     return {
         "title": payload.get("title") or topic,
         "script": script,
-        "description": payload.get("description") or "",
+        "description": apply_description_extras(payload.get("description") or "", channel_id),
         "tags": tags,
         "prompt_version": PROMPT_VERSION,
         "brief_version": research_brief.version if research_brief else "",

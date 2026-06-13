@@ -199,11 +199,18 @@ Last updated: 2026-06-13 — closed-loop recommenders, Apify data layer, idea-in
 
 ### Phase O — Authenticity & monetisation safety  *(highest priority — existential)*
 Turn the research spine into a compliance moat.
-- [ ] **Per-video variation guard** — detect template sameness across recent uploads (script shape, intro, b-roll); block "looks mass-produced" runs before render.
-- [ ] **Original-insight injection** — require an opinion / analysis / prediction beat from the research brief; fail thin runs (briefs + anti-hallucination already exist).
+- [x] **Pre-upload authenticity self-check** — `core/authenticity.py`: variation / original-insight / substance score + checklist; `AUTHENTICITY_GATE=block` to enforce.
+- [x] **Per-video variation guard** — shipped as the authenticity "variation" check (difflib vs recent uploads' script_preview).
+- [x] **AI-content disclosure** — `core/description_extras.py`: in-description disclosure on every upload (YouTube's #1 compliance "do"); `AI_DISCLOSURE_ENABLED`, per-channel `ai_disclosure`.
+- [x] **Cadence guardrail** — `core/cadence.py`: caps videos/rolling-week (recent + scheduled); `MAX_VIDEOS_PER_WEEK` (default 5); gates `auto_generate` (`--force` to override). Pairs with the variation check (variety + volume).
+- [ ] **Original-insight injection** — *detection* ships (authenticity insight check); still TODO: actively inject an opinion/analysis beat into generation.
 - [ ] **Human-context layer** — channel voice/persona, recurring segments, callbacks to prior videos (continuity data already in best-bet).
 - [ ] **Voice variety** — vary TTS delivery; optional real-voice clone slot.
-- [ ] **Pre-upload authenticity self-check** — score + checklist mirroring the policy ("original insight? variation? substance?").
+
+**From 2026 market research (shipped 2026-06):**
+- [x] **Competitor "outlier" surface** — `core/outlier.py`: top view-velocity competitor video shown as a content prompt (every guide says "study over-performing competitors first").
+- [x] **Alt-monetisation CTAs** — per-channel `monetization_cta` lines appended to descriptions (gaming/UFC is low-CPM; ad revenue alone underperforms).
+- [ ] **Multi-language** — single script → translated script + localized TTS → per-language uploads. Real growth lever, **low priority** for the gaming/UFC niche; pairs with Phase Q captions. *(deferred — see Later horizons.)*
 
 ### Phase P — Hook & retention intelligence
 - [ ] **Hook-score 0–100** for the opening line, predicted from past hooks + engagement; surfaced like best-bet.

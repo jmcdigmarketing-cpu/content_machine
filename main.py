@@ -193,6 +193,13 @@ def _run_new_video_flow(
 
     display_upload_queue(channel_id)
 
+    from core.cadence import cadence_status, display_cadence
+
+    try:
+        display_cadence(cadence_status(channel_id))
+    except Exception:
+        pass
+
     if seed_topic:
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
         topic = seed_topic
@@ -232,6 +239,10 @@ def _run_new_video_flow(
     print(f"  Completed in {t_disc:.1f}s")
 
     display_signal_health(discovery.base_signals)
+
+    from core.outlier import display_outlier, get_competitor_outlier
+
+    display_outlier(get_competitor_outlier(discovery.base_signals))
 
     best_default = display_variants(discovery.evaluated)
 

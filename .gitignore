@@ -35,7 +35,8 @@ output/
 *.srt
 
 # Local caches and channel data (may contain strategy/performance data)
-data/
+# Root runtime dir only (anchored) — keeps source dirs like core/data/ tracked.
+/data/
 assets/cache/
 assets/catalog.json
 

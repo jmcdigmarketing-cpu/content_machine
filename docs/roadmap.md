@@ -163,16 +163,93 @@ Last updated: 2026-06-13 — closed-loop recommenders, Apify data layer, idea-in
 
 *Prioritised, near-term. Top of list first.*
 
-1. **Ship the repo** — create the **private** GitHub remote and push (`gh repo create content_machine --private --source=. --push`). Never commit `.env`/tokens.
-2. **Re-auth for `youtube.readonly`** — `py -m youtube.oauth_setup --channel tapin` so the publisher's duplicate-upload recovery check works (currently 403s, fails safe).
-3. **Exercise the new data layer live** — run discovery on real topics; tune `config/apify_sources.json` actor inputs from observed results; confirm Reddit/TikTok/Twitter/competitor signals return useful data.
-4. **Validate recommenders against reality** — as publish volume grows, compare recommended topic/length/time picks to realised engagement; add confidence/min-sample cues in the UI.
-5. **Automation hardening** — `scripts/auto_generate.py` + Task Scheduler dry-runs; make `--length auto` the default everywhere and verify the daily unattended path end-to-end.
+1. **Re-auth for `youtube.readonly`** — `py -m youtube.oauth_setup --channel tapin` so the publisher's duplicate-upload recovery check works (currently 403s, fails safe). *(Repo shipped → `origin`; PR #1 open.)*
+2. **Exercise the new data layer live** — run discovery on real topics; tune `config/apify_sources.json` actor inputs from observed results; confirm Reddit/TikTok/Twitter/competitor signals return useful data.
+3. **Validate recommenders against reality** — as publish volume grows, compare recommended topic/length/time picks to realised engagement; add confidence/min-sample cues in the UI.
+4. **Automation hardening** — `scripts/auto_generate.py` + Task Scheduler dry-runs; make `--length auto` the default everywhere and verify the daily unattended path end-to-end.
 
-### Phase M — Multi-platform distribution (next major)
+➡ Mid-term direction is shaped by 2026 market research — see **Market positioning** and **Candidate phases** below.
 
-*Repurpose one rendered vertical to several surfaces. Publisher contract already exists (`publishing/`).*
+---
 
+## Market positioning (2026)
+
+*From a scan of the short-form / creator-tooling market (OpusClip, AutoShorts, Revid, Higgsfield, vidIQ, TubeBuddy) and YouTube policy.*
+
+**The defining shift — authenticity enforcement.** YouTube's "inauthentic content" policy (Jul 2025) plus the **Jan 2026 mass-termination wave** demonetised templated, synthetic-voiceover, volume-over-substance faceless channels. *Faceless is still fine — synthetic-and-shallow is not.* What survives: **original insight, real variation between videos, human context, substance over volume.** That is an existential constraint for a generation-first pipeline and reorders our priorities (Phase O).
+
+**Where rivals are strong (our gaps):**
+
+| Capability | Who has it | Us today |
+|---|---|---|
+| Virality / hook score 0–100, hold-rate prediction | OpusClip, Higgsfield | composite topic score only — no hook/retention predictor |
+| Hook-first generation (first 3 s / 60 frames) | most 2026 tools | generic hook rule in the prompt |
+| Burned animated captions, speaker reframe | effectively all | not burning captions (table stakes) |
+| A/B testing title/thumb/desc → CTR/watch-time | TubeBuddy | generate variants, but no post-publish A/B loop |
+| "Daily ideas" coach | vidIQ | best-bet (close — expand into a coach) |
+| Clip-from-long-form (VOD / podcast → shorts) | OpusClip core | generation-only; idea-intake already accepts YT links |
+
+**Our moat (lean in):** no competitor runs the **full closed loop** — decide → *research with verified facts* → generate → publish → learn — self-hosted, on an anti-hallucination / intelligence-report spine. vidIQ decides, TubeBuddy optimises, OpusClip clips; we do all three plus a sourcing layer they lack. Double down on **verifiable substance + the analytics learning loop**.
+
+---
+
+## Candidate phases — 2026 roadmap expansion (proposed)
+
+*Brainstorm, market-grounded. Ordering reflects risk/impact, not commitment.*
+
+### Phase O — Authenticity & monetisation safety  *(highest priority — existential)*
+Turn the research spine into a compliance moat.
+- [ ] **Per-video variation guard** — detect template sameness across recent uploads (script shape, intro, b-roll); block "looks mass-produced" runs before render.
+- [ ] **Original-insight injection** — require an opinion / analysis / prediction beat from the research brief; fail thin runs (briefs + anti-hallucination already exist).
+- [ ] **Human-context layer** — channel voice/persona, recurring segments, callbacks to prior videos (continuity data already in best-bet).
+- [ ] **Voice variety** — vary TTS delivery; optional real-voice clone slot.
+- [ ] **Pre-upload authenticity self-check** — score + checklist mirroring the policy ("original insight? variation? substance?").
+
+### Phase P — Hook & retention intelligence
+- [ ] **Hook-score 0–100** for the opening line, predicted from past hooks + engagement; surfaced like best-bet.
+- [ ] **Retention-curve modelling** from analytics (avg-view-% by script position) → feeds the length/pacing recommenders.
+- [ ] **Hook-first regeneration** — auto-rewrite the first 3 s until hook-score clears a threshold.
+- [ ] **A/B variant loop** — we already generate variants; publish/track two titles or thumbnails and let the analytics loop pick winners (closes the TubeBuddy gap).
+
+### Phase Q — Captions & visual polish  *(table stakes)*
+- [ ] **Burned animated captions** (Whisper word-timing → styled overlay) — the single biggest quality gap.
+- [ ] **Scene-matched b-roll** — pick stock / `assets` per script beat instead of one looped clip.
+- [ ] **Dynamic emphasis** — keyword pop, zoom on the hook, beat-synced cuts.
+
+### Phase R — Clip-from-source mode  *(market hedge)*
+*The market's "real content" pivot; pairs with idea-intake, which already accepts YouTube links.*
+- [ ] Ingest a long video / VOD / podcast (file or URL) → transcribe → find strong moments → cut vertical shorts with captions.
+- [ ] Reuse the scoring / hook / caption stack from Phases P–Q.
+
+### Phase S — Creator coach surface
+- [ ] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing).
+- [ ] **Thumbnail A/B** + CTR optimisation (Flux thumbnails already exist).
+- [ ] Weekly performance digest with concrete next actions.
+
+### UI / experience — themeable skins  *(fun, on-brand)*
+*Builds on the existing braille ASCII art, `DiscoverySpinner`, and `print_domain_art`.*
+- [ ] **`CONTENT_UI_THEME=onepiece|zelda|pokemon|dbz`** — swap banner art, spinner frames, palette, and loading copy.
+  - **Zelda** — Triforce signal-health glyphs, heart-container queue meter, a *secret-found* flourish on a new best-bet, Rupees = quota units.
+  - **Pokémon** — Pokéball spinner, "type advantage" framing for domain weights, **level-up / XP** when a recommender improves from analytics, a daily-streak "Gotta post 'em all".
+  - **DBZ** — **power-level = composite score** ("It's over 9000!" past a threshold), Scouter readout for signal health, charge-up render progress bar.
+- [ ] Theme registry so each channel picks a skin in `channels.json`; keep a plain/no-emoji mode for logs and CI.
+
+### Efficiency & integrations
+- [ ] **Whisper** locally for caption timing + clip transcription (enables Phases Q & R).
+- [ ] **Cost / quota dashboard** — per-run API spend (OpenAI / Apify / YouTube units) in status.
+- [ ] **Local-LLM option** — pluggable backend (Ollama) for cheaper drafts; keep Claude/GPT for finals.
+- [ ] **Webhook / n8n / Zapier out** — emit run + publish events for external automation.
+- [ ] **Batch generation** — N ideas → N drafts in one unattended pass (feeds A/B + volume-with-variation).
+- [ ] **Observability** — structured run traces + timing dashboard (timings already captured).
+
+---
+
+## Later horizons
+
+*Valuable, but intentionally pushed out.*
+
+### Phase M — Multi-platform distribution  *(pushed back — far later)*
+*Repurpose one rendered vertical to several surfaces. Publisher contract already exists (`publishing/`). Deferred behind authenticity (O), hook/retention (P), and captions (Q) — distribution multiplies whatever quality we ship, so it waits until the content itself is policy-safe and sharper.*
 - [ ] **TikTok publisher** — `TIKTOK_CLIENT_KEY`/`SECRET` present; `TikTokPublisher` still unimplemented (in `DEFERRED_PLATFORMS`)
 - [ ] Instagram Reels / Meta — `META_APP_ID`/`SECRET`, `INSTAGRAM_*` (keys still empty)
 - [ ] Per-platform caption/hashtag shaping from existing SEO + TikTok-trend signal

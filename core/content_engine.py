@@ -108,6 +108,7 @@ def _build_prompts(
     length_choice: str,
     seed_topic: str = "",
     is_thin_facts: bool = False,
+    creative_brief: str = "",
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
@@ -140,8 +141,9 @@ ANTI-HALLUCINATION RULES (strictly enforced):
 - A script grounded in genuine community takes beats a fabricated "news update" every time.
 
 You must:
-- Use ONLY names, results, and facts listed in VERIFIED FACTS or RESEARCH BRIEF.
-- If a fact is missing, say "reports suggest" or skip — do not fill from memory.
+- Use ONLY game-specific facts (patches, heroes, seasons, results, dates, stats) that appear in VERIFIED FACTS or RESEARCH BRIEF.
+- Cross-genre framing is allowed: real people, athletes, other sports, or other games introduced in the EDITORIAL ANGLE may be used as analogy, comparison, or opinion even if they are absent from VERIFIED FACTS — that is intentional creator framing, not a fabrication. Only invented GAME specifics are forbidden.
+- If a game fact is missing, say "reports suggest" or skip — do not fill from memory.
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
 - Avoid filler contrast phrases like "This isn't just X — it's Y" or "But wait, there's more."
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
@@ -154,6 +156,18 @@ You must:
     if seed_topic and seed_topic.strip().lower() != topic.strip().lower():
         seed_block = (
             f"SEED TOPIC (user/channel intent — stay on this subject):\n{seed_topic.strip()}\n\n"
+        )
+
+    angle_block = ""
+    if creative_brief and creative_brief.strip():
+        angle_block = (
+            "EDITORIAL ANGLE (the creator's deliberate take — build the entire script "
+            "around THIS thesis and point of view, not a generic overview). Names, "
+            "people, athletes, sports, or other genres referenced here (e.g. a fighter "
+            "used as an analogy for game mechanics) are INTENTIONAL cross-genre framing — "
+            "keep them and lean into the comparison; they are allowed even if not in "
+            "VERIFIED FACTS. Only GAME-SPECIFIC claims (patches, heroes, seasons, dates, "
+            f"numbers) must still come from VERIFIED FACTS:\n{creative_brief.strip()}\n\n"
         )
 
     # Split facts into verified data vs YouTube context-only titles
@@ -181,7 +195,7 @@ You must:
     user_prompt = f"""
 TODAY: {today}
 
-{seed_block}TOPIC:
+{seed_block}{angle_block}TOPIC:
 {topic}
 
 {brief_block}SCRIPT BRIEF (follow exactly):
@@ -283,6 +297,7 @@ def generate_content_package(
     research_brief: ResearchBrief | None = None,
     length_choice: str = "2",
     seed_topic: str = "",
+    creative_brief: str = "",
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -330,6 +345,7 @@ def generate_content_package(
         length_choice=length_choice,
         seed_topic=seed_topic,
         is_thin_facts=_is_thin_facts,
+        creative_brief=creative_brief,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude

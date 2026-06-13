@@ -198,6 +198,7 @@ def run_pipeline(
     proceed_video: bool = True,
     variant_limit: int = 5,
     channel_id: str | None = None,
+    creative_brief: str = "",
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -262,6 +263,7 @@ def run_pipeline(
         research_brief=research_brief,
         length_choice=length_choice,
         seed_topic=input_topic,
+        creative_brief=creative_brief,
     )
     result.timings["length_preset"] = preset.choice
     result.timings["content_package"] = time.perf_counter() - t_content

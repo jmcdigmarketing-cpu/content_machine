@@ -137,6 +137,8 @@ ANTI-HALLUCINATION RULES (strictly enforced):
 - Do NOT infer season numbers (e.g. "Season 8.5", "Season 7") from video titles in your training data.
 - Do NOT introduce hero names (e.g. Cyclops, White Fox, Hawkeye) that are not named in VERIFIED FACTS.
 - Do NOT invent patch version numbers, balance changes, mode names, or release dates.
+- SPORTS/MMA: Do NOT state who is champion, a fighter's record, ranking, or who they have fought/beaten from memory — titles and records change and your training data is stale. Use only statuses that appear in VERIFIED FACTS.
+- Do NOT invent fight results, opponents, event cards, dates, or quotes. If the outcome of a fight or event is NOT in VERIFIED FACTS, frame it as the question or hypothetical it is ("if Topuria loses…", "fans are asking whether…") — never assert it happened.
 - Competitor video titles in CONTEXT SIGNALS are NOT factual evidence — they show what's trending, not what's true.
 - If the facts are silent on specifics: write at the community/opinion level ("players are frustrated that…", "the debate right now is…") without inventing the specific thing they're debating.
 - A script grounded in genuine community takes beats a fabricated "news update" every time.

@@ -46,6 +46,11 @@ def _scrape_enabled() -> bool:
     )
 
 
+# Public alias used by ufc_context_api.
+def scrape_enabled() -> bool:
+    return _scrape_enabled()
+
+
 def _is_mma_topic(topic: str) -> bool:
     t = topic.lower()
     return any(k in t for k in ("ufc", "mma", "topuria", "gaethje", "fight", "boxing", "ppv"))

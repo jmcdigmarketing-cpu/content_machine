@@ -67,7 +67,19 @@ def _probe_analytics_api(channel_id: str) -> tuple[bool, str]:
         return False, f"Analytics probe failed: {msg[:500]}"
 
 
-def sync_channel(channel_id: str | None = None) -> int:
+def _recency_key(row):
+    """Sort newest-first by published_at, then by id."""
+    from datetime import datetime, timezone
+
+    when = row.published_at
+    if when is None:
+        when = datetime.min.replace(tzinfo=timezone.utc)
+    elif when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return (when, row.id or 0)
+
+
+def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     if not _analytics_enabled():
         print("Set YOUTUBE_ANALYTICS_SYNC=true in .env")
         return 1
@@ -78,17 +90,21 @@ def sync_channel(channel_id: str | None = None) -> int:
         print("Publish log list_uploaded not available for this storage backend.")
         return 1
 
-    # Pre-check the API before iterating all videos — catches disabled API early
+    # Pre-check the API before iterating — catches disabled API early
     ok, err = _probe_analytics_api(channel_id)
     if not ok:
         print(f"\n  {err}\n")
         return 1
 
-    rows = repo.list_uploaded_for_channel(channel_id)
+    # Only the most recent `limit` uploads — older videos already have metrics
+    # and re-pulling all of them every run wastes quota/time.
+    rows = [r for r in repo.list_uploaded_for_channel(channel_id) if r.youtube_video_id]
+    rows.sort(key=_recency_key, reverse=True)
+    rows = rows[: max(1, limit)]
+
     synced = 0
     for row in rows:
-        if not row.youtube_video_id:
-            continue
+        title = (row.detail or "").strip() or "(untitled)"
         result = refresh_publish_metrics(
             content_run_id=row.content_run_id,
             youtube_video_id=row.youtube_video_id,
@@ -96,12 +112,13 @@ def sync_channel(channel_id: str | None = None) -> int:
             title=row.detail or "",
             publish_log_id=row.id,
         )
+        mark = "✓" if result else "·"
+        short = title if len(title) <= 60 else title[:57] + "…"
+        print(f"  {mark} {short}  [{row.youtube_video_id}]")
         if result:
             synced += 1
-            print(f"  ✓ Synced video {row.youtube_video_id}")
 
-    total = sum(1 for r in rows if r.youtube_video_id)
-    print(f"\n  Synced {synced}/{total} uploaded video(s) for {channel_id}")
+    print(f"\n  Synced {synced}/{len(rows)} most-recent video(s) for {channel_id}")
     if synced > 0:
         print("  Best-bet recommendations will reflect real engagement on next run.")
     return 0
@@ -110,8 +127,11 @@ def sync_channel(channel_id: str | None = None) -> int:
 def main():
     parser = argparse.ArgumentParser(description="Sync YouTube Analytics metrics")
     parser.add_argument("--channel", default="tapin")
+    parser.add_argument(
+        "--limit", type=int, default=3, help="How many most-recent videos to sync (default 3)"
+    )
     args = parser.parse_args()
-    raise SystemExit(sync_channel(args.channel))
+    raise SystemExit(sync_channel(args.channel, limit=args.limit))
 
 
 if __name__ == "__main__":

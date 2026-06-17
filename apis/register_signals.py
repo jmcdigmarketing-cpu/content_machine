@@ -10,8 +10,17 @@ from apis.youtube_api import start_youtube_warmup_background
 
 _SKIP = {s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(",") if s.strip()}
 
+# Signals reused (pinned) from the base-topic fetch during per-variant scoring,
+# instead of being re-fetched for each of the 5 variants. The slow/paid Apify
+# social actors barely differ across title variants of the same topic — reusing
+# them cuts discovery from minutes to seconds and saves Apify credits.
 _VARIANT_REUSE = tuple(
-    s.strip().lower() for s in os.getenv("VARIANT_REUSE_SIGNALS", "youtube").split(",") if s.strip()
+    s.strip().lower()
+    for s in os.getenv(
+        "VARIANT_REUSE_SIGNALS",
+        "youtube,reddit,twitter,tiktok_trends,youtube_competitors",
+    ).split(",")
+    if s.strip()
 )
 
 

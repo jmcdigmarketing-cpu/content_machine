@@ -219,7 +219,9 @@ INSTRUCTIONS:
 - Open with a punchy hook sentence under 12 words (no "Today/Let's/In this video").
 - If Long format: structure as hook → context → analysis → implications → closing take.
 - If RESEARCH BRIEF says format is "analysis" or "prediction": DO NOT frame as a news announcement. Write as an informed breakdown, hot take, or prediction — not "just released" or "biggest update yet" language.
-- Close with a strong opinion or implication that invites comments.
+- TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it ("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.
+- Cut hedging and filler ("only time will tell", "the narrative is far from over", "could be a turning point"). Every sentence advances the take.
+- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".
 - Generate a compelling YouTube title (SEO-aware, accurate, no ellipsis).
 - Generate a concise SEO description (hook first line, call-to-action last line).
 - Generate 8-15 YouTube tags (no fabricated names).

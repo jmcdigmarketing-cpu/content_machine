@@ -159,16 +159,42 @@ Last updated: 2026-06-13 — closed-loop recommenders, Apify data layer, idea-in
 
 ---
 
+## Recently shipped (2026-06)
+
+All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
+
+- **Recommenders + analytics loop live** — best-bet (now **3 rotating options**), recommended length, recommended post-time; analytics sync (most-recent-3 with titles).
+- **Phase O — authenticity/compliance**: pre-upload self-check, AI disclosure, cadence guardrail, competitor-outlier surface, monetisation CTAs.
+- **Phase P — hook intelligence**: 0–100 hook scorer + opt-in regeneration.
+- **Phase Q — captions**: proportional, sentence-aware timing.
+- **Idea intake (option 5)** with cross-genre creative-brief threading.
+- **MoneyWise finance channel** (2nd channel) + `infer_domain` word-boundary fix.
+- **Apify hardening**: `set_cache` credit-burn fix, 201 handling, circuit breaker + preflight on/off check, per-variant signal reuse (discovery minutes → seconds).
+- **Script prompt refinement**: recap-first VOICE block, filler ban-list, anti-padding Extended format.
+- **Engineering baseline**: pyproject/ruff/mypy/pre-commit, CI on 3.11, 220 tests.
+- **Brand kit** for MoneyWise (`assets/branding/moneywise/`).
+- **Assessment**: `docs/assessment.md` (strengths/weaknesses/fixes).
+
+---
+
 ## Next — current focus
 
-*Prioritised, near-term. Top of list first.*
+*Prioritised fix queue, top first. `[S]`/`[M]`/`[L]` = effort.*
 
-1. **Re-auth for `youtube.readonly`** — `py -m youtube.oauth_setup --channel tapin` so the publisher's duplicate-upload recovery check works (currently 403s, fails safe). *(Repo shipped → `origin`; PR #1 open.)*
-2. **Exercise the new data layer live** — run discovery on real topics; tune `config/apify_sources.json` actor inputs from observed results; confirm Reddit/TikTok/Twitter/competitor signals return useful data.
-3. **Validate recommenders against reality** — as publish volume grows, compare recommended topic/length/time picks to realised engagement; add confidence/min-sample cues in the UI.
-4. **Automation hardening** — `scripts/auto_generate.py` + Task Scheduler dry-runs; make `--length auto` the default everywhere and verify the daily unattended path end-to-end.
+**Immediate (from live runs):**
+1. **Manual fact feeding** `[S–M]` — a "key facts" prompt: operator pastes 1–3 facts that inject as top-priority VERIFIED FACTS. THE fix for stale-fact guessing (e.g. "Topuria, the featherweight champion" when he isn't). Highest leverage.
+2. **Domain-aware signal gating** `[S]` — don't run gaming signals (RAWG/Steam/IGDB) for UFC/sports topics and vice-versa. Kills the "UFC 4 game" noise, speeds discovery, saves quota (`apis/register_signals.py` skip-by-domain).
+3. **Auto-disable on credit/quota** `[S–M]` — generalise the Apify circuit breaker: any signal returning a quota/auth status (YouTube units, Odds 500/mo) auto-skips for the session.
+4. **Live discovery feedback** `[M]` — per-phase progress (signals X/31, variant N/5, elapsed per phase) instead of one spinner that jumps to ~300s.
 
-➡ Mid-term direction is shaped by 2026 market research — see **Market positioning** and **Candidate phases** below.
+**Then — assessment top 5 ([docs/assessment.md](assessment.md)):**
+5. Recency/event grounding (enable Tapology for UFC; weight fresh result-RSS).
+6. Signal relevance gating (matched entity must appear in the topic).
+7. Confidence surfacing on recommenders (sample size; raise min-samples).
+8. Word-level animated captions (Phase Q next).
+9. Observability + per-run cost/quota dashboard.
+
+➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
 ---
 

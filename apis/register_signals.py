@@ -14,6 +14,71 @@ _VARIANT_REUSE = tuple(
     s.strip().lower() for s in os.getenv("VARIANT_REUSE_SIGNALS", "youtube").split(",") if s.strip()
 )
 
+# Domain-aware signal gating
+# ---------------------------
+# Signals that only make sense for a specific content domain. Anything NOT listed
+# here is universal (youtube, trends, news, wikipedia, reddit, etc.) and never gated.
+# When a topic confidently belongs to one domain group, we skip domain-specific
+# signals from a *different* group — e.g. RAWG/Steam/IGDB never run on a UFC topic
+# (which is where they currently match the wrong game), and the sports/odds/UFC
+# scrapers never run on a gaming topic.
+_DOMAIN_SIGNALS: dict[str, set[str]] = {
+    "gaming": {"rawg", "steam", "igdb", "twitch", "trendingnow"},
+    "sports": {
+        "sports",
+        "live_scores",
+        "odds",
+        "stats_context",
+        "api_sports",
+        "ufc_context",
+        "tapology",
+    },
+    "finance": {"fred", "sec_edgar", "finnhub", "coingecko"},
+    "anime": {"anime"},
+    "popculture": {"tmdb", "tvmaze"},
+    "music": {"lastfm", "musicbrainz"},
+}
+
+# Map an inferred topic domain (from topic_scorer.infer_domain) to a gating group.
+_DOMAIN_GROUP: dict[str, str] = {
+    "nba": "sports",
+    "nfl": "sports",
+    "ufc": "sports",
+    "gaming": "gaming",
+    "finance": "finance",
+    "anime": "anime",
+    "popculture": "popculture",
+    "music": "music",
+}
+
+# Reverse index: signal name -> the domain group it belongs to (built once).
+_SIGNAL_GROUP: dict[str, str] = {
+    name: group for group, names in _DOMAIN_SIGNALS.items() for name in names
+}
+
+
+def _domain_gating_enabled() -> bool:
+    return os.getenv("DOMAIN_SIGNAL_GATING", "true").lower() in ("1", "true", "yes")
+
+
+def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
+    """
+    Names of domain-specific signals to skip for this topic.
+
+    Returns empty when gating is disabled or the topic's domain is unknown/neutral
+    (fail-open: when unsure, run everything). Universal signals are never returned.
+    """
+    if not _domain_gating_enabled():
+        return set()
+
+    from apis.topic_scorer import infer_domain
+
+    topic_group = _DOMAIN_GROUP.get(infer_domain(topic, channel_id))
+    if not topic_group:
+        return set()
+
+    return {name for name, group in _SIGNAL_GROUP.items() if group != topic_group}
+
 
 def _youtube_cache_ttl():
     try:
@@ -22,12 +87,15 @@ def _youtube_cache_ttl():
         return 6 * 60 * 60
 
 
-def _active_signal_sources():
+def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     registry = get_signal_registry().get_registered_signals()
     pairs = tuple(registry.items())
-    if not _SKIP:
+    skip = set(_SKIP)
+    if topic:
+        skip |= _gated_signal_names(topic, channel_id)
+    if not skip:
         return pairs
-    return tuple(pair for pair in pairs if pair[0] not in _SKIP)
+    return tuple(pair for pair in pairs if pair[0] not in skip)
 
 
 def _cache_ttl_for(name):
@@ -121,16 +189,18 @@ def build_registry(
     max_workers=None,
     *,
     reuse_signals: dict[str, Any] | None = None,
+    channel_id: str | None = None,
 ):
     """
     Fetch all signals in parallel. Results are cached per signal + topic.
 
     reuse_signals: pin signals from a prior fetch (e.g. base-topic YouTube during
     variant scoring) to avoid duplicate slow API calls.
+    channel_id: used as a fallback when inferring the topic's domain for gating.
     """
     start_youtube_warmup_background()
 
-    sources = _active_signal_sources()
+    sources = _active_signal_sources(topic, channel_id)
     workers = max_workers or len(sources)
     pinned = {}
     if reuse_signals:

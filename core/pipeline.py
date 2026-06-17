@@ -69,7 +69,7 @@ def _score_variant(
     *,
     seed_topic: str = "",
 ):
-    variant_signals = build_registry(variant, reuse_signals=base_signals)
+    variant_signals = build_registry(variant, reuse_signals=base_signals, channel_id=channel_id)
     score = composite_score(variant_signals, variant, channel_id)
     if seed_topic:
         score = max(
@@ -112,7 +112,7 @@ def run_discovery(
     )
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        signals_future = executor.submit(build_registry, topic)
+        signals_future = executor.submit(build_registry, topic, channel_id=channel_id)
         variants_future = executor.submit(
             generate_variants,
             topic,
@@ -198,6 +198,7 @@ def run_pipeline(
     proceed_video: bool = True,
     variant_limit: int = 5,
     channel_id: str | None = None,
+    key_facts: list[str] | None = None,
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -262,6 +263,7 @@ def run_pipeline(
         research_brief=research_brief,
         length_choice=length_choice,
         seed_topic=input_topic,
+        key_facts=key_facts or [],
     )
     result.timings["length_preset"] = preset.choice
     result.timings["content_package"] = time.perf_counter() - t_content

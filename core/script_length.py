@@ -71,16 +71,18 @@ def format_length_report(script: str, preset: LengthPreset) -> str:
 def length_system_addendum(preset: LengthPreset) -> str:
     if preset.choice == "4":
         return (
-            "FORMAT: Extended long-form video (7-15 minutes). "
-            "Structure as a proper essay or documentary: "
-            "  1. Cold open / hook (1-2 sentences of undeniable fact or contradiction). "
-            "  2. Context section — what the situation is and why it matters. "
-            "  3. Deep dive — 3-5 distinct sub-points or angles with examples. "
-            "  4. Counter-argument or complication — steelman the other side. "
-            "  5. Analysis / opinion — your take with reasoning. "
-            "  6. Implication / call to action — what happens next, what viewers should think about. "
-            "Each section should flow naturally; no section headers or bullet points in the spoken script. "
-            "The script MUST reach at least 1000 words of spoken delivery."
+            "FORMAT: Extended deep-dive (7-15 minutes) — a LONG video, not a long-winded one. "
+            "Open by stating exactly what happened in plain words. Then move through it "
+            "concretely — fact, then your read on that fact; next fact, next read — building to "
+            "one clear thesis you commit to. Use the specific moments and numbers in VERIFIED "
+            "FACTS as the spine. "
+            "Earn every minute with NEW information or a sharper take. Do NOT pad to hit length "
+            "with abstraction, restating your own points, or 'on the other hand' filler — if "
+            "there aren't enough verified facts to fill the time honestly, write tighter and "
+            "shorter rather than bloating. "
+            "It is NOT an academic essay: no 'steelman the other side', no balanced both-sides "
+            "survey, no 'in conclusion'. No section headers or bullets in the spoken script. "
+            "Aim for 1000+ words only if every word earns its place."
         )
     if preset.choice == "3":
         return (

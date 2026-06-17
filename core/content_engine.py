@@ -132,6 +132,14 @@ Never open with "Today", "Let's", "In this video", "Welcome", or a direct questi
 Strong hooks: "He lost $2 billion in one afternoon." / "Nobody saw this roster move coming." / "This changes everything for the division."
 {retention_rule}
 
+VOICE — write like a sharp, opinionated human creator talking to camera, NOT an analyst writing a report:
+- SAY WHAT HAPPENED FIRST. Lead with the concrete facts in plain words — who did what to whom, how, and when (e.g. "Gaethje TKO'd Topuria in round 2") — BEFORE any commentary. No throat-clearing intro.
+- Concrete beats abstract every time. Use names, methods, rounds, numbers from VERIFIED FACTS — not vague abstractions like "systemic issues", "the broader narrative", "the delicate balance".
+- BANNED — never write these or anything like them: "grappling with the fallout", "at a crossroads", "as the dust settles", "the delicate balance between", "double-edged sword", "systemic issues", "the future of X depends on it", "it's essential to understand", "underscores a critical need", "a testament to", "the lifeblood of", "ripe with opportunities", "In conclusion", "the very foundations of", "now more than ever".
+- NO both-sidesing. Do NOT write "some argue X, while others believe Y". State what YOU think and why.
+- The topic is the assignment: if it says "recap / results", RECAP WHAT HAPPENED — do not drift into think-piece territory about officiating reform, "the meta", or the sport's future unless the facts are about that.
+- Delete any sentence that could appear in a generic essay on this subject. Every sentence must carry a specific fact or a real opinion.
+
 ANTI-HALLUCINATION RULES (strictly enforced):
 - You do NOT know which patch, season, or hero was released unless it appears verbatim in VERIFIED FACTS below.
 - Do NOT infer season numbers (e.g. "Season 8.5", "Season 7") from video titles in your training data.
@@ -152,7 +160,7 @@ You must:
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
 - Build to a strong closing line — a hot take, implication, or open question that drives comments.
 - Title and description must be SEO-friendly without misleading clickbait.
-- The script word count is MANDATORY: between {min_words} and {max_words} words (currently targeting ~{preset.target_words}).
+- Target {min_words}-{max_words} words (~{preset.target_words}) — but hit it with SUBSTANCE, never filler. If you run out of real facts and real takes before the minimum, STOP. A tight shorter script beats a padded one.
 """
 
     seed_block = ""
@@ -303,11 +311,16 @@ def _expand_script(
     preset = get_length_preset(length_choice)
     prompt = f"""Expand this video script for TOPIC: {topic}
 
-Current script ({current} words) is TOO SHORT. Target: at least {min_words} words, at most {max_words} words.
+Current script ({current} words) is short of the {min_words}-word target (max {max_words}).
 Format: {preset.label} video ({preset.duration_hint()}).
 {length_system_addendum(preset)}
 
-Keep all facts from the original script. Add depth: ripple effects, team context, fan/analyst angles, and a strong closing line.
+Add LENGTH WITH SUBSTANCE ONLY: more specific facts about what happened, concrete detail, and
+sharper opinion/analysis. Keep all facts from the original.
+BANNED filler — do NOT add any of this to pad the count: "fans are divided", "the lifeblood of
+the sport", "the future of X depends on it", "in conclusion", "a testament to", restating points
+already made, or vague abstractions. If you cannot reach {min_words} words HONESTLY with real
+substance, return the script unchanged rather than padding.
 Do not repeat the opening verbatim. Return JSON only: {{"script": "..."}}
 
 ORIGINAL:

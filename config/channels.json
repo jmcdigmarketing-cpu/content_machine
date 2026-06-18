@@ -63,6 +63,34 @@
           ]
         }
       }
+    },
+    "moneywise": {
+      "name": "MoneyWise",
+      "domain": "finance",
+      "background_mode": "hybrid",
+      "hybrid_local_ratio": 0.45,
+      "asset_provider_order": ["local", "pexels", "pixabay"],
+      "output_subdir": "moneywise",
+      "publishers_enabled": ["youtube"],
+      "youtube_oauth_token_file": "config/secrets/youtube_token_moneywise.json",
+      "privacy_status_default": "private",
+      "tts": {
+        "voice_id": "nPczCjzI2devNBz1zQrb",
+        "model_id": "eleven_multilingual_v2"
+      },
+      "post_schedule": {
+        "timezone": "America/New_York",
+        "comment": "Finance audience — weekday mornings (pre-market ET) + Sunday 'week ahead' + Saturday personal-finance evergreen",
+        "default_slots": [
+          {"weekday": 0, "hour": 8, "minute": 30},
+          {"weekday": 1, "hour": 8, "minute": 30},
+          {"weekday": 2, "hour": 8, "minute": 30},
+          {"weekday": 3, "hour": 8, "minute": 30},
+          {"weekday": 4, "hour": 8, "minute": 30},
+          {"weekday": 5, "hour": 10, "minute": 0},
+          {"weekday": 6, "hour": 18, "minute": 0}
+        ]
+      }
     }
   }
 }

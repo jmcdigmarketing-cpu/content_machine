@@ -84,7 +84,10 @@ def run_actor(
         if resp.status_code == 402:
             logger.warning("Apify: out of credits for actor %s", actor_id)
             return None
-        if resp.status_code != 200:
+        # run-sync-get-dataset-items returns 201 (Created) with the dataset items,
+        # not 200 — accept both. The dataset payload may itself carry an error object,
+        # which is handled by the caller's data-shape checks.
+        if resp.status_code not in (200, 201):
             logger.warning(
                 "Apify actor %s returned %s: %s", actor_id, resp.status_code, resp.text[:200]
             )
@@ -111,7 +114,7 @@ def fetch_dataset(dataset_id: str, *, purpose: str = "main") -> list[dict] | Non
             params={"token": api_key, "format": "json"},
             timeout=30,
         )
-        if resp.status_code != 200:
+        if resp.status_code not in (200, 201):
             return None
         return resp.json() if isinstance(resp.json(), list) else []
     except Exception as exc:

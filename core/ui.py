@@ -185,7 +185,16 @@ def print_domain_art(domain: str, *, topic: str = "", print_fn=print) -> None:
     if franchise:
         art, color = franchise
     else:
-        art = _DOMAIN_ART.get(domain)
+        # Prefer the topic's own domain (a UFC topic on a gaming channel should show
+        # the octagon, not the controller); fall back to the channel domain.
+        art_domain = domain
+        if topic:
+            from apis.topic_scorer import infer_domain
+
+            inferred = infer_domain(topic)
+            if inferred and inferred in _DOMAIN_ART:
+                art_domain = inferred
+        art = _DOMAIN_ART.get(art_domain)
         color = "\033[36m"  # cyan
     if not art:
         return

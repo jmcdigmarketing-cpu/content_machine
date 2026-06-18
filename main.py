@@ -158,14 +158,14 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
         topic = seed_topic
     else:
-        from core.best_bet import display_best_bet, get_best_bet
+        from core.best_bet import display_best_bets, get_best_bets
 
-        best_bet = get_best_bet(channel_id)
-        if best_bet:
-            display_best_bet(best_bet)
-            use_bet = input("  Use best bet? [y/N]: ").strip().lower()
-            if use_bet == "y":
-                topic = best_bet.topic
+        options = get_best_bets(channel_id, 3)
+        if options:
+            display_best_bets(options)
+            sel = input("  Use a best bet? [1-3 / Enter = type your own]: ").strip()
+            if sel.isdigit() and 1 <= int(sel) <= len(options):
+                topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")
             else:
                 topic = input("  Topic: ").strip()

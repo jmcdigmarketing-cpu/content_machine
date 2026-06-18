@@ -353,6 +353,60 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
     )
 
 
+def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
+    """
+    Up to `n` DISTINCT topic options, best first, so the operator can rotate
+    instead of being shown the same single pick every run. Ranks the channel's
+    on-brand history by real engagement then signal score, dedupes by topic, and
+    fills any remaining slot with a fresh franchise angle.
+    """
+    entries = _build_entries(channel_id)
+    if not entries:
+        single = get_best_bet(channel_id)
+        return [single] if single else []
+
+    allowed = on_brand_domains(channel_id)
+    pool = [e for e in entries if e["domain"] in allowed] or entries
+    ranked = sorted(
+        pool,
+        key=lambda e: (e["engaged_rate"] or 0.0, e["composite_score"]),
+        reverse=True,
+    )
+
+    options: list[BestBetResult] = []
+    seen: set[str] = set()
+    for e in ranked:
+        key = normalize_seed_topic(e["topic"]).lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        if e["engaged_rate"] is not None:
+            source = "analytics"
+            rationale = f"{e['engaged_rate']:.0%} engagement on a past {e['domain']} video"
+        else:
+            source = "score"
+            rationale = f"high signal score ({e['composite_score']:.0f}) for {e['domain']}"
+        options.append(
+            BestBetResult(
+                topic=e["topic"],
+                domain=e["domain"],
+                avg_engaged_rate=e["engaged_rate"] or 0.0,
+                source=source,
+                supporting_runs=1,
+                rationale=rationale,
+            )
+        )
+        if len(options) >= n:
+            break
+
+    if len(options) < n:
+        cont = _continuity_seed(channel_id, entries)
+        if cont and normalize_seed_topic(cont.topic).lower() not in seen:
+            options.append(cont)
+
+    return options[:n]
+
+
 def display_best_bet(result: BestBetResult) -> None:
     """Print a summary of the best-bet recommendation to stdout."""
     tag = {
@@ -363,3 +417,11 @@ def display_best_bet(result: BestBetResult) -> None:
     print(f"\n  Best Bet ({tag}): {result.topic}")
     print(f"  Domain : {result.domain}")
     print(f"  Reason : {result.rationale}")
+
+
+def display_best_bets(options: list[BestBetResult], *, print_fn=print) -> None:
+    """Print a numbered list of best-bet options to pick from."""
+    print_fn("\n  Best bets (pick one, or type your own):")
+    for i, opt in enumerate(options, 1):
+        print_fn(f"    {i}. [{opt.domain}] {opt.topic}")
+        print_fn(f"       {opt.rationale}")

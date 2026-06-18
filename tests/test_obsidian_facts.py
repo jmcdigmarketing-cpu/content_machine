@@ -69,6 +69,21 @@ class TestLoadFacts(unittest.TestCase):
                 facts = of.load_facts("Zelda gameplay tips", "tapin")
             self.assertEqual(facts, [])
 
+    def test_generic_shared_token_does_not_match(self):
+        # Regression: a gaming note mentioning "Summer Game Fest" must NOT surface on
+        # a UFC topic that merely says "this summer" (generic token leak).
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "gaming.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# Gaming\n- Onimusha was a standout at Summer Game Fest 2026\n",
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                facts = of.load_facts("Max Holloway will fight Conor McGregor this summer", "tapin")
+            self.assertFalse(any("Onimusha" in f for f in facts))
+
     def test_evergreen_note_surfaces_on_any_topic(self):
         with tempfile.TemporaryDirectory() as d:
             vault = Path(d)

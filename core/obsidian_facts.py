@@ -91,8 +91,11 @@ def _note_matches_channel(meta: dict[str, str], rel_path: Path, channel_id: str)
 
 
 def _is_evergreen(meta: dict[str, str]) -> bool:
+    # Only the explicit "evergreen" tag bypasses topic matching. A plain
+    # tags:[facts] note marks eligibility but still surfaces only on topic match,
+    # so dated fact notes (e.g. ufc-current) don't leak onto unrelated topics.
     tags = (meta.get("tags") or "").lower()
-    return "facts" in tags or "evergreen" in tags
+    return "evergreen" in tags
 
 
 def _extract_bullets(body: str) -> list[str]:

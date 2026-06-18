@@ -180,6 +180,7 @@ def print_domain_art(domain: str, *, topic: str = "", print_fn=print) -> None:
     if not ascii_enabled():
         return
 
+    art: str | None
     franchise = _franchise_art_for(topic)
     if franchise:
         art, color = franchise
@@ -487,7 +488,11 @@ def prompt_key_facts(
 
     key_facts: list[str] = []
 
-    suggestions = load_facts(topic, channel_id)
+    try:
+        suggestions = load_facts(topic, channel_id)
+    except Exception:
+        # Vault problems must never block video creation.
+        suggestions = []
     if suggestions:
         print_fn("")
         print_fn(f"  From your Obsidian vault ({len(suggestions)} matched):")
@@ -511,7 +516,12 @@ def prompt_key_facts(
 
     # De-duplicate while preserving order.
     seen: set[str] = set()
-    deduped = [f for f in key_facts if not (f.lower() in seen or seen.add(f.lower()))]
+    deduped: list[str] = []
+    for f in key_facts:
+        key = f.lower()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(f)
 
     if deduped:
         print_fn(f"  {len(deduped)} fact(s) will be injected as ground truth.")

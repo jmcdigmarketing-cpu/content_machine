@@ -54,6 +54,34 @@ class TestLoadFacts(unittest.TestCase):
                 facts = of.load_facts("Fed rate decision", "tapin")
             self.assertEqual(facts, [])
 
+    def test_dated_facts_note_does_not_leak_to_unrelated_topic(self):
+        # A tags:[facts] (non-evergreen) note must surface only on topic match,
+        # not bleed onto unrelated topics in the same channel.
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "ufc.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# UFC\n- Gaethje is the lightweight champion\n",
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                facts = of.load_facts("Zelda gameplay tips", "tapin")
+            self.assertEqual(facts, [])
+
+    def test_evergreen_note_surfaces_on_any_topic(self):
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "playbook.md").write_text(
+                "---\nchannel: tapin\ntags: [facts, evergreen]\n---\n"
+                "# Playbook\n- Fraud narratives outperform recaps\n",
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                facts = of.load_facts("completely unrelated topic xyz", "tapin")
+            self.assertTrue(any("Fraud narratives" in f for f in facts))
+
     def test_strips_markdown_emphasis(self):
         with tempfile.TemporaryDirectory() as d:
             vault = Path(d)

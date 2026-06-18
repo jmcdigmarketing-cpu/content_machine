@@ -1,7 +1,32 @@
 import unittest
 from unittest.mock import patch
 
-from core.research_brief import BRIEF_VERSION, build_research_brief
+from core.research_brief import BRIEF_VERSION, ResearchBrief, build_research_brief
+
+
+class TestBriefV4Fields(unittest.TestCase):
+    def test_version_is_v4(self):
+        self.assertEqual(BRIEF_VERSION, "research_brief_v4")
+
+    def test_prompt_block_includes_title_and_hook(self):
+        brief = ResearchBrief(
+            topic="UFC 250",
+            narrative="A big fight.",
+            title_direction="Frame as a legacy-defining title unification",
+            suggested_hook="Two new champions in one night.",
+        )
+        block = brief.to_prompt_block()
+        self.assertIn("Suggested title direction:", block)
+        self.assertIn("legacy-defining", block)
+        self.assertIn("Suggested hook", block)
+        self.assertIn("Two new champions", block)
+
+    def test_new_fields_default_empty(self):
+        brief = ResearchBrief()
+        self.assertEqual(brief.title_direction, "")
+        self.assertEqual(brief.suggested_hook, "")
+        # Empty fields must not leak placeholder lines into the prompt block.
+        self.assertNotIn("Suggested title direction", brief.to_prompt_block())
 
 
 class TestResearchBrief(unittest.TestCase):

@@ -42,6 +42,19 @@ def main(argv=None) -> int:
     seo = refresh_seo_hints(channel_id)
     print(f"  SEO hints: {len(seo.get('trending_tags') or [])} tags refreshed")
 
+    # Write machine-learned channel beliefs back into the Obsidian vault (no-op
+    # when OBSIDIAN_VAULT_PATH is unset or there is no analytics yet).
+    try:
+        from core.vault_writeback import write_channel_beliefs
+
+        belief_path = write_channel_beliefs(channel_id)
+        if belief_path:
+            print(f"  Vault beliefs: refreshed {belief_path}")
+        else:
+            print("  Vault beliefs: skipped (no vault or no analytics yet)")
+    except Exception as exc:  # never let writeback break the daily sync
+        print(f"  Vault beliefs: skipped ({exc})")
+
     print("\nDone. Discovery will use this data on next py main.py run.")
     return 0
 

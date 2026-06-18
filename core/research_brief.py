@@ -23,7 +23,7 @@ from core.script_brief import build_script_brief
 
 logger = get_logger("core.research_brief")
 
-BRIEF_VERSION = "research_brief_v3"
+BRIEF_VERSION = "research_brief_v4"
 _CACHE_TTL = 60 * 60 * 3
 _USE_LLM = os.getenv("RESEARCH_BRIEF_LLM", "1").lower() not in ("0", "false", "no")
 
@@ -38,6 +38,8 @@ class ResearchBrief:
     debate_angles: list[str] = field(default_factory=list)
     supporting_evidence: list[str] = field(default_factory=list)
     recommended_format: str = "short_debate"
+    title_direction: str = ""
+    suggested_hook: str = ""
     rss_headlines: list[dict[str, str]] = field(default_factory=list)
     community_summary: str = ""
     competitor_pulse: str = ""
@@ -59,6 +61,10 @@ class ResearchBrief:
                 lines.append(f"  - {ev}")
         if self.recommended_format:
             lines.append(f"Recommended format: {self.recommended_format}")
+        if self.title_direction:
+            lines.append(f"Suggested title direction: {self.title_direction}")
+        if self.suggested_hook:
+            lines.append(f"Suggested hook (<12 words, use or beat it): {self.suggested_hook}")
         if self.community_summary:
             lines.append(f"Community pulse (RSS):\n{self.community_summary}")
         if self.rss_headlines:
@@ -173,7 +179,9 @@ Return JSON only:
   "controversy_score": 0.0 to 1.0,
   "debate_angles": ["angle1", "angle2"],
   "supporting_evidence": ["fact1", "fact2"],
-  "recommended_format": "short_debate|preview|reaction|explainer|analysis|prediction"
+  "recommended_format": "short_debate|preview|reaction|explainer|analysis|prediction",
+  "title_direction": "an SEO-aware angle for the title (a direction, NOT the final title)",
+  "suggested_hook": "a punchy opening line under 12 words — a specific fact, number, or contradiction; no 'Today/Let's/In this video'"
 }}"""
 
     try:
@@ -197,6 +205,8 @@ Return JSON only:
             debate_angles=list(data.get("debate_angles") or [])[:6],
             supporting_evidence=list(data.get("supporting_evidence") or [])[:10],
             recommended_format=str(data.get("recommended_format", "short_debate")),
+            title_direction=str(data.get("title_direction", "")),
+            suggested_hook=str(data.get("suggested_hook", "")),
             rss_headlines=list(rss.get("headlines") or [])[:8],
             community_summary="",
             competitor_pulse=competitor_block,

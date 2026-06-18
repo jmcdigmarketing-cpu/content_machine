@@ -585,11 +585,23 @@ def prompt_key_facts(
                     key_facts.append(suggestions[int(tok) - 1])
 
     print_fn("")
-    print_fn("  Add your own facts — one per line, empty line when done:")
+    print_fn("  Add your own facts — one per line (or paste a link), empty line when done:")
+    from core.link_facts import extract_facts_from_url, looks_like_url
+
     while True:
         fact = input_fn(f"  Fact {len(key_facts) + 1}: ").strip()
         if not fact:
             break
+        if looks_like_url(fact):
+            print_fn("    Fetching link…")
+            extracted = extract_facts_from_url(fact)
+            if extracted:
+                for ex in extracted:
+                    print_fn(f"    + {ex[:90]}")
+                key_facts.extend(extracted)
+            else:
+                print_fn("    Could not extract facts from that link — skipped.")
+            continue
         key_facts.append(fact)
 
     # De-duplicate while preserving order.

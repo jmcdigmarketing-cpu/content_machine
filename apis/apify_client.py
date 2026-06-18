@@ -93,7 +93,7 @@ def run_actor(
             )
             return None
         items = resp.json() if isinstance(resp.json(), list) else []
-        set_cache(cache_key, items, ttl=ttl)
+        set_cache(cache_key, items, ttl_seconds=ttl)
         return items
     except requests.Timeout:
         logger.warning("Apify actor %s timed out after %ss", actor_id, timeout_secs)

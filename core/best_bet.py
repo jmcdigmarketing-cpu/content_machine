@@ -403,9 +403,7 @@ def _fresh_candidates(
             if domain not in allowed:
                 continue
             seen_local.add(key)
-            candidates.append(
-                {"topic": title, "domain": domain, "source": feed.get("name", "RSS")}
-            )
+            candidates.append({"topic": title, "domain": domain, "source": feed.get("name", "RSS")})
             if len(candidates) >= limit:
                 return candidates
     return candidates

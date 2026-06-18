@@ -315,6 +315,12 @@ def run_pipeline(
         fact_source="manual" if key_facts else "signals",
     )
 
+    from core.cost_meter import estimate_run_cost
+
+    result.features["cost"] = estimate_run_cost(
+        script=result.script, signals=best_signals, rendered=False
+    )
+
     if not proceed_video:
         result.aborted = True
         result.abort_reason = "proceed_video=False"
@@ -331,6 +337,11 @@ def run_pipeline(
     )
     result.mp3_path = mp3_path
     result.mp4_path = mp4_path
+
+    # Recompute cost now that TTS/render actually ran (adds the TTS line).
+    result.features["cost"] = estimate_run_cost(
+        script=result.script, signals=best_signals, rendered=True
+    )
 
     _finalize_run(
         channel_id=channel_id, input_topic=input_topic, result=result, discovery=discovery

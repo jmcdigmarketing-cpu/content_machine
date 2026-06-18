@@ -103,6 +103,16 @@ def cmd_seo_refresh(args: argparse.Namespace) -> int:
     return _run_module("analytics.seo_refresh", "--channel", args.channel)
 
 
+@_register("weekly-report", "Rules-based weekly intelligence (winners/losers by feature)")
+def cmd_weekly_report(args: argparse.Namespace) -> int:
+    return _run_module("analytics.weekly_report", "--channel", args.channel)
+
+
+@_register("backfill-features", "Reconstruct features_json for historical runs")
+def cmd_backfill_features(args: argparse.Namespace) -> int:
+    return _run_module("analytics.backfill_features", "--channel", args.channel)
+
+
 @_register("vault-sync", "Write machine-learned beliefs into the Obsidian vault")
 def cmd_vault_sync(args: argparse.Namespace) -> int:
     from core.vault_writeback import write_channel_beliefs

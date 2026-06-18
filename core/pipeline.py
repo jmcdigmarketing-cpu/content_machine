@@ -1,7 +1,8 @@
 import json
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -89,11 +90,26 @@ def run_discovery(
     topic: str,
     variant_limit: int = 5,
     channel_id: str | None = None,
+    *,
+    progress: Callable[..., None] | None = None,
 ) -> DiscoveryResult:
-    """Pull signals, generate variants, score in parallel."""
+    """Pull signals, generate variants, score in parallel.
+
+    progress: optional callback(phase: str, done: int | None, total: int | None)
+    invoked as each discovery phase advances (drives the live spinner).
+    """
+
+    def _report(phase: str, done: int | None = None, total: int | None = None) -> None:
+        if progress:
+            try:
+                progress(phase, done, total)
+            except Exception:  # never let UI reporting break discovery
+                pass
+
     channel_id = resolve_channel_id(channel_id)
     t0 = time.perf_counter()
 
+    _report("Loading history")
     competitor_sync = os.getenv("COMPETITOR_SYNC_ON_DISCOVERY", "auto").lower()
     if competitor_sync in ("1", "true", "yes", "auto"):
         from analytics.competitor_context import ensure_competitor_snapshot
@@ -111,6 +127,7 @@ def run_discovery(
         sum(1 for t in _recent if _anchor and _anchor.lower() in t.lower()) if _anchor else 0
     )
 
+    _report("Fetching signals & variants")
     with ThreadPoolExecutor(max_workers=2) as executor:
         signals_future = executor.submit(build_registry, topic, channel_id=channel_id)
         variants_future = executor.submit(
@@ -125,13 +142,21 @@ def run_discovery(
     timings = {"signals_and_variants": time.perf_counter() - t0}
 
     t1 = time.perf_counter()
+    candidates = variants[:variant_limit]
+    total = len(candidates)
+    _report("Scoring variants", 0, total)
+    evaluated: list[tuple[str, float, dict[str, Any]]] = []
     with ThreadPoolExecutor(max_workers=5) as executor:
-        evaluated = list(
-            executor.map(
-                lambda v: _score_variant(v, channel_id, base_signals, seed_topic=topic),
-                variants[:variant_limit],
-            )
-        )
+        futures = {
+            executor.submit(_score_variant, v, channel_id, base_signals, seed_topic=topic): v
+            for v in candidates
+        }
+        for done, future in enumerate(as_completed(futures), start=1):
+            evaluated.append(future.result())
+            _report("Scoring variants", done, total)
+    # Restore deterministic candidate order (as_completed yields by completion time).
+    _order = {v: i for i, v in enumerate(candidates)}
+    evaluated.sort(key=lambda e: _order.get(e[0], len(candidates)))
     timings["variant_scoring"] = time.perf_counter() - t1
 
     return DiscoveryResult(

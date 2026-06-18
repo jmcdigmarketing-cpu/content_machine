@@ -29,6 +29,7 @@ from apis.tvmaze_api import get_tvmaze_signal
 from apis.twitch_api import get_twitch_signal
 from apis.twitter_signal import get_twitter_signal
 from apis.ufc_context_api import get_ufc_context
+from apis.web_search_api import get_web_search_signal
 from apis.wikipedia_pageviews_api import get_wikipedia_pageviews_signal
 from apis.youtube_api import search_youtube
 from apis.youtube_apify_signal import get_youtube_apify_signal
@@ -48,6 +49,7 @@ def get_signal_registry() -> SignalRegistry:
     reg.register("news", get_news_score)
     reg.register("wikipedia", get_wikipedia_pageviews_signal)
     reg.register("blog_rss", get_blog_rss_signal)
+    reg.register("web_search", get_web_search_signal)
     reg.register("autocomplete", get_autocomplete_data)
     # Sports
     reg.register("sports", get_sports_data)

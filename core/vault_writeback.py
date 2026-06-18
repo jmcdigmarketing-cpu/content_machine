@@ -13,9 +13,11 @@ Safety:
 - Only ever writes a single, clearly-marked, auto-generated file per channel
   (`<vault>/<channel>/_machine-beliefs.md`). Never touches human notes.
 - No-ops when OBSIDIAN_VAULT_PATH is unset.
-- Tagged `[machine, beliefs]` (NOT `evergreen`) so beliefs surface only on topic
-  match and each line is prefixed "Machine belief:" so it reads as a heuristic
-  prior, not a hard fact.
+- Beliefs are channel-level patterns (angle/title-style/format that over- or
+  under-perform), NOT per-topic — naming a specific past topic as "repeat this"
+  makes the system reinforce its own (sometimes fabricated) seeds. Tagged
+  `[machine, beliefs, evergreen]` so these channel priors inform every script, and
+  each line is prefixed "Machine belief:" so it reads as a heuristic prior.
 """
 
 from __future__ import annotations
@@ -73,31 +75,54 @@ def build_channel_beliefs(channel_id: str) -> list[str]:
                 f"{worst_r:.0%} avg engagement across {worst_n} video(s)."
             )
 
-    # Top / bottom individual topics by engagement.
-    rated = [e for e in entries if e.get("engaged_rate") is not None]
-    rated.sort(key=lambda e: e["engaged_rate"], reverse=True)
-    for e in rated[:3]:
-        beliefs.append(
-            f"Machine belief: '{e['topic']}' performed well "
-            f"({e['engaged_rate']:.0%} engagement) — repeat this angle."
-        )
-    if len(rated) >= 4:
-        worst = rated[-1]
-        beliefs.append(
-            f"Machine belief: '{worst['topic']}' underperformed "
-            f"({worst['engaged_rate']:.0%}) — avoid this framing."
-        )
-
-    # No engagement data yet — fall back to highest-signal topics.
-    if not rated:
-        by_score = sorted(entries, key=lambda e: e.get("composite_score") or 0, reverse=True)
-        for e in by_score[:3]:
-            beliefs.append(
-                f"Machine belief: '{e['topic']}' scored highly on signals "
-                f"({e['composite_score']:.0f}) — no engagement data yet, treat as a hypothesis."
-            )
-
+    # Pattern-based beliefs (angle/title-structure/format) from the feature store.
+    # Deliberately NOT per-topic: naming a specific past topic as "repeat this" makes
+    # the system reinforce its own (sometimes fabricated) seeds — a feedback loop.
+    # Patterns generalize the lesson without recycling a literal topic string.
+    beliefs.extend(_pattern_beliefs(channel_id))
     return beliefs
+
+
+# Dimension -> human label for belief lines.
+_DIM_LABELS = {
+    "angle": "angle",
+    "title_structure": "title style",
+    "format": "format",
+}
+
+
+def _pattern_beliefs(channel_id: str) -> list[str]:
+    try:
+        from analytics.weekly_report import build_report
+    except Exception:
+        return []
+    try:
+        report = build_report(channel_id)
+    except Exception as exc:
+        logger.debug("vault writeback: report failed for %s: %s", channel_id, exc)
+        return []
+    if not report.get("ready"):
+        return []
+
+    baseline = report.get("baseline", 0.0)
+    out: list[str] = []
+    for dim, label in _DIM_LABELS.items():
+        groups = report.get("dimensions", {}).get(dim) or []
+        if not groups:
+            continue
+        top = groups[0]
+        if top["delta"] > 0.02:
+            out.append(
+                f"Machine belief: {top['value']} {label} over-performs — "
+                f"{top['avg']:.0%} vs {baseline:.0%} baseline (n={top['n']}); lean into it."
+            )
+        bottom = groups[-1]
+        if bottom["delta"] < -0.02 and bottom["value"] != top["value"]:
+            out.append(
+                f"Machine belief: {bottom['value']} {label} under-performs — "
+                f"{bottom['avg']:.0%} vs {baseline:.0%} baseline (n={bottom['n']}); use sparingly."
+            )
+    return out
 
 
 def _render_note(channel_id: str, beliefs: list[str]) -> str:
@@ -106,7 +131,7 @@ def _render_note(channel_id: str, beliefs: list[str]) -> str:
     return (
         "---\n"
         f"channel: {channel_id}\n"
-        "tags: [machine, beliefs]\n"
+        "tags: [machine, beliefs, evergreen]\n"
         f"generated: {date.today().isoformat()}\n"
         "source: content-machine analytics\n"
         "---\n\n"

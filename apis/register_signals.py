@@ -124,6 +124,13 @@ _SIGNAL_GROUP: dict[str, str] = {
     name: group for group, names in _DOMAIN_SIGNALS.items() for name in names
 }
 
+# Team-sport signals (team databases / team-sport betting / team scoreboards) that
+# do NOT cover MMA. They share the "sports" group with ufc_context/tapology, so the
+# group-level gating keeps them active on UFC topics — where they return noise (a
+# random soccer club, CFL odds). Skip them specifically for UFC/MMA topics; the
+# MMA-native signals (ufc_context, tapology, stats_context) stay.
+_TEAM_SPORT_SIGNALS = {"sports", "odds", "live_scores", "api_sports"}
+
 
 def _domain_gating_enabled() -> bool:
     return os.getenv("DOMAIN_SIGNAL_GATING", "true").lower() in ("1", "true", "yes")
@@ -141,11 +148,16 @@ def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
 
     from apis.topic_scorer import infer_domain
 
-    topic_group = _DOMAIN_GROUP.get(infer_domain(topic, channel_id))
+    inferred = infer_domain(topic, channel_id)
+    topic_group = _DOMAIN_GROUP.get(inferred)
     if not topic_group:
         return set()
 
-    return {name for name, group in _SIGNAL_GROUP.items() if group != topic_group}
+    gated = {name for name, group in _SIGNAL_GROUP.items() if group != topic_group}
+    # Within the sports group, team-sport signals don't cover MMA.
+    if inferred == "ufc":
+        gated |= _TEAM_SPORT_SIGNALS
+    return gated
 
 
 def _youtube_cache_ttl():

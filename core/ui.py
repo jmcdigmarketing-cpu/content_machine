@@ -142,18 +142,19 @@ _DOMAIN_ART: dict[str, str] = {
 }
 
 
+def _load_art(filename: str) -> str:
+    """Load decorative art from core/data/<filename> (UTF-8). '' if missing."""
+    from pathlib import Path
+
+    try:
+        return (Path(__file__).parent / "data" / filename).read_text(encoding="utf-8").rstrip("\n")
+    except OSError:
+        return ""
+
+
 # Franchise-specific art shown when a topic mentions it (overrides domain art).
 # Keyed by a tuple of trigger keywords -> (art, accent color).
-_SUPER_MARIO_GALAXY = """\
-        .  *  .    ✦     .   *
-     *    .-\"\"\"\"\"-.        .    *      S U P E R
-        /  .-. .-.  \\      *           M A R I O
-   ✦   |  (o ) (o ) |   .              G A L A X Y
-        \\    `-'    /     ✦
-     *   '._  ^  _.'        *   .
-       ✦   `-...-`   *    ✦
-      o   °    O    °    o   °
-    ~ * * collect the star bits * * ~"""
+_SUPER_MARIO_GALAXY = _load_art("mario_ascii.txt")
 
 _FRANCHISE_ART: list[tuple[tuple[str, ...], str, str]] = [
     (
@@ -242,12 +243,20 @@ _STARBURST_ART = """\
         '    *    '
         ON A ROLL"""
 
-# (art, color) — keyed; "mario" reuses the franchise piece.
+_HERO_ART = _load_art("bonus_hero_ascii.txt")
+
+# (art, color) — keyed; "mario"/"hero" load from core/data art files. Empty pieces
+# (missing data file) are filtered out so the gallery never prints a blank panel.
 _BONUS_ART: dict[str, tuple[str, str]] = {
-    "mario": (_SUPER_MARIO_GALAXY, "\033[33m"),  # yellow
-    "trophy": (_TROPHY_ART, "\033[33m"),  # gold
-    "rocket": (_ROCKET_ART, "\033[36m"),  # cyan
-    "starburst": (_STARBURST_ART, "\033[35m"),  # magenta
+    key: (art, color)
+    for key, art, color in (
+        ("mario", _SUPER_MARIO_GALAXY, "\033[31m"),  # red — Mario
+        ("hero", _HERO_ART, "\033[35m"),  # magenta
+        ("trophy", _TROPHY_ART, "\033[33m"),  # gold
+        ("rocket", _ROCKET_ART, "\033[36m"),  # cyan
+        ("starburst", _STARBURST_ART, "\033[35m"),  # magenta
+    )
+    if art
 }
 
 

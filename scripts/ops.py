@@ -103,6 +103,18 @@ def cmd_seo_refresh(args: argparse.Namespace) -> int:
     return _run_module("analytics.seo_refresh", "--channel", args.channel)
 
 
+@_register("vault-sync", "Write machine-learned beliefs into the Obsidian vault")
+def cmd_vault_sync(args: argparse.Namespace) -> int:
+    from core.vault_writeback import write_channel_beliefs
+
+    path = write_channel_beliefs(args.channel)
+    if path:
+        print(f"Wrote machine beliefs to {path}")
+    else:
+        print("Nothing written (OBSIDIAN_VAULT_PATH unset or no analytics yet).")
+    return 0
+
+
 @_register("queue-manage", "Re-queue after deleting scheduled YouTube video")
 def cmd_queue_manage(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]

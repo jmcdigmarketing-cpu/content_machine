@@ -32,6 +32,7 @@ from core.ui import (
     display_summary,
     display_upload_queue,
     display_variants,
+    print_bonus_art,
     print_domain_art,
     prompt_channel_selection,
     prompt_key_facts,
@@ -230,6 +231,7 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
     key_facts = prompt_key_facts(best_topic, channel_id)
 
     section("Content")
+    print_bonus_art(key="mario")
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -283,6 +285,7 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
         mp4_path=result.mp4_path or "",
         thumbnail_path=thumb_path,
     )
+    print_bonus_art()  # random celebratory flourish
     if thumb_path:
         print(f"  Thumbnail: {thumb_path}")
         print(f"  Thumbnail folder: {thumb_count} file(s) in {thumb_dir}")

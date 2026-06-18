@@ -203,6 +203,75 @@ def print_domain_art(domain: str, *, topic: str = "", print_fn=print) -> None:
     print_fn()
 
 
+# ---------------------------------------------------------------------------
+# Bonus art gallery — purely decorative, shown liberally (topic-agnostic).
+# Mario is always in the rotation; the rest add variety. All colored.
+# ---------------------------------------------------------------------------
+
+_TROPHY_ART = """\
+        ___________
+       '._==_==_=_.'
+       .-\\:      /-.
+      | (|:.     |) |
+       '-|:.     |-'
+         \\::.    /
+          '::. .'
+            ) (
+          _.' '._
+         `\"\"\"\"\"\"\"`
+         CHAMPION"""
+
+_ROCKET_ART = """\
+           /\\
+          /  \\
+         |    |
+         | CM |
+         |    |
+        /|/\\/\\|\\
+       /_|_||_|_\\
+          /||\\
+         // || \\\\
+            ''
+        LIFTOFF"""
+
+_STARBURST_ART = """\
+        .    *    .
+      *   \\  |  /   *
+       '--==[ ★ ]==--'
+      *   /  |  \\   *
+        '    *    '
+        ON A ROLL"""
+
+# (art, color) — keyed; "mario" reuses the franchise piece.
+_BONUS_ART: dict[str, tuple[str, str]] = {
+    "mario": (_SUPER_MARIO_GALAXY, "\033[33m"),  # yellow
+    "trophy": (_TROPHY_ART, "\033[33m"),  # gold
+    "rocket": (_ROCKET_ART, "\033[36m"),  # cyan
+    "starburst": (_STARBURST_ART, "\033[35m"),  # magenta
+}
+
+
+def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
+    """Print a decorative colored art panel. Random piece unless `key` is given.
+
+    Mario is guaranteed to be available; pass key='mario' to force it.
+    """
+    import random
+
+    from core.ascii_art import ascii_enabled
+    from core.ui_theme import paint, ui_color_enabled
+
+    if not ascii_enabled():
+        return
+    if key and key in _BONUS_ART:
+        art, color = _BONUS_ART[key]
+    else:
+        art, color = random.choice(list(_BONUS_ART.values()))
+    for line in art.splitlines():
+        print_fn(paint(line, color) if ui_color_enabled() else line)
+    print_fn()
+
+
 HEALTH_LEGEND = "ON=ok | ON (not active)=no match | " "QUOTA/RATE LIMITED/AUTH=issue — see detail"
 
 SIGNAL_ORDER = (

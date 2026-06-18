@@ -44,7 +44,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        # 3.11 only: pinned deps (numpy 2.4.4 needs >=3.11; Pillow 9.5.0 — kept for
+        # moviepy 1.0.3 compat — has no 3.12 wheel). 3.11 is the project's target.
+        python-version: ["3.11"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -61,6 +61,7 @@ class PipelineResult:
     timings: dict[str, float] = field(default_factory=dict)
     channel_id: str = "default"
     run_id: int | None = None
+    features: dict[str, Any] = field(default_factory=dict)
 
 
 def _score_variant(
@@ -202,6 +203,7 @@ def _finalize_run(
         mp4_path=result.mp4_path or "",
         timings={**discovery.timings, **result.timings},
         abort_reason=result.abort_reason or "",
+        features=result.features or {},
     )
     result.run_id = run_id
 
@@ -300,6 +302,18 @@ def run_pipeline(
     result.tags = list(content.get("tags") or [])
     result.brief_version = content.get("brief_version") or research_brief.version
     result.prompt_version = content.get("prompt_version") or ""
+
+    from core.run_features import build_features
+
+    result.features = build_features(
+        topic=best_topic,
+        channel_id=channel_id,
+        content_package=content,
+        research_brief=research_brief,
+        length_choice=length_choice,
+        key_facts=key_facts,
+        fact_source="manual" if key_facts else "signals",
+    )
 
     if not proceed_video:
         result.aborted = True

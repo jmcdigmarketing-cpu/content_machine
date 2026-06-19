@@ -110,6 +110,7 @@ def _build_prompts(
     seed_topic: str = "",
     is_thin_facts: bool = False,
     creative_brief: str = "",
+    key_facts: list[str] | None = None,
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
@@ -139,6 +140,10 @@ VOICE — write like a sharp, opinionated human creator talking to camera, NOT a
 - NO both-sidesing. Do NOT write "some argue X, while others believe Y". State what YOU think and why.
 - The topic is the assignment: if it says "recap / results", RECAP WHAT HAPPENED — do not drift into think-piece territory about officiating reform, "the meta", or the sport's future unless the facts are about that.
 - Delete any sentence that could appear in a generic essay on this subject. Every sentence must carry a specific fact or a real opinion.
+
+OPERATOR KEY FACTS RULE: If OPERATOR KEY FACTS are present in the user message, treat them as
+verified ground truth. They override any conflicting detail from training memory or signals.
+Always include them in the script — do not contradict, soften, or omit them.
 
 ANTI-HALLUCINATION RULES (strictly enforced):
 - You do NOT know which patch, season, or hero was released unless it appears verbatim in VERIFIED FACTS below.
@@ -192,6 +197,15 @@ You must:
         else ""
     )
 
+    operator_facts_block = ""
+    if key_facts:
+        facts_lines = "\n".join(f"- {f.strip()}" for f in key_facts if f.strip())
+        if facts_lines:
+            operator_facts_block = (
+                "OPERATOR KEY FACTS (ground truth — highest priority; always include, never contradict):\n"
+                f"{facts_lines}\n\n"
+            )
+
     thin_facts_warning = ""
     if is_thin_facts:
         thin_facts_warning = (
@@ -217,7 +231,7 @@ TODAY: {today}
 ACTIVE SIGNALS (scores):
 {signal_summary}
 
-VERIFIED FACTS (source of truth — only use specifics from here):
+{operator_facts_block}VERIFIED FACTS (source of truth — only use specifics from here):
 {verified_block}
 {context_block}
 {thin_facts_warning}
@@ -354,6 +368,7 @@ def generate_content_package(
     length_choice: str = "2",
     seed_topic: str = "",
     creative_brief: str = "",
+    key_facts: list[str] | None = None,
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -402,6 +417,7 @@ def generate_content_package(
         seed_topic=seed_topic,
         is_thin_facts=_is_thin_facts,
         creative_brief=creative_brief,
+        key_facts=key_facts,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude

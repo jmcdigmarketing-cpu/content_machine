@@ -303,6 +303,20 @@ def _run_new_video_flow(
     _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
+    subsection("Key facts (optional)")
+    print(
+        "  Paste up to 3 verified facts the script MUST use (e.g. current champion, correct score)."
+    )
+    print("  Enter one per line. Empty line when done (or just press Enter to skip).")
+    key_facts: list[str] = []
+    for i in range(1, 4):
+        fact = input(f"  Fact {i}: ").strip()
+        if not fact:
+            break
+        key_facts.append(fact)
+    if key_facts:
+        print(f"  {len(key_facts)} fact(s) will be injected as ground truth.")
+
     section("Content")
     result = run_pipeline(
         topic,
@@ -312,6 +326,7 @@ def _run_new_video_flow(
         proceed_video=False,
         channel_id=channel_id,
         creative_brief=creative_brief,
+        key_facts=key_facts or None,
     )
 
     print()

@@ -29,6 +29,31 @@ def _format_signal_facts(signals):
     return format_signal_facts(signals)
 
 
+# Operator key facts are injected straight into the prompt as ground truth, so
+# bound them: cap count + length and strip control chars / line breaks so a
+# pasted fact can't smuggle extra prompt structure (instruction injection).
+_MAX_KEY_FACTS = 5
+_MAX_KEY_FACT_CHARS = 300
+
+
+def _sanitize_key_facts(key_facts: list[str] | None) -> list[str]:
+    if not key_facts:
+        return []
+    cleaned: list[str] = []
+    for raw in key_facts:
+        if not isinstance(raw, str):
+            continue
+        # Collapse any whitespace/newlines to single spaces, drop control chars.
+        flat = re.sub(r"\s+", " ", raw).strip()
+        flat = "".join(ch for ch in flat if ch.isprintable())
+        if not flat:
+            continue
+        cleaned.append(flat[:_MAX_KEY_FACT_CHARS])
+        if len(cleaned) >= _MAX_KEY_FACTS:
+            break
+    return cleaned
+
+
 # Lines that are context-only (competitor titles / labels) — not factual evidence
 _CONTEXT_ONLY_PREFIXES = (
     "YouTube — real video titles",
@@ -173,13 +198,13 @@ You must:
     )
 
     operator_facts_block = ""
-    if key_facts:
-        facts_lines = "\n".join(f"- {f.strip()}" for f in key_facts if f.strip())
-        if facts_lines:
-            operator_facts_block = (
-                "OPERATOR KEY FACTS (ground truth — highest priority; always include, never contradict):\n"
-                f"{facts_lines}\n\n"
-            )
+    clean_facts = _sanitize_key_facts(key_facts)
+    if clean_facts:
+        facts_lines = "\n".join(f"- {f}" for f in clean_facts)
+        operator_facts_block = (
+            "OPERATOR KEY FACTS (ground truth — highest priority; always include, never contradict):\n"
+            f"{facts_lines}\n\n"
+        )
 
     thin_facts_warning = ""
     if is_thin_facts:

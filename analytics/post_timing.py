@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 from apis.topic_scorer import infer_domain
 from config.channels import get_channel_profile, resolve_channel_id
+from core.recommender_confidence import confidence_note
 
 # Python weekday: Monday=0 … Sunday=6
 DEFAULT_TAPIN_SLOTS = (
@@ -384,6 +385,7 @@ def get_recommended_time(
             rationale = (
                 f"learned from {n} past {domain} post(s) in this slot — "
                 f"{rate:.1%} avg engagement"
+                f"{confidence_note(n)}"
             )
         else:
             rationale = "learned from your post history (best-engagement weekday/hours)"

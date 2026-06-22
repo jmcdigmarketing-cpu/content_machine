@@ -18,6 +18,7 @@ from dataclasses import dataclass
 
 from config.channels import resolve_channel_id
 from core.logging import get_logger
+from core.recommender_confidence import confidence_note
 from core.script_length import PRESETS, get_length_preset
 
 logger = get_logger("core.length_recommender")
@@ -111,8 +112,8 @@ def get_recommended_length(
     channel_id: str,
     topic: str = "",
     *,
-    min_total: int = 4,
-    min_per_bucket: int = 2,
+    min_total: int = 6,
+    min_per_bucket: int = 3,
 ) -> LengthRecommendation:
     """
     Recommend a length preset using engagement history (analytics) when enough
@@ -144,6 +145,7 @@ def get_recommended_length(
             rationale=(
                 f"{preset.label} ({preset.duration_hint()}) averages {avg:.1%} "
                 f"engagement across {len(best_rates)} video(s)"
+                f"{confidence_note(len(best_rates))}"
             ),
         )
 

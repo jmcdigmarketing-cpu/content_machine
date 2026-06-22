@@ -19,6 +19,7 @@ from core.channel_context import (
     recent_input_topics,
 )
 from core.logging import get_logger
+from core.recommender_confidence import confidence_note
 
 logger = get_logger("core.best_bet")
 
@@ -331,7 +332,9 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             source="analytics",
             supporting_runs=len(rates),
             rationale=(
-                f"{best_domain} averages {avg_rate:.1%} engagement " f"across {len(rates)} video(s)"
+                f"{best_domain} averages {avg_rate:.1%} engagement "
+                f"across {len(rates)} video(s)"
+                f"{confidence_note(len(rates))}"
             ),
         )
 
@@ -361,6 +364,15 @@ def _domain_avg_rates(entries: list[dict]) -> dict[str, float]:
         if rate is not None:
             by_domain.setdefault(e["domain"], []).append(float(rate))
     return {d: sum(v) / len(v) for d, v in by_domain.items() if v}
+
+
+def _domain_sample_counts(entries: list[dict]) -> dict[str, int]:
+    """Per-domain count of videos with engagement data (confidence basis)."""
+    counts: dict[str, int] = {}
+    for e in entries:
+        if e.get("engaged_rate") is not None:
+            counts[e["domain"]] = counts.get(e["domain"], 0) + 1
+    return counts
 
 
 def _fresh_enabled() -> bool:
@@ -425,6 +437,7 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
 
     allowed = on_brand_domains(channel_id)
     domain_rates = _domain_avg_rates(entries)
+    domain_counts = _domain_sample_counts(entries)
     # Don't re-suggest anything covered recently (kills the repeat problem).
     recent = {normalize_seed_topic(t).lower() for t in recent_input_topics(channel_id, limit=30)}
 
@@ -445,6 +458,7 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
             rationale = f"trending on {c['source']} now"
             if rate is not None:
                 rationale += f" · {c['domain']} averages {rate:.0%} engagement"
+                rationale += confidence_note(domain_counts.get(c["domain"], 0))
             options.append(
                 BestBetResult(
                     topic=c["topic"],

@@ -257,10 +257,22 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
     _facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
     display_fact_preview(_facts_preview, print_fn=print)
 
+    _ungrounded = result.features.get("ungrounded_entities") or []
+    if _ungrounded:
+        print(
+            f"\n  ⚠ {len(_ungrounded)} specific(s) in the script are NOT in the facts "
+            f"(possible hallucination): {', '.join(_ungrounded)}"
+        )
+        print("    Verify these or add them as key facts before publishing.")
+
     proceed = input("  Proceed with video? [y/N]: ").strip().lower()
 
     if proceed != "y":
-        display_summary(timings=discovery.timings, title=result.title)
+        display_summary(
+            timings=discovery.timings,
+            title=result.title,
+            cost=result.features.get("cost"),
+        )
         print("\n  Stopped before render. Title/description saved above.")
         return
 
@@ -279,11 +291,20 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
 
     thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
     thumb_count = len(list_channel_thumbnails(thumb_dir))
+
+    # Render happened here (not via the pipeline), so recompute cost with the
+    # TTS line now included before showing the summary.
+    from core.cost_meter import estimate_run_cost
+
+    result.features["cost"] = estimate_run_cost(
+        script=result.script, signals=best_signals, rendered=True
+    )
     display_summary(
         timings=discovery.timings,
         title=result.title,
         mp4_path=result.mp4_path or "",
         thumbnail_path=thumb_path,
+        cost=result.features.get("cost"),
     )
     print_bonus_art()  # random celebratory flourish
     if thumb_path:

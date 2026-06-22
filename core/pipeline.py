@@ -315,6 +315,8 @@ def run_pipeline(
         fact_source="manual" if key_facts else "signals",
     )
 
+    result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []
+
     from core.cost_meter import estimate_run_cost
 
     result.features["cost"] = estimate_run_cost(

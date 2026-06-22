@@ -4,6 +4,7 @@ from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.fact_enrichment import _fact_line_count, enrich_facts
+from core.fact_grounding import find_ungrounded_entities
 from core.llm_client import get_model, get_openai_client
 from core.logging import get_logger
 from core.research_brief import ResearchBrief
@@ -419,6 +420,19 @@ def generate_content_package(
         extra=default_tags_for_channel(channel_id, topic) + tags_from_topic(topic),
     )
 
+    # Post-generation grounding check: flag specifics in the script not backed by
+    # the facts the model was given (catches invented heroes/products/patches).
+    grounding_text = "\n".join(
+        [signal_facts, brief_block, topic, seed_topic or "", *(_sanitize_key_facts(key_facts))]
+    )
+    ungrounded = find_ungrounded_entities(script, grounding_text)
+    if ungrounded:
+        logger.warning(
+            "Script names %s specific(s) not in the facts: %s",
+            len(ungrounded),
+            ", ".join(ungrounded),
+        )
+
     return {
         "title": payload.get("title") or topic,
         "script": script,
@@ -427,6 +441,7 @@ def generate_content_package(
         "prompt_version": PROMPT_VERSION,
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
+        "ungrounded_entities": ungrounded,
     }
 
 

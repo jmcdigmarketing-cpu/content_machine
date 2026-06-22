@@ -56,6 +56,12 @@ def _key_exhausted(api_key: str) -> bool:
         return api_key in _EXHAUSTED_KEYS
 
 
+def apify_credit_exhausted() -> bool:
+    """True if any Apify key hit a 402 (out of credits) this session."""
+    with _EXHAUSTED_LOCK:
+        return bool(_EXHAUSTED_KEYS)
+
+
 def _key(purpose: str = "main") -> str:
     if purpose == "tiktok":
         return os.getenv("APIFY_BENABLE_BOT", "").strip()

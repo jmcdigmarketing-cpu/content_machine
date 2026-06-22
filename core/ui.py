@@ -887,6 +887,7 @@ def display_summary(
     title: str,
     mp4_path: str = "",
     thumbnail_path: str = "",
+    cost: dict[str, float] | None = None,
     print_fn=print,
 ):
     subsection("Summary", print_fn)
@@ -899,3 +900,14 @@ def display_summary(
         print_fn(f"  Video: {mp4_path}")
     if thumbnail_path:
         print_fn(f"  Thumbnail: {thumbnail_path}")
+
+    from core.cost_meter import format_cost_line
+
+    cost_line = format_cost_line(cost)
+    if cost_line:
+        print_fn(f"  {cost_line}")
+
+    from apis.apify_client import apify_credit_exhausted
+
+    if apify_credit_exhausted():
+        print_fn("  ⚠ Apify ran out of credits this session — some social signals were skipped")

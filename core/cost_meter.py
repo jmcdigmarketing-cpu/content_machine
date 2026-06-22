@@ -64,3 +64,28 @@ def estimate_run_cost(
         "render": round(render, 4),
         "total": total,
     }
+
+
+# Order + short labels for the operator-facing breakdown.
+_COST_PARTS = (
+    ("llm", "llm"),
+    ("tts", "tts"),
+    ("apify", "apify"),
+    ("web_search", "web"),
+    ("render", "render"),
+)
+
+
+def format_cost_line(cost: dict[str, float] | None) -> str:
+    """One-line operator summary: total + the non-zero components.
+
+    Returns "" when there's nothing to show, so callers can skip the line.
+    """
+    if not cost:
+        return ""
+    total = float(cost.get("total") or 0.0)
+    parts = [
+        f"{label} ${cost[key]:.4f}" for key, label in _COST_PARTS if float(cost.get(key) or 0.0) > 0
+    ]
+    breakdown = f" ({' · '.join(parts)})" if parts else ""
+    return f"Est. run cost: ${total:.4f}{breakdown}"

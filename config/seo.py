@@ -110,11 +110,19 @@ def default_tags_for_channel(channel_id: str, topic: str | None = None) -> list[
     return merged
 
 
-def rss_feeds_for_channel(channel_id: str) -> list[dict[str, str]]:
+def rss_feeds_for_channel(channel_id: str) -> list[dict[str, Any]]:
     profile = get_seo_profile(channel_id)
     feeds = profile.get("rss_feeds") or []
     out = []
     for item in feeds:
         if isinstance(item, dict) and item.get("url"):
-            out.append({"name": str(item.get("name", "feed")), "url": str(item["url"])})
+            feed: dict[str, Any] = {
+                "name": str(item.get("name", "feed")),
+                "url": str(item["url"]),
+            }
+            # Optional domain tags route a feed to matching topics only; an
+            # untagged feed stays universal (back-compat).
+            if item.get("domains"):
+                feed["domains"] = [str(d).lower() for d in item["domains"]]
+            out.append(feed)
     return out

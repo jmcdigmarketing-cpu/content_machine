@@ -1,3 +1,5 @@
+import re
+
 from apis.draft_policy import determine_draft_status
 from apis.entity_extractor import extract_entities
 from config.channels import get_channel_profile
@@ -5,6 +7,10 @@ from core.channel_context import channel_history_block, extract_anchors
 from core.llm_client import get_model, get_openai_client
 
 client = get_openai_client()
+
+# Strip a leading list marker the LLM sometimes prepends ("1. ", "2) ", "- ", "* ")
+# so the UI's own numbering doesn't double up ("1. 1. Title").
+_LIST_PREFIX_RE = re.compile(r"^\s*(?:\d+[.)]\s*|[-*•]\s+)")
 
 
 _ESTABLISHED_THRESHOLD = 3  # times same anchor covered before switching angles
@@ -177,6 +183,7 @@ Return exactly {len(angle_types)} titles.
 
     titles = response.choices[0].message.content.strip().split("\n")
 
-    clean = [t.strip().strip('"') for t in titles if t.strip()]
+    clean = [_LIST_PREFIX_RE.sub("", t).strip().strip('"') for t in titles if t.strip()]
+    clean = [t for t in clean if t]
 
     return clean[:5]

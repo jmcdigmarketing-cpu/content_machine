@@ -32,8 +32,10 @@ from core.ui import (
     display_summary,
     display_upload_queue,
     display_variants,
+    print_bonus_art,
     print_domain_art,
     prompt_channel_selection,
+    prompt_key_facts,
     prompt_startup_mode,
     prompt_upload_plan,
     run_queue_manager_interactive,
@@ -157,14 +159,14 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
         topic = seed_topic
     else:
-        from core.best_bet import display_best_bet, get_best_bet
+        from core.best_bet import display_best_bets, get_best_bets
 
-        best_bet = get_best_bet(channel_id)
-        if best_bet:
-            display_best_bet(best_bet)
-            use_bet = input("  Use best bet? [y/N]: ").strip().lower()
-            if use_bet == "y":
-                topic = best_bet.topic
+        options = get_best_bets(channel_id, 3)
+        if options:
+            display_best_bets(options)
+            sel = input("  Use a best bet? [1-3 / Enter = type your own]: ").strip()
+            if sel.isdigit() and 1 <= int(sel) <= len(options):
+                topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")
             else:
                 topic = input("  Topic: ").strip()
@@ -182,9 +184,9 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
 
     section("Discovery")
     profile = get_channel_profile(channel_id)
-    print_domain_art(profile.domain)
-    with DiscoverySpinner("Discovery"):
-        discovery = run_discovery(topic, channel_id=channel_id)
+    print_domain_art(profile.domain, topic=topic)
+    with DiscoverySpinner("Discovery") as spinner:
+        discovery = run_discovery(topic, channel_id=channel_id, progress=spinner.report)
     display_competitor_pulse(channel_id, topic)
     t_disc = discovery.timings.get("signals_and_variants", 0) + discovery.timings.get(
         "variant_scoring", 0
@@ -226,19 +228,10 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
 
     length_choice = input(f"  Select 1-4 [{length_default}]: ").strip() or length_default
 
-    subsection("Key facts (optional)")
-    print("  Paste up to 3 verified facts the script MUST use (e.g. current champion, correct score).")
-    print("  Enter one per line. Empty line when done (or just press Enter to skip).")
-    key_facts: list[str] = []
-    for i in range(1, 4):
-        fact = input(f"  Fact {i}: ").strip()
-        if not fact:
-            break
-        key_facts.append(fact)
-    if key_facts:
-        print(f"  {len(key_facts)} fact(s) will be injected as ground truth.")
+    key_facts = prompt_key_facts(best_topic, channel_id)
 
     section("Content")
+    print_bonus_art(key="mario")
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -264,10 +257,22 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
     _facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
     display_fact_preview(_facts_preview, print_fn=print)
 
+    _ungrounded = result.features.get("ungrounded_entities") or []
+    if _ungrounded:
+        print(
+            f"\n  ⚠ {len(_ungrounded)} specific(s) in the script are NOT in the facts "
+            f"(possible hallucination): {', '.join(_ungrounded)}"
+        )
+        print("    Verify these or add them as key facts before publishing.")
+
     proceed = input("  Proceed with video? [y/N]: ").strip().lower()
 
     if proceed != "y":
-        display_summary(timings=discovery.timings, title=result.title)
+        display_summary(
+            timings=discovery.timings,
+            title=result.title,
+            cost=result.features.get("cost"),
+        )
         print("\n  Stopped before render. Title/description saved above.")
         return
 
@@ -286,12 +291,22 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
 
     thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
     thumb_count = len(list_channel_thumbnails(thumb_dir))
+
+    # Render happened here (not via the pipeline), so recompute cost with the
+    # TTS line now included before showing the summary.
+    from core.cost_meter import estimate_run_cost
+
+    result.features["cost"] = estimate_run_cost(
+        script=result.script, signals=best_signals, rendered=True
+    )
     display_summary(
         timings=discovery.timings,
         title=result.title,
         mp4_path=result.mp4_path or "",
         thumbnail_path=thumb_path,
+        cost=result.features.get("cost"),
     )
+    print_bonus_art()  # random celebratory flourish
     if thumb_path:
         print(f"  Thumbnail: {thumb_path}")
         print(f"  Thumbnail folder: {thumb_count} file(s) in {thumb_dir}")

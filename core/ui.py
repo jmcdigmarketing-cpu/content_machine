@@ -23,7 +23,12 @@ from config.settings import get_settings
 
 
 class DiscoverySpinner:
-    """Animated in-place spinner shown during the ~70s discovery phase."""
+    """Animated in-place spinner shown during the multi-minute discovery phase.
+
+    The pipeline drives the displayed phase via :meth:`report` (pass it as the
+    ``progress`` callback to ``run_discovery``). When no phase is reported, the
+    spinner falls back to time-based stage guesses so older callers still animate.
+    """
 
     _FRAMES: ClassVar[list[str]] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     _STAGES: ClassVar[list[tuple[int, str]]] = [
@@ -38,13 +43,31 @@ class DiscoverySpinner:
         self._thread: threading.Thread | None = None
         self._t0: float = 0.0
         self._enabled = sys.stdout.isatty()
+        self._lock = threading.Lock()
+        self._phase: str | None = None
+        self._done: int | None = None
+        self._total: int | None = None
+
+    def report(self, phase: str, done: int | None = None, total: int | None = None) -> None:
+        """Thread-safe progress hook. Sets the current phase and optional N/M count."""
+        with self._lock:
+            self._phase = phase
+            self._done = done
+            self._total = total
 
     def _current_stage(self, elapsed: float) -> str:
-        stage = self._STAGES[0][1]
-        for threshold, name in self._STAGES:
-            if elapsed >= threshold:
-                stage = name
-        return stage
+        with self._lock:
+            phase, done, total = self._phase, self._done, self._total
+        if phase is None:
+            # Fall back to time-based guesses for callers that don't report progress.
+            stage = self._STAGES[0][1]
+            for threshold, name in self._STAGES:
+                if elapsed >= threshold:
+                    stage = name
+            return stage
+        if total:
+            return f"{phase} {done or 0}/{total}"
+        return phase
 
     def _spin(self) -> None:
         i = 0
@@ -119,17 +142,140 @@ _DOMAIN_ART: dict[str, str] = {
 }
 
 
-def print_domain_art(domain: str, *, print_fn=print) -> None:
-    """Print a small decorative ASCII panel for the given domain."""
+def _load_art(filename: str) -> str:
+    """Load decorative art from core/data/<filename> (UTF-8). '' if missing."""
+    from pathlib import Path
+
+    try:
+        return (Path(__file__).parent / "data" / filename).read_text(encoding="utf-8").rstrip("\n")
+    except OSError:
+        return ""
+
+
+# Franchise-specific art shown when a topic mentions it (overrides domain art).
+# Keyed by a tuple of trigger keywords -> (art, accent color).
+_SUPER_MARIO_GALAXY = _load_art("mario_ascii.txt")
+
+_FRANCHISE_ART: list[tuple[tuple[str, ...], str, str]] = [
+    (
+        ("super mario galaxy", "mario galaxy", "mario", "galaxy", "nintendo", "luma"),
+        _SUPER_MARIO_GALAXY,
+        "\033[33m",  # yellow — star bits
+    ),
+]
+
+
+def _franchise_art_for(topic: str) -> tuple[str, str] | None:
+    t = (topic or "").lower()
+    for keywords, art, color in _FRANCHISE_ART:
+        if any(k in t for k in keywords):
+            return art, color
+    return None
+
+
+def print_domain_art(domain: str, *, topic: str = "", print_fn=print) -> None:
+    """Print a small decorative ASCII panel for the topic's franchise or domain."""
     from core.ascii_art import ascii_enabled
     from core.ui_theme import paint, ui_color_enabled
 
     if not ascii_enabled():
         return
-    art = _DOMAIN_ART.get(domain)
+
+    art: str | None
+    franchise = _franchise_art_for(topic)
+    if franchise:
+        art, color = franchise
+    else:
+        # Prefer the topic's own domain (a UFC topic on a gaming channel should show
+        # the octagon, not the controller); fall back to the channel domain.
+        art_domain = domain
+        if topic:
+            from apis.topic_scorer import infer_domain
+
+            inferred = infer_domain(topic)
+            if inferred and inferred in _DOMAIN_ART:
+                art_domain = inferred
+        art = _DOMAIN_ART.get(art_domain)
+        color = "\033[36m"  # cyan
     if not art:
         return
-    color = "\033[36m"  # cyan
+    for line in art.splitlines():
+        print_fn(paint(line, color) if ui_color_enabled() else line)
+    print_fn()
+
+
+# ---------------------------------------------------------------------------
+# Bonus art gallery — purely decorative, shown liberally (topic-agnostic).
+# Mario is always in the rotation; the rest add variety. All colored.
+# ---------------------------------------------------------------------------
+
+_TROPHY_ART = """\
+        ___________
+       '._==_==_=_.'
+       .-\\:      /-.
+      | (|:.     |) |
+       '-|:.     |-'
+         \\::.    /
+          '::. .'
+            ) (
+          _.' '._
+         `\"\"\"\"\"\"\"`
+         CHAMPION"""
+
+_ROCKET_ART = """\
+           /\\
+          /  \\
+         |    |
+         | CM |
+         |    |
+        /|/\\/\\|\\
+       /_|_||_|_\\
+          /||\\
+         // || \\\\
+            ''
+        LIFTOFF"""
+
+_STARBURST_ART = """\
+        .    *    .
+      *   \\  |  /   *
+       '--==[ ★ ]==--'
+      *   /  |  \\   *
+        '    *    '
+        ON A ROLL"""
+
+_HERO_ART = _load_art("bonus_hero_ascii.txt")
+
+# (art, color) — keyed; "mario"/"hero" load from core/data art files. Empty pieces
+# (missing data file) are filtered out so the gallery never prints a blank panel.
+_BONUS_ART: dict[str, tuple[str, str]] = {
+    key: (art, color)
+    for key, art, color in (
+        ("mario", _SUPER_MARIO_GALAXY, "\033[31m"),  # red — Mario
+        ("hero", _HERO_ART, "\033[35m"),  # magenta
+        ("trophy", _TROPHY_ART, "\033[33m"),  # gold
+        ("rocket", _ROCKET_ART, "\033[36m"),  # cyan
+        ("starburst", _STARBURST_ART, "\033[35m"),  # magenta
+    )
+    if art
+}
+
+
+def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
+    """Print a decorative colored art panel. Random piece unless `key` is given.
+
+    Mario is guaranteed to be available; pass key='mario' to force it.
+    """
+    import random
+
+    from core.ascii_art import ascii_enabled
+    from core.ui_theme import paint, ui_color_enabled
+
+    if not ascii_enabled():
+        return
+    if key and key in _BONUS_ART:
+        art, color = _BONUS_ART[key]
+    else:
+        art, color = random.choice(list(_BONUS_ART.values()))
     for line in art.splitlines():
         print_fn(paint(line, color) if ui_color_enabled() else line)
     print_fn()
@@ -146,6 +292,7 @@ SIGNAL_ORDER = (
     "blog_rss",
     "trends",
     "news",
+    "web_search",
     "youtube_competitors",
     "twitter",
     "reddit",
@@ -401,6 +548,83 @@ def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
         score = sig.get("score", 0)
         if sig.get("connected") and sig.get("active") and score > 0:
             print_fn(f"  {name.capitalize()}: {score}")
+
+
+def prompt_key_facts(
+    topic: str,
+    channel_id: str = "default",
+    *,
+    print_fn=print,
+    input_fn=input,
+) -> list[str]:
+    """Collect operator key facts (ground truth) for the script.
+
+    Pre-fills suggestions from the Obsidian vault (if configured), then lets the
+    operator accept/edit them and add more. Entry is open-ended (not capped) and
+    guided across the relevancy categories that actually go stale, so the facts
+    cover identity, latest result, hard numbers, and a recency anchor.
+    """
+    from core.obsidian_facts import load_facts
+
+    subsection("Key facts (ground truth — highest priority)", print_fn)
+    print_fn("  Cover the things that go stale — add as many as apply:")
+    print_fn("    · Who holds what NOW (champion, ranking, roster, CEO)")
+    print_fn("    · Latest result/event + its date")
+    print_fn("    · Hard numbers (score, record, odds, price)")
+    print_fn("    · Recency anchor (e.g. 'as of June 2026, ...')")
+
+    key_facts: list[str] = []
+
+    try:
+        suggestions = load_facts(topic, channel_id)
+    except Exception:
+        # Vault problems must never block video creation.
+        suggestions = []
+    if suggestions:
+        print_fn("")
+        print_fn(f"  From your Obsidian vault ({len(suggestions)} matched):")
+        for i, fact in enumerate(suggestions, 1):
+            print_fn(f"    {i}. {fact}")
+        choice = input_fn("  Use these? [Enter=all / n=none / e.g. '1 3'=pick]: ").strip().lower()
+        if choice in ("", "y", "yes", "all"):
+            key_facts.extend(suggestions)
+        elif choice not in ("n", "no", "none"):
+            for tok in choice.replace(",", " ").split():
+                if tok.isdigit() and 1 <= int(tok) <= len(suggestions):
+                    key_facts.append(suggestions[int(tok) - 1])
+
+    print_fn("")
+    print_fn("  Add your own facts — one per line (or paste a link), empty line when done:")
+    from core.link_facts import extract_facts_from_url, looks_like_url
+
+    while True:
+        fact = input_fn(f"  Fact {len(key_facts) + 1}: ").strip()
+        if not fact:
+            break
+        if looks_like_url(fact):
+            print_fn("    Fetching link…")
+            extracted = extract_facts_from_url(fact)
+            if extracted:
+                for ex in extracted:
+                    print_fn(f"    + {ex[:90]}")
+                key_facts.extend(extracted)
+            else:
+                print_fn("    Could not extract facts from that link — skipped.")
+            continue
+        key_facts.append(fact)
+
+    # De-duplicate while preserving order.
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for f in key_facts:
+        key = f.lower()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(f)
+
+    if deduped:
+        print_fn(f"  {len(deduped)} fact(s) will be injected as ground truth.")
+    return deduped
 
 
 def prompt_channel_selection(*, print_fn=print, input_fn=input) -> str:
@@ -663,6 +887,7 @@ def display_summary(
     title: str,
     mp4_path: str = "",
     thumbnail_path: str = "",
+    cost: dict[str, float] | None = None,
     print_fn=print,
 ):
     subsection("Summary", print_fn)
@@ -675,3 +900,14 @@ def display_summary(
         print_fn(f"  Video: {mp4_path}")
     if thumbnail_path:
         print_fn(f"  Thumbnail: {thumbnail_path}")
+
+    from core.cost_meter import format_cost_line
+
+    cost_line = format_cost_line(cost)
+    if cost_line:
+        print_fn(f"  {cost_line}")
+
+    from apis.apify_client import apify_credit_exhausted
+
+    if apify_credit_exhausted():
+        print_fn("  ⚠ Apify ran out of credits this session — some social signals were skipped")

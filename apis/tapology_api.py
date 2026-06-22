@@ -38,12 +38,16 @@ HEADERS = {
 }
 
 
-def _scrape_enabled() -> bool:
+def scrape_enabled() -> bool:
     return os.getenv("TAPOLOGY_SCRAPE_ENABLED", "false").lower() not in (
         "0",
         "false",
         "no",
     )
+
+
+# Back-compat alias (internal callers).
+_scrape_enabled = scrape_enabled
 
 
 def _is_mma_topic(topic: str) -> bool:

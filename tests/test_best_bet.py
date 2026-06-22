@@ -1,8 +1,65 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from core.best_bet import get_best_bet
+from core.best_bet import get_best_bet, get_best_bets
 from storage.repositories.content_runs import ContentRunRecord
+
+_ENTRIES = [
+    {"topic": "old ufc topic", "engaged_rate": 0.39, "composite_score": 60, "domain": "ufc"},
+    {"topic": "old gaming topic", "engaged_rate": 0.25, "composite_score": 50, "domain": "gaming"},
+]
+
+
+class TestFreshBestBets(unittest.TestCase):
+    def test_fresh_headlines_preferred_and_ranked_by_domain(self):
+        fresh = [
+            {"topic": "Gaethje turns top 10 P4P", "domain": "ufc", "source": "ESPN MMA"},
+            {"topic": "New roguelike hits Steam", "domain": "gaming", "source": "IGN"},
+        ]
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=fresh),
+        ):
+            bets = get_best_bets("tapin", 3)
+        # UFC (39%) outranks gaming (25%); both are fresh/trending, not historical.
+        self.assertEqual(bets[0].topic, "Gaethje turns top 10 P4P")
+        self.assertEqual(bets[0].source, "trending")
+        self.assertIn("trending", bets[0].rationale)
+
+    def test_recently_covered_topics_excluded(self):
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES),
+            patch(
+                "core.best_bet.recent_input_topics",
+                return_value=["Gaethje turns top 10 P4P"],
+            ),
+            # The helper itself excludes recent topics, so it returns none here.
+            patch("core.best_bet._fresh_candidates", return_value=[]),
+        ):
+            bets = get_best_bets("tapin", 3)
+        # Falls back to historical; the recent topic is not re-suggested.
+        self.assertTrue(all("Gaethje turns top 10" not in b.topic for b in bets))
+
+    def test_falls_back_to_historical_without_fresh(self):
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=[]),
+        ):
+            bets = get_best_bets("tapin", 3)
+        self.assertTrue(bets)
+        self.assertEqual(bets[0].source, "analytics")
+
+    def test_fresh_disabled_via_env(self):
+        with (
+            patch.dict("os.environ", {"BEST_BET_FRESH": "false"}, clear=False),
+            patch("core.best_bet._build_entries", return_value=_ENTRIES),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates") as mock_fresh,
+        ):
+            get_best_bets("tapin", 3)
+            mock_fresh.assert_not_called()
 
 
 class TestBestBet(unittest.TestCase):

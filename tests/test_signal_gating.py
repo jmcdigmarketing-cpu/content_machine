@@ -13,9 +13,23 @@ class TestGatedSignalNames(unittest.TestCase):
         self.assertIn("rawg", gated)
         self.assertIn("steam", gated)
         self.assertIn("igdb", gated)
-        # Sports signals must NOT be gated on a UFC topic
+        # MMA-native sports signals must NOT be gated on a UFC topic
         self.assertNotIn("ufc_context", gated)
         self.assertNotIn("tapology", gated)
+        self.assertNotIn("stats_context", gated)
+
+    def test_ufc_topic_gates_team_sport_signals(self):
+        # Team-sport signals (don't cover MMA) must be skipped on UFC topics.
+        gated = rs._gated_signal_names("UFC 311 Topuria title defense")
+        for team_signal in ("sports", "odds", "live_scores", "api_sports"):
+            self.assertIn(team_signal, gated)
+
+    def test_nba_topic_keeps_team_sport_signals(self):
+        # Team-sport signals ARE relevant for NBA/NFL — must stay active there.
+        gated = rs._gated_signal_names("NBA Finals Knicks vs Spurs")
+        self.assertNotIn("sports", gated)
+        self.assertNotIn("odds", gated)
+        self.assertNotIn("live_scores", gated)
 
     def test_gaming_topic_gates_sports_signals(self):
         gated = rs._gated_signal_names("Marvel Rivals new season meta")

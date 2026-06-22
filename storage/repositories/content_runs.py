@@ -36,6 +36,7 @@ class ContentRunRecord:
     mp4_path: str = ""
     timings_json: str = "{}"
     abort_reason: str = ""
+    features_json: str = "{}"
 
 
 class ContentRunRepository(ABC):
@@ -90,6 +91,7 @@ class JsonContentRunRepository(ContentRunRepository):
             mp4_path=str(row.get("mp4_path", "")),
             timings_json=str(row.get("timings_json", "{}")),
             abort_reason=str(row.get("abort_reason", "")),
+            features_json=str(row.get("features_json", "{}")),
         )
 
     def create(self, data: dict[str, Any]) -> ContentRunRecord:
@@ -153,6 +155,7 @@ class PostgresContentRunRepository(ContentRunRepository):
             mp4_path=row.mp4_path,
             timings_json=row.timings_json,
             abort_reason=row.abort_reason,
+            features_json=getattr(row, "features_json", "{}") or "{}",
         )
 
     def create(self, data: dict[str, Any]) -> ContentRunRecord:

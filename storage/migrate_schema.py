@@ -104,6 +104,10 @@ def main() -> int:
                     "prompt_version",
                     "ALTER TABLE content_runs ADD COLUMN prompt_version VARCHAR(64) DEFAULT ''",
                 ),
+                (
+                    "features_json",
+                    "ALTER TABLE content_runs ADD COLUMN features_json TEXT DEFAULT '{}'",
+                ),
             ):
                 if col not in cr_cols:
                     conn.execute(text(ddl))

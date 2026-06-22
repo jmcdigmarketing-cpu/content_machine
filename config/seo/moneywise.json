@@ -1,0 +1,63 @@
+{
+  "channel_id": "moneywise",
+  "niche": "finance, markets, crypto, and personal money — short-form",
+  "default_tags": [
+    "MoneyWise",
+    "finance",
+    "investing",
+    "stocks",
+    "crypto",
+    "money",
+    "markets",
+    "economy",
+    "personalfinance"
+  ],
+  "title_rules": [
+    "Under 70 characters when possible",
+    "Lead with the ticker, asset, or money concept — no clickbait promises of returns",
+    "Never state a price, percentage, or figure that is not in FACTS",
+    "Avoid financial-advice phrasing ('you should buy') — frame as analysis"
+  ],
+  "description_rules": [
+    "First line: hook matching the video opening",
+    "2-3 short lines of context from FACTS only (no invented numbers)",
+    "Include the line: Not financial advice — for education only.",
+    "End with: Subscribe for daily markets & money breakdowns.",
+    "No hashtags in description body (tags field is separate)"
+  ],
+  "tag_rules": [
+    "8-15 tags mixing broad (investing, finance, money) and specific (ticker, asset, or concept from topic)",
+    "No spaces in multi-word tags — use CamelCase or single words",
+    "Never invent tickers, fund names, or figures not in FACTS or TOPIC"
+  ],
+  "rss_feeds": [
+    {
+      "name": "CNBC Top News",
+      "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+    },
+    {
+      "name": "MarketWatch Top Stories",
+      "url": "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+    },
+    {
+      "name": "Investopedia",
+      "url": "https://www.investopedia.com/feedbuilder/feed/getfeed?feedName=rss_headline"
+    },
+    {
+      "name": "CoinDesk",
+      "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"
+    },
+    {
+      "name": "Federal Reserve Press",
+      "url": "https://www.federalreserve.gov/feeds/press_all.xml"
+    }
+  ],
+  "seo_refresh_queries": [
+    "stock market today",
+    "crypto news",
+    "personal finance tips",
+    "interest rates explained"
+  ],
+  "ai_disclosure": "Made with AI-assisted narration and editing. Not financial advice — for education only.",
+  "monetization_cta": []
+}

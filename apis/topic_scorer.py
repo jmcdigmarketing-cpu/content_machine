@@ -1,4 +1,5 @@
 import os
+import re
 
 from apis.learned_weights import compute_profile_from_performance
 from config.channels import get_channel_profile, resolve_channel_id
@@ -127,44 +128,48 @@ _LEARNED_PROFILES = {
 }
 
 
+def _mentions(text: str, words) -> bool:
+    """
+    Whole-word match (so 'inflows' does not match 'nfl', 'grammar' not 'mma').
+    Multi-word phrases and tokens with symbols (e.g. 's&p') are matched too.
+    """
+    for word in words:
+        word = word.strip()
+        if word and re.search(r"\b" + re.escape(word) + r"\b", text):
+            return True
+    return False
+
+
 def infer_domain(topic, channel_id=None):
     topic_lower = (topic or "").lower()
 
-    if any(
-        word in topic_lower for word in ["nba", "draft", "wembanyama", "finals", "knicks", "spurs"]
-    ):
+    if _mentions(topic_lower, ["nba", "draft", "wembanyama", "finals", "knicks", "spurs"]):
         return "nba"
 
-    if any(
-        word in topic_lower
-        for word in [
-            "nfl",
-            "super bowl",
-            "quarterback",
-            "herbert",
-            "chargers",
-            "mahomes",
-            "chiefs",
-        ]
+    if _mentions(
+        topic_lower,
+        ["nfl", "super bowl", "quarterback", "herbert", "chargers", "mahomes", "chiefs"],
     ):
         return "nfl"
 
-    if any(word in topic_lower for word in ["ufc", "fight", "boxing", "mma"]):
+    if _mentions(topic_lower, ["ufc", "fight", "boxing", "mma"]):
         return "ufc"
 
-    if any(
-        word in topic_lower
-        for word in [
+    if _mentions(
+        topic_lower,
+        [
             "stock",
             "stocks",
             "earnings",
-            "fed ",
+            "fed",
             "fomc",
             "cpi",
             "inflation",
             "bitcoin",
             "btc",
+            "ethereum",
             "crypto",
+            "etf",
             "nasdaq",
             "s&p",
             "dividend",
@@ -172,13 +177,27 @@ def infer_domain(topic, channel_id=None):
             "ticker",
             "sec filing",
             "treasury",
-        ]
+            "interest rate",
+            "interest rates",
+            "recession",
+            "emergency fund",
+            "index fund",
+            "budget",
+            "budgeting",
+            "savings",
+            "401k",
+            "roth",
+            "retirement",
+            "mortgage",
+            "credit score",
+            "debt",
+        ],
     ):
         return "finance"
 
-    if any(
-        word in topic_lower
-        for word in [
+    if _mentions(
+        topic_lower,
+        [
             "anime",
             "manga",
             "crunchyroll",
@@ -189,13 +208,13 @@ def infer_domain(topic, channel_id=None):
             "anilist",
             "shonen",
             "isekai",
-        ]
+        ],
     ):
         return "anime"
 
-    if any(
-        word in topic_lower
-        for word in [
+    if _mentions(
+        topic_lower,
+        [
             "album",
             "song",
             "rapper",
@@ -205,14 +224,14 @@ def infer_domain(topic, channel_id=None):
             "soundtrack",
             "music video",
             "tour dates",
-        ]
+        ],
     ):
         return "music"
 
     if (
-        any(
-            word in topic_lower
-            for word in [
+        _mentions(
+            topic_lower,
+            [
                 "movie",
                 "film",
                 "trailer",
@@ -225,23 +244,15 @@ def infer_domain(topic, channel_id=None):
                 "star wars",
                 "marvel movie",
                 "dc universe",
-            ]
+            ],
         )
         and "marvel rivals" not in topic_lower
     ):
         return "popculture"
 
-    if any(
-        word in topic_lower
-        for word in [
-            "gta",
-            "gaming",
-            "game",
-            "steam",
-            "roblox",
-            "marvel rivals",
-            "esports",
-        ]
+    if _mentions(
+        topic_lower,
+        ["gta", "gaming", "game", "steam", "roblox", "marvel rivals", "esports"],
     ):
         return "gaming"
 

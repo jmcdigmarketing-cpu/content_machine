@@ -10,7 +10,7 @@
       "searchKeywords": "{query}",
       "maxResults": 30,
       "maxResultsShorts": 0,
-      "sortVideosBy": "RELEVANCE",
+      "sortVideosBy": "POPULAR",
       "dateFilter": "month",
       "videoType": "video"
     }
@@ -96,6 +96,12 @@
       "youtube_channels": [],
       "twitter_accounts": ["ufc", "espnmma", "arielhelwani", "danawhite", "MMAFighting"],
       "instagram_hashtags": ["ufc", "mma", "ufcfightnight"]
+    },
+    "finance": {
+      "subreddits": ["stocks", "investing", "wallstreetbets", "personalfinance", "CryptoCurrency", "Bitcoin", "economics", "financialindependence"],
+      "youtube_channels": [],
+      "twitter_accounts": ["DeItaone", "unusual_whales", "charliebilello", "markets", "WSJmarkets", "FirstSquawk"],
+      "instagram_hashtags": ["investing", "stocks", "crypto", "personalfinance"]
     },
     "nba": {
       "subreddits": ["nba", "basketball", "nbadiscussion"],

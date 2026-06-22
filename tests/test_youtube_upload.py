@@ -79,6 +79,7 @@ class TestYouTubeUpload(unittest.TestCase):
 
         with (
             patch("publishing.youtube_publisher.is_youtube_configured", return_value=True),
+            patch("publishing.youtube_publisher.get_youtube_service", return_value=MagicMock()),
             patch(
                 "publishing.youtube_publisher.get_publish_log_repository", return_value=mock_repo
             ),
@@ -107,6 +108,7 @@ class TestYouTubeUpload(unittest.TestCase):
 
         with (
             patch("publishing.youtube_publisher.is_youtube_configured", return_value=True),
+            patch("publishing.youtube_publisher.get_youtube_service", return_value=MagicMock()),
             patch("publishing.youtube_publisher.has_quota_for_upload", return_value=False),
             patch(
                 "publishing.youtube_publisher.get_publish_log_repository", return_value=mock_repo

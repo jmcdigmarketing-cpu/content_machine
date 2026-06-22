@@ -23,7 +23,9 @@ class TestOpportunitySmoke(unittest.TestCase):
         self.assertEqual(result.topic, topic)
         self.assertEqual(result.channel_id, "tapin")
         self.assertIn("youtube", result.signal_breakdown)
-        mock_registry.assert_called_once_with(topic)
+        # channel_id must flow into build_registry so domain gating's channel
+        # fallback applies — same inputs as run_discovery's base-topic path.
+        mock_registry.assert_called_once_with(topic, channel_id="tapin")
 
     @patch("core.opportunity.recommended_angles", return_value=[])
     @patch("core.opportunity.build_registry", return_value={})

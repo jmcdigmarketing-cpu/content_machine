@@ -79,15 +79,22 @@ def build_seo_prompt_block(channel_id: str) -> str:
 
 
 def default_tags_for_channel(channel_id: str, topic: str | None = None) -> list[str]:
+    """
+    Curated brand/default tags that are always safe to attach for this channel.
+
+    Deliberately does NOT force-inject the auto-refreshed `trending_tags`: those
+    are a flat, domain-mixed list (e.g. a gaming+UFC channel's hints carry fighter
+    names like "Gaethje"/"Strickland"), so force-adding them bleeds UFC names onto
+    gaming videos and vice-versa. Trending tags are still offered to the model via
+    build_seo_prompt_block ("use if relevant"), so on-topic ones surface through the
+    LLM's own tags — relevance-gated instead of unconditional.
+    """
     profile = get_seo_profile(channel_id)
-    hints = load_seo_hints(channel_id)
+    defaults = profile.get("default_tags") or []
     merged: list[str] = []
-    for source in (profile.get("default_tags"), hints.get("trending_tags")):
-        if not source:
-            continue
-        for tag in source:
-            if tag and tag not in merged:
-                merged.append(str(tag))
+    for tag in defaults:
+        if tag and str(tag) not in merged:
+            merged.append(str(tag))
 
     if topic:
         try:

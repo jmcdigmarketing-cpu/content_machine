@@ -142,8 +142,9 @@ def _build_prompts(
     if preset.choice in ("2", "3"):
         retention_rule = (
             "\nRETENTION RULE: At roughly the 30-second mark (~75 words in), "
-            "insert a pivot — a counter-fact, unexpected angle, or reframe. "
-            "This is your 'but here's the thing' moment that stops scroll-back."
+            "insert a pivot — a counter-fact, unexpected angle, or reframe that "
+            "stops scroll-back. Land the pivot with a concrete fact or sharp "
+            "reframe, NOT a stock transition phrase."
         )
 
     system_prompt = f"""
@@ -173,7 +174,7 @@ You must:
 - Use ONLY names, results, and facts listed in VERIFIED FACTS or RESEARCH BRIEF.
 - If a fact is missing, say "reports suggest" or skip — do not fill from memory.
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
-- Avoid filler contrast phrases like "This isn't just X — it's Y" or "But wait, there's more."
+- Never use stock filler transitions. Banned verbatim: "But here's the thing", "This isn't just X — it's Y", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
 - Build to a strong closing line — a hot take, implication, or open question that drives comments.
 - Title and description must be SEO-friendly without misleading clickbait.

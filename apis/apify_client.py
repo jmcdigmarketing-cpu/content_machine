@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from typing import Any
 
 import requests
@@ -27,6 +28,32 @@ logger = get_logger("apis.apify_client")
 
 _BASE = "https://api.apify.com/v2"
 _DEFAULT_TTL = 3600 * 6  # 6h cache
+
+# Out-of-credits guard
+# --------------------
+# Apify credits are account- (key-) level, so a 402 on ANY actor means every
+# other actor on that same key will 402 too. Without this, discovery re-runs the
+# exhausted actor once per variant — each a failing round-trip — which is exactly
+# the repeated "out of credits" spam that drags discovery to 200-300s+. Once a key
+# 402s, skip all later calls on it for the rest of the session (fast None, no HTTP).
+_EXHAUSTED_KEYS: set[str] = set()
+_EXHAUSTED_LOCK = threading.Lock()
+
+
+def reset_apify_credit_guard() -> None:
+    """Clear the out-of-credits guard (test/CLI helper)."""
+    with _EXHAUSTED_LOCK:
+        _EXHAUSTED_KEYS.clear()
+
+
+def _mark_key_exhausted(api_key: str) -> None:
+    with _EXHAUSTED_LOCK:
+        _EXHAUSTED_KEYS.add(api_key)
+
+
+def _key_exhausted(api_key: str) -> bool:
+    with _EXHAUSTED_LOCK:
+        return api_key in _EXHAUSTED_KEYS
 
 
 def _key(purpose: str = "main") -> str:
@@ -60,6 +87,10 @@ def run_actor(
         logger.debug("Apify key not set (%s) — skipping actor %s", env_var, actor_id)
         return None
 
+    if _key_exhausted(api_key):
+        logger.debug("Apify key out of credits this session — skipping actor %s", actor_id)
+        return None
+
     cache_key = build_key(f"apify:{actor_id}", json.dumps(input_data, sort_keys=True))
     cached = get_cached(cache_key)
     if cached is not None:
@@ -82,7 +113,11 @@ def run_actor(
             timeout=timeout_secs + 15,
         )
         if resp.status_code == 402:
-            logger.warning("Apify: out of credits for actor %s", actor_id)
+            logger.warning(
+                "Apify: out of credits for actor %s — skipping this key for the session",
+                actor_id,
+            )
+            _mark_key_exhausted(api_key)
             return None
         # run-sync-get-dataset-items returns 201 (Created) with the dataset items,
         # not 200 — accept both. The dataset payload may itself carry an error object,

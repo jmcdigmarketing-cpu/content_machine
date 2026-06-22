@@ -7,6 +7,11 @@ from apis import apify_client as ac
 
 
 class TestRunActor(unittest.TestCase):
+    def setUp(self):
+        # A 402 marks the key out-of-credits for the session; reset so this
+        # session state can't leak between tests.
+        ac.reset_apify_credit_guard()
+
     @patch("apis.apify_client.set_cache")
     @patch("apis.apify_client.get_cached", return_value=None)
     @patch("apis.apify_client.requests.post")
@@ -29,6 +34,35 @@ class TestRunActor(unittest.TestCase):
         mock_post.return_value = MagicMock(status_code=402, text="no credits")
         with patch.dict("os.environ", {"APIFY_CONTENT_MACHINE_KEY": "k"}, clear=False):
             self.assertIsNone(ac.run_actor("user/actor", {}, ttl=10))
+
+    @patch("apis.apify_client.get_cached", return_value=None)
+    @patch("apis.apify_client.requests.post")
+    def test_402_short_circuits_subsequent_calls_on_same_key(self, mock_post, _get):
+        # After a 402, later actor calls on the same key must skip the HTTP round
+        # trip entirely — this is what stops the repeated "out of credits" spam
+        # that drags discovery to 200-300s+.
+        mock_post.return_value = MagicMock(status_code=402, text="no credits")
+        with patch.dict("os.environ", {"APIFY_CONTENT_MACHINE_KEY": "k"}, clear=False):
+            self.assertIsNone(ac.run_actor("user/actor-a", {}, ttl=10))
+            self.assertEqual(mock_post.call_count, 1)
+            # A different actor on the same exhausted key — no further request.
+            self.assertIsNone(ac.run_actor("user/actor-b", {}, ttl=10))
+            self.assertEqual(mock_post.call_count, 1)
+
+    @patch("apis.apify_client.get_cached", return_value=None)
+    @patch("apis.apify_client.requests.post")
+    def test_402_on_one_key_does_not_disable_other_key(self, mock_post, _get):
+        # Exhausting the main key must not skip the dedicated tiktok key.
+        mock_post.return_value = MagicMock(status_code=402, text="no credits")
+        with patch.dict(
+            "os.environ",
+            {"APIFY_CONTENT_MACHINE_KEY": "main", "APIFY_BENABLE_BOT": "tiktok"},
+            clear=False,
+        ):
+            self.assertIsNone(ac.run_actor("user/actor", {}, purpose="main", ttl=10))
+            # tiktok key is independent — still attempts the request.
+            self.assertIsNone(ac.run_actor("user/actor", {}, purpose="tiktok", ttl=10))
+            self.assertEqual(mock_post.call_count, 2)
 
     def test_no_key_returns_none(self):
         with patch.dict(

@@ -90,6 +90,8 @@ The repo serves two products:
 | `core/llm_router.py` | **Multi-provider LLM router** — task tiers (cheap/extract/premium) across DeepSeek/OpenRouter/Ollama/OpenAI/Claude; per-provider token ledger. All runtime LLM calls route here |
 | `core/llm_client.py` | Legacy OpenAI client — now only the multimodal thumbnail vision scorer (router has no vision path yet) |
 | `core/cost_meter.py` | Per-run fully-loaded cost; prices the `llm_router` token ledger per provider/model |
+| `core/quota_state.py` | Cross-run, TTL'd, fail-open credit/quota store (`data/quota_state.json`) |
+| `core/reliability.py` | `ops reliability` dashboard — breakers, budgets, cache hit-rate, YouTube units |
 | `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
 | `apis/tapology_api.py` | Tapology event/bout scrape (cached) |

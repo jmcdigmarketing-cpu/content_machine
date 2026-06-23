@@ -78,6 +78,11 @@ def reset_session_breaker() -> None:
         _SESSION_DISABLED.clear()
 
 
+def disabled_signals() -> set[str]:
+    """Signals disabled this session by the breaker (public view for the dashboard)."""
+    return _disabled_signals()
+
+
 # Signals reused (pinned) from the base-topic fetch during per-variant scoring,
 # instead of being re-fetched for each of the 5 variants. The slow/paid Apify
 # social actors barely differ across title variants of the same topic — reusing

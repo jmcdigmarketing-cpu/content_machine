@@ -3,6 +3,7 @@ import os
 import tempfile
 import threading
 import time
+from typing import Any
 
 from config.paths import (
     ROOT_DIR,
@@ -90,21 +91,16 @@ def build_key(prefix, topic):
 def get_cached(key):
     with _cache_lock:
         cache = load_cache()
-
-        if key not in cache:
-            return None
-
-        entry = cache[key]
-        timestamp = entry.get("timestamp")
-
-        if not timestamp:
-            return None
-
-        ttl = entry.get("ttl") or TTL_SECONDS
-        if time.time() - timestamp > ttl:
-            return None
-
-        return entry.get("data")
+        data = None
+        entry = cache.get(key)
+        if entry:
+            timestamp = entry.get("timestamp")
+            if timestamp:
+                ttl = entry.get("ttl") or TTL_SECONDS
+                if time.time() - timestamp <= ttl:
+                    data = entry.get("data")
+    _record_cache_access(key, data is not None)
+    return data
 
 
 def set_cache(key, data, ttl_seconds=None):
@@ -126,3 +122,98 @@ def set_cache(key, data, ttl_seconds=None):
                 _cache_path(),
                 exc,
             )
+
+
+# --- Cache-hit instrumentation (O8) -----------------------------------------
+# Count hits vs misses per cache-key prefix (the signal/source name) so the TTLs
+# in register_signals._cache_ttl_for can be tuned from data, and the reliability
+# dashboard can show how much caching actually saves. In-process counters are
+# merged into data/cache_stats.json on flush_cache_stats() (called once per run).
+_stats_lock = threading.Lock()
+_stats: dict[str, dict[str, int]] = {}
+
+
+def _prefix_of(key: str) -> str:
+    """`reddit::topic` -> `reddit`; `apify:actor::json` -> `apify`."""
+    return key.split("::", 1)[0].split(":", 1)[0] or "unknown"
+
+
+def _record_cache_access(key: str, hit: bool) -> None:
+    prefix = _prefix_of(key)
+    with _stats_lock:
+        bucket = _stats.setdefault(prefix, {"hits": 0, "misses": 0})
+        bucket["hits" if hit else "misses"] += 1
+
+
+def _stats_path() -> str:
+    from config.paths import CACHE_STATS_FILE
+
+    return CACHE_STATS_FILE
+
+
+def _load_stats_file() -> dict[str, dict[str, int]]:
+    path = _stats_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _merge_stats(
+    base: dict[str, dict[str, int]], extra: dict[str, dict[str, int]]
+) -> dict[str, dict[str, int]]:
+    out = {k: dict(v) for k, v in base.items()}
+    for prefix, counts in extra.items():
+        b = out.setdefault(prefix, {"hits": 0, "misses": 0})
+        b["hits"] = b.get("hits", 0) + int(counts.get("hits", 0))
+        b["misses"] = b.get("misses", 0) + int(counts.get("misses", 0))
+    return out
+
+
+def get_cache_stats() -> dict[str, Any]:
+    """Persisted + in-process hit/miss counts, with an overall hit-rate summary."""
+    with _stats_lock:
+        live = {k: dict(v) for k, v in _stats.items()}
+    merged = _merge_stats(_load_stats_file(), live)
+    hits = sum(v.get("hits", 0) for v in merged.values())
+    misses = sum(v.get("misses", 0) for v in merged.values())
+    total = hits + misses
+    return {
+        "by_prefix": merged,
+        "hits": hits,
+        "misses": misses,
+        "total": total,
+        "hit_rate": (hits / total) if total else 0.0,
+    }
+
+
+def flush_cache_stats() -> None:
+    """Merge in-process counters into data/cache_stats.json, then clear them.
+
+    Called once at the end of a run so the dashboard reads cumulative stats
+    without paying a file write on every cache lookup. Fail-open.
+    """
+    with _stats_lock:
+        if not _stats:
+            return
+        live = {k: dict(v) for k, v in _stats.items()}
+        _stats.clear()
+    try:
+        merged = _merge_stats(_load_stats_file(), live)
+        _write_cache_file(_stats_path(), merged)
+    except Exception as exc:
+        logger.debug("cache_stats flush skipped: %s", exc)
+
+
+def reset_cache_stats() -> None:
+    """Test/CLI helper — clear both in-process and persisted cache stats."""
+    with _stats_lock:
+        _stats.clear()
+    try:
+        _write_cache_file(_stats_path(), {})
+    except Exception:
+        pass

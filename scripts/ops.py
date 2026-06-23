@@ -144,6 +144,14 @@ def cmd_status(args: argparse.Namespace) -> int:
     return _run_module("scripts.status", "--channel", args.channel)
 
 
+@_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
+def cmd_reliability(_args: argparse.Namespace) -> int:
+    from core.reliability import render
+
+    print(render())
+    return 0
+
+
 @_register(
     "intelligence-report",
     "Content Intelligence Report (signals + brief + competitors, no render)",

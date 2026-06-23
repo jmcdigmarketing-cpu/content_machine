@@ -233,6 +233,12 @@ def reset_llm_breaker() -> None:
         _llm_disabled_state.clear()
 
 
+def disabled_providers() -> dict[str, str]:
+    """Providers disabled this session (provider -> reason). For the dashboard."""
+    with _llm_breaker_lock:
+        return dict(_llm_disabled_state)
+
+
 def _resolve_chain(tier: str) -> list[tuple[str, str]]:
     """Ordered ``(provider, model)`` candidates for a tier — for failover.
 

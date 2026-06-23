@@ -206,32 +206,105 @@ def _provider_available(provider: str, tier: str) -> bool:
     return not (provider in _MODEL_REQUIRED and not _model_override(provider, tier))
 
 
-def resolve_tier(tier: str) -> tuple[str, str]:
-    """Return (provider, model) for a task tier.
+# --- LLM session breaker (O6) -----------------------------------------------
+# Once a provider returns a hard auth/quota status, skip it for the rest of the
+# process so tier resolution + failover route around it (mirrors the signal
+# breaker). Free providers' rate-limits are transient, so 429/5xx do NOT disable
+# — they just trigger failover to the next provider (O5).
+_llm_disabled_state: dict[str, str] = {}
+_llm_breaker_lock = threading.Lock()
 
-    Honors ``LLM_<TIER>_PROVIDER`` / ``LLM_<TIER>_MODEL`` overrides, else walks
-    the free-first preference chain and returns the first available provider.
-    Falls back to OpenAI's tier default so behavior never hard-fails when at
-    least one key exists; raises only if nothing is configured at all.
+
+def _llm_disabled(provider: str) -> bool:
+    with _llm_breaker_lock:
+        return provider in _llm_disabled_state
+
+
+def _disable_llm(provider: str, reason: str) -> None:
+    with _llm_breaker_lock:
+        if provider not in _llm_disabled_state:
+            logger.warning("LLM provider '%s' disabled this session: %s", provider, reason)
+        _llm_disabled_state[provider] = reason
+
+
+def reset_llm_breaker() -> None:
+    """Test/CLI helper — re-enable all LLM providers."""
+    with _llm_breaker_lock:
+        _llm_disabled_state.clear()
+
+
+def _resolve_chain(tier: str) -> list[tuple[str, str]]:
+    """Ordered ``(provider, model)`` candidates for a tier — for failover.
+
+    Forced ``LLM_<TIER>_PROVIDER`` goes first, then the free-first preference
+    chain; session-disabled providers are dropped. Falls back to OpenAI's tier
+    default so a hard error downstream is a clear auth error, not a routing crash.
     """
     if tier not in _VALID_TIERS:
         tier = "cheap"
-
     forced = os.getenv(f"LLM_{tier.upper()}_PROVIDER", "").strip().lower()
     forced_model = os.getenv(f"LLM_{tier.upper()}_MODEL", "").strip()
+
+    order: list[str] = []
     if forced and forced in _PROVIDERS:
-        model = forced_model or _default_model(forced, tier)
-        return forced, model
-
+        order.append(forced)
     for provider in _TIER_PREFERENCE[tier]:
-        if _provider_available(provider, tier):
-            model = forced_model or _default_model(provider, tier)
-            if model:
-                return provider, model
+        if provider not in order:
+            order.append(provider)
 
-    # Nothing in the chain is available; last resort is OpenAI's default so the
-    # error surfaced downstream is a clear auth error, not a routing crash.
-    return "openai", _default_model("openai", tier)
+    chain: list[tuple[str, str]] = []
+    for provider in order:
+        if _llm_disabled(provider):
+            continue
+        is_forced = provider == forced
+        if not is_forced and not _provider_available(provider, tier):
+            continue
+        # LLM_<TIER>_MODEL pins the model only for the forced provider; failover
+        # candidates use their own default (a forced model id won't be valid on a
+        # different provider).
+        model = (forced_model if is_forced else "") or _default_model(provider, tier)
+        if model:
+            chain.append((provider, model))
+
+    if not chain:
+        return [("openai", _default_model("openai", tier))]
+    return chain
+
+
+def resolve_tier(tier: str) -> tuple[str, str]:
+    """Return the primary ``(provider, model)`` for a task tier.
+
+    Honors ``LLM_<TIER>_PROVIDER`` / ``LLM_<TIER>_MODEL`` overrides, else walks
+    the free-first preference chain and returns the first available provider
+    (skipping any disabled by the session breaker). See ``_resolve_chain`` for
+    the full failover ordering.
+    """
+    return _resolve_chain(tier)[0]
+
+
+# Error classes that warrant trying the next provider; a subset disables the
+# failing provider for the session.
+_RETRYABLE_LLM = frozenset({"rate_limit", "quota", "auth", "server"})
+_DISABLE_LLM = frozenset({"quota", "auth"})
+
+
+def _classify_llm_error(exc: Exception) -> str:
+    """Map a provider exception to a coarse class for failover decisions."""
+    status = getattr(exc, "status_code", None)
+    if status is None:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+    if status == 429:
+        return "rate_limit"
+    if status == 402:
+        return "quota"
+    if status in (401, 403):
+        return "auth"
+    if isinstance(status, int) and 500 <= status < 600:
+        return "server"
+    name = type(exc).__name__.lower()
+    if "timeout" in name or "connection" in name:
+        return "server"
+    return "other"
 
 
 # --- Usage ledger ------------------------------------------------------------
@@ -383,35 +456,55 @@ def complete(
     provider: str | None = None,
     model: str | None = None,
 ) -> str:
-    """Run a completion through the routed provider for ``tier``.
+    """Run a completion through the routed provider for ``tier``, with failover.
 
     ``messages`` may be a plain prompt string or a list of role/content dicts.
-    Pass ``provider``/``model`` to bypass tier routing. Returns the raw text
-    (use ``complete_json`` when you want a parsed dict). Records token usage in
-    the ledger. Raises on transport/auth errors (callers decide how to degrade).
+    When ``provider``/``model`` are omitted the tier resolves to a *chain* of
+    providers (O5): on a rate-limit/quota/auth/5xx error the next provider in the
+    chain is tried, and hard auth/quota failures disable that provider for the
+    session (O6). Pass an explicit ``provider`` to pin one (no failover). Returns
+    the raw text; records token usage. Raises only when every candidate fails.
     """
-    if provider and not model:
-        model = _default_model(provider, tier if tier in _VALID_TIERS else "cheap")
-    if not (provider and model):
-        provider, model = resolve_tier(tier)
-
     msgs = _normalize_messages(messages, system)
-    kind = _PROVIDERS.get(provider, {}).get("kind", "openai")
-    if kind == "anthropic":
-        text, in_tok, out_tok = _anthropic_complete(
-            model, msgs, temperature=temperature, max_tokens=max_tokens
-        )
+
+    if provider:
+        if not model:
+            model = _default_model(provider, tier if tier in _VALID_TIERS else "cheap")
+        candidates = [(provider, model)]
     else:
-        text, in_tok, out_tok = _openai_complete(
-            provider,
-            model,
-            msgs,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            json_mode=json_mode,
-        )
-    _record_usage(provider, model, tier, in_tok, out_tok)
-    return text
+        candidates = _resolve_chain(tier)
+
+    last_exc: Exception | None = None
+    for idx, (prov, mdl) in enumerate(candidates):
+        try:
+            kind = _PROVIDERS.get(prov, {}).get("kind", "openai")
+            if kind == "anthropic":
+                text, in_tok, out_tok = _anthropic_complete(
+                    mdl, msgs, temperature=temperature, max_tokens=max_tokens
+                )
+            else:
+                text, in_tok, out_tok = _openai_complete(
+                    prov,
+                    mdl,
+                    msgs,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    json_mode=json_mode,
+                )
+            _record_usage(prov, mdl, tier, in_tok, out_tok)
+            return text
+        except Exception as exc:
+            last_exc = exc
+            err_class = _classify_llm_error(exc)
+            if err_class in _DISABLE_LLM:
+                _disable_llm(prov, f"{err_class} ({type(exc).__name__})")
+            if err_class in _RETRYABLE_LLM and idx < len(candidates) - 1:
+                logger.info("LLM provider '%s' failed (%s) — failing over to next", prov, err_class)
+                continue
+            raise
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("no LLM provider available for this tier")
 
 
 def parse_json_payload(raw: str) -> dict[str, Any] | None:

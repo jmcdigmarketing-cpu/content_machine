@@ -1,7 +1,12 @@
 """Regression tests for the Apify client status handling."""
 
+import os
+import shutil
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
+
+from core import quota_state
 
 
 def _resp(status_code, payload):
@@ -17,21 +22,28 @@ class TestRunActorStatus(unittest.TestCase):
         from apis.apify_client import reset_apify_state
 
         reset_apify_state()
+        # Isolate cross-run quota state to a temp file so the 402/breaker tests
+        # don't write (or read) the real data/quota_state.json.
+        self._tmp = tempfile.mkdtemp()
         # Ensure a key is present so run_actor proceeds to the HTTP call.
         self._patches = [
             patch("apis.apify_client._key", return_value="apify_test_key"),
             patch("apis.apify_client.get_cached", return_value=None),
             patch("apis.apify_client.set_cache"),
+            patch.object(quota_state, "QUOTA_STATE_FILE", os.path.join(self._tmp, "q.json")),
         ]
         for p in self._patches:
             p.start()
+        quota_state.reset_all()
 
     def tearDown(self):
         from apis.apify_client import reset_apify_state
 
+        quota_state.reset_all()
         for p in self._patches:
             p.stop()
         reset_apify_state()
+        shutil.rmtree(self._tmp, ignore_errors=True)
 
     def test_accepts_201_with_items(self):
         # Apify run-sync-get-dataset-items returns 201 Created with the data.

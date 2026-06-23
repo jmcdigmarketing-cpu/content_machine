@@ -188,6 +188,25 @@ def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     return tuple(pair for pair in pairs if pair[0] not in skip)
 
 
+# Signals whose data comes from a paid Apify actor run.
+_APIFY_PAID_SIGNALS = frozenset({"reddit", "twitter", "tiktok_trends", "youtube_competitors"})
+
+
+def will_use_apify(topic: str = "", channel_id: str | None = None) -> bool:
+    """True iff a paid Apify-backed signal survives skip/gating/breaker for this topic.
+
+    Lets the pipeline skip the Apify preflight network call entirely when no
+    Apify actor will run (e.g. those signals are in CONTENT_SKIP_SIGNALS or the
+    session/persisted breaker already disabled them). Fail-safe: any error → True
+    (preflight runs), so we never wrongly skip a needed credit check.
+    """
+    try:
+        active = {name for name, _ in _active_signal_sources(topic, channel_id)}
+        return bool(active & _APIFY_PAID_SIGNALS)
+    except Exception:
+        return True
+
+
 def _cache_ttl_for(name):
     if name == "live_scores":
         return live_scores_cache_ttl()

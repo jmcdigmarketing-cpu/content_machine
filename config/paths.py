@@ -15,6 +15,7 @@ SIGNAL_CACHE_FILE = os.path.join(DATA_DIR, "signal_cache.json")
 CHANNEL_MEMORY_FILE = os.path.join(DATA_DIR, "channel_memory.json")
 PERFORMANCE_MEMORY_FILE = os.path.join(DATA_DIR, "performance_memory.json")
 YOUTUBE_QUOTA_FILE = os.path.join(DATA_DIR, "youtube_quota.json")
+QUOTA_STATE_FILE = os.path.join(DATA_DIR, "quota_state.json")
 
 DEFAULT_CLIENT_SECRETS = os.path.join(SECRETS_DIR, "client_secrets.json")
 DEFAULT_OAUTH_TOKEN = os.path.join(SECRETS_DIR, "youtube_token.json")

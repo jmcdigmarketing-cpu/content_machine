@@ -31,10 +31,10 @@ that was deliberate. Newest near the bottom. Keep entries short.
 **Why:** Apify is ~$40–200/mo and returns social chatter, not ground truth; conflating the two both costs money and pollutes facts.
 **Consequence:** Apify can be fully disabled (circuit breaker) with no loss of factual grounding.
 
-### 6. Paid/quota APIs self-disable for the session
-**Decision:** A circuit breaker + preflight (`apis/apify_client.py`; generalized signal breaker in `register_signals.py`) skips an API for the rest of the run after a 401/402/403/quota/repeated-timeout.
-**Why:** A live run once re-ran failing actors per variant and burned credits + took 300s. Failing once should stop retrying.
-**Consequence:** A transient blip can disable a signal for the session; re-run to reset.
+### 6. Paid/quota APIs self-disable for the session — and Apify remembers across runs
+**Decision:** A circuit breaker + preflight (`apis/apify_client.py`; generalized signal breaker in `register_signals.py`) skips an API for the rest of the run after a 401/402/403/quota/repeated-timeout. **Apify hard failures additionally persist** to `data/quota_state.json` (`core/quota_state.py`) with a TTL (`QUOTA_STATE_TTL_SECONDS`, default 6h), so a *fresh* process skips Apify instantly instead of re-paying the failing call; the `/users/me` usage reading is likewise cached (`APIFY_USAGE_CACHE_TTL_SECONDS`). The LLM router has the same shape: failover across a provider chain + a session breaker (`core/llm_router.py`).
+**Why:** A live run once re-ran failing actors per variant and burned credits + took 300s. Failing once should stop retrying — and the *next* run shouldn't re-pay it either. See [credit_efficiency.md](credit_efficiency.md).
+**Consequence:** A transient blip can disable a signal for the session; persisted Apify exhaustion auto-expires after the TTL (or clear `data/quota_state.json`). Signal-breaker persistence is intentionally deferred — auth/no-key disables must not survive the operator fixing the key (needs key-hash invalidation first). `quota_state` is fail-open: a corrupt/unwritable file never blocks a run.
 
 ### 7. Social signals are reused across variants, not re-fetched
 **Decision:** During per-variant scoring, the slow/paid Apify signals are pinned from the base-topic fetch (`VARIANT_REUSE_SIGNALS`).

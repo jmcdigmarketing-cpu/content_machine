@@ -26,12 +26,14 @@ How the system avoids burning paid credits/quota, what's shipped, and the
 | **LLM** | Multi-provider router: free-first tiers, token ledger, **provider failover + session breaker** | `core/llm_router.py`, `core/cost_meter.py` |
 | **Per-run cost** | Fully-loaded estimate (now ledger-priced for LLM) | `core/cost_meter.py` |
 
-**Wave 1 shipped (2026-06-23):** the Apify breaker now **persists across runs**
+**Waves 1–2 shipped (2026-06-23):** the Apify breaker **persists across runs**
 (`core/quota_state.py` → `data/quota_state.json`), the preflight is **skipped when
-no paid signal will run** and **reuses a cached usage reading**, and the LLM router
-gained **provider failover + a session breaker**. See O1/O2/O3/O5/O6 below (marked
-✅). Remaining gaps: operator budget ceilings (O4/O7), signal-breaker persistence,
-observability (O8/O9), reset-window awareness (O10), and the unified governor (O11).
+no paid signal will run** and **reuses a cached usage reading**, the LLM router has
+**provider failover + a session breaker**, and there are now **operator spend
+ceilings** for both Apify (`APIFY_MONTHLY_BUDGET_USD`) and LLM
+(`LLM_DAILY_BUDGET_USD`) that degrade *before* the hard walls. See O1–O7 below
+(marked ✅). Remaining: signal-breaker persistence, observability (O8/O9),
+reset-window awareness (O10), and the unified governor (O11).
 
 ---
 
@@ -61,11 +63,11 @@ invalidation first).*
 runs instead of re-hitting the network. *Saving: the preflight round-trip on
 repeated runs within the window.*
 
-**O4. Operator spend ceiling — degrade before the hard wall** `[S–M]`
-`APIFY_MONTHLY_BUDGET_USD` (and per-provider equivalents): trip the breaker when
-usage ≥ the **operator's budget**, not only Apify's hard limit. Graceful pre-limit
-degradation; the seed of the vision.md "quota & spend governor." *Saving: prevents
-ever hitting the painful hard-limit 402 mid-run.*
+**O4. Operator spend ceiling — degrade before the hard wall** `[S–M]` — ✅ **SHIPPED**
+`APIFY_MONTHLY_BUDGET_USD`: `apify_preflight` (via `_evaluate_apify_usage`) trips the
+breaker — and persists it (O2) — when usage ≥ the **operator's budget**, before
+Apify's hard limit. Enforced on both the fresh and cached usage paths. *Saving:
+never hits the painful hard-limit 402 mid-run.*
 
 ### Tier 2 — bring the LLM router to parity with the signal breakers
 
@@ -83,10 +85,12 @@ A hard auth/quota status disables that provider for the session
 Rate-limits/5xx are transient → failover only, no disable. *(Cross-run persistence
 of LLM disables is deferred — free providers' limits reset fast.)*
 
-**O7. LLM per-day / per-run spend ceiling** `[S–M]`
-Use the token ledger (`llm_router.get_usage` → `cost_meter.llm_cost_from_usage`) +
-a configurable cap to downgrade `premium`→`cheap` (or stop) when a daily LLM budget
-is exceeded. *Saving: bounds the one cost that scales with volume.*
+**O7. LLM per-day spend ceiling** `[S–M]` — ✅ **SHIPPED**
+`LLM_DAILY_BUDGET_USD`: `llm_router` tracks today's cross-run spend in
+`quota_state` (only when a budget is set — no overhead otherwise), and once it's
+exceeded a `premium`/`extract` call downgrades to the free-first `cheap` chain.
+*Saving: bounds the one cost that scales with volume; only bites when a tier is
+routed to a paid model.*
 
 ### Tier 3 — observability so the TTLs/budgets are tuned from data
 
@@ -127,8 +131,8 @@ persistence file (`data/quota_state.json`) and one dashboard. Endpoint of O2–O
 1. ✅ **O1 + O3** — stop the needless preflight; cache the usage read. *(wave 1)*
 2. ✅ **O2** (Apify) — persist the breaker; compounds O3 across runs. *(wave 1)*
 3. ✅ **O5 + O6** — LLM failover + breaker (free OpenRouter tier now robust). *(wave 1)*
-4. **O4 + O7** — operator budgets for Apify + LLM. *(next wave)*
-5. **O8 + O9** — instrument, then surface a dashboard.
+4. ✅ **O4 + O7** — operator budgets for Apify + LLM. *(wave 2)*
+5. **O8 + O9** — instrument, then surface a dashboard. *(next)*
 6. **O10**, then **O11** (the governor) once the pieces exist to unify.
 
 Also still open from O2: **signal-breaker persistence** (needs key-hash
@@ -149,5 +153,5 @@ Each step is independently shippable with a test (per [decisions.md](decisions.m
 | `VARIANT_REUSE_SIGNALS` | shipped | pin slow/paid signals across variants |
 | `QUOTA_STATE_TTL_SECONDS` | **shipped (O2)** | how long a persisted Apify exhaustion lasts (default 6h) |
 | `APIFY_USAGE_CACHE_TTL_SECONDS` | **shipped (O3)** | reuse window for the last Apify usage reading (default 20m) |
-| `APIFY_MONTHLY_BUDGET_USD` | **proposed (O4)** | operator spend ceiling for Apify |
-| `LLM_MONTHLY_BUDGET_USD` / `LLM_DAILY_BUDGET_USD` | **proposed (O7)** | LLM spend ceiling → tier downgrade |
+| `APIFY_MONTHLY_BUDGET_USD` | **shipped (O4)** | operator spend ceiling for Apify (trips before the hard limit) |
+| `LLM_DAILY_BUDGET_USD` | **shipped (O7)** | daily LLM spend ceiling → premium/extract downgrade to cheap |

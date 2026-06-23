@@ -342,6 +342,89 @@ def _record_usage(provider: str, model: str, tier: str, in_tok: int, out_tok: in
         )
 
 
+# --- Daily spend ceiling (O7) ------------------------------------------------
+# When today's *cross-run* LLM spend exceeds LLM_DAILY_BUDGET_USD, non-cheap tiers
+# are downgraded to the free-first cheap chain (premium → cheap) so a runaway day
+# can't keep billing paid models. Spend is only tracked when a budget is set
+# (otherwise we skip the per-call pricing + file write entirely).
+_spend_lock = threading.Lock()
+_budget_warned = False
+
+
+def _llm_daily_budget() -> float | None:
+    raw = os.getenv("LLM_DAILY_BUDGET_USD", "").strip()
+    if not raw:
+        return None
+    try:
+        val = float(raw)
+        return val if val > 0 else None
+    except ValueError:
+        return None
+
+
+def _today_spend_key() -> str:
+    import datetime
+
+    return f"llm_spend:{datetime.date.today().isoformat()}"
+
+
+def _price_call(provider: str, model: str, in_tok: int, out_tok: int) -> float:
+    try:
+        from core.cost_meter import llm_cost_from_usage
+
+        return llm_cost_from_usage(
+            [
+                {
+                    "provider": provider,
+                    "model": model,
+                    "input_tokens": in_tok,
+                    "output_tokens": out_tok,
+                }
+            ]
+        )
+    except Exception:
+        return 0.0
+
+
+def _add_llm_spend(cost: float) -> None:
+    """Accumulate today's cross-run LLM spend (only when a budget is configured)."""
+    if cost <= 0 or _llm_daily_budget() is None:
+        return
+    try:
+        from core.quota_state import get_value, set_value
+
+        key = _today_spend_key()
+        with _spend_lock:
+            current = float(get_value(key, 0.0) or 0.0)
+            set_value(key, round(current + cost, 6), ttl_seconds=48 * 3600)
+    except Exception:
+        pass
+
+
+def _over_llm_budget() -> bool:
+    budget = _llm_daily_budget()
+    if budget is None:
+        return False
+    try:
+        from core.quota_state import get_value
+
+        return float(get_value(_today_spend_key(), 0.0) or 0.0) >= budget
+    except Exception:
+        return False
+
+
+def reset_llm_spend() -> None:
+    """Test/CLI helper — clear today's recorded LLM spend."""
+    global _budget_warned
+    _budget_warned = False
+    try:
+        from core.quota_state import set_value
+
+        set_value(_today_spend_key(), 0.0, ttl_seconds=1)
+    except Exception:
+        pass
+
+
 # --- OpenAI-compatible client cache -----------------------------------------
 _clients: dict[str, Any] = {}
 
@@ -462,8 +545,10 @@ def complete(
     When ``provider``/``model`` are omitted the tier resolves to a *chain* of
     providers (O5): on a rate-limit/quota/auth/5xx error the next provider in the
     chain is tried, and hard auth/quota failures disable that provider for the
-    session (O6). Pass an explicit ``provider`` to pin one (no failover). Returns
-    the raw text; records token usage. Raises only when every candidate fails.
+    session (O6). Pass an explicit ``provider`` to pin one (no failover). When
+    today's spend exceeds ``LLM_DAILY_BUDGET_USD`` a non-cheap tier is downgraded
+    to the free-first cheap chain (O7). Returns the raw text; records token usage.
+    Raises only when every candidate fails.
     """
     msgs = _normalize_messages(messages, system)
 
@@ -472,6 +557,13 @@ def complete(
             model = _default_model(provider, tier if tier in _VALID_TIERS else "cheap")
         candidates = [(provider, model)]
     else:
+        # O7: over the daily budget → downgrade premium/extract to the cheap chain.
+        if tier != "cheap" and _over_llm_budget():
+            global _budget_warned
+            if not _budget_warned:
+                logger.warning("LLM daily budget exceeded — downgrading '%s' tier to 'cheap'", tier)
+                _budget_warned = True
+            tier = "cheap"
         candidates = _resolve_chain(tier)
 
     last_exc: Exception | None = None
@@ -492,6 +584,8 @@ def complete(
                     json_mode=json_mode,
                 )
             _record_usage(prov, mdl, tier, in_tok, out_tok)
+            if _llm_daily_budget() is not None:
+                _add_llm_spend(_price_call(prov, mdl, in_tok, out_tok))
             return text
         except Exception as exc:
             last_exc = exc

@@ -47,9 +47,9 @@ that was deliberate. Newest near the bottom. Keep entries short.
 **Consequence:** Domain keyword lists need maintenance; relevance gating (don't run gaming signals on UFC topics) is a known TODO.
 
 ### 9. Authenticity/compliance is a first-class gate, not an afterthought
-**Decision:** Pre-upload authenticity check, AI disclosure, cadence guardrail (Phase O).
-**Why:** YouTube's Jul-2025 "inauthentic content" policy + Jan-2026 termination wave make synthetic-and-shallow faceless content an existential risk. Compliance is the differentiator vs most rivals.
-**Consequence:** Some runs are flagged/blocked by design; the operator can override.
+**Decision:** Pre-upload authenticity check, AI disclosure, cadence guardrail (Phase O). Generation actively *earns* the score, not just measures it: if a script reads as a neutral recap, `content_engine._maybe_inject_insight` adds one opinion/prediction beat (grounded only in verified facts) using the gate's own detector (`authenticity.has_insight`), before the grounding regen.
+**Why:** YouTube's Jul-2025 "inauthentic content" policy + Jan-2026 termination wave make synthetic-and-shallow faceless content an existential risk. Compliance is the differentiator vs most rivals. A gate that only *flags* a recap still ships the recap — closing the loop (inject the missing beat) is what actually moves the score.
+**Consequence:** Some runs are flagged/blocked by design; the operator can override. Injection is grounded + bounded (no invented specifics, ≥90% word count, no-op when a take already exists) and ordered before grounding so it can't smuggle in unsupported claims.
 
 ### 10. Repositories are dual JSON/Postgres; the suite runs keyless
 **Decision:** Storage uses a repository pattern with a JSON fallback when Postgres/keys are absent; tests must pass with `.env` + OAuth token moved aside.

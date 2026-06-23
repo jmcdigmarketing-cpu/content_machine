@@ -238,7 +238,7 @@ Turn the research spine into a compliance moat.
 - [x] **Per-video variation guard** — shipped as the authenticity "variation" check (difflib vs recent uploads' script_preview).
 - [x] **AI-content disclosure** — `core/description_extras.py`: in-description disclosure on every upload (YouTube's #1 compliance "do"); `AI_DISCLOSURE_ENABLED`, per-channel `ai_disclosure`.
 - [x] **Cadence guardrail** — `core/cadence.py`: caps videos/rolling-week (recent + scheduled); `MAX_VIDEOS_PER_WEEK` (default 5); gates `auto_generate` (`--force` to override). Pairs with the variation check (variety + volume).
-- [ ] **Original-insight injection** — *detection* ships (authenticity insight check); still TODO: actively inject an opinion/analysis beat into generation.
+- [x] **Original-insight injection** — when a script reads as a neutral recap, inject one opinion/prediction/"why it matters" beat grounded only in verified facts (`content_engine._maybe_inject_insight`, `core/authenticity.has_insight`, `INSIGHT_INJECTION_ENABLED`). Runs before the grounding regen; default-on; no-op when a take already exists. Prompt also gained a detector-aligned STANCE bullet.
 - [ ] **Human-context layer** — channel voice/persona, recurring segments, callbacks to prior videos (continuity data already in best-bet).
 - [ ] **Voice variety** — vary TTS delivery; optional real-voice clone slot.
 

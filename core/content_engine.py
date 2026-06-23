@@ -20,7 +20,7 @@ from core.signal_facts import format_signal_facts
 
 logger = get_logger("core.content_engine")
 
-PROMPT_VERSION = "content_engine_v6"
+PROMPT_VERSION = "content_engine_v7"
 MAX_EXPAND_ATTEMPTS = 2
 MAX_EXPAND_ATTEMPTS_EXTENDED = 4  # Extended format needs more passes to hit 1000+ words
 
@@ -189,6 +189,7 @@ You must:
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
 - Never use stock filler transitions. Banned verbatim: "But here's the thing", "This isn't just X — it's Y", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
+- Include at least one explicit STANCE beat — a prediction or "why this matters" call the audience can agree or argue with (e.g. "expect…", "here's why…", "the real reason…", "my prediction…", "the bigger picture…") — grounded ONLY in the verified facts, never an invented specific.
 - Build to a strong closing line — a hot take, implication, or open question that drives comments.
 - Title and description must be SEO-friendly without misleading clickbait.
 - Target {min_words}-{max_words} words (~{preset.target_words}) — but hit it with SUBSTANCE, never filler. If you run out of real facts and real takes before the minimum, STOP. A tight shorter script beats a padded one.
@@ -403,6 +404,53 @@ def _maybe_reground_script(
     return script, ungrounded
 
 
+def _insight_injection_enabled() -> bool:
+    return os.getenv("INSIGHT_INJECTION_ENABLED", "true").lower() not in ("0", "false", "no")
+
+
+def _maybe_inject_insight(script: str, grounding_text: str, topic: str) -> str:
+    """Add one opinion/prediction/'why it matters' beat when a script reads as a recap.
+
+    Default-on (``INSIGHT_INJECTION_ENABLED``). No-op when the script already
+    carries a take (same detector the authenticity gate scores on), so most runs
+    pay nothing. The beat must be grounded ONLY in the verified facts — no invented
+    specifics — and runs BEFORE the grounding regen so anything it slips in still
+    gets cleaned. Accepted only if it now reads as having a take and didn't shrink
+    the script (an injection should add words, not drop them).
+    """
+    if not _insight_injection_enabled():
+        return script
+    from core.authenticity import has_insight
+
+    if has_insight(script):
+        return script
+
+    system_prompt = (
+        "You add exactly ONE original-insight beat to a short-form video script: a "
+        "clear opinion, prediction, or 'why this matters' take of 1-2 sentences, in "
+        "the creator's voice, that the audience can agree or argue with. Base it ONLY "
+        "on the VERIFIED FACTS — do NOT invent any new name, team, trade, number, or "
+        "result, and do NOT present a rumor or prediction as a fact. Keep everything "
+        "else intact and keep the length and flow; place the beat where it lands best "
+        '(often just before the closing line). Return JSON only: {"script": "..."}'
+    )
+    user_prompt = f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{grounding_text}\n\nSCRIPT:\n{script}"
+    try:
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.6, tier="premium")
+    except Exception as exc:
+        logger.debug("insight injection failed: %s", exc)
+        return script
+    if not isinstance(payload, dict) or not payload.get("script"):
+        return script
+
+    candidate = str(payload["script"]).strip()
+    keeps_length = count_spoken_words(candidate) >= 0.9 * max(count_spoken_words(script), 1)
+    if has_insight(candidate) and keeps_length:
+        logger.info("Injected original-insight beat")
+        return candidate
+    return script
+
+
 def _expand_script(
     *,
     script: str,
@@ -544,6 +592,17 @@ def generate_content_package(
 
     script = _maybe_improve_hook(script)
 
+    # The fact corpus the script must stay grounded in (also used by the insight
+    # beat so it can't invent specifics) — built before injection + grounding.
+    grounding_text = "\n".join(
+        [signal_facts, brief_block, topic, seed_topic or "", *(_sanitize_key_facts(key_facts))]
+    )
+
+    # Original-insight injection: if the script reads as a neutral recap, add one
+    # opinion/prediction beat (Phase O authenticity). Runs BEFORE grounding so any
+    # specifics it introduces still get caught/cleaned below.
+    script = _maybe_inject_insight(script, grounding_text, topic)
+
     llm_tags = payload.get("tags") or []
     if isinstance(llm_tags, str):
         llm_tags = [t.strip() for t in llm_tags.split(",") if t.strip()]
@@ -554,9 +613,6 @@ def generate_content_package(
 
     # Post-generation grounding check: flag specifics in the script not backed by
     # the facts the model was given (catches invented heroes/products/patches).
-    grounding_text = "\n".join(
-        [signal_facts, brief_block, topic, seed_topic or "", *(_sanitize_key_facts(key_facts))]
-    )
     ungrounded = find_ungrounded_entities(script, grounding_text)
     if ungrounded:
         # Regenerate-then-warn: try once to strip the unsupported specifics, then

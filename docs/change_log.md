@@ -6,6 +6,26 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Original-insight injection (Phase O) — 2026-06-23
+
+*Same live run flagged Authenticity 65/100: "no opinion/prediction/analysis beat —
+reads as a neutral recap." The base prompt asked for opinion but a recap still
+slipped past the gate's marker-based detector.*
+
+- **`core/authenticity.has_insight()`** — public wrapper over the insight detector
+  so generation can use the exact signal the gate scores on.
+- **`content_engine._maybe_inject_insight`** — when a script has no take, inject one
+  opinion/prediction/"why it matters" beat grounded **only** in the verified facts.
+  Default-on (`INSIGHT_INJECTION_ENABLED`), premium tier; no-op when the script
+  already has a take (most runs pay nothing); accepted only if it now reads as
+  having a take and didn't shrink the script (≥90% word count). Runs **before** the
+  grounding regen, so any specifics it introduces are still caught/cleaned.
+- **Prompt**: added a detector-aligned STANCE bullet to the script prompt
+  ("expect…", "here's why…", "my prediction…", grounded in the facts).
+  `PROMPT_VERSION` → `content_engine_v7`.
+- **Tests:** `tests/test_insight_injection.py` (inject / no-op-when-has-take /
+  reject-no-take / reject-gutted / disabled) + `has_insight`. Suite 454 green.
+
 ### Anti-hallucination wave — regenerate-then-warn grounding + link cleanup (2026-06-23)
 
 *From a live run where a script fused a real trade (Giannis→Heat, from pasted

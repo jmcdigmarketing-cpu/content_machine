@@ -6,6 +6,23 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Credit-efficiency wave 2 — operator spend ceilings (2026-06-23)
+
+*Second wave from [credit_efficiency.md](credit_efficiency.md) (O4 + O7): graceful
+degradation before the hard credit walls.*
+
+- **Apify budget (O4):** `APIFY_MONTHLY_BUDGET_USD` — `apify_client._evaluate_apify_usage`
+  trips (and persists) the breaker when monthly usage hits the operator's budget,
+  before Apify's hard limit. Enforced on both the fresh and cached preflight paths;
+  the status line shows the budget.
+- **LLM daily budget (O7):** `LLM_DAILY_BUDGET_USD` — `core/llm_router` accumulates
+  today's cross-run spend in `quota_state` (only when a budget is set), and once
+  exceeded a `premium`/`extract` call downgrades to the free-first `cheap` chain.
+  Pricing reuses `cost_meter.llm_cost_from_usage`; `reset_llm_spend()` test helper.
+- **Tests:** Apify budget (trip-before-limit, persistence) in
+  `tests/test_credit_efficiency.py`; LLM budget (spend tracking, downgrade,
+  under-budget keeps premium) in `tests/test_llm_router.py`. Suite 425 green.
+
 ### Credit-efficiency wave 1 — persistence + LLM failover (2026-06-23)
 
 *First implementation wave from [credit_efficiency.md](credit_efficiency.md) (O1/O2/O3/O5/O6).*

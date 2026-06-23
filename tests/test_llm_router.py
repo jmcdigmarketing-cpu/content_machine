@@ -1,9 +1,12 @@
 """Tests for the multi-provider LLM router (core/llm_router)."""
 
+import os
+import shutil
+import tempfile
 import unittest
 from unittest.mock import patch
 
-from core import llm_router
+from core import llm_router, quota_state
 
 
 def _clear_router_env(env: dict[str, str]) -> dict[str, str]:
@@ -41,6 +44,7 @@ def _clear_router_env(env: dict[str, str]) -> dict[str, str]:
         "LLM_CHEAP_MODEL": "",
         "LLM_EXTRACT_MODEL": "",
         "LLM_PREMIUM_MODEL": "",
+        "LLM_DAILY_BUDGET_USD": "",
     }
     base.update(env)
     return base
@@ -287,6 +291,78 @@ class TestFailover(unittest.TestCase):
                 with self.assertRaises(_HTTPTestError):
                     llm_router.complete("hi", tier="cheap", provider="deepseek")
         self.assertEqual(calls, ["deepseek"])  # pinned — no failover
+
+
+class TestDailyBudget(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._patch = patch.object(
+            quota_state, "QUOTA_STATE_FILE", os.path.join(self.tmp, "q.json")
+        )
+        self._patch.start()
+        quota_state.reset_all()
+        llm_router.reset_usage()
+        llm_router.reset_llm_breaker()
+        llm_router.reset_llm_spend()
+
+    def tearDown(self):
+        llm_router.reset_llm_spend()
+        self._patch.stop()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_no_budget_does_not_track_spend(self):
+        env = _clear_router_env({"OPENAI_API_KEY": "x"})  # no LLM_DAILY_BUDGET_USD
+
+        def fake(provider, model, messages, **kwargs):
+            return "ok", 1_000_000, 0
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("hi", tier="premium")
+        # Budget unset → no spend tracked, no file write.
+        self.assertEqual(float(quota_state.get_value(llm_router._today_spend_key(), 0.0)), 0.0)
+
+    def test_spend_accumulates_when_budget_set(self):
+        env = _clear_router_env({"OPENAI_API_KEY": "x", "LLM_DAILY_BUDGET_USD": "100"})
+
+        def fake(provider, model, messages, **kwargs):
+            return "ok", 1_000_000, 0  # gpt-4o @ $2.50/M input
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("hi", tier="premium")
+        self.assertGreater(float(quota_state.get_value(llm_router._today_spend_key(), 0.0)), 0.0)
+
+    def test_over_budget_downgrades_premium_to_cheap(self):
+        # Pre-seed today's spend above the budget.
+        quota_state.set_value(llm_router._today_spend_key(), 99.0, 3600)
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "LLM_DAILY_BUDGET_USD": "1"})
+        captured = {}
+
+        def fake(provider, model, messages, **kwargs):
+            captured["model"] = model
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("hi", tier="premium")
+        # Downgraded to the cheap chain → OpenRouter's free model, not the premium one.
+        self.assertIn(":free", captured["model"])
+
+    def test_under_budget_keeps_premium(self):
+        quota_state.set_value(llm_router._today_spend_key(), 0.1, 3600)
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "LLM_DAILY_BUDGET_USD": "100"})
+        captured = {}
+
+        def fake(provider, model, messages, **kwargs):
+            captured["model"] = model
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("hi", tier="premium")
+        # Under budget → premium routing kept (OpenRouter's premium default model).
+        self.assertEqual(captured["model"], "deepseek/deepseek-chat")
 
 
 if __name__ == "__main__":

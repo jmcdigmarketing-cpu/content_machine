@@ -55,6 +55,42 @@ def _usage_cache_ttl() -> int:
         return 20 * 60
 
 
+def _apify_budget() -> float | None:
+    """Operator monthly spend ceiling (USD), or None if unset/invalid (O4)."""
+    raw = os.getenv("APIFY_MONTHLY_BUDGET_USD", "").strip()
+    if not raw:
+        return None
+    try:
+        val = float(raw)
+        return val if val > 0 else None
+    except ValueError:
+        return None
+
+
+def _evaluate_apify_usage(usage: float, limit: float, purpose: str) -> tuple[bool, str]:
+    """Decide availability from a usage reading.
+
+    The operator budget (O4) trips *before* Apify's hard limit — graceful
+    degradation instead of slamming into the 402 wall. A trip disables Apify for
+    the session and persists it so the next run skips instantly too.
+    """
+    budget = _apify_budget()
+    if budget is not None and usage >= budget:
+        reason = f"Apify operator budget reached (${usage:.2f}/${budget:.2f})"
+        disable_apify(reason)
+        _persist_exhausted(purpose, reason)
+        return False, _state["reason"]
+    if limit and usage >= limit:
+        reason = f"Apify monthly limit reached (${usage:.2f}/${limit:.2f})"
+        disable_apify(reason)
+        _persist_exhausted(purpose, reason)
+        return False, _state["reason"]
+    label = f"${usage:.2f}/${limit:.2f} used" if limit else f"${usage:.2f} used"
+    if budget is not None:
+        label += f", budget ${budget:.2f}"
+    return True, f"ON ({label})"
+
+
 def _sync_persistent(purpose: str) -> None:
     """Seed the in-process breaker from cross-run persisted exhaustion (once).
 
@@ -238,6 +274,10 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
             usage = cached.get("usage")
             limit = cached.get("limit")
             if isinstance(usage, int | float) and isinstance(limit, int | float) and limit > 0:
+                # Still enforce the operator budget against the cached reading.
+                available, status = _evaluate_apify_usage(float(usage), float(limit), purpose)
+                if not available:
+                    return available, status
                 return True, f"ON (${usage:.2f}/${limit:.2f} used, cached)"
 
     try:
@@ -261,19 +301,16 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
         limit = data.get("monthlyUsageCycleMaxUsd") or (data.get("limits", {}) or {}).get(
             "maxMonthlyUsageUsd"
         )
-        if isinstance(usage, int | float) and isinstance(limit, int | float) and limit > 0:
-            if usage >= limit:
-                reason = f"Apify monthly limit reached (${usage:.2f}/${limit:.2f})"
-                disable_apify(reason)
-                _persist_exhausted(purpose, reason)
-                return False, _state["reason"]
-            if set_value is not None:
+        if isinstance(usage, int | float):
+            limit_val = float(limit) if isinstance(limit, int | float) else 0.0
+            available, status = _evaluate_apify_usage(float(usage), limit_val, purpose)
+            if available and limit_val > 0 and set_value is not None:
                 set_value(
                     f"apify_usage:{purpose}",
-                    {"usage": float(usage), "limit": float(limit)},
+                    {"usage": float(usage), "limit": limit_val},
                     _usage_cache_ttl(),
                 )
-            return True, f"ON (${usage:.2f}/${limit:.2f} used)"
+            return available, status
     except Exception as exc:
         logger.debug("Apify preflight parse error: %s", exc)
     return True, "ON"

@@ -55,6 +55,55 @@ class TestApifyPersistence(unittest.TestCase):
         mock_get.assert_not_called()
 
 
+class TestApifyBudget(unittest.TestCase):
+    """O4 — operator spend ceiling trips before Apify's hard limit."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._patch = patch.object(
+            quota_state, "QUOTA_STATE_FILE", os.path.join(self.tmp, "q.json")
+        )
+        self._patch.start()
+        quota_state.reset_all()
+        apify_client.reset_apify_state()
+
+    def tearDown(self):
+        apify_client.reset_apify_state()
+        quota_state.reset_all()
+        self._patch.stop()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_budget_trips_before_limit(self):
+        with patch.dict("os.environ", {"APIFY_MONTHLY_BUDGET_USD": "2"}, clear=False):
+            available, status = apify_client._evaluate_apify_usage(3.0, 100.0, "main")
+        self.assertFalse(available)
+        self.assertIn("budget", status.lower())
+        self.assertTrue(apify_client.apify_disabled())
+
+    def test_under_budget_is_available_and_shows_budget(self):
+        with patch.dict("os.environ", {"APIFY_MONTHLY_BUDGET_USD": "10"}, clear=False):
+            available, status = apify_client._evaluate_apify_usage(3.0, 100.0, "main")
+        self.assertTrue(available)
+        self.assertIn("budget $10", status)
+
+    def test_no_budget_falls_back_to_hard_limit(self):
+        with patch.dict("os.environ", {"APIFY_MONTHLY_BUDGET_USD": ""}, clear=False):
+            ok_under, _ = apify_client._evaluate_apify_usage(3.0, 100.0, "main")
+            self.assertTrue(ok_under)
+            apify_client.reset_apify_state()
+            ok_over, status = apify_client._evaluate_apify_usage(100.0, 100.0, "main")
+        self.assertFalse(ok_over)
+        self.assertIn("limit", status.lower())
+
+    def test_budget_persists_across_runs(self):
+        with patch.dict("os.environ", {"APIFY_MONTHLY_BUDGET_USD": "2"}, clear=False):
+            apify_client._evaluate_apify_usage(5.0, 100.0, "main")
+        # A fresh process syncs the persisted budget trip.
+        apify_client.reset_apify_state()
+        apify_client._sync_persistent("main")
+        self.assertTrue(apify_client.apify_disabled())
+
+
 class TestWillUseApify(unittest.TestCase):
     def test_false_when_no_paid_social_signal_active(self):
         active = (("youtube", None), ("trends", None), ("news", None))

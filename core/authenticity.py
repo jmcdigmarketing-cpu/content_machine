@@ -169,6 +169,15 @@ def _insight_check(script: str) -> AuthenticityCheck:
     )
 
 
+def has_insight(script: str) -> bool:
+    """True if the script carries an opinion/prediction/analysis beat (a 'take').
+
+    Public wrapper over the insight detector so generation can inject a beat when
+    a script reads as a neutral recap, using the same signal the gate scores on.
+    """
+    return _insight_check(script).passed
+
+
 def _substance_check(script: str, fact_count: int) -> AuthenticityCheck:
     words = count_spoken_words(script)
     if words < _MIN_WORDS:

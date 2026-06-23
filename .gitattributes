@@ -1,0 +1,29 @@
+# Line-ending + binary handling. Conservative: declares how files are treated
+# going forward (no mass renormalize), which quiets the recurring Windows
+# "LF will be replaced by CRLF" churn and stops git from treating large media
+# as diffable text.
+
+# Text files: normalize to LF in the repo; Git still checks out per platform.
+* text=auto
+
+# Keep these LF regardless of platform (scripts / shell / config consumed as LF).
+*.py    text eol=lf
+*.sh    text eol=lf
+*.toml  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+
+# Binary media — never diff, never normalize.
+*.mp4   binary
+*.mov   binary
+*.webm  binary
+*.mp3   binary
+*.wav   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.ico   binary
+*.gif   binary

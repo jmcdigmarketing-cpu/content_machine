@@ -597,6 +597,7 @@ def prompt_key_facts(
     print_fn("  Add your own facts — one per line (or paste a link), empty line when done:")
     from core.link_facts import extract_facts_from_url, looks_like_url
 
+    pasted_sources: list[dict[str, str]] = []
     while True:
         fact = input_fn(f"  Fact {len(key_facts) + 1}: ").strip()
         if not fact:
@@ -608,10 +609,24 @@ def prompt_key_facts(
                 for ex in extracted:
                     print_fn(f"    + {ex[:90]}")
                 key_facts.extend(extracted)
+                # Remember the link so it can be saved to the vault for reuse.
+                pasted_sources.append({"url": fact, "title": extracted[0]})
             else:
                 print_fn("    Could not extract facts from that link — skipped.")
             continue
         key_facts.append(fact)
+
+    # Persist the links we brought in so future related runs can reuse them
+    # (no-op without a vault; never blocks). See core.source_capture.
+    if pasted_sources:
+        try:
+            from core.source_capture import capture_sources
+
+            saved = capture_sources(channel_id, topic, pasted_sources)
+            if saved:
+                print_fn(f"    Saved {len(pasted_sources)} source(s) to your vault for reuse.")
+        except Exception:
+            pass
 
     # De-duplicate while preserving order.
     seen: set[str] = set()

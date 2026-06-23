@@ -76,6 +76,17 @@ class TestLLMCostFromUsage(unittest.TestCase):
         ]
         self.assertEqual(llm_cost_from_usage(calls), 0.0)
 
+    def test_openrouter_free_suffix_is_zero(self):
+        calls = [
+            {
+                "provider": "openrouter",
+                "model": "meta-llama/llama-3.3-70b-instruct:free",
+                "input_tokens": 5_000_000,
+                "output_tokens": 5_000_000,
+            }
+        ]
+        self.assertEqual(llm_cost_from_usage(calls), 0.0)
+
     def test_estimate_uses_real_ledger_when_present(self):
         from core import llm_router
 

@@ -364,6 +364,11 @@ class TestDailyBudget(unittest.TestCase):
         # Under budget → premium routing kept (OpenRouter's premium default model).
         self.assertEqual(captured["model"], "deepseek/deepseek-chat")
 
+    def test_reset_usage_clears_budget_warned(self):
+        llm_router._budget_warned = True
+        llm_router.reset_usage()
+        self.assertFalse(llm_router._budget_warned)
+
 
 if __name__ == "__main__":
     unittest.main()

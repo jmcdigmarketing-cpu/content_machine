@@ -325,8 +325,11 @@ _usage_lock = threading.Lock()
 
 def reset_usage() -> None:
     """Clear the per-run token ledger. Call at the start of each run."""
+    global _budget_warned
     with _usage_lock:
         _usage.calls.clear()
+    with _spend_lock:
+        _budget_warned = False
 
 
 def get_usage() -> list[dict[str, Any]]:
@@ -397,12 +400,9 @@ def _add_llm_spend(cost: float) -> None:
     if cost <= 0 or _llm_daily_budget() is None:
         return
     try:
-        from core.quota_state import get_value, set_value
+        from core.quota_state import increment_value
 
-        key = _today_spend_key()
-        with _spend_lock:
-            current = float(get_value(key, 0.0) or 0.0)
-            set_value(key, round(current + cost, 6), ttl_seconds=48 * 3600)
+        increment_value(_today_spend_key(), cost, ttl_seconds=48 * 3600)
     except Exception:
         pass
 
@@ -565,10 +565,13 @@ def complete(
     else:
         # O7: over the daily budget → downgrade premium/extract to the cheap chain.
         if tier != "cheap" and _over_llm_budget():
-            global _budget_warned
-            if not _budget_warned:
-                logger.warning("LLM daily budget exceeded — downgrading '%s' tier to 'cheap'", tier)
-                _budget_warned = True
+            with _spend_lock:
+                global _budget_warned
+                if not _budget_warned:
+                    logger.warning(
+                        "LLM daily budget exceeded — downgrading '%s' tier to 'cheap'", tier
+                    )
+                    _budget_warned = True
             tier = "cheap"
         candidates = _resolve_chain(tier)
 

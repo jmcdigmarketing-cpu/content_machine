@@ -54,6 +54,21 @@ class TestApifyPersistence(unittest.TestCase):
         self.assertIn("cached", status)
         mock_get.assert_not_called()
 
+    def test_cached_usage_still_trips_operator_budget(self):
+        # Cached readings must still enforce APIFY_MONTHLY_BUDGET_USD (no network).
+        quota_state.set_value("apify_usage:main", {"usage": 5.0, "limit": 100.0}, 1200)
+        with patch.dict(
+            os.environ,
+            {"APIFY_CONTENT_MACHINE_KEY": "key", "APIFY_MONTHLY_BUDGET_USD": "2"},
+            clear=False,
+        ):
+            with patch.object(apify_client.requests, "get") as mock_get:
+                ok, status = apify_client.apify_preflight()
+        self.assertFalse(ok)
+        self.assertIn("budget", status.lower())
+        self.assertTrue(apify_client.apify_disabled())
+        mock_get.assert_not_called()
+
 
 class TestApifyBudget(unittest.TestCase):
     """O4 — operator spend ceiling trips before Apify's hard limit."""

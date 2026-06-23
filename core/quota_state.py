@@ -145,6 +145,24 @@ def get_value(key: str, default: Any = None) -> Any:
     return rec.get("value", default)
 
 
+def increment_value(key: str, delta: float, ttl_seconds: int, *, default: float = 0.0) -> None:
+    """Atomically add ``delta`` to a numeric cached value (read-modify-write under lock)."""
+    if not delta:
+        return
+    now = time.time()
+    with _lock:
+        data = _prune(_load(), now)
+        rec = (data.get("kv") or {}).get(key)
+        current = default
+        if isinstance(rec, dict) and float(rec.get("until", 0) or 0) > now:
+            try:
+                current = float(rec.get("value", default) or default)
+            except (TypeError, ValueError):
+                current = default
+        data["kv"][key] = {"value": round(current + delta, 6), "until": now + ttl_seconds}
+        _save(data)
+
+
 def reset_all() -> None:
     """Test/CLI helper — wipe all persisted quota state."""
     with _lock:

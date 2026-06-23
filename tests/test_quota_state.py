@@ -49,6 +49,26 @@ class TestQuotaState(unittest.TestCase):
         quota_state.set_value("apify_usage:main", {"usage": 1.5, "limit": 5.0}, 3600)
         self.assertEqual(quota_state.get_value("apify_usage:main"), {"usage": 1.5, "limit": 5.0})
 
+    def test_increment_value_accumulates(self):
+        quota_state.increment_value("llm_spend:test", 1.5, 3600)
+        quota_state.increment_value("llm_spend:test", 2.0, 3600)
+        self.assertAlmostEqual(quota_state.get_value("llm_spend:test"), 3.5)
+
+    def test_increment_value_is_atomic_under_threads(self):
+        import threading
+
+        quota_state.increment_value("llm_spend:race", 0.0, 3600)
+
+        def add_one():
+            quota_state.increment_value("llm_spend:race", 1.0, 3600)
+
+        threads = [threading.Thread(target=add_one) for _ in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertAlmostEqual(quota_state.get_value("llm_spend:race"), 20.0)
+
     def test_kv_expiry(self):
         quota_state.set_value("k", "v", -1)
         self.assertIsNone(quota_state.get_value("k"))

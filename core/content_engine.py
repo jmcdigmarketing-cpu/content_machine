@@ -3,6 +3,7 @@ import re
 from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
+from core.description_extras import apply_description_extras
 from core.fact_enrichment import _fact_line_count, enrich_facts
 from core.fact_grounding import find_ungrounded_entities
 from core.llm_client import get_model, get_openai_client
@@ -134,6 +135,7 @@ def _build_prompts(
     length_choice: str,
     seed_topic: str = "",
     is_thin_facts: bool = False,
+    creative_brief: str = "",
     key_facts: list[str] | None = None,
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
@@ -158,6 +160,14 @@ Never open with "Today", "Let's", "In this video", "Welcome", or a direct questi
 Strong hooks: "He lost $2 billion in one afternoon." / "Nobody saw this roster move coming." / "This changes everything for the division."
 {retention_rule}
 
+VOICE — write like a sharp, opinionated human creator talking to camera, NOT an analyst writing a report:
+- SAY WHAT HAPPENED FIRST. Lead with the concrete facts in plain words — who did what to whom, how, and when (e.g. "Gaethje TKO'd Topuria in round 2") — BEFORE any commentary. No throat-clearing intro.
+- Concrete beats abstract every time. Use names, methods, rounds, numbers from VERIFIED FACTS — not vague abstractions like "systemic issues", "the broader narrative", "the delicate balance".
+- BANNED — never write these or anything like them: "grappling with the fallout", "at a crossroads", "as the dust settles", "the delicate balance between", "double-edged sword", "systemic issues", "the future of X depends on it", "it's essential to understand", "underscores a critical need", "a testament to", "the lifeblood of", "ripe with opportunities", "In conclusion", "the very foundations of", "now more than ever".
+- NO both-sidesing. Do NOT write "some argue X, while others believe Y". State what YOU think and why.
+- The topic is the assignment: if it says "recap / results", RECAP WHAT HAPPENED — do not drift into think-piece territory about officiating reform, "the meta", or the sport's future unless the facts are about that.
+- Delete any sentence that could appear in a generic essay on this subject. Every sentence must carry a specific fact or a real opinion.
+
 OPERATOR KEY FACTS RULE: If OPERATOR KEY FACTS are present in the user message, treat them as
 verified ground truth. They override any conflicting detail from training memory or signals.
 Always include them in the script — do not contradict, soften, or omit them.
@@ -167,25 +177,40 @@ ANTI-HALLUCINATION RULES (strictly enforced):
 - Do NOT infer season numbers (e.g. "Season 8.5", "Season 7") from video titles in your training data.
 - Do NOT introduce hero names (e.g. Cyclops, White Fox, Hawkeye) that are not named in VERIFIED FACTS.
 - Do NOT invent patch version numbers, balance changes, mode names, or release dates.
+- SPORTS/MMA: Do NOT state who is champion, a fighter's record, ranking, or who they have fought/beaten from memory — titles and records change and your training data is stale. Use only statuses that appear in VERIFIED FACTS.
+- Do NOT invent fight results, opponents, event cards, dates, or quotes. If the outcome of a fight or event is NOT in VERIFIED FACTS, frame it as the question or hypothetical it is ("if Topuria loses…", "fans are asking whether…") — never assert it happened.
 - Competitor video titles in CONTEXT SIGNALS are NOT factual evidence — they show what's trending, not what's true.
 - If the facts are silent on specifics: write at the community/opinion level ("players are frustrated that…", "the debate right now is…") without inventing the specific thing they're debating.
 - A script grounded in genuine community takes beats a fabricated "news update" every time.
 
 You must:
-- Use ONLY names, results, and facts listed in VERIFIED FACTS or RESEARCH BRIEF.
-- If a fact is missing, say "reports suggest" or skip — do not fill from memory.
+- Use ONLY game-specific facts (patches, heroes, seasons, results, dates, stats) that appear in VERIFIED FACTS or RESEARCH BRIEF.
+- Cross-genre framing is allowed: real people, athletes, other sports, or other games introduced in the EDITORIAL ANGLE may be used as analogy, comparison, or opinion even if they are absent from VERIFIED FACTS — that is intentional creator framing, not a fabrication. Only invented GAME specifics are forbidden.
+- If a game fact is missing, say "reports suggest" or skip — do not fill from memory.
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
 - Never use stock filler transitions. Banned verbatim: "But here's the thing", "This isn't just X — it's Y", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
 - Build to a strong closing line — a hot take, implication, or open question that drives comments.
 - Title and description must be SEO-friendly without misleading clickbait.
-- The script word count is MANDATORY: between {min_words} and {max_words} words (currently targeting ~{preset.target_words}).
+- Target {min_words}-{max_words} words (~{preset.target_words}) — but hit it with SUBSTANCE, never filler. If you run out of real facts and real takes before the minimum, STOP. A tight shorter script beats a padded one.
 """
 
     seed_block = ""
     if seed_topic and seed_topic.strip().lower() != topic.strip().lower():
         seed_block = (
             f"SEED TOPIC (user/channel intent — stay on this subject):\n{seed_topic.strip()}\n\n"
+        )
+
+    angle_block = ""
+    if creative_brief and creative_brief.strip():
+        angle_block = (
+            "EDITORIAL ANGLE (the creator's deliberate take — build the entire script "
+            "around THIS thesis and point of view, not a generic overview). Names, "
+            "people, athletes, sports, or other genres referenced here (e.g. a fighter "
+            "used as an analogy for game mechanics) are INTENTIONAL cross-genre framing — "
+            "keep them and lean into the comparison; they are allowed even if not in "
+            "VERIFIED FACTS. Only GAME-SPECIFIC claims (patches, heroes, seasons, dates, "
+            f"numbers) must still come from VERIFIED FACTS:\n{creative_brief.strip()}\n\n"
         )
 
     # Split facts into verified data vs YouTube context-only titles
@@ -222,7 +247,7 @@ You must:
     user_prompt = f"""
 TODAY: {today}
 
-{seed_block}TOPIC:
+{seed_block}{angle_block}TOPIC:
 {topic}
 
 {brief_block}SCRIPT BRIEF (follow exactly):
@@ -243,7 +268,9 @@ INSTRUCTIONS:
 - Open with a punchy hook sentence under 12 words (no "Today/Let's/In this video").
 - If Long format: structure as hook → context → analysis → implications → closing take.
 - If RESEARCH BRIEF says format is "analysis" or "prediction": DO NOT frame as a news announcement. Write as an informed breakdown, hot take, or prediction — not "just released" or "biggest update yet" language.
-- Close with a strong opinion or implication that invites comments.
+- TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it ("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.
+- Cut hedging and filler ("only time will tell", "the narrative is far from over", "could be a turning point"). Every sentence advances the take.
+- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".
 - Generate a compelling YouTube title (SEO-aware, accurate, no ellipsis).
 - Generate a concise SEO description (hook first line, call-to-action last line).
 - Generate 8-15 YouTube tags (no fabricated names).
@@ -275,6 +302,44 @@ def _call_content_llm(
     return _parse_json_payload(raw)
 
 
+def _maybe_improve_hook(script: str) -> str:
+    """
+    Opt-in (HOOK_REGEN_ENABLED=true): rewrite a weak opening line into a stronger
+    hook. Only swaps in the rewrite if it actually scores higher; otherwise the
+    original script is returned untouched.
+    """
+    from core.hook_score import hook_regen_enabled, score_script_hook
+
+    if not hook_regen_enabled():
+        return script
+    current = score_script_hook(script)
+    if current.passed or not current.hook:
+        return script
+
+    system_prompt = (
+        "You rewrite ONLY the first sentence of a short-form video script into a "
+        "stronger hook: a specific fact, number, or contradiction, under 12 words. "
+        "Never open with 'Today', 'Let's', 'In this video', 'Welcome', or a question. "
+        "Do not invent facts not already implied by the script. Keep the rest of the "
+        "script identical."
+    )
+    user_prompt = (
+        f"SCRIPT:\n{script}\n\nReturn JSON only with the full script, first sentence "
+        'replaced:\n{"script": "..."}'
+    )
+    try:
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.7)
+    except Exception as exc:
+        logger.debug("hook regen failed: %s", exc)
+        return script
+    if isinstance(payload, dict) and payload.get("script"):
+        candidate = str(payload["script"])
+        if score_script_hook(candidate).score > current.score:
+            logger.info("Improved hook via regeneration")
+            return candidate
+    return script
+
+
 def _expand_script(
     *,
     script: str,
@@ -287,11 +352,16 @@ def _expand_script(
     preset = get_length_preset(length_choice)
     prompt = f"""Expand this video script for TOPIC: {topic}
 
-Current script ({current} words) is TOO SHORT. Target: at least {min_words} words, at most {max_words} words.
+Current script ({current} words) is short of the {min_words}-word target (max {max_words}).
 Format: {preset.label} video ({preset.duration_hint()}).
 {length_system_addendum(preset)}
 
-Keep all facts from the original script. Add depth: ripple effects, team context, fan/analyst angles, and a strong closing line.
+Add LENGTH WITH SUBSTANCE ONLY: more specific facts about what happened, concrete detail, and
+sharper opinion/analysis. Keep all facts from the original.
+BANNED filler — do NOT add any of this to pad the count: "fans are divided", "the lifeblood of
+the sport", "the future of X depends on it", "in conclusion", "a testament to", restating points
+already made, or vague abstractions. If you cannot reach {min_words} words HONESTLY with real
+substance, return the script unchanged rather than padding.
 Do not repeat the opening verbatim. Return JSON only: {{"script": "..."}}
 
 ORIGINAL:
@@ -324,6 +394,7 @@ def generate_content_package(
     research_brief: ResearchBrief | None = None,
     length_choice: str = "2",
     seed_topic: str = "",
+    creative_brief: str = "",
     key_facts: list[str] | None = None,
 ):
     min_words, max_words = word_range
@@ -372,6 +443,7 @@ def generate_content_package(
         length_choice=length_choice,
         seed_topic=seed_topic,
         is_thin_facts=_is_thin_facts,
+        creative_brief=creative_brief,
         key_facts=key_facts,
     )
 
@@ -384,7 +456,7 @@ def generate_content_package(
         return {
             "title": topic,
             "script": payload if isinstance(payload, str) else "",
-            "description": "",
+            "description": apply_description_extras("", channel_id),
             "tags": normalize_youtube_tags(
                 default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
             ),
@@ -412,6 +484,8 @@ def generate_content_package(
         )
         attempts += 1
 
+    script = _maybe_improve_hook(script)
+
     llm_tags = payload.get("tags") or []
     if isinstance(llm_tags, str):
         llm_tags = [t.strip() for t in llm_tags.split(",") if t.strip()]
@@ -436,7 +510,7 @@ def generate_content_package(
     return {
         "title": payload.get("title") or topic,
         "script": script,
-        "description": payload.get("description") or "",
+        "description": apply_description_extras(payload.get("description") or "", channel_id),
         "tags": tags,
         "prompt_version": PROMPT_VERSION,
         "brief_version": research_brief.version if research_brief else "",

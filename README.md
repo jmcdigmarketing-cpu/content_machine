@@ -1,6 +1,10 @@
 # Content Machine (Content OS)
 
-Python CLI for short-form sports/gaming video: discover signals → score topics → LLM script → TTS → FFmpeg render → optional YouTube publish.
+Python CLI for short-form video: discover signals → score topics → LLM script → TTS → FFmpeg render → optional YouTube publish. With a closed analytics learning loop (best-bet topic, recommended length + post-time) and a 2026-policy compliance layer (authenticity check, AI disclosure, cadence guardrail).
+
+**Channels** (`config/channels.json`, domain-driven): `tapin` — gaming & UFC shorts · `moneywise` — finance (markets/crypto/personal finance). Add another by adding a profile + `config/seo/{id}.json`.
+
+Roadmap & current fix queue: [docs/roadmap.md](docs/roadmap.md). Honest assessment: [docs/assessment.md](docs/assessment.md).
 
 ## Quick start
 
@@ -96,7 +100,7 @@ python -m unittest discover -s tests       # tests (pytest also works: `pytest`)
 
 Tooling is configured in [`pyproject.toml`](pyproject.toml) (canonical deps +
 ruff/mypy/pytest config). CI runs lint, format-check, a type-check baseline, and
-the test suite on Python 3.10–3.12 — see [.github/workflows/ci.yml](.github/workflows/ci.yml).
+the test suite on Python 3.11 (the version the pinned deps are validated on) — see [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## Project layout
 

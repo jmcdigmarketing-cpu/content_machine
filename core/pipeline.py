@@ -111,6 +111,16 @@ def run_discovery(
     t0 = time.perf_counter()
 
     _report("Loading history")
+
+    # Quick Apify on/off check before topic research — if the key is dead or the
+    # monthly limit is hit, disable Apify for the session so the social actors
+    # skip instantly instead of timing out (and burning credits) on every variant.
+    if os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
+        from apis.apify_client import apify_preflight
+
+        ok, status = apify_preflight()
+        print(f"  Apify: {status}" if ok else f"  Apify: {status} — social signals skipped")
+
     competitor_sync = os.getenv("COMPETITOR_SYNC_ON_DISCOVERY", "auto").lower()
     if competitor_sync in ("1", "true", "yes", "auto"):
         from analytics.competitor_context import ensure_competitor_snapshot
@@ -225,6 +235,7 @@ def run_pipeline(
     proceed_video: bool = True,
     variant_limit: int = 5,
     channel_id: str | None = None,
+    creative_brief: str = "",
     key_facts: list[str] | None = None,
 ) -> PipelineResult:
     """
@@ -290,6 +301,7 @@ def run_pipeline(
         research_brief=research_brief,
         length_choice=length_choice,
         seed_topic=input_topic,
+        creative_brief=creative_brief,
         key_facts=key_facts or [],
     )
     result.timings["length_preset"] = preset.choice

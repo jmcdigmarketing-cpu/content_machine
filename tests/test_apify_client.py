@@ -1,74 +1,119 @@
-"""Tests for the Apify HTTP client (run_actor) — status handling + caching."""
+"""Regression tests for the Apify client status handling."""
 
 import unittest
 from unittest.mock import MagicMock, patch
 
-from apis import apify_client as ac
+
+def _resp(status_code, payload):
+    r = MagicMock()
+    r.status_code = status_code
+    r.json.return_value = payload
+    r.text = str(payload)
+    return r
 
 
-class TestRunActor(unittest.TestCase):
+class TestRunActorStatus(unittest.TestCase):
     def setUp(self):
-        # A 402 marks the key out-of-credits for the session; reset so this
-        # session state can't leak between tests.
-        ac.reset_apify_credit_guard()
+        from apis.apify_client import reset_apify_state
 
-    @patch("apis.apify_client.set_cache")
-    @patch("apis.apify_client.get_cached", return_value=None)
-    @patch("apis.apify_client.requests.post")
-    def test_201_returns_items_and_caches_with_ttl_seconds(self, mock_post, _get, mock_set):
-        # Apify run-sync returns 201 (Created) with the dataset items.
-        mock_post.return_value = MagicMock(status_code=201, json=lambda: [{"id": "1"}, {"id": "2"}])
-        with patch.dict("os.environ", {"APIFY_CONTENT_MACHINE_KEY": "k"}, clear=False):
-            items = ac.run_actor("user/actor", {"q": "x"}, ttl=123)
-        self.assertEqual(items, [{"id": "1"}, {"id": "2"}])
-        # Regression: must call set_cache with ttl_seconds (not ttl), or every
-        # actor crashes after fetching and nothing caches.
-        self.assertTrue(mock_set.called)
-        _, kwargs = mock_set.call_args
-        self.assertIn("ttl_seconds", kwargs)
-        self.assertEqual(kwargs["ttl_seconds"], 123)
+        reset_apify_state()
+        # Ensure a key is present so run_actor proceeds to the HTTP call.
+        self._patches = [
+            patch("apis.apify_client._key", return_value="apify_test_key"),
+            patch("apis.apify_client.get_cached", return_value=None),
+            patch("apis.apify_client.set_cache"),
+        ]
+        for p in self._patches:
+            p.start()
 
-    @patch("apis.apify_client.get_cached", return_value=None)
-    @patch("apis.apify_client.requests.post")
-    def test_402_out_of_credits_returns_none(self, mock_post, _get):
-        mock_post.return_value = MagicMock(status_code=402, text="no credits")
-        with patch.dict("os.environ", {"APIFY_CONTENT_MACHINE_KEY": "k"}, clear=False):
-            self.assertIsNone(ac.run_actor("user/actor", {}, ttl=10))
+    def tearDown(self):
+        from apis.apify_client import reset_apify_state
 
-    @patch("apis.apify_client.get_cached", return_value=None)
-    @patch("apis.apify_client.requests.post")
-    def test_402_short_circuits_subsequent_calls_on_same_key(self, mock_post, _get):
-        # After a 402, later actor calls on the same key must skip the HTTP round
-        # trip entirely — this is what stops the repeated "out of credits" spam
-        # that drags discovery to 200-300s+.
-        mock_post.return_value = MagicMock(status_code=402, text="no credits")
-        with patch.dict("os.environ", {"APIFY_CONTENT_MACHINE_KEY": "k"}, clear=False):
-            self.assertIsNone(ac.run_actor("user/actor-a", {}, ttl=10))
-            self.assertEqual(mock_post.call_count, 1)
-            # A different actor on the same exhausted key — no further request.
-            self.assertIsNone(ac.run_actor("user/actor-b", {}, ttl=10))
-            self.assertEqual(mock_post.call_count, 1)
+        for p in self._patches:
+            p.stop()
+        reset_apify_state()
 
-    @patch("apis.apify_client.get_cached", return_value=None)
-    @patch("apis.apify_client.requests.post")
-    def test_402_on_one_key_does_not_disable_other_key(self, mock_post, _get):
-        # Exhausting the main key must not skip the dedicated tiktok key.
-        mock_post.return_value = MagicMock(status_code=402, text="no credits")
-        with patch.dict(
-            "os.environ",
-            {"APIFY_CONTENT_MACHINE_KEY": "main", "APIFY_BENABLE_BOT": "tiktok"},
-            clear=False,
+    def test_accepts_201_with_items(self):
+        # Apify run-sync-get-dataset-items returns 201 Created with the data.
+        from apis.apify_client import run_actor
+
+        items = [{"id": "1", "text": "hello"}]
+        with patch("apis.apify_client.requests.post", return_value=_resp(201, items)):
+            result = run_actor("user/actor", {"q": "x"})
+        self.assertEqual(result, items)
+
+    def test_accepts_200_with_items(self):
+        from apis.apify_client import run_actor
+
+        items = [{"id": "2"}]
+        with patch("apis.apify_client.requests.post", return_value=_resp(200, items)):
+            result = run_actor("user/actor", {"q": "x"})
+        self.assertEqual(result, items)
+
+    def test_rejects_400(self):
+        from apis.apify_client import run_actor
+
+        with patch(
+            "apis.apify_client.requests.post",
+            return_value=_resp(400, {"error": "invalid-input"}),
         ):
-            self.assertIsNone(ac.run_actor("user/actor", {}, purpose="main", ttl=10))
-            # tiktok key is independent — still attempts the request.
-            self.assertIsNone(ac.run_actor("user/actor", {}, purpose="tiktok", ttl=10))
-            self.assertEqual(mock_post.call_count, 2)
+            result = run_actor("user/actor", {"q": "x"})
+        self.assertIsNone(result)
 
-    def test_no_key_returns_none(self):
-        with patch.dict(
-            "os.environ", {"APIFY_CONTENT_MACHINE_KEY": "", "APIFY_BENABLE_BOT": ""}, clear=False
+    def test_rejects_402_out_of_credits(self):
+        from apis.apify_client import run_actor
+
+        with patch("apis.apify_client.requests.post", return_value=_resp(402, {})):
+            result = run_actor("user/actor", {"q": "x"})
+        self.assertIsNone(result)
+
+    def test_402_trips_circuit_breaker(self):
+        from apis.apify_client import apify_disabled, run_actor
+
+        with patch("apis.apify_client.requests.post", return_value=_resp(402, {})):
+            run_actor("user/actor", {"q": "x"})
+        self.assertTrue(apify_disabled())
+
+    def test_disabled_skips_http(self):
+        from apis.apify_client import disable_apify, run_actor
+
+        disable_apify("test")
+        called = {"n": 0}
+
+        def _post(*a, **k):
+            called["n"] += 1
+            return _resp(201, [])
+
+        with patch("apis.apify_client.requests.post", side_effect=_post):
+            result = run_actor("user/actor", {"q": "x"})
+        self.assertIsNone(result)
+        self.assertEqual(called["n"], 0)  # no HTTP call when disabled
+
+    def test_passes_ttl_seconds_to_cache(self):
+        # Regression: set_cache takes ttl_seconds, not ttl.
+        from apis.apify_client import run_actor
+
+        with (
+            patch("apis.apify_client.requests.post", return_value=_resp(201, [{"a": 1}])),
+            patch("apis.apify_client.set_cache") as mock_cache,
         ):
-            self.assertIsNone(ac.run_actor("user/actor", {}))
+            run_actor("user/actor", {"q": "x"}, ttl=999)
+        _, kwargs = mock_cache.call_args
+        self.assertEqual(kwargs.get("ttl_seconds"), 999)
+
+    def test_actor_id_uses_tilde_path(self):
+        from apis.apify_client import run_actor
+
+        captured = {}
+
+        def _capture(url, **kwargs):
+            captured["url"] = url
+            return _resp(201, [])
+
+        with patch("apis.apify_client.requests.post", side_effect=_capture):
+            run_actor("trudax/reddit-scraper-lite", {"q": "x"})
+        self.assertIn("trudax~reddit-scraper-lite", captured["url"])
+        self.assertNotIn("trudax/reddit-scraper-lite", captured["url"])
 
 
 if __name__ == "__main__":

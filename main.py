@@ -114,22 +114,76 @@ def main():
     _run_new_video_flow(channel_id)
 
 
+def _drain_stdin() -> None:
+    """
+    Discard any input still buffered from a multi-line paste so leftover lines
+    (e.g. idea-generator scaffolding after a blank line) don't hijack the next
+    prompts. Best-effort and platform-aware; a no-op if it can't run.
+    """
+    try:
+        import msvcrt  # Windows console
+
+        while msvcrt.kbhit():
+            msvcrt.getwch()
+        return
+    except Exception:
+        pass
+    try:
+        import termios
+
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except Exception:
+        pass
+
+
+def _read_multiline(prompt: str) -> str:
+    """Read possibly-multiline pasted input; finish on a blank line or EOF."""
+    print(prompt)
+    print("  (paste your idea — press Enter on an empty line to finish)")
+    lines: list[str] = []
+    while True:
+        try:
+            line = input()
+        except EOFError:
+            break
+        if line.strip() == "":
+            if lines:
+                break
+            continue  # ignore leading blank lines
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def _run_idea_intake_flow(channel_id: str) -> None:
-    """Option 5 — generate a video from a user-supplied idea or a YouTube link."""
+    """Option 5 — generate a video from a user-supplied idea or a YouTube link.
+
+    Accepts a one-line topic, a YouTube link, or a full pasted idea block
+    (title + thesis + generator scaffolding). Rich ideas keep their thesis as
+    the creative angle that shapes the script.
+    """
     from apis.youtube_api import extract_youtube_video_id, fetch_video_metadata
+    from core.idea_intake import parse_pasted_idea
 
     subsection("Your video idea")
-    print("  Paste a video idea, a topic, or a YouTube link (watch/shorts/youtu.be).")
-    raw = input("  Idea / YouTube link: ").strip()
-    if not raw:
+    raw = _read_multiline(
+        "  Paste a video idea, a topic, or a YouTube link (watch/shorts/youtu.be):"
+    )
+    # Drop any scaffolding still buffered from the paste (e.g. "Develop idea",
+    # "Why this could fit…") so it can't auto-answer the upcoming prompts.
+    _drain_stdin()
+    if not raw.strip():
         print("  Nothing entered — returning.")
         return
 
-    seed_topic = raw
-    if extract_youtube_video_id(raw):
-        meta = fetch_video_metadata(raw)
+    first_line = raw.strip().splitlines()[0].strip()
+    single_line = len(raw.strip().splitlines()) == 1
+    creative_brief = ""
+
+    # YouTube link (single line) — fetch the title to seed from.
+    if single_line and extract_youtube_video_id(first_line):
+        meta = fetch_video_metadata(first_line)
         if meta and meta.get("title"):
-            print(f"\n  Found video: \"{meta['title']}\"")
+            print(f'\n  Found video: "{meta["title"]}"')
             if meta.get("channel"):
                 print(f"  Channel: {meta['channel']}")
             angle = input(
@@ -143,17 +197,35 @@ def _run_idea_intake_flow(channel_id: str) -> None:
                 print("  Nothing entered — returning.")
                 return
             seed_topic = typed
+    else:
+        # Plain topic or a pasted rich idea block.
+        parsed = parse_pasted_idea(raw)
+        seed_topic = parsed.seed_topic
+        if parsed.is_rich and parsed.thesis:
+            creative_brief = parsed.angle
+            print(f"\n  Title : {parsed.title}")
+            print(f"  Angle : {parsed.thesis[:160]}{'…' if len(parsed.thesis) > 160 else ''}")
+            print(f"  Search seed: {seed_topic}")
 
     print(f"\n  Using idea: {seed_topic}")
-    _run_new_video_flow(channel_id, seed_topic=seed_topic)
+    _run_new_video_flow(channel_id, seed_topic=seed_topic, creative_brief=creative_brief)
 
 
-def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> None:
+def _run_new_video_flow(
+    channel_id: str, *, seed_topic: str | None = None, creative_brief: str = ""
+) -> None:
     upload_report = check_channel_setup(channel_id)
     if not upload_report.ok:
         print("  YouTube upload: not configured (see issues after render)")
 
     display_upload_queue(channel_id)
+
+    from core.cadence import cadence_status, display_cadence
+
+    try:
+        display_cadence(cadence_status(channel_id))
+    except Exception:
+        pass
 
     if seed_topic:
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
@@ -195,6 +267,10 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
 
     display_signal_health(discovery.base_signals)
 
+    from core.outlier import display_outlier, get_competitor_outlier
+
+    display_outlier(get_competitor_outlier(discovery.base_signals))
+
     best_default = display_variants(discovery.evaluated)
 
     choice = input("\n  Choose 1-5 (Enter = best): ").strip()
@@ -226,7 +302,8 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
     except Exception:
         pass
 
-    length_choice = input(f"  Select 1-4 [{length_default}]: ").strip() or length_default
+    _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
+    length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
     key_facts = prompt_key_facts(best_topic, channel_id)
 
@@ -239,6 +316,7 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
         length_choice=length_choice,
         proceed_video=False,
         channel_id=channel_id,
+        creative_brief=creative_brief,
         key_facts=key_facts or None,
     )
 
@@ -248,14 +326,45 @@ def _run_new_video_flow(channel_id: str, *, seed_topic: str | None = None) -> No
     preset = get_length_preset(length_choice)
     print(f"  Length: {format_length_report(result.script, preset)}")
 
+    from core.hook_score import display_hook_score, score_script_hook
+
+    display_hook_score(score_script_hook(result.script))
+
     if result.run_id:
         print(f"  Run id: {result.run_id}")
 
     # Show what facts the script was based on — thin facts = warning before render
-    from core.fact_enrichment import enrich_facts
+    from core.fact_enrichment import _fact_line_count, enrich_facts
 
     _facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
     display_fact_preview(_facts_preview, print_fn=print)
+
+    # Authenticity / monetisation-safety self-check (Phase O)
+    from core.authenticity import (
+        display_authenticity_report,
+        evaluate_authenticity,
+        gate_mode,
+    )
+
+    auth = evaluate_authenticity(
+        result.script,
+        channel_id,
+        fact_count=_fact_line_count(_facts_preview),
+        exclude_run_id=result.run_id,
+    )
+    display_authenticity_report(auth)
+    if gate_mode() == "block" and auth.verdict == "block":
+        override = (
+            input("  Authenticity gate flagged this video. Render anyway? [y/N]: ").strip().lower()
+        )
+        if override != "y":
+            display_summary(
+                timings=discovery.timings,
+                title=result.title,
+                cost=result.features.get("cost"),
+            )
+            print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
+            return
 
     _ungrounded = result.features.get("ungrounded_entities") or []
     if _ungrounded:

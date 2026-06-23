@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <linearGradient id="bnavy" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0E2A50"/>
+      <stop offset="1" stop-color="#081628"/>
+    </linearGradient>
+    <linearGradient id="bmint" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#10B981"/>
+      <stop offset="1" stop-color="#5EEAD4"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="2560" height="1440" fill="url(#bnavy)"/>
+
+  <g stroke="#16365C" stroke-width="2" opacity="0.45">
+    <line x1="0" y1="360" x2="2560" y2="360"/>
+    <line x1="0" y1="720" x2="2560" y2="720"/>
+    <line x1="0" y1="1080" x2="2560" y2="1080"/>
+  </g>
+  <polyline points="-50,1180 360,1040 760,1120 1160,860 1560,940 1980,560 2620,360"
+            fill="none" stroke="#1C4E7E" stroke-width="6" opacity="0.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="560" y="585" width="270" height="270" rx="58" fill="#0C2748" stroke="#1E4E80" stroke-width="3"/>
+  <polyline points="612,765 663,815 706,720 757,800 800,648"
+            fill="none" stroke="url(#bmint)" stroke-width="22"
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="800" cy="648" r="18" fill="#5EEAD4"/>
+
+  <text x="888" y="745" font-size="150" font-weight="800" letter-spacing="-2">
+    <tspan fill="#FFFFFF">Money</tspan><tspan fill="#34D399">Wise</tspan>
+  </text>
+  <text x="892" y="820" font-size="48" font-weight="500" fill="#A9C0DC">Markets, crypto &amp; money — explained fast.</text>
+  <text x="892" y="884" font-size="36" font-weight="400" fill="#6E89AB">New breakdowns every weekday morning  ·  Not financial advice</text>
+</svg>

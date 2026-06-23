@@ -75,6 +75,9 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--no-best-bet", action="store_true", help="Always require --topic or manual input"
     )
+    parser.add_argument(
+        "--force", action="store_true", help="Bypass the cadence cap and authenticity gate"
+    )
     args = parser.parse_args(argv)
 
     from config.channels import get_channel_profile, resolve_channel_id
@@ -98,6 +101,15 @@ def main(argv=None) -> int:
     if not topic:
         print("  No topic — exiting.")
         return 1
+
+    # Cadence guardrail — don't flood the channel (policy: variation over volume)
+    from core.cadence import cadence_status, display_cadence
+
+    cadence = cadence_status(channel_id)
+    display_cadence(cadence)
+    if not cadence.ok and not args.force:
+        print("  Skipping to protect cadence. Use --force or raise MAX_VIDEOS_PER_WEEK.")
+        return 0
 
     # Length selection — learn from engagement history when --length auto
     length_choice = args.length
@@ -128,6 +140,10 @@ def main(argv=None) -> int:
     best_topic, best_score, best_signals = discovery.evaluated[0]
     print(f"  Selected variant: {best_topic} [score={best_score:.1f}]")
 
+    from core.outlier import display_outlier, get_competitor_outlier
+
+    display_outlier(get_competitor_outlier(discovery.base_signals))
+
     # Script
     print("\n  Generating script...")
     result = run_pipeline(
@@ -144,6 +160,32 @@ def main(argv=None) -> int:
     print(f"\n  Title : {result.title}")
     print(f"  Length: {length_report}")
     print(f"  Run id: {result.run_id}")
+
+    from core.hook_score import display_hook_score, score_script_hook
+
+    display_hook_score(score_script_hook(result.script))
+
+    # Authenticity / monetisation-safety gate (Phase O)
+    from core.authenticity import (
+        display_authenticity_report,
+        evaluate_authenticity,
+        gate_mode,
+    )
+    from core.fact_enrichment import _fact_line_count, enrich_facts
+
+    facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
+    auth = evaluate_authenticity(
+        result.script,
+        channel_id,
+        fact_count=_fact_line_count(facts_preview),
+        exclude_run_id=result.run_id,
+    )
+    display_authenticity_report(auth)
+    if gate_mode() == "block" and auth.verdict == "block" and not args.force:
+        print(
+            "\n  Blocked by authenticity gate (AUTHENTICITY_GATE=block). Use --force to override."
+        )
+        return 0
 
     if args.dry_run:
         print("\n  [DRY RUN] Stopping before render.")

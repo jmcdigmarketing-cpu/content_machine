@@ -2,9 +2,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: Domain expansion playbook (2026-06).
+Last updated: 2026-06-13 — closed-loop recommenders, Apify data layer, idea-intake mode, engineering-quality baseline.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
+
+**Where we are:** the discovery → script → render → publish pipeline is complete and the **learning loop is closed** — real YouTube engagement now feeds topic, length, and post-time recommendations. Current focus is widening data intake (Apify), tightening automation, and engineering hygiene. See "Next — current focus" below.
 
 ---
 
@@ -64,7 +66,7 @@ Last updated: Domain expansion playbook (2026-06).
 
 ---
 
-## Next — Intelligence phase (H → K)
+## Intelligence phase (H → K) — complete
 
 *Principle: **generation before measurement**. Full spec: [intelligence_phase.md](intelligence_phase.md).*
 
@@ -111,6 +113,181 @@ Last updated: Domain expansion playbook (2026-06).
 - [x] Live render progress (`core/render_progress.py`, `CONTENT_RENDER_PROGRESS=1`)
 - [x] YouTube `thumbnails.set` after `videos.insert` (`youtube/thumbnails.py`, `YOUTUBE_THUMBNAIL_UPLOAD=auto|off`)
 - [ ] Pillow remains fallback
+
+### Phase L — Closed-loop recommenders (2026-06)
+
+*All three share one pattern: `analytics` source when enough engagement history exists, sensible default otherwise, each with a rationale string.*
+
+- [x] **Best Bet (topic)** — `core/best_bet.py`; `source="analytics"` path live once metrics sync working (engaged-rate by domain)
+- [x] **Recommended post time** — `analytics/post_timing.py` (`get_recommended_time`); engagement bucketed by weekday/hour, domain-aware; surfaced in `main.py`, `auto_generate`, ops `recommend-time`
+- [x] **Recommended length** — `core/length_recommender.py`; engaged-rate by length preset (uses `timings_json.length_preset`); `auto_generate --length auto`; ops `recommend-length`
+- [x] YouTube Analytics sync hardened — validating probe query, clear "enable API"/scope guidance (`analytics/sync_metrics.py`)
+- [ ] Backtest recommender accuracy vs. realised engagement once volume grows
+- [ ] Confidence thresholds / minimum-sample surfacing in the UI
+
+### Phase L2 — Apify data layer (2026-06)
+
+*Catalog-driven external signals. Single source of truth: `config/apify_sources.json` (`apis/apify_catalog.py`).*
+
+- [x] Apify client with key routing + local cache (`apis/apify_client.py`); `~`-form actor ids
+- [x] `youtube_competitors` — top videos by **view velocity** (`apis/youtube_apify_signal.py`)
+- [x] `twitter` — breaking news weighted by domain authority accounts (`apis/twitter_signal.py`)
+- [x] `reddit`, `tiktok_trends` — community sentiment + viral angles
+- [x] Per-domain targeting (`domain_targets`); fact formatting keeps competitor titles as context, not verified facts
+- [x] Docs: [apify-data-sources.md](apify-data-sources.md)
+- [ ] `youtube_comments` / `instagram_figures` — templated in catalog, not yet wired as signals
+- [ ] Live-run tuning of actor inputs once observed against real topics
+
+### Phase L3 — Idea intake (2026-06)
+
+- [x] `py main.py` menu **option 5** — generate from a user idea or a **YouTube link** (`watch`/`shorts`/`youtu.be`)
+- [x] `apis/youtube_api.extract_youtube_video_id` + `fetch_video_metadata` (title/channel for the seed)
+- [x] Shared `_run_new_video_flow(seed_topic=...)`; best-bet skipped when idea supplied
+- [x] Tests: `tests/test_youtube_idea_intake.py`
+
+### Engineering quality baseline (2026-06)
+
+- [x] `pyproject.toml` — canonical deps + tool config; `[dev]` and `[sports]` extras
+- [x] `ruff` lint + format across the tree (clean); `python-dotenv` replaces hand-rolled `.env` parser
+- [x] CI: lint + format-check + type baseline + tests on Python 3.10/3.11/3.12
+- [x] `.pre-commit-config.yaml`; `.gitignore` covers tool caches
+- [x] `youtube.readonly` scope added for publisher dup-check / OAuth reads
+- [ ] **git remote** — repo initialised locally; create **private** GitHub remote and push
+- [ ] Tighten the mypy baseline (~94 errors → fix the real ones, e.g. `timings` value type)
+- [ ] Annotate/retire the remaining best-effort broad `except Exception` handlers
+- [ ] Raise test coverage on render + publish paths
+
+---
+
+## Recently shipped (2026-06)
+
+All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
+
+- **Recommenders + analytics loop live** — best-bet (now **3 rotating options**), recommended length, recommended post-time; analytics sync (most-recent-3 with titles).
+- **Phase O — authenticity/compliance**: pre-upload self-check, AI disclosure, cadence guardrail, competitor-outlier surface, monetisation CTAs.
+- **Phase P — hook intelligence**: 0–100 hook scorer + opt-in regeneration.
+- **Phase Q — captions**: proportional, sentence-aware timing.
+- **Idea intake (option 5)** with cross-genre creative-brief threading.
+- **MoneyWise finance channel** (2nd channel) + `infer_domain` word-boundary fix.
+- **Apify hardening**: `set_cache` credit-burn fix, 201 handling, circuit breaker + preflight on/off check, per-variant signal reuse (discovery minutes → seconds).
+- **Script prompt refinement**: recap-first VOICE block, filler ban-list, anti-padding Extended format.
+- **Engineering baseline**: pyproject/ruff/mypy/pre-commit, CI on 3.11, 220 tests.
+- **Brand kit** for MoneyWise (`assets/branding/moneywise/`).
+- **Assessment**: `docs/assessment.md` (strengths/weaknesses/fixes).
+
+---
+
+## Next — current focus
+
+*Prioritised fix queue, top first. `[S]`/`[M]`/`[L]` = effort.*
+
+**Immediate (from live runs):**
+1. **Manual fact feeding** `[S–M]` — a "key facts" prompt: operator pastes 1–3 facts that inject as top-priority VERIFIED FACTS. THE fix for stale-fact guessing (e.g. "Topuria, the featherweight champion" when he isn't). Highest leverage.
+2. **Domain-aware signal gating** `[S]` — don't run gaming signals (RAWG/Steam/IGDB) for UFC/sports topics and vice-versa. Kills the "UFC 4 game" noise, speeds discovery, saves quota (`apis/register_signals.py` skip-by-domain).
+3. **Auto-disable on credit/quota** `[S–M]` — generalise the Apify circuit breaker: any signal returning a quota/auth status (YouTube units, Odds 500/mo) auto-skips for the session.
+4. **Live discovery feedback** `[M]` — per-phase progress (signals X/31, variant N/5, elapsed per phase) instead of one spinner that jumps to ~300s.
+
+**Then — assessment top 5 ([docs/assessment.md](assessment.md)):**
+5. Recency/event grounding (enable Tapology for UFC; weight fresh result-RSS).
+6. Signal relevance gating (matched entity must appear in the topic).
+7. Confidence surfacing on recommenders (sample size; raise min-samples).
+8. Word-level animated captions (Phase Q next).
+9. Observability + per-run cost/quota dashboard.
+
+➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
+
+---
+
+## Market positioning (2026)
+
+*From a scan of the short-form / creator-tooling market (OpusClip, AutoShorts, Revid, Higgsfield, vidIQ, TubeBuddy) and YouTube policy.*
+
+**The defining shift — authenticity enforcement.** YouTube's "inauthentic content" policy (Jul 2025) plus the **Jan 2026 mass-termination wave** demonetised templated, synthetic-voiceover, volume-over-substance faceless channels. *Faceless is still fine — synthetic-and-shallow is not.* What survives: **original insight, real variation between videos, human context, substance over volume.** That is an existential constraint for a generation-first pipeline and reorders our priorities (Phase O).
+
+**Where rivals are strong (our gaps):**
+
+| Capability | Who has it | Us today |
+|---|---|---|
+| Virality / hook score 0–100, hold-rate prediction | OpusClip, Higgsfield | composite topic score only — no hook/retention predictor |
+| Hook-first generation (first 3 s / 60 frames) | most 2026 tools | generic hook rule in the prompt |
+| Burned animated captions, speaker reframe | effectively all | not burning captions (table stakes) |
+| A/B testing title/thumb/desc → CTR/watch-time | TubeBuddy | generate variants, but no post-publish A/B loop |
+| "Daily ideas" coach | vidIQ | best-bet (close — expand into a coach) |
+| Clip-from-long-form (VOD / podcast → shorts) | OpusClip core | generation-only; idea-intake already accepts YT links |
+
+**Our moat (lean in):** no competitor runs the **full closed loop** — decide → *research with verified facts* → generate → publish → learn — self-hosted, on an anti-hallucination / intelligence-report spine. vidIQ decides, TubeBuddy optimises, OpusClip clips; we do all three plus a sourcing layer they lack. Double down on **verifiable substance + the analytics learning loop**.
+
+---
+
+## Candidate phases — 2026 roadmap expansion (proposed)
+
+*Brainstorm, market-grounded. Ordering reflects risk/impact, not commitment.*
+
+### Phase O — Authenticity & monetisation safety  *(highest priority — existential)*
+Turn the research spine into a compliance moat.
+- [x] **Pre-upload authenticity self-check** — `core/authenticity.py`: variation / original-insight / substance score + checklist; `AUTHENTICITY_GATE=block` to enforce.
+- [x] **Per-video variation guard** — shipped as the authenticity "variation" check (difflib vs recent uploads' script_preview).
+- [x] **AI-content disclosure** — `core/description_extras.py`: in-description disclosure on every upload (YouTube's #1 compliance "do"); `AI_DISCLOSURE_ENABLED`, per-channel `ai_disclosure`.
+- [x] **Cadence guardrail** — `core/cadence.py`: caps videos/rolling-week (recent + scheduled); `MAX_VIDEOS_PER_WEEK` (default 5); gates `auto_generate` (`--force` to override). Pairs with the variation check (variety + volume).
+- [ ] **Original-insight injection** — *detection* ships (authenticity insight check); still TODO: actively inject an opinion/analysis beat into generation.
+- [ ] **Human-context layer** — channel voice/persona, recurring segments, callbacks to prior videos (continuity data already in best-bet).
+- [ ] **Voice variety** — vary TTS delivery; optional real-voice clone slot.
+
+**From 2026 market research (shipped 2026-06):**
+- [x] **Competitor "outlier" surface** — `core/outlier.py`: top view-velocity competitor video shown as a content prompt (every guide says "study over-performing competitors first").
+- [x] **Alt-monetisation CTAs** — per-channel `monetization_cta` lines appended to descriptions (gaming/UFC is low-CPM; ad revenue alone underperforms).
+- [ ] **Multi-language** — single script → translated script + localized TTS → per-language uploads. Real growth lever, **low priority** for the gaming/UFC niche; pairs with Phase Q captions. *(deferred — see Later horizons.)*
+
+### Phase P — Hook & retention intelligence
+- [x] **Hook-score 0–100** — `core/hook_score.py`: heuristic scorer (brevity, specificity, curiosity/contradiction, stakes; penalises weak openers) surfaced in the pipeline + auto_generate.
+- [x] **Hook-first regeneration** — opt-in `HOOK_REGEN_ENABLED`: rewrites a weak opening line via the LLM, only swapping it in if it scores higher.
+- [ ] **Retention-curve modelling** from analytics (avg-view-% by script position) → feeds the length/pacing recommenders.
+- [ ] **A/B variant loop** — we already generate variants; publish/track two titles or thumbnails and let the analytics loop pick winners (closes the TubeBuddy gap).
+
+### Phase Q — Captions & visual polish  *(table stakes)*
+- [x] **Burned captions, properly timed** — `video/subtitles.py`: sentence-aware, tighter chunks (`CAPTION_WORDS_PER_LINE`, default 5), durations **proportional to word count** (was uniform 8-word lines). Already burned in the render command.
+- [ ] **Word-level animated captions** (Whisper / ElevenLabs timestamps → karaoke-style highlight) — the next caption upgrade.
+- [ ] **Scene-matched b-roll** — pick stock / `assets` per script beat instead of one looped clip.
+- [ ] **Dynamic emphasis** — keyword pop, zoom on the hook, beat-synced cuts.
+
+### Phase R — Clip-from-source mode  *(market hedge)*
+*The market's "real content" pivot; pairs with idea-intake, which already accepts YouTube links.*
+- [ ] Ingest a long video / VOD / podcast (file or URL) → transcribe → find strong moments → cut vertical shorts with captions.
+- [ ] Reuse the scoring / hook / caption stack from Phases P–Q.
+
+### Phase S — Creator coach surface
+- [ ] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing).
+- [ ] **Thumbnail A/B** + CTR optimisation (Flux thumbnails already exist).
+- [ ] Weekly performance digest with concrete next actions.
+
+### UI / experience — themeable skins  *(fun, on-brand)*
+*Builds on the existing braille ASCII art, `DiscoverySpinner`, and `print_domain_art`.*
+- [ ] **`CONTENT_UI_THEME=onepiece|zelda|pokemon|dbz`** — swap banner art, spinner frames, palette, and loading copy.
+  - **Zelda** — Triforce signal-health glyphs, heart-container queue meter, a *secret-found* flourish on a new best-bet, Rupees = quota units.
+  - **Pokémon** — Pokéball spinner, "type advantage" framing for domain weights, **level-up / XP** when a recommender improves from analytics, a daily-streak "Gotta post 'em all".
+  - **DBZ** — **power-level = composite score** ("It's over 9000!" past a threshold), Scouter readout for signal health, charge-up render progress bar.
+- [ ] Theme registry so each channel picks a skin in `channels.json`; keep a plain/no-emoji mode for logs and CI.
+
+### Efficiency & integrations
+- [ ] **Whisper** locally for caption timing + clip transcription (enables Phases Q & R).
+- [ ] **Cost / quota dashboard** — per-run API spend (OpenAI / Apify / YouTube units) in status.
+- [ ] **Local-LLM option** — pluggable backend (Ollama) for cheaper drafts; keep Claude/GPT for finals.
+- [ ] **Webhook / n8n / Zapier out** — emit run + publish events for external automation.
+- [ ] **Batch generation** — N ideas → N drafts in one unattended pass (feeds A/B + volume-with-variation).
+- [ ] **Observability** — structured run traces + timing dashboard (timings already captured).
+
+---
+
+## Later horizons
+
+*Valuable, but intentionally pushed out.*
+
+### Phase M — Multi-platform distribution  *(pushed back — far later)*
+*Repurpose one rendered vertical to several surfaces. Publisher contract already exists (`publishing/`). Deferred behind authenticity (O), hook/retention (P), and captions (Q) — distribution multiplies whatever quality we ship, so it waits until the content itself is policy-safe and sharper.*
+- [ ] **TikTok publisher** — `TIKTOK_CLIENT_KEY`/`SECRET` present; `TikTokPublisher` still unimplemented (in `DEFERRED_PLATFORMS`)
+- [ ] Instagram Reels / Meta — `META_APP_ID`/`SECRET`, `INSTAGRAM_*` (keys still empty)
+- [ ] Per-platform caption/hashtag shaping from existing SEO + TikTok-trend signal
+- [ ] Cross-platform performance back into the learning loop (unify with YouTube engaged-rate)
 
 ---
 
@@ -165,6 +342,12 @@ Last updated: Domain expansion playbook (2026-06).
 5. `py -m youtube.check_setup --channel tapin`
 6. Add clips to `video/backgrounds/` for hybrid mode
 7. `YOUTUBE_UPLOAD_ENABLED=true` + `py -m jobs.worker --loop 30`
+
+**`py main.py` menu:** 1) new video · 2) queue manager · 3) intelligence report · 4) sync analytics · 5) make a video from your own idea / a YouTube link
+
+**Recommendation helpers:** `py -m scripts.ops recommend-time --channel tapin` · `recommend-length` · best-bet shown at startup
+
+**Developer setup:** `pip install -e ".[dev]"` then `pre-commit install`; `ruff check .` · `ruff format .` · `mypy analytics apis core config storage`. Tooling config lives in `pyproject.toml`.
 
 **Troubleshooting:** [debugging.md](debugging.md)
 

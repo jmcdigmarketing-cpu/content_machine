@@ -46,7 +46,7 @@ def scrape_enabled() -> bool:
     )
 
 
-# Back-compat alias (internal callers).
+# Back-compat alias (internal + ufc_context callers).
 _scrape_enabled = scrape_enabled
 
 

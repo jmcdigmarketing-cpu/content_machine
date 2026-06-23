@@ -102,7 +102,13 @@ def _find_video_on_channel(service, title: str, *, max_results: int = 20) -> str
             if snippet.get("title") == target:
                 return (snippet.get("resourceId") or {}).get("videoId")
     except HttpError as e:
-        logger.warning("YouTube playlist lookup failed: %s", e)
+        if "insufficientPermissions" in str(e) or "insufficient authentication scopes" in str(e):
+            logger.warning(
+                "Duplicate-upload check skipped: OAuth token lacks youtube.readonly. "
+                "Re-run `py -m youtube.oauth_setup --channel <id>` to enable it."
+            )
+        else:
+            logger.warning("YouTube playlist lookup failed: %s", e)
     except Exception as e:
         logger.debug("Channel video lookup failed: %s", e)
     return None

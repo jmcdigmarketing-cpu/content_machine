@@ -130,8 +130,8 @@ def main(argv=None) -> int:
     print("\n  Running discovery...")
     from core.ui import DiscoverySpinner
 
-    with DiscoverySpinner("Auto"):
-        discovery = run_discovery(topic, channel_id=channel_id)
+    with DiscoverySpinner("Auto") as spinner:
+        discovery = run_discovery(topic, channel_id=channel_id, progress=spinner.report)
 
     if not discovery.evaluated:
         print("  No variants scored — exiting.")

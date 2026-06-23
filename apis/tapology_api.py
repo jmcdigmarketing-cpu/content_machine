@@ -38,7 +38,7 @@ HEADERS = {
 }
 
 
-def _scrape_enabled() -> bool:
+def scrape_enabled() -> bool:
     return os.getenv("TAPOLOGY_SCRAPE_ENABLED", "false").lower() not in (
         "0",
         "false",
@@ -46,9 +46,8 @@ def _scrape_enabled() -> bool:
     )
 
 
-# Public alias used by ufc_context_api.
-def scrape_enabled() -> bool:
-    return _scrape_enabled()
+# Back-compat alias (internal + ufc_context callers).
+_scrape_enabled = scrape_enabled
 
 
 def _is_mma_topic(topic: str) -> bool:

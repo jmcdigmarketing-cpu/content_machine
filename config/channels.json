@@ -80,7 +80,7 @@
       },
       "post_schedule": {
         "timezone": "America/New_York",
-        "comment": "Finance audience — weekday mornings (pre-market ET) + a Sunday 'week ahead' + Saturday personal-finance evergreen",
+        "comment": "Finance audience — weekday mornings (pre-market ET) + Sunday 'week ahead' + Saturday personal-finance evergreen",
         "default_slots": [
           {"weekday": 0, "hour": 8, "minute": 30},
           {"weekday": 1, "hour": 8, "minute": 30},

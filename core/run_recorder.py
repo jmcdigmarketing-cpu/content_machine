@@ -58,6 +58,7 @@ def record_content_run(
     mp4_path: str = "",
     timings: dict[str, float] | None = None,
     abort_reason: str = "",
+    features: dict[str, Any] | None = None,
 ) -> int:
     channel_id = resolve_channel_id(channel_id)
     repo = get_content_run_repository()
@@ -80,6 +81,7 @@ def record_content_run(
             "mp4_path": mp4_path or "",
             "timings_json": json.dumps(timings or {}),
             "abort_reason": abort_reason or "",
+            "features_json": json.dumps(features or {}),
         }
     )
     logger.info("Recorded content run %s (%s)", record.id, status)

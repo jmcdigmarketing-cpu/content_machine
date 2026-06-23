@@ -19,6 +19,7 @@ from core.channel_context import (
     recent_input_topics,
 )
 from core.logging import get_logger
+from core.recommender_confidence import confidence_note
 
 logger = get_logger("core.best_bet")
 
@@ -331,7 +332,9 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             source="analytics",
             supporting_runs=len(rates),
             rationale=(
-                f"{best_domain} averages {avg_rate:.1%} engagement " f"across {len(rates)} video(s)"
+                f"{best_domain} averages {avg_rate:.1%} engagement "
+                f"across {len(rates)} video(s)"
+                f"{confidence_note(len(rates))}"
             ),
         )
 
@@ -353,12 +356,79 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
     )
 
 
+def _domain_avg_rates(entries: list[dict]) -> dict[str, float]:
+    """Per-domain average engaged_rate (only domains with engagement data)."""
+    by_domain: dict[str, list[float]] = {}
+    for e in entries:
+        rate = e.get("engaged_rate")
+        if rate is not None:
+            by_domain.setdefault(e["domain"], []).append(float(rate))
+    return {d: sum(v) / len(v) for d, v in by_domain.items() if v}
+
+
+def _domain_sample_counts(entries: list[dict]) -> dict[str, int]:
+    """Per-domain count of videos with engagement data (confidence basis)."""
+    counts: dict[str, int] = {}
+    for e in entries:
+        if e.get("engaged_rate") is not None:
+            counts[e["domain"]] = counts.get(e["domain"], 0) + 1
+    return counts
+
+
+def _fresh_enabled() -> bool:
+    import os
+
+    return os.getenv("BEST_BET_FRESH", "true").lower() in ("1", "true", "yes")
+
+
+def _fresh_candidates(
+    channel_id: str, *, allowed: set[str], exclude: set[str], limit: int = 12
+) -> list[dict]:
+    """Current headlines from the channel's RSS feeds as fresh topic candidates.
+
+    Returns [{topic, domain, source}] deduped against `exclude` (recently covered).
+    Only headlines whose title *confidently* maps to an on-brand domain are kept
+    (inferred without channel fallback) — this filters mixed-feed noise like a
+    gaming site's general-news items. Never raises — returns [] on any problem.
+    """
+    try:
+        from apis.rss_feeds import _fetch_feed
+        from apis.topic_scorer import infer_domain
+        from config.data_sources import rss_feeds_for_channel
+    except Exception:
+        return []
+
+    candidates: list[dict] = []
+    seen_local: set[str] = set()
+    for feed in list(rss_feeds_for_channel(channel_id))[:6]:
+        try:
+            rows = _fetch_feed(feed["url"])
+        except Exception:
+            continue
+        for row in rows[:8]:
+            title = (row.get("title") or "").strip()
+            key = normalize_seed_topic(title).lower()
+            if not title or key in exclude or key in seen_local:
+                continue
+            # Infer WITHOUT channel fallback so neutral/off-brand titles are dropped.
+            domain = infer_domain(title)
+            if domain not in allowed:
+                continue
+            seen_local.add(key)
+            candidates.append({"topic": title, "domain": domain, "source": feed.get("name", "RSS")})
+            if len(candidates) >= limit:
+                return candidates
+    return candidates
+
+
 def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
     """
-    Up to `n` DISTINCT topic options, best first, so the operator can rotate
-    instead of being shown the same single pick every run. Ranks the channel's
-    on-brand history by real engagement then signal score, dedupes by topic, and
-    fills any remaining slot with a fresh franchise angle.
+    Up to `n` DISTINCT topic options, best first.
+
+    Forward-looking: the channel's analytics pick the winning *domain* (what works),
+    while live RSS headlines supply the *current* topic (what's relevant now), so the
+    suggestions are fresh and stop repeating the same historical seeds. Falls back to
+    the historical engagement ranking when no fresh headlines are available.
     """
     entries = _build_entries(channel_id)
     if not entries:
@@ -366,15 +436,49 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
         return [single] if single else []
 
     allowed = on_brand_domains(channel_id)
+    domain_rates = _domain_avg_rates(entries)
+    domain_counts = _domain_sample_counts(entries)
+    # Don't re-suggest anything covered recently (kills the repeat problem).
+    recent = {normalize_seed_topic(t).lower() for t in recent_input_topics(channel_id, limit=30)}
+
+    options: list[BestBetResult] = []
+    seen: set[str] = set(recent)
+
+    if _fresh_enabled():
+        fresh = _fresh_candidates(channel_id, allowed=allowed, exclude=recent)
+        # Prefer fresh headlines in on-brand domains, best-performing domain first.
+        on_brand_fresh = [c for c in fresh if c["domain"] in allowed] or fresh
+        on_brand_fresh.sort(key=lambda c: domain_rates.get(c["domain"], 0.0), reverse=True)
+        for c in on_brand_fresh:
+            key = normalize_seed_topic(c["topic"]).lower()
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            rate = domain_rates.get(c["domain"])
+            rationale = f"trending on {c['source']} now"
+            if rate is not None:
+                rationale += f" · {c['domain']} averages {rate:.0%} engagement"
+                rationale += confidence_note(domain_counts.get(c["domain"], 0))
+            options.append(
+                BestBetResult(
+                    topic=c["topic"],
+                    domain=c["domain"],
+                    avg_engaged_rate=rate or 0.0,
+                    source="trending",
+                    supporting_runs=0,
+                    rationale=rationale,
+                )
+            )
+            if len(options) >= n:
+                return options[:n]
+
+    # Top up from historical engagement ranking (also fills the no-RSS case).
     pool = [e for e in entries if e["domain"] in allowed] or entries
     ranked = sorted(
         pool,
         key=lambda e: (e["engaged_rate"] or 0.0, e["composite_score"]),
         reverse=True,
     )
-
-    options: list[BestBetResult] = []
-    seen: set[str] = set()
     for e in ranked:
         key = normalize_seed_topic(e["topic"]).lower()
         if not key or key in seen:

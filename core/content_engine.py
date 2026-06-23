@@ -5,6 +5,7 @@ from typing import Any
 from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.description_extras import apply_description_extras
 from core.fact_enrichment import _fact_line_count, enrich_facts
+from core.fact_grounding import find_ungrounded_entities
 from core.llm_client import get_model, get_openai_client
 from core.logging import get_logger
 from core.research_brief import ResearchBrief
@@ -28,6 +29,31 @@ MAX_EXPAND_ATTEMPTS_EXTENDED = 4  # Extended format needs more passes to hit 100
 def _format_signal_facts(signals):
     """Backward-compatible alias."""
     return format_signal_facts(signals)
+
+
+# Operator key facts are injected straight into the prompt as ground truth, so
+# bound them: cap count + length and strip control chars / line breaks so a
+# pasted fact can't smuggle extra prompt structure (instruction injection).
+_MAX_KEY_FACTS = 5
+_MAX_KEY_FACT_CHARS = 300
+
+
+def _sanitize_key_facts(key_facts: list[str] | None) -> list[str]:
+    if not key_facts:
+        return []
+    cleaned: list[str] = []
+    for raw in key_facts:
+        if not isinstance(raw, str):
+            continue
+        # Collapse any whitespace/newlines to single spaces, drop control chars.
+        flat = re.sub(r"\s+", " ", raw).strip()
+        flat = "".join(ch for ch in flat if ch.isprintable())
+        if not flat:
+            continue
+        cleaned.append(flat[:_MAX_KEY_FACT_CHARS])
+        if len(cleaned) >= _MAX_KEY_FACTS:
+            break
+    return cleaned
 
 
 # Lines that are context-only (competitor titles / labels) — not factual evidence
@@ -119,8 +145,9 @@ def _build_prompts(
     if preset.choice in ("2", "3"):
         retention_rule = (
             "\nRETENTION RULE: At roughly the 30-second mark (~75 words in), "
-            "insert a pivot — a counter-fact, unexpected angle, or reframe. "
-            "This is your 'but here's the thing' moment that stops scroll-back."
+            "insert a pivot — a counter-fact, unexpected angle, or reframe that "
+            "stops scroll-back. Land the pivot with a concrete fact or sharp "
+            "reframe, NOT a stock transition phrase."
         )
 
     system_prompt = f"""
@@ -161,7 +188,7 @@ You must:
 - Cross-genre framing is allowed: real people, athletes, other sports, or other games introduced in the EDITORIAL ANGLE may be used as analogy, comparison, or opinion even if they are absent from VERIFIED FACTS — that is intentional creator framing, not a fabrication. Only invented GAME specifics are forbidden.
 - If a game fact is missing, say "reports suggest" or skip — do not fill from memory.
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
-- Avoid filler contrast phrases like "This isn't just X — it's Y" or "But wait, there's more."
+- Never use stock filler transitions. Banned verbatim: "But here's the thing", "This isn't just X — it's Y", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
 - Build to a strong closing line — a hot take, implication, or open question that drives comments.
 - Title and description must be SEO-friendly without misleading clickbait.
@@ -198,13 +225,13 @@ You must:
     )
 
     operator_facts_block = ""
-    if key_facts:
-        facts_lines = "\n".join(f"- {f.strip()}" for f in key_facts if f.strip())
-        if facts_lines:
-            operator_facts_block = (
-                "OPERATOR KEY FACTS (ground truth — highest priority; always include, never contradict):\n"
-                f"{facts_lines}\n\n"
-            )
+    clean_facts = _sanitize_key_facts(key_facts)
+    if clean_facts:
+        facts_lines = "\n".join(f"- {f}" for f in clean_facts)
+        operator_facts_block = (
+            "OPERATOR KEY FACTS (ground truth — highest priority; always include, never contradict):\n"
+            f"{facts_lines}\n\n"
+        )
 
     thin_facts_warning = ""
     if is_thin_facts:
@@ -467,6 +494,19 @@ def generate_content_package(
         extra=default_tags_for_channel(channel_id, topic) + tags_from_topic(topic),
     )
 
+    # Post-generation grounding check: flag specifics in the script not backed by
+    # the facts the model was given (catches invented heroes/products/patches).
+    grounding_text = "\n".join(
+        [signal_facts, brief_block, topic, seed_topic or "", *(_sanitize_key_facts(key_facts))]
+    )
+    ungrounded = find_ungrounded_entities(script, grounding_text)
+    if ungrounded:
+        logger.warning(
+            "Script names %s specific(s) not in the facts: %s",
+            len(ungrounded),
+            ", ".join(ungrounded),
+        )
+
     return {
         "title": payload.get("title") or topic,
         "script": script,
@@ -475,6 +515,7 @@ def generate_content_package(
         "prompt_version": PROMPT_VERSION,
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
+        "ungrounded_entities": ungrounded,
     }
 
 

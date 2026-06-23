@@ -57,6 +57,11 @@ def reset_apify_state() -> None:
     _state.update({"disabled": False, "reason": "", "fails": 0, "checked": False})
 
 
+def apify_credit_exhausted() -> bool:
+    """Back-compat alias: true once the session breaker has tripped (e.g. 402)."""
+    return apify_disabled()
+
+
 def _note_failure() -> None:
     _state["fails"] += 1
     if _state["fails"] >= _MAX_FAILS:
@@ -202,7 +207,7 @@ def fetch_dataset(dataset_id: str, *, purpose: str = "main") -> list[dict] | Non
             params={"token": api_key, "format": "json"},
             timeout=30,
         )
-        if resp.status_code != 200:
+        if resp.status_code not in (200, 201):
             return None
         return resp.json() if isinstance(resp.json(), list) else []
     except Exception as exc:

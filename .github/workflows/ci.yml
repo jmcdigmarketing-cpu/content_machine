@@ -44,9 +44,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Pinned deps are validated on 3.11 (the dev env): numpy 2.4.4 needs
-        # >=3.11, and Pillow 9.5.0 has no cp312 wheel. Re-add 3.12 once those
-        # pins are bumped to versions with 3.12 wheels.
+        # 3.11 only: pinned deps (numpy 2.4.4 needs >=3.11; Pillow 9.5.0 — kept for
+        # moviepy 1.0.3 compat — has no 3.12 wheel). 3.11 is the project's target.
         python-version: ["3.11"]
     steps:
       - uses: actions/checkout@v4

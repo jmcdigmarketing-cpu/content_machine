@@ -243,6 +243,30 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                         "before stating as fact):\n" + "\n".join(tw_lines)
                     )
 
+        elif name == "web_search" and isinstance(data, dict):
+            block_lines: list[str] = []
+            answer = (data.get("answer") or "").strip()
+            if answer:
+                block_lines.append(f"  Summary: {answer[:300]}")
+            for r in (data.get("results") or [])[:6]:
+                if not isinstance(r, dict):
+                    continue
+                title = (r.get("title") or "").strip()
+                snippet = (r.get("snippet") or "").strip().replace("\n", " ")
+                if not title and not snippet:
+                    continue
+                line = f"  • {title}"
+                if snippet:
+                    line += f" — {snippet[:160]}"
+                block_lines.append(line)
+            if block_lines:
+                provider = data.get("provider") or "web"
+                lines.append(
+                    f"Live web search ({provider}) — current facts on this topic "
+                    "(recent; verify specifics before stating as certainty):\n"
+                    + "\n".join(block_lines)
+                )
+
         elif isinstance(data, dict | list):
             snippet = json.dumps(data, ensure_ascii=False)[:400]
             lines.append(f"{name} data: {snippet}")

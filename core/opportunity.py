@@ -86,7 +86,7 @@ def score_topic(topic: str, channel_id: str | None = None) -> OpportunityScore:
         raise ValueError("topic must be non-empty")
 
     t0 = time.perf_counter()
-    signals = build_registry(topic)
+    signals = build_registry(topic, channel_id=channel_id)
     timings = {"signals": time.perf_counter() - t0}
 
     domain = infer_domain(topic, channel_id)

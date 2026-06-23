@@ -3,11 +3,13 @@
   "global_rss": [
     {
       "name": "BBC Sport",
-      "url": "https://feeds.bbci.co.uk/sport/rss.xml"
+      "url": "https://feeds.bbci.co.uk/sport/rss.xml",
+      "domains": ["nba", "nfl", "ufc", "mma"]
     },
     {
       "name": "The Athletic RSS (headlines)",
-      "url": "https://theathletic.com/rss/"
+      "url": "https://theathletic.com/rss/",
+      "domains": ["nba", "nfl", "ufc", "mma"]
     }
   ],
   "domain_rss": {

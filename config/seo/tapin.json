@@ -28,23 +28,28 @@
   "rss_feeds": [
     {
       "name": "MMA Fighting",
-      "url": "https://www.mmafighting.com/rss/current"
+      "url": "https://www.mmafighting.com/rss/current",
+      "domains": ["ufc", "mma"]
     },
     {
       "name": "Dexerto",
-      "url": "https://www.dexerto.com/feed"
+      "url": "https://www.dexerto.com/feed",
+      "domains": ["gaming"]
     },
     {
       "name": "IGN",
-      "url": "https://feeds.feedburner.com/ign/all"
+      "url": "https://feeds.feedburner.com/ign/all",
+      "domains": ["gaming"]
     },
     {
       "name": "Polygon",
-      "url": "https://www.polygon.com/rss/index.xml"
+      "url": "https://www.polygon.com/rss/index.xml",
+      "domains": ["gaming"]
     },
     {
       "name": "ESPN MMA",
-      "url": "https://www.espn.com/espn/rss/mma/news"
+      "url": "https://www.espn.com/espn/rss/mma/news",
+      "domains": ["ufc", "mma"]
     }
   ],
   "seo_refresh_queries": [

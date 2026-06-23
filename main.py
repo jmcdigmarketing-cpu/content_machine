@@ -32,8 +32,10 @@ from core.ui import (
     display_summary,
     display_upload_queue,
     display_variants,
+    print_bonus_art,
     print_domain_art,
     prompt_channel_selection,
+    prompt_key_facts,
     prompt_startup_mode,
     prompt_upload_plan,
     run_queue_manager_interactive,
@@ -254,9 +256,9 @@ def _run_new_video_flow(
 
     section("Discovery")
     profile = get_channel_profile(channel_id)
-    print_domain_art(profile.domain)
-    with DiscoverySpinner("Discovery"):
-        discovery = run_discovery(topic, channel_id=channel_id)
+    print_domain_art(profile.domain, topic=topic)
+    with DiscoverySpinner("Discovery") as spinner:
+        discovery = run_discovery(topic, channel_id=channel_id, progress=spinner.report)
     display_competitor_pulse(channel_id, topic)
     t_disc = discovery.timings.get("signals_and_variants", 0) + discovery.timings.get(
         "variant_scoring", 0
@@ -303,21 +305,10 @@ def _run_new_video_flow(
     _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
-    subsection("Key facts (optional)")
-    print(
-        "  Paste up to 3 verified facts the script MUST use (e.g. current champion, correct score)."
-    )
-    print("  Enter one per line. Empty line when done (or just press Enter to skip).")
-    key_facts: list[str] = []
-    for i in range(1, 4):
-        fact = input(f"  Fact {i}: ").strip()
-        if not fact:
-            break
-        key_facts.append(fact)
-    if key_facts:
-        print(f"  {len(key_facts)} fact(s) will be injected as ground truth.")
+    key_facts = prompt_key_facts(best_topic, channel_id)
 
     section("Content")
+    print_bonus_art(key="mario")
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -367,14 +358,30 @@ def _run_new_video_flow(
             input("  Authenticity gate flagged this video. Render anyway? [y/N]: ").strip().lower()
         )
         if override != "y":
-            display_summary(timings=discovery.timings, title=result.title)
+            display_summary(
+                timings=discovery.timings,
+                title=result.title,
+                cost=result.features.get("cost"),
+            )
             print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
             return
+
+    _ungrounded = result.features.get("ungrounded_entities") or []
+    if _ungrounded:
+        print(
+            f"\n  ⚠ {len(_ungrounded)} specific(s) in the script are NOT in the facts "
+            f"(possible hallucination): {', '.join(_ungrounded)}"
+        )
+        print("    Verify these or add them as key facts before publishing.")
 
     proceed = input("  Proceed with video? [y/N]: ").strip().lower()
 
     if proceed != "y":
-        display_summary(timings=discovery.timings, title=result.title)
+        display_summary(
+            timings=discovery.timings,
+            title=result.title,
+            cost=result.features.get("cost"),
+        )
         print("\n  Stopped before render. Title/description saved above.")
         return
 
@@ -393,12 +400,22 @@ def _run_new_video_flow(
 
     thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
     thumb_count = len(list_channel_thumbnails(thumb_dir))
+
+    # Render happened here (not via the pipeline), so recompute cost with the
+    # TTS line now included before showing the summary.
+    from core.cost_meter import estimate_run_cost
+
+    result.features["cost"] = estimate_run_cost(
+        script=result.script, signals=best_signals, rendered=True
+    )
     display_summary(
         timings=discovery.timings,
         title=result.title,
         mp4_path=result.mp4_path or "",
         thumbnail_path=thumb_path,
+        cost=result.features.get("cost"),
     )
+    print_bonus_art()  # random celebratory flourish
     if thumb_path:
         print(f"  Thumbnail: {thumb_path}")
         print(f"  Thumbnail folder: {thumb_count} file(s) in {thumb_dir}")

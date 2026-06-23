@@ -8,7 +8,6 @@ franchise continuity (e.g. Marvel Rivals on TapIn).
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 
 from config.channels import get_channel_profile
@@ -18,6 +17,8 @@ from core.channel_context import (
     on_brand_domains,
     recent_input_topics,
 )
+from core.engagement import engaged_rate as _engaged_rate
+from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
 from core.recommender_confidence import confidence_note
 
@@ -39,29 +40,6 @@ class BestBetResult:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
-
-
-def _engaged_rate(metrics_json: str) -> float | None:
-    try:
-        m = json.loads(metrics_json or "{}")
-        if "engaged_rate" in m:
-            return float(m["engaged_rate"])
-        views = float(m.get("views", 0))
-        likes = float(m.get("likes", 0))
-        if views > 0:
-            return likes / views
-    except (ValueError, TypeError, json.JSONDecodeError):
-        pass
-    return None
-
-
-def _infer_domain(topic: str, channel_id: str) -> str:
-    try:
-        from apis.topic_scorer import infer_domain
-
-        return infer_domain(topic, channel_id)
-    except Exception:
-        return "neutral"
 
 
 def _build_entries(channel_id: str) -> list[dict]:

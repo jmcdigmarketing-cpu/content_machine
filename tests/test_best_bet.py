@@ -1,8 +1,17 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from core import best_bet as bb
 from core.best_bet import get_best_bet, get_best_bets
 from storage.repositories.content_runs import ContentRunRecord
+
+# Mirrors the live run: one thin 39% UFC sample vs six well-sampled 11% NBA videos.
+_ENTRIES_MIX = [
+    {"topic": "ufc thing", "engaged_rate": 0.39, "composite_score": 60, "domain": "ufc"},
+] + [
+    {"topic": f"nba thing {i}", "engaged_rate": 0.11, "composite_score": 50, "domain": "nba"}
+    for i in range(6)
+]
 
 _ENTRIES = [
     {"topic": "old ufc topic", "engaged_rate": 0.39, "composite_score": 60, "domain": "ufc"},
@@ -60,6 +69,54 @@ class TestFreshBestBets(unittest.TestCase):
         ):
             get_best_bets("tapin", 3)
             mock_fresh.assert_not_called()
+
+
+class TestConfidenceAndDiversity(unittest.TestCase):
+    def test_adjusted_rate_shrinks_thin_domain(self):
+        adj = bb._adjusted_domain_rates(_ENTRIES_MIX)
+        self.assertLess(adj["ufc"], 0.39)  # 1-sample 39% pulled toward the mean
+        self.assertIn("nba", adj)
+
+    def test_domain_priority_prefers_well_sampled(self):
+        adjusted = {"nba": 0.12, "ufc": 0.20}
+        counts = {"nba": 6, "ufc": 1}
+        self.assertGreater(
+            bb._domain_priority("nba", adjusted, counts),
+            bb._domain_priority("ufc", adjusted, counts),
+        )
+
+    def test_well_sampled_domain_leads_over_thin_high_rate(self):
+        fresh = [
+            {"topic": "UFC champ plans return", "domain": "ufc", "source": "ESPN MMA"},
+            {"topic": "NBA trade shakes the East", "domain": "nba", "source": "ESPN NBA"},
+        ]
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES_MIX),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=fresh),
+        ):
+            bets = get_best_bets("tapin", 3)
+        # NBA (6 samples) leads the thin 1-sample UFC despite UFC's higher raw rate.
+        self.assertEqual(bets[0].domain, "nba")
+        # And the picks span domains instead of stacking one.
+        self.assertIn("ufc", {b.domain for b in bets})
+
+    def test_does_not_stack_a_single_thin_domain(self):
+        # Three UFC headlines, one thin UFC sample, plus well-sampled NBA history.
+        fresh = [
+            {"topic": "UFC story one", "domain": "ufc", "source": "ESPN MMA"},
+            {"topic": "UFC story two", "domain": "ufc", "source": "ESPN MMA"},
+            {"topic": "UFC story three", "domain": "ufc", "source": "ESPN MMA"},
+        ]
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES_MIX),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=fresh),
+        ):
+            bets = get_best_bets("tapin", 3)
+        # Not all three are the thin UFC domain — historical NBA fills a slot.
+        self.assertLess(sum(1 for b in bets if b.domain == "ufc"), 3)
+        self.assertTrue(any(b.domain == "nba" for b in bets))
 
 
 class TestBestBet(unittest.TestCase):

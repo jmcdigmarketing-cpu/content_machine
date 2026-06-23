@@ -6,6 +6,28 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Best-bet: confidence-weighted + diversified (2026-06-23)
+
+*Same live run: for an NBA session, best-bet offered 3 stale UFC picks, all "low
+confidence (1 sample)". Two root causes — fresh headlines were ranked by raw domain
+rate (a 1-video 39% UFC domain outranked a 6-video 11% NBA domain), and NBA was
+filtered out entirely because it isn't in the channel's configured on-brand set.*
+
+- **Confidence-adjusted domain ranking** (`_adjusted_domain_rates`,
+  `_domain_priority`): empirical-Bayes shrinkage toward the global mean, and
+  adequately-sampled domains (≥ `MODERATE_SAMPLES`) rank above thin ones regardless
+  of how high the thin average looks. Applied to both `get_best_bets` and the
+  singular `get_best_bet` domain pick.
+- **De-facto on-brand domains** (`_effective_allowed`): a domain the channel has
+  actually published *with measured engagement* counts as on-brand even if it's not
+  in the configured set — so NBA on a gaming/UFC channel is surfaced, not dropped.
+- **Domain diversity** (`get_best_bets`): Phase-1 picks at most one per domain in
+  confidence-first order (fresh headline preferred, else best historical run), so
+  three 1-sample picks from one domain can't fill every slot; Phase 2 fills the rest.
+  Historical rationales now carry the confidence note too.
+- **Tests:** `tests/test_best_bet.py` — adjusted-rate shrink, domain-priority,
+  well-sampled-leads-over-thin, no-single-domain-stacking. Suite 458 green.
+
 ### Original-insight injection (Phase O) — 2026-06-23
 
 *Same live run flagged Authenticity 65/100: "no opinion/prediction/analysis beat —

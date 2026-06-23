@@ -82,12 +82,14 @@ The repo serves two products:
 |--------|----------------|
 | `core/intelligence_report.py` | Content Intelligence Report from discovery + brief + competitors |
 | `core/pipeline.py` | `run_discovery`, `run_pipeline`, `run_media_only`; orchestrates end-to-end flow |
-| `core/content_engine.py` | LLM title/script/description (JSON mode, UFC facts, `script_brief`) |
+| `core/content_engine.py` | LLM title/script/description (JSON mode, UFC facts, `script_brief`); calls via `llm_router` |
 | `core/script_brief.py` | Topic/channel brief matrix (UFC weight class, event accuracy) |
 | `core/run_recorder.py` | Persists `content_runs`, calls learning outcome recording |
 | `core/ui.py` | CLI sections, signal health, variant display |
 | `core/logging.py` | Centralized log setup |
-| `core/llm_client.py` | OpenAI client + model name from settings |
+| `core/llm_router.py` | **Multi-provider LLM router** — task tiers (cheap/extract/premium) across DeepSeek/OpenRouter/Ollama/OpenAI/Claude; per-provider token ledger. All runtime LLM calls route here |
+| `core/llm_client.py` | Legacy OpenAI client — now only the multimodal thumbnail vision scorer (router has no vision path yet) |
+| `core/cost_meter.py` | Per-run fully-loaded cost; prices the `llm_router` token ledger per provider/model |
 | `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
 | `apis/tapology_api.py` | Tapology event/bout scrape (cached) |
@@ -199,6 +201,10 @@ All research signals are invoked through `build_registry(topic)` unless skipped 
 Quota tracking for YouTube search: `apis/youtube_quota.py` → `data/youtube_quota.json` (via `config/paths.py`).
 
 Signal cache: `apis/cache_manager.py` → `data/signal_cache.json` (atomic writes, TTL, thread-locked).
+
+**Credit/quota/spend efficiency** (Apify breaker, signal breaker, LLM router, the optimization backlog): see [credit_efficiency.md](credit_efficiency.md).
+
+**LLM providers:** all runtime LLM calls go through `core/llm_router.py` (task tiers cheap/extract/premium across DeepSeek/OpenRouter/Ollama/OpenAI/Claude). Provider keys + per-tier overrides are in `.env` (see `.env.example`).
 
 **Debugging:** see `docs/debugging.md`.
 

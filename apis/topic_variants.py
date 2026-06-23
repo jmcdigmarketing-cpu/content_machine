@@ -4,9 +4,7 @@ from apis.draft_policy import determine_draft_status
 from apis.entity_extractor import extract_entities
 from config.channels import get_channel_profile
 from core.channel_context import channel_history_block, extract_anchors
-from core.llm_client import get_model, get_openai_client
-
-client = get_openai_client()
+from core.llm_router import complete
 
 # Strip a leading list marker the LLM sometimes prepends ("1. ", "2) ", "- ", "* ")
 # so the UI's own numbering doesn't double up ("1. 1. Title").
@@ -177,11 +175,10 @@ Rules:
 Return exactly {len(angle_types)} titles.
 """
 
-    response = client.chat.completions.create(
-        model=get_model(), temperature=0.8, messages=[{"role": "user", "content": prompt}]
-    )
+    # Variant title brainstorming runs on every discovery → cheap tier.
+    raw = complete(prompt, tier="cheap", temperature=0.8, max_tokens=400)
 
-    titles = response.choices[0].message.content.strip().split("\n")
+    titles = (raw or "").strip().split("\n")
 
     clean = [_LIST_PREFIX_RE.sub("", t).strip().strip('"') for t in titles if t.strip()]
     clean = [t for t in clean if t]

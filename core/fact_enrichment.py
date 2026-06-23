@@ -7,7 +7,6 @@ extraction that may ONLY cite provided source text (no invention).
 
 from __future__ import annotations
 
-import json
 import os
 import re
 from typing import Any
@@ -189,7 +188,6 @@ def _llm_extract_facts(
     """Extract bullet facts from source text only. Returns [] on failure."""
     if not source_blob.strip():
         return []
-    provider = os.getenv("RESEARCH_ENRICH_PROVIDER", "openai").strip().lower()
     if os.getenv("RESEARCH_ENRICH_LLM", "true").lower() in ("0", "false", "no"):
         return []
 
@@ -206,44 +204,15 @@ Rules:
 
 Return JSON only: {{"facts": ["bullet1", "bullet2"]}}"""
 
+    # Grounded extraction over source text → extract tier (DeepSeek by default).
+    # RESEARCH_ENRICH_PROVIDER still honored as a per-call provider override.
+    from core.llm_router import complete_json
+
+    provider = os.getenv("RESEARCH_ENRICH_PROVIDER", "").strip().lower() or None
     try:
-        if provider == "anthropic":
-            key = os.getenv("ANTHROPIC_API_KEY", "").strip()
-            if not key:
-                return []
-            model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
-            resp = requests.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": model,
-                    "max_tokens": 800,
-                    "temperature": 0.2,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-                timeout=45,
-            )
-            if resp.status_code != 200:
-                return []
-            blocks = resp.json().get("content") or []
-            raw = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
-        else:
-            from core.llm_client import get_model, get_openai_client
-
-            client = get_openai_client()
-            response = client.chat.completions.create(
-                model=get_model(),
-                temperature=0.2,
-                response_format={"type": "json_object"},
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = response.choices[0].message.content or ""
-
-        data = json.loads(raw)
+        data = complete_json(
+            prompt, tier="extract", temperature=0.2, max_tokens=800, provider=provider
+        )
         facts = data.get("facts") if isinstance(data, dict) else []
         return [str(f).strip() for f in facts if str(f).strip()][:10]
     except Exception as exc:

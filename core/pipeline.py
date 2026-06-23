@@ -110,6 +110,11 @@ def run_discovery(
     channel_id = resolve_channel_id(channel_id)
     t0 = time.perf_counter()
 
+    # Start a fresh per-run LLM token ledger so cost_meter prices only this run.
+    from core.llm_router import reset_usage
+
+    reset_usage()
+
     _report("Loading history")
 
     # Quick Apify on/off check before topic research — if the key is dead or the

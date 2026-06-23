@@ -6,7 +6,6 @@ Runs after variant selection, before content generation. Cached by topic+channel
 
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import asdict, dataclass, field
 from typing import Any
@@ -17,7 +16,7 @@ from config.channels import resolve_channel_id
 from config.seo import build_seo_prompt_block
 from core.channel_context import channel_history_block, extract_anchors
 from core.fact_enrichment import enrich_facts
-from core.llm_client import get_model, get_openai_client
+from core.llm_router import complete_json
 from core.logging import get_logger
 from core.script_brief import build_script_brief
 
@@ -185,15 +184,8 @@ Return JSON only:
 }}"""
 
     try:
-        client = get_openai_client()
-        response = client.chat.completions.create(
-            model=get_model(),
-            temperature=0.45,
-            response_format={"type": "json_object"},
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = response.choices[0].message.content or ""
-        data = json.loads(raw)
+        # Research brief is product-grade reasoning → premium tier.
+        data = complete_json(prompt, tier="premium", temperature=0.45, max_tokens=1500)
         if not isinstance(data, dict):
             return None
         return ResearchBrief(

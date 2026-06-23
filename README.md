@@ -14,6 +14,9 @@ python -m venv .venv
 pip install -r requirements.txt
 copy .env.example .env
 # Add API keys; put OAuth files in config/secrets/ (see config/secrets/README.md)
+# LLM is multi-provider (core/llm_router.py): set DEEPSEEK_API_KEY (+ optional
+# OPENROUTER_API_KEY / OLLAMA_MODEL) for a near-free run; OpenAI/Claude are opt-in
+# premium upgrades. Routes cheap/extract/premium tiers automatically.
 
 py -m scripts.ops all-setup --channel tapin
 py main.py
@@ -138,6 +141,7 @@ the test suite on Python 3.11 (the version the pinned deps are validated on) —
 - [Signals & sources (operator)](docs/signals-and-sources.md) — signal health, zero-score troubleshooting
 - [Debugging & operations](docs/debugging.md) — common errors, fixes, env tuning
 - [Post scheduling](docs/post_scheduling.md) — queue and `publishAt`
+- [Credit & spend efficiency](docs/credit_efficiency.md) — Apify/signal breakers, LLM router cost, quota/spend optimization backlog
 - [Changelog](docs/change_log.md) — major updates by theme
 
 ## Background video (hybrid default)

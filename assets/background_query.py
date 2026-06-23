@@ -100,76 +100,28 @@ def _rule_based_query(topic: str, category: str, channel_id: Optional[str]) -> s
     return " ".join(words[:5]) or topic[:40]
 
 
-def _llm_query_openai(topic: str, category: str) -> Optional[str]:
+def _llm_query(topic: str, category: str) -> Optional[str]:
+    """Stock-video search query via the cheap tier (throwaway rewriting work)."""
     if os.getenv("BACKGROUND_QUERY_LLM", "true").lower() in ("0", "false", "no"):
         return None
+    # BACKGROUND_LLM_PROVIDER stays honored as a per-call provider override.
+    provider = os.getenv("BACKGROUND_LLM_PROVIDER", "").strip().lower() or None
     try:
-        from core.llm_client import get_model, get_openai_client
+        from core.llm_router import complete
 
-        client = get_openai_client()
-        response = client.chat.completions.create(
-            model=get_model(),
+        text = complete(
+            f"Topic: {topic}\nCategory: {category}\nSearch query:",
+            tier="cheap",
+            system=(
+                "You write stock-video search queries. Return ONE short line only. "
+                "Prefer literal footage: real games, courts, arenas, gameplay screens. "
+                "Never: fog, haze, bokeh, abstract particles, empty gradients."
+            ),
             temperature=0.2,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You write stock-video search queries. Return ONE short line only. "
-                        "Prefer literal footage: real games, courts, arenas, gameplay screens. "
-                        "Never: fog, haze, bokeh, abstract particles, empty gradients."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": f"Topic: {topic}\nCategory: {category}\nSearch query:",
-                },
-            ],
+            max_tokens=60,
+            provider=provider,
         )
-        q = (response.choices[0].message.content or "").strip().strip('"')
-        return q[:80] if q else None
-    except Exception:
-        return None
-
-
-def _llm_query_anthropic(topic: str, category: str) -> Optional[str]:
-    key = os.getenv("ANTHROPIC_API_KEY", "").strip()
-    if not key:
-        return None
-    if os.getenv("BACKGROUND_QUERY_LLM", "true").lower() in ("0", "false", "no"):
-        return None
-    try:
-        import requests
-
-        model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
-        resp = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": model,
-                "max_tokens": 60,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": (
-                            f"Stock video search query for topic '{topic}' ({category}). "
-                            "One line only. Literal game/sports/gameplay footage. "
-                            "No fog, haze, bokeh, or abstract backgrounds."
-                        ),
-                    }
-                ],
-            },
-            timeout=20,
-        )
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-        blocks = data.get("content") or []
-        text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
-        q = text.strip().strip('"')
+        q = (text or "").strip().strip('"')
         return q[:80] if q else None
     except Exception:
         return None
@@ -184,13 +136,7 @@ def resolve_background_query(
     """
     Best search string for local folder pick + Pexels/Pixabay.
     """
-    provider = os.getenv("BACKGROUND_LLM_PROVIDER", "openai").strip().lower()
-    llm_q = None
-    if provider == "anthropic":
-        llm_q = _llm_query_anthropic(topic, category)
-    if not llm_q:
-        llm_q = _llm_query_openai(topic, category)
-
+    llm_q = _llm_query(topic, category)
     rule_q = _rule_based_query(topic, category, channel_id)
     query = llm_q or rule_q
     if is_abstract_stock_text(query):

@@ -63,6 +63,16 @@ class TestCacheStats(unittest.TestCase):
         cache_manager.reset_cache_stats()
         self.assertEqual(cache_manager.get_cache_stats()["total"], 0)
 
+    def test_corrupt_stats_file_fails_open(self):
+        path = config.paths.CACHE_STATS_FILE
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{ not valid")
+        stats = cache_manager.get_cache_stats()
+        self.assertEqual(stats["total"], 0)
+        cache_manager._record_cache_access("reddit::t", True)
+        cache_manager.flush_cache_stats()  # must not raise
+        self.assertEqual(cache_manager.get_cache_stats()["hits"], 1)
+
 
 class TestReliability(unittest.TestCase):
     def test_gather_has_all_sections(self):

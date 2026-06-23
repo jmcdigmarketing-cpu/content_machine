@@ -84,6 +84,8 @@ Re-upload never-uploaded MP4s: `py -m scripts.requeue_upload --channel tapin --q
 
 Status: `py -m scripts.ops status --channel tapin`
 
+Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate): `py -m scripts.ops reliability`
+
 Daily direction sync: `py -m scripts.ops daily-sync --channel tapin`
 
 If something breaks, start with [docs/debugging.md](docs/debugging.md).

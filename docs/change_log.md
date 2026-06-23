@@ -6,6 +6,24 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Credit-efficiency wave 3 — observability (2026-06-23)
+
+*Third wave from [credit_efficiency.md](credit_efficiency.md) (O8 + O9): make the
+credit layer visible.*
+
+- **Cache-hit instrumentation (O8):** `apis/cache_manager.py` counts hits/misses
+  per key-prefix (signal/source name); `flush_cache_stats()` merges in-process
+  counters into `data/cache_stats.json` once per run (in `run_discovery`), so no
+  per-lookup write. `get_cache_stats()` / `reset_cache_stats()` added; `get_cached`
+  refactored to record each access.
+- **Reliability dashboard (O9):** `core/reliability.py` (`gather`/`render`) +
+  `py -m scripts.ops reliability` — Apify breaker/budget + persisted exhaustion,
+  LLM disabled providers + daily spend vs budget, session-disabled signals, cache
+  hit-rate by prefix, YouTube units. Read-only, fail-open. New public accessors:
+  `llm_router.disabled_providers()`, `register_signals.disabled_signals()`.
+- **Tests:** `tests/test_observability.py` (cache stats record/flush/persist/reset +
+  reliability gather/render). Suite 433 green.
+
 ### Credit-efficiency wave 2 — operator spend ceilings (2026-06-23)
 
 *Second wave from [credit_efficiency.md](credit_efficiency.md) (O4 + O7): graceful

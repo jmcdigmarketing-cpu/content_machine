@@ -24,16 +24,18 @@ How the system avoids burning paid credits/quota, what's shipped, and the
 | **YouTube units** | Quota tracking in `data/youtube_quota.json` | `apis/youtube_quota.py` |
 | **Cross-run state** | Persisted TTL'd exhaustion + usage cache (`data/quota_state.json`) | `core/quota_state.py` |
 | **LLM** | Multi-provider router: free-first tiers, token ledger, **provider failover + session breaker** | `core/llm_router.py`, `core/cost_meter.py` |
+| **Observability** | Cache hit/miss stats (`data/cache_stats.json`) + `ops reliability` dashboard | `apis/cache_manager.py`, `core/reliability.py` |
 | **Per-run cost** | Fully-loaded estimate (now ledger-priced for LLM) | `core/cost_meter.py` |
 
-**Waves 1–2 shipped (2026-06-23):** the Apify breaker **persists across runs**
+**Waves 1–3 shipped (2026-06-23):** the Apify breaker **persists across runs**
 (`core/quota_state.py` → `data/quota_state.json`), the preflight is **skipped when
 no paid signal will run** and **reuses a cached usage reading**, the LLM router has
-**provider failover + a session breaker**, and there are now **operator spend
-ceilings** for both Apify (`APIFY_MONTHLY_BUDGET_USD`) and LLM
-(`LLM_DAILY_BUDGET_USD`) that degrade *before* the hard walls. See O1–O7 below
-(marked ✅). Remaining: signal-breaker persistence, observability (O8/O9),
-reset-window awareness (O10), and the unified governor (O11).
+**provider failover + a session breaker**, there are **operator spend ceilings** for
+both Apify (`APIFY_MONTHLY_BUDGET_USD`) and LLM (`LLM_DAILY_BUDGET_USD`) that degrade
+*before* the hard walls, and a **reliability dashboard** (`ops reliability`) +
+**cache-hit instrumentation** make it all visible. See O1–O9 below (marked ✅).
+Remaining: signal-breaker persistence, reset-window awareness (O10), and the unified
+governor (O11).
 
 ---
 
@@ -94,16 +96,20 @@ routed to a paid model.*
 
 ### Tier 3 — observability so the TTLs/budgets are tuned from data
 
-**O8. Cache-hit instrumentation** `[S–M]`
-Count hits/misses per signal in `cache_manager`; a signal that's almost always a
-cache hit can take a longer TTL, a frequently-missed fast-moving one a shorter TTL.
-*Saving: turns the hand-tuned TTLs in `register_signals._cache_ttl_for` into
-data-driven ones.*
+**O8. Cache-hit instrumentation** `[S–M]` — ✅ **SHIPPED**
+`cache_manager` counts hits/misses per key-prefix (signal/source name); counters
+persist to `data/cache_stats.json` on `flush_cache_stats()` (called once per run in
+`run_discovery`, so no per-lookup write). `get_cache_stats()` exposes the merged
+hit-rate. *Now you can see which signals are almost always cached (raise TTL) vs
+frequently missed (lower it) — the `register_signals._cache_ttl_for` table becomes
+data-driven.*
 
-**O9. Reliability / quota dashboard** `[M]`
-`scripts.ops reliability`: per-provider breaker state, Apify usage vs budget,
-YouTube units used today, cache-hit rate, per-run LLM cost from the ledger. The
-operating_plan §1 "Phase next." *Saving: makes every credit leak visible.*
+**O9. Reliability / quota dashboard** `[M]` — ✅ **SHIPPED**
+`py -m scripts.ops reliability` (or `py -m core.reliability`) → `core/reliability.py`
+gathers Apify breaker/budget + persisted exhaustion, LLM disabled providers + daily
+spend vs budget, session-disabled signals, cache hit-rate by prefix, and YouTube
+units used today — read-only and fail-open. *Makes the whole credit layer visible
+in one view.* Remaining: per-run LLM cost line + a richer time series.
 
 **O10. Reset-window auto-re-enable** `[S–M]`
 Encode known reset cadences (YouTube Data API: daily 00:00 PT; Odds: monthly;
@@ -132,8 +138,8 @@ persistence file (`data/quota_state.json`) and one dashboard. Endpoint of O2–O
 2. ✅ **O2** (Apify) — persist the breaker; compounds O3 across runs. *(wave 1)*
 3. ✅ **O5 + O6** — LLM failover + breaker (free OpenRouter tier now robust). *(wave 1)*
 4. ✅ **O4 + O7** — operator budgets for Apify + LLM. *(wave 2)*
-5. **O8 + O9** — instrument, then surface a dashboard. *(next)*
-6. **O10**, then **O11** (the governor) once the pieces exist to unify.
+5. ✅ **O8 + O9** — instrument cache hits, surface the reliability dashboard. *(wave 3)*
+6. **O10**, then **O11** (the governor) once the pieces exist to unify. *(next)*
 
 Also still open from O2: **signal-breaker persistence** (needs key-hash
 invalidation so a fixed key clears the record).

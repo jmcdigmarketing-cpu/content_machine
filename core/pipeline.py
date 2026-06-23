@@ -180,6 +180,14 @@ def run_discovery(
     evaluated.sort(key=lambda e: _order.get(e[0], len(candidates)))
     timings["variant_scoring"] = time.perf_counter() - t1
 
+    # Persist this run's cache hit/miss counters for the reliability dashboard (O8).
+    try:
+        from apis.cache_manager import flush_cache_stats
+
+        flush_cache_stats()
+    except Exception:
+        pass
+
     return DiscoveryResult(
         input_topic=topic,
         base_signals=base_signals,

@@ -17,9 +17,9 @@ that was deliberate. Newest near the bottom. Keep entries short.
 **Consequence:** Early picks are tentative (small n); confidence surfacing is a known TODO.
 
 ### 3. The LLM may only state specifics that are in VERIFIED FACTS
-**Decision:** Facts are split into verified vs context-only; "thin facts mode" + anti-hallucination rules forbid inventing patches/heroes/seasons and (for sports) champions/records/results from training memory.
-**Why:** Faceless generation on a stale LLM will confidently invent specifics (we hit "Topuria, the featherweight champion"). Grounding to signals is the moat *and* the 2026-policy survival requirement.
-**Consequence:** When signals are thin the script must go opinion/community-level rather than assert specifics.
+**Decision:** Facts are split into verified vs context-only; "thin facts mode" + anti-hallucination rules forbid inventing patches/heroes/seasons and (for sports) champions/records/results from training memory. The post-gen grounding check (`core/fact_grounding.py`) flags specifics not in the facts; when it fires, `content_engine._maybe_reground_script` **regenerates once** to strip them and then **warns on whatever remains** (`GROUNDING_REGEN_ENABLED`, default on). Link-pasted facts are cleaned of promo/teaser junk first (`core/link_facts._is_junk_line`) so the model isn't fed noise to hallucinate around.
+**Why:** Faceless generation on a stale LLM will confidently invent specifics (we hit "Topuria, the featherweight champion"; and a script once fused a real Giannis→Heat trade with an invented Butler→Celtics one recalled as a stale prediction). Grounding to signals is the moat *and* the 2026-policy survival requirement. The model has no outcome-awareness of its past predictions — grounding is the only defense.
+**Consequence:** When signals are thin the script must go opinion/community-level rather than assert specifics. Regen is **"regenerate then warn," not block** — the operator stays in control and still sees the residual warning; the rewrite is only accepted if it reduces unsupported specifics without gutting the script (≥60% word count).
 
 ### 4. Operator key facts are ground truth that overrides everything
 **Decision:** Pasted "key facts" inject as highest-priority VERIFIED FACTS and override training memory and signals (`prompt_key_facts` → `content_engine`). Input is sanitized (`_sanitize_key_facts`: cap 5 facts × 300 chars, strip control chars/newlines) to prevent prompt injection.

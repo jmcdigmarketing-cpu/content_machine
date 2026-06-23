@@ -6,6 +6,26 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Anti-hallucination wave — regenerate-then-warn grounding + link cleanup (2026-06-23)
+
+*From a live run where a script fused a real trade (Giannis→Heat, from pasted
+links) with an invented one (Butler→Celtics): the grounding check flagged it but
+the script shipped anyway, and link extraction had fed the model promo/teaser junk.*
+
+- **Regenerate-then-warn grounding** (`core/content_engine._maybe_reground_script`):
+  when the post-gen check flags specifics not in VERIFIED FACTS, regenerate **once**
+  to strip/generalize the unsupported names/trades/numbers, accept the rewrite only
+  if it reduces the unsupported count and keeps ≥60% of the word count, then warn on
+  whatever remains. Default-on (`GROUNDING_REGEN_ENABLED`, `GROUNDING_REGEN_MIN`);
+  premium tier; triggered only when something was flagged (most runs pay nothing).
+- **Link-fact cleanup** (`core/link_facts._is_junk_line`): drop promo/nav
+  boilerplate ("has the latest", "subscribe", "all rights reserved", …) and teaser
+  questions ("Will the Bucks move Giannis?") from extracted article facts — index
+  pages were poisoning the fact corpus, which is what the model then hallucinated
+  around.
+- **Tests:** `tests/test_grounding_regen.py` + link junk-filter cases in
+  `tests/test_link_facts.py`. Suite 447 green.
+
 ### Credit-efficiency wave 3 — observability (2026-06-23)
 
 *Third wave from [credit_efficiency.md](credit_efficiency.md) (O8 + O9): make the

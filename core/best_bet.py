@@ -20,7 +20,7 @@ from core.channel_context import (
 from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
-from core.recommender_confidence import confidence_note
+from core.recommender_confidence import MODERATE_SAMPLES, confidence_note
 
 logger = get_logger("core.best_bet")
 
@@ -295,9 +295,13 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             domain_rates.setdefault(d, []).append(e["engaged_rate"])
             domain_topics.setdefault(d, []).append(e["topic"])
 
+        # Confidence-first: a well-sampled domain beats a thin high-rate one (don't
+        # crown a 1-video 39% domain over a 6-video 11% domain).
+        adjusted = _adjusted_domain_rates(entries)
+        counts = _domain_sample_counts(entries)
         best_domain = max(
             domain_rates,
-            key=lambda d: sum(domain_rates[d]) / len(domain_rates[d]),
+            key=lambda d: _domain_priority(d, adjusted, counts),
         )
         rates = domain_rates[best_domain]
         avg_rate = sum(rates) / len(rates)
@@ -351,6 +355,49 @@ def _domain_sample_counts(entries: list[dict]) -> dict[str, int]:
         if e.get("engaged_rate") is not None:
             counts[e["domain"]] = counts.get(e["domain"], 0) + 1
     return counts
+
+
+def _adjusted_domain_rates(entries: list[dict]) -> dict[str, float]:
+    """Empirical-Bayes-shrunk per-domain engaged_rate.
+
+    Thin domains regress toward the global mean so a single 39%-from-1-video domain
+    can't outrank a well-sampled 11%-from-6 domain. Prior strength = MODERATE_SAMPLES.
+    """
+    by_domain: dict[str, list[float]] = {}
+    for e in entries:
+        r = e.get("engaged_rate")
+        if r is not None:
+            by_domain.setdefault(e["domain"], []).append(float(r))
+    if not by_domain:
+        return {}
+    all_rates = [r for v in by_domain.values() for r in v]
+    prior = sum(all_rates) / len(all_rates)
+    k = MODERATE_SAMPLES
+    return {d: (sum(v) + k * prior) / (len(v) + k) for d, v in by_domain.items()}
+
+
+def _domain_priority(domain: str, adjusted: dict[str, float], counts: dict[str, int]) -> tuple:
+    """Sort key (descending): adequately-sampled domains first, then shrunk rate.
+
+    This is the fix for "all 3 picks are a stale 1-sample domain": a domain with
+    < MODERATE_SAMPLES videos of engagement data is ranked *below* any domain that
+    clears the bar, regardless of how high its thin average looks.
+    """
+    n = counts.get(domain, 0)
+    return (1 if n >= MODERATE_SAMPLES else 0, adjusted.get(domain, 0.0))
+
+
+def _effective_allowed(channel_id: str, entries: list[dict]) -> set[str]:
+    """On-brand domains PLUS domains the channel has actually published & measured.
+
+    Fixes the case where a channel makes content in a domain that isn't in its
+    configured on-brand set (e.g. NBA on a gaming/UFC channel): if it has measured
+    engagement there, it's de-facto on-brand, so best-bet reflects the *real* topic
+    mix instead of silently dropping it.
+    """
+    allowed = set(on_brand_domains(channel_id))
+    allowed |= {e["domain"] for e in entries if e.get("engaged_rate") is not None}
+    return allowed
 
 
 def _fresh_enabled() -> bool:
@@ -413,58 +460,71 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
         single = get_best_bet(channel_id)
         return [single] if single else []
 
-    allowed = on_brand_domains(channel_id)
+    allowed = _effective_allowed(channel_id, entries)
     domain_rates = _domain_avg_rates(entries)
     domain_counts = _domain_sample_counts(entries)
+    adjusted = _adjusted_domain_rates(entries)
     # Don't re-suggest anything covered recently (kills the repeat problem).
     recent = {normalize_seed_topic(t).lower() for t in recent_input_topics(channel_id, limit=30)}
 
     options: list[BestBetResult] = []
     seen: set[str] = set(recent)
+    used_domains: set[str] = set()
 
+    def _domain_key(d: str) -> tuple:
+        return _domain_priority(d, adjusted, domain_counts)
+
+    # Fresh RSS headlines, grouped by domain (relevant "what's hot now").
+    by_domain: dict[str, list[dict]] = {}
+    ordered_fresh_domains: list[str] = []
     if _fresh_enabled():
         fresh = _fresh_candidates(channel_id, allowed=allowed, exclude=recent)
-        # Prefer fresh headlines in on-brand domains, best-performing domain first.
         on_brand_fresh = [c for c in fresh if c["domain"] in allowed] or fresh
-        on_brand_fresh.sort(key=lambda c: domain_rates.get(c["domain"], 0.0), reverse=True)
         for c in on_brand_fresh:
-            key = normalize_seed_topic(c["topic"]).lower()
-            if not key or key in seen:
-                continue
-            seen.add(key)
-            rate = domain_rates.get(c["domain"])
-            rationale = f"trending on {c['source']} now"
-            if rate is not None:
-                rationale += f" · {c['domain']} averages {rate:.0%} engagement"
-                rationale += confidence_note(domain_counts.get(c["domain"], 0))
-            options.append(
-                BestBetResult(
-                    topic=c["topic"],
-                    domain=c["domain"],
-                    avg_engaged_rate=rate or 0.0,
-                    source="trending",
-                    supporting_runs=0,
-                    rationale=rationale,
-                )
-            )
-            if len(options) >= n:
-                return options[:n]
+            by_domain.setdefault(c["domain"], []).append(c)
+        ordered_fresh_domains = sorted(by_domain, key=_domain_key, reverse=True)
 
-    # Top up from historical engagement ranking (also fills the no-RSS case).
+    def _emit_fresh(c: dict) -> bool:
+        key = normalize_seed_topic(c["topic"]).lower()
+        if not key or key in seen:
+            return False
+        seen.add(key)
+        used_domains.add(c["domain"])
+        rate = domain_rates.get(c["domain"])
+        rationale = f"trending on {c['source']} now"
+        if rate is not None:
+            rationale += f" · {c['domain']} averages {rate:.0%} engagement"
+            rationale += confidence_note(domain_counts.get(c["domain"], 0))
+        options.append(
+            BestBetResult(
+                topic=c["topic"],
+                domain=c["domain"],
+                avg_engaged_rate=rate or 0.0,
+                source="trending",
+                supporting_runs=0,
+                rationale=rationale,
+            )
+        )
+        return True
+
+    # Historical pool, ranked confidence-first.
     pool = [e for e in entries if e["domain"] in allowed] or entries
     ranked = sorted(
         pool,
-        key=lambda e: (e["engaged_rate"] or 0.0, e["composite_score"]),
+        key=lambda e: (_domain_key(e["domain"]), e["engaged_rate"] or 0.0, e["composite_score"]),
         reverse=True,
     )
-    for e in ranked:
+
+    def _emit_hist(e: dict) -> bool:
         key = normalize_seed_topic(e["topic"]).lower()
         if not key or key in seen:
-            continue
+            return False
         seen.add(key)
+        used_domains.add(e["domain"])
         if e["engaged_rate"] is not None:
             source = "analytics"
             rationale = f"{e['engaged_rate']:.0%} engagement on a past {e['domain']} video"
+            rationale += confidence_note(domain_counts.get(e["domain"], 0))
         else:
             source = "score"
             rationale = f"high signal score ({e['composite_score']:.0f}) for {e['domain']}"
@@ -478,8 +538,42 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
                 rationale=rationale,
             )
         )
+        return True
+
+    # Phase 1 — DIVERSITY: at most one pick per domain, confidence-first order,
+    # preferring a fresh headline for the domain, else its best historical run. This
+    # is what stops three stale 1-sample picks from one domain filling every slot.
+    hist_domains: list[str] = []
+    for e in ranked:
+        if e["domain"] not in hist_domains:
+            hist_domains.append(e["domain"])
+    all_domains = sorted(
+        set(ordered_fresh_domains) | set(hist_domains), key=_domain_key, reverse=True
+    )
+    for d in all_domains:
         if len(options) >= n:
             break
+        if d in used_domains:
+            continue
+        if not any(_emit_fresh(c) for c in by_domain.get(d, [])):
+            for e in ranked:
+                if e["domain"] == d and _emit_hist(e):
+                    break
+
+    # Phase 2 — fill remaining slots: more fresh (priority order), then historical.
+    if len(options) < n:
+        for d in ordered_fresh_domains:
+            for c in by_domain.get(d, []):
+                if len(options) >= n:
+                    break
+                _emit_fresh(c)
+            if len(options) >= n:
+                break
+    if len(options) < n:
+        for e in ranked:
+            if len(options) >= n:
+                break
+            _emit_hist(e)
 
     if len(options) < n:
         cont = _continuity_seed(channel_id, entries)

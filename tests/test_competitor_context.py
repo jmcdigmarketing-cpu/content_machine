@@ -38,13 +38,16 @@ class TestCompetitorContext(unittest.TestCase):
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(payload, f)
 
+            with open(path, encoding="utf-8") as fh:
+                snapshot = json.load(fh)
+
             with patch(
                 "analytics.competitor_context.competitors_data_path",
                 return_value=path,
             ):
                 with patch(
                     "analytics.competitor_context.load_competitor_snapshot",
-                    side_effect=lambda c: json.load(open(path, encoding="utf-8")),
+                    side_effect=lambda c: snapshot,
                 ):
                     rows = list_recent_competitor_titles(
                         "tapin", topic="Rams Myles Garrett", limit=5

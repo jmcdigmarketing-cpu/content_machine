@@ -34,6 +34,14 @@ output/
 *.mov
 *.srt
 
+# Local background-clip library — large media (poster frames / screenshots;
+# the clips themselves are already covered by *.mp4/*.mov above). Keep the
+# tracked structure (README + .gitkeep), ignore the media content.
+video/backgrounds/**/*.png
+video/backgrounds/**/*.jpg
+video/backgrounds/**/*.jpeg
+video/backgrounds/**/*.webp
+
 # Local caches and channel data (may contain strategy/performance data)
 # Root runtime dir only (anchored) — keeps source dirs like core/data/ tracked.
 /data/

@@ -17,6 +17,8 @@ import json
 from dataclasses import dataclass
 
 from config.channels import resolve_channel_id
+from core.engagement import engaged_rate as _engaged_rate
+from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
 from core.recommender_confidence import confidence_note
 from core.script_length import PRESETS, get_length_preset
@@ -45,20 +47,6 @@ class LengthRecommendation:
     rationale: str
 
 
-def _engaged_rate(metrics_json: str) -> float | None:
-    try:
-        m = json.loads(metrics_json or "{}")
-        if "engaged_rate" in m:
-            return float(m["engaged_rate"])
-        views = float(m.get("views", 0))
-        likes = float(m.get("likes", 0))
-        if views > 0:
-            return likes / views
-    except (ValueError, TypeError, json.JSONDecodeError):
-        pass
-    return None
-
-
 def _length_choice_from_run(timings_json: str) -> str | None:
     """Extract the preset choice persisted at run time."""
     try:
@@ -67,15 +55,6 @@ def _length_choice_from_run(timings_json: str) -> str | None:
         return None
     choice = str(timings.get("length_preset") or "").strip()
     return choice if choice in PRESETS else None
-
-
-def _infer_domain(topic: str, channel_id: str) -> str:
-    try:
-        from apis.topic_scorer import infer_domain
-
-        return infer_domain(topic, channel_id)
-    except Exception:
-        return "neutral"
 
 
 def _collect_length_samples(channel_id: str) -> list[dict]:

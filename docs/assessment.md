@@ -10,7 +10,7 @@ prioritised fix list, not a victory lap.
 |---|---|---|
 | Learning loop | 4 / 5 | The differentiator — three analytics-driven recommenders |
 | Compliance & monetisation | 4 / 5 | Ahead of the market on the 2026 authenticity policy |
-| Architecture & maintainability | 4 / 5 | Real tooling, 220 tests, green CI, modular signals |
+| Architecture & maintainability | 4 / 5 | Real tooling, 363 tests, green CI, modular signals |
 | Content quality | 3.5 / 5 | Good hooks/prose; visuals and stance still thin |
 | Scalability | 3.5 / 5 | Multi-channel works; multi-platform deferred |
 | Competitive position | 3.5 / 5 | Unique full loop; behind on captions + reach |
@@ -35,7 +35,7 @@ prioritised fix list, not a victory lap.
    "inauthentic content" enforcement makes this existential, and most rivals
    ignore it.
 3. **Engineering hygiene.** `pyproject.toml`, ruff + mypy + pre-commit, CI on
-   3.11, 220 tests, repository pattern, Alembic, a signal registry. Above a lot
+   3.11, 363 tests, repository pattern, Alembic, a signal registry. Above a lot
    of shipped "production" code.
 4. **Multi-channel domain architecture.** A finance channel (MoneyWise) was
    added almost entirely from config + domain weights, alongside TapIn.

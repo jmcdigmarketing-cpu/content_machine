@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Any
 
@@ -340,6 +341,68 @@ def _maybe_improve_hook(script: str) -> str:
     return script
 
 
+def _reground_enabled() -> bool:
+    return os.getenv("GROUNDING_REGEN_ENABLED", "true").lower() not in ("0", "false", "no")
+
+
+def _maybe_reground_script(
+    script: str, grounding_text: str, topic: str, ungrounded: list[str]
+) -> tuple[str, list[str]]:
+    """Regenerate a script to strip specifics not backed by the facts, then re-check.
+
+    Default-on (``GROUNDING_REGEN_ENABLED``). Triggered only when the post-gen
+    grounding check already flagged ≥ ``GROUNDING_REGEN_MIN`` specifics — so most
+    runs pay nothing. The rewrite is told to remove/generalize the flagged
+    names/trades/numbers while keeping everything the facts DO support; it's only
+    accepted if it actually reduces the unsupported count and doesn't gut the
+    script (≥60% of the original word count). Returns (script, remaining_ungrounded)
+    — "regenerate then warn": the caller still surfaces whatever remains.
+    """
+    if not _reground_enabled() or not ungrounded:
+        return script, ungrounded
+    try:
+        min_flags = int(os.getenv("GROUNDING_REGEN_MIN", "1"))
+    except ValueError:
+        min_flags = 1
+    if len(ungrounded) < min_flags:
+        return script, ungrounded
+
+    system_prompt = (
+        "You rewrite a short-form video script to remove UNVERIFIED claims. You are "
+        "given VERIFIED FACTS and a list of FLAGGED specifics that are NOT supported "
+        "by those facts. Rewrite so the script asserts ONLY what the facts support: "
+        "remove or generalize every flagged name, team, trade, signing, roster move, "
+        "score, or version that is not in the facts. Do NOT introduce any new specific, "
+        "and do NOT present a rumor or prediction as a fact. Keep the opening hook, the "
+        "length, the tone, and all SUPPORTED content. Return JSON only: "
+        '{"script": "..."}'
+    )
+    user_prompt = (
+        f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{grounding_text}\n\n"
+        "FLAGGED (unsupported — remove or generalize):\n- " + "\n- ".join(ungrounded) + "\n\n"
+        f"SCRIPT:\n{script}"
+    )
+    try:
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.3, tier="premium")
+    except Exception as exc:
+        logger.debug("grounding regen failed: %s", exc)
+        return script, ungrounded
+    if not isinstance(payload, dict) or not payload.get("script"):
+        return script, ungrounded
+
+    candidate = str(payload["script"]).strip()
+    candidate_ungrounded = find_ungrounded_entities(candidate, grounding_text)
+    keeps_length = count_spoken_words(candidate) >= 0.6 * max(count_spoken_words(script), 1)
+    if len(candidate_ungrounded) < len(ungrounded) and keeps_length:
+        logger.info(
+            "Regrounded script: %d → %d unsupported specific(s)",
+            len(ungrounded),
+            len(candidate_ungrounded),
+        )
+        return candidate, candidate_ungrounded
+    return script, ungrounded
+
+
 def _expand_script(
     *,
     script: str,
@@ -495,6 +558,10 @@ def generate_content_package(
         [signal_facts, brief_block, topic, seed_topic or "", *(_sanitize_key_facts(key_facts))]
     )
     ungrounded = find_ungrounded_entities(script, grounding_text)
+    if ungrounded:
+        # Regenerate-then-warn: try once to strip the unsupported specifics, then
+        # surface whatever still remains (never silently rewrite away the warning).
+        script, ungrounded = _maybe_reground_script(script, grounding_text, topic, ungrounded)
     if ungrounded:
         logger.warning(
             "Script names %s specific(s) not in the facts: %s",

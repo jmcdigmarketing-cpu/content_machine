@@ -31,6 +31,38 @@ _HEADERS = {
 }
 
 
+# Promo / nav / boilerplate substrings that mark a line as non-factual. Index
+# pages (e.g. cbssports.com/nba/) are full of these; they poison the fact corpus
+# and, worse, give the model nothing solid so it fills gaps by inventing.
+_JUNK_MARKERS = (
+    "has the latest",
+    "sign up",
+    "subscribe",
+    "newsletter",
+    "cookie",
+    "all rights reserved",
+    "click here",
+    "terms of",
+    "privacy policy",
+    "advertisement",
+    "log in",
+    "logged in",
+    "create an account",
+    "fantasy games",
+    "©",
+)
+
+
+def _is_junk_line(text: str) -> bool:
+    """True for promo/nav boilerplate or pure teaser questions — not a usable fact."""
+    t = (text or "").strip()
+    low = t.lower()
+    if any(m in low for m in _JUNK_MARKERS):
+        return True
+    # Teaser questions ("Will the Bucks move Giannis? Are X going anywhere?")
+    return t.endswith("?") or t.count("?") >= 2
+
+
 def looks_like_url(text: str) -> bool:
     return bool(_URL_RE.match((text or "").strip()))
 
@@ -80,12 +112,12 @@ def _article_facts(url: str, *, max_lines: int = 5) -> list[str]:
     )
     if meta_desc and meta_desc.get("content"):
         content = meta_desc["content"].strip()
-        if len(content) > 25:
+        if len(content) > 25 and not _is_junk_line(content):
             facts.append(content[:300])
 
     for p in soup.find_all("p"):
         text = " ".join(p.get_text(" ", strip=True).split())
-        if len(text) > 60:
+        if len(text) > 60 and not _is_junk_line(text):
             facts.append(text[:300])
         if len(facts) >= max_lines:
             break

@@ -3,7 +3,11 @@
 > **North star:** [vision.md](vision.md) — the v3 intelligence-systems vision
 > ("operate media businesses," not "make videos"), a senior-level critique of it,
 > and the revised 12-month architecture plan prioritized for defensibility,
-> revenue, and learning advantage. This roadmap is the tactical layer beneath it.
+> revenue, and learning advantage.
+> **Operating plan:** [operating_plan.md](operating_plan.md) — pace/cost projections
+> (2wk/1mo/3mo/6mo/1yr), the new-channel playbook, AI cost-per-run + reduction
+> roadmap, side-income territories, ops/process hygiene, and competitive analysis.
+> This roadmap is the tactical layer beneath both.
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
@@ -128,7 +132,7 @@ Last updated: 2026-06-23 — **both feature PRs consolidated into `main`** (`e6d
 - [x] **Recommended length** — `core/length_recommender.py`; engaged-rate by length preset (uses `timings_json.length_preset`); `auto_generate --length auto`; ops `recommend-length`
 - [x] YouTube Analytics sync hardened — validating probe query, clear "enable API"/scope guidance (`analytics/sync_metrics.py`)
 - [ ] Backtest recommender accuracy vs. realised engagement once volume grows
-- [ ] Confidence thresholds / minimum-sample surfacing in the UI
+- [x] Confidence thresholds / minimum-sample surfacing in the UI (`core/recommender_confidence.py`; low/moderate caveats on best-bet/post-time/length)
 
 ### Phase L2 — Apify data layer (2026-06)
 
@@ -315,6 +319,8 @@ Turn the research spine into a compliance moat.
 - [x] **Fact-grounding post-check** — flags script specifics (heroes/products/patch-versions) not backed by VERIFIED FACTS/key facts before publish; conservative multi-word + version detector, flags (never rewrites) (`core/fact_grounding.py`, surfaced in `main.py`)
 - [x] **RAWG relevance gate** — filters fuzzy RAWG matches ("Need for Speed Rivals" for *Marvel Rivals*) by topic token overlap + acronym (keeps GTA→Grand Theft Auto) so only the real game is injected as facts (`apis/rawg_api.py`)
 - [x] **Domain-routed RSS** — feeds carry optional `domains` tags; gaming topics no longer pull MMA/soccer feeds (BBC Sport) and vice-versa; untagged feeds stay universal (`config/data_sources.py`, `config/seo.py`, `config/data_sources.json`, `config/seo/tapin.json`)
+- [x] **Obsidian source capture** — links pasted in the key-facts prompt are appended to `<vault>/<channel>/_sources.md` (de-duped, channel-scoped, `[sources, research]`) and read back by `obsidian_facts.load_facts` on related topics — research brought in once is reusable, not discarded (`core/source_capture.py`, wired in `prompt_key_facts`). *Follow-up: also capture `web_search` result URLs.*
+- [x] **Repo hygiene** — `.gitattributes` (LF/binary), ignore local background media, `.env.example` web-search keys surfaced, leaked-file-handle test fix; merged branches pruned (single-branch repo)
 
 ---
 

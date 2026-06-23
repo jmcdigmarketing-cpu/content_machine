@@ -65,3 +65,13 @@ that was deliberate. Newest near the bottom. Keep entries short.
 **Decision:** Avoid long-lived parallel feature branches; land a PR before opening overlapping work.
 **Why:** Parallel branches (`youtube-readonly-scope-and-roadmap` vs `recency-intelligence-cycle`) re-implemented overlapping code and diverged into a conflict + a wrongly-diagnosed "revert." That churn is the cost of not consolidating.
 **Consequence:** Slightly less parallelism, far less merge pain and lost work.
+
+### 13. The two PRs were consolidated by keeping BOTH sides (2026-06-23)
+**Decision:** PR #2 (recency layer) was fast-forwarded into `main`, then `main` was merged into PR #1 (Phase O/P/Q + idea-intake + recommenders) and PR #1 merged — landing everything on `main` (`e6d5c9c`). The 10-file conflict was resolved to **preserve both feature sets**, not pick a winner.
+**Why:** The PRs were largely disjoint; dropping either would lose shipped work.
+**Consequence — deliberate redundancy a future cleanup must NOT "simplify away":**
+- `apis/apify_client.py` keeps PR #1's **global** circuit breaker (`apify_disabled`/`disable_apify`/`apify_preflight`, tripped by 401/402/403 + repeated timeouts) AND exposes `apify_credit_exhausted()` as a thin alias that `core/ui.py`'s run summary imports. Both are intentional; the alias is not dead code.
+- `apis/register_signals.py` keeps the per-signal **session circuit breaker** (`_record_signal_health` etc.) AND the broader variant-reuse pinning — different layers, both load-bearing.
+- `core/pipeline.py` keeps both `apify_preflight()` (Apify on/off precheck) and the `progress=`/`_report` discovery feedback.
+- `main.py` runs both the fact-grounding warning (`core/fact_grounding.py`) and the Phase O authenticity gate (`core/authenticity.py`) before the render prompt — distinct checks.
+- `apis/tapology_api.py` exposes one real `scrape_enabled()` with `_scrape_enabled` as a back-compat alias.

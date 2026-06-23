@@ -2,7 +2,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-06-13 — closed-loop recommenders, Apify data layer, idea-intake mode, engineering-quality baseline.
+Last updated: 2026-06-23 — **both feature PRs consolidated into `main`** (`e6d5c9c`); 363 tests green. main now holds Phase O/P/Q + idea-intake + recommenders AND the full recency/quality layer (key facts, signal gating, web search, Obsidian, circuit breakers, confidence surfacing, cost meter, fact-grounding, RAWG relevance, domain-routed RSS). No open PRs or divergent branches.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 

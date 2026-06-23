@@ -120,11 +120,16 @@ def run_discovery(
     # Quick Apify on/off check before topic research — if the key is dead or the
     # monthly limit is hit, disable Apify for the session so the social actors
     # skip instantly instead of timing out (and burning credits) on every variant.
+    # Skip the preflight entirely when no paid Apify signal will actually run for
+    # this topic (gated/skipped/already-disabled) — no point paying /users/me.
     if os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
-        from apis.apify_client import apify_preflight
+        from apis.register_signals import will_use_apify
 
-        ok, status = apify_preflight()
-        print(f"  Apify: {status}" if ok else f"  Apify: {status} — social signals skipped")
+        if will_use_apify(topic, channel_id):
+            from apis.apify_client import apify_preflight
+
+            ok, status = apify_preflight()
+            print(f"  Apify: {status}" if ok else f"  Apify: {status} — social signals skipped")
 
     competitor_sync = os.getenv("COMPETITOR_SYNC_ON_DISCOVERY", "auto").lower()
     if competitor_sync in ("1", "true", "yes", "auto"):

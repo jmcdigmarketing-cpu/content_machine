@@ -6,6 +6,33 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Credit-efficiency wave 1 — persistence + LLM failover (2026-06-23)
+
+*First implementation wave from [credit_efficiency.md](credit_efficiency.md) (O1/O2/O3/O5/O6).*
+
+- **`core/quota_state.py`** (new): cross-run, TTL'd, fail-open store at
+  `data/quota_state.json` — exhaustion records (`mark_exhausted`/`is_exhausted`) +
+  a small TTL key/value cache (`set_value`/`get_value`). Seed of the eventual
+  unified quota governor (O11). `config/paths.py` adds `QUOTA_STATE_FILE`.
+- **Apify persistence (O2/O3):** `apis/apify_client.py` now seeds its breaker from
+  persisted state (`_sync_persistent`), persists hard 401/402/403/limit failures
+  (`_persist_exhausted`, `QUOTA_STATE_TTL_SECONDS`, default 6h), and caches the
+  `/users/me` usage reading (`APIFY_USAGE_CACHE_TTL_SECONDS`, default 20m) so a
+  fresh process skips the network preflight. A prior run's out-of-credits is
+  remembered — no re-paid failing call next run.
+- **Preflight skip (O1):** `apis/register_signals.will_use_apify(topic, channel_id)`;
+  `core/pipeline.run_discovery` only preflights when a paid Apify signal actually
+  survives skip/gating/breaker.
+- **LLM failover + breaker (O5/O6):** `core/llm_router.complete` resolves a tier to
+  a provider *chain* (`_resolve_chain`) and fails over on retryable errors
+  (429/402/401/403/5xx/timeout); hard auth/quota disables that provider for the
+  session (`_disable_llm`/`reset_llm_breaker`). Non-retryable errors propagate;
+  explicit `provider=` pins one (no failover). Makes the free OpenRouter tier
+  resilient (rate-limit → fall to DeepSeek).
+- **Tests:** `tests/test_quota_state.py`, `tests/test_credit_efficiency.py`
+  (Apify persistence + `will_use_apify`), router failover/breaker tests, and
+  `tests/test_apify_client.py` isolated to a temp quota-state file. Suite 417 green.
+
 ### Multi-provider LLM router + credit-efficiency docs (2026-06-23)
 
 - **`core/llm_router.py`:** unified router for every runtime LLM call. Task tiers

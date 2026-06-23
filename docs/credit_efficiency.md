@@ -22,14 +22,16 @@ How the system avoids burning paid credits/quota, what's shipped, and the
 | **Variant reuse** | Slow/paid social signals pinned from the base-topic fetch, not re-fetched per variant | `register_signals._VARIANT_REUSE` |
 | **Domain gating** | Skip domain-mismatched signals (no RAWG on a UFC topic) — fewer paid calls | `register_signals._gated_signal_names` |
 | **YouTube units** | Quota tracking in `data/youtube_quota.json` | `apis/youtube_quota.py` |
-| **LLM** | Multi-provider router with free-first tiers + a real per-provider token ledger | `core/llm_router.py`, `core/cost_meter.py` |
+| **Cross-run state** | Persisted TTL'd exhaustion + usage cache (`data/quota_state.json`) | `core/quota_state.py` |
+| **LLM** | Multi-provider router: free-first tiers, token ledger, **provider failover + session breaker** | `core/llm_router.py`, `core/cost_meter.py` |
 | **Per-run cost** | Fully-loaded estimate (now ledger-priced for LLM) | `core/cost_meter.py` |
 
-**Key limitation that motivates this doc:** all breakers are **process-scoped**.
-Every fresh `py main.py` invocation re-pays the first failing call per exhausted
-provider and re-runs the Apify preflight network round-trip. There is no memory of
-"this provider is out of credits" across runs, no operator-set budget ceiling, and
-no LLM-provider failover.
+**Wave 1 shipped (2026-06-23):** the Apify breaker now **persists across runs**
+(`core/quota_state.py` → `data/quota_state.json`), the preflight is **skipped when
+no paid signal will run** and **reuses a cached usage reading**, and the LLM router
+gained **provider failover + a session breaker**. See O1/O2/O3/O5/O6 below (marked
+✅). Remaining gaps: operator budget ceilings (O4/O7), signal-breaker persistence,
+observability (O8/O9), reset-window awareness (O10), and the unified governor (O11).
 
 ---
 
@@ -39,27 +41,25 @@ Effort: `[S]` days · `[M]` 1–2 wk · `[L]` 3+ wk. Each lists the saving.
 
 ### Tier 1 — cheap, high-leverage (do first)
 
-**O1. Skip the Apify preflight when no paid signal will run** `[S]`
-`run_discovery` calls `apify_preflight()` whenever `APIFY_CONTENT_MACHINE_KEY`
-exists — even when domain gating / `CONTENT_SKIP_SIGNALS` / the session breaker have
-already removed every paid social signal (`reddit`, `twitter`, `tiktok_trends`,
-`youtube_competitors`) for this topic. Compute the active signal set **first**;
-only preflight if ≥1 paid social signal survives. *Saving: one `/users/me` call on
-every gaming/finance/UFC run that gates out social (the common case).*
+**O1. Skip the Apify preflight when no paid signal will run** `[S]` — ✅ **SHIPPED**
+`run_discovery` now calls `register_signals.will_use_apify(topic, channel_id)` and
+only preflights when ≥1 paid Apify signal (`reddit`, `twitter`, `tiktok_trends`,
+`youtube_competitors`) actually survives skip/gating/breaker. *Saving: the
+`/users/me` call whenever those signals are skipped or already disabled.*
 
-**O2. Persist the breaker across runs (file-backed, TTL'd)** `[S–M]`
-Write tripped providers/signals to `data/quota_state.json` with a per-reason
-expiry: `auth`/`no_key` → long (until env changes / manual reset); `quota` → until
-the known reset window (§O10); repeated-timeout → short (~30 min). Load on startup
-so a fresh process **skips known-dead providers without re-paying the failing call
-or re-running preflight**. *Saving: the first failing call per exhausted provider on
-every subsequent run in the same window — the biggest cross-run win.*
+**O2. Persist the breaker across runs (file-backed, TTL'd)** `[S–M]` — ✅ **SHIPPED (Apify)**
+`core/quota_state.py` stores hard Apify 402/limit/auth failures in
+`data/quota_state.json` with a TTL (`QUOTA_STATE_TTL_SECONDS`, default 6h). A fresh
+process seeds its breaker via `_sync_persistent` and **skips Apify instantly — no
+preflight, no failing actor round-trip**. *Signal-breaker persistence is a later
+wave (the auth/no-key "fixed my key but still skipped" trap needs key-hash
+invalidation first).*
 
-**O3. Cache the Apify usage reading with a short TTL** `[S]`
-Store `monthlyUsageUsd` + limit from `/users/me` in `data/quota_state.json` with a
-15–30 min TTL; a fresh process within that window reuses it instead of a network
-preflight. Refresh on expiry or after a 402. *Saving: the preflight round-trip on
-back-to-back runs.*
+**O3. Cache the Apify usage reading with a short TTL** `[S]` — ✅ **SHIPPED**
+`apify_preflight` caches `{usage, limit}` from `/users/me` in `quota_state`
+(`APIFY_USAGE_CACHE_TTL_SECONDS`, default 20 min) and reuses it on back-to-back
+runs instead of re-hitting the network. *Saving: the preflight round-trip on
+repeated runs within the window.*
 
 **O4. Operator spend ceiling — degrade before the hard wall** `[S–M]`
 `APIFY_MONTHLY_BUDGET_USD` (and per-provider equivalents): trip the breaker when
@@ -69,17 +69,19 @@ ever hitting the painful hard-limit 402 mid-run.*
 
 ### Tier 2 — bring the LLM router to parity with the signal breakers
 
-**O5. LLM provider failover** `[M]`
-On a retryable status (429 rate-limit, 402, 401/403) from a tier's provider, fall
-through to the **next provider in that tier's preference chain** instead of raising.
-Mirrors the Apify breaker. Makes OpenRouter free-tier rate limits invisible (fall to
-DeepSeek). *Saving: avoids dropped LLM calls degrading to rule-based output, with no
-extra spend (next provider is also free).* Wiring point: `core/llm_router.complete`.
+**O5. LLM provider failover** `[M]` — ✅ **SHIPPED**
+`llm_router.complete` resolves a tier to a *chain* (`_resolve_chain`) and, on a
+retryable error (429/402/401/403/5xx/timeout), fails over to the next provider
+instead of raising. Makes OpenRouter free-tier rate limits invisible (fall to
+DeepSeek). Non-retryable errors (e.g. 400) propagate so prompt bugs aren't masked;
+an explicit `provider=` pins one with no failover. *Saving: dropped LLM calls no
+longer degrade to rule-based output, at no extra spend.*
 
-**O6. LLM provider session breaker** `[S]`
-Once a provider returns a hard auth/quota status, disable it for the session (like
-signals) so later tier resolutions skip it. Pairs with O5; reuses the same
-`data/quota_state.json` once O2 lands.
+**O6. LLM provider session breaker** `[S]` — ✅ **SHIPPED**
+A hard auth/quota status disables that provider for the session
+(`_disable_llm`/`reset_llm_breaker`), so later tier resolutions route around it.
+Rate-limits/5xx are transient → failover only, no disable. *(Cross-run persistence
+of LLM disables is deferred — free providers' limits reset fast.)*
 
 **O7. LLM per-day / per-run spend ceiling** `[S–M]`
 Use the token ledger (`llm_router.get_usage` → `cost_meter.llm_cost_from_usage`) +
@@ -122,12 +124,15 @@ persistence file (`data/quota_state.json`) and one dashboard. Endpoint of O2–O
 
 ## 3. Suggested sequencing
 
-1. **O1 + O3** (one PR) — stop the needless preflight; cache the usage read.
-2. **O2** — persist the breaker; immediately compounds O3 across runs.
-3. **O5 + O6** — LLM failover + breaker (makes the free OpenRouter tier robust).
-4. **O4 + O7** — operator budgets for Apify + LLM.
+1. ✅ **O1 + O3** — stop the needless preflight; cache the usage read. *(wave 1)*
+2. ✅ **O2** (Apify) — persist the breaker; compounds O3 across runs. *(wave 1)*
+3. ✅ **O5 + O6** — LLM failover + breaker (free OpenRouter tier now robust). *(wave 1)*
+4. **O4 + O7** — operator budgets for Apify + LLM. *(next wave)*
 5. **O8 + O9** — instrument, then surface a dashboard.
 6. **O10**, then **O11** (the governor) once the pieces exist to unify.
+
+Also still open from O2: **signal-breaker persistence** (needs key-hash
+invalidation so a fixed key clears the record).
 
 Each step is independently shippable with a test (per [decisions.md](decisions.md) §11).
 
@@ -142,6 +147,7 @@ Each step is independently shippable with a test (per [decisions.md](decisions.m
 | `CONTENT_SKIP_SIGNALS` | shipped | omit named signals (speed + spend) |
 | `DOMAIN_SIGNAL_GATING` | shipped | skip domain-mismatched signals |
 | `VARIANT_REUSE_SIGNALS` | shipped | pin slow/paid signals across variants |
+| `QUOTA_STATE_TTL_SECONDS` | **shipped (O2)** | how long a persisted Apify exhaustion lasts (default 6h) |
+| `APIFY_USAGE_CACHE_TTL_SECONDS` | **shipped (O3)** | reuse window for the last Apify usage reading (default 20m) |
 | `APIFY_MONTHLY_BUDGET_USD` | **proposed (O4)** | operator spend ceiling for Apify |
 | `LLM_MONTHLY_BUDGET_USD` / `LLM_DAILY_BUDGET_USD` | **proposed (O7)** | LLM spend ceiling → tier downgrade |
-| `QUOTA_STATE_TTL_SECONDS` | **proposed (O2/O3)** | freshness of the persisted quota cache |

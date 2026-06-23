@@ -160,6 +160,7 @@ class TestUsageLedger(unittest.TestCase):
 class TestComplete(unittest.TestCase):
     def setUp(self):
         llm_router.reset_usage()
+        llm_router.reset_llm_breaker()
 
     def test_complete_routes_and_records_usage(self):
         captured = {}
@@ -195,6 +196,97 @@ class TestComplete(unittest.TestCase):
     def test_parse_json_payload_extracts_embedded_object(self):
         self.assertEqual(llm_router.parse_json_payload('noise {"x": 1} trailing'), {"x": 1})
         self.assertIsNone(llm_router.parse_json_payload("no json here"))
+
+
+class _HTTPTestError(Exception):
+    """Carries a status_code so _classify_llm_error can read it (like SDK errors)."""
+
+    def __init__(self, status: int):
+        super().__init__(f"http {status}")
+        self.status_code = status
+
+
+def _status_error(status: int) -> _HTTPTestError:
+    return _HTTPTestError(status)
+
+
+class TestFailover(unittest.TestCase):
+    def setUp(self):
+        llm_router.reset_usage()
+        llm_router.reset_llm_breaker()
+
+    def tearDown(self):
+        llm_router.reset_llm_breaker()
+
+    def test_rate_limit_fails_over_to_next_provider(self):
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+        calls = []
+
+        def fake(provider, model, messages, **kwargs):
+            calls.append(provider)
+            if provider == "openrouter":
+                raise _status_error(429)
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                out = llm_router.complete("hi", tier="cheap")
+        self.assertEqual(out, "ok")
+        self.assertEqual(calls, ["openrouter", "deepseek"])
+        # Rate-limit is transient → openrouter is NOT disabled.
+        self.assertFalse(llm_router._llm_disabled("openrouter"))
+
+    def test_auth_error_disables_provider_for_session(self):
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+
+        def fake(provider, model, messages, **kwargs):
+            if provider == "openrouter":
+                raise _status_error(401)
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                out = llm_router.complete("hi", tier="cheap")
+            self.assertEqual(out, "ok")
+            self.assertTrue(llm_router._llm_disabled("openrouter"))
+            # Subsequent resolution routes around the disabled provider.
+            self.assertEqual(llm_router.resolve_tier("cheap")[0], "deepseek")
+
+    def test_non_retryable_error_propagates(self):
+        env = _clear_router_env({"DEEPSEEK_API_KEY": "x"})
+
+        def fake(provider, model, messages, **kwargs):
+            raise _status_error(400)  # bad request — don't mask with failover
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                with self.assertRaises(_HTTPTestError):
+                    llm_router.complete("hi", tier="cheap")
+
+    def test_all_candidates_fail_raises(self):
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+
+        def fake(provider, model, messages, **kwargs):
+            raise _status_error(429)
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                with self.assertRaises(_HTTPTestError):
+                    llm_router.complete("hi", tier="cheap")
+
+    def test_explicit_provider_does_not_failover(self):
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+        calls = []
+
+        def fake(provider, model, messages, **kwargs):
+            calls.append(provider)
+            raise _status_error(429)
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                with self.assertRaises(_HTTPTestError):
+                    llm_router.complete("hi", tier="cheap", provider="deepseek")
+        self.assertEqual(calls, ["deepseek"])  # pinned — no failover
 
 
 if __name__ == "__main__":

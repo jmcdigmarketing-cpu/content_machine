@@ -32,7 +32,59 @@ _MAX_FAILS = 2  # consecutive timeouts/errors before disabling for the session
 # Process-level circuit breaker: once Apify is out of credits, unauthorized, or
 # repeatedly failing, stop calling it so we don't burn credits/time re-trying
 # across every variant during discovery.
-_state: dict[str, Any] = {"disabled": False, "reason": "", "fails": 0, "checked": False}
+_state: dict[str, Any] = {
+    "disabled": False,
+    "reason": "",
+    "fails": 0,
+    "checked": False,
+    "synced": False,  # whether we've consulted cross-run persisted state yet
+}
+
+
+def _persist_ttl() -> int:
+    try:
+        return int(os.getenv("QUOTA_STATE_TTL_SECONDS", str(6 * 60 * 60)))
+    except ValueError:
+        return 6 * 60 * 60
+
+
+def _usage_cache_ttl() -> int:
+    try:
+        return int(os.getenv("APIFY_USAGE_CACHE_TTL_SECONDS", str(20 * 60)))
+    except ValueError:
+        return 20 * 60
+
+
+def _sync_persistent(purpose: str) -> None:
+    """Seed the in-process breaker from cross-run persisted exhaustion (once).
+
+    A prior run that hit a hard 402/limit recorded it in data/quota_state.json;
+    a fresh process picks that up here and skips Apify instantly — no network
+    preflight, no failing actor round-trip.
+    """
+    if _state["synced"] or _state["disabled"]:
+        return
+    _state["synced"] = True
+    try:
+        from core.quota_state import is_exhausted
+
+        exhausted, reason = is_exhausted("apify", purpose)
+    except Exception:
+        return
+    if exhausted:
+        _state["disabled"] = True
+        _state["reason"] = f"{reason} (persisted)"
+        logger.info("Apify skipped from persisted state: %s", reason)
+
+
+def _persist_exhausted(purpose: str, reason: str) -> None:
+    """Remember a hard credit/auth failure across runs (TTL'd)."""
+    try:
+        from core.quota_state import mark_exhausted
+
+        mark_exhausted("apify", purpose, reason, ttl_seconds=_persist_ttl())
+    except Exception:
+        pass
 
 
 def apify_disabled() -> bool:
@@ -53,8 +105,8 @@ def disable_apify(reason: str) -> None:
 
 
 def reset_apify_state() -> None:
-    """Test/CLI helper — clear the circuit breaker."""
-    _state.update({"disabled": False, "reason": "", "fails": 0, "checked": False})
+    """Test/CLI helper — clear the in-process circuit breaker."""
+    _state.update({"disabled": False, "reason": "", "fails": 0, "checked": False, "synced": False})
 
 
 def apify_credit_exhausted() -> bool:
@@ -93,6 +145,7 @@ def run_actor(
     Results are cached by (actor_id, input_data) for `ttl` seconds.
     Returns None if the actor is not configured or fails.
     """
+    _sync_persistent(purpose)
     if _state["disabled"]:
         return None
 
@@ -123,9 +176,12 @@ def run_actor(
             json=input_data,
             timeout=timeout_secs + 15,
         )
-        # Account-wide problems → trip the circuit breaker (don't retry this session).
+        # Account-wide problems → trip the circuit breaker (don't retry this session
+        # OR the next run, within the persisted TTL).
         if resp.status_code in (401, 402, 403):
-            disable_apify(f"Apify credits/auth ({resp.status_code}) — skipping social signals")
+            reason = f"Apify credits/auth ({resp.status_code}) — skipping social signals"
+            disable_apify(reason)
+            _persist_exhausted(purpose, reason)
             return None
         # run-sync-get-dataset-items returns 200 OR 201 (Created) with the items.
         if resp.status_code not in (200, 201):
@@ -158,6 +214,9 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
     """
     if _state["disabled"]:
         return False, _state["reason"]
+    _sync_persistent(purpose)
+    if _state["disabled"]:
+        return False, _state["reason"]
     if _state["checked"]:
         return True, "ON"
     _state["checked"] = True
@@ -167,6 +226,20 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
         disable_apify("no APIFY_CONTENT_MACHINE_KEY set")
         return False, _state["reason"]
 
+    # O3: reuse a recent usage reading instead of re-hitting /users/me on
+    # back-to-back runs (the limit/usage barely moves minute to minute).
+    try:
+        from core.quota_state import get_value, set_value
+    except Exception:
+        get_value = set_value = None  # type: ignore[assignment]
+    if get_value is not None:
+        cached = get_value(f"apify_usage:{purpose}")
+        if isinstance(cached, dict):
+            usage = cached.get("usage")
+            limit = cached.get("limit")
+            if isinstance(usage, int | float) and isinstance(limit, int | float) and limit > 0:
+                return True, f"ON (${usage:.2f}/${limit:.2f} used, cached)"
+
     try:
         resp = requests.get(f"{_BASE}/users/me", params={"token": api_key}, timeout=12)
     except Exception as exc:
@@ -175,7 +248,9 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
         return True, "ON (precheck skipped)"
 
     if resp.status_code in (401, 403):
-        disable_apify("Apify key unauthorized (preflight)")
+        reason = "Apify key unauthorized (preflight)"
+        disable_apify(reason)
+        _persist_exhausted(purpose, reason)
         return False, _state["reason"]
     if resp.status_code != 200:
         return True, "ON (precheck inconclusive)"
@@ -188,8 +263,16 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
         )
         if isinstance(usage, int | float) and isinstance(limit, int | float) and limit > 0:
             if usage >= limit:
-                disable_apify(f"Apify monthly limit reached (${usage:.2f}/${limit:.2f})")
+                reason = f"Apify monthly limit reached (${usage:.2f}/${limit:.2f})"
+                disable_apify(reason)
+                _persist_exhausted(purpose, reason)
                 return False, _state["reason"]
+            if set_value is not None:
+                set_value(
+                    f"apify_usage:{purpose}",
+                    {"usage": float(usage), "limit": float(limit)},
+                    _usage_cache_ttl(),
+                )
             return True, f"ON (${usage:.2f}/${limit:.2f} used)"
     except Exception as exc:
         logger.debug("Apify preflight parse error: %s", exc)

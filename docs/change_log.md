@@ -6,6 +6,36 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Multi-provider LLM router + credit-efficiency docs (2026-06-23)
+
+- **`core/llm_router.py`:** unified router for every runtime LLM call. Task tiers
+  — `cheap` / `extract` / `premium` — routed across **DeepSeek, OpenRouter, Ollama
+  (local), OpenAI, Anthropic** (Groq wired but not default — signup gated; Doubao
+  wired but skipped — China-region-locked). Free-first defaults: OpenRouter `:free`
+  models anchor `cheap` (Ollama local fallback), DeepSeek-V3 anchors `extract` +
+  `premium`. OpenAI-compatible providers share one client shape (different
+  `base_url`); Claude uses the native messages API. Per-tier overrides
+  `LLM_<TIER>_PROVIDER`/`_MODEL` and per-provider `{PROVIDER}_MODEL_<TIER>`; loads
+  `.env` standalone; degrades gracefully (OpenAI-only behaves like the old code).
+- **Call sites migrated** off the hardcoded OpenAI client: `core/content_engine.py`
+  (final script/expand → premium; hook regen → cheap), `core/research_brief.py`
+  (premium), `core/fact_enrichment.py` (extract — consolidated the duplicated raw
+  Claude branch), `apis/topic_variants.py` (cheap), `assets/background_query.py`
+  (cheap — merged the openai+anthropic duplicates), `assets/local_provider.py`
+  (cheap). Only the multimodal thumbnail vision scorer stays on `core/llm_client.py`.
+- **Cost meter:** real **per-provider token ledger** (`llm_router` records usage;
+  `cost_meter.llm_cost_from_usage` prices it) replaces the word-count heuristic for
+  LLM cost; free `:free`/Ollama calls priced at $0. `reset_usage()` per run in
+  `run_discovery`. Pricing table for DeepSeek/OpenRouter/Llama/Ollama/OpenAI/Claude.
+- **Config:** `DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_MODEL`/`OLLAMA_BASE_URL`
+  added to `settings` + `.env.example` (with the free-setup guidance).
+- **Docs:** new [credit_efficiency.md](credit_efficiency.md) — credit/quota/spend
+  optimization backlog (O1–O11); architecture, decisions (§14), debugging, roadmap,
+  operating_plan updated.
+- **Tests:** `tests/test_llm_router.py` (tier resolution, overrides, failover-ready
+  routing, usage ledger, completion mocking) + `tests/test_cost_meter.py` ledger
+  pricing. Suite green at 397.
+
 ### Multi-domain signal expansion (2026-06)
 
 - **Finance:** `fred`, `sec_edgar`, `finnhub`, `coingecko` APIs.

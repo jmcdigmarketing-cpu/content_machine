@@ -27,6 +27,14 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL") or os.getenv("DATABASE_KEY") or ""
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o")
+    # Multi-provider LLM keys (routed via core/llm_router.py). Free-first:
+    # DeepSeek + Doubao anchor the cheap/extract/premium tiers; OpenAI/Anthropic
+    # stay as opt-in premium upgrades. All optional — router degrades gracefully.
+    deepseek_api_key: str = os.getenv("DEEPSEEK_API_KEY", "")
+    openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    doubao_api_key: str = os.getenv("DOUBAO_API_KEY", "") or os.getenv("ARK_API_KEY", "")
+    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     youtube_daily_quota: int = int(os.getenv("YOUTUBE_DAILY_QUOTA", "10000"))
     content_skip_signals: str = os.getenv("CONTENT_SKIP_SIGNALS", "")
     youtube_upload_enabled: bool = os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() in (

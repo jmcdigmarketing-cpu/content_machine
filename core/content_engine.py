@@ -1,4 +1,3 @@
-import json
 import re
 from typing import Any
 
@@ -6,7 +5,7 @@ from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.description_extras import apply_description_extras
 from core.fact_enrichment import _fact_line_count, enrich_facts
 from core.fact_grounding import find_ungrounded_entities
-from core.llm_client import get_model, get_openai_client
+from core.llm_router import complete_json
 from core.logging import get_logger
 from core.research_brief import ResearchBrief
 from core.script_brief import build_script_brief
@@ -19,7 +18,6 @@ from core.seo import normalize_youtube_tags, tags_from_topic
 from core.signal_facts import format_signal_facts
 
 logger = get_logger("core.content_engine")
-client = get_openai_client()
 
 PROMPT_VERSION = "content_engine_v6"
 MAX_EXPAND_ATTEMPTS = 2
@@ -287,19 +285,20 @@ Return JSON only:
 
 
 def _call_content_llm(
-    system_prompt: str, user_prompt: str, *, temperature: float = 0.65
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    temperature: float = 0.65,
+    tier: str = "premium",
 ) -> dict[str, Any] | None:
-    response = client.chat.completions.create(
-        model=get_model(),
+    # Final script/title/description is the product → premium tier by default.
+    return complete_json(
+        user_prompt,
+        system=system_prompt,
+        tier=tier,
         temperature=temperature,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
+        max_tokens=3000,
     )
-    raw = response.choices[0].message.content or ""
-    return _parse_json_payload(raw)
 
 
 def _maybe_improve_hook(script: str) -> str:
@@ -328,7 +327,8 @@ def _maybe_improve_hook(script: str) -> str:
         'replaced:\n{"script": "..."}'
     )
     try:
-        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.7)
+        # Rewriting one sentence is throwaway work → cheap tier.
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.7, tier="cheap")
     except Exception as exc:
         logger.debug("hook regen failed: %s", exc)
         return script
@@ -368,13 +368,8 @@ ORIGINAL:
 {script}
 """
     try:
-        response = client.chat.completions.create(
-            model=get_model(),
-            temperature=0.5,
-            response_format={"type": "json_object"},
-            messages=[{"role": "user", "content": prompt}],
-        )
-        data = _parse_json_payload(response.choices[0].message.content or "")
+        # Expansion adds substance to the final script → premium tier.
+        data = complete_json(prompt, tier="premium", temperature=0.5, max_tokens=3000)
         if isinstance(data, dict) and data.get("script"):
             expanded = str(data["script"]).strip()
             if count_spoken_words(expanded) > current:
@@ -517,16 +512,3 @@ def generate_content_package(
         "word_count": count_spoken_words(script),
         "ungrounded_entities": ungrounded,
     }
-
-
-def _parse_json_payload(raw: str) -> dict[str, Any] | None:
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        match = re.search(r"\{[\s\S]*\}", raw)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                return None
-    return None

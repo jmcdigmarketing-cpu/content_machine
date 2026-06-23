@@ -17,12 +17,75 @@ from typing import Any
 # Signals that incur a paid Apify actor run.
 _APIFY_SIGNALS = ("reddit", "twitter", "tiktok_trends", "youtube_competitors")
 
+# Per-1M-token public pricing (USD), input/output, by provider+model prefix.
+# Used to price the real token ledger from core/llm_router. Override-friendly:
+# unknown models fall back to a conservative default. Free credits don't change
+# the modeled cost — they offset the bill, but the unit economics still inform
+# routing (a free DeepSeek call is ~10x "cheaper value" than a paid gpt-4o one).
+_LLM_PRICES: dict[str, tuple[float, float]] = {
+    # OpenAI
+    "gpt-4o-mini": (0.15, 0.60),
+    "gpt-4o": (2.50, 10.00),
+    # DeepSeek-V3 (deepseek-chat) — near-gpt-4o quality, ~10x cheaper
+    "deepseek-chat": (0.27, 1.10),
+    "deepseek-reasoner": (0.55, 2.19),
+    # Groq — free tier ($0); paid rates listed so a ledger still reflects value.
+    "llama-3.1-8b": (0.05, 0.08),
+    "llama-3.3-70b": (0.59, 0.79),
+    "llama-3": (0.59, 0.79),
+    # Ollama / local — zero marginal cost.
+    "ollama": (0.0, 0.0),
+    # Doubao (Volcengine Ark) — cheapest tier; lite vs pro
+    "doubao-lite": (0.04, 0.08),
+    "doubao-pro": (0.11, 0.28),
+    "doubao": (0.11, 0.28),
+    # Anthropic
+    "claude-haiku": (1.00, 5.00),
+    "claude-sonnet": (3.00, 15.00),
+    "claude-opus": (15.00, 75.00),
+}
+_LLM_PRICE_DEFAULT = (1.00, 4.00)  # conservative blended fallback
+
 
 def _rate(env: str, default: float) -> float:
     try:
         return float(os.getenv(env, str(default)))
     except (TypeError, ValueError):
         return default
+
+
+def _price_for_model(model: str) -> tuple[float, float]:
+    """Match a model id against the price table by longest known prefix."""
+    m = (model or "").lower()
+    best: tuple[float, float] | None = None
+    best_len = -1
+    for key, price in _LLM_PRICES.items():
+        if key in m and len(key) > best_len:
+            best, best_len = price, len(key)
+    return best or _LLM_PRICE_DEFAULT
+
+
+def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
+    """Price a token ledger (from core.llm_router.get_usage) in USD.
+
+    Returns 0.0 for an empty ledger so callers can detect "no real data" and
+    fall back to the heuristic estimate.
+    """
+    if not calls:
+        return 0.0
+    total = 0.0
+    for c in calls:
+        # Local Ollama has no marginal cost regardless of model name.
+        if str(c.get("provider", "")).lower() == "ollama":
+            continue
+        model = str(c.get("model", ""))
+        # OpenRouter free models (the `:free` suffix) are $0.
+        if ":free" in model.lower():
+            continue
+        in_price, out_price = _price_for_model(model)
+        total += (int(c.get("input_tokens", 0)) / 1_000_000.0) * in_price
+        total += (int(c.get("output_tokens", 0)) / 1_000_000.0) * out_price
+    return round(total, 6)
 
 
 def estimate_run_cost(
@@ -36,10 +99,19 @@ def estimate_run_cost(
     words = len([w for w in script.split() if w])
     chars = len(script)
 
-    # LLM: discovery variants + brief + content + expansion are many calls; approximate
-    # total tokens as a multiple of the final script length (blended in+out rate).
-    llm_tokens = max(words * 8, 1500)
-    llm = (llm_tokens / 1000.0) * _rate("COST_LLM_PER_1K_TOKENS", 0.005)
+    # LLM: prefer the real per-provider token ledger (core/llm_router) when a run
+    # recorded usage; fall back to the old word-count heuristic otherwise.
+    llm = 0.0
+    try:
+        from core.llm_router import get_usage
+
+        llm = llm_cost_from_usage(get_usage())
+    except Exception:
+        llm = 0.0
+    if llm <= 0.0:
+        # Heuristic fallback: total tokens ≈ a multiple of final script length.
+        llm_tokens = max(words * 8, 1500)
+        llm = (llm_tokens / 1000.0) * _rate("COST_LLM_PER_1K_TOKENS", 0.005)
 
     # TTS only happens on render.
     tts = (chars / 1000.0) * _rate("COST_TTS_PER_1K_CHARS", 0.30) if rendered else 0.0

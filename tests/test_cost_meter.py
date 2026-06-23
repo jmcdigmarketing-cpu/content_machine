@@ -3,7 +3,11 @@
 import unittest
 from unittest.mock import patch
 
-from core.cost_meter import estimate_run_cost, format_cost_line
+from core.cost_meter import (
+    estimate_run_cost,
+    format_cost_line,
+    llm_cost_from_usage,
+)
 
 
 class TestCostMeter(unittest.TestCase):
@@ -39,6 +43,49 @@ class TestCostMeter(unittest.TestCase):
         with patch.dict("os.environ", {"COST_LLM_PER_1K_TOKENS": "1.0"}, clear=False):
             cost = estimate_run_cost(script="word " * 1000)
         self.assertGreater(cost["llm"], 5.0)
+
+
+class TestLLMCostFromUsage(unittest.TestCase):
+    def test_empty_ledger_is_zero(self):
+        self.assertEqual(llm_cost_from_usage(None), 0.0)
+        self.assertEqual(llm_cost_from_usage([]), 0.0)
+
+    def test_prices_by_model_prefix(self):
+        # 1M input + 1M output on deepseek-chat = 0.27 + 1.10
+        calls = [{"model": "deepseek-chat", "input_tokens": 1_000_000, "output_tokens": 1_000_000}]
+        self.assertAlmostEqual(llm_cost_from_usage(calls), 1.37, places=4)
+
+    def test_doubao_far_cheaper_than_gpt4o(self):
+        doubao = [{"model": "ep-x doubao-lite", "input_tokens": 1_000_000, "output_tokens": 0}]
+        gpt = [{"model": "gpt-4o", "input_tokens": 1_000_000, "output_tokens": 0}]
+        self.assertLess(llm_cost_from_usage(doubao), llm_cost_from_usage(gpt))
+
+    def test_unknown_model_uses_default(self):
+        calls = [{"model": "mystery-llm", "input_tokens": 1_000_000, "output_tokens": 0}]
+        self.assertGreater(llm_cost_from_usage(calls), 0.0)
+
+    def test_local_ollama_is_free(self):
+        # Local provider has no marginal cost regardless of model name.
+        calls = [
+            {
+                "provider": "ollama",
+                "model": "llama3.1",
+                "input_tokens": 5_000_000,
+                "output_tokens": 5_000_000,
+            }
+        ]
+        self.assertEqual(llm_cost_from_usage(calls), 0.0)
+
+    def test_estimate_uses_real_ledger_when_present(self):
+        from core import llm_router
+
+        llm_router.reset_usage()
+        llm_router._record_usage("deepseek", "deepseek-chat", "premium", 1_000_000, 1_000_000)
+        try:
+            cost = estimate_run_cost(script="word " * 50, rendered=False)
+            self.assertAlmostEqual(cost["llm"], 1.37, places=4)
+        finally:
+            llm_router.reset_usage()
 
 
 class TestFormatCostLine(unittest.TestCase):

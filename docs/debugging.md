@@ -9,7 +9,7 @@ Operator-focused guide for diagnosing failures, validating config, and recoverin
 Run these in order when something fails before or during `py main.py`:
 
 ```powershell
-cd C:\Users\jonma\OneDrive\Desktop\content_machine
+cd C:\dev\content_machine
 
 # 1. Layout + channel config
 py -m scripts.ops migrate-layout
@@ -36,6 +36,30 @@ $env:CONTENT_LOG_LEVEL = "INFO"    # or DEBUG
 $env:CONTENT_QUIET_LOGS = "0"
 py main.py
 ```
+
+---
+
+## LLM providers (multi-provider router)
+
+All runtime LLM calls go through `core/llm_router.py` (tiers `cheap`/`extract`/
+`premium`). Check which provider each tier resolves to:
+
+```powershell
+py -c "import config.settings; from core import llm_router as r; [print(t, r.resolve_tier(t)) for t in ('cheap','extract','premium')]"
+```
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| All tiers resolve to `openai` despite DeepSeek/OpenRouter keys set | `.env` not loaded **or** keys missing/misnamed | Run the check above **with** `import config.settings` (it loads `.env`). Confirm exact var names: `DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY` |
+| Cheap tier still on DeepSeek, not OpenRouter | `OPENROUTER_API_KEY` not seen | Must be that **exact** name in `.env` (not `OPENROUTER_KEY`) |
+| Ollama never selected | `OLLAMA_MODEL` not set (an API key alone does nothing) | Set `OLLAMA_MODEL=<pulled model>` (`ollama list`) + run `ollama serve`; optional `OLLAMA_BASE_URL` for a remote host |
+| Premium script quality dropped | premium routed to a free model | It's free DeepSeek-V3 by default; to pay for top quality set `LLM_PREMIUM_PROVIDER=openai` (`LLM_PREMIUM_MODEL=gpt-4o`) or `=anthropic` |
+| OpenRouter calls intermittently fail | free `:free` models are rate-limited | Expected on the free tier; provider **failover** is a planned follow-up ([credit_efficiency.md](credit_efficiency.md) O5). For now set `LLM_CHEAP_PROVIDER=deepseek` to avoid it |
+| Want to force one provider everywhere | — | Set `LLM_<TIER>_PROVIDER` / `LLM_<TIER>_MODEL` per tier |
+
+Provider keys + the full free-setup guidance live in `.env.example`. Routing
+rationale: [decisions.md](decisions.md) §14. Spend/credit efficiency:
+[credit_efficiency.md](credit_efficiency.md).
 
 ---
 

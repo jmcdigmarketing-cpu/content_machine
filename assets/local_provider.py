@@ -1,8 +1,6 @@
 import os
 import random
 
-from core.llm_client import get_model, get_openai_client
-
 from typing import Optional
 
 from assets.base import AssetProvider
@@ -10,14 +8,6 @@ from assets.category import detect_category
 from assets.types import AssetResult
 
 BASE_VIDEO_DIR = os.path.join("video", "backgrounds")
-_client = None
-
-
-def _get_client():
-    global _client
-    if _client is None:
-        _client = get_openai_client()
-    return _client
 
 
 def _get_subfolders(base_path):
@@ -50,15 +40,16 @@ No explanation.
 """
 
     try:
-        response = _get_client().chat.completions.create(
-            model=get_model(),
+        from core.llm_router import complete
+
+        # Picking a background folder from a list is trivial → cheap tier.
+        choice = complete(
+            prompt,
+            tier="cheap",
+            system="Select best folder from list.",
             temperature=0,
-            messages=[
-                {"role": "system", "content": "Select best folder from list."},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        choice = response.choices[0].message.content.strip()
+            max_tokens=120,
+        ).strip()
         for folder in folders:
             if os.path.relpath(folder, BASE_VIDEO_DIR) == choice:
                 return folder

@@ -278,9 +278,12 @@ Turn the research spine into a compliance moat.
 - [ ] Theme registry so each channel picks a skin in `channels.json`; keep a plain/no-emoji mode for logs and CI.
 
 ### Efficiency & integrations
+> **Credit/quota/spend optimization backlog:** [credit_efficiency.md](credit_efficiency.md) — Apify preflight skip, cross-run breaker persistence, operator budgets, LLM provider failover, reliability dashboard, unified quota governor (O1–O11).
 - [ ] **Whisper** locally for caption timing + clip transcription (enables Phases Q & R).
-- [ ] **Cost / quota dashboard** — per-run API spend (OpenAI / Apify / YouTube units) in status.
-- [ ] **Local-LLM option** — pluggable backend (Ollama) for cheaper drafts; keep Claude/GPT for finals.
+- [ ] **Cost / quota dashboard** — per-run API spend (OpenAI / Apify / YouTube units) in status. *(spec'd as O9 in [credit_efficiency.md](credit_efficiency.md); LLM half now ledger-priced.)*
+- [x] **Multi-provider LLM router** (`core/llm_router.py`) — task-tier routing (cheap/extract/premium) across **DeepSeek, OpenRouter, Ollama (local), OpenAI, Anthropic** (Groq wired but not default — signup gated; Doubao wired but skipped — China-region-locked, ~$0 savings); OpenAI-compatible client shape + native Claude. Free-first defaults (**OpenRouter** free `:free` models anchor cheap, Ollama local fallback; **DeepSeek-V3** anchors extract+premium ≈ gpt-4o quality, ~10× cheaper), env-overridable per tier + per-provider `{PROVIDER}_MODEL_<TIER>`, graceful degradation, loads `.env` standalone. Consolidated the 3 ad-hoc Claude call sites + migrated content_engine / research_brief / fact_enrichment / topic_variants / background_query / local_provider. Real **per-provider token ledger** prices `cost_meter` (free `:free`/Ollama = $0). (`DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_MODEL`.)
+- [x] **Local-LLM option (Ollama)** — folded into the router as the `ollama` provider (OpenAI-compatible, `OLLAMA_MODEL` + optional `OLLAMA_BASE_URL`); zero marginal cost in the ledger.
+- [ ] **Router follow-ups** — route thumbnail vision scorer once multimodal is added to the router; add a provider failover (premium→cheaper on auth/quota error); surface per-provider spend in the cost line.
 - [ ] **Webhook / n8n / Zapier out** — emit run + publish events for external automation.
 - [ ] **Batch generation** — N ideas → N drafts in one unattended pass (feeds A/B + volume-with-variation).
 - [ ] **Observability** — structured run traces + timing dashboard (timings already captured).

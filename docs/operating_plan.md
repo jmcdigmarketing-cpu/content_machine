@@ -165,7 +165,11 @@ signals`; web search `$0.008`; render $0 (local FFmpeg).
 **Known cost-meter gaps to fix (cheap, high-value):**
 - **Flux thumbnail is not metered at all** (`BFL_API_KEY`, ~$0.04–0.05/image) —
   add it; it's a real per-run cost.
-- LLM is one blended line — split OpenAI vs Claude and count discovery calls.
+- ~~LLM is one blended line — split OpenAI vs Claude and count discovery calls.~~
+  ✅ **Done** — the `llm_router` token ledger now records every call's provider +
+  model + in/out tokens, and `cost_meter.llm_cost_from_usage` prices them per
+  provider (free `:free`/Ollama = $0). The old word-count heuristic is the fallback
+  only when a run recorded no usage.
 
 **Two different cost problems:**
 - **Per-run variable cost** → dominated by **TTS** (and Flux thumbnails).
@@ -173,9 +177,13 @@ signals`; web search `$0.008`; render $0 (local FFmpeg).
   402 saga showed it's the real budget ceiling.
 
 **Cost-reduction roadmap (ordered by leverage):**
-1. **Tiered models** — route classification/tagging/summaries/domain-inference to
-   cheap models (gpt-4o-mini / Gemini Flash / DeepSeek); reserve premium (Claude/
-   GPT-4o) for research briefs, final scripts, analytics reports. Biggest LLM saving.
+1. **Tiered models** — ✅ **SHIPPED (2026-06-23)** via `core/llm_router.py`: every
+   LLM call picks a tier (`cheap`/`extract`/`premium`) routed across DeepSeek /
+   OpenRouter / Ollama / OpenAI / Claude. Cheap+extract run on free providers
+   (DeepSeek/OpenRouter free models) → per-run LLM cost ≈ $0; premium stays free on
+   DeepSeek-V3 by default, one env flip to upgrade to gpt-4o/Claude. A real
+   per-provider token ledger now prices this section. See [credit_efficiency.md](credit_efficiency.md)
+   for the remaining quota/spend optimizations (failover, persistence, budgets).
 2. **Apify discipline** — already helped by the 402 guard + preflight + domain
    gating + variant-reuse pinning. Next: use the feature store to *measure* whether
    each paid social signal actually moves the composite score; drop the dead weight.

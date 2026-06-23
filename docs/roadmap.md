@@ -1,5 +1,10 @@
 # Content OS — Roadmap
 
+> **North star:** [vision.md](vision.md) — the v3 intelligence-systems vision
+> ("operate media businesses," not "make videos"), a senior-level critique of it,
+> and the revised 12-month architecture plan prioritized for defensibility,
+> revenue, and learning advantage. This roadmap is the tactical layer beneath it.
+
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
 Last updated: 2026-06-23 — **both feature PRs consolidated into `main`** (`e6d5c9c`); 363 tests green. main now holds Phase O/P/Q + idea-intake + recommenders AND the full recency/quality layer (key facts, signal gating, web search, Obsidian, circuit breakers, confidence surfacing, cost meter, fact-grounding, RAWG relevance, domain-routed RSS). No open PRs or divergent branches.

@@ -152,6 +152,15 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("topic-db", "Topic Winners (clone these) + Graveyard (avoided flops)")
+def cmd_topic_db(args: argparse.Namespace) -> int:
+    from core.topic_db import display_graveyard, display_winners, graveyard, winners
+
+    display_winners(winners(args.channel), print_fn=print)
+    display_graveyard(graveyard(args.channel), print_fn=print)
+    return 0
+
+
 @_register(
     "intelligence-report",
     "Content Intelligence Report (signals + brief + competitors, no render)",

@@ -464,8 +464,15 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
     domain_rates = _domain_avg_rates(entries)
     domain_counts = _domain_sample_counts(entries)
     adjusted = _adjusted_domain_rates(entries)
-    # Don't re-suggest anything covered recently (kills the repeat problem).
+    # Don't re-suggest anything covered recently (kills the repeat problem) — nor
+    # any topic in the Graveyard (proven flops; avoid-list from core/topic_db).
     recent = {normalize_seed_topic(t).lower() for t in recent_input_topics(channel_id, limit=30)}
+    try:
+        from core.topic_db import graveyard_topics
+
+        recent |= {normalize_seed_topic(t).lower() for t in graveyard_topics(channel_id)}
+    except Exception:
+        pass
 
     options: list[BestBetResult] = []
     seen: set[str] = set(recent)

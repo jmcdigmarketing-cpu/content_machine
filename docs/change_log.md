@@ -6,6 +6,23 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Topic Winners + Graveyard (2026-06-23)
+
+*The data was already in `content_runs`↔`publish_log`; this surfaces it by topic.*
+
+- **`core/topic_db.py`** — aggregates run history per topic into `TopicRecord`
+  (runs, measured count, avg/best engaged-rate, last status). `winners()` ranks
+  topics that engaged ("clone these"); `graveyard()` flags topics that measurably
+  flopped (avg engaged-rate < `GRAVEYARD_RATE_FLOOR`, default 4%). Read-only,
+  confidence-aware (`min_measured`), best-effort (empty on any storage error).
+- **Avoid-list wired into discovery**: `graveyard_topics()` is folded into
+  best-bet's exclude set (`GRAVEYARD_AVOID`, default on), so discovery stops
+  re-pitching proven losers.
+- **`scripts.ops topic-db --channel <id>`** prints Winners + Graveyard; also
+  `py -m core.topic_db`.
+- **Tests:** `tests/test_topic_db.py` (ranking, min-measured, floor, avoid-set,
+  disabled, empty display). Suite 486 green.
+
 ### Human-context layer (Phase O) — persona + continuity (2026-06-23)
 
 *The last open Phase O item. YouTube's 2026 policy rewards a consistent human voice

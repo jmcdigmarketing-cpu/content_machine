@@ -6,6 +6,32 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Subject anchoring + future-dated-fact filter (2026-06-23)
+
+*Live run: operator picked a "Kape" best-bet and pasted Kape facts, but the video
+came out about a different fighter (Du Plessis) — variant generation generalised
+the subject away ("the one fighter everyone is sleeping on") and the script then
+followed a web-search tangent, silently abandoning the operator's key facts. The
+same script also grounded on a web line claiming an event was "lost on July 18" (a
+future date relative to the run).*
+
+- **Subject preservation in variants** (`apis/topic_variants._subject_terms`):
+  single-word proper-noun subjects (e.g. "Kape") that `extract_anchors`
+  (franchise-only) misses are now pinned into the title rules — "keep the seed's
+  subject, do not generalise to 'one fighter'".
+- **Key-fact recenter** (`content_engine._maybe_recenter_on_key_facts`): if the
+  finished script mentions *none* of the proper-noun subjects in the operator's
+  pasted key facts, regenerate once to center it on them (accepted only if the
+  rewrite covers a key-fact subject without gutting the script). Runs first, before
+  insight/grounding. Default-on (`KEY_FACT_ANCHOR_ENABLED`).
+- **Future-dated junk-fact filter** (`core/fact_recency.drop_future_dated`): drops
+  corpus lines asserting a *completed* action on a date after today
+  (`FACT_FUTURE_DATE_FILTER`, default on). High-precision — only fires when a
+  future date co-occurs with a past-action verb, so legit previews survive.
+- **`core/fact_grounding`**: public `specific_entities()` + `mentions()` helpers.
+- **Tests:** `tests/test_fact_recency.py`, `tests/test_key_fact_anchor.py`
+  (subject terms + recenter accept/noop/reject/disabled). Suite 474 green.
+
 ### Best-bet: confidence-weighted + diversified (2026-06-23)
 
 *Same live run: for an NBA session, best-bet offered 3 stale UFC picks, all "low

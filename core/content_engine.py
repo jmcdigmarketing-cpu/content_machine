@@ -451,6 +451,69 @@ def _maybe_inject_insight(script: str, grounding_text: str, topic: str) -> str:
     return script
 
 
+def _key_fact_anchor_enabled() -> bool:
+    return os.getenv("KEY_FACT_ANCHOR_ENABLED", "true").lower() not in ("0", "false", "no")
+
+
+def _maybe_recenter_on_key_facts(
+    script: str, key_facts: list[str] | None, topic: str, grounding_text: str
+) -> str:
+    """Re-center a drifted script on the operator's key-fact subject.
+
+    The operator's pasted facts are highest-priority ground truth (ADR §4) that the
+    script must be ABOUT. A live run picked a "Kape" topic, pasted Kape facts, then
+    produced a script about a different fighter entirely — the key facts were
+    silently abandoned. This detects that drift: if the script mentions *none* of
+    the proper-noun subjects named in the key facts, regenerate once to center it on
+    them. Accepted only if the rewrite now covers a key-fact subject without gutting
+    the script. Default-on (``KEY_FACT_ANCHOR_ENABLED``); no-op when there are no
+    key facts or the script already references one (most runs pay nothing).
+    """
+    if not _key_fact_anchor_enabled() or not key_facts:
+        return script
+    from core.fact_grounding import mentions, specific_entities
+
+    facts_text = "\n".join(_sanitize_key_facts(key_facts))
+    subjects = specific_entities(facts_text)
+    if not subjects:
+        return script  # no named subject to anchor on (e.g. purely numeric facts)
+    if any(mentions(script, e) for e in subjects):
+        return script  # already on-topic
+
+    logger.warning(
+        "Script ignores operator key-fact subject(s): %s — recentering",
+        ", ".join(subjects[:5]),
+    )
+    system_prompt = (
+        "You rewrite a short-form video script so it is ABOUT the OPERATOR KEY FACTS. "
+        "The current script drifted onto a different subject. Rewrite it to center on "
+        "the people/events named in the KEY FACTS, using ONLY the verified facts given. "
+        "Do not introduce a different main subject, do not invent specifics, and do not "
+        "present a rumor as a fact. Keep the hook style, length, and tone. Return JSON "
+        'only: {"script": "..."}'
+    )
+    user_prompt = (
+        f"TOPIC: {topic}\n\nOPERATOR KEY FACTS (the script MUST be about these):\n"
+        + "\n".join(f"- {f}" for f in _sanitize_key_facts(key_facts))
+        + f"\n\nVERIFIED FACTS:\n{grounding_text}\n\n"
+        f"SCRIPT (drifted — rewrite to center on the key facts):\n{script}"
+    )
+    try:
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.4, tier="premium")
+    except Exception as exc:
+        logger.debug("key-fact recenter failed: %s", exc)
+        return script
+    if not isinstance(payload, dict) or not payload.get("script"):
+        return script
+
+    candidate = str(payload["script"]).strip()
+    keeps_length = count_spoken_words(candidate) >= 0.6 * max(count_spoken_words(script), 1)
+    if keeps_length and any(mentions(candidate, e) for e in subjects):
+        logger.info("Recentered script on operator key facts")
+        return candidate
+    return script
+
+
 def _expand_script(
     *,
     script: str,
@@ -513,6 +576,17 @@ def generate_content_package(
         channel_id=channel_id,
         seed_topic=seed_topic or topic,
     )
+    # Drop self-contradictory future-dated "facts" (e.g. a web line claiming an
+    # event was *lost* on a date that hasn't happened yet) before they ground the
+    # script — grounding stops invention, not propagation of a bad source.
+    if os.getenv("FACT_FUTURE_DATE_FILTER", "true").lower() not in ("0", "false", "no"):
+        import datetime
+
+        from core.fact_recency import drop_future_dated
+
+        signal_facts, _dropped_dates = drop_future_dated(signal_facts, datetime.date.today())
+        if _dropped_dates:
+            logger.info("Dropped %d future-dated fact line(s)", len(_dropped_dates))
 
     # Detect thin-facts mode — warn the LLM when verified (non-YouTube) data is sparse.
     # _fact_line_count counts only lines with "-" or ":" (not YouTube bullet "•" lines),
@@ -597,6 +671,10 @@ def generate_content_package(
     grounding_text = "\n".join(
         [signal_facts, brief_block, topic, seed_topic or "", *(_sanitize_key_facts(key_facts))]
     )
+
+    # Key-fact anchor: if the script drifted off the operator's pasted subject,
+    # recenter it FIRST (subject-level) — before insight/grounding tweak the prose.
+    script = _maybe_recenter_on_key_facts(script, key_facts, topic, grounding_text)
 
     # Original-insight injection: if the script reads as a neutral recap, add one
     # opinion/prediction beat (Phase O authenticity). Runs BEFORE grounding so any

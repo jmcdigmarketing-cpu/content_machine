@@ -244,13 +244,18 @@ You must:
             "not fabricated specifics. This honest framing builds trust and drives comments."
         )
 
+    from core.channel_persona import human_context_block
+
+    human_block = human_context_block(channel_id)
+    human_block = f"{human_block}\n\n" if human_block else ""
+
     user_prompt = f"""
 TODAY: {today}
 
 {seed_block}{angle_block}TOPIC:
 {topic}
 
-{brief_block}SCRIPT BRIEF (follow exactly):
+{human_block}{brief_block}SCRIPT BRIEF (follow exactly):
 {script_brief}
 
 {seo_block}

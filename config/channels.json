@@ -15,6 +15,12 @@
     "tapin": {
       "name": "TapIn Media",
       "domain": "gaming",
+      "persona": {
+        "perspective": "a plugged-in gaming + UFC fan who calls it straight",
+        "tone": "high-energy, confident, a little irreverent — never corporate",
+        "audience": "gaming and combat-sports fans who want the real take, fast",
+        "signoff": "Tap in for more."
+      },
       "background_mode": "hybrid",
       "hybrid_local_ratio": 0.45,
       "asset_provider_order": ["local", "pexels", "pixabay"],

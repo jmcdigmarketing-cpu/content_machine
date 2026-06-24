@@ -101,6 +101,51 @@ def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count
     )
 
 
+# Capitalised words that are NOT a named subject worth preserving in titles.
+_SUBJECT_COMMON = {
+    "the",
+    "a",
+    "an",
+    "best",
+    "top",
+    "new",
+    "next",
+    "state",
+    "gaming",
+    "update",
+    "rankings",
+    "ranking",
+    "divisional",
+    "news",
+    "this",
+    "that",
+    "what",
+    "why",
+    "how",
+    "who",
+    "is",
+    "are",
+    "was",
+}
+
+
+def _subject_terms(topic: str) -> list[str]:
+    """Named proper-noun subjects in the seed (e.g. a fighter's name).
+
+    Catches single-word names (`Kape`) that `extract_anchors` (franchise-focused)
+    and the multi-word entity detector both miss, so variant generation can't
+    generalise the subject away ("Kape punches his ticket" → "one fighter…").
+    ALL-CAPS acronyms (UFC, MMA, NBA) are excluded — they're domains, not subjects.
+    """
+    terms: list[str] = []
+    for w in re.findall(r"[A-Z][a-zA-Z]{2,}", topic):
+        if w.isupper() or w.lower() in _SUBJECT_COMMON:
+            continue
+        if w not in terms:
+            terms.append(w)
+    return terms[:3]
+
+
 def _anchor_rules(topic: str, channel_id: str | None) -> str:
     anchors = extract_anchors(topic)
     lines: list[str] = []
@@ -109,6 +154,16 @@ def _anchor_rules(topic: str, channel_id: str | None) -> str:
         lines.append(
             f"- MANDATORY: Every title must name {joined} exactly as written "
             "(same game/franchise as the seed topic)."
+        )
+    # Preserve a named subject (person/event) that isn't already an anchor, so the
+    # titles stay about who/what the seed is about, not a generic "one fighter".
+    subjects = [
+        s for s in _subject_terms(topic) if not any(s.lower() in a.lower() for a in anchors)
+    ]
+    if subjects:
+        lines.append(
+            f"- Keep the seed's subject in every title: {', '.join(subjects)} "
+            "(do not generalise to 'one fighter', 'a team', or 'someone')."
         )
         if any("marvel rivals" in a.lower() for a in anchors):
             lines.append(

@@ -144,6 +144,18 @@ def _distinctive_tokens(entity: str) -> list[str]:
     return [t for t in _TOKEN.findall(entity.lower()) if t not in _COMMON_WORDS]
 
 
+def specific_entities(text: str) -> list[str]:
+    """Proper-noun entities in `text` that carry at least one distinctive token."""
+    return [e for e in extract_entities(text) if _distinctive_tokens(e)]
+
+
+def mentions(text: str, entity: str) -> bool:
+    """True if every distinctive token of `entity` appears in `text` (case-insensitive)."""
+    tokens = _distinctive_tokens(entity)
+    low = (text or "").lower()
+    return bool(tokens) and all(t in low for t in tokens)
+
+
 def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
     """
     Entities named in `script` whose distinctive tokens don't all appear in

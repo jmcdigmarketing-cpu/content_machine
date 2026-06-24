@@ -41,6 +41,7 @@ py -m scripts.ops worker --loop 30
 py -m scripts.ops test
 py -m scripts.ops seo-refresh --channel tapin   # weekly tag hints
 py -m scripts.ops topic-db --channel tapin       # Topic Winners + Graveyard
+py -m scripts.ops title-patterns --channel tapin # title patterns that engage (A/B loop)
 py -m scripts.ops reliability                    # credit/quota/cache dashboard
 ```
 

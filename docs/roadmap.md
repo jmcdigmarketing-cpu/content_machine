@@ -251,7 +251,7 @@ Turn the research spine into a compliance moat.
 - [x] **Hook-score 0–100** — `core/hook_score.py`: heuristic scorer (brevity, specificity, curiosity/contradiction, stakes; penalises weak openers) surfaced in the pipeline + auto_generate.
 - [x] **Hook-first regeneration** — opt-in `HOOK_REGEN_ENABLED`: rewrites a weak opening line via the LLM, only swapping it in if it scores higher.
 - [ ] **Retention-curve modelling** from analytics (avg-view-% by script position) → feeds the length/pacing recommenders.
-- [ ] **A/B variant loop** — we already generate variants; publish/track two titles or thumbnails and let the analytics loop pick winners (closes the TubeBuddy gap).
+- [x] **A/B variant loop** (single-channel attribution form) — a faceless channel can't double-publish without cannibalizing, so instead of head-to-head it attributes realized engagement to the published title's **structural pattern** (`core/title_features`), builds a per-channel pattern leaderboard (`core/title_experiments`, `scripts.ops title-patterns`), and surfaces "▲ proven pattern" on matching variants at selection time. Thumbnail A/B (true two-up) still open.
 
 ### Phase Q — Captions & visual polish  *(table stakes)*
 - [x] **Burned captions, properly timed** — `video/subtitles.py`: sentence-aware, tighter chunks (`CAPTION_WORDS_PER_LINE`, default 5), durations **proportional to word count** (was uniform 8-word lines). Already burned in the render command.

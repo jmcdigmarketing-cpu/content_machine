@@ -40,6 +40,8 @@ py -m scripts.ops check-youtube
 py -m scripts.ops worker --loop 30
 py -m scripts.ops test
 py -m scripts.ops seo-refresh --channel tapin   # weekly tag hints
+py -m scripts.ops topic-db --channel tapin       # Topic Winners + Graveyard
+py -m scripts.ops reliability                    # credit/quota/cache dashboard
 ```
 
 After pulling schema changes:

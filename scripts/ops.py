@@ -161,6 +161,14 @@ def cmd_topic_db(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("title-patterns", "Title patterns that engage (A/B variant loop leaderboard)")
+def cmd_title_patterns(args: argparse.Namespace) -> int:
+    from core.title_experiments import display_leaderboard
+
+    display_leaderboard(args.channel, print_fn=print)
+    return 0
+
+
 @_register(
     "intelligence-report",
     "Content Intelligence Report (signals + brief + competitors, no render)",

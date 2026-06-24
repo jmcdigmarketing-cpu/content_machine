@@ -6,6 +6,28 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### A/B title-pattern loop (2026-06-23)
+
+*Phase P "A/B variant loop", in the single-channel form: a faceless channel can't
+double-publish without cannibalizing, so instead of head-to-head it **attributes**
+realized engagement to the published title's structural pattern and biases future
+picks.*
+
+- **`core/title_features.py`** — `feature_tags(title)`: structural pattern tags
+  (number / listicle / question / colon / versus / superlative / curiosity /
+  callout / year / bracket / short / long). Pure + deterministic.
+- **`core/title_experiments.py`** — joins each published title to its engagement
+  (`content_runs.title` ↔ `publish_log`), aggregates by pattern into a
+  `pattern_leaderboard()` ("colon titles average 18%"), and exposes `winning_tags()`
+  (patterns above the channel's overall engaged-rate, cached per run,
+  `TITLE_PATTERN_MIN_SAMPLES`).
+- **Loop closes at selection**: `core/ui.display_variants(channel_id=…)` annotates
+  any variant matching a winning pattern with "▲ <pattern>", so the analytics loop
+  biases the operator's pick. Wired at both `main.py` variant prompts.
+- **`scripts.ops title-patterns`** prints the leaderboard.
+- **Tests:** `tests/test_title_experiments.py` (feature extraction, leaderboard
+  ranking, winning-tags threshold, empty/min-samples). Suite 494 green.
+
 ### Topic Winners + Graveyard (2026-06-23)
 
 *The data was already in `content_runs`↔`publish_log`; this surfaces it by topic.*

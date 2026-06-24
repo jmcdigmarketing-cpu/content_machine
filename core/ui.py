@@ -435,16 +435,39 @@ def display_signal_health(signals: dict[str, Any], *, print_fn=print):
 def display_variants(
     evaluated: list[tuple[str, float, Any]],
     *,
+    channel_id: str | None = None,
     print_fn=print,
 ) -> int:
-    """Print variant list; return index of highest score."""
+    """Print variant list; return index of highest score.
+
+    When ``channel_id`` is given, each variant whose title matches a pattern that
+    has historically over-engaged on this channel is annotated "▲ proven pattern"
+    — the A/B title-pattern loop surfacing learned winners at selection time.
+    """
     best_i = max(range(len(evaluated)), key=lambda i: evaluated[i][1])
     subsection("Scored variants (Enter = best)", print_fn)
     from core.ui_theme import paint, score_badge
 
+    winning: frozenset[str] = frozenset()
+    feature_tags = None
+    if channel_id:
+        try:
+            from core.title_experiments import winning_tags
+            from core.title_features import feature_tags as _feature_tags
+
+            winning = winning_tags(channel_id)
+            feature_tags = _feature_tags
+        except Exception:
+            winning = frozenset()
+
     for i, (variant, score, _) in enumerate(evaluated, start=1):
         marker = paint("  *", "\033[1m\033[33m") if i - 1 == best_i else "   "
-        print_fn(f"{marker} {i}. {score_badge(score)} {variant}")
+        hint = ""
+        if winning and feature_tags:
+            hits = [t for t in feature_tags(variant) if t in winning]
+            if hits:
+                hint = paint(f"  ▲ {hits[0]}", "\033[32m")
+        print_fn(f"{marker} {i}. {score_badge(score)} {variant}{hint}")
     return best_i
 
 

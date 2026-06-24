@@ -34,6 +34,10 @@ class ChannelProfile:
     intro_video_file: str | None = None
     publishers_enabled: tuple | None = None
     repurpose_publish: bool = True
+    # Optional human-context persona (channels.json "persona"): free-form keys like
+    # tone / audience / perspective / recurring_segment / signoff that give the
+    # channel a consistent voice + continuity (Phase O human-context layer).
+    persona: dict[str, str] = field(default_factory=dict)
 
 
 def _load_channels_file() -> dict[str, Any]:
@@ -97,6 +101,11 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             intro_video_file=cfg.get("intro_video_file"),
             publishers_enabled=pub,
             repurpose_publish=bool(cfg.get("repurpose_publish", True)),
+            persona={
+                str(k): str(v)
+                for k, v in (cfg.get("persona") or {}).items()
+                if isinstance(v, str | int | float) and str(v).strip()
+            },
         )
 
     profiles.setdefault(

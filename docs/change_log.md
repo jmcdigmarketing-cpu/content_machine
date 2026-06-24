@@ -6,6 +6,24 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Human-context layer (Phase O) — persona + continuity (2026-06-23)
+
+*The last open Phase O item. YouTube's 2026 policy rewards a consistent human voice
+and continuity (a creator following a story), not fresh templated uploads.*
+
+- **`core/channel_persona.py`** — `human_context_block(channel_id)` builds a prompt
+  block from (1) an optional per-channel **persona** (`channels.json` "persona":
+  perspective / tone / audience / recurring_segment / signoff) and (2) a
+  data-driven **continuity** hint from real run history (`recent_input_topics` +
+  `dominant_anchor`): "this channel has been covering X — acknowledge the ongoing
+  storyline if it fits, never invent a prior video." Returns "" when there's
+  nothing to add; bounded so it can't override anti-hallucination/grounding.
+- **`config/channels.py`**: optional `persona` dict on `ChannelProfile`; a working
+  persona added to the `tapin` channel.
+- **`content_engine`**: the block is injected into the script prompt (after TOPIC).
+- **Tests:** `tests/test_channel_persona.py` (persona rendering/order, arbitrary
+  keys, anchor + theme continuity, thin-history no-op). Suite 480 green.
+
 ### Subject anchoring + future-dated-fact filter (2026-06-23)
 
 *Live run: operator picked a "Kape" best-bet and pasted Kape facts, but the video

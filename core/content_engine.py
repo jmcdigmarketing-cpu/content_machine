@@ -148,6 +148,16 @@ def _build_prompts(
             "stops scroll-back. Land the pivot with a concrete fact or sharp "
             "reframe, NOT a stock transition phrase."
         )
+        # Replace the static 30s heuristic with the channel's measured drop-off
+        # point once enough retention curves exist (data-driven pacing).
+        try:
+            from core.retention import pacing_hint
+
+            measured = pacing_hint(channel_id)
+            if measured:
+                retention_rule += f"\n{measured}"
+        except Exception:
+            pass
 
     system_prompt = f"""
 You are a sports and gaming scriptwriter for vertical video (YouTube Shorts and longer vertical formats).

@@ -6,6 +6,27 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Retention-curve modelling → data-driven pacing (Phase P) — 2026-06-23
+
+*Closes the Phase P retention item. We synced `averageViewPercentage` but never the
+per-position curve; this adds it and the model that consumes it.*
+
+- **Curve sync** (`analytics/youtube_metrics._fetch_retention_curve`): a second
+  Analytics report (`audienceWatchRatio` by `elapsedVideoTimeRatio`) stored as
+  `retention_curve` on the publish_log metrics blob. Best-effort
+  (`RETENTION_CURVE_SYNC`, default on) — empty for low-watch videos, never breaks
+  the main sync.
+- **`core/retention.py`**: aggregates per-video curves into a channel-average
+  curve and a **drop-off point** (first position below `RETENTION_DROPOFF_FLOOR`,
+  default 50%). Strictly confidence-gated — no model until ≥ `RETENTION_MIN_VIDEOS`
+  (default 3) curves exist, so it can't overfit a handful of videos.
+- **Data-driven pacing**: `pacing_hint()` replaces the script prompt's static
+  "~30-second mark" retention pivot with the channel's *measured* drop-off once
+  data accrues (no-op until then).
+- **`scripts.ops retention`** renders the average curve + drop-off.
+- **Tests:** `tests/test_retention.py` (min-videos gate, average curve, drop-off
+  detection, pacing-hint text, no-channel/no-data). Suite 500 green.
+
 ### A/B title-pattern loop (2026-06-23)
 
 *Phase P "A/B variant loop", in the single-channel form: a faceless channel can't

@@ -149,7 +149,7 @@ def render_vertical_video(
         )
 
     stage("Generating subtitles...")
-    subtitle_path = generate_subtitle_file(script, duration)
+    subtitle_path = generate_subtitle_file(script, duration, audio_path=mp3_path)
 
     audio_dir = os.path.dirname(os.path.abspath(mp3_path))
     video_dir = os.path.join(os.path.dirname(audio_dir), "video")

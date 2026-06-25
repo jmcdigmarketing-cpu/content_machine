@@ -10,6 +10,7 @@ Captions are table stakes for short-form retention. This builds an SRT where:
 Configurable via CAPTION_WORDS_PER_LINE (default 5).
 """
 
+import json
 import os
 import re
 
@@ -68,15 +69,59 @@ def build_srt(script: str, duration: float, *, max_words: int | None = None) -> 
     return "\n".join(blocks) + "\n"
 
 
-def generate_subtitle_file(script: str, duration: float) -> str:
+def caption_style() -> str:
+    """plain (proportional SRT) | word (accurate SRT, default) | karaoke (animated ASS).
+
+    Default `word` is a safe strict upgrade: when real word timings exist it produces
+    accurately-synced SRT (proven format), else falls back to the proportional
+    estimate. `karaoke` adds the animated highlight (ASS) — verify it once with a
+    real render before relying on it.
+    """
+    return os.getenv("CAPTION_STYLE", "word").strip().lower() or "word"
+
+
+def _load_word_timings(audio_path: str | None) -> list[dict] | None:
+    """Word timings written by the TTS step, if present + non-empty."""
+    if not audio_path:
+        return None
+    sidecar = audio_path + ".words.json"
+    if not os.path.exists(sidecar):
+        return None
+    try:
+        with open(sidecar, encoding="utf-8") as f:
+            words = json.load(f)
+        return words if isinstance(words, list) and words else None
+    except Exception:
+        return None
+
+
+def generate_subtitle_file(script: str, duration: float, *, audio_path: str | None = None) -> str:
     output_dir = os.path.join("output", "video")
     os.makedirs(output_dir, exist_ok=True)
-    subtitle_path = os.path.abspath(os.path.join(output_dir, "temp_subtitles.srt"))
 
-    srt = build_srt(script, duration)
-    if not srt.strip():
+    style = caption_style()
+    words = _load_word_timings(audio_path) if style in ("word", "karaoke") else None
+
+    # Real word timings → accurate SRT or animated karaoke ASS; else the
+    # proportional SRT estimate (unchanged behaviour).
+    if words:
+        from video.caption_timing import build_ass_karaoke, build_srt_from_words
+
+        max_words = caption_words_per_line()
+        if style == "karaoke":
+            text = build_ass_karaoke(words, max_words=max(2, min(4, max_words)))
+            ext = ".ass"
+        else:
+            text = build_srt_from_words(words, max_words=max_words)
+            ext = ".srt"
+    else:
+        text = build_srt(script, duration)
+        ext = ".srt"
+
+    if not text.strip():
         raise ValueError("Subtitle generation failed: empty script.")
 
+    subtitle_path = os.path.abspath(os.path.join(output_dir, f"temp_subtitles{ext}"))
     with open(subtitle_path, "w", encoding="utf-8") as f:
-        f.write(srt)
+        f.write(text)
     return subtitle_path

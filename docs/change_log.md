@@ -6,6 +6,25 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Word-level captions from real TTS timing (Phase Q) — 2026-06-23
+
+*Captions were timed by word-count estimate; the TTS step now gets real per-word
+timing from ElevenLabs (free, same call) — no Whisper dependency.*
+
+- **`video/caption_timing.py`** (pure, tested): `words_from_alignment` (char
+  alignment → word timings), `build_srt_from_words` (accurately-timed,
+  sentence/length-aware SRT), `build_ass_karaoke` (per-word `\k` highlight ASS —
+  the animated-caption upgrade).
+- **`core/tts.py`**: `convert_with_timestamps` captures alignment and writes a
+  `<mp3>.words.json` sidecar (best-effort, `TTS_WORD_TIMESTAMPS`; any failure
+  falls back to the plain stream).
+- **`video/subtitles.generate_subtitle_file`**: prefers the sidecar — `CAPTION_STYLE`
+  `word` (accurate SRT, **default**, safe strict upgrade) / `karaoke` (animated ASS,
+  opt-in — verify with a render) / `plain` (old proportional). The existing
+  `subtitles` ffmpeg filter burns both `.srt` and `.ass`, so no render-filter change.
+- **Tests:** `tests/test_caption_timing.py` (word grouping, SRT/ASS, TTS sidecar +
+  fallback) + word-timed branch in `tests/test_subtitles.py`. Suite 511 green.
+
 ### Retention-curve modelling → data-driven pacing (Phase P) — 2026-06-23
 
 *Closes the Phase P retention item. We synced `averageViewPercentage` but never the

@@ -1,8 +1,19 @@
 """Tests for caption (SRT) generation (Phase Q)."""
 
+import json
+import os
+import shutil
+import tempfile
 import unittest
+from unittest.mock import patch
 
-from video.subtitles import build_srt, format_timestamp, split_script_into_lines
+from video import subtitles
+from video.subtitles import (
+    build_srt,
+    format_timestamp,
+    generate_subtitle_file,
+    split_script_into_lines,
+)
 
 
 class TestSplit(unittest.TestCase):
@@ -47,6 +58,44 @@ class TestBuildSrt(unittest.TestCase):
     def test_last_subtitle_ends_at_duration(self):
         srt = build_srt("hello world this is a test caption line", 12.0, max_words=3)
         self.assertIn("--> 00:00:12,000", srt)
+
+
+class TestWordTimedCaptions(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.audio = os.path.join(self.tmp, "out.mp3")
+        words = [
+            {"word": "Real", "start": 0.0, "end": 0.5},
+            {"word": "timing.", "start": 0.5, "end": 1.1},
+        ]
+        with open(self.audio + ".words.json", "w", encoding="utf-8") as f:
+            json.dump(words, f)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_karaoke_ass_from_sidecar(self):
+        with patch.dict("os.environ", {"CAPTION_STYLE": "karaoke"}, clear=False):
+            path = generate_subtitle_file("Real timing.", 5.0, audio_path=self.audio)
+        self.assertTrue(path.endswith(".ass"))
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("{\\k", f.read())
+
+    def test_accurate_srt_from_sidecar(self):
+        with patch.dict("os.environ", {"CAPTION_STYLE": "word"}, clear=False):
+            path = generate_subtitle_file("Real timing.", 5.0, audio_path=self.audio)
+        self.assertTrue(path.endswith(".srt"))
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("00:00:00,000 --> 00:00:01,100", f.read())
+
+    def test_falls_back_to_proportional_without_sidecar(self):
+        with patch.dict("os.environ", {"CAPTION_STYLE": "karaoke"}, clear=False):
+            path = generate_subtitle_file("no sidecar here", 5.0, audio_path=self.audio + "x")
+        self.assertTrue(path.endswith(".srt"))  # plain proportional SRT
+
+    def test_load_word_timings_missing(self):
+        self.assertIsNone(subtitles._load_word_timings(None))
+        self.assertIsNone(subtitles._load_word_timings(self.audio + "x"))
 
 
 if __name__ == "__main__":

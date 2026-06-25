@@ -169,6 +169,14 @@ def cmd_title_patterns(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("retention", "Audience-retention curve + drop-off point (pacing intelligence)")
+def cmd_retention(args: argparse.Namespace) -> int:
+    from core.retention import display_retention
+
+    display_retention(args.channel, print_fn=print)
+    return 0
+
+
 @_register(
     "intelligence-report",
     "Content Intelligence Report (signals + brief + competitors, no render)",

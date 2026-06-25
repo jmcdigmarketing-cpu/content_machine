@@ -39,6 +39,44 @@ def _parse_report_row(row: list, headers: list) -> dict[str, Any]:
     return out
 
 
+def _curve_sync_enabled() -> bool:
+    return os.getenv("RETENTION_CURVE_SYNC", "true").lower() in ("1", "true", "yes")
+
+
+def _fetch_retention_curve(video_id, service, start_date, end_date) -> list | None:
+    """Audience-retention curve: [[elapsed_ratio, watch_ratio], ...] or None.
+
+    A separate Analytics report from the headline metrics. Best-effort — short or
+    low-watch videos return no rows (common on small channels), so it never breaks
+    the main sync. Feeds the pacing model in core/retention.py.
+    """
+    if not _curve_sync_enabled():
+        return None
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="audienceWatchRatio",
+                dimensions="elapsedVideoTimeRatio",
+                filters=f"video=={video_id}",
+            )
+            .execute()
+        )
+    except Exception as exc:
+        logger.debug("retention curve fetch failed for %s: %s", video_id, exc)
+        return None
+    curve: list[list[float]] = []
+    for row in resp.get("rows") or []:
+        try:
+            curve.append([round(float(row[0]), 3), round(float(row[1]), 4)])
+        except (ValueError, IndexError, TypeError):
+            continue
+    return curve or None
+
+
 def fetch_video_metrics(
     youtube_video_id: str,
     *,
@@ -93,7 +131,7 @@ def fetch_video_metrics(
     avg_pct = float(parsed.get("averageViewPercentage", 0) or 0)
     engaged_rate = round(avg_pct / 100.0, 4) if avg_pct else 0.0
 
-    return {
+    result = {
         "youtube_video_id": youtube_video_id,
         "views": views,
         "likes": int(float(parsed.get("likes", 0) or 0)),
@@ -106,6 +144,10 @@ def fetch_video_metrics(
         "period_start": start_date,
         "period_end": end_date,
     }
+    curve = _fetch_retention_curve(youtube_video_id, service, start_date, end_date)
+    if curve:
+        result["retention_curve"] = curve
+    return result
 
 
 def refresh_publish_metrics(

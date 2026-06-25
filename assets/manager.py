@@ -1,7 +1,5 @@
 import os
 
-from core.logging import get_logger
-
 from assets.base import AssetProvider
 from assets.category import detect_category
 from assets.composite import try_compose_hybrid
@@ -10,6 +8,7 @@ from assets.pexels_provider import PexelsAssetProvider
 from assets.pixabay_provider import PixabayAssetProvider
 from assets.types import AssetResult
 from config.settings import get_settings
+from core.logging import get_logger
 
 logger = get_logger("assets")
 
@@ -102,9 +101,7 @@ def get_local_background_asset(topic: str, channel_id=None) -> AssetResult | Non
 
 def get_stock_background_asset(topic: str, channel_id=None) -> AssetResult | None:
     chain = _provider_chain(channel_id, include_local=False)
-    return _find_from_chain(
-        topic, detect_category(topic), chain, channel_id=channel_id
-    )
+    return _find_from_chain(topic, detect_category(topic), chain, channel_id=channel_id)
 
 
 def get_stock_only_background(topic: str, channel_id=None) -> AssetResult:
@@ -164,9 +161,7 @@ def get_background_asset(
         logger.warning("Hybrid mode: no stock clip — using local gameplay only")
         return local
     if stock and not local:
-        logger.warning(
-            "Hybrid mode: no local clips in video/backgrounds/ — using stock only"
-        )
+        logger.warning("Hybrid mode: no local clips in video/backgrounds/ — using stock only")
         return stock
     if stock:
         return stock
@@ -174,3 +169,44 @@ def get_background_asset(
     raise Exception(
         "No background video found. Add files under video/backgrounds/ or configure stock API keys."
     )
+
+
+def _scene_matched_enabled() -> bool:
+    # Default OFF — a render-path feature; verify it on a real render before relying.
+    return os.getenv("SCENE_MATCHED_BROLL", "").lower() in ("1", "true", "yes")
+
+
+def get_scene_matched_background(
+    topic: str,
+    script: str,
+    channel_id=None,
+    *,
+    duration: float,
+    words: list | None = None,
+) -> AssetResult | None:
+    """Cut several stock clips, one per script beat, into one background.
+
+    Returns None (so the caller falls back to the normal single/hybrid background)
+    when the feature is off, the plan is trivial, any clip is missing, or compose
+    fails — i.e. it only ever *upgrades* the background, never breaks the render.
+    """
+    if not _scene_matched_enabled() or not duration or duration <= 0:
+        return None
+    try:
+        from assets.composite import compose_scene_matched_background
+        from video.scene_plan import plan_scenes
+
+        scenes = plan_scenes(script, topic, duration, words=words)
+        if len(scenes) < 2:
+            return None
+        segments: list[tuple[str, float]] = []
+        for sc in scenes:
+            clip = get_stock_background_asset(sc.query, channel_id)
+            if not clip or not getattr(clip, "path", None):
+                logger.info("Scene-matched: no clip for '%s' — using normal background", sc.query)
+                return None
+            segments.append((os.path.abspath(clip.path), sc.end - sc.start))
+        return compose_scene_matched_background(segments, duration)
+    except Exception as exc:
+        logger.warning("Scene-matched background failed; falling back: %s", exc)
+        return None

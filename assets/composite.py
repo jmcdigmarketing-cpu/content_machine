@@ -80,6 +80,80 @@ def build_hybrid_concat_command(
     ]
 
 
+def build_multi_concat_command(
+    segments: list[tuple[str, float]],
+    output_path: str,
+    *,
+    duration: float,
+) -> list[str]:
+    """FFmpeg: trim each (clip_path, segment_duration) to length, scale/crop, concat.
+
+    Generalises the 2-input hybrid concat to N scene clips (scene-matched B-roll).
+    Each input is normalised (fps/scale/crop/yuv420p) and trimmed to its window, so
+    mixed codecs/aspect ratios concat cleanly.
+    """
+    if not segments:
+        raise ValueError("build_multi_concat_command needs at least one segment")
+    inputs: list[str] = []
+    filters: list[str] = []
+    labels: list[str] = []
+    for i, (path, seg_dur) in enumerate(segments):
+        inputs += ["-hwaccel", "none", "-stream_loop", "-1", "-i", path]
+        filters.append(
+            f"[{i}:v]fps=30,scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
+            f"crop={TARGET_W}:{TARGET_H},format=yuv420p,trim=duration={max(0.1, seg_dur):.3f},"
+            f"setpts=PTS-STARTPTS[v{i}]"
+        )
+        labels.append(f"[v{i}]")
+    filter_complex = (
+        ";".join(filters)
+        + ";"
+        + "".join(labels)
+        + f"concat=n={len(segments)}:v=1:a=0,format=yuv420p[vout]"
+    )
+    return [
+        "ffmpeg",
+        "-y",
+        *inputs,
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "[vout]",
+        "-t",
+        f"{duration:.3f}",
+        "-r",
+        "30",
+        "-c:v",
+        "libx264",
+        "-preset",
+        "fast",
+        "-crf",
+        "23",
+        "-pix_fmt",
+        "yuv420p",
+        "-an",
+        output_path,
+    ]
+
+
+def compose_scene_matched_background(
+    segments: list[tuple[str, float]], duration: float
+) -> AssetResult:
+    """Concat per-scene clips into one background. Raises on ffmpeg failure."""
+    output_path = _temp_output_path()
+    cmd = build_multi_concat_command(segments, output_path, duration=duration)
+    logger.info("Composing scene-matched background from %d clips", len(segments))
+    process = subprocess.run(cmd, capture_output=True, text=True)
+    if process.returncode != 0:
+        if os.path.isfile(output_path):
+            try:
+                os.remove(output_path)
+            except OSError:
+                pass
+        raise RuntimeError(f"Scene-matched compose failed: {(process.stderr or '')[-800:]}")
+    return AssetResult(path=output_path, provider="scene_matched", query="", attribution="")
+
+
 def _temp_output_path() -> str:
     ensure_data_dir()
     tmp_dir = os.path.join(DATA_DIR, "tmp", "hybrid_backgrounds")
@@ -116,9 +190,7 @@ def compose_hybrid_background(
                 os.remove(output_path)
             except OSError:
                 pass
-        raise RuntimeError(
-            f"Hybrid background compose failed: {(process.stderr or '')[-800:]}"
-        )
+        raise RuntimeError(f"Hybrid background compose failed: {(process.stderr or '')[-800:]}")
 
     attribution = stock.attribution
     if local.provider == "local" and stock.attribution:
@@ -142,9 +214,7 @@ def try_compose_hybrid(
     if not (local and stock):
         return None
     try:
-        return compose_hybrid_background(
-            local, stock, duration, local_ratio=local_ratio
-        )
+        return compose_hybrid_background(local, stock, duration, local_ratio=local_ratio)
     except RuntimeError as exc:
         logger.warning(
             "Hybrid background compose failed; will use stock or local only: %s",

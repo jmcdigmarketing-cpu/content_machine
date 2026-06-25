@@ -256,8 +256,8 @@ Turn the research spine into a compliance moat.
 ### Phase Q — Captions & visual polish  *(table stakes)*
 - [x] **Burned captions, properly timed** — `video/subtitles.py`: sentence-aware, tighter chunks (`CAPTION_WORDS_PER_LINE`, default 5), durations **proportional to word count** (was uniform 8-word lines). Already burned in the render command.
 - [x] **Word-level animated captions** — real per-word timing from ElevenLabs `convert_with_timestamps` (no Whisper); `video/caption_timing.py` builds accurate SRT + karaoke-highlight ASS. `CAPTION_STYLE=word` (default, accurate SRT) / `karaoke` (animated, opt-in — verify with a render) / `plain`. Burned via the existing `subtitles` filter.
-- [ ] **Scene-matched b-roll** — pick stock / `assets` per script beat instead of one looped clip.
-- [ ] **Dynamic emphasis** — keyword pop, zoom on the hook, beat-synced cuts.
+- [x] **Scene-matched b-roll** — `video/scene_plan.py` splits the script into timed beats (real word timings when available), one stock clip per beat concatenated (`assets/composite.build_multi_concat_command`). Opt-in `SCENE_MATCHED_BROLL`, fails safe to the normal background.
+- [x] **Dynamic emphasis** — keyword pop (karaoke caption highlight) + beat-synced cuts (scene-matched b-roll) shipped; hook zoom-in remains an optional flourish.
 
 ### Phase R — Clip-from-source mode  *(market hedge)*
 *The market's "real content" pivot; pairs with idea-intake, which already accepts YouTube links.*

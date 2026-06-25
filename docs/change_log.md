@@ -6,6 +6,28 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Scene-matched B-roll (Phase Q) — 2026-06-23
+
+*The render looped one background clip; this cuts between several, one per script
+beat (visual changes as the topic does — a retention lever).*
+
+- **`video/scene_plan.py`** (pure, tested): `plan_scenes(script, topic, duration,
+  words=…)` splits the script into ≤N timed beats, each with a `topic + beat-keyword`
+  B-roll query. Uses real word timings for accurate beat boundaries when available,
+  else proportional.
+- **`assets/composite.build_multi_concat_command`**: generalises the 2-input hybrid
+  concat to N normalised scene clips; `compose_scene_matched_background` runs it.
+- **`assets/manager.get_scene_matched_background`** + render wiring: fetches a stock
+  clip per beat and composes. **Default OFF** (`SCENE_MATCHED_BROLL`) — a render-path
+  feature; **returns None → falls back** to the normal single/hybrid background on
+  any missing clip or compose error, so it only ever upgrades, never breaks a render.
+- **Tests:** `tests/test_scene_plan.py` (planning, contiguous windows, word-timed
+  boundaries, N-input concat builder, missing-clip fallback). Suite 521 green.
+
+*With this, Phase Q is functionally complete: timed + word-level animated captions
+(keyword pop) and scene-matched cuts (beat-synced) cover the "dynamic emphasis"
+checklist; a hook zoom-in remains an optional flourish.*
+
 ### Word-level captions from real TTS timing (Phase Q) — 2026-06-23
 
 *Captions were timed by word-count estimate; the TTS step now gets real per-word

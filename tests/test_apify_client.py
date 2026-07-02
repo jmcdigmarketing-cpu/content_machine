@@ -86,6 +86,23 @@ class TestRunActorStatus(unittest.TestCase):
             run_actor("user/actor", {"q": "x"})
         self.assertTrue(apify_disabled())
 
+    def test_403_message_distinguishes_auth_from_credits(self):
+        from apis.apify_client import _apify_failure_reason, apify_disabled, run_actor
+
+        self.assertIn("unauthorized", _apify_failure_reason(403).lower())
+        self.assertIn("credits exhausted", _apify_failure_reason(402).lower())
+        with patch("apis.apify_client.requests.post", return_value=_resp(403, {})):
+            run_actor("user/actor", {"q": "x"})
+        from apis.apify_client import apify_status
+
+        self.assertIn("unauthorized", apify_status().lower())
+        self.assertTrue(apify_disabled())
+
+    def test_403_uses_shorter_auth_ttl(self):
+        from apis.apify_client import _persist_ttl_for_status
+
+        self.assertLess(_persist_ttl_for_status(403), _persist_ttl_for_status(402))
+
     def test_disabled_skips_http(self):
         from apis.apify_client import disable_apify, run_actor
 

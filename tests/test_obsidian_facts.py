@@ -84,18 +84,48 @@ class TestLoadFacts(unittest.TestCase):
                 facts = of.load_facts("Max Holloway will fight Conor McGregor this summer", "tapin")
             self.assertFalse(any("Onimusha" in f for f in facts))
 
-    def test_evergreen_note_surfaces_on_any_topic(self):
+    def test_evergreen_factual_note_surfaces_on_weak_match(self):
         with tempfile.TemporaryDirectory() as d:
             vault = Path(d)
             (vault / "tapin").mkdir()
-            (vault / "tapin" / "playbook.md").write_text(
+            (vault / "tapin" / "nba.md").write_text(
                 "---\nchannel: tapin\ntags: [facts, evergreen]\n---\n"
-                "# Playbook\n- Fraud narratives outperform recaps\n",
+                "# NBA\n- Jaylen Brown was traded to the 76ers on July 1, 2026\n",
                 encoding="utf-8",
             )
             with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
                 facts = of.load_facts("completely unrelated topic xyz", "tapin")
-            self.assertTrue(any("Fraud narratives" in f for f in facts))
+            self.assertTrue(any("Jaylen Brown" in f for f in facts))
+
+    def test_strategy_playbook_excluded_from_key_facts(self):
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "playbook.md").write_text(
+                "---\nchannel: tapin\ntags: [facts, evergreen, strategy]\n---\n"
+                "# Playbook\n- Fraud narratives outperform straight recaps\n",
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                facts = of.load_facts("NBA offseason trades", "tapin")
+            self.assertEqual(facts, [])
+
+    def test_strategy_bullet_filtered_even_in_factual_note(self):
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "mixed.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# NBA\n"
+                "- Rankings and tier-list framings outperform highlight reactions\n"
+                "- Giannis Antetokounmpo was traded to the Miami Heat on June 22, 2026\n",
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                facts = of.load_facts("NBA trades Giannis", "tapin")
+            joined = " ".join(facts)
+            self.assertIn("Giannis", joined)
+            self.assertNotIn("tier-list", joined)
 
     def test_strips_markdown_emphasis(self):
         with tempfile.TemporaryDirectory() as d:
@@ -149,6 +179,16 @@ class TestPromptKeyFacts(unittest.TestCase):
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
             )
         self.assertEqual(facts, ["Suggested fact A"])
+
+    def test_manual_facts_prioritized_over_vault_in_prompt_order(self):
+        # Vault accepted first in UX, but manual facts must sort ahead for the LLM cap.
+        inputs = iter(["", "Manual trade fact", ""])
+        with patch("core.obsidian_facts.load_facts", return_value=["Vault suggestion"]):
+            facts = prompt_key_facts(
+                "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
+            )
+        self.assertEqual(facts[0], "Manual trade fact")
+        self.assertIn("Vault suggestion", facts)
 
 
 if __name__ == "__main__":

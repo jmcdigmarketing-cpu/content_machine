@@ -116,8 +116,16 @@ def estimate_run_cost(
     # TTS only happens on render.
     tts = (chars / 1000.0) * _rate("COST_TTS_PER_1K_CHARS", 0.30) if rendered else 0.0
 
-    # Apify: one actor run per active paid social signal.
-    apify_runs = sum(1 for name in _APIFY_SIGNALS if (signals.get(name) or {}).get("active"))
+    # Apify: one actor run per active paid social signal — except youtube_competitors
+    # when it was served by a free in-process backend (data.backend == "free"), which
+    # costs $0 (see apis/free_backends.py, apis/youtube_apify_signal.py).
+    def _billed_to_apify(name: str) -> bool:
+        sig = signals.get(name) or {}
+        if not sig.get("active"):
+            return False
+        return ((sig.get("data") or {}).get("backend") or "apify") == "apify"
+
+    apify_runs = sum(1 for name in _APIFY_SIGNALS if _billed_to_apify(name))
     apify = apify_runs * _rate("COST_APIFY_PER_RUN", 0.02)
 
     # Web search: one query if the web_search signal was active.

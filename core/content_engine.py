@@ -33,8 +33,25 @@ def _format_signal_facts(signals):
 # Operator key facts are injected straight into the prompt as ground truth, so
 # bound them: cap count + length and strip control chars / line breaks so a
 # pasted fact can't smuggle extra prompt structure (instruction injection).
-_MAX_KEY_FACTS = 5
 _MAX_KEY_FACT_CHARS = 300
+
+
+def max_operator_key_facts() -> int:
+    """How many operator key facts reach the LLM (default 5; override via env)."""
+    raw = os.getenv("MAX_OPERATOR_KEY_FACTS", "5").strip()
+    try:
+        return max(1, min(20, int(raw)))
+    except ValueError:
+        return 5
+
+
+# Back-compat alias for UI imports
+MAX_OPERATOR_KEY_FACTS = 5
+
+
+def key_facts_for_prompt(key_facts: list[str] | None) -> list[str]:
+    """Facts that actually reach the LLM after cap/sanitize (for operator display)."""
+    return _sanitize_key_facts(key_facts)
 
 
 def _sanitize_key_facts(key_facts: list[str] | None) -> list[str]:
@@ -50,7 +67,7 @@ def _sanitize_key_facts(key_facts: list[str] | None) -> list[str]:
         if not flat:
             continue
         cleaned.append(flat[:_MAX_KEY_FACT_CHARS])
-        if len(cleaned) >= _MAX_KEY_FACTS:
+        if len(cleaned) >= max_operator_key_facts():
             break
     return cleaned
 

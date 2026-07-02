@@ -1,5 +1,6 @@
 """Unit tests for the session signal circuit breaker in apis/register_signals.py."""
 
+import time
 import unittest
 from unittest.mock import patch
 
@@ -42,14 +43,18 @@ class TestCircuitBreaker(unittest.TestCase):
         self._record("reddit", STATUS_INACTIVE)
         self.assertEqual(rs._disabled_signals(), set())
 
-    def test_rate_limit_excluded_by_default(self):
-        self._record("twitter", STATUS_RATE_LIMIT)
+    def test_rate_limit_does_not_trip_permanently_by_default(self):
+        # With the cooldown disabled, a 429 must not touch the session breaker.
+        with patch.dict("os.environ", {"SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS": "0"}):
+            self._record("twitter", STATUS_RATE_LIMIT)
         self.assertNotIn("twitter", rs._disabled_signals())
 
     def test_rate_limit_trips_when_env_enabled(self):
         with patch.dict("os.environ", {"SIGNAL_BREAKER_INCLUDE_RATE_LIMIT": "true"}):
             self._record("twitter", STATUS_RATE_LIMIT)
             self.assertIn("twitter", rs._disabled_signals())
+        # Permanent trip, not a cooldown: survives cooldown expiry semantics.
+        self.assertEqual(rs.signal_cooldowns(), {})
 
     def test_disabled_signal_excluded_from_active_sources(self):
         self._record("rawg", STATUS_QUOTA)
@@ -68,6 +73,64 @@ class TestCircuitBreaker(unittest.TestCase):
         self.assertIn("twitter", rs._disabled_signals())
         rs.reset_session_breaker()
         self.assertEqual(rs._disabled_signals(), set())
+
+
+class TestRateLimitCooldown(unittest.TestCase):
+    """Timed disabled-until-T cooldown for transient 429s."""
+
+    def setUp(self):
+        rs.reset_session_breaker()
+
+    def tearDown(self):
+        rs.reset_session_breaker()
+
+    def _record(self, name, status):
+        rs._record_signal_health(name, make_signal(connected=False, active=False, status=status))
+
+    def test_rate_limit_starts_cooldown(self):
+        self._record("youtube_competitors", STATUS_RATE_LIMIT)
+        self.assertIn("youtube_competitors", rs._disabled_signals())
+        cooldowns = rs.signal_cooldowns()
+        self.assertIn("youtube_competitors", cooldowns)
+        # Until-timestamp is in the future (default 900s window).
+        self.assertGreater(cooldowns["youtube_competitors"], time.time())
+
+    def test_cooldown_expires_and_signal_recovers(self):
+        self._record("reddit", STATUS_RATE_LIMIT)
+        with rs._BREAKER_LOCK:
+            rs._COOLDOWN_UNTIL["reddit"] = time.time() - 1  # force expiry
+        self.assertNotIn("reddit", rs._disabled_signals())
+        self.assertEqual(rs.signal_cooldowns(), {})
+
+    def test_hard_statuses_do_not_start_cooldown(self):
+        self._record("twitter", STATUS_QUOTA)
+        self.assertEqual(rs.signal_cooldowns(), {})
+        self.assertIn("twitter", rs._disabled_signals())  # permanent trip instead
+
+    def test_cooldown_disabled_via_env(self):
+        with patch.dict("os.environ", {"SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS": "0"}):
+            self._record("reddit", STATUS_RATE_LIMIT)
+        self.assertEqual(rs.signal_cooldowns(), {})
+        self.assertNotIn("reddit", rs._disabled_signals())
+
+    def test_cooling_signal_excluded_from_active_sources(self):
+        self._record("rawg", STATUS_RATE_LIMIT)
+        sources = rs._active_signal_sources("Marvel Rivals new season meta")
+        names = {n for n, _ in sources}
+        self.assertNotIn("rawg", names)
+
+    def test_reset_clears_cooldowns(self):
+        self._record("reddit", STATUS_RATE_LIMIT)
+        self.assertNotEqual(rs.signal_cooldowns(), {})
+        rs.reset_session_breaker()
+        self.assertEqual(rs.signal_cooldowns(), {})
+
+    def test_repeat_rate_limit_does_not_shorten_cooldown(self):
+        self._record("reddit", STATUS_RATE_LIMIT)
+        first = rs.signal_cooldowns()["reddit"]
+        with patch.dict("os.environ", {"SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS": "1"}):
+            self._record("reddit", STATUS_RATE_LIMIT)
+        self.assertGreaterEqual(rs.signal_cooldowns()["reddit"], first)
 
 
 if __name__ == "__main__":

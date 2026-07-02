@@ -275,6 +275,36 @@ Older runs may store MP4 under `output/video/` instead of `output/tapin/video/` 
 
 ---
 
+### Script accuracy / hallucinations (NBA, trades, fresh news)
+
+**Symptom:** Script asserts trades/rosters that are wrong or stale; **Authenticity ✓ 100/100** anyway; **Fact quality ✓** with many signal lines.
+
+**Important:** Phase O authenticity checks **structure** (variation, authorial take, word count) — **not** factual correctness. The **Fact grounding** section (before authenticity in `main.py`) is the factual check.
+
+| Check | What it measures | What it does *not* measure |
+|-------|------------------|----------------------------|
+| Fact quality preview | Signal/brief line count | Whether script claims match those lines |
+| Fact grounding | Proper nouns / mononyms in script vs facts corpus | Semantic truth of headlines |
+| Authenticity (Phase O) | Template-stamp risk + recap vs take | Factual accuracy |
+
+**Common causes from live runs:**
+
+1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault suggestions (`core/obsidian_facts.py`). At the prompt, type `n` to skip vault suggestions when unsure.
+2. **Key-facts cap (5)** — only five operator facts reach the LLM. **Pasted facts and link extracts are prioritized** over vault suggestions (`prompt_key_facts` order). UI shows how many were collected vs sent.
+3. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Paste article text manually; do not rely on ESPN URLs.
+4. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”).
+5. **Single-name athletes** — grounding now flags mononyms (e.g. `LeBron`) when absent from the facts corpus.
+
+**What to do:**
+
+1. At key facts: `n` for vault unless bullets are dated/event facts; paste 3–5 concrete trade lines.
+2. After script generation, read **Fact grounding** before **Authenticity**. Fix or add key facts if specifics are listed.
+3. Regenerate — do not re-upload an old MP4 with a bad script.
+
+**Env:** `OBSIDIAN_VAULT_PATH` — tag strategy notes `tags: [strategy]` or put under `vault/<channel>/strategy/`.
+
+---
+
 ### Tapology signal inactive / 403
 
 Tapology is HTML scrape (no API). Sites may block automated requests.

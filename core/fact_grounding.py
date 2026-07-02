@@ -122,17 +122,133 @@ _COMMON_WORDS = {
     "best",
     "good",
     "bad",
+    "another",
+    "other",
 }
 
 _TOKEN = re.compile(r"[a-z0-9.]+")
+# Distinctive mononyms common in sports scripts (LeBron, Kawhi, Giannis…).
+_MONONYM = re.compile(r"\b([A-Z][A-Za-z']{3,})\b")
+_SPORTS_CONTEXT_RE = re.compile(
+    r"\b(?:nba|nfl|mlb|nhl|ufc|wnba|"
+    r"traded|trade|trades|signing|signed|draft|offseason|playoffs|playoff|"
+    r"championship|finals|roster|free agency|"
+    r"lakers|celtics|knicks|bucks|heat|spurs|raptors|warriors|nets|76ers|sixers)\b",
+    re.I,
+)
+_MONONYM_SKIP = _COMMON_WORDS | {
+    "the",
+    "this",
+    "that",
+    "who",
+    "what",
+    "when",
+    "where",
+    "why",
+    "how",
+    "but",
+    "and",
+    "for",
+    "not",
+    "are",
+    "was",
+    "has",
+    "had",
+    "his",
+    "her",
+    "they",
+    "them",
+    "our",
+    "your",
+    "tap",
+    "nba",
+    "ufc",
+    "mlb",
+    "nfl",
+    "espn",
+    "cbs",
+    "let",
+    "now",
+    "then",
+    "here",
+    "there",
+    "just",
+    "still",
+    "real",
+    "bold",
+    "free",
+    "top",
+    "new",
+    "old",
+    "big",
+    "hot",
+    "cold",
+    "east",
+    "west",
+    "north",
+    "south",
+    "june",
+    "july",
+    "august",
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "september",
+    "october",
+    "november",
+    "december",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+}
+
+
+def _token_in_grounding(token: str, grounding: str) -> bool:
+    """Whole-token match in the facts corpus (avoids substring false positives)."""
+    if not token:
+        return False
+    return bool(re.search(rf"(?<![a-z0-9]){re.escape(token)}(?![a-z0-9])", grounding, re.I))
+
+
+def _extract_mononyms(text: str, *, covered_spans: list[tuple[int, int]]) -> list[str]:
+    """Single-word proper names not already part of a multi-word phrase."""
+    if not _SPORTS_CONTEXT_RE.search(text or ""):
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for match in _MONONYM.finditer(text or ""):
+        start, end = match.span()
+        if any(start >= s and end <= e for s, e in covered_spans):
+            continue
+        name = match.group(1)
+        key = name.lower()
+        if len(name) < 4 or key in _MONONYM_SKIP:
+            continue
+        if key not in seen:
+            seen.add(key)
+            out.append(name)
+    return out
 
 
 def extract_entities(text: str) -> list[str]:
-    """Proper-noun phrases + explicit version tokens found in text (order-preserving)."""
+    """Proper-noun phrases, mononyms, and explicit version tokens (order-preserving)."""
     out: list[str] = []
     seen: set[str] = set()
-    for match in list(_PHRASE.finditer(text)) + list(_VERSION.finditer(text)):
+    covered: list[tuple[int, int]] = []
+    for match in list(_PHRASE.finditer(text or "")) + list(_VERSION.finditer(text or "")):
         ent = match.group(0).strip()
+        covered.append(match.span())
+        key = ent.lower()
+        if key not in seen:
+            seen.add(key)
+            out.append(ent)
+    for ent in _extract_mononyms(text, covered_spans=covered):
         key = ent.lower()
         if key not in seen:
             seen.add(key)
@@ -153,7 +269,7 @@ def mentions(text: str, entity: str) -> bool:
     """True if every distinctive token of `entity` appears in `text` (case-insensitive)."""
     tokens = _distinctive_tokens(entity)
     low = (text or "").lower()
-    return bool(tokens) and all(t in low for t in tokens)
+    return bool(tokens) and all(_token_in_grounding(t, low) for t in tokens)
 
 
 def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
@@ -169,7 +285,7 @@ def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
         tokens = _distinctive_tokens(entity)
         if not tokens:
             continue  # all-common phrase ("The Community") — not a specific claim
-        if all(tok in grounding for tok in tokens):
+        if all(_token_in_grounding(tok, grounding) for tok in tokens):
             continue  # every distinctive token is backed by the facts
         ungrounded.append(entity)
     return ungrounded

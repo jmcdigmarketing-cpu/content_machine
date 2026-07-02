@@ -162,8 +162,12 @@ def main(argv=None) -> int:
     print(f"  Run id: {result.run_id}")
 
     from core.hook_score import display_hook_score, score_script_hook
+    from core.ui import display_grounding_report
 
     display_hook_score(score_script_hook(result.script))
+
+    _ungrounded = result.features.get("ungrounded_entities") or []
+    needs_grounding_review = display_grounding_report(_ungrounded, print_fn=print)
 
     # Authenticity / monetisation-safety gate (Phase O)
     from core.authenticity import (
@@ -184,6 +188,13 @@ def main(argv=None) -> int:
     if gate_mode() == "block" and auth.verdict == "block" and not args.force:
         print(
             "\n  Blocked by authenticity gate (AUTHENTICITY_GATE=block). Use --force to override."
+        )
+        return 0
+
+    if needs_grounding_review and not args.force:
+        print(
+            "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
+            "Use --force to render anyway."
         )
         return 0
 
@@ -249,5 +260,14 @@ def main(argv=None) -> int:
     return 0
 
 
+def _main_with_observability(argv=None) -> int:
+    try:
+        return main(argv)
+    finally:
+        from core.pipeline import finalize_run_observability
+
+        finalize_run_observability()
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_main_with_observability())

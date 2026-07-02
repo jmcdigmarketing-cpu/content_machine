@@ -98,9 +98,9 @@ routed to a paid model.*
 
 **O8. Cache-hit instrumentation** `[S–M]` — ✅ **SHIPPED**
 `cache_manager` counts hits/misses per key-prefix (signal/source name); counters
-persist to `data/cache_stats.json` on `flush_cache_stats()` (called once per run in
-`run_discovery`, so no per-lookup write). `get_cache_stats()` exposes the merged
-hit-rate. *Now you can see which signals are almost always cached (raise TTL) vs
+persist to `data/cache_stats.json` on `flush_cache_stats()` (after discovery and
+again at pipeline end via `finalize_run_observability()`). `get_cache_stats()`
+exposes the merged hit-rate. *Now you can see which signals are almost always cached (raise TTL) vs
 frequently missed (lower it) — the `register_signals._cache_ttl_for` table becomes
 data-driven.*
 

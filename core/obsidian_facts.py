@@ -76,6 +76,60 @@ _STOPWORDS = {
 }
 
 
+_STRATEGY_TAGS = frozenset({"strategy", "playbook", "heuristic", "content-tips", "tips"})
+_STRATEGY_PATH_PARTS = frozenset({"strategy", "playbook", "heuristics", "content-tips"})
+# Bullets that read as content-strategy heuristics, not verifiable event facts.
+_STRATEGY_BULLET_MARKERS = (
+    "outperform",
+    "engagement",
+    "framing",
+    "angles",
+    "drive comments",
+    "narratives",
+    "narrative",
+    "tier-list",
+    "tier list",
+    "travel further",
+    "age better",
+    "heuristic",
+    "clickbait",
+    "content strategy",
+    "underdog/upset",
+    "decline takes",
+    "disrespected",
+    "beef framing",
+    "implication hooks",
+    "invite debate",
+    "defensive engagement",
+)
+# Factual anchors — if present, keep the bullet even when strategy-flavored.
+_FACT_ANCHOR_RE = re.compile(
+    r"\b(?:traded|trade|signed|draft(?:ed)?|acquired|waived|released|"
+    r"defeated|beat|won|lost|score|final|champion|ranking|record|"
+    r"\$[\d,]+|\d{1,3}-\d{1,3}|20\d{2})\b",
+    re.I,
+)
+
+
+def _is_strategy_note(meta: dict[str, str], rel_path: Path) -> bool:
+    tags = {t.strip().lower() for t in re.split(r"[,;\s]+", meta.get("tags") or "") if t.strip()}
+    if tags & _STRATEGY_TAGS:
+        return True
+    parts = {p.lower() for p in rel_path.parts}
+    return bool(parts & _STRATEGY_PATH_PARTS)
+
+
+def _is_strategy_bullet(text: str) -> bool:
+    """True for engagement/playbook lines that must not be operator ground truth."""
+    stripped = (text or "").strip()
+    if stripped.lower().startswith("machine belief:"):
+        return False
+    low = stripped.lower()
+    if _FACT_ANCHOR_RE.search(text or ""):
+        return False
+    return any(m in low for m in _STRATEGY_BULLET_MARKERS)
+
+
 def _vault_path() -> Path | None:
     raw = os.getenv("OBSIDIAN_VAULT_PATH", "").strip()
     if not raw:
@@ -169,6 +223,8 @@ def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> li
         rel = path.relative_to(vault)
         if not _note_matches_channel(meta, rel, channel_id):
             continue
+        if _is_strategy_note(meta, rel):
+            continue
 
         # Relevance: overlap of topic tokens with filename + headings.
         headings = " ".join(_HEADING_RE.findall(body))
@@ -180,6 +236,8 @@ def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> li
         # title doesn't mention the topic).
         note_weight = overlap + (0.5 if evergreen else 0)
         for bullet in _extract_bullets(body):
+            if _is_strategy_bullet(bullet):
+                continue
             bullet_overlap = len(topic_tokens & _tokens(bullet))
             if overlap == 0 and not evergreen and bullet_overlap == 0:
                 continue

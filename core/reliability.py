@@ -66,11 +66,15 @@ def _llm_section() -> dict[str, Any]:
 
 def _signals_section() -> dict[str, Any]:
     try:
-        from apis.register_signals import disabled_signals
+        from apis.register_signals import disabled_signals, signal_cooldowns
 
-        return {"disabled": sorted(disabled_signals())}
+        cooldowns = signal_cooldowns()
+        return {
+            "disabled": sorted(disabled_signals() - set(cooldowns)),
+            "cooldowns": dict(sorted(cooldowns.items())),
+        }
     except Exception:
-        return {"disabled": []}
+        return {"disabled": [], "cooldowns": {}}
 
 
 def _cache_section() -> dict[str, Any]:
@@ -102,6 +106,15 @@ def gather() -> dict[str, Any]:
     }
 
 
+def _hhmm(unix_ts: float) -> str:
+    from datetime import datetime
+
+    try:
+        return datetime.fromtimestamp(float(unix_ts)).strftime("%H:%M")
+    except (ValueError, OSError, OverflowError):
+        return "?"
+
+
 def _budget_line(used: float | None, budget: float | None) -> str:
     if budget is None:
         return "no budget set"
@@ -120,7 +133,15 @@ def render(data: dict[str, Any] | None = None) -> str:
     lines.append("Apify")
     lines.append(f"  session : {ap.get('status', 'n/a')}")
     if ap.get("persisted_exhausted"):
-        lines.append(f"  persisted: OFF — {ap.get('persisted_reason', '')}")
+        reason = str(ap.get("persisted_reason", ""))
+        lines.append(f"  persisted: OFF — {reason}")
+        low = reason.lower()
+        if "unauthorized" in low or "(403)" in reason or "(401)" in reason:
+            lines.append(
+                "  hint    : auth/permissions — verify APIFY_CONTENT_MACHINE_KEY (not credits)"
+            )
+        elif "402" in reason or "credits exhausted" in low:
+            lines.append("  hint    : monthly credits exhausted — wait for reset or add billing")
     cache = ap.get("usage_cache")
     if isinstance(cache, dict):
         lines.append(
@@ -137,6 +158,12 @@ def render(data: dict[str, Any] | None = None) -> str:
     sig = data.get("signals", {})
     dis = sig.get("disabled") or []
     lines.append(f"Signals disabled (this process): {', '.join(dis) if dis else '(none)'}")
+    cooldowns = sig.get("cooldowns") or {}
+    if cooldowns:
+        # ASCII arrow: unlike main.py, scripts/ops.py doesn't force UTF-8 stdout,
+        # and cp1252 consoles can't encode '→'.
+        parts = [f"{name} -> {_hhmm(until)}" for name, until in cooldowns.items()]
+        lines.append(f"Signals cooling down (rate-limited): {', '.join(parts)}")
 
     c = data.get("cache", {})
     total = c.get("total", 0)

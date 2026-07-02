@@ -1,5 +1,6 @@
 import os
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
@@ -28,10 +29,15 @@ _SKIP = {s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(
 # generalises the per-call Apify 402 handling to ANY signal (the contract already
 # classifies these statuses uniformly via signal_contract).
 #
-# Rate-limits are transient and recover, so they only trip the breaker when
-# SIGNAL_BREAKER_INCLUDE_RATE_LIMIT is enabled.
+# Rate-limits are transient and recover, so they get a *timed cooldown*
+# (disabled-until-T, default 15 min via SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS)
+# instead of a session-long trip — unless SIGNAL_BREAKER_INCLUDE_RATE_LIMIT is
+# enabled, which promotes 429s to a permanent session trip. Free/keyless
+# backends fail by 429 rather than 402, so without the cooldown they'd hammer
+# a rate-limiting host on every discovery pass.
 _TRIP_STATUSES = {STATUS_QUOTA, STATUS_AUTH, STATUS_NO_KEY}
 _SESSION_DISABLED: set[str] = set()
+_COOLDOWN_UNTIL: dict[str, float] = {}  # signal name -> unix ts when it may run again
 _BREAKER_LOCK = threading.Lock()
 
 
@@ -46,11 +52,32 @@ def _trip_statuses() -> set[str]:
     return statuses
 
 
+def _cooldown_seconds() -> int:
+    try:
+        return int(os.getenv("SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS", "900"))
+    except ValueError:
+        return 900
+
+
 def _record_signal_health(name: str, result: dict[str, Any]) -> None:
-    """Trip the session breaker if a signal returned a hard failure status."""
+    """Trip the session breaker (hard failure) or start a cooldown (rate limit)."""
     if not _breaker_enabled() or not isinstance(result, dict):
         return
     status = result.get("status")
+    if status == STATUS_RATE_LIMIT and status not in _trip_statuses():
+        secs = _cooldown_seconds()
+        if secs <= 0:
+            return
+        until = time.time() + secs
+        with _BREAKER_LOCK:
+            _COOLDOWN_UNTIL[name] = max(_COOLDOWN_UNTIL.get(name, 0.0), until)
+        logger.warning(
+            "Circuit breaker: cooling down signal '%s' for %ds after rate limit (detail=%s)",
+            name,
+            secs,
+            result.get("status_detail") or "",
+        )
+        return
     if status not in _trip_statuses():
         return
     with _BREAKER_LOCK:
@@ -68,19 +95,38 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
 def _disabled_signals() -> set[str]:
     if not _breaker_enabled():
         return set()
+    now = time.time()
     with _BREAKER_LOCK:
-        return set(_SESSION_DISABLED)
+        for sig in [n for n, until in _COOLDOWN_UNTIL.items() if until <= now]:
+            del _COOLDOWN_UNTIL[sig]
+        return set(_SESSION_DISABLED) | set(_COOLDOWN_UNTIL)
 
 
 def reset_session_breaker() -> None:
-    """Clear all session-disabled signals (test/CLI helper)."""
+    """Clear all session-disabled signals and cooldowns (test/CLI helper)."""
     with _BREAKER_LOCK:
         _SESSION_DISABLED.clear()
+        _COOLDOWN_UNTIL.clear()
 
 
 def disabled_signals() -> set[str]:
     """Signals disabled this session by the breaker (public view for the dashboard)."""
     return _disabled_signals()
+
+
+def signal_cooldowns() -> dict[str, float]:
+    """Active rate-limit cooldowns: signal name -> unix ts when it becomes available.
+
+    Public view for dashboards (ops reliability, signal health) — expired entries
+    are purged, so an empty dict means nothing is cooling down.
+    """
+    if not _breaker_enabled():
+        return {}
+    now = time.time()
+    with _BREAKER_LOCK:
+        for sig in [n for n, until in _COOLDOWN_UNTIL.items() if until <= now]:
+            del _COOLDOWN_UNTIL[sig]
+        return dict(_COOLDOWN_UNTIL)
 
 
 # Signals reused (pinned) from the base-topic fetch during per-variant scoring,

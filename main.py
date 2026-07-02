@@ -27,6 +27,7 @@ from core.ui import (
     display_competitor_pulse,
     display_database_status,
     display_fact_preview,
+    display_grounding_report,
     display_signal_breakdown,
     display_signal_health,
     display_summary,
@@ -214,6 +215,17 @@ def _run_idea_intake_flow(channel_id: str) -> None:
 def _run_new_video_flow(
     channel_id: str, *, seed_topic: str | None = None, creative_brief: str = ""
 ) -> None:
+    try:
+        _run_new_video_flow_body(channel_id, seed_topic=seed_topic, creative_brief=creative_brief)
+    finally:
+        from core.pipeline import finalize_run_observability
+
+        finalize_run_observability()
+
+
+def _run_new_video_flow_body(
+    channel_id: str, *, seed_topic: str | None = None, creative_brief: str = ""
+) -> None:
     upload_report = check_channel_setup(channel_id)
     if not upload_report.ok:
         print("  YouTube upload: not configured (see issues after render)")
@@ -339,6 +351,11 @@ def _run_new_video_flow(
     _facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
     display_fact_preview(_facts_preview, print_fn=print)
 
+    _ungrounded = result.features.get("ungrounded_entities") or []
+    needs_grounding_review = display_grounding_report(
+        _ungrounded, key_facts=key_facts or None, print_fn=print
+    )
+
     # Authenticity / monetisation-safety self-check (Phase O)
     from core.authenticity import (
         display_authenticity_report,
@@ -366,13 +383,11 @@ def _run_new_video_flow(
             print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
             return
 
-    _ungrounded = result.features.get("ungrounded_entities") or []
-    if _ungrounded:
+    if needs_grounding_review:
         print(
-            f"\n  ⚠ {len(_ungrounded)} specific(s) in the script are NOT in the facts "
-            f"(possible hallucination): {', '.join(_ungrounded)}"
+            "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
+            "Rendering without fixing risks shipping hallucinations."
         )
-        print("    Verify these or add them as key facts before publishing.")
 
     proceed = input("  Proceed with video? [y/N]: ").strip().lower()
 

@@ -197,6 +197,20 @@ def run_discovery(
     )
 
 
+def finalize_run_observability() -> None:
+    """Merge in-process cache counters at pipeline end (O8 follow-up).
+
+    ``run_discovery`` flushes once after signals; this second flush captures
+    cache hits during script generation and fact enrichment afterward.
+    """
+    try:
+        from apis.cache_manager import flush_cache_stats
+
+        flush_cache_stats()
+    except Exception:
+        pass
+
+
 def _finalize_run(
     *,
     channel_id: str,

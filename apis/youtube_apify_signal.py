@@ -30,12 +30,55 @@ from typing import Any
 
 from apis.apify_catalog import build_input, get_source
 from apis.apify_client import run_actor
+from apis.free_backends import fetch_youtube_free, youtube_available
 from apis.signal_contract import STATUS_INACTIVE, STATUS_NO_KEY, STATUS_OK, make_signal
 from core.logging import get_logger
 
 logger = get_logger("apis.youtube_apify_signal")
 
 _SOURCE = "youtube_competitors"
+
+
+def _backend() -> str:
+    """SIGNAL_BACKEND=apify (default, unchanged behavior) | free | auto.
+
+    free  = yt-dlp only, no Apify key needed, no fallback on empty results.
+    auto  = yt-dlp first, falls back to Apify on empty/unavailable.
+    """
+    return os.getenv("SIGNAL_BACKEND", "apify").strip().lower()
+
+
+def _fetch_items(backend: str, query: str) -> tuple[list[dict] | None, str]:
+    """Fetch raw items for `query` using the selected backend.
+
+    Returns (items, source):
+      items  -- raw item list (possibly empty), or None on a hard failure the
+                caller must surface as "no_key"/"not_configured"/apify-timeout.
+      source -- "free" | "apify" | "no_key" | "not_configured"
+    """
+    if backend in ("free", "auto"):
+        if youtube_available():
+            free_items = fetch_youtube_free(query)
+            if free_items:
+                return free_items, "free"
+        if backend == "free":
+            return [], "free"
+        # auto: free unavailable/empty -> fall through to Apify below
+
+    if not os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
+        return None, "no_key"
+
+    src = get_source(_SOURCE)
+    actor = src.get("actor")
+    if not actor:
+        return None, "not_configured"
+
+    actor_input = build_input(_SOURCE, query)
+    ttl = int(src.get("ttl_seconds", 10800))
+    items = run_actor(actor, actor_input, purpose="main", timeout_secs=120, ttl=ttl)
+    if items is None:
+        return None, "apify"
+    return items, "apify"
 
 
 def _build_query(topic: str) -> str:
@@ -103,7 +146,11 @@ def _normalise_score(top_velocity: float) -> float:
 
 
 def get_youtube_apify_signal(topic: str, channel_id: str = "default") -> dict[str, Any]:
-    if not os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
+    query = _build_query(topic)
+    backend = _backend()
+    items, source = _fetch_items(backend, query)
+
+    if source == "no_key":
         return make_signal(
             connected=False,
             active=False,
@@ -112,10 +159,7 @@ def get_youtube_apify_signal(topic: str, channel_id: str = "default") -> dict[st
             status_detail="Set APIFY_CONTENT_MACHINE_KEY for YouTube competitor performance",
             status=STATUS_NO_KEY,
         )
-
-    src = get_source(_SOURCE)
-    actor = src.get("actor")
-    if not actor:
+    if source == "not_configured":
         return make_signal(
             connected=True,
             active=False,
@@ -124,12 +168,6 @@ def get_youtube_apify_signal(topic: str, channel_id: str = "default") -> dict[st
             status_detail="youtube_competitors not configured in apify_sources.json",
             status=STATUS_INACTIVE,
         )
-
-    query = _build_query(topic)
-    actor_input = build_input(_SOURCE, query)
-    ttl = int(src.get("ttl_seconds", 10800))
-
-    items = run_actor(actor, actor_input, purpose="main", timeout_secs=120, ttl=ttl)
     if items is None:
         return make_signal(
             connected=True,
@@ -140,12 +178,13 @@ def get_youtube_apify_signal(topic: str, channel_id: str = "default") -> dict[st
             status=STATUS_INACTIVE,
         )
     if not items:
+        label = "YouTube (free/yt-dlp)" if source == "free" else "YouTube/Apify"
         return make_signal(
             connected=True,
             active=False,
             score=0,
             data=None,
-            status_detail=f"YouTube/Apify: no videos for '{query}'",
+            status_detail=f"{label}: no videos for '{query}'",
             status=STATUS_INACTIVE,
         )
 
@@ -194,6 +233,7 @@ def get_youtube_apify_signal(topic: str, channel_id: str = "default") -> dict[st
             "top_velocity": top_velocity,
             "median_duration_secs": median_duration,
             "hot_titles": hot_titles,
+            "backend": source,
         },
         status=STATUS_OK,
     )

@@ -12,10 +12,7 @@ def _capture(**kwargs):
     def p(*args):
         lines.append(" ".join(str(a) for a in args))
 
-    with patch(
-        "apis.apify_client.apify_credit_exhausted", return_value=kwargs.pop("exhausted", False)
-    ):
-        display_summary(print_fn=p, **kwargs)
+    display_summary(print_fn=p, **kwargs)
     return "\n".join(lines)
 
 
@@ -32,13 +29,23 @@ class TestDisplaySummary(unittest.TestCase):
         out = _capture(timings={}, title="T")
         self.assertNotIn("Est. run cost", out)
 
-    def test_apify_exhausted_warning(self):
-        out = _capture(timings={}, title="T", exhausted=True)
-        self.assertIn("Apify ran out of credits", out)
+    def test_apify_disabled_shows_session_reason(self):
+        with (
+            patch("apis.apify_client.apify_disabled", return_value=True),
+            patch(
+                "apis.apify_client.apify_status",
+                return_value="OFF — Apify credits/auth (403) — skipping social signals",
+            ),
+        ):
+            out = _capture(timings={}, title="T")
+        self.assertIn("Apify disabled this session", out)
+        self.assertIn("403", out)
+        self.assertNotIn("ran out of credits", out.lower())
 
     def test_no_apify_warning_when_healthy(self):
-        out = _capture(timings={}, title="T", exhausted=False)
-        self.assertNotIn("Apify ran out of credits", out)
+        with patch("apis.apify_client.apify_disabled", return_value=False):
+            out = _capture(timings={}, title="T")
+        self.assertNotIn("Apify disabled", out)
 
 
 if __name__ == "__main__":

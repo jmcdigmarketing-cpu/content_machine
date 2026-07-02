@@ -418,6 +418,20 @@ def display_signal_health(signals: dict[str, Any], *, print_fn=print):
         print_fn(
             f"  {warn('Issues')} ({len(issues)}): " + ", ".join(s.capitalize() for s in issues)
         )
+    try:
+        from datetime import datetime
+
+        from apis.register_signals import signal_cooldowns
+
+        cooldowns = signal_cooldowns()
+        if cooldowns:
+            parts = [
+                f"{name} → {datetime.fromtimestamp(until).strftime('%H:%M')}"
+                for name, until in sorted(cooldowns.items())
+            ]
+            print_fn(f"  {warn('Cooling down')} (rate-limited): " + ", ".join(parts))
+    except Exception:
+        pass
     print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
     print_fn()
 
@@ -597,6 +611,9 @@ def prompt_key_facts(
     print_fn("    · Recency anchor (e.g. 'as of June 2026, ...')")
 
     key_facts: list[str] = []
+    vault_accepted: list[str] = []
+    manual_facts: list[str] = []
+    link_facts: list[str] = []
 
     try:
         suggestions = load_facts(topic, channel_id)
@@ -605,24 +622,27 @@ def prompt_key_facts(
         suggestions = []
     if suggestions:
         print_fn("")
-        print_fn(f"  From your Obsidian vault ({len(suggestions)} matched):")
+        print_fn(f"  From your Obsidian vault ({len(suggestions)} factual match(es)):")
         for i, fact in enumerate(suggestions, 1):
             print_fn(f"    {i}. {fact}")
         choice = input_fn("  Use these? [Enter=all / n=none / e.g. '1 3'=pick]: ").strip().lower()
         if choice in ("", "y", "yes", "all"):
-            key_facts.extend(suggestions)
+            vault_accepted.extend(suggestions)
         elif choice not in ("n", "no", "none"):
             for tok in choice.replace(",", " ").split():
                 if tok.isdigit() and 1 <= int(tok) <= len(suggestions):
-                    key_facts.append(suggestions[int(tok) - 1])
+                    vault_accepted.append(suggestions[int(tok) - 1])
 
     print_fn("")
     print_fn("  Add your own facts — one per line (or paste a link), empty line when done:")
-    from core.link_facts import extract_facts_from_url, looks_like_url
+    from core.content_engine import key_facts_for_prompt, max_operator_key_facts
+    from core.link_facts import extract_facts_from_url, link_fetch_issue, looks_like_url
 
     pasted_sources: list[dict[str, str]] = []
     while True:
-        fact = input_fn(f"  Fact {len(key_facts) + 1}: ").strip()
+        fact = input_fn(
+            f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1}: "
+        ).strip()
         if not fact:
             break
         if looks_like_url(fact):
@@ -631,13 +651,14 @@ def prompt_key_facts(
             if extracted:
                 for ex in extracted:
                     print_fn(f"    + {ex[:90]}")
-                key_facts.extend(extracted)
+                link_facts.extend(extracted)
                 # Remember the link so it can be saved to the vault for reuse.
                 pasted_sources.append({"url": fact, "title": extracted[0]})
             else:
-                print_fn("    Could not extract facts from that link — skipped.")
+                issue = link_fetch_issue(fact)
+                print_fn(f"    {issue or 'Could not extract facts from that link — skipped.'}")
             continue
-        key_facts.append(fact)
+        manual_facts.append(fact)
 
     # Persist the links we brought in so future related runs can reuse them
     # (no-op without a vault; never blocks). See core.source_capture.
@@ -651,6 +672,9 @@ def prompt_key_facts(
         except Exception:
             pass
 
+    # Manual + link facts outrank vault suggestions when capping for the LLM (ADR §4).
+    key_facts = manual_facts + link_facts + vault_accepted
+
     # De-duplicate while preserving order.
     seen: set[str] = set()
     deduped: list[str] = []
@@ -661,8 +685,59 @@ def prompt_key_facts(
             deduped.append(f)
 
     if deduped:
-        print_fn(f"  {len(deduped)} fact(s) will be injected as ground truth.")
+        sent = key_facts_for_prompt(deduped)
+        print_fn(f"  {len(deduped)} fact(s) collected; {len(sent)} will be sent to the LLM.")
+        cap = max_operator_key_facts()
+        if len(deduped) > cap:
+            print_fn(
+                f"  Note: cap is {cap} — your pasted facts are prioritized over "
+                f"vault suggestions."
+            )
+            skipped = [f for f in deduped if f not in sent]
+            if skipped:
+                print_fn(f"  Skipped by cap ({len(skipped)}): {skipped[0][:60]}…")
     return deduped
+
+
+def display_grounding_report(
+    ungrounded: list[str],
+    *,
+    key_facts: list[str] | None = None,
+    print_fn=print,
+) -> bool:
+    """Show post-generation grounding warnings. Returns True when review is needed."""
+    from core.content_engine import key_facts_for_prompt
+
+    subsection("Fact grounding", print_fn)
+    if not ungrounded:
+        print_fn("  ✓ No unsupported specifics detected in the script.")
+        sent = key_facts_for_prompt(key_facts) if key_facts else []
+        if sent:
+            print_fn(f"  Operator key facts sent to LLM ({len(sent)}):")
+            for i, fact in enumerate(sent, 1):
+                short = fact[:90] + ("…" if len(fact) > 90 else "")
+                print_fn(f"    {i}. {short}")
+        return False
+
+    print_fn(
+        f"  ⚠ {len(ungrounded)} specific(s) in the script are NOT backed by verified facts "
+        f"(possible hallucination):"
+    )
+    for ent in ungrounded[:12]:
+        print_fn(f"    · {ent}")
+    if len(ungrounded) > 12:
+        print_fn(f"    · …and {len(ungrounded) - 12} more")
+    print_fn(
+        "  These passed the authenticity gate (structure/take) but failed token grounding. "
+        "Add them as key facts or edit the script before publishing."
+    )
+    sent = key_facts_for_prompt(key_facts) if key_facts else []
+    if sent:
+        print_fn(f"  Key facts that reached the LLM ({len(sent)}):")
+        for i, fact in enumerate(sent, 1):
+            short = fact[:90] + ("…" if len(fact) > 90 else "")
+            print_fn(f"    {i}. {short}")
+    return True
 
 
 def prompt_channel_selection(*, print_fn=print, input_fn=input) -> str:
@@ -945,7 +1020,7 @@ def display_summary(
     if cost_line:
         print_fn(f"  {cost_line}")
 
-    from apis.apify_client import apify_credit_exhausted
+    from apis.apify_client import apify_disabled, apify_status
 
-    if apify_credit_exhausted():
-        print_fn("  ⚠ Apify ran out of credits this session — some social signals were skipped")
+    if apify_disabled():
+        print_fn(f"  ⚠ Apify disabled this session — {apify_status()}")

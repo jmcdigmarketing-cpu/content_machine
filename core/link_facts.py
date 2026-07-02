@@ -90,11 +90,48 @@ def _youtube_facts(url: str) -> list[str]:
     return facts
 
 
+def _is_bot_blocked(resp: requests.Response) -> bool:
+    """True when the host returned a WAF/challenge page instead of article HTML."""
+    text = resp.text or ""
+    if not text.strip():
+        return True
+    low = text.lower()
+    if "awswaf" in low or ("window.aws" in low and "challenge" in low):
+        return True
+    # ESPN and similar sites often return 202 + empty title + a JS challenge shell.
+    return resp.status_code == 202 and len(text) < 8000
+
+
+def link_fetch_issue(url: str) -> str | None:
+    """Human-readable reason a URL could not be scraped, or None if unknown/empty."""
+    url = (url or "").strip()
+    if not looks_like_url(url):
+        return None
+    if _youtube_facts(url):
+        return None
+    try:
+        resp = requests.get(url, headers=_HEADERS, timeout=12)
+    except Exception as exc:
+        logger.debug("link fetch failed for %s: %s", url, exc)
+        return "Network error fetching that link — paste the text manually."
+    if _is_bot_blocked(resp):
+        host = url.split("/")[2] if "/" in url else "that site"
+        return (
+            f"{host} blocked automated fetch (bot protection) — "
+            "copy/paste the article text as facts instead."
+        )
+    if resp.status_code != 200:
+        logger.debug("link fetch %s returned %s", url, resp.status_code)
+        return f"Link returned HTTP {resp.status_code} — paste the text manually."
+    return None
+
+
 def _article_facts(url: str, *, max_lines: int = 5) -> list[str]:
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=12)
-        if resp.status_code != 200:
-            logger.debug("link fetch %s returned %s", url, resp.status_code)
+        if resp.status_code != 200 or _is_bot_blocked(resp):
+            blocked = _is_bot_blocked(resp)
+            logger.debug("link fetch %s returned %s (blocked=%s)", url, resp.status_code, blocked)
             return []
         soup = BeautifulSoup(resp.text, "html.parser")
     except Exception as exc:

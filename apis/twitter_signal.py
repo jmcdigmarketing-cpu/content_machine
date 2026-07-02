@@ -72,6 +72,17 @@ def _normalise_score(top_engagement: int, authority_hits: int) -> float:
 
 
 def get_twitter_signal(topic: str, channel_id: str = "default") -> dict[str, Any]:
+    from apis.apify_client import apify_disabled, apify_status
+
+    if apify_disabled():
+        return make_signal(
+            connected=True,
+            active=False,
+            score=0,
+            data=None,
+            status_detail=f"Twitter/Apify: {apify_status()}",
+            status=STATUS_INACTIVE,
+        )
     if not os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
         return make_signal(
             connected=False,

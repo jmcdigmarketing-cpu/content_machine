@@ -459,7 +459,8 @@ def display_variants(
     — the A/B title-pattern loop surfacing learned winners at selection time.
     """
     best_i = max(range(len(evaluated)), key=lambda i: evaluated[i][1])
-    subsection("Scored variants (Enter = best)", print_fn)
+    subsection("Scored angles (Enter = best)", print_fn)
+    print_fn("  (YouTube title is generated after key facts + script — not here.)")
     from core.ui_theme import paint, score_badge
 
     winning: frozenset[str] = frozenset()
@@ -618,8 +619,10 @@ def prompt_key_facts(
     try:
         suggestions = load_facts(topic, channel_id)
     except Exception:
-        # Vault problems must never block video creation.
         suggestions = []
+    from core.operator_facts import is_writing_tip
+
+    suggestions = [s for s in suggestions if not is_writing_tip(s)]
     if suggestions:
         print_fn("")
         print_fn(f"  From your Obsidian vault ({len(suggestions)} factual match(es)):")
@@ -634,17 +637,40 @@ def prompt_key_facts(
                     vault_accepted.append(suggestions[int(tok) - 1])
 
     print_fn("")
-    print_fn("  Add your own facts — one per line (or paste a link), empty line when done:")
-    from core.content_engine import key_facts_for_prompt, max_operator_key_facts
+    print_fn("  Add facts — paste a URL, one line, or type `paste` + Enter for a multi-line block.")
+    print_fn("  (Trade trackers paste well as a block. Empty line when done.)")
+    from core.content_engine import key_facts_for_prompt
     from core.link_facts import extract_facts_from_url, link_fetch_issue, looks_like_url
+    from core.operator_facts import (
+        capture_facts_to_vault,
+        dedupe_facts,
+        operator_key_fact_char_budget,
+        parse_pasted_block,
+    )
 
     pasted_sources: list[dict[str, str]] = []
     while True:
         fact = input_fn(
-            f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1}: "
+            f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1} "
+            f"(or `paste`, empty when done): "
         ).strip()
         if not fact:
             break
+        if fact.lower() == "paste":
+            print_fn("  >> Paste your block below (blank line when finished):")
+            block_lines: list[str] = []
+            while True:
+                line = input_fn("    ").strip()
+                if not line:
+                    break
+                block_lines.append(line)
+            parsed = parse_pasted_block("\n".join(block_lines))
+            if parsed:
+                print_fn(f"    Parsed {len(parsed)} fact line(s) from block.")
+                manual_facts.extend(parsed)
+            else:
+                print_fn("    No facts parsed — try shorter lines or one trade per paragraph.")
+            continue
         if looks_like_url(fact):
             print_fn("    Fetching link…")
             extracted = extract_facts_from_url(fact)
@@ -652,51 +678,47 @@ def prompt_key_facts(
                 for ex in extracted:
                     print_fn(f"    + {ex[:90]}")
                 link_facts.extend(extracted)
-                # Remember the link so it can be saved to the vault for reuse.
                 pasted_sources.append({"url": fact, "title": extracted[0]})
             else:
                 issue = link_fetch_issue(fact)
-                print_fn(f"    {issue or 'Could not extract facts from that link — skipped.'}")
+                msg = issue or "Could not extract facts from that link."
+                print_fn(f"    {msg}")
+                print_fn("    Tip: type `paste` and paste the article text as a block instead.")
             continue
-        manual_facts.append(fact)
+        if "\n" in fact:
+            manual_facts.extend(parse_pasted_block(fact))
+        else:
+            manual_facts.append(fact)
 
-    # Persist the links we brought in so future related runs can reuse them
-    # (no-op without a vault; never blocks). See core.source_capture.
     if pasted_sources:
         try:
             from core.source_capture import capture_sources
 
             saved = capture_sources(channel_id, topic, pasted_sources)
             if saved:
-                print_fn(f"    Saved {len(pasted_sources)} source(s) to your vault for reuse.")
+                print_fn(f"    Saved {len(pasted_sources)} source URL(s) to your vault.")
         except Exception:
             pass
 
-    # Manual + link facts outrank vault suggestions when capping for the LLM (ADR §4).
-    key_facts = manual_facts + link_facts + vault_accepted
+    key_facts = dedupe_facts(manual_facts + link_facts + vault_accepted)
 
-    # De-duplicate while preserving order.
-    seen: set[str] = set()
-    deduped: list[str] = []
-    for f in key_facts:
-        key = f.lower()
-        if key not in seen:
-            seen.add(key)
-            deduped.append(f)
-
-    if deduped:
-        sent = key_facts_for_prompt(deduped)
-        print_fn(f"  {len(deduped)} fact(s) collected; {len(sent)} will be sent to the LLM.")
-        cap = max_operator_key_facts()
-        if len(deduped) > cap:
+    if key_facts:
+        saved_path = capture_facts_to_vault(channel_id, topic, key_facts)
+        if saved_path:
+            print_fn(f"  Saved all {len(key_facts)} fact(s) to vault (full set, no cap).")
+        sent = key_facts_for_prompt(key_facts)
+        budget = operator_key_fact_char_budget()
+        print_fn(
+            f"  {len(key_facts)} fact(s) collected; {len(sent)} packed for the LLM "
+            f"({sum(len(s) for s in sent)} / {budget} chars)."
+        )
+        if len(sent) < len(key_facts):
+            skipped = len(key_facts) - len(sent)
             print_fn(
-                f"  Note: cap is {cap} — your pasted facts are prioritized over "
-                f"vault suggestions."
+                f"  Note: {skipped} fact(s) stored in vault but omitted from prompt "
+                f"(char budget — raise OPERATOR_KEY_FACT_CHAR_BUDGET if needed)."
             )
-            skipped = [f for f in deduped if f not in sent]
-            if skipped:
-                print_fn(f"  Skipped by cap ({len(skipped)}): {skipped[0][:60]}…")
-    return deduped
+    return key_facts
 
 
 def display_grounding_report(

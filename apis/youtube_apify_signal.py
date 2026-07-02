@@ -65,6 +65,18 @@ def _fetch_items(backend: str, query: str) -> tuple[list[dict] | None, str]:
             return [], "free"
         # auto: free unavailable/empty -> fall through to Apify below
 
+    try:
+        from apis.apify_client import apify_disabled
+
+        if apify_disabled():
+            if youtube_available():
+                free_items = fetch_youtube_free(query)
+                if free_items:
+                    return free_items, "free"
+            return [], "apify_off"
+    except Exception:
+        pass
+
     if not os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
         return None, "no_key"
 

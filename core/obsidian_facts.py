@@ -121,12 +121,16 @@ def _is_strategy_note(meta: dict[str, str], rel_path: Path) -> bool:
 
 def _is_strategy_bullet(text: str) -> bool:
     """True for engagement/playbook lines that must not be operator ground truth."""
+    from core.operator_facts import is_writing_tip
+
+    if is_writing_tip(text):
+        return True
     stripped = (text or "").strip()
     if stripped.lower().startswith("machine belief:"):
         return False
-    low = stripped.lower()
     if _FACT_ANCHOR_RE.search(text or ""):
         return False
+    low = stripped.lower()
     return any(m in low for m in _STRATEGY_BULLET_MARKERS)
 
 

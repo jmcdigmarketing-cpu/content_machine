@@ -72,6 +72,17 @@ def _normalise_score(avg_views: float, item_count: int) -> float:
 
 
 def get_tiktok_signal(topic: str, channel_id: str = "default") -> dict[str, Any]:
+    from apis.apify_client import apify_disabled, apify_status
+
+    if apify_disabled():
+        return make_signal(
+            connected=True,
+            active=False,
+            score=0,
+            data=None,
+            status_detail=f"TikTok/Apify: {apify_status()}",
+            status=STATUS_INACTIVE,
+        )
     benable_key = os.getenv("APIFY_BENABLE_BOT", "").strip()
     main_key = os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip()
 

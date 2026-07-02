@@ -19,6 +19,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from core.logging import get_logger
+from core.operator_facts import is_writing_tip, parse_pasted_block
 
 logger = get_logger("core.link_facts")
 
@@ -126,7 +127,21 @@ def link_fetch_issue(url: str) -> str | None:
     return None
 
 
-def _article_facts(url: str, *, max_lines: int = 5) -> list[str]:
+def _extract_trade_lines(soup: BeautifulSoup) -> list[str]:
+    """Pull list items and trade-shaped headings from sports tracker pages."""
+    facts: list[str] = []
+    for li in soup.find_all("li"):
+        text = " ".join(li.get_text(" ", strip=True).split())
+        if len(text) > 15 and not _is_junk_line(text):
+            facts.append(text[:400])
+    for tag in soup.find_all(["h2", "h3", "h4"]):
+        text = " ".join(tag.get_text(" ", strip=True).split())
+        if len(text) > 20 and re.search(r"\btrade", text, re.I) and not _is_junk_line(text):
+            facts.append(text[:400])
+    return facts
+
+
+def _article_facts(url: str, *, max_lines: int = 24) -> list[str]:
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=12)
         if resp.status_code != 200 or _is_bot_blocked(resp):
@@ -155,16 +170,21 @@ def _article_facts(url: str, *, max_lines: int = 5) -> list[str]:
     for p in soup.find_all("p"):
         text = " ".join(p.get_text(" ", strip=True).split())
         if len(text) > 60 and not _is_junk_line(text):
-            facts.append(text[:300])
-        if len(facts) >= max_lines:
-            break
+            facts.append(text[:400])
 
-    # De-duplicate, preserve order.
+    for trade_line in _extract_trade_lines(soup):
+        if trade_line.lower() not in {f.lower() for f in facts}:
+            facts.append(trade_line)
+
+    # De-duplicate, preserve order; drop writing tips.
     seen: set[str] = set()
     out: list[str] = []
     for f in facts:
-        if f.lower() not in seen:
-            seen.add(f.lower())
+        if is_writing_tip(f):
+            continue
+        key = f.lower()[:100]
+        if key not in seen:
+            seen.add(key)
             out.append(f)
     return out[:max_lines]
 
@@ -177,4 +197,6 @@ def extract_facts_from_url(url: str) -> list[str]:
     yt = _youtube_facts(url)
     if yt:
         return yt
-    return _article_facts(url)
+    raw = _article_facts(url)
+    # Compact duplicate intros from meta + first paragraph.
+    return parse_pasted_block("\n".join(raw)) or raw

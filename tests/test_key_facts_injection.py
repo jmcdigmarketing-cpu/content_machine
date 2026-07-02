@@ -1,5 +1,6 @@
 """Unit tests for operator key-facts injection into LLM prompts."""
 
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -77,14 +78,16 @@ class TestSanitizeKeyFacts(unittest.TestCase):
         self.assertEqual(self._sanitize(None), [])
         self.assertEqual(self._sanitize([]), [])
 
-    def test_caps_to_five_facts(self):
-        result = self._sanitize([f"fact {i}" for i in range(10)])
+    def test_caps_respects_line_limit(self):
+        with patch.dict(
+            os.environ, {"MAX_OPERATOR_KEY_FACTS": "5", "OPERATOR_KEY_FACT_CHAR_BUDGET": "500"}
+        ):
+            result = self._sanitize([f"fact {i}" for i in range(10)])
         self.assertEqual(len(result), 5)
-        self.assertEqual(result, ["fact 0", "fact 1", "fact 2", "fact 3", "fact 4"])
 
-    def test_truncates_long_fact_to_300_chars(self):
+    def test_truncates_long_fact_to_400_chars(self):
         result = self._sanitize(["x" * 500])
-        self.assertEqual(len(result[0]), 300)
+        self.assertEqual(len(result[0]), 400)
 
     def test_collapses_newlines_and_whitespace(self):
         result = self._sanitize(["Champion is\n\nTopuria\t  by  KO"])

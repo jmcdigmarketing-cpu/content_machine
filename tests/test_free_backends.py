@@ -127,6 +127,11 @@ class TestFetchYoutubeFree(unittest.TestCase):
 class TestBackendSelection(unittest.TestCase):
     """SIGNAL_BACKEND routing inside get_youtube_apify_signal."""
 
+    def setUp(self):
+        from apis.apify_client import reset_apify_state
+
+        reset_apify_state()
+
     def test_default_apify_no_key_returns_no_key(self):
         # Default backend + no Apify key = the exact pre-change behavior.
         with patch.dict("os.environ", {"SIGNAL_BACKEND": "", "APIFY_CONTENT_MACHINE_KEY": ""}):

@@ -97,6 +97,17 @@ def _normalise_score(items: list[dict]) -> float:
 
 
 def get_reddit_signal(topic: str, channel_id: str = "default") -> dict[str, Any]:
+    from apis.apify_client import apify_disabled, apify_status
+
+    if apify_disabled():
+        return make_signal(
+            connected=True,
+            active=False,
+            score=0,
+            data=None,
+            status_detail=f"Reddit/Apify: {apify_status()}",
+            status=STATUS_INACTIVE,
+        )
     key_set = bool(os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip())
     if not key_set:
         return make_signal(

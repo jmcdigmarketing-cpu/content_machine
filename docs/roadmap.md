@@ -191,18 +191,17 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 
 *Prioritised fix queue, top first. `[S]`/`[M]`/`[L]` = effort.*
 
-**Immediate (from live runs):**
-1. **Manual fact feeding** `[S–M]` — a "key facts" prompt: operator pastes 1–3 facts that inject as top-priority VERIFIED FACTS. THE fix for stale-fact guessing (e.g. "Topuria, the featherweight champion" when he isn't). Highest leverage.
-2. **Domain-aware signal gating** `[S]` — don't run gaming signals (RAWG/Steam/IGDB) for UFC/sports topics and vice-versa. Kills the "UFC 4 game" noise, speeds discovery, saves quota (`apis/register_signals.py` skip-by-domain).
-3. **Auto-disable on credit/quota** `[S–M]` — generalise the Apify circuit breaker: any signal returning a quota/auth status (YouTube units, Odds 500/mo) auto-skips for the session.
-4. **Live discovery feedback** `[M]` — per-phase progress (signals X/31, variant N/5, elapsed per phase) instead of one spinner that jumps to ~300s.
+**Immediate (from live runs):** *(mostly shipped — see recency cycle + script-accuracy PR)*
+1. ~~Manual fact feeding~~ — key facts + vault + `paste` block + char budget (`core/operator_facts.py`)
+2. ~~Domain-aware signal gating~~ — shipped
+3. ~~Auto-disable on credit/quota~~ — shipped (+ persisted Apify, LLM router)
+4. ~~Live discovery feedback~~ — shipped
 
-**Then — assessment top 5 ([docs/assessment.md](assessment.md)):**
-5. Recency/event grounding (enable Tapology for UFC; weight fresh result-RSS).
-6. Signal relevance gating (matched entity must appear in the topic).
-7. Confidence surfacing on recommenders (sample size; raise min-samples).
-8. Word-level animated captions (Phase Q next).
-9. Observability + per-run cost/quota dashboard.
+**Current focus (2026-07):**
+1. **Fact-first generation pipeline** — discovery picks editorial *angles*; YouTube title generated after key facts + script (`core/title_generator.py`). Operator facts saved in full to vault; LLM gets char budget not hard-5 cap.
+2. **O10 reset-window auto-re-enable** — Apify/YouTube/Odds recover after known reset cadence ([credit_efficiency.md](credit_efficiency.md))
+3. **Semantic trade validation** (optional) — headline ↔ corpus trade-verb check; higher false-positive risk
+4. **Creator coach surface (Phase S)** — expand best-bet into daily ideas + why
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
@@ -288,6 +287,7 @@ Turn the research spine into a compliance moat.
 - [x] **Free in-process signal backends (Option 3)** — *spike done 2026-06-29; YouTube backend shipped 2026-07-01:* `apis/free_backends.py` (hybrid `yt-dlp` flat-rank → full-extract top-N) behind `SIGNAL_BACKEND=apify|free|auto` (default `apify` — unchanged behavior; `free` = keyless/zero-cost; `auto` = free-first with Apify fallback). Cost meter no longer bills a free-served `youtube_competitors` as an Apify run. Reddit keyless is 403-blocked → use the Reddit-OAuth prereq, not a scrape; Twitter/TikTok stay Apify. Tests: `tests/test_free_backends.py`. Full write-up: [agent_reach_evaluation.md](agent_reach_evaluation.md).
 - [x] **Per-platform rate-limit cooldown** — *shipped 2026-07-01:* free backends fail by 429 (rate-limit), not 402 (credit). Session breaker (`apis/register_signals.py`) now gives transient 429s a *disabled-until-T* cooldown (`SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS`, default 15 min, 0 = off) instead of ignoring them; hard statuses still trip permanently, and `SIGNAL_BREAKER_INCLUDE_RATE_LIMIT=true` still promotes 429s to a full-session trip. "Next available" surfaces in `ops reliability` and the post-discovery signal-health panel (`youtube_competitors → 14:32`). Tests in `tests/test_circuit_breaker.py`.
 - [x] **Script-accuracy follow-ups (2026-07-01)** — Apify 403 vs 402 messaging + shorter auth-failure TTL; `MAX_OPERATOR_KEY_FACTS` env cap; pipeline-end `finalize_run_observability()` for cache stats; `auto_generate` mirrors fact-grounding gate.
+- [x] **Fact-first pipeline (2026-07-02)** — `core/operator_facts.py` (paste block, vault save-all, char budget); discovery → **angles** not titles; `core/title_generator.py` runs after facts + script; anti-slop title rules.
 - [ ] **Webhook / n8n / Zapier out** — emit run + publish events for external automation.
 - [ ] **Batch generation** — N ideas → N drafts in one unattended pass (feeds A/B + volume-with-variation).
 - [ ] **Observability** — structured run traces + timing dashboard (timings already captured).

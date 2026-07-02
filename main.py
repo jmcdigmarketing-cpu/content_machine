@@ -291,7 +291,7 @@ def _run_new_video_flow_body(
 
     best_topic, best_score, best_signals = discovery.evaluated[variant_index]
 
-    subsection("Selected")
+    subsection("Selected angle")
     print(f"  {best_topic}")
     print(f"  Score: {best_score}")
     display_signal_breakdown(best_signals)
@@ -317,7 +317,7 @@ def _run_new_video_flow_body(
     _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
-    key_facts = prompt_key_facts(best_topic, channel_id)
+    key_facts = prompt_key_facts(topic, channel_id)
 
     section("Content")
     print_bonus_art(key="mario")
@@ -335,6 +335,9 @@ def _run_new_video_flow_body(
     print()
     print(result.script)
     print()
+    if result.title:
+        print(f"  Title: {result.title}")
+        print()
     preset = get_length_preset(length_choice)
     print(f"  Length: {format_length_report(result.script, preset)}")
 

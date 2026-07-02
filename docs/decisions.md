@@ -22,9 +22,14 @@ that was deliberate. Newest near the bottom. Keep entries short.
 **Consequence:** When signals are thin the script must go opinion/community-level rather than assert specifics. Regen is **"regenerate then warn," not block** — the operator stays in control and still sees the residual warning; the rewrite is only accepted if it reduces unsupported specifics without gutting the script (≥60% word count).
 
 ### 4. Operator key facts are ground truth that overrides everything
-**Decision:** Pasted "key facts" inject as highest-priority VERIFIED FACTS and override training memory and signals (`prompt_key_facts` → `content_engine`). Input is sanitized (`_sanitize_key_facts`: cap 5 facts × 300 chars, strip control chars/newlines) to prevent prompt injection. **Order:** manual pasted facts and link extracts rank **before** vault suggestions so the cap keeps operator input, not Obsidian heuristics.
-**Why:** Recent events live past the LLM cutoff and the signals often don't surface results; the cheapest fix is to let the human state the truth.
-**Consequence:** Accuracy on fresh events depends on the operator supplying facts (or web-search/Tapology filling them). Vault notes tagged `strategy` / `playbook` (or strategy-shaped bullets) are excluded from key-fact suggestions — they are content tactics, not verifiable events. UI shows collected vs sent count when over the cap.
+**Decision:** Pasted "key facts" inject as highest-priority VERIFIED FACTS and override training memory and signals (`prompt_key_facts` → `content_engine`). **All** collected facts persist to `vault/<channel>/_operator_facts/`; the LLM receives a **char budget** (`OPERATOR_KEY_FACT_CHAR_BUDGET`, default 4500) with soft line cap (`MAX_OPERATOR_KEY_FACTS`, default 24). Manual + link facts rank before vault suggestions. Multi-line `paste` mode parses trade trackers. Writing-tip / playbook bullets filtered via `is_writing_tip()`.
+**Why:** Recent events live past the LLM cutoff; trade-heavy runs need more than 5 lines. Vault storage ≠ prompt cap — everything is kept for reuse.
+**Consequence:** Accuracy on fresh events depends on operator supplying facts (or web-search filling them). ESPN/WAF hosts need manual paste.
+
+### 4b. YouTube title is generated after facts + script, not at discovery
+**Decision:** Discovery (`apis/topic_variants.py`) returns editorial **angles** (≤12 words), not publishable titles. The YouTube title is generated in `core/title_generator.py` after operator key facts, script, and grounding — using the script hook + fact corpus. Anti-slop banned phrases enforced in both stages.
+**Why:** Pre-fact title variants were engagement slop ("Just Broke the League") and misled variant selection before the operator pasted trades.
+**Consequence:** UI labels discovery picks as "angles"; final title appears after script generation in `main.py`.
 
 ### 5. Apify is trend discovery, NOT fact freshness
 **Decision:** Apify (reddit/twitter/tiktok/youtube_competitors) feeds *what's trending / community sentiment / competitor angles* — never treated as verified facts. Fact freshness comes from free APIs + Tapology + web search (Tavily/Brave) + manual key facts.

@@ -290,18 +290,20 @@ Older runs may store MP4 under `output/video/` instead of `output/tapin/video/` 
 **Common causes from live runs:**
 
 1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault suggestions (`core/obsidian_facts.py`). At the prompt, type `n` to skip vault suggestions when unsure.
-2. **Key-facts cap (5)** — only five operator facts reach the LLM. **Pasted facts and link extracts are prioritized** over vault suggestions (`prompt_key_facts` order). UI shows how many were collected vs sent.
-3. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Paste article text manually; do not rely on ESPN URLs.
-4. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”).
-5. **Single-name athletes** — grounding now flags mononyms (e.g. `LeBron`) when absent from the facts corpus.
+2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/`; LLM gets a **char budget** (default 4500, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Pasted + link facts rank before vault. Type **`paste`** + Enter to drop a whole trade tracker block. UI shows collected vs packed-for-LLM counts.
+3. **Discovery angles ≠ YouTube title** — discovery picks editorial angles; the publishable title is generated **after** key facts + script (`core/title_generator.py`). Ignore slop-looking angle lines — the final title uses your facts.
+4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs.
+5. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”). Set `SIGNAL_BACKEND=auto` for yt-dlp YouTube when Apify is dead.
+6. **Single-name athletes** — grounding flags mononyms (e.g. `LeBron`) when absent from the facts corpus.
 
 **What to do:**
 
-1. At key facts: `n` for vault unless bullets are dated/event facts; paste 3–5 concrete trade lines.
-2. After script generation, read **Fact grounding** before **Authenticity**. Fix or add key facts if specifics are listed.
-3. Regenerate — do not re-upload an old MP4 with a bad script.
+1. At key facts: `n` for vault unless bullets are dated/event facts; type **`paste`** and paste the full Yahoo trade block (or 3–5 concrete lines).
+2. Pick a discovery **angle** (not a headline) — the YouTube title appears after script generation.
+3. After script generation, read **Fact grounding** before **Authenticity**. Fix or add key facts if specifics are listed.
+4. Regenerate — do not re-upload an old MP4 with a bad script.
 
-**Env:** `OBSIDIAN_VAULT_PATH` — tag strategy notes `tags: [strategy]` or put under `vault/<channel>/strategy/`.
+**Env:** `OBSIDIAN_VAULT_PATH`, `OPERATOR_KEY_FACT_CHAR_BUDGET=6000` for trade-heavy nights, `MAX_OPERATOR_KEY_FACTS=24`.
 
 ---
 

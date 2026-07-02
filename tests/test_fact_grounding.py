@@ -5,7 +5,9 @@ title-case prose must NOT be (false positives would train the operator to ignore
 the warning).
 """
 
+import os
 import unittest
+from unittest.mock import patch
 
 from core.fact_grounding import extract_entities, find_ungrounded_entities
 
@@ -61,6 +63,50 @@ class TestFindUngrounded(unittest.TestCase):
     def test_empty_inputs_safe(self):
         self.assertEqual(find_ungrounded_entities("", "facts"), [])
         self.assertEqual(find_ungrounded_entities("Emma Frost", ""), ["Emma Frost"])
+
+    def test_mononym_athlete_flagged_when_ungrounded(self):
+        script = "LeBron is not re-signing with the Lakers this summer."
+        facts = "VERIFIED FACTS:\n- Jaylen Brown was traded to the 76ers."
+        ungrounded = find_ungrounded_entities(script, facts)
+        self.assertIn("LeBron", ungrounded)
+
+    def test_mononym_grounded_when_in_facts(self):
+        script = "LeBron is leaving the Lakers."
+        facts = "VERIFIED FACTS:\n- LeBron James will not re-sign with Los Angeles."
+        self.assertNotIn("LeBron", find_ungrounded_entities(script, facts))
+
+    def test_word_boundary_avoids_substring_false_grounding(self):
+        script = "Art Walker leads the rebuild."
+        facts = "VERIFIED FACTS:\n- Smart roster moves matter."
+        self.assertIn("Art Walker", find_ungrounded_entities(script, facts))
+
+
+class TestKeyFactsPriority(unittest.TestCase):
+    def test_manual_facts_win_over_vault_when_capped(self):
+        from core.content_engine import key_facts_for_prompt
+
+        ordered = [
+            "Giannis traded to Miami Heat June 22 2026",
+            "Jaylen Brown to 76ers July 1 2026",
+            "Kawhi Leonard to Raptors June 30 2026",
+            "Ja Morant to Trail Blazers June 29 2026",
+            "Walker Kessler to Lakers July 1 2026",
+            "Fraud narratives outperform recaps",
+            "Rankings framing beats reactions",
+        ]
+        sent = key_facts_for_prompt(ordered)
+        self.assertGreaterEqual(len(sent), 5)
+        self.assertIn("Giannis", sent[0])
+        self.assertNotIn("Fraud", " ".join(sent))
+
+    def test_max_operator_key_facts_env(self):
+        from core.operator_facts import facts_for_prompt, max_operator_key_facts
+
+        facts = [f"fact {i}" for i in range(10)]
+        with patch.dict(os.environ, {"MAX_OPERATOR_KEY_FACTS": "8"}):
+            self.assertEqual(max_operator_key_facts(), 8)
+            sent = facts_for_prompt(facts)
+        self.assertEqual(len(sent), 8)
 
 
 if __name__ == "__main__":

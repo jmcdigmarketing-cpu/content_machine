@@ -91,8 +91,14 @@ def cadence_status(
 
 def display_cadence(status: CadenceStatus, *, print_fn=print) -> None:
     icon = "✓" if status.ok else "⚠"
+    try:
+        from core.themes import meter
+
+        gauge = meter(status.total, status.cap)
+    except Exception:
+        gauge = f"{status.total}/{status.cap}"
     print_fn(
-        f"\n  Cadence {icon} {status.total}/{status.cap} in a {status.window_days}-day window "
+        f"\n  Cadence {icon} {gauge} in a {status.window_days}-day window "
         f"({status.recent} recent + {status.upcoming} scheduled)"
     )
     if not status.ok:

@@ -182,7 +182,7 @@ def _anchor_rules(topic: str, channel_id: str | None) -> str:
     return "\n".join(lines)
 
 
-def generate_ai_titles(topic, angle_types, *, channel_id=None, is_established: bool = False):
+def generate_ai_angles(topic, angle_types, *, channel_id=None, is_established: bool = False):
     angle_block = "\n".join(angle_types)
 
     competitor_block = ""
@@ -199,43 +199,45 @@ def generate_ai_titles(topic, angle_types, *, channel_id=None, is_established: b
             "\nFRESHNESS CONTEXT: This game/franchise has been covered multiple times "
             "on this channel already. DO NOT use 'just released', 'biggest update yet', "
             "or 'what you need to know' framing — that angle is stale.\n"
-            "Instead: focus on ANALYSIS (what's changed and why it matters), "
-            "PREDICTION (what's coming next, leaks, roadmap), "
-            "COMMUNITY (what players are debating or demanding), "
-            "or CRITIQUE (what's broken, what needs fixing).\n"
-            "Titles should feel like hot takes or informed breakdowns, not news summaries.\n"
+            "Instead: focus on ANALYSIS, PREDICTION, COMMUNITY debate, or CRITIQUE.\n"
         )
 
     prompt = f"""
-You are generating YouTube titles.
+You are generating editorial ANGLES for a short-form video — NOT YouTube titles.
 
 Topic:
 {topic}
 {freshness_block}
 {competitor_block}
 
-Angles (use as creative direction only — do NOT paste angle names into titles):
+Angle types (direction only — do NOT paste these labels verbatim):
 {angle_block}
 
 {anchor_block}
 
 Rules:
-- One strong title per angle.
-- Do not fabricate specific patch notes, hero names, or version numbers you cannot verify.
-- Do not repeat topic verbatim.
-- Keep titles natural and compelling.
+- One short angle line per item (max 12 words).
+- Describe the TAKE or focus — NOT a clickbait headline.
+- Do not fabricate specifics you cannot verify.
 - No numbering, no markdown, no "Primary Storyline:" prefixes.
-- Never drop the game/franchise name from the seed topic.
+- Never drop the named subject from the seed topic.
+- BANNED headline templates: "just broke the league", "nobody's talking about",
+  "reshapes the entire season", "the real winner isn't", "left fans furious", "my hot take".
 
-Return exactly {len(angle_types)} titles.
+The publishable YouTube title is generated LATER from verified facts + script.
+
+Return exactly {len(angle_types)} angle lines.
 """
 
-    # Variant title brainstorming runs on every discovery → cheap tier.
-    raw = complete(prompt, tier="cheap", temperature=0.8, max_tokens=400)
+    raw = complete(prompt, tier="cheap", temperature=0.7, max_tokens=400)
 
-    titles = (raw or "").strip().split("\n")
+    lines = (raw or "").strip().split("\n")
+    clean = [_LIST_PREFIX_RE.sub("", t).strip().strip('"') for t in lines if t.strip()]
+    return [t for t in clean if t][:5]
 
-    clean = [_LIST_PREFIX_RE.sub("", t).strip().strip('"') for t in titles if t.strip()]
-    clean = [t for t in clean if t]
 
-    return clean[:5]
+def generate_ai_titles(topic, angle_types, *, channel_id=None, is_established: bool = False):
+    """Back-compat alias — returns editorial angles, not publishable titles."""
+    return generate_ai_angles(
+        topic, angle_types, channel_id=channel_id, is_established=is_established
+    )

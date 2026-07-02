@@ -73,6 +73,13 @@ class TestCacheStats(unittest.TestCase):
         cache_manager.flush_cache_stats()  # must not raise
         self.assertEqual(cache_manager.get_cache_stats()["hits"], 1)
 
+    def test_finalize_run_observability_flushes(self):
+        from core.pipeline import finalize_run_observability
+
+        cache_manager._record_cache_access("reddit::t", True)
+        finalize_run_observability()
+        self.assertEqual(cache_manager.get_cache_stats()["hits"], 1)
+
 
 class TestReliability(unittest.TestCase):
     def test_gather_has_all_sections(self):
@@ -105,6 +112,22 @@ class TestReliability(unittest.TestCase):
         self.assertIn("Apify", out)
         self.assertIn("75% hit rate", out)
         self.assertIn("YouTube units", out)
+
+    def test_render_apify_auth_hint(self):
+        out = reliability.render(
+            {
+                "apify": {
+                    "status": "OFF",
+                    "persisted_exhausted": True,
+                    "persisted_reason": "Apify key unauthorized (403)",
+                },
+                "llm": {},
+                "signals": {},
+                "cache": {},
+                "youtube": {},
+            }
+        )
+        self.assertIn("auth/permissions", out)
 
 
 if __name__ == "__main__":

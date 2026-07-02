@@ -11,7 +11,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-06-23 — **both feature PRs consolidated into `main`** (`e6d5c9c`); 363 tests green. main now holds Phase O/P/Q + idea-intake + recommenders AND the full recency/quality layer (key facts, signal gating, web search, Obsidian, circuit breakers, confidence surfacing, cost meter, fact-grounding, RAWG relevance, domain-routed RSS). No open PRs or divergent branches.
+Last updated: 2026-07-02 — **2026-07 focus wave shipped** on `fix/credit-efficiency-review` (PR #24); 613 tests green. Adds O10 reset-window auto-re-enable, opt-in semantic trade validation, the Phase S creator coach (`ops coach`) + weekly-digest next actions, and headless key facts for `auto_generate` — on top of the fact-first pipeline (angles at discovery, title after facts + script).
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -162,6 +162,7 @@ Last updated: 2026-06-23 — **both feature PRs consolidated into `main`** (`e6d
 - [x] `.pre-commit-config.yaml`; `.gitignore` covers tool caches
 - [x] `youtube.readonly` scope added for publisher dup-check / OAuth reads
 - [ ] **git remote** — repo initialised locally; create **private** GitHub remote and push
+- [x] **`CLAUDE.md`** — project guide for AI coding agents (pipeline overview, `ops`/`main.py` entry points, signal architecture, LLM router tiers, test/lint commands, hard rules). Companion: [docs/claude_code_usage.md](claude_code_usage.md) (Claude Code modes/features specific to this repo).
 - [ ] Tighten the mypy baseline (~94 errors → fix the real ones, e.g. `timings` value type)
 - [ ] Annotate/retire the remaining best-effort broad `except Exception` handlers
 - [ ] Raise test coverage on render + publish paths
@@ -190,18 +191,19 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 
 *Prioritised fix queue, top first. `[S]`/`[M]`/`[L]` = effort.*
 
-**Immediate (from live runs):**
-1. **Manual fact feeding** `[S–M]` — a "key facts" prompt: operator pastes 1–3 facts that inject as top-priority VERIFIED FACTS. THE fix for stale-fact guessing (e.g. "Topuria, the featherweight champion" when he isn't). Highest leverage.
-2. **Domain-aware signal gating** `[S]` — don't run gaming signals (RAWG/Steam/IGDB) for UFC/sports topics and vice-versa. Kills the "UFC 4 game" noise, speeds discovery, saves quota (`apis/register_signals.py` skip-by-domain).
-3. **Auto-disable on credit/quota** `[S–M]` — generalise the Apify circuit breaker: any signal returning a quota/auth status (YouTube units, Odds 500/mo) auto-skips for the session.
-4. **Live discovery feedback** `[M]` — per-phase progress (signals X/31, variant N/5, elapsed per phase) instead of one spinner that jumps to ~300s.
+**Immediate (from live runs):** *(mostly shipped — see recency cycle + script-accuracy PR)*
+1. ~~Manual fact feeding~~ — key facts + vault + `paste` block + char budget (`core/operator_facts.py`)
+2. ~~Domain-aware signal gating~~ — shipped
+3. ~~Auto-disable on credit/quota~~ — shipped (+ persisted Apify, LLM router)
+4. ~~Live discovery feedback~~ — shipped
 
-**Then — assessment top 5 ([docs/assessment.md](assessment.md)):**
-5. Recency/event grounding (enable Tapology for UFC; weight fresh result-RSS).
-6. Signal relevance gating (matched entity must appear in the topic).
-7. Confidence surfacing on recommenders (sample size; raise min-samples).
-8. Word-level animated captions (Phase Q next).
-9. Observability + per-run cost/quota dashboard.
+**Current focus (2026-07):** *(wave shipped 2026-07-02 — see below)*
+1. ~~Fact-first generation pipeline~~ — shipped (angles at discovery, title after facts + script)
+2. ~~O10 reset-window auto-re-enable~~ — shipped (`core/reset_window.py`; [credit_efficiency.md](credit_efficiency.md) O10)
+3. ~~Semantic trade validation~~ — shipped opt-in (`core/trade_validation.py`, `SEMANTIC_TRADE_VALIDATION`)
+4. ~~Creator coach surface (Phase S)~~ — shipped (`core/creator_coach.py`, `ops coach`; weekly digest gained "Next actions")
+
+**Up next:** O11 unified quota governor · thumbnail A/B (Phase S remainder) · batch generation · signal-breaker persistence (key-hash invalidation).
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
@@ -265,17 +267,18 @@ Turn the research spine into a compliance moat.
 - [ ] Reuse the scoring / hook / caption stack from Phases P–Q.
 
 ### Phase S — Creator coach surface
-- [ ] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing).
+- [x] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing) — `core/creator_coach.py`, `py -m scripts.ops coach`: ranked ideas each with a *why*, plus recommended length/post-time, winning title patterns, retention pacing, and cadence headroom. Read-only + fail-open. *(2026-07-02)*
 - [ ] **Thumbnail A/B** + CTR optimisation (Flux thumbnails already exist).
-- [ ] Weekly performance digest with concrete next actions.
+- [x] Weekly performance digest with concrete next actions — `analytics/weekly_report.build_next_actions`: the winners/losers per dimension become numbered operator instructions ("Lead with the 'fraud' angle again", "Retire the 'recap' angle"), noise-gated at ±3pp vs baseline. *(2026-07-02)*
 
-### UI / experience — themeable skins  *(fun, on-brand)*
+### UI / experience — themeable skins  *(fun, on-brand)* — **shipped 2026-07-02**
 *Builds on the existing braille ASCII art, `DiscoverySpinner`, and `print_domain_art`.*
-- [ ] **`CONTENT_UI_THEME=onepiece|zelda|pokemon|dbz`** — swap banner art, spinner frames, palette, and loading copy.
-  - **Zelda** — Triforce signal-health glyphs, heart-container queue meter, a *secret-found* flourish on a new best-bet, Rupees = quota units.
-  - **Pokémon** — Pokéball spinner, "type advantage" framing for domain weights, **level-up / XP** when a recommender improves from analytics, a daily-streak "Gotta post 'em all".
-  - **DBZ** — **power-level = composite score** ("It's over 9000!" past a threshold), Scouter readout for signal health, charge-up render progress bar.
-- [ ] Theme registry so each channel picks a skin in `channels.json`; keep a plain/no-emoji mode for logs and CI.
+- [x] **`CONTENT_UI_THEME=onepiece|zelda|pokemon|dbz|jjba|plain|default`** (`core/themes.py`) — each skin swaps the ANSI palette (16-color + auto-detected 256-color via `CONTENT_UI_COLOR_DEPTH`), spinner frames + themed loading copy, section glyphs, meter characters, startup tagline + inline mascot panel, publish celebration art, and a ≥90-score hype tag.
+  - **Zelda** — ▲ spinner + glyphs, **heart-container meters** (❤❤♡♡♡ cadence/quota), "YOU GOT THE RENDERED VIDEO" item-get celebration, *SECRET FOUND* score tag.
+  - **Pokémon** — Pokéball spinner (◓◑◒◐), "type advantage" loading copy, level-up celebration, *SUPER EFFECTIVE* score tag.
+  - **DBZ** — ki-charge spinner, Scouter loading copy, **"IT'S OVER 9000!"** on composite ≥ 90, over-9000 celebration.
+  - **JJBA** — ゴゴゴ menacing spinner + mascot, "ORA ORA scoring variants", **"TO BE CONTINUED ➡"** publish celebration, *MUDA MUDA* score tag.
+- [x] Theme registry with per-channel skin via `"ui_theme"` in `channels.json` (env overrides); `plain` keeps logs/CI color- and art-free. Meters + milestones (`maybe_print_milestone`) + themed celebrations wired into main flow, cadence, `ops reliability`, and `ops coach`. Sections/banners now span the full terminal width (capped at 100 cols). Tests: `tests/test_themes.py`.
 
 ### Efficiency & integrations
 > **Credit/quota/spend optimization backlog:** [credit_efficiency.md](credit_efficiency.md) — Apify preflight skip, cross-run breaker persistence, operator budgets, LLM provider failover, reliability dashboard, unified quota governor (O1–O11).
@@ -284,6 +287,13 @@ Turn the research spine into a compliance moat.
 - [x] **Multi-provider LLM router** (`core/llm_router.py`) — task-tier routing (cheap/extract/premium) across **DeepSeek, OpenRouter, Ollama (local), OpenAI, Anthropic** (Groq wired but not default — signup gated; Doubao wired but skipped — China-region-locked, ~$0 savings); OpenAI-compatible client shape + native Claude. Free-first defaults (**OpenRouter** free `:free` models anchor cheap, Ollama local fallback; **DeepSeek-V3** anchors extract+premium ≈ gpt-4o quality, ~10× cheaper), env-overridable per tier + per-provider `{PROVIDER}_MODEL_<TIER>`, graceful degradation, loads `.env` standalone. Consolidated the 3 ad-hoc Claude call sites + migrated content_engine / research_brief / fact_enrichment / topic_variants / background_query / local_provider. Real **per-provider token ledger** prices `cost_meter` (free `:free`/Ollama = $0). (`DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_MODEL`.)
 - [x] **Local-LLM option (Ollama)** — folded into the router as the `ollama` provider (OpenAI-compatible, `OLLAMA_MODEL` + optional `OLLAMA_BASE_URL`); zero marginal cost in the ledger.
 - [ ] **Router follow-ups** — route thumbnail vision scorer once multimodal is added to the router; add a provider failover (premium→cheaper on auth/quota error); surface per-provider spend in the cost line.
+- [x] **Free in-process signal backends (Option 3)** — *spike done 2026-06-29; YouTube backend shipped 2026-07-01:* `apis/free_backends.py` (hybrid `yt-dlp` flat-rank → full-extract top-N) behind `SIGNAL_BACKEND=apify|free|auto` (default `apify` — unchanged behavior; `free` = keyless/zero-cost; `auto` = free-first with Apify fallback). Cost meter no longer bills a free-served `youtube_competitors` as an Apify run. Reddit keyless is 403-blocked → use the Reddit-OAuth prereq, not a scrape; Twitter/TikTok stay Apify. Tests: `tests/test_free_backends.py`. Full write-up: [agent_reach_evaluation.md](agent_reach_evaluation.md).
+- [x] **Per-platform rate-limit cooldown** — *shipped 2026-07-01:* free backends fail by 429 (rate-limit), not 402 (credit). Session breaker (`apis/register_signals.py`) now gives transient 429s a *disabled-until-T* cooldown (`SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS`, default 15 min, 0 = off) instead of ignoring them; hard statuses still trip permanently, and `SIGNAL_BREAKER_INCLUDE_RATE_LIMIT=true` still promotes 429s to a full-session trip. "Next available" surfaces in `ops reliability` and the post-discovery signal-health panel (`youtube_competitors → 14:32`). Tests in `tests/test_circuit_breaker.py`.
+- [x] **Script-accuracy follow-ups (2026-07-01)** — Apify 403 vs 402 messaging + shorter auth-failure TTL; `MAX_OPERATOR_KEY_FACTS` env cap; pipeline-end `finalize_run_observability()` for cache stats; `auto_generate` mirrors fact-grounding gate.
+- [x] **Fact-first pipeline (2026-07-02)** — `core/operator_facts.py` (paste block, vault save-all, char budget); discovery → **angles** not titles; `core/title_generator.py` runs after facts + script; anti-slop title rules.
+- [x] **O10 reset-window auto-re-enable (2026-07-02)** — `core/reset_window.py` encodes real reset cadences (YouTube daily 00:00 PT, Apify monthly `APIFY_RESET_DAY`, Odds monthly). Apify 402/monthly-limit exhaustion persists until the cycle reset (auth keeps 30m TTL, budget keeps flat TTL); quota-blocked YouTube uploads retry just after the real reset; reset times in `ops reliability`. `RESET_WINDOW_AUTO_ENABLE` master switch. Tests: `tests/test_reset_window.py`.
+- [x] **Semantic trade validation (2026-07-02, opt-in)** — `core/trade_validation.py`: extracts `player → team` trade claims from the script and warns when the pair never co-occurs on a single fact line (catches fused trades token grounding passes, e.g. real Giannis→Heat + invented Butler→Celtics). `SEMANTIC_TRADE_VALIDATION` (default **off** — higher false-positive risk); warns after the Fact-grounding section in `main.py`/`auto_generate`, never blocks. Tests: `tests/test_trade_validation.py`.
+- [x] **Headless key facts for `auto_generate` (2026-07-02)** — `--facts-file` (same parser as interactive `paste` mode — trade blocks work) + repeatable `--fact` lines; deduped/tip-filtered, saved in full to the vault, injected as ground truth, and echoed in the grounding report. Tests: `tests/test_auto_generate_facts.py`.
 - [ ] **Webhook / n8n / Zapier out** — emit run + publish events for external automation.
 - [ ] **Batch generation** — N ideas → N drafts in one unattended pass (feeds A/B + volume-with-variation).
 - [ ] **Observability** — structured run traces + timing dashboard (timings already captured).

@@ -1,8 +1,15 @@
-"""ANSI colors for CLI (Windows Terminal / PowerShell 5.1+ with VT enabled)."""
+"""ANSI colors for CLI (Windows Terminal / PowerShell 5.1+ with VT enabled).
+
+Colors are theme-aware: role colors (primary/accent/success/warn/error) come
+from the active skin in core/themes.py (CONTENT_UI_THEME / channel "ui_theme"),
+falling back to the classic cyan/yellow scheme. CONTENT_UI_COLOR=false still
+disables everything.
+"""
 
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 
 
@@ -40,15 +47,31 @@ class _C:
     BG_MAGENTA = "\033[45m"
 
 
+def _role(role: str, fallback: str) -> str:
+    """Theme role color, or the classic fallback when the theme has no palette."""
+    try:
+        from core.themes import role_color
+
+        return role_color(role) or fallback
+    except Exception:
+        return fallback
+
+
 def paint(text: str, *styles: str) -> str:
     if not ui_color_enabled():
         return text
     return "".join(styles) + text + _C.RESET
 
 
-def banner_line(char: str = "=", width: int = 56) -> str:
-    line = char * width
-    return paint(line, _C.CYAN) if ui_color_enabled() else line
+def terminal_width(*, minimum: int = 56, maximum: int = 100) -> int:
+    """Usable banner width — fills the terminal without going novel-length."""
+    cols = shutil.get_terminal_size(fallback=(minimum, 24)).columns
+    return max(minimum, min(cols - 2, maximum))
+
+
+def banner_line(char: str = "=", width: int | None = None) -> str:
+    line = char * (width if width is not None else terminal_width())
+    return paint(line, _role("primary", _C.CYAN)) if ui_color_enabled() else line
 
 
 def title(text: str) -> str:
@@ -56,26 +79,40 @@ def title(text: str) -> str:
 
 
 def subsection_label(text: str) -> str:
-    return paint(f"-- {text} --", _C.BOLD, _C.CYAN)
+    return paint(f"-- {text} --", _C.BOLD, _role("primary", _C.CYAN))
 
 
 def ok(text: str) -> str:
-    return paint(text, _C.GREEN)
+    return paint(text, _role("success", _C.GREEN))
 
 
 def warn(text: str) -> str:
-    return paint(text, _C.YELLOW)
+    return paint(text, _role("warn", _C.YELLOW))
 
 
 def err(text: str) -> str:
-    return paint(text, _C.RED)
+    return paint(text, _role("error", _C.RED))
+
+
+def accent(text: str) -> str:
+    return paint(text, _role("accent", _C.YELLOW))
 
 
 def score_badge(score: float) -> str:
+    hype = ""
+    if score >= 90:
+        try:
+            from core.themes import active_theme
+
+            hype = active_theme().score_hype
+        except Exception:
+            hype = ""
     if score >= 70:
-        return paint(f"[{score}]", _C.BOLD, _C.GREEN)
+        return paint(f"[{score}]", _C.BOLD, _role("success", _C.GREEN)) + (
+            accent(hype) if hype else ""
+        )
     if score >= 45:
-        return paint(f"[{score}]", _C.YELLOW)
+        return paint(f"[{score}]", _role("warn", _C.YELLOW))
     return paint(f"[{score}]", _C.DIM)
 
 

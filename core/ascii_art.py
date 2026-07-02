@@ -94,7 +94,12 @@ def startup_banner_lines(channel_id: str | None = None) -> list[str]:
     if channel_id == "tapin":
         lines.append("  ── TapIn Media · gaming & UFC shorts ──")
     else:
-        lines.append("  ── discovery → render → publish ──")
+        try:
+            from core.themes import active_theme
+
+            lines.append(f"  {active_theme().tagline}")
+        except Exception:
+            lines.append("  ── discovery → render → publish ──")
 
     out: list[str] = []
     for i, line in enumerate(lines):
@@ -191,12 +196,27 @@ def _mascot_layout(cols: int, left_w: int, mascot_w: int) -> tuple[int, int, boo
     return gap, right_indent, avail >= mascot_w
 
 
+def _theme_mascot_lines() -> tuple[str, ...]:
+    """The active theme's mascot panel: inline art, or Luffy when the theme keeps it."""
+    try:
+        from core.themes import active_theme
+
+        theme = active_theme()
+    except Exception:
+        return luffy_mascot_lines()
+    if theme.mascot:
+        return theme.mascot
+    if theme.use_luffy_mascot:
+        return luffy_mascot_lines()
+    return ()
+
+
 def startup_panel_lines(channel_id: str | None = None) -> list[str]:
     left = startup_banner_lines(channel_id)
     if not mascot_enabled():
         return left
 
-    mascot = luffy_mascot_lines()
+    mascot = _theme_mascot_lines()
     if not mascot:
         return left
 
@@ -241,6 +261,14 @@ def section_glyph(name: str) -> str:
         "queue": "☰",
         "channel": "◎",
     }
+    try:
+        from core.themes import active_theme
+
+        glyphs = active_theme().section_glyphs  # {} (plain theme) = no glyphs
+    except Exception:
+        pass
     key = name.strip().lower().split()[0]
-    g = glyphs.get(key, "•")
+    g = glyphs.get(key, "•" if glyphs else "")
+    if not g:
+        return ""
     return paint(f"{g} ", _M) if ui_color_enabled() else f"{g} "

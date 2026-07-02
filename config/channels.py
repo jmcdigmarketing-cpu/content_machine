@@ -38,6 +38,8 @@ class ChannelProfile:
     # tone / audience / perspective / recurring_segment / signoff that give the
     # channel a consistent voice + continuity (Phase O human-context layer).
     persona: dict[str, str] = field(default_factory=dict)
+    # Optional terminal skin (core/themes.py) — CONTENT_UI_THEME env overrides.
+    ui_theme: str = ""
 
 
 def _load_channels_file() -> dict[str, Any]:
@@ -106,6 +108,7 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
                 for k, v in (cfg.get("persona") or {}).items()
                 if isinstance(v, str | int | float) and str(v).strip()
             },
+            ui_theme=str(cfg.get("ui_theme", "")).strip().lower(),
         )
 
     profiles.setdefault(

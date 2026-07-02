@@ -27,6 +27,7 @@ from core.ui import (
     display_competitor_pulse,
     display_database_status,
     display_fact_preview,
+    display_grounding_report,
     display_signal_breakdown,
     display_signal_health,
     display_summary,
@@ -86,6 +87,9 @@ def main():
     section("Content Machine")
     channel_id = prompt_channel_selection()
     profile = get_channel_profile(channel_id)
+    from core.themes import set_channel_theme
+
+    set_channel_theme(channel_id)
     from core.ascii_art import print_startup_panel
 
     print_startup_panel(channel_id)
@@ -214,6 +218,17 @@ def _run_idea_intake_flow(channel_id: str) -> None:
 def _run_new_video_flow(
     channel_id: str, *, seed_topic: str | None = None, creative_brief: str = ""
 ) -> None:
+    try:
+        _run_new_video_flow_body(channel_id, seed_topic=seed_topic, creative_brief=creative_brief)
+    finally:
+        from core.pipeline import finalize_run_observability
+
+        finalize_run_observability()
+
+
+def _run_new_video_flow_body(
+    channel_id: str, *, seed_topic: str | None = None, creative_brief: str = ""
+) -> None:
     upload_report = check_channel_setup(channel_id)
     if not upload_report.ok:
         print("  YouTube upload: not configured (see issues after render)")
@@ -279,7 +294,7 @@ def _run_new_video_flow(
 
     best_topic, best_score, best_signals = discovery.evaluated[variant_index]
 
-    subsection("Selected")
+    subsection("Selected angle")
     print(f"  {best_topic}")
     print(f"  Score: {best_score}")
     display_signal_breakdown(best_signals)
@@ -305,7 +320,7 @@ def _run_new_video_flow(
     _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
-    key_facts = prompt_key_facts(best_topic, channel_id)
+    key_facts = prompt_key_facts(topic, channel_id)
 
     section("Content")
     print_bonus_art(key="mario")
@@ -323,6 +338,9 @@ def _run_new_video_flow(
     print()
     print(result.script)
     print()
+    if result.title:
+        print(f"  Title: {result.title}")
+        print()
     preset = get_length_preset(length_choice)
     print(f"  Length: {format_length_report(result.script, preset)}")
 
@@ -338,6 +356,16 @@ def _run_new_video_flow(
 
     _facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
     display_fact_preview(_facts_preview, print_fn=print)
+
+    _ungrounded = result.features.get("ungrounded_entities") or []
+    needs_grounding_review = display_grounding_report(
+        _ungrounded, key_facts=key_facts or None, print_fn=print
+    )
+
+    # Semantic trade validation (opt-in, SEMANTIC_TRADE_VALIDATION)
+    from core.trade_validation import display_trade_validation
+
+    display_trade_validation(result.features.get("trade_warnings") or [], print_fn=print)
 
     # Authenticity / monetisation-safety self-check (Phase O)
     from core.authenticity import (
@@ -366,13 +394,11 @@ def _run_new_video_flow(
             print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
             return
 
-    _ungrounded = result.features.get("ungrounded_entities") or []
-    if _ungrounded:
+    if needs_grounding_review:
         print(
-            f"\n  ⚠ {len(_ungrounded)} specific(s) in the script are NOT in the facts "
-            f"(possible hallucination): {', '.join(_ungrounded)}"
+            "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
+            "Rendering without fixing risks shipping hallucinations."
         )
-        print("    Verify these or add them as key facts before publishing.")
 
     proceed = input("  Proceed with video? [y/N]: ").strip().lower()
 
@@ -415,7 +441,9 @@ def _run_new_video_flow(
         thumbnail_path=thumb_path,
         cost=result.features.get("cost"),
     )
-    print_bonus_art()  # random celebratory flourish
+    from core.ui import print_celebration
+
+    print_celebration()  # themed celebratory flourish (random when unthemed)
     if thumb_path:
         print(f"  Thumbnail: {thumb_path}")
         print(f"  Thumbnail folder: {thumb_count} file(s) in {thumb_dir}")
@@ -464,6 +492,9 @@ def _run_new_video_flow(
                 when = upload_plan.scheduled_at.astimezone().strftime("%Y-%m-%d %H:%M")
             print(f"\n  Upload queued (job {job.id}, {upload_plan.privacy_status}, {when}).")
             print("  Run worker:  py -m jobs.worker --loop 30")
+        from core.ui import maybe_print_milestone
+
+        maybe_print_milestone(channel_id)
         if not upload_report.ok:
             print("  Setup first: py -m youtube.check_setup --channel", channel_id)
             for issue in upload_report.issues[:3]:

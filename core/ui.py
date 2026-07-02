@@ -47,6 +47,16 @@ class DiscoverySpinner:
         self._phase: str | None = None
         self._done: int | None = None
         self._total: int | None = None
+        # Themed frames + loading copy (CONTENT_UI_THEME) — resolved once per
+        # spinner so the 10Hz animation loop never re-reads env/theme state.
+        try:
+            from core.themes import active_theme, themed_phase
+
+            self._frames: list[str] = list(active_theme().spinner_frames) or self._FRAMES
+            self._themed_phase = themed_phase
+        except Exception:
+            self._frames = self._FRAMES
+            self._themed_phase = lambda p: p
 
     def report(self, phase: str, done: int | None = None, total: int | None = None) -> None:
         """Thread-safe progress hook. Sets the current phase and optional N/M count."""
@@ -64,16 +74,16 @@ class DiscoverySpinner:
             for threshold, name in self._STAGES:
                 if elapsed >= threshold:
                     stage = name
-            return stage
+            return self._themed_phase(stage)
         if total:
-            return f"{phase} {done or 0}/{total}"
-        return phase
+            return f"{self._themed_phase(phase)} {done or 0}/{total}"
+        return self._themed_phase(phase)
 
     def _spin(self) -> None:
         i = 0
         while not self._stop.is_set():
             elapsed = time.perf_counter() - self._t0
-            frame = self._FRAMES[i % len(self._FRAMES)]
+            frame = self._frames[i % len(self._frames)]
             stage = self._current_stage(elapsed)
             line = f"\r  {frame}  {self._label} · {stage}... {elapsed:.0f}s   "
             sys.stdout.write(line)
@@ -245,6 +255,38 @@ _STARBURST_ART = """\
 
 _HERO_ART = _load_art("bonus_hero_ascii.txt")
 
+# Theme celebration pieces (fired on publish success via print_celebration).
+_ZELDA_ITEM_ART = """\
+      da-da-da-DAAA!
+         ________
+        |  ◆◆◆◆  |
+        |  ◆||◆  |
+        |  ◆||◆  |
+        |__◆◆◆◆__|
+       YOU GOT THE
+      RENDERED VIDEO"""
+
+_POKEMON_LEVELUP_ART = """\
+       ▁▂▃▅▆▇ ⚡
+      CHANNEL grew
+      to LVL UP! ⬆
+     ◓ It's super
+       effective!"""
+
+_DBZ_OVER9000_ART = """\
+       \\ ⚡ ⚡ /
+      ─ ((●)) ─
+       / |☰| \\
+     IT'S OVER 9000!
+      (the render
+       is complete)"""
+
+_JJBA_TBC_ART = """\
+                    ____
+      ⬅ TO BE CONTINUED
+     ────────────────╯
+      ゴ ゴ ゴ ゴ ゴ"""
+
 # (art, color) — keyed; "mario"/"hero" load from core/data art files. Empty pieces
 # (missing data file) are filtered out so the gallery never prints a blank panel.
 _BONUS_ART: dict[str, tuple[str, str]] = {
@@ -255,6 +297,10 @@ _BONUS_ART: dict[str, tuple[str, str]] = {
         ("trophy", _TROPHY_ART, "\033[33m"),  # gold
         ("rocket", _ROCKET_ART, "\033[36m"),  # cyan
         ("starburst", _STARBURST_ART, "\033[35m"),  # magenta
+        ("zelda_item", _ZELDA_ITEM_ART, "\033[32m"),  # kokiri green
+        ("pokemon_levelup", _POKEMON_LEVELUP_ART, "\033[33m"),  # pikachu yellow
+        ("dbz_over9000", _DBZ_OVER9000_ART, "\033[33m"),  # saiyan orange-ish
+        ("jjba_tbc", _JJBA_TBC_ART, "\033[35m"),  # stand purple
     )
     if art
 }
@@ -279,6 +325,37 @@ def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
     for line in art.splitlines():
         print_fn(paint(line, color) if ui_color_enabled() else line)
     print_fn()
+
+
+def print_celebration(*, print_fn=print) -> None:
+    """Publish-success flourish: the active theme's celebration piece, else random."""
+    try:
+        from core.themes import active_theme
+
+        key = active_theme().celebration_key or None
+    except Exception:
+        key = None
+    print_bonus_art(key=key, print_fn=print_fn)
+
+
+# Publish counts that earn a milestone line (kept sparse so it stays special).
+_MILESTONES = (1, 5, 10, 25, 50, 100, 250, 500, 1000)
+
+
+def maybe_print_milestone(channel_id: str, *, print_fn=print) -> None:
+    """One-line badge when the channel's upload count hits a milestone. Fail-open."""
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        count = len(get_publish_log_repository().list_uploaded_for_channel(channel_id))
+    except Exception:
+        return
+    if count not in _MILESTONES:
+        return
+    from core.ui_theme import accent
+
+    label = "first video queued!" if count == 1 else f"video #{count} for this channel!"
+    print_fn(accent(f"  ★ Milestone — {label}"))
 
 
 HEALTH_LEGEND = "ON=ok | ON (not active)=no match | " "QUOTA/RATE LIMITED/AUTH=issue — see detail"
@@ -321,10 +398,10 @@ SIGNAL_ORDER = (
 
 def section(title: str, print_fn=print):
     from core.ascii_art import section_glyph
-    from core.ui_theme import banner_line
+    from core.ui_theme import banner_line, terminal_width
     from core.ui_theme import title as theme_title
 
-    width = 56
+    width = terminal_width()
     print_fn()
     glyph = section_glyph(title)
     print_fn(banner_line("=", width))
@@ -418,6 +495,20 @@ def display_signal_health(signals: dict[str, Any], *, print_fn=print):
         print_fn(
             f"  {warn('Issues')} ({len(issues)}): " + ", ".join(s.capitalize() for s in issues)
         )
+    try:
+        from datetime import datetime
+
+        from apis.register_signals import signal_cooldowns
+
+        cooldowns = signal_cooldowns()
+        if cooldowns:
+            parts = [
+                f"{name} → {datetime.fromtimestamp(until).strftime('%H:%M')}"
+                for name, until in sorted(cooldowns.items())
+            ]
+            print_fn(f"  {warn('Cooling down')} (rate-limited): " + ", ".join(parts))
+    except Exception:
+        pass
     print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
     print_fn()
 
@@ -445,7 +536,8 @@ def display_variants(
     — the A/B title-pattern loop surfacing learned winners at selection time.
     """
     best_i = max(range(len(evaluated)), key=lambda i: evaluated[i][1])
-    subsection("Scored variants (Enter = best)", print_fn)
+    subsection("Scored angles (Enter = best)", print_fn)
+    print_fn("  (YouTube title is generated after key facts + script — not here.)")
     from core.ui_theme import paint, score_badge
 
     winning: frozenset[str] = frozenset()
@@ -597,72 +689,154 @@ def prompt_key_facts(
     print_fn("    · Recency anchor (e.g. 'as of June 2026, ...')")
 
     key_facts: list[str] = []
+    vault_accepted: list[str] = []
+    manual_facts: list[str] = []
+    link_facts: list[str] = []
 
     try:
         suggestions = load_facts(topic, channel_id)
     except Exception:
-        # Vault problems must never block video creation.
         suggestions = []
+    from core.operator_facts import is_writing_tip
+
+    suggestions = [s for s in suggestions if not is_writing_tip(s)]
     if suggestions:
         print_fn("")
-        print_fn(f"  From your Obsidian vault ({len(suggestions)} matched):")
+        print_fn(f"  From your Obsidian vault ({len(suggestions)} factual match(es)):")
         for i, fact in enumerate(suggestions, 1):
             print_fn(f"    {i}. {fact}")
         choice = input_fn("  Use these? [Enter=all / n=none / e.g. '1 3'=pick]: ").strip().lower()
         if choice in ("", "y", "yes", "all"):
-            key_facts.extend(suggestions)
+            vault_accepted.extend(suggestions)
         elif choice not in ("n", "no", "none"):
             for tok in choice.replace(",", " ").split():
                 if tok.isdigit() and 1 <= int(tok) <= len(suggestions):
-                    key_facts.append(suggestions[int(tok) - 1])
+                    vault_accepted.append(suggestions[int(tok) - 1])
 
     print_fn("")
-    print_fn("  Add your own facts — one per line (or paste a link), empty line when done:")
-    from core.link_facts import extract_facts_from_url, looks_like_url
+    print_fn("  Add facts — paste a URL, one line, or type `paste` + Enter for a multi-line block.")
+    print_fn("  (Trade trackers paste well as a block. Empty line when done.)")
+    from core.content_engine import key_facts_for_prompt
+    from core.link_facts import extract_facts_from_url, link_fetch_issue, looks_like_url
+    from core.operator_facts import (
+        capture_facts_to_vault,
+        dedupe_facts,
+        operator_key_fact_char_budget,
+        parse_pasted_block,
+    )
 
     pasted_sources: list[dict[str, str]] = []
     while True:
-        fact = input_fn(f"  Fact {len(key_facts) + 1}: ").strip()
+        fact = input_fn(
+            f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1} "
+            f"(or `paste`, empty when done): "
+        ).strip()
         if not fact:
             break
+        if fact.lower() == "paste":
+            print_fn("  >> Paste your block below (blank line when finished):")
+            block_lines: list[str] = []
+            while True:
+                line = input_fn("    ").strip()
+                if not line:
+                    break
+                block_lines.append(line)
+            parsed = parse_pasted_block("\n".join(block_lines))
+            if parsed:
+                print_fn(f"    Parsed {len(parsed)} fact line(s) from block.")
+                manual_facts.extend(parsed)
+            else:
+                print_fn("    No facts parsed — try shorter lines or one trade per paragraph.")
+            continue
         if looks_like_url(fact):
             print_fn("    Fetching link…")
             extracted = extract_facts_from_url(fact)
             if extracted:
                 for ex in extracted:
                     print_fn(f"    + {ex[:90]}")
-                key_facts.extend(extracted)
-                # Remember the link so it can be saved to the vault for reuse.
+                link_facts.extend(extracted)
                 pasted_sources.append({"url": fact, "title": extracted[0]})
             else:
-                print_fn("    Could not extract facts from that link — skipped.")
+                issue = link_fetch_issue(fact)
+                msg = issue or "Could not extract facts from that link."
+                print_fn(f"    {msg}")
+                print_fn("    Tip: type `paste` and paste the article text as a block instead.")
             continue
-        key_facts.append(fact)
+        if "\n" in fact:
+            manual_facts.extend(parse_pasted_block(fact))
+        else:
+            manual_facts.append(fact)
 
-    # Persist the links we brought in so future related runs can reuse them
-    # (no-op without a vault; never blocks). See core.source_capture.
     if pasted_sources:
         try:
             from core.source_capture import capture_sources
 
             saved = capture_sources(channel_id, topic, pasted_sources)
             if saved:
-                print_fn(f"    Saved {len(pasted_sources)} source(s) to your vault for reuse.")
+                print_fn(f"    Saved {len(pasted_sources)} source URL(s) to your vault.")
         except Exception:
             pass
 
-    # De-duplicate while preserving order.
-    seen: set[str] = set()
-    deduped: list[str] = []
-    for f in key_facts:
-        key = f.lower()
-        if key not in seen:
-            seen.add(key)
-            deduped.append(f)
+    key_facts = dedupe_facts(manual_facts + link_facts + vault_accepted)
 
-    if deduped:
-        print_fn(f"  {len(deduped)} fact(s) will be injected as ground truth.")
-    return deduped
+    if key_facts:
+        saved_path = capture_facts_to_vault(channel_id, topic, key_facts)
+        if saved_path:
+            print_fn(f"  Saved all {len(key_facts)} fact(s) to vault (full set, no cap).")
+        sent = key_facts_for_prompt(key_facts)
+        budget = operator_key_fact_char_budget()
+        print_fn(
+            f"  {len(key_facts)} fact(s) collected; {len(sent)} packed for the LLM "
+            f"({sum(len(s) for s in sent)} / {budget} chars)."
+        )
+        if len(sent) < len(key_facts):
+            skipped = len(key_facts) - len(sent)
+            print_fn(
+                f"  Note: {skipped} fact(s) stored in vault but omitted from prompt "
+                f"(char budget — raise OPERATOR_KEY_FACT_CHAR_BUDGET if needed)."
+            )
+    return key_facts
+
+
+def display_grounding_report(
+    ungrounded: list[str],
+    *,
+    key_facts: list[str] | None = None,
+    print_fn=print,
+) -> bool:
+    """Show post-generation grounding warnings. Returns True when review is needed."""
+    from core.content_engine import key_facts_for_prompt
+
+    subsection("Fact grounding", print_fn)
+    if not ungrounded:
+        print_fn("  ✓ No unsupported specifics detected in the script.")
+        sent = key_facts_for_prompt(key_facts) if key_facts else []
+        if sent:
+            print_fn(f"  Operator key facts sent to LLM ({len(sent)}):")
+            for i, fact in enumerate(sent, 1):
+                short = fact[:90] + ("…" if len(fact) > 90 else "")
+                print_fn(f"    {i}. {short}")
+        return False
+
+    print_fn(
+        f"  ⚠ {len(ungrounded)} specific(s) in the script are NOT backed by verified facts "
+        f"(possible hallucination):"
+    )
+    for ent in ungrounded[:12]:
+        print_fn(f"    · {ent}")
+    if len(ungrounded) > 12:
+        print_fn(f"    · …and {len(ungrounded) - 12} more")
+    print_fn(
+        "  These passed the authenticity gate (structure/take) but failed token grounding. "
+        "Add them as key facts or edit the script before publishing."
+    )
+    sent = key_facts_for_prompt(key_facts) if key_facts else []
+    if sent:
+        print_fn(f"  Key facts that reached the LLM ({len(sent)}):")
+        for i, fact in enumerate(sent, 1):
+            short = fact[:90] + ("…" if len(fact) > 90 else "")
+            print_fn(f"    {i}. {short}")
+    return True
 
 
 def prompt_channel_selection(*, print_fn=print, input_fn=input) -> str:
@@ -945,7 +1119,7 @@ def display_summary(
     if cost_line:
         print_fn(f"  {cost_line}")
 
-    from apis.apify_client import apify_credit_exhausted
+    from apis.apify_client import apify_disabled, apify_status
 
-    if apify_credit_exhausted():
-        print_fn("  ⚠ Apify ran out of credits this session — some social signals were skipped")
+    if apify_disabled():
+        print_fn(f"  ⚠ Apify disabled this session — {apify_status()}")

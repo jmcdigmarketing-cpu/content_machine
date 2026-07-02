@@ -91,7 +91,7 @@ def build_report(channel_id: str) -> dict[str, Any]:
         if r["features"].get("cost")
     ]
 
-    return {
+    report = {
         "channel_id": channel_id,
         "n": len(rows),
         "ready": True,
@@ -100,6 +100,49 @@ def build_report(channel_id: str) -> dict[str, Any]:
         "avg_cost": _avg(costs) if costs else None,
         "total_cost": round(sum(costs), 2) if costs else None,
     }
+    report["next_actions"] = build_next_actions(report)
+    return report
+
+
+# Delta (vs baseline) below which a feature value is treated as neutral noise.
+_ACTION_DELTA = 0.03
+
+# How each dimension's winner/loser translates into an operator instruction.
+_ACTION_PHRASES: dict[str, tuple[str, str]] = {
+    "domain": ("Make more {value} videos", "Pause {value} topics"),
+    "angle": ("Lead with the '{value}' angle again", "Retire the '{value}' angle"),
+    "title_structure": ("Keep using {value} titles", "Drop {value} titles"),
+    "format": ("Stick with the {value} format", "Rework the {value} format"),
+    "fact_source": ("Keep sourcing facts via {value}", "Improve {value} fact sourcing"),
+}
+
+
+def build_next_actions(report: dict[str, Any], *, max_actions: int = 5) -> list[str]:
+    """Concrete operator instructions from the per-dimension winners/losers.
+
+    One "do more" from the strongest over-performer and one "do less" from the
+    weakest under-performer per dimension (only past the noise threshold), then
+    a cadence/coach pointer. Purely derived — no new data reads.
+    """
+    if not report.get("ready"):
+        return []
+    actions: list[str] = []
+    for dim, groups in (report.get("dimensions") or {}).items():
+        more_tpl, less_tpl = _ACTION_PHRASES.get(
+            dim, (f"Do more {dim}={{value}}", f"Do less {dim}={{value}}")
+        )
+        best, worst = groups[0], groups[-1]
+        if best["delta"] >= _ACTION_DELTA:
+            actions.append(
+                f"{more_tpl.format(value=best['value'])} "
+                f"({best['avg']:.0%} vs {report['baseline']:.0%} baseline, n={best['n']})"
+            )
+        if worst is not best and worst["delta"] <= -_ACTION_DELTA:
+            actions.append(
+                f"{less_tpl.format(value=worst['value'])} "
+                f"({worst['avg']:.0%} vs {report['baseline']:.0%} baseline, n={worst['n']})"
+            )
+    return actions[:max_actions]
 
 
 def format_report(report: dict[str, Any]) -> str:
@@ -130,6 +173,14 @@ def format_report(report: dict[str, Any]) -> str:
             f"  Cost: ~${report['avg_cost']:.3f}/video · "
             f"~${report['total_cost']:.2f} across {report['n']} tracked"
         )
+
+    actions = report.get("next_actions") or []
+    if actions:
+        lines.append("")
+        lines.append("  Next actions:")
+        for i, action in enumerate(actions, 1):
+            lines.append(f"    {i}. {action}")
+        lines.append("    (daily ideas: py -m scripts.ops coach)")
     return "\n".join(lines)
 
 

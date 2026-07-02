@@ -68,6 +68,19 @@ class TestArticleFacts(unittest.TestCase):
         self.assertTrue(any("traded to the Miami Heat" in f for f in facts))  # real fact kept
 
     @patch("apis.youtube_api.extract_youtube_video_id", return_value=None)
+    @patch("core.link_facts.requests.get")
+    def test_waf_challenge_returns_empty_with_issue(self, mock_get, _ytid):
+        html = (
+            "<html><head><title></title></head><body>"
+            "<script>window.awsWafCookieDomainList=[]</script></body></html>"
+        )
+        mock_get.return_value = MagicMock(status_code=202, text=html)
+        self.assertEqual(lf.extract_facts_from_url("https://www.espn.com/nba/story"), [])
+        issue = lf.link_fetch_issue("https://www.espn.com/nba/story")
+        self.assertIsNotNone(issue)
+        self.assertIn("blocked automated fetch", issue.lower())
+
+    @patch("apis.youtube_api.extract_youtube_video_id", return_value=None)
     @patch("core.link_facts.requests.get", side_effect=Exception("network down"))
     def test_fetch_failure_returns_empty(self, mock_get, _ytid):
         self.assertEqual(lf.extract_facts_from_url("https://broken.example.com"), [])

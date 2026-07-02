@@ -48,6 +48,53 @@ def _persist_ttl() -> int:
         return 6 * 60 * 60
 
 
+def _auth_failure_ttl() -> int:
+    """Shorter TTL for key/auth failures so a fixed key recovers without waiting 6h."""
+    try:
+        return int(os.getenv("APIFY_AUTH_FAILURE_TTL_SECONDS", str(30 * 60)))
+    except ValueError:
+        return 30 * 60
+
+
+def _credit_exhaustion_ttl() -> int:
+    """TTL for a hard credit/limit exhaustion.
+
+    O10: when the reset-window layer is enabled, persist until the *actual*
+    monthly Apify cycle reset (APIFY_RESET_DAY) instead of re-paying a failing
+    check every 6h for the rest of the month. Falls back to the flat TTL when
+    disabled or on any error. Manual recovery: clear data/quota_state.json.
+    """
+    try:
+        from core.reset_window import reset_window_enabled, seconds_until_reset
+
+        if reset_window_enabled():
+            secs = seconds_until_reset("apify")
+            if secs:
+                return secs
+    except Exception:
+        pass
+    return _persist_ttl()
+
+
+def _persist_ttl_for_status(status_code: int) -> int:
+    if status_code in (401, 403):
+        return _auth_failure_ttl()
+    if status_code == 402:
+        return _credit_exhaustion_ttl()
+    return _persist_ttl()
+
+
+def _apify_failure_reason(status_code: int) -> str:
+    if status_code == 402:
+        return "Apify monthly credits exhausted (402) — skipping social signals"
+    if status_code in (401, 403):
+        return (
+            f"Apify key unauthorized ({status_code}) — "
+            "check APIFY_CONTENT_MACHINE_KEY permissions; skipping social signals"
+        )
+    return f"Apify HTTP {status_code} — skipping social signals"
+
+
 def _usage_cache_ttl() -> int:
     try:
         return int(os.getenv("APIFY_USAGE_CACHE_TTL_SECONDS", str(20 * 60)))
@@ -76,14 +123,17 @@ def _evaluate_apify_usage(usage: float, limit: float, purpose: str) -> tuple[boo
     """
     budget = _apify_budget()
     if budget is not None and usage >= budget:
+        # Flat TTL (not reset-window): a raised APIFY_MONTHLY_BUDGET_USD should
+        # recover within hours, not stay blocked until the billing cycle turns.
         reason = f"Apify operator budget reached (${usage:.2f}/${budget:.2f})"
         disable_apify(reason)
         _persist_exhausted(purpose, reason)
         return False, _state["reason"]
     if limit and usage >= limit:
+        # Apify's own monthly limit clears only at the cycle reset (O10).
         reason = f"Apify monthly limit reached (${usage:.2f}/${limit:.2f})"
         disable_apify(reason)
-        _persist_exhausted(purpose, reason)
+        _persist_exhausted(purpose, reason, status_code=402)
         return False, _state["reason"]
     label = f"${usage:.2f}/${limit:.2f} used" if limit else f"${usage:.2f} used"
     if budget is not None:
@@ -113,12 +163,13 @@ def _sync_persistent(purpose: str) -> None:
         logger.info("Apify skipped from persisted state: %s", reason)
 
 
-def _persist_exhausted(purpose: str, reason: str) -> None:
+def _persist_exhausted(purpose: str, reason: str, *, status_code: int | None = None) -> None:
     """Remember a hard credit/auth failure across runs (TTL'd)."""
     try:
         from core.quota_state import mark_exhausted
 
-        mark_exhausted("apify", purpose, reason, ttl_seconds=_persist_ttl())
+        ttl = _persist_ttl_for_status(status_code) if status_code is not None else _persist_ttl()
+        mark_exhausted("apify", purpose, reason, ttl_seconds=ttl)
     except Exception:
         pass
 
@@ -215,9 +266,9 @@ def run_actor(
         # Account-wide problems → trip the circuit breaker (don't retry this session
         # OR the next run, within the persisted TTL).
         if resp.status_code in (401, 402, 403):
-            reason = f"Apify credits/auth ({resp.status_code}) — skipping social signals"
+            reason = _apify_failure_reason(resp.status_code)
             disable_apify(reason)
-            _persist_exhausted(purpose, reason)
+            _persist_exhausted(purpose, reason, status_code=resp.status_code)
             return None
         # run-sync-get-dataset-items returns 200 OR 201 (Created) with the items.
         if resp.status_code not in (200, 201):
@@ -288,9 +339,9 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
         return True, "ON (precheck skipped)"
 
     if resp.status_code in (401, 403):
-        reason = "Apify key unauthorized (preflight)"
+        reason = _apify_failure_reason(resp.status_code)
         disable_apify(reason)
-        _persist_exhausted(purpose, reason)
+        _persist_exhausted(purpose, reason, status_code=resp.status_code)
         return False, _state["reason"]
     if resp.status_code != 200:
         return True, "ON (precheck inconclusive)"

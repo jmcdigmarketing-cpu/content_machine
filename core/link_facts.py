@@ -19,6 +19,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from core.logging import get_logger
+from core.operator_facts import is_writing_tip, parse_pasted_block
 
 logger = get_logger("core.link_facts")
 
@@ -90,11 +91,62 @@ def _youtube_facts(url: str) -> list[str]:
     return facts
 
 
-def _article_facts(url: str, *, max_lines: int = 5) -> list[str]:
+def _is_bot_blocked(resp: requests.Response) -> bool:
+    """True when the host returned a WAF/challenge page instead of article HTML."""
+    text = resp.text or ""
+    if not text.strip():
+        return True
+    low = text.lower()
+    if "awswaf" in low or ("window.aws" in low and "challenge" in low):
+        return True
+    # ESPN and similar sites often return 202 + empty title + a JS challenge shell.
+    return resp.status_code == 202 and len(text) < 8000
+
+
+def link_fetch_issue(url: str) -> str | None:
+    """Human-readable reason a URL could not be scraped, or None if unknown/empty."""
+    url = (url or "").strip()
+    if not looks_like_url(url):
+        return None
+    if _youtube_facts(url):
+        return None
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=12)
-        if resp.status_code != 200:
-            logger.debug("link fetch %s returned %s", url, resp.status_code)
+    except Exception as exc:
+        logger.debug("link fetch failed for %s: %s", url, exc)
+        return "Network error fetching that link — paste the text manually."
+    if _is_bot_blocked(resp):
+        host = url.split("/")[2] if "/" in url else "that site"
+        return (
+            f"{host} blocked automated fetch (bot protection) — "
+            "copy/paste the article text as facts instead."
+        )
+    if resp.status_code != 200:
+        logger.debug("link fetch %s returned %s", url, resp.status_code)
+        return f"Link returned HTTP {resp.status_code} — paste the text manually."
+    return None
+
+
+def _extract_trade_lines(soup: BeautifulSoup) -> list[str]:
+    """Pull list items and trade-shaped headings from sports tracker pages."""
+    facts: list[str] = []
+    for li in soup.find_all("li"):
+        text = " ".join(li.get_text(" ", strip=True).split())
+        if len(text) > 15 and not _is_junk_line(text):
+            facts.append(text[:400])
+    for tag in soup.find_all(["h2", "h3", "h4"]):
+        text = " ".join(tag.get_text(" ", strip=True).split())
+        if len(text) > 20 and re.search(r"\btrade", text, re.I) and not _is_junk_line(text):
+            facts.append(text[:400])
+    return facts
+
+
+def _article_facts(url: str, *, max_lines: int = 24) -> list[str]:
+    try:
+        resp = requests.get(url, headers=_HEADERS, timeout=12)
+        if resp.status_code != 200 or _is_bot_blocked(resp):
+            blocked = _is_bot_blocked(resp)
+            logger.debug("link fetch %s returned %s (blocked=%s)", url, resp.status_code, blocked)
             return []
         soup = BeautifulSoup(resp.text, "html.parser")
     except Exception as exc:
@@ -118,16 +170,21 @@ def _article_facts(url: str, *, max_lines: int = 5) -> list[str]:
     for p in soup.find_all("p"):
         text = " ".join(p.get_text(" ", strip=True).split())
         if len(text) > 60 and not _is_junk_line(text):
-            facts.append(text[:300])
-        if len(facts) >= max_lines:
-            break
+            facts.append(text[:400])
 
-    # De-duplicate, preserve order.
+    for trade_line in _extract_trade_lines(soup):
+        if trade_line.lower() not in {f.lower() for f in facts}:
+            facts.append(trade_line)
+
+    # De-duplicate, preserve order; drop writing tips.
     seen: set[str] = set()
     out: list[str] = []
     for f in facts:
-        if f.lower() not in seen:
-            seen.add(f.lower())
+        if is_writing_tip(f):
+            continue
+        key = f.lower()[:100]
+        if key not in seen:
+            seen.add(key)
             out.append(f)
     return out[:max_lines]
 
@@ -140,4 +197,6 @@ def extract_facts_from_url(url: str) -> list[str]:
     yt = _youtube_facts(url)
     if yt:
         return yt
-    return _article_facts(url)
+    raw = _article_facts(url)
+    # Compact duplicate intros from meta + first paragraph.
+    return parse_pasted_block("\n".join(raw)) or raw

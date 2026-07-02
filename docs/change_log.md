@@ -6,6 +6,66 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Terminal UI themes + daily-brief batch — 2026-07-02
+
+*The roadmap's "themeable skins" item, executed. Presentation-only: no pipeline
+logic reads a theme, everything degrades to plain text. Suite 645 green.*
+
+- **`core/themes.py`** — `Theme` registry: palette (16 + 256-color pairs,
+  `CONTENT_UI_COLOR_DEPTH=auto|16|256` with Windows Terminal auto-detect),
+  spinner frames + themed loading copy, section glyphs, meter chars, tagline,
+  inline mascot, celebration key, ≥90-score hype tag. Resolution:
+  `CONTENT_UI_THEME` env → channel `"ui_theme"` (channels.json, new
+  `ChannelProfile.ui_theme` field, set at startup) → `default`.
+- **Six skins**: `onepiece` (straw-hat palette, Luffy mascot stays), `zelda`
+  (▲ spinner, heart meters, item-get celebration), `pokemon` (Pokéball spinner,
+  level-up), `dbz` (Scouter copy, "IT'S OVER 9000!" at composite ≥ 90), `jjba`
+  (ゴゴゴ spinner + mascot, "TO BE CONTINUED ➡" celebration), plus `plain`
+  (no color/art — logs/CI) and `default`.
+- **Positive-UI moments** — `meter()` block gauges in cadence, `ops reliability`
+  (YouTube units), and `ops coach` (ASCII fallback on non-UTF stdout);
+  `print_celebration()` themed publish flourish; `maybe_print_milestone()`
+  (video #1/#5/#10/#25/... badge, fail-open); sections/banners now fill the
+  terminal width (56 → up to 100 cols via `ui_theme.terminal_width`).
+- **`ops daily-brief`** — 5th batch: `daily-sync` → `coach` → `reliability` →
+  `status` (the morning "what should I do today" one-shot).
+- Tests: `tests/test_themes.py` (registry, resolution, depth, meters, spinner
+  theming, glyphs, mascots, milestones, batch). Docs + `.env.example` updated.
+
+### 2026-07 focus wave: O10 + trade validation + creator coach + headless facts — 2026-07-02
+
+*Closes the four "Current focus (2026-07)" roadmap items that remained after the
+fact-first pipeline. Suite 613 green.*
+
+- **O10 reset-window auto-re-enable** — `core/reset_window.py`: encodes real quota
+  reset cadences (YouTube Data API daily 00:00 Pacific; Apify monthly cycle via
+  `APIFY_RESET_DAY`; Odds monthly). A hard Apify **402/monthly-limit** exhaustion
+  now persists until the actual cycle reset instead of re-checking every 6h
+  (401/403 keeps the 30m TTL; the operator-budget trip keeps the flat TTL so a
+  raised budget recovers fast). Quota-blocked YouTube uploads retry 5 min after
+  the real reset. Reset times surface in `ops reliability`. Master switch
+  `RESET_WINDOW_AUTO_ENABLE` (default on). Tests: `tests/test_reset_window.py`.
+- **Semantic trade validation (opt-in)** — `core/trade_validation.py`: extracts
+  `player → team` claims from the script and warns when the pair never co-occurs
+  on a single fact line — the fused-trade failure token grounding passes (real
+  Giannis→Heat fused with invented Butler→Celtics). `SEMANTIC_TRADE_VALIDATION`
+  default **off** (higher false-positive rate); shown after Fact grounding in
+  `main.py` + `auto_generate`; warns, never blocks. Tests:
+  `tests/test_trade_validation.py`.
+- **Creator coach (Phase S)** — `core/creator_coach.py` + `py -m scripts.ops coach`:
+  daily "ideas + why" view — ranked best-bets each with a rationale, recommended
+  length + post time, winning title patterns, retention pacing hint, cadence
+  headroom. Read-only, fail-open per section. Tests: `tests/test_creator_coach.py`.
+- **Weekly digest next actions (Phase S)** — `analytics/weekly_report.py` now
+  derives numbered operator instructions from the per-dimension winners/losers
+  ("Lead with the 'fraud' angle again (45% vs 25% baseline, n=3)"), noise-gated
+  at ±3pp vs baseline; rendered under "Next actions:" with a pointer to `ops coach`.
+- **Headless key facts for `auto_generate`** — `--facts-file` (parsed with the same
+  paste-block parser as the interactive prompt; trade trackers work) + repeatable
+  `--fact` lines. Deduped/tip-filtered, saved in full to the vault, injected as
+  highest-priority ground truth, echoed in the grounding report. Tests:
+  `tests/test_auto_generate_facts.py`.
+
 ### Scene-matched B-roll (Phase Q) — 2026-06-23
 
 *The render looped one background clip; this cuts between several, one per script

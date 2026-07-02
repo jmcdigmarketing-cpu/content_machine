@@ -1,5 +1,4 @@
 import os
-import re
 from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
@@ -8,6 +7,9 @@ from core.fact_enrichment import _fact_line_count, enrich_facts
 from core.fact_grounding import find_ungrounded_entities
 from core.llm_router import complete_json
 from core.logging import get_logger
+from core.operator_facts import (
+    facts_for_prompt as key_facts_for_prompt,
+)
 from core.research_brief import ResearchBrief
 from core.script_brief import build_script_brief
 from core.script_length import (
@@ -30,29 +32,12 @@ def _format_signal_facts(signals):
     return format_signal_facts(signals)
 
 
-# Operator key facts are injected straight into the prompt as ground truth, so
-# bound them: cap count + length and strip control chars / line breaks so a
-# pasted fact can't smuggle extra prompt structure (instruction injection).
-_MAX_KEY_FACTS = 5
-_MAX_KEY_FACT_CHARS = 300
+# Operator key facts — see core.operator_facts for parse/store/prompt packing.
+_MAX_KEY_FACT_CHARS = 400
 
 
 def _sanitize_key_facts(key_facts: list[str] | None) -> list[str]:
-    if not key_facts:
-        return []
-    cleaned: list[str] = []
-    for raw in key_facts:
-        if not isinstance(raw, str):
-            continue
-        # Collapse any whitespace/newlines to single spaces, drop control chars.
-        flat = re.sub(r"\s+", " ", raw).strip()
-        flat = "".join(ch for ch in flat if ch.isprintable())
-        if not flat:
-            continue
-        cleaned.append(flat[:_MAX_KEY_FACT_CHARS])
-        if len(cleaned) >= _MAX_KEY_FACTS:
-            break
-    return cleaned
+    return key_facts_for_prompt(key_facts)
 
 
 # Lines that are context-only (competitor titles / labels) — not factual evidence
@@ -286,13 +271,12 @@ INSTRUCTIONS:
 - TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it ("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.
 - Cut hedging and filler ("only time will tell", "the narrative is far from over", "could be a turning point"). Every sentence advances the take.
 - Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".
-- Generate a compelling YouTube title (SEO-aware, accurate, no ellipsis).
+- Do NOT write the YouTube title — title is generated in a separate pass after facts + script.
 - Generate a concise SEO description (hook first line, call-to-action last line).
 - Generate 8-15 YouTube tags (no fabricated names).
 
 Return JSON only:
 {{
-  "title": "...",
   "script": "...",
   "description": "...",
   "tags": ["tag1", "tag2"]
@@ -718,8 +702,32 @@ def generate_content_package(
             ", ".join(ungrounded),
         )
 
+    # Semantic trade validation (opt-in): player→team pairings must co-occur on a
+    # fact line, catching fused trades that token grounding passes.
+    trade_warnings: list[str] = []
+    from core.trade_validation import trade_validation_enabled, validate_trade_claims
+
+    if trade_validation_enabled():
+        trade_warnings = validate_trade_claims(script, grounding_text)
+        if trade_warnings:
+            logger.warning(
+                "Trade direction check flagged %d pairing(s): %s",
+                len(trade_warnings),
+                "; ".join(trade_warnings),
+            )
+
+    from core.title_generator import generate_title
+
+    title = generate_title(
+        script=script,
+        topic=topic,
+        seed_topic=seed_topic,
+        key_facts=key_facts,
+        channel_id=channel_id,
+    )
+
     return {
-        "title": payload.get("title") or topic,
+        "title": title,
         "script": script,
         "description": apply_description_extras(payload.get("description") or "", channel_id),
         "tags": tags,
@@ -727,4 +735,5 @@ def generate_content_package(
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
         "ungrounded_entities": ungrounded,
+        "trade_warnings": trade_warnings,
     }

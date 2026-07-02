@@ -194,8 +194,8 @@ def get_cache_stats() -> dict[str, Any]:
 def flush_cache_stats() -> None:
     """Merge in-process counters into data/cache_stats.json, then clear them.
 
-    Called once at the end of a run so the dashboard reads cumulative stats
-    without paying a file write on every cache lookup. Fail-open.
+    Called once per discovery run and again at pipeline end via
+    ``finalize_run_observability()`` so post-discovery cache hits are captured.
     """
     with _stats_lock:
         if not _stats:

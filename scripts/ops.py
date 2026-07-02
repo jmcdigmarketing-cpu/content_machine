@@ -274,6 +274,7 @@ def cmd_list(_args: argparse.Namespace) -> int:
     print("  all-checks         validate + test")
     print("  all-analytics      seed, learn-schedule, weights, sync-metrics")
     print("  daily-sync         competitor-sync + seo-refresh (daily)")
+    print("  daily-brief        daily-sync + coach + reliability + status (morning one-shot)")
     print("\nInteractive (not batched): py main.py")
     return 0
 
@@ -315,6 +316,13 @@ def cmd_all_analytics(args: argparse.Namespace) -> int:
         ["seed", "learn-schedule", "weights", "sync-metrics"],
         args,
     )
+
+
+@_register("daily-brief", "Morning one-shot: fresh data, coach ideas, quota health, queue")
+def cmd_daily_brief(args: argparse.Namespace) -> int:
+    """The 'what should I do today' batch: refresh competitor/SEO data, then the
+    coach's ranked ideas, the credit/quota dashboard, and the queue snapshot."""
+    return _run_batch(["daily-sync", "coach", "reliability", "status"], args)
 
 
 def main(argv=None) -> int:

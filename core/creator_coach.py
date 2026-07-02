@@ -123,15 +123,21 @@ def render_coach(data: dict[str, Any]) -> str:
 
     cad = data.get("cadence")
     if cad:
+        try:
+            from core.themes import meter
+
+            gauge = meter(cad["total"], cad["cap"])
+        except Exception:
+            gauge = f"{cad['total']}/{cad['cap']}"
         room = max(cad["cap"] - cad["total"], 0)
         if room:
             lines.append(
-                f"  Cadence: {cad['total']}/{cad['cap']} used this {cad['window_days']}-day "
+                f"  Cadence: {gauge} used this {cad['window_days']}-day "
                 f"window — room for {room} more."
             )
         else:
             lines.append(
-                f"  Cadence: at the cap ({cad['total']}/{cad['cap']}) — "
+                f"  Cadence: at the cap ({gauge}) — "
                 "hold off, or raise MAX_VIDEOS_PER_WEEK deliberately."
             )
     return "\n".join(lines)

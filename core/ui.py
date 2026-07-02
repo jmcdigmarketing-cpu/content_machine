@@ -47,6 +47,16 @@ class DiscoverySpinner:
         self._phase: str | None = None
         self._done: int | None = None
         self._total: int | None = None
+        # Themed frames + loading copy (CONTENT_UI_THEME) — resolved once per
+        # spinner so the 10Hz animation loop never re-reads env/theme state.
+        try:
+            from core.themes import active_theme, themed_phase
+
+            self._frames: list[str] = list(active_theme().spinner_frames) or self._FRAMES
+            self._themed_phase = themed_phase
+        except Exception:
+            self._frames = self._FRAMES
+            self._themed_phase = lambda p: p
 
     def report(self, phase: str, done: int | None = None, total: int | None = None) -> None:
         """Thread-safe progress hook. Sets the current phase and optional N/M count."""
@@ -64,16 +74,16 @@ class DiscoverySpinner:
             for threshold, name in self._STAGES:
                 if elapsed >= threshold:
                     stage = name
-            return stage
+            return self._themed_phase(stage)
         if total:
-            return f"{phase} {done or 0}/{total}"
-        return phase
+            return f"{self._themed_phase(phase)} {done or 0}/{total}"
+        return self._themed_phase(phase)
 
     def _spin(self) -> None:
         i = 0
         while not self._stop.is_set():
             elapsed = time.perf_counter() - self._t0
-            frame = self._FRAMES[i % len(self._FRAMES)]
+            frame = self._frames[i % len(self._frames)]
             stage = self._current_stage(elapsed)
             line = f"\r  {frame}  {self._label} · {stage}... {elapsed:.0f}s   "
             sys.stdout.write(line)
@@ -245,6 +255,38 @@ _STARBURST_ART = """\
 
 _HERO_ART = _load_art("bonus_hero_ascii.txt")
 
+# Theme celebration pieces (fired on publish success via print_celebration).
+_ZELDA_ITEM_ART = """\
+      da-da-da-DAAA!
+         ________
+        |  ◆◆◆◆  |
+        |  ◆||◆  |
+        |  ◆||◆  |
+        |__◆◆◆◆__|
+       YOU GOT THE
+      RENDERED VIDEO"""
+
+_POKEMON_LEVELUP_ART = """\
+       ▁▂▃▅▆▇ ⚡
+      CHANNEL grew
+      to LVL UP! ⬆
+     ◓ It's super
+       effective!"""
+
+_DBZ_OVER9000_ART = """\
+       \\ ⚡ ⚡ /
+      ─ ((●)) ─
+       / |☰| \\
+     IT'S OVER 9000!
+      (the render
+       is complete)"""
+
+_JJBA_TBC_ART = """\
+                    ____
+      ⬅ TO BE CONTINUED
+     ────────────────╯
+      ゴ ゴ ゴ ゴ ゴ"""
+
 # (art, color) — keyed; "mario"/"hero" load from core/data art files. Empty pieces
 # (missing data file) are filtered out so the gallery never prints a blank panel.
 _BONUS_ART: dict[str, tuple[str, str]] = {
@@ -255,6 +297,10 @@ _BONUS_ART: dict[str, tuple[str, str]] = {
         ("trophy", _TROPHY_ART, "\033[33m"),  # gold
         ("rocket", _ROCKET_ART, "\033[36m"),  # cyan
         ("starburst", _STARBURST_ART, "\033[35m"),  # magenta
+        ("zelda_item", _ZELDA_ITEM_ART, "\033[32m"),  # kokiri green
+        ("pokemon_levelup", _POKEMON_LEVELUP_ART, "\033[33m"),  # pikachu yellow
+        ("dbz_over9000", _DBZ_OVER9000_ART, "\033[33m"),  # saiyan orange-ish
+        ("jjba_tbc", _JJBA_TBC_ART, "\033[35m"),  # stand purple
     )
     if art
 }
@@ -279,6 +325,37 @@ def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
     for line in art.splitlines():
         print_fn(paint(line, color) if ui_color_enabled() else line)
     print_fn()
+
+
+def print_celebration(*, print_fn=print) -> None:
+    """Publish-success flourish: the active theme's celebration piece, else random."""
+    try:
+        from core.themes import active_theme
+
+        key = active_theme().celebration_key or None
+    except Exception:
+        key = None
+    print_bonus_art(key=key, print_fn=print_fn)
+
+
+# Publish counts that earn a milestone line (kept sparse so it stays special).
+_MILESTONES = (1, 5, 10, 25, 50, 100, 250, 500, 1000)
+
+
+def maybe_print_milestone(channel_id: str, *, print_fn=print) -> None:
+    """One-line badge when the channel's upload count hits a milestone. Fail-open."""
+    try:
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        count = len(get_publish_log_repository().list_uploaded_for_channel(channel_id))
+    except Exception:
+        return
+    if count not in _MILESTONES:
+        return
+    from core.ui_theme import accent
+
+    label = "first video queued!" if count == 1 else f"video #{count} for this channel!"
+    print_fn(accent(f"  ★ Milestone — {label}"))
 
 
 HEALTH_LEGEND = "ON=ok | ON (not active)=no match | " "QUOTA/RATE LIMITED/AUTH=issue — see detail"
@@ -321,10 +398,10 @@ SIGNAL_ORDER = (
 
 def section(title: str, print_fn=print):
     from core.ascii_art import section_glyph
-    from core.ui_theme import banner_line
+    from core.ui_theme import banner_line, terminal_width
     from core.ui_theme import title as theme_title
 
-    width = 56
+    width = terminal_width()
     print_fn()
     glyph = section_glyph(title)
     print_fn(banner_line("=", width))

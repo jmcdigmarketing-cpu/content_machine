@@ -271,13 +271,14 @@ Turn the research spine into a compliance moat.
 - [ ] **Thumbnail A/B** + CTR optimisation (Flux thumbnails already exist).
 - [x] Weekly performance digest with concrete next actions — `analytics/weekly_report.build_next_actions`: the winners/losers per dimension become numbered operator instructions ("Lead with the 'fraud' angle again", "Retire the 'recap' angle"), noise-gated at ±3pp vs baseline. *(2026-07-02)*
 
-### UI / experience — themeable skins  *(fun, on-brand)*
+### UI / experience — themeable skins  *(fun, on-brand)* — **shipped 2026-07-02**
 *Builds on the existing braille ASCII art, `DiscoverySpinner`, and `print_domain_art`.*
-- [ ] **`CONTENT_UI_THEME=onepiece|zelda|pokemon|dbz`** — swap banner art, spinner frames, palette, and loading copy.
-  - **Zelda** — Triforce signal-health glyphs, heart-container queue meter, a *secret-found* flourish on a new best-bet, Rupees = quota units.
-  - **Pokémon** — Pokéball spinner, "type advantage" framing for domain weights, **level-up / XP** when a recommender improves from analytics, a daily-streak "Gotta post 'em all".
-  - **DBZ** — **power-level = composite score** ("It's over 9000!" past a threshold), Scouter readout for signal health, charge-up render progress bar.
-- [ ] Theme registry so each channel picks a skin in `channels.json`; keep a plain/no-emoji mode for logs and CI.
+- [x] **`CONTENT_UI_THEME=onepiece|zelda|pokemon|dbz|jjba|plain|default`** (`core/themes.py`) — each skin swaps the ANSI palette (16-color + auto-detected 256-color via `CONTENT_UI_COLOR_DEPTH`), spinner frames + themed loading copy, section glyphs, meter characters, startup tagline + inline mascot panel, publish celebration art, and a ≥90-score hype tag.
+  - **Zelda** — ▲ spinner + glyphs, **heart-container meters** (❤❤♡♡♡ cadence/quota), "YOU GOT THE RENDERED VIDEO" item-get celebration, *SECRET FOUND* score tag.
+  - **Pokémon** — Pokéball spinner (◓◑◒◐), "type advantage" loading copy, level-up celebration, *SUPER EFFECTIVE* score tag.
+  - **DBZ** — ki-charge spinner, Scouter loading copy, **"IT'S OVER 9000!"** on composite ≥ 90, over-9000 celebration.
+  - **JJBA** — ゴゴゴ menacing spinner + mascot, "ORA ORA scoring variants", **"TO BE CONTINUED ➡"** publish celebration, *MUDA MUDA* score tag.
+- [x] Theme registry with per-channel skin via `"ui_theme"` in `channels.json` (env overrides); `plain` keeps logs/CI color- and art-free. Meters + milestones (`maybe_print_milestone`) + themed celebrations wired into main flow, cadence, `ops reliability`, and `ops coach`. Sections/banners now span the full terminal width (capped at 100 cols). Tests: `tests/test_themes.py`.
 
 ### Efficiency & integrations
 > **Credit/quota/spend optimization backlog:** [credit_efficiency.md](credit_efficiency.md) — Apify preflight skip, cross-run breaker persistence, operator budgets, LLM provider failover, reliability dashboard, unified quota governor (O1–O11).

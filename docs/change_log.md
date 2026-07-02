@@ -6,6 +6,32 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Terminal UI themes + daily-brief batch — 2026-07-02
+
+*The roadmap's "themeable skins" item, executed. Presentation-only: no pipeline
+logic reads a theme, everything degrades to plain text. Suite 645 green.*
+
+- **`core/themes.py`** — `Theme` registry: palette (16 + 256-color pairs,
+  `CONTENT_UI_COLOR_DEPTH=auto|16|256` with Windows Terminal auto-detect),
+  spinner frames + themed loading copy, section glyphs, meter chars, tagline,
+  inline mascot, celebration key, ≥90-score hype tag. Resolution:
+  `CONTENT_UI_THEME` env → channel `"ui_theme"` (channels.json, new
+  `ChannelProfile.ui_theme` field, set at startup) → `default`.
+- **Six skins**: `onepiece` (straw-hat palette, Luffy mascot stays), `zelda`
+  (▲ spinner, heart meters, item-get celebration), `pokemon` (Pokéball spinner,
+  level-up), `dbz` (Scouter copy, "IT'S OVER 9000!" at composite ≥ 90), `jjba`
+  (ゴゴゴ spinner + mascot, "TO BE CONTINUED ➡" celebration), plus `plain`
+  (no color/art — logs/CI) and `default`.
+- **Positive-UI moments** — `meter()` block gauges in cadence, `ops reliability`
+  (YouTube units), and `ops coach` (ASCII fallback on non-UTF stdout);
+  `print_celebration()` themed publish flourish; `maybe_print_milestone()`
+  (video #1/#5/#10/#25/... badge, fail-open); sections/banners now fill the
+  terminal width (56 → up to 100 cols via `ui_theme.terminal_width`).
+- **`ops daily-brief`** — 5th batch: `daily-sync` → `coach` → `reliability` →
+  `status` (the morning "what should I do today" one-shot).
+- Tests: `tests/test_themes.py` (registry, resolution, depth, meters, spinner
+  theming, glyphs, mascots, milestones, batch). Docs + `.env.example` updated.
+
 ### 2026-07 focus wave: O10 + trade validation + creator coach + headless facts — 2026-07-02
 
 *Closes the four "Current focus (2026-07)" roadmap items that remained after the

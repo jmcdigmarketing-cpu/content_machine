@@ -198,10 +198,13 @@ def render(data: dict[str, Any] | None = None) -> str:
 
     yt = data.get("youtube", {})
     if yt:
-        line = (
-            f"YouTube units: {yt.get('used', 0):,}/{yt.get('limit', 0):,} used "
-            f"(~{yt.get('remaining', 0):,} left today)"
-        )
+        try:
+            from core.themes import meter
+
+            gauge = meter(yt.get("used", 0), yt.get("limit", 0), width=16)
+        except Exception:
+            gauge = f"{yt.get('used', 0):,}/{yt.get('limit', 0):,}"
+        line = f"YouTube units: {gauge} used " f"(~{yt.get('remaining', 0):,} left today)"
         if yt.get("next_reset"):
             line += f" — resets {str(yt['next_reset'])[:16]} UTC"
         lines.append(line)

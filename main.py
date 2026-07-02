@@ -87,6 +87,9 @@ def main():
     section("Content Machine")
     channel_id = prompt_channel_selection()
     profile = get_channel_profile(channel_id)
+    from core.themes import set_channel_theme
+
+    set_channel_theme(channel_id)
     from core.ascii_art import print_startup_panel
 
     print_startup_panel(channel_id)
@@ -438,7 +441,9 @@ def _run_new_video_flow_body(
         thumbnail_path=thumb_path,
         cost=result.features.get("cost"),
     )
-    print_bonus_art()  # random celebratory flourish
+    from core.ui import print_celebration
+
+    print_celebration()  # themed celebratory flourish (random when unthemed)
     if thumb_path:
         print(f"  Thumbnail: {thumb_path}")
         print(f"  Thumbnail folder: {thumb_count} file(s) in {thumb_dir}")
@@ -487,6 +492,9 @@ def _run_new_video_flow_body(
                 when = upload_plan.scheduled_at.astimezone().strftime("%Y-%m-%d %H:%M")
             print(f"\n  Upload queued (job {job.id}, {upload_plan.privacy_status}, {when}).")
             print("  Run worker:  py -m jobs.worker --loop 30")
+        from core.ui import maybe_print_milestone
+
+        maybe_print_milestone(channel_id)
         if not upload_report.ok:
             print("  Setup first: py -m youtube.check_setup --channel", channel_id)
             for issue in upload_report.issues[:3]:

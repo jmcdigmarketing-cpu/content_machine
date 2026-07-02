@@ -11,7 +11,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-06-23 — **both feature PRs consolidated into `main`** (`e6d5c9c`); 363 tests green. main now holds Phase O/P/Q + idea-intake + recommenders AND the full recency/quality layer (key facts, signal gating, web search, Obsidian, circuit breakers, confidence surfacing, cost meter, fact-grounding, RAWG relevance, domain-routed RSS). No open PRs or divergent branches.
+Last updated: 2026-07-02 — **2026-07 focus wave shipped** on `fix/credit-efficiency-review` (PR #24); 613 tests green. Adds O10 reset-window auto-re-enable, opt-in semantic trade validation, the Phase S creator coach (`ops coach`) + weekly-digest next actions, and headless key facts for `auto_generate` — on top of the fact-first pipeline (angles at discovery, title after facts + script).
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -197,11 +197,13 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 3. ~~Auto-disable on credit/quota~~ — shipped (+ persisted Apify, LLM router)
 4. ~~Live discovery feedback~~ — shipped
 
-**Current focus (2026-07):**
-1. **Fact-first generation pipeline** — discovery picks editorial *angles*; YouTube title generated after key facts + script (`core/title_generator.py`). Operator facts saved in full to vault; LLM gets char budget not hard-5 cap.
-2. **O10 reset-window auto-re-enable** — Apify/YouTube/Odds recover after known reset cadence ([credit_efficiency.md](credit_efficiency.md))
-3. **Semantic trade validation** (optional) — headline ↔ corpus trade-verb check; higher false-positive risk
-4. **Creator coach surface (Phase S)** — expand best-bet into daily ideas + why
+**Current focus (2026-07):** *(wave shipped 2026-07-02 — see below)*
+1. ~~Fact-first generation pipeline~~ — shipped (angles at discovery, title after facts + script)
+2. ~~O10 reset-window auto-re-enable~~ — shipped (`core/reset_window.py`; [credit_efficiency.md](credit_efficiency.md) O10)
+3. ~~Semantic trade validation~~ — shipped opt-in (`core/trade_validation.py`, `SEMANTIC_TRADE_VALIDATION`)
+4. ~~Creator coach surface (Phase S)~~ — shipped (`core/creator_coach.py`, `ops coach`; weekly digest gained "Next actions")
+
+**Up next:** O11 unified quota governor · thumbnail A/B (Phase S remainder) · batch generation · signal-breaker persistence (key-hash invalidation).
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
@@ -265,9 +267,9 @@ Turn the research spine into a compliance moat.
 - [ ] Reuse the scoring / hook / caption stack from Phases P–Q.
 
 ### Phase S — Creator coach surface
-- [ ] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing).
+- [x] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing) — `core/creator_coach.py`, `py -m scripts.ops coach`: ranked ideas each with a *why*, plus recommended length/post-time, winning title patterns, retention pacing, and cadence headroom. Read-only + fail-open. *(2026-07-02)*
 - [ ] **Thumbnail A/B** + CTR optimisation (Flux thumbnails already exist).
-- [ ] Weekly performance digest with concrete next actions.
+- [x] Weekly performance digest with concrete next actions — `analytics/weekly_report.build_next_actions`: the winners/losers per dimension become numbered operator instructions ("Lead with the 'fraud' angle again", "Retire the 'recap' angle"), noise-gated at ±3pp vs baseline. *(2026-07-02)*
 
 ### UI / experience — themeable skins  *(fun, on-brand)*
 *Builds on the existing braille ASCII art, `DiscoverySpinner`, and `print_domain_art`.*
@@ -288,6 +290,9 @@ Turn the research spine into a compliance moat.
 - [x] **Per-platform rate-limit cooldown** — *shipped 2026-07-01:* free backends fail by 429 (rate-limit), not 402 (credit). Session breaker (`apis/register_signals.py`) now gives transient 429s a *disabled-until-T* cooldown (`SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS`, default 15 min, 0 = off) instead of ignoring them; hard statuses still trip permanently, and `SIGNAL_BREAKER_INCLUDE_RATE_LIMIT=true` still promotes 429s to a full-session trip. "Next available" surfaces in `ops reliability` and the post-discovery signal-health panel (`youtube_competitors → 14:32`). Tests in `tests/test_circuit_breaker.py`.
 - [x] **Script-accuracy follow-ups (2026-07-01)** — Apify 403 vs 402 messaging + shorter auth-failure TTL; `MAX_OPERATOR_KEY_FACTS` env cap; pipeline-end `finalize_run_observability()` for cache stats; `auto_generate` mirrors fact-grounding gate.
 - [x] **Fact-first pipeline (2026-07-02)** — `core/operator_facts.py` (paste block, vault save-all, char budget); discovery → **angles** not titles; `core/title_generator.py` runs after facts + script; anti-slop title rules.
+- [x] **O10 reset-window auto-re-enable (2026-07-02)** — `core/reset_window.py` encodes real reset cadences (YouTube daily 00:00 PT, Apify monthly `APIFY_RESET_DAY`, Odds monthly). Apify 402/monthly-limit exhaustion persists until the cycle reset (auth keeps 30m TTL, budget keeps flat TTL); quota-blocked YouTube uploads retry just after the real reset; reset times in `ops reliability`. `RESET_WINDOW_AUTO_ENABLE` master switch. Tests: `tests/test_reset_window.py`.
+- [x] **Semantic trade validation (2026-07-02, opt-in)** — `core/trade_validation.py`: extracts `player → team` trade claims from the script and warns when the pair never co-occurs on a single fact line (catches fused trades token grounding passes, e.g. real Giannis→Heat + invented Butler→Celtics). `SEMANTIC_TRADE_VALIDATION` (default **off** — higher false-positive risk); warns after the Fact-grounding section in `main.py`/`auto_generate`, never blocks. Tests: `tests/test_trade_validation.py`.
+- [x] **Headless key facts for `auto_generate` (2026-07-02)** — `--facts-file` (same parser as interactive `paste` mode — trade blocks work) + repeatable `--fact` lines; deduped/tip-filtered, saved in full to the vault, injected as ground truth, and echoed in the grounding report. Tests: `tests/test_auto_generate_facts.py`.
 - [ ] **Webhook / n8n / Zapier out** — emit run + publish events for external automation.
 - [ ] **Batch generation** — N ideas → N drafts in one unattended pass (feeds A/B + volume-with-variation).
 - [ ] **Observability** — structured run traces + timing dashboard (timings already captured).

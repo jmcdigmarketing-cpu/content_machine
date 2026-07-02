@@ -702,6 +702,20 @@ def generate_content_package(
             ", ".join(ungrounded),
         )
 
+    # Semantic trade validation (opt-in): player→team pairings must co-occur on a
+    # fact line, catching fused trades that token grounding passes.
+    trade_warnings: list[str] = []
+    from core.trade_validation import trade_validation_enabled, validate_trade_claims
+
+    if trade_validation_enabled():
+        trade_warnings = validate_trade_claims(script, grounding_text)
+        if trade_warnings:
+            logger.warning(
+                "Trade direction check flagged %d pairing(s): %s",
+                len(trade_warnings),
+                "; ".join(trade_warnings),
+            )
+
     from core.title_generator import generate_title
 
     title = generate_title(
@@ -721,4 +735,5 @@ def generate_content_package(
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
         "ungrounded_entities": ungrounded,
+        "trade_warnings": trade_warnings,
     }

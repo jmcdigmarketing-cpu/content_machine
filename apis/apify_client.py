@@ -56,9 +56,31 @@ def _auth_failure_ttl() -> int:
         return 30 * 60
 
 
+def _credit_exhaustion_ttl() -> int:
+    """TTL for a hard credit/limit exhaustion.
+
+    O10: when the reset-window layer is enabled, persist until the *actual*
+    monthly Apify cycle reset (APIFY_RESET_DAY) instead of re-paying a failing
+    check every 6h for the rest of the month. Falls back to the flat TTL when
+    disabled or on any error. Manual recovery: clear data/quota_state.json.
+    """
+    try:
+        from core.reset_window import reset_window_enabled, seconds_until_reset
+
+        if reset_window_enabled():
+            secs = seconds_until_reset("apify")
+            if secs:
+                return secs
+    except Exception:
+        pass
+    return _persist_ttl()
+
+
 def _persist_ttl_for_status(status_code: int) -> int:
     if status_code in (401, 403):
         return _auth_failure_ttl()
+    if status_code == 402:
+        return _credit_exhaustion_ttl()
     return _persist_ttl()
 
 
@@ -101,14 +123,17 @@ def _evaluate_apify_usage(usage: float, limit: float, purpose: str) -> tuple[boo
     """
     budget = _apify_budget()
     if budget is not None and usage >= budget:
+        # Flat TTL (not reset-window): a raised APIFY_MONTHLY_BUDGET_USD should
+        # recover within hours, not stay blocked until the billing cycle turns.
         reason = f"Apify operator budget reached (${usage:.2f}/${budget:.2f})"
         disable_apify(reason)
         _persist_exhausted(purpose, reason)
         return False, _state["reason"]
     if limit and usage >= limit:
+        # Apify's own monthly limit clears only at the cycle reset (O10).
         reason = f"Apify monthly limit reached (${usage:.2f}/${limit:.2f})"
         disable_apify(reason)
-        _persist_exhausted(purpose, reason)
+        _persist_exhausted(purpose, reason, status_code=402)
         return False, _state["reason"]
     label = f"${usage:.2f}/${limit:.2f} used" if limit else f"${usage:.2f} used"
     if budget is not None:

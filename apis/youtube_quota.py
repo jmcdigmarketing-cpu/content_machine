@@ -126,12 +126,28 @@ def record_thumbnail_usage():
 
 
 def next_quota_retry_at():
-    """When local tracker says upload is blocked, suggest next retry (UTC)."""
+    """When local tracker says upload is blocked, suggest next retry (UTC).
+
+    O10: uses the documented Data API daily reset (midnight Pacific) via
+    core.reset_window so a blocked upload retries right after the real reset
+    instead of a heuristic +1 day. Falls back to the old heuristic when the
+    reset-window layer is disabled or unavailable.
+    """
     from datetime import datetime, timedelta, timezone
 
     now = datetime.now(timezone.utc)
     if has_quota_for_upload():
         return now
+    try:
+        from core.reset_window import next_reset, reset_window_enabled
+
+        if reset_window_enabled():
+            nxt = next_reset("youtube", now=now)
+            if nxt is not None:
+                # Small buffer so the worker doesn't race the reset boundary.
+                return nxt + timedelta(minutes=5)
+    except Exception:
+        pass
     retry = (now + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
     if retry <= now:
         retry = now + timedelta(hours=6)

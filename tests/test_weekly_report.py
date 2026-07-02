@@ -79,6 +79,56 @@ class TestFormatReport(unittest.TestCase):
         self.assertIn("Cost:", text)
 
 
+class TestNextActions(unittest.TestCase):
+    def test_winner_and_loser_become_actions(self):
+        rows = [
+            _row(0.50, angle="fraud"),
+            _row(0.45, angle="fraud"),
+            _row(0.40, angle="fraud"),
+            _row(0.10, angle="recap"),
+            _row(0.12, angle="recap"),
+            _row(0.11, angle="recap"),
+        ]
+        with patch("analytics.weekly_report._load_rows", return_value=rows):
+            report = wr.build_report("tapin")
+        actions = report["next_actions"]
+        self.assertTrue(any("fraud" in a and "again" in a for a in actions))
+        self.assertTrue(any("recap" in a and "Retire" in a for a in actions))
+
+    def test_neutral_deltas_produce_no_actions(self):
+        # All values hover at the baseline — nothing actionable.
+        rows = [
+            _row(0.30, angle="fraud"),
+            _row(0.31, angle="fraud"),
+            _row(0.29, angle="fraud"),
+            _row(0.30, angle="recap"),
+            _row(0.31, angle="recap"),
+            _row(0.29, angle="recap"),
+        ]
+        with patch("analytics.weekly_report._load_rows", return_value=rows):
+            report = wr.build_report("tapin")
+        self.assertEqual(report["next_actions"], [])
+
+    def test_not_ready_report_has_no_actions(self):
+        self.assertEqual(wr.build_next_actions({"ready": False}), [])
+
+    def test_actions_rendered_in_format(self):
+        report = {
+            "channel_id": "tapin",
+            "n": 6,
+            "ready": True,
+            "baseline": 0.25,
+            "dimensions": {"angle": [{"value": "fraud", "avg": 0.45, "n": 3, "delta": 0.20}]},
+            "avg_cost": None,
+            "total_cost": None,
+            "next_actions": ["Lead with the 'fraud' angle again (45% vs 25% baseline, n=3)"],
+        }
+        text = wr.format_report(report)
+        self.assertIn("Next actions:", text)
+        self.assertIn("1. Lead with the 'fraud' angle again", text)
+        self.assertIn("ops coach", text)
+
+
 # Smoke test that the JSON feature round-trips through the loader shape.
 class TestLoaderShape(unittest.TestCase):
     def test_features_json_parsing_is_tolerant(self):

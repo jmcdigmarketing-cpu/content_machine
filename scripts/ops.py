@@ -152,6 +152,14 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("coach", "Daily creator coach — ranked ideas + why, post time, length, patterns")
+def cmd_coach(args: argparse.Namespace) -> int:
+    from core.creator_coach import build_coach, render_coach
+
+    print(render_coach(build_coach(args.channel)))
+    return 0
+
+
 @_register("topic-db", "Topic Winners (clone these) + Graveyard (avoided flops)")
 def cmd_topic_db(args: argparse.Namespace) -> int:
     from core.topic_db import display_graveyard, display_winners, graveyard, winners

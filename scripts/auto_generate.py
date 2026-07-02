@@ -18,6 +18,9 @@ Options:
     --dry-run     Run discovery + script but skip render and queue
     --sync-analytics  Sync YouTube metrics for previously uploaded videos first
     --no-best-bet Skip best-bet and always prompt for or use --topic
+    --facts-file  Path to a text file of operator key facts (paste-block format —
+                  same parser as the interactive `paste` mode; trade blocks OK)
+    --fact        A single key-fact line; repeatable (--fact "..." --fact "...")
 """
 
 from __future__ import annotations
@@ -55,6 +58,25 @@ def _pick_topic(channel_id: str, topic_override: str, use_best_bet: bool) -> str
     return input("  Topic: ").strip()
 
 
+def _collect_key_facts(facts_file: str, fact_lines: list[str]) -> list[str]:
+    """Headless key facts: a paste-block file and/or repeated --fact lines.
+
+    Mirrors the interactive key-facts prompt: the file goes through the same
+    `paste` parser (trade blocks work), everything is deduped and tip-filtered.
+    Returns [] when neither input is supplied.
+    """
+    from core.operator_facts import dedupe_facts, parse_pasted_block
+
+    collected: list[str] = list(fact_lines or [])
+    if facts_file:
+        try:
+            with open(facts_file, encoding="utf-8") as f:
+                collected.extend(parse_pasted_block(f.read()))
+        except OSError as exc:
+            print(f"  Key-facts file skipped ({exc})")
+    return dedupe_facts(collected)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Automated content generation")
     parser.add_argument("--channel", default="tapin")
@@ -77,6 +99,17 @@ def main(argv=None) -> int:
     )
     parser.add_argument(
         "--force", action="store_true", help="Bypass the cadence cap and authenticity gate"
+    )
+    parser.add_argument(
+        "--facts-file",
+        default="",
+        help="Text file of operator key facts (paste-block format, e.g. a trade tracker)",
+    )
+    parser.add_argument(
+        "--fact",
+        action="append",
+        default=[],
+        help="Single key-fact line (repeatable)",
     )
     args = parser.parse_args(argv)
 
@@ -144,6 +177,17 @@ def main(argv=None) -> int:
 
     display_outlier(get_competitor_outlier(discovery.base_signals))
 
+    # Operator key facts (headless): file and/or repeated --fact lines — same
+    # ground-truth priority as the interactive prompt, saved in full to the vault.
+    key_facts = _collect_key_facts(args.facts_file, args.fact)
+    if key_facts:
+        from core.content_engine import key_facts_for_prompt
+        from core.operator_facts import capture_facts_to_vault
+
+        capture_facts_to_vault(channel_id, topic, key_facts)
+        sent = key_facts_for_prompt(key_facts)
+        print(f"\n  Key facts: {len(key_facts)} collected, {len(sent)} packed for the LLM")
+
     # Script
     print("\n  Generating script...")
     result = run_pipeline(
@@ -153,6 +197,7 @@ def main(argv=None) -> int:
         length_choice=length_choice,
         proceed_video=False,
         channel_id=channel_id,
+        key_facts=key_facts or None,
     )
 
     preset = get_length_preset(length_choice)
@@ -167,7 +212,13 @@ def main(argv=None) -> int:
     display_hook_score(score_script_hook(result.script))
 
     _ungrounded = result.features.get("ungrounded_entities") or []
-    needs_grounding_review = display_grounding_report(_ungrounded, print_fn=print)
+    needs_grounding_review = display_grounding_report(
+        _ungrounded, key_facts=key_facts or None, print_fn=print
+    )
+
+    from core.trade_validation import display_trade_validation
+
+    display_trade_validation(result.features.get("trade_warnings") or [], print_fn=print)
 
     # Authenticity / monetisation-safety gate (Phase O)
     from core.authenticity import (

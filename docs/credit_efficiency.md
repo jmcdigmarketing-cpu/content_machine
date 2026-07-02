@@ -111,11 +111,18 @@ spend vs budget, session-disabled signals, cache hit-rate by prefix, and YouTube
 units used today — read-only and fail-open. *Makes the whole credit layer visible
 in one view.* Remaining: per-run LLM cost line + a richer time series.
 
-**O10. Reset-window auto-re-enable** `[S–M]`
-Encode known reset cadences (YouTube Data API: daily 00:00 PT; Odds: monthly;
-Apify: monthly cycle) so a disabled provider auto-re-enables after its reset rather
-than staying off until restart. *Saving: recovers usable quota the session breaker
-would otherwise waste for the rest of the day/month.*
+**O10. Reset-window auto-re-enable** `[S–M]` — ✅ **SHIPPED (2026-07-02)**
+`core/reset_window.py` encodes the known reset cadences (YouTube Data API: daily
+00:00 Pacific; Apify: monthly cycle on `APIFY_RESET_DAY`; Odds: monthly on the
+1st). Consumers: a hard Apify **402/monthly-limit** exhaustion now persists
+*until the actual cycle reset* instead of re-checking every 6h (auth failures
+keep the short 30m TTL; the operator-budget trip keeps the flat TTL so raising
+the budget recovers fast), and a quota-blocked YouTube upload retries **5 min
+after the real midnight-PT reset** instead of a +1-day heuristic. Reset times
+surface in `ops reliability`. Master switch `RESET_WINDOW_AUTO_ENABLE` (default
+on) falls back to the old flat-TTL behaviour. Tests: `tests/test_reset_window.py`.
+*Saving: recovers usable quota the breaker would otherwise waste, and stops
+pointless re-checks against a wall that won't move until the cycle turns.*
 
 ### Tier 4 — unify
 
@@ -139,7 +146,8 @@ persistence file (`data/quota_state.json`) and one dashboard. Endpoint of O2–O
 3. ✅ **O5 + O6** — LLM failover + breaker (free OpenRouter tier now robust). *(wave 1)*
 4. ✅ **O4 + O7** — operator budgets for Apify + LLM. *(wave 2)*
 5. ✅ **O8 + O9** — instrument cache hits, surface the reliability dashboard. *(wave 3)*
-6. **O10**, then **O11** (the governor) once the pieces exist to unify. *(next)*
+6. ✅ **O10** — reset-window auto-re-enable (`core/reset_window.py`). *(2026-07-02)*
+7. **O11** (the governor) once the pieces exist to unify. *(next)*
 
 Also still open from O2: **signal-breaker persistence** (needs key-hash
 invalidation so a fixed key clears the record).
@@ -161,3 +169,5 @@ Each step is independently shippable with a test (per [decisions.md](decisions.m
 | `APIFY_USAGE_CACHE_TTL_SECONDS` | **shipped (O3)** | reuse window for the last Apify usage reading (default 20m) |
 | `APIFY_MONTHLY_BUDGET_USD` | **shipped (O4)** | operator spend ceiling for Apify (trips before the hard limit) |
 | `LLM_DAILY_BUDGET_USD` | **shipped (O7)** | daily LLM spend ceiling → premium/extract downgrade to cheap |
+| `RESET_WINDOW_AUTO_ENABLE` | **shipped (O10)** | persist exhaustions until the provider's real reset (off = flat TTLs) |
+| `APIFY_RESET_DAY` | **shipped (O10)** | day-of-month the Apify usage cycle resets (default 1) |

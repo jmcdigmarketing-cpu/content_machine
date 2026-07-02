@@ -47,6 +47,14 @@ def _apify_section() -> dict[str, Any]:
         out["usage_cache"] = get_value("apify_usage:main")
     except Exception:
         pass
+    try:
+        from core.reset_window import next_reset, reset_window_enabled
+
+        if reset_window_enabled():
+            nxt = next_reset("apify")
+            out["next_reset"] = nxt.isoformat() if nxt else None
+    except Exception:
+        pass
     return out
 
 
@@ -90,9 +98,18 @@ def _youtube_section() -> dict[str, Any]:
     try:
         from apis.youtube_quota import get_usage_summary
 
-        return get_usage_summary()
+        out: dict[str, Any] = dict(get_usage_summary())
     except Exception:
         return {}
+    try:
+        from core.reset_window import next_reset, reset_window_enabled
+
+        if reset_window_enabled():
+            nxt = next_reset("youtube")
+            out["next_reset"] = nxt.isoformat() if nxt else None
+    except Exception:
+        pass
+    return out
 
 
 def gather() -> dict[str, Any]:
@@ -148,6 +165,8 @@ def render(data: dict[str, Any] | None = None) -> str:
             f"  usage   : ${cache.get('usage', 0):.2f}/${cache.get('limit', 0):.2f} (cached)"
         )
     lines.append(f"  budget  : {_budget_line(None, ap.get('budget'))}")
+    if ap.get("persisted_exhausted") and ap.get("next_reset"):
+        lines.append(f"  reset   : cycle resets {str(ap['next_reset'])[:16]} UTC (auto re-enable)")
 
     llm = data.get("llm", {})
     lines.append("LLM")
@@ -179,10 +198,13 @@ def render(data: dict[str, Any] | None = None) -> str:
 
     yt = data.get("youtube", {})
     if yt:
-        lines.append(
+        line = (
             f"YouTube units: {yt.get('used', 0):,}/{yt.get('limit', 0):,} used "
             f"(~{yt.get('remaining', 0):,} left today)"
         )
+        if yt.get("next_reset"):
+            line += f" — resets {str(yt['next_reset'])[:16]} UTC"
+        lines.append(line)
     return "\n".join(lines)
 
 

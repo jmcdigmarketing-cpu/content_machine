@@ -360,6 +360,7 @@ def run_pipeline(
     )
 
     result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []
+    result.features["trade_warnings"] = content.get("trade_warnings") or []
 
     from core.cost_meter import estimate_run_cost
 

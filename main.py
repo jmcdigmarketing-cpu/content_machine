@@ -359,6 +359,11 @@ def _run_new_video_flow_body(
         _ungrounded, key_facts=key_facts or None, print_fn=print
     )
 
+    # Semantic trade validation (opt-in, SEMANTIC_TRADE_VALIDATION)
+    from core.trade_validation import display_trade_validation
+
+    display_trade_validation(result.features.get("trade_warnings") or [], print_fn=print)
+
     # Authenticity / monetisation-safety self-check (Phase O)
     from core.authenticity import (
         display_authenticity_report,

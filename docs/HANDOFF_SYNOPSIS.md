@@ -53,12 +53,18 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 
 ---
 
+## Shipped 2026-07-02 (second wave)
+
+1. **O10** — `core/reset_window.py`: Apify 402 persists to the real cycle reset (`APIFY_RESET_DAY`); YouTube retries after midnight PT; `RESET_WINDOW_AUTO_ENABLE`
+2. **Semantic trade validation** — `core/trade_validation.py`, opt-in `SEMANTIC_TRADE_VALIDATION` (fused-trade check; warns, never blocks)
+3. **Phase S coach** — `py -m scripts.ops coach` (ideas + why, length, post time, patterns, cadence); weekly-report now prints **Next actions**
+4. **Headless key facts** — `auto_generate --facts-file <paste-block> --fact "..."`
+
 ## Open (roadmap next)
 
-1. **O10** — reset-window auto-re-enable (Apify/YouTube monthly/daily)
-2. **Semantic trade validation** — optional, higher false-positive risk
-3. **Phase S** — creator coach / daily ideas surface
-4. **`scripts/auto_generate.py`** — optional key-facts prompt for headless
+1. **O11** — unified quota governor
+2. **Thumbnail A/B** (Phase S remainder)
+3. **Batch generation** · signal-breaker persistence (key-hash invalidation)
 
 ---
 

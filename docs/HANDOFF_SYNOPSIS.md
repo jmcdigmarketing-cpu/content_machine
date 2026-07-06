@@ -1,12 +1,12 @@
-# Handoff synopsis — 2026-07 waves: fact-first, O10, coach, UI themes (2026-07-02)
+# Handoff synopsis — 2026-07-06 wave: free backends, batch/A/B, webhooks, O11 governor
 
-Use in a fresh Cursor tab to continue `content_machine` without re-reading the full thread.
+Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
-- **Branch:** `fix/credit-efficiency-review` → `main`
-- **PR:** https://github.com/jmcdigmarketing-cpu/content_machine/pull/24 (CI green, mergeable)
-- **Suite:** 645 tests green · **Pre-PR:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Branch:** `feat/reddit-free-backend-and-signal-persistence` → `main`
+- **Suite:** 720 tests green · **Pre-PR:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- Prior wave (fact-first, O10, coach, UI themes) merged via PR #24.
 
 ---
 
@@ -35,26 +35,29 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 
 ## Credit / speed
 
-- Apify 403 = auth (30m TTL), 402 = credits — **402 now persists until the real monthly cycle reset** (`core/reset_window.py`, `APIFY_RESET_DAY`, O10)
+- **O1–O11 backlog complete** ([credit_efficiency.md](credit_efficiency.md)). `core/quota_governor.py`
+  is the single façade over `data/quota_state.json`: Apify exhaustion + usage cache, LLM daily
+  spend, persisted signal disables (key-hash invalidated), `snapshot()` for the dashboard.
+  Check points stay layered (decisions §13) — governor unifies state/persistence/reporting only.
+- Apify 403 = auth (30m TTL), 402 = credits — persists until the real monthly cycle reset
+  (`core/reset_window.py`, `APIFY_RESET_DAY`, O10)
 - YouTube quota-blocked uploads retry 5 min after the real midnight-PT reset
 - `RESET_WINDOW_AUTO_ENABLE=false` restores flat TTLs; manual clear: `data/quota_state.json`
-- Social signals skip instantly when the Apify breaker is tripped; `SIGNAL_BACKEND=auto` = yt-dlp YouTube fallback
-- `py -m scripts.ops reliability` — dashboard (now shows next-reset times + unit meters)
+- `SIGNAL_BACKEND=apify|free|auto` — `free`/`auto` serve `youtube_competitors` via yt-dlp and
+  `reddit` via official OAuth (free script app) at $0; Twitter/TikTok stay Apify
+- `py -m scripts.ops reliability` — dashboard (breakers, budgets, persisted disables, resets, cache)
 
 ---
 
-## Shipped 2026-07-02 (three waves, all on this branch)
+## Shipped 2026-07-06 (this branch)
 
-**Wave 1 — fact-first pipeline:** `core/operator_facts.py` (paste, vault, char budget) · angles not titles (`apis/topic_variants.py`) · `core/title_generator.py` after facts+script · grounding gate before render.
-
-**Wave 2 — five roadmap objectives:**
-1. **O10** `core/reset_window.py` (see Credit/speed above)
-2. **Semantic trade validation** `core/trade_validation.py` — opt-in `SEMANTIC_TRADE_VALIDATION=true`; flags `player → team` pairings never on one fact line (fused-trade catch); warns after Fact grounding, never blocks
-3. **Creator coach** `core/creator_coach.py` → `py -m scripts.ops coach` (ranked ideas + why, length, post time, title patterns, cadence, retention)
-4. **Weekly digest next actions** — `weekly-report` prints numbered instructions from winners/losers (±3pp noise gate)
-5. **Headless key facts** for `auto_generate`
-
-**Wave 3 — terminal UI themes:** `core/themes.py` registry; `CONTENT_UI_THEME=onepiece|zelda|pokemon|dbz|jjba|plain|default` (env → channel `"ui_theme"` in channels.json → default). Skins swap palette (16/256-color, `CONTENT_UI_COLOR_DEPTH`), spinner frames + loading copy, section glyphs, meters (❤❤♡ cadence), mascot panel, celebration art, ≥90-score hype ("IT'S OVER 9000!"). Full-terminal-width sections (cap 100). `meter()` gauges in cadence/reliability/coach; `maybe_print_milestone()`; `print_celebration()`. New batch: **`ops daily-brief`** = daily-sync + coach + reliability + status.
+1. **Reddit free backend** — `apis/free_backends.fetch_reddit_free` (official OAuth; keyless scraping is 403-blocked); 429s feed the rate-limit cooldown.
+2. **Signal-breaker persistence + key-hash invalidation** (O11 seed) — hard signal trips persist across runs (`SIGNAL_BREAKER_PERSIST`); a changed credential env clears the record instantly.
+3. **Batch generation** — `py -m scripts.ops batch-drafts --channel tapin --count 3`: N ideas → N render-free draft scripts in `output/<ch>/drafts/` (no TTS spend, no cadence impact).
+4. **Script-lever A/B** — `py -m core.experiments start hook_style|cta_style` + `ops experiment` (low-n-safe Bayesian report; winner at P(best) ≥ 95%). Fed by batch-drafts.
+5. **Thumbnail A/B** — `py -m core.experiments start thumbnail_style` (close_up vs wide_drama on Flux prompts; Pillow fallbacks never pollute attribution).
+6. **Webhook events out** — `EVENT_WEBHOOK_URL` POSTs `run_completed` / `video_published` / `batch_completed`; fire-and-forget daemon thread.
+7. **O11 complete** — Apify + LLM router persistence migrated behind `core/quota_governor.py`; unified `snapshot()`; `core/reliability.py` reads via facades. Same scopes/keys, zero env changes.
 
 ---
 
@@ -63,27 +66,44 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 1. `py -m scripts.ops daily-brief` — morning one-shot: fresh data → ideas → quota → queue
 2. `py -m scripts.ops coach` — daily ideas + why (fast, no sync)
 3. `py -m scripts.ops all-checks` — validate + tests ("done" = CI passes)
-4. `py -m scripts.auto_generate --channel tapin --dry-run --facts-file facts.txt` — headless script + gates, no render
+4. `py -m scripts.ops batch-drafts --channel tapin --count 3` — unattended draft scripts (feeds A/B)
 5. `py -m scripts.ops reliability` — credit/quota/breaker/cache dashboard
 
 Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ---
 
-## Open (roadmap next)
+## Open (roadmap next — see "Internal-systems pillars — 2026-H2" in roadmap.md)
 
-1. **O11** — unified quota governor (`core/quota_governor.py`, merges the 3 breakers' state)
-2. **Thumbnail A/B** (Phase S remainder)
-3. **Batch generation** · signal-breaker persistence (key-hash invalidation)
-4. Optional: promote `SEMANTIC_TRADE_VALIDATION` to default-on if precise in live runs
+*Reoriented 2026-07-06 (decisions §15): Phases T–W folded into five pillars. All
+pillar work is proposed / not started — **implementation held for operator review**.*
+
+1. **Pillar 1 — Run Ledger** (do first): per-run trace, `quality_json` persistence,
+   `ops traces`/`dossier` viewers, data-quality monitor *(was T + V)*, unit-economics
+   join *(was U)*
+2. **Pillar 2 — Video Grading System**: pre-publish report card → predicted
+   engaged-rate → calibration loop *(data-gated)* → multimodal review *(later)*
+3. **Pillar 3 — Fact Engine 2.0**: structured fact store, tiered grounding corpus,
+   claim-level verifier, contradiction detection, `web_search` source capture
+4. **Pillar 4 — Obsidian knowledge OS**: run dossiers into the vault, vault index,
+   playbook read path, structured fact templates
+5. **Pillar 5 — Agent layer** (last): Channel Health Agent *(was W)*, verifier stage,
+   weekly analyst agent, overnight operator
+6. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,
+   MoneyWise depth, AI Tools/Tech groundwork
+7. Optional: promote `SEMANTIC_TRADE_VALIDATION` to default-on if precise in live runs
+8. One-time ops: re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise
+
+**Parked / excluded:** Instagram + TikTok platform linking (Phase M, far later) · Benable bot.
 
 ---
 
 ## Docs to read first
 
-- `docs/decisions.md` §3 (grounding), §4 (key facts), §4b (title timing), §13b (reset windows), §13c (trade validation)
-- `docs/credit_efficiency.md` — O1–O11 (O10 ✅)
-- `docs/roadmap.md` — "Current focus (2026-07)" + "UI / experience — themeable skins"
+- `docs/decisions.md` §3 (grounding), §4 (key facts), §4b (title timing), §13 (breaker layers), §13b (reset windows)
+- `docs/credit_efficiency.md` — O1–O11 (all ✅; O12 candidates under O11)
+- `docs/roadmap.md` — "Up next" + "Candidate phases — 2026-H2 expansion"
+- `docs/agent_reach_evaluation.md` — free/keyless backend evaluation (SIGNAL_BACKEND)
 - `docs/debugging.md` — "Script accuracy / hallucinations"
 
 ---
@@ -91,15 +111,15 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 ## Key files
 
 ```
-core/themes.py              — theme registry (6 skins), meter(), themed_phase()
+core/quota_governor.py      — O11 façade: apify/llm/signal persistence + snapshot()
+core/quota_state.py         — the dumb TTL'd store underneath (data/quota_state.json)
+apis/free_backends.py       — yt-dlp YouTube + Reddit OAuth free backends
+core/experiments.py         — A/B lifecycle; core/experiment_levers.py arms
+core/batch_generation.py    — ops batch-drafts (render-free volume)
+core/events.py              — webhook events out (fire-and-forget)
 core/reset_window.py        — O10 reset cadences (youtube/apify/odds)
-core/trade_validation.py    — fused-trade check (opt-in)
-core/creator_coach.py       — ops coach (ideas + why)
-core/operator_facts.py      — paste, vault, char budget
-core/title_generator.py     — title after facts + script
-core/fact_grounding.py      — mononyms, word boundaries
-core/content_engine.py      — script JSON (no title field)
+core/reliability.py         — ops reliability dashboard (governor-backed)
 analytics/weekly_report.py  — digest + next actions
-scripts/ops.py              — ~35 subcommands, 5 batches
+scripts/ops.py              — ~38 subcommands, 5 batches
 main.py                     — flow order, theme init, celebrations
 ```

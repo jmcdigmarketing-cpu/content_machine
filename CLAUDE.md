@@ -16,13 +16,14 @@ Channels (`config/channels.json`): `tapin` (gaming/UFC shorts), `moneywise`
 (finance). Full picture: [README.md](README.md) and
 [docs/architecture.md](docs/architecture.md). Current priorities:
 [docs/roadmap.md](docs/roadmap.md). Honest state of the project:
-[docs/assessment.md](docs/assessment.md).
+[docs/assessment.md](docs/assessment.md). State as of the last working session
+(branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
 
 ## Entry points
 
 - `main.py` — interactive CLI (discovery → script → render → publish menu).
 - `scripts/ops.py` — operator CLI, run in batch or one-by-one. `py -m scripts.ops
-  list` prints all ~30 subcommands. Most-used: `all-checks`, `status`,
+  list` prints all ~38 subcommands. Most-used: `all-checks`, `status`,
   `reliability` (credit/quota/cache dashboard), `weekly-report`, `test`.
 
 ## Signal architecture (read this before touching `apis/`)
@@ -63,7 +64,10 @@ python -m unittest discover -s tests -v        # tests — CI-blocking (or: pyte
   ([`core/cost_meter.py`](core/cost_meter.py), [`apis/apify_client.py`](apis/apify_client.py))
   without reading how the breaker trips first — a wrong change can silently
   disable a paid signal for the whole session (or persist that disablement
-  across runs via `data/quota_state.json`).
+  across runs via `data/quota_state.json`). Cross-run breaker persistence goes
+  through [`core/quota_governor.py`](core/quota_governor.py) (the O11 façade) —
+  don't write to `core/quota_state.py` directly from a subsystem, and keep the
+  breakers' *check points* separate per `docs/decisions.md` §13.
 - Any change to a signal must preserve `make_signal()`'s output shape — several
   tests key off it directly (e.g. `tests/test_circuit_breaker.py`,
   `tests/test_cadence_and_outlier.py`).

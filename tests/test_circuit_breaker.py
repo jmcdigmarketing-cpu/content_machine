@@ -1,5 +1,7 @@
 """Unit tests for the session signal circuit breaker in apis/register_signals.py."""
 
+import os
+import tempfile
 import time
 import unittest
 from unittest.mock import patch
@@ -14,18 +16,31 @@ from apis.signal_contract import (
     STATUS_RATE_LIMIT,
     make_signal,
 )
+from core import quota_governor, quota_state
 
 
-class TestCircuitBreaker(unittest.TestCase):
+class _IsolatedStateCase(unittest.TestCase):
+    """Redirect data/quota_state.json to a temp file — hard trips now persist,
+    and tests must never poison the real cross-run state."""
+
     def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._state_patch = patch.object(
+            quota_state, "QUOTA_STATE_FILE", os.path.join(self._tmp.name, "q.json")
+        )
+        self._state_patch.start()
         rs.reset_session_breaker()
 
     def tearDown(self):
         rs.reset_session_breaker()
+        self._state_patch.stop()
+        self._tmp.cleanup()
 
     def _record(self, name, status):
         rs._record_signal_health(name, make_signal(connected=False, active=False, status=status))
 
+
+class TestCircuitBreaker(_IsolatedStateCase):
     def test_quota_trips_breaker(self):
         self._record("youtube_competitors", STATUS_QUOTA)
         self.assertIn("youtube_competitors", rs._disabled_signals())
@@ -75,17 +90,8 @@ class TestCircuitBreaker(unittest.TestCase):
         self.assertEqual(rs._disabled_signals(), set())
 
 
-class TestRateLimitCooldown(unittest.TestCase):
+class TestRateLimitCooldown(_IsolatedStateCase):
     """Timed disabled-until-T cooldown for transient 429s."""
-
-    def setUp(self):
-        rs.reset_session_breaker()
-
-    def tearDown(self):
-        rs.reset_session_breaker()
-
-    def _record(self, name, status):
-        rs._record_signal_health(name, make_signal(connected=False, active=False, status=status))
 
     def test_rate_limit_starts_cooldown(self):
         self._record("youtube_competitors", STATUS_RATE_LIMIT)
@@ -131,6 +137,60 @@ class TestRateLimitCooldown(unittest.TestCase):
         with patch.dict("os.environ", {"SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS": "1"}):
             self._record("reddit", STATUS_RATE_LIMIT)
         self.assertGreaterEqual(rs.signal_cooldowns()["reddit"], first)
+
+
+class TestBreakerPersistence(_IsolatedStateCase):
+    """Hard trips persist across runs via core/quota_governor.py."""
+
+    def _simulate_fresh_process(self):
+        # Clear session state WITHOUT reset_session_breaker (which also wipes
+        # the persisted store) — the next _disabled_signals() re-reads it.
+        with rs._BREAKER_LOCK:
+            rs._SESSION_DISABLED.clear()
+            rs._COOLDOWN_UNTIL.clear()
+            rs._PERSISTED_DISABLED = set()
+            rs._PERSISTED_SYNCED = False
+
+    def test_hard_trip_survives_a_fresh_process(self):
+        self._record("youtube_competitors", STATUS_QUOTA)
+        self._simulate_fresh_process()
+        self.assertIn("youtube_competitors", rs._disabled_signals())
+        reasons = quota_governor.persisted_disabled_signals()
+        self.assertIn("quota_exceeded", reasons["youtube_competitors"])
+
+    def test_rate_limit_cooldown_is_not_persisted(self):
+        self._record("twitter", STATUS_RATE_LIMIT)
+        self.assertEqual(quota_governor.persisted_disabled_signals(), {})
+        self._simulate_fresh_process()
+        self.assertNotIn("twitter", rs._disabled_signals())
+
+    def test_persistence_disabled_via_env(self):
+        with patch.dict("os.environ", {"SIGNAL_BREAKER_PERSIST": "false"}):
+            self._record("finnhub", STATUS_NO_KEY)
+            self.assertEqual(quota_governor.persisted_disabled_signals(), {})
+        self._simulate_fresh_process()
+        self.assertNotIn("finnhub", rs._disabled_signals())
+
+    def test_key_change_clears_persisted_record(self):
+        with patch.dict("os.environ", {"FINNHUB_API_KEY": "old-key"}):
+            self._record("finnhub", STATUS_AUTH)
+            self.assertIn("finnhub", quota_governor.persisted_disabled_signals())
+        with patch.dict("os.environ", {"FINNHUB_API_KEY": "rotated-key"}):
+            self.assertEqual(quota_governor.persisted_disabled_signals(), {})
+            self._simulate_fresh_process()
+            self.assertNotIn("finnhub", rs._disabled_signals())
+
+    def test_reset_session_breaker_clears_persisted(self):
+        self._record("twitter", STATUS_AUTH)
+        rs.reset_session_breaker()
+        self.assertEqual(quota_governor.persisted_disabled_signals(), {})
+        self.assertEqual(rs._disabled_signals(), set())
+
+    def test_persisted_signal_excluded_from_active_sources(self):
+        self._record("rawg", STATUS_QUOTA)
+        self._simulate_fresh_process()
+        names = {n for n, _ in rs._active_signal_sources("Marvel Rivals new season meta")}
+        self.assertNotIn("rawg", names)
 
 
 if __name__ == "__main__":

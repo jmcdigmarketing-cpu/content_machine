@@ -73,16 +73,22 @@ def _llm_section() -> dict[str, Any]:
 
 
 def _signals_section() -> dict[str, Any]:
+    out: dict[str, Any] = {"disabled": [], "cooldowns": {}, "persisted": {}}
+    try:
+        from core.quota_governor import persisted_disabled_signals
+
+        out["persisted"] = dict(sorted(persisted_disabled_signals().items()))
+    except Exception:
+        pass
     try:
         from apis.register_signals import disabled_signals, signal_cooldowns
 
         cooldowns = signal_cooldowns()
-        return {
-            "disabled": sorted(disabled_signals() - set(cooldowns)),
-            "cooldowns": dict(sorted(cooldowns.items())),
-        }
+        out["disabled"] = sorted(disabled_signals() - set(cooldowns) - set(out["persisted"]))
+        out["cooldowns"] = dict(sorted(cooldowns.items()))
     except Exception:
-        return {"disabled": [], "cooldowns": {}}
+        pass
+    return out
 
 
 def _cache_section() -> dict[str, Any]:
@@ -183,6 +189,10 @@ def render(data: dict[str, Any] | None = None) -> str:
         # and cp1252 consoles can't encode '→'.
         parts = [f"{name} -> {_hhmm(until)}" for name, until in cooldowns.items()]
         lines.append(f"Signals cooling down (rate-limited): {', '.join(parts)}")
+    persisted = sig.get("persisted") or {}
+    if persisted:
+        parts = [f"{name} ({reason})" if reason else name for name, reason in persisted.items()]
+        lines.append("Signals disabled (persisted, clears on key change/TTL): " + ", ".join(parts))
 
     c = data.get("cache", {})
     total = c.get("total", 0)

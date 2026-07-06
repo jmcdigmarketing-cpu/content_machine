@@ -126,11 +126,22 @@ pointless re-checks against a wall that won't move until the cycle turns.*
 
 ### Tier 4 — unify
 
-**O11. Single quota governor** `[L]`
+**O11. Single quota governor** `[L]` — 🟡 **SEED SHIPPED (2026-07-06)**
 Extract one `core/quota_governor.py` holding per-provider state (usage, ceiling,
 breaker, reset window, ledger), consulted by Apify, the signal breaker, and the LLM
 router. The three scattered breakers become one source of truth with one
 persistence file (`data/quota_state.json`) and one dashboard. Endpoint of O2–O10.
+
+*Shipped so far:* `core/quota_governor.py` exists and owns **persistent
+per-signal breaker records with key-hash invalidation** (the O2 leftover — see
+below): a hard signal trip (quota/auth/no_key) persists across runs (scope
+`"signal"` in `data/quota_state.json`, `SIGNAL_BREAKER_PERSIST`, default on),
+and a changed credential env var (`_SIGNAL_CREDENTIAL_ENVS` map) clears the
+record immediately instead of waiting out the TTL. 429 cooldowns stay
+session-only. Surfaced in `ops reliability` ("Signals disabled (persisted…)").
+Tests: `tests/test_quota_governor.py`, `tests/test_circuit_breaker.py`.
+*Remaining O11 work:* migrate `apis/apify_client.py` and `core/llm_router.py`
+consultation behind the governor; unified snapshot for the dashboard.
 
 > **Do not collapse the layered checks themselves.** Per [decisions.md](decisions.md)
 > §13, the Apify global breaker and the per-signal session breaker are *intentionally
@@ -149,8 +160,9 @@ persistence file (`data/quota_state.json`) and one dashboard. Endpoint of O2–O
 6. ✅ **O10** — reset-window auto-re-enable (`core/reset_window.py`). *(2026-07-02)*
 7. **O11** (the governor) once the pieces exist to unify. *(next)*
 
-Also still open from O2: **signal-breaker persistence** (needs key-hash
-invalidation so a fixed key clears the record).
+~~Also still open from O2: **signal-breaker persistence** (needs key-hash
+invalidation so a fixed key clears the record).~~ ✅ **SHIPPED (2026-07-06)** as
+the O11 governor seed — see O11 above.
 
 Each step is independently shippable with a test (per [decisions.md](decisions.md) §11).
 

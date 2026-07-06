@@ -118,6 +118,22 @@ def is_exhausted(scope: str, name: str) -> tuple[bool, str]:
     return True, str(rec.get("reason", ""))
 
 
+def list_exhausted(scope: str) -> dict[str, str]:
+    """Unexpired exhaustion records in `scope` -> {name: reason}."""
+    now = time.time()
+    prefix = f"{scope}:"
+    with _lock:
+        disabled = _load().get("disabled") or {}
+    out: dict[str, str] = {}
+    for key, rec in disabled.items():
+        if not key.startswith(prefix) or not isinstance(rec, dict):
+            continue
+        if float(rec.get("until", 0) or 0) <= now:
+            continue
+        out[key[len(prefix) :]] = str(rec.get("reason", ""))
+    return out
+
+
 def clear_exhausted(scope: str, name: str) -> None:
     """Remove an exhaustion record (e.g. operator fixed the key)."""
     with _lock:

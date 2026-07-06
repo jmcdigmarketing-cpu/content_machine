@@ -203,7 +203,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 3. ~~Semantic trade validation~~ — shipped opt-in (`core/trade_validation.py`, `SEMANTIC_TRADE_VALIDATION`)
 4. ~~Creator coach surface (Phase S)~~ — shipped (`core/creator_coach.py`, `ops coach`; weekly digest gained "Next actions")
 
-**Up next:** O11 unified quota governor · thumbnail A/B (Phase S remainder) · batch generation · signal-breaker persistence (key-hash invalidation).
+**Up next:** batch generation · thumbnail A/B (Phase S remainder) · O11 remainder (migrate Apify + LLM router behind `core/quota_governor.py`). *(Signal-breaker persistence + key-hash invalidation shipped 2026-07-06 as the O11 governor seed — see [credit_efficiency.md](credit_efficiency.md) O11.)*
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 

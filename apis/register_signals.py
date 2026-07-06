@@ -29,6 +29,10 @@ _SKIP = {s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(
 # generalises the per-call Apify 402 handling to ANY signal (the contract already
 # classifies these statuses uniformly via signal_contract).
 #
+# Hard trips also PERSIST across runs (core/quota_governor.py, TTL'd, key-hash
+# invalidated — a changed credential clears the record). SIGNAL_BREAKER_PERSIST=false
+# turns persistence off.
+#
 # Rate-limits are transient and recover, so they get a *timed cooldown*
 # (disabled-until-T, default 15 min via SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS)
 # instead of a session-long trip — unless SIGNAL_BREAKER_INCLUDE_RATE_LIMIT is
@@ -38,6 +42,10 @@ _SKIP = {s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(
 _TRIP_STATUSES = {STATUS_QUOTA, STATUS_AUTH, STATUS_NO_KEY}
 _SESSION_DISABLED: set[str] = set()
 _COOLDOWN_UNTIL: dict[str, float] = {}  # signal name -> unix ts when it may run again
+# Hard trips also persist across runs via core/quota_governor.py (scope "signal",
+# key-hash invalidated). Loaded once per process into this memo.
+_PERSISTED_DISABLED: set[str] = set()
+_PERSISTED_SYNCED = False
 _BREAKER_LOCK = threading.Lock()
 
 
@@ -90,23 +98,61 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
         status,
         result.get("status_detail") or "",
     )
+    try:
+        from core.quota_governor import disable_signal
+
+        detail = result.get("status_detail") or ""
+        disable_signal(name, f"{status}: {detail}" if detail else str(status))
+    except Exception:
+        pass  # persistence is an optimization, never load-bearing
+
+
+def _persisted_disabled() -> set[str]:
+    """Signals disabled by a persisted (cross-run) trip. Read once per process."""
+    global _PERSISTED_SYNCED, _PERSISTED_DISABLED
+    with _BREAKER_LOCK:
+        if _PERSISTED_SYNCED:
+            return set(_PERSISTED_DISABLED)
+    try:
+        from core.quota_governor import persisted_disabled_signals
+
+        names = set(persisted_disabled_signals())
+    except Exception:
+        names = set()
+    with _BREAKER_LOCK:
+        _PERSISTED_SYNCED = True
+        _PERSISTED_DISABLED = names
+    if names:
+        logger.info("Signals skipped from persisted state: %s", ", ".join(sorted(names)))
+    return set(names)
 
 
 def _disabled_signals() -> set[str]:
     if not _breaker_enabled():
         return set()
+    persisted = _persisted_disabled()
     now = time.time()
     with _BREAKER_LOCK:
         for sig in [n for n, until in _COOLDOWN_UNTIL.items() if until <= now]:
             del _COOLDOWN_UNTIL[sig]
-        return set(_SESSION_DISABLED) | set(_COOLDOWN_UNTIL)
+        return set(_SESSION_DISABLED) | set(_COOLDOWN_UNTIL) | persisted
 
 
 def reset_session_breaker() -> None:
-    """Clear all session-disabled signals and cooldowns (test/CLI helper)."""
+    """Clear session-disabled signals, cooldowns, and persisted signal records
+    (test/CLI helper — gives every signal another chance right now)."""
+    global _PERSISTED_SYNCED, _PERSISTED_DISABLED
     with _BREAKER_LOCK:
         _SESSION_DISABLED.clear()
         _COOLDOWN_UNTIL.clear()
+        _PERSISTED_DISABLED = set()
+        _PERSISTED_SYNCED = False
+    try:
+        from core.quota_governor import clear_all_signals
+
+        clear_all_signals()
+    except Exception:
+        pass
 
 
 def disabled_signals() -> set[str]:

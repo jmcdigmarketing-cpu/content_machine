@@ -203,7 +203,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 3. ~~Semantic trade validation~~ — shipped opt-in (`core/trade_validation.py`, `SEMANTIC_TRADE_VALIDATION`)
 4. ~~Creator coach surface (Phase S)~~ — shipped (`core/creator_coach.py`, `ops coach`; weekly digest gained "Next actions")
 
-**Up next:** batch generation · thumbnail A/B (Phase S remainder) · O11 remainder (migrate Apify + LLM router behind `core/quota_governor.py`). *(Signal-breaker persistence + key-hash invalidation shipped 2026-07-06 as the O11 governor seed — see [credit_efficiency.md](credit_efficiency.md) O11.)*
+**Up next:** thumbnail A/B (Phase S remainder) · O11 remainder (migrate Apify + LLM router behind `core/quota_governor.py`). *(Shipped 2026-07-06: signal-breaker persistence + key-hash invalidation as the O11 governor seed — see [credit_efficiency.md](credit_efficiency.md) O11 — and batch generation, `ops batch-drafts`.)*
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
@@ -295,7 +295,7 @@ Turn the research spine into a compliance moat.
 - [x] **Semantic trade validation (2026-07-02, opt-in)** — `core/trade_validation.py`: extracts `player → team` trade claims from the script and warns when the pair never co-occurs on a single fact line (catches fused trades token grounding passes, e.g. real Giannis→Heat + invented Butler→Celtics). `SEMANTIC_TRADE_VALIDATION` (default **off** — higher false-positive risk); warns after the Fact-grounding section in `main.py`/`auto_generate`, never blocks. Tests: `tests/test_trade_validation.py`.
 - [x] **Headless key facts for `auto_generate` (2026-07-02)** — `--facts-file` (same parser as interactive `paste` mode — trade blocks work) + repeatable `--fact` lines; deduped/tip-filtered, saved in full to the vault, injected as ground truth, and echoed in the grounding report. Tests: `tests/test_auto_generate_facts.py`.
 - [ ] **Webhook / n8n / Zapier out** — emit run + publish events for external automation.
-- [ ] **Batch generation** — N ideas → N drafts in one unattended pass (feeds A/B + volume-with-variation).
+- [x] **Batch generation** — *shipped 2026-07-06:* `py -m scripts.ops batch-drafts --channel tapin --count 3` (or `py -m core.batch_generation` with explicit topics / `--file ideas.txt`). N ideas → N draft scripts unattended: discovery → best variant → recommended length → script/title/description saved to `output/<ch>/drafts/<ts>-<slug>/` (`draft.md` + `meta.json` with hook score, authenticity verdict, grounding flags, cost). Render-free by design — no TTS spend, no cadence impact; feeds A/B + volume-with-variation. Tests: `tests/test_batch_generation.py`.
 - [ ] **Observability** — structured run traces + timing dashboard (timings already captured).
 
 ---

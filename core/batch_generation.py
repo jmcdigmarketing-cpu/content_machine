@@ -1,0 +1,245 @@
+"""Batch generation — N ideas → N draft scripts in one unattended pass.
+
+Roadmap "Efficiency & integrations": feeds A/B and volume-with-variation
+without babysitting the interactive flow. Strictly headless (no input()) and
+render-free: each topic runs discovery → best variant → recommended length →
+script/title/description, then saves a review-ready draft folder under
+output/<channel>/drafts/<timestamp>-<slug>/ with the same quality checks the
+interactive flow shows (hook score, authenticity verdict, grounding flags).
+
+Nothing is rendered or published — drafts are cheap (LLM + signals only), so
+an unattended batch can't burn TTS credits or trip the cadence guardrail.
+
+    py -m core.batch_generation --channel tapin --count 3
+    py -m core.batch_generation --channel moneywise "Fed rate cut" "CPI print"
+    py -m core.batch_generation --file ideas.txt        # one topic per line
+    py -m scripts.ops batch-drafts --channel tapin --count 3
+
+Topic sources, in priority order: explicit CLI topics → --file lines →
+best-bet recommendations for the channel.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import time
+from dataclasses import dataclass, field
+from datetime import datetime
+
+from core.logging import get_logger
+
+logger = get_logger("core.batch_generation")
+
+
+@dataclass
+class DraftOutcome:
+    topic: str
+    ok: bool = False
+    title: str = ""
+    variant: str = ""
+    score: float = 0.0
+    hook_score: int | None = None
+    hook_verdict: str = ""
+    authenticity_verdict: str = ""
+    ungrounded: list[str] = field(default_factory=list)
+    run_id: int | None = None
+    path: str = ""
+    error: str = ""
+    seconds: float = 0.0
+
+
+def _slug(topic: str, max_len: int = 40) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", topic.lower()).strip("-")
+    return slug[:max_len].rstrip("-") or "draft"
+
+
+def _drafts_dir(channel_id: str) -> str:
+    from core.output_paths import channel_output_root
+
+    path = os.path.join(channel_output_root(channel_id), "drafts")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def collect_topics(
+    channel_id: str,
+    topics: list[str] | None = None,
+    file: str | None = None,
+    count: int = 3,
+) -> list[str]:
+    """Explicit topics → file lines → best bets, capped at `count` for implicit sources."""
+    if topics:
+        return [t.strip() for t in topics if t.strip()]
+    if file:
+        with open(file, encoding="utf-8") as f:
+            lines = [ln.strip() for ln in f if ln.strip() and not ln.lstrip().startswith("#")]
+        return lines
+    try:
+        from core.best_bet import get_best_bets
+
+        return [b.topic for b in get_best_bets(channel_id, count)]
+    except Exception as exc:
+        logger.warning("No topics given and best bets unavailable: %s", exc)
+        return []
+
+
+def _length_choice(channel_id: str, topic: str) -> str:
+    try:
+        from core.length_recommender import get_recommended_length
+
+        return get_recommended_length(channel_id, topic).length_choice
+    except Exception:
+        return "2"
+
+
+def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
+    """One headless draft: discovery → best variant → script → saved folder."""
+    from core.pipeline import run_discovery, run_pipeline
+
+    out = DraftOutcome(topic=topic)
+    started = time.time()
+
+    discovery = run_discovery(topic, channel_id=channel_id)
+    if not discovery.evaluated:
+        out.error = "discovery returned no scored variants"
+        return out
+    variant_index = max(
+        range(len(discovery.evaluated)), key=lambda i: discovery.evaluated[i][1] or 0
+    )
+    best_topic, best_score, best_signals = discovery.evaluated[variant_index]
+    out.variant, out.score = best_topic, float(best_score or 0)
+
+    result = run_pipeline(
+        topic,
+        discovery=discovery,
+        variant_index=variant_index,
+        length_choice=_length_choice(channel_id, best_topic),
+        proceed_video=False,
+        channel_id=channel_id,
+    )
+    if result.aborted or not (result.script or "").strip():
+        out.error = result.abort_reason or "pipeline produced no script"
+        return out
+    out.title, out.run_id = result.title, result.run_id
+
+    # Same quality surface the interactive flow prints, persisted instead.
+    try:
+        from core.hook_score import score_script_hook
+
+        hook = score_script_hook(result.script)
+        out.hook_score, out.hook_verdict = hook.score, hook.verdict
+    except Exception:
+        pass
+    fact_count = 0
+    try:
+        from core.fact_enrichment import _fact_line_count, enrich_facts
+
+        fact_count = _fact_line_count(
+            enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
+        )
+    except Exception:
+        pass
+    try:
+        from core.authenticity import evaluate_authenticity
+
+        out.authenticity_verdict = evaluate_authenticity(
+            result.script, channel_id, fact_count=fact_count, exclude_run_id=result.run_id
+        ).verdict
+    except Exception:
+        pass
+    out.ungrounded = list(result.features.get("ungrounded_entities") or [])
+
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    folder = os.path.join(_drafts_dir(channel_id), f"{stamp}-{_slug(best_topic)}")
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "draft.md"), "w", encoding="utf-8") as f:
+        f.write(f"# {result.title or best_topic}\n\n")
+        f.write(f"**Topic:** {topic}\n**Angle:** {best_topic} (score {best_score})\n\n")
+        f.write("## Script\n\n")
+        f.write(result.script.strip() + "\n\n")
+        f.write("## Description\n\n")
+        f.write((result.description or "").strip() + "\n")
+        if result.tags:
+            f.write("\n## Tags\n\n" + ", ".join(result.tags) + "\n")
+    meta = {
+        "topic": topic,
+        "variant": best_topic,
+        "variant_score": best_score,
+        "title": result.title,
+        "run_id": result.run_id,
+        "channel_id": channel_id,
+        "hook_score": out.hook_score,
+        "hook_verdict": out.hook_verdict,
+        "authenticity_verdict": out.authenticity_verdict,
+        "fact_count": fact_count,
+        "ungrounded_entities": out.ungrounded,
+        "cost": result.features.get("cost"),
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    with open(os.path.join(folder, "meta.json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2, default=str)
+
+    out.path, out.ok, out.seconds = folder, True, round(time.time() - started, 1)
+    return out
+
+
+def run_batch(channel_id: str, topics: list[str]) -> list[DraftOutcome]:
+    """Generate a draft per topic; one failure never kills the batch."""
+    outcomes: list[DraftOutcome] = []
+    for i, topic in enumerate(topics, 1):
+        logger.info("Batch draft %d/%d: %s", i, len(topics), topic)
+        try:
+            outcomes.append(generate_draft(topic, channel_id))
+        except Exception as exc:
+            logger.warning("Draft failed for %r: %s", topic, exc)
+            outcomes.append(DraftOutcome(topic=topic, error=str(exc)))
+    try:
+        from core.pipeline import finalize_run_observability
+
+        finalize_run_observability()
+    except Exception:
+        pass
+    return outcomes
+
+
+def render_summary(outcomes: list[DraftOutcome]) -> str:
+    lines = ["", "Batch drafts", "=" * 40]
+    for o in outcomes:
+        if o.ok:
+            hook = f"hook {o.hook_score}" if o.hook_score is not None else "hook n/a"
+            auth = o.authenticity_verdict or "n/a"
+            flags = f", {len(o.ungrounded)} ungrounded" if o.ungrounded else ""
+            lines.append(f"  OK   {o.title or o.variant}")
+            lines.append(f"       {hook} ({o.hook_verdict}), authenticity {auth}{flags}")
+            lines.append(f"       {o.path}  [{o.seconds:.0f}s]")
+        else:
+            lines.append(f"  FAIL {o.topic} — {o.error}")
+    made = sum(1 for o in outcomes if o.ok)
+    lines.append(f"  {made}/{len(outcomes)} drafts saved")
+    return "\n".join(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="N ideas -> N draft scripts, unattended")
+    parser.add_argument("topics", nargs="*", help="Topics (default: best bets)")
+    parser.add_argument("--channel", default="tapin", help="Channel id (default: tapin)")
+    parser.add_argument("--file", default=None, help="File with one topic per line")
+    parser.add_argument(
+        "--count", type=int, default=3, help="How many best-bet topics when none given"
+    )
+    args = parser.parse_args(argv)
+
+    topics = collect_topics(args.channel, args.topics, args.file, args.count)
+    if not topics:
+        print("No topics to draft (give topics, --file, or record analytics for best bets).")
+        return 1
+    outcomes = run_batch(args.channel, topics)
+    print(render_summary(outcomes))
+    return 0 if any(o.ok for o in outcomes) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

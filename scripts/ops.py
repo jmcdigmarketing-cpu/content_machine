@@ -325,6 +325,15 @@ def cmd_daily_brief(args: argparse.Namespace) -> int:
     return _run_batch(["daily-sync", "coach", "reliability", "status"], args)
 
 
+@_register("batch-drafts", "N ideas -> N draft scripts, unattended (no render/publish)")
+def cmd_batch_drafts(args: argparse.Namespace) -> int:
+    """Headless volume-with-variation: best-bet topics (or py -m core.batch_generation
+    with explicit topics/--file) -> scripts + quality checks in output/<ch>/drafts/."""
+    return _run_module(
+        "core.batch_generation", "--channel", args.channel, "--count", str(args.count)
+    )
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Content OS operator commands (individual or batch)",
@@ -351,6 +360,12 @@ def main(argv=None) -> int:
         type=int,
         default=0,
         help="Worker poll interval in seconds (jobs.worker only)",
+    )
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=3,
+        help="How many drafts to generate (batch-drafts only)",
     )
     parser.add_argument(
         "--run-id",

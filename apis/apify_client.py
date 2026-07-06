@@ -152,9 +152,9 @@ def _sync_persistent(purpose: str) -> None:
         return
     _state["synced"] = True
     try:
-        from core.quota_state import is_exhausted
+        from core.quota_governor import apify_is_exhausted
 
-        exhausted, reason = is_exhausted("apify", purpose)
+        exhausted, reason = apify_is_exhausted(purpose)
     except Exception:
         return
     if exhausted:
@@ -166,10 +166,10 @@ def _sync_persistent(purpose: str) -> None:
 def _persist_exhausted(purpose: str, reason: str, *, status_code: int | None = None) -> None:
     """Remember a hard credit/auth failure across runs (TTL'd)."""
     try:
-        from core.quota_state import mark_exhausted
+        from core.quota_governor import apify_mark_exhausted
 
         ttl = _persist_ttl_for_status(status_code) if status_code is not None else _persist_ttl()
-        mark_exhausted("apify", purpose, reason, ttl_seconds=ttl)
+        apify_mark_exhausted(purpose, reason, ttl_seconds=ttl)
     except Exception:
         pass
 
@@ -316,20 +316,25 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
     # O3: reuse a recent usage reading instead of re-hitting /users/me on
     # back-to-back runs (the limit/usage barely moves minute to minute).
     try:
-        from core.quota_state import get_value, set_value
+        from core.quota_governor import apify_get_usage, apify_set_usage
     except Exception:
-        get_value = set_value = None  # type: ignore[assignment]
-    if get_value is not None:
-        cached = get_value(f"apify_usage:{purpose}")
-        if isinstance(cached, dict):
-            usage = cached.get("usage")
-            limit = cached.get("limit")
-            if isinstance(usage, int | float) and isinstance(limit, int | float) and limit > 0:
-                # Still enforce the operator budget against the cached reading.
-                available, status = _evaluate_apify_usage(float(usage), float(limit), purpose)
-                if not available:
-                    return available, status
-                return True, f"ON (${usage:.2f}/${limit:.2f} used, cached)"
+
+        def apify_get_usage(_purpose: str) -> dict | None:
+            return None
+
+        def apify_set_usage(_purpose: str, _usage: float, _limit: float, _ttl: int) -> None:
+            return None
+
+    cached = apify_get_usage(purpose)
+    if isinstance(cached, dict):
+        usage = cached.get("usage")
+        limit = cached.get("limit")
+        if isinstance(usage, int | float) and isinstance(limit, int | float) and limit > 0:
+            # Still enforce the operator budget against the cached reading.
+            available, status = _evaluate_apify_usage(float(usage), float(limit), purpose)
+            if not available:
+                return available, status
+            return True, f"ON (${usage:.2f}/${limit:.2f} used, cached)"
 
     try:
         resp = requests.get(f"{_BASE}/users/me", params={"token": api_key}, timeout=12)
@@ -355,12 +360,8 @@ def apify_preflight(purpose: str = "main") -> tuple[bool, str]:
         if isinstance(usage, int | float):
             limit_val = float(limit) if isinstance(limit, int | float) else 0.0
             available, status = _evaluate_apify_usage(float(usage), limit_val, purpose)
-            if available and limit_val > 0 and set_value is not None:
-                set_value(
-                    f"apify_usage:{purpose}",
-                    {"usage": float(usage), "limit": limit_val},
-                    _usage_cache_ttl(),
-                )
+            if available and limit_val > 0:
+                apify_set_usage(purpose, float(usage), limit_val, _usage_cache_ttl())
             return available, status
     except Exception as exc:
         logger.debug("Apify preflight parse error: %s", exc)

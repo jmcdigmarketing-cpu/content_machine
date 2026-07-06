@@ -372,9 +372,10 @@ def _llm_daily_budget() -> float | None:
 
 
 def _today_spend_key() -> str:
-    import datetime
+    # Thin alias — the governor owns the key format (core/quota_governor.py, O11).
+    from core.quota_governor import llm_today_spend_key
 
-    return f"llm_spend:{datetime.date.today().isoformat()}"
+    return llm_today_spend_key()
 
 
 def _price_call(provider: str, model: str, in_tok: int, out_tok: int) -> float:
@@ -400,9 +401,9 @@ def _add_llm_spend(cost: float) -> None:
     if cost <= 0 or _llm_daily_budget() is None:
         return
     try:
-        from core.quota_state import increment_value
+        from core.quota_governor import llm_add_spend
 
-        increment_value(_today_spend_key(), cost, ttl_seconds=48 * 3600)
+        llm_add_spend(cost)
     except Exception:
         pass
 
@@ -412,9 +413,9 @@ def _over_llm_budget() -> bool:
     if budget is None:
         return False
     try:
-        from core.quota_state import get_value
+        from core.quota_governor import llm_spend_today
 
-        return float(get_value(_today_spend_key(), 0.0) or 0.0) >= budget
+        return llm_spend_today() >= budget
     except Exception:
         return False
 
@@ -424,9 +425,9 @@ def reset_llm_spend() -> None:
     global _budget_warned
     _budget_warned = False
     try:
-        from core.quota_state import set_value
+        from core.quota_governor import llm_reset_spend
 
-        set_value(_today_spend_key(), 0.0, ttl_seconds=1)
+        llm_reset_spend()
     except Exception:
         pass
 

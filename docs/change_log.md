@@ -6,6 +6,32 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### O11 complete: unified quota governor — 2026-07-06
+
+*Closes the credit-efficiency backlog (O1–O11). Suite 720 green.*
+
+- **`core/quota_governor.py` is now the single façade over the cross-run
+  persistence store** (`core/quota_state.py` → `data/quota_state.json`). Per
+  decisions.md §13 it unifies **state + persistence + reporting**, not the check
+  points — the Apify global breaker, per-signal session breaker, and LLM provider
+  breaker remain separate layers that now all read/write through the governor.
+- **Apify migrated** — `apis/apify_client.py` `_sync_persistent` /
+  `_persist_exhausted` + the O3 preflight usage cache now call
+  `apify_is_exhausted` / `apify_mark_exhausted` / `apify_get_usage` /
+  `apify_set_usage`. TTL/reset policy (auth 30m, 402 → O10 cycle reset) stays in
+  `apify_client`.
+- **LLM router migrated** — `_add_llm_spend` / `_over_llm_budget` /
+  `reset_llm_spend` go through `llm_add_spend` / `llm_spend_today` /
+  `llm_reset_spend`; `_today_spend_key` is a thin alias for the governor's
+  `llm_today_spend_key` (key format has one owner). Budget guard stays in the
+  router.
+- **`snapshot()`** — one fail-open read of everything persisted
+  (apify exhaustion + usage cache, LLM spend today, persisted signal disables);
+  `core/reliability.py` sections now read via governor facades.
+- No env/file-format changes; same scopes/keys — all pre-existing quota tests
+  pass unmodified. New tests in `tests/test_quota_governor.py`: Apify facade
+  roundtrips, LLM spend accumulate/reset, snapshot shape.
+
 ### Terminal UI themes + daily-brief batch — 2026-07-02
 
 *The roadmap's "themeable skins" item, executed. Presentation-only: no pipeline

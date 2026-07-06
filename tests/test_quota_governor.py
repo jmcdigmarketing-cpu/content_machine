@@ -1,5 +1,6 @@
 """Tests for core/quota_governor.py — persisted signal breaker records with
-key-hash invalidation (the O11 seed). State file always isolated."""
+key-hash invalidation, plus the Apify/LLM facades and unified snapshot (O11).
+State file always isolated."""
 
 import os
 import tempfile
@@ -89,6 +90,82 @@ class TestKeyHashInvalidation(GovernorCase):
         qg.disable_signal("wikipedia", "upstream_error")
         with patch.dict("os.environ", {"FINNHUB_API_KEY": "irrelevant-change"}):
             self.assertIn("wikipedia", qg.persisted_disabled_signals())
+
+
+class TestApifyFacade(GovernorCase):
+    def test_exhausted_roundtrip(self):
+        qg.apify_mark_exhausted("main", "Apify monthly credits exhausted (402)", ttl_seconds=3600)
+        exhausted, reason = qg.apify_is_exhausted("main")
+        self.assertTrue(exhausted)
+        self.assertIn("402", reason)
+
+    def test_not_exhausted_by_default(self):
+        self.assertEqual(qg.apify_is_exhausted("main"), (False, ""))
+
+    def test_expired_record_reads_not_exhausted(self):
+        qg.apify_mark_exhausted("main", "r", ttl_seconds=-1)
+        self.assertEqual(qg.apify_is_exhausted("main"), (False, ""))
+
+    def test_clear(self):
+        qg.apify_mark_exhausted("main", "r", ttl_seconds=3600)
+        qg.apify_clear("main")
+        self.assertEqual(qg.apify_is_exhausted("main"), (False, ""))
+
+    def test_purposes_are_isolated(self):
+        qg.apify_mark_exhausted("tiktok", "r", ttl_seconds=3600)
+        self.assertFalse(qg.apify_is_exhausted("main")[0])
+        self.assertTrue(qg.apify_is_exhausted("tiktok")[0])
+
+    def test_usage_cache_roundtrip(self):
+        self.assertIsNone(qg.apify_get_usage("main"))
+        qg.apify_set_usage("main", 1.25, 5.0, ttl_seconds=3600)
+        self.assertEqual(qg.apify_get_usage("main"), {"usage": 1.25, "limit": 5.0})
+
+    def test_usage_cache_expires(self):
+        qg.apify_set_usage("main", 1.0, 5.0, ttl_seconds=-1)
+        self.assertIsNone(qg.apify_get_usage("main"))
+
+
+class TestLlmFacade(GovernorCase):
+    def test_spend_accumulates_and_resets(self):
+        self.assertEqual(qg.llm_spend_today(), 0.0)
+        qg.llm_add_spend(0.10)
+        qg.llm_add_spend(0.05)
+        self.assertAlmostEqual(qg.llm_spend_today(), 0.15)
+        qg.llm_reset_spend()
+        self.assertEqual(qg.llm_spend_today(), 0.0)
+
+    def test_zero_or_negative_spend_ignored(self):
+        qg.llm_add_spend(0.0)
+        qg.llm_add_spend(-1.0)
+        self.assertEqual(qg.llm_spend_today(), 0.0)
+
+    def test_key_is_date_scoped(self):
+        self.assertTrue(qg.llm_today_spend_key().startswith("llm_spend:"))
+
+
+class TestSnapshot(GovernorCase):
+    def test_empty_store_shape(self):
+        snap = qg.snapshot()
+        self.assertEqual(
+            snap,
+            {
+                "apify": {"exhausted": False, "reason": "", "usage": None},
+                "llm": {"spend_today": 0.0},
+                "signals": {"persisted": {}},
+            },
+        )
+
+    def test_populated_snapshot(self):
+        qg.apify_mark_exhausted("main", "402", ttl_seconds=3600)
+        qg.apify_set_usage("main", 2.0, 5.0, ttl_seconds=3600)
+        qg.llm_add_spend(0.25)
+        qg.disable_signal("finnhub", "no_key")
+        snap = qg.snapshot()
+        self.assertTrue(snap["apify"]["exhausted"])
+        self.assertEqual(snap["apify"]["usage"], {"usage": 2.0, "limit": 5.0})
+        self.assertAlmostEqual(snap["llm"]["spend_today"], 0.25)
+        self.assertEqual(snap["signals"]["persisted"], {"finnhub": "no_key"})
 
 
 if __name__ == "__main__":

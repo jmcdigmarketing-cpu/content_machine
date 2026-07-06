@@ -39,12 +39,12 @@ def _apify_section() -> dict[str, Any]:
     except Exception:
         out["status"] = "n/a"
     try:
-        from core.quota_state import get_value, is_exhausted
+        from core.quota_governor import apify_get_usage, apify_is_exhausted
 
-        exhausted, reason = is_exhausted("apify", "main")
+        exhausted, reason = apify_is_exhausted("main")
         out["persisted_exhausted"] = exhausted
         out["persisted_reason"] = reason
-        out["usage_cache"] = get_value("apify_usage:main")
+        out["usage_cache"] = apify_get_usage("main")
     except Exception:
         pass
     try:
@@ -61,12 +61,12 @@ def _apify_section() -> dict[str, Any]:
 def _llm_section() -> dict[str, Any]:
     out: dict[str, Any] = {"daily_budget": _f("LLM_DAILY_BUDGET_USD")}
     try:
-        from core.llm_router import _today_spend_key, disabled_providers
+        from core.llm_router import disabled_providers
 
         out["disabled_providers"] = disabled_providers()
-        from core.quota_state import get_value
+        from core.quota_governor import llm_spend_today
 
-        out["spend_today"] = float(get_value(_today_spend_key(), 0.0) or 0.0)
+        out["spend_today"] = llm_spend_today()
     except Exception:
         out["disabled_providers"] = {}
     return out

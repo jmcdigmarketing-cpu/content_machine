@@ -1,17 +1,25 @@
-"""Unified quota governor — the O11 seed (credit_efficiency.md, Tier 4).
+"""Unified quota governor — O11 (credit_efficiency.md, Tier 4).
 
-Stage shipped here: **persistent per-signal breaker records with key-hash
-invalidation**. A hard signal trip (quota/auth/no_key) is remembered across
-runs in `data/quota_state.json` (scope `"signal"`), so a fresh process skips
-the failing round-trip — and a *changed credential* clears the record
-immediately instead of waiting out the TTL (a fixed key means the failure
-reason is gone).
+The **single module that talks to the cross-run persistence store**
+(`core/quota_state.py` → `data/quota_state.json`) on behalf of every credit
+subsystem. Three areas of state live here behind one façade:
+
+- **Signals** (scope `"signal"`) — persistent per-signal breaker records with
+  key-hash invalidation. A hard trip (quota/auth/no_key) is remembered across
+  runs, and a *changed credential* clears the record immediately instead of
+  waiting out the TTL (a fixed key means the failure reason is gone).
+- **Apify** (scope `"apify"`) — the global-breaker exhaustion record + the
+  cached `/users/me` usage reading, consulted by `apis/apify_client.py`.
+- **LLM** (kv `llm_spend:<date>`) — today's cross-run spend, consulted by
+  `core/llm_router.py`'s daily-budget downgrade.
 
 Per decisions.md §13 the governor unifies **state + persistence + reporting**,
-NOT the distinct check points: the Apify global breaker and the per-signal
-session breaker remain separate layers that consult this store. Apify and the
-LLM router still talk to `core/quota_state.py` directly — migrating them
-behind this module is the remaining O11 work.
+NOT the distinct check points: the Apify global breaker, the per-signal session
+breaker, and the LLM provider breaker remain separate layers — they just read
+and write their persisted state through this one module (and `snapshot()` gives
+the dashboard a single cross-run view). TTL/reset *policy* stays with each
+subsystem (e.g. Apify's reset-window TTL); the governor owns *where and how*
+state is stored.
 
 Everything here is fail-open: any storage error reads as "nothing persisted".
 """
@@ -134,3 +142,110 @@ def persisted_disabled_signals() -> dict[str, str]:
                 continue
         out[name] = reason
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Apify scope — global-breaker exhaustion + cached usage reading.
+# The check point (the process breaker `_state`) stays in apify_client; only its
+# cross-run persistence is routed here. TTL policy stays in apify_client too.
+# --------------------------------------------------------------------------- #
+_APIFY_SCOPE = "apify"
+
+
+def _apify_usage_key(purpose: str) -> str:
+    return f"apify_usage:{purpose}"
+
+
+def apify_mark_exhausted(purpose: str, reason: str, ttl_seconds: int) -> None:
+    """Persist a hard Apify credit/auth failure across runs (caller sets the TTL)."""
+    try:
+        quota_state.mark_exhausted(_APIFY_SCOPE, purpose, reason, ttl_seconds=ttl_seconds)
+    except Exception as exc:
+        logger.debug("apify persistence skipped for '%s': %s", purpose, exc)
+
+
+def apify_is_exhausted(purpose: str) -> tuple[bool, str]:
+    """(exhausted, reason) for a persisted Apify trip; fail-open to not-exhausted."""
+    try:
+        return quota_state.is_exhausted(_APIFY_SCOPE, purpose)
+    except Exception:
+        return False, ""
+
+
+def apify_clear(purpose: str) -> None:
+    try:
+        quota_state.clear_exhausted(_APIFY_SCOPE, purpose)
+    except Exception:
+        pass
+
+
+def apify_get_usage(purpose: str) -> dict | None:
+    """Last cached `/users/me` reading `{usage, limit}` or None if missing/expired."""
+    try:
+        val = quota_state.get_value(_apify_usage_key(purpose))
+    except Exception:
+        return None
+    return val if isinstance(val, dict) else None
+
+
+def apify_set_usage(purpose: str, usage: float, limit: float, ttl_seconds: int) -> None:
+    try:
+        quota_state.set_value(
+            _apify_usage_key(purpose), {"usage": usage, "limit": limit}, ttl_seconds
+        )
+    except Exception as exc:
+        logger.debug("apify usage cache skipped for '%s': %s", purpose, exc)
+
+
+# --------------------------------------------------------------------------- #
+# LLM scope — today's cross-run spend (drives the daily-budget downgrade).
+# Budget/downgrade policy stays in llm_router; the governor owns the key format
+# and the store access so the spend ledger has one home.
+# --------------------------------------------------------------------------- #
+
+
+def llm_today_spend_key() -> str:
+    import datetime
+
+    return f"llm_spend:{datetime.date.today().isoformat()}"
+
+
+def llm_add_spend(cost: float, *, key: str | None = None, ttl_seconds: int = 48 * 3600) -> None:
+    if cost <= 0:
+        return
+    try:
+        quota_state.increment_value(key or llm_today_spend_key(), cost, ttl_seconds=ttl_seconds)
+    except Exception:
+        pass
+
+
+def llm_spend_today(key: str | None = None) -> float:
+    try:
+        return float(quota_state.get_value(key or llm_today_spend_key(), 0.0) or 0.0)
+    except Exception:
+        return 0.0
+
+
+def llm_reset_spend(key: str | None = None) -> None:
+    try:
+        quota_state.set_value(key or llm_today_spend_key(), 0.0, ttl_seconds=1)
+    except Exception:
+        pass
+
+
+# --------------------------------------------------------------------------- #
+# Unified cross-run snapshot — one read for the reliability dashboard.
+# In-process-only breakers (session signal/LLM) are layered on by the caller.
+# --------------------------------------------------------------------------- #
+def snapshot(apify_purpose: str = "main") -> dict:
+    """Everything the governor persists, in one fail-open read."""
+    exhausted, reason = apify_is_exhausted(apify_purpose)
+    return {
+        "apify": {
+            "exhausted": exhausted,
+            "reason": reason,
+            "usage": apify_get_usage(apify_purpose),
+        },
+        "llm": {"spend_today": llm_spend_today()},
+        "signals": {"persisted": persisted_disabled_signals()},
+    }

@@ -34,8 +34,8 @@ no paid signal will run** and **reuses a cached usage reading**, the LLM router 
 both Apify (`APIFY_MONTHLY_BUDGET_USD`) and LLM (`LLM_DAILY_BUDGET_USD`) that degrade
 *before* the hard walls, and a **reliability dashboard** (`ops reliability`) +
 **cache-hit instrumentation** make it all visible. See O1–O9 below (marked ✅).
-Remaining: signal-breaker persistence, reset-window awareness (O10), and the unified
-governor (O11).
+O10 (reset windows) and O11 (the unified governor) shipped 2026-07-02 / 2026-07-06 —
+**the O1–O11 backlog is complete**; open follow-ups are listed under O11 as O12 candidates.
 
 ---
 
@@ -126,22 +126,32 @@ pointless re-checks against a wall that won't move until the cycle turns.*
 
 ### Tier 4 — unify
 
-**O11. Single quota governor** `[L]` — 🟡 **SEED SHIPPED (2026-07-06)**
-Extract one `core/quota_governor.py` holding per-provider state (usage, ceiling,
-breaker, reset window, ledger), consulted by Apify, the signal breaker, and the LLM
-router. The three scattered breakers become one source of truth with one
-persistence file (`data/quota_state.json`) and one dashboard. Endpoint of O2–O10.
+**O11. Single quota governor** `[L]` — ✅ **SHIPPED (2026-07-06)**
+`core/quota_governor.py` is now the **single module that talks to the cross-run
+persistence store** (`core/quota_state.py` → `data/quota_state.json`) on behalf
+of every credit subsystem — the endpoint of O2–O10:
 
-*Shipped so far:* `core/quota_governor.py` exists and owns **persistent
-per-signal breaker records with key-hash invalidation** (the O2 leftover — see
-below): a hard signal trip (quota/auth/no_key) persists across runs (scope
-`"signal"` in `data/quota_state.json`, `SIGNAL_BREAKER_PERSIST`, default on),
-and a changed credential env var (`_SIGNAL_CREDENTIAL_ENVS` map) clears the
-record immediately instead of waiting out the TTL. 429 cooldowns stay
-session-only. Surfaced in `ops reliability` ("Signals disabled (persisted…)").
-Tests: `tests/test_quota_governor.py`, `tests/test_circuit_breaker.py`.
-*Remaining O11 work:* migrate `apis/apify_client.py` and `core/llm_router.py`
-consultation behind the governor; unified snapshot for the dashboard.
+- **Signals** (scope `"signal"`): persistent per-signal breaker records with
+  **key-hash invalidation** (the O2 leftover): a hard trip (quota/auth/no_key)
+  persists across runs (`SIGNAL_BREAKER_PERSIST`, default on), and a changed
+  credential env var (`_SIGNAL_CREDENTIAL_ENVS` map) clears the record
+  immediately instead of waiting out the TTL. 429 cooldowns stay session-only.
+- **Apify** (scope `"apify"`): `apify_client._sync_persistent` /
+  `_persist_exhausted` and the preflight usage cache (O3) route through
+  `apify_is_exhausted` / `apify_mark_exhausted` / `apify_get_usage` /
+  `apify_set_usage`. TTL/reset *policy* (auth 30m, 402 → cycle reset per O10)
+  stays in `apify_client`.
+- **LLM** (kv `llm_spend:<date>`): the router's daily-spend tracking (O7) goes
+  through `llm_add_spend` / `llm_spend_today` / `llm_reset_spend`; the
+  budget-configured guard stays in the router.
+- **`snapshot()`** — one fail-open read of everything persisted (apify / llm /
+  signals), consumed by `ops reliability` alongside the in-process breakers.
+
+No env or file-format changes — same scopes/keys, `core/quota_state.py` remains
+the dumb store underneath. Tests: `tests/test_quota_governor.py` (facade
+roundtrips, key-hash invalidation, snapshot shape), `tests/test_circuit_breaker.py`.
+*Follow-ups (O12 candidates):* YouTube units under a governor scope; per-provider
+spend in the run cost line; reliability time series.
 
 > **Do not collapse the layered checks themselves.** Per [decisions.md](decisions.md)
 > §13, the Apify global breaker and the per-signal session breaker are *intentionally
@@ -158,7 +168,7 @@ consultation behind the governor; unified snapshot for the dashboard.
 4. ✅ **O4 + O7** — operator budgets for Apify + LLM. *(wave 2)*
 5. ✅ **O8 + O9** — instrument cache hits, surface the reliability dashboard. *(wave 3)*
 6. ✅ **O10** — reset-window auto-re-enable (`core/reset_window.py`). *(2026-07-02)*
-7. **O11** (the governor) once the pieces exist to unify. *(next)*
+7. ✅ **O11** — the governor: one persistence façade + unified snapshot. *(2026-07-06)*
 
 ~~Also still open from O2: **signal-breaker persistence** (needs key-hash
 invalidation so a fixed key clears the record).~~ ✅ **SHIPPED (2026-07-06)** as

@@ -11,7 +11,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-02 — **2026-07 focus wave shipped** on `fix/credit-efficiency-review` (PR #24); 613 tests green. Adds O10 reset-window auto-re-enable, opt-in semantic trade validation, the Phase S creator coach (`ops coach`) + weekly-digest next actions, and headless key facts for `auto_generate` — on top of the fact-first pipeline (angles at discovery, title after facts + script).
+Last updated: 2026-07-06 — **O11 complete** (unified quota governor — the O1–O11 credit-efficiency backlog is done) on `feat/reddit-free-backend-and-signal-persistence`; 720 tests green. Same-day wave: Reddit free backend, batch generation (`ops batch-drafts`), script-lever + thumbnail A/B experiments, webhook events out. New: **"Candidate phases — 2026-H2 expansion"** section (Phases T–W + unphased levers). Prior wave (2026-07-02, PR #24): O10 reset windows, semantic trade validation, creator coach, headless key facts.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -297,7 +297,63 @@ Turn the research spine into a compliance moat.
 - [x] **Headless key facts for `auto_generate` (2026-07-02)** — `--facts-file` (same parser as interactive `paste` mode — trade blocks work) + repeatable `--fact` lines; deduped/tip-filtered, saved in full to the vault, injected as ground truth, and echoed in the grounding report. Tests: `tests/test_auto_generate_facts.py`.
 - [x] **Webhook / n8n / Zapier out** — *shipped 2026-07-06:* `core/events.py` POSTs `{"event", "at", "payload"}` to `EVENT_WEBHOOK_URL` on `run_completed` (every pipeline finalize), `video_published` (YouTube upload/schedule success, includes video URL), and `batch_completed` (`ops batch-drafts` summary). Fire-and-forget on a daemon thread — a dead webhook can never stall a run; `EVENT_WEBHOOK_EVENTS` csv filters types. Pairs with a free self-hosted n8n for Discord pings, cross-posting, spreadsheets. Tests: `tests/test_events.py`.
 - [x] **Batch generation** — *shipped 2026-07-06:* `py -m scripts.ops batch-drafts --channel tapin --count 3` (or `py -m core.batch_generation` with explicit topics / `--file ideas.txt`). N ideas → N draft scripts unattended: discovery → best variant → recommended length → script/title/description saved to `output/<ch>/drafts/<ts>-<slug>/` (`draft.md` + `meta.json` with hook score, authenticity verdict, grounding flags, cost). Render-free by design — no TTS spend, no cadence impact; feeds A/B + volume-with-variation. Tests: `tests/test_batch_generation.py`.
-- [ ] **Observability** — structured run traces + timing dashboard (timings already captured).
+- [ ] **Observability** — structured run traces + timing dashboard (timings already captured). *(promoted to **Phase T** below.)*
+
+---
+
+## Candidate phases — 2026-H2 expansion (proposed 2026-07-06)
+
+*Grounded in [vision.md](vision.md)'s spike list, [operating_plan.md](operating_plan.md)'s
+pace projections, and [content_intelligence_roadmap.md](content_intelligence_roadmap.md)'s
+evolution path. All YouTube-native or platform-free — no Instagram/TikTok platform
+linking (Phase M stays deferred), no Benable work (parked). Ordered by leverage;
+ordering reflects risk/impact, not commitment.*
+
+### Phase T — Observability & run traces  *(do first — feeds everything after it)*
+*Promotes the long-standing "Observability" efficiency item. vision.md's thesis: the
+learning advantage compounds only if every run leaves a machine-readable trace.*
+- [ ] Structured per-run trace: signals used (+ cache hit/miss per signal), LLM calls
+  (tier/provider/tokens/cost), phase timings, grounding + authenticity verdicts,
+  experiment arms — one JSON per run (extends `finalize_run_observability()`).
+- [ ] `ops traces` viewer — recent runs, slowest phases, cost per run, failure hotspots.
+- [ ] Keep it write-only + fail-open in the pipeline (a broken trace must never stall a run).
+
+### Phase U — Unit-economics ledger  *(the measurement half of monetization)*
+*vision.md: contribution margin per content unit is "cheap to instrument now and
+impossible to reconstruct later". No affiliate dependency.*
+- [ ] Join per-video fully-loaded cost (`core/cost_meter.py`, already metered) to YouTube
+  Analytics `estimatedRevenue` in the metrics sync.
+- [ ] Surface contribution margin per video / per channel in `weekly-report` + `status`.
+- [ ] Channel-level trend: cost/video vs revenue/video over time (decides what to scale).
+
+### Phase V — Data-quality monitor  *(cheapest protective spike)*
+- [ ] Validator over signal payloads: missing-field rates, staleness, empty-result streaks
+  per signal; thresholds fail-open to warnings.
+- [ ] Surface in `ops reliability` (pairs with the O11 governor snapshot).
+
+### Phase W — Channel Health Agent
+*operating_plan's next-month item; composes existing pieces, no new data.*
+- [ ] Composite per-channel health score: cadence headroom, engagement trend,
+  authenticity trend, quota/breaker state, cost trend — on the weekly-report machinery.
+- [ ] `ops health` (and a line in `ops daily-brief`); each sub-score with a rationale
+  string, recommender-confidence style.
+
+### Intelligence & quality levers (unphased, independently shippable)
+- [ ] **Prompt-evolution eval set** — frozen rubric + golden topics so prompt changes are
+  measured, not vibed; pairs with the shipped A/B experiment harness (vision.md spike).
+- [ ] **Whisper local** *(promoted from Efficiency backlog)* — caption timing without
+  ElevenLabs timestamps; unlocks Phase R clip-from-source transcription.
+- [ ] **MoneyWise depth wave** ([domain-expansion.md](domain-expansion.md) ROI 9.5) —
+  earnings-calendar signal (free API), ticker-watchlist tracking, finance-tuned research
+  brief sections.
+- [ ] **Third-vertical groundwork: AI Tools / Tech** (ROI 9.0) — new-channel playbook dry
+  run: channel profile + SEO config + signal-coverage audit. *Groundwork only, not a
+  launch commitment.*
+- [ ] **Governor follow-ups (O12 candidates)** — YouTube units under a governor scope;
+  per-provider LLM spend in the run cost line; reliability time series
+  ([credit_efficiency.md](credit_efficiency.md) O11 follow-ups).
+- [ ] **Engineering hygiene** — CI coverage reporting (non-blocking), mypy-baseline
+  tightening tracking, render/publish test depth (the acknowledged soft spot).
 
 ---
 

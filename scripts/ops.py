@@ -179,6 +179,38 @@ def cmd_economics(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("grade", "Pre-publish report card for a run (--run-id required, Pillar 2)")
+def cmd_grade(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("grade requires --run-id (see 'ops traces' for recent ids)")
+        return 1
+    from core.video_grade import grade_run, render_grade
+
+    grade = grade_run(args.run_id)
+    if grade is None:
+        print(f"No persisted quality for run #{args.run_id} (pre-ledger run?)")
+        return 1
+    print(render_grade(grade))
+    return 0
+
+
+@_register("calibration", "Pre-publish grade vs realized engaged-rate (Pillar 2)")
+def cmd_calibration(args: argparse.Namespace) -> int:
+    from core.grade_calibration import render as render_calibration
+
+    print(render_calibration(args.channel))
+    return 0
+
+
+@_register("prompt-eval", "Golden-topic prompt evals: run (LLM cost) or compare last two")
+def cmd_prompt_eval(args: argparse.Namespace) -> int:
+    from core.prompt_evals import main as evals_main
+
+    action = "compare" if getattr(args, "compare", False) else "run"
+    extra = ["--channel", args.channel] if action == "run" else []
+    return evals_main([action, *extra])
+
+
 @_register("coach", "Daily creator coach — ranked ideas + why, post time, length, patterns")
 def cmd_coach(args: argparse.Namespace) -> int:
     from core.creator_coach import build_coach, render_coach
@@ -423,6 +455,11 @@ def main(argv=None) -> int:
         "--no-brief",
         action="store_true",
         help="Skip LLM brief in intelligence-report",
+    )
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        help="prompt-eval: compare the two most recent eval runs instead of generating",
     )
     args = parser.parse_args(argv)
     args.queue_upload = False

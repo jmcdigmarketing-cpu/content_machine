@@ -29,9 +29,13 @@ def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
     for log in uploads:
         metrics = _parse_metrics(log)
         views = metrics.get("views") or metrics.get("viewCount")
-        if views is not None:
+        # Engaged-rate is the loop's objective (Pillar 2 realignment) — views
+        # stay as the fallback outcome for pre-analytics-sync history.
+        engaged = metrics.get("engaged_rate")
+        if views is not None or engaged is not None:
             metrics_by_run[int(log.content_run_id)] = {
-                "views": int(views),
+                "views": int(views or 0),
+                "engaged_rate": float(engaged) if engaged is not None else None,
                 "youtube_video_id": log.youtube_video_id,
             }
 
@@ -60,6 +64,7 @@ def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
                 "topic": run.selected_topic,
                 "composite_score": score,
                 "views": outcome["views"],
+                "engaged_rate": outcome.get("engaged_rate"),
                 "youtube_video_id": outcome.get("youtube_video_id", ""),
             }
         )
@@ -81,12 +86,35 @@ def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
             "top_flagged": flagged[:8],
         }
 
+    # Backtest against engaged-rate when enough runs carry it — the metric the
+    # learning loop optimizes. Views remain the fallback for legacy history.
+    engaged_outcomes = [r for r in with_outcomes if r.get("engaged_rate") is not None]
+    if len(engaged_outcomes) >= 5:
+        avg_rate = sum(r["engaged_rate"] for r in engaged_outcomes) / len(engaged_outcomes)
+        hits = [r for r in engaged_outcomes if r["engaged_rate"] >= avg_rate]
+        hit_rate = len(hits) / len(engaged_outcomes)
+        return {
+            "status": "ok",
+            "metric": "engaged_rate",
+            "flagged_opportunities": n_flagged,
+            "runs_with_metrics": len(engaged_outcomes),
+            "hit_rate": round(hit_rate, 3),
+            "avg_engaged_rate": round(avg_rate, 4),
+            "score_threshold": _FLAG_THRESHOLD,
+            "summary": (
+                f"Of {len(engaged_outcomes)} flagged publishes, {len(hits)} met or beat "
+                f"channel average engaged-rate ({avg_rate:.1%}) — hit rate {hit_rate:.0%}."
+            ),
+            "sample_outcomes": engaged_outcomes[:10],
+        }
+
     avg_views = sum(r["views"] for r in with_outcomes) / n_outcomes
     hits = [r for r in with_outcomes if r["views"] >= avg_views]
     hit_rate = len(hits) / n_outcomes
 
     return {
         "status": "ok",
+        "metric": "views",
         "flagged_opportunities": n_flagged,
         "runs_with_metrics": n_outcomes,
         "hit_rate": round(hit_rate, 3),
@@ -94,7 +122,8 @@ def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
         "score_threshold": _FLAG_THRESHOLD,
         "summary": (
             f"Of {n_outcomes} flagged publishes, {len(hits)} met or beat "
-            f"channel average views ({avg_views:.0f}) — hit rate {hit_rate:.0%}."
+            f"channel average views ({avg_views:.0f}) — hit rate {hit_rate:.0%}. "
+            "(views fallback — engaged-rate not yet synced on 5+ runs)"
         ),
         "sample_outcomes": with_outcomes[:10],
     }

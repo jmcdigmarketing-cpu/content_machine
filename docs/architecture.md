@@ -98,6 +98,10 @@ The repo serves two products:
 | `core/run_ledger.py` | `ops traces` + `ops dossier` viewers over the run ledger |
 | `core/data_quality.py` | Signal-health + join-integrity validators (warn-only) |
 | `core/unit_economics.py` | Per-video cost ↔ `estimatedRevenue` join → contribution margin (`ops economics`) |
+| `core/video_grade.py` | **Pillar 2** pre-publish report card — weighted rollup of persisted quality (`ops grade`) |
+| `core/engagement_predictor.py` | Data-gated predicted engaged-rate (baseline + hook/authenticity slopes) |
+| `core/grade_calibration.py` | Grade ↔ realized-engagement calibration + thumbnail-score join (`ops calibration`) |
+| `core/prompt_evals.py` | Golden-topic prompt eval harness (`config/prompt_evals.json`, `ops prompt-eval`) |
 | `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
 | `apis/tapology_api.py` | Tapology event/bout scrape (cached) |

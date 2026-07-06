@@ -353,22 +353,32 @@ discarded in the interactive flow; `thumbnail_scores` has carried "CTR correlati
 later" since Alembic `0002` with no reader; and the only backtest
 (`core/analyst_accuracy.py`) uses views while the learning loop optimizes
 engaged-rate.*
-- [ ] **Pre-publish report card** `[S]` — `core/video_grade.py`: one weighted grade
-  rolled up from the Pillar-1-persisted scores; shown before the render prompt +
-  `ops grade --run-id N`.
-- [ ] **Predicted engaged-rate** `[M]` *(data-gated)* — bucket/regression over
-  `features_json` + `quality_json` → expected engagement band; confidence-gated
-  (≥~15 measured videos, `core/recommender_confidence.py` pattern).
-- [ ] **Calibration loop** `[M]` *(data-gated)* — post-sync actual grade (percentile
-  vs channel baseline) + prediction delta feeding weekly-report next-actions and
-  experiment levers; join `thumbnail_scores` → engaged-rate; realign
-  `analyst_accuracy` from views to engaged-rate. *(absorbs the open
-  thumbnail-calibration work)*
-- [ ] **Prompt-evolution eval set** `[M]` — frozen rubric + golden topics so prompt
-  changes are measured, not vibed; pairs with the shipped A/B harness (vision.md spike).
+*Shipped 2026-07-06 (calibration/prediction stages are structurally live and
+data-gated — they activate as measured volume accrues):*
+- [x] **Pre-publish report card** — `core/video_grade.py`: weighted rollup of the
+  Pillar-1-persisted scores (hook/authenticity/grounding/topic/thumbnail; missing
+  components renormalize) → 0–100 + letter; shown before the render prompt in
+  `main.py` + `ops grade --run-id N`.
+- [x] **Predicted engaged-rate** *(data-gated)* — `core/engagement_predictor.py`:
+  channel baseline + least-squares hook/authenticity adjustments over measured runs
+  with quality; gated at `PREDICTOR_MIN_SAMPLES` (default 15); frozen into
+  `quality_json.predicted_engaged_rate` at generation time so calibration can score
+  it later; surfaces on the report card with an explainable note.
+- [x] **Calibration loop** *(data-gated)* — `core/grade_calibration.py`: realized
+  engaged-rate percentile per graded run, grade↔engagement Pearson r (the "is the
+  report card meaningful?" number), prediction column, and the long-promised
+  `thumbnail_scores` → engaged-rate join; `ops calibration` + one weekly-report
+  line. `core/analyst_accuracy.py` realigned: backtests **engaged-rate** when ≥5
+  runs carry it (views only as legacy fallback, labeled).
+- [x] **Prompt-evolution eval set** — `core/prompt_evals.py` +
+  `config/prompt_evals.json` (frozen golden topics + facts per channel, rubric v1:
+  hook, ungrounded-vs-frozen-facts, length fit, filler count); `run` generates with
+  live prompts and saves tagged with `prompt_version`, `compare` diffs the last two;
+  `ops prompt-eval [--compare]`.
 - [ ] **Multimodal rendered-video review** `[L]` *(later)* — sampled frames +
   transcript → LLM rubric (pacing, caption readability, visual interest); needs the
   router vision path first (see supporting track).
+- Tests: `tests/test_video_grade.py` (18).
 
 ### Pillar 3 — Fact Engine 2.0
 *Audit: today's checker is a prompt-layer fact assembler + string-presence linter —

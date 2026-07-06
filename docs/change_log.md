@@ -6,6 +6,35 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Pillar 2 — Video Grading System — 2026-07-06
+
+*Second pillar (decisions §15): the six scorers roll up into one calibrated
+grade. Data-gated stages ship structurally and activate with volume. Suite 761
+green.*
+
+- **Report card** — `core/video_grade.py`: weighted 0–100 + letter over the
+  persisted quality dict (hook/authenticity/grounding/topic/thumbnail, missing
+  components renormalize); interactive flow shows it before the render prompt;
+  `ops grade --run-id N`.
+- **Predicted engaged-rate (data-gated)** — `core/engagement_predictor.py`:
+  explainable baseline+slopes model over measured runs with quality;
+  `PREDICTOR_MIN_SAMPLES` (default 15); prediction frozen into `quality_json`
+  at generation time.
+- **Calibration loop (data-gated)** — `core/grade_calibration.py`: realized
+  percentile per graded run, grade↔engagement Pearson r, prediction deltas,
+  and the first reader for `thumbnail_scores` (overall vs engaged-rate);
+  `ops calibration` + a weekly-report line.
+- **`core/analyst_accuracy.py` realigned** — backtests engaged-rate (the
+  loop's objective) when ≥5 measured runs carry it; views stay as a labeled
+  legacy fallback.
+- **Prompt-evolution eval set** — `core/prompt_evals.py` +
+  `config/prompt_evals.json`: frozen golden topics/facts + heuristic rubric v1
+  (hook, ungrounded-vs-frozen-facts, length fit, filler count); results saved
+  to `data/prompt_evals/` tagged with `prompt_version`; `ops prompt-eval`
+  runs, `--compare` diffs the last two.
+- Tests: `tests/test_video_grade.py` (grade math, predictor gating + direction,
+  calibration correlations, rubric, accuracy realignment).
+
 ### Pillar 1 — Run Ledger (metadata spine) — 2026-07-06
 
 *First pillar of the internal-systems reorientation (decisions §15): the run

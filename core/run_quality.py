@@ -75,6 +75,17 @@ def build_quality(
     if ungrounded:
         quality["ungrounded_entities"] = list(ungrounded)[:20]
     quality["trade_warning_count"] = len(features.get("trade_warnings") or [])
+
+    # Pillar 2: freeze the data-gated engaged-rate prediction at generation time
+    # so the calibration loop can score it against the realized outcome later.
+    try:
+        from core.engagement_predictor import predict_engaged_rate
+
+        prediction = predict_engaged_rate(channel_id, quality=quality)
+        if prediction is not None:
+            quality["predicted_engaged_rate"] = prediction.rate
+    except Exception as exc:
+        logger.debug("prediction skipped: %s", exc)
     return quality
 
 

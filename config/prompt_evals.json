@@ -1,0 +1,43 @@
+{
+  "_comment": "Frozen golden topics + facts for the prompt-evolution eval set (Pillar 2). Do NOT edit topics/facts casually — changing them invalidates comparison against earlier eval runs. Add a new entry instead.",
+  "rubric_version": "v1",
+  "channels": {
+    "tapin": [
+      {
+        "id": "ufc-title-fight",
+        "topic": "Topuria vs Gaethje title fight breakdown",
+        "length_choice": "2",
+        "key_facts": [
+          "Ilia Topuria defends the featherweight title against Justin Gaethje at UFC 350 on August 15",
+          "Topuria is undefeated at 16-0 with 14 finishes",
+          "Gaethje earned the shot by knocking out Dan Hooker in round two in May",
+          "The fight headlines the card at the T-Mobile Arena in Las Vegas"
+        ]
+      },
+      {
+        "id": "gaming-patch-meta",
+        "topic": "Marvel Rivals season 3 balance patch shakes up the meta",
+        "length_choice": "2",
+        "key_facts": [
+          "The season 3 patch reduced Iron Man's unibeam damage by 15 percent",
+          "Cyclops joined the roster as a duelist on July 1",
+          "Win rates for Storm rose from 48 to 53 percent after her movement buff",
+          "Ranked mode now bans two heroes per team per match"
+        ]
+      }
+    ],
+    "moneywise": [
+      {
+        "id": "fed-rate-cut",
+        "topic": "What the Fed's rate cut means for your savings account",
+        "length_choice": "2",
+        "key_facts": [
+          "The Federal Reserve cut its benchmark rate by 25 basis points to a 4.00-4.25 percent target range",
+          "High-yield savings accounts averaged 4.1 percent APY before the cut",
+          "Analysts expect two more cuts before year end",
+          "Savings yields typically fall within weeks of a Fed cut"
+        ]
+      }
+    ]
+  }
+}

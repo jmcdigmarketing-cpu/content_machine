@@ -183,6 +183,16 @@ def format_report(report: dict[str, Any]) -> str:
     except Exception:
         pass
 
+    # Pillar 2 calibration: is the pre-publish report card predictive yet?
+    try:
+        from core.grade_calibration import build_calibration, summary_line
+
+        calibration = summary_line(build_calibration(report["channel_id"]))
+        if calibration:
+            lines.append(f"  {calibration}")
+    except Exception:
+        pass
+
     actions = report.get("next_actions") or []
     if actions:
         lines.append("")

@@ -400,6 +400,11 @@ def _run_new_video_flow_body(
             "Rendering without fixing risks shipping hallucinations."
         )
 
+    # Pillar 2: one weighted report card over the scores above (read-only).
+    from core.video_grade import display_grade_for_run
+
+    display_grade_for_run(result.run_id)
+
     proceed = input("  Proceed with video? [y/N]: ").strip().lower()
 
     if proceed != "y":

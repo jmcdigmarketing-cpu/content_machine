@@ -116,6 +116,76 @@ class TestAttribution(ExperimentCase):
         self.assertIsNone(report["evaluation"]["winner"])
 
 
+class TestKindFilter(ExperimentCase):
+    """Script vs thumbnail levers only reach the consumer that can apply them."""
+
+    def test_script_lever_hidden_from_thumbnail_consumer(self):
+        ex.start_experiment("tapin", "hook_style")
+        self.assertIsNotNone(ex.next_arm("tapin", kind="script"))
+        self.assertIsNone(ex.next_arm("tapin", kind="thumbnail"))
+
+    def test_thumbnail_lever_hidden_from_script_consumer(self):
+        ex.start_experiment("tapin", "thumbnail_style")
+        self.assertIsNone(ex.next_arm("tapin", kind="script"))
+        picked = ex.next_arm("tapin", kind="thumbnail")
+        self.assertEqual(picked[0], "thumbnail_style")
+        self.assertIn(picked[1], arms("thumbnail_style"))
+
+    def test_no_kind_filter_returns_any_lever(self):
+        ex.start_experiment("tapin", "thumbnail_style")
+        self.assertIsNotNone(ex.next_arm("tapin"))
+
+
+class TestThumbnailIntegration(ExperimentCase):
+    """generate_thumbnail applies the arm's style directive and records the
+    assignment only when Flux actually generated the image."""
+
+    def _generate(self, flux_result, tmp):
+        from assets import flux_thumbnail as ft
+
+        with (
+            patch.object(ft, "is_flux_configured", return_value=True),
+            patch.object(ft, "_flux_thumbnail", return_value=flux_result) as fx,
+        ):
+            ft.generate_thumbnail(
+                "UFC 320", "Pereira shocks the world", tmp, content_run_id=7, channel_id="tapin"
+            )
+        return fx
+
+    def test_flux_success_records_assignment_with_directive(self):
+        from assets.flux_thumbnail import ThumbnailResult
+
+        ex.start_experiment("tapin", "thumbnail_style")
+        first_arm = arms("thumbnail_style")[0]
+        with tempfile.TemporaryDirectory() as tmp:
+            fx = self._generate(
+                ThumbnailResult(path=os.path.join(tmp, "x.jpg"), status="generated"), tmp
+            )
+        self.assertEqual(
+            fx.call_args.kwargs["style_directive"], directive("thumbnail_style", first_arm)
+        )
+        report = ex.experiment_report("tapin")
+        self.assertEqual(report["assigned"][first_arm], 1)
+
+    def test_flux_failure_records_nothing(self):
+        from assets.flux_thumbnail import ThumbnailResult
+
+        ex.start_experiment("tapin", "thumbnail_style")
+        with tempfile.TemporaryDirectory() as tmp:
+            self._generate(ThumbnailResult(path=None, status="flux_failed", detail="boom"), tmp)
+        report = ex.experiment_report("tapin")
+        self.assertEqual(sum(report["assigned"].values()), 0)
+
+    def test_no_experiment_means_no_directive(self):
+        from assets.flux_thumbnail import ThumbnailResult
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fx = self._generate(
+                ThumbnailResult(path=os.path.join(tmp, "x.jpg"), status="generated"), tmp
+            )
+        self.assertEqual(fx.call_args.kwargs["style_directive"], "")
+
+
 class TestBatchIntegration(ExperimentCase):
     """batch_generation picks up the active experiment's arm directive."""
 
@@ -156,6 +226,40 @@ class TestBatchIntegration(ExperimentCase):
         self.assertEqual(rp.call_args.kwargs["creative_brief"], directive("hook_style", first_arm))
         report = ex.experiment_report("tapin")
         self.assertEqual(report["assigned"][first_arm], 1)
+
+    def test_thumbnail_experiment_does_not_touch_script_prompt(self):
+        ex.start_experiment("tapin", "thumbnail_style")
+        discovery = SimpleNamespace(evaluated=[("Angle", 80.0, {})], channel_id="tapin", timings={})
+        result = SimpleNamespace(
+            aborted=False,
+            abort_reason=None,
+            script="Hook!\nBody.",
+            title="T",
+            description="",
+            tags=[],
+            run_id=8,
+            features={},
+        )
+        with (
+            tempfile.TemporaryDirectory() as out_tmp,
+            patch("core.output_paths.channel_output_root", return_value=out_tmp),
+            patch("core.fact_enrichment.enrich_facts", return_value=""),
+            patch(
+                "core.authenticity.evaluate_authenticity",
+                return_value=SimpleNamespace(verdict="ok"),
+            ),
+            patch(
+                "core.length_recommender.get_recommended_length",
+                side_effect=RuntimeError("no analytics"),
+            ),
+            patch("core.pipeline.run_discovery", return_value=discovery),
+            patch("core.pipeline.run_pipeline", return_value=result) as rp,
+        ):
+            out = bg.generate_draft("UFC 320", "tapin")
+
+        self.assertTrue(out.ok)
+        self.assertEqual(out.experiment_arm, "")
+        self.assertEqual(rp.call_args.kwargs["creative_brief"], "")
 
 
 if __name__ == "__main__":

@@ -113,12 +113,13 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
     best_topic, best_score, best_signals = discovery.evaluated[variant_index]
     out.variant, out.score = best_topic, float(best_score or 0)
 
-    # Active A/B experiment: the least-used arm's directive shapes this draft.
+    # Active script-lever A/B experiment: the least-used arm's directive
+    # shapes this draft (thumbnail levers apply at render, not here).
     experiment: tuple[str, str, str] | None = None
     try:
         from core.experiments import next_arm
 
-        experiment = next_arm(channel_id)
+        experiment = next_arm(channel_id, kind="script")
     except Exception:
         pass
 

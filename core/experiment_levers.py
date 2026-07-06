@@ -4,6 +4,11 @@ A lever is the *one thing* an experiment varies while everything else is held
 constant. Each arm maps to a short prompt directive that overrides the relevant
 generation knob. Arms are chosen to be compatible with the base prompt's rules
 (e.g. no "question" hook arm, since the prompt forbids opening on a question).
+
+`kind` says where the directive applies: "script" levers ride the script
+prompt (creative_brief); "thumbnail" levers append to the Flux thumbnail
+prompt (`assets/flux_thumbnail`). Consumers filter by kind so a running
+thumbnail experiment never leaks visual directives into a script prompt.
 """
 
 from __future__ import annotations
@@ -11,6 +16,7 @@ from __future__ import annotations
 _LEVERS: dict[str, dict] = {
     "hook_style": {
         "description": "How the script's first line grabs attention",
+        "kind": "script",
         "arms": {
             "bold_statement": (
                 "HOOK EXPERIMENT: open with a bold declarative statement — a strong, "
@@ -24,9 +30,24 @@ _LEVERS: dict[str, dict] = {
     },
     "cta_style": {
         "description": "How the script closes / calls for engagement",
+        "kind": "script",
         "arms": {
             "question": "CTA EXPERIMENT: close on a sharp, specific question that invites a take.",
             "prediction": "CTA EXPERIMENT: close on a bold prediction the audience can argue with.",
+        },
+    },
+    "thumbnail_style": {
+        "description": "Flux thumbnail composition style (Phase S thumbnail A/B)",
+        "kind": "thumbnail",
+        "arms": {
+            "close_up": (
+                "extreme close-up on the single main subject, face or key action filling "
+                "the frame, shallow depth of field, intense emotion"
+            ),
+            "wide_drama": (
+                "wide dramatic composition, subject small against an epic environment, "
+                "cinematic lighting, high-stakes atmosphere"
+            ),
         },
     },
 }
@@ -46,3 +67,7 @@ def arms(lever: str) -> list[str]:
 
 def directive(lever: str, arm: str) -> str:
     return _LEVERS.get(lever, {}).get("arms", {}).get(arm, "")
+
+
+def kind(lever: str) -> str:
+    return _LEVERS.get(lever, {}).get("kind", "script")

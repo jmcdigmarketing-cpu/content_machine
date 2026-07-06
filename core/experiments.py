@@ -115,13 +115,18 @@ def _assignments(channel_id: str, lever: str) -> list[dict[str, Any]]:
     ]
 
 
-def next_arm(channel_id: str) -> tuple[str, str, str] | None:
+def next_arm(channel_id: str, kind: str | None = None) -> tuple[str, str, str] | None:
     """(lever, arm, prompt_directive) for the next draft, or None when no
-    experiment is active. Least-assigned arm first (round-robin at parity)."""
+    experiment is active. Least-assigned arm first (round-robin at parity).
+
+    kind: filter to "script" or "thumbnail" levers — a consumer only receives
+    directives it knows where to apply (script prompt vs Flux prompt)."""
     active = active_experiment(channel_id)
     if not active:
         return None
     lever = str(active["lever"])
+    if kind is not None and experiment_levers.kind(lever) != kind:
+        return None
     arms = experiment_levers.arms(lever)
     if not arms:
         return None

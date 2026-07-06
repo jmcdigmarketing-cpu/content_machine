@@ -121,7 +121,7 @@ def _download_image(url: str, dest_path: str) -> None:
 
 
 def _flux_thumbnail(
-    topic: str, title: str, output_dir: str, *, filename: str
+    topic: str, title: str, output_dir: str, *, filename: str, style_directive: str = ""
 ) -> ThumbnailResult:
     api_key = _flux_api_key()
     if not api_key:
@@ -132,6 +132,8 @@ def _flux_thumbnail(
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, filename)
     prompt = _build_flux_prompt(topic, title)
+    if style_directive:
+        prompt = f"{prompt}, {style_directive}"
 
     headers = {
         "accept": "application/json",
@@ -296,14 +298,43 @@ def generate_thumbnail(
     )
     primary = pillow
 
+    # Thumbnail A/B (Phase S): an active thumbnail-kind experiment appends its
+    # arm's style directive to the Flux prompt. The assignment is recorded only
+    # when Flux actually generated the image — Pillow fallbacks would pollute
+    # the arm's attribution with thumbnails the lever never shaped.
+    experiment: tuple[str, str, str] | None = None
+    try:
+        from config.channels import resolve_channel_id
+        from core.experiments import next_arm
+
+        experiment = next_arm(resolve_channel_id(channel_id), kind="thumbnail")
+    except Exception:
+        experiment = None
+
     if is_flux_configured() and os.getenv("THUMBNAIL_FLUX_FIRST", "true").lower() not in (
         "0",
         "false",
         "no",
     ):
-        flux = _flux_thumbnail(topic, title, output_dir, filename=flux_name)
+        flux = _flux_thumbnail(
+            topic,
+            title,
+            output_dir,
+            filename=flux_name,
+            style_directive=experiment[2] if experiment else "",
+        )
         if flux.path:
             primary = flux
+            if experiment and content_run_id:
+                try:
+                    from config.channels import resolve_channel_id
+                    from core.experiments import record_assignment
+
+                    record_assignment(
+                        resolve_channel_id(channel_id), content_run_id, experiment[0], experiment[1]
+                    )
+                except Exception:
+                    pass
         elif flux.detail:
             logger.info("Using Pillow thumbnail; Flux: %s", flux.detail)
             primary = ThumbnailResult(

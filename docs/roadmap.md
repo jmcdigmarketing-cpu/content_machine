@@ -203,7 +203,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 3. ~~Semantic trade validation~~ — shipped opt-in (`core/trade_validation.py`, `SEMANTIC_TRADE_VALIDATION`)
 4. ~~Creator coach surface (Phase S)~~ — shipped (`core/creator_coach.py`, `ops coach`; weekly digest gained "Next actions")
 
-**Up next:** thumbnail A/B (Phase S remainder — the experiment harness now exists; needs a thumbnail lever + upload variation) · O11 remainder (migrate Apify + LLM router behind `core/quota_governor.py`). *(Shipped 2026-07-06: signal-breaker persistence + key-hash invalidation as the O11 governor seed — see [credit_efficiency.md](credit_efficiency.md) O11 — batch generation `ops batch-drafts`, and script-lever A/B experiments `ops experiment`.)*
+**Up next:** O11 remainder (migrate Apify + LLM router behind `core/quota_governor.py`) · CTR/impressions in the metrics sync (unlocks click-based thumbnail attribution) · webhook/n8n out. *(Shipped 2026-07-06: signal-breaker persistence + key-hash invalidation as the O11 governor seed — see [credit_efficiency.md](credit_efficiency.md) O11 — batch generation `ops batch-drafts`, script-lever A/B experiments `ops experiment`, and thumbnail A/B via the `thumbnail_style` lever.)*
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
@@ -269,7 +269,7 @@ Turn the research spine into a compliance moat.
 
 ### Phase S — Creator coach surface
 - [x] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing) — `core/creator_coach.py`, `py -m scripts.ops coach`: ranked ideas each with a *why*, plus recommended length/post-time, winning title patterns, retention pacing, and cadence headroom. Read-only + fail-open. *(2026-07-02)*
-- [ ] **Thumbnail A/B** + CTR optimisation (Flux thumbnails already exist).
+- [x] **Thumbnail A/B** — *shipped 2026-07-06 on the experiment harness:* `py -m core.experiments start thumbnail_style` → each Flux render appends the least-used arm's composition directive (`close_up` vs `wide_drama`, `core/experiment_levers.py` kind="thumbnail") to the prompt in `assets/flux_thumbnail.py`; the assignment is recorded only when Flux actually generated (Pillow fallbacks never pollute attribution), and `ops experiment` runs the same low-n-safe Bayesian report against realized engaged-rate. *CTR optimisation still open — needs impressions/CTR in the metrics sync before the report can attribute clicks rather than engagement.*
 - [x] Weekly performance digest with concrete next actions — `analytics/weekly_report.build_next_actions`: the winners/losers per dimension become numbered operator instructions ("Lead with the 'fraud' angle again", "Retire the 'recap' angle"), noise-gated at ±3pp vs baseline. *(2026-07-02)*
 
 ### UI / experience — themeable skins  *(fun, on-brand)* — **shipped 2026-07-02**

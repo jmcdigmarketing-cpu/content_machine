@@ -257,6 +257,24 @@ def _finalize_run(
             content_run_id=run_id,
         )
 
+    try:
+        from core.events import emit_event
+
+        emit_event(
+            "run_completed",
+            {
+                "channel_id": channel_id,
+                "run_id": run_id,
+                "status": status,
+                "topic": result.topic,
+                "title": result.title,
+                "score": result.score,
+                "abort_reason": result.abort_reason or "",
+            },
+        )
+    except Exception:
+        pass
+
 
 def run_pipeline(
     topic: str,

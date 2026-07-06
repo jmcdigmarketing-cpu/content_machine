@@ -423,6 +423,26 @@ class YouTubePublisher(Publisher):
                     log_id,
                     {"detail": f"{base_detail} | {detail_suffix}"[:500]},
                 )
+            try:
+                from core.events import emit_event
+
+                emit_event(
+                    "video_published",
+                    {
+                        "platform": PLATFORM_YOUTUBE,
+                        "video_id": video_id,
+                        "url": f"https://youtu.be/{video_id}" if video_id else "",
+                        "status": result_status,
+                        "channel_id": channel_id,
+                        "content_run_id": content_run_id,
+                        "title": request.title,
+                        "scheduled_for": video_status.get("publishAt", "")
+                        if is_youtube_scheduled
+                        else "",
+                    },
+                )
+            except Exception:
+                pass
             return PublishResult(
                 video_id=video_id,
                 status=result_status,

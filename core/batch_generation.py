@@ -225,6 +225,23 @@ def run_batch(channel_id: str, topics: list[str]) -> list[DraftOutcome]:
         finalize_run_observability()
     except Exception:
         pass
+    try:
+        from core.events import emit_event
+
+        emit_event(
+            "batch_completed",
+            {
+                "channel_id": channel_id,
+                "requested": len(topics),
+                "saved": sum(1 for o in outcomes if o.ok),
+                "drafts": [
+                    {"topic": o.topic, "ok": o.ok, "title": o.title, "path": o.path}
+                    for o in outcomes
+                ],
+            },
+        )
+    except Exception:
+        pass
     return outcomes
 
 

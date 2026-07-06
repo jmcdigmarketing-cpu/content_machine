@@ -6,6 +6,35 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Pillar 1 — Run Ledger (metadata spine) — 2026-07-06
+
+*First pillar of the internal-systems reorientation (decisions §15): the run
+metadata that used to be write-only or in-process-lost is now persisted and
+readable. Suite 743 green.*
+
+- **Per-run trace** — `core/run_trace.py` writes `data/traces/<run_id>.json`
+  from `_finalize_run` (fail-open): phase timings, per-signal status, the priced
+  LLM call ledger, post-discovery cache counters (new
+  `cache_manager.session_cache_stats()`), experiment arm (new
+  `experiments.assignment_for_run()`), quality dict.
+- **Quality persistence** — new `content_runs.quality_json` column (models,
+  `migrate_schema`, Alembic `0003`); `core/run_quality.py` builds + persists
+  hook/authenticity/grounding/trade quality for every generation path in
+  `_finalize_run`; thumbnail score merged post-render via `merge_quality`.
+- **Viewers** — `ops traces` + `ops dossier --run-id N` (`core/run_ledger.py`):
+  recent-run table with hotspots, and a single joined run view (features,
+  quality, cost, publish metrics, margin, experiment arm, LLM calls).
+- **Data-quality monitor (was Phase V)** — `core/data_quality.py`: signal
+  failure-rate + not-ok-streak checks over recent traces and
+  run↔quality/features/metrics join assertions; warnings in `ops reliability`.
+- **Unit economics (was Phase U)** — fail-open `estimatedRevenue` sync
+  (separate query; missing monetary scope can never break the main sync) +
+  `core/unit_economics.py` cost↔revenue join; `ops economics`, margin lines in
+  `weekly-report`, per-video margin in the dossier.
+- **Test hygiene** — pipeline-exercising tests must patch the ledger writes
+  (`core.pipeline.build_quality`/`persist_quality`/`write_run_trace`) —
+  documented in `tests/CLAUDE.md`; `tests/test_run_ledger.py` adds 23 tests.
+
 ### O11 complete: unified quota governor — 2026-07-06
 
 *Closes the credit-efficiency backlog (O1–O11). Suite 720 green.*

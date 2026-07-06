@@ -152,6 +152,33 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("traces", "Recent run traces — timings, LLM cost, quality, hotspots (Pillar 1)")
+def cmd_traces(args: argparse.Namespace) -> int:
+    from core.run_ledger import render_traces
+
+    print(render_traces(limit=args.limit or 10, channel_id=args.channel))
+    return 0
+
+
+@_register("dossier", "One run end-to-end: quality, cost, metrics, trace (--run-id required)")
+def cmd_dossier(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("dossier requires --run-id (see 'ops traces' for recent ids)")
+        return 1
+    from core.run_ledger import render_dossier
+
+    print(render_dossier(args.run_id))
+    return 0
+
+
+@_register("economics", "Per-video cost vs revenue -> contribution margin (Pillar 1)")
+def cmd_economics(args: argparse.Namespace) -> int:
+    from core.unit_economics import render as render_economics
+
+    print(render_economics(args.channel, limit=args.limit or 25))
+    return 0
+
+
 @_register("coach", "Daily creator coach — ranked ideas + why, post time, length, patterns")
 def cmd_coach(args: argparse.Namespace) -> int:
     from core.creator_coach import build_coach, render_coach
@@ -379,7 +406,13 @@ def main(argv=None) -> int:
         "--run-id",
         type=int,
         default=0,
-        help="Content run id (list-uploads / requeue-upload)",
+        help="Content run id (list-uploads / requeue-upload / dossier)",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Row limit (traces / economics; 0 = command default)",
     )
     parser.add_argument(
         "--topic",

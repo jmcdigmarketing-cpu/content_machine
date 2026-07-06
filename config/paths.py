@@ -18,6 +18,7 @@ YOUTUBE_QUOTA_FILE = os.path.join(DATA_DIR, "youtube_quota.json")
 QUOTA_STATE_FILE = os.path.join(DATA_DIR, "quota_state.json")
 CACHE_STATS_FILE = os.path.join(DATA_DIR, "cache_stats.json")
 EXPERIMENTS_FILE = os.path.join(DATA_DIR, "experiments.json")
+TRACES_DIR = os.path.join(DATA_DIR, "traces")
 
 DEFAULT_CLIENT_SECRETS = os.path.join(SECRETS_DIR, "client_secrets.json")
 DEFAULT_OAUTH_TOKEN = os.path.join(SECRETS_DIR, "youtube_token.json")

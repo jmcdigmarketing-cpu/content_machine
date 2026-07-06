@@ -12,7 +12,13 @@ pytest fixtures (pytest runs them fine, the reverse isn't true).
   ([test_quota_governor.py](test_quota_governor.py)) or `_IsolatedStateCase`
   ([test_circuit_breaker.py](test_circuit_breaker.py)).
 - Same idea for other stores: `data/youtube_quota.json`, `data/cache_stats.json`,
-  `data/experiments.json` — never let a test write to the real `data/` files.
+  `data/experiments.json`, `data/traces/` — never let a test write to the real
+  `data/` files.
+- A test that drives `run_pipeline` into `_finalize_run` must also patch the
+  Pillar-1 ledger writes — `core.pipeline.build_quality` (returns `{}`),
+  `core.pipeline.persist_quality`, `core.pipeline.write_run_trace` — or it will
+  write real `data/traces/<id>.json` files and hit the live DB
+  (see [test_pipeline_smoke.py](test_pipeline_smoke.py) for the pattern).
 - No network in tests — mock `requests`/clients; signals must be tested through
   `make_signal()`-shaped fakes.
 - Credential env vars leak between tests: wrap in `patch.dict("os.environ", ...)`

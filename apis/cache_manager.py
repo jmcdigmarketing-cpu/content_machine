@@ -191,6 +191,16 @@ def get_cache_stats() -> dict[str, Any]:
     }
 
 
+def session_cache_stats() -> dict[str, dict[str, int]]:
+    """In-process (not-yet-flushed) hit/miss counters by prefix.
+
+    Approximates "this run since the last flush" — used by the per-run trace
+    (core/run_trace.py). The persisted aggregate remains `get_cache_stats()`.
+    """
+    with _stats_lock:
+        return {k: dict(v) for k, v in _stats.items()}
+
+
 def flush_cache_stats() -> None:
     """Merge in-process counters into data/cache_stats.json, then clear them.
 

@@ -174,6 +174,15 @@ def format_report(report: dict[str, Any]) -> str:
             f"~${report['total_cost']:.2f} across {report['n']} tracked"
         )
 
+    # Pillar 1 unit economics: contribution margin once revenue data exists.
+    try:
+        from core.unit_economics import channel_economics, summary_lines
+
+        for line in summary_lines(channel_economics(report["channel_id"])):
+            lines.append(f"  {line}")
+    except Exception:
+        pass
+
     actions = report.get("next_actions") or []
     if actions:
         lines.append("")

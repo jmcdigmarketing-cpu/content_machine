@@ -60,6 +60,10 @@ class ContentRun(Base):
     # format, angle, title_structure, hook, controversy, sentiment, post_slot,
     # fact_source, cost breakdown, etc. (the moat substrate — Priority #0).
     features_json: Mapped[str] = mapped_column(Text, default="{}")
+    # Pre-publish quality scores (Pillar 1): hook score/verdict, authenticity
+    # score/verdict, ungrounded count, trade warnings, thumbnail overall —
+    # persisted so the grading/calibration layer can read them back.
+    quality_json: Mapped[str] = mapped_column(Text, default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

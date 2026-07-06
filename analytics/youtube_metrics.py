@@ -77,6 +77,34 @@ def _fetch_retention_curve(video_id, service, start_date, end_date) -> list | No
     return curve or None
 
 
+def _fetch_estimated_revenue(video_id, service, start_date, end_date) -> float | None:
+    """AdSense estimatedRevenue for one video, or None (Pillar 1 unit economics).
+
+    A separate report on purpose: the metric needs the yt-analytics-monetary
+    scope AND a monetized channel — bundling it into the headline query would
+    403 the whole sync for everyone else. Any failure reads as "no revenue
+    data", never an error.
+    """
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="estimatedRevenue",
+                filters=f"video=={video_id}",
+            )
+            .execute()
+        )
+        rows = resp.get("rows") or []
+        if rows and rows[0]:
+            return round(float(rows[0][-1] or 0.0), 4)
+    except Exception as exc:
+        logger.debug("estimatedRevenue fetch skipped for %s: %s", video_id, exc)
+    return None
+
+
 def fetch_video_metrics(
     youtube_video_id: str,
     *,
@@ -147,6 +175,9 @@ def fetch_video_metrics(
     curve = _fetch_retention_curve(youtube_video_id, service, start_date, end_date)
     if curve:
         result["retention_curve"] = curve
+    revenue = _fetch_estimated_revenue(youtube_video_id, service, start_date, end_date)
+    if revenue is not None:
+        result["estimated_revenue_usd"] = revenue
     return result
 
 

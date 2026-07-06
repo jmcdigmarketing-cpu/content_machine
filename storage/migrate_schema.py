@@ -108,6 +108,10 @@ def main() -> int:
                     "features_json",
                     "ALTER TABLE content_runs ADD COLUMN features_json TEXT DEFAULT '{}'",
                 ),
+                (
+                    "quality_json",
+                    "ALTER TABLE content_runs ADD COLUMN quality_json TEXT DEFAULT '{}'",
+                ),
             ):
                 if col not in cr_cols:
                     conn.execute(text(ddl))

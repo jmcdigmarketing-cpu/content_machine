@@ -118,6 +118,15 @@ def _youtube_section() -> dict[str, Any]:
     return out
 
 
+def _data_quality_section() -> list[str]:
+    try:
+        from core.data_quality import warnings
+
+        return warnings()
+    except Exception:
+        return []
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {
@@ -126,6 +135,7 @@ def gather() -> dict[str, Any]:
         "signals": _signals_section(),
         "cache": _cache_section(),
         "youtube": _youtube_section(),
+        "data_quality": _data_quality_section(),
     }
 
 
@@ -218,6 +228,12 @@ def render(data: dict[str, Any] | None = None) -> str:
         if yt.get("next_reset"):
             line += f" — resets {str(yt['next_reset'])[:16]} UTC"
         lines.append(line)
+
+    dq = data.get("data_quality") or []
+    if dq:
+        lines.append("Data quality:")
+        # ASCII marker for the same cp1252-console reason as the cooldown arrow above.
+        lines.extend(f"  ! {w}" for w in dq)
     return "\n".join(lines)
 
 

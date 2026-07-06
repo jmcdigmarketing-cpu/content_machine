@@ -11,16 +11,16 @@ from storage.alembic_runner import current_revision
 
 
 class TestAlembicBaseline(unittest.TestCase):
-    def test_head_revision_is_0002(self):
-        self.assertEqual(current_revision(), "0002")
+    def test_head_revision_is_0003(self):
+        self.assertEqual(current_revision(), "0003")
 
     def test_script_chain_loads(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         cfg = Config(os.path.join(root, "alembic.ini"))
         script = ScriptDirectory.from_config(cfg)
         revs = list(script.walk_revisions())
-        self.assertEqual(len(revs), 2)
-        self.assertEqual(revs[0].revision, "0002")
+        self.assertEqual(len(revs), 3)
+        self.assertEqual(revs[0].revision, "0003")
 
     def test_upgrade_creates_tables_on_sqlite(self):
         with tempfile.TemporaryDirectory() as tmp:

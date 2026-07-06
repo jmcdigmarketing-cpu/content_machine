@@ -92,7 +92,12 @@ The repo serves two products:
 | `core/cost_meter.py` | Per-run fully-loaded cost; prices the `llm_router` token ledger per provider/model |
 | `core/quota_state.py` | Cross-run, TTL'd, fail-open credit/quota store (`data/quota_state.json`) |
 | `core/quota_governor.py` | **O11 governor** — single façade over the store for Apify/LLM/signal persistence; `snapshot()` for the dashboard |
-| `core/reliability.py` | `ops reliability` dashboard — breakers, budgets, cache hit-rate, YouTube units |
+| `core/reliability.py` | `ops reliability` dashboard — breakers, budgets, cache hit-rate, YouTube units, data-quality warnings |
+| `core/run_trace.py` | **Pillar 1** per-run trace (`data/traces/<id>.json`): timings, signals, LLM ledger, experiment arm |
+| `core/run_quality.py` | **Pillar 1** quality persistence — hook/authenticity/grounding scores → `content_runs.quality_json` |
+| `core/run_ledger.py` | `ops traces` + `ops dossier` viewers over the run ledger |
+| `core/data_quality.py` | Signal-health + join-integrity validators (warn-only) |
+| `core/unit_economics.py` | Per-video cost ↔ `estimatedRevenue` join → contribution margin (`ops economics`) |
 | `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
 | `apis/tapology_api.py` | Tapology event/bout scrape (cached) |

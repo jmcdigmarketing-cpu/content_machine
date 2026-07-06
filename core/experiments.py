@@ -138,6 +138,18 @@ def next_arm(channel_id: str, kind: str | None = None) -> tuple[str, str, str] |
     return lever, arm, experiment_levers.directive(lever, arm)
 
 
+def assignment_for_run(run_id: int | None) -> dict[str, Any] | None:
+    """The {lever, arm} that shaped a run, if any (read path for trace/dossier)."""
+    if not run_id:
+        return None
+    with _lock:
+        rows = _load()["assignments"]
+    for a in rows:
+        if isinstance(a, dict) and a.get("run_id") == int(run_id):
+            return {"lever": str(a.get("lever", "")), "arm": str(a.get("arm", ""))}
+    return None
+
+
 def record_assignment(channel_id: str, run_id: int | None, lever: str, arm: str) -> None:
     """Remember which arm shaped a generated run (skips runs without an id)."""
     if not run_id:

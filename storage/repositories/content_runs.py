@@ -37,6 +37,7 @@ class ContentRunRecord:
     timings_json: str = "{}"
     abort_reason: str = ""
     features_json: str = "{}"
+    quality_json: str = "{}"
 
 
 class ContentRunRepository(ABC):
@@ -92,6 +93,7 @@ class JsonContentRunRepository(ContentRunRepository):
             timings_json=str(row.get("timings_json", "{}")),
             abort_reason=str(row.get("abort_reason", "")),
             features_json=str(row.get("features_json", "{}")),
+            quality_json=str(row.get("quality_json", "{}")),
         )
 
     def create(self, data: dict[str, Any]) -> ContentRunRecord:
@@ -156,6 +158,7 @@ class PostgresContentRunRepository(ContentRunRepository):
             timings_json=row.timings_json,
             abort_reason=row.abort_reason,
             features_json=getattr(row, "features_json", "{}") or "{}",
+            quality_json=getattr(row, "quality_json", "{}") or "{}",
         )
 
     def create(self, data: dict[str, Any]) -> ContentRunRecord:

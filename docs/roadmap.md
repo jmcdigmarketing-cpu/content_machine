@@ -321,26 +321,30 @@ proposed / not started — implementation held for operator review.***
 after every run, `signals_json`/`variants_json` have no readers, experiment arms live
 in a sidecar file, hook/authenticity scores aren't persisted at all (batch `meta.json`
 only), and `finalize_run_observability()` today only flushes aggregate cache counters.*
-- [ ] **Per-run trace** `[M]` — one JSON per run (`data/traces/<run_id>.json` or a
-  `run_traces` table) written from `_finalize_run`: phase timings, per-signal status +
-  cache hit/miss, persisted LLM call log (tier/provider/tokens/cost from
-  `llm_router.get_usage()`), regen attempts, experiment arm. Fail-open — a broken
-  trace must never stall a run. *(was Phase T)*
-- [ ] **Quality persistence** `[S]` — `quality_json` on `content_runs`: hook
-  score/verdict, authenticity score/verdict, ungrounded count, trade warnings,
-  thumbnail overall, corroboration confidence — written from both the interactive
-  and batch paths.
-- [ ] **Viewers** `[S–M]` — `ops traces` (recent runs, slowest phases, cost per run,
-  failure hotspots) + `ops dossier --run-id N` (one joined view: run + features +
-  quality + cost + metrics + assets + experiment arm).
-- [ ] **Data-quality monitor** `[S–M]` — validators over signal payloads
-  (missing-field rates, staleness, empty-result streaks) + run↔metrics join
-  assertions; thresholds fail-open to warnings, surfaced in `ops reliability`.
+*Shipped 2026-07-06 (same-day wave after the reorientation was approved):*
+- [x] **Per-run trace** — `core/run_trace.py`: one JSON per run in `data/traces/<run_id>.json`,
+  written fail-open from `_finalize_run`: phase timings, per-signal status, the priced
+  LLM call ledger (`llm_router.get_usage()`), post-discovery cache counters
+  (`cache_manager.session_cache_stats()`), experiment arm, quality dict. *(was Phase T)*
+- [x] **Quality persistence** — `quality_json` on `content_runs` (models +
+  `migrate_schema` + Alembic `0003`), built by `core/run_quality.py` in `_finalize_run`
+  (hook score/verdict, authenticity score/verdict, ungrounded count, trade warnings)
+  for **every** path — interactive, headless, batch; thumbnail overall merged
+  post-render (`merge_quality`).
+- [x] **Viewers** — `ops traces` (recent runs, slowest-phase hotspots, LLM cost,
+  quality) + `ops dossier --run-id N` (run + features + quality + cost + publish
+  metrics + experiment arm + trace) in `core/run_ledger.py`.
+- [x] **Data-quality monitor** — `core/data_quality.py`: per-signal failure rates +
+  consecutive not-ok streaks over recent traces, run↔quality/features/metrics join
+  assertions; warnings surface in `ops reliability` + `py -m core.data_quality`.
   *(was Phase V)*
-- [ ] **Unit-economics ledger** `[M]` — join per-video fully-loaded cost
-  (`core/cost_meter.py`, already metered) to YouTube Analytics `estimatedRevenue` in
-  the metrics sync; contribution margin per video / per channel in `weekly-report` +
-  `status`; cost-vs-revenue trend per channel. *(Phase U, scope unchanged)*
+- [x] **Unit-economics ledger** — fail-open `estimatedRevenue` fetch in the metrics
+  sync (own query — needs monetized channel + `yt-analytics-monetary` scope, never
+  breaks the main sync) joined to `features_json.cost.total` in
+  `core/unit_economics.py`; `ops economics` + margin lines in `weekly-report`;
+  dossier shows per-video margin. *(Phase U)*
+- Tests: `tests/test_run_ledger.py` (23) + pipeline tests isolate the ledger writes
+  (see `tests/CLAUDE.md`).
 
 ### Pillar 2 — Video Grading System
 *Audit: six scorers exist (composite topic, hook, authenticity, grounding, trade,

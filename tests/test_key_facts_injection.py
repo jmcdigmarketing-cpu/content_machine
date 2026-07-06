@@ -113,13 +113,16 @@ class TestSanitizeKeyFacts(unittest.TestCase):
 class TestKeyFactsThroughPipeline(unittest.TestCase):
     """key_facts flows through run_pipeline → generate_content_package."""
 
+    @patch("core.pipeline.write_run_trace")
+    @patch("core.pipeline.persist_quality")
+    @patch("core.pipeline.build_quality", return_value={})
     @patch("core.pipeline.record_learning_outcome")
     @patch("core.pipeline.record_content_run", return_value=42)
     @patch("core.pipeline.build_research_brief", return_value=MagicMock(version="v1"))
     @patch("core.pipeline.generate_content_package")
     @patch("core.pipeline.run_discovery")
     def test_key_facts_passed_to_content_package(
-        self, mock_discovery, mock_content, mock_brief, mock_record, mock_learn
+        self, mock_discovery, mock_content, mock_brief, mock_record, mock_learn, _bq, _pq, _tr
     ):
         from core.pipeline import DiscoveryResult, run_pipeline
 

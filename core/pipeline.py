@@ -18,11 +18,13 @@ from core.logging import get_logger
 from core.output_paths import media_paths_for_topic
 from core.render_progress import RenderProgress, is_render_progress_enabled
 from core.research_brief import build_research_brief
+from core.run_quality import build_quality, persist_quality
 from core.run_recorder import (
     record_content_run,
     record_learning_outcome,
     update_content_run_media,
 )
+from core.run_trace import write_run_trace
 from core.script_length import count_spoken_words, get_length_preset, word_range
 from core.tts import generate_audio
 from core.utils import clean_script_for_tts
@@ -248,6 +250,34 @@ def _finalize_run(
         features=result.features or {},
     )
     result.run_id = run_id
+
+    # Pillar 1 (Run Ledger): persist the quality scores every path used to
+    # print-and-discard, then drop the full per-run trace. Both fail-open.
+    quality: dict[str, Any] = {}
+    try:
+        quality = build_quality(
+            script=result.script,
+            channel_id=channel_id,
+            features=result.features,
+            exclude_run_id=run_id,
+        )
+        persist_quality(run_id, quality)
+    except Exception:
+        quality = {}
+    try:
+        write_run_trace(
+            run_id=run_id,
+            channel_id=channel_id,
+            input_topic=input_topic,
+            selected_topic=result.topic,
+            status=status,
+            timings={**discovery.timings, **result.timings},
+            signals=result.signals,
+            features=result.features,
+            quality=quality,
+        )
+    except Exception:
+        pass
 
     if result.score > 0 and status in ("drafted", "rendered"):
         record_learning_outcome(
@@ -483,6 +513,13 @@ def run_media_only(
             )
             if scored:
                 progress.note(f"Thumbnail score {scored.overall}/100 ({scored.source})")
+                if content_run_id:
+                    from core.run_quality import merge_quality
+
+                    merge_quality(
+                        content_run_id,
+                        {"thumbnail_overall": scored.overall, "thumbnail_source": scored.source},
+                    )
 
     if content_run_id:
         update_content_run_media(

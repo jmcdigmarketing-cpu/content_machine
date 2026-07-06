@@ -11,7 +11,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-06 — **O11 complete** (unified quota governor — the O1–O11 credit-efficiency backlog is done) on `feat/reddit-free-backend-and-signal-persistence`; 720 tests green. Same-day wave: Reddit free backend, batch generation (`ops batch-drafts`), script-lever + thumbnail A/B experiments, webhook events out. New: **"Candidate phases — 2026-H2 expansion"** section (Phases T–W + unphased levers). Prior wave (2026-07-02, PR #24): O10 reset windows, semantic trade validation, creator coach, headless key facts.
+Last updated: 2026-07-06 — **roadmap reoriented around five internal-systems pillars** (Run Ledger, Video Grading System, Fact Engine 2.0, Obsidian knowledge OS, Agent layer — see **"Internal-systems pillars — 2026-H2"** below; replaces the Phase T–W candidate list; **implementation held for operator review**; decisions §15). Earlier same day: **O11 complete** (unified quota governor — the O1–O11 credit-efficiency backlog is done) on `feat/reddit-free-backend-and-signal-persistence`; 720 tests green; same-day wave: Reddit free backend, batch generation (`ops batch-drafts`), script-lever + thumbnail A/B experiments, webhook events out. Prior wave (2026-07-02, PR #24): O10 reset windows, semantic trade validation, creator coach, headless key facts.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -203,7 +203,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 3. ~~Semantic trade validation~~ — shipped opt-in (`core/trade_validation.py`, `SEMANTIC_TRADE_VALIDATION`)
 4. ~~Creator coach surface (Phase S)~~ — shipped (`core/creator_coach.py`, `ops coach`; weekly digest gained "Next actions")
 
-**Up next:** the 2026-H2 expansion candidates below — Phase T observability (structured run traces) first. *Note: CTR-based thumbnail attribution is externally blocked — YouTube's public Analytics API does not expose impressions/CTR (Studio-only); the thumbnail lever attributes engaged-rate until Google ships the metric.* *(Shipped 2026-07-06: **O11 complete** — Apify + LLM router persistence migrated behind `core/quota_governor.py` + unified `snapshot()` ([credit_efficiency.md](credit_efficiency.md) O1–O11 all ✅); earlier same day: signal-breaker persistence + key-hash invalidation (the O11 seed), batch generation `ops batch-drafts`, script-lever A/B `ops experiment`, thumbnail A/B via `thumbnail_style`, webhook events out.)*
+**Up next:** the **internal-systems pillars** below — **Pillar 1 (Run Ledger)** first: per-run trace + quality persistence + `ops traces`/`dossier` viewers (absorbs Phase T observability + Phase V data-quality; carries Phase U unit economics). Pillar 2's calibration and Pillar 5's agents are data-gated behind publish volume. All pillar work is proposed — implementation held for operator review. *Note: CTR-based thumbnail attribution is externally blocked — YouTube's public Analytics API does not expose impressions/CTR (Studio-only); the thumbnail lever attributes engaged-rate until Google ships the metric.* *(Shipped 2026-07-06: **O11 complete** — Apify + LLM router persistence migrated behind `core/quota_governor.py` + unified `snapshot()` ([credit_efficiency.md](credit_efficiency.md) O1–O11 all ✅); earlier same day: signal-breaker persistence + key-hash invalidation (the O11 seed), batch generation `ops batch-drafts`, script-lever A/B `ops experiment`, thumbnail A/B via `thumbnail_style`, webhook events out.)*
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
@@ -297,50 +297,144 @@ Turn the research spine into a compliance moat.
 - [x] **Headless key facts for `auto_generate` (2026-07-02)** — `--facts-file` (same parser as interactive `paste` mode — trade blocks work) + repeatable `--fact` lines; deduped/tip-filtered, saved in full to the vault, injected as ground truth, and echoed in the grounding report. Tests: `tests/test_auto_generate_facts.py`.
 - [x] **Webhook / n8n / Zapier out** — *shipped 2026-07-06:* `core/events.py` POSTs `{"event", "at", "payload"}` to `EVENT_WEBHOOK_URL` on `run_completed` (every pipeline finalize), `video_published` (YouTube upload/schedule success, includes video URL), and `batch_completed` (`ops batch-drafts` summary). Fire-and-forget on a daemon thread — a dead webhook can never stall a run; `EVENT_WEBHOOK_EVENTS` csv filters types. Pairs with a free self-hosted n8n for Discord pings, cross-posting, spreadsheets. Tests: `tests/test_events.py`.
 - [x] **Batch generation** — *shipped 2026-07-06:* `py -m scripts.ops batch-drafts --channel tapin --count 3` (or `py -m core.batch_generation` with explicit topics / `--file ideas.txt`). N ideas → N draft scripts unattended: discovery → best variant → recommended length → script/title/description saved to `output/<ch>/drafts/<ts>-<slug>/` (`draft.md` + `meta.json` with hook score, authenticity verdict, grounding flags, cost). Render-free by design — no TTS spend, no cadence impact; feeds A/B + volume-with-variation. Tests: `tests/test_batch_generation.py`.
-- [ ] **Observability** — structured run traces + timing dashboard (timings already captured). *(promoted to **Phase T** below.)*
+- [ ] **Observability** — structured run traces + timing dashboard (timings already captured). *(promoted into **Pillar 1 — Run Ledger** below.)*
 
 ---
 
-## Candidate phases — 2026-H2 expansion (proposed 2026-07-06)
+## Internal-systems pillars — 2026-H2 (proposed 2026-07-06 — reorientation)
 
-*Grounded in [vision.md](vision.md)'s spike list, [operating_plan.md](operating_plan.md)'s
-pace projections, and [content_intelligence_roadmap.md](content_intelligence_roadmap.md)'s
-evolution path. All YouTube-native or platform-free — no Instagram/TikTok platform
-linking (Phase M stays deferred), no Benable work (parked). Ordered by leverage;
-ordering reflects risk/impact, not commitment.*
+*Replaces the former "Candidate phases — 2026-H2 expansion" (Phases T–W). Three deep
+code audits (fact/Obsidian layer, metadata/storage, grading/scoring) converged on one
+finding: **the system writes down far more than it reads back, and no pre-publish
+score is calibrated against outcomes** (decisions §15). The forward roadmap is now
+organized around five internal systems instead of feature phases: Phases T + V fold
+into Pillar 1, the open thumbnail-calibration + prompt-eval work into Pillar 2,
+Phase W into Pillar 5; Phase U keeps its scope inside Pillar 1's ledger work.
+Dependency order is explicit — **Pillar 1 first** (everything downstream keys off
+it); Pillar 2's calibration stages and Pillar 5's agents are **data-gated** behind
+publish volume. Still YouTube-native or platform-free — no Instagram/TikTok platform
+linking (Phase M stays deferred), no Benable work (parked). **All items below are
+proposed / not started — implementation held for operator review.***
 
-### Phase T — Observability & run traces  *(do first — feeds everything after it)*
-*Promotes the long-standing "Observability" efficiency item. vision.md's thesis: the
-learning advantage compounds only if every run leaves a machine-readable trace.*
-- [ ] Structured per-run trace: signals used (+ cache hit/miss per signal), LLM calls
-  (tier/provider/tokens/cost), phase timings, grounding + authenticity verdicts,
-  experiment arms — one JSON per run (extends `finalize_run_observability()`).
-- [ ] `ops traces` viewer — recent runs, slowest phases, cost per run, failure hotspots.
-- [ ] Keep it write-only + fail-open in the pipeline (a broken trace must never stall a run).
+### Pillar 1 — Run Ledger (metadata spine)  *(do first — absorbs Phases T + V; carries U)*
+*Audit: most run metadata is write-only — the LLM call ledger is in-process and lost
+after every run, `signals_json`/`variants_json` have no readers, experiment arms live
+in a sidecar file, hook/authenticity scores aren't persisted at all (batch `meta.json`
+only), and `finalize_run_observability()` today only flushes aggregate cache counters.*
+- [ ] **Per-run trace** `[M]` — one JSON per run (`data/traces/<run_id>.json` or a
+  `run_traces` table) written from `_finalize_run`: phase timings, per-signal status +
+  cache hit/miss, persisted LLM call log (tier/provider/tokens/cost from
+  `llm_router.get_usage()`), regen attempts, experiment arm. Fail-open — a broken
+  trace must never stall a run. *(was Phase T)*
+- [ ] **Quality persistence** `[S]` — `quality_json` on `content_runs`: hook
+  score/verdict, authenticity score/verdict, ungrounded count, trade warnings,
+  thumbnail overall, corroboration confidence — written from both the interactive
+  and batch paths.
+- [ ] **Viewers** `[S–M]` — `ops traces` (recent runs, slowest phases, cost per run,
+  failure hotspots) + `ops dossier --run-id N` (one joined view: run + features +
+  quality + cost + metrics + assets + experiment arm).
+- [ ] **Data-quality monitor** `[S–M]` — validators over signal payloads
+  (missing-field rates, staleness, empty-result streaks) + run↔metrics join
+  assertions; thresholds fail-open to warnings, surfaced in `ops reliability`.
+  *(was Phase V)*
+- [ ] **Unit-economics ledger** `[M]` — join per-video fully-loaded cost
+  (`core/cost_meter.py`, already metered) to YouTube Analytics `estimatedRevenue` in
+  the metrics sync; contribution margin per video / per channel in `weekly-report` +
+  `status`; cost-vs-revenue trend per channel. *(Phase U, scope unchanged)*
 
-### Phase U — Unit-economics ledger  *(the measurement half of monetization)*
-*vision.md: contribution margin per content unit is "cheap to instrument now and
-impossible to reconstruct later". No affiliate dependency.*
-- [ ] Join per-video fully-loaded cost (`core/cost_meter.py`, already metered) to YouTube
-  Analytics `estimatedRevenue` in the metrics sync.
-- [ ] Surface contribution margin per video / per channel in `weekly-report` + `status`.
-- [ ] Channel-level trend: cost/video vs revenue/video over time (decides what to scale).
+### Pillar 2 — Video Grading System
+*Audit: six scorers exist (composite topic, hook, authenticity, grounding, trade,
+opt-in thumbnail) but nothing rolls them up; pre-publish scores are printed and
+discarded in the interactive flow; `thumbnail_scores` has carried "CTR correlation
+later" since Alembic `0002` with no reader; and the only backtest
+(`core/analyst_accuracy.py`) uses views while the learning loop optimizes
+engaged-rate.*
+- [ ] **Pre-publish report card** `[S]` — `core/video_grade.py`: one weighted grade
+  rolled up from the Pillar-1-persisted scores; shown before the render prompt +
+  `ops grade --run-id N`.
+- [ ] **Predicted engaged-rate** `[M]` *(data-gated)* — bucket/regression over
+  `features_json` + `quality_json` → expected engagement band; confidence-gated
+  (≥~15 measured videos, `core/recommender_confidence.py` pattern).
+- [ ] **Calibration loop** `[M]` *(data-gated)* — post-sync actual grade (percentile
+  vs channel baseline) + prediction delta feeding weekly-report next-actions and
+  experiment levers; join `thumbnail_scores` → engaged-rate; realign
+  `analyst_accuracy` from views to engaged-rate. *(absorbs the open
+  thumbnail-calibration work)*
+- [ ] **Prompt-evolution eval set** `[M]` — frozen rubric + golden topics so prompt
+  changes are measured, not vibed; pairs with the shipped A/B harness (vision.md spike).
+- [ ] **Multimodal rendered-video review** `[L]` *(later)* — sampled frames +
+  transcript → LLM rubric (pacing, caption readability, visual interest); needs the
+  router vision path first (see supporting track).
 
-### Phase V — Data-quality monitor  *(cheapest protective spike)*
-- [ ] Validator over signal payloads: missing-field rates, staleness, empty-result streaks
-  per signal; thresholds fail-open to warnings.
-- [ ] Surface in `ops reliability` (pairs with the O11 governor snapshot).
+### Pillar 3 — Fact Engine 2.0
+*Audit: today's checker is a prompt-layer fact assembler + string-presence linter —
+`find_ungrounded_entities()` passes any claim whose tokens appear anywhere in the
+corpus, nothing is verified against a source, facts carry no provenance or TTL, and
+operator paste / web snippets / YouTube descriptions share one undifferentiated
+grounding corpus.*
+- [ ] **Structured fact store** `[M–L]` — facts as `{claim, source_url, tier,
+  verified_at, expires}` (SQLite or vault frontmatter) instead of `list[str]`;
+  `load_facts()` ranks by freshness + provenance tier so stale champions/rosters
+  age out.
+- [ ] **Tiered grounding corpus** `[M]` — tag fact lines `[operator|link|web|signal|brief]`;
+  high-stakes claims (trades, results, records) must ground against operator/link
+  tier, not a YouTube description.
+- [ ] **Claim-level LLM verifier** `[M]` — `verify_claims(script, facts)` on the
+  extract tier → `{claim, supported, citation_line}`; optional `GROUNDING_GATE=block`
+  mirroring the authenticity gate. Generalizes trade validation (decisions §13c) to
+  all claim types.
+- [ ] **Contradiction detection pre-script** `[M]` — flag operator vs signal vs vault
+  disagreements before the LLM call, not after.
+- [ ] **Quick wins** `[S]` — capture `web_search` result URLs to `_sources.md`;
+  persist grounding/trade outputs into the report card; promote
+  `SEMANTIC_TRADE_VALIDATION` to default-on for sports channels once precision is
+  confirmed in live runs.
 
-### Phase W — Channel Health Agent
-*operating_plan's next-month item; composes existing pieces, no new data.*
-- [ ] Composite per-channel health score: cadence headroom, engagement trend,
-  authenticity trend, quota/breaker state, cost trend — on the weekly-report machinery.
-- [ ] `ops health` (and a line in `ops daily-brief`); each sub-score with a rationale
-  string, recommender-confidence style.
+### Pillar 4 — Obsidian knowledge OS
+*Audit: the vault is a one-way sidecar — read via token overlap with a full `rglob`
+scan per call, written as exactly three file patterns (`_operator_facts/`,
+`_sources.md`, `_machine-beliefs.md`); runs, scripts, and outcomes never land back in
+it. Target: the vault as the human-readable mirror of machine state (vision.md §7's
+"two faces").*
+- [ ] **Run dossiers into the vault** `[M]` — `{channel}/_runs/{date}_{slug}.md`:
+  topic, angle, final script, grade, ungrounded list, cost, and post-sync actuals;
+  weekly report lands in the vault too — a browsable content encyclopedia.
+- [ ] **Vault index** `[S]` — mtime-invalidated index replacing the full `rglob`
+  scan in `obsidian_facts.load_facts()`.
+- [ ] **Playbook layer** `[S–M]` — a read path for the strategy/playbook notes
+  `load_facts()` deliberately excludes today, feeding the research brief's strategy
+  fields (angles, voice, banned takes) beside `_machine-beliefs.md`.
+- [ ] **Structured fact templates** `[S]` — `verified_at`/`source` frontmatter on
+  operator fact notes (what makes Pillar 3's TTL/provenance work; no plugin needed).
 
-### Intelligence & quality levers (unphased, independently shippable)
-- [ ] **Prompt-evolution eval set** — frozen rubric + golden topics so prompt changes are
-  measured, not vibed; pairs with the shipped A/B experiment harness (vision.md spike).
+### Pillar 5 — Agent layer  *(last — composes Pillars 1–4; absorbs Phase W)*
+*Only worth building once the pillars give agents trustworthy data to reason over —
+autonomy is earned, not flipped on (vision.md §6).*
+- [ ] **Channel Health Agent** `[M]` — composite per-channel Green/Yellow/Red:
+  cadence headroom, engagement/authenticity/cost trends, quota/breaker state — on
+  the weekly-report machinery; `ops health` + a line in `ops daily-brief`, each
+  sub-score with a rationale string, recommender-confidence style. *(was Phase W)*
+- [ ] **Verifier agent** `[S]` — Pillar 3's claim verifier wired in as a standard
+  pipeline stage (lands with Pillar 3).
+- [ ] **Weekly analyst agent** `[M]` — LLM over run traces + weekly report +
+  prediction deltas → prose briefing with recommended lever changes; written to the
+  vault and fired out the webhook (`core/events.py` → n8n/Discord).
+- [ ] **Overnight operator** `[M]` — `batch-drafts` + grading + facts-file intake
+  chained as a scheduled job: drafts wake up graded, verified, and dossier'd for
+  approval.
+
+### Supporting track — API & efficiency (not a pillar)
+*The credit/quota layer is in good shape post-O11; these stay incremental.*
+- [ ] **Governor follow-ups (O12 candidates)** — YouTube units under a governor
+  scope; per-provider LLM spend in the run cost line; reliability time series
+  ([credit_efficiency.md](credit_efficiency.md) O11 follow-ups).
+- [ ] **Router vision path** — migrate the multimodal thumbnail scorer off legacy
+  `core/llm_client.py`; unlocks Pillar 2's rendered-video review.
+- [ ] **Free-backend probes (optional)** — TikTok/Twitter equivalents of the
+  yt-dlp / Reddit-OAuth backends, only if the Apify bill justifies it
+  ([agent_reach_evaluation.md](agent_reach_evaluation.md)).
+
+### Unphased levers (carried over, independently shippable)
 - [ ] **Whisper local** *(promoted from Efficiency backlog)* — caption timing without
   ElevenLabs timestamps; unlocks Phase R clip-from-source transcription.
 - [ ] **MoneyWise depth wave** ([domain-expansion.md](domain-expansion.md) ROI 9.5) —
@@ -349,9 +443,6 @@ impossible to reconstruct later". No affiliate dependency.*
 - [ ] **Third-vertical groundwork: AI Tools / Tech** (ROI 9.0) — new-channel playbook dry
   run: channel profile + SEO config + signal-coverage audit. *Groundwork only, not a
   launch commitment.*
-- [ ] **Governor follow-ups (O12 candidates)** — YouTube units under a governor scope;
-  per-provider LLM spend in the run cost line; reliability time series
-  ([credit_efficiency.md](credit_efficiency.md) O11 follow-ups).
 - [ ] **Engineering hygiene** — CI coverage reporting (non-blocking), mypy-baseline
   tightening tracking, render/publish test depth (the acknowledged soft spot).
 

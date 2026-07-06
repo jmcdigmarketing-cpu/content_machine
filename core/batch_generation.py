@@ -44,6 +44,7 @@ class DraftOutcome:
     hook_score: int | None = None
     hook_verdict: str = ""
     authenticity_verdict: str = ""
+    experiment_arm: str = ""
     ungrounded: list[str] = field(default_factory=list)
     run_id: int | None = None
     path: str = ""
@@ -112,6 +113,15 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
     best_topic, best_score, best_signals = discovery.evaluated[variant_index]
     out.variant, out.score = best_topic, float(best_score or 0)
 
+    # Active A/B experiment: the least-used arm's directive shapes this draft.
+    experiment: tuple[str, str, str] | None = None
+    try:
+        from core.experiments import next_arm
+
+        experiment = next_arm(channel_id)
+    except Exception:
+        pass
+
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -119,11 +129,22 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
         length_choice=_length_choice(channel_id, best_topic),
         proceed_video=False,
         channel_id=channel_id,
+        creative_brief=experiment[2] if experiment else "",
     )
     if result.aborted or not (result.script or "").strip():
         out.error = result.abort_reason or "pipeline produced no script"
         return out
     out.title, out.run_id = result.title, result.run_id
+
+    if experiment:
+        lever, arm, _ = experiment
+        out.experiment_arm = f"{lever}={arm}"
+        try:
+            from core.experiments import record_assignment
+
+            record_assignment(channel_id, result.run_id, lever, arm)
+        except Exception:
+            pass
 
     # Same quality surface the interactive flow prints, persisted instead.
     try:
@@ -176,6 +197,7 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
         "authenticity_verdict": out.authenticity_verdict,
         "fact_count": fact_count,
         "ungrounded_entities": out.ungrounded,
+        "experiment": out.experiment_arm or None,
         "cost": result.features.get("cost"),
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
@@ -212,8 +234,9 @@ def render_summary(outcomes: list[DraftOutcome]) -> str:
             hook = f"hook {o.hook_score}" if o.hook_score is not None else "hook n/a"
             auth = o.authenticity_verdict or "n/a"
             flags = f", {len(o.ungrounded)} ungrounded" if o.ungrounded else ""
+            arm = f", A/B {o.experiment_arm}" if o.experiment_arm else ""
             lines.append(f"  OK   {o.title or o.variant}")
-            lines.append(f"       {hook} ({o.hook_verdict}), authenticity {auth}{flags}")
+            lines.append(f"       {hook} ({o.hook_verdict}), authenticity {auth}{flags}{arm}")
             lines.append(f"       {o.path}  [{o.seconds:.0f}s]")
         else:
             lines.append(f"  FAIL {o.topic} — {o.error}")

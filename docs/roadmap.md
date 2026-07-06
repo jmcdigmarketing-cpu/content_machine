@@ -203,7 +203,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 3. ~~Semantic trade validation~~ — shipped opt-in (`core/trade_validation.py`, `SEMANTIC_TRADE_VALIDATION`)
 4. ~~Creator coach surface (Phase S)~~ — shipped (`core/creator_coach.py`, `ops coach`; weekly digest gained "Next actions")
 
-**Up next:** thumbnail A/B (Phase S remainder) · O11 remainder (migrate Apify + LLM router behind `core/quota_governor.py`). *(Shipped 2026-07-06: signal-breaker persistence + key-hash invalidation as the O11 governor seed — see [credit_efficiency.md](credit_efficiency.md) O11 — and batch generation, `ops batch-drafts`.)*
+**Up next:** thumbnail A/B (Phase S remainder — the experiment harness now exists; needs a thumbnail lever + upload variation) · O11 remainder (migrate Apify + LLM router behind `core/quota_governor.py`). *(Shipped 2026-07-06: signal-breaker persistence + key-hash invalidation as the O11 governor seed — see [credit_efficiency.md](credit_efficiency.md) O11 — batch generation `ops batch-drafts`, and script-lever A/B experiments `ops experiment`.)*
 
 ➡ One-time: re-auth `youtube.readonly` (`py -m youtube.oauth_setup --channel tapin`) to activate the dup-upload check. MoneyWise needs its own `oauth_setup`.
 
@@ -254,6 +254,7 @@ Turn the research spine into a compliance moat.
 - [x] **Hook-first regeneration** — opt-in `HOOK_REGEN_ENABLED`: rewrites a weak opening line via the LLM, only swapping it in if it scores higher.
 - [x] **Retention-curve modelling** — syncs the per-position audience-retention curve (`audienceWatchRatio` by `elapsedVideoTimeRatio`, stored on publish_log metrics) and aggregates it into a channel drop-off point (`core/retention.py`), confidence-gated (≥`RETENTION_MIN_VIDEOS`). Feeds the script prompt's pacing pivot (front-load before the measured cliff) + `ops retention` view. Activates as curves accrue.
 - [x] **A/B variant loop** (single-channel attribution form) — a faceless channel can't double-publish without cannibalizing, so instead of head-to-head it attributes realized engagement to the published title's **structural pattern** (`core/title_features`), builds a per-channel pattern leaderboard (`core/title_experiments`, `scripts.ops title-patterns`), and surfaces "▲ proven pattern" on matching variants at selection time. Thumbnail A/B (true two-up) still open.
+- [x] **Script-lever A/B experiments** — *shipped 2026-07-06:* controlled one-lever-at-a-time experiments (`core/experiments.py` lifecycle + `core/experiment_levers.py` arms: `hook_style`, `cta_style` + `core/experiment_stats.py` low-n-safe Bayesian winner detection). `py -m core.experiments start hook_style` → every batch draft gets the least-used arm's prompt directive, assignments persist in `data/experiments.json`, and `ops experiment` joins them to realized engaged-rates: "collecting" until ≥6 measured per arm, winner only at P(best) ≥ 95%. Fed by `ops batch-drafts` (volume-with-variation). Tests: `tests/test_experiments.py`.
 
 ### Phase Q — Captions & visual polish  *(table stakes)*
 - [x] **Burned captions, properly timed** — `video/subtitles.py`: sentence-aware, tighter chunks (`CAPTION_WORDS_PER_LINE`, default 5), durations **proportional to word count** (was uniform 8-word lines). Already burned in the render command.

@@ -334,6 +334,14 @@ def cmd_batch_drafts(args: argparse.Namespace) -> int:
     )
 
 
+@_register("experiment", "Script-lever A/B report (start/stop: py -m core.experiments)")
+def cmd_experiment(args: argparse.Namespace) -> int:
+    from core.experiments import display_report
+
+    display_report(args.channel)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description="Content OS operator commands (individual or batch)",

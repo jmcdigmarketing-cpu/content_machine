@@ -1,16 +1,21 @@
 """
-Reddit community sentiment signal via Apify.
+Reddit community sentiment signal — Apify actor or free official OAuth API.
 
-Scrapes relevant gaming/UFC subreddits for hot posts matching the topic.
-Returns upvotes, comment counts, and top post titles as community sentiment data.
+Searches relevant gaming/UFC/finance subreddits for hot posts matching the
+topic. Returns upvotes, comment counts, and top post titles as community
+sentiment data.
 
-Actor: apify/reddit-scraper (public, free tier available)
+Backends (SIGNAL_BACKEND, shared with youtube_competitors):
+  apify (default) — actor trudax/reddit-scraper-lite, paid credits.
+  free            — Reddit's official OAuth API via a free script app
+                    (REDDIT_CLIENT_ID/REDDIT_CLIENT_SECRET), $0, no fallback.
+  auto            — free first, Apify fallback on empty/rate-limited.
 
 Signal contract:
-  connected = APIFY_CONTENT_MACHINE_KEY is set
+  connected = a usable backend credential is set
   active    = ≥1 relevant post found
   score     = normalised engagement (0-100)
-  data      = {posts: [...], subreddits_searched: [...]}
+  data      = {posts: [...], subreddits_searched: [...], backend: "apify"|"free"}
 """
 
 from __future__ import annotations
@@ -20,7 +25,14 @@ import re
 from typing import Any
 
 from apis.apify_client import run_actor
-from apis.signal_contract import STATUS_INACTIVE, STATUS_NO_KEY, STATUS_OK, make_signal
+from apis.free_backends import fetch_reddit_free, reddit_available, signal_backend
+from apis.signal_contract import (
+    STATUS_INACTIVE,
+    STATUS_NO_KEY,
+    STATUS_OK,
+    STATUS_RATE_LIMIT,
+    make_signal,
+)
 from core.logging import get_logger
 
 logger = get_logger("apis.reddit_signal")
@@ -97,28 +109,6 @@ def _normalise_score(items: list[dict]) -> float:
 
 
 def get_reddit_signal(topic: str, channel_id: str = "default") -> dict[str, Any]:
-    from apis.apify_client import apify_disabled, apify_status
-
-    if apify_disabled():
-        return make_signal(
-            connected=True,
-            active=False,
-            score=0,
-            data=None,
-            status_detail=f"Reddit/Apify: {apify_status()}",
-            status=STATUS_INACTIVE,
-        )
-    key_set = bool(os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip())
-    if not key_set:
-        return make_signal(
-            connected=False,
-            active=False,
-            score=0,
-            data=None,
-            status_detail="Set APIFY_CONTENT_MACHINE_KEY for Reddit community sentiment",
-            status=STATUS_NO_KEY,
-        )
-
     subreddits = _pick_subreddits(topic, channel_id)
 
     # Build search query from topic (first anchor or cleaned topic)
@@ -130,32 +120,98 @@ def get_reddit_signal(topic: str, channel_id: str = "default") -> dict[str, Any]
     except Exception:
         query = topic
 
-    actor_input = {
-        "searches": [{"query": query[:100], "sort": "hot"}],
-        "subreddits": subreddits[:6],
-        "maxItems": 20,
-        "proxy": {"useApifyProxy": True},
-    }
+    backend = signal_backend()
+    items: list[dict] | None = None
+    source = "apify"
 
-    items = run_actor(_ACTOR_ID, actor_input, purpose="main", timeout_secs=90, ttl=_TTL)
+    if backend in ("free", "auto"):
+        if reddit_available():
+            free_items = fetch_reddit_free(query, subreddits[:6])
+            if free_items is None:
+                # 429 — surface rate_limited so the breaker's timed cooldown applies.
+                if backend == "free":
+                    return make_signal(
+                        connected=True,
+                        active=False,
+                        score=0,
+                        data=None,
+                        status_detail="Reddit (free/OAuth): rate limited",
+                        status=STATUS_RATE_LIMIT,
+                    )
+                # auto: fall through to Apify
+            elif free_items:
+                items, source = free_items, "free"
+            elif backend == "free":
+                return make_signal(
+                    connected=True,
+                    active=False,
+                    score=0,
+                    data=None,
+                    status_detail=f"Reddit (free/OAuth): no posts for '{query[:60]}'",
+                    status=STATUS_INACTIVE,
+                )
+        elif backend == "free":
+            return make_signal(
+                connected=False,
+                active=False,
+                score=0,
+                data=None,
+                status_detail=(
+                    "Set REDDIT_CLIENT_ID/REDDIT_CLIENT_SECRET (free script app) "
+                    "for Reddit community sentiment"
+                ),
+                status=STATUS_NO_KEY,
+            )
+
     if items is None:
-        return make_signal(
-            connected=True,
-            active=False,
-            score=0,
-            data=None,
-            status_detail="Reddit: Apify actor failed or timed out",
-            status=STATUS_INACTIVE,
-        )
+        from apis.apify_client import apify_disabled, apify_status
+
+        if apify_disabled():
+            return make_signal(
+                connected=True,
+                active=False,
+                score=0,
+                data=None,
+                status_detail=f"Reddit/Apify: {apify_status()}",
+                status=STATUS_INACTIVE,
+            )
+        if not os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
+            return make_signal(
+                connected=False,
+                active=False,
+                score=0,
+                data=None,
+                status_detail="Set APIFY_CONTENT_MACHINE_KEY for Reddit community sentiment",
+                status=STATUS_NO_KEY,
+            )
+
+        actor_input = {
+            "searches": [{"query": query[:100], "sort": "hot"}],
+            "subreddits": subreddits[:6],
+            "maxItems": 20,
+            "proxy": {"useApifyProxy": True},
+        }
+
+        items = run_actor(_ACTOR_ID, actor_input, purpose="main", timeout_secs=90, ttl=_TTL)
+        if items is None:
+            return make_signal(
+                connected=True,
+                active=False,
+                score=0,
+                data=None,
+                status_detail="Reddit: Apify actor failed or timed out",
+                status=STATUS_INACTIVE,
+            )
 
     relevant = _score_items(items, query)
     if not relevant:
+        label = "Reddit (free/OAuth)" if source == "free" else "Reddit"
         return make_signal(
             connected=True,
             active=False,
             score=0,
             data=None,
-            status_detail=f"Reddit: no matching posts in {', '.join(subreddits[:3])}",
+            status_detail=f"{label}: no matching posts in {', '.join(subreddits[:3])}",
             status=STATUS_INACTIVE,
         )
 
@@ -175,6 +231,6 @@ def get_reddit_signal(topic: str, channel_id: str = "default") -> dict[str, Any]
         connected=True,
         active=True,
         score=score,
-        data={"posts": posts, "subreddits_searched": subreddits},
+        data={"posts": posts, "subreddits_searched": subreddits, "backend": source},
         status=STATUS_OK,
     )

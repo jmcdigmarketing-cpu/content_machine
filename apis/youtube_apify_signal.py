@@ -30,22 +30,13 @@ from typing import Any
 
 from apis.apify_catalog import build_input, get_source
 from apis.apify_client import run_actor
-from apis.free_backends import fetch_youtube_free, youtube_available
+from apis.free_backends import fetch_youtube_free, signal_backend, youtube_available
 from apis.signal_contract import STATUS_INACTIVE, STATUS_NO_KEY, STATUS_OK, make_signal
 from core.logging import get_logger
 
 logger = get_logger("apis.youtube_apify_signal")
 
 _SOURCE = "youtube_competitors"
-
-
-def _backend() -> str:
-    """SIGNAL_BACKEND=apify (default, unchanged behavior) | free | auto.
-
-    free  = yt-dlp only, no Apify key needed, no fallback on empty results.
-    auto  = yt-dlp first, falls back to Apify on empty/unavailable.
-    """
-    return os.getenv("SIGNAL_BACKEND", "apify").strip().lower()
 
 
 def _fetch_items(backend: str, query: str) -> tuple[list[dict] | None, str]:
@@ -159,7 +150,7 @@ def _normalise_score(top_velocity: float) -> float:
 
 def get_youtube_apify_signal(topic: str, channel_id: str = "default") -> dict[str, Any]:
     query = _build_query(topic)
-    backend = _backend()
+    backend = signal_backend()
     items, source = _fetch_items(backend, query)
 
     if source == "no_key":

@@ -211,7 +211,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 
 ## Market positioning (2026)
 
-*From a scan of the short-form / creator-tooling market (OpusClip, AutoShorts, Revid, Higgsfield, vidIQ, TubeBuddy) and YouTube policy.*
+*From a scan of the short-form / creator-tooling market (OpusClip, AutoShorts, Revid, Higgsfield, vidIQ, TubeBuddy) and YouTube policy. Deeper tool-by-tool teardown (17 repos/guides, borrow/threat verdicts mapped to modules): [tooling_landscape.md](tooling_landscape.md).*
 
 **The defining shift — authenticity enforcement.** YouTube's "inauthentic content" policy (Jul 2025) plus the **Jan 2026 mass-termination wave** demonetised templated, synthetic-voiceover, volume-over-substance faceless channels. *Faceless is still fine — synthetic-and-shallow is not.* What survives: **original insight, real variation between videos, human context, substance over volume.** That is an existential constraint for a generation-first pipeline and reorders our priorities (Phase O).
 

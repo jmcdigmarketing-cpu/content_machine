@@ -6,10 +6,16 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core import obsidian_facts as of
+from core import vault_index
 from core.ui import prompt_key_facts
 
 
 class TestLoadFacts(unittest.TestCase):
+    def setUp(self):
+        vault_index.clear_cache()
+
+    def tearDown(self):
+        vault_index.clear_cache()
     def test_unset_vault_returns_empty(self):
         with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": ""}, clear=False):
             self.assertEqual(of.load_facts("anything", "tapin"), [])
@@ -109,6 +115,23 @@ class TestLoadFacts(unittest.TestCase):
             with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
                 facts = of.load_facts("NBA offseason trades", "tapin")
             self.assertEqual(facts, [])
+
+    def test_machine_beliefs_excluded_from_key_facts(self):
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "_machine-beliefs.md").write_text(
+                "---\nchannel: tapin\ntags: [machine, beliefs, evergreen]\n---\n"
+                "# Beliefs\n"
+                "- Prefer reports suggest over stating an unverified specific as fact\n"
+                "- Competitor video titles show what's trending, NOT what's true\n",
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                facts = of.load_facts("LeBron free agency", "tapin")
+                self.assertEqual(facts, [])
+                pb = of.load_playbook("tapin")
+                self.assertTrue(any("reports suggest" in b for b in pb))
 
     def test_strategy_bullet_filtered_even_in_factual_note(self):
         with tempfile.TemporaryDirectory() as d:

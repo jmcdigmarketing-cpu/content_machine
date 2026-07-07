@@ -679,7 +679,7 @@ def prompt_key_facts(
     guided across the relevancy categories that actually go stale, so the facts
     cover identity, latest result, hard numbers, and a recency anchor.
     """
-    from core.obsidian_facts import load_facts
+    from core.obsidian_facts import is_playbook_line, load_facts
 
     subsection("Key facts (ground truth — highest priority)", print_fn)
     print_fn("  Cover the things that go stale — add as many as apply:")
@@ -699,7 +699,7 @@ def prompt_key_facts(
         suggestions = []
     from core.operator_facts import is_writing_tip
 
-    suggestions = [s for s in suggestions if not is_writing_tip(s)]
+    suggestions = [s for s in suggestions if not is_writing_tip(s) and not is_playbook_line(s)]
     if suggestions:
         print_fn("")
         print_fn(f"  From your Obsidian vault ({len(suggestions)} factual match(es)):")

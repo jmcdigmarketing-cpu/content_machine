@@ -51,6 +51,15 @@ _JUNK_MARKERS = (
     "create an account",
     "fantasy games",
     "©",
+    "college & high school",
+    "free agency updates",
+    "red-card timeline",
+    "fights back tears",
+    "dream ends in rout",
+    "reportedly waive",
+    "pens lakers goodbye",
+    "staffer confesses",
+    "kevin o'connor show",
 )
 
 
@@ -58,10 +67,34 @@ def _is_junk_line(text: str) -> bool:
     """True for promo/nav boilerplate or pure teaser questions — not a usable fact."""
     t = (text or "").strip()
     low = t.lower()
+    if low.startswith("related:"):
+        return True
     if any(m in low for m in _JUNK_MARKERS):
         return True
     # Teaser questions ("Will the Bucks move Giannis? Are X going anywhere?")
     return t.endswith("?") or t.count("?") >= 2
+
+
+def _main_content_root(soup: BeautifulSoup):
+    """Prefer article body over full-page scrape (sidebars, related links)."""
+    for selector in (
+        "article",
+        "[role='main']",
+        ".article-body",
+        ".caas-body",
+        "#article-body",
+        "main",
+    ):
+        el = soup.select_one(selector)
+        if el:
+            return el
+    return soup.body or soup
+
+
+def _looks_like_trade_tracker(url: str, title: str) -> bool:
+    u = (url or "").lower()
+    t = (title or "").lower()
+    return "trade" in u or "trade tracker" in t or "offseason trade" in t
 
 
 def looks_like_url(text: str) -> bool:
@@ -153,6 +186,7 @@ def _article_facts(url: str, *, max_lines: int = 24) -> list[str]:
         logger.debug("link fetch failed for %s: %s", url, exc)
         return []
 
+    root = _main_content_root(soup)
     facts: list[str] = []
     title = (soup.title.string if soup.title and soup.title.string else "").strip()
     if title:
@@ -167,14 +201,16 @@ def _article_facts(url: str, *, max_lines: int = 24) -> list[str]:
         if len(content) > 25 and not _is_junk_line(content):
             facts.append(content[:300])
 
-    for p in soup.find_all("p"):
+    for p in root.find_all("p"):
         text = " ".join(p.get_text(" ", strip=True).split())
         if len(text) > 60 and not _is_junk_line(text):
             facts.append(text[:400])
 
-    for trade_line in _extract_trade_lines(soup):
-        if trade_line.lower() not in {f.lower() for f in facts}:
-            facts.append(trade_line)
+    # List items only on trade-tracker pages — Yahoo/MSN sidebars are full of <li> noise.
+    if _looks_like_trade_tracker(url, title):
+        for trade_line in _extract_trade_lines(root):
+            if trade_line.lower() not in {f.lower() for f in facts}:
+                facts.append(trade_line)
 
     # De-duplicate, preserve order; drop writing tips.
     seen: set[str] = set()

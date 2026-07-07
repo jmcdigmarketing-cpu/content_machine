@@ -50,6 +50,13 @@ _WRITING_TIP_MARKERS = (
     "age better",
     "clickbait",
     "heuristic",
+    "not facts",
+    "reports suggest",
+    "facts are thin",
+    "always verify",
+    "competitor video",
+    "corporate-jargon",
+    "spoken-word cadence",
 )
 
 

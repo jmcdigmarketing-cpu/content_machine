@@ -87,8 +87,9 @@ class TestWriteBeliefs(unittest.TestCase):
             self.assertIsNone(vw.write_channel_beliefs("tapin"))
 
     def test_written_beliefs_are_readable_back(self):
-        # The machine note must be picked up by the human-facing reader (loop closed).
+        # Machine beliefs feed the playbook layer, not load_facts (Pillar 4 / §17).
         from core import obsidian_facts as of
+        from core import vault_index
 
         with tempfile.TemporaryDirectory() as d:
             with (
@@ -97,8 +98,11 @@ class TestWriteBeliefs(unittest.TestCase):
                 patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": d}, clear=False),
             ):
                 vw.write_channel_beliefs("tapin")
+                vault_index.clear_cache()
                 facts = of.load_facts("UFC fraud callout angle", "tapin")
-            self.assertTrue(any("Machine belief" in f for f in facts))
+                playbook = of.load_playbook("tapin")
+            self.assertEqual(facts, [])
+            self.assertTrue(any("Machine belief" in b for b in playbook))
 
 
 if __name__ == "__main__":

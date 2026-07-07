@@ -774,7 +774,9 @@ def generate_content_package(
     # (YouTube titles must not "support" a claim). Fail-open → None.
     from core.claim_verifier import verify_claims
 
-    verification = verify_claims(script, corpus.factual_text, topic=topic)
+    verification = verify_claims(
+        script, corpus.factual_text, topic=topic, priority_facts=clean_key_facts
+    )
     if verification and verification.unsupported:
         logger.warning(
             "Claim verifier: %d/%d claim(s) unsupported: %s",

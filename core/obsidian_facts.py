@@ -105,6 +105,15 @@ _STRATEGY_BULLET_MARKERS = (
     "implication hooks",
     "invite debate",
     "defensive engagement",
+    "not facts",
+    "reports suggest",
+    "facts are thin",
+    "always verify",
+    "competitor video",
+    "corporate-jargon",
+    "spoken-word cadence",
+    "opinionated",
+    "corporate anchor",
 )
 # Factual anchors — if present, keep the bullet even when strategy-flavored.
 _FACT_ANCHOR_RE = re.compile(
@@ -131,6 +140,20 @@ def _is_strategy_note(meta: dict[str, str], rel_path: Path) -> bool:
 def _is_machine_record(rel_path: Path) -> bool:
     """Run dossiers / weekly reports the system writes — never read back as facts."""
     return bool({p.lower() for p in rel_path.parts} & _MACHINE_PATH_PARTS)
+
+
+def _is_playbook_only_note(meta: dict[str, str], rel_path: Path) -> bool:
+    """Machine beliefs + strategy notes — playbook layer only, never load_facts."""
+    if rel_path.stem == "_machine-beliefs":
+        return True
+    if "beliefs" in _tag_set(meta):
+        return True
+    return _is_strategy_note(meta, rel_path)
+
+
+def is_playbook_line(text: str) -> bool:
+    """True for strategy/voice guidance that must not be operator ground truth."""
+    return _is_strategy_bullet(text)
 
 
 def _is_strategy_bullet(text: str) -> bool:
@@ -220,7 +243,7 @@ def load_fact_records(
         meta = note.meta
         if not _note_matches_channel(meta, rel, channel_id):
             continue
-        if _is_strategy_note(meta, rel) or _is_machine_record(rel):
+        if _is_playbook_only_note(meta, rel) or _is_machine_record(rel):
             continue
 
         tier, verified_at, expires, source_url = note_metadata(meta, rel)

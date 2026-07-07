@@ -79,6 +79,14 @@ class TestVerifyClaims(unittest.TestCase):
             result = cv.verify_claims(_SCRIPT, _FACTS)
         self.assertEqual(result.claims[0].citation_line, "")
 
+    def test_priority_facts_survive_char_budget_truncation(self):
+        """Operator key facts must be numbered first — signal corpus can't crowd them out."""
+        noise = "\n".join(f"Signal line {i} with filler padding text" for i in range(200))
+        priority = ["The Lakers reportedly wanted James to take a pay cut."]
+        facts = cv._numbered_facts(noise, priority_facts=priority)
+        self.assertGreaterEqual(len(facts), 1)
+        self.assertIn("pay cut", facts[0])
+
 
 class TestGroundingGate(unittest.TestCase):
     def test_default_mode_is_warn(self):

@@ -300,9 +300,10 @@ render gate (interactive asks to override; headless needs `--force`).
 1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault fact suggestions (`core/obsidian_facts.py`). Since Pillar 4, those same notes **do** feed the bounded `CHANNEL PLAYBOOK` prompt block (clearly labeled NOT facts). At the prompt, type `n` to skip vault suggestions when unsure.
 2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/`; LLM gets a **char budget** (default 4500, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Pasted + link facts rank before vault. Type **`paste`** + Enter to drop a whole trade tracker block. UI shows collected vs packed-for-LLM counts.
 3. **Discovery angles ≠ YouTube title** — discovery picks editorial angles; the publishable title is generated **after** key facts + script (`core/title_generator.py`). Ignore slop-looking angle lines — the final title uses your facts.
-4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs.
+4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs. Yahoo/MSN article links can also pull sidebar "Related:" items — `link_facts` now scopes to `<article>` and drops nav noise; if a link still looks polluted, **`paste`** the paragraph block instead.
 5. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”). Set `SIGNAL_BACKEND=auto` for yt-dlp YouTube when Apify is dead.
 6. **Single-name athletes** — grounding flags mononyms (e.g. `LeBron`) when absent from the facts corpus.
+7. **Claim verifier vs token grounding** — token grounding can pass while the claim verifier fails: the verifier checks whether the *claim* is backed, not just whether names appear. Operator key facts are now **prioritized** in the verifier's fact window (signal corpus used to crowd them out past the 6000-char cap). If pay-cut lines are in your pasted facts but still flag unsupported, re-run after pull — or add the exact stat as a key fact.
 
 **What to do:**
 

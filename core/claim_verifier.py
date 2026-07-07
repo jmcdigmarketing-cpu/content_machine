@@ -91,19 +91,52 @@ def gate_blocks(verification_dict: dict[str, Any] | None) -> bool:
     return bool((verification_dict or {}).get("unsupported"))
 
 
-def _numbered_facts(facts_text: str) -> list[str]:
-    lines = [ln.strip() for ln in (facts_text or "").splitlines() if ln.strip()]
+def _numbered_facts(
+    facts_text: str,
+    *,
+    priority_facts: list[str] | None = None,
+) -> list[str]:
+    """Build the numbered fact list; operator key facts come first (never truncated away)."""
+    seen: set[str] = set()
     numbered: list[str] = []
     used = 0
-    for ln in lines:
+
+    def _add(ln: str) -> None:
+        nonlocal used
         if used + len(ln) > _MAX_FACT_CHARS:
-            break
+            return
         numbered.append(ln)
         used += len(ln)
+
+    for raw in priority_facts or []:
+        ln = (raw or "").strip()
+        if not ln:
+            continue
+        key = ln.lower()[:120]
+        if key in seen:
+            continue
+        seen.add(key)
+        _add(ln)
+
+    for ln in (facts_text or "").splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        key = ln.lower()[:120]
+        if key in seen:
+            continue
+        seen.add(key)
+        _add(ln)
     return numbered
 
 
-def verify_claims(script: str, facts_text: str, *, topic: str = "") -> ClaimVerification | None:
+def verify_claims(
+    script: str,
+    facts_text: str,
+    *,
+    topic: str = "",
+    priority_facts: list[str] | None = None,
+) -> ClaimVerification | None:
     """Decompose the script into factual claims and verify each against the facts.
 
     Returns ``None`` when disabled, when there is nothing to verify, or on any
@@ -114,7 +147,7 @@ def verify_claims(script: str, facts_text: str, *, topic: str = "") -> ClaimVeri
     if not (script or "").strip() or not (facts_text or "").strip():
         return None
 
-    facts = _numbered_facts(facts_text)
+    facts = _numbered_facts(facts_text, priority_facts=priority_facts)
     if not facts:
         return None
     facts_block = "\n".join(f"{i}. {ln}" for i, ln in enumerate(facts, 1))

@@ -81,9 +81,29 @@ class TestArticleFacts(unittest.TestCase):
         self.assertIn("blocked automated fetch", issue.lower())
 
     @patch("apis.youtube_api.extract_youtube_video_id", return_value=None)
-    @patch("core.link_facts.requests.get", side_effect=Exception("network down"))
-    def test_fetch_failure_returns_empty(self, mock_get, _ytid):
-        self.assertEqual(lf.extract_facts_from_url("https://broken.example.com"), [])
+    @patch("core.link_facts.requests.get")
+    def test_yahoo_sidebar_related_links_filtered(self, mock_get, _ytid):
+        html = (
+            "<html><head><title>Lakers rumors: Insider reveals LeBron plans</title></head>"
+            "<body><article>"
+            "<p>The Lakers reportedly wanted James to take a pay cut as an attempt to add a center.</p>"
+            "<p>As free agent LeBron James ponders what is next, the Lakers will always be in the mix.</p>"
+            "</article>"
+            "<aside><ul>"
+            "<li>Related: Rui Hachimura pens Lakers goodbye after Clippers signing</li>"
+            "<li>USMNT's dream ends in rout</li>"
+            "<li>Ronaldo fights back tears</li>"
+            "<li>College &amp; High School</li>"
+            "</ul></aside></body></html>"
+        )
+        mock_get.return_value = MagicMock(status_code=200, text=html)
+        facts = lf.extract_facts_from_url("https://sports.yahoo.com/articles/lakers-rumors")
+        joined = " ".join(facts)
+        self.assertIn("pay cut", joined)
+        self.assertNotIn("Rui Hachimura", joined)
+        self.assertNotIn("USMNT", joined)
+        self.assertNotIn("Ronaldo", joined)
+        self.assertNotIn("College", joined)
 
     def test_non_url_returns_empty(self):
         self.assertEqual(lf.extract_facts_from_url("not a url"), [])

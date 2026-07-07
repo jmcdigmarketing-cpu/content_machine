@@ -86,7 +86,12 @@ def build_quality(
     quality["fact_conflict_count"] = len(features.get("fact_conflicts") or [])
     verification = features.get("claim_verification") or {}
     if verification.get("total"):
-        quality["claim_support_rate"] = verification.get("support_rate")
+        # Only persist a numeric support_rate — a malformed/None value would
+        # leave a non-numeric quality_json key that the calibration/analyst
+        # averages then have to special-case.
+        support_rate = verification.get("support_rate")
+        if isinstance(support_rate, int | float):
+            quality["claim_support_rate"] = float(support_rate)
         quality["unsupported_claim_count"] = len(verification.get("unsupported") or [])
 
     # Pillar 2: freeze the data-gated engaged-rate prediction at generation time

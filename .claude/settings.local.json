@@ -9,7 +9,14 @@
       "Bash(py -m pytest *)",
       "Bash(ruff check *)",
       "Bash(ruff format *)",
-      "Bash(python -m pip show *)"
+      "Bash(python -m pip show *)",
+      "Bash(python -m pytest --co -q)",
+      "Bash(awk '{sum += $NF} END {print \"Total tests: \" sum}')",
+      "Bash(python -c \"from core.run_ledger import render_traces; print\\(render_traces\\(limit=0\\)\\)\")",
+      "Bash(…\" | head -20)",
+      "Bash(python -c \"import sys; print\\(sys.stdout.encoding\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python -m scripts.ops traces --limit 0)"
     ]
   }
 }

@@ -46,7 +46,7 @@ def render_traces(limit: int = 10, *, channel_id: str | None = None) -> str:
 
     traces = list_traces(limit=limit, channel_id=channel_id)
     if not traces:
-        return "No run traces yet — traces appear in data/traces/ after the next run."
+        return "No run traces yet - traces appear in data/traces/ after the next run."
 
     lines = [f"Run traces (most recent {len(traces)})", "=" * 72]
     slowest_phase_counts: dict[str, int] = {}
@@ -125,7 +125,7 @@ def render_dossier(run_id: int) -> str:
     quality = _load_json(record.quality_json)
     timings = _load_json(record.timings_json)
 
-    lines = [f"Run dossier — #{run_id}", "=" * 72]
+    lines = [f"Run dossier - #{run_id}", "=" * 72]
     lines.append(f"Channel : {record.channel_id}   Status: {record.status}")
     lines.append(f"Topic   : {record.selected_topic or record.input_topic}")
     if record.title:
@@ -189,7 +189,7 @@ def render_dossier(run_id: int) -> str:
 
         exp = assignment_for_run(run_id)
         if exp and exp.get("arm"):
-            lines.append(f"Experiment: {exp['lever']} → arm '{exp['arm']}'")
+            lines.append(f"Experiment: {exp['lever']} -> arm '{exp['arm']}'")
     except Exception:
         pass
 
@@ -207,7 +207,7 @@ def render_dossier(run_id: int) -> str:
                 revenue = float(metrics["estimated_revenue_usd"] or 0)
                 total_cost = float((cost or {}).get("total") or 0)
                 lines.append(
-                    f"  revenue ${revenue:.2f} — margin ${revenue - total_cost:+.2f}"
+                    f"  revenue ${revenue:.2f} - margin ${revenue - total_cost:+.2f}"
                     " (est., 28d window)"
                 )
     else:
@@ -226,7 +226,7 @@ def render_dossier(run_id: int) -> str:
             tier = str(c.get("tier", "?"))
             by_tier[tier] = by_tier.get(tier, 0) + 1
         if by_tier:
-            lines.append("  " + ", ".join(f"{tier}×{n}" for tier, n in sorted(by_tier.items())))
+            lines.append("  " + ", ".join(f"{tier}x{n}" for tier, n in sorted(by_tier.items())))
     else:
-        lines.append("LLM     : (no trace — run predates the ledger)")
+        lines.append("LLM     : (no trace - run predates the ledger)")
     return "\n".join(lines)

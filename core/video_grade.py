@@ -195,8 +195,8 @@ def grade_run(run_id: int) -> VideoGrade | None:
 def render_grade(grade: VideoGrade) -> str:
     lines = [f"Report card: {grade.letter} ({grade.score:.0f}/100)"]
     for c in grade.components:
-        note = f" — {c.note}" if c.note else ""
-        lines.append(f"    {c.name:<12} {c.score:5.1f} × {c.weight:.0%}{note}")
+        note = f" - {c.note}" if c.note else ""
+        lines.append(f"    {c.name:<12} {c.score:5.1f} x {c.weight:.0%}{note}")
     if grade.predicted_engaged_rate is not None:
         lines.append(
             f"    predicted engaged-rate ~{grade.predicted_engaged_rate * 100:.1f}%"

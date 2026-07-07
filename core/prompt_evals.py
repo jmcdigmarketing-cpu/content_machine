@@ -177,7 +177,7 @@ def compare_latest() -> str:
     """Diff the two most recent eval runs per golden topic and metric."""
     evals = _load_eval_files(2)
     if len(evals) < 2:
-        return "Need two eval runs to compare — run `py -m core.prompt_evals run` twice."
+        return "Need two eval runs to compare - run `py -m core.prompt_evals run` twice."
     new, old = evals[0], evals[1]
     lines = [
         f"Prompt evals: {old.get('prompt_version', '?')} -> {new.get('prompt_version', '?')}",

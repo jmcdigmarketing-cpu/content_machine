@@ -80,7 +80,7 @@ class FactConflict:
 
     def render(self) -> str:
         return (
-            f'{self.detail} — operator: "{_short(self.operator_line)}" '
+            f'{self.detail} - operator: "{_short(self.operator_line)}" '
             f'vs source: "{_short(self.other_line)}"'
         )
 
@@ -252,9 +252,9 @@ def display_fact_conflicts(
     """Show pre-script conflict flags. Returns True when review is needed."""
     if not conflicts_rendered:
         return False
-    print_fn(f"\n  ⚠ Fact conflicts ({len(conflicts_rendered)}) — operator facts win:")
+    print_fn(f"\n  ! Fact conflicts ({len(conflicts_rendered)}) - operator facts win:")
     for c in conflicts_rendered[:6]:
-        print_fn(f"    · {c}")
+        print_fn(f"    - {c}")
     if dropped:
         print_fn(
             f"    {dropped} conflicting source line(s) were kept out of the prompt "

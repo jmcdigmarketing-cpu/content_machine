@@ -173,10 +173,10 @@ def summary_line(report: CalibrationReport) -> str | None:
 
 def render(channel_id: str | None = None) -> str:
     report = build_calibration(channel_id)
-    lines = [f"Grade calibration — {report.channel_id}", "=" * 64]
+    lines = [f"Grade calibration - {report.channel_id}", "=" * 64]
     if not report.rows:
         lines.append(
-            "No measured runs with persisted quality yet — publish + sync-metrics, "
+            "No measured runs with persisted quality yet - publish + sync-metrics, "
             "then re-run. (Runs recorded before the ledger have no quality_json.)"
         )
         return "\n".join(lines)

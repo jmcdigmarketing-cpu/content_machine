@@ -200,7 +200,7 @@ def high_stakes_low_tier(script: str, corpus: TieredCorpus) -> list[str]:
             flagged.add(key)
             warnings.append(
                 f"High-stakes claim about '{entity}' is backed only by unverified "
-                f"sources (web/news/titles) — verify it or add an operator key fact."
+                f"sources (web/news/titles) - verify it or add an operator key fact."
             )
     return warnings
 
@@ -210,7 +210,7 @@ def tier_warnings_for_script(script: str, corpus: TieredCorpus) -> list[str]:
     context_only = set(context_grounded_entities(script, corpus))
     warnings = [
         f"'{entity}' only grounds when YouTube titles/descriptions are counted "
-        f"(context, not facts) — treat as unverified."
+        f"(context, not facts) - treat as unverified."
         for entity in sorted(context_only)
     ]
     warnings.extend(

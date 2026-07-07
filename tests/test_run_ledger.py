@@ -71,6 +71,28 @@ class TestBuildQuality(unittest.TestCase):
         self.assertEqual(q["claim_support_rate"], 0.75)
         self.assertEqual(q["unsupported_claim_count"], 1)
 
+    def test_none_support_rate_is_not_persisted(self):
+        # Guard: a verifier that ran but returned a non-numeric support_rate must
+        # not leave a non-numeric quality_json key for the calibration averages.
+        with patch(
+            "storage.repositories.content_runs.get_content_run_repository",
+            return_value=_mock_repo(),
+        ):
+            q = run_quality.build_quality(
+                script=SCRIPT,
+                channel_id="tapin",
+                features={
+                    "claim_verification": {
+                        "total": 2,
+                        "supported": 2,
+                        "support_rate": None,
+                        "unsupported": [],
+                    },
+                },
+            )
+        self.assertNotIn("claim_support_rate", q)
+        self.assertEqual(q["unsupported_claim_count"], 0)  # count still recorded
+
 
 class TestQualityPersistence(unittest.TestCase):
     def test_persist_writes_quality_json(self):
@@ -205,10 +227,12 @@ class TestViewers(TraceCase):
             ),
         ):
             out = render_dossier(9)
-        self.assertIn("Run dossier — #9", out)
+        self.assertIn("Run dossier - #9", out)
         self.assertIn("hook 66/100 (solid)", out)
         self.assertIn("$0.050", out)
         self.assertIn("(not uploaded)", out)
+        # cp1252 regression: ops (no forced UTF-8 stdout) must be able to print it.
+        out.encode("cp1252")
 
     def test_render_dossier_missing_run(self):
         with patch(

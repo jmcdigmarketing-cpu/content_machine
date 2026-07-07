@@ -134,7 +134,7 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
     if econ.total_revenue is not None:
         margin = econ.total_margin or 0.0
         lines.append(
-            f"  revenue ${econ.total_revenue:.2f} — margin ${margin:+.2f} (est., 28d windows)"
+            f"  revenue ${econ.total_revenue:.2f} - margin ${margin:+.2f} (est., 28d windows)"
         )
     else:
         lines.append(
@@ -145,7 +145,7 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
 
 def render(channel_id: str | None = None, *, limit: int = 25) -> str:
     econ = channel_economics(channel_id, limit=limit)
-    lines = [f"Unit economics — {econ.channel_id}", "=" * 64]
+    lines = [f"Unit economics - {econ.channel_id}", "=" * 64]
     if not econ.videos:
         lines.append("No uploaded videos with run links yet.")
         return "\n".join(lines)

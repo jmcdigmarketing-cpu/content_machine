@@ -340,3 +340,52 @@ brief listed it.
 *Updated stance (decisions §17): alongside the loop/grounding/data moat, we now
 **also** invest in generation quality — see [video_creation_stack.md](video_creation_stack.md)
 for the video-creation provider slots to build.*
+
+---
+
+## Ranking — the 17 by value to Content OS
+
+*Ranked by how much adopting/borrowing helps the project **now** (real module
+mapping × maturity × fills-a-gap × low friction). The brief listed
+qiaomu/anything-to-notebooklm twice, so there are 16 unique resources.*
+
+| Rank | Resource | Verdict | Why it ranks here |
+|---|---|---|---|
+| 1 | goose3 (← python-goose) | Borrow | Hardens fact intake (`core/link_facts.py`) — grounding is the moat; free, near-drop-in |
+| 2 | anything-to-notebooklm | Borrow | Multi-source → provenance-tagged vault notes (Pillar 4); grows the verified-fact base |
+| 3 | ericosiu/ai-marketing-skills | Reference→Borrow | Mature MIT "Expert Panel" persona-scoring → richer Pillar 2 grading |
+| 4 | lucaswalter/n8n-ai-automations | Complement | Distribution/repurposing layer downstream of `core/events.py` webhooks — reach |
+| 5 | system_prompts_leaks | Reference | Free prompt-engineering corpus for the verifier + prompt-evals; ongoing value |
+| 6 | AI-Content-Studio | Reference (watch) | Closest thesis-aligned rival (has grounding, no loop) — proves the approach |
+| 7 | youtube-automation-agent | Reference | Validates Pillar 5 (agent orchestration + weekly review cadence) |
+| 8 | gemini-youtube-automation | Borrow (one) | Clean dual-format render tactic (one script → 9:16 + 16:9) |
+| 9 | Marvomatic/n8n-templates | Complement | SEO "analyst agent" n8n recipes downstream of our data |
+| 10 | youtubeniches 2026 guide | Intel | Validates the authenticity/disclosure strategy + faceless viability |
+| 11 | directai roundup | Intel | Competitor watch (DirectAI/Pictory/InVideo) + confirms the grounding+loop market gap |
+| 12 | Higgsfield | Complement (paid) | Optional media-provider quality lever — not free |
+| 13 | AutoSocial | Complement (parked) | Local browser posting — a Phase-M hedge, low near-term value |
+| 14 | ShortGPT | Overlap | Commodity generator; its resumable-state pattern is already exceeded by Pillar 1 |
+| 15 | MoneyPrinterV2 | Overlap-threat | AGPL-3.0 blocks code reuse; only a cost-posture idea (local TTS) survives |
+| 16 | ComplianceAsCode/content | Irrelevant | Category mismatch; naming analogy only — do not pursue |
+
+## Top 10 free (OSS) tools to actually adopt
+
+*Genuinely free / self-hostable, highest leverage, each mapped to a slot/module.
+Spans the moat (grounding) **and** the new video-quality investment (decisions §17).*
+
+| # | Tool | Slot / module | Payoff |
+|---|---|---|---|
+| 1 | **faster-whisper / WhisperX** | captions/alignment (stack §3) | Local word-timing for *any* TTS + unlocks clip-from-source (Phase R) |
+| 2 | **Kokoro-82M** (TTS) | `core/tts.py` (stack §2) | Free local voice — kills the dominant per-video cost |
+| 3 | **goose3** | `core/link_facts.py` (#1 above) | Cleaner fact extraction → stronger grounding (the moat) |
+| 4 | **LTX-Video** (or Wan 2.x) | AI video-gen (stack §1) | Headline quality upgrade at ~$0 marginal (local GPU) |
+| 5 | **MusicGen** (Meta AudioCraft) | music/SFX (stack §4) | Free background beds — big perceived-quality jump, low effort |
+| 6 | **anything-to-notebooklm** | Obsidian ingestion (#2 above) | Grows the verified-fact vault from many source types |
+| 7 | **ComfyUI** | infra backend (stack §12) | One endpoint to run/swap image+video+upscale models |
+| 8 | **ericosiu/ai-marketing-skills** | Pillar 2 grading (#3 above) | Expert-Panel persona scoring pattern for the report card |
+| 9 | **Real-ESRGAN + RIFE** | upscale/interp (stack §8) | Polish AI b-roll (sharper, smoother) for free |
+| 10 | **lucaswalter/n8n-ai-automations** | distribution (#4 above) | Free templates for cross-post/repurpose off the webhook events |
+
+*Honorable mentions (free, next-in): XTTS-v2 (voice cloning → multilingual dub),
+LatentSync (lip-sync avatar), Ultralytics YOLO (auto-reframe — note AGPL),
+system_prompts_leaks (prompt reference).*

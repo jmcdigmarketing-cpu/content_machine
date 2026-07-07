@@ -257,6 +257,14 @@ Beyond YouTube ad revenue (low RPM on shorts):
 
 ## 8. Industry & competitive comparison
 
+> **Override (2026-07-07, decisions §17):** the "keep generation boring… if a
+> change only adds generation volume it's probably not [worth building]" clause
+> below is **retired**. Generation *quality* is now a competitive lever — see
+> [video_creation_stack.md](video_creation_stack.md) for the full tool list to
+> add (free/local-first, cost-metered provider slots). The moat thesis in this
+> section still holds; the video layer is additive, not a substitute for the loop.
+
+
 | Tool | Stronger than us | We're stronger on |
 |---|---|---|
 | **TubeBuddy** | polished UI, install base | intelligence depth, closed learning loop |

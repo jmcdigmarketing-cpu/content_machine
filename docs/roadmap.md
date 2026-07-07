@@ -474,6 +474,25 @@ autonomy is earned, not flipped on (vision.md §6).*
   chained as a scheduled job: drafts wake up graded, verified, and dossier'd for
   approval.
 
+### Pillar 6 — Video Creation Provider Layer  *(2026-07-07 — overrides §8, decisions §17)*
+*The operator reversed operating_plan §8's "keep generation boring" default:
+generation quality is now a competitive lever. Full tool list + build order:
+**[video_creation_stack.md](video_creation_stack.md)**. Each item ships as a
+free/local-first, cost-metered, fail-open **provider slot** (the asset-chain /
+`llm_router` pattern) — quality goes up without wrecking margin, and the moat
+(grounding + loop) is untouched.*
+- [ ] **TTS provider chain + local (Kokoro/XTTS/Piper)** — kills the dominant
+  per-video cost; adds voice variety (Phase O). *(do first — cost lever)*
+- [ ] **Whisper local alignment** — word timing for any TTS + enables clip-from-source.
+- [ ] **Music/SFX bed** (MusicGen local / Suno / ElevenLabs) — big perceived-quality jump.
+- [ ] **AI video-gen slot** — `assets/composite` provider for Veo 3.1 / Kling / Runway
+  (or local Wan / LTX-Video) per scene beat; fail-open to stock. *(headline upgrade)*
+- [ ] **Thumbnail text-models** (Ideogram/Recraft) + **dual-format render** (9:16/16:9/1:1).
+- [ ] **Clip-from-source (Phase R)** + subject-tracked auto-reframe.
+- [ ] **Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists** — polish tiers.
+- [ ] **Distribution/ingestion borrows** — n8n webhook recipes, `goose3` scrape,
+  multi-source vault importer (see [tooling_landscape.md](tooling_landscape.md)).
+
 ### Supporting track — API & efficiency (not a pillar)
 *The credit/quota layer is in good shape post-O11; these stay incremental.*
 - [ ] **Governor follow-ups (O12 candidates)** — YouTube units under a governor

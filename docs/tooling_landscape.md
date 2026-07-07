@@ -310,9 +310,13 @@ brief listed it.
 ### Do NOT adopt
 - **ComplianceAsCode** — category mismatch; naming analogy only.
 - **Original `python-goose`** — stale; use `goose3` if anything.
-- **Rebuilding the video factory / chasing volume** — every generator here proves
-  it's commodity. Per §8, if a change only adds generation volume it's not worth
-  building; pour energy into the loop, grounding, and data moat.
+- **Copying AGPL source** (MoneyPrinterV2) — pattern-borrow only; don't lift code.
+
+> **Update (2026-07-07, decisions §17):** the earlier "don't invest in
+> generation / don't chase quality" stance is **overridden**. Generation quality
+> is now a lever — the full add-list is [video_creation_stack.md](video_creation_stack.md)
+> (AI video-gen, local TTS, music/SFX, thumbnail text-models, clip-from-source,
+> etc., all as cost-metered provider slots). Grounding + the loop still stand.
 
 ---
 
@@ -333,6 +337,6 @@ brief listed it.
 6. **[ignore, logged] ComplianceAsCode, original python-goose, any "add more
    generation" idea** — recorded here so the loop is closed.
 
-*None of the above touches the generator core (deliberately). The strategy holds:
-keep generation boring and stable; invest in the loop, the grounding, and the data
-moat.*
+*Updated stance (decisions §17): alongside the loop/grounding/data moat, we now
+**also** invest in generation quality — see [video_creation_stack.md](video_creation_stack.md)
+for the video-creation provider slots to build.*

@@ -106,6 +106,9 @@ The repo serves two products:
 | `core/grounding_tiers.py` | **Pillar 3** tiered grounding corpus (operator/link/web/signal/brief/context) + high-stakes tier warnings |
 | `core/claim_verifier.py` | **Pillar 3** claim-level LLM verifier (extract tier) + `GROUNDING_GATE` |
 | `core/fact_conflicts.py` | **Pillar 3** pre-script contradiction detection — operator facts win, conflicting source lines dropped |
+| `core/obsidian_facts.py` | Vault fact reader (`load_facts`) + **Pillar 4** playbook read path (`load_playbook`/`playbook_block`) |
+| `core/vault_index.py` | **Pillar 4** per-process mtime-cached vault parse (behind `load_fact_records`) |
+| `core/vault_dossiers.py` | **Pillar 4** run dossiers + weekly report into the vault (`_runs/`, `_reports/`) |
 | `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
 | `apis/tapology_api.py` | Tapology event/bout scrape (cached) |

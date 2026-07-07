@@ -6,6 +6,34 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Pillar 4 — Obsidian knowledge OS — 2026-07-07
+
+*Fourth pillar (decisions §17): the vault stops being a one-way sidecar. Runs
+flow back into it as browsable dossiers, reads are cached, and strategy notes
+finally have a read path. Suite 846 green.*
+
+- **Run dossiers** — `core/vault_dossiers.py` writes `{channel}/_runs/{date}_
+  {slug}-{id}.md` (topic, angle, report-card grade, quality summary, cost,
+  script, post-sync actuals + video URL). Fail-open call in
+  `pipeline._finalize_run` (module-level import — patchable in tests);
+  `refresh_dossiers()` upserts actuals via `daily_sync` + `ops vault-sync`;
+  weekly report copied to `{channel}/_reports/{date}_weekly.md`.
+- **Vault index** — `core/vault_index.py`: per-process, mtime-keyed parse cache
+  behind `obsidian_facts.load_fact_records()`. Unchanged notes are `stat()`ed,
+  not re-read (batch-drafts re-called `load_facts` per idea). No on-disk index —
+  avoids `data/` growth + cross-run staleness. Parsing byte-identical, so
+  ranking/filtering unchanged; `tests/test_obsidian_facts.py` passes untouched.
+- **Playbook layer** — `obsidian_facts.load_playbook()` + `playbook_block()`
+  read exactly the strategy/belief bullets `load_facts` excludes and inject a
+  bounded, clearly-non-factual "CHANNEL PLAYBOOK" block into the script prompt
+  (beside the persona block; `""` without a vault). Fixed `_is_strategy_note`
+  tag parsing (`_tag_set` strips `[ ]`/quotes — `[strategy]` notes were only
+  excluded via their bullets before).
+- Dossiers/reports live under `_runs/`/`_reports/`, excluded from `load_facts`
+  (`_is_machine_record`) — records of what we made, never read back as facts.
+- Tests: `tests/test_vault_pillar4.py`; pipeline smoke + key-facts injection
+  tests isolate the vault (`OBSIDIAN_VAULT_PATH=""`).
+
 ### Pillar 3 — Fact Engine 2.0 — 2026-07-06
 
 *Third pillar (decisions §16): facts gain provenance + TTL, the grounding corpus

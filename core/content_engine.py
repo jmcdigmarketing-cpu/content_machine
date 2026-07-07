@@ -242,13 +242,23 @@ You must:
     human_block = human_context_block(channel_id)
     human_block = f"{human_block}\n\n" if human_block else ""
 
+    # Pillar 4: optional playbook/style guidance from the vault (strategy notes +
+    # machine beliefs). Bounded, clearly non-factual, "" when the vault is unset.
+    try:
+        from core.obsidian_facts import playbook_block
+
+        _playbook = playbook_block(channel_id)
+    except Exception:
+        _playbook = ""
+    playbook = f"{_playbook}\n\n" if _playbook else ""
+
     user_prompt = f"""
 TODAY: {today}
 
 {seed_block}{angle_block}TOPIC:
 {topic}
 
-{human_block}{brief_block}SCRIPT BRIEF (follow exactly):
+{human_block}{playbook}{brief_block}SCRIPT BRIEF (follow exactly):
 {script_brief}
 
 {seo_block}

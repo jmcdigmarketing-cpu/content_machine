@@ -207,7 +207,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Rules-based weekly intelligence report")
     parser.add_argument("--channel", default="tapin")
     args = parser.parse_args(argv)
-    print(format_report(build_report(args.channel)))
+    channel_id = resolve_channel_id(args.channel)
+    rendered = format_report(build_report(channel_id))
+    print(rendered)
+    # Pillar 4: land a copy in the vault (no-op without OBSIDIAN_VAULT_PATH).
+    try:
+        from core.vault_dossiers import write_weekly_report_note
+
+        path = write_weekly_report_note(channel_id, rendered)
+        if path:
+            print(f"\n  (saved to vault: {path})")
+    except Exception:
+        pass
     return 0
 
 

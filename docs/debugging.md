@@ -297,7 +297,7 @@ render gate (interactive asks to override; headless needs `--force`).
 
 **Common causes from live runs:**
 
-1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault suggestions (`core/obsidian_facts.py`). At the prompt, type `n` to skip vault suggestions when unsure.
+1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault fact suggestions (`core/obsidian_facts.py`). Since Pillar 4, those same notes **do** feed the bounded `CHANNEL PLAYBOOK` prompt block (clearly labeled NOT facts). At the prompt, type `n` to skip vault suggestions when unsure.
 2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/`; LLM gets a **char budget** (default 4500, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Pasted + link facts rank before vault. Type **`paste`** + Enter to drop a whole trade tracker block. UI shows collected vs packed-for-LLM counts.
 3. **Discovery angles ≠ YouTube title** — discovery picks editorial angles; the publishable title is generated **after** key facts + script (`core/title_generator.py`). Ignore slop-looking angle lines — the final title uses your facts.
 4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs.

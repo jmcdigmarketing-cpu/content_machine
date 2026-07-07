@@ -11,21 +11,24 @@ class TestKeyFactsInjection(unittest.TestCase):
     def _call_build_prompts(self, key_facts):
         from core.content_engine import _build_prompts
 
-        return _build_prompts(
-            topic="Test topic",
-            signals={},
-            min_words=60,
-            max_words=90,
-            today="2026-06-17",
-            channel_id="tapin",
-            script_brief="Be punchy.",
-            seo_block="",
-            signal_facts="No structured facts available.",
-            signal_summary="",
-            brief_block="",
-            length_choice="1",
-            key_facts=key_facts,
-        )
+        # Isolate from the operator's real vault so the playbook block (Pillar 4)
+        # can't make prompt structure non-deterministic in these unit tests.
+        with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": ""}, clear=False):
+            return _build_prompts(
+                topic="Test topic",
+                signals={},
+                min_words=60,
+                max_words=90,
+                today="2026-06-17",
+                channel_id="tapin",
+                script_brief="Be punchy.",
+                seo_block="",
+                signal_facts="No structured facts available.",
+                signal_summary="",
+                brief_block="",
+                length_choice="1",
+                key_facts=key_facts,
+            )
 
     def test_key_facts_appear_in_user_prompt(self):
         _, user_prompt = self._call_build_prompts(

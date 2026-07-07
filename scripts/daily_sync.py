@@ -55,6 +55,16 @@ def main(argv=None) -> int:
     except Exception as exc:  # never let writeback break the daily sync
         print(f"  Vault beliefs: skipped ({exc})")
 
+    # Refresh run dossiers so post-sync actuals (views/engaged/revenue) land in
+    # the vault (Pillar 4; no-op without a vault).
+    try:
+        from core.vault_dossiers import refresh_dossiers
+
+        n_doss = refresh_dossiers(channel_id)
+        print(f"  Vault dossiers: {n_doss} refreshed" if n_doss else "  Vault dossiers: none")
+    except Exception as exc:
+        print(f"  Vault dossiers: skipped ({exc})")
+
     print("\nDone. Discovery will use this data on next py main.py run.")
     return 0
 

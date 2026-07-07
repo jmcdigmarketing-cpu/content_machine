@@ -28,6 +28,7 @@ from core.run_trace import write_run_trace
 from core.script_length import count_spoken_words, get_length_preset, word_range
 from core.tts import generate_audio
 from core.utils import clean_script_for_tts
+from core.vault_dossiers import write_run_dossier
 from video.render_video import render_vertical_video
 
 logger = get_logger("pipeline")
@@ -278,6 +279,13 @@ def _finalize_run(
         )
     except Exception:
         pass
+
+    # Pillar 4: mirror the run into the Obsidian vault (no-op without a vault).
+    if status in ("drafted", "rendered"):
+        try:
+            write_run_dossier(run_id)
+        except Exception:
+            pass
 
     if result.score > 0 and status in ("drafted", "rendered"):
         record_learning_outcome(

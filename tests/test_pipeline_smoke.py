@@ -5,8 +5,9 @@ from core.pipeline import DiscoveryResult, run_pipeline
 
 
 class TestPipelineSmoke(unittest.TestCase):
-    # Ledger writes (quality/trace) are patched so the test never touches the
-    # real DB or data/traces/ — see tests/CLAUDE.md.
+    # Ledger + vault writes are patched so the test never touches the real DB,
+    # data/traces/, or the operator's vault — see tests/CLAUDE.md.
+    @patch("core.pipeline.write_run_dossier")
     @patch("core.pipeline.write_run_trace")
     @patch("core.pipeline.persist_quality")
     @patch("core.pipeline.build_quality", return_value={})
@@ -15,7 +16,7 @@ class TestPipelineSmoke(unittest.TestCase):
     @patch("core.pipeline.generate_content_package")
     @patch("core.pipeline.run_discovery")
     def test_run_pipeline_drafted_without_video(
-        self, mock_discovery, mock_content, mock_record, mock_learn, _bq, _pq, mock_trace
+        self, mock_discovery, mock_content, mock_record, mock_learn, _bq, _pq, mock_trace, mock_doss
     ):
         discovery = DiscoveryResult(
             input_topic="Marvel Rivals meta",
@@ -49,7 +50,9 @@ class TestPipelineSmoke(unittest.TestCase):
         self.assertEqual(result.title, "Test")
         mock_learn.assert_called_once()
         mock_trace.assert_called_once()  # ledger trace written for drafted runs too
+        mock_doss.assert_called_once()  # vault dossier mirrored for drafted runs too
 
+    @patch("core.pipeline.write_run_dossier")
     @patch("core.pipeline.write_run_trace")
     @patch("core.pipeline.persist_quality")
     @patch("core.pipeline.build_quality", return_value={})
@@ -58,7 +61,7 @@ class TestPipelineSmoke(unittest.TestCase):
     @patch("core.pipeline.generate_content_package")
     @patch("core.pipeline.run_discovery")
     def test_fact_engine_outputs_flow_into_features(
-        self, mock_discovery, mock_content, mock_record, mock_learn, _bq, _pq, _tr
+        self, mock_discovery, mock_content, mock_record, mock_learn, _bq, _pq, _tr, _doss
     ):
         """Pillar 3: tier warnings, conflicts, and verifier output reach features."""
         discovery = DiscoveryResult(

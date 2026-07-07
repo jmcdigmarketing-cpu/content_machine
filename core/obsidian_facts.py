@@ -29,11 +29,10 @@ from pathlib import Path
 
 from core.fact_store import FactRecord, note_metadata, rank_bonus
 from core.logging import get_logger
+from core.vault_index import iter_notes
 
 logger = get_logger("core.obsidian_facts")
 
-_BULLET_RE = re.compile(r"^\s*[-*]\s+(.*\S)\s*$")
-_HEADING_RE = re.compile(r"^#+\s+(.*\S)\s*$")
 _STOPWORDS = {
     "the",
     "and",
@@ -80,6 +79,9 @@ _STOPWORDS = {
 
 _STRATEGY_TAGS = frozenset({"strategy", "playbook", "heuristic", "content-tips", "tips"})
 _STRATEGY_PATH_PARTS = frozenset({"strategy", "playbook", "heuristics", "content-tips"})
+# Machine-written folders that must never feed back into load_facts as ground truth
+# (dossiers/reports are records of what we made, not verified facts about the world).
+_MACHINE_PATH_PARTS = frozenset({"_runs", "_reports"})
 # Bullets that read as content-strategy heuristics, not verifiable event facts.
 _STRATEGY_BULLET_MARKERS = (
     "outperform",
@@ -113,12 +115,22 @@ _FACT_ANCHOR_RE = re.compile(
 )
 
 
+def _tag_set(meta: dict[str, str]) -> set[str]:
+    """Frontmatter tags as a lowercased set, tolerant of `[a, b]` / `a, b` forms."""
+    raw = (meta.get("tags") or "").strip().strip("[]")
+    return {t.strip().strip("\"'").lower() for t in re.split(r"[,;\s]+", raw) if t.strip()}
+
+
 def _is_strategy_note(meta: dict[str, str], rel_path: Path) -> bool:
-    tags = {t.strip().lower() for t in re.split(r"[,;\s]+", meta.get("tags") or "") if t.strip()}
-    if tags & _STRATEGY_TAGS:
+    if _tag_set(meta) & _STRATEGY_TAGS:
         return True
     parts = {p.lower() for p in rel_path.parts}
     return bool(parts & _STRATEGY_PATH_PARTS)
+
+
+def _is_machine_record(rel_path: Path) -> bool:
+    """Run dossiers / weekly reports the system writes — never read back as facts."""
+    return bool({p.lower() for p in rel_path.parts} & _MACHINE_PATH_PARTS)
 
 
 def _is_strategy_bullet(text: str) -> bool:
@@ -152,23 +164,6 @@ def _tokens(text: str) -> set[str]:
     return {w for w in words if len(w) > 3 and w not in _STOPWORDS}
 
 
-def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
-    """Return (frontmatter dict, body). Handles a leading `---` ... `---` block."""
-    if not text.startswith("---"):
-        return {}, text
-    end = text.find("\n---", 3)
-    if end == -1:
-        return {}, text
-    block = text[3:end].strip()
-    body = text[end + 4 :]
-    meta: dict[str, str] = {}
-    for line in block.splitlines():
-        if ":" in line:
-            key, _, val = line.partition(":")
-            meta[key.strip().lower()] = val.strip()
-    return meta, body
-
-
 def _note_matches_channel(meta: dict[str, str], rel_path: Path, channel_id: str) -> bool:
     declared = (meta.get("channel") or "").lower()
     if declared:
@@ -184,20 +179,6 @@ def _is_evergreen(meta: dict[str, str]) -> bool:
     # so dated fact notes (e.g. ufc-current) don't leak onto unrelated topics.
     tags = (meta.get("tags") or "").lower()
     return "evergreen" in tags
-
-
-def _extract_bullets(body: str) -> list[str]:
-    bullets = []
-    for line in body.splitlines():
-        m = _BULLET_RE.match(line)
-        if m:
-            text = m.group(1).strip()
-            # Strip simple markdown emphasis/links for clean spoken facts.
-            text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
-            text = text.replace("**", "").replace("*", "").replace("`", "")
-            if len(text) > 3:
-                bullets.append(text)
-    return bullets
 
 
 def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> list[str]:
@@ -234,22 +215,12 @@ def load_fact_records(
     topic_tokens = _tokens(topic)
     scored: list[tuple[float, FactRecord]] = []
 
-    try:
-        md_files = list(vault.rglob("*.md"))
-    except OSError as exc:
-        logger.warning("Could not read vault %s: %s", vault, exc)
-        return []
-
-    for path in md_files:
-        try:
-            text = path.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            continue
-        meta, body = _parse_frontmatter(text)
-        rel = path.relative_to(vault)
+    for note in iter_notes(vault):
+        rel = Path(note.rel_path)
+        meta = note.meta
         if not _note_matches_channel(meta, rel, channel_id):
             continue
-        if _is_strategy_note(meta, rel):
+        if _is_strategy_note(meta, rel) or _is_machine_record(rel):
             continue
 
         tier, verified_at, expires, source_url = note_metadata(meta, rel)
@@ -257,8 +228,7 @@ def load_fact_records(
             continue  # stale by declaration — champions/rosters age out
 
         # Relevance: overlap of topic tokens with filename + headings.
-        headings = " ".join(_HEADING_RE.findall(body))
-        note_tokens = _tokens(path.stem + " " + headings)
+        note_tokens = _tokens(note.stem + " " + note.headings)
         overlap = len(topic_tokens & note_tokens)
         evergreen = _is_evergreen(meta)
         # A note qualifies if its title/headings match, it's an evergreen fact note,
@@ -266,7 +236,7 @@ def load_fact_records(
         # title doesn't mention the topic).
         note_weight = overlap + (0.5 if evergreen else 0)
         provenance = rank_bonus(tier=tier, verified_at=verified_at, today=today)
-        for bullet in _extract_bullets(body):
+        for bullet in note.bullets:
             if _is_strategy_bullet(bullet):
                 continue
             bullet_overlap = len(topic_tokens & _tokens(bullet))
@@ -297,3 +267,65 @@ def load_fact_records(
         if len(records) >= limit:
             break
     return records
+
+
+def load_playbook(channel_id: str = "default", *, limit: int = 10) -> list[str]:
+    """Strategy/playbook bullets for a channel — the notes `load_facts` excludes.
+
+    The mirror of `load_facts`: it reads exactly the strategy notes (`_is_strategy_note`)
+    and machine-belief lines that the fact loader deliberately skips, so they can feed
+    the script prompt as **style guidance, not ground truth** (Pillar 4). Topic-agnostic
+    by design — a channel's voice/angle rules apply to every video. Returns [] when the
+    vault is unset. Machine-belief notes (`_machine-beliefs.md`, tagged strategy-free but
+    evergreen) are included since they read as priors, not facts.
+    """
+    vault = _vault_path()
+    if not vault:
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for note in iter_notes(vault):
+        rel = Path(note.rel_path)
+        if not _note_matches_channel(note.meta, rel, channel_id) or _is_machine_record(rel):
+            continue
+        strategy_note = _is_strategy_note(note.meta, rel)
+        is_belief = note.stem == "_machine-beliefs" or "machine" in _tag_set(note.meta)
+        for bullet in note.bullets:
+            # A playbook line is exactly what load_facts drops as non-factual guidance:
+            # a whole strategy/belief note, or a strategy-flavored bullet in any note.
+            if not (strategy_note or is_belief or _is_strategy_bullet(bullet)):
+                continue
+            key = bullet.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(bullet)
+            if len(out) >= limit:
+                return out
+    return out
+
+
+def playbook_block(channel_id: str = "default", *, limit: int = 8, char_budget: int = 700) -> str:
+    """A bounded prompt block of playbook guidance, or "" when none.
+
+    Mirrors `core/channel_persona.human_context_block`: a small, clearly-labeled,
+    bounded insert the script prompt can include without it overriding grounding.
+    """
+    bullets = load_playbook(channel_id, limit=limit)
+    if not bullets:
+        return ""
+    lines: list[str] = []
+    used = 0
+    for b in bullets:
+        if used + len(b) > char_budget:
+            break
+        lines.append(f"- {b}")
+        used += len(b)
+    if not lines:
+        return ""
+    body = "\n".join(lines)
+    return (
+        "CHANNEL PLAYBOOK (style/strategy guidance from the operator's vault — "
+        "shape tone and angle with these; they are NOT facts and never override "
+        f"the verified source facts below):\n{body}"
+    )

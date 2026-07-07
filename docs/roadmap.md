@@ -11,7 +11,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-06 — **Pillar 3 (Fact Engine 2.0) shipped** (decisions §16): structured fact store (vault frontmatter provenance/TTL), tiered grounding corpus, claim-level LLM verifier + `GROUNDING_GATE`, pre-script contradiction detection, web-source capture; quality schema v2. 833 tests green. Earlier same day: roadmap reoriented around five internal-systems pillars (decisions §15); Pillars 1–2 shipped (run ledger, video grading); **O11 complete** (unified quota governor — the O1–O11 credit-efficiency backlog is done) on `feat/reddit-free-backend-and-signal-persistence`; same-day wave: Reddit free backend, batch generation (`ops batch-drafts`), script-lever + thumbnail A/B experiments, webhook events out. Prior wave (2026-07-02, PR #24): O10 reset windows, semantic trade validation, creator coach, headless key facts.
+Last updated: 2026-07-07 — **Pillar 4 (Obsidian knowledge OS) shipped**: run dossiers + weekly reports into the vault, mtime-cached vault index, playbook read path into the script prompt. 846 tests green. Earlier: **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete** on `feat/reddit-free-backend-and-signal-persistence`.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -432,18 +432,30 @@ scan per call, written as exactly three file patterns (`_operator_facts/`,
 `_sources.md`, `_machine-beliefs.md`); runs, scripts, and outcomes never land back in
 it. Target: the vault as the human-readable mirror of machine state (vision.md §7's
 "two faces").*
-- [ ] **Run dossiers into the vault** `[M]` — `{channel}/_runs/{date}_{slug}.md`:
-  topic, angle, final script, grade, ungrounded list, cost, and post-sync actuals;
-  weekly report lands in the vault too — a browsable content encyclopedia.
-- [ ] **Vault index** `[S]` — mtime-invalidated index replacing the full `rglob`
-  scan in `obsidian_facts.load_facts()`.
-- [ ] **Playbook layer** `[S–M]` — a read path for the strategy/playbook notes
-  `load_facts()` deliberately excludes today, feeding the research brief's strategy
-  fields (angles, voice, banned takes) beside `_machine-beliefs.md`.
+*Shipped 2026-07-07 (decisions §17). Dossiers are records, not facts — they never
+feed back into grounding.*
+- [x] **Run dossiers into the vault** — `core/vault_dossiers.py`:
+  `{channel}/_runs/{date}_{slug}-{id}.md` (topic, angle, grade, quality summary,
+  cost, script + post-sync actuals/video URL) written fail-open from
+  `_finalize_run` and re-upserted by `refresh_dossiers()` (wired into `daily_sync`
+  + `ops vault-sync`). Weekly report lands in `{channel}/_reports/{date}_weekly.md`.
+  Dossiers live under `_runs/`/`_reports/` and are excluded from `load_facts`
+  (`_is_machine_record`) — records, not facts.
+- [x] **Vault index** — `core/vault_index.py`: per-process, mtime-invalidated parse
+  cache behind `obsidian_facts.load_fact_records()`; an unchanged note is `stat()`ed
+  but never re-read (batch-drafts calls `load_facts` once per idea). Byte-identical
+  parsing → ranking/filtering unchanged; no on-disk index (no `data/` growth).
+- [x] **Playbook layer** — `obsidian_facts.load_playbook()` / `playbook_block()`:
+  reads exactly the strategy/belief bullets `load_facts` drops and injects a bounded,
+  clearly-non-factual "CHANNEL PLAYBOOK" block into the script prompt (beside the
+  persona block; `""` when the vault is unset). Also fixed `_is_strategy_note` tag
+  parsing (`[strategy]` bracket form was only excluded via its bullets before).
 - [x] **Structured fact templates** — *(landed with Pillar 3)* writers stamp
   `tier`/`verified_at` frontmatter (`operator_facts.py`, `source_capture.py`) and
   `core/fact_store.note_metadata()` reads `tier`/`verified_at`/`expires`/`source`
   from any hand-written note — add those keys to a note and TTL/provenance apply.
+- Tests: `tests/test_vault_pillar4.py` (12) + pipeline smoke isolates vault writes;
+  `tests/test_obsidian_facts.py` unchanged (index is byte-identical parse).
 
 ### Pillar 5 — Agent layer  *(last — composes Pillars 1–4; absorbs Phase W)*
 *Only worth building once the pillars give agents trustworthy data to reason over —

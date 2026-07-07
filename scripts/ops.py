@@ -113,15 +113,18 @@ def cmd_backfill_features(args: argparse.Namespace) -> int:
     return _run_module("analytics.backfill_features", "--channel", args.channel)
 
 
-@_register("vault-sync", "Write machine-learned beliefs into the Obsidian vault")
+@_register("vault-sync", "Write machine beliefs + run dossiers into the Obsidian vault")
 def cmd_vault_sync(args: argparse.Namespace) -> int:
+    from core.vault_dossiers import refresh_dossiers
     from core.vault_writeback import write_channel_beliefs
 
     path = write_channel_beliefs(args.channel)
     if path:
         print(f"Wrote machine beliefs to {path}")
     else:
-        print("Nothing written (OBSIDIAN_VAULT_PATH unset or no analytics yet).")
+        print("Beliefs: nothing written (OBSIDIAN_VAULT_PATH unset or no analytics yet).")
+    n_doss = refresh_dossiers(args.channel)
+    print(f"Dossiers: {n_doss} run note(s) refreshed" if n_doss else "Dossiers: none written.")
     return 0
 
 

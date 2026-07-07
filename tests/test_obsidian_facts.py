@@ -16,6 +16,7 @@ class TestLoadFacts(unittest.TestCase):
 
     def tearDown(self):
         vault_index.clear_cache()
+
     def test_unset_vault_returns_empty(self):
         with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": ""}, clear=False):
             self.assertEqual(of.load_facts("anything", "tapin"), [])

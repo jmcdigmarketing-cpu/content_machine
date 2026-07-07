@@ -193,26 +193,39 @@ def refresh_dossiers(channel_id: str | None = None, *, limit: int = 15) -> int:
     return written
 
 
-def write_weekly_report_note(channel_id: str, rendered: str) -> Path | None:
-    """Land the rendered weekly report in `{channel}/_reports/{date}_weekly.md`."""
+def write_report_note(
+    channel_id: str, kind: str, title: str, rendered: str, *, fenced: bool = True
+) -> Path | None:
+    """Land a machine report in `{channel}/_reports/{date}_{kind}.md` (fail-open).
+
+    `kind` is the filename suffix + tag (e.g. "weekly", "analyst"). `fenced` wraps
+    the body in a code block (right for fixed-width report renders); analyst prose
+    passes `fenced=False`.
+    """
     vault = _vault_path()
     if not vault or not (rendered or "").strip():
         return None
     day = date.today().isoformat()
     try:
-        target = vault / channel_id / _REPORTS_DIR / f"{day}_weekly.md"
+        target = vault / channel_id / _REPORTS_DIR / f"{day}_{kind}.md"
         target.parent.mkdir(parents=True, exist_ok=True)
+        content = f"```\n{rendered.strip()}\n```" if fenced else rendered.strip()
         body = (
             "---\n"
             f"channel: {channel_id}\n"
             "tags: [report, machine]\n"
             f"date: {day}\n"
-            "source: content-machine (weekly report)\n"
+            f"source: content-machine ({kind} report)\n"
             "---\n\n"
-            f"# Weekly report — {day}\n\n```\n{rendered.strip()}\n```\n"
+            f"# {title} — {day}\n\n{content}\n"
         )
         target.write_text(body, encoding="utf-8", newline="\n")
         return target
     except Exception as exc:
-        logger.debug("weekly report note skipped: %s", exc)
+        logger.debug("%s report note skipped: %s", kind, exc)
         return None
+
+
+def write_weekly_report_note(channel_id: str, rendered: str) -> Path | None:
+    """Land the rendered weekly report in `{channel}/_reports/{date}_weekly.md`."""
+    return write_report_note(channel_id, "weekly", "Weekly report", rendered)

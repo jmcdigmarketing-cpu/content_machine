@@ -97,15 +97,20 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-*Pillars 1–4 shipped (decisions §15–17). Remaining:*
+***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
+is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
-1. **Pillar 5 — Agent layer** (last): Channel Health Agent *(was W)*, weekly analyst
-   agent (can now read vault dossiers/reports), overnight operator.
-2. **Pillar 2 remainder**: multimodal rendered-video review *(later — needs router vision path)*;
+1. **Pillar 6 — Video Creation Provider Layer** (decisions §17, overrides §8):
+   the new headline track — free/local-first cost-metered provider slots. Full tool
+   list + build order: [video_creation_stack.md](video_creation_stack.md). Do-first:
+   TTS provider chain + local Kokoro (cost lever), then Whisper alignment, music bed,
+   AI video-gen slot.
+2. **Pillar 2 remainder**: multimodal rendered-video review *(needs router vision path)*;
    calibration/predictor activate as measured volume accrues.
 3. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,
    MoneyWise depth, AI Tools/Tech groundwork.
-4. Optional: promote `SEMANTIC_TRADE_VALIDATION` default-on if precise in live runs.
+4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`);
+   promote `SEMANTIC_TRADE_VALIDATION` default-on if precise in live runs.
 5. Vault housekeeping: cross-day dossier refresh leaves prior-day `_runs/` notes (same
    `run_id`, different date prefix) — safe but clutter; stable-path upsert is a follow-up.
 6. One-time ops: re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.

@@ -6,6 +6,31 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Pillar 5 — Agent layer — 2026-07-07
+
+*Fifth/final pillar (decisions §15): agents that compose Pillars 1–4 into
+verdicts and actions. All read-only + fail-open. Suite 869 green.*
+
+- **Channel Health Agent** — `core/channel_health.py`: one Green/Yellow/Red per
+  channel from six rules-based sub-scores (engagement trend vs baseline, cadence
+  headroom, authenticity trend over `quality_json`, reliability breakers, cost/
+  margin, data-quality warnings), each with a rationale; folds worst-first, thin
+  data holds yellow (never green). `ops health` + added to the `daily-brief` batch.
+- **Weekly analyst agent** — `core/analyst_agent.py`: bounds a context (weekly
+  report + grade calibration + health + recent run traces + economics) → **premium**
+  LLM tier → <220-word briefing with 3–5 concrete lever changes; writes
+  `{channel}/_reports/{date}_analyst.md` and emits the `analyst_briefing` webhook.
+  Fail-open to the weekly report's rules-based next-actions on any LLM/assembly
+  error (no context ⇒ no spend). `ops analyst`.
+- **Overnight operator** — `core/overnight.py`: best-bet topics → `run_batch`
+  (graded + verified drafts, render-free ⇒ cadence-safe) → vault dossiers → health
+  snapshot → `overnight_completed` webhook. `ops overnight` (`--count`/`--file`);
+  schedulable like `daily_sync`.
+- **Supporting:** `vault_dossiers.write_report_note()` generalizes the weekly-note
+  writer (analyst notes reuse it, `fenced=False` for prose). Verifier stage already
+  landed with Pillar 3.
+- Tests: `tests/test_pillar5_agents.py`; `test_themes` daily-brief step list updated.
+
 ### Live-run fixes — TapIn sports drift + link/grounding hygiene — 2026-07-07
 
 *Second live-run intake (NBA 2027 standings on TapIn): script drifted to Marvel

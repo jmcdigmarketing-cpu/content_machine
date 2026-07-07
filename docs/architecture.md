@@ -108,7 +108,10 @@ The repo serves two products:
 | `core/fact_conflicts.py` | **Pillar 3** pre-script contradiction detection — operator facts win, conflicting source lines dropped |
 | `core/obsidian_facts.py` | Vault fact reader (`load_facts`) + **Pillar 4** playbook read path (`load_playbook`/`playbook_block`) |
 | `core/vault_index.py` | **Pillar 4** per-process mtime-cached vault parse (behind `load_fact_records`) |
-| `core/vault_dossiers.py` | **Pillar 4** run dossiers + weekly report into the vault (`_runs/`, `_reports/`) |
+| `core/vault_dossiers.py` | **Pillar 4** run dossiers + reports into the vault (`_runs/`, `_reports/`) |
+| `core/channel_health.py` | **Pillar 5** Green/Yellow/Red channel health agent (`ops health`) |
+| `core/analyst_agent.py` | **Pillar 5** weekly analyst briefing (premium LLM → vault + webhook; `ops analyst`) |
+| `core/overnight.py` | **Pillar 5** overnight operator — best-bet drafts + grade + dossiers (`ops overnight`) |
 | `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
 | `apis/tapology_api.py` | Tapology event/bout scrape (cached) |

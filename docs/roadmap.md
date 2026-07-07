@@ -457,22 +457,29 @@ feed back into grounding.*
 - Tests: `tests/test_vault_pillar4.py` (12) + pipeline smoke isolates vault writes;
   `tests/test_obsidian_facts.py` unchanged (index is byte-identical parse).
 
-### Pillar 5 — Agent layer  *(last — composes Pillars 1–4; absorbs Phase W)*
+### Pillar 5 — Agent layer  *(composes Pillars 1–4; absorbs Phase W)* — **shipped 2026-07-07**
 *Only worth building once the pillars give agents trustworthy data to reason over —
-autonomy is earned, not flipped on (vision.md §6).*
-- [ ] **Channel Health Agent** `[M]` — composite per-channel Green/Yellow/Red:
-  cadence headroom, engagement/authenticity/cost trends, quota/breaker state — on
-  the weekly-report machinery; `ops health` + a line in `ops daily-brief`, each
-  sub-score with a rationale string, recommender-confidence style. *(was Phase W)*
+autonomy is earned, not flipped on (vision.md §6). All three read-only + fail-open.*
+- [x] **Channel Health Agent** — `core/channel_health.py`: composite per-channel
+  Green/Yellow/Red over six rules-based sub-scores (engagement trend, cadence
+  headroom, authenticity trend, reliability breakers, cost/margin, data-quality)
+  each with a rationale string; folds worst-first, **thin data reads yellow, never
+  green**. `ops health` + a line in `ops daily-brief`. *(was Phase W)*
 - [x] **Verifier agent** — *(landed with Pillar 3)* the claim verifier runs inside
   `generate_content_package` for every path (interactive, headless, batch, prompt
   evals) with `GROUNDING_GATE` enforcement in both operator flows.
-- [ ] **Weekly analyst agent** `[M]` — LLM over run traces + weekly report +
-  prediction deltas → prose briefing with recommended lever changes; written to the
-  vault and fired out the webhook (`core/events.py` → n8n/Discord).
-- [ ] **Overnight operator** `[M]` — `batch-drafts` + grading + facts-file intake
-  chained as a scheduled job: drafts wake up graded, verified, and dossier'd for
-  approval.
+- [x] **Weekly analyst agent** — `core/analyst_agent.py`: bounds a context (weekly
+  report + calibration + health + recent traces + economics) → **premium** LLM tier
+  → prose briefing with 3–5 lever changes; writes `{channel}/_reports/{date}_analyst.md`
+  (Pillar 4) + emits `analyst_briefing` webhook. Fail-open to the weekly report's
+  rules-based next-actions on any LLM error. `ops analyst`.
+- [x] **Overnight operator** — `core/overnight.py`: best-bet topics → `batch-drafts`
+  (graded + verified, render-free ⇒ cadence-safe) → vault dossiers → health snapshot
+  → `overnight_completed` webhook. `ops overnight --channel tapin --count 3`
+  (`--file topics.txt`); schedulable like `daily_sync`. *(facts-file intake is a
+  follow-up — needs `batch_generation.generate_draft` to accept key facts.)*
+- Tests: `tests/test_pillar5_agents.py` (health folding + fail-open + cp1252,
+  analyst LLM/rules-fallback, overnight chaining).
 
 ### Pillar 6 — Video Creation Provider Layer  *(2026-07-07 — overrides §8, decisions §17)*
 *The operator reversed operating_plan §8's "keep generation boring" default:

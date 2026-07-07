@@ -222,6 +222,31 @@ def cmd_coach(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("health", "Channel health — Green/Yellow/Red across engagement/cadence/cost (Pillar 5)")
+def cmd_health(args: argparse.Namespace) -> int:
+    from core.channel_health import build_health, render_health
+
+    print(render_health(build_health(args.channel)))
+    return 0
+
+
+@_register("analyst", "Weekly analyst briefing — LLM over the pillars -> lever changes (Pillar 5)")
+def cmd_analyst(args: argparse.Namespace) -> int:
+    from core.analyst_agent import run_analyst
+
+    print(run_analyst(args.channel))
+    return 0
+
+
+@_register("overnight", "Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5)")
+def cmd_overnight(args: argparse.Namespace) -> int:
+    from core.overnight import render_overnight, run_overnight
+
+    result = run_overnight(args.channel, count=args.count or 3, file=getattr(args, "file", None))
+    print(render_overnight(result))
+    return 0
+
+
 @_register("topic-db", "Topic Winners (clone these) + Graveyard (avoided flops)")
 def cmd_topic_db(args: argparse.Namespace) -> int:
     from core.topic_db import display_graveyard, display_winners, graveyard, winners
@@ -336,7 +361,9 @@ def cmd_list(_args: argparse.Namespace) -> int:
     print("  all-checks         validate + test")
     print("  all-analytics      seed, learn-schedule, weights, sync-metrics")
     print("  daily-sync         competitor-sync + seo-refresh (daily)")
-    print("  daily-brief        daily-sync + coach + reliability + status (morning one-shot)")
+    print(
+        "  daily-brief        daily-sync + coach + health + reliability + status (morning one-shot)"
+    )
     print("\nInteractive (not batched): py main.py")
     return 0
 
@@ -383,8 +410,8 @@ def cmd_all_analytics(args: argparse.Namespace) -> int:
 @_register("daily-brief", "Morning one-shot: fresh data, coach ideas, quota health, queue")
 def cmd_daily_brief(args: argparse.Namespace) -> int:
     """The 'what should I do today' batch: refresh competitor/SEO data, then the
-    coach's ranked ideas, the credit/quota dashboard, and the queue snapshot."""
-    return _run_batch(["daily-sync", "coach", "reliability", "status"], args)
+    coach's ranked ideas, channel health, the credit/quota dashboard, and the queue."""
+    return _run_batch(["daily-sync", "coach", "health", "reliability", "status"], args)
 
 
 @_register("batch-drafts", "N ideas -> N draft scripts, unattended (no render/publish)")
@@ -463,6 +490,11 @@ def main(argv=None) -> int:
         "--compare",
         action="store_true",
         help="prompt-eval: compare the two most recent eval runs instead of generating",
+    )
+    parser.add_argument(
+        "--file",
+        default=None,
+        help="overnight: file of topics (one per line) instead of best-bet",
     )
     args = parser.parse_args(argv)
     args.queue_upload = False

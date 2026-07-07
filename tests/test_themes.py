@@ -249,7 +249,7 @@ class TestDailyBriefBatch(unittest.TestCase):
             ops.COMMANDS["daily-brief"][1](object())
         run.assert_called_once()
         steps = run.call_args[0][0]
-        self.assertEqual(steps, ["daily-sync", "coach", "reliability", "status"])
+        self.assertEqual(steps, ["daily-sync", "coach", "health", "reliability", "status"])
 
 
 if __name__ == "__main__":

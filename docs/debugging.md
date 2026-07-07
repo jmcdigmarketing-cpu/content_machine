@@ -285,7 +285,15 @@ Older runs may store MP4 under `output/video/` instead of `output/tapin/video/` 
 |-------|------------------|----------------------------|
 | Fact quality preview | Signal/brief line count | Whether script claims match those lines |
 | Fact grounding | Proper nouns / mononyms in script vs facts corpus | Semantic truth of headlines |
+| Fact conflicts (Pillar 3) | Operator facts vs signal/web disagreement (trades, results, champions) — **before** the LLM call | Conflicts among non-operator sources |
+| Tier warnings (Pillar 3) | High-stakes claims grounded only by web/brief; entities grounded only by YouTube titles | Claims the tier layer can't parse |
+| Claim verifier (Pillar 3) | Per-claim support against the fact corpus, with the citing line (LLM, extract tier) | Facts wrong in the corpus itself |
 | Authenticity (Phase O) | Template-stamp risk + recap vs take | Factual accuracy |
+
+Since Pillar 3 (decisions §16), unsupported claims / conflicts / tier warnings also
+land in `quality_json` v2 and drag the report card's grounding component — check
+`ops dossier --run-id N`. `GROUNDING_GATE=block` turns unsupported claims into a
+render gate (interactive asks to override; headless needs `--force`).
 
 **Common causes from live runs:**
 

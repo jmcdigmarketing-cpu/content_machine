@@ -36,6 +36,11 @@ _WEIGHTS = {
 
 _UNGROUNDED_PENALTY = 25  # per unsupported specific
 _TRADE_PENALTY = 20  # per trade-direction warning
+# Pillar 3 (Fact Engine) penalties — advisory layers weigh less than hard
+# token-grounding failures (they carry more false-positive risk).
+_UNSUPPORTED_CLAIM_PENALTY = 15  # per LLM-verifier unsupported claim
+_CONFLICT_PENALTY = 15  # per operator-vs-source fact conflict
+_TIER_PENALTY = 10  # per grounding-tier warning
 
 
 @dataclass
@@ -70,12 +75,29 @@ def _letter(score: float) -> str:
 def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
     ungrounded = int(quality.get("ungrounded_count") or 0)
     trades = int(quality.get("trade_warning_count") or 0)
-    score = max(0.0, 100.0 - _UNGROUNDED_PENALTY * ungrounded - _TRADE_PENALTY * trades)
+    unsupported = int(quality.get("unsupported_claim_count") or 0)
+    conflicts = int(quality.get("fact_conflict_count") or 0)
+    tiers = int(quality.get("tier_warning_count") or 0)
+    score = max(
+        0.0,
+        100.0
+        - _UNGROUNDED_PENALTY * ungrounded
+        - _TRADE_PENALTY * trades
+        - _UNSUPPORTED_CLAIM_PENALTY * unsupported
+        - _CONFLICT_PENALTY * conflicts
+        - _TIER_PENALTY * tiers,
+    )
     notes = []
     if ungrounded:
         notes.append(f"{ungrounded} unsupported specific(s)")
     if trades:
         notes.append(f"{trades} trade warning(s)")
+    if unsupported:
+        notes.append(f"{unsupported} unsupported claim(s)")
+    if conflicts:
+        notes.append(f"{conflicts} fact conflict(s)")
+    if tiers:
+        notes.append(f"{tiers} tier warning(s)")
     return score, "; ".join(notes) or "fully grounded"
 
 

@@ -14,8 +14,12 @@ Shape (all keys optional — consumers must tolerate absence):
       "authenticity_score": 85, "authenticity_verdict": "ok",
       "ungrounded_count": 1, "ungrounded_entities": [...],
       "trade_warning_count": 0,
+      "tier_warning_count": 0,          # Pillar 3: grounding-tier lint
+      "fact_conflict_count": 0,         # Pillar 3: operator-vs-source conflicts
+      "claim_support_rate": 0.9,        # Pillar 3: LLM claim verifier (when it ran)
+      "unsupported_claim_count": 1,
       "thumbnail_overall": 61.0, "thumbnail_source": "llm",   # merged post-render
-      "quality_version": "v1",
+      "quality_version": "v2",
     }
 
 Everything here is fail-open: quality persistence is an observability layer,
@@ -31,7 +35,7 @@ from core.logging import get_logger
 
 logger = get_logger("core.run_quality")
 
-QUALITY_VERSION = "v1"
+QUALITY_VERSION = "v2"  # v2: Pillar 3 keys (tier/conflict counts, claim support)
 
 
 def build_quality(
@@ -75,6 +79,15 @@ def build_quality(
     if ungrounded:
         quality["ungrounded_entities"] = list(ungrounded)[:20]
     quality["trade_warning_count"] = len(features.get("trade_warnings") or [])
+
+    # Pillar 3 (Fact Engine): tier lint + conflicts always count; the claim
+    # verifier's keys appear only when it actually ran (absence ≠ perfect).
+    quality["tier_warning_count"] = len(features.get("tier_warnings") or [])
+    quality["fact_conflict_count"] = len(features.get("fact_conflicts") or [])
+    verification = features.get("claim_verification") or {}
+    if verification.get("total"):
+        quality["claim_support_rate"] = verification.get("support_rate")
+        quality["unsupported_claim_count"] = len(verification.get("unsupported") or [])
 
     # Pillar 2: freeze the data-gated engaged-rate prediction at generation time
     # so the calibration loop can score it against the realized outcome later.

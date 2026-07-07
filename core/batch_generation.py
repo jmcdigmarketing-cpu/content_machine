@@ -46,6 +46,8 @@ class DraftOutcome:
     authenticity_verdict: str = ""
     experiment_arm: str = ""
     ungrounded: list[str] = field(default_factory=list)
+    unsupported_claims: int = 0
+    fact_conflicts: int = 0
     run_id: int | None = None
     path: str = ""
     error: str = ""
@@ -173,6 +175,10 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
     except Exception:
         pass
     out.ungrounded = list(result.features.get("ungrounded_entities") or [])
+    out.unsupported_claims = len(
+        (result.features.get("claim_verification") or {}).get("unsupported") or []
+    )
+    out.fact_conflicts = len(result.features.get("fact_conflicts") or [])
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     folder = os.path.join(_drafts_dir(channel_id), f"{stamp}-{_slug(best_topic)}")
@@ -198,6 +204,9 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
         "authenticity_verdict": out.authenticity_verdict,
         "fact_count": fact_count,
         "ungrounded_entities": out.ungrounded,
+        "tier_warnings": result.features.get("tier_warnings") or [],
+        "fact_conflicts": result.features.get("fact_conflicts") or [],
+        "claim_verification": result.features.get("claim_verification"),
         "experiment": out.experiment_arm or None,
         "cost": result.features.get("cost"),
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -252,6 +261,10 @@ def render_summary(outcomes: list[DraftOutcome]) -> str:
             hook = f"hook {o.hook_score}" if o.hook_score is not None else "hook n/a"
             auth = o.authenticity_verdict or "n/a"
             flags = f", {len(o.ungrounded)} ungrounded" if o.ungrounded else ""
+            if o.unsupported_claims:
+                flags += f", {o.unsupported_claims} unsupported claim(s)"
+            if o.fact_conflicts:
+                flags += f", {o.fact_conflicts} fact conflict(s)"
             arm = f", A/B {o.experiment_arm}" if o.experiment_arm else ""
             lines.append(f"  OK   {o.title or o.variant}")
             lines.append(f"       {hook} ({o.hook_verdict}), authenticity {auth}{flags}{arm}")

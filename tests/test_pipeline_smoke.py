@@ -50,6 +50,48 @@ class TestPipelineSmoke(unittest.TestCase):
         mock_learn.assert_called_once()
         mock_trace.assert_called_once()  # ledger trace written for drafted runs too
 
+    @patch("core.pipeline.write_run_trace")
+    @patch("core.pipeline.persist_quality")
+    @patch("core.pipeline.build_quality", return_value={})
+    @patch("core.pipeline.record_learning_outcome")
+    @patch("core.pipeline.record_content_run", return_value=7)
+    @patch("core.pipeline.generate_content_package")
+    @patch("core.pipeline.run_discovery")
+    def test_fact_engine_outputs_flow_into_features(
+        self, mock_discovery, mock_content, mock_record, mock_learn, _bq, _pq, _tr
+    ):
+        """Pillar 3: tier warnings, conflicts, and verifier output reach features."""
+        discovery = DiscoveryResult(
+            input_topic="UFC 350",
+            base_signals={},
+            evaluated=[("UFC 350 recap", 70.0, {})],
+            channel_id="tapin",
+        )
+        mock_discovery.return_value = discovery
+        verification = {"total": 3, "supported": 2, "unsupported": ["bad claim"]}
+        mock_content.return_value = {
+            "title": "T",
+            "script": "S",
+            "description": "D",
+            "tier_warnings": ["tier warning"],
+            "fact_conflicts": ["conflict"],
+            "fact_conflicts_dropped": 1,
+            "claim_verification": verification,
+        }
+
+        with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": ""}, clear=False):
+            result = run_pipeline(
+                "UFC 350",
+                discovery=discovery,
+                proceed_video=False,
+                channel_id="tapin",
+            )
+
+        self.assertEqual(result.features["tier_warnings"], ["tier warning"])
+        self.assertEqual(result.features["fact_conflicts"], ["conflict"])
+        self.assertEqual(result.features["fact_conflicts_dropped"], 1)
+        self.assertEqual(result.features["claim_verification"], verification)
+
 
 if __name__ == "__main__":
     unittest.main()

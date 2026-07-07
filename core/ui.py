@@ -839,6 +839,35 @@ def display_grounding_report(
     return True
 
 
+def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
+    """Pillar 3 surface — pre-script conflicts, grounding-tier lint, claim verifier.
+
+    Reads the features the pipeline persisted for this run. Returns True when
+    anything needs operator review (all advisory; only GROUNDING_GATE=block
+    turns the verifier verdict into a hard stop).
+    """
+    from core.claim_verifier import display_claim_verification
+    from core.fact_conflicts import display_fact_conflicts
+
+    features = features or {}
+    needs_review = display_fact_conflicts(
+        features.get("fact_conflicts") or [],
+        dropped=int(features.get("fact_conflicts_dropped") or 0),
+        print_fn=print_fn,
+    )
+
+    tier_warnings = features.get("tier_warnings") or []
+    if tier_warnings:
+        print_fn(f"\n  ⚠ Grounding tiers ({len(tier_warnings)}):")
+        for warning in tier_warnings[:8]:
+            print_fn(f"    · {warning}")
+        needs_review = True
+
+    if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
+        needs_review = True
+    return needs_review
+
+
 def prompt_channel_selection(*, print_fn=print, input_fn=input) -> str:
     """Interactive channel picker; returns resolved channel_id."""
     profiles = get_channel_profiles()

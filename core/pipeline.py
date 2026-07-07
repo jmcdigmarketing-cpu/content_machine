@@ -409,6 +409,21 @@ def run_pipeline(
 
     result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []
     result.features["trade_warnings"] = content.get("trade_warnings") or []
+    # Pillar 3 (Fact Engine): tier lint, pre-script conflicts, claim verifier.
+    result.features["tier_warnings"] = content.get("tier_warnings") or []
+    result.features["fact_conflicts"] = content.get("fact_conflicts") or []
+    result.features["fact_conflicts_dropped"] = int(content.get("fact_conflicts_dropped") or 0)
+    if content.get("claim_verification"):
+        result.features["claim_verification"] = content["claim_verification"]
+
+    # Quick win (Pillar 3): web-search result URLs become reusable research in
+    # the vault (_sources.md) instead of evaporating with the run. Fail-open.
+    try:
+        from core.source_capture import capture_web_sources
+
+        capture_web_sources(channel_id, best_topic, best_signals)
+    except Exception:
+        pass
 
     from core.cost_meter import estimate_run_cost
 

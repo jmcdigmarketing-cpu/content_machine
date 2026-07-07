@@ -220,6 +220,11 @@ def main(argv=None) -> int:
 
     display_trade_validation(result.features.get("trade_warnings") or [], print_fn=print)
 
+    # Fact Engine (Pillar 3): pre-script conflicts, tier lint, claim verifier.
+    from core.ui import display_fact_engine_report
+
+    display_fact_engine_report(result.features, print_fn=print)
+
     # Authenticity / monetisation-safety gate (Phase O)
     from core.authenticity import (
         display_authenticity_report,
@@ -247,6 +252,14 @@ def main(argv=None) -> int:
             "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
             "Use --force to render anyway."
         )
+        return 0
+
+    # Grounding gate (Pillar 3, opt-in): GROUNDING_GATE=block stops the render
+    # when the claim verifier found unsupported claims — mirrors authenticity.
+    from core.claim_verifier import gate_blocks
+
+    if gate_blocks(result.features.get("claim_verification")) and not args.force:
+        print("\n  Blocked by grounding gate (GROUNDING_GATE=block). Use --force to override.")
         return 0
 
     if args.dry_run:

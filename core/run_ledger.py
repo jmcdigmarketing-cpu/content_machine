@@ -147,6 +147,17 @@ def render_dossier(run_id: int) -> str:
             lines.append(f"  ungrounded specifics: {quality['ungrounded_count']}")
         if quality.get("trade_warning_count"):
             lines.append(f"  trade warnings: {quality['trade_warning_count']}")
+        if quality.get("claim_support_rate") is not None:
+            rate = float(quality["claim_support_rate"] or 0)
+            unsupported = int(quality.get("unsupported_claim_count") or 0)
+            lines.append(
+                f"  claim support: {rate * 100:.0f}%"
+                + (f" ({unsupported} unsupported)" if unsupported else "")
+            )
+        if quality.get("fact_conflict_count"):
+            lines.append(f"  fact conflicts: {quality['fact_conflict_count']}")
+        if quality.get("tier_warning_count"):
+            lines.append(f"  tier warnings: {quality['tier_warning_count']}")
         if quality.get("thumbnail_overall") is not None:
             lines.append(
                 f"  thumbnail {quality['thumbnail_overall']}/100 "

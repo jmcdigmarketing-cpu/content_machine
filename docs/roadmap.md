@@ -11,7 +11,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-06 — **roadmap reoriented around five internal-systems pillars** (Run Ledger, Video Grading System, Fact Engine 2.0, Obsidian knowledge OS, Agent layer — see **"Internal-systems pillars — 2026-H2"** below; replaces the Phase T–W candidate list; **implementation held for operator review**; decisions §15). Earlier same day: **O11 complete** (unified quota governor — the O1–O11 credit-efficiency backlog is done) on `feat/reddit-free-backend-and-signal-persistence`; 720 tests green; same-day wave: Reddit free backend, batch generation (`ops batch-drafts`), script-lever + thumbnail A/B experiments, webhook events out. Prior wave (2026-07-02, PR #24): O10 reset windows, semantic trade validation, creator coach, headless key facts.
+Last updated: 2026-07-06 — **Pillar 3 (Fact Engine 2.0) shipped** (decisions §16): structured fact store (vault frontmatter provenance/TTL), tiered grounding corpus, claim-level LLM verifier + `GROUNDING_GATE`, pre-script contradiction detection, web-source capture; quality schema v2. 833 tests green. Earlier same day: roadmap reoriented around five internal-systems pillars (decisions §15); Pillars 1–2 shipped (run ledger, video grading); **O11 complete** (unified quota governor — the O1–O11 credit-efficiency backlog is done) on `feat/reddit-free-backend-and-signal-persistence`; same-day wave: Reddit free backend, batch generation (`ops batch-drafts`), script-lever + thumbnail A/B experiments, webhook events out. Prior wave (2026-07-02, PR #24): O10 reset windows, semantic trade validation, creator coach, headless key facts.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -386,23 +386,45 @@ data-gated — they activate as measured volume accrues):*
 corpus, nothing is verified against a source, facts carry no provenance or TTL, and
 operator paste / web snippets / YouTube descriptions share one undifferentiated
 grounding corpus.*
-- [ ] **Structured fact store** `[M–L]` — facts as `{claim, source_url, tier,
-  verified_at, expires}` (SQLite or vault frontmatter) instead of `list[str]`;
-  `load_facts()` ranks by freshness + provenance tier so stale champions/rosters
-  age out.
-- [ ] **Tiered grounding corpus** `[M]` — tag fact lines `[operator|link|web|signal|brief]`;
-  high-stakes claims (trades, results, records) must ground against operator/link
-  tier, not a YouTube description.
-- [ ] **Claim-level LLM verifier** `[M]` — `verify_claims(script, facts)` on the
-  extract tier → `{claim, supported, citation_line}`; optional `GROUNDING_GATE=block`
-  mirroring the authenticity gate. Generalizes trade validation (decisions §13c) to
-  all claim types.
-- [ ] **Contradiction detection pre-script** `[M]` — flag operator vs signal vs vault
-  disagreements before the LLM call, not after.
-- [ ] **Quick wins** `[S]` — capture `web_search` result URLs to `_sources.md`;
-  persist grounding/trade outputs into the report card; promote
-  `SEMANTIC_TRADE_VALIDATION` to default-on for sports channels once precision is
-  confirmed in live runs.
+*Shipped 2026-07-06 (decisions §16). All layers fail-open; verifier is the only new
+LLM call (one extract-tier call per script).*
+- [x] **Structured fact store** — `core/fact_store.py`: `FactRecord`
+  `{claim, tier, source_url, verified_at, expires}` parsed from vault note
+  frontmatter (no new DB — decisions §16a); `load_fact_records()` in
+  `obsidian_facts.py` drops expired notes and ranks by topic overlap first, then
+  provenance tier + freshness (rank bonus capped below one overlap token);
+  `load_facts()` keeps its `list[str]` contract. Writers stamp frontmatter:
+  operator capture → `tier: operator` + `verified_at`, source capture → `tier: link`.
+- [x] **Tiered grounding corpus** — `core/grounding_tiers.py`:
+  `build_tiered_corpus()` tags every corpus line
+  `operator|link|web|signal|brief|context` (`full_text` stays byte-identical to the
+  legacy corpus so `find_ungrounded_entities()` is unchanged); YouTube
+  titles/descriptions are **context** (topic evidence, not facts) — entities that
+  only ground there get a "treat as unverified" warning; high-stakes sentences
+  (results/trades/records/champion) backed only by web/brief tiers warn.
+- [x] **Claim-level LLM verifier** — `core/claim_verifier.py`:
+  `verify_claims(script, facts)` on the extract tier → per-claim
+  `{claim, supported, citation_line}`; default-on (`CLAIM_VERIFIER_ENABLED=false`
+  to opt out), fail-open on LLM/parse errors; `GROUNDING_GATE=warn|block` mirrors
+  the authenticity gate in both interactive (`main.py`, override prompt) and
+  headless (`auto_generate`, `--force`) flows. Generalizes trade validation
+  (decisions §13c) to all claim types.
+- [x] **Contradiction detection pre-script** — `core/fact_conflicts.py`: rule-based
+  trade-direction / reversed-result / champion conflicts between operator key facts
+  and the signal+web corpus, detected **before** the LLM call; operator wins — the
+  conflicting source lines are dropped from the corpus (`FACT_CONFLICT_FILTER=false`
+  to keep them; conflicts always reported either way).
+- [x] **Quick wins (partial)** — `capture_web_sources()` writes `web_search` result
+  URLs to `_sources.md` (they re-rank as `link` tier on future related topics);
+  all Fact Engine outputs persist into `quality_json` **v2**
+  (`claim_support_rate`, `unsupported_claim_count`, `fact_conflict_count`,
+  `tier_warning_count`) and penalize the report card's grounding component;
+  dossier + batch summary surface them.
+- [ ] **Promote `SEMANTIC_TRADE_VALIDATION` default-on** `[S]` — for sports channels
+  once precision is confirmed in live runs (co-occurrence false-positive risk).
+- Tests: `tests/test_fact_store.py` (23), `tests/test_grounding_tiers.py` (14),
+  `tests/test_claim_verifier.py` (12), `tests/test_fact_conflicts.py` (18) +
+  quality/grade/pipeline/source-capture coverage in the existing suites.
 
 ### Pillar 4 — Obsidian knowledge OS
 *Audit: the vault is a one-way sidecar — read via token overlap with a full `rglob`
@@ -418,8 +440,10 @@ it. Target: the vault as the human-readable mirror of machine state (vision.md �
 - [ ] **Playbook layer** `[S–M]` — a read path for the strategy/playbook notes
   `load_facts()` deliberately excludes today, feeding the research brief's strategy
   fields (angles, voice, banned takes) beside `_machine-beliefs.md`.
-- [ ] **Structured fact templates** `[S]` — `verified_at`/`source` frontmatter on
-  operator fact notes (what makes Pillar 3's TTL/provenance work; no plugin needed).
+- [x] **Structured fact templates** — *(landed with Pillar 3)* writers stamp
+  `tier`/`verified_at` frontmatter (`operator_facts.py`, `source_capture.py`) and
+  `core/fact_store.note_metadata()` reads `tier`/`verified_at`/`expires`/`source`
+  from any hand-written note — add those keys to a note and TTL/provenance apply.
 
 ### Pillar 5 — Agent layer  *(last — composes Pillars 1–4; absorbs Phase W)*
 *Only worth building once the pillars give agents trustworthy data to reason over —
@@ -428,8 +452,9 @@ autonomy is earned, not flipped on (vision.md §6).*
   cadence headroom, engagement/authenticity/cost trends, quota/breaker state — on
   the weekly-report machinery; `ops health` + a line in `ops daily-brief`, each
   sub-score with a rationale string, recommender-confidence style. *(was Phase W)*
-- [ ] **Verifier agent** `[S]` — Pillar 3's claim verifier wired in as a standard
-  pipeline stage (lands with Pillar 3).
+- [x] **Verifier agent** — *(landed with Pillar 3)* the claim verifier runs inside
+  `generate_content_package` for every path (interactive, headless, batch, prompt
+  evals) with `GROUNDING_GATE` enforcement in both operator flows.
 - [ ] **Weekly analyst agent** `[M]` — LLM over run traces + weekly report +
   prediction deltas → prose briefing with recommended lever changes; written to the
   vault and fired out the webhook (`core/events.py` → n8n/Discord).

@@ -367,6 +367,11 @@ def _run_new_video_flow_body(
 
     display_trade_validation(result.features.get("trade_warnings") or [], print_fn=print)
 
+    # Fact Engine (Pillar 3): pre-script conflicts, tier lint, claim verifier.
+    from core.ui import display_fact_engine_report
+
+    needs_fact_review = display_fact_engine_report(result.features, print_fn=print)
+
     # Authenticity / monetisation-safety self-check (Phase O)
     from core.authenticity import (
         display_authenticity_report,
@@ -394,10 +399,34 @@ def _run_new_video_flow_body(
             print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
             return
 
+    # Grounding gate (Pillar 3, opt-in): unsupported claims become a hard stop
+    # the operator must override — mirrors the authenticity gate above.
+    from core.claim_verifier import gate_blocks
+
+    if gate_blocks(result.features.get("claim_verification")):
+        override = (
+            input("  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ")
+            .strip()
+            .lower()
+        )
+        if override != "y":
+            display_summary(
+                timings=discovery.timings,
+                title=result.title,
+                cost=result.features.get("cost"),
+            )
+            print("\n  Stopped by grounding gate (GROUNDING_GATE=block).")
+            return
+
     if needs_grounding_review:
         print(
             "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
             "Rendering without fixing risks shipping hallucinations."
+        )
+    if needs_fact_review:
+        print(
+            "\n  Fact Engine flagged items above (conflicts / tiers / claims). "
+            "Verify before publishing."
         )
 
     # Pillar 2: one weighted report card over the scores above (read-only).

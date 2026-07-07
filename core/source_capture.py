@@ -37,6 +37,7 @@ def _header(channel_id: str) -> str:
         "---\n"
         f"channel: {channel_id}\n"
         "tags: [sources, research]\n"
+        "tier: link\n"
         "source: content-machine (auto-captured)\n"
         "---\n\n"
         f"# Captured sources — {channel_id} (auto-appended)\n\n"
@@ -117,3 +118,24 @@ def capture_sources(
 
     logger.info("Captured %d source(s) to %s", len(fresh), path)
     return path
+
+
+def capture_web_sources(
+    channel_id: str | None,
+    topic: str,
+    signals: dict[str, Any] | None,
+) -> Path | None:
+    """Log the web_search signal's result URLs to ``_sources.md`` (Pillar 3 quick win).
+
+    The web-search signal grounds scripts with title+snippet but its URLs were
+    discarded after the run. Same append-only, URL-deduped log as pasted links,
+    so a source found once is findable (and re-readable) on related topics.
+    """
+    data = ((signals or {}).get("web_search") or {}).get("data") or {}
+    results = data.get("results") if isinstance(data, dict) else None
+    if not isinstance(results, list):
+        return None
+    sources = [
+        {"url": r.get("url"), "title": r.get("title")} for r in results if isinstance(r, dict)
+    ]
+    return capture_sources(channel_id, topic, sources)

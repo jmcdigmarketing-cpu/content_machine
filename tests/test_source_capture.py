@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.obsidian_facts import load_facts
-from core.source_capture import capture_sources
+from core.source_capture import capture_sources, capture_web_sources
 
 
 class TestCaptureSources(unittest.TestCase):
@@ -70,6 +70,46 @@ class TestCaptureSources(unittest.TestCase):
                 )
                 facts = load_facts("Marvel Rivals next update", "tapin")
             self.assertTrue(any("Marvel Rivals" in f for f in facts))
+
+
+class TestCaptureWebSources(unittest.TestCase):
+    """Pillar 3 quick win: web_search result URLs land in _sources.md."""
+
+    def _signals(self):
+        return {
+            "web_search": {
+                "connected": True,
+                "active": True,
+                "data": {
+                    "provider": "tavily",
+                    "answer": "Gaethje won.",
+                    "results": [
+                        {"title": "Gaethje TKOs Topuria", "url": "https://espn.com/ufc350"},
+                        {"title": "no url entry", "url": ""},
+                    ],
+                },
+            }
+        }
+
+    def test_web_search_urls_captured(self):
+        with tempfile.TemporaryDirectory() as d:
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": d}, clear=False):
+                path = capture_web_sources("tapin", "UFC 350 recap", self._signals())
+            self.assertIsNotNone(path)
+            text = Path(path).read_text(encoding="utf-8")
+            self.assertIn("https://espn.com/ufc350", text)
+            self.assertIn("Gaethje TKOs Topuria", text)
+
+    def test_no_web_search_signal_is_noop(self):
+        with tempfile.TemporaryDirectory() as d:
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": d}, clear=False):
+                self.assertIsNone(capture_web_sources("tapin", "topic", {}))
+                self.assertIsNone(capture_web_sources("tapin", "topic", None))
+                self.assertIsNone(
+                    capture_web_sources(
+                        "tapin", "topic", {"web_search": {"data": {"results": "bad"}}}
+                    )
+                )
 
 
 if __name__ == "__main__":

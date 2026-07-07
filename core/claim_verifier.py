@@ -1,0 +1,193 @@
+"""Claim-level LLM verifier (Pillar 3 — Fact Engine 2.0).
+
+Token grounding (`core/fact_grounding.py`) checks that *names* in the script
+appear in the facts; it cannot check that the *claim about them* is what the
+facts say (decisions §3: a real Giannis→Heat trade fused with an invented
+Butler→Celtics one passes token grounding as long as every name is present).
+Semantic trade validation covers exactly one claim type. This generalizes it:
+one extract-tier LLM call decomposes the finished script into declarative
+factual claims and checks each against the numbered fact corpus →
+``{claim, supported, citation_line}``.
+
+Behavior contract:
+  - Runs post-generation in ``generate_content_package`` (all paths —
+    interactive, headless, batch). Default ON; ``CLAIM_VERIFIER_ENABLED=false``
+    disables. Fail-open: any LLM/parse failure returns ``None``, never raises.
+  - Verifies against the **factual** corpus only (context-tier YouTube
+    titles/descriptions are excluded — they must not "support" a claim).
+  - WARNS by default. ``GROUNDING_GATE=block`` mirrors the authenticity gate:
+    unsupported claims become a hard stop the operator must override
+    (interactive prompt / headless ``--force``).
+"""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from typing import Any
+
+from core.logging import get_logger
+
+logger = get_logger("core.claim_verifier")
+
+_MAX_CLAIMS = 12
+_MAX_FACT_CHARS = 6000
+_MAX_UNSUPPORTED_KEPT = 10
+
+
+@dataclass
+class VerifiedClaim:
+    claim: str
+    supported: bool
+    citation_line: str = ""  # the fact line that backs a supported claim
+
+
+@dataclass
+class ClaimVerification:
+    claims: list[VerifiedClaim] = field(default_factory=list)
+
+    @property
+    def total(self) -> int:
+        return len(self.claims)
+
+    @property
+    def supported_count(self) -> int:
+        return sum(1 for c in self.claims if c.supported)
+
+    @property
+    def unsupported(self) -> list[VerifiedClaim]:
+        return [c for c in self.claims if not c.supported]
+
+    @property
+    def support_rate(self) -> float | None:
+        if not self.claims:
+            return None
+        return round(self.supported_count / self.total, 3)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Compact shape persisted into features_json / quality."""
+        return {
+            "total": self.total,
+            "supported": self.supported_count,
+            "support_rate": self.support_rate,
+            "unsupported": [c.claim[:200] for c in self.unsupported[:_MAX_UNSUPPORTED_KEPT]],
+        }
+
+
+def verifier_enabled() -> bool:
+    """Default on — one extract-tier (free-first) call per generated script."""
+    return os.getenv("CLAIM_VERIFIER_ENABLED", "true").lower() not in ("0", "false", "no")
+
+
+def grounding_gate_mode() -> str:
+    """warn (default) | block — mirrors AUTHENTICITY_GATE (decisions §9)."""
+    return os.getenv("GROUNDING_GATE", "warn").strip().lower() or "warn"
+
+
+def gate_blocks(verification_dict: dict[str, Any] | None) -> bool:
+    """True when GROUNDING_GATE=block and the verifier found unsupported claims."""
+    if grounding_gate_mode() != "block":
+        return False
+    return bool((verification_dict or {}).get("unsupported"))
+
+
+def _numbered_facts(facts_text: str) -> list[str]:
+    lines = [ln.strip() for ln in (facts_text or "").splitlines() if ln.strip()]
+    numbered: list[str] = []
+    used = 0
+    for ln in lines:
+        if used + len(ln) > _MAX_FACT_CHARS:
+            break
+        numbered.append(ln)
+        used += len(ln)
+    return numbered
+
+
+def verify_claims(script: str, facts_text: str, *, topic: str = "") -> ClaimVerification | None:
+    """Decompose the script into factual claims and verify each against the facts.
+
+    Returns ``None`` when disabled, when there is nothing to verify, or on any
+    LLM/parse failure — callers must treat ``None`` as "no verdict", not "ok".
+    """
+    if not verifier_enabled():
+        return None
+    if not (script or "").strip() or not (facts_text or "").strip():
+        return None
+
+    facts = _numbered_facts(facts_text)
+    if not facts:
+        return None
+    facts_block = "\n".join(f"{i}. {ln}" for i, ln in enumerate(facts, 1))
+
+    system_prompt = (
+        "You are a fact-checker for a short-form video script. You are given "
+        "numbered VERIFIED FACTS (the ONLY source of truth) and a SCRIPT. "
+        f"Extract up to {_MAX_CLAIMS} declarative factual claims the script asserts "
+        "as true — specific events, results, trades, signings, records, stats, "
+        "dates, versions. Skip opinions, predictions, hypotheticals, and "
+        "rhetorical questions. For each claim decide:\n"
+        "- supported: true only if one or more FACT lines directly back the claim "
+        "(paraphrase is fine, but direction, names, and numbers must match).\n"
+        "- citation: the number of the single FACT line that best supports it "
+        "(null when unsupported).\n"
+        'Return JSON only: {"claims": [{"claim": "...", "supported": true, '
+        '"citation": 3}]}'
+    )
+    user_prompt = f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{facts_block}\n\nSCRIPT:\n{script}"
+
+    from core.llm_router import complete_json
+
+    try:
+        payload = complete_json(
+            user_prompt,
+            system=system_prompt,
+            tier="extract",
+            temperature=0.1,
+            max_tokens=1200,
+        )
+    except Exception as exc:
+        logger.debug("claim verification failed: %s", exc)
+        return None
+    raw_claims = payload.get("claims") if isinstance(payload, dict) else None
+    if not isinstance(raw_claims, list):
+        return None
+
+    verification = ClaimVerification()
+    for item in raw_claims[:_MAX_CLAIMS]:
+        if not isinstance(item, dict):
+            continue
+        claim = str(item.get("claim") or "").strip()
+        if not claim:
+            continue
+        supported = bool(item.get("supported"))
+        citation = ""
+        raw_citation = item.get("citation")
+        if supported and isinstance(raw_citation, int) and 1 <= raw_citation <= len(facts):
+            citation = facts[raw_citation - 1]
+        verification.claims.append(
+            VerifiedClaim(claim=claim, supported=supported, citation_line=citation)
+        )
+    if not verification.claims:
+        return None
+    return verification
+
+
+def display_claim_verification(verification_dict: dict[str, Any] | None, *, print_fn=print) -> bool:
+    """Show the claim-verifier verdict. Returns True when review is needed."""
+    if not verification_dict:
+        return False
+    total = int(verification_dict.get("total") or 0)
+    supported = int(verification_dict.get("supported") or 0)
+    unsupported = list(verification_dict.get("unsupported") or [])
+    if not total:
+        return False
+    if not unsupported:
+        print_fn(f"  ✓ Claim check: {supported}/{total} factual claim(s) backed by the facts.")
+        return False
+    print_fn(f"  ⚠ Claim check: {len(unsupported)} of {total} claim(s) NOT backed by the facts:")
+    for claim in unsupported[:6]:
+        print_fn(f"    · {claim}")
+    if len(unsupported) > 6:
+        print_fn(f"    · …and {len(unsupported) - 6} more")
+    print_fn("    Verify each against your sources or add the missing key facts.")
+    return True

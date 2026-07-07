@@ -38,11 +38,38 @@ class TestBuildQuality(unittest.TestCase):
         self.assertIn("authenticity_score", q)
         self.assertEqual(q["ungrounded_count"], 1)
         self.assertEqual(q["trade_warning_count"], 0)
-        self.assertEqual(q["quality_version"], "v1")
+        self.assertEqual(q["tier_warning_count"], 0)
+        self.assertEqual(q["fact_conflict_count"], 0)
+        self.assertNotIn("claim_support_rate", q)  # verifier did not run
+        self.assertEqual(q["quality_version"], "v2")
 
     def test_empty_script_returns_version_only(self):
         q = run_quality.build_quality(script="  ", channel_id="tapin")
-        self.assertEqual(q, {"quality_version": "v1"})
+        self.assertEqual(q, {"quality_version": "v2"})
+
+    def test_pillar3_features_persist_into_quality(self):
+        with patch(
+            "storage.repositories.content_runs.get_content_run_repository",
+            return_value=_mock_repo(),
+        ):
+            q = run_quality.build_quality(
+                script=SCRIPT,
+                channel_id="tapin",
+                features={
+                    "tier_warnings": ["w1", "w2"],
+                    "fact_conflicts": ["c1"],
+                    "claim_verification": {
+                        "total": 4,
+                        "supported": 3,
+                        "support_rate": 0.75,
+                        "unsupported": ["bad claim"],
+                    },
+                },
+            )
+        self.assertEqual(q["tier_warning_count"], 2)
+        self.assertEqual(q["fact_conflict_count"], 1)
+        self.assertEqual(q["claim_support_rate"], 0.75)
+        self.assertEqual(q["unsupported_claim_count"], 1)
 
 
 class TestQualityPersistence(unittest.TestCase):

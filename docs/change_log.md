@@ -6,6 +6,47 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Pillar 3 — Fact Engine 2.0 — 2026-07-06
+
+*Third pillar (decisions §16): facts gain provenance + TTL, the grounding corpus
+gains trust tiers, and scripts get claim-level verification with an optional
+gate. Every layer fails open. Suite 833 green.*
+
+- **Structured fact store** — `core/fact_store.py`: `FactRecord`
+  `{claim, tier, source_url, verified_at, expires}` from vault note frontmatter
+  (no new DB); `obsidian_facts.load_fact_records()` drops expired notes and
+  ranks relevance-first with a provenance+freshness tiebreak (bonus capped
+  below one overlap token); `load_facts()` keeps its `list[str]` contract.
+  Writers stamp frontmatter: operator capture → `tier: operator` +
+  `verified_at`, `_sources.md` → `tier: link`.
+- **Tiered grounding corpus** — `core/grounding_tiers.py`: every corpus line
+  tagged `operator|link|web|signal|brief|context` (`full_text` byte-identical
+  to the legacy corpus); YouTube titles/descriptions are context, not facts —
+  entities grounding only there warn "treat as unverified"; high-stakes
+  sentences (results/trades/records/champions) backed only by web/brief warn.
+- **Claim-level LLM verifier** — `core/claim_verifier.py`:
+  `verify_claims(script, facts)` on the extract tier → per-claim
+  `{claim, supported, citation_line}`; default-on
+  (`CLAIM_VERIFIER_ENABLED=false` to opt out), fail-open;
+  `GROUNDING_GATE=warn|block` mirrors the authenticity gate in `main.py`
+  (override prompt) and `auto_generate` (`--force`).
+- **Pre-script contradiction detection** — `core/fact_conflicts.py`:
+  trade-direction / reversed-result / champion conflicts between operator key
+  facts and the signal+web corpus, caught **before** the LLM call; operator
+  wins — losing source lines dropped (`FACT_CONFLICT_FILTER=false` keeps
+  them); conflicts always reported.
+- **Web-source capture** — `capture_web_sources()` writes `web_search` result
+  URLs to `_sources.md`, where they re-rank as `link` tier on related topics.
+- **Quality v2 + grading** — `quality_json` version bumps to v2 with
+  `claim_support_rate`, `unsupported_claim_count`, `fact_conflict_count`,
+  `tier_warning_count`; `video_grade` grounding component penalizes each;
+  dossier, batch `meta.json` + summary, and the interactive Fact Engine report
+  (`core/ui.display_fact_engine_report`) surface them.
+- Tests: `tests/test_fact_store.py`, `tests/test_grounding_tiers.py`,
+  `tests/test_claim_verifier.py`, `tests/test_fact_conflicts.py` + v2/penalty/
+  pass-through coverage in the run-ledger, video-grade, pipeline, and
+  source-capture suites.
+
 ### Pillar 2 — Video Grading System — 2026-07-06
 
 *Second pillar (decisions §15): the six scorers roll up into one calibrated

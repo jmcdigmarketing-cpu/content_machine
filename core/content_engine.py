@@ -5,6 +5,7 @@ from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.description_extras import apply_description_extras
 from core.fact_enrichment import _fact_line_count, enrich_facts
 from core.fact_grounding import find_ungrounded_entities
+from core.grounding_tiers import YOUTUBE_SECTION_HEADERS, build_tiered_corpus
 from core.llm_router import complete_json
 from core.logging import get_logger
 from core.operator_facts import (
@@ -50,12 +51,9 @@ _CONTEXT_ONLY_PREFIXES = (
 )
 
 
-_YOUTUBE_SECTION_HEADERS = (
-    "YouTube — real video titles",
-    "YouTube video descriptions",
-    "YouTube market titles",
-    "YouTube competitor performance",
-)
+# Shared with the tier layer (core/grounding_tiers.py) so both split YouTube
+# context sections the same way.
+_YOUTUBE_SECTION_HEADERS = YOUTUBE_SECTION_HEADERS
 
 # Bullet prefixes used inside YouTube sections
 _YT_BULLET_PREFIXES = ("  •", "  →", "• ", "→ ")
@@ -587,6 +585,32 @@ def generate_content_package(
         if _dropped_dates:
             logger.info("Dropped %d future-dated fact line(s)", len(_dropped_dates))
 
+    # Pre-script contradiction detection (Pillar 3): flag source lines that
+    # disagree with the operator's key facts BEFORE the LLM sees both, and
+    # (default on) keep the losing lines out of the prompt entirely.
+    from core.fact_conflicts import (
+        conflict_filter_enabled,
+        drop_conflicting_lines,
+        find_fact_conflicts,
+    )
+
+    clean_key_facts = _sanitize_key_facts(key_facts)
+    conflicts = find_fact_conflicts(clean_key_facts, signal_facts)
+    conflicts_dropped = 0
+    if conflicts:
+        logger.warning(
+            "Fact conflicts (%d): %s",
+            len(conflicts),
+            "; ".join(c.detail for c in conflicts),
+        )
+        if conflict_filter_enabled():
+            signal_facts, conflicts_dropped = drop_conflicting_lines(signal_facts, conflicts)
+            if conflicts_dropped:
+                logger.info(
+                    "Dropped %d source line(s) conflicting with operator facts",
+                    conflicts_dropped,
+                )
+
     # Detect thin-facts mode — warn the LLM when verified (non-YouTube) data is sparse.
     # _fact_line_count counts only lines with "-" or ":" (not YouTube bullet "•" lines),
     # so YouTube titles alone cannot mask a thin-facts situation.
@@ -667,9 +691,16 @@ def generate_content_package(
 
     # The fact corpus the script must stay grounded in (also used by the insight
     # beat so it can't invent specifics) — built before injection + grounding.
-    grounding_text = "\n".join(
-        [signal_facts, brief_block, topic, seed_topic or "", *(_sanitize_key_facts(key_facts))]
+    # Tiered (Pillar 3): every line carries a provenance tier; full_text is the
+    # same flat string the token-grounding check has always seen.
+    corpus = build_tiered_corpus(
+        signal_facts=signal_facts,
+        brief_block=brief_block,
+        topic=topic,
+        seed_topic=seed_topic or "",
+        key_facts=clean_key_facts,
     )
+    grounding_text = corpus.full_text
 
     # Key-fact anchor: if the script drifted off the operator's pasted subject,
     # recenter it FIRST (subject-level) — before insight/grounding tweak the prose.
@@ -716,6 +747,32 @@ def generate_content_package(
                 "; ".join(trade_warnings),
             )
 
+    # Tier lint (Pillar 3): specifics that only ground via YouTube titles, and
+    # high-stakes claims (trades/results/records) backed only by low-tier text.
+    from core.grounding_tiers import tier_warnings_for_script
+
+    tier_warnings = tier_warnings_for_script(script, corpus)
+    if tier_warnings:
+        logger.warning(
+            "Grounding tier check flagged %d claim(s): %s",
+            len(tier_warnings),
+            "; ".join(tier_warnings),
+        )
+
+    # Claim-level verification (Pillar 3): one extract-tier call decomposes the
+    # script into factual claims and checks each against the NON-context corpus
+    # (YouTube titles must not "support" a claim). Fail-open → None.
+    from core.claim_verifier import verify_claims
+
+    verification = verify_claims(script, corpus.factual_text, topic=topic)
+    if verification and verification.unsupported:
+        logger.warning(
+            "Claim verifier: %d/%d claim(s) unsupported: %s",
+            len(verification.unsupported),
+            verification.total,
+            "; ".join(c.claim for c in verification.unsupported[:5]),
+        )
+
     from core.title_generator import generate_title
 
     title = generate_title(
@@ -736,4 +793,8 @@ def generate_content_package(
         "word_count": count_spoken_words(script),
         "ungrounded_entities": ungrounded,
         "trade_warnings": trade_warnings,
+        "tier_warnings": tier_warnings,
+        "fact_conflicts": [c.render() for c in conflicts],
+        "fact_conflicts_dropped": conflicts_dropped,
+        "claim_verification": verification.to_dict() if verification else None,
     }

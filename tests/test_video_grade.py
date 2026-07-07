@@ -37,6 +37,23 @@ class TestGradeFromParts(unittest.TestCase):
         grounding = next(c for c in dirty.components if c.name == "grounding")
         self.assertEqual(grounding.score, 25.0)  # 100 - 3*25
 
+    def test_fact_engine_outputs_penalize(self):
+        # Pillar 3: unsupported claims (15), conflicts (15), tier warnings (10).
+        dirty = grade_from_parts(
+            quality={
+                **FULL_QUALITY,
+                "unsupported_claim_count": 2,
+                "fact_conflict_count": 1,
+                "tier_warning_count": 2,
+            },
+            composite_score=75.0,
+        )
+        grounding = next(c for c in dirty.components if c.name == "grounding")
+        self.assertEqual(grounding.score, 35.0)  # 100 - 2*15 - 15 - 2*10
+        self.assertIn("unsupported claim", grounding.note)
+        self.assertIn("fact conflict", grounding.note)
+        self.assertIn("tier warning", grounding.note)
+
     def test_missing_components_renormalize(self):
         grade = grade_from_parts(quality={"hook_score": 60}, composite_score=0)
         self.assertEqual(len(grade.components), 1)

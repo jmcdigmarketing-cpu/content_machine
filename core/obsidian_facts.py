@@ -24,8 +24,10 @@ from __future__ import annotations
 
 import os
 import re
+from datetime import date
 from pathlib import Path
 
+from core.fact_store import FactRecord, note_metadata, rank_bonus
 from core.logging import get_logger
 
 logger = get_logger("core.obsidian_facts")
@@ -202,15 +204,35 @@ def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> li
     """Return relevant fact bullet lines from the vault for this topic + channel.
 
     Returns [] when the vault is unset/missing or nothing relevant is found, so it
-    is always safe to call. Results are ranked by keyword overlap with the topic;
-    evergreen notes for the channel are always considered.
+    is always safe to call. Results are ranked by keyword overlap with the topic,
+    then by provenance tier + freshness (core/fact_store.py) so a fact verified
+    last week outranks an equally relevant undated one; expired notes are dropped.
+    Evergreen notes for the channel are always considered.
+    """
+    return [r.claim for r in load_fact_records(topic, channel_id, limit=limit)]
+
+
+def load_fact_records(
+    topic: str,
+    channel_id: str = "default",
+    *,
+    limit: int = 8,
+    today: date | None = None,
+) -> list[FactRecord]:
+    """`load_facts` with provenance — one FactRecord per relevant bullet (Pillar 3).
+
+    Frontmatter drives the metadata: ``tier:`` (else inferred from the path —
+    ``_operator_facts/`` → operator, ``_sources.md`` → link, else vault),
+    ``verified_at:`` (falls back to ``date:``), ``expires:`` (note dropped once
+    past), ``source:`` when it is a URL.
     """
     vault = _vault_path()
     if not vault:
         return []
 
+    today = today or date.today()
     topic_tokens = _tokens(topic)
-    scored: list[tuple[float, str]] = []
+    scored: list[tuple[float, FactRecord]] = []
 
     try:
         md_files = list(vault.rglob("*.md"))
@@ -230,6 +252,10 @@ def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> li
         if _is_strategy_note(meta, rel):
             continue
 
+        tier, verified_at, expires, source_url = note_metadata(meta, rel)
+        if expires is not None and expires < today:
+            continue  # stale by declaration — champions/rosters age out
+
         # Relevance: overlap of topic tokens with filename + headings.
         headings = " ".join(_HEADING_RE.findall(body))
         note_tokens = _tokens(path.stem + " " + headings)
@@ -239,26 +265,35 @@ def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> li
         # or any individual bullet matches the topic (a fact can live in a note whose
         # title doesn't mention the topic).
         note_weight = overlap + (0.5 if evergreen else 0)
+        provenance = rank_bonus(tier=tier, verified_at=verified_at, today=today)
         for bullet in _extract_bullets(body):
             if _is_strategy_bullet(bullet):
                 continue
             bullet_overlap = len(topic_tokens & _tokens(bullet))
             if overlap == 0 and not evergreen and bullet_overlap == 0:
                 continue
-            scored.append((note_weight + bullet_overlap, bullet))
+            record = FactRecord(
+                claim=bullet,
+                tier=tier,
+                source_url=source_url,
+                verified_at=verified_at,
+                expires=expires,
+                note_path=str(rel),
+            )
+            scored.append((note_weight + bullet_overlap + provenance, record))
 
     if not scored:
         return []
 
     scored.sort(key=lambda s: s[0], reverse=True)
     seen: set[str] = set()
-    facts: list[str] = []
-    for _, bullet in scored:
-        key = bullet.lower()
+    records: list[FactRecord] = []
+    for _, record in scored:
+        key = record.claim.lower()
         if key in seen:
             continue
         seen.add(key)
-        facts.append(bullet)
-        if len(facts) >= limit:
+        records.append(record)
+        if len(records) >= limit:
             break
-    return facts
+    return records

@@ -216,6 +216,8 @@ def capture_facts_to_vault(
             "tags: [facts, operator, research]\n"
             f"topic: {topic[:120]}\n"
             f"date: {day}\n"
+            "tier: operator\n"
+            f"verified_at: {day}\n"
             "source: content-machine (operator key facts)\n"
             "---\n\n"
             f"# Operator facts — {topic[:80]}\n\n"

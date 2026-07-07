@@ -164,3 +164,140 @@ for the slot-1 video provider. Turns "one background" into a directed sequence.
 
 Every step ships as a flagged, cost-metered, fail-open provider — generation gets
 *better*, and the cost meter + grounding + learning loop keep it honest.
+
+---
+
+## Cost & links reference
+
+> **Pricing is approximate (mid-2026) — verify at each link; AI pricing moves
+> fast.** "Free (OSS)" = no license fee; you still pay the GPU to run it (see
+> Infra). "Pay-per-use" = per-second/per-image/per-run, no subscription. Open-model
+> license notes: Apache/MIT/OpenRAIL are commercial-safe; a few video weights are
+> research/non-commercial — check before shipping.
+
+### 1. AI video generation
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| Google Veo 3.1 | API | ~$0.40–0.75 / sec (native audio) | https://deepmind.google/models/veo/ |
+| OpenAI Sora 2 | API / app | ChatGPT Plus $20 · Pro $200/mo; API pay-per-sec | https://openai.com/sora/ |
+| Kling 3.0 | Freemium SaaS | free credits; ~$4–92/mo + credits | https://klingai.com |
+| Runway Gen-4 | Freemium SaaS/API | $12–76/mo; API ~$0.05/sec | https://runwayml.com |
+| Luma Ray (Dream Machine) | Freemium SaaS | $9.99–94/mo | https://lumalabs.ai/dream-machine |
+| Pika 2.x | Freemium SaaS | $8–58/mo | https://pika.art |
+| MiniMax Hailuo | Freemium SaaS | free tier; ~$5–15/mo | https://hailuoai.video |
+| Higgsfield | Paid SaaS | ~$9–49/mo | https://higgsfield.ai |
+| Wan 2.x (Alibaba) | Free (OSS, Apache-2.0) | Free (self-host GPU) | https://github.com/Wan-Video/Wan2.2 |
+| LTX-Video (Lightricks) | Free (OSS) | Free (fast; self-host) | https://github.com/Lightricks/LTX-Video |
+| HunyuanVideo (Tencent) | Free (OSS, community license) | Free (self-host; check terms) | https://github.com/Tencent/HunyuanVideo |
+| Mochi-1 (Genmo) | Free (OSS, Apache-2.0) | Free (self-host) | https://github.com/genmoai/models |
+| CogVideoX | Free (OSS) | Free (self-host) | https://github.com/THUDM/CogVideo |
+| Open-Sora | Free (OSS) | Free (self-host) | https://github.com/hpcaitech/Open-Sora |
+
+### 2. Voice / TTS
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| ElevenLabs v3 | Freemium API | free 10k chars/mo; $5–$99+/mo; ~$0.15–0.30/1k chars | https://elevenlabs.io/pricing |
+| Cartesia Sonic | Freemium API | free tier; usage-based | https://cartesia.ai |
+| Hume Octave | Freemium API | free tier; usage-based | https://hume.ai |
+| OpenAI TTS | API | ~$15 / 1M chars | https://platform.openai.com/docs/guides/text-to-speech |
+| PlayHT | Freemium SaaS | $31–99/mo | https://play.ht |
+| Rime | API | usage-based | https://rime.ai |
+| Kokoro-82M | Free (OSS, Apache-2.0) | Free (tiny/fast, self-host) | https://huggingface.co/hexgrad/Kokoro-82M |
+| XTTS-v2 (Coqui) | Free (OSS) | Free (cloning; self-host) | https://github.com/coqui-ai/TTS |
+| Piper | Free (OSS, MIT) | Free (CPU/edge) | https://github.com/rhasspy/piper |
+| Chatterbox (Resemble) | Free (OSS, MIT) | Free (emotion; self-host) | https://github.com/resemble-ai/chatterbox |
+| F5-TTS | Free (OSS) | Free (self-host) | https://github.com/SWivid/F5-TTS |
+| Fish Speech | Free (OSS) | Free (self-host) | https://github.com/fishaudio/fish-speech |
+| Orpheus TTS | Free (OSS) | Free (self-host) | https://github.com/canopyai/Orpheus-TTS |
+
+### 3. Captions / word-timing / alignment
+| Tool | Type | Cost | Link |
+|---|---|---|---|
+| faster-whisper | Free (OSS, MIT) | Free (self-host) | https://github.com/SYSTRAN/faster-whisper |
+| WhisperX | Free (OSS) | Free (word-level; self-host) | https://github.com/m-bain/whisperX |
+| Montreal Forced Aligner | Free (OSS) | Free | https://github.com/MontrealCorpusTools/Montreal-Forced-Aligner |
+| aeneas | Free (OSS) | Free | https://github.com/readbeyond/aeneas |
+
+### 4. Music & SFX
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| Suno | Freemium SaaS | free tier; $10/$30/mo | https://suno.com |
+| Udio | Freemium SaaS | free tier; $10/$30/mo | https://udio.com |
+| ElevenLabs Music + SFX | within ElevenLabs plans | see ElevenLabs pricing | https://elevenlabs.io/sound-effects |
+| MusicGen (Meta AudioCraft) | Free (OSS, MIT) | Free (self-host) | https://github.com/facebookresearch/audiocraft |
+| Stable Audio Open | Free (OSS) | Free (self-host) | https://huggingface.co/stabilityai/stable-audio-open-1.0 |
+| AudioLDM2 | Free (OSS) | Free (self-host) | https://github.com/haoheliu/AudioLDM2 |
+
+### 5. Thumbnails / images
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| Ideogram v3 (best text) | Freemium SaaS/API | free tier; $8–48/mo | https://ideogram.ai |
+| Recraft v3 | Freemium SaaS/API | free tier; $10–48/mo | https://recraft.ai |
+| Nano Banana (Gemini image) | API | pay-per-image (~$0.03–0.04) | https://ai.google.dev |
+| GPT-image-1 | API | ~$0.01–0.17 / image | https://platform.openai.com |
+| Flux / Flux Kontext | OSS + API | OSS free; API pay-per-use | https://blackforestlabs.ai |
+
+### 6. Talking-head / avatar
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| Hedra Character-3 | Freemium SaaS | free tier; $10–45/mo | https://www.hedra.com |
+| HeyGen | Freemium SaaS | free tier; $29–89/mo | https://www.heygen.com |
+| D-ID | Paid SaaS | $5.9–49/mo | https://www.d-id.com |
+| Argil | Paid SaaS | $39–500/mo | https://www.argil.ai |
+| LatentSync (ByteDance) | Free (OSS) | Free (lip-sync; self-host) | https://github.com/bytedance/LatentSync |
+| MuseTalk | Free (OSS) | Free (self-host) | https://github.com/TMElyralab/MuseTalk |
+| SadTalker | Free (OSS) | Free (self-host) | https://github.com/OpenTalker/SadTalker |
+| Wav2Lip | Free (OSS) | Free (self-host) | https://github.com/Rudrabha/Wav2Lip |
+
+### 7. Clip-from-source (Phase R)
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| Ultralytics YOLO (auto-reframe) | Free (OSS, AGPL-3.0) | Free (self-host; note AGPL) | https://github.com/ultralytics/ultralytics |
+| OpusClip | Freemium SaaS | free tier; $9–29/mo | https://www.opus.pro |
+| Vizard | Freemium SaaS | free tier; $16–50/mo | https://vizard.ai |
+| Klap | Paid SaaS | $29–79/mo | https://klap.app |
+| *(self-host: faster-whisper + hook_score + FFmpeg)* | Free | Free | — |
+
+### 8. Upscaling / interpolation / cleanup
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| Real-ESRGAN (upscale) | Free (OSS) | Free | https://github.com/xinntao/Real-ESRGAN |
+| RIFE / Practical-RIFE (interpolation) | Free (OSS) | Free | https://github.com/hzwer/Practical-RIFE |
+| CodeFormer (face restore) | Free (OSS) | Free | https://github.com/sczhou/CodeFormer |
+| Topaz Video AI | Paid (one-time) | ~$299 one-time | https://www.topazlabs.com/topaz-video-ai |
+
+### 9–12. Ingestion, aggregators, infra
+| Tool | Type | Cost (approx) | Link |
+|---|---|---|---|
+| goose3 (article extraction) | Free (OSS, Apache-2.0) | Free | https://github.com/goose3/goose3 |
+| ComfyUI (node graph) | Free (OSS) | Free (self-host) | https://github.com/comfyanonymous/ComfyUI |
+| fal.ai (model marketplace) | Pay-per-use | per-run/sec | https://fal.ai |
+| Replicate (model marketplace) | Pay-per-use | per-run/sec | https://replicate.com |
+| Modal (serverless GPU) | Pay-per-use | GPU/sec (free monthly credits) | https://modal.com |
+| RunPod (GPU rental) | Pay-per-use | ~$0.2–3/hr by GPU | https://www.runpod.io |
+
+### Original 17 resources (from tooling_landscape.md)
+| # | Resource | Type | Cost | Link |
+|---|---|---|---|---|
+| 1 | ShortGPT | Free (OSS, MIT) | Free (you pay the APIs it calls) | https://github.com/RayVentura/ShortGPT |
+| 2 | MoneyPrinterV2 | Free (OSS, **AGPL-3.0**) | Free (pattern-only — copyleft) | https://github.com/FujiwaraChoki/MoneyPrinterV2 |
+| 3 | AI-Content-Studio | Free (OSS) | Free (+ Gemini/Vertex API costs) | https://github.com/naqashafzal/AI-Content-Studio |
+| 4 | Higgsfield | Paid SaaS | ~$9–49/mo | https://higgsfield.ai |
+| 5 | youtube-automation-agent | Free (OSS) | Free (+ LLM API costs) | https://github.com/darkzOGx/youtube-automation-agent |
+| 6 | AutoSocial | Free (OSS, MIT) | Free (self-host) | https://github.com/Katzca/AutoSocial |
+| 7 | Marvomatic/n8n-templates | Free templates | Free (n8n self-host free; Cloud ~$20+/mo) | https://github.com/Marvomatic/n8n-templates |
+| 8 | lucaswalter/n8n-ai-automations | Free templates | Free (+ n8n + API costs) | https://github.com/lucaswalter/n8n-ai-automations |
+| 9 | ericosiu/ai-marketing-skills | Free (OSS, MIT) | Free | https://github.com/ericosiu/ai-marketing-skills |
+| 10 | gemini-youtube-automation | Free (OSS, MIT) | Free (+ Gemini API) | https://github.com/ChaitanyaEswarRajeshJakki/gemini-youtube-automation |
+| 11 | anything-to-notebooklm | Free (OSS, MIT) | Free (NotebookLM is free) | https://github.com/joeseesun/qiaomu-anything-to-notebooklm |
+| 12 | python-goose (→ use goose3) | Free (OSS) | Free (original stale) | https://github.com/grangier/python-goose |
+| 13 | system_prompts_leaks | Free (CC0) | Free (reference archive) | https://github.com/asgeirtj/system_prompts_leaks |
+| 14 | ComplianceAsCode/content | Free (OSS) | Free (outlier — not adopted) | https://github.com/ComplianceAsCode/content |
+| 15 | youtubeniches 2026 guide | Free (article) | Free to read | https://youtubeniches.com/blog/ai-youtube-automation-complete-guide-2026 |
+| 16 | directai tool roundup | Free (article) | Free to read | https://www.directai.app/blog/best-ai-tools-for-youtube-automation |
+| 17 | n8n (platform, for #7/#8) | Freemium | self-host free; Cloud ~$20–50/mo | https://n8n.io |
+
+**Cheapest viable stack (~$0 marginal):** Kokoro TTS + faster-whisper + MusicGen +
+LTX-Video/Wan (local) + Flux/Ideogram-free + FFmpeg, on a RunPod/Modal GPU billed
+per-second. **Fastest-quality paid stack:** ElevenLabs + Veo 3.1 (via fal.ai) +
+Suno + Ideogram + Hedra — higher per-video cost, all metered in `cost_meter`.

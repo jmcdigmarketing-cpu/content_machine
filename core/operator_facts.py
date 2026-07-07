@@ -57,6 +57,9 @@ _WRITING_TIP_MARKERS = (
     "competitor video",
     "corporate-jargon",
     "spoken-word cadence",
+    "short-form punchy",
+    "retention pivot",
+    "longer analysis for rankings",
 )
 
 

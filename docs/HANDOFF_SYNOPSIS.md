@@ -1,13 +1,14 @@
-# Handoff synopsis — 2026-07-07 wave: Pillars 1–4 shipped (ledger, grading, fact engine, vault OS)
+# Handoff synopsis — 2026-07-07 wave: Pillars 1–4 shipped + live-run hardening
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
 - **Branch:** `feat/reddit-free-backend-and-signal-persistence` → `main`
-- **Suite:** 846 tests green · **Pre-PR:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Suite:** 860 tests green · **Pre-PR:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - This branch carries three waves: morning (free backends, batch/A/B, webhooks, O11),
-  afternoon (Pillars 1–3), and **Pillar 4** (Obsidian knowledge OS). Prior wave
+  afternoon (Pillars 1–3), **Pillar 4** (Obsidian knowledge OS), and **live-run
+  hardening** (link scrape, domain/key-fact drift, grounding noise). Prior wave
   (fact-first, O10, coach, UI themes) merged via PR #24.
 
 ---
@@ -35,7 +36,8 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 | Conflicts | Operator facts win — contradicting signal/web lines dropped pre-prompt (`FACT_CONFLICT_FILTER`) |
 | Playbook | Strategy/belief notes → `CHANNEL PLAYBOOK` prompt block (NOT facts) |
 | Run dossiers | `vault/<channel>/_runs/` — records of what we made, never read back as facts |
-| Link scrape | Yahoo/list items OK; ESPN WAF → use `paste` |
+| Link scrape | Yahoo/list items OK; ESPN WAF → use `paste`; Bing search/captcha blocked; `ck/a` unwraps |
+| Sports on TapIn | `infer_domain(key_facts=)` + NBA script matrix — pasted NBA facts override gaming default |
 | **Headless** | `auto_generate --facts-file <paste-block.txt> --fact "..."` (repeatable) |
 
 ---

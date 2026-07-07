@@ -302,8 +302,10 @@ render gate (interactive asks to override; headless needs `--force`).
 3. **Discovery angles ≠ YouTube title** — discovery picks editorial angles; the publishable title is generated **after** key facts + script (`core/title_generator.py`). Ignore slop-looking angle lines — the final title uses your facts.
 4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs. Yahoo/MSN article links can also pull sidebar "Related:" items — `link_facts` now scopes to `<article>` and drops nav noise; if a link still looks polluted, **`paste`** the paragraph block instead.
 5. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”). Set `SIGNAL_BACKEND=auto` for yt-dlp YouTube when Apify is dead.
-6. **Single-name athletes** — grounding flags mononyms (e.g. `LeBron`) when absent from the facts corpus.
+6. **Single-name athletes** — grounding flags mononyms (e.g. `LeBron`) when absent from the facts corpus. Common transition words (`Meanwhile`, `Rookie`, `Bottom line`) are **not** flagged.
 7. **Claim verifier vs token grounding** — token grounding can pass while the claim verifier fails: the verifier checks whether the *claim* is backed, not just whether names appear. Operator key facts are now **prioritized** in the verifier's fact window (signal corpus used to crowd them out past the 6000-char cap). If pay-cut lines are in your pasted facts but still flag unsupported, re-run after pull — or add the exact stat as a key fact.
+8. **TapIn + real sports** — topics like "2027 standings / award races" without the word "NBA" used to inherit TapIn's `gaming` domain and drift to Marvel Rivals. Fixed: expanded NBA keywords + **key facts override** the channel default; script brief adds an NBA matrix and drops the gaming-franchise nudge. If you still see esports language, add more concrete NBA team/player facts and regenerate.
+9. **Bing redirect/search URLs** — paste the **destination** article URL (or use `paste` for ESPN). Bing search pages and captcha interstitials are blocked; `ck/a` tracking links are unwrapped when possible.
 
 **What to do:**
 

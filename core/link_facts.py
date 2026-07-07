@@ -13,7 +13,9 @@ input line uniformly.
 
 from __future__ import annotations
 
+import base64
 import re
+from urllib.parse import unquote
 
 import requests
 from bs4 import BeautifulSoup
@@ -60,6 +62,21 @@ _JUNK_MARKERS = (
     "pens lakers goodbye",
     "staffer confesses",
     "kevin o'connor show",
+    "intelligent search from bing",
+    "makes it easier to quickly find",
+)
+
+
+_BLOCKED_URL_PARTS = (
+    "bing.com/search",
+    "well-known/sgcaptcha",
+    "sgcaptcha",
+)
+
+_BLOCKED_TITLE_MARKERS = (
+    "robot challenge",
+    " - search",
+    "captcha",
 )
 
 
@@ -99,6 +116,36 @@ def _looks_like_trade_tracker(url: str, title: str) -> bool:
 
 def looks_like_url(text: str) -> bool:
     return bool(_URL_RE.match((text or "").strip()))
+
+
+def _unwrap_redirect_url(url: str) -> str:
+    """Follow Bing click-tracking wrappers to the destination URL when possible."""
+    u = (url or "").strip()
+    low = u.lower()
+    if "bing.com/ck/" not in low:
+        return u
+    match = re.search(r"[?&]u=([^&]+)", u)
+    if not match:
+        return u
+    raw = unquote(match.group(1))
+    if raw.startswith("a1"):
+        raw = raw[2:]
+    try:
+        pad = "=" * (-len(raw) % 4)
+        decoded = base64.b64decode(raw + pad).decode("utf-8", errors="ignore")
+    except Exception:
+        return u
+    return decoded if decoded.startswith("http") else u
+
+
+def _is_blocked_url(url: str) -> bool:
+    low = (url or "").lower()
+    return any(part in low for part in _BLOCKED_URL_PARTS)
+
+
+def _is_blocked_title(title: str) -> bool:
+    low = (title or "").lower()
+    return any(m in low for m in _BLOCKED_TITLE_MARKERS)
 
 
 def _youtube_facts(url: str) -> list[str]:
@@ -141,6 +188,13 @@ def link_fetch_issue(url: str) -> str | None:
     url = (url or "").strip()
     if not looks_like_url(url):
         return None
+    if _is_blocked_url(url):
+        if "bing.com/search" in url.lower():
+            return (
+                "Bing search pages cannot be scraped — paste the destination article URL instead."
+            )
+        return "That link is a bot-check or redirect page — paste the article URL or text manually."
+    url = _unwrap_redirect_url(url)
     if _youtube_facts(url):
         return None
     try:
@@ -174,7 +228,11 @@ def _extract_trade_lines(soup: BeautifulSoup) -> list[str]:
     return facts
 
 
-def _article_facts(url: str, *, max_lines: int = 24) -> list[str]:
+def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
+    url = _unwrap_redirect_url(url)
+    if _is_blocked_url(url):
+        logger.debug("link fetch skipped blocked url %s", url)
+        return []
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=12)
         if resp.status_code != 200 or _is_bot_blocked(resp):
@@ -189,6 +247,9 @@ def _article_facts(url: str, *, max_lines: int = 24) -> list[str]:
     root = _main_content_root(soup)
     facts: list[str] = []
     title = (soup.title.string if soup.title and soup.title.string else "").strip()
+    if _is_blocked_title(title):
+        logger.debug("link fetch rejected blocked title for %s: %s", url, title)
+        return []
     if title:
         facts.append(f"Source: {title}")
 
@@ -230,6 +291,9 @@ def extract_facts_from_url(url: str) -> list[str]:
     url = (url or "").strip()
     if not looks_like_url(url):
         return []
+    if _is_blocked_url(url):
+        return []
+    url = _unwrap_redirect_url(url)
     yt = _youtube_facts(url)
     if yt:
         return yt

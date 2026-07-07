@@ -80,6 +80,13 @@ class TestFindUngrounded(unittest.TestCase):
         facts = "VERIFIED FACTS:\n- Smart roster moves matter."
         self.assertIn("Art Walker", find_ungrounded_entities(script, facts))
 
+    def test_common_transition_words_not_flagged_as_mononyms(self):
+        script = (
+            "Meanwhile, Rookie of the Year is wide open. Bottom line: the Thunder look fragile."
+        )
+        facts = "VERIFIED FACTS:\n- Oklahoma City Thunder had injury issues in the playoffs."
+        self.assertEqual(find_ungrounded_entities(script, facts), [])
+
 
 class TestKeyFactsPriority(unittest.TestCase):
     def test_manual_facts_win_over_vault_when_capped(self):

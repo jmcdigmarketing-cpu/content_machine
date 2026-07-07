@@ -19,6 +19,14 @@ class TestWritingTips(unittest.TestCase):
         self.assertTrue(is_writing_tip("Never invent a fight result, record, or event date"))
         self.assertFalse(is_writing_tip("Giannis Antetokounmpo traded to Miami Heat June 2026"))
 
+    def test_playbook_retention_lines_filtered(self):
+        self.assertTrue(
+            is_writing_tip(
+                "Short-form punchy for breaking reactions; longer analysis for rankings/predictions"
+            )
+        )
+        self.assertTrue(is_writing_tip('Retention pivot ~30s in ("but here\'s the thing…")'))
+
 
 class TestParsePastedBlock(unittest.TestCase):
     def test_groups_trade_block(self):

@@ -74,6 +74,22 @@ class TestKeyFactRecenter(unittest.TestCase):
             mock_llm.assert_not_called()
         self.assertEqual(out, "some script")
 
+    def test_recenters_on_video_game_drift_with_nba_facts(self):
+        drifted = "Marvel Rivals standings show paper tigers at the top of the leaderboard."
+        nba_facts = [
+            "Tyran Stokes leads Jonathan Wasserman's 2027 mock draft.",
+            "The New York Knicks won the 2026 title.",
+        ]
+        fixed = (
+            "The Knicks look like paper tigers in early 2027 projections — "
+            "Tyran Stokes is the prospect everyone is sleeping on."
+        )
+        with patch.object(ce, "_call_content_llm", return_value={"script": fixed}):
+            out = ce._maybe_recenter_on_key_facts(
+                drifted, nba_facts, "2027 NBA standings too early", _FACTS
+            )
+        self.assertEqual(out, fixed)
+
 
 if __name__ == "__main__":
     unittest.main()

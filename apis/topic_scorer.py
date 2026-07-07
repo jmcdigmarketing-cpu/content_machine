@@ -140,10 +140,37 @@ def _mentions(text: str, words) -> bool:
     return False
 
 
-def infer_domain(topic, channel_id=None):
-    topic_lower = (topic or "").lower()
+def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: bool = True) -> str:
+    """Classify domain from free text; optional channel profile fallback."""
+    topic_lower = (text or "").lower()
 
-    if _mentions(topic_lower, ["nba", "draft", "wembanyama", "finals", "knicks", "spurs"]):
+    if _mentions(
+        topic_lower,
+        [
+            "nba",
+            "draft",
+            "wembanyama",
+            "finals",
+            "knicks",
+            "spurs",
+            "standings",
+            "standing",
+            "award race",
+            "award races",
+            "mvp race",
+            "mock draft",
+            "power ranking",
+            "power rankings",
+            "free agency",
+            "contender",
+            "contenders",
+            "basketball-reference",
+            "giannis",
+            "lakers",
+            "celtics",
+            "thunder",
+        ],
+    ):
         return "nba"
 
     if _mentions(
@@ -256,11 +283,35 @@ def infer_domain(topic, channel_id=None):
     ):
         return "gaming"
 
-    profile = get_channel_profile(channel_id)
-    if profile.domain and profile.domain != "neutral":
-        return profile.domain
+    if use_channel_profile:
+        profile = get_channel_profile(channel_id)
+        if profile.domain and profile.domain != "neutral":
+            return profile.domain
 
     return "neutral"
+
+
+def infer_domain(topic, channel_id=None, *, key_facts=None):
+    """Infer content domain from topic text, with optional key-fact override.
+
+    When the operator pastes NBA/NFL facts on a gaming channel (or a topic that
+    lacks explicit sport keywords), the fact corpus wins over the channel default.
+    """
+    domain = _infer_domain_from_text(topic or "", channel_id)
+    if not key_facts:
+        return domain
+    facts_blob = "\n".join(str(f).strip() for f in key_facts if str(f).strip())
+    if not facts_blob:
+        return domain
+    facts_domain = _infer_domain_from_text(facts_blob, use_channel_profile=False)
+    sport_domains = {"nba", "nfl", "ufc"}
+    if facts_domain in sport_domains and domain in ("gaming", "neutral", "popculture"):
+        return facts_domain
+    if facts_domain == "finance" and domain in ("gaming", "neutral"):
+        return facts_domain
+    if domain == "neutral" and facts_domain != "neutral":
+        return facts_domain
+    return domain
 
 
 def get_default_weights(domain):

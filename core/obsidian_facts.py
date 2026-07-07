@@ -114,6 +114,10 @@ _STRATEGY_BULLET_MARKERS = (
     "spoken-word cadence",
     "opinionated",
     "corporate anchor",
+    "short-form punchy",
+    "retention pivot",
+    "longer analysis for rankings",
+    "breaking reactions",
 )
 # Factual anchors — if present, keep the bullet even when strategy-flavored.
 _FACT_ANCHOR_RE = re.compile(

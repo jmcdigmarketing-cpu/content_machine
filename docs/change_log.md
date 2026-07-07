@@ -6,6 +6,32 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Live-run fixes — TapIn sports drift + link/grounding hygiene — 2026-07-07
+
+*Second live-run intake (NBA 2027 standings on TapIn): script drifted to Marvel
+Rivals esports while operator key facts were NBA. Suite 860 green.*
+
+- **Domain from key facts** — `infer_domain(..., key_facts=)` expands NBA topic
+  keywords (`standings`, `award race`, `mock draft`, `power ranking`, …) and
+  lets pasted NBA/NFL facts override the TapIn `gaming` channel default
+  (`apis/topic_scorer.py`).
+- **NBA/NFL script matrices** — `build_script_brief(..., key_facts=)` injects
+  real-sports rules and suppresses the channel's "Primary franchise focus"
+  gaming nudge on sports runs (`core/script_brief.py`, wired in
+  `content_engine.generate_content_package`).
+- **Video-game drift recenter** — `_video_game_drift()` + extended
+  `_maybe_recenter_on_key_facts()` regenerate when the script pivots to
+  Marvel Rivals / esports while key facts are NBA/NFL/UFC.
+- **Link scrape guards** — block Bing search/captcha URLs, unwrap Bing `ck/a`
+  redirects to the destination, reject junk titles ("Robot Challenge", "
+  - Search"), cap article lines at 12 (`core/link_facts.py`).
+- **Playbook noise** — filter "short-form punchy…" / "retention pivot…" from
+  vault suggestions and link facts (`operator_facts`, `obsidian_facts`).
+- **Mononym false positives** — skip common sports-script words (`Meanwhile`,
+  `Rookie`, `Bottom`, …) in token grounding (`core/fact_grounding.py`).
+- Tests: `tests/test_domain_key_facts.py` + extensions to link-facts, key-fact
+  anchor, fact-grounding, operator-facts suites.
+
 ### Pillar 4 — Obsidian knowledge OS — 2026-07-07
 
 *Fourth pillar (decisions §17): the vault stops being a one-way sidecar. Runs

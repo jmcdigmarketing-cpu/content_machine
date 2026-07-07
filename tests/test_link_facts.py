@@ -108,6 +108,25 @@ class TestArticleFacts(unittest.TestCase):
     def test_non_url_returns_empty(self):
         self.assertEqual(lf.extract_facts_from_url("not a url"), [])
 
+    def test_bing_search_url_blocked(self):
+        url = "https://www.bing.com/search?q=nba+2027+predictions"
+        self.assertEqual(lf.extract_facts_from_url(url), [])
+        issue = lf.link_fetch_issue(url)
+        self.assertIsNotNone(issue)
+        self.assertIn("destination", issue.lower())
+
+    @patch("apis.youtube_api.extract_youtube_video_id", return_value=None)
+    @patch("core.link_facts.requests.get")
+    def test_captcha_title_rejected(self, mock_get, _ytid):
+        html = "<html><head><title>Robot Challenge Screen</title></head><body></body></html>"
+        mock_get.return_value = MagicMock(status_code=200, text=html)
+        facts = lf.extract_facts_from_url("https://nbadraftroom.com/2027-nba-mock-draft/")
+        self.assertEqual(facts, [])
+
+    def test_unwrap_bing_redirect(self):
+        wrapped = "https://www.bing.com/ck/a?!&&p=x&u=a1aHR0cHM6Ly93d3cuZXNwbi5jb20vbmJhLw=="
+        self.assertIn("espn.com", lf._unwrap_redirect_url(wrapped))
+
 
 class TestJunkLine(unittest.TestCase):
     def test_flags_promo_and_questions(self):

@@ -462,6 +462,32 @@ def _key_fact_anchor_enabled() -> bool:
     return os.getenv("KEY_FACT_ANCHOR_ENABLED", "true").lower() not in ("0", "false", "no")
 
 
+def _video_game_drift(script: str, key_facts: list[str], topic: str) -> bool:
+    """True when key facts are real sports but the script pivoted to video games."""
+    from apis.topic_scorer import infer_domain
+    from core.channel_context import extract_anchors
+
+    clean = _sanitize_key_facts(key_facts)
+    if len(clean) < 2:
+        return False
+    facts_domain = infer_domain(topic or "", key_facts=clean, channel_id=None)
+    if facts_domain not in ("nba", "nfl", "ufc"):
+        return False
+    blob = "\n".join(clean).lower()
+    sl = (script or "").lower()
+    for anchor in extract_anchors(script):
+        if anchor.lower() not in blob:
+            return True
+    drift_phrases = (
+        "marvel rivals",
+        "dive comp",
+        "balance patch",
+        "esports leaderboard",
+        "patch-proof",
+    )
+    return any(p in sl for p in drift_phrases)
+
+
 def _maybe_recenter_on_key_facts(
     script: str, key_facts: list[str] | None, topic: str, grounding_text: str
 ) -> str:
@@ -482,23 +508,34 @@ def _maybe_recenter_on_key_facts(
 
     facts_text = "\n".join(_sanitize_key_facts(key_facts))
     subjects = specific_entities(facts_text)
-    if not subjects:
+    cross_domain = _video_game_drift(script, key_facts, topic)
+    if not subjects and not cross_domain:
         return script  # no named subject to anchor on (e.g. purely numeric facts)
-    if any(mentions(script, e) for e in subjects):
+    if any(mentions(script, e) for e in subjects) and not cross_domain:
         return script  # already on-topic
 
-    logger.warning(
-        "Script ignores operator key-fact subject(s): %s — recentering",
-        ", ".join(subjects[:5]),
-    )
+    if cross_domain:
+        logger.warning(
+            "Script drifted to video games/esports while key facts are real sports — recentering"
+        )
+    else:
+        logger.warning(
+            "Script ignores operator key-fact subject(s): %s — recentering",
+            ", ".join(subjects[:5]),
+        )
     system_prompt = (
         "You rewrite a short-form video script so it is ABOUT the OPERATOR KEY FACTS. "
         "The current script drifted onto a different subject. Rewrite it to center on "
         "the people/events named in the KEY FACTS, using ONLY the verified facts given. "
         "Do not introduce a different main subject, do not invent specifics, and do not "
-        "present a rumor as a fact. Keep the hook style, length, and tone. Return JSON "
-        'only: {"script": "..."}'
+        "present a rumor as a fact. Keep the hook style, length, and tone."
     )
+    if cross_domain:
+        system_prompt += (
+            " CRITICAL: The key facts are REAL SPORTS (NBA/NFL/UFC) — remove ALL "
+            "video-game, esports, Marvel Rivals, patch/meta, and leaderboard content."
+        )
+    system_prompt += ' Return JSON only: {"script": "..."}'
     user_prompt = (
         f"TOPIC: {topic}\n\nOPERATOR KEY FACTS (the script MUST be about these):\n"
         + "\n".join(f"- {f}" for f in _sanitize_key_facts(key_facts))
@@ -515,7 +552,14 @@ def _maybe_recenter_on_key_facts(
 
     candidate = str(payload["script"]).strip()
     keeps_length = count_spoken_words(candidate) >= 0.6 * max(count_spoken_words(script), 1)
-    if keeps_length and any(mentions(candidate, e) for e in subjects):
+    if not keeps_length:
+        return script
+    if cross_domain:
+        if _video_game_drift(candidate, key_facts, topic):
+            return script
+        logger.info("Recentered script away from video-game drift")
+        return candidate
+    if any(mentions(candidate, e) for e in subjects):
         logger.info("Recentered script on operator key facts")
         return candidate
     return script
@@ -575,7 +619,13 @@ def generate_content_package(
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
-    script_brief = build_script_brief(topic, channel_id, seed_topic=seed_topic or topic)
+    clean_key_facts_early = _sanitize_key_facts(key_facts)
+    script_brief = build_script_brief(
+        topic,
+        channel_id,
+        seed_topic=seed_topic or topic,
+        key_facts=clean_key_facts_early or None,
+    )
     seo_block = build_seo_prompt_block(channel_id)
     signal_facts = enrich_facts(
         topic,
@@ -604,7 +654,7 @@ def generate_content_package(
         find_fact_conflicts,
     )
 
-    clean_key_facts = _sanitize_key_facts(key_facts)
+    clean_key_facts = clean_key_facts_early
     conflicts = find_fact_conflicts(clean_key_facts, signal_facts)
     conflicts_dropped = 0
     if conflicts:

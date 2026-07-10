@@ -416,6 +416,61 @@ def _maybe_reground_script(
     return script, ungrounded
 
 
+def _claim_regen_enabled() -> bool:
+    return os.getenv("CLAIM_REGEN_ENABLED", "true").lower() not in ("0", "false", "no")
+
+
+def _maybe_rewrite_unsupported_claims(script, verification, corpus_text, topic, priority_facts):
+    """Act on the claim verifier's verdict: rewrite unsupported claims out (or attribute them).
+
+    Token grounding can pass while the *claims* are invented (e.g. real names, fabricated
+    patch contents) — the verifier catches those but previously nothing acted on it. One
+    premium-tier rewrite removes each unsupported claim or restates it as explicitly
+    attributed speculation ("reports claim…"), then re-verifies; the rewrite is adopted
+    only if the unsupported count actually drops and the script isn't gutted (≥60% of the
+    original length). Default-on (``CLAIM_REGEN_ENABLED``); fail-open everywhere.
+
+    Returns (script, verification) — possibly the originals.
+    """
+    if not _claim_regen_enabled() or not verification or not verification.unsupported:
+        return script, verification
+
+    claims_block = "\n".join(f"- {c.claim}" for c in verification.unsupported[:8])
+    system_prompt = (
+        "You are revising a short-form video script. You are given VERIFIED FACTS "
+        "(the only source of truth) and a list of UNSUPPORTED CLAIMS the script "
+        "asserts that are NOT backed by those facts. Rewrite the script so that each "
+        "unsupported claim is either REMOVED or restated as clearly attributed "
+        "speculation ('reports claim…', 'the rumor is…', 'unconfirmed, but…'). Do NOT "
+        "add any new facts, names, numbers, or events. Keep the hook, voice, stance, "
+        'and roughly the same length. Return JSON only: {"script": "..."}'
+    )
+    user_prompt = (
+        f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{corpus_text}\n\n"
+        f"UNSUPPORTED CLAIMS (remove or attribute each):\n{claims_block}\n\nSCRIPT:\n{script}"
+    )
+    try:
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.3, tier="premium")
+    except Exception as exc:
+        logger.info("Claim rewrite failed (%s) — keeping original script", exc)
+        return script, verification
+    candidate = (payload.get("script") or "").strip() if isinstance(payload, dict) else ""
+    if not candidate or len(candidate.split()) < int(len(script.split()) * 0.6):
+        return script, verification
+
+    from core.claim_verifier import verify_claims
+
+    re_check = verify_claims(candidate, corpus_text, topic=topic, priority_facts=priority_facts)
+    if re_check is not None and len(re_check.unsupported) < len(verification.unsupported):
+        logger.info(
+            "Claim rewrite adopted: unsupported %d -> %d",
+            len(verification.unsupported),
+            len(re_check.unsupported),
+        )
+        return candidate, re_check
+    return script, verification
+
+
 def _insight_injection_enabled() -> bool:
     return os.getenv("INSIGHT_INJECTION_ENABLED", "true").lower() not in ("0", "false", "no")
 
@@ -838,6 +893,12 @@ def generate_content_package(
             len(verification.unsupported),
             verification.total,
             "; ".join(c.claim for c in verification.unsupported[:5]),
+        )
+        # Act on the verdict: one rewrite pass removes/attributes the unsupported
+        # claims (kept only if the re-verified count improves). "Fact slop" fix —
+        # the script must be correct, not detail-stuffed with invented specifics.
+        script, verification = _maybe_rewrite_unsupported_claims(
+            script, verification, corpus.factual_text, topic, clean_key_facts
         )
 
     from core.title_generator import generate_title

@@ -103,12 +103,24 @@ def run_discovery(
     invoked as each discovery phase advances (drives the live spinner).
     """
 
-    def _report(phase: str, done: int | None = None, total: int | None = None) -> None:
-        if progress:
+    def _report(
+        phase: str,
+        done: int | None = None,
+        total: int | None = None,
+        detail: str | None = None,
+    ) -> None:
+        if not progress:
+            return
+        try:
+            progress(phase, done, total, detail)
+        except TypeError:
+            # Older 3-arg progress callbacks (custom callers) — drop the detail.
             try:
                 progress(phase, done, total)
-            except Exception:  # never let UI reporting break discovery
+            except Exception:
                 pass
+        except Exception:  # never let UI reporting break discovery
+            pass
 
     channel_id = resolve_channel_id(channel_id)
     t0 = time.perf_counter()
@@ -177,7 +189,8 @@ def run_discovery(
         }
         for done, future in enumerate(as_completed(futures), start=1):
             evaluated.append(future.result())
-            _report("Scoring variants", done, total)
+            # Show which angle just finished scoring — engagement during the wait.
+            _report("Scoring variants", done, total, detail=futures[future])
     # Restore deterministic candidate order (as_completed yields by completion time).
     _order = {v: i for i, v in enumerate(candidates)}
     evaluated.sort(key=lambda e: _order.get(e[0], len(candidates)))

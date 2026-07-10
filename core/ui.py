@@ -37,6 +37,12 @@ class DiscoverySpinner:
         (45, "Finishing up"),
     ]
 
+    # Phase-prefix → run-trace timing key, for the "typ ~Ns" hint.
+    _PHASE_TIMING_KEYS: ClassVar[dict[str, str]] = {
+        "Fetching signals": "signals_and_variants",
+        "Scoring variants": "variant_scoring",
+    }
+
     def __init__(self, label: str = "Discovery"):
         self._label = label
         self._stop = threading.Event()
@@ -47,6 +53,8 @@ class DiscoverySpinner:
         self._phase: str | None = None
         self._done: int | None = None
         self._total: int | None = None
+        self._detail: str | None = None
+        self._line_len = 0
         # Themed frames + loading copy (CONTENT_UI_THEME) — resolved once per
         # spinner so the 10Hz animation loop never re-reads env/theme state.
         try:
@@ -57,17 +65,48 @@ class DiscoverySpinner:
         except Exception:
             self._frames = self._FRAMES
             self._themed_phase = lambda p: p
+        self._typical = self._load_typical_timings()
 
-    def report(self, phase: str, done: int | None = None, total: int | None = None) -> None:
-        """Thread-safe progress hook. Sets the current phase and optional N/M count."""
+    @staticmethod
+    def _load_typical_timings() -> dict[str, float]:
+        """Phase timings from the most recent run trace ("typ ~Ns" hints). Fail-open."""
+        try:
+            from core.run_trace import list_traces
+
+            for trace in list_traces(limit=3):
+                timings = trace.get("timings") or {}
+                if timings:
+                    return {k: float(v) for k, v in timings.items() if isinstance(v, int | float)}
+        except Exception:
+            pass
+        return {}
+
+    def report(
+        self,
+        phase: str,
+        done: int | None = None,
+        total: int | None = None,
+        detail: str | None = None,
+    ) -> None:
+        """Thread-safe progress hook. Sets phase, optional N/M count, and a detail line
+        (e.g. the variant title currently being scored)."""
         with self._lock:
             self._phase = phase
             self._done = done
             self._total = total
+            self._detail = detail
+
+    def _typical_hint(self, phase: str) -> str:
+        for prefix, key in self._PHASE_TIMING_KEYS.items():
+            if phase.startswith(prefix):
+                secs = self._typical.get(key) or 0.0
+                if secs >= 5:
+                    return f" (typ ~{secs:.0f}s)"
+        return ""
 
     def _current_stage(self, elapsed: float) -> str:
         with self._lock:
-            phase, done, total = self._phase, self._done, self._total
+            phase, done, total, detail = self._phase, self._done, self._total, self._detail
         if phase is None:
             # Fall back to time-based guesses for callers that don't report progress.
             stage = self._STAGES[0][1]
@@ -75,9 +114,13 @@ class DiscoverySpinner:
                 if elapsed >= threshold:
                     stage = name
             return self._themed_phase(stage)
+        stage = self._themed_phase(phase)
         if total:
-            return f"{self._themed_phase(phase)} {done or 0}/{total}"
-        return self._themed_phase(phase)
+            stage = f"{stage} {done or 0}/{total}"
+        stage += self._typical_hint(phase)
+        if detail:
+            stage += f" · {detail[:44]}"
+        return stage
 
     def _spin(self) -> None:
         i = 0
@@ -85,12 +128,14 @@ class DiscoverySpinner:
             elapsed = time.perf_counter() - self._t0
             frame = self._frames[i % len(self._frames)]
             stage = self._current_stage(elapsed)
-            line = f"\r  {frame}  {self._label} · {stage}... {elapsed:.0f}s   "
-            sys.stdout.write(line)
+            text = f"  {frame}  {self._label} · {stage}... {elapsed:.0f}s"[:110]
+            # Pad to the longest line drawn so a shrinking status never leaves residue.
+            self._line_len = max(self._line_len, len(text))
+            sys.stdout.write(f"\r{text.ljust(self._line_len)}")
             sys.stdout.flush()
             time.sleep(0.1)
             i += 1
-        sys.stdout.write(f"\r{' ' * 70}\r")
+        sys.stdout.write(f"\r{' ' * max(self._line_len, 70)}\r")
         sys.stdout.flush()
 
     def __enter__(self):

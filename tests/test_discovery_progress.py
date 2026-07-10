@@ -61,18 +61,23 @@ class TestDiscoveryProgress(unittest.TestCase):
 
 
 class TestSpinnerReport(unittest.TestCase):
+    def _spinner(self) -> DiscoverySpinner:
+        # Isolate from real data/traces (typ-hint reads the last run's timings).
+        with patch.object(DiscoverySpinner, "_load_typical_timings", return_value={}):
+            return DiscoverySpinner("Discovery")
+
     def test_report_sets_phase_with_count(self):
-        spinner = DiscoverySpinner("Discovery")
+        spinner = self._spinner()
         spinner.report("Scoring variants", 2, 5)
         self.assertEqual(spinner._current_stage(0.0), "Scoring variants 2/5")
 
     def test_report_sets_phase_without_count(self):
-        spinner = DiscoverySpinner("Discovery")
+        spinner = self._spinner()
         spinner.report("Loading history")
         self.assertEqual(spinner._current_stage(0.0), "Loading history")
 
     def test_time_based_fallback_when_no_phase(self):
-        spinner = DiscoverySpinner("Discovery")
+        spinner = self._spinner()
         # No report() call -> falls back to time-based stage guesses.
         self.assertEqual(spinner._current_stage(0.0), "Fetching signals")
         self.assertEqual(spinner._current_stage(20.0), "Scoring variants")

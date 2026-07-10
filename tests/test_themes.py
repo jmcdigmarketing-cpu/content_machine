@@ -163,7 +163,11 @@ class TestSpinnerTheming(unittest.TestCase):
     def test_spinner_reports_themed_stage(self):
         from core.ui import DiscoverySpinner
 
-        with patch.dict("os.environ", {"CONTENT_UI_THEME": "jjba"}):
+        with (
+            patch.dict("os.environ", {"CONTENT_UI_THEME": "jjba"}),
+            # Isolate from real data/traces (typ-hint reads the last run's timings).
+            patch.object(DiscoverySpinner, "_load_typical_timings", return_value={}),
+        ):
             spinner = DiscoverySpinner("Test")
             spinner.report("Scoring variants", 2, 5)
             self.assertEqual(spinner._current_stage(0.0), "ORA ORA scoring variants 2/5")

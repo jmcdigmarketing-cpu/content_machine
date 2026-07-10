@@ -176,17 +176,28 @@ def signal_cooldowns() -> dict[str, float]:
 
 
 # Signals reused (pinned) from the base-topic fetch during per-variant scoring,
-# instead of being re-fetched for each of the 5 variants. The slow/paid Apify
-# social actors barely differ across title variants of the same topic — reusing
-# them cuts discovery from minutes to seconds and saves Apify credits.
-_VARIANT_REUSE = tuple(
-    s.strip().lower()
-    for s in os.getenv(
-        "VARIANT_REUSE_SIGNALS",
-        "youtube,reddit,twitter,tiktok_trends,youtube_competitors",
-    ).split(",")
-    if s.strip()
+# instead of being re-fetched for each of the 5 variants. Variants are editorial
+# angles on the SAME topic, so signal *data* barely differs between them — and
+# composite_score still re-scores each variant's text against the pinned data, so
+# per-variant differentiation survives (youtube was always pinned yet scored
+# 20-100 across variants). Re-fetching the rest cost 150-185s of variant scoring
+# per run, 5x the Tavily/web-search spend, and Wikipedia 429 cooldowns. Default:
+# pin everything; env-override to re-fetch specific signals per variant.
+_VARIANT_REUSE_DEFAULT = (
+    "youtube,reddit,twitter,tiktok_trends,youtube_competitors,"
+    "web_search,wikipedia,trends,news,blog_rss,twitch,rawg,steam,igdb,"
+    "trendingnow,autocomplete"
 )
+
+
+def _variant_reuse() -> tuple[str, ...]:
+    """Signals pinned during variant scoring (read per-call so env/tests apply)."""
+    return tuple(
+        s.strip().lower()
+        for s in os.getenv("VARIANT_REUSE_SIGNALS", _VARIANT_REUSE_DEFAULT).split(",")
+        if s.strip()
+    )
+
 
 # Domain-aware signal gating
 # ---------------------------
@@ -414,7 +425,7 @@ def build_registry(
     workers = max_workers or len(sources)
     pinned = {}
     if reuse_signals:
-        for name in _VARIANT_REUSE:
+        for name in _variant_reuse():
             if reuse_signals.get(name):
                 pinned[name] = reuse_signals[name]
 

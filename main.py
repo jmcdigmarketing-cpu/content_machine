@@ -24,7 +24,6 @@ from core.pipeline import run_discovery, run_media_only, run_pipeline
 from core.script_length import PRESETS, format_length_report, get_length_preset
 from core.ui import (
     DiscoverySpinner,
-    display_competitor_pulse,
     display_database_status,
     display_fact_preview,
     display_grounding_report,
@@ -63,7 +62,6 @@ def _run_intelligence_report_flow(channel_id: str) -> None:
 
     section("Intelligence")
     discovery = run_discovery(topic, channel_id=channel_id)
-    display_competitor_pulse(channel_id, topic)
     display_signal_health(discovery.base_signals)
     best_default = display_variants(discovery.evaluated, channel_id=channel_id)
 
@@ -274,7 +272,6 @@ def _run_new_video_flow_body(
     print_domain_art(profile.domain, topic=topic)
     with DiscoverySpinner("Discovery") as spinner:
         discovery = run_discovery(topic, channel_id=channel_id, progress=spinner.report)
-    display_competitor_pulse(channel_id, topic)
     t_disc = discovery.timings.get("signals_and_variants", 0) + discovery.timings.get(
         "variant_scoring", 0
     )

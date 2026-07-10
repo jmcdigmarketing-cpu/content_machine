@@ -89,11 +89,11 @@ def get_igdb_signal(topic: str) -> dict:
     query = _search_query(topic).replace('"', "")
 
     try:
-        body = (
-            f'search "{query}"; '
-            "fields name,popularity,total_rating,first_release_date; "
-            "limit 6;"
-        )
+        # NOTE: `popularity` was removed from IGDB's /games endpoint (now a separate
+        # popularity_primitives endpoint) — requesting it 400s every call, which is
+        # why this signal read "HTTP ERROR (400)" on every run. Score on rating +
+        # hype + match count instead.
+        body = f'search "{query}"; fields name,total_rating,hypes,first_release_date; limit 6;'
         resp = requests.post(f"{_BASE}/games", headers=headers, data=body, timeout=14)
         if resp.status_code != 200:
             status, detail = classify_http(resp.status_code, resp.text)
@@ -110,17 +110,19 @@ def get_igdb_signal(topic: str) -> dict:
             set_cache(cache_key, sig, ttl_seconds=_TTL)
             return sig
 
-        pop_sum = sum(float(g.get("popularity") or 0) for g in games)
+        rated = [float(g["total_rating"]) for g in games if g.get("total_rating")]
+        rating_avg = sum(rated) / len(rated) if rated else 0.0
+        hype_sum = sum(float(g.get("hypes") or 0) for g in games)
         titles = [g.get("name", "") for g in games if g.get("name")]
-        score = min(40 + pop_sum / 2 + len(games) * 6, 95)
+        score = min(40 + rating_avg / 4 + min(hype_sum, 40) / 2 + len(games) * 4, 95)
         sig = make_signal(
             connected=True,
             active=True,
             score=float(score),
             confidence=0.88,
             status=STATUS_OK,
-            status_detail=f"IGDB PopScore: {len(games)} games",
-            data={"games": games, "titles": titles, "popularity_sum": pop_sum},
+            status_detail=f"IGDB: {len(games)} game match(es), rating avg {rating_avg:.0f}",
+            data={"games": games, "titles": titles, "rating_avg": rating_avg, "hypes": hype_sum},
         )
         set_cache(cache_key, sig, ttl_seconds=_TTL)
         return sig

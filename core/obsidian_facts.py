@@ -191,6 +191,77 @@ def _tokens(text: str) -> set[str]:
     return {w for w in words if len(w) > 3 and w not in _STOPWORDS}
 
 
+# Words too generic to establish TOPIC relevance on their own. A one-token overlap
+# on "patch"/"massive" is how NBA facts surfaced on a Palworld topic — genre-level
+# vocabulary matches everything in a channel's vault. Distinctive relevance requires
+# a token outside this set (names, games, events: "palworld", "gaethje", "lakers").
+_GENERIC_TOKENS = {
+    "patch",
+    "notes",
+    "note",
+    "update",
+    "updates",
+    "updated",
+    "game",
+    "games",
+    "gaming",
+    "gamers",
+    "player",
+    "players",
+    "playing",
+    "season",
+    "seasons",
+    "news",
+    "massive",
+    "video",
+    "videos",
+    "community",
+    "content",
+    "release",
+    "released",
+    "reveal",
+    "revealed",
+    "announced",
+    "announcement",
+    "official",
+    "officially",
+    "launch",
+    "launched",
+    "trailer",
+    "record",
+    "records",
+    "team",
+    "teams",
+    "fans",
+    "sport",
+    "sports",
+    "league",
+    "match",
+    "event",
+    "events",
+    "source",
+    "sources",
+    "report",
+    "reports",
+    "rumor",
+    "rumors",
+    "year",
+    "years",
+    "week",
+    "month",
+    "today",
+    "2024",
+    "2025",
+    "2026",
+    "2027",
+}
+
+
+def _distinctive_tokens(text: str) -> set[str]:
+    """`_tokens` minus genre-generic vocabulary — the tokens that mark TOPIC identity."""
+    return _tokens(text) - _GENERIC_TOKENS
+
+
 def _note_matches_channel(meta: dict[str, str], rel_path: Path, channel_id: str) -> bool:
     declared = (meta.get("channel") or "").lower()
     if declared:
@@ -208,7 +279,13 @@ def _is_evergreen(meta: dict[str, str]) -> bool:
     return "evergreen" in tags
 
 
-def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> list[str]:
+def load_facts(
+    topic: str,
+    channel_id: str = "default",
+    *,
+    limit: int = 8,
+    require_distinctive: bool = False,
+) -> list[str]:
     """Return relevant fact bullet lines from the vault for this topic + channel.
 
     Returns [] when the vault is unset/missing or nothing relevant is found, so it
@@ -216,8 +293,18 @@ def load_facts(topic: str, channel_id: str = "default", *, limit: int = 8) -> li
     then by provenance tier + freshness (core/fact_store.py) so a fact verified
     last week outranks an equally relevant undated one; expired notes are dropped.
     Evergreen notes for the channel are always considered.
+
+    require_distinctive: only return facts sharing a TOPIC-distinctive token with
+    the topic (generic genre words like "patch"/"season" don't count, and evergreen
+    notes get no bypass) — use for operator-facing suggestions so a Palworld topic
+    can never surface NBA facts.
     """
-    return [r.claim for r in load_fact_records(topic, channel_id, limit=limit)]
+    return [
+        r.claim
+        for r in load_fact_records(
+            topic, channel_id, limit=limit, require_distinctive=require_distinctive
+        )
+    ]
 
 
 def load_fact_records(
@@ -226,6 +313,7 @@ def load_fact_records(
     *,
     limit: int = 8,
     today: date | None = None,
+    require_distinctive: bool = False,
 ) -> list[FactRecord]:
     """`load_facts` with provenance — one FactRecord per relevant bullet (Pillar 3).
 
@@ -240,6 +328,7 @@ def load_fact_records(
 
     today = today or date.today()
     topic_tokens = _tokens(topic)
+    topic_distinctive = _distinctive_tokens(topic)
     scored: list[tuple[float, FactRecord]] = []
 
     for note in iter_notes(vault):
@@ -263,12 +352,24 @@ def load_fact_records(
         # title doesn't mention the topic).
         note_weight = overlap + (0.5 if evergreen else 0)
         provenance = rank_bonus(tier=tier, verified_at=verified_at, today=today)
+        # Distinctive gate: for operator-facing suggestions, note-level relevance
+        # needs a topic-identity token (not just genre vocabulary), with no
+        # evergreen bypass — computed once per note, refined per bullet below.
+        note_distinctive = (
+            len(topic_distinctive & _distinctive_tokens(note.stem + " " + note.headings))
+            if require_distinctive
+            else 0
+        )
         for bullet in note.bullets:
             if _is_strategy_bullet(bullet):
                 continue
             bullet_overlap = len(topic_tokens & _tokens(bullet))
             if overlap == 0 and not evergreen and bullet_overlap == 0:
                 continue
+            if require_distinctive:
+                bullet_distinctive = len(topic_distinctive & _distinctive_tokens(bullet))
+                if note_distinctive == 0 and bullet_distinctive == 0:
+                    continue  # genre-only match (e.g. "patch"/"massive") — not this topic
             record = FactRecord(
                 claim=bullet,
                 tier=tier,

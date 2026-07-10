@@ -693,16 +693,29 @@ def prompt_key_facts(
     manual_facts: list[str] = []
     link_facts: list[str] = []
 
+    # Vault scan: only TOPIC-distinctive facts are considered (a Palworld topic can
+    # never surface NBA facts). Relevant matches auto-attach by default — no manual
+    # accept/reject step; VAULT_FACTS_AUTO=false restores the pick prompt.
     try:
-        suggestions = load_facts(topic, channel_id)
+        suggestions = load_facts(topic, channel_id, require_distinctive=True)
     except Exception:
         suggestions = []
     from core.operator_facts import is_writing_tip
 
     suggestions = [s for s in suggestions if not is_writing_tip(s) and not is_playbook_line(s)]
-    if suggestions:
+    auto_attach = os.getenv("VAULT_FACTS_AUTO", "true").lower() not in ("0", "false", "no")
+    if not suggestions:
         print_fn("")
-        print_fn(f"  From your Obsidian vault ({len(suggestions)} factual match(es)):")
+        print_fn("  Vault scan: no topic-relevant facts — skipped.")
+    elif auto_attach:
+        print_fn("")
+        print_fn(f"  Vault scan: auto-attached {len(suggestions)} topic-relevant fact(s):")
+        for i, fact in enumerate(suggestions, 1):
+            print_fn(f"    {i}. {fact[:120]}")
+        vault_accepted.extend(suggestions)
+    else:
+        print_fn("")
+        print_fn(f"  From your Obsidian vault ({len(suggestions)} topic-relevant match(es)):")
         for i, fact in enumerate(suggestions, 1):
             print_fn(f"    {i}. {fact}")
         choice = input_fn("  Use these? [Enter=all / n=none / e.g. '1 3'=pick]: ").strip().lower()

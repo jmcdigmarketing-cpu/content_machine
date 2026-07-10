@@ -104,6 +104,59 @@ class TestLoadFacts(unittest.TestCase):
                 facts = of.load_facts("completely unrelated topic xyz", "tapin")
             self.assertTrue(any("Jaylen Brown" in f for f in facts))
 
+    def test_require_distinctive_blocks_genre_only_matches(self):
+        # Live-run regression: a Palworld topic surfaced NBA/Marvel-Rivals facts via
+        # generic tokens ("patch", "notes", "massive"). Under require_distinctive
+        # those must be dropped while a real Palworld fact still surfaces.
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "rivals.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# Marvel Rivals July 2026 Patch Notes\n"
+                "- The July patch notes rework the massive support meta\n",
+                encoding="utf-8",
+            )
+            (vault / "tapin" / "nba.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# NBA offseason\n"
+                "- NBA teams show interest in massive defensive centers this offseason\n",
+                encoding="utf-8",
+            )
+            (vault / "tapin" / "palworld.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# Palworld\n- Palworld 1.0 released with notes exceeding Steam limits\n",
+                encoding="utf-8",
+            )
+            topic = "Palworld's 1.0 patch notes are so massive Steam wouldn't accept them"
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                strict = of.load_facts(topic, "tapin", require_distinctive=True)
+                loose = of.load_facts(topic, "tapin")
+            self.assertTrue(any("Palworld 1.0" in f for f in strict))
+            self.assertFalse(any("NBA" in f for f in strict))
+            self.assertFalse(any("support meta" in f for f in strict))
+            # Default behavior unchanged: the generic-token leak still exists there.
+            self.assertTrue(any("Palworld 1.0" in f for f in loose))
+
+    def test_require_distinctive_removes_evergreen_bypass(self):
+        # Evergreen zero-overlap notes surface under the default path but must NOT
+        # under require_distinctive (the operator-suggestions path).
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "nba.md").write_text(
+                "---\nchannel: tapin\ntags: [facts, evergreen]\n---\n"
+                "# NBA\n- Jaylen Brown was traded to the 76ers on July 1, 2026\n",
+                encoding="utf-8",
+            )
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                strict = of.load_facts(
+                    "Palworld 1.0 Steam launch", "tapin", require_distinctive=True
+                )
+                loose = of.load_facts("Palworld 1.0 Steam launch", "tapin")
+            self.assertEqual(strict, [])
+            self.assertTrue(any("Jaylen Brown" in f for f in loose))
+
     def test_strategy_playbook_excluded_from_key_facts(self):
         with tempfile.TemporaryDirectory() as d:
             vault = Path(d)
@@ -167,9 +220,10 @@ class TestLoadFacts(unittest.TestCase):
 
 
 class TestPromptKeyFacts(unittest.TestCase):
-    def test_accepts_suggestions_and_manual(self):
+    def test_auto_attaches_suggestions_and_takes_manual(self):
+        # Default (VAULT_FACTS_AUTO on): relevant vault facts attach with NO prompt.
         outputs: list[str] = []
-        inputs = iter(["", "Extra manual fact", ""])  # accept all suggestions, add one, stop
+        inputs = iter(["Extra manual fact", ""])  # only fact-entry inputs consumed
         with patch("core.obsidian_facts.load_facts", return_value=["Suggested fact A"]):
             facts = prompt_key_facts(
                 "topic",
@@ -179,10 +233,29 @@ class TestPromptKeyFacts(unittest.TestCase):
             )
         self.assertIn("Suggested fact A", facts)
         self.assertIn("Extra manual fact", facts)
+        self.assertTrue(any("auto-attached" in o for o in outputs))
+
+    def test_no_relevant_facts_skips_silently(self):
+        outputs: list[str] = []
+        inputs = iter([""])
+        with patch("core.obsidian_facts.load_facts", return_value=[]):
+            facts = prompt_key_facts(
+                "topic",
+                "tapin",
+                print_fn=lambda *a, **k: outputs.append(" ".join(str(x) for x in a)),
+                input_fn=lambda *_: next(inputs),
+            )
+        self.assertEqual(facts, [])
+        self.assertTrue(any("skipped" in o for o in outputs))
+        self.assertFalse(any("Use these?" in o for o in outputs))
 
     def test_pick_specific_suggestions(self):
+        # Interactive pick survives behind VAULT_FACTS_AUTO=false.
         inputs = iter(["1 3", ""])  # pick suggestions 1 and 3, no manual additions
-        with patch("core.obsidian_facts.load_facts", return_value=["A", "B", "C"]):
+        with (
+            patch.dict("os.environ", {"VAULT_FACTS_AUTO": "false"}, clear=False),
+            patch("core.obsidian_facts.load_facts", return_value=["A", "B", "C"]),
+        ):
             facts = prompt_key_facts(
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
             )
@@ -197,7 +270,7 @@ class TestPromptKeyFacts(unittest.TestCase):
         self.assertEqual(facts, ["Fact one", "Fact two"])
 
     def test_dedupes(self):
-        inputs = iter(["", "Suggested fact A", ""])  # accept suggestion, re-type same manually
+        inputs = iter(["Suggested fact A", ""])  # auto-attached, then re-typed manually
         with patch("core.obsidian_facts.load_facts", return_value=["Suggested fact A"]):
             facts = prompt_key_facts(
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
@@ -205,8 +278,8 @@ class TestPromptKeyFacts(unittest.TestCase):
         self.assertEqual(facts, ["Suggested fact A"])
 
     def test_manual_facts_prioritized_over_vault_in_prompt_order(self):
-        # Vault accepted first in UX, but manual facts must sort ahead for the LLM cap.
-        inputs = iter(["", "Manual trade fact", ""])
+        # Vault auto-attached first in UX, but manual facts must sort ahead for the LLM cap.
+        inputs = iter(["Manual trade fact", ""])
         with patch("core.obsidian_facts.load_facts", return_value=["Vault suggestion"]):
             facts = prompt_key_facts(
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)

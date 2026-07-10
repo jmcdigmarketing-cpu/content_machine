@@ -54,7 +54,8 @@ sports = [
 # Each is lazy-imported behind an env gate (see docs/providers_runbook.md); absence
 # just means that seam fails open to the current behavior.
 providers = [
-    "kokoro>=0.9.4",        # local TTS (core/tts.py TTS_PROVIDER=kokoro)
+    "kokoro>=0.9.4",        # local TTS (core/tts.py TTS_PROVIDER=kokoro; torch + espeak-ng)
+    "piper-tts>=1.2.0",     # local TTS, CPU/ONNX — no torch (TTS_PROVIDER=piper)
     "soundfile>=0.12.1",    # write local-TTS / music wav
     "whisperx",             # word-level caption alignment (core/caption_align.py)
     "audiocraft",           # MusicGen music beds (core/music.py)

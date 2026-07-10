@@ -30,7 +30,7 @@ gate are supplied · `excluded` = deliberately not integrated this pass.
 | Tool | Module | Env gate | Proof / test | Status |
 |---|---|---|---|---|
 | **goose3** | [core/link_facts.py](../core/link_facts.py) `_goose3_body_lines` | (always on; falls back) | `python -m unittest tests.test_link_facts_goose3` | **implemented** |
-| Kokoro-82M / XTTS-v2 | [core/tts.py](../core/tts.py) `_try_alt_tts_provider` | `TTS_PROVIDER=kokoro\|xtts` | set gate + `pip install -e ".[providers]"`, render one video | seam |
+| Kokoro-82M / XTTS-v2 / **Piper** | [core/tts.py](../core/tts.py) `_try_alt_tts_provider` | `TTS_PROVIDER=piper\|kokoro\|xtts` (+ `PIPER_VOICE=…onnx`) | `python -m unittest tests.test_tts_local`; live: set gate, render → real mp3 + `tts $0.0000` | **implemented** |
 | WhisperX | [core/caption_align.py](../core/caption_align.py) | `CAPTION_ALIGN_BACKEND=whisperx` | `transcribe_and_align(audio)` returns word segments | seam |
 | anything-to-notebooklm | [core/vault_ingest.py](../core/vault_ingest.py) | `INGEST_ENABLED` (auto only) | `python -c "from core.vault_ingest import ingest_url; print(ingest_url('https://www.bbc.com/news'))"` | seam (`ingest_url` real) |
 | Expert Panel (ai-marketing-skills) | [core/grade.py](../core/grade.py) | `EXPERT_PANEL_ENABLED` | add persona to `prompts/expert_panel/`, `expert_panel_review(draft)` | seam |

@@ -495,8 +495,11 @@ Higgsfield (paid) + the `[search github]` repos. Heavy backends →
 `pip install -e ".[providers]"`; each seam stays OFF until its gate is set.*
 *3-month north star (new tools + roadmap + adjacent projects + code-sharing):
 [groundwork_2026Q3.md](groundwork_2026Q3.md).*
-- [ ] **TTS provider chain + local (Kokoro/XTTS/Piper)** — kills the dominant
-  per-video cost; adds voice variety (Phase O). *(do first — cost lever)*
+- [x] **TTS provider chain + local (Kokoro/XTTS/Piper)** — *shipped 2026-07-09:*
+  local providers synth → transcode to the render's mp3 (`core/tts.py`), fail-open
+  to ElevenLabs, metered **$0** in `cost_meter` (was ~96% of run cost). **Piper**
+  is the CPU-only path (no torch/GPU); Kokoro/XTTS for a GPU box. Voice-variety
+  (per-channel local voices) still open.
 - [ ] **Whisper local alignment** — word timing for any TTS + enables clip-from-source.
 - [ ] **Music/SFX bed** (MusicGen local / Suno / ElevenLabs) — big perceived-quality jump.
 - [ ] **AI video-gen slot** — `assets/composite` provider for Veo 3.1 / Kling / Runway

@@ -28,6 +28,17 @@ class TestCostMeter(unittest.TestCase):
         self.assertEqual(unrendered["tts"], 0.0)
         self.assertGreater(rendered["tts"], 0.0)
 
+    def test_local_tts_provider_is_zero_cost(self):
+        # Pillar 6: a local voice (Kokoro/XTTS/Piper) has no marginal TTS cost.
+        script = "word " * 200
+        for provider in ("kokoro", "xtts", "piper"):
+            with patch.dict("os.environ", {"TTS_PROVIDER": provider}, clear=False):
+                cost = estimate_run_cost(script=script, rendered=True)
+            self.assertEqual(cost["tts"], 0.0, provider)
+        # Default (ElevenLabs) stays billed.
+        with patch.dict("os.environ", {"TTS_PROVIDER": "elevenlabs"}, clear=False):
+            self.assertGreater(estimate_run_cost(script=script, rendered=True)["tts"], 0.0)
+
     def test_apify_and_web_search_counted(self):
         signals = {
             "reddit": {"active": True},

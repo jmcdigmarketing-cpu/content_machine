@@ -113,8 +113,17 @@ def estimate_run_cost(
         llm_tokens = max(words * 8, 1500)
         llm = (llm_tokens / 1000.0) * _rate("COST_LLM_PER_1K_TOKENS", 0.005)
 
-    # TTS only happens on render.
+    # TTS only happens on render. Local providers (Kokoro/XTTS/Piper via
+    # TTS_PROVIDER, core/tts.py) have zero marginal cost — env read directly to
+    # avoid an import cycle with core.tts.
+    _local_tts = os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() in (
+        "kokoro",
+        "xtts",
+        "piper",
+    )
     tts = (chars / 1000.0) * _rate("COST_TTS_PER_1K_CHARS", 0.30) if rendered else 0.0
+    if _local_tts:
+        tts = 0.0
 
     # Apify: one actor run per active paid social signal — except youtube_competitors
     # when it was served by a free in-process backend (data.backend == "free"), which

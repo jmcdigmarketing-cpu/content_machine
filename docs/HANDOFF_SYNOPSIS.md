@@ -79,6 +79,17 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
    workflows gitignored. Index: [providers_runbook.md](providers_runbook.md).
    Tests: `tests/test_providers.py` (23), `tests/test_link_facts_goose3.py` (9).
 
+## Shipped 2026-07-09 (this branch — Pillar 6 #1: local TTS)
+
+**The cost lever** (TTS was ~96% of run cost): `TTS_PROVIDER=piper|kokoro|xtts` now works
+end-to-end — local synth → temp wav → ffmpeg transcode to the exact mp3 the render pipeline
+reads (`core/tts.py` `_transcode_to_mp3`); any failure falls back to ElevenLabs (a local
+provider can never break a render). `cost_meter` meters local voice at **$0**. **Piper** is
+the CPU-only Windows path: `pip install piper-tts` + `PIPER_VOICE=<voice.onnx>`; Kokoro
+(torch + espeak-ng) / XTTS (torch, cloning) for a GPU box. Local TTS emits no word
+timestamps → captions use the proportional fallback until the Whisper-alignment phase.
+Tests: `tests/test_tts_local.py` + cost-meter zero-cost case.
+
 ## Shipped 2026-07-08 (this branch — live-run quality fixes)
 
 From a real tapin run's pain points:

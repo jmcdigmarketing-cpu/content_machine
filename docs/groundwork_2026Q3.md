@@ -121,14 +121,11 @@ so future runs see the full arc).
 
 ## Month 1 — Cost, grounding, captions (no GPU required; highest ROI)
 
-1. **Local TTS provider chain (Kokoro / Piper / XTTS)** — *the cost lever.*
-   - Goal: rendered TTS from ~$0.30/video (96% of run cost) → ~$0.
-   - Files: `core/tts.py` (transcode local synth → the expected `.mp3`; today the seam returns a
-     `.wav` that `core/pipeline.py:490` ignores → render would break), `core/cost_meter.py` ($0 for
-     local), `pyproject.toml` (`piper-tts`).
-   - Deps: Kokoro/XTTS need torch (GPU-preferred); **Piper is CPU/ONNX — the Windows-box path.**
-   - Risk: low (fail-open to ElevenLabs). Done-when: `TTS_PROVIDER=piper` renders a real mp3 and the
-     run summary shows `tts $0.0000`; ElevenLabs unchanged when unset.
+1. ✅ **Local TTS provider chain (Kokoro / Piper / XTTS)** — *the cost lever; shipped 2026-07-09.*
+   - Local providers synth → `_transcode_to_mp3` → the exact mp3 the render reads; fail-open to
+     ElevenLabs; `cost_meter` shows `tts $0.0000` for local (was ~96% of run cost). **Piper** is the
+     CPU/ONNX Windows-box path (`pip install piper-tts` + `PIPER_VOICE=<voice.onnx>`); Kokoro/XTTS
+     for a GPU box. Tests: `tests/test_tts_local.py`. Open: per-channel local-voice mapping.
 2. **Whisper local alignment** — word-timing for *any* TTS.
    - Goal: karaoke/word captions for local TTS (emits no timestamps) + unlock clip-from-source.
    - Files: `core/caption_align.py` (seam) → wire into `video/caption_timing.py` when ElevenLabs

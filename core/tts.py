@@ -102,8 +102,48 @@ def _resolve_tts_provider() -> str:
     return (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
 
 
+_LOCAL_TTS_PROVIDERS = ("kokoro", "xtts", "piper")
+
+
+def is_local_tts_provider() -> bool:
+    """True when TTS_PROVIDER selects a local (zero-marginal-cost) voice backend."""
+    return _resolve_tts_provider() in _LOCAL_TTS_PROVIDERS
+
+
+def _transcode_to_mp3(src_path: str, output_path: str) -> str | None:
+    """Transcode a local-synth wav to the mp3 path the render pipeline expects.
+
+    The pipeline ignores generate_audio's return and reads `mp3_path` directly
+    (core/pipeline.py → video/render_video.py: AudioFileClip, subtitles, ffmpeg mux),
+    so a local provider MUST leave a real mp3 at `output_path`. Fail-open → None on
+    any ffmpeg failure (caller falls back to ElevenLabs); removes the temp wav.
+    """
+    import subprocess
+
+    cmd = ["ffmpeg", "-y", "-i", src_path, "-codec:a", "libmp3lame", "-qscale:a", "4", output_path]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+    except Exception as exc:
+        logger.warning("TTS transcode failed to launch ffmpeg: %s", exc)
+        return None
+    if proc.returncode != 0 or not os.path.isfile(output_path):
+        logger.warning(
+            "TTS transcode failed (rc=%s): %s", proc.returncode, (proc.stderr or "")[-300:]
+        )
+        return None
+    try:
+        os.remove(src_path)
+    except OSError:
+        pass
+    return output_path
+
+
+def _tmp_wav_path(output_path: str) -> str:
+    return os.path.splitext(output_path)[0] + ".tmp.wav"
+
+
 def _kokoro_synth(script: str, output_path: str, channel_id: str | None) -> str | None:
-    """Local Kokoro-82M TTS (optional extra: kokoro, soundfile). Returns a .wav path."""
+    """Local Kokoro-82M TTS (optional extra: kokoro, soundfile; needs espeak-ng)."""
     import numpy as np
     import soundfile as sf
     from kokoro import KPipeline
@@ -113,9 +153,9 @@ def _kokoro_synth(script: str, output_path: str, channel_id: str | None) -> str 
     chunks = [audio for _, _, audio in pipeline(script, voice=voice)]
     if not chunks:
         return None
-    wav_path = os.path.splitext(output_path)[0] + ".wav"
+    wav_path = _tmp_wav_path(output_path)
     sf.write(wav_path, np.concatenate(chunks), 24000)
-    return wav_path
+    return _transcode_to_mp3(wav_path, output_path)
 
 
 def _xtts_synth(script: str, output_path: str, channel_id: str | None) -> str | None:
@@ -125,23 +165,47 @@ def _xtts_synth(script: str, output_path: str, channel_id: str | None) -> str | 
     speaker = os.getenv("XTTS_SPEAKER_WAV")
     if not speaker:
         return None
-    wav_path = os.path.splitext(output_path)[0] + ".wav"
+    wav_path = _tmp_wav_path(output_path)
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
     tts.tts_to_file(
         text=script, speaker_wav=speaker, language=os.getenv("XTTS_LANG", "en"), file_path=wav_path
     )
-    return wav_path
+    return _transcode_to_mp3(wav_path, output_path)
 
 
-_ALT_TTS = {"kokoro": _kokoro_synth, "xtts": _xtts_synth}
+def _piper_synth(script: str, output_path: str, channel_id: str | None) -> str | None:
+    """Local Piper TTS (optional extra: piper-tts) — CPU/ONNX, no torch, MIT.
+
+    The Windows-box path: needs only `pip install piper-tts` plus a voice model
+    (PIPER_VOICE=<path/to/voice.onnx>, e.g. en_US-lessac-medium from the Piper
+    releases). Synthesizes to wav via the python API, then transcodes to the mp3.
+    """
+    import wave
+
+    model = os.getenv("PIPER_VOICE", "").strip()
+    if not model or not os.path.isfile(model):
+        logger.warning("TTS_PROVIDER=piper needs PIPER_VOICE=<path/to/voice.onnx>")
+        return None
+
+    from piper import PiperVoice
+
+    voice = PiperVoice.load(model)
+    wav_path = _tmp_wav_path(output_path)
+    with wave.open(wav_path, "wb") as wav_file:
+        voice.synthesize(script, wav_file)
+    return _transcode_to_mp3(wav_path, output_path)
+
+
+_ALT_TTS = {"kokoro": _kokoro_synth, "xtts": _xtts_synth, "piper": _piper_synth}
 
 
 def _try_alt_tts_provider(script: str, output_path: str, channel_id: str | None) -> str | None:
-    """Try a non-ElevenLabs TTS provider; return a path on success, else None (fall back).
+    """Try a non-ElevenLabs TTS provider; return the mp3 path on success, else None.
 
-    Baseline seam: local providers write a `.wav` sidecar and return it — wiring the
-    render to accept/transcode that path is the follow-up. No-op (returns None) unless
-    `TTS_PROVIDER` selects a known local provider.
+    Providers synth to a temp wav and transcode to `output_path` (the mp3 the render
+    pipeline reads), so callers that ignore the return keep working. No-op (None ⇒
+    ElevenLabs fallback) unless `TTS_PROVIDER` selects a known local provider; any
+    provider failure also falls back — local voice can never break a render.
     """
     provider = _resolve_tts_provider()
     if provider in ("", "elevenlabs"):
@@ -156,7 +220,7 @@ def _try_alt_tts_provider(script: str, output_path: str, channel_id: str | None)
         logger.warning("TTS provider %s failed (%s) — falling back to ElevenLabs", provider, exc)
         return None
     if path:
-        print(f"[TTS] Channel: {channel_id} | Provider: {provider} (local)")
+        print(f"[TTS] Channel: {channel_id} | Provider: {provider} (local, $0)")
     return path
 
 

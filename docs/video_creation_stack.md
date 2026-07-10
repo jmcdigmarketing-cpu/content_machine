@@ -31,6 +31,13 @@ Pixabay; [core/llm_router.py](../core/llm_router.py) tier chains). Every slot:
 > hot 2026 video models are research/non-commercial (e.g. some Hunyuan/Kling
 > terms); Apache/OpenRAIL ones (Wan, LTX-Video, Mochi, MusicGen, Kokoro) are safe.
 
+> **Status (2026-07-08 — baseline seams landed):** the shared contract
+> ([core/providers.py](../core/providers.py)) + fail-open, env-gated seams for the included
+> tools exist now, and **goose3** article extraction is implemented. Module → env → proof
+> map: [providers_runbook.md](providers_runbook.md). Excluded this pass: Higgsfield (paid)
+> and the `[search github]` repos (Real-ESRGAN/RIFE, youtube-automation-agent,
+> gemini-youtube-automation, AutoSocial). Backends install via `pip install -e ".[providers]"`.
+
 ---
 
 ## The slots (all tools to add)

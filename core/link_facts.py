@@ -14,6 +14,7 @@ input line uniformly.
 from __future__ import annotations
 
 import base64
+import os
 import re
 from urllib.parse import unquote
 
@@ -228,6 +229,37 @@ def _extract_trade_lines(soup: BeautifulSoup) -> list[str]:
     return facts
 
 
+def _goose3_body_lines(url: str, html: str) -> list[str]:
+    """Main-article paragraph lines via goose3 (raw_html — no extra fetch). [] on failure.
+
+    goose3 is a maintained article-extraction library that isolates the primary article
+    body and drops nav / sidebar / related-link chrome — cleaner than a blanket `<p>`
+    scan. It parses the already-fetched HTML (`raw_html`), so there's no second network
+    call and existing `requests.get` mocks stay authoritative. Returns raw lines; the
+    caller applies the same junk / length / dedupe filters. Returns [] when goose3 is
+    unavailable or yields nothing, so the caller falls back to its BeautifulSoup scan.
+    """
+    try:
+        from goose3 import Goose
+        from goose3.configuration import Configuration
+    except Exception:
+        return []  # goose3 not installed → BeautifulSoup fallback
+    config = Configuration()
+    config.strict = False
+    config.browser_user_agent = _HEADERS["User-Agent"]
+    config.http_timeout = 8.0
+    try:
+        with Goose(config) as g:
+            article = g.extract(raw_html=html, url=url)
+    except Exception as exc:
+        logger.debug("goose3 extract failed for %s: %s", url, exc)
+        return []
+    text = (getattr(article, "cleaned_text", "") or "").strip()
+    if not text:
+        return []
+    return [" ".join(line.split()) for line in text.split("\n") if line.strip()]
+
+
 def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
     url = _unwrap_redirect_url(url)
     if _is_blocked_url(url):
@@ -239,7 +271,8 @@ def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
             blocked = _is_bot_blocked(resp)
             logger.debug("link fetch %s returned %s (blocked=%s)", url, resp.status_code, blocked)
             return []
-        soup = BeautifulSoup(resp.text, "html.parser")
+        html = resp.text
+        soup = BeautifulSoup(html, "html.parser")
     except Exception as exc:
         logger.debug("link fetch failed for %s: %s", url, exc)
         return []
@@ -262,8 +295,15 @@ def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
         if len(content) > 25 and not _is_junk_line(content):
             facts.append(content[:300])
 
-    for p in root.find_all("p"):
-        text = " ".join(p.get_text(" ", strip=True).split())
+    # Body paragraphs: goose3-first (cleaner main text, drops nav/sidebar chrome), with
+    # the BeautifulSoup <p> scan as the fallback for JS-heavy / tiny pages. Trade-tracker
+    # pages skip goose3 so the specialised <li>/heading extractor below still governs.
+    body_lines: list[str] = []
+    if not _looks_like_trade_tracker(url, title):
+        body_lines = _goose3_body_lines(url, html)
+    if not body_lines:
+        body_lines = [" ".join(p.get_text(" ", strip=True).split()) for p in root.find_all("p")]
+    for text in body_lines:
         if len(text) > 60 and not _is_junk_line(text):
             facts.append(text[:400])
 
@@ -286,6 +326,50 @@ def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
     return out[:max_lines]
 
 
+def is_title_only(lines: list[str]) -> bool:
+    """True when a scrape returned no real body — just a 'Source: <title>' line (or nothing).
+
+    Lets the operator UI warn that a link (e.g. a JS-heavy MSN page) under-delivered so they
+    paste the article text instead of shipping a script grounded only in a headline.
+    """
+    body = [ln for ln in (lines or []) if not ln.lower().startswith("source:")]
+    return not body
+
+
+def _reader_proxy_enabled() -> bool:
+    return os.getenv("LINK_READER_PROXY", "").lower() in ("1", "true", "yes")
+
+
+def _reader_proxy_facts(url: str, *, max_lines: int = 12) -> list[str]:
+    """Rendered page text via the r.jina.ai reader proxy — handles JS-heavy pages (MSN).
+
+    OPT-IN (`LINK_READER_PROXY`) and off by default: this sends the target URL to a
+    third-party service (r.jina.ai), which is why it isn't on in the self-hosted-first
+    default. Fail-open → [] on any error; applies the same junk/tip filters as the scraper.
+    """
+    try:
+        resp = requests.get(f"https://r.jina.ai/{url}", headers=_HEADERS, timeout=15)
+        if resp.status_code != 200 or not (resp.text or "").strip():
+            return []
+        text = resp.text
+    except Exception as exc:
+        logger.debug("reader proxy failed for %s: %s", url, exc)
+        return []
+    facts: list[str] = []
+    seen: set[str] = set()
+    for line in text.splitlines():
+        ln = " ".join(line.lstrip("#>*-• ").split())  # strip markdown chrome
+        if len(ln) <= 60 or _is_junk_line(ln) or is_writing_tip(ln):
+            continue
+        key = ln.lower()[:100]
+        if key not in seen:
+            seen.add(key)
+            facts.append(ln[:400])
+        if len(facts) >= max_lines:
+            break
+    return facts
+
+
 def extract_facts_from_url(url: str) -> list[str]:
     """Best-effort fact extraction from a URL. Returns [] on any failure."""
     url = (url or "").strip()
@@ -298,5 +382,11 @@ def extract_facts_from_url(url: str) -> list[str]:
     if yt:
         return yt
     raw = _article_facts(url)
+    # JS-heavy pages (e.g. MSN) scrape to only a title — retry via the opt-in reader proxy.
+    if is_title_only(raw) and _reader_proxy_enabled():
+        proxied = _reader_proxy_facts(url)
+        if proxied:
+            title_lines = [ln for ln in raw if ln.lower().startswith("source:")]
+            raw = title_lines + proxied
     # Compact duplicate intros from meta + first paragraph.
     return parse_pasted_block("\n".join(raw)) or raw

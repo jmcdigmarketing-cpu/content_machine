@@ -128,6 +128,42 @@ class TestArticleFacts(unittest.TestCase):
         self.assertIn("espn.com", lf._unwrap_redirect_url(wrapped))
 
 
+class TestReaderProxyAndTitleOnly(unittest.TestCase):
+    def test_is_title_only(self):
+        self.assertTrue(lf.is_title_only(["Source: MSN"]))
+        self.assertTrue(lf.is_title_only([]))
+        self.assertFalse(lf.is_title_only(["Source: MSN", "A real body paragraph of facts here."]))
+
+    @patch("apis.youtube_api.extract_youtube_video_id", return_value=None)
+    @patch("core.link_facts.requests.get")
+    def test_reader_proxy_off_by_default(self, mock_get, _ytid):
+        html = "<html><head><title>MSN Story</title></head><body></body></html>"
+        mock_get.return_value = MagicMock(status_code=200, text=html)
+        with (
+            patch.dict("os.environ", {"LINK_READER_PROXY": ""}, clear=False),
+            patch("core.link_facts._reader_proxy_facts") as proxy,
+        ):
+            lf.extract_facts_from_url("https://www.msn.com/en-au/story")
+        proxy.assert_not_called()  # title-only, but proxy is opt-in
+
+    @patch("apis.youtube_api.extract_youtube_video_id", return_value=None)
+    @patch("core.link_facts.requests.get")
+    def test_reader_proxy_recovers_body_when_enabled(self, mock_get, _ytid):
+        html = "<html><head><title>MSN Story</title></head><body></body></html>"
+        mock_get.return_value = MagicMock(status_code=200, text=html)
+        with (
+            patch.dict("os.environ", {"LINK_READER_PROXY": "1"}, clear=False),
+            patch(
+                "core.link_facts._reader_proxy_facts",
+                return_value=[
+                    "A long recovered body paragraph well over the sixty character gate."
+                ],
+            ),
+        ):
+            facts = lf.extract_facts_from_url("https://www.msn.com/en-au/story")
+        self.assertTrue(any("recovered body paragraph" in f for f in facts))
+
+
 class TestJunkLine(unittest.TestCase):
     def test_flags_promo_and_questions(self):
         self.assertTrue(lf._is_junk_line("CBS Sports has the latest NBA news."))

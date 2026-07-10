@@ -60,6 +60,20 @@ build/
 dist/
 .backup_pre_ruff/
 
+# Pillar 6 — local-only provider assets
+# Eval corpus: keep verbatim leaked/adversarial prompts local (README is the marker).
+prompts/eval_corpus/*
+!prompts/eval_corpus/README.md
+# ComfyUI graph exports can be large / machine-specific.
+workflows/*.json
+
+# External tool checkouts cloned in for integration (each has its own .git) — local
+# only, never embedded into this repo. See docs/providers_runbook.md.
+/ComfyUI/
+/ai-marketing-skills/
+/qiaomu-anything-to-notebooklm/
+/system_prompts_leaks/
+
 # OS / editor
 .DS_Store
 Thumbs.db

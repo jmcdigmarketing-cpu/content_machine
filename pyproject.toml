@@ -31,6 +31,7 @@ dependencies = [
     "python-dotenv==1.0.1",
     "tzdata>=2024.1; platform_system == 'Windows'",
     "yt-dlp==2026.6.9",
+    "goose3>=3.1.19",
 ]
 
 [project.optional-dependencies]
@@ -47,6 +48,18 @@ dev = [
 sports = [
     "nfl_data_py>=0.3.0",
     "pybaseball>=2.2.7",
+]
+# Pillar 6 video-creation provider backends (heavy / GPU). Install on demand:
+#   pip install -e ".[providers]"
+# Each is lazy-imported behind an env gate (see docs/providers_runbook.md); absence
+# just means that seam fails open to the current behavior.
+providers = [
+    "kokoro>=0.9.4",        # local TTS (core/tts.py TTS_PROVIDER=kokoro)
+    "soundfile>=0.12.1",    # write local-TTS / music wav
+    "whisperx",             # word-level caption alignment (core/caption_align.py)
+    "audiocraft",           # MusicGen music beds (core/music.py)
+    "TTS>=0.22.0",          # XTTS-v2 voice clone (core/tts.py TTS_PROVIDER=xtts)
+    "ultralytics>=8.0.0",   # auto-reframe — NOTE: AGPL-3.0, see core/reframe.py
 ]
 
 [project.scripts]

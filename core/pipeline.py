@@ -61,7 +61,9 @@ class PipelineResult:
     variants: list[tuple[str, float]] = field(default_factory=list)
     aborted: bool = False
     abort_reason: str | None = None
-    timings: dict[str, float] = field(default_factory=dict)
+    # Mostly phase durations (float), but "length_preset" (str) rides along by
+    # design — analytics/length_recommender join on timings_json.length_preset.
+    timings: dict[str, Any] = field(default_factory=dict)
     channel_id: str = "default"
     run_id: int | None = None
     features: dict[str, Any] = field(default_factory=dict)

@@ -79,6 +79,28 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
    workflows gitignored. Index: [providers_runbook.md](providers_runbook.md).
    Tests: `tests/test_providers.py` (23), `tests/test_link_facts_goose3.py` (9).
 
+## Shipped 2026-07-09 (this branch — live-run wave 2: vault scan, claim regen, speed, UI)
+
+From the Palworld run's pain points:
+1. **Vault topic scan** — `load_facts(..., require_distinctive=True)`: facts must share a
+   topic-identity token (generic "patch"/"massive" don't count; no evergreen bypass).
+   `prompt_key_facts` auto-attaches relevant facts (`VAULT_FACTS_AUTO`, default on) or
+   skips with one line — no more manual `n` on NBA facts for a Palworld video.
+2. **Claim regen** — the verifier's verdict is now acted on: unsupported claims get one
+   premium-tier rewrite (remove or attribute as "reports claim…"), adopted only if the
+   re-verified count drops (`CLAIM_REGEN_ENABLED`, default on).
+3. **Variant scoring 185s → seconds** — ALL signals now pin by default during variant
+   scoring (`_variant_reuse()`, env per-call). **A stale `.env` override
+   (`VARIANT_REUSE_SIGNALS=youtube`) was the real cause — commented out locally.**
+   Also fixes per-variant Wikipedia 429s + 5× Tavily spend.
+4. **Competitor pulse panel scrapped** from main.py (snapshot sync kept for briefs).
+5. **IGDB 400 fixed** — the query requested the removed `popularity` field; now
+   total_rating/hypes.
+6. **Spinner engagement** — live variant detail, "typ ~Ns" hints from the last trace.
+
+Known issues: YouTube RSS feed id `UCq-Fj5jknLsUf-MWSik4vhQ` 404s (stale channel id in
+config — replace or remove the feed entry).
+
 ## Shipped 2026-07-09 (this branch — Pillar 6 #1: local TTS)
 
 **The cost lever** (TTS was ~96% of run cost): `TTS_PROVIDER=piper|kokoro|xtts` now works

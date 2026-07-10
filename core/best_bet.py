@@ -8,7 +8,9 @@ franchise continuity (e.g. Marvel Rivals on TapIn).
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 from config.channels import get_channel_profile
 from core.channel_context import (
@@ -406,6 +408,52 @@ def _fresh_enabled() -> bool:
     return os.getenv("BEST_BET_FRESH", "true").lower() in ("1", "true", "yes")
 
 
+def _fresh_days() -> int:
+    import os
+
+    try:
+        return max(1, int(os.getenv("BEST_BET_FRESH_DAYS", "5")))
+    except ValueError:
+        return 5
+
+
+def _parse_pubdate(raw: str | None) -> datetime | None:
+    """Parse an RSS pubDate (RFC822) or Atom published/updated (ISO8601). None if unknown."""
+    if not raw:
+        return None
+    from email.utils import parsedate_to_datetime
+
+    s = raw.strip()
+    dt: datetime | None = None
+    try:
+        dt = parsedate_to_datetime(s)  # RFC822, e.g. "Tue, 08 Jul 2026 14:03:00 GMT"
+    except (TypeError, ValueError, IndexError):
+        dt = None
+    if dt is None:
+        try:
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))  # ISO8601 (Atom)
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _first_anchor(topic: str) -> str | None:
+    """Franchise anchor for a title (e.g. 'gta'), or None — used for per-anchor diversity.
+
+    Returns the most-GENERAL match (shortest) so 'GTA VI' and 'GTA 6' collapse to one
+    franchise ('gta') and don't both fill best-bet slots.
+    """
+    try:
+        from core.channel_context import extract_anchors
+
+        anchors = extract_anchors(topic)
+        return min(anchors, key=len).lower() if anchors else None
+    except Exception:
+        return None
+
+
 def _fresh_candidates(
     channel_id: str, *, allowed: set[str], exclude: set[str], limit: int = 12
 ) -> list[dict]:
@@ -415,6 +463,10 @@ def _fresh_candidates(
     Only headlines whose title *confidently* maps to an on-brand domain are kept
     (inferred without channel fallback) — this filters mixed-feed noise like a
     gaming site's general-news items. Never raises — returns [] on any problem.
+
+    Freshness: gathers a wide pool, prefers items published within BEST_BET_FRESH_DAYS,
+    then applies a **date-seeded shuffle** so the surfaced set rotates day-to-day (stable
+    within a session) instead of always returning the same top-of-feed headlines.
     """
     try:
         from apis.rss_feeds import _fetch_feed
@@ -423,14 +475,14 @@ def _fresh_candidates(
     except Exception:
         return []
 
-    candidates: list[dict] = []
+    pool: list[dict] = []
     seen_local: set[str] = set()
-    for feed in list(rss_feeds_for_channel(channel_id))[:6]:
+    for feed in list(rss_feeds_for_channel(channel_id))[:8]:
         try:
             rows = _fetch_feed(feed["url"])
         except Exception:
             continue
-        for row in rows[:8]:
+        for row in rows[:20]:
             title = (row.get("title") or "").strip()
             key = normalize_seed_topic(title).lower()
             if not title or key in exclude or key in seen_local:
@@ -440,10 +492,27 @@ def _fresh_candidates(
             if domain not in allowed:
                 continue
             seen_local.add(key)
-            candidates.append({"topic": title, "domain": domain, "source": feed.get("name", "RSS")})
-            if len(candidates) >= limit:
-                return candidates
-    return candidates
+            pool.append(
+                {
+                    "topic": title,
+                    "domain": domain,
+                    "source": feed.get("name", "RSS"),
+                    "published": _parse_pubdate(row.get("published")),
+                }
+            )
+
+    if not pool:
+        return []
+
+    # Prefer recent items; keep older ones only if too few recent exist. Undated items
+    # count as "unknown" and stay in the full pool (ranked no worse than old-but-dated).
+    horizon = datetime.now(timezone.utc) - timedelta(days=_fresh_days())
+    recent = [c for c in pool if c["published"] and c["published"] >= horizon]
+    base = recent if len(recent) >= limit else pool
+
+    # Daily rotation: same picks all session, but a new mix each day.
+    random.Random(datetime.now(timezone.utc).strftime("%Y-%m-%d")).shuffle(base)
+    return base[:limit]
 
 
 def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
@@ -477,6 +546,7 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
     options: list[BestBetResult] = []
     seen: set[str] = set(recent)
     used_domains: set[str] = set()
+    used_anchors: set[str] = set()  # per-franchise cap so gaming isn't all one game (e.g. GTA)
 
     def _domain_key(d: str) -> tuple:
         return _domain_priority(d, adjusted, domain_counts)
@@ -495,8 +565,13 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
         key = normalize_seed_topic(c["topic"]).lower()
         if not key or key in seen:
             return False
+        anchor = _first_anchor(c["topic"])
+        if anchor and anchor in used_anchors:
+            return False  # already have a pick for this franchise
         seen.add(key)
         used_domains.add(c["domain"])
+        if anchor:
+            used_anchors.add(anchor)
         rate = domain_rates.get(c["domain"])
         rationale = f"trending on {c['source']} now"
         if rate is not None:
@@ -526,8 +601,13 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
         key = normalize_seed_topic(e["topic"]).lower()
         if not key or key in seen:
             return False
+        anchor = _first_anchor(e["topic"])
+        if anchor and anchor in used_anchors:
+            return False  # already have a pick for this franchise
         seen.add(key)
         used_domains.add(e["domain"])
+        if anchor:
+            used_anchors.add(anchor)
         if e["engaged_rate"] is not None:
             source = "analytics"
             rationale = f"{e['engaged_rate']:.0%} engagement on a past {e['domain']} video"

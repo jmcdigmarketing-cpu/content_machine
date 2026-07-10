@@ -45,6 +45,14 @@ class TestScriptPromptFiller(unittest.TestCase):
         self.assertIn("but here's the thing", lowered)  # named in the banned list
         self.assertIn("banned", lowered)
 
+    def test_framing_rule_treats_facts_as_evidence(self):
+        # The FRAMING block is what stops the model reciting facts as a list.
+        system_prompt, _ = _build("2")
+        self.assertIn("FRAMING", system_prompt)
+        lowered = system_prompt.lower()
+        self.assertIn("evidence", lowered)  # facts are evidence, not the point
+        self.assertIn("attributed", lowered)  # speculation must be attributed, not asserted
+
 
 if __name__ == "__main__":
     unittest.main()

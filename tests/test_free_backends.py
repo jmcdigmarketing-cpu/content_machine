@@ -397,6 +397,23 @@ class TestRedditBackendSelection(unittest.TestCase):
         self.assertEqual(sig["status"], STATUS_OK)
         self.assertEqual(sig["data"]["backend"], "apify")
 
+    def test_apify_disabled_degrades_to_free_reddit(self):
+        # A dead Apify key this session must fall back to the free OAuth backend, not
+        # return inactive after a slow actor timeout (default SIGNAL_BACKEND=apify).
+        with (
+            patch.dict(
+                "os.environ",
+                {"SIGNAL_BACKEND": "apify", "APIFY_CONTENT_MACHINE_KEY": "k", **_REDDIT_CREDS},
+            ),
+            patch("apis.apify_client.apify_disabled", return_value=True),
+            patch.object(rds, "fetch_reddit_free", return_value=list(_REDDIT_FREE_ITEMS)),
+            patch.object(rds, "run_actor") as ra,
+        ):
+            sig = rds.get_reddit_signal("Pereira UFC 320", "tapin")
+        ra.assert_not_called()  # no Apify actor wait when the key is dead
+        self.assertEqual(sig["data"]["backend"], "free")
+        self.assertTrue(sig["active"])
+
     def test_default_apify_no_key_returns_no_key(self):
         with patch.dict("os.environ", {"SIGNAL_BACKEND": "", "APIFY_CONTENT_MACHINE_KEY": ""}):
             sig = rds.get_reddit_signal("Pereira UFC 320", "tapin")

@@ -59,17 +59,21 @@ def _parse_feed_xml(xml_text: str, *, limit: int = 25) -> list[dict[str, str]]:
             continue
         title_el = None
         link_el = None
+        date_el = ""
         for child in item:
             ctag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
             if ctag == "title" and child.text:
                 title_el = child.text.strip()
-            if ctag == "link":
+            elif ctag == "link":
                 if child.text:
                     link_el = child.text.strip()
                 elif child.get("href"):
                     link_el = child.get("href", "").strip()
+            elif ctag in ("pubDate", "published", "updated", "date") and child.text and not date_el:
+                # RSS pubDate (RFC822) or Atom published/updated (ISO8601)
+                date_el = child.text.strip()
         if title_el:
-            items.append({"title": title_el, "link": link_el or ""})
+            items.append({"title": title_el, "link": link_el or "", "published": date_el})
         if len(items) >= limit:
             break
     return items

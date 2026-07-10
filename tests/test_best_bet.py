@@ -119,6 +119,69 @@ class TestConfidenceAndDiversity(unittest.TestCase):
         self.assertTrue(any(b.domain == "nba" for b in bets))
 
 
+class TestBestBetFreshnessDiversity(unittest.TestCase):
+    def test_first_anchor_collapses_gta_variants(self):
+        # "GTA VI" and "GTA 6" must resolve to the SAME franchise so the cap dedupes them.
+        self.assertEqual(bb._first_anchor("GTA VI new 2026 leak"), "gta")
+        self.assertEqual(bb._first_anchor("GTA 6 map details revealed"), "gta")
+        self.assertIsNone(bb._first_anchor("Some generic esports drama"))
+
+    def test_parse_pubdate_formats(self):
+        self.assertIsNotNone(bb._parse_pubdate("Tue, 08 Jul 2026 14:03:00 GMT"))  # RFC822
+        self.assertIsNotNone(bb._parse_pubdate("2026-07-08T14:03:00Z"))  # ISO8601 / Atom
+        self.assertIsNone(bb._parse_pubdate("not a date"))
+        self.assertIsNone(bb._parse_pubdate(None))
+
+    def test_anchor_cap_limits_one_pick_per_franchise(self):
+        # Three GTA headlines (same franchise) must NOT fill every gaming slot.
+        fresh = [
+            {"topic": "GTA VI new trailer breakdown", "domain": "gaming", "source": "IGN"},
+            {"topic": "GTA 6 map size leaks online", "domain": "gaming", "source": "Dexerto"},
+            {"topic": "GTA VI pre-order controversy", "domain": "gaming", "source": "Kotaku"},
+        ]
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=fresh),
+        ):
+            bets = get_best_bets("tapin", 3)
+        gta = [b for b in bets if "gta" in b.topic.lower()]
+        self.assertLessEqual(len(gta), 1)  # at most one GTA pick
+
+    def test_fresh_candidates_prefers_recent_and_rotates_daily(self):
+        from datetime import datetime, timezone
+
+        rows = [
+            {"title": f"Gaming headline {i}", "link": "", "published": "2026-07-08T12:00:00Z"}
+            for i in range(15)
+        ] + [{"title": "Ancient gaming headline", "link": "", "published": "2020-01-01T00:00:00Z"}]
+
+        def _fake_now_factory(day):
+            class _DT(datetime):
+                @classmethod
+                def now(cls, tz=None):
+                    return datetime(2026, 7, day, 12, 0, 0, tzinfo=timezone.utc)
+
+            return _DT
+
+        with (
+            patch("apis.rss_feeds._fetch_feed", return_value=rows),
+            patch("apis.topic_scorer.infer_domain", return_value="gaming"),
+            patch(
+                "config.data_sources.rss_feeds_for_channel",
+                return_value=[{"url": "http://feed", "name": "Feed"}],
+            ),
+        ):
+            with patch("core.best_bet.datetime", _fake_now_factory(8)):
+                day8 = bb._fresh_candidates("tapin", allowed={"gaming"}, exclude=set(), limit=5)
+            with patch("core.best_bet.datetime", _fake_now_factory(9)):
+                day9 = bb._fresh_candidates("tapin", allowed={"gaming"}, exclude=set(), limit=5)
+        # The stale 2020 item is dropped when enough recent items exist.
+        self.assertTrue(all("Ancient" not in c["topic"] for c in day8))
+        # Daily-seeded rotation: different day → a different surfaced order/set.
+        self.assertNotEqual([c["topic"] for c in day8], [c["topic"] for c in day9])
+
+
 class TestBestBet(unittest.TestCase):
     def test_prefers_marvel_rivals_continuity_on_tapin(self):
         runs = [

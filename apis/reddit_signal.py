@@ -121,6 +121,13 @@ def get_reddit_signal(topic: str, channel_id: str = "default") -> dict[str, Any]
         query = topic
 
     backend = signal_backend()
+    # Auto-degrade a disabled paid backend to the free OAuth path (Apify 402/403 this
+    # session) so a dead key neither drops the signal nor stalls on 90s actor timeouts.
+    if backend == "apify" and reddit_available():
+        from apis.apify_client import apify_disabled
+
+        if apify_disabled():
+            backend = "auto"
     items: list[dict] | None = None
     source = "apify"
 

@@ -217,6 +217,10 @@ Angle types (direction only — do NOT paste these labels verbatim):
 
 Rules:
 - One short angle line per item (max 12 words).
+- DISTINCT LENSES: the {len(angle_types)} angles must each take a genuinely different frame
+  — e.g. a factual read, a contrarian counter-take, a forward prediction, a human/stakes
+  angle, an analytical breakdown. Do NOT return variations of one take; if two angles could
+  share the same thumbnail, rewrite one.
 - Describe the TAKE or focus — NOT a clickbait headline.
 - Do not fabricate specifics you cannot verify.
 - No numbering, no markdown, no "Primary Storyline:" prefixes.

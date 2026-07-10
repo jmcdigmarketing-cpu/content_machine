@@ -717,7 +717,12 @@ def prompt_key_facts(
     print_fn("  Add facts — paste a URL, one line, or type `paste` + Enter for a multi-line block.")
     print_fn("  (Trade trackers paste well as a block. Empty line when done.)")
     from core.content_engine import key_facts_for_prompt
-    from core.link_facts import extract_facts_from_url, link_fetch_issue, looks_like_url
+    from core.link_facts import (
+        extract_facts_from_url,
+        is_title_only,
+        link_fetch_issue,
+        looks_like_url,
+    )
     from core.operator_facts import (
         capture_facts_to_vault,
         dedupe_facts,
@@ -754,6 +759,11 @@ def prompt_key_facts(
             if extracted:
                 for ex in extracted:
                     print_fn(f"    + {ex[:90]}")
+                if is_title_only(extracted):
+                    print_fn(
+                        "    ⚠ Only got the headline — no article body scraped (JS-heavy page?). "
+                        "Paste the article text as facts, or set LINK_READER_PROXY=1 to try a proxy."
+                    )
                 link_facts.extend(extracted)
                 pasted_sources.append({"url": fact, "title": extracted[0]})
             else:

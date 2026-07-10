@@ -217,10 +217,15 @@ def display_claim_verification(verification_dict: dict[str, Any] | None, *, prin
     if not unsupported:
         print_fn(f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts.")
         return False
-    print_fn(f"  ! Claim check: {len(unsupported)} of {total} claim(s) NOT backed by the facts:")
+    print_fn(
+        f"  ! Claim check: {len(unsupported)} of {total} claim(s) in the SCRIPT aren't in your facts:"
+    )
     for claim in unsupported[:6]:
         print_fn(f"    - {claim}")
     if len(unsupported) > 6:
         print_fn(f"    - ...and {len(unsupported) - 6} more")
-    print_fn("    Verify each against your sources or add the missing key facts.")
+    print_fn(
+        "    These are unverified — the model likely added them. Cut them from the script, "
+        "or add a source that backs them."
+    )
     return True

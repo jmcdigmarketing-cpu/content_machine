@@ -488,6 +488,13 @@ generation quality is now a competitive lever. Full tool list + build order:
 free/local-first, cost-metered, fail-open **provider slot** (the asset-chain /
 `llm_router` pattern) — quality goes up without wrecking margin, and the moat
 (grounding + loop) is untouched.*
+*Shipped 2026-07-08 (baseline seams): shared provider contract (`core/providers.py`)
++ fail-open, env-gated seams for every included tool ([providers_runbook.md](providers_runbook.md));
+**goose3 article extraction is live** in `core/link_facts.py`. Excluded this pass:
+Higgsfield (paid) + the `[search github]` repos. Heavy backends →
+`pip install -e ".[providers]"`; each seam stays OFF until its gate is set.*
+*3-month north star (new tools + roadmap + adjacent projects + code-sharing):
+[groundwork_2026Q3.md](groundwork_2026Q3.md).*
 - [ ] **TTS provider chain + local (Kokoro/XTTS/Piper)** — kills the dominant
   per-video cost; adds voice variety (Phase O). *(do first — cost lever)*
 - [ ] **Whisper local alignment** — word timing for any TTS + enables clip-from-source.
@@ -497,8 +504,10 @@ free/local-first, cost-metered, fail-open **provider slot** (the asset-chain /
 - [ ] **Thumbnail text-models** (Ideogram/Recraft) + **dual-format render** (9:16/16:9/1:1).
 - [ ] **Clip-from-source (Phase R)** + subject-tracked auto-reframe.
 - [ ] **Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists** — polish tiers.
-- [ ] **Distribution/ingestion borrows** — n8n webhook recipes, `goose3` scrape,
-  multi-source vault importer (see [tooling_landscape.md](tooling_landscape.md)).
+- [ ] **Distribution/ingestion borrows** — `goose3` scrape **shipped**
+  (`core/link_facts.py`); multi-source vault importer seam (`core/vault_ingest.py`);
+  n8n recipes ride the existing `core/events.py` webhooks (see
+  [tooling_landscape.md](tooling_landscape.md)).
 
 ### Supporting track — API & efficiency (not a pillar)
 *The credit/quota layer is in good shape post-O11; these stay incremental.*

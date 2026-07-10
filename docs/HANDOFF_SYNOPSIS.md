@@ -1,15 +1,16 @@
-# Handoff synopsis — 2026-07-07 wave: Pillars 1–4 shipped + live-run hardening
+# Handoff synopsis — 2026-07-08: Pillar 6 baseline seams + goose3 (after Pillars 1–5)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
 - **Branch:** `feat/reddit-free-backend-and-signal-persistence` → `main`
-- **Suite:** 860 tests green · **Pre-PR:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
-- This branch carries three waves: morning (free backends, batch/A/B, webhooks, O11),
-  afternoon (Pillars 1–3), **Pillar 4** (Obsidian knowledge OS), and **live-run
-  hardening** (link scrape, domain/key-fact drift, grounding noise). Prior wave
-  (fact-first, O10, coach, UI themes) merged via PR #24.
+- **Suite:** 892 tests green · **Pre-PR:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- This branch carries: morning (free backends, batch/A/B, webhooks, O11), afternoon
+  (Pillars 1–3), **Pillar 4** (Obsidian knowledge OS), **live-run hardening** (link
+  scrape, domain/key-fact drift, grounding noise), and **Pillar 6 baseline provider
+  seams + goose3 grounding** (2026-07-08). Prior wave (fact-first, O10, coach, UI themes)
+  merged via PR #24.
 
 ---
 
@@ -59,6 +60,45 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 
 ---
 
+## Shipped 2026-07-08 (this branch — Pillar 6 baseline seams + goose3)
+
+1. **Provider contract** — `core/providers.py`: `ProviderResult` + `resolve_order` /
+   `selected_provider` / `flag_enabled` / `run_chain` (generalizes `signal_contract` +
+   the asset chain). Every seam is env-gated OFF, lazy-imports its backend, fails open.
+2. **Tool seams** (baseline, fail-open): `core/caption_align.py` (WhisperX),
+   `core/music.py` (MusicGen), `core/comfy_client.py` (ComfyUI), `core/vault_ingest.py`
+   (multi-source → vault note), `core/grade.py` (Expert Panel), `core/run_eval_corpus.py`
+   (system_prompts_leaks), `core/avatar.py`, `core/reframe.py` (AGPL note),
+   `assets/ai_video_provider.py`, + a `TTS_PROVIDER` chain in `core/tts.py` (Kokoro/XTTS).
+3. **goose3 grounding (implemented)** — `core/link_facts._goose3_body_lines`: goose3
+   extracts the article body from already-fetched HTML (`raw_html`, no 2nd request),
+   BeautifulSoup `<p>` scan as fallback; trade-tracker pages keep the BS4 path.
+   `vault_ingest.ingest_url` reuses it.
+4. **Config/docs** — `goose3` in core deps; heavy backends in the `[providers]` extra;
+   `.env.example` "Provider slots (ALL OFF)" block; cloned tool dirs + local corpus/
+   workflows gitignored. Index: [providers_runbook.md](providers_runbook.md).
+   Tests: `tests/test_providers.py` (23), `tests/test_link_facts_goose3.py` (9).
+
+## Shipped 2026-07-08 (this branch — live-run quality fixes)
+
+From a real tapin run's pain points:
+1. **Script framing** — `core/content_engine._build_prompts` gained a FRAMING block: facts
+   are EVIDENCE for the take (no 3+ bare-fact runs), and brief/web speculation must be
+   explicitly attributed, not asserted (cuts invented-claim flags).
+2. **Best-bet freshness** — `apis/rss_feeds._parse_feed_xml` now captures pubDate; `core/best_bet`
+   prefers items within `BEST_BET_FRESH_DAYS` (5) and **date-seeded rotates** the pool so bets
+   change daily instead of recurring for a week.
+3. **Topic diversity** — best_bet caps **one pick per franchise anchor** (`_first_anchor`, most-
+   general match so GTA VI + GTA 6 collapse) so gaming slots aren't all GTA; angle prompt
+   (`apis/topic_variants`) forces distinct lenses.
+4. **Scrape/checks** — `core/link_facts`: title-only detection + opt-in `LINK_READER_PROXY`
+   (r.jina.ai) for JS-heavy pages (MSN); `core/ui.py` warns on headline-only scrapes;
+   `core/claim_verifier` message explains unsupported = model-invented.
+5. **Apify 403 → free** — `apis/reddit_signal` now auto-degrades to the free OAuth backend when
+   Apify is disabled this session (youtube_competitors already did), so a dead key keeps Reddit
+   and stops 90s actor-timeout stalls. **Operator fix:** check `APIFY_CONTENT_MACHINE_KEY`
+   permissions, or set `SIGNAL_BACKEND=auto`.
+
 ## Shipped 2026-07-07 (this branch — Pillar 4)
 
 1. **Run dossiers** — `core/vault_dossiers.py`: `{channel}/_runs/{date}_{slug}-{id}.md`
@@ -101,10 +141,11 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
 1. **Pillar 6 — Video Creation Provider Layer** (decisions §17, overrides §8):
-   the new headline track — free/local-first cost-metered provider slots. Full tool
-   list + build order: [video_creation_stack.md](video_creation_stack.md). Do-first:
-   TTS provider chain + local Kokoro (cost lever), then Whisper alignment, music bed,
-   AI video-gen slot.
+   **baseline seams + goose3 landed 2026-07-08** ([providers_runbook.md](providers_runbook.md)).
+   Next = implement a backend behind a seam: TTS local Kokoro (cost lever, `TTS_PROVIDER`),
+   then Whisper alignment, music bed, AI video-gen via ComfyUI. Full tool list + build
+   order: [video_creation_stack.md](video_creation_stack.md). Excluded: Higgsfield +
+   `[search github]` repos.
 2. **Pillar 2 remainder**: multimodal rendered-video review *(needs router vision path)*;
    calibration/predictor activate as measured volume accrues.
 3. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,
@@ -123,7 +164,8 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
 - `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17 (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
-- `docs/roadmap.md` — Pillars 1–4 ✅, Pillar 5 next
+- `docs/roadmap.md` — Pillars 1–5 ✅, Pillar 6 baseline seams landed
+- `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index
 - `docs/debugging.md` — playbook vs facts, hallucination triage
 
 ---
@@ -139,6 +181,9 @@ core/claim_verifier.py      — Pillar 3: claim verifier + GROUNDING_GATE
 core/run_trace.py           — Pillar 1: per-run traces
 core/video_grade.py         — Pillar 2: pre-publish report card
 core/quota_governor.py      — O11 façade
+core/providers.py           — Pillar 6: provider-slot contract (ProviderResult, run_chain)
+core/link_facts.py          — goose3-first article extraction (+ BeautifulSoup fallback)
+docs/providers_runbook.md   — Pillar 6: tool → module → env → proof index
 scripts/ops.py              — ~40 subcommands (vault-sync, traces, dossier, batch-drafts)
 main.py                     — interactive flow + gates + report card
 ```

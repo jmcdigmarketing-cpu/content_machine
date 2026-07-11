@@ -55,18 +55,23 @@ def build_render_ffmpeg_command(
     output_path: str,
     subtitle_path: str,
     duration: float,
+    profile=None,
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
-    scale/crop to vertical, burn subtitles, fixed output duration.
+    scale/crop to the profile's aspect (vertical 9:16 by default), burn subtitles,
+    fixed output duration. `profile` is a video.render_profiles.RenderProfile; None
+    keeps the current vertical 1080x1920 output byte-identical.
     """
+    width = profile.width if profile is not None else TARGET_W
+    height = profile.height if profile is not None else TARGET_H
     subtitle_escaped = _escape_subtitle_path(subtitle_path)
     duration_str = f"{duration:.3f}"
 
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
     filter_complex = (
-        f"[0:v]scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
-        f"crop={TARGET_W}:{TARGET_H},"
+        f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},"
         f"setpts=PTS-STARTPTS,"
         f"subtitles='{subtitle_escaped}'[vout]"
     )
@@ -223,7 +228,71 @@ def render_vertical_video(
             if progress:
                 progress.note(f"Intro skipped: {e}")
 
+    # Dual-format reach (Pillar 6): the primary 9:16 output above is untouched. When
+    # RENDER_FORMATS names extra aspects, emit those cuts too (same bg/VO/captions),
+    # each fail-open so a bonus cut can never break the primary render.
+    _render_extra_formats(
+        background_path=background_path,
+        mp3_path=mp3_path,
+        primary_output=output_path,
+        subtitle_path=subtitle_path,
+        duration=duration,
+        stage=stage,
+    )
+
     if progress:
         progress.done(f"Video saved: {output_path}")
     logger.info("Video saved: %s", output_path)
     return output_path, asset
+
+
+def _render_extra_formats(
+    *,
+    background_path: str,
+    mp3_path: str,
+    primary_output: str,
+    subtitle_path: str,
+    duration: float,
+    stage,
+) -> list[str]:
+    """Render each non-vertical RENDER_FORMATS profile as a suffixed sibling file.
+
+    Returns the list of extra output paths written. Fully fail-open: any failure is
+    logged and skipped — the primary vertical render is already complete and returned.
+    """
+    try:
+        from video.render_profiles import extra_profiles
+
+        extras = extra_profiles()
+    except Exception:
+        return []
+    if not extras:
+        return []
+
+    stem, ext = os.path.splitext(primary_output)
+    written: list[str] = []
+    for profile in extras:
+        alt_output = f"{stem}{profile.suffix}{ext}"
+        try:
+            cmd = build_render_ffmpeg_command(
+                background_path=background_path,
+                mp3_path=mp3_path,
+                output_path=alt_output,
+                subtitle_path=subtitle_path,
+                duration=duration,
+                profile=profile,
+            )
+            stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")
+            proc = subprocess.run(cmd, capture_output=True, text=True)
+            if proc.returncode == 0 and os.path.isfile(alt_output):
+                written.append(alt_output)
+                logger.info("Extra-format render saved: %s", alt_output)
+            else:
+                logger.warning(
+                    "Extra-format render %s failed (kept primary): %s",
+                    profile.name,
+                    (proc.stderr or "")[-400:],
+                )
+        except Exception as exc:
+            logger.warning("Extra-format render %s skipped: %s", profile.name, exc)
+    return written

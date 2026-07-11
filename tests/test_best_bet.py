@@ -119,6 +119,51 @@ class TestConfidenceAndDiversity(unittest.TestCase):
         self.assertTrue(any(b.domain == "nba" for b in bets))
 
 
+class TestCommerceFilter(unittest.TestCase):
+    def test_flags_deal_and_hardware_headlines(self):
+        commerce = [
+            "The RTX 5080 Prebuilt Gaming PC Drops to $2,350",
+            "Alienware AW3426DW Gaming Monitor Review",
+            "Dell Outlet Has Restocked Alienware Area-51 RTX 5090 Gaming PCs",
+            "Best Gaming Laptop Deals This Week",
+            "Save $400 on This GeForce RTX Bundle",
+        ]
+        for title in commerce:
+            self.assertTrue(bb._is_commerce_headline(title), title)
+
+    def test_keeps_real_content_headlines(self):
+        content = [
+            "Marvel Rivals Season 9 overhauls Black Widow and 80% of the roster",
+            "Palworld's 1.0 patch notes are so massive Steam wouldn't accept them",
+            "Gaethje turns top 10 pound-for-pound after the White House card",
+        ]
+        for title in content:
+            self.assertFalse(bb._is_commerce_headline(title), title)
+
+    def test_fresh_candidates_drops_commerce(self):
+        rows = [
+            {"title": "RTX 5090 Gaming PC Drops to $2,350", "published": ""},
+            {"title": "Marvel Rivals Season 9 reworks Black Widow entirely", "published": ""},
+            {"title": "Alienware Monitor Review", "published": ""},
+        ]
+        with (
+            patch("apis.rss_feeds._fetch_feed", return_value=rows),
+            patch("apis.topic_scorer.infer_domain", return_value="gaming"),
+            patch(
+                "config.data_sources.rss_feeds_for_channel",
+                return_value=[{"url": "http://feed", "name": "IGN"}],
+            ),
+        ):
+            cands = bb._fresh_candidates("tapin", allowed={"gaming"}, exclude=set(), limit=10)
+        topics = [c["topic"] for c in cands]
+        self.assertIn("Marvel Rivals Season 9 reworks Black Widow entirely", topics)
+        self.assertFalse(any("Drops to" in t or "Monitor Review" in t for t in topics))
+
+    def test_filter_can_be_disabled_via_env(self):
+        with patch.dict("os.environ", {"BEST_BET_FILTER_COMMERCE": "false"}, clear=False):
+            self.assertFalse(bb._commerce_filter_enabled())
+
+
 class TestBestBetFreshnessDiversity(unittest.TestCase):
     def test_first_anchor_collapses_gta_variants(self):
         # "GTA VI" and "GTA 6" must resolve to the SAME franchise so the cap dedupes them.

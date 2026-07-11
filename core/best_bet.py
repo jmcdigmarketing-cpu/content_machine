@@ -9,6 +9,7 @@ franchise continuity (e.g. Marvel Rivals on TapIn).
 from __future__ import annotations
 
 import random
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -454,6 +455,67 @@ def _first_anchor(topic: str) -> str | None:
         return None
 
 
+# Product/deal/affiliate headlines that pass the domain gate (a gaming site's feed is
+# full of "RTX 5080 Prebuilt Drops to $2,350") but are commerce, not video topics. These
+# make terrible best bets — the recurring "best bet is always products" complaint.
+_COMMERCE_MARKERS = (
+    "drops to",
+    "on sale",
+    "for sale",
+    "% off",
+    "percent off",
+    "discount",
+    " deal",
+    "deals",
+    "coupon",
+    "promo code",
+    "price cut",
+    "save $",
+    "save up to",
+    "restock",
+    "clearance",
+    "bundle",
+    "cheapest",
+    "lowest price",
+    "best price",
+    "prebuilt",
+    "pre-built",
+    "gaming pc",
+    "gaming laptop",
+    "gaming monitor",
+    "gaming chair",
+    "gaming desk",
+    "gaming headset",
+    "gaming keyboard",
+    "gaming mouse",
+    "graphics card",
+    "nvme",
+    "alienware",
+    "geforce rtx",
+    "radeon rx",
+    "best buy",
+    "newegg",
+    "dell outlet",
+    "microcenter",
+    "amazon prime day",
+)
+_PRICE_RE = re.compile(r"\$\s?\d")
+
+
+def _commerce_filter_enabled() -> bool:
+    import os
+
+    return os.getenv("BEST_BET_FILTER_COMMERCE", "true").lower() not in ("0", "false", "no")
+
+
+def _is_commerce_headline(title: str) -> bool:
+    """True for shopping/deal/hardware-listing headlines (not a real content topic)."""
+    t = (title or "").lower()
+    if _PRICE_RE.search(t):
+        return True
+    return any(m in t for m in _COMMERCE_MARKERS)
+
+
 def _fresh_candidates(
     channel_id: str, *, allowed: set[str], exclude: set[str], limit: int = 12
 ) -> list[dict]:
@@ -490,6 +552,9 @@ def _fresh_candidates(
             # Infer WITHOUT channel fallback so neutral/off-brand titles are dropped.
             domain = infer_domain(title)
             if domain not in allowed:
+                continue
+            # Drop product/deal/affiliate headlines — commerce, not video topics.
+            if _commerce_filter_enabled() and _is_commerce_headline(title):
                 continue
             seen_local.add(key)
             pool.append(

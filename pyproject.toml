@@ -61,6 +61,8 @@ providers = [
     "audiocraft",           # MusicGen music beds (core/music.py)
     "TTS>=0.22.0",          # XTTS-v2 voice clone (core/tts.py TTS_PROVIDER=xtts)
     "ultralytics>=8.0.0",   # auto-reframe — NOTE: AGPL-3.0, see core/reframe.py
+    "pypdf>=4.0.0",         # PDF text extraction (core/vault_ingest.ingest_pdf)
+    "youtube-transcript-api>=0.6.0",  # YouTube transcript ingest (core/vault_ingest)
 ]
 
 [project.scripts]

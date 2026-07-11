@@ -40,6 +40,26 @@ def cmd_migrate_layout(_args: argparse.Namespace) -> int:
     return _run_module("storage.migrate_layout")
 
 
+@_register("ingest", "Ingest a URL / PDF path / YouTube link into the vault as a provenance note")
+def cmd_ingest(args: argparse.Namespace) -> int:
+    source = getattr(args, "source", None) or getattr(args, "target", None)
+    if not source:
+        print("Usage: py -m scripts.ops ingest <url|pdf-path|youtube-link> [--channel tapin]")
+        return 2
+    from core.vault_ingest import ingest, save_to_vault
+
+    record = ingest(source)
+    lines = len([ln for ln in (record.get("text") or "").splitlines() if ln.strip()])
+    print(f"Ingested [{record.get('kind')}] {source}")
+    print(f"  extracted {lines} line(s), confidence={record.get('confidence')}")
+    path = save_to_vault(record, args.channel)
+    if path:
+        print(f"  saved -> {path}")
+    else:
+        print("  not saved (set OBSIDIAN_VAULT_PATH, or nothing was extracted)")
+    return 0
+
+
 @_register("init-db", "Create SQL tables (Postgres)")
 def cmd_init_db(_args: argparse.Namespace) -> int:
     return _run_module("storage.init_db")
@@ -447,6 +467,13 @@ def main(argv=None) -> int:
         choices=list(COMMANDS.keys()),
         help="Command to run (default: list)",
     )
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="Positional argument for some commands (e.g. ingest: a URL / PDF path / YouTube link)",
+    )
+    parser.add_argument("--source", default=None, help="ingest: URL / PDF path / YouTube link")
     parser.add_argument("--channel", default="tapin", help="Channel id (default: tapin)")
     parser.add_argument(
         "--domain", default="gaming", help="Domain for compute_weights (default: gaming)"

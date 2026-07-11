@@ -11,9 +11,10 @@ goose3 phase, is goose3-first with a BeautifulSoup fallback (one extractor, two 
 
     INGEST_ENABLED=true      # gate for any *auto* ingestion; explicit calls always work
 
-Baseline: `ingest_url` is real; `ingest_pdf` / `ingest_youtube_transcript` are thin
-records pending markitdown / transcript backends. Everything fails open (empty record /
-`None`) — it never raises, and does nothing when `OBSIDIAN_VAULT_PATH` is unset.
+`ingest(source)` detects the kind (local .pdf → `ingest_pdf` via lazy pypdf; YouTube link →
+`ingest_youtube_transcript` via lazy youtube-transcript-api; else → `ingest_url`/goose3).
+Everything fails open (empty record / `None`) — it never raises, and does nothing when
+`OBSIDIAN_VAULT_PATH` is unset. Operator entry: `py -m scripts.ops ingest <url|pdf|yt>`.
 """
 
 from __future__ import annotations
@@ -56,20 +57,67 @@ def ingest_url(url: str) -> dict[str, Any]:
 
 
 def ingest_pdf(path: str) -> dict[str, Any]:
-    """PDF → text. Baseline stub (markitdown / pypdf backend is the follow-up)."""
-    return _record("", path, kind="pdf", confidence="low")
+    """PDF → extracted text via pypdf (lazy, [providers] extra). Fail-open to empty."""
+    text = ""
+    try:
+        from pypdf import PdfReader
+
+        reader = PdfReader(path)
+        parts: list[str] = []
+        for page in reader.pages:
+            try:
+                parts.append(page.extract_text() or "")
+            except Exception:
+                continue
+        text = "\n".join(p.strip() for p in parts if p.strip())
+    except Exception as exc:  # missing pypdf / unreadable file — never raise
+        logger.debug("ingest_pdf failed for %s: %s", path, exc)
+        text = ""
+    return _record(text, path, kind="pdf", confidence="high" if text else "low")
 
 
 def ingest_youtube_transcript(url: str) -> dict[str, Any]:
-    """YouTube link → title/description now; full transcript is the follow-up."""
+    """YouTube → full transcript via youtube-transcript-api (lazy); falls back to the
+    video title/description (the link extractor) when no transcript is available."""
+    text = ""
     try:
-        from core.link_facts import extract_facts_from_url
+        from youtube_transcript_api import YouTubeTranscriptApi
 
-        lines = extract_facts_from_url(url)
-    except Exception as exc:
-        logger.debug("ingest_youtube_transcript failed for %s: %s", url, exc)
-        lines = []
-    return _record("\n".join(lines), url, kind="youtube", confidence="low")
+        from apis.youtube_api import extract_youtube_video_id
+
+        vid = extract_youtube_video_id(url)
+        if vid:
+            chunks = YouTubeTranscriptApi.get_transcript(vid)
+            text = " ".join(c.get("text", "").strip() for c in chunks if c.get("text"))
+    except Exception as exc:  # no transcript / lib missing — fall back below
+        logger.debug("ingest_youtube_transcript transcript unavailable for %s: %s", url, exc)
+        text = ""
+    if not text:
+        try:
+            from core.link_facts import extract_facts_from_url
+
+            text = "\n".join(extract_facts_from_url(url))
+        except Exception as exc:
+            logger.debug("ingest_youtube_transcript fallback failed for %s: %s", url, exc)
+            text = ""
+    return _record(text, url, kind="youtube", confidence="high" if text else "low")
+
+
+def _looks_like_youtube(url: str) -> bool:
+    low = (url or "").lower()
+    return "youtube.com/watch" in low or "youtu.be/" in low or "youtube.com/shorts" in low
+
+
+def ingest(source: str) -> dict[str, Any]:
+    """Detect the source kind and ingest it: local .pdf path, YouTube link, or URL."""
+    s = (source or "").strip()
+    if not s:
+        return _record("", s, kind="unknown", confidence="low")
+    if s.lower().endswith(".pdf"):
+        return ingest_pdf(s)
+    if _looks_like_youtube(s):
+        return ingest_youtube_transcript(s)
+    return ingest_url(s)
 
 
 def _slugify(text: str, *, limit: int = 48) -> str:

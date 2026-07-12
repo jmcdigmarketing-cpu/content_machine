@@ -38,7 +38,7 @@ def _provider_chain(channel_id=None, *, include_local: bool = True) -> list[Asse
     from config.channels import get_channel_profile, resolve_channel_id
 
     profile = get_channel_profile(resolve_channel_id(channel_id))
-    order = profile.asset_provider_order or get_settings().asset_provider_order
+    order = list(profile.asset_provider_order or get_settings().asset_provider_order)
     # AI video-gen (Pillar 6): when AI_VIDEO_PROVIDER is set, prefer generated footage
     # at the front of the chain even if it isn't in ASSET_PROVIDER_ORDER — it fails open
     # to the stock/local providers below when ComfyUI is unreachable. Off by default.

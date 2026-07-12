@@ -17,7 +17,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-import requests
+import requests  # type: ignore[import-untyped]
 
 from apis.signal_contract import (
     STATUS_INACTIVE,

@@ -1,5 +1,10 @@
 """
 Thumbnail generation — BFL Flux API when configured, else Pillow title card.
+
+Optional provider chain (env `THUMBNAIL_PROVIDER=ideogram|recraft|flux|pillow`):
+the selected provider fails open to Flux, then Pillow. Ideogram and Recraft
+render the headline text directly on the image (Flux prompts stay text-free).
+Unset (default) keeps the original Flux-if-configured behavior unchanged.
 """
 
 from __future__ import annotations
@@ -7,14 +12,13 @@ from __future__ import annotations
 import os
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable, List, Optional
 
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
-from config.settings import get_settings
 from core.logging import get_logger
 
 logger = get_logger("assets.flux_thumbnail")
@@ -22,13 +26,15 @@ logger = get_logger("assets.flux_thumbnail")
 BFL_BASE_URL = os.getenv("BFL_API_BASE", "https://api.bfl.ai")
 FLUX_MODEL = os.getenv("FLUX_MODEL", "flux-2-pro-preview")
 FLUX_POLL_TIMEOUT = int(os.getenv("FLUX_POLL_TIMEOUT", "120"))
+IDEOGRAM_BASE_URL = os.getenv("IDEOGRAM_API_BASE", "https://api.ideogram.ai")
+RECRAFT_BASE_URL = os.getenv("RECRAFT_API_BASE", "https://external.api.recraft.ai")
 
 
 @dataclass
 class ThumbnailResult:
-    path: Optional[str]
+    path: str | None
     status: str
-    detail: Optional[str] = None
+    detail: str | None = None
 
 
 def _flux_api_key() -> str:
@@ -51,7 +57,7 @@ def _thumbnail_basename(title: str, topic: str, *, suffix: str = "") -> str:
     return f"{base}_{ts}{tag}.jpg"
 
 
-def list_channel_thumbnails(output_dir: str) -> List[str]:
+def list_channel_thumbnails(output_dir: str) -> list[str]:
     if not os.path.isdir(output_dir):
         return []
     paths = [
@@ -83,7 +89,7 @@ def _poll_flux_result(
     polling_url: str,
     api_key: str,
     *,
-    on_wait: Optional[Callable[[float, str], None]] = None,
+    on_wait: Callable[[float, str], None] | None = None,
 ) -> str:
     headers = {"accept": "application/json", "x-key": api_key}
     delay = 0.5
@@ -187,6 +193,179 @@ def _flux_thumbnail(
         )
 
 
+def _build_text_prompt(topic: str, title: str) -> str:
+    """Prompt for text-capable models (Ideogram/Recraft): render the headline
+    on the image — unlike Flux, whose prompt explicitly forbids text."""
+    headline = (title or topic).strip()[:80].replace('"', "'")
+    base = _build_flux_prompt(topic, title).replace("no text, ", "")
+    return f'{base}, large bold readable headline text: "{headline}"'
+
+
+def _ideogram_thumbnail(
+    topic: str, title: str, output_dir: str, *, filename: str, style_directive: str = ""
+) -> ThumbnailResult:
+    api_key = os.getenv("IDEOGRAM_API_KEY") or ""
+    if not api_key:
+        return ThumbnailResult(path=None, status="not_configured", detail="Set IDEOGRAM_API_KEY")
+
+    os.makedirs(output_dir, exist_ok=True)
+    out_path = os.path.join(output_dir, filename)
+    prompt = _build_text_prompt(topic, title)
+    if style_directive:
+        prompt = f"{prompt}, {style_directive}"
+
+    try:
+        resp = requests.post(
+            f"{IDEOGRAM_BASE_URL}/generate",
+            headers={"Api-Key": api_key, "Content-Type": "application/json"},
+            json={
+                "image_request": {
+                    "prompt": prompt,
+                    "aspect_ratio": "ASPECT_16_9",
+                    "model": os.getenv("IDEOGRAM_MODEL", "V_2"),
+                    "magic_prompt_option": "AUTO",
+                }
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("data") or []
+        url = items[0].get("url") if items and isinstance(items[0], dict) else None
+        if not url:
+            raise RuntimeError(f"Ideogram response missing image url: {data}")
+        _download_image(url, out_path)
+        logger.info("Ideogram thumbnail saved: %s", out_path)
+        return ThumbnailResult(path=out_path, status="generated", detail="Ideogram")
+    except Exception as e:
+        logger.warning("Ideogram failed (%s), falling back", e)
+        return ThumbnailResult(path=None, status="ideogram_failed", detail=str(e)[:200])
+
+
+def _recraft_thumbnail(
+    topic: str, title: str, output_dir: str, *, filename: str, style_directive: str = ""
+) -> ThumbnailResult:
+    api_key = os.getenv("RECRAFT_API_KEY") or ""
+    if not api_key:
+        return ThumbnailResult(path=None, status="not_configured", detail="Set RECRAFT_API_KEY")
+
+    os.makedirs(output_dir, exist_ok=True)
+    out_path = os.path.join(output_dir, filename)
+    prompt = _build_text_prompt(topic, title)
+    if style_directive:
+        prompt = f"{prompt}, {style_directive}"
+
+    try:
+        resp = requests.post(
+            f"{RECRAFT_BASE_URL}/v1/images/generations",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "prompt": prompt,
+                "model": os.getenv("RECRAFT_MODEL", "recraftv3"),
+                "style": os.getenv("RECRAFT_STYLE", "realistic_image"),
+                # Closest 16:9 in Recraft's fixed size list.
+                "size": "1820x1024",
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("data") or []
+        url = items[0].get("url") if items and isinstance(items[0], dict) else None
+        if not url:
+            raise RuntimeError(f"Recraft response missing image url: {data}")
+        _download_image(url, out_path)
+        logger.info("Recraft thumbnail saved: %s", out_path)
+        return ThumbnailResult(path=out_path, status="generated", detail="Recraft")
+    except Exception as e:
+        logger.warning("Recraft failed (%s), falling back", e)
+        return ThumbnailResult(path=None, status="recraft_failed", detail=str(e)[:200])
+
+
+def _provider_chain(selected: str) -> list[str]:
+    """Fail-open order for an explicit THUMBNAIL_PROVIDER value."""
+    if selected == "pillow":
+        return ["pillow"]
+    if selected in ("ideogram", "recraft", "flux"):
+        chain = [selected]
+    else:
+        logger.warning("Unknown THUMBNAIL_PROVIDER=%r, using flux->pillow", selected)
+        chain = []
+    for fallback in ("flux", "pillow"):
+        if fallback not in chain:
+            chain.append(fallback)
+    return chain
+
+
+def _chain_thumbnail(
+    selected: str,
+    topic: str,
+    title: str,
+    output_dir: str,
+    *,
+    content_run_id: int | None = None,
+    channel_id: str | None = None,
+) -> ThumbnailResult:
+    """Explicit-provider path: try `selected`, fail open to Flux, then Pillow.
+
+    Unlike the default path, only the provider that succeeds writes a file.
+    An active thumbnail A/B arm styles the generative providers and is
+    recorded only when one of them (not Pillow) produced the image.
+    """
+    run_tag = f"run{content_run_id}" if content_run_id else "thumb"
+
+    experiment: tuple[str, str, str] | None = None
+    try:
+        from config.channels import resolve_channel_id
+        from core.experiments import next_arm
+
+        experiment = next_arm(resolve_channel_id(channel_id), kind="thumbnail")
+    except Exception:
+        experiment = None
+    style = experiment[2] if experiment else ""
+
+    skipped: list[str] = []
+    for name in _provider_chain(selected):
+        filename = _thumbnail_basename(title, topic, suffix=f"{name}_{run_tag}")
+        if name == "ideogram":
+            result = _ideogram_thumbnail(
+                topic, title, output_dir, filename=filename, style_directive=style
+            )
+        elif name == "recraft":
+            result = _recraft_thumbnail(
+                topic, title, output_dir, filename=filename, style_directive=style
+            )
+        elif name == "flux":
+            result = _flux_thumbnail(
+                topic, title, output_dir, filename=filename, style_directive=style
+            )
+        else:
+            result = _pillow_thumbnail(
+                topic, title, output_dir, filename=filename, channel_id=channel_id
+            )
+        if result.path:
+            if name != "pillow" and experiment and content_run_id:
+                try:
+                    from config.channels import resolve_channel_id
+                    from core.experiments import record_assignment
+
+                    record_assignment(
+                        resolve_channel_id(channel_id), content_run_id, experiment[0], experiment[1]
+                    )
+                except Exception:
+                    pass
+            if skipped:
+                detail = f"{result.detail} (skipped: {'; '.join(skipped)})"[:200]
+                result = ThumbnailResult(path=result.path, status=result.status, detail=detail)
+            return result
+        skipped.append(f"{name}: {result.detail or result.status}")
+
+    return ThumbnailResult(path=None, status="failed", detail="; ".join(skipped)[:200])
+
+
 def _topic_accent(topic: str, title: str) -> tuple:
     text = f"{title} {topic}".lower()
     if any(k in text for k in ("nba", "basketball", "finals")):
@@ -204,7 +383,7 @@ def _pillow_thumbnail(
     output_dir: str,
     *,
     filename: str,
-    channel_id: Optional[str] = None,
+    channel_id: str | None = None,
 ) -> ThumbnailResult:
     os.makedirs(output_dir, exist_ok=True)
     width, height = 1280, 720
@@ -281,14 +460,29 @@ def generate_thumbnail(
     title: str,
     output_dir: str = "output/thumbnails",
     *,
-    content_run_id: Optional[int] = None,
-    channel_id: Optional[str] = None,
+    content_run_id: int | None = None,
+    channel_id: str | None = None,
 ) -> ThumbnailResult:
     """
     One thumbnail per render (Flux if configured, always Pillow as usable fallback).
 
     Files are timestamped so older thumbnails are not overwritten.
+
+    Set THUMBNAIL_PROVIDER=ideogram|recraft|flux|pillow to pick an explicit
+    provider instead (fails open to Flux, then Pillow). Unset keeps the
+    default behavior below unchanged.
     """
+    selected = (os.getenv("THUMBNAIL_PROVIDER") or "").strip().lower()
+    if selected:
+        return _chain_thumbnail(
+            selected,
+            topic,
+            title,
+            output_dir,
+            content_run_id=content_run_id,
+            channel_id=channel_id,
+        )
+
     run_tag = f"run{content_run_id}" if content_run_id else "thumb"
     pillow_name = _thumbnail_basename(title, topic, suffix=f"pillow_{run_tag}")
     flux_name = _thumbnail_basename(title, topic, suffix=f"flux_{run_tag}")

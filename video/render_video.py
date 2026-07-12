@@ -18,6 +18,11 @@ logger = get_logger("video.render")
 TARGET_W = 1080
 TARGET_H = 1920
 
+# Music bed duck level: the bed is scaled to this gain and mixed under the VO with
+# amix normalize=0, which keeps the VO at unit gain (dominant) — see
+# build_render_ffmpeg_command.
+MUSIC_BED_VOLUME = 0.2
+
 
 def _probe_video_duration(path: str) -> float | None:
     try:
@@ -56,12 +61,18 @@ def build_render_ffmpeg_command(
     subtitle_path: str,
     duration: float,
     profile=None,
+    music_path: str | None = None,
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
     scale/crop to the profile's aspect (vertical 9:16 by default), burn subtitles,
     fixed output duration. `profile` is a video.render_profiles.RenderProfile; None
     keeps the current vertical 1080x1920 output byte-identical.
+
+    `music_path` (Pillar 6 music bed) adds a looped third input mixed UNDER the VO:
+    the bed is ducked to MUSIC_BED_VOLUME while `amix ... normalize=0` leaves the VO
+    at unit gain, so the voice stays dominant. `music_path=None` emits a command
+    byte-identical to the VO-only command of today.
     """
     width = profile.width if profile is not None else TARGET_W
     height = profile.height if profile is not None else TARGET_H
@@ -76,7 +87,7 @@ def build_render_ffmpeg_command(
         f"subtitles='{subtitle_escaped}'[vout]"
     )
 
-    return [
+    cmd = [
         "ffmpeg",
         "-y",
         "-stream_loop",
@@ -85,6 +96,19 @@ def build_render_ffmpeg_command(
         background_path,
         "-i",
         mp3_path,
+    ]
+    audio_map = "1:a:0"
+    if music_path is not None:
+        # Loop the bed (input 2) so a short bed still covers the full VO; duck it and
+        # mix under the VO. duration=first ends the mix with the VO, and -t below
+        # bounds the output either way.
+        cmd += ["-stream_loop", "-1", "-i", music_path]
+        filter_complex += (
+            f";[2:a]volume={MUSIC_BED_VOLUME}[bed];"
+            f"[1:a][bed]amix=inputs=2:duration=first:normalize=0[aout]"
+        )
+        audio_map = "[aout]"
+    cmd += [
         "-t",
         duration_str,
         "-filter_complex",
@@ -92,7 +116,7 @@ def build_render_ffmpeg_command(
         "-map",
         "[vout]",
         "-map",
-        "1:a:0",
+        audio_map,
         "-c:v",
         "libx264",
         "-preset",
@@ -107,6 +131,29 @@ def build_render_ffmpeg_command(
         "+faststart",
         output_path,
     ]
+    return cmd
+
+
+def _resolve_music_bed(duration: float, stage) -> str | None:
+    """Music bed path when MUSIC_PROVIDER delivers one, else None (Pillar 6, fail-open).
+
+    Any miss — gate unset, backend not installed, generation error, missing file —
+    returns None so the caller renders VO-only exactly as today. Never raises.
+    """
+    if (os.getenv("MUSIC_PROVIDER") or "none").strip().lower() in ("", "none"):
+        return None
+    try:
+        from core.music import generate_bed
+
+        mood = (os.getenv("MUSIC_MOOD") or "").strip() or "upbeat"
+        stage("Generating music bed...")
+        result = generate_bed(mood, duration)
+        if result.ok and result.data and os.path.isfile(str(result.data)):
+            return os.path.abspath(str(result.data)).replace("\\", "/")
+        logger.info("Music bed unavailable (VO-only): %s", result.detail or result.status)
+    except Exception as exc:
+        logger.warning("Music bed skipped (VO-only): %s", exc)
+    return None
 
 
 def render_vertical_video(
@@ -186,12 +233,17 @@ def render_vertical_video(
     subtitle_path = os.path.abspath(subtitle_path).replace("\\", "/")
     output_path = os.path.abspath(output_path).replace("\\", "/")
 
+    # Music bed (Pillar 6): mixed under the VO when MUSIC_PROVIDER delivers; any miss
+    # keeps music_path None and the command below byte-identical to the VO-only render.
+    music_path = _resolve_music_bed(duration, stage)
+
     cmd = build_render_ffmpeg_command(
         background_path=background_path,
         mp3_path=mp3_path,
         output_path=output_path,
         subtitle_path=subtitle_path,
         duration=duration,
+        music_path=music_path,
     )
 
     stage(f"FFmpeg render (~{duration:.0f}s video)...")
@@ -208,6 +260,24 @@ def render_vertical_video(
         logger.info(
             "Rendering with FFmpeg (loop bg, mute stock audio, duration=%ss)",
             f"{duration:.3f}",
+        )
+        process = subprocess.run(cmd, capture_output=True, text=True)
+
+    if process.returncode != 0 and music_path is not None:
+        # The music bed must never break a render: drop it and retry VO-only once
+        # with the exact command used before the bed existed.
+        logger.warning(
+            "FFmpeg failed with music bed - retrying VO-only: %s",
+            (process.stderr or "")[-400:],
+        )
+        stage("Music mix failed - retrying VO-only...")
+        music_path = None
+        cmd = build_render_ffmpeg_command(
+            background_path=background_path,
+            mp3_path=mp3_path,
+            output_path=output_path,
+            subtitle_path=subtitle_path,
+            duration=duration,
         )
         process = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -238,6 +308,7 @@ def render_vertical_video(
         subtitle_path=subtitle_path,
         duration=duration,
         stage=stage,
+        music_path=music_path,
     )
 
     if progress:
@@ -254,11 +325,13 @@ def _render_extra_formats(
     subtitle_path: str,
     duration: float,
     stage,
+    music_path: str | None = None,
 ) -> list[str]:
     """Render each non-vertical RENDER_FORMATS profile as a suffixed sibling file.
 
     Returns the list of extra output paths written. Fully fail-open: any failure is
     logged and skipped — the primary vertical render is already complete and returned.
+    `music_path` mirrors the primary render's audio mix (same bed, or None for VO-only).
     """
     try:
         from video.render_profiles import extra_profiles
@@ -281,6 +354,7 @@ def _render_extra_formats(
                 subtitle_path=subtitle_path,
                 duration=duration,
                 profile=profile,
+                music_path=music_path,
             )
             stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")
             proc = subprocess.run(cmd, capture_output=True, text=True)

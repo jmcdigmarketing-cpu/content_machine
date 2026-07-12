@@ -1,0 +1,111 @@
+{
+  "name": "Content Machine - Discord batch digest",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cm-discord-digest",
+        "options": {}
+      },
+      "id": "cm-digest-webhook",
+      "name": "Content Machine events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "cm-discord-digest"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "event-is-batch-completed",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "batch_completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cm-digest-filter",
+      "name": "Is batch_completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $input.first().json.body.payload;\nconst lines = (p.drafts || []).map((d) => `${d.ok ? 'OK  ' : 'FAIL'} ${d.topic}${d.title ? ' -> ' + d.title : ''}`);\nlet content = `Batch for ${p.channel_id}: ${p.saved}/${p.requested} drafts saved\\n` + lines.join('\\n');\nif (content.length > 1900) {\n  content = content.slice(0, 1900) + '\\n...(truncated)';\n}\nreturn [{ json: { content } }];"
+      },
+      "id": "cm-digest-format",
+      "name": "Format digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $json.content }) }}",
+        "options": {}
+      },
+      "id": "cm-digest-post",
+      "name": "Post to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    }
+  ],
+  "connections": {
+    "Content Machine events": {
+      "main": [
+        [
+          {
+            "node": "Is batch_completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is batch_completed?": {
+      "main": [
+        [
+          {
+            "node": "Format digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format digest": {
+      "main": [
+        [
+          {
+            "node": "Post to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

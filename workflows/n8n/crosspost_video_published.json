@@ -1,0 +1,99 @@
+{
+  "name": "Content Machine - cross-post published video",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cm-crosspost",
+        "options": {}
+      },
+      "id": "cm-crosspost-webhook",
+      "name": "Content Machine events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "cm-crosspost"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "event-is-video-published",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "video_published",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "status-is-uploaded",
+              "leftValue": "={{ $json.body.payload.status }}",
+              "rightValue": "uploaded",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cm-crosspost-filter",
+      "name": "Is a live video_published?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://example.com/REPLACE-with-your-crosspost-endpoint",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.body.payload.title + ' ' + $json.body.payload.url, channel: $json.body.payload.channel_id }) }}",
+        "options": {}
+      },
+      "id": "cm-crosspost-post",
+      "name": "Cross-post (replace me)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    }
+  ],
+  "connections": {
+    "Content Machine events": {
+      "main": [
+        [
+          {
+            "node": "Is a live video_published?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is a live video_published?": {
+      "main": [
+        [
+          {
+            "node": "Cross-post (replace me)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

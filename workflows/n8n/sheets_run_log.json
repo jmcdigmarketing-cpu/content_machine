@@ -1,0 +1,111 @@
+{
+  "name": "Content Machine - Google Sheets run log",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cm-sheets-log",
+        "options": {}
+      },
+      "id": "cm-sheets-webhook",
+      "name": "Content Machine events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "cm-sheets-log"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "event-is-run-completed",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "run_completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cm-sheets-filter",
+      "name": "Is run_completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "YOUR_SPREADSHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "runs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "at": "={{ $json.body.at }}",
+            "channel_id": "={{ $json.body.payload.channel_id }}",
+            "run_id": "={{ $json.body.payload.run_id }}",
+            "status": "={{ $json.body.payload.status }}",
+            "topic": "={{ $json.body.payload.topic }}",
+            "title": "={{ $json.body.payload.title }}",
+            "score": "={{ $json.body.payload.score }}",
+            "abort_reason": "={{ $json.body.payload.abort_reason }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "cm-sheets-append",
+      "name": "Append run row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [440, 0]
+    }
+  ],
+  "connections": {
+    "Content Machine events": {
+      "main": [
+        [
+          {
+            "node": "Is run_completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is run_completed?": {
+      "main": [
+        [
+          {
+            "node": "Append run row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

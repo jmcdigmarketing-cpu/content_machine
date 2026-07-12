@@ -12,6 +12,11 @@ grade also carries a **predicted engaged-rate band**
 
 Read-only and fail-open — grading never blocks a run (the authenticity gate
 remains the only blocking check, per Phase O).
+
+Pillar 6 adds an optional *qualitative* Expert-Panel section beside the numeric
+card (`EXPERT_PANEL_ENABLED`, default off) — it composes
+`core.grade.expert_panel_review` at the formatting layer only and never changes
+the numeric score.
 """
 
 from __future__ import annotations
@@ -207,6 +212,66 @@ def render_grade(grade: VideoGrade) -> str:
     return "\n".join(lines)
 
 
+def render_expert_panel(draft: str, channel_id: str | None = None) -> str:
+    """Optional qualitative Expert-Panel section shown beside the numeric card.
+
+    Composes `core.grade.expert_panel_review` (Pillar 6 seam) at the formatting
+    layer only — the numeric grade is computed before this runs and is never
+    affected. Gated by EXPERT_PANEL_ENABLED (default off) and fail-open: returns
+    "" when disabled, when no persona reviews come back, or on any error.
+    """
+    try:
+        from core.providers import flag_enabled
+
+        if not flag_enabled("EXPERT_PANEL_ENABLED") or not (draft or "").strip():
+            return ""
+        import textwrap
+
+        from core.grade import expert_panel_review
+
+        result = expert_panel_review(draft, channel_id)
+        if not result.ok or not result.data:
+            return ""
+        lines = ["Expert panel (qualitative, does not affect the score):"]
+        for entry in result.data:
+            persona = str(entry.get("persona") or "").strip() or "persona"
+            review = " ".join(str(entry.get("review") or "").split())
+            if not review:
+                continue
+            lines.extend(
+                textwrap.wrap(
+                    f"{persona}: {review}",
+                    width=92,
+                    initial_indent="    ",
+                    subsequent_indent=" " * 8,
+                )
+            )
+        if len(lines) == 1:
+            return ""
+        return "\n".join(lines)
+    except Exception as exc:
+        logger.debug("expert panel skipped: %s", exc)
+        return ""
+
+
+def expert_panel_for_run(run_id: int) -> str:
+    """Panel section for a persisted run's script preview ("" when off/failed)."""
+    try:
+        from core.providers import flag_enabled
+
+        if not flag_enabled("EXPERT_PANEL_ENABLED"):
+            return ""
+        from storage.repositories.content_runs import get_content_run_repository
+
+        record = get_content_run_repository().get(run_id)
+        if record is None:
+            return ""
+        return render_expert_panel(record.script_preview, record.channel_id)
+    except Exception as exc:
+        logger.debug("expert panel skipped: %s", exc)
+        return ""
+
+
 def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
     """Interactive-flow helper: grade the just-persisted run, fail-open."""
     if not run_id:
@@ -217,5 +282,10 @@ def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
             print_fn("")
             for line in render_grade(grade).splitlines():
                 print_fn(f"  {line}")
+            panel = expert_panel_for_run(run_id)
+            if panel:
+                print_fn("")
+                for line in panel.splitlines():
+                    print_fn(f"  {line}")
     except Exception as exc:
         logger.debug("grade display skipped: %s", exc)

@@ -1,12 +1,22 @@
 """Pillar 2 (Video Grading) tests — report card math, data-gated predictor,
-calibration correlations, prompt-eval rubric, analyst-accuracy realignment."""
+calibration correlations, prompt-eval rubric, analyst-accuracy realignment,
+optional Expert-Panel qualitative section (Pillar 6)."""
 
 import json
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
 from core import engagement_predictor, grade_calibration
-from core.video_grade import grade_from_parts, grade_run, render_grade
+from core.providers import ProviderResult
+from core.video_grade import (
+    display_grade_for_run,
+    expert_panel_for_run,
+    grade_from_parts,
+    grade_run,
+    render_expert_panel,
+    render_grade,
+)
 
 FULL_QUALITY = {
     "hook_score": 80,
@@ -102,6 +112,128 @@ class TestGradeRun(unittest.TestCase):
             "storage.repositories.content_runs.get_content_run_repository", return_value=repo
         ):
             self.assertIsNone(grade_run(4))
+
+
+class TestExpertPanelSection(unittest.TestCase):
+    """Pillar 6 — optional qualitative panel beside the report card.
+
+    Invariants: OFF by default (output byte-identical to the numeric-only card),
+    present only when EXPERT_PANEL_ENABLED=true, and fail-open — a not-ok panel
+    result or a raising panel never changes the numeric score or breaks grading.
+    """
+
+    RUN_ID = 4
+
+    def setUp(self):
+        # Restore the operator's env after each test; start from the gate unset.
+        patcher = patch.dict(os.environ, {}, clear=False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        os.environ.pop("EXPERT_PANEL_ENABLED", None)
+
+    def _record(self):
+        record = MagicMock()
+        record.composite_score = 70.0
+        record.channel_id = None  # skip predictor
+        record.quality_json = json.dumps(FULL_QUALITY)
+        record.script_preview = "Hook line. Body of the draft script."
+        return record
+
+    def _display_lines(self):
+        repo = MagicMock()
+        repo.get.return_value = self._record()
+        lines: list[str] = []
+        with patch(
+            "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+        ):
+            display_grade_for_run(self.RUN_ID, print_fn=lines.append)
+        return lines
+
+    def _numeric_only_lines(self):
+        """What display_grade_for_run printed before the panel existed."""
+        grade = grade_from_parts(quality=FULL_QUALITY, composite_score=70.0, channel_id=None)
+        return [""] + [f"  {line}" for line in render_grade(grade).splitlines()]
+
+    # -- disabled (default) ------------------------------------------------
+
+    def test_off_by_default_output_byte_identical(self):
+        lines = self._display_lines()
+        self.assertEqual(lines, self._numeric_only_lines())
+        self.assertNotIn("Expert panel", "\n".join(lines))
+
+    def test_off_by_default_section_is_empty_without_llm(self):
+        # No LLM mock in scope: disabled must return "" before any LLM work.
+        self.assertEqual(render_expert_panel("draft text"), "")
+        self.assertEqual(expert_panel_for_run(self.RUN_ID), "")
+
+    # -- enabled -----------------------------------------------------------
+
+    def test_enabled_panel_section_present(self):
+        with (
+            patch.dict(os.environ, {"EXPERT_PANEL_ENABLED": "true"}, clear=False),
+            patch(
+                "core.grade._load_personas",
+                return_value=[("skeptical_editor", "You are a skeptical editor.")],
+            ),
+            patch("core.llm_router.complete", return_value="Strong hook; tighten the middle."),
+        ):
+            section = render_expert_panel("Hook line. Body.", "tapin")
+        self.assertIn("Expert panel", section)
+        self.assertIn("does not affect the score", section)
+        self.assertIn("skeptical_editor", section)
+        self.assertIn("tighten the middle", section)
+
+    def test_enabled_panel_shown_beside_report_card(self):
+        with (
+            patch.dict(os.environ, {"EXPERT_PANEL_ENABLED": "true"}, clear=False),
+            patch(
+                "core.grade.expert_panel_review",
+                return_value=ProviderResult.success(
+                    "expert_panel",
+                    "expert_panel",
+                    data=[{"persona": "skeptical_editor", "review": "Solid draft."}],
+                ),
+            ),
+        ):
+            lines = self._display_lines()
+        # The numeric card is byte-identical; the panel is appended after it.
+        numeric = self._numeric_only_lines()
+        self.assertEqual(lines[: len(numeric)], numeric)
+        panel_text = "\n".join(lines[len(numeric) :])
+        self.assertIn("Expert panel", panel_text)
+        self.assertIn("Solid draft.", panel_text)
+
+    # -- fail-open ---------------------------------------------------------
+
+    def test_fail_open_not_ok_result_keeps_grading_and_score(self):
+        with (
+            patch.dict(os.environ, {"EXPERT_PANEL_ENABLED": "true"}, clear=False),
+            patch(
+                "core.grade.expert_panel_review",
+                return_value=ProviderResult.fail_open("expert_panel", "no persona replied"),
+            ),
+        ):
+            lines = self._display_lines()
+        self.assertEqual(lines, self._numeric_only_lines())
+
+    def test_fail_open_raising_panel_keeps_grading_and_score(self):
+        with (
+            patch.dict(os.environ, {"EXPERT_PANEL_ENABLED": "true"}, clear=False),
+            patch("core.grade.expert_panel_review", side_effect=RuntimeError("llm down")),
+        ):
+            lines = self._display_lines()
+        self.assertEqual(lines, self._numeric_only_lines())
+
+    def test_fail_open_missing_record(self):
+        repo = MagicMock()
+        repo.get.return_value = None
+        with (
+            patch.dict(os.environ, {"EXPERT_PANEL_ENABLED": "true"}, clear=False),
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+            ),
+        ):
+            self.assertEqual(expert_panel_for_run(self.RUN_ID), "")
 
 
 def _measured_runs(n, *, hook_spread=True):

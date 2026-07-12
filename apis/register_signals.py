@@ -226,7 +226,7 @@ _DOMAIN_SIGNALS: dict[str, set[str]] = {
         "ufc_context",
         "tapology",
     },
-    "finance": {"fred", "sec_edgar", "finnhub", "coingecko"},
+    "finance": {"fred", "sec_edgar", "finnhub", "coingecko", "earnings"},
     "anime": {"anime"},
     "popculture": {"tmdb", "tvmaze"},
     "music": {"lastfm", "musicbrainz"},

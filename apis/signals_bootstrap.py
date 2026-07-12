@@ -6,6 +6,7 @@ from apis.api_sports_api import get_api_sports_signal
 from apis.autocomplete_api import get_autocomplete_data
 from apis.blog_rss_api import get_blog_rss_signal
 from apis.coingecko_api import get_coingecko_signal
+from apis.earnings_signal import get_earnings_signal
 from apis.finnhub_api import get_finnhub_signal
 from apis.fred_api import get_fred_signal
 from apis.igdb_api import get_igdb_signal
@@ -70,6 +71,7 @@ def get_signal_registry() -> SignalRegistry:
     reg.register("sec_edgar", get_sec_edgar_signal)
     reg.register("finnhub", get_finnhub_signal)
     reg.register("coingecko", get_coingecko_signal)
+    reg.register("earnings", get_earnings_signal)
     # Anime
     reg.register("anime", get_anime_signal)
     # Pop culture

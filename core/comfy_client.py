@@ -16,6 +16,7 @@ here with the prompt swapped in (see LTX-Video note in `workflows/README.md`).
 
 from __future__ import annotations
 
+import json
 import os
 import time
 
@@ -74,18 +75,46 @@ def poll(prompt_id: str, *, max_wait: float = 120.0, interval: float = 2.0) -> P
     return ProviderResult.fail_open(SLOT, "timed out waiting for outputs", status=STATUS_ERROR)
 
 
+def _load_workflow_template() -> dict | None:
+    """Load the ComfyUI workflow graph from COMFYUI_WORKFLOW (a workflows/*.json path).
+
+    Returns None (⇒ fail-open) when unset, missing, or unparseable.
+    """
+    path = os.getenv("COMFYUI_WORKFLOW", "").strip()
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else None
+    except (OSError, ValueError) as exc:
+        logger.debug("ComfyUI workflow load failed (%s): %s", path, exc)
+        return None
+
+
+def _inject_prompt(workflow: dict, prompt: str) -> dict:
+    """Swap the prompt into the template by replacing the `__PROMPT__` placeholder
+    anywhere in the graph's string values (the operator marks the text node with it)."""
+    raw = json.dumps(workflow).replace("__PROMPT__", prompt.replace('"', "'"))
+    return json.loads(raw)
+
+
 def generate(prompt: str, *, workflow: dict | None = None) -> ProviderResult:
     """High-level: submit a workflow (with `prompt` swapped in) and wait for outputs.
 
-    Baseline: without a saved workflow template this fails open — the operator supplies
-    a `workflows/*.json` graph and the prompt-injection point once ComfyUI is running.
+    Without an explicit `workflow`, loads the template named by COMFYUI_WORKFLOW and
+    injects `prompt` at its `__PROMPT__` placeholder. Fails open when no template is
+    configured or ComfyUI is unreachable, so callers keep their stock/local path.
     """
+    if workflow is None:
+        workflow = _load_workflow_template()
     if not workflow:
         return ProviderResult.fail_open(
             SLOT,
-            "no workflow template provided (see workflows/README.md)",
+            "no workflow template (set COMFYUI_WORKFLOW; see workflows/README.md)",
             status=STATUS_NOT_CONFIGURED,
         )
+    workflow = _inject_prompt(workflow, prompt)
     submitted = submit_workflow(workflow)
     if not submitted.ok:
         return submitted

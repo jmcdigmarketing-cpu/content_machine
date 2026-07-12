@@ -1,5 +1,6 @@
 import os
 
+from assets.ai_video_provider import AIVideoProvider
 from assets.base import AssetProvider
 from assets.category import detect_category
 from assets.composite import try_compose_hybrid
@@ -16,6 +17,7 @@ _PROVIDERS = {
     "local": LocalAssetProvider,
     "pexels": PexelsAssetProvider,
     "pixabay": PixabayAssetProvider,
+    "ai_video": AIVideoProvider,
 }
 
 VALID_BACKGROUND_MODES = ("hybrid", "stock", "local")
@@ -37,6 +39,11 @@ def _provider_chain(channel_id=None, *, include_local: bool = True) -> list[Asse
 
     profile = get_channel_profile(resolve_channel_id(channel_id))
     order = profile.asset_provider_order or get_settings().asset_provider_order
+    # AI video-gen (Pillar 6): when AI_VIDEO_PROVIDER is set, prefer generated footage
+    # at the front of the chain even if it isn't in ASSET_PROVIDER_ORDER — it fails open
+    # to the stock/local providers below when ComfyUI is unreachable. Off by default.
+    if "ai_video" not in order and AIVideoProvider().is_configured():
+        order = ["ai_video", *order]
     chain = []
     for name in order:
         if name == "local" and not include_local:

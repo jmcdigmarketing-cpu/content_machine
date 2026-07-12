@@ -6,8 +6,10 @@ import os
 import shutil
 import tempfile
 import unittest
-from unittest.mock import MagicMock
+from typing import ClassVar
+from unittest.mock import MagicMock, patch
 
+from core.providers import ProviderResult
 from video import caption_timing as ct
 
 
@@ -60,6 +62,94 @@ class TestAss(unittest.TestCase):
         ass = ct.build_ass_karaoke([{"word": "a{b}c", "start": 0.0, "end": 0.2}], max_words=2)
         self.assertNotIn("a{b}c", ass)
         self.assertIn("a(b)c", ass)
+
+
+class TestWordsFromCaptionAlign(unittest.TestCase):
+    """Wiring of the whisper alignment seam (core/caption_align) — fail-open."""
+
+    ENV: ClassVar[dict[str, str]] = {"CAPTION_ALIGN_BACKEND": "whisperx"}
+
+    def _success(self, data):
+        return ProviderResult.success("caption_align", "whisperx", data=data)
+
+    def test_converts_word_segments_when_backend_ok(self):
+        segments = [
+            {"word": " Hello", "start": 0.0, "end": 0.4, "score": 0.98},
+            {"word": "world.", "start": 0.5, "end": 1.1, "score": 0.95},
+        ]
+        with (
+            patch.dict(os.environ, self.ENV, clear=False),
+            patch(
+                "core.caption_align.transcribe_and_align", return_value=self._success(segments)
+            ) as mock_align,
+        ):
+            words = ct.words_from_caption_align("audio.mp3")
+        mock_align.assert_called_once_with("audio.mp3")
+        self.assertEqual(
+            words,
+            [
+                {"word": "Hello", "start": 0.0, "end": 0.4},
+                {"word": "world.", "start": 0.5, "end": 1.1},
+            ],
+        )
+
+    def test_keeps_untimed_words_and_skips_empty(self):
+        segments = [
+            {"word": "Top", "start": 0.0, "end": 0.3},
+            {"word": "5", "score": 0.0},  # whisperx leaves numerals untimed
+            {"word": "  ", "start": 0.4, "end": 0.5},  # no text → dropped
+            {"word": "picks", "start": "bad", "end": 0.9},  # garbage start → None
+            "not-a-dict",
+        ]
+        with (
+            patch.dict(os.environ, self.ENV, clear=False),
+            patch("core.caption_align.transcribe_and_align", return_value=self._success(segments)),
+        ):
+            words = ct.words_from_caption_align("audio.mp3")
+        self.assertEqual(
+            words,
+            [
+                {"word": "Top", "start": 0.0, "end": 0.3},
+                {"word": "5", "start": None, "end": None},
+                {"word": "picks", "start": None, "end": 0.9},
+            ],
+        )
+
+    def test_none_when_backend_unset_and_backend_not_called(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("CAPTION_ALIGN_BACKEND", None)
+            with patch("core.caption_align.transcribe_and_align") as mock_align:
+                self.assertIsNone(ct.words_from_caption_align("audio.mp3"))
+        mock_align.assert_not_called()
+
+    def test_none_on_fail_open_result(self):
+        with (
+            patch.dict(os.environ, self.ENV, clear=False),
+            patch(
+                "core.caption_align.transcribe_and_align",
+                return_value=ProviderResult.fail_open("caption_align", "no whisperx"),
+            ),
+        ):
+            self.assertIsNone(ct.words_from_caption_align("audio.mp3"))
+
+    def test_none_on_empty_or_malformed_data(self):
+        for data in ([], "oops", None, [{"word": ""}]):
+            with (
+                patch.dict(os.environ, self.ENV, clear=False),
+                patch("core.caption_align.transcribe_and_align", return_value=self._success(data)),
+            ):
+                self.assertIsNone(ct.words_from_caption_align("audio.mp3"))
+
+    def test_never_raises_when_backend_raises(self):
+        with (
+            patch.dict(os.environ, self.ENV, clear=False),
+            patch("core.caption_align.transcribe_and_align", side_effect=RuntimeError("boom")),
+        ):
+            self.assertIsNone(ct.words_from_caption_align("audio.mp3"))
+
+    def test_none_for_missing_audio_path(self):
+        self.assertIsNone(ct.words_from_caption_align(None))
+        self.assertIsNone(ct.words_from_caption_align(""))
 
 
 class TestTtsSidecar(unittest.TestCase):

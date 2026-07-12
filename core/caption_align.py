@@ -8,8 +8,9 @@ proportional/ElevenLabs caption path (`video/caption_timing.py`).
 
     CAPTION_ALIGN_BACKEND=whisperx     # default: none
 
-Wire point (documented, not activated): in `video/caption_timing.py`, call
-`transcribe_and_align(audio)` when `words_from_alignment(...)` yields nothing.
+Wired: `video/subtitles.py::generate_subtitle_file` calls this via
+`video/caption_timing.words_from_caption_align` when no ElevenLabs `.words.json`
+sidecar exists for the audio — same fail-open fallback to proportional captions.
 """
 
 from __future__ import annotations

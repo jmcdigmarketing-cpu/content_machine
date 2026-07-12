@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from typing import ClassVar
 from unittest.mock import patch
 
 from video import subtitles
@@ -96,6 +97,106 @@ class TestWordTimedCaptions(unittest.TestCase):
     def test_load_word_timings_missing(self):
         self.assertIsNone(subtitles._load_word_timings(None))
         self.assertIsNone(subtitles._load_word_timings(self.audio + "x"))
+
+
+class TestWhisperAlignedCaptions(unittest.TestCase):
+    """No ElevenLabs sidecar + CAPTION_ALIGN_BACKEND set → whisper word timings
+    feed the same SRT/ASS builders; any miss falls back to proportional."""
+
+    ENV: ClassVar[dict[str, str]] = {"CAPTION_ALIGN_BACKEND": "whisperx"}
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.audio = os.path.join(self.tmp, "local_tts.mp3")  # no .words.json sidecar
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _aligned(self):
+        from core.providers import ProviderResult
+
+        return ProviderResult.success(
+            "caption_align",
+            "whisperx",
+            data=[
+                {"word": "Real", "start": 0.0, "end": 0.5, "score": 0.99},
+                {"word": "timing.", "start": 0.5, "end": 1.1, "score": 0.97},
+            ],
+        )
+
+    def test_accurate_srt_from_whisper_when_sidecar_absent(self):
+        env = {"CAPTION_STYLE": "word", **self.ENV}
+        with (
+            patch.dict("os.environ", env, clear=False),
+            patch(
+                "core.caption_align.transcribe_and_align", return_value=self._aligned()
+            ) as mock_align,
+        ):
+            path = generate_subtitle_file("Real timing.", 5.0, audio_path=self.audio)
+        mock_align.assert_called_once_with(self.audio)
+        self.assertTrue(path.endswith(".srt"))
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("00:00:00,000 --> 00:00:01,100", f.read())
+
+    def test_karaoke_ass_from_whisper_when_sidecar_absent(self):
+        env = {"CAPTION_STYLE": "karaoke", **self.ENV}
+        with (
+            patch.dict("os.environ", env, clear=False),
+            patch("core.caption_align.transcribe_and_align", return_value=self._aligned()),
+        ):
+            path = generate_subtitle_file("Real timing.", 5.0, audio_path=self.audio)
+        self.assertTrue(path.endswith(".ass"))
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("{\\k", f.read())
+
+    def test_sidecar_takes_precedence_over_whisper(self):
+        with open(self.audio + ".words.json", "w", encoding="utf-8") as f:
+            json.dump([{"word": "Sidecar", "start": 0.0, "end": 0.7}], f)
+        env = {"CAPTION_STYLE": "word", **self.ENV}
+        with (
+            patch.dict("os.environ", env, clear=False),
+            patch("core.caption_align.transcribe_and_align") as mock_align,
+        ):
+            path = generate_subtitle_file("Sidecar", 5.0, audio_path=self.audio)
+        mock_align.assert_not_called()
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("Sidecar", f.read())
+
+    def test_proportional_fallback_when_backend_unset(self):
+        with patch.dict("os.environ", {"CAPTION_STYLE": "word"}, clear=False):
+            os.environ.pop("CAPTION_ALIGN_BACKEND", None)
+            with patch("core.caption_align.transcribe_and_align") as mock_align:
+                path = generate_subtitle_file("no sidecar no backend", 5.0, audio_path=self.audio)
+        mock_align.assert_not_called()
+        self.assertTrue(path.endswith(".srt"))
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("--> 00:00:05,000", f.read())  # proportional: ends at duration
+
+    def test_proportional_fallback_when_alignment_fails(self):
+        from core.providers import ProviderResult
+
+        env = {"CAPTION_STYLE": "word", **self.ENV}
+        with (
+            patch.dict("os.environ", env, clear=False),
+            patch(
+                "core.caption_align.transcribe_and_align",
+                return_value=ProviderResult.fail_open("caption_align", "whisperx not installed"),
+            ),
+        ):
+            path = generate_subtitle_file("backend fell over", 5.0, audio_path=self.audio)
+        self.assertTrue(path.endswith(".srt"))
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("--> 00:00:05,000", f.read())
+
+    def test_plain_style_never_calls_whisper(self):
+        env = {"CAPTION_STYLE": "plain", **self.ENV}
+        with (
+            patch.dict("os.environ", env, clear=False),
+            patch("core.caption_align.transcribe_and_align") as mock_align,
+        ):
+            path = generate_subtitle_file("plain style", 5.0, audio_path=self.audio)
+        mock_align.assert_not_called()
+        self.assertTrue(path.endswith(".srt"))
 
 
 if __name__ == "__main__":

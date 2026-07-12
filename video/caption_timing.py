@@ -10,9 +10,60 @@ TTS step already gets per-character alignment back from ElevenLabs
     (the word "pops" as it's spoken), the Phase-Q animated-caption upgrade.
 
 All pure + deterministic so they're unit-tested without the API or a render.
+
+One exception: `words_from_caption_align` wires the Pillar-6 whisper alignment seam
+(`core/caption_align.py`) for audio *without* an ElevenLabs sidecar — env-gated OFF
+by default and fail-open (returns None), so it never breaks the proportional path.
 """
 
 from __future__ import annotations
+
+
+def _as_time(value: object) -> float | None:
+    """Coerce a segment timestamp to float; None on anything non-numeric."""
+    try:
+        return float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def words_from_caption_align(audio_path: str | None) -> list[dict] | None:
+    """Whisper-aligned word timings for audio with no ElevenLabs `.words.json` sidecar.
+
+    Calls `core.caption_align.transcribe_and_align` (lazy — whisperx/torch only load
+    when `CAPTION_ALIGN_BACKEND` selects a backend) and converts its word segments
+    to the same `[{word, start, end}, …]` shape `words_from_alignment` produces, so
+    callers feed them into the existing SRT/ASS builders unchanged.
+
+    Fail-open: returns None when the backend is unset, uninstalled, or errors —
+    the caller keeps the proportional caption estimate. Never raises.
+    """
+    if not audio_path:
+        return None
+    try:
+        from core.caption_align import transcribe_and_align
+        from core.providers import selected_provider
+
+        if selected_provider("CAPTION_ALIGN_BACKEND", "none") in ("", "none"):
+            return None
+        result = transcribe_and_align(audio_path)
+    except Exception:
+        return None
+    if not result.ok or not isinstance(result.data, list):
+        return None
+    words: list[dict] = []
+    for seg in result.data:
+        if not isinstance(seg, dict):
+            continue
+        word = str(seg.get("word") or "").strip()
+        if not word:
+            continue
+        # Unaligned words (whisperx skips timing for e.g. numerals) keep None
+        # start/end — the builders below already tolerate that per-word.
+        words.append(
+            {"word": word, "start": _as_time(seg.get("start")), "end": _as_time(seg.get("end"))}
+        )
+    return words or None
 
 
 def words_from_alignment(

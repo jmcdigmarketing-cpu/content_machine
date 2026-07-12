@@ -101,6 +101,13 @@ def generate_subtitle_file(script: str, duration: float, *, audio_path: str | No
 
     style = caption_style()
     words = _load_word_timings(audio_path) if style in ("word", "karaoke") else None
+    if words is None and style in ("word", "karaoke"):
+        # No ElevenLabs sidecar (local TTS, imported audio) — try the whisper
+        # alignment seam (CAPTION_ALIGN_BACKEND; off by default, fail-open to
+        # the proportional estimate below).
+        from video.caption_timing import words_from_caption_align
+
+        words = words_from_caption_align(audio_path)
 
     # Real word timings → accurate SRT or animated karaoke ASS; else the
     # proportional SRT estimate (unchanged behaviour).

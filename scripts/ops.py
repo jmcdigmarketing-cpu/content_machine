@@ -207,14 +207,18 @@ def cmd_grade(args: argparse.Namespace) -> int:
     if not args.run_id:
         print("grade requires --run-id (see 'ops traces' for recent ids)")
         return 1
-    from core.video_grade import expert_panel_for_run, grade_run, render_grade
+    from core.video_grade import grade_from_record, render_expert_panel, render_grade
+    from storage.repositories.content_runs import get_content_run_repository
 
-    grade = grade_run(args.run_id)
+    record = get_content_run_repository().get(args.run_id)  # one fetch for grade + panel
+    grade = grade_from_record(record)
     if grade is None:
         print(f"No persisted quality for run #{args.run_id} (pre-ledger run?)")
         return 1
     print(render_grade(grade))
-    panel = expert_panel_for_run(args.run_id)  # qualitative, EXPERT_PANEL_ENABLED-gated
+    panel = render_expert_panel(
+        record.script_preview, record.channel_id
+    )  # EXPERT_PANEL_ENABLED-gated
     if panel:
         print()
         print(panel)

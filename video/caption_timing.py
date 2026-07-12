@@ -123,13 +123,28 @@ def _ass_ts(seconds: float) -> str:
     return f"{h}:{m:02}:{s:05.2f}"
 
 
+def _line_span(line: list[dict]) -> tuple[float, float]:
+    """Start/end for a caption line, tolerant of missing per-word times.
+
+    whisper alignment (words_from_caption_align) can hand back words with None
+    start/end; naively taking `line[-1]["end"] or start` then collapses the block to
+    the line's START — a zero/negative-duration cue. Fall back to the last word that
+    kept a valid time, and guarantee a minimum visible span."""
+    starts = [w["start"] for w in line if w.get("start") is not None]
+    ends = [w["end"] for w in line if w.get("end") is not None]
+    start = float(starts[0]) if starts else 0.0
+    end = float(ends[-1]) if ends else (float(starts[-1]) if starts else start)
+    if end <= start:
+        end = start + 0.4
+    return start, end
+
+
 def build_srt_from_words(words: list[dict], *, max_words: int = 5) -> str:
     """Accurately-timed SRT from word timings (chunk start/end = real spoken time)."""
     lines = group_into_lines(words, max_words)
     blocks: list[str] = []
     for i, line in enumerate(lines):
-        start = line[0]["start"] or 0.0
-        end = line[-1]["end"] or start
+        start, end = _line_span(line)
         text = " ".join(w["word"] for w in line)
         blocks.append(f"{i + 1}\n{_srt_ts(start)} --> {_srt_ts(end)}\n{text}\n")
     return ("\n".join(blocks) + "\n") if blocks else ""
@@ -164,8 +179,7 @@ def build_ass_karaoke(
     lines = group_into_lines(words, max_words)
     events: list[str] = []
     for line in lines:
-        start = line[0]["start"] or 0.0
-        end = line[-1]["end"] or start
+        start, end = _line_span(line)
         parts: list[str] = []
         for w in line:
             ws = float(w["start"] or start)

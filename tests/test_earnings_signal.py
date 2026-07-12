@@ -33,12 +33,24 @@ class TestEarningsSignal(unittest.TestCase):
             self.assertEqual(sig["status"], STATUS_NO_KEY)
             self.assertFalse(sig["active"])
 
-    def test_no_ticker_is_inactive(self):
+    def test_unresolved_name_is_inactive(self):
         with mock.patch.dict(os.environ, {"FINNHUB_API_KEY": "k"}, clear=True):
             with mock.patch.object(es, "requests") as req:
-                sig = es.get_earnings_signal("what are the best dividend stocks")
+                req.get.return_value = _resp(200, {"result": []})  # search finds nothing
+                sig = es.get_earnings_signal("best dividend stocks to buy")
                 self.assertEqual(sig["status"], STATUS_INACTIVE)
-                req.get.assert_not_called()  # no ticker -> no HTTP
+
+    def test_company_name_resolves_via_search(self):
+        # Real topics use the company name, not the ticker — search must resolve it.
+        soon = (datetime.now(timezone.utc).date() + timedelta(days=5)).isoformat()
+        search = _resp(200, {"result": [{"symbol": "AAPL", "description": "APPLE INC"}]})
+        calendar = _resp(200, {"earningsCalendar": [{"date": soon, "epsEstimate": 1.0}]})
+        with mock.patch.dict(os.environ, {"FINNHUB_API_KEY": "k"}, clear=True):
+            with mock.patch.object(es, "requests") as req:
+                req.get.side_effect = [search, calendar]  # /search then /calendar/earnings
+                sig = es.get_earnings_signal("Apple earnings preview")
+                self.assertEqual(sig["status"], STATUS_OK)
+                self.assertEqual(sig["data"]["symbol"], "AAPL")
 
     def test_upcoming_earnings_scores_active(self):
         soon = (datetime.now(timezone.utc).date() + timedelta(days=3)).isoformat()

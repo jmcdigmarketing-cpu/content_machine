@@ -68,8 +68,24 @@ class TestComfyGenerate(unittest.TestCase):
         injected = comfy._inject_prompt(wf, "a red fox")
         self.assertEqual(injected["3"]["inputs"]["text"], "a red fox")
 
-    def test_generate_loads_template_and_injects(self):
+    def test_inject_prompt_handles_quotes_and_backslashes(self):
+        # A prompt with JSON-hostile characters must not raise or corrupt the graph.
+        wf = {"3": {"inputs": {"text": "__PROMPT__"}}}
+        nasty = r'a "quoted" C:\path and a \x escape'
+        injected = comfy._inject_prompt(wf, nasty)
+        self.assertEqual(injected["3"]["inputs"]["text"], nasty)
+
+    def test_extract_output_file(self):
+        outputs = {"9": {"images": [{"filename": "gen.mp4", "subfolder": "s", "type": "output"}]}}
+        self.assertEqual(
+            comfy._extract_output_file(outputs),
+            {"filename": "gen.mp4", "subfolder": "s", "type": "output"},
+        )
+        self.assertIsNone(comfy._extract_output_file({"9": {}}))
+
+    def test_generate_injects_and_returns_downloaded_path(self):
         template = {"3": {"inputs": {"text": "__PROMPT__"}}}
+        outputs = {"9": {"images": [{"filename": "gen.mp4", "subfolder": "", "type": "output"}]}}
         with (
             mock.patch.dict(os.environ, {"COMFYUI_WORKFLOW": "wf.json"}, clear=True),
             mock.patch("os.path.isfile", return_value=True),
@@ -82,14 +98,36 @@ class TestComfyGenerate(unittest.TestCase):
             mock.patch.object(
                 comfy,
                 "poll",
-                return_value=ProviderResult.success("comfyui", "comfyui", data={"9": {}}),
+                return_value=ProviderResult.success("comfyui", "comfyui", data=outputs),
             ),
+            mock.patch.object(comfy, "_download_output", return_value="output/ai_video/gen.mp4"),
         ):
             out = comfy.generate("a cat")
-            sub.assert_called_once()
             passed = sub.call_args[0][0]
             self.assertEqual(passed["3"]["inputs"]["text"], "a cat")  # prompt injected
             self.assertTrue(out.ok)
+            self.assertEqual(out.data, "output/ai_video/gen.mp4")  # local path, not outputs dict
+
+    def test_generate_fails_open_when_download_fails(self):
+        template = {"3": {"inputs": {"text": "__PROMPT__"}}}
+        outputs = {"9": {"images": [{"filename": "gen.mp4"}]}}
+        with (
+            mock.patch.dict(os.environ, {"COMFYUI_WORKFLOW": "wf.json"}, clear=True),
+            mock.patch("os.path.isfile", return_value=True),
+            mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(template))),
+            mock.patch.object(
+                comfy,
+                "submit_workflow",
+                return_value=ProviderResult.success("comfyui", "comfyui", data="pid"),
+            ),
+            mock.patch.object(
+                comfy,
+                "poll",
+                return_value=ProviderResult.success("comfyui", "comfyui", data=outputs),
+            ),
+            mock.patch.object(comfy, "_download_output", return_value=None),
+        ):
+            self.assertFalse(comfy.generate("a cat").ok)
 
 
 if __name__ == "__main__":

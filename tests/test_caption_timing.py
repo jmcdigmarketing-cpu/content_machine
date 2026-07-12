@@ -50,6 +50,17 @@ class TestSrt(unittest.TestCase):
         self.assertIn("One two.", srt)
         self.assertIn("Three four five", srt)
 
+    def test_none_word_timing_does_not_collapse_block(self):
+        # whisper can drop the last word's end time — the cue must still have span,
+        # not collapse to a zero/negative-duration block at the line start.
+        line = [
+            {"word": "hello", "start": 1.0, "end": 1.4},
+            {"word": "world", "start": 1.4, "end": None},
+        ]
+        start, end = ct._line_span(line)
+        self.assertEqual(start, 1.0)
+        self.assertGreater(end, start)
+
 
 class TestAss(unittest.TestCase):
     def test_karaoke_tags_and_header(self):

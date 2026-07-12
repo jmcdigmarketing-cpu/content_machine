@@ -50,6 +50,31 @@ def _days_until(date_str: str) -> int | None:
     return (day - datetime.now(timezone.utc).date()).days
 
 
+def _resolve_symbol(topic: str, key: str) -> str | None:
+    """Resolve a ticker from the topic: an explicit uppercase symbol if present,
+    else Finnhub symbol search on the topic text so a company NAME resolves too
+    ('Apple earnings' -> AAPL). Real topics use names, not tickers — searching is
+    what makes this signal fire. Returns None when nothing resolves."""
+    ticker = _ticker_guess(topic)
+    if ticker:
+        return ticker
+    query = (topic or "").strip()
+    if not query:
+        return None
+    try:
+        resp = requests.get(f"{_BASE}/search", params={"q": query[:80], "token": key}, timeout=10)
+        if resp.status_code != 200:
+            return None
+        results = (resp.json() or {}).get("result") or []
+    except Exception:
+        return None
+    for row in results:
+        sym = str(row.get("symbol") or "")
+        if sym.isalpha() and 1 <= len(sym) <= 5:  # plain US ticker, skip exchange-suffixed
+            return sym.upper()
+    return None
+
+
 def get_earnings_signal(topic: str) -> dict:
     """Score a finance topic by how soon the company's next earnings date is."""
     key = _api_key()
@@ -61,13 +86,13 @@ def get_earnings_signal(topic: str) -> dict:
             status_detail="Set FINNHUB_API_KEY (free tier at finnhub.io) for earnings",
         )
 
-    ticker = _ticker_guess(topic)
-    if not ticker:
+    symbol = _resolve_symbol(topic, key)
+    if not symbol:
         return make_signal(
             connected=True,
             active=False,
             status=STATUS_INACTIVE,
-            status_detail="No ticker symbol in topic",
+            status_detail="No company or ticker resolved from topic",
         )
 
     try:
@@ -77,7 +102,7 @@ def get_earnings_signal(topic: str) -> dict:
             params={
                 "from": today.isoformat(),
                 "to": (today + timedelta(days=_HORIZON_DAYS)).isoformat(),
-                "symbol": ticker,
+                "symbol": symbol,
                 "token": key,
             },
             timeout=10,
@@ -106,7 +131,7 @@ def get_earnings_signal(topic: str) -> dict:
             connected=True,
             active=False,
             status=STATUS_INACTIVE,
-            status_detail=f"No earnings for {ticker} in the next {_HORIZON_DAYS}d",
+            status_detail=f"No earnings for {symbol} in the next {_HORIZON_DAYS}d",
         )
 
     upcoming.sort(key=lambda x: x[0])
@@ -119,9 +144,9 @@ def get_earnings_signal(topic: str) -> dict:
         score=float(round(score, 1)),
         confidence=0.8,
         status=STATUS_OK,
-        status_detail=f"{ticker} earnings in {days}d ({row.get('date')})",
+        status_detail=f"{symbol} earnings in {days}d ({row.get('date')})",
         data={
-            "symbol": ticker,
+            "symbol": symbol,
             "date": row.get("date"),
             "days_until": days,
             "eps_estimate": row.get("epsEstimate"),

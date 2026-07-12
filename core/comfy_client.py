@@ -93,18 +93,77 @@ def _load_workflow_template() -> dict | None:
 
 
 def _inject_prompt(workflow: dict, prompt: str) -> dict:
-    """Swap the prompt into the template by replacing the `__PROMPT__` placeholder
-    anywhere in the graph's string values (the operator marks the text node with it)."""
-    raw = json.dumps(workflow).replace("__PROMPT__", prompt.replace('"', "'"))
-    return json.loads(raw)
+    """Replace the `__PROMPT__` placeholder in the graph's string values with `prompt`.
+
+    Walks the structure rather than string-replacing serialized JSON, so any prompt
+    text — quotes, backslashes, newlines — is injected safely and can never make the
+    workflow unparseable (which would break generate()'s fail-open contract).
+    """
+
+    def _walk(node):
+        if isinstance(node, dict):
+            return {k: _walk(v) for k, v in node.items()}
+        if isinstance(node, list):
+            return [_walk(v) for v in node]
+        if isinstance(node, str):
+            return node.replace("__PROMPT__", prompt)
+        return node
+
+    return _walk(workflow)
+
+
+def _extract_output_file(outputs: dict) -> dict | None:
+    """First saved-file descriptor {filename, subfolder, type} in ComfyUI's outputs.
+
+    ComfyUI groups a node's saved files under "images"/"gifs"/"videos"; a video
+    workflow (LTX/Wan/VHS) lands under gifs or videos. Returns None when the graph
+    produced no downloadable file.
+    """
+    for node in (outputs or {}).values():
+        if not isinstance(node, dict):
+            continue
+        for key in ("videos", "gifs", "images"):
+            items = node.get(key)
+            if isinstance(items, list) and items and isinstance(items[0], dict):
+                first = items[0]
+                if first.get("filename"):
+                    return {
+                        "filename": first["filename"],
+                        "subfolder": first.get("subfolder", ""),
+                        "type": first.get("type", "output"),
+                    }
+    return None
+
+
+def _download_output(descriptor: dict) -> str | None:
+    """Download a ComfyUI output file via /view to a local path (None on failure)."""
+    dest_dir = os.getenv("AI_VIDEO_OUTPUT_DIR", os.path.join("output", "ai_video"))
+    try:
+        os.makedirs(dest_dir, exist_ok=True)
+        dest = os.path.join(dest_dir, os.path.basename(str(descriptor["filename"])))
+        resp = requests.get(
+            f"{base_url()}/view",
+            params={
+                "filename": descriptor["filename"],
+                "subfolder": descriptor.get("subfolder", ""),
+                "type": descriptor.get("type", "output"),
+            },
+            timeout=max(30.0, _timeout() * 4),
+        )
+        resp.raise_for_status()
+        with open(dest, "wb") as f:
+            f.write(resp.content)
+        return dest
+    except Exception as exc:
+        logger.debug("ComfyUI /view download failed: %s", exc)
+        return None
 
 
 def generate(prompt: str, *, workflow: dict | None = None) -> ProviderResult:
-    """High-level: submit a workflow (with `prompt` swapped in) and wait for outputs.
-
-    Without an explicit `workflow`, loads the template named by COMFYUI_WORKFLOW and
-    injects `prompt` at its `__PROMPT__` placeholder. Fails open when no template is
-    configured or ComfyUI is unreachable, so callers keep their stock/local path.
+    """High-level: submit a workflow (prompt injected), wait for outputs, and
+    download the produced media. `data` is the LOCAL PATH to the generated file on
+    success. Fails open when no template is configured, ComfyUI is unreachable, or
+    no output file comes back — so callers keep their stock/local path.
     """
     if workflow is None:
         workflow = _load_workflow_template()
@@ -114,8 +173,18 @@ def generate(prompt: str, *, workflow: dict | None = None) -> ProviderResult:
             "no workflow template (set COMFYUI_WORKFLOW; see workflows/README.md)",
             status=STATUS_NOT_CONFIGURED,
         )
-    workflow = _inject_prompt(workflow, prompt)
-    submitted = submit_workflow(workflow)
+    submitted = submit_workflow(_inject_prompt(workflow, prompt))
     if not submitted.ok:
         return submitted
-    return poll(str(submitted.data))
+    polled = poll(str(submitted.data))
+    if not polled.ok or not isinstance(polled.data, dict):
+        return polled
+    descriptor = _extract_output_file(polled.data)
+    if not descriptor:
+        return ProviderResult.fail_open(
+            SLOT, "no output file in ComfyUI response", status=STATUS_ERROR
+        )
+    local_path = _download_output(descriptor)
+    if not local_path:
+        return ProviderResult.fail_open(SLOT, "output download failed", status=STATUS_ERROR)
+    return ProviderResult.success(SLOT, "comfyui", data=local_path)

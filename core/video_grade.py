@@ -21,6 +21,7 @@ the numeric score.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -175,6 +176,25 @@ def grade_from_parts(
     return grade
 
 
+def grade_from_record(record) -> VideoGrade | None:
+    """Grade using an already-fetched content-run record (its quality_json +
+    composite score) — lets callers grade AND run the expert panel from a single
+    record fetch instead of re-reading it per helper."""
+    if record is None:
+        return None
+    try:
+        quality = json.loads(record.quality_json or "{}")
+    except (TypeError, ValueError):
+        quality = {}
+    if not isinstance(quality, dict) or not quality:
+        return None
+    return grade_from_parts(
+        quality=quality,
+        composite_score=float(record.composite_score or 0),
+        channel_id=record.channel_id,
+    )
+
+
 def grade_run(run_id: int) -> VideoGrade | None:
     """Grade a persisted run from its quality_json + composite score."""
     try:
@@ -183,18 +203,7 @@ def grade_run(run_id: int) -> VideoGrade | None:
         record = get_content_run_repository().get(run_id)
     except Exception:
         record = None
-    if record is None:
-        return None
-    from core.run_quality import load_quality
-
-    quality = load_quality(run_id)
-    if not quality:
-        return None
-    return grade_from_parts(
-        quality=quality,
-        composite_score=float(record.composite_score or 0),
-        channel_id=record.channel_id,
-    )
+    return grade_from_record(record)
 
 
 def render_grade(grade: VideoGrade) -> str:
@@ -277,12 +286,16 @@ def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
     if not run_id:
         return
     try:
-        grade = grade_run(run_id)
-        if grade is not None:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        record = get_content_run_repository().get(run_id)
+        grade = grade_from_record(record)
+        if grade is not None and record is not None:
             print_fn("")
             for line in render_grade(grade).splitlines():
                 print_fn(f"  {line}")
-            panel = expert_panel_for_run(run_id)
+            # Reuse the record we already fetched — no second lookup for the panel.
+            panel = render_expert_panel(record.script_preview, record.channel_id)
             if panel:
                 print_fn("")
                 for line in panel.splitlines():

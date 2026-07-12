@@ -69,6 +69,15 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     if alt:
         return alt
 
+    # Free mode (strict): local $0 voice failed/absent and paid ElevenLabs is
+    # disallowed — block with install guidance instead of silently paying.
+    if _free_mode_strict():
+        raise RuntimeError(
+            "Free mode ($0, strict): no local TTS produced audio and paid ElevenLabs "
+            "is disallowed. Install a local voice - pip install piper-tts, set "
+            "PIPER_VOICE=<voice.onnx> and TTS_PROVIDER=piper. See docs/free_mode.md."
+        )
+
     eleven_key = os.getenv("ELEVEN_API_KEY")
     if not eleven_key:
         raise Exception("ELEVEN_API_KEY not found.")
@@ -100,6 +109,11 @@ def generate_audio(script, output_path, channel_id: str | None = None):
 
 def _resolve_tts_provider() -> str:
     return (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+
+
+def _free_mode_strict() -> bool:
+    """Free-mode never-pay guard (set by core.run_mode.apply_cost_mode)."""
+    return os.getenv("FREE_MODE_STRICT", "").strip().lower() in ("1", "true", "yes")
 
 
 _LOCAL_TTS_PROVIDERS = ("kokoro", "xtts", "piper")

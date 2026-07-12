@@ -239,12 +239,27 @@ def disabled_providers() -> dict[str, str]:
         return dict(_llm_disabled_state)
 
 
+def _free_mode_strict() -> bool:
+    """Free-mode never-pay guard (set by core.run_mode.apply_cost_mode)."""
+    return os.getenv("FREE_MODE_STRICT", "").strip().lower() in ("1", "true", "yes")
+
+
+def _is_free_llm(provider: str, model: str) -> bool:
+    """True for a zero-cost candidate: local Ollama, or an OpenRouter `:free` model."""
+    if provider == "ollama":
+        return True
+    return provider == "openrouter" and model.strip().lower().endswith(":free")
+
+
 def _resolve_chain(tier: str) -> list[tuple[str, str]]:
     """Ordered ``(provider, model)`` candidates for a tier — for failover.
 
     Forced ``LLM_<TIER>_PROVIDER`` goes first, then the free-first preference
     chain; session-disabled providers are dropped. Falls back to OpenAI's tier
     default so a hard error downstream is a clear auth error, not a routing crash.
+
+    Free mode (``FREE_MODE_STRICT``) filters the chain to zero-cost candidates
+    only and raises if none remain — a paid provider is never returned.
     """
     if tier not in _VALID_TIERS:
         tier = "cheap"
@@ -271,6 +286,16 @@ def _resolve_chain(tier: str) -> list[tuple[str, str]]:
         model = (forced_model if is_forced else "") or _default_model(provider, tier)
         if model:
             chain.append((provider, model))
+
+    if _free_mode_strict():
+        chain = [(p, m) for (p, m) in chain if _is_free_llm(p, m)]
+        if not chain:
+            raise RuntimeError(
+                "Free mode ($0, strict): no zero-cost LLM provider available. Set "
+                "OPENROUTER_API_KEY (free :free models) or configure Ollama "
+                "(OLLAMA_MODEL). See docs/free_mode.md."
+            )
+        return chain
 
     if not chain:
         return [("openai", _default_model("openai", tier))]

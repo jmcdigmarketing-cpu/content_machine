@@ -109,11 +109,32 @@ def main():
         sync_channel(channel_id)
         print("\n  Run 'py main.py' again to see updated best-bet recommendations.")
         return
+
+    # Cost mode ($0 Free vs Standard) — only the render flows below incur provider cost.
+    _apply_cost_mode_interactive()
+
     if startup_mode == "idea_intake":
         _run_idea_intake_flow(channel_id)
         return
 
     _run_new_video_flow(channel_id)
+
+
+def _apply_cost_mode_interactive() -> None:
+    """Prompt for the run's cost mode and apply it to the environment (Free = $0)."""
+    from core.run_mode import COST_MODE_FREE, apply_cost_mode
+    from core.ui import prompt_cost_mode
+
+    result = apply_cost_mode(prompt_cost_mode())
+    if result.mode != COST_MODE_FREE:
+        return
+    voice = result.applied.get("TTS_PROVIDER", "BLOCKED")
+    llm = result.applied.get("LLM_PREMIUM_PROVIDER", "BLOCKED")
+    print(f"  Free mode ($0): voice={voice}  llm={llm}  signals=free (paid signals skipped)")
+    for blocker in result.blockers:
+        print(f"  ! {blocker}")
+    if not result.can_render:
+        print("  ! Free mode can't render until the above are resolved (docs/free_mode.md).")
 
 
 def _drain_stdin() -> None:

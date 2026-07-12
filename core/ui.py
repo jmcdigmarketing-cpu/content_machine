@@ -1024,6 +1024,37 @@ def prompt_startup_mode(*, print_fn=print, input_fn=input) -> str:
     return "new_video"
 
 
+def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
+    """standard | free — pick the run's cost mode. Honors RUN_COST_MODE headless.
+
+    Free ($0) pins TTS/LLM/signals to their zero-cost backends and, in strict mode,
+    never calls a paid provider (see core.run_mode). The readiness line shows which
+    $0 backends are actually installed so the choice is informed.
+    """
+    from core.run_mode import (
+        COST_MODE_FREE,
+        COST_MODE_STANDARD,
+        format_readiness_line,
+        free_backend_readiness,
+        resolve_cost_mode,
+    )
+
+    # Non-interactive override: RUN_COST_MODE=free skips the prompt.
+    if resolve_cost_mode() == COST_MODE_FREE:
+        print_fn("  Cost mode: Free ($0) [RUN_COST_MODE=free]")
+        return COST_MODE_FREE
+
+    subsection("Cost mode", print_fn)
+    print_fn("  1) Standard  - best quality (may use paid providers)")
+    print_fn("  2) Free ($0) - local voice + free models only, no paid calls")
+    try:
+        print_fn("  " + format_readiness_line(free_backend_readiness()))
+    except Exception:
+        pass
+    choice = input_fn("  Select 1-2 [1]: ").strip() or "1"
+    return COST_MODE_FREE if choice == "2" else COST_MODE_STANDARD
+
+
 def run_queue_manager_interactive(
     channel_id: str,
     *,

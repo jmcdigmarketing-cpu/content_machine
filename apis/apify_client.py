@@ -236,6 +236,11 @@ def run_actor(
     if _state["disabled"]:
         return None
 
+    # Free mode (strict): a paid actor run is disallowed — skip like the breaker.
+    if os.getenv("FREE_MODE_STRICT", "").strip().lower() in ("1", "true", "yes"):
+        logger.debug("Free mode ($0, strict): skipping paid Apify actor %s", actor_id)
+        return None
+
     api_key = _key(purpose)
     if not api_key:
         env_var = "APIFY_BENABLE_BOT" if purpose == "tiktok" else "APIFY_CONTENT_MACHINE_KEY"

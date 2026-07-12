@@ -19,7 +19,15 @@ from core.logging import get_logger
 
 logger = get_logger("apis.register_signals")
 
-_SKIP = {s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(",") if s.strip()}
+
+def _skip_signals() -> set[str]:
+    """Signals to skip entirely (CONTENT_SKIP_SIGNALS), read per-call so a runtime
+    toggle applies — e.g. Free mode appends the paid signals after this module is
+    already imported (core.pipeline loads eagerly at startup, see main.py)."""
+    return {
+        s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(",") if s.strip()
+    }
+
 
 # Session circuit breaker
 # -----------------------
@@ -287,7 +295,7 @@ def _youtube_cache_ttl():
 def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     registry = get_signal_registry().get_registered_signals()
     pairs = tuple(registry.items())
-    skip = set(_SKIP)
+    skip = _skip_signals()
     skip |= _disabled_signals()
     if topic:
         skip |= _gated_signal_names(topic, channel_id)
@@ -395,9 +403,10 @@ def _apply_topic_fanout(
 
     registry = dict(sources)
     disabled = _disabled_signals()
+    skip = _skip_signals()
     for sub in subtopics:
         for name in FANOUT_SIGNAL_NAMES:
-            if name not in registry or name in _SKIP or name in disabled:
+            if name not in registry or name in skip or name in disabled:
                 continue
             _, sub_sig = _fetch_one(name, registry[name], sub, None)
             results[name] = _merge_signal(results.get(name), sub_sig)

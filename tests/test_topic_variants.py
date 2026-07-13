@@ -1,8 +1,28 @@
-"""Tests for topic variant post-processing (list-prefix stripping)."""
+"""Tests for topic variant post-processing (list-prefix stripping) + LLM fail-open."""
 
 import unittest
+from unittest import mock
 
-from apis.topic_variants import _LIST_PREFIX_RE
+from apis import topic_variants
+from apis.topic_variants import _LIST_PREFIX_RE, _heuristic_angles
+
+
+class TestHeuristicFallback(unittest.TestCase):
+    def test_angles_when_llm_unavailable_do_not_crash(self):
+        # A rate-limited / unavailable LLM must degrade to heuristic angles, not raise.
+        with mock.patch.object(
+            topic_variants, "complete", side_effect=RuntimeError("rate limited")
+        ):
+            angles = topic_variants.generate_ai_angles(
+                "Conor McGregor UFC 329", ["a", "b", "c"], channel_id=None
+            )
+        self.assertTrue(angles)  # non-empty
+        self.assertIn("Conor McGregor UFC 329", angles)  # seed leads
+
+    def test_empty_llm_output_falls_back(self):
+        with mock.patch.object(topic_variants, "complete", return_value="   "):
+            angles = topic_variants.generate_ai_angles("Marvel Rivals S9", ["x"], channel_id=None)
+        self.assertEqual(angles, _heuristic_angles("Marvel Rivals S9", ["x"]))
 
 
 class TestVariantPrefixStripping(unittest.TestCase):

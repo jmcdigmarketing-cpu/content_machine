@@ -5,10 +5,34 @@ from apis.entity_extractor import extract_entities
 from config.channels import get_channel_profile
 from core.channel_context import channel_history_block, extract_anchors
 from core.llm_router import complete
+from core.logging import get_logger
+
+logger = get_logger("apis.topic_variants")
 
 # Strip a leading list marker the LLM sometimes prepends ("1. ", "2) ", "- ", "* ")
 # so the UI's own numbering doesn't double up ("1. 1. Title").
 _LIST_PREFIX_RE = re.compile(r"^\s*(?:\d+[.)]\s*|[-*•]\s+)")
+
+
+def _heuristic_angles(topic: str, angle_types) -> list[str]:
+    """Deterministic angles when the LLM is unavailable (e.g. the free tier is
+    rate-limited). Keeps discovery alive instead of crashing the run — the seed
+    topic itself leads so scoring still has a real candidate to work with."""
+    base = (topic or "").strip()
+    if not base:
+        return []
+    templates = [
+        base,
+        f"What {base} really means",
+        f"The overlooked story in {base}",
+        f"{base}: what happens next",
+        f"Why {base} matters right now",
+    ]
+    out: list[str] = []
+    for t in templates:
+        if t and t not in out:
+            out.append(t)
+    return out[: max(1, min(5, len(angle_types) or 5))]
 
 
 _ESTABLISHED_THRESHOLD = 3  # times same anchor covered before switching angles
@@ -233,11 +257,16 @@ The publishable YouTube title is generated LATER from verified facts + script.
 Return exactly {len(angle_types)} angle lines.
 """
 
-    raw = complete(prompt, tier="cheap", temperature=0.7, max_tokens=400)
+    try:
+        raw = complete(prompt, tier="cheap", temperature=0.7, max_tokens=400)
+    except Exception as exc:
+        # Best-effort: a rate-limited/unavailable LLM must not crash discovery.
+        logger.warning("Variant LLM unavailable (%s) — using heuristic angles", exc)
+        return _heuristic_angles(topic, angle_types)
 
     lines = (raw or "").strip().split("\n")
     clean = [_LIST_PREFIX_RE.sub("", t).strip().strip('"') for t in lines if t.strip()]
-    return [t for t in clean if t][:5]
+    return [t for t in clean if t][:5] or _heuristic_angles(topic, angle_types)
 
 
 def generate_ai_titles(topic, angle_types, *, channel_id=None, is_established: bool = False):

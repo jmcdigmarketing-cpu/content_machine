@@ -237,8 +237,19 @@ def _run_idea_intake_flow(channel_id: str) -> None:
 def _run_new_video_flow(
     channel_id: str, *, seed_topic: str | None = None, creative_brief: str = ""
 ) -> None:
+    from core.llm_router import LLMUnavailableError
+
     try:
         _run_new_video_flow_body(channel_id, seed_topic=seed_topic, creative_brief=creative_brief)
+    except LLMUnavailableError as exc:
+        # Free ($0) mode pins rate-limited free models with no paid fallback — degrade
+        # to a clean message instead of a traceback when they're all unavailable.
+        print("\n  LLM unavailable — every model for this step failed.")
+        print(f"    {exc}")
+        print(
+            "    Free ($0) mode uses rate-limited free models. Wait ~30s and retry, add\n"
+            "    OPENROUTER_API_KEY for higher limits (or run Ollama), or pick Standard mode."
+        )
     finally:
         from core.pipeline import finalize_run_observability
 

@@ -55,6 +55,7 @@ import json
 import os
 import re
 import threading
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -317,6 +318,17 @@ def resolve_tier(tier: str) -> tuple[str, str]:
 # failing provider for the session.
 _RETRYABLE_LLM = frozenset({"rate_limit", "quota", "auth", "server"})
 _DISABLE_LLM = frozenset({"quota", "auth"})
+# Only these transient classes are worth retrying on the SAME provider (auth/quota
+# won't recover on a retry). Used when the chain has no fallback left — e.g. strict
+# Free mode pins a single free provider and free tiers rate-limit briefly.
+_SAME_PROVIDER_RETRY = frozenset({"rate_limit", "server"})
+_LLM_RETRY_BACKOFFS = (1.5, 4.0)  # seconds before retry 1, retry 2 (bounded, ~5.5s total)
+
+
+class LLMUnavailableError(RuntimeError):
+    """Every candidate provider for a tier failed (e.g. the free tier is rate-limited
+    and no paid fallback is configured in Free mode). Callers catch this to degrade
+    gracefully instead of surfacing a raw provider traceback."""
 
 
 def _classify_llm_error(exc: Exception) -> str:
@@ -603,36 +615,65 @@ def complete(
 
     last_exc: Exception | None = None
     for idx, (prov, mdl) in enumerate(candidates):
-        try:
-            kind = _PROVIDERS.get(prov, {}).get("kind", "openai")
-            if kind == "anthropic":
-                text, in_tok, out_tok = _anthropic_complete(
-                    mdl, msgs, temperature=temperature, max_tokens=max_tokens
-                )
-            else:
-                text, in_tok, out_tok = _openai_complete(
-                    prov,
-                    mdl,
-                    msgs,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    json_mode=json_mode,
-                )
-            _record_usage(prov, mdl, tier, in_tok, out_tok)
-            if _llm_daily_budget() is not None:
-                _add_llm_spend(_price_call(prov, mdl, in_tok, out_tok))
-            return text
-        except Exception as exc:
-            last_exc = exc
-            err_class = _classify_llm_error(exc)
-            if err_class in _DISABLE_LLM:
-                _disable_llm(prov, f"{err_class} ({type(exc).__name__})")
-            if err_class in _RETRYABLE_LLM and idx < len(candidates) - 1:
-                logger.info("LLM provider '%s' failed (%s) — failing over to next", prov, err_class)
-                continue
-            raise
+        is_last = idx >= len(candidates) - 1
+        attempt = 0
+        while True:
+            try:
+                kind = _PROVIDERS.get(prov, {}).get("kind", "openai")
+                if kind == "anthropic":
+                    text, in_tok, out_tok = _anthropic_complete(
+                        mdl, msgs, temperature=temperature, max_tokens=max_tokens
+                    )
+                else:
+                    text, in_tok, out_tok = _openai_complete(
+                        prov,
+                        mdl,
+                        msgs,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        json_mode=json_mode,
+                    )
+                _record_usage(prov, mdl, tier, in_tok, out_tok)
+                if _llm_daily_budget() is not None:
+                    _add_llm_spend(_price_call(prov, mdl, in_tok, out_tok))
+                return text
+            except Exception as exc:
+                last_exc = exc
+                err_class = _classify_llm_error(exc)
+                if err_class in _DISABLE_LLM:
+                    _disable_llm(prov, f"{err_class} ({type(exc).__name__})")
+                if provider is not None:
+                    raise  # explicitly pinned provider: no failover, no retry, raw error
+                if err_class in _RETRYABLE_LLM:
+                    if not is_last:
+                        logger.info(
+                            "LLM provider '%s' failed (%s) — failing over to next",
+                            prov,
+                            err_class,
+                        )
+                        break  # a different provider is cheaper than waiting
+                    # No fallback left: retry the sole provider briefly on a transient
+                    # error (free tiers rate-limit for seconds), then give up gracefully.
+                    if err_class in _SAME_PROVIDER_RETRY and attempt < len(_LLM_RETRY_BACKOFFS):
+                        wait = _LLM_RETRY_BACKOFFS[attempt]
+                        logger.info(
+                            "LLM '%s' transient error (%s), no fallback — retry %d in %.1fs",
+                            prov,
+                            err_class,
+                            attempt + 1,
+                            wait,
+                        )
+                        time.sleep(wait)
+                        attempt += 1
+                        continue
+                    raise LLMUnavailableError(
+                        f"all LLM providers failed for tier '{tier}': {exc}"
+                    ) from exc
+                raise  # non-retryable, unexpected error — surface as-is
     if last_exc:
-        raise last_exc
+        raise LLMUnavailableError(
+            f"all LLM providers failed for tier '{tier}': {last_exc}"
+        ) from last_exc
     raise RuntimeError("no LLM provider available for this tier")
 
 

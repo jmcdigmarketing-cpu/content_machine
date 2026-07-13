@@ -274,9 +274,58 @@ class TestFailover(unittest.TestCase):
             raise _status_error(429)
 
         with patch.dict("os.environ", env, clear=False):
-            with patch.object(llm_router, "_openai_complete", side_effect=fake):
-                with self.assertRaises(_HTTPTestError):
-                    llm_router.complete("hi", tier="cheap")
+            with patch.object(llm_router.time, "sleep"):  # don't wait out retries in a test
+                with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                    with self.assertRaises(llm_router.LLMUnavailableError):
+                        llm_router.complete("hi", tier="cheap")
+
+    def test_free_only_provider_retries_then_raises_unavailable(self):
+        # Strict Free mode pins one free provider with no fallback; a persistent 429
+        # must retry briefly then raise a catchable LLMUnavailableError, not crash.
+        env = _clear_router_env(
+            {
+                "FREE_MODE_STRICT": "1",
+                "OPENROUTER_API_KEY": "x",
+                "LLM_CHEAP_PROVIDER": "openrouter",
+                "LLM_CHEAP_MODEL": "meta-llama/llama-3.3-70b-instruct:free",
+            }
+        )
+        calls = []
+
+        def fake(provider, model, messages, **kwargs):
+            calls.append(provider)
+            raise _status_error(429)
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router.time, "sleep") as slept:
+                with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                    with self.assertRaises(llm_router.LLMUnavailableError):
+                        llm_router.complete("hi", tier="cheap")
+        self.assertEqual(len(calls), 3)  # 1 initial + 2 bounded retries
+        self.assertEqual(slept.call_count, 2)
+
+    def test_free_only_provider_recovers_on_retry(self):
+        env = _clear_router_env(
+            {
+                "FREE_MODE_STRICT": "1",
+                "OPENROUTER_API_KEY": "x",
+                "LLM_CHEAP_PROVIDER": "openrouter",
+                "LLM_CHEAP_MODEL": "meta-llama/llama-3.3-70b-instruct:free",
+            }
+        )
+        seq = [_status_error(429), None]  # rate-limited once, then recovers
+
+        def fake(provider, model, messages, **kwargs):
+            exc = seq.pop(0)
+            if exc:
+                raise exc
+            return "recovered", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router.time, "sleep"):
+                with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                    out = llm_router.complete("hi", tier="cheap")
+        self.assertEqual(out, "recovered")
 
     def test_explicit_provider_does_not_failover(self):
         env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})

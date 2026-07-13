@@ -26,12 +26,16 @@ from dataclasses import dataclass, field
 COST_MODE_STANDARD = "standard"
 COST_MODE_FREE = "free"
 
-# Paid signals with no free backend — skipped entirely in Free mode.
-_PAID_NO_FREE_BACKEND = ("twitter", "tiktok_trends", "web_search")
+# Paid signals with no free backend — skipped entirely in Free mode. (web_search
+# now has a keyless DuckDuckGo backend, so it is NOT skipped.)
+_PAID_NO_FREE_BACKEND = ("twitter", "tiktok_trends")
 
-# OpenRouter free (`:free`) model pinned for every tier in Free mode. Known-free,
-# rate-limited but fine for this volume; override with OPENROUTER_MODEL_<TIER>.
+# OpenRouter free (`:free`) model — the CLOUD fallback used only when local Ollama
+# isn't running. Free but rate-limited; override with OPENROUTER_MODEL_<TIER>.
 _OPENROUTER_FREE_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+
+# Truly-free (keyless) web-search backend wired in Free mode — see apis/web_search_api.
+_FREE_WEB_SEARCH_BACKEND = "duckduckgo"
 
 # Local (zero-cost) TTS providers, best first. Each needs its backend installed
 # and (piper/xtts) a voice model configured — mirrors core/tts.py._ALT_TTS.
@@ -77,13 +81,33 @@ def _local_tts_available() -> str | None:
     return None
 
 
+def _ollama_ready() -> tuple[bool, str]:
+    """(reachable, model) — local Ollama is truly free only if a model is set AND the
+    server answers. A quick /api/tags ping keeps readiness honest (don't route to a
+    down server, then crash). Never raises."""
+    model = os.getenv("OLLAMA_MODEL", "").strip()
+    if not model:
+        return False, ""
+    base = os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1"
+    root = base.rsplit("/v1", 1)[0].rstrip("/")
+    try:
+        import requests  # type: ignore[import-untyped]
+
+        resp = requests.get(f"{root}/api/tags", timeout=2)
+        return resp.status_code == 200, model
+    except Exception:
+        return False, model
+
+
 def _free_llm() -> tuple[str | None, str]:
-    """Free LLM (provider, model): openrouter (`:free`) > ollama > (None, "")."""
+    """Truly-free LLM (provider, model), LOCAL-FIRST: local Ollama (unlimited, offline,
+    $0) > OpenRouter `:free` (cloud, rate-limited) > (None, ""). A truly-free run should
+    use the unlimited local model, not the throttled cloud one."""
+    ready, model = _ollama_ready()
+    if ready:
+        return "ollama", model
     if os.getenv("OPENROUTER_API_KEY", "").strip():
         return "openrouter", _OPENROUTER_FREE_MODEL
-    ollama_model = os.getenv("OLLAMA_MODEL", "").strip()
-    if ollama_model:
-        return "ollama", ollama_model
     return None, ""
 
 
@@ -94,6 +118,7 @@ class Readiness:
     tts_provider: str | None  # local $0 TTS provider ready, else None
     llm_provider: str | None  # free LLM provider ready, else None
     llm_model: str = ""
+    llm_local: bool = False  # True when the LLM is a local (truly-free, unlimited) backend
     reddit_free: bool = False
     youtube_free: bool = False
 
@@ -115,6 +140,7 @@ def free_backend_readiness() -> Readiness:
         tts_provider=_local_tts_available(),
         llm_provider=llm_provider,
         llm_model=llm_model,
+        llm_local=(llm_provider == "ollama"),
         reddit_free=reddit_available(),
         youtube_free=youtube_available(),
     )
@@ -176,11 +202,14 @@ def apply_cost_mode(mode: str, *, readiness: Readiness | None = None) -> ApplyRe
                 _set(f"LLM_{tier}_MODEL", r.llm_model)
     else:
         result.blockers.append(
-            "llm: no free model ready - set OPENROUTER_API_KEY or run Ollama (docs/free_mode.md)"
+            "llm: no free model ready - run Ollama (OLLAMA_MODEL) or set OPENROUTER_API_KEY "
+            "(docs/free_mode.md)"
         )
 
-    # Signals — free backends for reddit + youtube_competitors; skip the paid rest.
+    # Signals — free backends for reddit + youtube_competitors, keyless DuckDuckGo for
+    # web search; skip only the paid signals that have no free backend.
     _set("SIGNAL_BACKEND", "free")
+    _set("WEB_SEARCH_BACKEND", _FREE_WEB_SEARCH_BACKEND)
     _set("CONTENT_SKIP_SIGNALS", _merge_skip(os.getenv("CONTENT_SKIP_SIGNALS", "")))
 
     return result
@@ -190,5 +219,10 @@ def format_readiness_line(r: Readiness | None = None) -> str:
     """One cp1252-safe line summarizing Free-mode readiness for the startup prompt."""
     r = r or free_backend_readiness()
     voice = f"voice={r.tts_provider} OK" if r.voice_ok else "voice=X (install Piper)"
-    llm = f"llm={r.llm_provider} OK" if r.llm_ok else "llm=X (set OPENROUTER_API_KEY)"
-    return f"Free ready:  {voice}   {llm}   signals=free OK"
+    if not r.llm_ok:
+        llm = "llm=X (run Ollama or set OPENROUTER_API_KEY)"
+    elif r.llm_local:
+        llm = f"llm={r.llm_provider} OK (local $0)"
+    else:
+        llm = f"llm={r.llm_provider} OK (free, throttled)"
+    return f"Free ready:  {voice}   {llm}   web=duckduckgo   signals=free"

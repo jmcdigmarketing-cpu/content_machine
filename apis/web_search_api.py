@@ -1,11 +1,13 @@
 """Live web search — fresh, verified facts for topics past the LLM training cutoff.
 
-Provider-agnostic: prefers Tavily (built for LLM grounding) and falls back to
-Brave Search. Either is near-free at this project's volume. The signal stays
-inactive (no_key) until a key is configured, so it is safe to ship unset.
+Provider-agnostic: keyed Tavily (built for LLM grounding) > keyed Brave, or a keyless
+DuckDuckGo backend for a truly-free ($0, no account) run. Selected via
+`WEB_SEARCH_BACKEND` (unset = keyed-only; Free mode sets `duckduckgo`). The signal stays
+inactive (no_key) until a provider is available, so it is safe to ship unset.
 
     TAVILY_API_KEY        — https://tavily.com (free tier ~1k searches/mo)
     BRAVE_SEARCH_API_KEY  — https://brave.com/search/api (free tier ~2k/mo)
+    WEB_SEARCH_BACKEND=duckduckgo  — keyless (pip install ddgs); best-effort, $0
 
 This is a *universal* signal (never domain-gated): it returns current facts and
 headlines that ground the script against stale training memory — the core fix for
@@ -42,12 +44,24 @@ def _brave_key() -> str:
     return (os.getenv("BRAVE_API_KEY") or os.getenv("BRAVE_SEARCH_API_KEY") or "").strip()
 
 
+def _web_backend() -> str:
+    """WEB_SEARCH_BACKEND=tavily|brave|duckduckgo|auto ('' = keyed-only, default)."""
+    return os.getenv("WEB_SEARCH_BACKEND", "").strip().lower()
+
+
 def _active_provider() -> str | None:
-    """Tavily preferred (LLM-tuned snippets + synthesized answer); Brave fallback."""
+    """Pick the search provider. `duckduckgo` is keyless (always available); otherwise
+    keyed Tavily > Brave; `auto` adds a keyless DuckDuckGo fallback when no key is set.
+    Default (no backend, no key) stays None → the signal reports no_key, unchanged."""
+    backend = _web_backend()
+    if backend == "duckduckgo":
+        return "duckduckgo"
     if _tavily_key():
         return "tavily"
     if _brave_key():
         return "brave"
+    if backend == "auto":
+        return "duckduckgo"  # keyless fallback, opt-in
     return None
 
 
@@ -102,6 +116,41 @@ def _brave_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]:
     return {"answer": "", "results": results}, None
 
 
+def _duckduckgo_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]:
+    """Keyless web search via DuckDuckGo (ddgs) — no API key or account. Same payload
+    shape as the keyed providers. Best-effort: DDG can throttle scrapers, so any failure
+    returns an error tuple and the signal fails open (never raises)."""
+    try:
+        from ddgs import DDGS
+    except ImportError:
+        try:
+            from duckduckgo_search import DDGS  # older package name
+        except ImportError:
+            return None, (STATUS_NO_KEY, "pip install ddgs for keyless web search")
+    try:
+        with DDGS() as ddgs:
+            hits = list(ddgs.text(topic, max_results=_MAX_RESULTS))
+    except Exception as exc:
+        return None, classify_exception(exc)
+    results = [
+        {
+            "title": (h.get("title") or "").strip(),
+            "snippet": (h.get("body") or "").strip(),
+            "url": h.get("href") or "",
+        }
+        for h in hits
+        if h.get("title") or h.get("body")
+    ]
+    return {"answer": "", "results": results}, None
+
+
+_SEARCHERS = {
+    "tavily": _tavily_search,
+    "brave": _brave_search,
+    "duckduckgo": _duckduckgo_search,
+}
+
+
 def get_web_search_signal(topic: str) -> dict:
     provider = _active_provider()
     if not provider:
@@ -118,7 +167,7 @@ def get_web_search_signal(topic: str) -> dict:
         return cached
 
     try:
-        payload, error = (_tavily_search if provider == "tavily" else _brave_search)(topic)
+        payload, error = _SEARCHERS[provider](topic)
         if error is not None:
             status, detail = error
             return make_signal(connected=False, active=False, status=status, status_detail=detail)

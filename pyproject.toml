@@ -63,6 +63,7 @@ providers = [
     "ultralytics>=8.0.0",   # auto-reframe — NOTE: AGPL-3.0, see core/reframe.py
     "pypdf>=4.0.0",         # PDF text extraction (core/vault_ingest.ingest_pdf)
     "youtube-transcript-api>=0.6.0",  # YouTube transcript ingest (core/vault_ingest)
+    "ddgs>=6.0.0",          # keyless DuckDuckGo web search (apis/web_search_api; Free mode)
 ]
 
 [project.scripts]

@@ -56,7 +56,8 @@ class TestApplyCostMode(unittest.TestCase):
             self.assertIn("tapology", skip)  # preserved
             self.assertIn("twitter", skip)  # added
             self.assertIn("tiktok_trends", skip)
-            self.assertIn("web_search", skip)
+            self.assertNotIn("web_search", skip)  # keyless DuckDuckGo backend -> not skipped
+            self.assertEqual(os.environ["WEB_SEARCH_BACKEND"], "duckduckgo")
 
     def test_missing_local_tts_blocks_and_never_sets_paid(self):
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -97,15 +98,50 @@ class TestReadiness(unittest.TestCase):
         finally:
             os.unlink(voice)
 
-    def test_free_llm_prefers_openrouter_then_ollama(self):
+    def test_free_llm_is_local_first(self):
+        # Ollama reachable -> preferred even when an OpenRouter key is also present.
+        with mock.patch.dict(
+            os.environ, {"OLLAMA_MODEL": "llama3.1", "OPENROUTER_API_KEY": "sk-or-x"}, clear=True
+        ):
+            with mock.patch.object(run_mode, "_ollama_ready", return_value=(True, "llama3.1")):
+                self.assertEqual(run_mode._free_llm(), ("ollama", "llama3.1"))
+        # Ollama down -> fall back to the (rate-limited) OpenRouter :free cloud tier.
         with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "sk-or-x"}, clear=True):
-            provider, model = run_mode._free_llm()
-            self.assertEqual(provider, "openrouter")
-            self.assertTrue(model.endswith(":free"))
-        with mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1"}, clear=True):
-            self.assertEqual(run_mode._free_llm(), ("ollama", "llama3.1"))
+            with mock.patch.object(run_mode, "_ollama_ready", return_value=(False, "")):
+                provider, model = run_mode._free_llm()
+                self.assertEqual(provider, "openrouter")
+                self.assertTrue(model.endswith(":free"))
+        # Neither -> none.
         with mock.patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(run_mode._free_llm(), (None, ""))
+            with mock.patch.object(run_mode, "_ollama_ready", return_value=(False, "")):
+                self.assertEqual(run_mode._free_llm(), (None, ""))
+
+    def test_ollama_ready_pings_the_server(self):
+        with mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1"}, clear=True):
+            with mock.patch("requests.get", return_value=mock.Mock(status_code=200)) as g:
+                self.assertEqual(run_mode._ollama_ready(), (True, "llama3.1"))
+                g.assert_called_once()
+            with mock.patch("requests.get", side_effect=OSError("connection refused")):
+                self.assertEqual(run_mode._ollama_ready(), (False, "llama3.1"))  # down -> not ready
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with mock.patch("requests.get") as g:
+                self.assertEqual(run_mode._ollama_ready(), (False, ""))  # no model -> no ping
+                g.assert_not_called()
+
+    def test_readiness_llm_local_flag_and_line(self):
+        with mock.patch.object(run_mode, "_free_llm", return_value=("ollama", "llama3.1")):
+            with (
+                mock.patch.object(run_mode, "_local_tts_available", return_value="piper"),
+                mock.patch("apis.free_backends.reddit_available", return_value=False),
+                mock.patch("apis.free_backends.youtube_available", return_value=True),
+            ):
+                r = run_mode.free_backend_readiness()
+        self.assertTrue(r.llm_local)
+        self.assertIn("local $0", run_mode.format_readiness_line(r))
+        cloud = run_mode.Readiness(
+            tts_provider="piper", llm_provider="openrouter", llm_model="x:free", llm_local=False
+        )
+        self.assertIn("throttled", run_mode.format_readiness_line(cloud))
 
 
 class TestSkipSignalsPerCall(unittest.TestCase):
@@ -169,6 +205,23 @@ class TestLlmStrictChain(unittest.TestCase):
         with mock.patch.dict(os.environ, env, clear=True):
             provider, _ = self.router.resolve_tier("premium")
             self.assertEqual(provider, "deepseek")  # unchanged behavior
+
+
+class TestFreeDoctor(unittest.TestCase):
+    def test_runs_clean_with_nothing_installed(self):
+        import argparse
+
+        from scripts import ops
+
+        with (
+            mock.patch.object(run_mode, "_ollama_ready", return_value=(False, "")),
+            mock.patch.object(run_mode, "_local_tts_available", return_value=None),
+            mock.patch("apis.free_backends.reddit_available", return_value=False),
+            mock.patch("apis.free_backends.youtube_available", return_value=True),
+            mock.patch.dict(os.environ, {}, clear=True),
+        ):
+            rc = ops.cmd_free_doctor(argparse.Namespace())
+        self.assertEqual(rc, 0)  # never raises, even with nothing installed
 
 
 if __name__ == "__main__":

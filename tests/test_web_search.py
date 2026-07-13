@@ -1,5 +1,6 @@
 """Tests for the provider-agnostic web search signal and its fact rendering."""
 
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -85,6 +86,49 @@ class TestBraveFetch(unittest.TestCase):
         self.assertTrue(sig["active"])
         self.assertEqual(sig["data"]["provider"], "brave")
         self.assertEqual(sig["data"]["results"][0]["title"], "Game patch")
+
+
+class TestDuckDuckGoBackend(unittest.TestCase):
+    def test_backend_selects_keyless_duckduckgo(self):
+        with patch.dict("os.environ", {"WEB_SEARCH_BACKEND": "duckduckgo"}, clear=True):
+            self.assertEqual(ws._active_provider(), "duckduckgo")
+
+    def test_auto_falls_back_to_ddg_without_key(self):
+        with patch.dict("os.environ", {"WEB_SEARCH_BACKEND": "auto"}, clear=True):
+            self.assertEqual(ws._active_provider(), "duckduckgo")
+
+    def test_default_unchanged_no_backend_no_key(self):
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertIsNone(ws._active_provider())  # existing behavior preserved
+
+    @patch("apis.web_search_api.get_cached", return_value=None)
+    @patch("apis.web_search_api.set_cache")
+    def test_ddg_active_signal(self, _set, _get):
+        ddgs_cls = MagicMock()
+        ddgs_cls.return_value.__enter__.return_value.text.return_value = [
+            {"title": "Marvel Rivals S9", "body": "Jubilee joins the roster.", "href": "u1"},
+            {"title": "Patch notes", "body": "80% of roster changed.", "href": "u2"},
+        ]
+        mod = types.ModuleType("ddgs")
+        mod.DDGS = ddgs_cls
+        with (
+            patch.dict("os.environ", {"WEB_SEARCH_BACKEND": "duckduckgo"}, clear=True),
+            patch.dict("sys.modules", {"ddgs": mod}),
+        ):
+            sig = ws.get_web_search_signal("Marvel Rivals S9")
+        self.assertTrue(sig["active"])
+        self.assertEqual(sig["data"]["provider"], "duckduckgo")
+        self.assertEqual(len(sig["data"]["results"]), 2)
+
+    @patch("apis.web_search_api.get_cached", return_value=None)
+    def test_ddg_missing_lib_fails_open(self, _get):
+        with (
+            patch.dict("os.environ", {"WEB_SEARCH_BACKEND": "duckduckgo"}, clear=True),
+            patch.dict("sys.modules", {"ddgs": None, "duckduckgo_search": None}),
+        ):
+            sig = ws.get_web_search_signal("topic")  # must not raise
+        self.assertFalse(sig["active"])
+        self.assertEqual(sig["status"], STATUS_NO_KEY)
 
 
 class TestWebSearchFactRendering(unittest.TestCase):

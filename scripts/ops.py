@@ -175,6 +175,68 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("free-doctor", "Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo")
+def cmd_free_doctor(_args: argparse.Namespace) -> int:
+    import importlib.util
+    import os
+
+    import config.settings  # noqa: F401  # load .env so configured keys are seen
+    from core.run_mode import _ollama_ready, free_backend_readiness
+
+    r = free_backend_readiness()
+    print("Truly-free ($0) readiness")
+    print("=" * 48)
+
+    ready, model = _ollama_ready()
+    if ready:
+        print(f"  LLM        : OK  ollama (local, unlimited) - model {model}")
+    elif os.getenv("OLLAMA_MODEL", "").strip():
+        print(
+            f"  LLM        : X   OLLAMA_MODEL={os.getenv('OLLAMA_MODEL')} set, server unreachable"
+        )
+        print("                   start it: `ollama serve` (+ `ollama pull <model>`)")
+    elif os.getenv("OPENROUTER_API_KEY", "").strip():
+        print("  LLM        : ~   openrouter :free (cloud, RATE-LIMITED) - not truly free")
+        print("                   for unlimited $0: install Ollama, `ollama pull llama3.1:8b`,")
+        print("                   then set OLLAMA_MODEL=llama3.1:8b")
+    else:
+        print("  LLM        : X   no free LLM")
+        print("                   install Ollama, `ollama pull llama3.1:8b`, set OLLAMA_MODEL")
+
+    if r.tts_provider:
+        print(f"  Voice      : OK  {r.tts_provider} (local)")
+    else:
+        print("  Voice      : X   no local TTS")
+        print("                   pip install piper-tts ; set PIPER_VOICE=<voice.onnx>")
+
+    if r.youtube_free:
+        print("  YouTube    : OK  yt-dlp (keyless)")
+    else:
+        print("  YouTube    : X   pip install yt-dlp")
+
+    if r.reddit_free:
+        print("  Reddit     : OK  official OAuth (free)")
+    else:
+        print("  Reddit     : -   optional; set REDDIT_CLIENT_ID/REDDIT_CLIENT_SECRET (free app)")
+
+    ddgs_ok = (
+        importlib.util.find_spec("ddgs") is not None
+        or importlib.util.find_spec("duckduckgo_search") is not None
+    )
+    if ddgs_ok:
+        print("  Web search : OK  duckduckgo (keyless)")
+    else:
+        print("  Web search : X   pip install ddgs")
+
+    truly_free = bool(ready and r.tts_provider and r.youtube_free and ddgs_ok)
+    print("=" * 48)
+    if truly_free:
+        print("  Ready for a truly-free ($0) run:  py main.py -> Free ($0)")
+    else:
+        print("  Not fully free yet - resolve the X lines above (docs/free_mode.md).")
+    return 0
+
+
 @_register("traces", "Recent run traces — timings, LLM cost, quality, hotspots (Pillar 1)")
 def cmd_traces(args: argparse.Namespace) -> int:
     from core.run_ledger import render_traces

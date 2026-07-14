@@ -49,6 +49,15 @@ sports = [
     "nfl_data_py>=0.3.0",
     "pybaseball>=2.2.7",
 ]
+# Truly-free ($0) stack — lightweight, installs clean (no heavy ML deps, no numpy
+# conflicts). This is all Free mode needs besides Ollama (a separate binary):
+#   pip install -e ".[free]"
+free = [
+    "piper-tts>=1.2.0",     # local TTS, CPU/ONNX — no torch (TTS_PROVIDER=piper)
+    "soundfile>=0.12.1",    # write local-TTS wav
+    "ddgs>=6.0.0",          # keyless DuckDuckGo web search (apis/web_search_api; Free mode)
+]
+
 # Pillar 6 video-creation provider backends (heavy / GPU). Install on demand:
 #   pip install -e ".[providers]"
 # Each is lazy-imported behind an env gate (see docs/providers_runbook.md); absence
@@ -59,12 +68,17 @@ providers = [
     "soundfile>=0.12.1",    # write local-TTS / music wav
     "whisperx",             # word-level caption alignment (core/caption_align.py)
     "audiocraft",           # MusicGen music beds (core/music.py)
-    "TTS>=0.22.0",          # XTTS-v2 voice clone (core/tts.py TTS_PROVIDER=xtts)
     "ultralytics>=8.0.0",   # auto-reframe — NOTE: AGPL-3.0, see core/reframe.py
     "pypdf>=4.0.0",         # PDF text extraction (core/vault_ingest.ingest_pdf)
     "youtube-transcript-api>=0.6.0",  # YouTube transcript ingest (core/vault_ingest)
     "ddgs>=6.0.0",          # keyless DuckDuckGo web search (apis/web_search_api; Free mode)
 ]
+
+# XTTS-v2 voice clone (Coqui TTS, core/tts.py TTS_PROVIDER=xtts). Kept OUT of
+# [providers] because its `gruut` dep pins numpy<2.0, which conflicts with the
+# project's numpy==2.4.4 — install in a SEPARATE venv if you actually need XTTS.
+# Piper (in [free]) is the recommended local voice.
+xtts = ["TTS>=0.22.0"]
 
 [project.scripts]
 content-machine = "main:main"

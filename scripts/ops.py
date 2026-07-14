@@ -205,9 +205,11 @@ def cmd_free_doctor(_args: argparse.Namespace) -> int:
 
     if r.tts_provider:
         print(f"  Voice      : OK  {r.tts_provider} (local)")
+    elif importlib.util.find_spec("piper") is not None:
+        print("  Voice      : X   piper installed, but PIPER_VOICE not set / file missing")
+        print("                   download a voice .onnx (Piper releases), set PIPER_VOICE=<path>")
     else:
-        print("  Voice      : X   no local TTS")
-        print("                   pip install piper-tts ; set PIPER_VOICE=<voice.onnx>")
+        print('  Voice      : X   pip install -e ".[free]" ; set PIPER_VOICE=<voice.onnx>')
 
     if r.youtube_free:
         print("  YouTube    : OK  yt-dlp (keyless)")
@@ -226,7 +228,7 @@ def cmd_free_doctor(_args: argparse.Namespace) -> int:
     if ddgs_ok:
         print("  Web search : OK  duckduckgo (keyless)")
     else:
-        print("  Web search : X   pip install ddgs")
+        print('  Web search : X   pip install -e ".[free]"  (or: pip install ddgs)')
 
     truly_free = bool(ready and r.tts_provider and r.youtube_free and ddgs_ok)
     print("=" * 48)

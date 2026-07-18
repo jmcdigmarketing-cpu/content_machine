@@ -1,16 +1,17 @@
-# Handoff synopsis — 2026-07-08: Pillar 6 baseline seams + goose3 (after Pillars 1–5)
+# Handoff synopsis — 2026-07-17: Pillar 6 mostly shipped + local-TTS voice variety (after Pillars 1–5)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
-- **Branch:** `feat/reddit-free-backend-and-signal-persistence` → `main`
-- **Suite:** 892 tests green · **Pre-PR:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
-- This branch carries: morning (free backends, batch/A/B, webhooks, O11), afternoon
-  (Pillars 1–3), **Pillar 4** (Obsidian knowledge OS), **live-run hardening** (link
-  scrape, domain/key-fact drift, grounding noise), and **Pillar 6 baseline provider
-  seams + goose3 grounding** (2026-07-08). Prior wave (fact-first, O10, coach, UI themes)
-  merged via PR #24.
+- **Branch:** `main` (Pillars 1–6 merged; tree clean)
+- **Suite:** 1064 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
+  **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
+  `analyst` / `overnight`), **live-run hardening**, and **Pillar 6** — baseline provider
+  seams + goose3 (2026-07-08), then seam→live-path wiring (U1 whisper align, U3 music bed,
+  U4 AI-video slot, U5 thumbnail chain + dual-format render, U8 n8n recipes, U9 earnings
+  signal), local TTS (2026-07-09), and **local-TTS voice variety** (2026-07-17).
 
 ---
 
@@ -59,6 +60,24 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 - `py -m scripts.ops reliability` — dashboard (breakers, budgets, persisted disables, resets, cache)
 
 ---
+
+## Shipped 2026-07-17 (Pillar 6 — local-TTS voice variety + doc reconciliation)
+
+1. **Voice variety** — `core/tts.resolve_local_voice(provider, channel_id)` mirrors the
+   ElevenLabs per-channel/pool pattern for the local providers: per-channel
+   `channels.json` `tts.local_voice` / `tts.local_voices` (pool rotates per run) →
+   global env pool (`PIPER_VOICES` / `KOKORO_VOICES` / `XTTS_SPEAKERS`, csv) → the single
+   env (`PIPER_VOICE` etc.) — so the fallback is byte-identical to before. Threaded into
+   `_piper_synth` / `_kokoro_synth` / `_xtts_synth`. Optional run-seeded delivery jitter
+   (`TTS_VOICE_VARIETY`, default off; `_variety_speed_factor` in a 0.94–1.06 band).
+2. **Piper API fix** — the installed piper's `synthesize()` returns audio chunks and takes
+   no wav file; `_piper_write_wav` now uses `synthesize_wav(text, wav_file, syn_config=…)`
+   with a legacy `synthesize(text, wav_file)` fallback. This also carries the jitter config.
+3. **Config** — `ChannelProfile.local_tts_voice` / `local_tts_voices` (default None; existing
+   `config/channels.json` unchanged). Tests: `tests/test_tts_voice_variety.py` (21).
+4. **Doc reconciliation** — roadmap Pillar 6 + `providers_runbook.md` status map now match
+   git: seams wired into live paths marked so, GPU-only backends marked **parked (needs a
+   GPU box)**, clip-from-source + storyboard marked not-started.
 
 ## Shipped 2026-07-08 (this branch — Pillar 6 baseline seams + goose3)
 
@@ -173,12 +192,16 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 ***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
-1. **Pillar 6 — Video Creation Provider Layer** (decisions §17, overrides §8):
-   **baseline seams + goose3 landed 2026-07-08** ([providers_runbook.md](providers_runbook.md)).
-   Next = implement a backend behind a seam: TTS local Kokoro (cost lever, `TTS_PROVIDER`),
-   then Whisper alignment, music bed, AI video-gen via ComfyUI. Full tool list + build
-   order: [video_creation_stack.md](video_creation_stack.md). Excluded: Higgsfield +
-   `[search github]` repos.
+1. **Pillar 6 — Video Creation Provider Layer** (decisions §17, overrides §8): the
+   seam→live-path wiring is **done** for every slot (U1–U9; local TTS + voice variety
+   shipped) — see the reconciled roadmap + [providers_runbook.md](providers_runbook.md).
+   What's left is **backend + feature work that needs a GPU box** (can't be verified on the
+   Windows/CPU dev machine, so each stays OFF and fails open): real WhisperX / MusicGen /
+   ComfyUI-Wan-LTX AI-video / YOLO auto-reframe / avatar / Real-ESRGAN·RIFE upscaling — plus
+   two **not-started** items: **clip-from-source (Phase R)** and **storyboard shot-lists**
+   (build storyboard *with* the AI-video backend — its real consumer; cinematic prose hurts
+   keyword stock search). Full tool list + build order:
+   [video_creation_stack.md](video_creation_stack.md). Excluded: Higgsfield + `[search github]` repos.
 2. **Pillar 2 remainder**: multimodal rendered-video review *(needs router vision path)*;
    calibration/predictor activate as measured volume accrues.
 3. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,

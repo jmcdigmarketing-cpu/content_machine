@@ -1,7 +1,10 @@
 import base64
+import datetime
+import hashlib
 import json
 import os
 import random
+from typing import Any
 
 from elevenlabs.client import ElevenLabs
 
@@ -118,10 +121,113 @@ def _free_mode_strict() -> bool:
 
 _LOCAL_TTS_PROVIDERS = ("kokoro", "xtts", "piper")
 
+# Per-channel local voice → global env fallback. Value semantics depend on the provider:
+# Piper → a .onnx path, Kokoro → a voice name (e.g. "af_heart"), XTTS → a speaker wav.
+_LOCAL_VOICE_ENV = {"piper": "PIPER_VOICE", "kokoro": "KOKORO_VOICE", "xtts": "XTTS_SPEAKER_WAV"}
+_LOCAL_VOICE_POOL_ENV = {
+    "piper": "PIPER_VOICES",
+    "kokoro": "KOKORO_VOICES",
+    "xtts": "XTTS_SPEAKERS",
+}
+
+# Delivery-variation speed band (TTS_VOICE_VARIETY). Narrow enough to never hurt
+# intelligibility; a factor > 1 speeds delivery up, < 1 slows it down.
+_VARIETY_MIN, _VARIETY_MAX = 0.94, 1.06
+
 
 def is_local_tts_provider() -> bool:
     """True when TTS_PROVIDER selects a local (zero-marginal-cost) voice backend."""
     return _resolve_tts_provider() in _LOCAL_TTS_PROVIDERS
+
+
+def _env_pool(env_key: str) -> list[str]:
+    return [v.strip() for v in (os.getenv(env_key, "") or "").split(",") if v.strip()]
+
+
+def resolve_local_voice(provider: str, channel_id: str | None = None) -> str | None:
+    """Resolve the local voice for a channel + provider, or None to use the synth default.
+
+    Precedence mirrors the ElevenLabs per-channel/pool pattern in `resolve_tts_config`:
+      1. per-channel config (`channels.json` `tts.local_voices` pool → rotates per run =
+         delivery variation; or `tts.local_voice` single value);
+      2. global env pool — PIPER_VOICES / KOKORO_VOICES / XTTS_SPEAKERS (csv, rotates);
+      3. global env single — PIPER_VOICE / KOKORO_VOICE / XTTS_SPEAKER_WAV.
+    Step 3 means when nothing new is configured this returns exactly today's value, so
+    the synths stay byte-identical. Fail-open: any profile-load error drops to the env
+    forms; never raises.
+    """
+    provider = (provider or "").strip().lower()
+    if provider not in _LOCAL_TTS_PROVIDERS:
+        return None
+    try:
+        profile = get_channel_profile(channel_id)
+    except Exception:
+        profile = None
+    if profile is not None:
+        if profile.local_tts_voices:
+            return random.choice(list(profile.local_tts_voices))
+        if profile.local_tts_voice:
+            return profile.local_tts_voice
+    pool = _env_pool(_LOCAL_VOICE_POOL_ENV.get(provider, ""))
+    if pool:
+        return random.choice(pool)
+    single = (os.getenv(_LOCAL_VOICE_ENV.get(provider, ""), "") or "").strip()
+    return single or None
+
+
+def _voice_variety_enabled() -> bool:
+    return os.getenv("TTS_VOICE_VARIETY", "").strip().lower() in ("1", "true", "yes")
+
+
+def _variety_speed_factor(channel_id: str | None = None, *, seed: str | None = None) -> float:
+    """Stable speed factor in [_VARIETY_MIN, _VARIETY_MAX], or exactly 1.0 when off.
+
+    Deterministic in `seed` (default: today + channel) so a re-render reproduces the same
+    delivery while different videos / channels / days differ — variation without random
+    intelligibility risk. Returns 1.0 (a no-op) unless TTS_VOICE_VARIETY is set.
+    """
+    if not _voice_variety_enabled():
+        return 1.0
+    key = seed or f"{datetime.date.today().isoformat()}:{channel_id or 'default'}"
+    bucket = int(hashlib.sha256(key.encode("utf-8")).hexdigest(), 16) % 1000
+    return round(_VARIETY_MIN + (bucket / 999) * (_VARIETY_MAX - _VARIETY_MIN), 4)
+
+
+def _piper_syn_config(factor: float):
+    """A piper `SynthesisConfig` applying the variety speed factor, or None (plain synth).
+
+    `length_scale` is the inverse of speed (> 1 slower). Returns None when variety is a
+    no-op or the installed piper lacks `SynthesisConfig`, so the plain synth call is
+    always the fallback.
+    """
+    if factor == 1.0:
+        return None
+    try:
+        from piper import SynthesisConfig
+    except Exception:
+        return None
+    try:
+        return SynthesisConfig(length_scale=round(1.0 / factor, 4))
+    except Exception:
+        return None
+
+
+def _piper_write_wav(voice: Any, script: str, wav_file, syn_config) -> None:
+    """Write Piper audio into an open wave file across piper API generations.
+
+    Current piper (>=1.3) exposes `synthesize_wav(text, wav_file, syn_config=...)` and its
+    bare `synthesize` returns audio chunks (no wav_file); older piper wrote via
+    `synthesize(text, wav_file)`. `syn_config` carries the optional delivery-jitter speed;
+    a plain call is always the fallback so jitter can never break synthesis.
+    """
+    synth_wav = getattr(voice, "synthesize_wav", None)
+    if callable(synth_wav):
+        if syn_config is not None:
+            synth_wav(script, wav_file, syn_config=syn_config)
+        else:
+            synth_wav(script, wav_file)
+        return
+    voice.synthesize(script, wav_file)  # legacy piper API (voice is Any → mypy-safe)
 
 
 def _transcode_to_mp3(src_path: str, output_path: str) -> str | None:
@@ -163,8 +269,16 @@ def _kokoro_synth(script: str, output_path: str, channel_id: str | None) -> str 
     from kokoro import KPipeline
 
     pipeline = KPipeline(lang_code=os.getenv("KOKORO_LANG", "a"))
-    voice = os.getenv("KOKORO_VOICE", "af_heart")
-    chunks = [audio for _, _, audio in pipeline(script, voice=voice)]
+    voice = resolve_local_voice("kokoro", channel_id) or "af_heart"
+    speed = _variety_speed_factor(channel_id, seed=output_path)
+    try:
+        if speed != 1.0:
+            gen = pipeline(script, voice=voice, speed=speed)
+        else:
+            gen = pipeline(script, voice=voice)
+    except TypeError:  # older kokoro without a speed kwarg — delivery jitter is best-effort
+        gen = pipeline(script, voice=voice)
+    chunks = [audio for _, _, audio in gen]
     if not chunks:
         return None
     wav_path = _tmp_wav_path(output_path)
@@ -176,14 +290,25 @@ def _xtts_synth(script: str, output_path: str, channel_id: str | None) -> str | 
     """Local XTTS-v2 voice clone (optional extra: TTS). Needs XTTS_SPEAKER_WAV set."""
     from TTS.api import TTS
 
-    speaker = os.getenv("XTTS_SPEAKER_WAV")
+    speaker = resolve_local_voice("xtts", channel_id)
     if not speaker:
         return None
     wav_path = _tmp_wav_path(output_path)
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-    tts.tts_to_file(
-        text=script, speaker_wav=speaker, language=os.getenv("XTTS_LANG", "en"), file_path=wav_path
-    )
+    kwargs = {
+        "text": script,
+        "speaker_wav": speaker,
+        "language": os.getenv("XTTS_LANG", "en"),
+        "file_path": wav_path,
+    }
+    speed = _variety_speed_factor(channel_id, seed=output_path)
+    try:
+        if speed != 1.0:
+            tts.tts_to_file(**kwargs, speed=speed)
+        else:
+            tts.tts_to_file(**kwargs)
+    except TypeError:  # model/version without a speed kwarg — jitter is best-effort
+        tts.tts_to_file(**kwargs)
     return _transcode_to_mp3(wav_path, output_path)
 
 
@@ -196,7 +321,7 @@ def _piper_synth(script: str, output_path: str, channel_id: str | None) -> str |
     """
     import wave
 
-    model = os.getenv("PIPER_VOICE", "").strip()
+    model = (resolve_local_voice("piper", channel_id) or "").strip()
     if not model or not os.path.isfile(model):
         logger.warning("TTS_PROVIDER=piper needs PIPER_VOICE=<path/to/voice.onnx>")
         return None
@@ -205,8 +330,9 @@ def _piper_synth(script: str, output_path: str, channel_id: str | None) -> str |
 
     voice = PiperVoice.load(model)
     wav_path = _tmp_wav_path(output_path)
+    syn_config = _piper_syn_config(_variety_speed_factor(channel_id, seed=output_path))
     with wave.open(wav_path, "wb") as wav_file:
-        voice.synthesize(script, wav_file)
+        _piper_write_wav(voice, script, wav_file, syn_config)
     return _transcode_to_mp3(wav_path, output_path)
 
 

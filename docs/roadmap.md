@@ -11,7 +11,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-07 — **Pillar 4 (Obsidian knowledge OS) shipped**: run dossiers + weekly reports into the vault, mtime-cached vault index, playbook read path into the script prompt. 846 tests green. Earlier: **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete** on `feat/reddit-free-backend-and-signal-persistence`.
+Last updated: 2026-07-17 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1064 tests green. Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -495,22 +495,43 @@ Higgsfield (paid) + the `[search github]` repos. Heavy backends →
 `pip install -e ".[providers]"`; each seam stays OFF until its gate is set.*
 *3-month north star (new tools + roadmap + adjacent projects + code-sharing):
 [groundwork_2026Q3.md](groundwork_2026Q3.md).*
-- [x] **TTS provider chain + local (Kokoro/XTTS/Piper)** — *shipped 2026-07-09:*
-  local providers synth → transcode to the render's mp3 (`core/tts.py`), fail-open
-  to ElevenLabs, metered **$0** in `cost_meter` (was ~96% of run cost). **Piper**
-  is the CPU-only path (no torch/GPU); Kokoro/XTTS for a GPU box. Voice-variety
-  (per-channel local voices) still open.
-- [ ] **Whisper local alignment** — word timing for any TTS + enables clip-from-source.
-- [ ] **Music/SFX bed** (MusicGen local / Suno / ElevenLabs) — big perceived-quality jump.
-- [ ] **AI video-gen slot** — `assets/composite` provider for Veo 3.1 / Kling / Runway
-  (or local Wan / LTX-Video) per scene beat; fail-open to stock. *(headline upgrade)*
-- [ ] **Thumbnail text-models** (Ideogram/Recraft) + **dual-format render** (9:16/16:9/1:1).
-- [ ] **Clip-from-source (Phase R)** + subject-tracked auto-reframe.
+
+*Status honesty (2026-07-17 reconciliation): the seam→live-path wiring is done for
+every slot below (U1–U9). The remaining `[ ]` items split into **live wiring shipped,
+heavy backend parked** (each seam runs today and fails open to the current behavior; its
+real backend — WhisperX / MusicGen / ComfyUI-Wan-LTX / YOLO / avatar / Real-ESRGAN·RIFE —
+needs a **GPU box + `[providers]` install** and can't be verified on the Windows/CPU dev
+box, so it stays OFF) and **not started** (clip-from-source, storyboard).*
+- [x] **TTS provider chain + local (Kokoro/XTTS/Piper)** — *shipped 2026-07-09; voice
+  variety 2026-07-17:* local providers synth → transcode to the render's mp3
+  (`core/tts.py`), fail-open to ElevenLabs, metered **$0** in `cost_meter` (was ~96% of
+  run cost). **Piper** is the CPU-only path (no torch/GPU); Kokoro/XTTS for a GPU box.
+  **Voice variety (done):** per-channel local voice + pool rotation
+  (`resolve_local_voice`, `channels.json` `tts.local_voice(s)` → `PIPER_VOICES` env) +
+  optional run-seeded delivery jitter (`TTS_VOICE_VARIETY`, default off); fixed the
+  Piper `synthesize_wav` API path. Real-voice clone slot (XTTS) still optional.
+- [x] **Whisper local alignment** — *wired (U1):* `video/subtitles.py` →
+  `core/caption_align.py` (`CAPTION_ALIGN_BACKEND=whisperx`); word timing for any TTS,
+  fail-open to the proportional/ElevenLabs path. *Backend parked (GPU/torch extra).*
+- [x] **Music/SFX bed** — *wired (U3):* `MUSIC_PROVIDER` bed ducked under the VO in the
+  render command (`video/render_video.py`), retries VO-only on any mix failure.
+  *MusicGen backend parked (GPU extra); ElevenLabs/Suno are paid opt-ins.*
+- [x] **AI video-gen slot** — *registered (U4):* `assets/ai_video_provider.py` in the
+  asset chain via `AI_VIDEO_PROVIDER`, routed through one `core/comfy_client.py` HTTP
+  endpoint, fail-open to stock. *Real ComfyUI/Wan/LTX backend parked — needs a GPU box.*
+- [x] **Thumbnail text-models + dual-format render** — *shipped (U5 + render profiles):*
+  `THUMBNAIL_PROVIDER` chain (ideogram/recraft → flux → pillow); **dual-format render**
+  emits 16:9 / 1:1 siblings from the same bg/VO/captions (`video/render_profiles.py`,
+  `RENDER_FORMATS`, fail-open — the 9:16 primary is untouched).
+- [ ] **Clip-from-source (Phase R)** + subject-tracked auto-reframe — *not started;
+  auto-reframe seam is `core/reframe.py` (YOLO/AGPL, GPU). Deprioritized this pass.*
 - [ ] **Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists** — polish tiers.
-- [ ] **Distribution/ingestion borrows** — `goose3` scrape **shipped**
-  (`core/link_facts.py`); multi-source vault importer seam (`core/vault_ingest.py`);
-  n8n recipes ride the existing `core/events.py` webhooks (see
-  [tooling_landscape.md](tooling_landscape.md)).
+  *Avatar/upscaling = seams parked (GPU + `[search github]` repos). Storyboard = build
+  with the AI-video backend (its real consumer; prose hurts keyword stock search).*
+- [x] **Distribution/ingestion borrows** — *shipped:* `goose3` scrape
+  (`core/link_facts.py`); **multi-source vault importer** (`core/vault_ingest.py` —
+  URL/PDF/YouTube → provenance-tagged vault note, `ops ingest`); n8n recipes ride the
+  existing `core/events.py` webhooks (see [tooling_landscape.md](tooling_landscape.md)).
 
 ### Supporting track — API & efficiency (not a pillar)
 *The credit/quota layer is in good shape post-O11; these stay incremental.*

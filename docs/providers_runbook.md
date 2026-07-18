@@ -31,13 +31,14 @@ gate are supplied · `excluded` = deliberately not integrated this pass.
 |---|---|---|---|---|
 | **goose3** | [core/link_facts.py](../core/link_facts.py) `_goose3_body_lines` | (always on; falls back) | `python -m unittest tests.test_link_facts_goose3` | **implemented** |
 | Kokoro-82M / XTTS-v2 / **Piper** | [core/tts.py](../core/tts.py) `_try_alt_tts_provider` | `TTS_PROVIDER=piper\|kokoro\|xtts` (+ `PIPER_VOICE=…onnx`) | `python -m unittest tests.test_tts_local`; live: set gate, render → real mp3 + `tts $0.0000` | **implemented** |
-| WhisperX | [core/caption_align.py](../core/caption_align.py) | `CAPTION_ALIGN_BACKEND=whisperx` | `transcribe_and_align(audio)` returns word segments | seam |
-| anything-to-notebooklm | [core/vault_ingest.py](../core/vault_ingest.py) | `INGEST_ENABLED` (auto only) | `python -c "from core.vault_ingest import ingest_url; print(ingest_url('https://www.bbc.com/news'))"` | seam (`ingest_url` real) |
+| **Voice variety** (per-channel + jitter) | [core/tts.py](../core/tts.py) `resolve_local_voice` | `channels.json` `tts.local_voice(s)` / `PIPER_VOICES` (csv) + `TTS_VOICE_VARIETY` (off) | `python -m unittest tests.test_tts_voice_variety`; live: two channels → distinct `[TTS]` voice | **implemented** |
+| WhisperX | [core/caption_align.py](../core/caption_align.py) | `CAPTION_ALIGN_BACKEND=whisperx` | `transcribe_and_align(audio)` returns word segments | **wired** (U1: subtitle path; backend parked — GPU/torch) |
+| anything-to-notebooklm | [core/vault_ingest.py](../core/vault_ingest.py) | `INGEST_ENABLED` (auto only) | `python -c "from core.vault_ingest import ingest; print(ingest('https://www.bbc.com/news'))"` | **implemented** (URL/PDF/YouTube → vault note, `ops ingest`) |
 | Expert Panel (ai-marketing-skills) | [core/grade.py](../core/grade.py) | `EXPERT_PANEL_ENABLED` | add persona to `prompts/expert_panel/`, `expert_panel_review(draft)` | seam |
 | ComfyUI | [core/comfy_client.py](../core/comfy_client.py) | `COMFYUI_URL` | run ComfyUI, `generate(prompt, workflow=...)` | seam |
 | LTX-Video | [workflows/](../workflows/README.md) + comfy_client | `AI_VIDEO_PROVIDER=comfyui` | export `workflows/ltx_broll.json`, submit via comfy_client | seam |
-| AI video-gen slot | [assets/ai_video_provider.py](../assets/ai_video_provider.py) | `AI_VIDEO_PROVIDER` | register in `assets/manager._PROVIDERS`, add to `ASSET_PROVIDER_ORDER` | seam (not registered) |
-| MusicGen | [core/music.py](../core/music.py) | `MUSIC_PROVIDER=musicgen` | `generate_bed('calm', 10)` returns a wav path | seam |
+| AI video-gen slot | [assets/ai_video_provider.py](../assets/ai_video_provider.py) | `AI_VIDEO_PROVIDER` | registered in the asset chain, routes via `core/comfy_client` | **wired** (U4; ComfyUI/Wan/LTX backend parked — GPU) |
+| MusicGen | [core/music.py](../core/music.py) | `MUSIC_PROVIDER=musicgen` | `generate_bed('calm', 10)` returns a wav path | **wired** (U3: ducked under VO in render; backend parked — GPU) |
 | system_prompts_leaks | [core/run_eval_corpus.py](../core/run_eval_corpus.py) | (`EVAL_CORPUS_LLM` for scoring) | drop cases in `prompts/eval_corpus/`, `py -m core.run_eval_corpus` | seam |
 | LatentSync (avatar) | [core/avatar.py](../core/avatar.py) | `AVATAR_PROVIDER` | — (real-likeness ⇒ must trip AI disclosure) | seam |
 | Ultralytics YOLO (auto-reframe) | [core/reframe.py](../core/reframe.py) | `REFRAME_ENABLED` | — (**AGPL** — license check before shipping) | seam |

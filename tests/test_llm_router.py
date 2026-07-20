@@ -342,6 +342,106 @@ class TestFailover(unittest.TestCase):
         self.assertEqual(calls, ["deepseek"])  # pinned — no failover
 
 
+class _MessageError(Exception):
+    """Provider error carrying both a status and a message (some report 400 for models)."""
+
+    def __init__(self, status: int, message: str):
+        super().__init__(message)
+        self.status_code = status
+
+
+class TestModelUnavailable(unittest.TestCase):
+    """A retired model slug (404) must fail over, not kill the run.
+
+    Regression: OpenRouter retired `…:free`, returning 404. That classified as "other",
+    which skipped failover and raised a raw provider error mid-pipeline.
+    """
+
+    def setUp(self):
+        llm_router.reset_usage()
+        llm_router.reset_llm_breaker()
+
+    def tearDown(self):
+        llm_router.reset_llm_breaker()
+
+    def test_404_classifies_as_model_unavailable(self):
+        self.assertEqual(llm_router._classify_llm_error(_status_error(404)), "model_unavailable")
+
+    def test_400_with_model_message_classifies_as_model_unavailable(self):
+        exc = _MessageError(400, "The model `foo:free` is not found or unavailable")
+        self.assertEqual(llm_router._classify_llm_error(exc), "model_unavailable")
+
+    def test_plain_400_still_propagates_as_other(self):
+        # A genuine bad request must NOT be masked by failover.
+        self.assertEqual(llm_router._classify_llm_error(_status_error(400)), "other")
+
+    def test_404_fails_over_to_next_provider(self):
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+        calls = []
+
+        def fake(provider, model, messages, **kwargs):
+            calls.append(provider)
+            if provider == "openrouter":
+                raise _status_error(404)
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                out = llm_router.complete("hi", tier="cheap")
+        self.assertEqual(out, "ok")
+        self.assertEqual(calls, ["openrouter", "deepseek"])
+
+    def test_404_does_not_disable_whole_provider(self):
+        # Only the dead *model* is skipped — OpenRouter's other models/tiers still work.
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+
+        def fake(provider, model, messages, **kwargs):
+            if provider == "openrouter":
+                raise _status_error(404)
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("hi", tier="cheap")
+        self.assertFalse(llm_router._llm_disabled("openrouter"))
+
+    def test_dead_model_skipped_on_later_calls(self):
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+        calls = []
+
+        def fake(provider, model, messages, **kwargs):
+            calls.append(provider)
+            if provider == "openrouter":
+                raise _status_error(404)
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("one", tier="cheap")
+                calls.clear()
+                out = llm_router.complete("two", tier="cheap")
+        self.assertEqual(out, "ok")
+        # Second call must not repeat the known-dead 404 round-trip.
+        self.assertEqual(calls, ["deepseek"])
+
+    def test_all_models_dead_raises_unavailable(self):
+        env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
+
+        def fake(provider, model, messages, **kwargs):
+            raise _status_error(404)
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                with self.assertRaises(llm_router.LLMUnavailableError):
+                    llm_router.complete("hi", tier="cheap")
+
+    def test_reset_clears_dead_models(self):
+        llm_router._mark_model_dead("openrouter", "some:free", "NotFoundError", "cheap")
+        self.assertTrue(llm_router._model_is_dead("openrouter", "some:free"))
+        llm_router.reset_llm_breaker()
+        self.assertFalse(llm_router._model_is_dead("openrouter", "some:free"))
+
+
 class TestDailyBudget(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()

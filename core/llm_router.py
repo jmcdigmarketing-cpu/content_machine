@@ -228,10 +228,39 @@ def _disable_llm(provider: str, reason: str) -> None:
         _llm_disabled_state[provider] = reason
 
 
+# A specific (provider, model) slug that the provider says doesn't exist / isn't
+# available on this account (e.g. a retired OpenRouter `:free` variant). Unlike the
+# provider breaker above this is *per model*: OpenRouter's other models and tiers keep
+# working. Skipping it for the session avoids a wasted 404 round-trip on every later call.
+_dead_models: set[tuple[str, str]] = set()
+
+
+def _model_is_dead(provider: str, model: str) -> bool:
+    with _llm_breaker_lock:
+        return (provider, model) in _dead_models
+
+
+def _mark_model_dead(provider: str, model: str, reason: str, tier: str = "") -> None:
+    with _llm_breaker_lock:
+        if (provider, model) in _dead_models:
+            return
+        _dead_models.add((provider, model))
+    override = f"{provider.upper()}_MODEL_{tier.upper()}" if tier else f"{provider.upper()}_MODEL"
+    logger.warning(
+        "LLM model '%s/%s' unavailable this session (%s) — skipping it. If this is a "
+        "retired free slug, set %s to a live one.",
+        provider,
+        model,
+        reason,
+        override,
+    )
+
+
 def reset_llm_breaker() -> None:
-    """Test/CLI helper — re-enable all LLM providers."""
+    """Test/CLI helper — re-enable all LLM providers and dead models."""
     with _llm_breaker_lock:
         _llm_disabled_state.clear()
+        _dead_models.clear()
 
 
 def disabled_providers() -> dict[str, str]:
@@ -316,7 +345,11 @@ def resolve_tier(tier: str) -> tuple[str, str]:
 
 # Error classes that warrant trying the next provider; a subset disables the
 # failing provider for the session.
-_RETRYABLE_LLM = frozenset({"rate_limit", "quota", "auth", "server"})
+# "model_unavailable" fails over like the rest, but is deliberately NOT in _DISABLE_LLM
+# (that would disable the whole provider — its other models/tiers are fine) nor in
+# _SAME_PROVIDER_RETRY (a retired slug won't come back in a few seconds). It's handled
+# per-model by _mark_model_dead instead.
+_RETRYABLE_LLM = frozenset({"rate_limit", "quota", "auth", "server", "model_unavailable"})
 _DISABLE_LLM = frozenset({"quota", "auth"})
 # Only these transient classes are worth retrying on the SAME provider (auth/quota
 # won't recover on a retry). Used when the chain has no fallback left — e.g. strict
@@ -342,12 +375,27 @@ def _classify_llm_error(exc: Exception) -> str:
         return "quota"
     if status in (401, 403):
         return "auth"
+    # 404 = this model doesn't exist / isn't available on this account (e.g. a retired
+    # OpenRouter `:free` slug). A *provider* problem, not a bad request — fail over.
+    if status == 404:
+        return "model_unavailable"
+    # Some providers report an unknown model as 400 rather than 404.
+    if status == 400 and _looks_like_model_error(exc):
+        return "model_unavailable"
     if isinstance(status, int) and 500 <= status < 600:
         return "server"
     name = type(exc).__name__.lower()
     if "timeout" in name or "connection" in name:
         return "server"
     return "other"
+
+
+def _looks_like_model_error(exc: Exception) -> bool:
+    """True when an error message points at the model slug rather than the request."""
+    text = str(exc).lower()
+    return "model" in text and any(
+        phrase in text for phrase in ("not found", "unavailable", "invalid", "does not exist")
+    )
 
 
 # --- Usage ledger ------------------------------------------------------------
@@ -613,6 +661,14 @@ def complete(
             tier = "cheap"
         candidates = _resolve_chain(tier)
 
+    # Skip slugs already proven unavailable this session (e.g. a retired `:free` model) so
+    # we don't repeat the same 404 on every call. If that would empty the chain, keep the
+    # original list so the failure path still surfaces the provider's real error.
+    if provider is None:
+        live = [c for c in candidates if not _model_is_dead(*c)]
+        if live:
+            candidates = live
+
     last_exc: Exception | None = None
     for idx, (prov, mdl) in enumerate(candidates):
         is_last = idx >= len(candidates) - 1
@@ -642,6 +698,8 @@ def complete(
                 err_class = _classify_llm_error(exc)
                 if err_class in _DISABLE_LLM:
                     _disable_llm(prov, f"{err_class} ({type(exc).__name__})")
+                if err_class == "model_unavailable":
+                    _mark_model_dead(prov, mdl, type(exc).__name__, tier)
                 if provider is not None:
                     raise  # explicitly pinned provider: no failover, no retry, raw error
                 if err_class in _RETRYABLE_LLM:

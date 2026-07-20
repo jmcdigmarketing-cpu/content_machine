@@ -85,19 +85,35 @@ RULES:
 
 Title:"""
 
-    raw = complete(prompt, tier="cheap", temperature=0.45, max_tokens=48)
     fallback = hook[:70] if hook else (seed_topic or topic)[:70]
-    title = _clean_title(raw or "", fallback=fallback)
+
+    # Fail-open: the title runs *after* the script, grounding and claim verifier have
+    # already succeeded — an LLM outage here must never throw that work away. Any failure
+    # degrades to the script hook, mirroring the variant path's "using heuristic angles".
+    raw = _complete_or_none(prompt, temperature=0.45, max_tokens=48)
+    if raw is None:
+        return fallback
+
+    title = _clean_title(raw, fallback=fallback)
     if title == fallback and facts:
         # Second attempt with explicit fact anchor when slop was rejected.
         anchor = facts[0][:80]
-        retry = complete(
+        retry = _complete_or_none(
             f"Write a 60-char YouTube title for a short about: {anchor}. "
             f"Hook: {hook}. Facts only — no hype templates. Title only:",
-            tier="cheap",
             temperature=0.35,
             max_tokens=40,
         )
-        title = _clean_title(retry or "", fallback=fallback)
+        if retry is not None:
+            title = _clean_title(retry, fallback=fallback)
     logger.debug("Generated title: %s", title)
     return title
+
+
+def _complete_or_none(prompt: str, *, temperature: float, max_tokens: int) -> str | None:
+    """Cheap-tier completion, or None when the LLM is unavailable (never raises)."""
+    try:
+        return complete(prompt, tier="cheap", temperature=temperature, max_tokens=max_tokens) or ""
+    except Exception as exc:
+        logger.warning("Title LLM unavailable (%s) — using the script hook", exc)
+        return None

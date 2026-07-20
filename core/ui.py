@@ -1008,7 +1008,7 @@ def prompt_startup_mode(*, print_fn=print, input_fn=input) -> str:
 
     subsection("Start", print_fn)
     print_fn("  1) Create new video (discovery pipeline)")
-    print_fn("  2) Queue manager — re-queue after YouTube delete")
+    print_fn("  2) Queue manager — recover / re-queue rendered videos")
     print_fn("  3) Intelligence report only (no script/render)")
     print_fn("  4) Sync YouTube analytics (update performance metrics)")
     print_fn("  5) Make a video from my own idea (paste idea or a YouTube link)")
@@ -1055,36 +1055,148 @@ def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
     return COST_MODE_FREE if choice == "2" else COST_MODE_STANDARD
 
 
-def run_queue_manager_interactive(
-    channel_id: str,
+def prompt_proceed_or_length(
+    current_choice: str,
     *,
     print_fn=print,
     input_fn=input,
-) -> None:
-    """Interactive re-queue flow for deleted scheduled videos."""
+) -> tuple[str, str]:
+    """Post-generation gate: render, regenerate at a different length, or stop.
+
+    Returns one of:
+      ("render", current_choice)  -- y: proceed to render
+      ("relength", new_choice)    -- +/-/1-4: regenerate at a new length target
+      ("stop", current_choice)    -- n / empty / anything else: stop before render
+
+    "+"/"-" nudge the current preset one step (core.script_length.nudge_length); a 1-4
+    entry jumps to that preset. Regeneration is a fresh generate at the new target, so
+    grounding + authenticity are re-checked — it is not an in-place trim.
+    """
+    from core.script_length import nudge_length
+
+    raw = (
+        input_fn("  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: ")
+        .strip()
+        .lower()
+    )
+    if raw == "y":
+        return ("render", current_choice)
+    if raw == "+":
+        return ("relength", nudge_length(current_choice, 1))
+    if raw == "-":
+        return ("relength", nudge_length(current_choice, -1))
+    if raw in ("1", "2", "3", "4"):
+        return ("relength", raw)
+    return ("stop", current_choice)
+
+
+def _prompt_timing_and_privacy(
+    channel_id: str,
+    title: str,
+    *,
+    print_fn=print,
+    input_fn=input,
+):
+    """Shared 'when + privacy' sub-prompt for the queue manager.
+
+    Returns (scheduled_at, youtube_publish_at, privacy_status): scheduled_at is always
+    now (the worker claims it); youtube_publish_at is set only for the scheduled option.
+    """
+    from datetime import datetime, timezone
+
+    from analytics.post_timing import format_scheduled_local, next_optimal_post_time
+
+    profile = get_channel_profile(channel_id)
+    default_priv = profile.privacy_status_default or "private"
+
+    subsection("When", print_fn)
+    print_fn("  1) Queue now — upload on the next worker run")
+    print_fn("  2) Schedule — next optimal YouTube slot (topic-aware)")
+    when = input_fn("  Select 1-2 [1]: ").strip() or "1"
+
+    privacy_map = {"1": "private", "2": "unlisted", "3": "public"}
+    default_key = next((k for k, v in privacy_map.items() if v == default_priv), "1")
+    subsection("Privacy", print_fn)
+    print_fn(f"  1) Private  2) Unlisted  3) Public  (default: {default_priv})")
+    priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
+    privacy = privacy_map.get(priv, default_priv)
+
+    publish_at = None
+    if when == "2":
+        publish_at = next_optimal_post_time(channel_id, title)
+        print_fn(f"  YouTube publish at: {format_scheduled_local(publish_at, channel_id)}")
+
+    return datetime.now(timezone.utc), publish_at, privacy
+
+
+def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn=input) -> None:
+    """Queue an upload for a rendered-but-never-uploaded run (folds in requeue_upload)."""
+    import json
+
+    from scripts.requeue_upload import _resolve_mp4_path
+    from storage.repositories.jobs import enqueue_upload_job
+
+    subsection("Recover rendered video (never uploaded)", print_fn)
+    for i, run in enumerate(recyclable, 1):
+        title = (run.title or run.selected_topic or "")[:60]
+        print_fn(f"  {i}. [run {run.id}] {title}")
+        print_fn(f"       {_resolve_mp4_path(run)}")
+
+    raw = input_fn("\n  Pick # to queue (Enter = cancel): ").strip()
+    if not raw or not raw.isdigit():
+        print_fn("  Cancelled.")
+        return
+    idx = int(raw) - 1
+    if idx < 0 or idx >= len(recyclable):
+        print_fn("  Invalid selection.")
+        return
+
+    run = recyclable[idx]
+    mp4 = _resolve_mp4_path(run)
+    if not mp4:
+        print_fn("  That run has no MP4 on disk anymore.")
+        return
+
+    title = run.title or run.selected_topic or ""
+    scheduled_at, publish_at, privacy = _prompt_timing_and_privacy(
+        channel_id, title, print_fn=print_fn, input_fn=input_fn
+    )
+    try:
+        tags = json.loads(run.tags_json or "[]")
+        if not isinstance(tags, list):
+            tags = []
+    except (TypeError, ValueError):
+        tags = []
+
+    job = enqueue_upload_job(
+        channel_id=channel_id,
+        content_run_id=run.id,
+        file_path=mp4,
+        title=title,
+        description=run.description or "",
+        tags=tags,
+        privacy_status=privacy,
+        scheduled_at=scheduled_at,
+        youtube_publish_at=publish_at,
+    )
+    print_fn(f"\n  Queued upload job {job.id} for run {run.id}. Run: py -m jobs.worker --loop 30")
+    print_fn(f"  File: {mp4}")
+
+
+def _requeue_deleted(channel_id, candidates, *, print_fn=print, input_fn=input) -> None:
+    """Re-queue a run whose prior upload/schedule was deleted on YouTube."""
     from datetime import datetime, timezone
 
     from analytics.post_timing import format_scheduled_local, next_optimal_post_time
     from analytics.queue_manager import (
         format_requeue_menu_line,
-        list_requeue_candidates,
         requeue_content_run,
         reset_publish_for_requeue,
     )
 
-    channel_id = resolve_channel_id(channel_id)
     profile = get_channel_profile(channel_id)
 
-    section("Queue manager", print_fn)
-    display_upload_queue(channel_id, print_fn=print_fn)
-
-    candidates = list_requeue_candidates(channel_id)
     subsection("Re-queue (deleted on YouTube before publish)", print_fn)
-    if not candidates:
-        print_fn("  No runs with a prior upload/schedule found.")
-        print_fn("  For never-uploaded MP4s: py -m scripts.requeue_upload --channel", channel_id)
-        return
-
     for i, c in enumerate(candidates, 1):
         print_fn(f"  {i}. {format_requeue_menu_line(c, channel_id)}")
 
@@ -1138,6 +1250,48 @@ def run_queue_manager_interactive(
         print_fn(f"\n  Error: {exc}")
 
 
+def run_queue_manager_interactive(
+    channel_id: str,
+    *,
+    print_fn=print,
+    input_fn=input,
+) -> None:
+    """Recover a rendered-but-unuploaded video, or re-queue one deleted on YouTube."""
+    from analytics.queue_manager import list_requeue_candidates
+    from scripts.requeue_upload import list_recyclable
+
+    channel_id = resolve_channel_id(channel_id)
+
+    section("Queue manager", print_fn)
+    display_upload_queue(channel_id, print_fn=print_fn)
+
+    try:
+        recyclable = list_recyclable(channel_id)
+    except Exception:
+        recyclable = []
+    candidates = list_requeue_candidates(channel_id)
+
+    if not recyclable and not candidates:
+        subsection("Nothing to recover", print_fn)
+        print_fn("  No rendered-but-unuploaded videos and no deleted-on-YouTube runs.")
+        return
+
+    mode = "recover"
+    if recyclable and candidates:
+        subsection("What to do", print_fn)
+        print_fn(f"  1) Recover a rendered video never uploaded ({len(recyclable)})")
+        print_fn(f"  2) Re-queue a deleted-on-YouTube video ({len(candidates)})")
+        pick = input_fn("  Select 1-2 [1]: ").strip() or "1"
+        mode = "requeue" if pick == "2" else "recover"
+    elif candidates:
+        mode = "requeue"
+
+    if mode == "recover":
+        _recover_rendered_upload(channel_id, recyclable, print_fn=print_fn, input_fn=input_fn)
+    else:
+        _requeue_deleted(channel_id, candidates, print_fn=print_fn, input_fn=input_fn)
+
+
 def prompt_upload_plan(
     *,
     channel_id: str | None = None,
@@ -1161,7 +1315,7 @@ def prompt_upload_plan(
     print_fn("  2) Queue now — worker uploads when you run: py -m jobs.worker")
     print_fn("  3) Queue later — enter minutes from now")
     print_fn(f"  4) Schedule on YouTube for {optimal_label} — next open slot (topic-aware)")
-    print_fn("  5) Re-queue deleted video — open queue manager (same as startup option 2)")
+    print_fn("  5) Recover / re-queue a rendered video — open queue manager")
     timing = input_fn("  Select 1-5 [1]: ").strip() or "1"
 
     if timing == "5":

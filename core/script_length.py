@@ -38,6 +38,19 @@ def get_length_preset(length_choice: str) -> LengthPreset:
     return PRESETS.get(str(length_choice).strip(), PRESETS["2"])
 
 
+def nudge_length(length_choice: str, delta: int) -> str:
+    """Shift a length choice by `delta` presets, clamped to the 1-4 range.
+
+    Used by the post-generation "+ longer / - shorter" prompt. An unparseable
+    choice falls back to Medium ("2") before the shift.
+    """
+    try:
+        current = int(str(length_choice).strip())
+    except (TypeError, ValueError):
+        current = 2
+    return str(max(1, min(4, current + delta)))
+
+
 def word_range(length_choice: str) -> tuple[int, int]:
     p = get_length_preset(length_choice)
     return p.min_words, p.max_words

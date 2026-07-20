@@ -36,6 +36,7 @@ from core.ui import (
     print_domain_art,
     prompt_channel_selection,
     prompt_key_facts,
+    prompt_proceed_or_length,
     prompt_startup_mode,
     prompt_upload_plan,
     run_queue_manager_interactive,
@@ -353,119 +354,133 @@ def _run_new_video_flow_body(
 
     section("Content")
     print_bonus_art(key="mario")
-    result = run_pipeline(
-        topic,
-        discovery=discovery,
-        variant_index=variant_index,
-        length_choice=length_choice,
-        proceed_video=False,
-        channel_id=channel_id,
-        creative_brief=creative_brief,
-        key_facts=key_facts or None,
-    )
 
-    print()
-    print(result.script)
-    print()
-    if result.title:
-        print(f"  Title: {result.title}")
+    # Generate → review → decide loop. The operator can regenerate the script at a
+    # different length (+ longer / - shorter / 1-4) without re-running discovery —
+    # run_pipeline reuses the discovery passed in, so only the script + checks re-run.
+    while True:
+        result = run_pipeline(
+            topic,
+            discovery=discovery,
+            variant_index=variant_index,
+            length_choice=length_choice,
+            proceed_video=False,
+            channel_id=channel_id,
+            creative_brief=creative_brief,
+            key_facts=key_facts or None,
+        )
+
         print()
-    preset = get_length_preset(length_choice)
-    print(f"  Length: {format_length_report(result.script, preset)}")
+        print(result.script)
+        print()
+        if result.title:
+            print(f"  Title: {result.title}")
+            print()
+        preset = get_length_preset(length_choice)
+        print(f"  Length: {format_length_report(result.script, preset)}")
 
-    from core.hook_score import display_hook_score, score_script_hook
+        from core.hook_score import display_hook_score, score_script_hook
 
-    display_hook_score(score_script_hook(result.script))
+        display_hook_score(score_script_hook(result.script))
 
-    if result.run_id:
-        print(f"  Run id: {result.run_id}")
+        if result.run_id:
+            print(f"  Run id: {result.run_id}")
 
-    # Show what facts the script was based on — thin facts = warning before render
-    from core.fact_enrichment import _fact_line_count, enrich_facts
+        # Show what facts the script was based on — thin facts = warning before render
+        from core.fact_enrichment import _fact_line_count, enrich_facts
 
-    _facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
-    display_fact_preview(_facts_preview, print_fn=print)
-
-    _ungrounded = result.features.get("ungrounded_entities") or []
-    needs_grounding_review = display_grounding_report(
-        _ungrounded, key_facts=key_facts or None, print_fn=print
-    )
-
-    # Semantic trade validation (opt-in, SEMANTIC_TRADE_VALIDATION)
-    from core.trade_validation import display_trade_validation
-
-    display_trade_validation(result.features.get("trade_warnings") or [], print_fn=print)
-
-    # Fact Engine (Pillar 3): pre-script conflicts, tier lint, claim verifier.
-    from core.ui import display_fact_engine_report
-
-    needs_fact_review = display_fact_engine_report(result.features, print_fn=print)
-
-    # Authenticity / monetisation-safety self-check (Phase O)
-    from core.authenticity import (
-        display_authenticity_report,
-        evaluate_authenticity,
-        gate_mode,
-    )
-
-    auth = evaluate_authenticity(
-        result.script,
-        channel_id,
-        fact_count=_fact_line_count(_facts_preview),
-        exclude_run_id=result.run_id,
-    )
-    display_authenticity_report(auth)
-    if gate_mode() == "block" and auth.verdict == "block":
-        override = (
-            input("  Authenticity gate flagged this video. Render anyway? [y/N]: ").strip().lower()
+        _facts_preview = enrich_facts(
+            best_topic, best_signals, channel_id=channel_id, seed_topic=topic
         )
-        if override != "y":
-            display_summary(
-                timings=discovery.timings,
-                title=result.title,
-                cost=result.features.get("cost"),
+        display_fact_preview(_facts_preview, print_fn=print)
+
+        _ungrounded = result.features.get("ungrounded_entities") or []
+        needs_grounding_review = display_grounding_report(
+            _ungrounded, key_facts=key_facts or None, print_fn=print
+        )
+
+        # Semantic trade validation (opt-in, SEMANTIC_TRADE_VALIDATION)
+        from core.trade_validation import display_trade_validation
+
+        display_trade_validation(result.features.get("trade_warnings") or [], print_fn=print)
+
+        # Fact Engine (Pillar 3): pre-script conflicts, tier lint, claim verifier.
+        from core.ui import display_fact_engine_report
+
+        needs_fact_review = display_fact_engine_report(result.features, print_fn=print)
+
+        # Authenticity / monetisation-safety self-check (Phase O)
+        from core.authenticity import (
+            display_authenticity_report,
+            evaluate_authenticity,
+            gate_mode,
+        )
+
+        auth = evaluate_authenticity(
+            result.script,
+            channel_id,
+            fact_count=_fact_line_count(_facts_preview),
+            exclude_run_id=result.run_id,
+        )
+        display_authenticity_report(auth)
+        if gate_mode() == "block" and auth.verdict == "block":
+            override = (
+                input("  Authenticity gate flagged this video. Render anyway? [y/N]: ")
+                .strip()
+                .lower()
             )
-            print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
-            return
+            if override != "y":
+                display_summary(
+                    timings=discovery.timings,
+                    title=result.title,
+                    cost=result.features.get("cost"),
+                )
+                print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
+                return
 
-    # Grounding gate (Pillar 3, opt-in): unsupported claims become a hard stop
-    # the operator must override — mirrors the authenticity gate above.
-    from core.claim_verifier import gate_blocks
+        # Grounding gate (Pillar 3, opt-in): unsupported claims become a hard stop
+        # the operator must override — mirrors the authenticity gate above.
+        from core.claim_verifier import gate_blocks
 
-    if gate_blocks(result.features.get("claim_verification")):
-        override = (
-            input("  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ")
-            .strip()
-            .lower()
-        )
-        if override != "y":
-            display_summary(
-                timings=discovery.timings,
-                title=result.title,
-                cost=result.features.get("cost"),
+        if gate_blocks(result.features.get("claim_verification")):
+            override = (
+                input("  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ")
+                .strip()
+                .lower()
             )
-            print("\n  Stopped by grounding gate (GROUNDING_GATE=block).")
-            return
+            if override != "y":
+                display_summary(
+                    timings=discovery.timings,
+                    title=result.title,
+                    cost=result.features.get("cost"),
+                )
+                print("\n  Stopped by grounding gate (GROUNDING_GATE=block).")
+                return
 
-    if needs_grounding_review:
-        print(
-            "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
-            "Rendering without fixing risks shipping hallucinations."
-        )
-    if needs_fact_review:
-        print(
-            "\n  Fact Engine flagged items above (conflicts / tiers / claims). "
-            "Verify before publishing."
-        )
+        if needs_grounding_review:
+            print(
+                "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
+                "Rendering without fixing risks shipping hallucinations."
+            )
+        if needs_fact_review:
+            print(
+                "\n  Fact Engine flagged items above (conflicts / tiers / claims). "
+                "Verify before publishing."
+            )
 
-    # Pillar 2: one weighted report card over the scores above (read-only).
-    from core.video_grade import display_grade_for_run
+        # Pillar 2: one weighted report card over the scores above (read-only).
+        from core.video_grade import display_grade_for_run
 
-    display_grade_for_run(result.run_id)
+        display_grade_for_run(result.run_id)
 
-    proceed = input("  Proceed with video? [y/N]: ").strip().lower()
-
-    if proceed != "y":
+        decision, length_choice = prompt_proceed_or_length(length_choice)
+        if decision == "render":
+            break
+        if decision == "relength":
+            new_preset = get_length_preset(length_choice)
+            print(f"\n  Regenerating at {new_preset.label} target (new LLM call)...")
+            continue
+        # stop
         display_summary(
             timings=discovery.timings,
             title=result.title,

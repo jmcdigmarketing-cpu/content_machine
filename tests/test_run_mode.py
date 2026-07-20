@@ -104,17 +104,33 @@ class TestReadiness(unittest.TestCase):
             os.environ, {"OLLAMA_MODEL": "llama3.1", "OPENROUTER_API_KEY": "sk-or-x"}, clear=True
         ):
             with mock.patch.object(run_mode, "_ollama_ready", return_value=(True, "llama3.1")):
-                self.assertEqual(run_mode._free_llm(), ("ollama", "llama3.1"))
+                self.assertEqual(run_mode._free_llm(), ("ollama", "llama3.1", ""))
         # Ollama down -> fall back to the (rate-limited) OpenRouter :free cloud tier.
         with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "sk-or-x"}, clear=True):
             with mock.patch.object(run_mode, "_ollama_ready", return_value=(False, "")):
-                provider, model = run_mode._free_llm()
+                provider, model, note = run_mode._free_llm()
                 self.assertEqual(provider, "openrouter")
                 self.assertTrue(model.endswith(":free"))
-        # Neither -> none.
+                self.assertEqual(note, "")
+        # Neither -> none, with a reason the readiness line can show.
         with mock.patch.dict(os.environ, {}, clear=True):
             with mock.patch.object(run_mode, "_ollama_ready", return_value=(False, "")):
-                self.assertEqual(run_mode._free_llm(), (None, ""))
+                provider, model, note = run_mode._free_llm()
+                self.assertIsNone(provider)
+                self.assertEqual(model, "")
+                self.assertIn("Ollama", note)
+
+    def test_free_llm_does_not_claim_a_dead_openrouter_model(self):
+        # Regression: readiness advertised "llm=openrouter OK" purely because the key was
+        # set, while that free slug was 404-ing. A known-dead model must not read as OK.
+        with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "sk-or-x"}, clear=True):
+            with (
+                mock.patch.object(run_mode, "_ollama_ready", return_value=(False, "")),
+                mock.patch.object(run_mode, "_model_known_dead", return_value=True),
+            ):
+                provider, _model, note = run_mode._free_llm()
+        self.assertIsNone(provider)
+        self.assertIn("OPENROUTER_MODEL_CHEAP", note)
 
     def test_ollama_ready_pings_the_server(self):
         with mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1"}, clear=True):
@@ -129,7 +145,7 @@ class TestReadiness(unittest.TestCase):
                 g.assert_not_called()
 
     def test_readiness_llm_local_flag_and_line(self):
-        with mock.patch.object(run_mode, "_free_llm", return_value=("ollama", "llama3.1")):
+        with mock.patch.object(run_mode, "_free_llm", return_value=("ollama", "llama3.1", "")):
             with (
                 mock.patch.object(run_mode, "_local_tts_available", return_value="piper"),
                 mock.patch("apis.free_backends.reddit_available", return_value=False),

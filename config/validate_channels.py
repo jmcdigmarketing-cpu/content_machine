@@ -52,6 +52,37 @@ def _load_raw() -> dict:
         return json.load(f)
 
 
+def _known_voice_ids() -> set[str]:
+    """Every ElevenLabs id in config/voices.json. Empty set = catalog unavailable, which
+    disables the "unknown id" warnings rather than firing false positives."""
+    try:
+        from core.tts import load_voice_registry
+
+        return {vid for pool in load_voice_registry().values() for vid in pool}
+    except Exception:
+        return set()
+
+
+def _check_shared_voices(channels: dict) -> list[str]:
+    """Warn when channels are pinned to the SAME single voice — they'd sound identical."""
+    warnings: list[str] = []
+    pinned: dict[str, list[str]] = {}
+    for cid, cfg in channels.items():
+        if not isinstance(cfg, dict):
+            continue
+        tts = cfg.get("tts") or {}
+        vid = tts.get("voice_id") or cfg.get("tts_voice_id")
+        if vid:
+            pinned.setdefault(str(vid), []).append(cid)
+    for vid, cids in sorted(pinned.items()):
+        if len(cids) > 1:
+            warnings.append(
+                f"channels {', '.join(sorted(cids))} are all pinned to voice {vid} — they will "
+                "sound identical; give each a tts.voice_pool instead"
+            )
+    return warnings
+
+
 def _check_post_schedule(block: dict, channel_id: str) -> list[str]:
     errors: list[str] = []
     if not block:
@@ -91,6 +122,27 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
     if not voice_id and not voice_pool:
         warnings.append(
             f"{channel_id}: no tts.voice_id or tts.voice_pool — global voice pool will be used"
+        )
+
+    known = _known_voice_ids()
+    if isinstance(voice_pool, dict):
+        for vid, weight in voice_pool.items():
+            try:
+                if float(weight) <= 0:
+                    errors.append(f"{channel_id}: tts.voice_pool[{vid}] must be > 0 (got {weight})")
+            except (TypeError, ValueError):
+                errors.append(
+                    f"{channel_id}: tts.voice_pool[{vid}] must be numeric, not {weight!r}"
+                )
+            if known and vid not in known:
+                warnings.append(
+                    f"{channel_id}: tts.voice_pool id {vid} is not in config/voices.json "
+                    "(run: py -m scripts.ops voices)"
+                )
+    if voice_id and known and voice_id not in known:
+        warnings.append(
+            f"{channel_id}: tts.voice_id {voice_id} is not in config/voices.json "
+            "(run: py -m scripts.ops voices)"
         )
 
     mode = str(raw_cfg.get("background_mode", "hybrid")).lower()
@@ -170,6 +222,9 @@ def validate_all(channel_filter: str | None = None) -> int:
         errs, warns = validate_channel(cid, cfg)
         all_errors.extend(errs)
         all_warnings.extend(warns)
+
+    if not channel_filter and isinstance(channels, dict):
+        all_warnings.extend(_check_shared_voices(channels))
 
     for w in all_warnings:
         print(f"WARN: {w}")

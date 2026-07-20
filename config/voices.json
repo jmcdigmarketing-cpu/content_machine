@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "Voice catalog for TTS. Adding a voice = edit this file (no code change).",
+    "Discover IDs with: py -m scripts.ops voices",
+    "  elevenlabs.<category>[] -> paid ElevenLabs voices. Categories are cosmetic:",
+    "    a channel with no tts.voice_pool draws from ALL categories, weighted.",
+    "    Per-channel pools live in config/channels.json (tts.voice_pool).",
+    "  local.piper[]  -> path to a voice .onnx (needs its .onnx.json beside it)",
+    "  local.kokoro[] -> a built-in Kokoro voice name (e.g. af_heart)",
+    "weight = relative odds when a voice is picked at random (higher = more often).",
+    "Fill in blank 'name'/'notes' from `ops voices` output, then re-categorize.",
+    "A category whose name starts with '_' is PARKED: kept for reference, never used.",
+    "_parked_voice_not_found holds ids the API rejects with 400 voice_not_found - they",
+    "are not in this account's library. Add them from the ElevenLabs Voice Library",
+    "(Voices -> Explore -> Add to my voices), re-run `ops voices` to confirm they list,",
+    "then move them into a real category above."
+  ],
+  "elevenlabs": {
+    "primary_male": [
+      { "id": "nPczCjzI2devNBz1zQrb", "name": "", "weight": 4, "notes": "current tapin/moneywise default" },
+      { "id": "XjLkpWUlnhS8i7gGz3lZ", "name": "", "weight": 3, "notes": "" },
+      { "id": "JBFqnCBsd6RMkjVDRZzb", "name": "", "weight": 2, "notes": "" }
+    ],
+    "secondary_male": [
+      { "id": "VR6AewLTigWG4xSOukaG", "name": "", "weight": 1, "notes": "" }
+    ],
+    "female": [
+      { "id": "r1KmysJdVYZjJCm4mL3b", "name": "", "weight": 3, "notes": "" },
+      { "id": "cgSgspJ2msm6clMCkdW9", "name": "", "weight": 2, "notes": "" },
+      { "id": "hA4zGnmTwX2NQiTRMt7o", "name": "", "weight": 1, "notes": "" }
+    ],
+    "_parked_voice_not_found": [
+      { "id": "OZxMHsGaBmV5pjMIDIn0", "name": "", "weight": 3, "notes": "" },
+      { "id": "NOpBlnGInO9m6vDvFkFC", "name": "", "weight": 3, "notes": "" },
+      { "id": "yjJ45q8TVCrtMhEKurxY", "name": "", "weight": 1, "notes": "lower odds" },
+      { "id": "YOq2y2Up4RgXP2HyXjE5", "name": "", "weight": 1, "notes": "lower odds" },
+      { "id": "RILOU7YmBhvwJGDGjNmP", "name": "", "weight": 3, "notes": "" },
+      { "id": "exsUS4vynmxd379XN4yO", "name": "", "weight": 3, "notes": "" },
+      { "id": "c6SfcYrb2t09NHXiT80T", "name": "", "weight": 3, "notes": "" }
+    ]
+  },
+  "local": {
+    "piper": [],
+    "kokoro": []
+  }
+}

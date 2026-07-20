@@ -99,16 +99,48 @@ def _ollama_ready() -> tuple[bool, str]:
         return False, model
 
 
-def _free_llm() -> tuple[str | None, str]:
-    """Truly-free LLM (provider, model), LOCAL-FIRST: local Ollama (unlimited, offline,
-    $0) > OpenRouter `:free` (cloud, rate-limited) > (None, ""). A truly-free run should
-    use the unlimited local model, not the throttled cloud one."""
+def _openrouter_free_model() -> str:
+    """The cheap-tier OpenRouter model the router would actually use.
+
+    Single source of truth: reads the router's default (which already honors
+    OPENROUTER_MODEL_CHEAP) rather than keeping a second copy of the slug here — a stale
+    duplicate is exactly how readiness ends up advertising a retired model.
+    """
+    try:
+        from core.llm_router import _default_model
+
+        return _default_model("openrouter", "cheap") or _OPENROUTER_FREE_MODEL
+    except Exception:
+        return _OPENROUTER_FREE_MODEL
+
+
+def _model_known_dead(provider: str, model: str) -> bool:
+    """True when this session already saw the provider reject that model (404)."""
+    try:
+        from core.llm_router import _model_is_dead
+
+        return _model_is_dead(provider, model)
+    except Exception:
+        return False
+
+
+def _free_llm() -> tuple[str | None, str, str]:
+    """Truly-free LLM (provider, model, blocked_reason), LOCAL-FIRST: local Ollama
+    (unlimited, offline, $0) > OpenRouter `:free` (cloud, rate-limited) > none. A truly-
+    free run should use the unlimited local model, not the throttled cloud one.
+
+    A key being present is NOT proof the free model works — if the router already hit
+    404 on that slug this session we report it blocked instead of claiming OK.
+    """
     ready, model = _ollama_ready()
     if ready:
-        return "ollama", model
+        return "ollama", model, ""
     if os.getenv("OPENROUTER_API_KEY", "").strip():
-        return "openrouter", _OPENROUTER_FREE_MODEL
-    return None, ""
+        free_model = _openrouter_free_model()
+        if _model_known_dead("openrouter", free_model):
+            return None, "", "openrouter free model retired - set OPENROUTER_MODEL_CHEAP"
+        return "openrouter", free_model, ""
+    return None, "", "run Ollama or set OPENROUTER_API_KEY"
 
 
 @dataclass
@@ -119,6 +151,7 @@ class Readiness:
     llm_provider: str | None  # free LLM provider ready, else None
     llm_model: str = ""
     llm_local: bool = False  # True when the LLM is a local (truly-free, unlimited) backend
+    llm_note: str = ""  # why no free LLM is available (shown instead of a bare "X")
     reddit_free: bool = False
     youtube_free: bool = False
 
@@ -135,12 +168,13 @@ def free_backend_readiness() -> Readiness:
     """Probe (never mutates env) which $0 backends are ready for Free mode."""
     from apis.free_backends import reddit_available, youtube_available
 
-    llm_provider, llm_model = _free_llm()
+    llm_provider, llm_model, llm_note = _free_llm()
     return Readiness(
         tts_provider=_local_tts_available(),
         llm_provider=llm_provider,
         llm_model=llm_model,
         llm_local=(llm_provider == "ollama"),
+        llm_note=llm_note,
         reddit_free=reddit_available(),
         youtube_free=youtube_available(),
     )
@@ -220,9 +254,15 @@ def format_readiness_line(r: Readiness | None = None) -> str:
     r = r or free_backend_readiness()
     voice = f"voice={r.tts_provider} OK" if r.voice_ok else "voice=X (install Piper)"
     if not r.llm_ok:
-        llm = "llm=X (run Ollama or set OPENROUTER_API_KEY)"
+        llm = f"llm=X ({r.llm_note or 'run Ollama or set OPENROUTER_API_KEY'})"
     elif r.llm_local:
         llm = f"llm={r.llm_provider} OK (local $0)"
     else:
         llm = f"llm={r.llm_provider} OK (free, throttled)"
-    return f"Free ready:  {voice}   {llm}   web=duckduckgo   signals=free"
+    # Report what was actually probed — reddit_free/youtube_free are real checks, so
+    # don't print a blanket "signals=free" that outlives the thing it claims.
+    free_signals = [
+        name for name, ok in (("reddit", r.reddit_free), ("youtube", r.youtube_free)) if ok
+    ]
+    signals = f"signals={'+'.join(free_signals)}" if free_signals else "signals=X (none free)"
+    return f"Free ready:  {voice}   {llm}   web={_FREE_WEB_SEARCH_BACKEND}   {signals}"

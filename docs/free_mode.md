@@ -84,6 +84,26 @@ Free mode sets `TTS_PROVIDER=piper` for you once `PIPER_VOICE` exists.
 > No local voice yet? Free mode still runs discovery + scripting, but **blocks at render**
 > with the install reminder. Standard mode is unaffected (uses ElevenLabs).
 
+#### Where to get more free voices
+
+- **Piper** — the full catalog is the **`rhasspy/piper-voices`** repo on HuggingFace
+  (quality tiers `x_low`/`low`/`medium`/`high`; `medium` is the sweet spot). Every voice is
+  **two files** — `<voice>.onnx` **and** `<voice>.onnx.json`. Download both into
+  `video/voices/` (override with `PIPER_VOICES_DIR`).
+- **Kokoro** — ships its own voices, no download. `KOKORO_VOICE` selects one
+  (default `af_heart`); needs torch + espeak-ng, so it's the GPU-box option.
+- **XTTS** — clones a voice from a 6s+ clean reference wav (`XTTS_SPEAKER_WAV`).
+
+Run **`py -m scripts.ops voices`** to see every voice this machine can use — local `.onnx`
+files found on disk, plus the voices on your ElevenLabs account with their ids and labels —
+and what each channel resolves to right now.
+
+**Adding voices is config, not code.** Put them in [`config/voices.json`](../config/voices.json):
+`local.piper[]` takes `.onnx` paths, `local.kokoro[]` takes voice names, and the
+`elevenlabs` categories take voice ids — each with a `weight` (higher = picked more often).
+A category whose name starts with `_` is **parked**: kept for reference, never used.
+Per-channel rotation lives in `channels.json` (`tts.voice_pool` / `tts.local_voices`).
+
 ### 3. Free web search + signals
 
 - **Web search** — keyless DuckDuckGo via `ddgs` (in the `providers` extra). Free mode sets

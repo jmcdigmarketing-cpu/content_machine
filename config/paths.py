@@ -9,6 +9,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 SECRETS_DIR = os.path.join(ROOT_DIR, "config", "secrets")
 CHANNELS_FILE = os.path.join(ROOT_DIR, "config", "channels.json")
+VOICES_FILE = os.path.join(ROOT_DIR, "config", "voices.json")
 LUFFY_ASCII_FILE = os.path.join(ROOT_DIR, "core", "data", "luffy_ascii.txt")
 
 SIGNAL_CACHE_FILE = os.path.join(DATA_DIR, "signal_cache.json")

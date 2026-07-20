@@ -9,13 +9,17 @@ from typing import Any
 from elevenlabs.client import ElevenLabs
 
 from config.channels import get_channel_profile, resolve_channel_id
+from config.paths import VOICES_FILE
 from core.logging import get_logger
 from core.utils import clean_script_for_tts
 from video.caption_timing import words_from_alignment
 
 logger = get_logger("core.tts")
 
-VOICE_REGISTRY = {
+# Fallback catalog, used only when config/voices.json is missing or unusable. The
+# operator-facing catalog lives in that file so adding a voice never needs a code change
+# (discover ids with `py -m scripts.ops voices`).
+_BUILTIN_VOICE_REGISTRY: dict[str, dict[str, int]] = {
     "primary_male": {
         "nPczCjzI2devNBz1zQrb": 4,
         "XjLkpWUlnhS8i7gGz3lZ": 3,
@@ -33,13 +37,129 @@ VOICE_REGISTRY = {
 
 DEFAULT_MODEL = "eleven_multilingual_v2"
 
+# (mtime, parsed) — voices.json is re-read only when it changes.
+_voice_catalog_cache: tuple[float, dict[str, Any]] | None = None
+
+
+def _load_voice_catalog() -> dict[str, Any]:
+    """Parsed config/voices.json, mtime-cached. Returns {} when missing or unreadable."""
+    global _voice_catalog_cache
+    try:
+        mtime = os.path.getmtime(VOICES_FILE)
+    except OSError:
+        _voice_catalog_cache = None
+        return {}
+    if _voice_catalog_cache is not None and _voice_catalog_cache[0] == mtime:
+        return _voice_catalog_cache[1]
+    try:
+        with open(VOICES_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            data = {}
+    except (OSError, ValueError) as exc:
+        logger.warning("voices.json unreadable (%s) - using the built-in voice registry", exc)
+        data = {}
+    _voice_catalog_cache = (mtime, data)
+    return data
+
+
+def _entries_to_pool(entries: Any) -> dict[str, int]:
+    """`[{"id": ..., "weight": n}, ...]` (or bare id strings) -> `{id: weight}`.
+
+    Blank ids are skipped and weights floor at 1, so a half-filled catalog can't produce
+    an unusable pool.
+    """
+    pool: dict[str, int] = {}
+    if not isinstance(entries, list):
+        return pool
+    for entry in entries:
+        if isinstance(entry, str):
+            voice_id, weight = entry.strip(), 1
+        elif isinstance(entry, dict):
+            voice_id = str(entry.get("id") or "").strip()
+            try:
+                weight = int(entry.get("weight", 1))
+            except (TypeError, ValueError):
+                weight = 1
+        else:
+            continue
+        if voice_id:
+            pool[voice_id] = max(1, weight)
+    return pool
+
+
+def load_voice_registry() -> dict[str, dict[str, int]]:
+    """ElevenLabs voices as `{category: {voice_id: weight}}` — config first, built-in last.
+
+    Reads the `elevenlabs` block of config/voices.json. Falls back to
+    `_BUILTIN_VOICE_REGISTRY` when the file is absent, malformed, or defines no usable
+    voice, so behavior is identical to before when no catalog exists. Categories are only
+    a grouping aid: an unpooled channel draws from all of them.
+    """
+    block = _load_voice_catalog().get("elevenlabs")
+    if isinstance(block, dict):
+        registry = {
+            str(category): pool
+            for category, entries in block.items()
+            # A leading underscore parks a category (kept for reference, never used) —
+            # e.g. ids the API rejects until they're added to the account's library.
+            if not str(category).startswith("_") and (pool := _entries_to_pool(entries))
+        }
+        if registry:
+            return registry
+    return {name: dict(pool) for name, pool in _BUILTIN_VOICE_REGISTRY.items()}
+
+
+def load_local_voice_pool(provider: str) -> dict[str, int]:
+    """Local (free) voices for a provider as `{voice: weight}` from voices.json.
+
+    Piper entries are `.onnx` paths, Kokoro entries are built-in voice names. Empty when
+    the catalog has none, which drops resolution through to the env forms.
+    """
+    block = _load_voice_catalog().get("local")
+    if not isinstance(block, dict):
+        return {}
+    return _entries_to_pool(block.get((provider or "").strip().lower()))
+
+
+# Voice ids this account rejected this session (400 voice_not_found). Skipped when
+# picking, so one stale id in a pool can't keep breaking renders.
+_dead_voices: set[str] = set()
+
+
+def _is_unusable_voice(exc: Exception) -> bool:
+    """True when an error says the voice id itself is unusable (not a transient fault)."""
+    text = str(exc).lower()
+    return "voice_not_found" in text or "voice with id" in text
+
+
+def _mark_voice_dead(voice_id: str, reason: object) -> None:
+    if voice_id in _dead_voices:
+        return
+    _dead_voices.add(voice_id)
+    logger.warning(
+        "ElevenLabs voice '%s' is not on this account (%s) - skipping it this session. "
+        "Add it from the ElevenLabs Voice Library, or remove it from config/voices.json.",
+        voice_id,
+        str(reason)[:160],
+    )
+
+
+def reset_dead_voices() -> None:
+    """Test/CLI helper — forget voices marked unusable this session."""
+    _dead_voices.clear()
+
 
 def weighted_random_voice(pool: dict[str, int] | None = None) -> str:
-    source = pool or {}
+    source = dict(pool or {})
     if not source:
-        for category in VOICE_REGISTRY.values():
+        for category in load_voice_registry().values():
             for voice_id, weight in category.items():
                 source[voice_id] = source.get(voice_id, 0) + weight
+
+    # Drop known-bad ids, but never leave the pool empty (if every id is dead we retry
+    # them rather than crash with nothing to choose from).
+    source = {v: w for v, w in source.items() if v not in _dead_voices} or source
 
     choices = []
     for voice_id, weight in source.items():
@@ -84,29 +204,45 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     eleven_key = os.getenv("ELEVEN_API_KEY")
     if not eleven_key:
         raise Exception("ELEVEN_API_KEY not found.")
-    voice_id, model_id = resolve_tts_config(channel_id)
 
     client = ElevenLabs(api_key=eleven_key)
 
-    # Word-level timestamps (free from the same TTS call) power accurate / karaoke
-    # captions (video/caption_timing). Best-effort — any failure falls back to the
-    # plain stream, so captions just revert to the proportional estimate.
-    if _word_timestamps_enabled() and _save_word_timestamps(
-        client, voice_id, model_id, script, output_path
-    ):
-        print(f"[TTS] Channel: {channel_id} | Voice: {voice_id} | Model: {model_id} | +timestamps")
-        return output_path
+    # A voice id this account can't use (400 voice_not_found — e.g. a Voice Library voice
+    # that was never added to the library) must not kill a render at the TTS step, which
+    # runs after the whole script + grounding pipeline. Mark it dead for the session and
+    # retry once with a freshly resolved voice.
+    last_voice = ""
+    for attempt in (0, 1):
+        voice_id, model_id = resolve_tts_config(channel_id)
+        last_voice = voice_id
+        try:
+            # Word-level timestamps (free from the same TTS call) power accurate /
+            # karaoke captions (video/caption_timing). Best-effort — any failure falls
+            # back to the plain stream, so captions revert to the proportional estimate.
+            if _word_timestamps_enabled() and _save_word_timestamps(
+                client, voice_id, model_id, script, output_path
+            ):
+                print(
+                    f"[TTS] Channel: {channel_id} | Voice: {voice_id} | "
+                    f"Model: {model_id} | +timestamps"
+                )
+                return output_path
 
-    audio = client.text_to_speech.convert(
-        voice_id=voice_id,
-        model_id=model_id,
-        text=script,
-    )
-    with open(output_path, "wb") as f:
-        for chunk in audio:
-            f.write(chunk)
+            audio = client.text_to_speech.convert(
+                voice_id=voice_id,
+                model_id=model_id,
+                text=script,
+            )
+            with open(output_path, "wb") as f:
+                for chunk in audio:
+                    f.write(chunk)
+            break
+        except Exception as exc:
+            if attempt or not _is_unusable_voice(exc):
+                raise
+            _mark_voice_dead(voice_id, exc)
 
-    print(f"[TTS] Channel: {channel_id} | Voice: {voice_id} | Model: {model_id}")
+    print(f"[TTS] Channel: {channel_id} | Voice: {last_voice} | Model: {model_id}")
     return output_path
 
 
@@ -150,9 +286,10 @@ def resolve_local_voice(provider: str, channel_id: str | None = None) -> str | N
     Precedence mirrors the ElevenLabs per-channel/pool pattern in `resolve_tts_config`:
       1. per-channel config (`channels.json` `tts.local_voices` pool → rotates per run =
          delivery variation; or `tts.local_voice` single value);
-      2. global env pool — PIPER_VOICES / KOKORO_VOICES / XTTS_SPEAKERS (csv, rotates);
-      3. global env single — PIPER_VOICE / KOKORO_VOICE / XTTS_SPEAKER_WAV.
-    Step 3 means when nothing new is configured this returns exactly today's value, so
+      2. shared catalog — `config/voices.json` `local.<provider>` (weighted, rotates);
+      3. global env pool — PIPER_VOICES / KOKORO_VOICES / XTTS_SPEAKERS (csv, rotates);
+      4. global env single — PIPER_VOICE / KOKORO_VOICE / XTTS_SPEAKER_WAV.
+    Step 4 means when nothing new is configured this returns exactly today's value, so
     the synths stay byte-identical. Fail-open: any profile-load error drops to the env
     forms; never raises.
     """
@@ -168,6 +305,9 @@ def resolve_local_voice(provider: str, channel_id: str | None = None) -> str | N
             return random.choice(list(profile.local_tts_voices))
         if profile.local_tts_voice:
             return profile.local_tts_voice
+    catalog = load_local_voice_pool(provider)
+    if catalog:
+        return weighted_random_voice(catalog)
     pool = _env_pool(_LOCAL_VOICE_POOL_ENV.get(provider, ""))
     if pool:
         return random.choice(pool)

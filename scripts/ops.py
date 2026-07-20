@@ -175,6 +175,16 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "voices", "List TTS voices — ElevenLabs account + local Piper — and what each channel uses"
+)
+def cmd_voices(_args: argparse.Namespace) -> int:
+    from core.voice_catalog import render
+
+    print(render())
+    return 0
+
+
 @_register("free-doctor", "Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo")
 def cmd_free_doctor(_args: argparse.Namespace) -> int:
     import importlib.util

@@ -4,11 +4,13 @@ Both use injected print_fn/input_fn, so they test without a terminal, DB, or net
 (per tests/CLAUDE.md — all DB-backed helpers are patched).
 """
 
+import os
 import unittest
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from core.ui import prompt_proceed_or_length, run_queue_manager_interactive
+from core.ui import prompt_proceed_or_length, prompt_upload_plan, run_queue_manager_interactive
 
 
 def _seq(*items):
@@ -116,6 +118,44 @@ class TestQueueManagerRecovery(unittest.TestCase):
         ):
             run_queue_manager_interactive("tapin", print_fn=_sink(), input_fn=_seq())
         enqueue.assert_not_called()
+
+
+class TestUploadPlanOption3(unittest.TestCase):
+    """Option 3 now takes a clock time (or minutes), not just minutes-from-now."""
+
+    def _run(self, time_input):
+        # timing=3, privacy=default(""), then the time string.
+        with (
+            patch.dict(os.environ, {"USE_LEARNED_POST_SLOTS": "0"}, clear=False),
+            patch("core.ui.display_upload_queue"),
+            patch(
+                "analytics.post_timing.next_optimal_post_time",
+                return_value=datetime(2026, 7, 25, 22, 0, tzinfo=timezone.utc),
+            ),
+        ):
+            return prompt_upload_plan(
+                channel_id="tapin",
+                topic="",
+                print_fn=_sink(),
+                input_fn=_seq("3", "", time_input),
+            )
+
+    def test_explicit_datetime_schedules_that_time(self):
+        plan = self._run("2026-07-25 18:00")
+        self.assertEqual(plan.mode, "queue")
+        # 18:00 America/New_York (EDT) == 22:00 UTC.
+        self.assertEqual(
+            plan.scheduled_at.astimezone(timezone.utc),
+            datetime(2026, 7, 25, 22, 0, tzinfo=timezone.utc),
+        )
+
+    def test_bare_number_falls_back_to_minutes(self):
+        plan = self._run("45")
+        self.assertEqual(plan.mode, "queue")
+        # ~45 minutes from now (allow scheduling slack), and safely in the future.
+        delta = (plan.scheduled_at - datetime.now(timezone.utc)).total_seconds()
+        self.assertGreater(delta, 40 * 60)
+        self.assertLess(delta, 50 * 60)
 
 
 if __name__ == "__main__":

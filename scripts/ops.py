@@ -185,6 +185,31 @@ def cmd_voices(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _ollama_server_probe(timeout: float = 2.0) -> tuple[bool, int]:
+    """(reachable, model_count) for the local Ollama server. Never raises.
+
+    Unlike run_mode._ollama_ready() - which returns False when OLLAMA_MODEL is unset -
+    this reports the server being up even before a model is chosen, so free-doctor can
+    tell "Ollama running, just pick a model" apart from "no free LLM installed at all".
+    """
+    import os
+
+    base = (os.getenv("OLLAMA_BASE_URL", "") or "http://localhost:11434/v1").strip()
+    root = base.rstrip("/")
+    if root.endswith("/v1"):
+        root = root[: -len("/v1")]
+    try:
+        import requests
+
+        resp = requests.get(f"{root}/api/tags", timeout=timeout)
+        if resp.status_code != 200:
+            return False, 0
+        models = resp.json().get("models", []) or []
+        return True, len(models)
+    except Exception:
+        return False, 0
+
+
 @_register("free-doctor", "Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo")
 def cmd_free_doctor(_args: argparse.Namespace) -> int:
     import importlib.util
@@ -205,13 +230,23 @@ def cmd_free_doctor(_args: argparse.Namespace) -> int:
             f"  LLM        : X   OLLAMA_MODEL={os.getenv('OLLAMA_MODEL')} set, server unreachable"
         )
         print("                   start it: `ollama serve` (+ `ollama pull <model>`)")
-    elif os.getenv("OPENROUTER_API_KEY", "").strip():
-        print("  LLM        : ~   openrouter :free (cloud, RATE-LIMITED) - not truly free")
-        print("                   for unlimited $0: install Ollama, `ollama pull llama3.1:8b`,")
-        print("                   then set OLLAMA_MODEL=llama3.1:8b")
     else:
-        print("  LLM        : X   no free LLM")
-        print("                   install Ollama, `ollama pull llama3.1:8b`, set OLLAMA_MODEL")
+        # OLLAMA_MODEL unset. Tell "Ollama running, just pick a model" apart from the
+        # rate-limited cloud fallback and "nothing installed".
+        up, n_models = _ollama_server_probe()
+        if up:
+            print("  LLM        : X   Ollama running, but OLLAMA_MODEL not set")
+            if n_models:
+                print("                   a model is already pulled - set OLLAMA_MODEL=<name>")
+            else:
+                print("                   pull one: `ollama pull llama3.1:8b`, set OLLAMA_MODEL")
+        elif os.getenv("OPENROUTER_API_KEY", "").strip():
+            print("  LLM        : ~   openrouter :free (cloud, RATE-LIMITED) - not truly free")
+            print("                   for unlimited $0: install Ollama, `ollama pull llama3.1:8b`,")
+            print("                   then set OLLAMA_MODEL=llama3.1:8b")
+        else:
+            print("  LLM        : X   no free LLM")
+            print("                   install Ollama, `ollama pull llama3.1:8b`, set OLLAMA_MODEL")
 
     if r.tts_provider:
         print(f"  Voice      : OK  {r.tts_provider} (local)")

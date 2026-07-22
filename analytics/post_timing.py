@@ -296,6 +296,91 @@ def format_scheduled_local(when_utc: datetime, channel_id: str) -> str:
     return local.strftime("%a %I:%M %p %Z").replace(" 0", " ")
 
 
+# Explicit date + time (full date required — a year-less date can't be dated safely).
+_DATETIME_FORMATS = (
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d %I:%M%p",
+    "%Y-%m-%d %I%p",
+)
+# Bare clock time (no date) — combined with today/tomorrow by the caller.
+_CLOCK_FORMATS = (
+    "%H:%M",
+    "%I:%M%p",
+    "%I%p",
+)
+
+
+def _try_strptime(text: str, formats: tuple[str, ...]) -> datetime | None:
+    for fmt in formats:
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def parse_local_time_input(
+    raw: str,
+    channel_id: str | None = None,
+    *,
+    after: datetime | None = None,
+) -> datetime | None:
+    """Parse an operator time string into a UTC datetime, read in the channel's tz.
+
+    Accepts a bare clock time (``9:30pm``, ``9:30 pm``, ``21:30``, ``9pm``) — rolled
+    to the next future occurrence — an optional ``today``/``tomorrow`` prefix
+    (``tomorrow 6pm``), or a full date + time (``2026-07-25 18:00``,
+    ``2026-07-25 6:00pm``). Returns None when nothing parses so the caller can
+    re-prompt or fall back. Never raises.
+    """
+    text = (raw or "").strip().lower()
+    if not text:
+        return None
+
+    schedule = get_post_schedule(channel_id)
+    try:
+        tz = ZoneInfo(schedule.timezone)
+    except Exception:
+        tz = ZoneInfo("America/New_York")
+
+    after_utc = after or datetime.now(timezone.utc)
+    if after_utc.tzinfo is None:
+        after_utc = after_utc.replace(tzinfo=timezone.utc)
+    now_local = after_utc.astimezone(tz)
+
+    day_offset: int | None = None
+    for word, offset in (("tomorrow", 1), ("today", 0)):
+        if text.startswith(word):
+            day_offset = offset
+            text = text[len(word) :].strip()
+            break
+    if text.startswith("at "):
+        text = text[3:].strip()
+
+    # Explicit date + time wins when a date is present (ignore any day-word prefix).
+    try:
+        explicit = datetime.fromisoformat(text)
+    except ValueError:
+        explicit = _try_strptime(text, _DATETIME_FORMATS)
+    if explicit is not None:
+        local = explicit.replace(tzinfo=tz) if explicit.tzinfo is None else explicit.astimezone(tz)
+        return local.astimezone(timezone.utc)
+
+    # Bare clock time (try with and without an internal space, e.g. "9:30 pm").
+    clock = _try_strptime(text, _CLOCK_FORMATS) or _try_strptime(
+        text.replace(" ", ""), _CLOCK_FORMATS
+    )
+    if clock is None:
+        return None
+
+    base = now_local.date() + timedelta(days=day_offset or 0)
+    local = datetime(base.year, base.month, base.day, clock.hour, clock.minute, tzinfo=tz)
+    # An unqualified clock time already past today rolls to tomorrow.
+    if day_offset is None and local <= now_local:
+        local = local + timedelta(days=1)
+    return local.astimezone(timezone.utc)
+
+
 def _bucket_key(when_utc: datetime, tz: ZoneInfo) -> tuple[int, int, int]:
     if when_utc.tzinfo is None:
         when_utc = when_utc.replace(tzinfo=timezone.utc)
@@ -310,6 +395,20 @@ def _top_slots(
 ) -> tuple[PostSlot, ...]:
     ranked = sorted(scores.items(), key=lambda item: -item[1])[:limit]
     return tuple(PostSlot(w, h, m) for (w, h, m), _ in ranked)
+
+
+def _bucket_averages(
+    sums: dict[tuple[int, int, int], float],
+    counts: dict[tuple[int, int, int], int],
+    min_bucket_samples: int,
+) -> dict[tuple[int, int, int], float]:
+    """Average engagement per (weekday, hour) bucket, keeping only buckets with at least
+    ``min_bucket_samples`` posts. Falls back to all buckets when the floor would leave
+    nothing (thin data) so a schedule can still be learned."""
+    avg = {k: sums[k] / counts[k] for k in sums if counts[k] >= min_bucket_samples}
+    if not avg:
+        avg = {k: sums[k] / counts[k] for k in sums}
+    return avg
 
 
 @dataclass
@@ -417,9 +516,16 @@ def learn_slots_from_analytics(
     max_default_slots: int = 6,
     max_domain_slots: int = 3,
     min_domain_samples: int = 3,
+    min_bucket_samples: int = 2,
 ) -> PostScheduleConfig | None:
     """
     Derive best weekday/hour slots from publish_log rows with published_at + engagement.
+
+    Slots are ranked by **average** engaged-rate per (weekday, hour) bucket, not summed
+    engagement — otherwise whichever day already gets the most posts wins on volume alone,
+    so a schedule that leans weekend keeps re-learning the weekend. Buckets with fewer than
+    ``min_bucket_samples`` posts are set aside so one lucky post can't top the list, unless
+    the floor would leave nothing (thin data) — then all buckets count.
     Returns None until enough timed outcome data exists.
     """
     channel_id = resolve_channel_id(channel_id)
@@ -433,25 +539,31 @@ def learn_slots_from_analytics(
     except Exception:
         tz = ZoneInfo("America/New_York")
 
-    overall: dict[tuple[int, int, int], float] = defaultdict(float)
-    by_domain: dict[str, dict[tuple[int, int, int], float]] = defaultdict(
-        lambda: defaultdict(float)
-    )
+    overall_sum: dict[tuple[int, int, int], float] = defaultdict(float)
+    overall_n: dict[tuple[int, int, int], int] = defaultdict(int)
+    dom_sum: dict[str, dict[tuple[int, int, int], float]] = defaultdict(lambda: defaultdict(float))
+    dom_n: dict[str, dict[tuple[int, int, int], int]] = defaultdict(lambda: defaultdict(int))
 
     for domain, when, engagement in samples:
         key = _bucket_key(when, tz)
-        overall[key] += engagement
-        by_domain[domain][key] += engagement
+        overall_sum[key] += engagement
+        overall_n[key] += 1
+        dom_sum[domain][key] += engagement
+        dom_n[domain][key] += 1
 
-    default_slots = _top_slots(overall, limit=max_default_slots)
+    overall_avg = _bucket_averages(overall_sum, overall_n, min_bucket_samples)
+    default_slots = _top_slots(overall_avg, limit=max_default_slots)
     if not default_slots:
         return None
 
     domain_slots: dict[str, tuple[PostSlot, ...]] = {}
-    for domain, scores in by_domain.items():
-        if len(scores) < min_domain_samples:
+    for domain, sums in dom_sum.items():
+        counts = dom_n[domain]
+        if sum(counts.values()) < min_domain_samples:
             continue
-        picked = _top_slots(scores, limit=max_domain_slots)
+        picked = _top_slots(
+            _bucket_averages(sums, counts, min_bucket_samples), limit=max_domain_slots
+        )
         if picked:
             domain_slots[domain] = picked
 

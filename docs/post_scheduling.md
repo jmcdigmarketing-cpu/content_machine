@@ -67,8 +67,18 @@ py -m analytics.sync_metrics --channel tapin
 
 Run that hours or days after publish when YouTube Analytics has data.
 
+## Learned slots
+
+`learn_slots_from_analytics()` derives weekday/hour slots from your own timed publish
+outcomes once ≥8 exist (`USE_LEARNED_POST_SLOTS=auto`, default). Slots are ranked by
+**average** engaged-rate per bucket — not summed — so whichever day already receives the
+most posts can't win on volume alone (a weekend-heavy schedule would otherwise keep
+re-learning the weekend). Buckets below `min_bucket_samples` (2) are set aside unless that
+would leave nothing. Until 8 timed outcomes accrue, the static `channels.json` schedule
+drives the recommendation; the manual time input on upload **Option 3** (a clock time like
+`9:30pm` / `tomorrow 6pm`) is always available to override it.
+
 ## Future
 
-- `learn_slots_from_analytics()` — adjust slots from TapIn / YouTube Analytics performance by hour  
 - Alembic migrations with FK constraints across runs → publish_log → assets  
 - Optional minimum gap between publishes (e.g. 24h) via env

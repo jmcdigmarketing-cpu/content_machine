@@ -1300,7 +1300,11 @@ def prompt_upload_plan(
     input_fn=input,
 ) -> UploadPlan:
     """Interactive upload timing and privacy (no CLI flags)."""
-    from analytics.post_timing import format_scheduled_local, next_optimal_post_time
+    from analytics.post_timing import (
+        format_scheduled_local,
+        next_optimal_post_time,
+        parse_local_time_input,
+    )
 
     profile = get_channel_profile(channel_id)
     default_priv = profile.privacy_status_default or "private"
@@ -1313,7 +1317,7 @@ def prompt_upload_plan(
     subsection("Upload", print_fn)
     print_fn("  1) Skip — do not upload")
     print_fn("  2) Queue now — worker uploads when you run: py -m jobs.worker")
-    print_fn("  3) Queue later — enter minutes from now")
+    print_fn("  3) Queue later — enter a time (e.g. 9:30pm, tomorrow 6pm) or minutes")
     print_fn(f"  4) Schedule on YouTube for {optimal_label} — next open slot (topic-aware)")
     print_fn("  5) Recover / re-queue a rendered video — open queue manager")
     timing = input_fn("  Select 1-5 [1]: ").strip() or "1"
@@ -1340,13 +1344,22 @@ def prompt_upload_plan(
         return UploadPlan(mode="queue", scheduled_at=now, privacy_status=privacy_status)
 
     if timing == "3":
-        raw = input_fn("  Minutes until upload [60]: ").strip() or "60"
-        try:
-            minutes = max(1, int(raw))
-        except ValueError:
-            minutes = 60
-        scheduled = now + timedelta(minutes=minutes)
-        print_fn(f"  Scheduled for: {scheduled.astimezone().strftime('%Y-%m-%d %H:%M %Z')}")
+        raw = input_fn(
+            "  Upload time — 9:30pm, tomorrow 6pm, 2026-07-25 18:00, or minutes [60]: "
+        ).strip()
+        scheduled = parse_local_time_input(raw, channel_id or "default", after=now) if raw else None
+        if scheduled is None:
+            # Empty or not a time ⇒ treat as legacy minutes-from-now (bare number / default 60).
+            try:
+                minutes = max(1, int(raw)) if raw else 60
+            except ValueError:
+                minutes = 60
+            scheduled = now + timedelta(minutes=minutes)
+        # The local worker claims when scheduled_at <= now, so never schedule in the past.
+        min_at = now + timedelta(minutes=1)
+        if scheduled < min_at:
+            scheduled = min_at
+        print_fn(f"  Scheduled for: {format_scheduled_local(scheduled, channel_id or 'default')}")
         return UploadPlan(
             mode="queue",
             scheduled_at=scheduled,

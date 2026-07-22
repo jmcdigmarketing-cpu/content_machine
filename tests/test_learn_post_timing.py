@@ -60,6 +60,51 @@ class TestLearnPostTiming(unittest.TestCase):
         top = learned.slots[0]
         self.assertEqual((top.weekday, top.hour), (3, 18))
 
+    def test_ranks_by_average_not_summed_volume(self):
+        # The operator's "always a weekend" bug: a high-VOLUME mediocre weekend bucket
+        # must NOT beat a low-volume EXCELLENT weekday bucket. Averaging (not summing)
+        # engagement is what de-biases the schedule. This fails on the old summed code.
+        tz = timezone.utc
+        samples = (
+            # Tuesday 19:00 — few posts, excellent engagement (lower summed total).
+            (2025, 1, 7, 19, 0.50),
+            (2025, 1, 14, 19, 0.48),
+            # Saturday 12:00 — many posts, mediocre engagement (higher summed total).
+            (2025, 1, 4, 12, 0.20),
+            (2025, 1, 11, 12, 0.20),
+            (2025, 1, 18, 12, 0.20),
+            (2025, 1, 25, 12, 0.20),
+            (2025, 2, 1, 12, 0.20),
+            (2025, 2, 8, 12, 0.20),
+        )
+        rows = [
+            PublishLogRecord(
+                id=i + 1,
+                content_run_id=0,
+                channel_id="tapin",
+                status="imported",
+                metrics_json=json.dumps(
+                    {"engaged_rate": rate, "domain": "gaming", "title": f"V{i}"}
+                ),
+                published_at=datetime(y, m, d, hr, 0, tzinfo=tz),
+            )
+            for i, (y, m, d, hr, rate) in enumerate(samples)
+        ]
+
+        static = PostScheduleConfig(timezone="UTC", slots=(PostSlot(0, 12, 0),))
+        with (
+            patch("storage.repositories.publish_log.get_publish_log_repository") as repo,
+            patch("analytics.post_timing._load_static_post_schedule", return_value=static),
+        ):
+            repo.return_value.list_timed_outcomes.return_value = rows
+            learned = learn_slots_from_analytics("tapin", min_samples=8)
+
+        self.assertIsNotNone(learned)
+        top = learned.slots[0]
+        self.assertEqual((top.weekday, top.hour), (1, 19))  # Tuesday, not Saturday
+        # Saturday noon still surfaces — it's just no longer first.
+        self.assertIn((5, 12), [(s.weekday, s.hour) for s in learned.slots])
+
 
 class TestJobScheduledDelay(unittest.TestCase):
     def test_pending_job_not_claimed_before_scheduled_at(self):

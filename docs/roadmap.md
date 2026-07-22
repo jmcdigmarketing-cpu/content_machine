@@ -11,11 +11,71 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-17 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1064 tests green. Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
+Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1125 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
-**Where we are:** the discovery → script → render → publish pipeline is complete and the **learning loop is closed** — real YouTube engagement now feeds topic, length, and post-time recommendations. Current focus is widening data intake (Apify), tightening automation, and engineering hygiene. See "Next — current focus" below.
+**Where we are:** the discovery → script → render → publish pipeline is complete and the **learning loop is closed** — real YouTube engagement now feeds topic, length, and post-time recommendations. Current focus is widening data intake (Apify), tightening automation, and engineering hygiene. See **Next up — all open items** below.
+
+---
+
+## Next up — all open items
+
+*The single forward list — everything still open across this roadmap, grouped by area.
+Detail lives in the phase/pillar sections further down. **Multi-platform distribution
+(Phase M) is intentionally excluded here** — it stays parked under
+[Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
+voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
+the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
+input + average-based learned post slots). 1125 tests green.*
+
+**Data spine & storage**
+- [ ] Alembic baseline + FKs (`content_run_id` on `publish_log`, `jobs`, `assets`)
+- [ ] Reddit agent-workload rate-limit-aware caching (the OAuth backend already shipped)
+- [ ] RSS feeds to reduce Tapology scrape dependency
+
+**Recommenders & calibration**
+- [ ] Backtest recommender accuracy vs. realized engagement (volume-gated)
+- [ ] Promote `SEMANTIC_TRADE_VALIDATION` default-on for sports channels `[S]`
+
+**Signals & data intake**
+- [ ] `youtube_comments` / `instagram_figures` signals (templated in the catalog, not wired)
+- [ ] Live-run tuning of Apify actor inputs against real topics
+- [ ] Free-backend probes — TikTok/Twitter equivalents (only if the Apify bill justifies it)
+
+**Video creation quality (Pillar 6 remainder + Phases Q/R)**
+- [ ] Whisper local — caption timing + clip transcription (unlocks Phase R)
+- [ ] Clip-from-source (Phase R) + subject-tracked auto-reframe
+- [ ] Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists
+- [ ] Router vision path → multimodal rendered-video review (Pillar 2)
+
+**Efficiency & observability**
+- [ ] Cost / quota dashboard (O9) — per-run API spend (OpenAI / Apify / YouTube units) in status
+- [ ] Governor follow-ups (O12) — YouTube units under a governor scope; per-provider LLM spend in the cost line
+- [ ] Router follow-ups — premium→cheaper provider failover on auth/quota error
+
+**Growth & new verticals**
+- [ ] MoneyWise depth wave — earnings-calendar signal, ticker watchlist, finance brief sections
+- [ ] Third-vertical groundwork: AI Tools / Tech — channel profile + SEO + coverage audit
+
+**Engineering hygiene**
+- [ ] git private remote — create + push
+- [ ] Tighten the mypy baseline; annotate/retire the remaining broad `except Exception` handlers
+- [ ] Raise test coverage on render + publish paths
+
+**Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)** *(proposed / not started — detail in the Pillar 7 section below)*
+- [ ] C1 — expose `scripts/ops.py` `@_register` commands as `SKILL.md` Agent Skills
+- [ ] C2 — SkillOpt-Sleep loop in `core/overnight.py` (nightly gated prompt/skill edits)
+
+**Deferred (volume-gated — do not build until publish volume supports correlations)**
+- [ ] Thumbnail scoring → CTR (needs impressions/CTR in the metrics sync)
+- [ ] Prompt-performance analysis; asset-effectiveness ranking from `assets` history
+- [ ] Full operator dashboard / Channel Command Center
+- [ ] Tavily / broad web research; Bluesky direction signal
+- [ ] Multi-language (single script → localized TTS) — low priority for the gaming/UFC niche
+
+*Excluded: **Phase M — multi-platform distribution** (TikTok/Instagram/Reels + cross-platform
+learning) stays parked under [Later horizons](#later-horizons).*
 
 ---
 
@@ -242,7 +302,10 @@ Turn the research spine into a compliance moat.
 - [x] **Cadence guardrail** — `core/cadence.py`: caps videos/rolling-week (recent + scheduled); `MAX_VIDEOS_PER_WEEK` (default 5); gates `auto_generate` (`--force` to override). Pairs with the variation check (variety + volume).
 - [x] **Original-insight injection** — when a script reads as a neutral recap, inject one opinion/prediction/"why it matters" beat grounded only in verified facts (`content_engine._maybe_inject_insight`, `core/authenticity.has_insight`, `INSIGHT_INJECTION_ENABLED`). Runs before the grounding regen; default-on; no-op when a take already exists. Prompt also gained a detector-aligned STANCE bullet.
 - [x] **Human-context layer** — per-channel persona (voice/tone/audience/recurring-segment/sign-off via `channels.json` "persona") + data-driven continuity callbacks to recent coverage, injected into the script prompt (`core/channel_persona.human_context_block`). Bounded so it can't override grounding; "" when unconfigured + thin history.
-- [ ] **Voice variety** — vary TTS delivery; optional real-voice clone slot.
+- [x] **Voice variety** — *shipped:* per-channel local voice + pool rotation
+  (`core/tts.resolve_local_voice`, config-driven `config/voices.json`) + optional
+  run-seeded delivery jitter (`TTS_VOICE_VARIETY`); real-voice **clone** slot via XTTS
+  and the new **Qwen3-TTS** provider (`local.qwen[]`, GPU voice cloning, metered $0).
 
 **From 2026 market research (shipped 2026-06):**
 - [x] **Competitor "outlier" surface** — `core/outlier.py`: top view-velocity competitor video shown as a content prompt (every guide says "study over-performing competitors first").
@@ -532,6 +595,24 @@ box, so it stays OFF) and **not started** (clip-from-source, storyboard).*
   (`core/link_facts.py`); **multi-source vault importer** (`core/vault_ingest.py` —
   URL/PDF/YouTube → provenance-tagged vault note, `ops ingest`); n8n recipes ride the
   existing `core/events.py` webhooks (see [tooling_landscape.md](tooling_landscape.md)).
+
+### Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)  *(proposed / not started)*
+*Names and closes loops the project already opened, adding almost no new dependency. The
+open **Agent Skills** standard (`SKILL.md` folders that Copilot/Claude agents auto-load)
+plus Microsoft's **SkillOpt** (a validation-gated optimizer that trains reusable
+natural-language skills for a frozen LLM agent) map directly onto ingredients already
+built here: the `scripts/ops.py` `@_register` command registry, the frozen
+`core/prompt_evals.py` eval gate, `core/overnight.py`, and the Pillar 4 vault. Compounds
+with a local frozen model (Bonsai/Ollama) into a self-improving $0 factory. **All items
+below are proposed — implementation held for operator review.***
+- [ ] **C1 — Ops-as-skills** — wrap the `@_register` ops commands as `SKILL.md` Agent
+  Skills so Pillar 5 agents and external Claude Code / Copilot agents can invoke them as
+  first-class skills.
+- [ ] **C2 — SkillOpt-Sleep loop** — extend `core/overnight.py` with a nightly "review the
+  day's runs → propose prompt/skill edits → ship only if they beat the frozen
+  `core/prompt_evals.py` gate → consolidate into the vault (Pillar 4)". Optimizes the
+  script prompt, Best-Bet angle templates, and title rules against realized engagement;
+  uses the local frozen model when available.
 
 ### Supporting track — API & efficiency (not a pillar)
 *The credit/quota layer is in good shape post-O11; these stay incremental.*

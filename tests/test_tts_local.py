@@ -19,6 +19,7 @@ class TestIsLocalProvider(unittest.TestCase):
             ("kokoro", True),
             ("xtts", True),
             ("piper", True),
+            ("qwen", True),
             ("PIPER", True),  # case-insensitive
             ("elevenlabs", False),
             ("", False),
@@ -98,6 +99,56 @@ class TestAltProviderChain(unittest.TestCase):
     def test_unset_provider_is_noop(self):
         os.environ.pop("TTS_PROVIDER", None)
         self.assertIsNone(tts._try_alt_tts_provider("hi", "out.mp3", "tapin"))
+
+
+class TestQwenProvider(unittest.TestCase):
+    """Local Qwen3-TTS (voice cloning, GPU). No model/torch in CI — heavy bits mocked."""
+
+    def test_no_voice_returns_none(self):
+        # Voice unresolved -> None before any heavy import (fail-open to ElevenLabs).
+        with patch("core.tts.resolve_local_voice", return_value=None):
+            self.assertIsNone(tts._qwen_synth("hi", "out.mp3", "tapin"))
+
+    def test_speaker_mode_passes_speaker(self):
+        model = MagicMock()
+        model.generate_custom_voice.return_value = ([b"wav"], 24000)
+        with (
+            patch("core.tts.resolve_local_voice", return_value="Vivian"),
+            patch("core.tts._load_qwen_model", return_value=model),
+            patch("core.tts._transcode_to_mp3", return_value="out.mp3") as trans,
+            patch.dict("sys.modules", {"soundfile": MagicMock()}),
+        ):
+            self.assertEqual(tts._qwen_synth("hello", "out.mp3", "tapin"), "out.mp3")
+        kwargs = model.generate_custom_voice.call_args.kwargs
+        self.assertEqual(kwargs["speaker"], "Vivian")
+        self.assertNotIn("ref_audio", kwargs)
+        trans.assert_called_once()
+
+    def test_wav_voice_uses_clone_ref(self):
+        model = MagicMock()
+        model.generate_custom_voice.return_value = ([b"wav"], 24000)
+        with (
+            patch("core.tts.resolve_local_voice", return_value="C:/ref/brand.wav"),
+            patch("core.tts.os.path.isfile", return_value=True),
+            patch("core.tts._qwen_ref_text", return_value="the transcript"),
+            patch("core.tts._load_qwen_model", return_value=model),
+            patch("core.tts._transcode_to_mp3", return_value="out.mp3"),
+            patch.dict("sys.modules", {"soundfile": MagicMock()}),
+        ):
+            tts._qwen_synth("hello", "out.mp3", "tapin")
+        kwargs = model.generate_custom_voice.call_args.kwargs
+        self.assertEqual(kwargs["ref_audio"], "C:/ref/brand.wav")
+        self.assertEqual(kwargs["ref_text"], "the transcript")
+        self.assertNotIn("speaker", kwargs)
+
+    def test_provider_failure_falls_back(self):
+        # A model/import failure must fall back to None (ElevenLabs), never raise.
+        with (
+            patch.dict(os.environ, {"TTS_PROVIDER": "qwen"}, clear=False),
+            patch("core.tts.resolve_local_voice", return_value="Vivian"),
+            patch("core.tts._load_qwen_model", side_effect=RuntimeError("no GPU")),
+        ):
+            self.assertIsNone(tts._try_alt_tts_provider("hi", "out.mp3", "tapin"))
 
 
 if __name__ == "__main__":

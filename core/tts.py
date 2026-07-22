@@ -255,15 +255,22 @@ def _free_mode_strict() -> bool:
     return os.getenv("FREE_MODE_STRICT", "").strip().lower() in ("1", "true", "yes")
 
 
-_LOCAL_TTS_PROVIDERS = ("kokoro", "xtts", "piper")
+_LOCAL_TTS_PROVIDERS = ("kokoro", "xtts", "piper", "qwen")
 
 # Per-channel local voice → global env fallback. Value semantics depend on the provider:
-# Piper → a .onnx path, Kokoro → a voice name (e.g. "af_heart"), XTTS → a speaker wav.
-_LOCAL_VOICE_ENV = {"piper": "PIPER_VOICE", "kokoro": "KOKORO_VOICE", "xtts": "XTTS_SPEAKER_WAV"}
+# Piper → a .onnx path, Kokoro → a voice name (e.g. "af_heart"), XTTS → a speaker wav,
+# Qwen → a built-in speaker name OR a reference .wav path (voice cloning).
+_LOCAL_VOICE_ENV = {
+    "piper": "PIPER_VOICE",
+    "kokoro": "KOKORO_VOICE",
+    "xtts": "XTTS_SPEAKER_WAV",
+    "qwen": "QWEN_VOICE",
+}
 _LOCAL_VOICE_POOL_ENV = {
     "piper": "PIPER_VOICES",
     "kokoro": "KOKORO_VOICES",
     "xtts": "XTTS_SPEAKERS",
+    "qwen": "QWEN_VOICES",
 }
 
 # Delivery-variation speed band (TTS_VOICE_VARIETY). Narrow enough to never hurt
@@ -476,7 +483,81 @@ def _piper_synth(script: str, output_path: str, channel_id: str | None) -> str |
     return _transcode_to_mp3(wav_path, output_path)
 
 
-_ALT_TTS = {"kokoro": _kokoro_synth, "xtts": _xtts_synth, "piper": _piper_synth}
+# Loaded Qwen3-TTS model(s), cached per process/model-id — loading a 1.7B model is heavy
+# and a render only needs it once, but multi-render sessions (e.g. reruns) reuse it.
+_qwen_model_cache: dict[str, Any] = {}
+
+
+def _load_qwen_model(model_id: str):
+    """Load + cache the Qwen3-TTS model (optional extra: qwen-tts, torch; needs a GPU)."""
+    cached = _qwen_model_cache.get(model_id)
+    if cached is not None:
+        return cached
+    import torch
+    from qwen_tts import Qwen3TTSModel
+
+    device = os.getenv("QWEN_TTS_DEVICE", "cuda:0")
+    dtype = torch.bfloat16 if device.startswith("cuda") else torch.float32
+    kwargs: dict[str, Any] = {"device_map": device, "dtype": dtype}
+    attn = os.getenv("QWEN_TTS_ATTN", "").strip()  # optional, e.g. flash_attention_2
+    if attn:
+        kwargs["attn_implementation"] = attn
+    model = Qwen3TTSModel.from_pretrained(model_id, **kwargs)
+    _qwen_model_cache[model_id] = model
+    return model
+
+
+def _qwen_ref_text(ref_audio: str) -> str:
+    """Transcript for a clone reference: sidecar `<ref>.txt`, else the QWEN_REF_TEXT env."""
+    sidecar = os.path.splitext(ref_audio)[0] + ".txt"
+    try:
+        if os.path.isfile(sidecar):
+            with open(sidecar, encoding="utf-8") as f:
+                return f.read().strip()
+    except OSError:
+        pass
+    return (os.getenv("QWEN_REF_TEXT", "") or "").strip()
+
+
+def _qwen_synth(script: str, output_path: str, channel_id: str | None) -> str | None:
+    """Local Qwen3-TTS (optional extra: qwen-tts + torch; needs a CUDA GPU).
+
+    The resolved voice is either a built-in speaker name (e.g. "Vivian") or a path to a
+    reference `.wav` for **voice cloning** (transcript from a sidecar `<ref>.txt` or
+    QWEN_REF_TEXT). Any failure falls back to ElevenLabs — a local voice can't break a
+    render. Voice resolution happens before heavy imports so the "not configured" path
+    returns None without needing torch/qwen-tts installed.
+    """
+    voice = (resolve_local_voice("qwen", channel_id) or "").strip()
+    if not voice:
+        logger.warning("TTS_PROVIDER=qwen needs a QWEN_VOICE (speaker name or reference .wav)")
+        return None
+
+    import soundfile as sf
+
+    model = _load_qwen_model(os.getenv("QWEN_TTS_MODEL", "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"))
+    kwargs: dict[str, Any] = {"text": script, "language": os.getenv("QWEN_TTS_LANG", "English")}
+    if voice.lower().endswith(".wav") and os.path.isfile(voice):
+        kwargs["ref_audio"] = voice
+        ref_text = _qwen_ref_text(voice)
+        if ref_text:
+            kwargs["ref_text"] = ref_text
+    else:
+        kwargs["speaker"] = voice
+
+    wavs, sr = model.generate_custom_voice(**kwargs)
+    wav = wavs[0] if isinstance(wavs, list | tuple) else wavs
+    wav_path = _tmp_wav_path(output_path)
+    sf.write(wav_path, wav, int(sr))
+    return _transcode_to_mp3(wav_path, output_path)
+
+
+_ALT_TTS = {
+    "kokoro": _kokoro_synth,
+    "xtts": _xtts_synth,
+    "piper": _piper_synth,
+    "qwen": _qwen_synth,
+}
 
 
 def _try_alt_tts_provider(script: str, output_path: str, channel_id: str | None) -> str | None:

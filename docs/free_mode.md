@@ -93,6 +93,11 @@ Free mode sets `TTS_PROVIDER=piper` for you once `PIPER_VOICE` exists.
 - **Kokoro** — ships its own voices, no download. `KOKORO_VOICE` selects one
   (default `af_heart`); needs torch + espeak-ng, so it's the GPU-box option.
 - **XTTS** — clones a voice from a 6s+ clean reference wav (`XTTS_SPEAKER_WAV`).
+- **Qwen3-TTS** — local voice **cloning** on a GPU (`pip install -U qwen-tts`; needs torch +
+  CUDA, fits a 12GB card). `QWEN_VOICE` is either a built-in speaker name **or** a path to a
+  reference `.wav` to clone a **brand voice** for a channel (transcript from a sidecar
+  `<ref>.txt` or `QWEN_REF_TEXT`). Add it to `config/voices.json` `local.qwen[]`. A unique,
+  consistent, $0 voice per channel — the authenticity moat, without ElevenLabs characters.
 
 Run **`py -m scripts.ops voices`** to see every voice this machine can use — local `.onnx`
 files found on disk, plus the voices on your ElevenLabs account with their ids and labels —

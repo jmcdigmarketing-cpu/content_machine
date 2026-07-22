@@ -109,7 +109,7 @@ def _channel_rows() -> list[str]:
             else:
                 how = "global catalog (sample)"
             rows.append(f"  {cid:<12} elevenlabs {voice_id}  [{how}]")
-            if provider in ("piper", "kokoro", "xtts"):
+            if provider in ("piper", "kokoro", "xtts", "qwen"):
                 local = resolve_local_voice(provider, cid) or "(none configured)"
                 rows.append(f"  {'':<12} {provider:<10} {local}")
         except Exception as exc:  # a broken channel must not kill the listing
@@ -130,7 +130,7 @@ def render() -> str:
         ids = ", ".join(f"{vid} (w{w})" for vid, w in pool.items())
         lines.append(f"  {category}: {ids}")
 
-    for provider in ("piper", "kokoro"):
+    for provider in ("piper", "kokoro", "xtts", "qwen"):
         pool = load_local_voice_pool(provider)
         if pool:
             joined = ", ".join(f"{vid} (w{w})" for vid, w in pool.items())

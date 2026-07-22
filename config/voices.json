@@ -7,6 +7,9 @@
     "    Per-channel pools live in config/channels.json (tts.voice_pool).",
     "  local.piper[]  -> path to a voice .onnx (needs its .onnx.json beside it)",
     "  local.kokoro[] -> a built-in Kokoro voice name (e.g. af_heart)",
+    "  local.xtts[]   -> path to a speaker reference .wav (XTTS voice clone)",
+    "  local.qwen[]   -> a built-in Qwen3-TTS speaker name, OR a reference .wav to CLONE",
+    "                    (transcript from a sidecar <ref>.txt or QWEN_REF_TEXT). Needs a GPU.",
     "weight = relative odds when a voice is picked at random (higher = more often).",
     "Fill in blank 'name'/'notes' from `ops voices` output, then re-categorize.",
     "A category whose name starts with '_' is PARKED: kept for reference, never used.",
@@ -41,6 +44,8 @@
   },
   "local": {
     "piper": [],
-    "kokoro": []
+    "kokoro": [],
+    "xtts": [],
+    "qwen": []
   }
 }

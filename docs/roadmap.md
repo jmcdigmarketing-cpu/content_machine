@@ -65,9 +65,10 @@ input + average-based learned post slots). 1125 tests green.*
 - [ ] Tighten the mypy baseline; annotate/retire the remaining broad `except Exception` handlers
 - [ ] Raise test coverage on render + publish paths
 
-**Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)** *(proposed / not started — detail in the Pillar 7 section below)*
-- [ ] C1 — expose `scripts/ops.py` `@_register` commands as `SKILL.md` Agent Skills
-- [ ] C2 — SkillOpt-Sleep loop in `core/overnight.py` (nightly gated prompt/skill edits)
+**Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)** *(shipped 2026-07-24 — detail in the Pillar 7 section below)*
+- [x] C1 — `scripts/ops.py` commands exposed as `skills/content-ops/SKILL.md` (Agent Skills)
+- [x] C2 — SkillOpt-Sleep gated proposal loop (`core/skillopt.py`, opt-in in `overnight`)
+- [ ] C-follow-ups — LLM-proposed directives; optional auto-apply of a gate-winner behind a flag
 
 **Deferred (volume-gated — do not build until publish volume supports correlations)**
 - [ ] Thumbnail scoring → CTR (needs impressions/CTR in the metrics sync)
@@ -598,23 +599,26 @@ box, so it stays OFF) and **not started** (clip-from-source, storyboard).*
   URL/PDF/YouTube → provenance-tagged vault note, `ops ingest`); n8n recipes ride the
   existing `core/events.py` webhooks (see [tooling_landscape.md](tooling_landscape.md)).
 
-### Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)  *(proposed / not started)*
+### Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)  *(shipped 2026-07-24)*
 *Names and closes loops the project already opened, adding almost no new dependency. The
 open **Agent Skills** standard (`SKILL.md` folders that Copilot/Claude agents auto-load)
 plus Microsoft's **SkillOpt** (a validation-gated optimizer that trains reusable
 natural-language skills for a frozen LLM agent) map directly onto ingredients already
 built here: the `scripts/ops.py` `@_register` command registry, the frozen
 `core/prompt_evals.py` eval gate, `core/overnight.py`, and the Pillar 4 vault. Compounds
-with a local frozen model (Bonsai/Ollama) into a self-improving $0 factory. **All items
-below are proposed — implementation held for operator review.***
-- [ ] **C1 — Ops-as-skills** — wrap the `@_register` ops commands as `SKILL.md` Agent
-  Skills so Pillar 5 agents and external Claude Code / Copilot agents can invoke them as
-  first-class skills.
-- [ ] **C2 — SkillOpt-Sleep loop** — extend `core/overnight.py` with a nightly "review the
-  day's runs → propose prompt/skill edits → ship only if they beat the frozen
-  `core/prompt_evals.py` gate → consolidate into the vault (Pillar 4)". Optimizes the
-  script prompt, Best-Bet angle templates, and title rules against realized engagement;
-  uses the local frozen model when available.
+with a local frozen model (Bonsai/Ollama) into a self-improving $0 factory.*
+- [x] **C1 — Ops-as-skills** — `core/ops_skills.py` renders `skills/content-ops/SKILL.md`
+  (Agent Skills frontmatter + a command table) from the live `@_register` registry, so
+  Pillar 5 agents / external Claude Code / Copilot agents can operate the pipeline as a
+  first-class skill. `py -m scripts.ops gen-skills` regenerates it (never drifts from the CLI).
+- [x] **C2 — SkillOpt-Sleep loop** — `core/skillopt.py`: scores the live prompts vs curated
+  candidate **STYLE DIRECTIVEs** on the **frozen `core/prompt_evals` rubric** across the
+  golden topics (via a new `extra_directive` seam in `content_engine`), keeps only a
+  gate-beater (`SKILLOPT_MIN_MARGIN`), and writes a reviewable **proposal** record to the
+  vault (Pillar 4) + a `skillopt_proposal` webhook. **Never auto-edits live prompts** — the
+  operator promotes a proposal to a `[strategy]` playbook bullet. Runs nightly inside
+  `overnight` when `SKILLOPT_ENABLED=true` (render-free, LLM-metered); `ops skillopt`.
+  *Follow-up: LLM-proposed (not just curated) directives; optional auto-apply behind a flag.*
 
 ### Supporting track — API & efficiency (not a pillar)
 *The credit/quota layer is in good shape post-O11; these stay incremental.*

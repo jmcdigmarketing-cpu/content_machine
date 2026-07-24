@@ -11,6 +11,33 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-07-24 — Pillar 7: Self-improving skills (Agent Skills + SkillOpt)
+
+**Prompt:** *"continue pillar 7 and from there advance as scheduled."* Built autonomously
+(safe-by-design) rather than pausing for a fresh approval gate.
+
+**How it maps to what already existed:** the `scripts/ops.py` `@_register` registry is a
+skill catalog; `core/prompt_evals.py` is a frozen validation gate; `core/overnight.py` is the
+nightly runner; the Pillar 4 vault `playbook_block` is the "ship" surface. Pillar 7 just names
+and closes those loops.
+
+**Shipped:**
+- **C1 — Ops-as-skills** — `core/ops_skills.py` renders `skills/content-ops/SKILL.md` (Agent
+  Skills frontmatter + a command table) from the live registry; `ops gen-skills` regenerates
+  it so it never drifts from the CLI.
+- **C2 — SkillOpt-Sleep** — `core/skillopt.py` scores the live prompts vs curated candidate
+  STYLE DIRECTIVEs on the frozen `prompt_evals` rubric across the golden topics (new
+  `extra_directive` seam in `content_engine`), keeps only a gate-beater
+  (`SKILLOPT_MIN_MARGIN`), and writes a reviewable **proposal** record to the vault +
+  `skillopt_proposal` event. Runs in `overnight` when `SKILLOPT_ENABLED=true`.
+
+**Key safety decision:** C2 **never auto-edits live prompts**. It proposes a gate-validated
+directive; the operator promotes it to a `[strategy]` playbook bullet. This delivers the full
+SkillOpt "validated optimization" value with zero autonomous prompt-mutation risk. Follow-ups
+(deferred): LLM-proposed directives; optional auto-apply behind a flag.
+
+---
+
 ## 2026-07-22 — Best Bet breadth
 
 **Prompt:** *"best bet needs more options"* — the startup best-bet picker returned too few,

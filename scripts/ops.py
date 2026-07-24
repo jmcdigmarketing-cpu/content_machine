@@ -60,6 +60,17 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "gen-skills", "Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills)"
+)
+def cmd_gen_skills(_args: argparse.Namespace) -> int:
+    from core.ops_skills import write_skill
+
+    path = write_skill()
+    print(f"Wrote {path} ({len(COMMANDS)} commands)")
+    return 0
+
+
 @_register("init-db", "Create SQL tables (Postgres)")
 def cmd_init_db(_args: argparse.Namespace) -> int:
     return _run_module("storage.init_db")
@@ -381,6 +392,16 @@ def cmd_overnight(args: argparse.Namespace) -> int:
 
     result = run_overnight(args.channel, count=args.count or 3, file=getattr(args, "file", None))
     print(render_overnight(result))
+    return 0
+
+
+@_register(
+    "skillopt", "SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate)"
+)
+def cmd_skillopt(args: argparse.Namespace) -> int:
+    from core.skillopt import render_skillopt, run_skillopt
+
+    print(render_skillopt(run_skillopt(args.channel)))
     return 0
 
 

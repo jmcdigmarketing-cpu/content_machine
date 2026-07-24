@@ -37,6 +37,7 @@ class OvernightResult:
     dossiers: int = 0
     outcomes: list[Any] = field(default_factory=list)
     health_line: str = ""
+    skillopt_line: str = ""
 
 
 def run_overnight(
@@ -82,6 +83,25 @@ def run_overnight(
     except Exception:
         result.health_line = ""
 
+    # Pillar 7: nightly SkillOpt-Sleep — gated skill-directive optimization. Opt-in (LLM
+    # calls) and fail-open; only proposes gate-beating directives, never edits live prompts.
+    import os
+
+    if os.getenv("SKILLOPT_ENABLED", "false").lower() in ("1", "true", "yes"):
+        try:
+            from core.skillopt import run_skillopt
+
+            r = run_skillopt(channel)
+            if r.improved:
+                result.skillopt_line = (
+                    f"SkillOpt: proposed a directive (+{r.margin:.1f} vs baseline) "
+                    f"-> {r.proposal_path or 'vault unset'}"
+                )
+            elif r.n_topics:
+                result.skillopt_line = "SkillOpt: no candidate beat the gate (prompts unchanged)"
+        except Exception as exc:
+            logger.debug("overnight skillopt step skipped: %s", exc)
+
     try:
         from core.events import emit_event
 
@@ -115,6 +135,8 @@ def render_overnight(result: OvernightResult) -> str:
     lines.append(f"Dossiers written to vault: {result.dossiers}")
     if result.health_line:
         lines.append(result.health_line)
+    if result.skillopt_line:
+        lines.append(result.skillopt_line)
     lines.append("Review drafts in output/<channel>/drafts/, then approve to render.")
     return "\n".join(lines)
 

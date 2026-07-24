@@ -119,6 +119,7 @@ def _build_prompts(
     is_thin_facts: bool = False,
     creative_brief: str = "",
     key_facts: list[str] | None = None,
+    extra_directive: str = "",
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
@@ -257,13 +258,22 @@ You must:
         _playbook = ""
     playbook = f"{_playbook}\n\n" if _playbook else ""
 
+    # Pillar 7 (SkillOpt): a trial style directive under test by the skill-optimizer, or a
+    # gate-proven directive applied to a run. Bounded + clearly non-factual, like the
+    # playbook block; "" in normal generation.
+    trial = (
+        f"STYLE DIRECTIVE (apply throughout):\n{extra_directive.strip()}\n\n"
+        if extra_directive.strip()
+        else ""
+    )
+
     user_prompt = f"""
 TODAY: {today}
 
 {seed_block}{angle_block}TOPIC:
 {topic}
 
-{human_block}{playbook}{brief_block}SCRIPT BRIEF (follow exactly):
+{human_block}{playbook}{trial}{brief_block}SCRIPT BRIEF (follow exactly):
 {script_brief}
 
 {seo_block}
@@ -676,6 +686,7 @@ def generate_content_package(
     seed_topic: str = "",
     creative_brief: str = "",
     key_facts: list[str] | None = None,
+    extra_directive: str = "",
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -768,6 +779,7 @@ def generate_content_package(
         is_thin_facts=_is_thin_facts,
         creative_brief=creative_brief,
         key_facts=key_facts,
+        extra_directive=extra_directive,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude

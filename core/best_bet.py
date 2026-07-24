@@ -267,6 +267,61 @@ def _continuity_seed(channel_id: str, entries: list[dict]) -> BestBetResult | No
     return None
 
 
+def _angle_options(
+    channel_id: str,
+    entries: list[dict],
+    *,
+    exclude: set[str],
+    limit: int,
+) -> list[BestBetResult]:
+    """Distinct content angles on the channel's dominant franchise anchor — to fill
+    best-bet slots when live headlines + history run out.
+
+    A single-franchise channel (all its coverage is one game) can't be given more *distinct
+    headlines*, but it can be given more *distinct angles* on that franchise (tier list vs.
+    what's broken vs. meta evolution). $0 — reuses the angle templates already used by
+    _continuity_seed. Returns [] when there's no clear anchor (e.g. finance channels).
+    """
+    if limit <= 0 or not entries:
+        return []
+    anchor = dominant_anchor(e["topic"] for e in entries)
+    if not anchor:
+        return []
+
+    anchor_entries = [e for e in entries if anchor.lower() in e.get("topic", "").lower()]
+    top_kws = _weighted_keywords(anchor_entries or entries, anchor)
+
+    ordered: list[str] = []
+    seen_local: set[str] = set()
+
+    def _add(text: str) -> None:
+        key = normalize_seed_topic(text).lower()
+        if key and key not in exclude and key not in seen_local:
+            seen_local.add(key)
+            ordered.append(text)
+
+    # Keyword-matched angles first (biased toward what has worked), then the fallback
+    # rotation for variety — same ordering _continuity_seed uses, but keep them all.
+    for kw in top_kws:
+        for template_key, template in _KEYWORD_ANGLE_MAP.items():
+            if template_key in kw or kw in template_key:
+                _add(template.format(anchor=anchor))
+    for tmpl in _FALLBACK_ANGLES:
+        _add(tmpl.format(anchor=anchor))
+
+    return [
+        BestBetResult(
+            topic=text,
+            domain=_infer_domain(text, channel_id),
+            avg_engaged_rate=0.0,
+            source="angle",
+            supporting_runs=0,
+            rationale=f"a fresh angle on {anchor} to vary your coverage",
+        )
+        for text in ordered[:limit]
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -403,6 +458,29 @@ def _effective_allowed(channel_id: str, entries: list[dict]) -> set[str]:
     return allowed
 
 
+def best_bet_option_count() -> int:
+    """How many best-bet options to surface at startup (BEST_BET_OPTIONS, default 5)."""
+    import os
+
+    try:
+        return max(1, min(8, int(os.getenv("BEST_BET_OPTIONS", "5"))))
+    except ValueError:
+        return 5
+
+
+def _best_bet_signal_sources() -> set[str]:
+    """Which candidate sources feed best-bet (BEST_BET_SIGNALS csv, default just 'rss').
+
+    Opt-in extras are the KEYLESS ($0) backends 'reddit' and 'youtube' — never paid Apify.
+    They add current Reddit-hot / YouTube-velocity titles at the cost of startup latency,
+    so they stay off by default.
+    """
+    import os
+
+    raw = os.getenv("BEST_BET_SIGNALS", "rss")
+    return {s.strip().lower() for s in raw.split(",") if s.strip()} or {"rss"}
+
+
 def _fresh_enabled() -> bool:
     import os
 
@@ -516,55 +594,160 @@ def _is_commerce_headline(title: str) -> bool:
     return any(m in t for m in _COMMERCE_MARKERS)
 
 
-def _fresh_candidates(
-    channel_id: str, *, allowed: set[str], exclude: set[str], limit: int = 12
-) -> list[dict]:
-    """Current headlines from the channel's RSS feeds as fresh topic candidates.
+def _consider_candidate(
+    title: str,
+    source: str,
+    *,
+    allowed: set[str],
+    exclude: set[str],
+    seen_local: set[str],
+    published: datetime | None = None,
+) -> dict | None:
+    """Vet a headline into a candidate dict, or None when it's empty, a duplicate, off-brand,
+    or a commerce/deal headline. Shared by the RSS and keyless-signal candidate loops."""
+    from apis.topic_scorer import infer_domain
 
-    Returns [{topic, domain, source}] deduped against `exclude` (recently covered).
-    Only headlines whose title *confidently* maps to an on-brand domain are kept
-    (inferred without channel fallback) — this filters mixed-feed noise like a
-    gaming site's general-news items. Never raises — returns [] on any problem.
+    t = (title or "").strip()
+    if not t:
+        return None
+    key = normalize_seed_topic(t).lower()
+    if key in exclude or key in seen_local:
+        return None
+    # Infer WITHOUT channel fallback so neutral/off-brand titles are dropped.
+    domain = infer_domain(t)
+    if domain not in allowed:
+        return None
+    # Drop product/deal/affiliate headlines — commerce, not video topics.
+    if _commerce_filter_enabled() and _is_commerce_headline(t):
+        return None
+    seen_local.add(key)
+    return {"topic": t, "domain": domain, "source": source, "published": published}
+
+
+def _keyless_query_seed(channel_id: str, entries: list[dict]) -> str:
+    """Search seed for the keyless backends: the channel's dominant franchise anchor if it
+    has one, else its configured domain/name."""
+    anchor = dominant_anchor(e["topic"] for e in entries) if entries else None
+    if anchor:
+        return anchor
+    try:
+        prof = get_channel_profile(channel_id)
+        return (prof.domain or prof.name or "").strip()
+    except Exception:
+        return ""
+
+
+def _keyless_candidates(
+    channel_id: str,
+    *,
+    entries: list[dict],
+    allowed: set[str],
+    exclude: set[str],
+    seen_local: set[str],
+) -> list[dict]:
+    """Fresh candidates from KEYLESS backends (reddit-free hot, youtube-free velocity), gated
+    by BEST_BET_SIGNALS. Never touches paid Apify; fail-open per source. Trending/hot items
+    are current by nature, so they're stamped 'now' for the recency preference."""
+    sources = _best_bet_signal_sources()
+    if not (sources & {"reddit", "youtube"}):
+        return []
+    seed = _keyless_query_seed(channel_id, entries)
+    if not seed:
+        return []
+
+    now = datetime.now(timezone.utc)
+    out: list[dict] = []
+
+    def _absorb(items, source_label: str) -> None:
+        for it in items or []:
+            cand = _consider_candidate(
+                it.get("title", ""),
+                source_label,
+                allowed=allowed,
+                exclude=exclude,
+                seen_local=seen_local,
+                published=now,
+            )
+            if cand:
+                out.append(cand)
+
+    if "reddit" in sources:
+        try:
+            from apis.free_backends import fetch_reddit_free
+            from apis.reddit_signal import _pick_subreddits
+
+            _absorb(fetch_reddit_free(seed, _pick_subreddits(seed, channel_id)[:6]), "Reddit")
+        except Exception:
+            pass
+
+    if "youtube" in sources:
+        try:
+            from apis.free_backends import fetch_youtube_free
+
+            _absorb(fetch_youtube_free(seed), "YouTube")
+        except Exception:
+            pass
+
+    return out
+
+
+def _fresh_candidates(
+    channel_id: str,
+    *,
+    allowed: set[str],
+    exclude: set[str],
+    limit: int = 12,
+    entries: list[dict] | None = None,
+) -> list[dict]:
+    """Current headlines as fresh topic candidates — RSS by default, plus opt-in keyless
+    signals (BEST_BET_SIGNALS).
+
+    Returns [{topic, domain, source, published}] deduped against `exclude` (recently
+    covered). Only titles that *confidently* map to an on-brand domain are kept (inferred
+    without channel fallback) — filtering mixed-feed noise. Never raises — [] on any problem.
 
     Freshness: gathers a wide pool, prefers items published within BEST_BET_FRESH_DAYS,
     then applies a **date-seeded shuffle** so the surfaced set rotates day-to-day (stable
     within a session) instead of always returning the same top-of-feed headlines.
     """
-    try:
-        from apis.rss_feeds import _fetch_feed
-        from apis.topic_scorer import infer_domain
-        from config.data_sources import rss_feeds_for_channel
-    except Exception:
-        return []
-
+    sources = _best_bet_signal_sources()
     pool: list[dict] = []
     seen_local: set[str] = set()
-    for feed in list(rss_feeds_for_channel(channel_id))[:8]:
+
+    if "rss" in sources:
         try:
-            rows = _fetch_feed(feed["url"])
+            from apis.rss_feeds import _fetch_feed
+            from config.data_sources import rss_feeds_for_channel
+
+            for feed in list(rss_feeds_for_channel(channel_id))[:8]:
+                try:
+                    rows = _fetch_feed(feed["url"])
+                except Exception:
+                    continue
+                for row in rows[:20]:
+                    cand = _consider_candidate(
+                        row.get("title", ""),
+                        feed.get("name", "RSS"),
+                        allowed=allowed,
+                        exclude=exclude,
+                        seen_local=seen_local,
+                        published=_parse_pubdate(row.get("published")),
+                    )
+                    if cand:
+                        pool.append(cand)
         except Exception:
-            continue
-        for row in rows[:20]:
-            title = (row.get("title") or "").strip()
-            key = normalize_seed_topic(title).lower()
-            if not title or key in exclude or key in seen_local:
-                continue
-            # Infer WITHOUT channel fallback so neutral/off-brand titles are dropped.
-            domain = infer_domain(title)
-            if domain not in allowed:
-                continue
-            # Drop product/deal/affiliate headlines — commerce, not video topics.
-            if _commerce_filter_enabled() and _is_commerce_headline(title):
-                continue
-            seen_local.add(key)
-            pool.append(
-                {
-                    "topic": title,
-                    "domain": domain,
-                    "source": feed.get("name", "RSS"),
-                    "published": _parse_pubdate(row.get("published")),
-                }
-            )
+            pass
+
+    # Opt-in keyless signal breadth (reddit-free / youtube-free), $0, fail-open.
+    pool.extend(
+        _keyless_candidates(
+            channel_id,
+            entries=entries or [],
+            allowed=allowed,
+            exclude=exclude,
+            seen_local=seen_local,
+        )
+    )
 
     if not pool:
         return []
@@ -580,7 +763,7 @@ def _fresh_candidates(
     return base[:limit]
 
 
-def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
+def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     """
     Up to `n` DISTINCT topic options, best first.
 
@@ -620,7 +803,7 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
     by_domain: dict[str, list[dict]] = {}
     ordered_fresh_domains: list[str] = []
     if _fresh_enabled():
-        fresh = _fresh_candidates(channel_id, allowed=allowed, exclude=recent)
+        fresh = _fresh_candidates(channel_id, allowed=allowed, exclude=recent, entries=entries)
         on_brand_fresh = [c for c in fresh if c["domain"] in allowed] or fresh
         for c in on_brand_fresh:
             by_domain.setdefault(c["domain"], []).append(c)
@@ -727,6 +910,17 @@ def get_best_bets(channel_id: str, n: int = 3) -> list[BestBetResult]:
                 break
             _emit_hist(e)
 
+    # Phase 3 — angle multiplexing: fill remaining slots with DISTINCT angles on the
+    # dominant franchise (e.g. "GTA tier list", "what's broken in GTA"). This is what a
+    # single-franchise channel needs instead of near-duplicate headlines — and it's $0.
+    if len(options) < n:
+        for opt in _angle_options(channel_id, entries, exclude=seen, limit=n - len(options)):
+            seen.add(normalize_seed_topic(opt.topic).lower())
+            options.append(opt)
+            if len(options) >= n:
+                break
+
+    # Last resort: the continuity seed (below-threshold franchise replay) if still short.
     if len(options) < n:
         cont = _continuity_seed(channel_id, entries)
         if cont and normalize_seed_topic(cont.topic).lower() not in seen:

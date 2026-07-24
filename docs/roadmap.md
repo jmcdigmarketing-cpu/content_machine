@@ -8,6 +8,8 @@
 > (2wk/1mo/3mo/6mo/1yr), the new-channel playbook, AI cost-per-run + reduction
 > roadmap, side-income territories, ops/process hygiene, and competitive analysis.
 > This roadmap is the tactical layer beneath both.
+> **Planning log:** [planning_log.md](planning_log.md) — dated brainstorming/decisions
+> from planning sessions (so ideas survive beyond the ephemeral plan files).
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 

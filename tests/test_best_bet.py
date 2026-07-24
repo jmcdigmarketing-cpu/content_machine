@@ -1,8 +1,10 @@
+import os
 import unittest
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
 from core import best_bet as bb
-from core.best_bet import get_best_bet, get_best_bets
+from core.best_bet import best_bet_option_count, get_best_bet, get_best_bets
 from storage.repositories.content_runs import ContentRunRecord
 
 # Mirrors the live run: one thin 39% UFC sample vs six well-sampled 11% NBA videos.
@@ -309,6 +311,84 @@ class TestBestBet(unittest.TestCase):
 
         self.assertEqual(result.topic, "GTA VI Online Wishlist")
         self.assertEqual(result.source, "score")
+
+
+class TestBreadth(unittest.TestCase):
+    """Best Bet breadth: configurable count, angle multiplexing, opt-in keyless signals."""
+
+    _GTA: ClassVar[list[dict]] = [
+        {
+            "topic": "GTA 6 map details",
+            "engaged_rate": 0.20,
+            "composite_score": 50,
+            "domain": "gaming",
+        },
+        {
+            "topic": "GTA 6 release window",
+            "engaged_rate": 0.25,
+            "composite_score": 55,
+            "domain": "gaming",
+        },
+    ]
+
+    def test_option_count_env_and_clamp(self):
+        cases = {"": 5, "7": 7, "99": 8, "0": 1, "abc": 5}
+        for raw, expected in cases.items():
+            env = {"BEST_BET_OPTIONS": raw} if raw != "" else {}
+            with patch.dict(os.environ, env, clear=False):
+                if raw == "":
+                    os.environ.pop("BEST_BET_OPTIONS", None)
+                self.assertEqual(best_bet_option_count(), expected, raw)
+
+    def test_angle_multiplexing_fills_single_franchise(self):
+        # A one-franchise channel with no fresh headlines fills the tail with DISTINCT
+        # angles on the anchor, not near-duplicate historical seeds.
+        with (
+            patch("core.best_bet._build_entries", return_value=self._GTA),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=[]),
+        ):
+            bets = get_best_bets("tapin", 5)
+        self.assertEqual(len(bets), 5)
+        topics = [b.topic.lower() for b in bets]
+        self.assertEqual(len(set(topics)), 5)  # all distinct
+        angles = [b for b in bets if b.source == "angle"]
+        self.assertGreaterEqual(len(angles), 1)
+        self.assertTrue(all("gta" in a.topic.lower() for a in angles))
+
+    def test_keyless_signals_off_by_default(self):
+        # BEST_BET_SIGNALS default = rss only ⇒ keyless backends are never called.
+        with (
+            patch.dict(os.environ, {"BEST_BET_SIGNALS": "rss"}, clear=False),
+            patch("config.data_sources.rss_feeds_for_channel", return_value=[]),
+            patch("apis.free_backends.fetch_reddit_free") as rf,
+            patch("apis.free_backends.fetch_youtube_free") as yf,
+        ):
+            bb._fresh_candidates("tapin", allowed={"gaming"}, exclude=set(), entries=[])
+            rf.assert_not_called()
+            yf.assert_not_called()
+
+    def test_keyless_signals_opt_in_surface_titles(self):
+        # Opt in to reddit ⇒ the keyless backend is called and its titles become candidates,
+        # while paid Apify is never touched (we only ever call the free-backend function).
+        with (
+            patch.dict(os.environ, {"BEST_BET_SIGNALS": "reddit"}, clear=False),
+            patch(
+                "apis.free_backends.fetch_reddit_free",
+                return_value=[{"title": "Marvel Rivals season 3 leaks"}],
+            ) as rf,
+            patch("apis.reddit_signal._pick_subreddits", return_value=["MarvelRivals"]),
+            patch("apis.topic_scorer.infer_domain", return_value="gaming"),
+        ):
+            cands = bb._fresh_candidates(
+                "tapin",
+                allowed={"gaming"},
+                exclude=set(),
+                entries=[{"topic": "Marvel Rivals meta breakdown"}],
+            )
+        rf.assert_called_once()
+        self.assertTrue(any("Marvel Rivals season 3" in c["topic"] for c in cands))
+        self.assertTrue(all(c["source"] == "Reddit" for c in cands))
 
 
 if __name__ == "__main__":

@@ -18,6 +18,8 @@ Channels (`config/channels.json`): `tapin` (gaming/UFC shorts), `moneywise`
 [docs/roadmap.md](docs/roadmap.md). Honest state of the project:
 [docs/assessment.md](docs/assessment.md). State as of the last working session
 (branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
+Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/planning_log.md)
+— **append a dated entry after any substantial planning session** so ideas aren't lost.
 
 ## Entry points
 

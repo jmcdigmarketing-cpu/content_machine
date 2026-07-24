@@ -277,12 +277,12 @@ def _run_new_video_flow_body(
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
         topic = seed_topic
     else:
-        from core.best_bet import display_best_bets, get_best_bets
+        from core.best_bet import best_bet_option_count, display_best_bets, get_best_bets
 
-        options = get_best_bets(channel_id, 3)
+        options = get_best_bets(channel_id, best_bet_option_count())
         if options:
             display_best_bets(options)
-            sel = input("  Use a best bet? [1-3 / Enter = type your own]: ").strip()
+            sel = input(f"  Use a best bet? [1-{len(options)} / Enter = type your own]: ").strip()
             if sel.isdigit() and 1 <= int(sel) <= len(options):
                 topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")

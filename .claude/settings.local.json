@@ -16,7 +16,10 @@
       "Bash(…\" | head -20)",
       "Bash(python -c \"import sys; print\\(sys.stdout.encoding\\)\")",
       "Bash(python -c ' *)",
-      "Bash(python -m scripts.ops traces --limit 0)"
+      "Bash(python -m scripts.ops traces --limit 0)",
+      "PowerShell(if \\(Test-Path \"C:\\\\Users\\\\jonma\\\\.ollama\\\\models\"\\) { Write-Output \"EXISTS\"; Get-ChildItem -Recurse \"C:\\\\Users\\\\jonma\\\\.ollama\\\\models\" -File -ErrorAction SilentlyContinue | Select-Object FullName, @{N='MB';E={[math]::Round\\($_.Length/1MB,1\\)}} | Format-Table -AutoSize } else { Write-Output \"MISSING: C:\\\\Users\\\\jonma\\\\.ollama\\\\models\" })",
+      "PowerShell($root=\"C:\\\\Users\\\\jonma\\\\.ollama\\\\models\"; Write-Output \"--- tree ---\"; Get-ChildItem -Recurse $root -ErrorAction SilentlyContinue | Select-Object Mode, @{N='MB';E={if\\(-not $_.PSIsContainer\\){[math]::Round\\($_.Length/1MB,1\\)}}}, FullName | Format-Table -AutoSize; Write-Output \"--- manifests \\(model names\\) ---\"; Get-ChildItem -Recurse \"$root\\\\manifests\" -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName.Replace\\(\"$root\\\\manifests\\\\\",\"\"\\) }; Write-Output \"--- ollama on PATH? ---\"; $o=Get-Command ollama -ErrorAction SilentlyContinue; if\\($o\\){$o.Source}else{\"ollama not on PATH\"})",
+      "Bash(python -c \"import json; d=json.load\\(open\\('config/channels.json'\\)\\); ch=d.get\\('channels',d\\); [print\\(k, '->', json.dumps\\(v.get\\('post_schedule','\\(none\\)'\\)\\)\\) for k,v in ch.items\\(\\)]\")"
     ]
   }
 }

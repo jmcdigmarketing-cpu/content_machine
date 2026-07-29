@@ -11,6 +11,46 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-07-29 — 2026-H2 strategy brainstorm (short/long term, blockers, roadmap refresh)
+
+**Prompt:** *"brainstorm as much as we can with where we are, including updating roadmaps,
+long term future, short term future. Reddit api still needs manual setup, multi platform
+requires many things and verification… which i don't know if i am eligible for."*
+
+**The core idea (the doc's thesis):** the roadmap contains a contradiction — a large block
+of work is **volume-gated** ("don't build until publish volume supports correlations"), but
+**Phase O deliberately caps volume** (cadence guardrail + authenticity checks). The learning
+loop is rate-limited by our own compliance layer. **Reframe: optimize *information per
+publish*, not publishes** — richer per-run instrumentation (Pillar 1), within-publish
+structural experiments (the shipped title-pattern A/B generalizes to hook archetype, length,
+slot, thumbnail), and **cross-channel pooling** (tapin + moneywise share what's structural).
+
+**Decisions (operator):**
+1. **Phase M stays parked entirely** — but the eligibility research is now *recorded* so it
+   never needs redoing.
+2. **Both futures, sequenced** — near-term quality + reliability so published volume
+   compounds; long-term the **intelligence/analyst product line** (already half-built in
+   `core/intelligence_report.py`) as the depth play that needs no volume and hedges
+   single-platform risk.
+
+**Blockers, verified:**
+- **Reddit setup is irreducible** — `apis/free_backends.py` documents that keyless
+  reddit JSON is **403-blocked for bots**, so the free script-app OAuth is the only $0 path.
+  Fix is **UX not elimination**: an `ops reddit-setup` that prints the click-path, validates
+  credentials with a live token call, and shows a clear `free-doctor` line.
+- **Multi-platform eligibility concern is well-founded.** TikTok **Upload to Inbox /
+  Creator's Draft needs no audit** (human publishes from drafts); **Direct Post** needs a
+  2–4 week audit and unaudited Direct Post is **private-only**. Instagram needs a
+  Business/Creator account + linked FB Page + app review (dev-mode-with-own-account is
+  **unverified**). Both audits are shaped for *interactive multi-tenant apps* — a solo
+  headless pipeline doesn't fit that shape. Parked, with the honest revisit order recorded.
+
+**Shipped:** [strategy_2026H2.md](strategy_2026H2.md) (where we are, the volume paradox,
+short/medium/long-term horizons, risks & hedges, an explicit **do-not-build** list) +
+roadmap refresh (audit-derived correctness items, `ops reddit-setup`, Phase M rewritten with
+verified facts). Docs only. Earlier the same day: PRs #26 (LLM strategy), #27 (trade
+validation), #28 ([code_audit_2026-07.md](code_audit_2026-07.md)).
+
 ## 2026-07-24 — Pillar 7: Self-improving skills (Agent Skills + SkillOpt)
 
 **Prompt:** *"continue pillar 7 and from there advance as scheduled."* Built autonomously

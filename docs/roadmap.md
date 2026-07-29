@@ -21,6 +21,13 @@ Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Cre
 
 ---
 
+> **2026-H2 strategy:** [strategy_2026H2.md](strategy_2026H2.md) — the layer between
+> this queue and [vision.md](vision.md): the *volume paradox* (the loop is volume-gated
+> but Phase O caps volume → **optimize information per publish, not publishes**), the
+> both-futures-sequenced direction (quality/reliability now, the intelligence product
+> line long-term), verified multi-platform eligibility, and an explicit **do-not-build**
+> list.
+
 ## Next up — all open items
 
 *The single forward list — everything still open across this roadmap, grouped by area.
@@ -31,8 +38,15 @@ voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-clonin
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
 input + average-based learned post slots). 1125 tests green.*
 
+**Correctness & seams** *(from [code_audit_2026-07.md](code_audit_2026-07.md) — new)*
+- [ ] **Centralize the free-mode guard** `[S]` — `FREE_MODE_STRICT` is re-implemented at 3 paid seams (`llm_router`, `tts`, `apify_client`) with no shared helper, so a *new* paid call site opts out of Free mode silently. One helper + a test that every paid seam consults it.
+- [ ] **Narrow `core/engagement.safe_infer_domain`'s catch** `[S]` — returns `"neutral"` on *any* exception, so an import/DB hiccup silently re-opens tag pollution (UFC tags on gaming topics) with no warning. At minimum log the fallback.
+- [ ] **Router image path → un-strand vision** `[M]` — the only vision capability (`assets/thumbnail_scorer._vision_score`) goes through the legacy `core/llm_client`, outside the router *and* the cost meter, and is **inactive** while the OpenAI key is off. Routing it restores the capability on Claude (already paid), meters it, closes the guard gap, and unblocks the Pillar-2 vision item. Lets `core/llm_client.py` be deleted.
+- [ ] **`[test]` extra so the logic suite runs without the media stack** `[S–M]` — 90 of 148 collection errors are just `sqlalchemy`; four light packages unlock ~121.
+
 **Data spine & storage**
 - [ ] Alembic baseline + FKs (`content_run_id` on `publish_log`, `jobs`, `assets`)
+- [ ] **`ops reddit-setup` guided flow** `[S]` — keyless Reddit JSON is 403-blocked for bots (`apis/free_backends.py`), so the free script-app OAuth is **irreducible**. Fix the UX instead: print the click-path, accept id/secret, **validate with a live token call**, and surface a clear `free-doctor` line when missing.
 - [ ] Reddit agent-workload rate-limit-aware caching (the OAuth backend already shipped)
 - [ ] RSS feeds to reduce Tapology scrape dependency
 
@@ -649,12 +663,22 @@ with a local frozen model (Bonsai/Ollama) into a self-improving $0 factory.*
 
 *Valuable, but intentionally pushed out.*
 
-### Phase M — Multi-platform distribution  *(pushed back — far later)*
-*Repurpose one rendered vertical to several surfaces. Publisher contract already exists (`publishing/`). Deferred behind authenticity (O), hook/retention (P), and captions (Q) — distribution multiplies whatever quality we ship, so it waits until the content itself is policy-safe and sharper.*
-- [ ] **TikTok publisher** — `TIKTOK_CLIENT_KEY`/`SECRET` present; `TikTokPublisher` still unimplemented (in `DEFERRED_PLATFORMS`)
-- [ ] Instagram Reels / Meta — `META_APP_ID`/`SECRET`, `INSTAGRAM_*` (keys still empty)
+### Phase M — Multi-platform distribution  *(**stays parked** — operator decision, 2026-07)*
+*Repurpose one rendered vertical to several surfaces. Publisher contract already exists (`publishing/`), platforms listed in `publishing/repurpose.DEFERRED_PLATFORMS`.*
+
+**Eligibility researched 2026-07 so this doesn't need re-researching** (July-2026 scan — *platform rules drift*). The blocker is not effort, it's **shape**: both audit processes are designed for *interactive, multi-tenant apps* (show the creator's username/avatar before posting, offer a privacy picker, demo an account-connect flow). A single-operator headless pipeline does not have that shape.
+
+- **TikTok** — an unblocked path exists, but it is **not full automation**:
+  - **Upload to Inbox / Creator's Draft** needs **no audit** — the video lands in the creator's TikTok drafts and a human publishes it (and can add native sounds/effects first). [docs](https://developers.tiktok.com/doc/content-posting-api-get-started)
+  - **Direct Post** needs an audit (2–4 weeks, multiple rounds), and **unaudited Direct Post is private-only** — useless. Unaudited clients also cap at ~5 posting users/24h with accounts private at post time. [ref](https://www.netrows.com/blog/tiktok-content-posting-api-guide-2026)
+- **Instagram** — heavier: IG **Business/Creator** account **linked to a Facebook Page**, a Meta app, and app review for `instagram_business_basic` + `instagram_business_content_publish` (2–4 weeks; screencast must show a full interactive journey). Dev mode allows ≤25 test users — whether the operator's own account qualifies **without** full review is **unverified**. [ref](https://postproxy.dev/blog/post-to-instagram-via-api/)
+- **If ever revisited, the honest order:** TikTok inbox mode first (no audit, no eligibility risk, human-in-the-loop publish — which also fits the Phase O authenticity posture), then *maybe* verify the Instagram dev-mode question. Direct Post and full Meta app review are the parts worth refusing.
+
+Still open if the phase is ever unparked:
 - [ ] Per-platform caption/hashtag shaping from existing SEO + TikTok-trend signal
 - [ ] Cross-platform performance back into the learning loop (unify with YouTube engaged-rate)
+
+*Full reasoning: [strategy_2026H2.md](strategy_2026H2.md) §6.2.*
 
 ---
 

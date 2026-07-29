@@ -11,6 +11,26 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-07-26 — Kimi K3 fit evaluation (analysis only)
+
+**Prompt:** *"in what ways could kimi k3 be of use to this project, in addition to the
+other github adds found recently (in docs)."* Plan mode; scope chosen =
+**documentation/analysis only** (no code, no router edits).
+
+**Finding:** the 2026-07 GitHub adds (ComfyUI, ai-marketing-skills, anything-to-notebooklm,
+system_prompts_leaks, goose3, the `[providers]` backends) are *tools/backends*; Kimi K3 is
+the **LLM brain** that drives/grades them — complementary, not overlapping. It plugs into the
+free-first router (`core/llm_router.py`) as an **opt-in premium** provider (OpenAI-compatible;
+or zero-code via the `openrouter` provider), bounded by the existing `LLM_DAILY_BUDGET_USD`
+governance. Highest-leverage fits map to **open** roadmap items: the **router vision path →
+rendered-video/thumbnail review (Pillar 2)** — K3's native vision covers text+image in one
+seam — and **1M-context** work (clip-from-source Phase R, vault-wide synthesis Pillar 4,
+SkillOpt Pillar 7, prompt-eval Pillar 2). Verdict: **complement (premium)** — reserve for
+vision + long-context + grading; never displace the free cheap/extract tiers.
+
+**Shipped:** [kimi_k3_evaluation.md](kimi_k3_evaluation.md) + a verdict-table row (#18) in
+[tooling_landscape.md](tooling_landscape.md). No integration built — left for a future task.
+
 ## 2026-07-24 — Pillar 7: Self-improving skills (Agent Skills + SkillOpt)
 
 **Prompt:** *"continue pillar 7 and from there advance as scheduled."* Built autonomously

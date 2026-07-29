@@ -52,6 +52,12 @@ the whole install.
 
 Ollama runs models locally: **$0, unlimited, offline, no account or rate limits.**
 
+> **Local vs cloud (2026):** the **local runtime** used here (`localhost:11434`) is
+> still free and open-source (MIT) — the line above holds. But **Ollama Cloud** is now
+> a *paid* managed-inference service (~$0 free / ~$20 Pro / ~$100–200 Pro Max; sources
+> disagree on the top tier). "Ollama" is no longer free by default — **local** is.
+> Keep `OLLAMA_BASE_URL` pointed at localhost for the $0 path.
+
 ```powershell
 # install Ollama from https://ollama.com, then:
 ollama pull llama3.1:8b      # good default; qwen2.5:7b is a solid alternative

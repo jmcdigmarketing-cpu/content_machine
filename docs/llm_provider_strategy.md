@@ -1,35 +1,40 @@
-# LLM provider strategy — Free mode vs Standard mode
+# LLM provider strategy — what's reachable today, and what each model adds
 
-*Analysis only (2026-07). Which LLMs can actually serve this project **while paid
-chat + paid Apify are off**, what each would add if paid were re-enabled, the free
-vs paid use case per job, and what crosses over or is unnecessary.*
+*Analysis only (2026-07). Which LLMs can actually serve this project **given that
+paid `chat` (OpenAI) and paid Apify are currently off while Claude is available**,
+the free vs paid use case per job, and what crosses over or is unnecessary.*
 
 > **Provenance:** model specs/pricing from a **July-2026 web scan — figures drift**.
 > Sources inline per claim. Repo claims are cited to paths verified against the tree.
 
 ---
 
-## 1. Two modes → two completely different questions
+## 1. Three states, not two
 
-`core/run_mode.py` implements a real, **strict** cost mode — not a posture:
+A previous revision of this doc treated "paid chat + Apify off" as though the project
+were running **Free mode**. That was wrong, and it skewed the verdict. There are
+three distinct states:
 
-| | **Free ($0)** — *current state* | **Standard** |
-|---|---|---|
-| LLM | **local Ollama** (unlimited, offline); OpenRouter `:free` = rate-limited cloud fallback | any wired provider, paid allowed |
-| Voice | local Piper / Kokoro / XTTS | ElevenLabs |
-| Web search | keyless **DuckDuckGo** | Tavily / Brave |
-| `reddit`, `youtube_competitors` | `SIGNAL_BACKEND=free` (Reddit OAuth + yt-dlp) | Apify |
-| `twitter`, `tiktok_trends` | **skipped entirely** (`_PAID_NO_FREE_BACKEND`) | Apify |
+| | **(a) Today** — Standard *with gaps* | **(b) Free mode** — a per-run tool | **(c) Full Standard** |
+|---|---|---|---|
+| LLM | **Claude available (paid)**; DeepSeek/OpenRouter as configured; **OpenAI unavailable** | local Ollama; OpenRouter `:free` fallback | any wired provider |
+| Voice | ElevenLabs or local | local Piper / Kokoro / XTTS | ElevenLabs |
+| Web search | Tavily / Brave / DuckDuckGo | keyless **DuckDuckGo** | Tavily / Brave |
+| `reddit`, `youtube_competitors` | free backends (Apify off) | `SIGNAL_BACKEND=free` | Apify |
+| `twitter`, `tiktok_trends` | **unavailable** (Apify off) | **skipped** (`_PAID_NO_FREE_BACKEND`) | Apify |
 
-**It blocks, it doesn't degrade.** Under `FREE_MODE_STRICT` the router filters the
-tier chain to zero-cost candidates and **raises** rather than reaching for a paid
-provider (`core/llm_router.py` `_free_mode_strict()` → chain filter → `RuntimeError`).
+**(a) is the live state.** Paid is *not* being switched off permanently — quality is
+the priority, and Claude is the paid provider in hand. **(b) Free mode** is a real,
+strict subsystem in `core/run_mode.py` that can be selected per run
+(`RUN_COST_MODE=free`), where the router filters the tier chain to zero-cost
+candidates and **raises** rather than reaching for a paid provider
+(`_free_mode_strict()` → chain filter → `RuntimeError`). It is a tool, not the posture.
 
-> ### ⇒ The headline reframe
-> **With paid chat off, every frontier model below is blocked at the seam.** Claude,
-> GPT, Gemini, Grok and Kimi are *unreachable* right now — not "expensive," but
-> refused. The only live LLM decision today is **"which model do I `ollama pull`?"**
-> Everything in Group A is a *Standard-mode contingency plan*.
+> ### ⇒ What this actually means
+> Frontier models are **not** globally blocked — that is only true *inside* Free mode.
+> Today the live facts are: **Claude is reachable and paid** (so the judge/grading
+> roles are available now), **OpenAI is not** (which silently kills the one vision
+> path — see §5.2), and **Apify is not** (so `twitter`/`tiktok_trends` are absent).
 
 ## 2. ⚠ Verified: "Is Kimi open weight and free?"
 
@@ -46,33 +51,42 @@ hardware floor puts self-hosting out of reach and there's no free API. **Kimi ca
 serve Free mode.** (An earlier draft of this doc implied open weights were an
 advantage — they are, but only to someone with a datacenter.)
 
-## 3. All 12 models — grouped by which mode they can serve
+## 3. All 12 models — grouped by availability
 
-| Model | Access | Free-mode usable? | Best job here |
-|---|---|---|---|
-| **Claude** Opus 5 / Sonnet 5 | paid API (**wired**) | ❌ | judgment: grading, claim-verify |
-| **GPT-5.6** | paid API (**wired**) | ❌ | generalist; today's vision scorer |
-| **Gemini 3.x Pro** | paid API | ❌ | **native video/audio** review |
-| **Grok 4.5** | paid API | ❌ | live X/web recency |
-| **Kimi K3** | paid API (open weights, 8×H100) | ❌ *(see §2)* | 1M-context synthesis |
-| **Llama** 3.1/3.3 | **open — Ollama** | ✅ **default** | everything, locally |
-| **Qwen** 2.5 / 3 | **open — Ollama** | ✅ **alternative** | everything; strong multilingual |
-| **Mistral** | open + paid API | ✅ (local sizes) | fast local generation |
-| **Gemma** | **open — Ollama** | ✅ | small-box fallback |
-| **Phi** | **open — Ollama** | ✅ | smallest boxes; weakest |
-| **GLM** | open + paid API | ⚠️ large locally | coding/structured output |
-| **DeepSeek** V3/R1 | paid API (**wired**) + open distills | ⚠️ distills only | Standard anchor (§3.12) |
+| Model | Access | Available **today**? | Free-mode usable? | Best job here |
+|---|---|---|---|---|
+| **Claude** Opus 5 / Sonnet 5 | paid API (**wired**) | ✅ **yes — paid, in hand** | ❌ | judgment: grading, claim-verify |
+| **GPT-5.6** | paid API (**wired**) | ❌ *chat paid off* | ❌ | generalist; the (now dead) vision scorer |
+| **Gemini 3.x Pro** | paid API | ➖ needs a key | ❌ | **native video/audio** review |
+| **Grok 4.5** | paid API | ➖ needs a key | ❌ | live X/web recency |
+| **Kimi K3** | paid API (open weights, 8×H100) | ➖ needs a key | ❌ *(see §2)* | 1M-context synthesis |
+| **Llama** 3.1/3.3 | **open — local Ollama** | ✅ local | ✅ **default** | everything, locally |
+| **Qwen** 2.5 / 3 | **open — local Ollama** | ✅ local | ✅ **alternative** | everything; strong multilingual |
+| **Mistral** | open + paid API | ✅ local sizes | ✅ | fast local generation |
+| **Gemma** | **open — local Ollama** | ✅ local | ✅ | small-box fallback |
+| **Phi** | **open — local Ollama** | ✅ local | ✅ | smallest boxes; weakest |
+| **GLM** | open + paid API | ➖ needs a key | ⚠️ large locally | coding/structured output |
+| **DeepSeek** V3/R1 | paid API (**wired**) + open distills | ✅ if key set | ⚠️ distills only | Standard anchor (§3.12) |
 
-### Group A — paid frontier (**Standard mode only — all blocked today**)
+### Group A — paid frontier
 
-**3.1 Claude (Opus 5 / Sonnet 5)** — tops the July-2026 intelligence ranking; the
-*judge*: Pillar 2 grading, Pillar 3 claim-verifier, authenticity passes.
+**3.1 Claude (Opus 5 / Sonnet 5) — ✅ available today, and the one to use**
+Tops the July-2026 intelligence ranking; the *judge*: Pillar 2 grading, Pillar 3
+claim-verifier, authenticity passes. **It is the paid provider actually in hand**, so
+these are live options right now — not contingencies.
 · **Crossover:** already wired (`anthropic`, native messages API) — nothing to build.
+· **Gap:** `_DEFAULT_MODELS` still pins `claude-sonnet-4-…` / `claude-haiku-4-5-…`
+(see §5.1), and the router can't send it images (§5.2) even though the model supports
+vision.
 · **Unnecessary if** you only need generation; local Llama/Qwen write acceptable scripts.
 
-**3.2 GPT-5.6 (OpenAI)** — ~1M context; already the *de-facto vision provider*
-(`assets/thumbnail_scorer._vision_score`). · **Crossover:** already wired **and**
-already doing vision — adding it is a no-op. · **Unnecessary if** free tiers pass your bar.
+**3.2 GPT-5.6 (OpenAI) — ❌ unavailable today (paid chat off)**
+~1M context, and the *only* provider the vision scorer knows how to call
+(`assets/thumbnail_scorer._vision_score`). With the key absent that function returns
+`None` and thumbnail scoring **silently degrades to heuristics** (§5.2).
+· **Crossover:** wired, so it returns the moment a key does. · **Unnecessary if**
+Claude covers the same jobs — which, for everything except the hardcoded vision path,
+it does.
 
 **3.3 Gemini 3.x Pro** — the one genuinely differentiated capability in this list:
 **native video + audio ingestion** (~2M ctx) — it could watch the *rendered video*,
@@ -81,9 +95,10 @@ not just frames, which is the exact shape of the open Pillar-2 item.
 through OpenRouter, so this is the one most likely to need a native entry.
 
 **3.4 Grok 4.5** — cheapest frontier (~$2/$6) and the only one with **live X/web access**.
-· **⚠ Reframed for paid-off:** previously pitched as "displaces the paid `twitter`
-signal" — but Free mode **already skips `twitter`**, so Grok wouldn't *remove a cost*,
-it would **restore a capability Free mode drops**. · **Gate:** an LLM summary is not a
+· **⚠ Reframed:** previously pitched as "displaces the paid `twitter` Apify signal" —
+but with **Apify paid off, `twitter`/`tiktok_trends` are already gone**, so Grok
+wouldn't *remove a cost*, it would **restore a capability that is currently absent**.
+· **Gate:** an LLM summary is not a
 citable source; the Pillar-3 grounding spine needs attributable URLs. **Unverified.**
 
 **3.5 Kimi K3** — 2.8T MoE, 1M ctx, native vision, always-on reasoning, structured
@@ -94,7 +109,16 @@ transcribes → K3 reasons; notebooklm ingests → K3 synthesizes).
 · **Unnecessary if** no workload exceeds DeepSeek's context — and **unusable in Free
 mode** (§2).
 
-### Group B — open-weight / local (**what actually runs today**)
+### Group B — open-weight / local (**the $0 path**)
+
+> **⚠ Ollama is no longer unqualifiedly "free."** The **local runtime remains free and
+> open-source (MIT)** — that is the `localhost:11434` path
+> [free_mode.md](free_mode.md) uses, and it is still $0 and unlimited. But **Ollama
+> Cloud** is now a paid managed-inference service (roughly $0 free / ~$20 Pro /
+> ~$100–200 Pro Max — *aggregator sources disagree on the top tier*). Local = free;
+> hosted = paid. Sources:
+> [cloud pricing](https://pooyagolchian.com/blog/ollama-cloud-pricing-hardware-requirements-2026/),
+> [overview](https://aisotools.com/pricing/ollama).
 
 **3.6 Llama (`llama3.1:8b`)** — **the project's own documented default**
 ([free_mode.md](free_mode.md) §1) and the OpenRouter `:free` anchor
@@ -128,58 +152,76 @@ weaker than the hosted V3/R1. Measure any change against DeepSeek, not against "
 
 ## 4. Use cases — free vs paid, per job
 
-| Pipeline job | **$0 option (today)** | **Paid upgrade** | What staying free costs you |
+| Pipeline job | **$0 / Free mode** | **Paid, available today (Claude)** | **Paid, needs a key** |
 |---|---|---|---|
-| Discovery / extraction | Ollama local (`extract` tier) | DeepSeek V3 | Slower; more parse retries on messy pages |
-| Script generation | Ollama local (`premium` tier) | DeepSeek → Claude/GPT | Flatter prose, weaker stance-holding; the biggest *quality* gap |
-| Grading (Pillar 2) | local model self-grading | **Claude** (best judge) | A weak judge grading a weak writer — correlated blind spots |
-| Claim verification (Pillar 3) | local + DuckDuckGo | Claude / Kimi | Lower recall on subtle fused claims |
-| Thumbnail / vision | **none** (heuristic fallback only) | GPT-5.6 today; **Gemini** for video | No real vision review — heuristics only ⚠ see §5.1 |
-| Long-context synthesis | limited by local ctx (~8–128K) | Kimi K3 / Gemini | Chunking instead of whole-vault reasoning |
-| Recency | DuckDuckGo + RSS + free reddit/yt | Grok live X; Apify twitter/tiktok | **`twitter` + `tiktok_trends` simply absent** |
-| Voice | Piper / Kokoro / XTTS | ElevenLabs | Less natural delivery |
+| Discovery / extraction | Ollama local (`extract`) | Claude Haiku-class | DeepSeek V3 (cheapest) |
+| Script generation | Ollama local (`premium`) | **Claude Sonnet 5** — biggest quality jump | GPT-5.6 |
+| Grading (Pillar 2) | local self-grading *(weak judge grading a weak writer — correlated blind spots)* | **Claude — best judge available** | — |
+| Claim verification (Pillar 3) | local + DuckDuckGo | **Claude** | Kimi (long ctx) |
+| Thumbnail / vision | none (heuristics) | **Claude supports vision — but the router can't send images** ⚠ §5.2 | GPT-5.6 (wired but key off); **Gemini** for video |
+| Long-context synthesis | limited by local ctx | Claude (200K-class) | Kimi K3 (1M) / Gemini (2M) |
+| Recency | DuckDuckGo + RSS + free reddit/yt | *(same — LLM doesn't fix sourcing)* | Grok live X; Apify twitter/tiktok |
+| Voice | Piper / Kokoro / XTTS | ElevenLabs | — |
+
+**Reading this table today:** the middle column is what you can actually use right
+now. The one row where paid-in-hand does *not* help is **vision** — Claude can do it,
+but nothing in the codebase can hand it an image (§5.2).
 
 Per [free_mode.md](free_mode.md), local inference is **slower and lower-quality** than
-paid models and wants ~8GB+ RAM (GPU ideal) — that is the honest headline tradeoff,
-and it is stated by the project itself, not inferred here.
+paid models and wants ~8GB+ RAM (GPU ideal) — the project's own words, not inferred
+here. That is the honest cost of the left column.
 
-## 5. Reevaluated verdict (paid off)
+## 5. Verdict — ordered for the actual state
 
-### 5.1 Close the Free-mode never-pay gap — *correctness, $0 spend* ⚠
-`assets/thumbnail_scorer.py` calls paid OpenAI **directly** via the legacy
-`core/llm_client.get_openai_client()` — bypassing the router **and therefore
-`FREE_MODE_STRICT`**. `core/run_mode.py` contains **zero** thumbnail/vision references
-and the scorer has no free-mode awareness. Free mode promises it "never falls back to
-a paid provider"; this path is outside the guard.
+### 5.1 Refresh the Anthropic default model IDs — *highest value, zero integration*
+Claude is **the live paid provider**, yet `core/llm_router._DEFAULT_MODELS` still pins
+it to `claude-sonnet-4-…` / `claude-haiku-4-5-…` while the Claude 5 family exists. The
+provider is already wired, so this is a **config-level** upgrade to the model doing
+your most quality-sensitive work (script generation, grading, claim-verify).
+*Evaluate, don't blind-bump* — newer models shift cost and prompt behavior, and the
+prompts are tuned. (The OpenAI pins are stale too, but moot until that key returns.)
 
-**Precision — this is latent, not a live bug:** the scorer is opt-in and default-off
-(`THUMBNAIL_SCORER_ENABLED`), so it only fires if the operator enabled it *and* an
-`OPENAI_API_KEY` is present. But that's exactly the configuration a Standard-mode user
-who later switches to Free would be in. Routing it through `core/llm_router` (or making
-it free-mode aware) both closes the gap and unblocks the Pillar-2 vision path — the same
-fix serves both modes. **Highest-value LLM-adjacent work while paid is off.**
+### 5.2 Give the router an image path — *restores a dead capability* ⚠
+**The only vision capability in the project is hard-pinned to the one provider that is
+currently off.** `assets/thumbnail_scorer._vision_score` builds base64 `image_url`
+blocks and sends them through the legacy `core/llm_client.get_openai_client()` —
+bypassing the router entirely. It guards on `OPENAI_API_KEY`, so with chat paid off it
+returns `None` and `score_thumbnail` falls back to `_heuristic_score`: **thumbnail
+vision scoring is silently dead right now**, with no error.
 
-### 5.2 Pick the right local model — *the only live model decision*
-`llama3.1:8b` (documented default) vs `qwen2.5:7b` (documented alternative) is the one
-choice that changes output **today**. Worth a real A/B on hook quality and stance-holding
-— the two things §4 flags as the biggest free-mode quality gap — before assuming a bigger
-pull or a paid tier is needed.
+Meanwhile **Claude — which you are paying for — supports vision**, but the router
+cannot carry an image: `_normalize_messages` is typed `list[dict[str, str]]`, text-only.
 
-### 5.3 When/if paid returns (Standard mode), in order
-1. **Refresh the stale `_DEFAULT_MODELS` IDs** — still pinned to `gpt-4o` and
-   `claude-sonnet-4-…` on two **already-wired** providers. Frontier quality for zero
-   integration. *Evaluate, don't blind-bump* — cost and prompt behavior shift.
-2. **Gemini** — only if the Pillar-2 rendered-video review is the priority (native
-   video is the one capability nothing else has).
-3. **Grok** — gated on verifying citable source URLs (§3.4).
-4. **Kimi K3** — last; paid-only despite open weights (§2), and nothing is blocked on it.
+So one fix does three things: restores thumbnail vision on an already-paid provider,
+puts that spend under `cost_meter`/failover, and unblocks the open Pillar-2
+"router vision path" roadmap item.
+
+> **Correction to an earlier revision of this doc:** this was previously framed as a
+> Free-mode "never-pay leak." That framing rested on a wrong premise. The real,
+> current impact is a **dead capability**, not an unguarded charge. (A narrow latent
+> case does still exist — an `OPENAI_API_KEY` present *while* `FREE_MODE_STRICT` is
+> set would bypass the guard — but it is not today's situation.)
+
+### 5.3 Pick the local model — *only when running Free mode*
+`llama3.1:8b` (documented default) vs `qwen2.5:7b` (documented alternative). Worth a
+real A/B on hook quality and stance-holding before assuming a bigger pull is needed —
+but this only affects runs you deliberately start in Free mode, not the default path.
+
+### 5.4 Optional additions, in order
+1. **Gemini** — only if the Pillar-2 **rendered-video** review is the priority; native
+   video is the one capability nothing else has. (§5.2 is its prerequisite either way.)
+2. **Grok** — would *restore* the `twitter`/`tiktok_trends` capability that Apify-off
+   removed; gated on verifying it returns citable source URLs (§3.4).
+3. **Kimi K3** — last; paid-only despite open weights (§2), and nothing is blocked on it.
 
 ## 6. Crossover / unnecessary — consolidated
 
 | Idea | Verdict |
 |---|---|
-| "Adopt Claude / GPT / Gemini / Grok / Kimi **now**" | **Moot while paid is off** — `FREE_MODE_STRICT` blocks them at the seam. |
-| "Add GPT / add Claude" (Standard) | **Already wired.** No work exists to do. |
+| "Adopt Claude" | **Already available and already wired** — use it; just refresh the model IDs (§5.1). |
+| "Adopt GPT now" | **Blocked by the missing key**, not by code — it returns the moment paid chat is back. |
+| "Everything is blocked because paid is off" | **False** — that's only true *inside* Free mode (§1). Claude is reachable today. |
+| "Add GPT / add Claude" (as providers) | **Already wired.** No work exists to do. |
 | "Add native Gemini / Grok / Kimi providers" | **Mostly unnecessary** — OpenRouter already reaches them (Standard only). Justify natively only for params OpenRouter can't proxy (Gemini video, Grok live-search). |
 | "Kimi is open weight, so it's our free model" | **False** — §2: 1.56 TB weights, 8×H100, no free API tier. |
 | "Put a frontier model on `cheap`/`extract`" | **Anti-doctrine** — and impossible in Free mode. |

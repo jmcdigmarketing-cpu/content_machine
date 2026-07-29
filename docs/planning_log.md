@@ -11,6 +11,36 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-07-26 — LLM strategy CORRECTED (operator feedback)
+
+**Prompt:** *"I did mean paid is CURRENTLY off for only chat and apify… paid is on for
+claude, and for quality sake i wouldn't turn the paid version off permanently… you do know
+that ollama isn't free anymore either right?"*
+
+**What was wrong:** the previous entry generalized "chat + Apify paid off" into "the project
+is running strict Free mode." It isn't. Corrected framing = **three states**: (a) **today** —
+Standard *with gaps* (OpenAI + Apify keys off, **Claude available and paid**), (b) **Free
+mode** — a strict per-run tool (`RUN_COST_MODE=free`), (c) full Standard. Paid is not being
+disabled permanently; quality is the priority.
+
+**The correction improved the headline finding.** Verified: `_vision_score` guards on
+`OPENAI_API_KEY` → returns `None` → `score_thumbnail` falls back to `_heuristic_score`. So
+with chat paid off, **thumbnail vision scoring is silently dead** — a *dead capability*, not
+the "never-pay leak" previously claimed (that framing rested on the wrong premise; the latent
+leak case is narrow — key present *and* `FREE_MODE_STRICT`). Meanwhile **Claude supports
+vision and is paid for**, but the router can't carry images (`_normalize_messages` is
+`list[dict[str, str]]`). One fix restores the capability on an already-paid provider, meters
+it, and unblocks the Pillar-2 vision item.
+
+**Ollama (verified):** the **local runtime is still free/open-source (MIT)** — the
+`localhost:11434` path `free_mode.md` uses — but **Ollama Cloud is now paid** (~$0 / ~$20 Pro
+/ ~$100–200 Pro Max; sources disagree on the top tier). "Ollama = free" is no longer
+unqualified; caveat added to `free_mode.md`.
+
+**Reordered verdict:** (1) refresh the **Anthropic** default model IDs (`claude-sonnet-4-…`
+pinned while Claude 5 exists — live paid provider, config-only change), (2) give the router
+an image path, (3) local-model A/B only when running Free mode, (4) Gemini/Grok/Kimi optional.
+
 ## 2026-07-26 — LLM strategy reevaluated for Free mode (analysis only)
 
 **Prompt:** *"reevaluate with the understanding that chat and apify paid is off. show use

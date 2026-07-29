@@ -11,6 +11,37 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-07-26 — Big-5 LLM provider strategy (analysis only)
+
+**Prompt:** *"what could, including kimi, each of the big 5 llms do for this project and which
+is most necessary? note if anything crosses over with my existing framework or is
+unnecessary."* Plan mode; scope = **analysis/documentation only**, folding the Kimi doc into a
+wider comparison ([llm_provider_strategy.md](llm_provider_strategy.md)).
+
+**Findings (verified against the tree):**
+- **GPT and Claude are already wired** (`core/llm_router._PROVIDERS`) — for those two, the
+  "what could it do" answer is "it's already available." Nothing to build.
+- **Gemini / Grok / Kimi are reachable today with zero code** via the wired `openrouter`
+  provider. Native entries buy billing/latency/params, **not access** — the biggest
+  "unnecessary" item.
+- **The vision path already exists but is stranded**: `assets/thumbnail_scorer._vision_score`
+  goes through the legacy `core/llm_client` (hardcoded OpenAI, bypassing the router → no cost
+  ledger, no failover). This is *why* the Pillar-2 "router vision path" item is still open.
+- **Grok uniquely touches the data layer** — live X/web access vs the paid `twitter` Apify
+  signal (`_APIFY_PAID_SIGNALS`) — but LLM summaries aren't citable sources, so it's gated on
+  returning attributable URLs.
+- `_DEFAULT_MODELS` still pins `gpt-4o` / `claude-sonnet-4-…` while the field moved to GPT-5.6
+  and the Claude 5 family.
+
+**Verdict:** the most necessary work is **not a model purchase** — (1) route the thumbnail
+vision scorer through `core/llm_router` (unblocks *any* vision model, $0 spend), (2) evaluate
+refreshing the stale default model IDs on the already-wired providers, then (3) Gemini (only
+native *video* reader) if Pillar-2 video review is the priority, (4) Grok (gated), (5) Kimi
+(nice-to-have).
+
+**Shipped:** [llm_provider_strategy.md](llm_provider_strategy.md) (renamed from
+`kimi_k3_evaluation.md`) + `tooling_landscape.md` rows #18–19. No code.
+
 ## 2026-07-26 — Kimi K3 fit evaluation (analysis only)
 
 **Prompt:** *"in what ways could kimi k3 be of use to this project, in addition to the
@@ -28,7 +59,8 @@ seam — and **1M-context** work (clip-from-source Phase R, vault-wide synthesis
 SkillOpt Pillar 7, prompt-eval Pillar 2). Verdict: **complement (premium)** — reserve for
 vision + long-context + grading; never displace the free cheap/extract tiers.
 
-**Shipped:** [kimi_k3_evaluation.md](kimi_k3_evaluation.md) + a verdict-table row (#18) in
+**Shipped:** the Kimi evaluation (since folded into
+[llm_provider_strategy.md](llm_provider_strategy.md) §3.5) + a verdict-table row (#18) in
 [tooling_landscape.md](tooling_landscape.md). No integration built — left for a future task.
 
 ## 2026-07-24 — Pillar 7: Self-improving skills (Agent Skills + SkillOpt)

@@ -60,8 +60,8 @@ That gap *is* the moat.
 | 15 | [youtubeniches guide](https://youtubeniches.com/blog/ai-youtube-automation-complete-guide-2026) | Market guide | — | Positioning intel | Validates 2026 disclosure penalties + faceless viability |
 | 16 | [directai roundup](https://www.directai.app/blog/best-ai-tools-for-youtube-automation) | Market guide | — | Positioning intel | Confirms no market tool ships grounding+loop; "automation ≠ quality" |
 | 17 | [qiaomu (dup)](https://github.com/joeseesun/qiaomu-anything-to-notebooklm) | Ingestion | see #11 | — | Listed twice in the brief; same repo as #11 |
-| 18 | [Kimi K3](https://openrouter.ai/moonshotai/kimi-k3) | LLM provider (Moonshot) | Frontier, 2026-07, open weights | Complement (premium) | Vision + 1M context the free tiers lack; grades/verifies, doesn't generate — see [llm_provider_strategy.md](llm_provider_strategy.md) §3.5 |
-| 19 | Big-5 LLMs (Claude / GPT / Gemini / Grok / Kimi) | LLM providers | Frontier, 2026-07 | Complement (mostly already wired) | GPT+Claude already in the router; Gemini/Grok/Kimi reachable via OpenRouter with zero code — the bottleneck is the stranded vision seam, not a model. [llm_provider_strategy.md](llm_provider_strategy.md) |
+| 18 | [Kimi K3](https://openrouter.ai/moonshotai/kimi-k3) | LLM provider (Moonshot) | Frontier, 2026-07, open weights (Modified MIT) | **Paid-only** (blocked in Free mode) | Open weight ≠ free: 1.56 TB weights / ~1.68 TB VRAM / 8×H100, and no free API tier — see [llm_provider_strategy.md](llm_provider_strategy.md) §2 |
+| 19 | 12-model LLM field (5 frontier + 7 open-weight) | LLM providers | Frontier + open, 2026-07 | Complement (mostly already wired / blocked) | With paid chat off, `FREE_MODE_STRICT` blocks every frontier model; the live choice is the local Ollama model (llama3.1 vs qwen2.5). Bottleneck is the stranded vision seam, not a model. [llm_provider_strategy.md](llm_provider_strategy.md) |
 
 ---
 

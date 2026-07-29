@@ -11,6 +11,38 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-07-26 — LLM strategy reevaluated for Free mode (analysis only)
+
+**Prompt:** *"reevaluate with the understanding that chat and apify paid is off. show use
+case for free and paid, and provide two more llms to compare to in the same doc"* →
+then *"add all of them… also note that kimi is open weight and free? (verify)"*.
+Rewrote [llm_provider_strategy.md](llm_provider_strategy.md); **12 models**, no code.
+
+**The reframe:** `core/run_mode.py` Free mode is *strict* — under `FREE_MODE_STRICT` the
+router filters to zero-cost candidates and **raises** rather than falling back to paid. So
+with paid chat off, **every frontier model is blocked at the seam**; the only live LLM
+decision is which model to `ollama pull`. Frontier analysis is a Standard-mode contingency.
+
+**Verified (the user's ask): Kimi K3 is open weight but NOT free.** Modified-MIT weights
+(2026-07-27, permissive at our scale) — but **1.56 TB weights / ~1.68 TB VRAM / 8×H100
+minimum**, and **no free API tier** ($3/$15 on direct + OpenRouter, no `:free` variant).
+Open weight ≠ free: it cannot serve Free mode.
+
+**Upgraded finding — latent never-pay gap:** `assets/thumbnail_scorer.py` calls paid OpenAI
+directly via the legacy `core/llm_client`, bypassing the router *and* `FREE_MODE_STRICT`
+(`run_mode.py` has zero vision references). Latent, not live — the scorer is opt-in
+(`THUMBNAIL_SCORER_ENABLED`) and needs an OpenAI key — but it's exactly the config of a
+Standard user switching to Free. Routing it through the router closes the gap **and**
+unblocks the Pillar-2 vision path.
+
+**Also reframed:** Grok was pitched as displacing the paid `twitter` signal — but Free mode
+already *skips* `twitter`, so it would restore a dropped capability, not remove a cost.
+
+**Verdict (paid off):** (1) close the never-pay gap, (2) A/B the local model
+(`llama3.1:8b` vs `qwen2.5:7b` — both already named in `free_mode.md`), (3) only when paid
+returns: refresh stale `_DEFAULT_MODELS` IDs → Gemini (only native video reader) → Grok
+(gated on citable URLs) → Kimi last.
+
 ## 2026-07-26 — Big-5 LLM provider strategy (analysis only)
 
 **Prompt:** *"what could, including kimi, each of the big 5 llms do for this project and which

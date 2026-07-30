@@ -1,17 +1,93 @@
-# Handoff synopsis — 2026-07-17: Pillar 6 mostly shipped + local-TTS voice variety (after Pillars 1–5)
+# Handoff synopsis — 2026-07-29: Pillars 1–7 shipped · **5 PRs open** (docs + one code)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
-- **Branch:** `main` (Pillars 1–6 merged; tree clean)
-- **Suite:** 1064 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Branch:** `main` — **Pillars 1–7 merged.** The working tree is clean, but **five
+  branches are unmerged with open PRs** (below).
+- **Suite:** ~1,125 tests green on a fully-installed machine (see *How to count metrics*).
+  **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
-  `analyst` / `overnight`), **live-run hardening**, and **Pillar 6** — baseline provider
-  seams + goose3 (2026-07-08), then seam→live-path wiring (U1 whisper align, U3 music bed,
-  U4 AI-video slot, U5 thumbnail chain + dual-format render, U8 n8n recipes, U9 earnings
-  signal), local TTS (2026-07-09), and **local-TTS voice variety** (2026-07-17).
+  `analyst` / `overnight`), **live-run hardening**, **Pillar 6** (provider seams + goose3,
+  seam→live-path wiring U1–U9, local TTS + voice variety), and **Pillar 7**
+  (self-improving skills, 2026-07-24).
+
+### Open PRs (2026-07-29) — read before starting anything
+
+| PR | Branch | Contents | Type |
+|---|---|---|---|
+| **#26** | `claude/kimi-k3-evaluation` | `llm_provider_strategy.md` — 12-model comparison, free vs paid use cases per job | docs |
+| **#27** | `claude/trade-validation-default-on` | `SEMANTIC_TRADE_VALIDATION` **default-on for NBA/NFL** (domain-gated); 18/18 tests green | **code** |
+| **#28** | `claude/code-audit-2026-07` | `code_audit_2026-07.md` — whole-repo health pass | docs |
+| **#29** | `claude/strategy-2026h2` | `strategy_2026H2.md` + roadmap refresh (volume paradox, Phase M eligibility, do-not-build list) | docs |
+| **#30** | `claude/efficiency-audit` | `efficiency_audit_2026-07.md` — dead code, hardcoding, waste | docs |
+
+**Merge order:** #26 and #28 first — **#29 links to both** of their docs, so landing #29
+alone leaves two temporarily dangling links. #27 (code) and #30 are independent.
+
+**Branch hygiene — do NOT merge `claude/docs-optimization-review-a4l104`.** It carries 9
+docs commits written against an *older lineage* (its `audit_2026-06-25.md` claims 521
+tests / 35,688 LOC vs today's ~1,125 / 56,222) and it diverges on ~15 docs that `main`
+has since moved forward — `HANDOFF_SYNOPSIS.md`, `architecture.md`, `assessment.md`,
+`change_log.md`, `decisions.md`… **Merging it would revert newer content.** No PR was
+opened for it; recommend abandoning/deleting the branch. Anything valuable in it is
+superseded by #26–#30.
+
+### Shipped since 2026-07-17 (not in the sections below)
+
+- **Pillar 7 — self-improving skills** (2026-07-24): `core/ops_skills.py` renders
+  `skills/content-ops/SKILL.md` from the live `@_register` registry (`ops gen-skills`);
+  `core/skillopt.py` is a gated **proposal-only** loop in `overnight`
+  (`SKILLOPT_ENABLED`) — it **never auto-edits live prompts** by design.
+- **Scheduling upgrades**: clock-time upload input (`parse_local_time_input`) + learned
+  post slots now rank by **average** engaged-rate (killed the weekend feedback loop).
+- **Voices as config**: `config/voices.json` catalog + `ops voices`; **Qwen3-TTS** local
+  voice-cloning provider; honest Free-mode readiness reporting.
+- **Crash fixes**: retired free-model slug no longer kills a completed run; title/voice fixes.
+
+### Known-inert capability ⚠ (operator has NOT installed the external additions)
+
+All four cloned reference repos are **absent** (ComfyUI, ai-marketing-skills,
+anything-to-notebooklm, system_prompts_leaks) and no `[providers]`/`[free]` backends are
+installed. ~757 LOC of seam code is therefore **dormant — env-gated and fail-open**, so
+nothing breaks, but three capabilities are silently unavailable (detail in #30):
+
+1. **Free mode is not actually $0-ready** — it needs `piper` (local voice) and `ddgs`.
+   Without `piper` it **blocks at render by design**. Fix: `pip install -e ".[free]"`.
+2. **Expert-Panel grading (Pillar 2) has no personas** — `EXPERT_PANEL_ENABLED` is inert.
+3. **The prompt-eval corpus harness has no corpus** to replay, so guardrail regressions
+   aren't caught by it.
+
+### Live findings a fresh session should know (from #28 / #30)
+
+1. **`core/run_mode.free_mode_strict()` has ZERO importers** — all three paid seams
+   (`llm_router:272`, `tts:253`, `apify_client:240`) reimplemented it privately. The
+   canonical guard already exists and is being ignored; **~4-line fix**, and it's a
+   correctness item (a new paid seam currently opts out of Free mode by default).
+2. **The vision path is stranded and silently inactive** —
+   `assets/thumbnail_scorer._vision_score` goes through the legacy `core/llm_client`
+   (raw OpenAI SDK), bypassing the router *and* `cost_meter`. It guards on
+   `OPENAI_API_KEY`; with paid chat off it returns `None` and falls back to heuristics
+   **with no error**. Claude (paid, available) does vision, but the router can't carry an
+   image (`_normalize_messages` is `list[dict[str, str]]`).
+3. **`core/engagement.safe_infer_domain` returns `"neutral"` on any exception** — an
+   import/DB hiccup silently re-opens **tag pollution** (UFC tags on gaming topics) with
+   no warning. This is why two tests fail in a bare container.
+
+### How to count metrics (three numbers, all correct)
+
+Future audits should reconcile these rather than "correct" them:
+
+| Number | What it is | Command |
+|---|---|---|
+| **1,139** | `def test_` definitions (static grep; includes helpers) | `grep -rh "def test_" tests/ \| wc -l` |
+| **~1,125** | the green suite on a fully-installed machine | `python -m unittest discover -s tests` |
+| **863** | what runs in a **bare** container — 148 modules can't import without heavy deps (90 × `sqlalchemy`) | same command, no deps installed |
+
+Also: **56,222 LOC / 388 files** (`find . -name '*.py' … \| xargs wc -l`), ruff
+**0.8.4** (CI-pinned — newer ruff reports false drift), mypy **106 errors / 68 files**.
 
 ---
 
@@ -189,7 +265,15 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
+> **Do these first (cheap, and two change behavior):** ① use the existing
+> `run_mode.free_mode_strict()` in all three paid seams (~4 lines, correctness);
+> ② `pip install -e ".[free]"` so Free mode actually works; ③ narrow
+> `safe_infer_domain`'s catch; ④ refresh the **Anthropic** default model IDs
+> (`_DEFAULT_MODELS` still pins `claude-sonnet-4-…` on the live paid provider);
+> ⑤ merge the five open PRs. Full ranking: #30 §5 and
+> [strategy_2026H2.md](strategy_2026H2.md) §4 *(arrives with #29)*.
+
+***Pillars 1–7 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
 1. **Pillar 6 — Video Creation Provider Layer** (decisions §17, overrides §8): the
@@ -206,23 +290,32 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
    calibration/predictor activate as measured volume accrues.
 3. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,
    MoneyWise depth, AI Tools/Tech groundwork.
-4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`);
-   promote `SEMANTIC_TRADE_VALIDATION` default-on if precise in live runs.
+4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`).
+   *(`SEMANTIC_TRADE_VALIDATION` default-on is **done** — domain-gated to NBA/NFL in PR #27.)*
 5. Vault housekeeping: cross-day dossier refresh leaves prior-day `_runs/` notes (same
    `run_id`, different date prefix) — safe but clutter; stable-path upsert is a follow-up.
 6. One-time ops: re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
 
-**Parked / excluded:** Instagram + TikTok platform linking (Phase M, far later) · Benable bot.
+**Parked / excluded:** **Phase M — multi-platform stays parked** (operator decision,
+2026-07). Eligibility was researched so it needn't be again: TikTok *Upload to Inbox /
+Creator's Draft* needs **no audit** (human publishes from drafts), while **Direct Post**
+needs a 2–4 week audit and **unaudited Direct Post is private-only**; Instagram needs a
+Business/Creator account + linked FB Page + app review. Both audits are shaped for
+*interactive multi-tenant apps*, which a solo headless pipeline is not — see
+`roadmap.md` → Later horizons → Phase M. · Benable bot.
 
 ---
 
 ## Docs to read first
 
+- `docs/roadmap.md` — **"Next up — all open items"** is the single forward list; Pillars 1–7 ✅
 - `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17 (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
-- `docs/roadmap.md` — Pillars 1–5 ✅, Pillar 6 baseline seams landed
+- `docs/free_mode.md` — the $0 stack + `ops free-doctor` (**needs `.[free]` installed**)
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index
 - `docs/debugging.md` — playbook vs facts, hallucination triage
+- *Arriving with the open PRs:* `code_audit_2026-07.md` (#28) · `efficiency_audit_2026-07.md`
+  (#30) · `strategy_2026H2.md` (#29) · `llm_provider_strategy.md` (#26)
 
 ---
 

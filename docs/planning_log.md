@@ -11,6 +11,35 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-07-29 — Handoff refresh + metrics-counting convention + branch hygiene
+
+**Prompt:** *"follow through on the most pressing documentation updates, analysis, or research
+that can be done at this time. if none, state such."*
+
+**Assessment: one pressing item, then saturated.** After five PRs in one session (#26–#30),
+further analysis docs would be noise. The one genuinely pressing gap was
+[HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) — the doc whose *entire job* is orienting a fresh
+session — sitting at **2026-07-17**: "Pillars 1–6", "1064 tests", "tree clean", and no mention
+of Pillar 7 or the five open PRs. Refreshed with: the open-PR table + **merge order** (#26/#28
+before #29, which links to both), what shipped since the 17th (Pillar 7, scheduling, voice
+catalog, Qwen3-TTS), a **known-inert capability** section, the three live findings from
+#28/#30, and Phase M's researched eligibility.
+
+**Metrics-counting convention (new — settles a recurring drift):** three numbers are all
+correct for different questions — **1,139** (`grep "def test_"`, includes helpers), **~1,125**
+(green suite, fully installed), **863** (bare container; 148 modules can't import, 90 of them
+just `sqlalchemy`). Recorded with the exact command for each so future audits *reconcile*
+rather than "fix" a number that wasn't broken. Same for LOC (56,222 / 388 files), ruff
+(**0.8.4** pinned — newer versions report false drift), mypy (106/68).
+
+**Branch hygiene:** `claude/docs-optimization-review-a4l104` is a **merge trap** — 9 docs
+commits from an older lineage (claims 521 tests / 35,688 LOC) that also diverge on ~15 docs
+`main` has moved forward, so merging would **revert newer content**. Recommend abandoning it;
+its value is superseded by #26–#30. *(Not deleted — operator's call.)*
+
+**Explicitly not done:** no third audit (saturation); Grok citable-URL and Instagram dev-mode
+verification both left open — flagged unverified but moot while Phase M is parked.
+
 ## 2026-07-24 — Pillar 7: Self-improving skills (Agent Skills + SkillOpt)
 
 **Prompt:** *"continue pillar 7 and from there advance as scheduled."* Built autonomously

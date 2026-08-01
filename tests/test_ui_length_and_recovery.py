@@ -6,9 +6,10 @@ Both use injected print_fn/input_fn, so they test without a terminal, DB, or net
 
 import os
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
+from zoneinfo import ZoneInfo
 
 from core.ui import prompt_proceed_or_length, prompt_upload_plan, run_queue_manager_interactive
 
@@ -123,6 +124,17 @@ class TestQueueManagerRecovery(unittest.TestCase):
 class TestUploadPlanOption3(unittest.TestCase):
     """Option 3 now takes a clock time (or minutes), not just minutes-from-now."""
 
+    # The target must stay in the FUTURE relative to the wall clock: prompt_upload_plan
+    # clamps any past time to now+1min ("never schedule in the past"). A hardcoded date
+    # here silently expires — this test failed every CI run from 2026-07-25 onward for
+    # exactly that reason. Always derive it from now.
+    @staticmethod
+    def _future_local(days: int = 3, hour: int = 18):
+        """A fixed clock time `days` ahead, in the channel's tz (tapin = America/New_York)."""
+        return (datetime.now(ZoneInfo("America/New_York")) + timedelta(days=days)).replace(
+            hour=hour, minute=0, second=0, microsecond=0
+        )
+
     def _run(self, time_input):
         # timing=3, privacy=default(""), then the time string.
         with (
@@ -130,7 +142,7 @@ class TestUploadPlanOption3(unittest.TestCase):
             patch("core.ui.display_upload_queue"),
             patch(
                 "analytics.post_timing.next_optimal_post_time",
-                return_value=datetime(2026, 7, 25, 22, 0, tzinfo=timezone.utc),
+                return_value=self._future_local(days=1, hour=22).astimezone(timezone.utc),
             ),
         ):
             return prompt_upload_plan(
@@ -141,12 +153,13 @@ class TestUploadPlanOption3(unittest.TestCase):
             )
 
     def test_explicit_datetime_schedules_that_time(self):
-        plan = self._run("2026-07-25 18:00")
+        # An explicit date+time is honoured verbatim, including the local→UTC conversion.
+        target_local = self._future_local()
+        plan = self._run(target_local.strftime("%Y-%m-%d %H:%M"))
         self.assertEqual(plan.mode, "queue")
-        # 18:00 America/New_York (EDT) == 22:00 UTC.
         self.assertEqual(
             plan.scheduled_at.astimezone(timezone.utc),
-            datetime(2026, 7, 25, 22, 0, tzinfo=timezone.utc),
+            target_local.astimezone(timezone.utc),
         )
 
     def test_bare_number_falls_back_to_minutes(self):

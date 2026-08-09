@@ -38,7 +38,7 @@ input + average-based learned post slots). 1125 tests green.*
 
 **Recommenders & calibration**
 - [ ] Backtest recommender accuracy vs. realized engagement (volume-gated)
-- [ ] Promote `SEMANTIC_TRADE_VALIDATION` default-on for sports channels `[S]`
+- [x] Promote `SEMANTIC_TRADE_VALIDATION` default-on for sports channels `[S]` — now auto-on for NBA/NFL topics (domain-gated); env still forces on/off globally
 
 **Signals & data intake**
 - [ ] `youtube_comments` / `instagram_figures` signals (templated in the catalog, not wired)
@@ -359,7 +359,7 @@ Turn the research spine into a compliance moat.
 - [x] **Script-accuracy follow-ups (2026-07-01)** — Apify 403 vs 402 messaging + shorter auth-failure TTL; `MAX_OPERATOR_KEY_FACTS` env cap; pipeline-end `finalize_run_observability()` for cache stats; `auto_generate` mirrors fact-grounding gate.
 - [x] **Fact-first pipeline (2026-07-02)** — `core/operator_facts.py` (paste block, vault save-all, char budget); discovery → **angles** not titles; `core/title_generator.py` runs after facts + script; anti-slop title rules.
 - [x] **O10 reset-window auto-re-enable (2026-07-02)** — `core/reset_window.py` encodes real reset cadences (YouTube daily 00:00 PT, Apify monthly `APIFY_RESET_DAY`, Odds monthly). Apify 402/monthly-limit exhaustion persists until the cycle reset (auth keeps 30m TTL, budget keeps flat TTL); quota-blocked YouTube uploads retry just after the real reset; reset times in `ops reliability`. `RESET_WINDOW_AUTO_ENABLE` master switch. Tests: `tests/test_reset_window.py`.
-- [x] **Semantic trade validation (2026-07-02, opt-in)** — `core/trade_validation.py`: extracts `player → team` trade claims from the script and warns when the pair never co-occurs on a single fact line (catches fused trades token grounding passes, e.g. real Giannis→Heat + invented Butler→Celtics). `SEMANTIC_TRADE_VALIDATION` (default **off** — higher false-positive risk); warns after the Fact-grounding section in `main.py`/`auto_generate`, never blocks. Tests: `tests/test_trade_validation.py`.
+- [x] **Semantic trade validation (2026-07-02, opt-in)** — `core/trade_validation.py`: extracts `player → team` trade claims from the script and warns when the pair never co-occurs on a single fact line (catches fused trades token grounding passes, e.g. real Giannis→Heat + invented Butler→Celtics). `SEMANTIC_TRADE_VALIDATION`: unset ⇒ **default-on for NBA/NFL topics** (domain-gated, 2026-07-26; UFC excluded — `signed` would false-positive), set `true`/`false` to force globally; warns after the Fact-grounding section in `main.py`/`auto_generate`, never blocks. Tests: `tests/test_trade_validation.py`.
 - [x] **Headless key facts for `auto_generate` (2026-07-02)** — `--facts-file` (same parser as interactive `paste` mode — trade blocks work) + repeatable `--fact` lines; deduped/tip-filtered, saved in full to the vault, injected as ground truth, and echoed in the grounding report. Tests: `tests/test_auto_generate_facts.py`.
 - [x] **Webhook / n8n / Zapier out** — *shipped 2026-07-06:* `core/events.py` POSTs `{"event", "at", "payload"}` to `EVENT_WEBHOOK_URL` on `run_completed` (every pipeline finalize), `video_published` (YouTube upload/schedule success, includes video URL), and `batch_completed` (`ops batch-drafts` summary). Fire-and-forget on a daemon thread — a dead webhook can never stall a run; `EVENT_WEBHOOK_EVENTS` csv filters types. Pairs with a free self-hosted n8n for Discord pings, cross-posting, spreadsheets. Tests: `tests/test_events.py`.
 - [x] **Batch generation** — *shipped 2026-07-06:* `py -m scripts.ops batch-drafts --channel tapin --count 3` (or `py -m core.batch_generation` with explicit topics / `--file ideas.txt`). N ideas → N draft scripts unattended: discovery → best variant → recommended length → script/title/description saved to `output/<ch>/drafts/<ts>-<slug>/` (`draft.md` + `meta.json` with hook score, authenticity verdict, grounding flags, cost). Render-free by design — no TTS spend, no cadence impact; feeds A/B + volume-with-variation. Tests: `tests/test_batch_generation.py`.
@@ -486,7 +486,7 @@ LLM call (one extract-tier call per script).*
   (`claim_support_rate`, `unsupported_claim_count`, `fact_conflict_count`,
   `tier_warning_count`) and penalize the report card's grounding component;
   dossier + batch summary surface them.
-- [ ] **Promote `SEMANTIC_TRADE_VALIDATION` default-on** `[S]` — for sports channels
+- [x] **Promote `SEMANTIC_TRADE_VALIDATION` default-on** `[S]` — domain-gated: auto-on for NBA/NFL topics, off elsewhere (UFC excluded); env override preserved
   once precision is confirmed in live runs (co-occurrence false-positive risk).
 - Tests: `tests/test_fact_store.py` (23), `tests/test_grounding_tiers.py` (14),
   `tests/test_claim_verifier.py` (12), `tests/test_fact_conflicts.py` (18) +

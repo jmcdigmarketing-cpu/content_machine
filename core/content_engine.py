@@ -868,9 +868,17 @@ def generate_content_package(
     # Semantic trade validation (opt-in): player→team pairings must co-occur on a
     # fact line, catching fused trades that token grounding passes.
     trade_warnings: list[str] = []
+    from apis.topic_scorer import infer_domain
     from core.trade_validation import trade_validation_enabled, validate_trade_claims
 
-    if trade_validation_enabled():
+    # Default-on for NBA/NFL trade topics (env still forces on/off globally). No channel
+    # defaults to nba/nfl, so the channel-profile fallback can't spuriously trigger it.
+    # key_facts must be passed: pasted NBA facts on the gaming/UFC channel are exactly
+    # the case this check exists for, and topic+channel alone would infer "gaming".
+    _trade_domain = infer_domain(
+        topic or "", channel_id=channel_id, key_facts=clean_key_facts_early or None
+    )
+    if trade_validation_enabled(_trade_domain):
         trade_warnings = validate_trade_claims(script, grounding_text)
         if trade_warnings:
             logger.warning(

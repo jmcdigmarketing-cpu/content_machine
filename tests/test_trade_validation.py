@@ -76,6 +76,7 @@ class TestValidateTradeClaims(unittest.TestCase):
 
 class TestEnableSwitch(unittest.TestCase):
     def test_disabled_by_default(self):
+        # No env, no domain → off (the pre-domain default is preserved).
         with patch.dict("os.environ", {}, clear=False):
             import os
 
@@ -85,6 +86,59 @@ class TestEnableSwitch(unittest.TestCase):
     def test_enabled_via_env(self):
         with patch.dict("os.environ", {"SEMANTIC_TRADE_VALIDATION": "true"}):
             self.assertTrue(trade_validation_enabled())
+
+    def test_default_on_for_sports_domains(self):
+        # Env unset → auto-on for trade-bearing sports domains.
+        with patch.dict("os.environ", {}, clear=False):
+            import os
+
+            os.environ.pop("SEMANTIC_TRADE_VALIDATION", None)
+            self.assertTrue(trade_validation_enabled("nba"))
+            self.assertTrue(trade_validation_enabled("nfl"))
+
+    def test_default_off_for_non_trade_domains(self):
+        # Env unset → off everywhere trades don't occur (UFC excluded on purpose).
+        with patch.dict("os.environ", {}, clear=False):
+            import os
+
+            os.environ.pop("SEMANTIC_TRADE_VALIDATION", None)
+            for domain in ("gaming", "finance", "ufc", None):
+                self.assertFalse(trade_validation_enabled(domain))
+
+    def test_explicit_off_overrides_sports_default(self):
+        with patch.dict("os.environ", {"SEMANTIC_TRADE_VALIDATION": "false"}):
+            self.assertFalse(trade_validation_enabled("nba"))
+
+    def test_explicit_on_overrides_domain(self):
+        with patch.dict("os.environ", {"SEMANTIC_TRADE_VALIDATION": "true"}):
+            self.assertTrue(trade_validation_enabled(None))
+
+
+class TestDomainGateWiring(unittest.TestCase):
+    """The domain content_engine feeds the gate must come from key facts too.
+
+    The flagship case is an operator pasting NBA trade facts on tapin (a gaming/UFC
+    channel): topic + channel alone infer "gaming" and the check would stay off, so
+    `generate_content_package` passes `key_facts=` through to `infer_domain`.
+    """
+
+    def test_pasted_nba_facts_enable_the_gate_on_a_gaming_channel(self):
+        from apis.topic_scorer import infer_domain
+
+        topic = "The biggest roster shakeup of the week"
+        facts = ["Luka Doncic was traded to the Los Angeles Lakers, per ESPN."]
+
+        with patch.dict("os.environ", {}, clear=False):
+            import os
+
+            os.environ.pop("SEMANTIC_TRADE_VALIDATION", None)
+            # Without the facts, the gate stays off...
+            bare = infer_domain(topic, channel_id="tapin")
+            self.assertFalse(trade_validation_enabled(bare))
+            # ...with them, the NBA domain wins and the check runs.
+            with_facts = infer_domain(topic, channel_id="tapin", key_facts=facts)
+            self.assertEqual(with_facts, "nba")
+            self.assertTrue(trade_validation_enabled(with_facts))
 
 
 class TestDisplay(unittest.TestCase):

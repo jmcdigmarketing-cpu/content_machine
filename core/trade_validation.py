@@ -11,9 +11,12 @@ each pair co-occurs on a **single fact line** with a trade verb. Both names
 present in the corpus but never together on one trade line ⇒ the pairing is
 suspect (fused/mis-directed trade).
 
-Opt-in via ``SEMANTIC_TRADE_VALIDATION`` (default **off**) — deliberately,
-because sentence-level co-occurrence has a higher false-positive rate than
-token grounding (a fact split across two pasted lines will flag). Like the
+Gating: ``SEMANTIC_TRADE_VALIDATION`` forces the check on/off globally when set;
+when unset it defaults **on for trade-bearing sports domains (NBA/NFL)** and off
+elsewhere. Sentence-level co-occurrence has a higher false-positive rate than token
+grounding (a fact split across two pasted lines can flag), so it stays scoped to the
+domains where ``player → team`` trades actually occur — and UFC is excluded on
+purpose (fighter "signings" would false-positive via the ``signed`` verb). Like the
 grounding check it WARNS, never blocks or rewrites.
 """
 
@@ -73,9 +76,24 @@ class TradeClaim:
         return f"{self.player} → {self.team}"
 
 
-def trade_validation_enabled() -> bool:
-    """Opt-in: higher false-positive risk than token grounding (see module doc)."""
-    return os.getenv("SEMANTIC_TRADE_VALIDATION", "").lower() in ("1", "true", "yes")
+# Sports domains where player→team trades actually occur. Excludes UFC on purpose:
+# fighter "signings" would false-positive via the `signed` verb.
+_TRADE_DOMAINS = frozenset({"nba", "nfl"})
+
+
+def trade_validation_enabled(domain: str | None = None) -> bool:
+    """Is the semantic trade check active for this run?
+
+    Explicit ``SEMANTIC_TRADE_VALIDATION`` wins in both directions; when unset the
+    default is on for trade-bearing sports domains (NBA/NFL) and off elsewhere
+    (see module doc). A no-argument call stays ``False`` — the pre-domain default.
+    """
+    val = os.getenv("SEMANTIC_TRADE_VALIDATION", "").strip().lower()
+    if val in ("1", "true", "yes"):
+        return True
+    if val in ("0", "false", "no"):
+        return False
+    return domain in _TRADE_DOMAINS
 
 
 def _clean(name: str) -> str:

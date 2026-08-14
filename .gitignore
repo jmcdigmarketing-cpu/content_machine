@@ -81,3 +81,6 @@ Thumbs.db
 .vscode/
 *.swp
 *~
+
+# Local vault backups (operator Obsidian notes — never commit)
+.vault_backups/

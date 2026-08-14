@@ -30,6 +30,8 @@
 
   "twitter_breaking": {
     "actor": "apidojo/tweet-scraper",
+    "enabled": false,
+    "disabled_note": "Retired 2026-08-14. Measured across all 19 run traces (2026-07-07 to 2026-08-14) the signal was 'inactive' on 19/19 runs — it has never once produced a fact. The actor bills a full run, takes ~32s (the slowest signal, so it set the wall-clock floor for every discovery since signals run concurrently), and returns 10 x {'noResults': true} sentinel rows instead of tweets; X search almost certainly requires authenticated cookies now. The input was verified correct against input_template (searchTerms/sort/maxItems), so this is not the reddit-style input drift. Re-enable only after confirming the actor returns real tweets for a live query — apify_client.is_no_results() now reports the sentinel as STATUS_UNAVAILABLE rather than a quiet 'inactive'.",
     "key": "main",
     "ttl_seconds": 5400,
     "value": "Real-time breaking news and viral moments. UFC fight announcements, results, fighter beef; gaming patch reactions and controversy. Highest timeliness of any source — primary fact-grounding for 'just happened' topics.",

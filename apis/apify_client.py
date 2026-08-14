@@ -230,6 +230,31 @@ def _actor_fail_ttl() -> int:
         return 60 * 60
 
 
+def is_no_results(items: Any) -> bool:
+    """True when an actor answered with only "I found nothing" sentinel rows.
+
+    Some Apify actors bill a full run and then return placeholder objects such as
+    `[{"noResults": true}]` instead of an empty dataset. A caller that just checks
+    `if not items` reads that as a *successful* search with no matches, so the source
+    looks merely quiet while it is actually broken — the `twitter` signal reported
+    `inactive` on 19/19 runs across five weeks for exactly this reason, at ~32s and
+    real credits per run.
+
+    Sentinel rows carry no payload beyond the flag, so an actor that genuinely returned
+    data is never mistaken for one that failed.
+    """
+    if not isinstance(items, list) or not items:
+        return False
+    sentinel_keys = {"noresults", "no_results", "error", "message"}
+    for row in items:
+        if not isinstance(row, dict):
+            return False
+        keys = {str(k).lower() for k in row}
+        if not keys or not keys.issubset(sentinel_keys):
+            return False
+    return True
+
+
 def run_actor(
     actor_id: str,
     input_data: dict[str, Any],

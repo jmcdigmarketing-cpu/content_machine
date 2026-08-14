@@ -6,7 +6,7 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 - **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
   (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
-- **Suite:** 1234 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Suite:** 1247 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -73,6 +73,33 @@ nothing reported it. Verified live, not inferred:
 **Watch out:** `core/signal_facts.format_signal_facts` formats **per-signal** — adding a
 new key to a signal's `data` silently drops it from the prompt until a branch is added
 there. That is how `fighter_stats` would have been lost.
+
+## Shipped 2026-08-14 (paid-signal audit — `twitter` retired)
+
+Same silent-failure pattern, but this one cost money. Measured against all 19 run
+traces: **`twitter` was `inactive` on 19/19 runs from 2026-07-07 to 08-14** — it has
+never once produced a fact — while being the **slowest signal at ~32s**. Signals run
+concurrently with one worker each (`build_registry`: `workers = max_workers or
+len(sources)`), so wall-clock ≈ the slowest signal: twitter alone set the floor for
+every discovery. Next slowest is `youtube_competitors` at ~15s.
+
+Cause: `apidojo/tweet-scraper` bills a full run and returns `10 x {"noResults": true}`
+sentinel rows instead of tweets (X search almost certainly needs authenticated cookies
+now). The signal only checked `if not items`, so a broken source read as a successful
+empty search. The actor input was verified correct against `input_template`, so unlike
+Reddit this was **not** input drift.
+
+- `apify_client.is_no_results()` — shared sentinel detector; a run of rows carrying
+  nothing but `noResults`/`error`/`message` keys is a failure, and any real row means
+  the actor worked.
+- `twitter_signal` reports `STATUS_UNAVAILABLE` on the sentinel, not `inactive`.
+- `twitter_breaking` → `enabled: false` in `config/apify_sources.json` (the catalog
+  kill-switch in `register_signals._catalog_disabled_signals` does the rest).
+- `tiktok_trends` (~14s) and `youtube_competitors` (~15s) were checked and **kept** —
+  both return real data.
+
+**Remaining Apify tier:** `tiktok_trends`, `youtube_competitors`. Reddit + twitter
+retired; `youtube_comments`/`instagram_figures` templated but never wired.
 
 ---
 

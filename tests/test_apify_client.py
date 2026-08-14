@@ -238,5 +238,90 @@ class TestActorFailureMemory(unittest.TestCase):
             self.assertEqual(self._count_posts(400), 3)
 
 
+class TestNoResultsSentinel(unittest.TestCase):
+    """An actor that bills a run and answers "I found nothing" is broken, not quiet.
+
+    `apidojo/tweet-scraper` returns 10 x {"noResults": true} instead of tweets. Because
+    the signal only checked `if not items`, that read as a successful-but-empty search:
+    `twitter` reported `inactive` on 19/19 traces across five weeks while costing ~32s
+    and Apify credits every run, and nothing ever flagged it.
+    """
+
+    def test_detects_the_tweet_scraper_sentinel(self):
+        from apis.apify_client import is_no_results
+
+        self.assertTrue(is_no_results([{"noResults": True}] * 10))
+
+    def test_detects_single_sentinel(self):
+        from apis.apify_client import is_no_results
+
+        self.assertTrue(is_no_results([{"noResults": True}]))
+
+    def test_real_data_is_not_a_sentinel(self):
+        from apis.apify_client import is_no_results
+
+        self.assertFalse(is_no_results([{"text": "a real tweet", "likeCount": 5}]))
+
+    def test_mixed_results_are_not_a_sentinel(self):
+        # One real row means the actor worked; don't discard the run.
+        from apis.apify_client import is_no_results
+
+        self.assertFalse(is_no_results([{"noResults": True}, {"text": "real"}]))
+
+    def test_empty_and_non_list_are_not_sentinels(self):
+        # A genuinely empty dataset is "no match", which is different from "broken".
+        from apis.apify_client import is_no_results
+
+        self.assertFalse(is_no_results([]))
+        self.assertFalse(is_no_results(None))
+        self.assertFalse(is_no_results({"noResults": True}))
+
+    def test_non_dict_rows_are_not_sentinels(self):
+        from apis.apify_client import is_no_results
+
+        self.assertFalse(is_no_results(["a string"]))
+
+
+class TestTwitterSignalRetired(unittest.TestCase):
+    def test_sentinel_reports_unavailable_not_inactive(self):
+        from apis.signal_contract import STATUS_UNAVAILABLE
+        from apis.twitter_signal import get_twitter_signal
+
+        with (
+            patch.dict(os.environ, {"APIFY_CONTENT_MACHINE_KEY": "k"}, clear=False),
+            patch("apis.twitter_signal.run_actor", return_value=[{"noResults": True}] * 10),
+            patch("apis.apify_client.apify_disabled", return_value=False),
+        ):
+            sig = get_twitter_signal("Marvel Rivals season 9")
+        self.assertEqual(sig["status"], STATUS_UNAVAILABLE)
+        self.assertFalse(sig["connected"])
+
+    def test_real_tweets_still_work_if_re_enabled(self):
+        from apis.signal_contract import STATUS_OK
+        from apis.twitter_signal import get_twitter_signal
+
+        tweets = [{"text": "Marvel Rivals season 9 is live", "likeCount": 5000}]
+        with (
+            patch.dict(os.environ, {"APIFY_CONTENT_MACHINE_KEY": "k"}, clear=False),
+            patch("apis.twitter_signal.run_actor", return_value=tweets),
+            patch("apis.apify_client.apify_disabled", return_value=False),
+        ):
+            sig = get_twitter_signal("Marvel Rivals season 9")
+        self.assertEqual(sig["status"], STATUS_OK)
+
+    def test_catalog_marks_twitter_disabled(self):
+        from apis.register_signals import _catalog_disabled_signals
+
+        self.assertIn("twitter", _catalog_disabled_signals())
+
+    def test_disabled_signal_is_not_scheduled(self):
+        # The real payoff: no actor call, and twitter no longer sets the wall-clock
+        # floor for discovery (it was the slowest signal at ~32s).
+        from apis.register_signals import _active_signal_sources
+
+        names = dict(_active_signal_sources("Marvel Rivals season 9", "tapin"))
+        self.assertNotIn("twitter", names)
+
+
 if __name__ == "__main__":
     unittest.main()

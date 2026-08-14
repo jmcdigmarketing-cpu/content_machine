@@ -13,7 +13,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1234 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
+Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1247 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -29,7 +29,7 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). 1234 tests green.*
+input + average-based learned post slots). 1247 tests green.*
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -62,7 +62,18 @@ input + average-based learned post slots). 1234 tests green.*
 
 **Signals & data intake**
 - [ ] `youtube_comments` / `instagram_figures` signals (templated in the catalog, not wired)
-- [ ] Live-run tuning of Apify actor inputs against real topics
+- [x] **Live-run tuning of Apify actor inputs against real topics** *(2026-08-14)* —
+  audited the paid tier against real run traces. `twitter` was **`inactive` on 19/19
+  traces spanning 2026-07-07 → 08-14** — it has never produced a fact — while being the
+  **slowest signal (~32s)**, which set the wall-clock floor for every discovery
+  (signals run concurrently, one worker each). The actor bills a run and returns
+  `10 x {"noResults": true}` sentinels instead of tweets; the input was verified
+  correct against `input_template`, so unlike Reddit this was **not** input drift —
+  X search now needs auth. Retired (`enabled: false`) and
+  `apify_client.is_no_results()` makes the sentinel report `STATUS_UNAVAILABLE`
+  instead of a quiet `inactive`. `tiktok_trends` + `youtube_competitors` verified
+  healthy and kept
+- [ ] Free-backend probe for Twitter/X, if the signal is ever worth restoring
 - [ ] Free-backend probes — TikTok/Twitter equivalents (only if the Apify bill justifies it)
 
 **Video creation quality (Pillar 6 remainder + Phases Q/R)**

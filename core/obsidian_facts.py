@@ -254,6 +254,41 @@ _GENERIC_TOKENS = {
     "2025",
     "2026",
     "2027",
+    # Generic English verbs/adverbs/prepositions that survive `_tokens` (len > 3, not
+    # a stopword) but carry no topic identity. A live run titled "...Salkilld,
+    # Thainara break through" pulled Marvel Rivals facts into a UFC script on the
+    # single token "break" (from "I break down the buffs") — genre vocabulary is not
+    # the only way a one-token overlap matches everything.
+    "break",
+    "breaks",
+    "breaking",
+    "broke",
+    "through",
+    "down",
+    "back",
+    "over",
+    "after",
+    "before",
+    "around",
+    "still",
+    "first",
+    "last",
+    "more",
+    "full",
+    "real",
+    "huge",
+    "major",
+    "make",
+    "makes",
+    "made",
+    "take",
+    "takes",
+    "give",
+    "gets",
+    "sets",
+    "goes",
+    "come",
+    "comes",
 }
 
 

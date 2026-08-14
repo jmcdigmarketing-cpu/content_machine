@@ -847,10 +847,19 @@ def prompt_key_facts(
 
     key_facts = dedupe_facts(manual_facts + link_facts + vault_accepted)
 
-    if key_facts:
-        saved_path = capture_facts_to_vault(channel_id, topic, key_facts)
+    # Persist only facts that are NEW to the vault. Re-saving `vault_accepted` would
+    # copy borrowed facts into a note titled with THIS topic, permanently stamping
+    # them as this topic's facts — a laundering loop: one weak token match pulls a
+    # foreign fact in, the write-back re-titles it, and it then matches strongly
+    # forever. That is how Marvel Rivals facts ended up in an MMA-rankings note.
+    new_facts = dedupe_facts(manual_facts + link_facts)
+
+    if new_facts:
+        saved_path = capture_facts_to_vault(channel_id, topic, new_facts)
         if saved_path:
-            print_fn(f"  Saved all {len(key_facts)} fact(s) to vault (full set, no cap).")
+            print_fn(f"  Saved all {len(new_facts)} fact(s) to vault (full set, no cap).")
+
+    if key_facts:
         sent = key_facts_for_prompt(key_facts)
         budget = operator_key_fact_char_budget()
         print_fn(

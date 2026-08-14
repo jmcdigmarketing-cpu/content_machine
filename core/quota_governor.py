@@ -326,6 +326,36 @@ def llm_clear_dead_models() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# YouTube scope (O12) — daily unit consumption, reported through the governor.
+#
+# `apis/youtube_quota.py` remains the counter and the *check point* (decisions §13:
+# the governor unifies state + reporting, never the layered checks). It keeps its own
+# per-day file because uploads and the job worker read it outside a run; this scope
+# exists so `snapshot()` reports YouTube alongside Apify and LLM instead of the
+# dashboard reaching into a second store directly.
+# --------------------------------------------------------------------------- #
+
+
+def youtube_usage() -> dict:
+    """Today's YouTube unit usage, fail-open to zeros when the tracker is unreadable."""
+    try:
+        from apis.youtube_quota import get_usage_summary
+
+        summary = get_usage_summary()
+        used = int(summary.get("used") or 0)
+        limit = int(summary.get("limit") or 0)
+        return {
+            "used": used,
+            "limit": limit,
+            "remaining": int(summary.get("remaining") or 0),
+            "pct": round(100.0 * used / limit, 1) if limit else 0.0,
+            "day": summary.get("day", ""),
+        }
+    except Exception:
+        return {"used": 0, "limit": 0, "remaining": 0, "pct": 0.0, "day": ""}
+
+
+# --------------------------------------------------------------------------- #
 # Unified cross-run snapshot — one read for the reliability dashboard.
 # In-process-only breakers (session signal/LLM) are layered on by the caller.
 # --------------------------------------------------------------------------- #
@@ -340,4 +370,5 @@ def snapshot(apify_purpose: str = "main") -> dict:
         },
         "llm": {"spend_today": llm_spend_today(), "dead_models": persisted_dead_models()},
         "signals": {"persisted": persisted_disabled_signals()},
+        "youtube": youtube_usage(),
     }

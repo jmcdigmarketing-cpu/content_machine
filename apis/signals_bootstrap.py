@@ -34,6 +34,7 @@ from apis.web_search_api import get_web_search_signal
 from apis.wikipedia_pageviews_api import get_wikipedia_pageviews_signal
 from apis.youtube_api import search_youtube
 from apis.youtube_apify_signal import get_youtube_apify_signal
+from apis.youtube_comments_signal import get_youtube_comments_signal
 
 _registry: SignalRegistry | None = None
 
@@ -46,6 +47,7 @@ def get_signal_registry() -> SignalRegistry:
     reg = SignalRegistry()
     # Core
     reg.register("youtube", search_youtube)
+    reg.register("youtube_comments", get_youtube_comments_signal)
     reg.register("trends", get_trend_score)
     reg.register("news", get_news_score)
     reg.register("wikipedia", get_wikipedia_pageviews_signal)

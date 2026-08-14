@@ -49,6 +49,20 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                 elif isinstance(bout, dict) and bout.get("main_event"):
                     lines.append(f"Tapology main: {bout['main_event']}")
 
+        elif name == "youtube_comments" and isinstance(data, dict):
+            # Audience language, NOT verified fact — label it so the script prompt
+            # can't promote a viewer's guess into a claim. The unanswered questions
+            # are the useful part: they are the content gaps competitors left.
+            questions = [q for q in (data.get("questions") or [])[:6] if q]
+            if questions:
+                lines.append(
+                    "AUDIENCE QUESTIONS (unverified — viewer comments, use as angles "
+                    "to answer, never as facts):\n" + "\n".join(f"- {q}" for q in questions)
+                )
+            themes = [t for t in (data.get("themes") or [])[:8] if t]
+            if themes:
+                lines.append("Audience vocabulary: " + ", ".join(themes))
+
         elif name == "ufc_context" and isinstance(data, dict):
             # Fighter records/physicals from API-SPORTS — the structured facts that
             # replaced the Cloudflare-blocked Tapology scrape. These are verified

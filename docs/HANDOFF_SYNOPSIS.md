@@ -6,7 +6,7 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 - **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
   (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
-- **Suite:** 1247 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Suite:** 1288 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -99,7 +99,38 @@ Reddit this was **not** input drift.
   both return real data.
 
 **Remaining Apify tier:** `tiktok_trends`, `youtube_competitors`. Reddit + twitter
-retired; `youtube_comments`/`instagram_figures` templated but never wired.
+retired; `instagram_figures` still templated only.
+
+## Shipped 2026-08-14 (`youtube_comments` signal + O12 complete)
+
+**1. `youtube_comments` — audience questions as content gaps.** The catalog templated
+this as an Apify actor; wired instead against the **official Data API**, which serves
+the same data under the YouTube key we already hold. ~103 units/topic (one 100-unit
+search + 1 per video) of a 10,000/day budget, versus billed Apify credits.
+
+Surfaces the questions viewers are still asking under the best existing coverage —
+by definition what nobody has answered. Live check on a Marvel Rivals topic returned
+75 comments across 3 videos and 8 usable questions.
+
+Three guards worth knowing about:
+- `signal_facts` labels them **"AUDIENCE QUESTIONS (unverified …never as facts)"** —
+  they are audience *language*, and the whole fact layer depends on not confusing the
+  two.
+- **Profanity filtered** (`_is_clean`) before anything reaches the script prompt; this
+  is an advertiser-facing channel and comment sections are crude.
+- **Pinned in `_VARIANT_REUSE_DEFAULT` + 6h TTL** — without that it re-runs per
+  variant at ~103 units each.
+
+**2. O12 complete.**
+- `quota_governor.youtube_usage()` — `snapshot()` now reports apify/llm/signals/**youtube**
+  together. `apis/youtube_quota` stays the counter *and* the check point (decisions §13:
+  the governor unifies state + reporting, never the layered checks).
+- `core/reliability_history.py` — one row per day (LLM spend, YouTube units, signals
+  disabled, dead feeds, cache hit-rate), capped at `RELIABILITY_HISTORY_DAYS` (90),
+  rendered as an ASCII trend under `ops reliability` and **recorded on view**, so the
+  series builds itself with no job to forget. The dashboard could only answer "how is
+  it now", never "is this getting worse" — which is exactly how every failure found
+  this session stayed invisible while it developed.
 
 ---
 

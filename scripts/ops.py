@@ -180,9 +180,19 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
 def cmd_reliability(_args: argparse.Namespace) -> int:
-    from core.reliability import render
+    from core.reliability import gather, render
 
-    print(render())
+    data = gather()
+    print(render(data))
+    # Recording on view means the trend builds itself — no separate job to forget.
+    try:
+        from core.reliability_history import record
+        from core.reliability_history import render as render_trend
+
+        record(data)
+        print(render_trend())
+    except Exception:
+        pass
     return 0
 
 

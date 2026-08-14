@@ -192,7 +192,7 @@ def signal_cooldowns() -> dict[str, float]:
 # per run, 5x the Tavily/web-search spend, and Wikipedia 429 cooldowns. Default:
 # pin everything; env-override to re-fetch specific signals per variant.
 _VARIANT_REUSE_DEFAULT = (
-    "youtube,reddit,twitter,tiktok_trends,youtube_competitors,"
+    "youtube,youtube_comments,reddit,twitter,tiktok_trends,youtube_competitors,"
     "web_search,wikipedia,trends,news,blog_rss,twitch,rawg,steam,igdb,"
     "trendingnow,autocomplete"
 )
@@ -373,6 +373,10 @@ def _cache_ttl_for(name):
         return 3 * 60 * 60  # 3h — TikTok trends move faster
     if name == "youtube_competitors":
         return 3 * 60 * 60  # 3h — competitor view velocity
+    if name == "youtube_comments":
+        # 6h — comment threads move slowly, and each miss costs ~103 YouTube units
+        # (one search + one read per video) against the 10k/day budget.
+        return 6 * 60 * 60
     if name == "twitter":
         return 90 * 60  # 1.5h — breaking news moves fastest
     if name == "web_search":

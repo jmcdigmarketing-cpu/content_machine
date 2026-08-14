@@ -1,6 +1,5 @@
 {
   "_comment": "Curated catalog of the highest-value Apify actors for the Content Machine. This is the single source of truth for which actors run, what they pull, and how their input is shaped. Signals read templates from here so you can retune targets without touching code. 'key' selects which env credential is used: 'main' = APIFY_CONTENT_MACHINE_KEY, 'tiktok' = APIFY_BENABLE_BOT.",
-
   "youtube_competitors": {
     "actor": "streamers/youtube-scraper",
     "key": "main",
@@ -15,7 +14,6 @@
       "videoType": "video"
     }
   },
-
   "youtube_comments": {
     "actor": "streamers/youtube-comments-scraper",
     "key": "main",
@@ -25,9 +23,10 @@
       "startUrls": [],
       "maxComments": 50,
       "sortBy": "top"
-    }
+    },
+    "disabled_note": "Not used. The youtube_comments SIGNAL (apis/youtube_comments_signal.py) reads the same data through the official YouTube Data API at 1 quota unit per video, which costs no Apify credits. This catalog entry is kept only for parity with the other social sources; enabling it would pay for data we already reach.",
+    "enabled": false
   },
-
   "twitter_breaking": {
     "actor": "apidojo/tweet-scraper",
     "enabled": false,
@@ -36,14 +35,15 @@
     "ttl_seconds": 5400,
     "value": "Real-time breaking news and viral moments. UFC fight announcements, results, fighter beef; gaming patch reactions and controversy. Highest timeliness of any source — primary fact-grounding for 'just happened' topics.",
     "input_template": {
-      "searchTerms": ["{query}"],
+      "searchTerms": [
+        "{query}"
+      ],
       "sort": "Top",
       "maxItems": 25,
       "tweetLanguage": "en",
       "onlyVerifiedUsers": false
     }
   },
-
   "reddit_community": {
     "actor": "trudax/reddit-scraper-lite",
     "enabled": false,
@@ -56,10 +56,11 @@
       "subreddits": [],
       "maxItems": 30,
       "sort": "hot",
-      "proxy": { "useApifyProxy": true }
+      "proxy": {
+        "useApifyProxy": true
+      }
     }
   },
-
   "tiktok_trends": {
     "actor": "clockworks/tiktok-scraper",
     "key": "tiktok",
@@ -67,13 +68,14 @@
     "ttl_seconds": 10800,
     "value": "Viral angles, hooks, and hashtag patterns. Shows which framings of a topic are already winning attention in short-form.",
     "input_template": {
-      "searchQueries": ["{query}"],
+      "searchQueries": [
+        "{query}"
+      ],
       "resultsPerPage": 30,
       "shouldDownloadVideos": false,
       "shouldDownloadCovers": false
     }
   },
-
   "instagram_figures": {
     "actor": "apify/instagram-scraper",
     "key": "main",
@@ -87,40 +89,122 @@
       "resultsType": "posts"
     }
   },
-
   "domain_targets": {
     "gaming": {
-      "subreddits": ["marvelrivals", "gaming", "pcgaming", "Games", "FortNiteBR", "CallOfDuty", "valorant"],
+      "subreddits": [
+        "marvelrivals",
+        "gaming",
+        "pcgaming",
+        "Games",
+        "FortNiteBR",
+        "CallOfDuty",
+        "valorant"
+      ],
       "youtube_channels": [],
-      "twitter_accounts": ["Dexerto", "IGN", "ESLCS", "PlayStation", "Xbox"],
-      "instagram_hashtags": ["marvelrivals", "callofduty", "fortnite", "gamingclips"]
+      "twitter_accounts": [
+        "Dexerto",
+        "IGN",
+        "ESLCS",
+        "PlayStation",
+        "Xbox"
+      ],
+      "instagram_hashtags": [
+        "marvelrivals",
+        "callofduty",
+        "fortnite",
+        "gamingclips"
+      ]
     },
     "ufc": {
-      "subreddits": ["ufc", "MMA", "mmafighting", "Boxing"],
+      "subreddits": [
+        "ufc",
+        "MMA",
+        "mmafighting",
+        "Boxing"
+      ],
       "youtube_channels": [],
-      "twitter_accounts": ["ufc", "espnmma", "arielhelwani", "danawhite", "MMAFighting"],
-      "instagram_hashtags": ["ufc", "mma", "ufcfightnight"]
+      "twitter_accounts": [
+        "ufc",
+        "espnmma",
+        "arielhelwani",
+        "danawhite",
+        "MMAFighting"
+      ],
+      "instagram_hashtags": [
+        "ufc",
+        "mma",
+        "ufcfightnight"
+      ]
     },
     "finance": {
-      "subreddits": ["stocks", "investing", "wallstreetbets", "personalfinance", "CryptoCurrency", "Bitcoin", "economics", "financialindependence"],
+      "subreddits": [
+        "stocks",
+        "investing",
+        "wallstreetbets",
+        "personalfinance",
+        "CryptoCurrency",
+        "Bitcoin",
+        "economics",
+        "financialindependence"
+      ],
       "youtube_channels": [],
-      "twitter_accounts": ["DeItaone", "unusual_whales", "charliebilello", "markets", "WSJmarkets", "FirstSquawk"],
-      "instagram_hashtags": ["investing", "stocks", "crypto", "personalfinance"]
+      "twitter_accounts": [
+        "DeItaone",
+        "unusual_whales",
+        "charliebilello",
+        "markets",
+        "WSJmarkets",
+        "FirstSquawk"
+      ],
+      "instagram_hashtags": [
+        "investing",
+        "stocks",
+        "crypto",
+        "personalfinance"
+      ]
     },
     "nba": {
-      "subreddits": ["nba", "basketball", "nbadiscussion"],
-      "twitter_accounts": ["wojespn", "ShamsCharania", "NBA"],
-      "instagram_hashtags": ["nba", "basketball"]
+      "subreddits": [
+        "nba",
+        "basketball",
+        "nbadiscussion"
+      ],
+      "twitter_accounts": [
+        "wojespn",
+        "ShamsCharania",
+        "NBA"
+      ],
+      "instagram_hashtags": [
+        "nba",
+        "basketball"
+      ]
     },
     "nfl": {
-      "subreddits": ["nfl", "fantasyfootball"],
-      "twitter_accounts": ["AdamSchefter", "RapSheet", "NFL"],
-      "instagram_hashtags": ["nfl", "football"]
+      "subreddits": [
+        "nfl",
+        "fantasyfootball"
+      ],
+      "twitter_accounts": [
+        "AdamSchefter",
+        "RapSheet",
+        "NFL"
+      ],
+      "instagram_hashtags": [
+        "nfl",
+        "football"
+      ]
     },
     "neutral": {
-      "subreddits": ["gaming", "sports"],
-      "twitter_accounts": ["BleacherReport"],
-      "instagram_hashtags": ["sports"]
+      "subreddits": [
+        "gaming",
+        "sports"
+      ],
+      "twitter_accounts": [
+        "BleacherReport"
+      ],
+      "instagram_hashtags": [
+        "sports"
+      ]
     }
   }
 }

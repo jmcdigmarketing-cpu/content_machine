@@ -13,7 +13,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1247 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
+Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1288 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -29,7 +29,7 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). 1247 tests green.*
+input + average-based learned post slots). 1288 tests green.*
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -61,7 +61,15 @@ input + average-based learned post slots). 1247 tests green.*
 - [x] Promote `SEMANTIC_TRADE_VALIDATION` default-on for sports channels `[S]` — now auto-on for NBA/NFL topics (domain-gated); env still forces on/off globally
 
 **Signals & data intake**
-- [ ] `youtube_comments` / `instagram_figures` signals (templated in the catalog, not wired)
+- [x] **`youtube_comments` signal** *(2026-08-14)* — wired, but against the **official
+  Data API** (1 unit/video) rather than the catalog's `streamers/youtube-comments-scraper`,
+  which would bill Apify credits for data the YouTube key already reaches (~103 units/topic
+  of a 10k/day budget). Surfaces the **unanswered audience questions** on a topic's top
+  videos — the content gaps competitors left — plus audience vocabulary. Labelled
+  *unverified* in `signal_facts` so a viewer's guess can never become a claim, profanity
+  filtered (advertiser-facing), pinned during variant scoring + 6h TTL so it can't
+  re-bill per variant
+- [ ] `instagram_figures` signal — still templated only; catalog entry `enabled: false`
 - [x] **Live-run tuning of Apify actor inputs against real topics** *(2026-08-14)* —
   audited the paid tier against real run traces. `twitter` was **`inactive` on 19/19
   traces spanning 2026-07-07 → 08-14** — it has never produced a fact — while being the
@@ -88,7 +96,15 @@ input + average-based learned post slots). 1247 tests green.*
   (`cost_meter.llm_cost_by_provider`) + **cross-run dead-model persistence**: a retired
   slug is skipped for `LLM_DEAD_MODEL_TTL_SECONDS` (24h) instead of costing a failed
   probe every run, key-hash invalidated and shown in `ops reliability`
-- [ ] Governor follow-ups (O12), rest — YouTube units under a governor scope; reliability time series
+- [x] **Governor follow-ups (O12), rest** *(2026-08-14)* — **YouTube units under a
+  governor scope** (`quota_governor.youtube_usage()`; `snapshot()` now reports
+  apify/llm/signals/**youtube** together, while `apis/youtube_quota` stays the counter
+  and the check point per decisions §13) + a **reliability time series**
+  (`core/reliability_history.py`): one row per day of LLM spend, YouTube units, signals
+  disabled, dead feeds and cache hit-rate, rendered as an ASCII trend under
+  `ops reliability`. Recorded *on view*, so the series builds itself. **O12 complete** —
+  the dashboard could only ever answer "how is it now", never "is this getting worse",
+  which is how every failure found this session stayed invisible while it developed
 - [x] ~~Router follow-ups — premium→cheaper provider failover on auth/quota error~~ — already
   live as O5/O6 (`_RETRYABLE_LLM` chain failover + `_DISABLE_LLM` session breaker); entry was stale
 

@@ -146,13 +146,28 @@ class TestLlmFacade(GovernorCase):
 
 class TestSnapshot(GovernorCase):
     def test_empty_store_shape(self):
-        snap = qg.snapshot()
+        # The YouTube scope (O12) reads apis/youtube_quota, which is a separate
+        # per-day store the governor only *reports*. Stub it so this test asserts a
+        # shape instead of whatever the operator's real quota file happens to hold
+        # (tests/CLAUDE.md: never read or write the real data/ stores).
+        with patch(
+            "apis.youtube_quota.get_usage_summary",
+            return_value={"used": 0, "limit": 10000, "remaining": 10000, "day": "2026-01-01"},
+        ):
+            snap = qg.snapshot()
         self.assertEqual(
             snap,
             {
                 "apify": {"exhausted": False, "reason": "", "usage": None},
                 "llm": {"spend_today": 0.0, "dead_models": {}},
                 "signals": {"persisted": {}},
+                "youtube": {
+                    "used": 0,
+                    "limit": 10000,
+                    "remaining": 10000,
+                    "pct": 0.0,
+                    "day": "2026-01-01",
+                },
             },
         )
 

@@ -44,6 +44,8 @@
 
   "reddit_community": {
     "actor": "trudax/reddit-scraper-lite",
+    "enabled": false,
+    "disabled_note": "Retired 2026-08-14. The actor failed ('run did not succeed') on every live run while still billing compute, and the free OAuth backend needs REDDIT_CLIENT_ID/SECRET which are not set. Re-enable by setting those credentials (SIGNAL_BACKEND=auto already prefers free) or by fixing the actor input, which had drifted from input_template: the signal sent searches=[{query,sort}] objects where this template implies flat values.",
     "key": "main",
     "ttl_seconds": 14400,
     "value": "Hot posts + engagement from domain subreddits. Community sentiment, the debates people care about, and the language fans actually use.",

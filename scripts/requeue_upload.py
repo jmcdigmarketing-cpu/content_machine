@@ -28,7 +28,10 @@ def _publish_rows_for_run(run_id: int, channel_id: str) -> list:
         return [
             r
             for r in primary._read()
-            if int(r.get("content_run_id", 0)) == run_id and r.get("channel_id") == channel_id
+            # content_run_id may be None (imported rows have no run) — int(None) raises.
+            if r.get("content_run_id") is not None
+            and int(r["content_run_id"]) == run_id
+            and r.get("channel_id") == channel_id
         ]
     matches = []
     for row in repo.list_uploaded_for_channel(channel_id):

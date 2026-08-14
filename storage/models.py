@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Integer, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -73,7 +73,16 @@ class PublishLog(Base):
     __tablename__ = "publish_log"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    content_run_id: Mapped[int] = mapped_column(Integer, index=True)
+    # Nullable: rows imported from YouTube analytics (analytics/seed_tapin.py) have no
+    # originating run. That was historically written as the sentinel 0, which is not a
+    # real run id and blocked the FK — NULL is what SQL means by "no associated run".
+    # SET NULL on delete: a published-video record must outlive its run.
+    content_run_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("content_runs.id", ondelete="SET NULL", name="fk_publish_log_content_run"),
+        nullable=True,
+        index=True,
+    )
     idempotency_key: Mapped[str] = mapped_column(String(128), default="", unique=True, index=True)
     channel_id: Mapped[str] = mapped_column(String(64), default="default", index=True)
     youtube_video_id: Mapped[str] = mapped_column(String(64), default="")
@@ -94,7 +103,11 @@ class Job(Base):
     channel_id: Mapped[str] = mapped_column(String(64), default="default", index=True)
     job_type: Mapped[str] = mapped_column(String(32), index=True)
     status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
-    content_run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_run_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("content_runs.id", ondelete="SET NULL", name="fk_jobs_content_run"),
+        nullable=True,
+    )
     payload_json: Mapped[str] = mapped_column(Text, default="{}")
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, default=3)
@@ -112,7 +125,12 @@ class ThumbnailScore(Base):
     __tablename__ = "thumbnail_scores"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    content_run_id: Mapped[int] = mapped_column(Integer, index=True)
+    # CASCADE, not SET NULL: a thumbnail score is meaningless without its run.
+    content_run_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("content_runs.id", ondelete="CASCADE", name="fk_thumbnail_scores_content_run"),
+        index=True,
+    )
     channel_id: Mapped[str] = mapped_column(String(64), default="default", index=True)
     image_path: Mapped[str] = mapped_column(String(1024), default="")
     topic: Mapped[str] = mapped_column(String(512), default="")
@@ -133,7 +151,12 @@ class Asset(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     channel_id: Mapped[str] = mapped_column(String(64), default="default", index=True)
-    content_run_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    content_run_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("content_runs.id", ondelete="SET NULL", name="fk_assets_content_run"),
+        nullable=True,
+        index=True,
+    )
     asset_type: Mapped[str] = mapped_column(String(32), index=True)
     provider: Mapped[str] = mapped_column(String(32), default="")
     source_id: Mapped[str] = mapped_column(String(128), default="")

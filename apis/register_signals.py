@@ -292,11 +292,34 @@ def _youtube_cache_ttl():
         return 6 * 60 * 60
 
 
+# Signal name -> Apify catalog key, for signals whose data comes from a catalog actor.
+# Lets `enabled: false` in config/apify_sources.json actually switch a signal off:
+# apify_catalog.source_enabled() existed but had no callers, so the catalog's own
+# kill-switch was dead config.
+_CATALOG_KEY_FOR_SIGNAL = {
+    "reddit": "reddit_community",
+    "twitter": "twitter_breaking",
+    "tiktok_trends": "tiktok_trends",
+    "youtube_competitors": "youtube_competitors",
+}
+
+
+def _catalog_disabled_signals() -> set[str]:
+    """Signals switched off via `enabled: false` in the Apify catalog. Fail-open."""
+    try:
+        from apis.apify_catalog import source_enabled
+
+        return {name for name, key in _CATALOG_KEY_FOR_SIGNAL.items() if not source_enabled(key)}
+    except Exception:
+        return set()
+
+
 def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     registry = get_signal_registry().get_registered_signals()
     pairs = tuple(registry.items())
     skip = _skip_signals()
     skip |= _disabled_signals()
+    skip |= _catalog_disabled_signals()
     if topic:
         skip |= _gated_signal_names(topic, channel_id)
     if not skip:

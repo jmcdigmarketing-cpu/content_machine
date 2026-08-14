@@ -32,8 +32,15 @@ the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time 
 input + average-based learned post slots). 1125 tests green.*
 
 **Data spine & storage**
-- [ ] Alembic baseline + FKs (`content_run_id` on `publish_log`, `jobs`, `assets`)
-- [ ] Reddit agent-workload rate-limit-aware caching (the OAuth backend already shipped)
+- [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
+  `content_run_id` foreign keys on `publish_log` / `jobs` / `assets` /
+  `thumbnail_scores`. The blocker was `publish_log`'s legacy `0` sentinel for
+  "imported, no run" (836 of 870 rows), now `NULL`; all rows preserved. Also
+  reconciled the stamp/state drift — `migrate_schema` finishes through Alembic
+  instead of hand-patching past it
+- [~] ~~Reddit agent-workload rate-limit-aware caching~~ — **signal retired 2026-08-14**
+  (`enabled: false` in the catalog): its actor failed on 100% of live runs while still
+  billing, and the free OAuth backend has no credentials configured
 - [ ] RSS feeds to reduce Tapology scrape dependency
 
 **Recommenders & calibration**
@@ -149,9 +156,9 @@ learning) stays parked under [Later horizons](#later-horizons).*
 
 ### Prerequisites (before / with Phase H)
 
-- [ ] Alembic baseline + FKs (`content_run_id` on `publish_log`, `jobs`, `assets`)
+- [x] Alembic baseline + FKs (`content_run_id` on `publish_log`, `jobs`, `assets`, `thumbnail_scores`) — *shipped 2026-08-14, Alembic `0004`*
 - [x] Provenance columns on `content_runs`: `brief_version`, `prompt_version`
-- [ ] Reddit OAuth + rate-limit-aware caching for agent workload *(the OAuth signal backend half shipped 2026-07-06 — `apis/free_backends.py` `fetch_reddit_free` behind `SIGNAL_BACKEND`; agent-workload caching still open)*
+- [~] Reddit OAuth + rate-limit-aware caching for agent workload — *signal retired 2026-08-14; the free OAuth backend (`apis/free_backends.fetch_reddit_free`) still exists and re-enabling only needs `REDDIT_CLIENT_ID`/`SECRET` + `enabled: true` in the catalog*
 - [ ] RSS feeds to reduce Tapology scrape dependency
 
 ### Phase H — Research Brief Engine (+ Reddit Agent + RSS) — **priority**

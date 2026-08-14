@@ -84,3 +84,6 @@ Thumbs.db
 
 # Local vault backups (operator Obsidian notes — never commit)
 .vault_backups/
+
+# Local database dumps (operator data — never commit)
+.db_backups/

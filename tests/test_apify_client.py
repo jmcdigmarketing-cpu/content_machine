@@ -145,5 +145,98 @@ class TestRunActorStatus(unittest.TestCase):
         self.assertNotIn("trudax/reddit-scraper-lite", captured["url"])
 
 
+class TestActorFailureMemory(unittest.TestCase):
+    """A broken actor must not be re-run (and re-billed) on every run.
+
+    The non-2xx branch used to return without calling `_note_failure()` and without
+    caching, unlike the timeout/exception branches. The reddit actor failed on 100% of
+    the 2026-08-14 live runs and started a fresh billable Apify run each time.
+    Needs a REAL cache (the class above stubs get_cached/set_cache).
+    """
+
+    def setUp(self):
+        from apis import cache_manager
+        from apis.apify_client import reset_apify_state
+
+        reset_apify_state()
+        self._tmp = tempfile.mkdtemp()
+        self._patches = [
+            patch("apis.apify_client._key", return_value="apify_test_key"),
+            patch.object(cache_manager, "_cache_path", lambda: os.path.join(self._tmp, "c.json")),
+            patch.object(quota_state, "QUOTA_STATE_FILE", os.path.join(self._tmp, "q.json")),
+        ]
+        for p in self._patches:
+            p.start()
+        quota_state.reset_all()
+
+    def tearDown(self):
+        from apis.apify_client import reset_apify_state
+
+        quota_state.reset_all()
+        for p in self._patches:
+            p.stop()
+        reset_apify_state()
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def _count_posts(self, status, runs=3):
+        from apis.apify_client import run_actor
+
+        calls = {"n": 0}
+
+        def _post(*a, **k):
+            calls["n"] += 1
+            return _resp(status, {"error": {"type": "run-failed"}})
+
+        with patch("apis.apify_client.requests.post", side_effect=_post):
+            for _ in range(runs):
+                self.assertIsNone(run_actor("user/broken", {"q": "x"}))
+        return calls["n"]
+
+    def test_400_is_remembered_so_the_actor_is_not_re_billed(self):
+        self.assertEqual(self._count_posts(400), 1)
+
+    def test_404_is_remembered(self):
+        self.assertEqual(self._count_posts(404), 1)
+
+    def test_5xx_stays_retryable(self):
+        # Transient: never suppressed, so a working actor recovers next run. (Two
+        # attempts, not three — 5xx counts toward the account-wide breaker, which
+        # trips at _MAX_FAILS=2 and short-circuits the third.)
+        self.assertEqual(self._count_posts(503, runs=3), 2)
+
+    def test_5xx_counts_toward_the_account_breaker(self):
+        from apis import apify_client
+
+        self._count_posts(503, runs=1)
+        self.assertGreater(apify_client._state["fails"], 0)
+
+    def test_bad_input_does_not_trip_the_account_breaker(self):
+        # One actor with bad input must NOT disable twitter/tiktok/youtube_competitors.
+        from apis import apify_client
+
+        self._count_posts(400, runs=1)
+        self.assertEqual(apify_client._state["fails"], 0)
+        self.assertFalse(apify_client._state["disabled"])
+
+    def test_suppression_is_per_input(self):
+        # A different input is a different actor call — it must still be attempted.
+        from apis.apify_client import run_actor
+
+        calls = {"n": 0}
+
+        def _post(*a, **k):
+            calls["n"] += 1
+            return _resp(400, {"error": "bad"})
+
+        with patch("apis.apify_client.requests.post", side_effect=_post):
+            run_actor("user/broken", {"q": "one"})
+            run_actor("user/broken", {"q": "two"})
+        self.assertEqual(calls["n"], 2)
+
+    def test_ttl_zero_disables_suppression(self):
+        with patch.dict(os.environ, {"APIFY_ACTOR_FAIL_TTL_SECONDS": "0"}, clear=False):
+            self.assertEqual(self._count_posts(400), 3)
+
+
 if __name__ == "__main__":
     unittest.main()

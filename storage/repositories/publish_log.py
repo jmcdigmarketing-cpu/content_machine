@@ -17,10 +17,24 @@ LOG_FILE = os.path.join("data", "publish_log.json")
 _lock = threading.Lock()
 
 
+def _opt_int(value) -> int | None:
+    """None/'' stay None (no associated run); anything numeric coerces to int.
+
+    Legacy rows used 0 as the "no run" sentinel, which blocked the content_run_id
+    foreign key; it is normalised to None here so both storage backends agree.
+    """
+    if value is None or value == "":
+        return None
+    try:
+        return int(value) or None
+    except (TypeError, ValueError):
+        return None
+
+
 @dataclass
 class PublishLogRecord:
     id: int
-    content_run_id: int
+    content_run_id: int | None
     channel_id: str
     youtube_video_id: str = ""
     privacy_status: str = "private"
@@ -35,7 +49,7 @@ def _to_record(row) -> PublishLogRecord:
     if isinstance(row, dict):
         return PublishLogRecord(
             id=int(row.get("id", 0)),
-            content_run_id=int(row.get("content_run_id", 0)),
+            content_run_id=_opt_int(row.get("content_run_id")),
             channel_id=str(row.get("channel_id", "default")),
             youtube_video_id=str(row.get("youtube_video_id", "")),
             privacy_status=str(row.get("privacy_status", "private")),
@@ -47,7 +61,7 @@ def _to_record(row) -> PublishLogRecord:
         )
     return PublishLogRecord(
         id=row.id,
-        content_run_id=row.content_run_id,
+        content_run_id=_opt_int(row.content_run_id),
         channel_id=row.channel_id,
         youtube_video_id=row.youtube_video_id or "",
         privacy_status=row.privacy_status,

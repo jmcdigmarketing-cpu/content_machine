@@ -56,7 +56,9 @@ def _publish_logs_for_run(channel_id: str, content_run_id: int) -> list[dict]:
         return [
             r
             for r in primary._read()
-            if int(r.get("content_run_id", 0)) == content_run_id
+            # content_run_id may be None (imported rows have no run) — int(None) raises.
+            if r.get("content_run_id") is not None
+            and int(r["content_run_id"]) == content_run_id
             and r.get("channel_id") == channel_id
         ]
     out = []

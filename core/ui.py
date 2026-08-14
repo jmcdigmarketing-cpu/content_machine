@@ -1417,9 +1417,17 @@ def display_summary(
     if thumbnail_path:
         print_fn(f"  Thumbnail: {thumbnail_path}")
 
-    from core.cost_meter import format_cost_line
+    from core.cost_meter import format_cost_line, llm_cost_by_provider
 
-    cost_line = format_cost_line(cost)
+    # Per-provider LLM split (O12): the free-first chain means most calls should land
+    # on a $0 provider, which the aggregate `llm $x` hides. Fail-open to the plain line.
+    try:
+        from core.llm_router import get_usage
+
+        by_provider = llm_cost_by_provider(get_usage())
+    except Exception:
+        by_provider = {}
+    cost_line = format_cost_line(cost, llm_by_provider=by_provider)
     if cost_line:
         print_fn(f"  {cost_line}")
 

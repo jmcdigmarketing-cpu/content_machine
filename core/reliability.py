@@ -64,9 +64,10 @@ def _llm_section() -> dict[str, Any]:
         from core.llm_router import disabled_providers
 
         out["disabled_providers"] = disabled_providers()
-        from core.quota_governor import llm_spend_today
+        from core.quota_governor import llm_spend_today, persisted_dead_models
 
         out["spend_today"] = llm_spend_today()
+        out["dead_models"] = dict(sorted(persisted_dead_models().items()))
     except Exception:
         out["disabled_providers"] = {}
     return out
@@ -189,6 +190,13 @@ def render(data: dict[str, Any] | None = None) -> str:
     disabled = llm.get("disabled_providers") or {}
     lines.append(f"  disabled: {', '.join(disabled) if disabled else '(none this process)'}")
     lines.append(f"  spend   : {_budget_line(llm.get('spend_today'), llm.get('daily_budget'))}")
+    dead = llm.get("dead_models") or {}
+    if dead:
+        # Retired slugs (e.g. an OpenRouter ':free' variant that was withdrawn).
+        # Persisted so a new run skips them instead of re-paying the 404.
+        parts = [f"{slug} ({reason})" if reason else slug for slug, reason in dead.items()]
+        lines.append("  dead    : " + ", ".join(parts))
+        lines.append("            (clears on TTL or when you repoint the model env)")
 
     sig = data.get("signals", {})
     dis = sig.get("disabled") or []

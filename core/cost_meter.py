@@ -65,6 +65,27 @@ def _price_for_model(model: str) -> tuple[float, float]:
     return best or _LLM_PRICE_DEFAULT
 
 
+def llm_cost_by_provider(calls: list[dict[str, Any]] | None) -> dict[str, float]:
+    """Price a token ledger per provider (O12) -> {provider: usd}.
+
+    Free-by-construction calls (local Ollama, OpenRouter ':free' slugs) price at
+    $0 but are still reported, so the operator can see WHERE the free-first chain
+    actually served a run rather than only what it cost.
+    """
+    out: dict[str, float] = {}
+    for c in calls or []:
+        provider = str(c.get("provider", "") or "unknown").lower()
+        model = str(c.get("model", ""))
+        free = provider == "ollama" or ":free" in model.lower()
+        cost = 0.0
+        if not free:
+            in_price, out_price = _price_for_model(model)
+            cost = (int(c.get("input_tokens", 0)) / 1_000_000.0) * in_price
+            cost += (int(c.get("output_tokens", 0)) / 1_000_000.0) * out_price
+        out[provider] = round(out.get(provider, 0.0) + cost, 6)
+    return out
+
+
 def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
     """Price a token ledger (from core.llm_router.get_usage) in USD.
 
@@ -73,19 +94,7 @@ def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
     """
     if not calls:
         return 0.0
-    total = 0.0
-    for c in calls:
-        # Local Ollama has no marginal cost regardless of model name.
-        if str(c.get("provider", "")).lower() == "ollama":
-            continue
-        model = str(c.get("model", ""))
-        # OpenRouter free models (the `:free` suffix) are $0.
-        if ":free" in model.lower():
-            continue
-        in_price, out_price = _price_for_model(model)
-        total += (int(c.get("input_tokens", 0)) / 1_000_000.0) * in_price
-        total += (int(c.get("output_tokens", 0)) / 1_000_000.0) * out_price
-    return round(total, 6)
+    return round(sum(llm_cost_by_provider(calls).values()), 6)
 
 
 def estimate_run_cost(
@@ -165,16 +174,32 @@ _COST_PARTS = (
 )
 
 
-def format_cost_line(cost: dict[str, float] | None) -> str:
+def format_cost_line(
+    cost: dict[str, float] | None, *, llm_by_provider: dict[str, float] | None = None
+) -> str:
     """One-line operator summary: total + the non-zero components.
+
+    `llm_by_provider` (O12) appends which provider served the LLM spend, e.g.
+    `llm $0.0049 [deepseek $0.0049 · openrouter $0]` — the free-first chain's whole
+    point is that most calls land on a $0 provider, which the aggregate hides.
 
     Returns "" when there's nothing to show, so callers can skip the line.
     """
     if not cost:
         return ""
     total = float(cost.get("total") or 0.0)
-    parts = [
-        f"{label} ${cost[key]:.4f}" for key, label in _COST_PARTS if float(cost.get(key) or 0.0) > 0
-    ]
+    parts = []
+    for key, label in _COST_PARTS:
+        if float(cost.get(key) or 0.0) <= 0:
+            continue
+        part = f"{label} ${cost[key]:.4f}"
+        if key == "llm" and llm_by_provider:
+            inner = " · ".join(
+                f"{prov} ${amt:.4f}" if amt > 0 else f"{prov} $0"
+                for prov, amt in sorted(llm_by_provider.items(), key=lambda kv: (-kv[1], kv[0]))
+            )
+            if inner:
+                part += f" [{inner}]"
+        parts.append(part)
     breakdown = f" ({' · '.join(parts)})" if parts else ""
     return f"Est. run cost: ${total:.4f}{breakdown}"

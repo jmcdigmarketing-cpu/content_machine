@@ -151,7 +151,7 @@ class TestSnapshot(GovernorCase):
             snap,
             {
                 "apify": {"exhausted": False, "reason": "", "usage": None},
-                "llm": {"spend_today": 0.0},
+                "llm": {"spend_today": 0.0, "dead_models": {}},
                 "signals": {"persisted": {}},
             },
         )
@@ -166,6 +166,75 @@ class TestSnapshot(GovernorCase):
         self.assertEqual(snap["apify"]["usage"], {"usage": 2.0, "limit": 5.0})
         self.assertAlmostEqual(snap["llm"]["spend_today"], 0.25)
         self.assertEqual(snap["signals"]["persisted"], {"finnhub": "no_key"})
+
+
+class TestDeadModelPersistence(GovernorCase):
+    """Cross-run dead-model records (O12).
+
+    Live runs on 2026-08-14 re-probed the same two retired free slugs on every run
+    because the router's dead-model set was session-only.
+    """
+
+    def test_roundtrip(self):
+        qg.llm_mark_model_dead("openrouter", "meta-llama/llama-3.3-70b:free", "NotFoundError")
+        out = qg.persisted_dead_models()
+        self.assertEqual(out, {"openrouter/meta-llama/llama-3.3-70b:free": "NotFoundError"})
+
+    def test_fingerprint_mismatch_clears_record(self):
+        # Operator rotates the key or repoints the tier -> re-probe, don't stay pinned off.
+        qg.llm_mark_model_dead("ollama", "llama3.1:8b", "NotFoundError", fingerprint="OLD")
+        self.assertEqual(qg.persisted_dead_models({"ollama/llama3.1:8b": "NEW"}), {})
+        self.assertEqual(qg.persisted_dead_models(), {})  # cleared, not just filtered
+
+    def test_matching_fingerprint_is_kept(self):
+        qg.llm_mark_model_dead("ollama", "llama3.1:8b", "NotFoundError", fingerprint="SAME")
+        out = qg.persisted_dead_models({"ollama/llama3.1:8b": "SAME"})
+        self.assertEqual(out, {"ollama/llama3.1:8b": "NotFoundError"})
+
+    def test_clear_all(self):
+        qg.llm_mark_model_dead("openrouter", "a:free", "NotFoundError")
+        qg.llm_mark_model_dead("ollama", "b", "NotFoundError")
+        qg.llm_clear_dead_models()
+        self.assertEqual(qg.persisted_dead_models(), {})
+
+    def test_persistence_switch_off(self):
+        with patch.dict(os.environ, {"SIGNAL_BREAKER_PERSIST": "false"}, clear=False):
+            qg.llm_mark_model_dead("openrouter", "a:free", "NotFoundError")
+            self.assertEqual(qg.persisted_dead_models(), {})
+
+
+class TestRouterDeadModelWiring(GovernorCase):
+    """The router must survive a process boundary — the point of the change."""
+
+    def setUp(self):
+        super().setUp()
+        from core import llm_router
+
+        self.router = llm_router
+        llm_router.reset_llm_breaker()
+
+    def tearDown(self):
+        self.router.reset_llm_breaker()
+        super().tearDown()
+
+    def test_dead_model_survives_a_new_process(self):
+        self.router._mark_model_dead("openrouter", "dead:free", "NotFoundError", "cheap")
+        # Simulate a fresh run: drop session state only, keep the persisted store.
+        self.router._dead_models.clear()
+        self.router._dead_models_loaded = False
+        self.assertTrue(self.router._model_is_dead("openrouter", "dead:free"))
+
+    def test_live_model_unaffected(self):
+        self.router._mark_model_dead("openrouter", "dead:free", "NotFoundError", "cheap")
+        self.router._dead_models.clear()
+        self.router._dead_models_loaded = False
+        self.assertFalse(self.router._model_is_dead("openrouter", "alive:free"))
+
+    def test_reset_clears_the_persisted_layer(self):
+        self.router._mark_model_dead("openrouter", "dead:free", "NotFoundError", "cheap")
+        self.router.reset_llm_breaker()
+        self.assertFalse(self.router._model_is_dead("openrouter", "dead:free"))
+        self.assertEqual(qg.persisted_dead_models(), {})
 
 
 if __name__ == "__main__":

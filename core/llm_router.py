@@ -51,6 +51,7 @@ Call ``reset_usage()`` at the start of a run; read it back with ``get_usage()``.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -233,10 +234,54 @@ def _disable_llm(provider: str, reason: str) -> None:
 # provider breaker above this is *per model*: OpenRouter's other models and tiers keep
 # working. Skipping it for the session avoids a wasted 404 round-trip on every later call.
 _dead_models: set[tuple[str, str]] = set()
+_dead_models_loaded = False
+
+
+def _dead_model_ttl_hours() -> float:
+    try:
+        from core.quota_governor import llm_dead_model_ttl
+
+        return llm_dead_model_ttl() / 3600.0
+    except Exception:
+        return 24.0
+
+
+def _model_fingerprint(provider: str, model: str) -> str:
+    """Credential + configured-slug fingerprint, so rotating a key or pointing the
+    tier at a different model re-probes instead of staying pinned off."""
+    material = f"{_provider_key(provider)}|{model}"
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
+def _load_persisted_dead_models() -> None:
+    """Seed the session set from the cross-run store (O11 governor), once."""
+    global _dead_models_loaded
+    if _dead_models_loaded:
+        return
+    _dead_models_loaded = True
+    try:
+        from core.quota_governor import persisted_dead_models
+
+        # Pass 1 (no fingerprints) just lists the stored slugs; pass 2 re-checks them
+        # against what the CURRENT config resolves to, so a rotated key or a retargeted
+        # tier clears the record instead of pinning a live model off.
+        fps = {
+            slug: _model_fingerprint(*slug.split("/", 1))
+            for slug in persisted_dead_models()
+            if "/" in slug
+        }
+        for slug in persisted_dead_models(fps):
+            prov, _, mdl = slug.partition("/")
+            if prov and mdl:
+                _dead_models.add((prov, mdl))
+    except Exception as exc:
+        logger.debug("dead-model load skipped: %s", exc)
 
 
 def _model_is_dead(provider: str, model: str) -> bool:
     with _llm_breaker_lock:
+        if not _dead_models_loaded:
+            _load_persisted_dead_models()
         return (provider, model) in _dead_models
 
 
@@ -245,22 +290,45 @@ def _mark_model_dead(provider: str, model: str, reason: str, tier: str = "") -> 
         if (provider, model) in _dead_models:
             return
         _dead_models.add((provider, model))
+    try:
+        from core.quota_governor import llm_mark_model_dead
+
+        llm_mark_model_dead(
+            provider, model, reason, fingerprint=_model_fingerprint(provider, model)
+        )
+    except Exception as exc:
+        logger.debug("dead-model persistence skipped: %s", exc)
     override = f"{provider.upper()}_MODEL_{tier.upper()}" if tier else f"{provider.upper()}_MODEL"
     logger.warning(
-        "LLM model '%s/%s' unavailable this session (%s) — skipping it. If this is a "
-        "retired free slug, set %s to a live one.",
+        "LLM model '%s/%s' unavailable (%s) — skipping it for %.0fh (persisted across "
+        "runs). If this is a retired free slug, set %s to a live one; changing it "
+        "clears the record.",
         provider,
         model,
         reason,
+        _dead_model_ttl_hours(),
         override,
     )
 
 
-def reset_llm_breaker() -> None:
-    """Test/CLI helper — re-enable all LLM providers and dead models."""
+def reset_llm_breaker(*, persisted: bool = True) -> None:
+    """Test/CLI helper — re-enable all LLM providers and dead models.
+
+    Clears the cross-run dead-model store too: a session-only reset would look like
+    a no-op on the next call, since the persisted records reload immediately.
+    """
+    global _dead_models_loaded
     with _llm_breaker_lock:
         _llm_disabled_state.clear()
         _dead_models.clear()
+        _dead_models_loaded = not persisted
+    if persisted:
+        try:
+            from core.quota_governor import llm_clear_dead_models
+
+            llm_clear_dead_models()
+        except Exception:
+            pass
 
 
 def disabled_providers() -> dict[str, str]:

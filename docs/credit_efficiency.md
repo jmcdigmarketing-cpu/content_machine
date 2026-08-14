@@ -109,7 +109,27 @@ data-driven.*
 gathers Apify breaker/budget + persisted exhaustion, LLM disabled providers + daily
 spend vs budget, session-disabled signals, cache hit-rate by prefix, and YouTube
 units used today — read-only and fail-open. *Makes the whole credit layer visible
-in one view.* Remaining: per-run LLM cost line + a richer time series.
+in one view.* Remaining: a richer time series. *(The per-run LLM cost line landed
+2026-08-14 as O12 part 1 — see below.)*
+
+**O12. Governor follow-ups (part 1)** `[S]` — ✅ **SHIPPED (2026-08-14)**
+Two gaps the 2026-08-14 live runs made visible:
+1. **Per-provider LLM spend in the run cost line** — `cost_meter.llm_cost_by_provider()`
+   splits the token ledger by provider and `format_cost_line(..., llm_by_provider=)`
+   renders `llm $0.0059 [deepseek $0.0059 · ollama $0 · openrouter $0]`. Free-by-
+   construction calls (Ollama, `:free` slugs) are reported **at $0 rather than dropped**,
+   so the operator can see *where* the free-first chain actually served a run.
+2. **Cross-run dead-model persistence** — the router's dead-model set was session-only,
+   so every new run re-paid the 404 for a retired slug (three consecutive live runs each
+   logged the same two). `quota_governor.llm_mark_model_dead()` /
+   `persisted_dead_models()` now persist it via the O11 store for
+   `LLM_DEAD_MODEL_TTL_SECONDS` (default 24h) with key-hash invalidation — rotating the
+   key or repointing `{PROVIDER}_MODEL_<TIER>` clears the record instead of pinning a
+   live model off. Surfaced in `ops reliability` under `LLM → dead`. The *check point*
+   stays in `llm_router` per §13; only persistence routes through the governor.
+Tests: `tests/test_quota_governor.py` (dead-model roundtrip, fingerprint invalidation,
+router-survives-a-new-process), `tests/test_cost_meter.py` (split reconciles with the
+aggregate; cost line unchanged without the split).
 
 **O10. Reset-window auto-re-enable** `[S–M]` — ✅ **SHIPPED (2026-07-02)**
 `core/reset_window.py` encodes the known reset cadences (YouTube Data API: daily

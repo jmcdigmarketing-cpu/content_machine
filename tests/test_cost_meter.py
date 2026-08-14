@@ -6,6 +6,7 @@ from unittest.mock import patch
 from core.cost_meter import (
     estimate_run_cost,
     format_cost_line,
+    llm_cost_by_provider,
     llm_cost_from_usage,
 )
 
@@ -137,6 +138,73 @@ class TestFormatCostLine(unittest.TestCase):
     def test_total_only_when_no_components(self):
         line = format_cost_line({"total": 0.0})
         self.assertEqual(line, "Est. run cost: $0.0000")
+
+
+class TestLLMCostByProvider(unittest.TestCase):
+    """Per-provider split (O12) — the free-first chain's whole point is that most
+    calls land on a $0 provider, which the aggregate `llm $x` hides."""
+
+    def test_free_providers_reported_at_zero_not_dropped(self):
+        calls = [
+            {
+                "provider": "ollama",
+                "model": "llama3.1:8b",
+                "input_tokens": 900,
+                "output_tokens": 90,
+            },
+            {
+                "provider": "openrouter",
+                "model": "some/model:free",
+                "input_tokens": 800,
+                "output_tokens": 80,
+            },
+        ]
+        out = llm_cost_by_provider(calls)
+        self.assertEqual(out, {"ollama": 0.0, "openrouter": 0.0})
+
+    def test_splits_and_sums_to_the_aggregate(self):
+        calls = [
+            {
+                "provider": "deepseek",
+                "model": "deepseek-chat",
+                "input_tokens": 10_000,
+                "output_tokens": 2_000,
+            },
+            {
+                "provider": "deepseek",
+                "model": "deepseek-chat",
+                "input_tokens": 5_000,
+                "output_tokens": 1_000,
+            },
+            {
+                "provider": "ollama",
+                "model": "llama3.1:8b",
+                "input_tokens": 9_000,
+                "output_tokens": 900,
+            },
+        ]
+        out = llm_cost_by_provider(calls)
+        self.assertEqual(set(out), {"deepseek", "ollama"})
+        self.assertEqual(out["ollama"], 0.0)
+        self.assertGreater(out["deepseek"], 0.0)
+        # The split must reconcile with the headline number.
+        self.assertAlmostEqual(sum(out.values()), llm_cost_from_usage(calls), places=6)
+
+    def test_empty_ledger(self):
+        self.assertEqual(llm_cost_by_provider([]), {})
+        self.assertEqual(llm_cost_by_provider(None), {})
+
+    def test_cost_line_appends_provider_split(self):
+        line = format_cost_line(
+            {"llm": 0.004, "total": 0.004},
+            llm_by_provider={"deepseek": 0.004, "openrouter": 0.0},
+        )
+        self.assertIn("llm $0.0040 [deepseek $0.0040 · openrouter $0]", line)
+
+    def test_cost_line_unchanged_without_the_split(self):
+        # Back-compat: existing callers that pass no split get the old format.
+        line = format_cost_line({"llm": 0.004, "total": 0.004})
+        self.assertEqual(line, "Est. run cost: $0.0040 (llm $0.0040)")
 
 
 if __name__ == "__main__":

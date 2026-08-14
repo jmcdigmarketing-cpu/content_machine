@@ -52,9 +52,14 @@ input + average-based learned post slots). 1125 tests green.*
 - [ ] Router vision path → multimodal rendered-video review (Pillar 2)
 
 **Efficiency & observability**
-- [ ] Cost / quota dashboard (O9) — per-run API spend (OpenAI / Apify / YouTube units) in status
-- [ ] Governor follow-ups (O12) — YouTube units under a governor scope; per-provider LLM spend in the cost line
-- [ ] Router follow-ups — premium→cheaper provider failover on auth/quota error
+- [x] ~~Cost / quota dashboard (O9)~~ — shipped in wave 3 (`ops reliability`); this entry was stale
+- [x] Governor follow-ups (O12), part 1 — **per-provider LLM spend in the cost line**
+  (`cost_meter.llm_cost_by_provider`) + **cross-run dead-model persistence**: a retired
+  slug is skipped for `LLM_DEAD_MODEL_TTL_SECONDS` (24h) instead of costing a failed
+  probe every run, key-hash invalidated and shown in `ops reliability`
+- [ ] Governor follow-ups (O12), rest — YouTube units under a governor scope; reliability time series
+- [x] ~~Router follow-ups — premium→cheaper provider failover on auth/quota error~~ — already
+  live as O5/O6 (`_RETRYABLE_LLM` chain failover + `_DISABLE_LLM` session breaker); entry was stale
 
 **Growth & new verticals**
 - [ ] MoneyWise depth wave — earnings-calendar signal, ticker watchlist, finance brief sections

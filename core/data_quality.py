@@ -148,6 +148,14 @@ def warnings(data: dict[str, Any] | None = None, *, channel_id: str | None = Non
             f"{joins['uploads_without_metrics']} uploaded video(s) with no metrics yet "
             "(run sync-metrics)"
         )
+    # Dead/stale research feeds starve the grounding corpus. Read from the last
+    # persisted `ops feeds` run — no network here, the dashboard must stay fast.
+    try:
+        from core.feed_health import cached_warnings
+
+        out.extend(cached_warnings())
+    except Exception:
+        pass
     return out
 
 

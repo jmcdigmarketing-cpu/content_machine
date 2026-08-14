@@ -73,7 +73,7 @@ Last verified: 2026-06-10
 | `finnhub` | Finnhub | Finance/stock topics | `FINNHUB_API_KEY` |
 | `fred` | FRED | Economic/finance topics | `FRED_API_KEY` |
 | `live_scores` | ESPN API | NBA topics with scoreboard match | — (no key needed) |
-| `tapology` | HTML scrape (off) | MMA/UFC topics | `TAPOLOGY_SCRAPE_ENABLED=true` to enable |
+| `tapology` | HTML scrape (**retired**) | — | Cloudflare 403 since ~2026-07; leave off. Fighter facts come from API-SPORTS MMA via `ufc_context` |
 | `wikipedia` | Wikimedia pageviews REST | Free trends fallback | No key — always on |
 | `odds` | The Odds API | Sports betting angle | `ODDS_API_KEY` |
 | `youtube_competitors` | Apify YouTube scraper | Competitor performance — top videos by view velocity (views/day) | `APIFY_CONTENT_MACHINE_KEY` |
@@ -169,7 +169,12 @@ Finance, anime, and music signals add latency with zero value for TapIn:
 CONTENT_SKIP_SIGNALS=fred,sec_edgar,finnhub,coingecko,anime,tvmaze,lastfm,musicbrainz
 ```
 
-Keep: `youtube`, `rawg`, `steam`, `igdb`, `twitch`, `blog_rss`, `news`, `trends`, `odds`, `tapology` (UFC), `sports`, `live_scores`.
+Keep: `youtube`, `rawg`, `steam`, `igdb`, `twitch`, `blog_rss`, `news`, `trends`, `odds`, `ufc_context` (UFC), `sports`, `live_scores`.
+
+> **Feed rot is silent.** Sources die without telling you — an audit on 2026-08-14 found
+> 11 of ~37 configured feeds dead and one live feed lost to a parser bug, none of it
+> reported. Run `py -m scripts.ops feeds` periodically (it's in `all-checks`); dead and
+> stale feeds also surface in `ops reliability`.
 
 ---
 

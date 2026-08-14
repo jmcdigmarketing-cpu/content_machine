@@ -13,7 +13,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1125 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
+Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1234 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -29,7 +29,7 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). 1125 tests green.*
+input + average-based learned post slots). 1234 tests green.*
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -38,10 +38,23 @@ input + average-based learned post slots). 1125 tests green.*
   "imported, no run" (836 of 870 rows), now `NULL`; all rows preserved. Also
   reconciled the stamp/state drift — `migrate_schema` finishes through Alembic
   instead of hand-patching past it
+- [~] ~~Tapology scrape~~ — **retired 2026-08-14**: Cloudflare JS challenge returns 403
+  for every request (direct *and* via the r.jina.ai reader proxy), and it had reported
+  itself as "no event match" rather than blocked for ~33 days. Module kept behind
+  `TAPOLOGY_SCRAPE_ENABLED` for revival; fighter facts come from `mma_stats`
 - [~] ~~Reddit agent-workload rate-limit-aware caching~~ — **signal retired 2026-08-14**
   (`enabled: false` in the catalog): its actor failed on 100% of live runs while still
   billing, and the free OAuth backend has no credentials configured
-- [ ] RSS feeds to reduce Tapology scrape dependency
+- [x] **Research intake repair + source health monitoring** *(2026-08-14)* — the audit
+  behind this item found the intake layer had been silently dead for a month:
+  **Tapology is Cloudflare-403'd** (10/10 cached results empty over 33 days, and it
+  reported the block as *"no event match"*, so no breaker ever saw it), **11 of ~37
+  feeds were dead**, and the Federal Reserve feed was *alive* but dropped by a UTF-8
+  **BOM parse bug**. Fixed the parser, replaced every dead URL with a live-verified
+  one (**37/37 ok**), made a blocked scrape report `STATUS_UNAVAILABLE`, retired
+  Tapology (`apis/mma_stats_api.py` — API-SPORTS MMA — now supplies fighter
+  records/physicals), and added **`ops feeds`** (ok/stale/dead + newest-item age) wired
+  into `all-checks` and `ops reliability` so rot can't hide again
 
 **Recommenders & calibration**
 - [ ] Backtest recommender accuracy vs. realized engagement (volume-gated)
@@ -73,7 +86,7 @@ input + average-based learned post slots). 1125 tests green.*
 - [ ] Third-vertical groundwork: AI Tools / Tech — channel profile + SEO + coverage audit
 
 **Engineering hygiene**
-- [ ] git private remote — create + push
+- [x] git private remote — create + push *(done: `jmcdigmarketing-cpu/content_machine`, private)*
 - [ ] Tighten the mypy baseline; annotate/retire the remaining broad `except Exception` handlers
 - [ ] Raise test coverage on render + publish paths
 
@@ -159,7 +172,8 @@ learning) stays parked under [Later horizons](#later-horizons).*
 - [x] Alembic baseline + FKs (`content_run_id` on `publish_log`, `jobs`, `assets`, `thumbnail_scores`) — *shipped 2026-08-14, Alembic `0004`*
 - [x] Provenance columns on `content_runs`: `brief_version`, `prompt_version`
 - [~] Reddit OAuth + rate-limit-aware caching for agent workload — *signal retired 2026-08-14; the free OAuth backend (`apis/free_backends.fetch_reddit_free`) still exists and re-enabling only needs `REDDIT_CLIENT_ID`/`SECRET` + `enabled: true` in the catalog*
-- [ ] RSS feeds to reduce Tapology scrape dependency
+- [x] RSS feeds to reduce Tapology scrape dependency — *shipped 2026-08-14: Tapology
+  retired (Cloudflare 403), all dead feeds replaced (37/37 live), `ops feeds` monitors*
 
 ### Phase H — Research Brief Engine (+ Reddit Agent + RSS) — **priority**
 

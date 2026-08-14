@@ -40,8 +40,8 @@
       "url": "https://feeds.content.dowjones.io/public/rss/mw_topstories"
     },
     {
-      "name": "Investopedia",
-      "url": "https://www.investopedia.com/feedbuilder/feed/getfeed?feedName=rss_headline"
+      "name": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/news/rssindex"
     },
     {
       "name": "CoinDesk",

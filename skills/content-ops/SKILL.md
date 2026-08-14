@@ -18,7 +18,7 @@ py -m scripts.ops <command> [--channel tapin] [--count N] [...]
 | Command | What it does |
 | --- | --- |
 | `all-analytics` | Seed, schedules, weights, sync metrics |
-| `all-checks` | Validate channels + unit tests |
+| `all-checks` | Validate channels + unit tests + feed health |
 | `all-setup` | First-time / fresh machine setup (non-interactive) |
 | `analyst` | Weekly analyst briefing — LLM over the pillars -> lever changes (Pillar 5) |
 | `backfill-features` | Reconstruct features_json for historical runs |
@@ -32,6 +32,7 @@ py -m scripts.ops <command> [--channel tapin] [--count N] [...]
 | `dossier` | One run end-to-end: quality, cost, metrics, trace (--run-id required) |
 | `economics` | Per-video cost vs revenue -> contribution margin (Pillar 1) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
+| `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |

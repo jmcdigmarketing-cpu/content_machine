@@ -50,6 +50,15 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                     lines.append(f"Tapology main: {bout['main_event']}")
 
         elif name == "ufc_context" and isinstance(data, dict):
+            # Fighter records/physicals from API-SPORTS — the structured facts that
+            # replaced the Cloudflare-blocked Tapology scrape. These are verified
+            # source data, so they lead the block.
+            stats = data.get("fighter_stats") or {}
+            if isinstance(stats, dict):
+                for line in (stats.get("lines") or [])[:4]:
+                    if line:
+                        lines.append(f"Fighter record: {line}")
+
             tap = data.get("tapology") or {}
             if isinstance(tap, dict):
                 if tap.get("matched_event") or tap.get("event_title"):

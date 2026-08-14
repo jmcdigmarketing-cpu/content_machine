@@ -186,6 +186,17 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("feeds", "Check every configured RSS feed — dead/stale sources starve grounding")
+def cmd_feeds(_args: argparse.Namespace) -> int:
+    from core.feed_health import check_feeds, render, save_results, summarize
+
+    results = check_feeds()
+    save_results(results)
+    print(render(results))
+    # Non-zero on a dead feed so `all-checks` fails loudly instead of printing quietly.
+    return 1 if summarize(results).get("dead") else 0
+
+
 @_register(
     "voices", "List TTS voices — ElevenLabs account + local Piper — and what each channel uses"
 )
@@ -516,7 +527,7 @@ def cmd_list(_args: argparse.Namespace) -> int:
     print(
         "  all-setup          migrate-layout, init-db, migrate-schema, seed, validate, check-youtube"
     )
-    print("  all-checks         validate + test")
+    print("  all-checks         validate + test + feeds")
     print("  all-analytics      seed, learn-schedule, weights, sync-metrics")
     print("  daily-sync         competitor-sync + seo-refresh (daily)")
     print(
@@ -552,9 +563,9 @@ def cmd_all_setup(args: argparse.Namespace) -> int:
     return _run_batch(steps, args)
 
 
-@_register("all-checks", "Validate channels + unit tests")
+@_register("all-checks", "Validate channels + unit tests + feed health")
 def cmd_all_checks(args: argparse.Namespace) -> int:
-    return _run_batch(["validate", "test"], args)
+    return _run_batch(["validate", "test", "feeds"], args)
 
 
 @_register("all-analytics", "Seed, schedules, weights, sync metrics")

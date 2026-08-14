@@ -1,17 +1,78 @@
-# Handoff synopsis — 2026-07-17: Pillar 6 mostly shipped + local-TTS voice variety (after Pillars 1–5)
+# Handoff synopsis — 2026-08-14: fact-layer repair wave (after Pillars 1–7)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
-- **Branch:** `main` (Pillars 1–6 merged; tree clean)
-- **Suite:** 1064 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
+  (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
+- **Suite:** 1234 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
-  `analyst` / `overnight`), **live-run hardening**, and **Pillar 6** — baseline provider
-  seams + goose3 (2026-07-08), then seam→live-path wiring (U1 whisper align, U3 music bed,
-  U4 AI-video slot, U5 thumbnail chain + dual-format render, U8 n8n recipes, U9 earnings
-  signal), local TTS (2026-07-09), and **local-TTS voice variety** (2026-07-17).
+  `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
+  **Pillar 7** (Agent Skills + SkillOpt).
+
+### Unmerged work on these two branches (2026-08-14 session)
+
+`feat/trade-validation-default-on` (6 commits):
+
+1. **Trade validation default-on** for NBA/NFL topics (domain-gated; UFC excluded —
+   `signed` false-positives). `infer_domain(key_facts=)` so pasted NBA facts on the
+   gaming channel resolve correctly.
+2. **Vault fact contamination fixed** — `core/ui.py` was re-saving *borrowed* vault
+   facts into a note titled with the new topic, laundering them into "operator facts"
+   for every later run. 131 borrowed bullets cleaned from 31 notes (0 distinct facts
+   lost). Grounding false positives fixed (`_MONONYM_SKIP` discourse adverbs,
+   30 generic tokens added to `_GENERIC_TOKENS`).
+3. **Test-suite vault isolation** — `tests/__init__.py` forces `OBSIDIAN_VAULT_PATH=""`;
+   the suite had been writing into the operator's real vault for weeks.
+4. **O12 part 1** — per-provider LLM cost line + cross-run dead-model persistence.
+5. **Alembic baseline + `0004` content_run FKs** — `publish_log`'s legacy `0` sentinel
+   became `NULL` (836 of 870 rows preserved); `migrate_schema` finishes through Alembic.
+   Reddit signal retired (`enabled: false`) + Apify actor-failure memory.
+
+`feat/research-intake-repair` (this wave) — see below.
+
+---
+
+## Shipped 2026-08-14 (research intake repair + source health)
+
+**The finding:** TapIn's research intake had been silently dead for over a month and
+nothing reported it. Verified live, not inferred:
+
+- **Tapology is Cloudflare-403'd** ("Just a moment... Enable JavaScript"), direct *and*
+  via the r.jina.ai reader proxy. All 10 cached results were empty across ~33 days.
+  It reported the block as `STATUS_INACTIVE` "no event match", so no breaker or
+  dashboard ever saw a failure. Its query builder also hardcoded `"Topuria Gaethje"`
+  into *every* numbered-event search.
+- **11 of ~37 configured RSS feeds were dead** (404s, a 403, a 501, ESPN's
+  `202`-with-empty-body, a dead host).
+- **The Federal Reserve feed was alive but invisible** — valid RSS with 20 items,
+  dropped because `_parse_feed_xml(resp.text)` chokes on a UTF-8 BOM and the bare
+  `except ET.ParseError` swallowed it.
+
+**The fix:**
+
+1. **Parser** — `apis/rss_feeds.decode_feed_bytes()` (`utf-8-sig` → latin-1 fallback);
+   parse failures now log at warning with the feed URL.
+2. **Feeds** — every dead URL replaced with a live-verified one. **37/37 ok.**
+   MMA went from 1 working source to 5 (Sherdog, MMA Fighting `/rss/index.xml`,
+   Bloody Elbow, MMA Weekly, UFC.com official).
+3. **Honest failure** — `tapology_api` non-2xx now raises, so a 403 reports
+   `STATUS_UNAVAILABLE`. Retired via `TAPOLOGY_SCRAPE_ENABLED=false` (module kept).
+4. **`apis/mma_stats_api.py`** — API-SPORTS MMA host (reuses `API_SPORTS_KEY`) for
+   fighter records + physicals, consumed by `ufc_context`. Guards: rate limits arrive
+   as **HTTP 200 + `errors.rateLimit`** and must not read as "not found";
+   `search=Topuria` returns *Aleksandre*, so `_name_matches` rejects a wrong first name.
+   Free tier: 10 req/min, 100/day, `/fights` gated to 2022–2024 (so **no upcoming
+   cards** — those come from RSS + NewsAPI).
+5. **`core/feed_health.py` + `ops feeds`** — ok/**stale**/dead with newest-item age,
+   persisted to `data/feed_health.json`, surfaced through `data_quality.warnings()`
+   into `ops reliability`, and added to the `all-checks` batch.
+
+**Watch out:** `core/signal_facts.format_signal_facts` formats **per-signal** — adding a
+new key to a signal's `data` silently drops it from the prompt until a branch is added
+there. That is how `fighter_stats` would have been lost.
 
 ---
 
@@ -182,6 +243,7 @@ From a real tapin run's pain points:
 3. `py -m scripts.ops vault-sync --channel tapin` — beliefs + dossier refresh into vault
 4. `py -m scripts.ops batch-drafts --channel tapin --count 3` — unattended draft scripts (feeds A/B)
 5. `py -m scripts.ops reliability` — credit/quota/breaker/cache dashboard
+6. `py -m scripts.ops feeds` — RSS source health (ok/stale/dead); run monthly, feeds die quietly
 
 Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
@@ -206,11 +268,19 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
    calibration/predictor activate as measured volume accrues.
 3. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,
    MoneyWise depth, AI Tools/Tech groundwork.
-4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`);
-   promote `SEMANTIC_TRADE_VALIDATION` default-on if precise in live runs.
+4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`).
+   *(`SEMANTIC_TRADE_VALIDATION` default-on shipped 2026-08-14 — domain-gated NBA/NFL.)*
 5. Vault housekeeping: cross-day dossier refresh leaves prior-day `_runs/` notes (same
    `run_id`, different date prefix) — safe but clutter; stable-path upsert is a follow-up.
+   17 test-fixture `<date>_topic.md` notes remain in the vault (harmless; they no longer
+   regenerate now that the suite is isolated).
 6. One-time ops: re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
+7. **Open PRs to triage** — the two 2026-08-14 branches are unmerged, and PRs #29–#32
+   have been open since late July. `origin/claude/trade-validation-default-on` is
+   **superseded and should be deleted** — it carries a pre-#33 CI time-bomb test that
+   would revert the fix.
+8. Two retired LLM slugs still need repointing (`OPENROUTER_MODEL_CHEAP`,
+   `OLLAMA_MODEL_CHEAP`) — each currently costs one failed probe per 24h.
 
 **Parked / excluded:** Instagram + TikTok platform linking (Phase M, far later) · Benable bot.
 
@@ -229,6 +299,9 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 ## Key files
 
 ```
+apis/mma_stats_api.py       — API-SPORTS MMA fighter records (replaced Tapology)
+core/feed_health.py         — RSS ok/stale/dead checker behind `ops feeds`
+core/signal_facts.py        — per-signal -> prompt formatting (add a branch for new data keys)
 core/vault_dossiers.py      — Pillar 4: run dossiers + weekly report into vault
 core/vault_index.py         — Pillar 4: mtime-cached vault parse
 core/obsidian_facts.py      — load_facts + load_playbook/playbook_block

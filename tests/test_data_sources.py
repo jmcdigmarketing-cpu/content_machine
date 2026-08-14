@@ -5,9 +5,15 @@ from config.data_sources import _feed_matches_domain, domain_rss_feeds, rss_feed
 
 class TestDataSources(unittest.TestCase):
     def test_nba_domain_feeds(self):
+        # Asserts the contract (the domain resolves to usable feeds), not a vendor.
+        # This previously pinned "espn", which kept passing after ESPN's RSS went dead
+        # (202 with an empty body) — a green test over a source returning nothing.
+        # Liveness is `ops feeds` / tests/test_feed_health.py; this is shape only.
         feeds = domain_rss_feeds("nba")
-        urls = [f["url"] for f in feeds]
-        self.assertTrue(any("espn" in u for u in urls))
+        self.assertGreaterEqual(len(feeds), 2)
+        for feed in feeds:
+            self.assertTrue(feed.get("url", "").startswith("http"))
+            self.assertTrue(feed.get("name"))
 
     def test_topic_merges_channel_and_domain(self):
         feeds = rss_feeds_for_topic("NBA Finals Knicks", "tapin")

@@ -87,3 +87,9 @@ Thumbs.db
 
 # Local database dumps (operator data — never commit)
 .db_backups/
+
+# Local model weights (Piper TTS voices, whisper caches) — large binaries, fetched
+# on demand per docs/free_mode.md. Whisper models live in the HF cache outside the repo.
+/models/
+*.onnx
+*.onnx.json

@@ -6,7 +6,7 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 - **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
   (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
-- **Suite:** 1328 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Suite:** 1347 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -31,7 +31,22 @@ Use in a fresh session to continue `content_machine` without re-reading the full
    became `NULL` (836 of 870 rows preserved); `migrate_schema` finishes through Alembic.
    Reddit signal retired (`enabled: false`) + Apify actor-failure memory.
 
-`feat/research-intake-repair` (this wave) — see below.
+`feat/research-intake-repair` (5 commits, this session's later waves):
+
+1. **Research intake repair + source health** — Tapology retired (Cloudflare 403),
+   11 dead RSS feeds replaced (37/37 live), BOM parser fix, `ops feeds` monitoring.
+2. **`twitter` signal retired** — 19/19 runs, zero facts, slowest phase (~32s).
+3. **`youtube_comments` + O12 complete** — official-API signal; YouTube units under the
+   governor + reliability time series.
+4. **Post-render cost persisted** — the ledger was missing TTS on every render;
+   `ops economics` went from $0.02 to $0.31/video, 38 historical runs repaired.
+5. **Whisper local CPU backend** — landed with measurements; caption-text fix still open
+   (see the section below, and "Open (roadmap next)").
+
+**Neither branch is merged and no PR exists.** Also:
+`origin/claude/trade-validation-default-on` is **superseded and should be deleted** — it
+carries a pre-#33 CI time-bomb test that would revert the fix. PRs #29–#32 have been
+open since late July and need triage.
 
 ---
 
@@ -169,6 +184,57 @@ $0.32 ($0.02/video)*; the truth was **$6.18 ($0.31/video)**.
 *Open observation, not built:* on a subscription the plan covers ~90 videos/month
 against ~21 actually made, so the **allocated** cost is nearer $1/video than $0.22.
 The metered marginal rate is the right fit for `cost_meter`; utilisation is a later pass.
+
+---
+
+## Shipped 2026-08-14 (Whisper local — CPU backend; caption text still blocked)
+
+**Stopped deliberately mid-item.** The backend and its evidence are landed; the thing
+that would make it *useful* is not, and the reason is written down rather than lost.
+
+The roadmap said these backends were "parked — needs a GPU box". On this machine
+`whisperx`, `faster_whisper` (1.2.1), `torch` (2.8.0+**cpu**), `piper` and
+`ctranslate2` were **all already installed**, and the caption wiring
+(`video/subtitles.py:110` → `caption_timing.words_from_caption_align` →
+`core/caption_align.transcribe_and_align`) was **already complete and fail-open**.
+Only a CPU-capable backend was missing.
+
+**Landed**
+- `core/caption_align.py` — `faster_whisper` backend alongside `whisperx`, plus
+  `CAPTION_ALIGN_MODEL` / `_DEVICE` (auto → cpu here) / `_COMPUTE` (int8 on CPU).
+  Still OFF by default and fail-open.
+- `scripts/bench_caption_align.py` — accuracy against the **ElevenLabs `.words.json`
+  sidecars** already sitting next to our mp3s. Real ground truth, real channel audio.
+
+**Measured** (3 shorts, 55–58s):
+
+| model | line-start p50 | p90 | speed (CPU) |
+|---|---|---|---|
+| **tiny** | **43–56ms** | 111–176ms | 12–15× realtime |
+| base | 73–85ms | 142–159ms | 4–15× realtime |
+
+`tiny` wins and is half the download, so it is the default — evidence, not instinct.
+Piper synthesis of a real 1,156-char script: **5.1s**.
+
+*Benchmark gotcha worth keeping:* grouping each transcript into caption lines
+independently reported ~4s of "error" when per-word error was ~40ms — Whisper punctuates
+differently, so `group_into_lines` split at different points and line N described
+different words. The fix was to pair words first, then group. Don't re-introduce it.
+
+**Why this is not finished.** The path transcribes blind, so captions carry **ASR text,
+not the script**: run 65 came back with "Salkal" for "Salkilld" and "Mattius Gamarat"
+for "Mateusz Gamrot". Fighter and game names are the channel's entire subject, so burned
+captions would show mangled names despite ~45ms timing accuracy.
+
+**Next step (small, well-defined):** keep whisper's timings, take the *text* from the
+known script by sequence alignment — `generate_subtitle_file` already receives `script`,
+and `scripts/bench_caption_align.align_sequences` is most of the matcher. That unblocks
+the **$0 TTS switch**, worth **$0.25/video (~88% of run cost)**.
+
+Also noted: Piper renders the same script **66.3s vs ElevenLabs 55.2s** (~20% slower),
+which shifts video length and feeds the learned-length loop. A voice sample exists at
+`output/samples/piper_lessac_run65.mp3` for the operator to judge; **ElevenLabs remains
+the default and nothing was switched.** Voice: `models/piper/` (gitignored).
 
 ---
 
@@ -347,6 +413,11 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
+> **Start here next session:** finish the caption-text fix described above (whisper
+> timings + script text via sequence alignment). It is small, well-scoped, and it
+> unblocks the **$0 TTS switch — $0.25/video, ~88% of run cost**, the largest remaining
+> cost lever in the project. Everything needed is installed and measured.
+
 ***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
@@ -362,8 +433,10 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
    [video_creation_stack.md](video_creation_stack.md). Excluded: Higgsfield + `[search github]` repos.
 2. **Pillar 2 remainder**: multimodal rendered-video review *(needs router vision path)*;
    calibration/predictor activate as measured volume accrues.
-3. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,
-   MoneyWise depth, AI Tools/Tech groundwork.
+3. Supporting/unphased: router vision path, MoneyWise depth, AI Tools/Tech groundwork.
+   *(O12 complete 2026-08-14. Whisper local: CPU backend landed — see above; the
+   caption-text fix is the open half.)* Still volume-gated: the **recommender backtest**
+   (10 measured run-linked videos vs the predictor's threshold of 15).
 4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`).
    *(`SEMANTIC_TRADE_VALIDATION` default-on shipped 2026-08-14 — domain-gated NBA/NFL.)*
 5. Vault housekeeping: cross-day dossier refresh leaves prior-day `_runs/` notes (same

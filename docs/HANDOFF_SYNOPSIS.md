@@ -6,7 +6,7 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 - **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
   (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
-- **Suite:** 1288 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Suite:** 1328 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -131,6 +131,44 @@ Three guards worth knowing about:
   series builds itself with no job to forget. The dashboard could only answer "how is
   it now", never "is this getting worse" — which is exactly how every failure found
   this session stayed invisible while it developed.
+
+---
+
+## Shipped 2026-08-14 (post-render cost reaches the ledger)
+
+Third instance of the session's pattern — something silently wrong that nothing
+reported — and this one corrupted a shipped feature's headline number.
+
+**Both operator render paths finalize the run before rendering it.** `main.py:362` and
+`scripts/auto_generate.py:193` each call `run_pipeline(proceed_video=False)`, then
+render separately. So the persisted cost kept `tts: 0.0` and the trace kept
+`status="drafted"` on every rendered run. `main.py:512` *did* recompute the correct
+cost — into a local dict, for display only, never written back.
+
+`core/unit_economics.py:79` derives contribution margin from
+`features_json.cost.total`, so **every margin was overstated by roughly the whole TTS
+line** — the largest cost of a rendered run. `ops economics` reported *20 uploads,
+$0.32 ($0.02/video)*; the truth was **$6.18 ($0.31/video)**.
+
+- **`core/pipeline.run_media_only`** now persists the render lines + patches the trace.
+  It is the single choke point both flows share, so one fix covers both.
+- **`cost_meter.render_cost_lines()` / `merge_render_cost()`** — render lines only.
+  `llm`/`apify`/`web_search` are session-metered and already persisted; recomputing them
+  after the fact would overwrite good values with wrong ones.
+- **`run_features.merge_features()` / `run_trace.update_trace()`** — merge helpers
+  mirroring the existing `run_quality.merge_quality`.
+- **`ops backfill-cost`** (`--dry-run` first) repaired 38 runs ($0.75 → $11.77) and 13
+  traces. Idempotent; only touches rendered/scheduled/published rows. Flags
+  `cost_estimated` when chars came from `word_count` (`script_preview` truncates at
+  2000) and `cost_partial` for the 18 runs predating cost metering entirely.
+- **TTS priced from the real plan**: ElevenLabs Creator $22/100k chars = **$0.22/1k**
+  (was a $0.30 list-price guess). Re-derive as monthly cost ÷ quota if the plan changes.
+- **`backfill-features --force` no longer wipes cost** — `build_features` has no `cost`
+  block, so a forced rebuild silently destroyed it. It now carries unknown keys forward.
+
+*Open observation, not built:* on a subscription the plan covers ~90 videos/month
+against ~21 actually made, so the **allocated** cost is nearer $1/video than $0.22.
+The metered marginal rate is the right fit for `cost_meter`; utilisation is a later pass.
 
 ---
 

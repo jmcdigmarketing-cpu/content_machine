@@ -130,6 +130,28 @@ def read_trace(run_id: int) -> dict[str, Any] | None:
         return None
 
 
+def update_trace(run_id: int | None, patch: dict[str, Any]) -> bool:
+    """Merge keys into an existing trace. Fail-open; False when there was nothing to update.
+
+    The trace is written at `_finalize_run`, which both operator flows reach *before*
+    rendering — so every rendered run's trace claimed `status="drafted"` and carried the
+    pre-render cost. The render path uses this to correct both after the fact.
+    """
+    if not run_id or not patch:
+        return False
+    try:
+        current = read_trace(run_id)
+        if current is None:
+            return False
+        current.update(patch)
+        with open(_trace_path(run_id), "w", encoding="utf-8") as f:
+            json.dump(current, f, indent=2)
+        return True
+    except Exception as exc:
+        logger.debug("trace update skipped for run %s: %s", run_id, exc)
+        return False
+
+
 def list_traces(limit: int = 20, *, channel_id: str | None = None) -> list[dict[str, Any]]:
     """Most-recent traces first (by run id), optionally filtered by channel."""
     try:

@@ -11,7 +11,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from core.logging import get_logger
 from core.script_length import get_length_preset
+
+logger = get_logger("core.run_features")
 
 _QUESTION_RE = re.compile(r"\?\s*$")
 _NUMBER_RE = re.compile(r"\b\d+\b")
@@ -117,3 +120,43 @@ def build_features(
         "key_facts_count": len(key_facts or []),
         "feature_version": "v1",
     }
+
+
+def load_features(run_id: int | None) -> dict[str, Any]:
+    """Read a run's persisted features dict ({} when absent/undecodable)."""
+    if not run_id:
+        return {}
+    try:
+        import json
+
+        from storage.repositories.content_runs import get_content_run_repository
+
+        record = get_content_run_repository().get(run_id)
+        if record is None:
+            return {}
+        loaded = json.loads(record.features_json or "{}")
+        return loaded if isinstance(loaded, dict) else {}
+    except Exception as exc:
+        logger.debug("features read skipped for run %s: %s", run_id, exc)
+        return {}
+
+
+def merge_features(run_id: int | None, updates: dict[str, Any]) -> None:
+    """Merge keys into an existing features_json (e.g. the post-render cost lines).
+
+    Mirrors `core.run_quality.merge_quality`. Needed because both operator render paths
+    finalize the run *before* rendering, so the stored cost never gained its TTS line.
+    """
+    if not run_id or not updates:
+        return
+    try:
+        import json
+
+        from storage.repositories.content_runs import get_content_run_repository
+
+        repo = get_content_run_repository()
+        current = load_features(run_id)
+        current.update(updates)
+        repo.update(run_id, {"features_json": json.dumps(current)})
+    except Exception as exc:
+        logger.debug("features merge skipped for run %s: %s", run_id, exc)

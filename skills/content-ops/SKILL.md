@@ -21,6 +21,7 @@ py -m scripts.ops <command> [--channel tapin] [--count N] [...]
 | `all-checks` | Validate channels + unit tests + feed health |
 | `all-setup` | First-time / fresh machine setup (non-interactive) |
 | `analyst` | Weekly analyst briefing — LLM over the pillars -> lever changes (Pillar 5) |
+| `backfill-cost` | Repair missing TTS cost on runs that rendered before the fix |
 | `backfill-features` | Reconstruct features_json for historical runs |
 | `batch-drafts` | N ideas -> N draft scripts, unattended (no render/publish) |
 | `calibration` | Pre-publish grade vs realized engaged-rate (Pillar 2) |

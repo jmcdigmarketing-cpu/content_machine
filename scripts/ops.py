@@ -144,6 +144,16 @@ def cmd_backfill_features(args: argparse.Namespace) -> int:
     return _run_module("analytics.backfill_features", "--channel", args.channel)
 
 
+@_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
+def cmd_backfill_cost(args: argparse.Namespace) -> int:
+    extra = ["--channel", args.channel]
+    if getattr(args, "dry_run", False):
+        extra.append("--dry-run")
+    if getattr(args, "force", False):
+        extra.append("--force")
+    return _run_module("analytics.backfill_cost", *extra)
+
+
 @_register("vault-sync", "Write machine beliefs + run dossiers into the Obsidian vault")
 def cmd_vault_sync(args: argparse.Namespace) -> int:
     from core.vault_dossiers import refresh_dossiers
@@ -681,6 +691,11 @@ def main(argv=None) -> int:
         "--file",
         default=None,
         help="overnight: file of topics (one per line) instead of best-bet",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="backfill-cost: show what would change without writing",
     )
     args = parser.parse_args(argv)
     args.queue_upload = False

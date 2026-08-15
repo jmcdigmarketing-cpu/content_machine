@@ -54,6 +54,13 @@ def backfill_channel(channel_id: str, *, force: bool = False) -> int:
             key_facts=None,
             fact_source="backfilled",
         )
+        # `build_features` does not produce `cost` (the pipeline adds it separately), so
+        # a --force rebuild would silently destroy the cost ledger for every run it
+        # touched. Carry forward anything build_features doesn't own.
+        for key, value in existing.items():
+            if key not in features:
+                features[key] = value
+
         repo.update(run.id, {"features_json": json.dumps(features)})
         updated += 1
     return updated

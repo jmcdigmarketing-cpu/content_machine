@@ -563,6 +563,23 @@ def run_media_only(
         update_content_run_media(
             content_run_id, mp3_path=mp3_path, mp4_path=mp4_path, status="rendered"
         )
+        # The run was finalized before this render (both operator flows call
+        # run_pipeline with proceed_video=False, then render here), so its stored cost
+        # still says tts=0 and its trace still says "drafted". Correct both now —
+        # unit_economics computes contribution margin off features_json.cost.total,
+        # and TTS is the largest line on a rendered run. Fail-open: a bookkeeping
+        # error must never fail a render that already succeeded.
+        try:
+            from core.cost_meter import merge_render_cost
+            from core.run_features import load_features, merge_features
+            from core.run_trace import update_trace
+
+            cost = merge_render_cost((load_features(content_run_id) or {}).get("cost"), script)
+            merge_features(content_run_id, {"cost": cost})
+            update_trace(content_run_id, {"status": "rendered", "cost": cost})
+        except Exception as exc:
+            logger.debug("post-render cost update skipped for run %s: %s", content_run_id, exc)
+
         record_render_assets(
             channel_id=channel_id,
             content_run_id=content_run_id,

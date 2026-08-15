@@ -13,7 +13,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1288 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
+Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1328 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -29,7 +29,7 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). 1288 tests green.*
+input + average-based learned post slots). 1328 tests green.*
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -57,7 +57,19 @@ input + average-based learned post slots). 1288 tests green.*
   into `all-checks` and `ops reliability` so rot can't hide again
 
 **Recommenders & calibration**
-- [ ] Backtest recommender accuracy vs. realized engagement (volume-gated)
+- [ ] Backtest recommender accuracy vs. realized engagement (volume-gated — **10** measured
+  run-linked videos vs the predictor's own threshold of 15)
+- [x] **Post-render cost reaches the ledger** *(2026-08-14)* — both operator render paths
+  finalize a run *before* rendering it, so `features_json.cost` kept `tts: 0.0` on every
+  rendered run and the trace stayed `drafted`. `main.py` recomputed the right number but
+  only into a local dict for display. Since `unit_economics` derives contribution margin
+  from `cost.total`, **every margin was overstated**: `ops economics` read *20 uploads,
+  $0.32 total ($0.02/video)* when the real figure was **$6.18 ($0.31/video)**.
+  `run_media_only` — the one choke point both flows share — now persists
+  `cost_meter.merge_render_cost()` plus a `status="rendered"` trace patch;
+  `ops backfill-cost` repaired 38 historical runs ($0.75 → $11.77) and 13 traces.
+  TTS is now priced from the real plan ($22/100k chars = **$0.22/1k**, was a $0.30
+  guess). Also stopped `backfill-features --force` silently wiping the cost block
 - [x] Promote `SEMANTIC_TRADE_VALIDATION` default-on for sports channels `[S]` — now auto-on for NBA/NFL topics (domain-gated); env still forces on/off globally
 
 **Signals & data intake**

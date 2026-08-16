@@ -5,8 +5,16 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-# Spoken delivery ~2.4 words/sec (energetic Shorts-style narration)
-WORDS_PER_SECOND = 2.4
+# Spoken delivery rate, measured — not guessed.
+#
+# Was 2.4 ("energetic Shorts-style narration"), which understated real delivery by 38%:
+# run 66 was shown "243 words (~101s spoken)" and rendered 70.2s of audio. Recomputed
+# across **all 14 real renders** carrying an ElevenLabs word sidecar
+# (`py -m scripts.bench_script_duration`): median 3.32 w/s, range 2.76-3.64.
+#
+# Re-derive with that script if the voice, model or stability settings change — this
+# drifted silently for months because nothing ever checked it against real audio.
+WORDS_PER_SECOND = 3.3
 
 
 @dataclass(frozen=True)
@@ -15,22 +23,35 @@ class LengthPreset:
     label: str
     min_words: int
     max_words: int
-    min_seconds: int
-    max_seconds: int
 
     @property
     def target_words(self) -> int:
         return (self.min_words + self.max_words) // 2
 
+    # Durations are DERIVED from the word range, never stored. They used to be
+    # hardcoded alongside it and the two silently disagreed: "Extended (420-900s)"
+    # actually produced ~300-600s. Deriving them means a change to WORDS_PER_SECOND
+    # can never leave the menu advertising a duration the preset cannot hit.
+    @property
+    def min_seconds(self) -> int:
+        return round(self.min_words / WORDS_PER_SECOND)
+
+    @property
+    def max_seconds(self) -> int:
+        return round(self.max_words / WORDS_PER_SECOND)
+
     def duration_hint(self) -> str:
         return f"{self.min_seconds}-{self.max_seconds}s"
 
 
+# Word ranges are the source of truth; seconds follow from them. Deliberately left
+# unchanged when the rate was corrected, so a stored `length_preset` label still means
+# the same thing to the learned-length analytics loop.
 PRESETS = {
-    "1": LengthPreset("1", "Short", 100, 150, 40, 60),
-    "2": LengthPreset("2", "Medium", 150, 300, 60, 120),
-    "3": LengthPreset("3", "Long", 300, 750, 120, 300),
-    "4": LengthPreset("4", "Extended", 1000, 2000, 420, 900),
+    "1": LengthPreset("1", "Short", 100, 150),
+    "2": LengthPreset("2", "Medium", 150, 300),
+    "3": LengthPreset("3", "Long", 300, 750),
+    "4": LengthPreset("4", "Extended", 1000, 2000),
 }
 
 

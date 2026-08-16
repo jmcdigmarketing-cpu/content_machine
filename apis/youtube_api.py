@@ -4,6 +4,7 @@ import re
 import threading
 from datetime import datetime, timezone
 
+import httplib2
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -40,6 +41,20 @@ _LIGHTWEIGHT = os.getenv("YOUTUBE_LIGHTWEIGHT", "").lower() in ("1", "true", "ye
 _MAX_RESULTS = max(3, min(int(os.getenv("YOUTUBE_MAX_RESULTS", "10") or 10), 10))
 
 
+def api_timeout() -> float:
+    """Socket timeout for Data API calls.
+
+    Without one, httplib2 uses the global default socket timeout — effectively
+    unbounded — so a slow read stalls discovery and then surfaces as a hard ERROR
+    ("The read operation timed out" killed the `youtube` signal on run 66). Bounded
+    here so a slow call degrades into a normal transient-failure signal instead.
+    """
+    try:
+        return max(3.0, float(os.getenv("YOUTUBE_API_TIMEOUT", "15")))
+    except ValueError:
+        return 15.0
+
+
 def _get_youtube_client():
     global _youtube_client
     if _youtube_client is not None:
@@ -52,6 +67,7 @@ def _get_youtube_client():
                 "v3",
                 developerKey=_youtube_key(),
                 cache_discovery=False,
+                http=httplib2.Http(timeout=api_timeout()),
             )
     return _youtube_client
 

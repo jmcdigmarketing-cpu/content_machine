@@ -6,7 +6,7 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 - **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
   (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
-- **Suite:** 1347 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Suite:** 1377 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -235,6 +235,43 @@ Also noted: Piper renders the same script **66.3s vs ElevenLabs 55.2s** (~20% sl
 which shifts video length and feeds the learned-length loop. A voice sample exists at
 `output/samples/piper_lessac_run65.mp3` for the operator to judge; **ElevenLabs remains
 the default and nothing was switched.** Voice: `models/piper/` (gitignored).
+
+---
+
+## Shipped 2026-08-15 (live-run 66 fixes)
+
+Run 66 (GTA VI / Netflix) **confirmed the cost fix works live** —
+`$0.3454 (llm $0.0043 · tts $0.3131 · apify $0.0200 · web $0.0080)`, TTS visible at 91%.
+It also exposed five defects, none of which announced itself as a failure. All were
+reproduced before being fixed.
+
+| # | Defect | Fix |
+|---|---|---|
+| 1 | `WORDS_PER_SECOND = 2.4` vs **measured 3.32** (median of all 14 real renders) — run 66 shown "~101s", rendered **70.2s** | rate corrected; preset seconds now **derived** from word ranges so they can't drift apart again |
+| 2 | `"If Netflix"` flagged as a possible hallucination → report card **A→B**, while the claim verifier said 12/12 backed | phrases no longer start on a function word |
+| 3 | `youtube: ERROR — read operation timed out` (no timeout set anywhere) | bounded `YOUTUBE_API_TIMEOUT`; timeouts classify as `STATUS_UNAVAILABLE` |
+| 4 | `youtube_comments` surfaced only *"What about Alaska?"* from 25 comments | questions must share a topic token; `"first"` no longer matches as a substring |
+| 5 | Both cheap-tier LLM slugs dead — one probe each per 24h | OpenRouter repointed; Ollama reports unavailable when nothing is pulled |
+
+**Things worth not relearning:**
+
+- **Preset durations are derived, not stored.** Word ranges are the source of truth
+  (`core/script_length.py`); they were deliberately *not* retuned, so a stored
+  `length_preset` still means the same thing to the learned-length analytics.
+  Re-check the rate with `py -m scripts.bench_script_duration` after any voice change.
+- **Don't trim proper nouns on the whole `_COMMON_WORDS` list.** The first attempt did,
+  and destroyed `"Black Widow" → "Widow"` and `"Season 8.5" → "8.5"`. `_LEADING_STOPWORDS`
+  is deliberately a narrow function-word set, and `"the"` is excluded ("The Rock").
+- **Don't pin a specific `:free` slug in a test.** OpenRouter rotates them; a test naming
+  one goes green while production 404s daily. `test_openrouter_anchors_cheap_tier` now
+  asserts *provider + `:free`*, not the id.
+- **Picking an OpenRouter free model needs a live call, not a spec sheet.** The
+  `gemma-4-*:free` models 429 on contention, and every `nemotron-*:free` leaks its
+  reasoning trace into the reply ("Okay, the user just asked me to…"), which would
+  corrupt short structured outputs. `poolside/laguna-s-2.1:free` returned a clean exact
+  answer. A 429 is fine (fails over, O5); only a **404** means retired.
+- **Ollama:** `ollama list` is empty on this box. `ollama pull llama3.1:8b` (~4.7GB) is
+  the operator's call; until then the provider correctly reports unavailable.
 
 ---
 

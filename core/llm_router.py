@@ -137,7 +137,20 @@ _DEFAULT_MODELS: dict[str, dict[str, str]] = {
     "openrouter": {
         # Free (`:free`) models by default; override with OPENROUTER_MODEL.
         # Free models are rate-limited — fine for this volume.
-        "cheap": "meta-llama/llama-3.3-70b-instruct:free",
+        #
+        # **Free slugs rotate and get retired.** The previous default
+        # (`meta-llama/llama-3.3-70b-instruct:free`) was withdrawn and cost a failed
+        # probe every 24h; because it is hardcoded here, setting OPENROUTER_MODEL_CHEAP
+        # in .env never fixed it. Re-check https://openrouter.ai/api/v1/models when this
+        # starts 404ing rather than guessing a replacement.
+        #
+        # Chosen by live test on 2026-08-15, not by size: the `google/gemma-4-*:free`
+        # models answered 429 (free-tier contention) and every `nvidia/nemotron-*:free`
+        # leaked its reasoning trace into the reply ("Okay, the user just asked me to…"),
+        # which would corrupt short prompt-shaped outputs. This one returned a clean
+        # exact "OK". A 429 is fine either way — it fails over (O5) rather than being
+        # recorded dead; only a 404 is a retired slug.
+        "cheap": "poolside/laguna-s-2.1:free",
         "extract": "deepseek/deepseek-chat",
         "premium": "deepseek/deepseek-chat",
     },
@@ -201,11 +214,53 @@ def _default_model(provider: str, tier: str) -> str:
     return _DEFAULT_MODELS.get(provider, {}).get(tier, "")
 
 
+_ollama_models_cache: list[str] | None = None
+
+
+def ollama_installed_models(*, refresh: bool = False) -> list[str]:
+    """Model tags actually pulled on the local Ollama daemon ([] when none/unreachable).
+
+    Cached per process: this is a localhost call, but the chain is resolved on every
+    LLM request and the answer cannot change mid-run in practice.
+    """
+    global _ollama_models_cache
+    if _ollama_models_cache is not None and not refresh:
+        return _ollama_models_cache
+    tags: list[str] = []
+    try:
+        import requests
+
+        base = (os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1").rstrip("/")
+        root = base[: -len("/v1")] if base.endswith("/v1") else base
+        resp = requests.get(f"{root}/api/tags", timeout=3)
+        if resp.status_code == 200:
+            tags = [
+                str(m.get("name") or "") for m in (resp.json().get("models") or []) if m.get("name")
+            ]
+    except Exception:
+        tags = []
+    _ollama_models_cache = tags
+    return tags
+
+
 def _provider_available(provider: str, tier: str) -> bool:
     if not _provider_key(provider):
         return False
     # Model-required providers (Doubao, Ollama) need a model id configured.
-    return not (provider in _MODEL_REQUIRED and not _model_override(provider, tier))
+    if provider in _MODEL_REQUIRED and not _model_override(provider, tier):
+        return False
+    if provider == "ollama":
+        # A configured model id is not enough — the daemon may have nothing pulled.
+        # `ollama list` was empty on this box while OLLAMA_MODEL=llama3.1:8b, so every
+        # run spent a request 404ing and then recorded the model "dead" for 24h. A
+        # provider with nothing installed should report unavailable, not fail a lookup.
+        installed = ollama_installed_models()
+        if not installed:
+            return False
+        wanted = _model_override(provider, tier)
+        # Ollama tags are "name:tag"; accept a bare name matching any installed tag.
+        return any(m == wanted or m.split(":")[0] == wanted.split(":")[0] for m in installed)
+    return True
 
 
 # --- LLM session breaker (O6) -----------------------------------------------

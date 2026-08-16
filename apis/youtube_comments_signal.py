@@ -88,17 +88,40 @@ def _clean(text: str) -> str:
     return " ".join((text or "").replace("\n", " ").split())
 
 
-def _is_useful_question(text: str) -> bool:
-    """A question worth surfacing as an angle, not chat noise."""
+def topic_tokens(topic: str) -> set[str]:
+    """Meaningful words from the topic, for relevance-checking a question."""
+    return {w for w in re.findall(r"[a-z0-9']{3,}", (topic or "").lower()) if w not in _STOP}
+
+
+def _is_useful_question(text: str, topic: str = "") -> bool:
+    """A question worth surfacing as an angle, not chat noise.
+
+    Relevance is the point: these become *content gaps to answer*, so a question that
+    shares nothing with the topic is not a gap in our coverage. Run 66 surfaced only
+    "What about Alaska?" from 25 comments on a GTA VI video — exactly 18 chars (the old
+    floor) and unrelated to the topic.
+    """
     stripped = text.strip()
-    if len(stripped) < 18 or len(stripped) > 200:
+    if len(stripped) < 25 or len(stripped) > 200:
         return False
     if not _is_clean(stripped):
         return False
     lowered = stripped.lower()
-    # "first?", "who else watching?", "anyone 2026?" are noise, not content gaps.
-    noise = ("who else", "anyone else", "first", "who's here", "whos here", "sub to")
-    return not any(n in lowered for n in noise)
+    # "who else watching?", "sub to my channel" are noise, not content gaps.
+    noise = ("who else", "anyone else", "who's here", "whos here", "sub to")
+    if any(n in lowered for n in noise):
+        return False
+    # "first" only signals bait when the comment IS the claim ("first?", "im first").
+    # As a substring it also matches legitimate questions — "why is it on Netflix
+    # first?" was being thrown away with the bait.
+    if re.fullmatch(r"(i'?m\s+|im\s+)?first[\s!?.]*", lowered):
+        return False
+
+    wanted = topic_tokens(topic)
+    if not wanted:
+        return True  # no topic to compare against — keep the old behaviour
+    words = set(re.findall(r"[a-z0-9']{3,}", lowered))
+    return bool(words & wanted)
 
 
 def _themes(comments: list[dict[str, Any]], topic: str, limit: int = 8) -> list[str]:
@@ -187,7 +210,7 @@ def gather_comment_intel(topic: str) -> dict[str, Any]:
     for c in sorted(comments, key=lambda c: -(c["likes"] + c["replies"] * 2)):
         for raw in _QUESTION_RE.findall(c["text"]):
             q = _clean(raw)
-            if not _is_useful_question(q):
+            if not _is_useful_question(q, topic):
                 continue
             key = q.lower()[:60]
             if key in seen:

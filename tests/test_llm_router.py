@@ -62,10 +62,13 @@ class TestTierResolution(unittest.TestCase):
         env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
         with patch.dict("os.environ", env, clear=False):
             # OpenRouter wins cheap (free models); DeepSeek owns extract/premium.
-            self.assertEqual(
-                llm_router.resolve_tier("cheap"),
-                ("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
-            )
+            # Asserts the routing and that the model stays zero-cost — NOT a specific
+            # slug. Pinning one is what hid the retirement of
+            # meta-llama/llama-3.3-70b-instruct:free: OpenRouter rotates `:free` ids,
+            # and a test naming one goes green while production 404s daily.
+            provider, model = llm_router.resolve_tier("cheap")
+            self.assertEqual(provider, "openrouter")
+            self.assertTrue(model.endswith(":free"), f"cheap tier must stay free, got {model}")
             self.assertEqual(llm_router.resolve_tier("extract"), ("deepseek", "deepseek-chat"))
             self.assertEqual(llm_router.resolve_tier("premium"), ("deepseek", "deepseek-chat"))
 
@@ -93,13 +96,26 @@ class TestTierResolution(unittest.TestCase):
             self.assertEqual(llm_router.resolve_tier("cheap"), ("openai", "gpt-4o-mini"))
 
     def test_ollama_available_only_with_model(self):
-        # Local: no key needed, but unavailable until a model id is set.
+        # Local: no key needed, but unavailable until a model id is set AND that model
+        # is actually pulled. The daemon reported ready with an empty model list, so a
+        # configured-but-absent model cost a 404 probe every day.
         with patch.dict("os.environ", _clear_router_env({}), clear=False):
             self.assertFalse(llm_router._provider_available("ollama", "cheap"))
         env = _clear_router_env({"OLLAMA_MODEL": "llama3.1"})
-        with patch.dict("os.environ", env, clear=False):
+        with (
+            patch.dict("os.environ", env, clear=False),
+            patch.object(llm_router, "ollama_installed_models", return_value=["llama3.1"]),
+        ):
             self.assertTrue(llm_router._provider_available("ollama", "cheap"))
             self.assertEqual(llm_router.resolve_tier("cheap"), ("ollama", "llama3.1"))
+
+    def test_ollama_unavailable_when_the_model_is_not_pulled(self):
+        env = _clear_router_env({"OLLAMA_MODEL": "llama3.1"})
+        with (
+            patch.dict("os.environ", env, clear=False),
+            patch.object(llm_router, "ollama_installed_models", return_value=[]),
+        ):
+            self.assertFalse(llm_router._provider_available("ollama", "cheap"))
 
     def test_doubao_wins_cheap_only_when_model_set(self):
         # Key without a model id -> Doubao not yet usable, falls through.

@@ -13,7 +13,7 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1347 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
+Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** (need a GPU box + `[providers]` install) or **not started** (clip-from-source, storyboard). 1377 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -29,7 +29,7 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). 1347 tests green.*
+input + average-based learned post slots). 1377 tests green.*
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -59,6 +59,30 @@ input + average-based learned post slots). 1347 tests green.*
 **Recommenders & calibration**
 - [ ] Backtest recommender accuracy vs. realized engagement (volume-gated — **10** measured
   run-linked videos vs the predictor's own threshold of 15)
+- [x] **Live-run 66 fixes** *(2026-08-15)* — the run confirmed the cost fix landed
+  (`tts $0.3131`, **91%** of a $0.3454 run) and exposed five defects, none of which
+  announced itself as a failure:
+  1. **Duration estimates were 38% wrong** — `WORDS_PER_SECOND` 2.4 vs a measured
+     **3.32 median across all 14 real renders**; run 66 was shown "~101s spoken" and
+     rendered **70.2s**. Rate corrected and preset seconds are now **derived** from the
+     word range, so the menu can't advertise a duration the preset can't hit
+     ("Extended 420–900s" really produced ~300–600s). Word ranges untouched, so the
+     learned-length loop keeps its meaning. `ops`-style checker:
+     `py -m scripts.bench_script_duration`
+  2. **A false hallucination alarm cost a grade** — `"If Netflix"` was extracted as a
+     proper noun (sentence-initial `If`) and failed grounding, dropping the report card
+     **A→B** while the claim verifier said 12/12 backed. Phrases no longer start on a
+     function word; real inventions still flag
+  3. **`youtube` reported ERROR on a timeout** — no timeout was set anywhere; now bounded
+     (`YOUTUBE_API_TIMEOUT`) and `classify_exception` maps timeouts to
+     `STATUS_UNAVAILABLE` (transient, retried) rather than a hard error
+  4. **`youtube_comments` surfaced "What about Alaska?"** — questions must now share a
+     token with the topic; also fixed `"first"` matching as a substring, which was
+     discarding legitimate questions
+  5. **Both cheap-tier LLM slugs were dead ends** — the retired OpenRouter model was
+     **hardcoded** (so `.env` never fixed it), repointed to a live slug chosen by live
+     test; Ollama had **zero models pulled**, so the router now checks `/api/tags` and
+     reports unavailable instead of 404ing a model daily. Stale dead-model records cleared
 - [x] **Post-render cost reaches the ledger** *(2026-08-14)* — both operator render paths
   finalize a run *before* rendering it, so `features_json.cost` kept `tts: 0.0` on every
   rendered run and the trace stayed `drafted`. `main.py` recomputed the right number but

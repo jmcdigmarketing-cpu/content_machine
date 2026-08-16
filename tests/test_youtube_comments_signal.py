@@ -91,10 +91,17 @@ class TestSignal(unittest.TestCase):
             return yc.get_youtube_comments_signal("Marvel Rivals season 9")
 
     def test_happy_path(self):
-        sig = self._run([_thread("Why did they nerf the healing on that hero?", likes=50)])
+        # Must share a word with the topic ("Marvel Rivals season 9") — questions are
+        # surfaced as content gaps *in our coverage*, so an unrelated one is not a gap.
+        sig = self._run([_thread("Why did they nerf healing in Marvel Rivals season 9?", likes=50)])
         self.assertEqual(sig["status"], STATUS_OK)
         self.assertTrue(sig["active"])
         self.assertTrue(sig["data"]["questions"])
+
+    def test_off_topic_question_is_not_surfaced(self):
+        # Run 66 surfaced only "What about Alaska?" from 25 comments on a GTA video.
+        sig = self._run([_thread("What about Alaska?", likes=99)])
+        self.assertEqual(sig["data"]["questions"], [])
 
     def test_no_comments_is_inactive_not_an_error(self):
         # Comments disabled on every top video is normal, not a failure.

@@ -227,3 +227,48 @@ class TestDeadSlugs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHyphenatedNamesReachTheGate(unittest.TestCase):
+    """Audit finding: a fabricated hyphenated name was invisible to grounding.
+
+    `_PHRASE` needs two space-separated capitalised words and `_MONONYM` only fires in
+    sports context, so a standalone hyphenated compound matched neither.
+    `find_ungrounded_entities("Nova-Strike launches soon.", facts)` returned `[]` — the
+    anti-hallucination gate simply could not see it.
+    """
+
+    FACTS = "Take-Two Interactive reported earnings. Rockstar Games announced August 27."
+
+    def test_invented_hyphenated_name_is_flagged(self):
+        from core.fact_grounding import find_ungrounded_entities
+
+        self.assertIn(
+            "Nova-Strike", find_ungrounded_entities("Nova-Strike launches soon.", self.FACTS)
+        )
+
+    def test_real_hyphenated_name_still_grounds(self):
+        from core.fact_grounding import find_ungrounded_entities
+
+        self.assertEqual(find_ungrounded_entities("Take-Two's CEO spoke.", self.FACTS), [])
+
+    def test_hyphenated_names_extract_whole(self):
+        from core.fact_grounding import extract_entities
+
+        self.assertEqual(extract_entities("Take-Two's CEO called it strategy."), ["Take-Two"])
+        self.assertIn("Spider-Man", extract_entities("Spider-Man returns next season."))
+
+    def test_nested_hyphen_is_not_double_reported(self):
+        # "Jean-Luc Picard" must not also yield "Jean-Luc".
+        from core.fact_grounding import extract_entities
+
+        self.assertEqual(extract_entities("Jean-Luc Picard signed."), ["Jean-Luc Picard"])
+
+    def test_earlier_fixes_still_hold(self):
+        from core.fact_grounding import extract_entities, find_ungrounded_entities
+
+        self.assertEqual(
+            find_ungrounded_entities("If Netflix's numbers spike.", self.FACTS + " Netflix."), []
+        )
+        self.assertIn("Black Widow", extract_entities("Emma Frost and Black Widow are in."))
+        self.assertIn("Season 8.5", extract_entities("The Season 8.5 update dropped."))

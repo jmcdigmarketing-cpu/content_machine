@@ -77,9 +77,11 @@ Last verified: 2026-06-10
 | `wikipedia` | Wikimedia pageviews REST | Free trends fallback | No key — always on |
 | `odds` | The Odds API | Sports betting angle | `ODDS_API_KEY` |
 | `youtube_competitors` | Apify YouTube scraper | Competitor performance — top videos by view velocity (views/day) | `APIFY_CONTENT_MACHINE_KEY` |
-| `twitter` | Apify tweet scraper | Breaking news + viral moments — UFC/gaming, authority-account weighted | `APIFY_CONTENT_MACHINE_KEY` |
-| `reddit` | Apify reddit scraper | Community sentiment — hot posts from domain subreddits | `APIFY_CONTENT_MACHINE_KEY` |
+| `twitter` | Apify tweet scraper (**retired**) | — | Retired 2026-08-14: `inactive` on 19/19 run traces, never produced a fact, while being the slowest signal (~32s) and billing an actor run each time. The actor returns `{"noResults": true}` sentinels — X search needs auth now |
+| `reddit` | Apify reddit scraper (**retired**) | — | Retired 2026-08-14: actor failed on every live run while still billing; the free OAuth backend needs `REDDIT_CLIENT_ID`/`SECRET`, unset |
 | `tiktok_trends` | Apify TikTok scraper | Viral content discovery — trending angles + hashtags | `APIFY_BENABLE_BOT` (primary), `APIFY_CONTENT_MACHINE_KEY` (fallback) |
+| `youtube_comments` | **YouTube Data API** (not Apify) | Unanswered audience questions on a topic's top videos — the content gaps competitors left, plus audience vocabulary | `YOUTUBE_API_KEY` (~103 units/topic; the catalog's Apify actor is deliberately unused) |
+| `mma_stats` | API-SPORTS MMA host | Fighter records + physicals (replaced the Tapology scrape) | `API_SPORTS_KEY` — free tier 10 req/min, 100/day; `/fights` gated to 2022–2024, so **no upcoming cards** |
 
 Apify data layer detail: [apify-data-sources.md](apify-data-sources.md) · catalog: `config/apify_sources.json`
 

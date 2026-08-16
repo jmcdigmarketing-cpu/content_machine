@@ -6,7 +6,7 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 - **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
   (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
-- **Suite:** 1377 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Suite:** 1382 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -494,7 +494,7 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
 ## Docs to read first
 
-- `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17 (vault OS)**
+- `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
 - `docs/roadmap.md` — Pillars 1–5 ✅, Pillar 6 baseline seams landed
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index

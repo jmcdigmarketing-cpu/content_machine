@@ -6,6 +6,45 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Silent-failure repair — six waves — 2026-08-14/15
+
+*Six roadmap passes that kept converging on one shape: **things were failing quietly and
+reporting "nothing found" instead of "I am broken"** (decisions §18). Nothing crashed;
+every run looked fine. Suite 1377 green.*
+
+- **Research intake repair + source health** — Tapology retired (Cloudflare 403 for 33
+  days while reporting "no event match"); **11 of ~37 RSS feeds** were dead and replaced
+  with live-verified ones (**37/37 ok**); the Federal Reserve feed was alive but lost to a
+  **UTF-8 BOM** parse error (`rss_feeds.decode_feed_bytes`). New `core/feed_health.py` +
+  `ops feeds` classify ok/**stale**/dead with newest-item age, wired into `all-checks` and
+  `ops reliability`. `apis/mma_stats_api.py` (API-SPORTS MMA) replaces Tapology's
+  structured fighter data.
+- **`twitter` retired** — `inactive` on **19/19 run traces**, never produced a fact, and
+  as the slowest signal (~32s) it set the wall-clock floor for every discovery.
+  `apify_client.is_no_results()` now reports a sentinel payload as a failure.
+- **`youtube_comments` signal + O12 complete** — wired against the **official Data API**
+  (~1 unit/video) rather than the catalog's billed actor; surfaces unanswered audience
+  questions, labelled *unverified* so a viewer's guess can't become a claim. YouTube units
+  moved under the governor scope, and `core/reliability_history.py` adds the daily trend
+  the dashboard's snapshot could never show.
+- **Post-render cost persisted** — both render paths finalized a run *before* rendering,
+  so `features_json.cost.tts` was `0.0` on every rendered run and contribution margin was
+  overstated by its largest component. `ops economics` went from *$0.32 total ($0.02/video)*
+  to **$6.18 ($0.31/video, TTS 91%)**; `ops backfill-cost` repaired 38 historical runs.
+  TTS repriced from the operator's real plan ($0.22/1k, not a $0.30 guess) — decisions §22.
+- **Whisper CPU caption backend** — `faster_whisper` in `core/caption_align.py`, measured
+  against ElevenLabs sidecars at **43–56 ms** median caption line-start error, 12–15×
+  realtime. Landed deliberately **half-done**: captions still carry ASR text, which mangles
+  proper nouns, so the $0 TTS switch stays blocked.
+- **Run-66 fixes** — duration estimates were **38% wrong** (`WORDS_PER_SECOND` 2.4 vs a
+  measured 3.32); a false hallucination alarm (`"If Netflix"`) cost a run a grade while the
+  claim verifier said 12/12 backed; a timeout reported as a hard ERROR; an off-topic
+  audience question; and both cheap-tier LLM slugs were dead ends — one **hardcoded**, so
+  `.env` never fixed it (decisions §20, §21).
+- **Earlier in the same session** — Alembic `0004` `content_run` foreign keys (836 sentinel
+  rows preserved as `NULL`), vault fact-contamination cleanup, test-suite vault isolation,
+  and O12 part 1.
+
 ### Pillar 5 — Agent layer — 2026-07-07
 
 *Fifth/final pillar (decisions §15): agents that compose Pillars 1–4 into
@@ -59,7 +98,7 @@ Rivals esports while operator key facts were NBA. Suite 860 green.*
 
 ### Pillar 4 — Obsidian knowledge OS — 2026-07-07
 
-*Fourth pillar (decisions §17): the vault stops being a one-way sidecar. Runs
+*Fourth pillar (decisions §17b): the vault stops being a one-way sidecar. Runs
 flow back into it as browsable dossiers, reads are cached, and strategy notes
 finally have a read path. Suite 846 green.*
 

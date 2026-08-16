@@ -84,6 +84,33 @@ Free mode sets `TTS_PROVIDER=piper` for you once `PIPER_VOICE` exists.
 > No local voice yet? Free mode still runs discovery + scripting, but **blocks at render**
 > with the install reminder. Standard mode is unaffected (uses ElevenLabs).
 
+#### Captions are the catch — local TTS emits no word timings
+
+ElevenLabs returns per-character alignment and `core/tts.py` writes an
+`<audio>.words.json` sidecar, which is what makes captions land on the spoken word.
+**Local TTS produces no sidecar**, so `video/subtitles.py` falls back to *proportional*
+timing and captions drift out of sync. Turn the local aligner on alongside Piper:
+
+```powershell
+# in .env — pair these two, or $0 voice costs you caption accuracy
+TTS_PROVIDER=piper
+PIPER_VOICE=C:\voices\en_US-lessac-medium.onnx
+CAPTION_ALIGN_BACKEND=faster_whisper    # CPU; model downloads on first use (~75MB)
+```
+
+Timing accuracy is good — **43–56 ms** median caption line-start error, 12–15× realtime
+on CPU (measured, `py -m scripts.bench_caption_align`).
+
+> **Not recommended yet.** The aligner transcribes the audio blind, so caption *text* is
+> ASR output rather than your script: "Salkilld" comes back as "Salkal", "Mateusz Gamrot"
+> as "Mattius Gamarat". On a channel about fighters and games, that is the wrong thing to
+> burn into a video. Until the timings are re-labelled from the known script, the honest
+> trade is: **ElevenLabs for anything you publish** (~$0.25/video, ~91% of run cost),
+> local TTS for drafts and experiments where captions don't ship.
+
+Piper also speaks ~20% slower than ElevenLabs for the same script (66.3s vs 55.2s
+measured on run 65), which shifts video length and feeds the learned-length loop.
+
 #### Where to get more free voices
 
 - **Piper** — the full catalog is the **`rhasspy/piper-voices`** repo on HuggingFace

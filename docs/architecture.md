@@ -93,6 +93,9 @@ The repo serves two products:
 | `core/quota_state.py` | Cross-run, TTL'd, fail-open credit/quota store (`data/quota_state.json`) |
 | `core/quota_governor.py` | **O11 governor** — single façade over the store for Apify/LLM/signal persistence; `snapshot()` for the dashboard |
 | `core/reliability.py` | `ops reliability` dashboard — breakers, budgets, cache hit-rate, YouTube units, data-quality warnings |
+| `core/reliability_history.py` | **O12** daily reliability time series (`data/reliability_history.json`) — the *trend* the dashboard's snapshot can't show; recorded on view |
+| `core/feed_health.py` | RSS source health (`ops feeds`): ok/**stale**/dead + newest-item age; feeds `data_quality.warnings()` |
+| `core/caption_align.py` | Local word-timing for audio with no ElevenLabs sidecar (`faster_whisper` on CPU, or `whisperx`); fail-open to proportional captions |
 | `core/run_trace.py` | **Pillar 1** per-run trace (`data/traces/<id>.json`): timings, signals, LLM ledger, experiment arm |
 | `core/run_quality.py` | **Pillar 1** quality persistence — hook/authenticity/grounding scores → `content_runs.quality_json` |
 | `core/run_ledger.py` | `ops traces` + `ops dossier` viewers over the run ledger |
@@ -323,7 +326,9 @@ See **`docs/intelligence_phase.md`**. Summary:
 | NFL entities / NBA teams | `apis/nfl_entities.py`, `apis/nba_teams.py` | Team matching for `sports_data` and `live_scores` |
 | ESPN scoreboard | `sports/espn.py` | Used by `apis/live_scores_api.py` |
 | Repurpose scaffold | `publishing/repurpose.py` | TikTok/Instagram deferred; YouTube path is live |
-| Alembic | `alembic/`, `storage/alembic_runner.py` | `0001` baseline, `0002` thumbnail_scores; run `upgrade head` after pull |
+| Alembic | `alembic/`, `storage/alembic_runner.py` | `0001` baseline → `0004` `content_run` foreign keys; `migrate_schema` finishes through `upgrade head`, so the hand-patch and Alembic paths can't diverge again |
+| Cost backfill | `analytics/backfill_cost.py` | `ops backfill-cost` — repairs `features_json.cost` on runs that rendered before the cost fix; flags `cost_estimated` / `cost_partial` |
+| Duration / caption benchmarks | `scripts/bench_script_duration.py`, `scripts/bench_caption_align.py` | Re-derive `WORDS_PER_SECOND` and whisper timing accuracy from **real rendered audio** — dev scripts, deliberately outside the suite |
 
 ### Known design gaps
 

@@ -32,7 +32,7 @@ gate are supplied · `excluded` = deliberately not integrated this pass.
 | **goose3** | [core/link_facts.py](../core/link_facts.py) `_goose3_body_lines` | (always on; falls back) | `python -m unittest tests.test_link_facts_goose3` | **implemented** |
 | Kokoro-82M / XTTS-v2 / **Piper** | [core/tts.py](../core/tts.py) `_try_alt_tts_provider` | `TTS_PROVIDER=piper\|kokoro\|xtts` (+ `PIPER_VOICE=…onnx`) | `python -m unittest tests.test_tts_local`; live: set gate, render → real mp3 + `tts $0.0000` | **implemented** |
 | **Voice variety** (per-channel + jitter) | [core/tts.py](../core/tts.py) `resolve_local_voice` | `channels.json` `tts.local_voice(s)` / `PIPER_VOICES` (csv) + `TTS_VOICE_VARIETY` (off) | `python -m unittest tests.test_tts_voice_variety`; live: two channels → distinct `[TTS]` voice | **implemented** |
-| WhisperX | [core/caption_align.py](../core/caption_align.py) | `CAPTION_ALIGN_BACKEND=whisperx` | `transcribe_and_align(audio)` returns word segments | **wired** (U1: subtitle path; backend parked — GPU/torch) |
+| **faster-whisper** / WhisperX | [core/caption_align.py](../core/caption_align.py) | `CAPTION_ALIGN_BACKEND=faster_whisper\|whisperx` (+ `CAPTION_ALIGN_MODEL`, default `tiny`) | `python -m unittest tests.test_caption_align`; accuracy: `py -m scripts.bench_caption_align` | **implemented on CPU** (U1) — see note below |
 | anything-to-notebooklm | [core/vault_ingest.py](../core/vault_ingest.py) | `INGEST_ENABLED` (auto only) | `python -c "from core.vault_ingest import ingest; print(ingest('https://www.bbc.com/news'))"` | **implemented** (URL/PDF/YouTube → vault note, `ops ingest`) |
 | Expert Panel (ai-marketing-skills) | [core/grade.py](../core/grade.py) | `EXPERT_PANEL_ENABLED` | add persona to `prompts/expert_panel/`, `expert_panel_review(draft)` | seam |
 | ComfyUI | [core/comfy_client.py](../core/comfy_client.py) | `COMFYUI_URL` | run ComfyUI, `generate(prompt, workflow=...)` | seam |
@@ -55,6 +55,37 @@ gate are supplied · `excluded` = deliberately not integrated this pass.
 The four cloned tool checkouts (`ComfyUI/`, `ai-marketing-skills/`,
 `qiaomu-anything-to-notebooklm/`, `system_prompts_leaks/`) are gitignored — local
 reference/runtime, never embedded into this repo.
+
+### U1 caption alignment — CPU works; "needs a GPU box" was wrong (2026-08-15)
+
+`faster_whisper` runs the alignment slot on **CPU**, measured against ElevenLabs'
+own `.words.json` sidecars over three real 55–58s shorts
+(`py -m scripts.bench_caption_align`):
+
+| model | caption line-start error (p50) | p90 | speed |
+|---|---|---|---|
+| **tiny** (default) | **43–56 ms** | 111–176 ms | 12–15× realtime |
+| base | 73–85 ms | 142–159 ms | 4–15× realtime |
+
+`tiny` wins on typical error *and* speed *and* download size — the audio is clean
+synthetic speech, the easiest case for ASR, so bigger models mostly re-segment
+differently. Raise `CAPTION_ALIGN_MODEL` for noisy source audio (Phase R).
+
+> **Open limitation:** this transcribes *blind*, so captions carry ASR text rather than
+> the script — run 65 produced "Salkal" for "Salkilld" and "Mattius Gamarat" for
+> "Mateusz Gamrot". Fighter and game names are the channel's subject, so treat this as
+> **timing-grade, not caption-ready** until the timings are re-labelled from the known
+> script. That fix is what unblocks the $0 TTS switch ([free_mode.md](free_mode.md)).
+
+### The other "parked — needs a GPU" slots are blocked by an install, not hardware
+
+This box has an **RTX 4070 Ti (12 GB, driver 591.86)**, but `torch` is installed as
+**`2.8.0+cpu`**, so `torch.cuda.is_available()` is `False`. Every slot below marked
+*parked — GPU* (WhisperX's wav2vec2 pass, MusicGen, ComfyUI/Wan/LTX, YOLO reframe,
+avatar, Real-ESRGAN/RIFE, XTTS/Kokoro voice cloning) is waiting on a CUDA torch build,
+not on new hardware. Verify with `nvidia-smi` and
+`python -c "import torch; print(torch.__version__, torch.cuda.is_available())"` before
+believing any "parked" status here.
 
 ## Adding a provider
 

@@ -11,6 +11,56 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-14/15 — Six roadmap waves: the silent-failure session
+
+**Prompt:** a sequence of *"next roadmap task"* passes, punctuated by two pasted live-run
+logs (runs 64/65, then run 66). Each pass began as a normal roadmap item and turned into
+the same discovery, which became the session's organising idea:
+
+> **Things were failing quietly, and the system reported "nothing found" instead of
+> "I am broken."** Nothing was crashing. Every run looked fine.
+
+**What that pattern actually cost, once measured:**
+
+| Source | Reported as | Truth |
+|---|---|---|
+| Tapology scrape | "no event match" | Cloudflare 403 for **33 days**, 10/10 empty cache |
+| `twitter` signal | `inactive` | **19/19 runs, zero facts**, slowest phase (~32s), billing Apify each time |
+| 11 of ~37 RSS feeds | quiet news day | 404 / 403 / 501 / dead host |
+| Federal Reserve feed | 0 items | alive with 20 items — killed by a **UTF-8 BOM** parse error |
+| API-SPORTS rate limit | `results: 0` | HTTP 200 **with** `errors.rateLimit` |
+| `features_json.cost.tts` | `0.0` | TTS is **91% of run cost** — margin overstated ~19× |
+| `"If Netflix"` | possible hallucination | sentence-initial "If"; cost the run a grade (A→B) |
+| OpenRouter cheap slug | test green | retired model, **404 every day** for weeks |
+
+**Decisions made (recorded in [decisions.md](decisions.md) §18–§22):** a dead source must
+report failure, not "no match"; retire a paid signal that produces nothing rather than
+repair it; derive values that can drift instead of storing them beside their source;
+never pin a rotating vendor id in a test; price from the operator's real plan.
+
+**Waves shipped:** research-intake repair + `ops feeds` monitoring · `twitter` retired ·
+`youtube_comments` via the official API + O12 complete · post-render cost persisted
+(+ 38 historical runs repaired) · whisper CPU caption backend · run-66 fixes.
+
+**Deliberately stopped mid-item:** the whisper work landed its backend and measurements
+but **not** the caption-text fix — whisper transcribes blind, so captions carry ASR text
+("Salkilld" → "Salkal"), and fighter names are the channel's whole subject. Stopping with
+the blocker written down beat shipping something that looks finished.
+
+**Rejected / not built:** restoring Reddit (operator declined); retuning preset *word*
+counts to hit their advertised durations (would change output length and break
+length-label continuity in the analytics); paying down the 420 broad `except Exception`
+handlers (sized in the audit, not fixed).
+
+**Open, highest-value next:** the caption-text fix, which unblocks the **$0 TTS switch** —
+the single biggest cost lever left at **$0.25/video**.
+
+**Surprise worth acting on:** the box has an **RTX 4070 Ti (12 GB)**, but `torch` is
+installed as `2.8.0+cpu`, so `torch.cuda.is_available()` is False. Every roadmap item
+marked *"parked — needs a GPU box"* (WhisperX, MusicGen, ComfyUI/Wan-LTX, YOLO reframe,
+avatar, Real-ESRGAN/RIFE, XTTS/Kokoro voice cloning) is blocked by a **CPU-only install,
+not by hardware**. See [audit.md](audit.md).
+
 ## 2026-07-24 — Pillar 7: Self-improving skills (Agent Skills + SkillOpt)
 
 **Prompt:** *"continue pillar 7 and from there advance as scheduled."* Built autonomously

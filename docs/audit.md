@@ -169,7 +169,9 @@ than the docs have described for months.
 - Neither branch is merged and **no PR exists** (12 commits).
 - `origin/claude/trade-validation-default-on` is **superseded and should be deleted** — it
   carries a pre-#33 CI time-bomb test that would revert the fix if merged.
-- PRs #29–#32 have been open since late July.
+- PRs #29–#32 have been open since late July. *(Corrected 2026-08-17: it is **seven**
+  PRs, **#26–#32**, and **#27** is the superseded trade-validation branch above — close
+  it rather than merge it.)*
 - 17 test-fixture notes remain in the operator's vault (harmless; they no longer
   regenerate now the suite is isolated).
 

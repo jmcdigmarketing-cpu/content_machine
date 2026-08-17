@@ -45,8 +45,11 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 **Neither branch is merged and no PR exists.** Also:
 `origin/claude/trade-validation-default-on` is **superseded and should be deleted** — it
-carries a pre-#33 CI time-bomb test that would revert the fix. PRs #29–#32 have been
-open since late July and need triage.
+carries a pre-#33 CI time-bomb test that would revert the fix (confirmed 2026-08-17:
+the hardcoded `"2026-07-25 18:00"` is still at `tests/test_ui_length_and_recovery.py:144`),
+and its PR **#27** should be closed rather than merged. **Seven** PRs are open — **#26–#32**,
+not the "#29–#32" earlier notes recorded — all since late July. See the triage block at
+the top of this file.
 
 ---
 
@@ -521,14 +524,39 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 > `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
 > **The 93 silent-`pass` handlers are done too** (2026-08-16, below).
 >
-> **Start here next session — a wave was paused mid-flight.** "Raise test coverage on
-> render + publish paths" is **`[~]` in [roadmap.md](roadmap.md)**, which carries the full
-> remaining design (what's covered, what isn't, and why the old roadmap line's framing was
-> wrong). Step 1 done: `prepend_channel_intro` + the render-loss defect it exposed. Next
-> up, in blast-radius order: **`jobs/worker.process_one`'s quota gate** (an inversion
-> burns ~1,600 units per attempt), `_defer_for_quota` (a quota defer must not eat a
-> retry), `build_render_ffmpeg_command`'s music-bed/duration/subtitle paths, then
-> `youtube/oauth` token handling. `coverage` still needs adding to the `[dev]` extra.
+> ## ▶ Start here next session — 1. Branch + PR triage (decision, not code)
+>
+> Verified 2026-08-17, not inherited from an older note — earlier synopses said "PRs
+> #29–#32"; it is actually **seven** open PRs, **#26–#32**.
+>
+> **The unmerged stack.** `main` → `feat/trade-validation-default-on` (**6** commits) →
+> `feat/research-intake-repair` (**13** more) = **19 commits ahead of main**. Both are
+> pushed; neither is merged and **neither has a PR**. They are genuinely stacked
+> (trade-validation is an ancestor), so landing them means choosing: two PRs in order, or
+> one PR for all 19. That choice is the first thing to make.
+>
+> **PR #27 must be closed, not merged.** It comes from
+> `origin/claude/trade-validation-default-on`, which is **superseded** — its work was
+> redone properly in the local `feat/trade-validation-default-on` — and it **predates
+> #33**. It still carries the hardcoded `"2026-07-25 18:00"` at
+> `tests/test_ui_length_and_recovery.py:144` that #33 replaced with a wall-clock-derived
+> date. That date is now weeks past, so merging #27 turns CI **permanently red**. Close
+> the PR and delete the remote branch.
+>
+> **The other five** (#26, #28, #29, #30, #31, #32) are docs-only reports from `claude/*`
+> branches, open since late July. Most are superseded by the 2026-08 audit and the docs
+> catch-up already on this branch — read, harvest anything still true, then close.
+>
+> ## 2. Then: the paused coverage wave
+>
+> "Raise test coverage on render + publish paths" is **`[~]` in [roadmap.md](roadmap.md)**,
+> which carries the full remaining design (what's covered, what isn't, and why the old
+> roadmap line's framing was wrong). Step 1 done: `prepend_channel_intro` + the
+> render-loss defect it exposed. Next, in blast-radius order:
+> **`jobs/worker.process_one`'s quota gate** (an inversion burns ~1,600 units per
+> attempt), `_defer_for_quota` (a quota defer must not eat a retry),
+> `build_render_ffmpeg_command`'s music-bed/duration/subtitle paths, then `youtube/oauth`
+> token handling. `coverage` still needs adding to the `[dev]` extra.
 
 ***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
@@ -556,10 +584,10 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
    17 test-fixture `<date>_topic.md` notes remain in the vault (harmless; they no longer
    regenerate now that the suite is isolated).
 6. One-time ops: re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
-7. **Open PRs to triage** — the two 2026-08-14 branches are unmerged, and PRs #29–#32
-   have been open since late July. `origin/claude/trade-validation-default-on` is
-   **superseded and should be deleted** — it carries a pre-#33 CI time-bomb test that
-   would revert the fix.
+7. **Open PRs to triage — now the first pickup item; see the block at the top of this
+   file.** The stack is 19 commits over `main` with no PR, and **#26–#32** (seven, not
+   the four earlier notes claimed) are open since late July. **#27 must be closed, not
+   merged** — superseded, and it would turn CI permanently red.
 8. Two retired LLM slugs still need repointing (`OPENROUTER_MODEL_CHEAP`,
    `OLLAMA_MODEL_CHEAP`) — each currently costs one failed probe per 24h.
 

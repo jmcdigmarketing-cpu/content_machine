@@ -200,7 +200,9 @@ def prepend_channel_intro(
         work_body = temp_body
         os.replace(body_path, temp_body)
 
-    intro_dur = _probe_duration(intro_path) or 3.0
+    intro_dur = _probe_duration(intro_path)
+    if intro_dur is None:  # not `or 3.0` — a real 0.0 is a probe answer, not a miss
+        intro_dur = 3.0
     cmd = build_intro_concat_command(
         intro_path=intro_path,
         body_path=work_body,
@@ -210,11 +212,25 @@ def prepend_channel_intro(
     )
 
     logger.info("Prepending channel intro (%s)", os.path.basename(intro_path))
-    process = subprocess.run(cmd, capture_output=True, text=True)
-    if process.returncode != 0:
-        if temp_body and os.path.isfile(temp_body):
+    concat_ok = False
+    try:
+        process = subprocess.run(cmd, capture_output=True, text=True)
+        if process.returncode != 0:
+            raise RuntimeError(f"Intro concat failed: {(process.stderr or '')[-800:]}")
+        # Exit 0 is not proof of an output: a truncated or empty file here would be
+        # "successful" right up until we delete the temp holding the real render.
+        if not os.path.isfile(final_path) or os.path.getsize(final_path) == 0:
+            raise RuntimeError(f"Intro concat exited 0 but wrote no usable file: {final_path}")
+        concat_ok = True
+    finally:
+        # From the os.replace above to here, the rendered video exists ONLY under the
+        # temp name. Every exit from that window has to put it back — a non-zero exit,
+        # ffmpeg missing from PATH (subprocess raises before there is an exit code),
+        # an empty output, or a Ctrl-C. Otherwise render_vertical_video's
+        # "Channel intro skipped (render kept)" is a lie and the pipeline stores an
+        # mp4_path with no file behind it.
+        if not concat_ok and temp_body and os.path.isfile(temp_body):
             os.replace(temp_body, body_path)
-        raise RuntimeError(f"Intro concat failed: {(process.stderr or '')[-800:]}")
 
     if temp_body and os.path.isfile(temp_body):
         try:

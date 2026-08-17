@@ -101,15 +101,19 @@ CAPTION_ALIGN_BACKEND=faster_whisper    # CPU; model downloads on first use (~75
 Timing accuracy is good — **43–56 ms** median caption line-start error, 12–15× realtime
 on CPU (measured, `py -m scripts.bench_caption_align`).
 
-> **Not recommended yet.** The aligner transcribes the audio blind, so caption *text* is
-> ASR output rather than your script: "Salkilld" comes back as "Salkal", "Mateusz Gamrot"
-> as "Mattius Gamarat". On a channel about fighters and games, that is the wrong thing to
-> burn into a video. Until the timings are re-labelled from the known script, the honest
-> trade is: **ElevenLabs for anything you publish** (~$0.25/video, ~91% of run cost),
-> local TTS for drafts and experiments where captions don't ship.
+**Caption text comes from your script, not from the ASR** (2026-08-16). The aligner
+transcribes blind and gets proper nouns wrong — "Salkilld" came back as "Salkal" — so
+[video/caption_retext.py](../video/caption_retext.py) keeps whisper's timings and takes
+the words from the script. It is on by default; `CAPTION_RETEXT=off` restores raw ASR
+text. If the transcript doesn't match the script it declines and captions fall back to
+the proportional estimate, so a mismatch degrades timing rather than spelling.
 
-Piper also speaks ~20% slower than ElevenLabs for the same script (66.3s vs 55.2s
-measured on run 65), which shifts video length and feeds the learned-length loop.
+Two things to know before you switch a published channel over:
+
+- **Judge the voice yourself.** Sample: `output/samples/piper_lessac_run65.mp3`.
+- **Piper speaks ~20% slower** than ElevenLabs for the same script (66.3s vs 55.2s on
+  run 65). That shifts video length and feeds the learned-length loop, so re-run
+  `py -m scripts.bench_script_duration` after switching or `WORDS_PER_SECOND` goes stale.
 
 #### Where to get more free voices
 

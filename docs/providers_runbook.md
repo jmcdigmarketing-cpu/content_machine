@@ -71,11 +71,23 @@ own `.words.json` sidecars over three real 55–58s shorts
 synthetic speech, the easiest case for ASR, so bigger models mostly re-segment
 differently. Raise `CAPTION_ALIGN_MODEL` for noisy source audio (Phase R).
 
-> **Open limitation:** this transcribes *blind*, so captions carry ASR text rather than
-> the script — run 65 produced "Salkal" for "Salkilld" and "Mattius Gamarat" for
-> "Mateusz Gamrot". Fighter and game names are the channel's subject, so treat this as
-> **timing-grade, not caption-ready** until the timings are re-labelled from the known
-> script. That fix is what unblocks the $0 TTS switch ([free_mode.md](free_mode.md)).
+**Caption text now comes from the script (2026-08-16).** Whisper transcribes blind, so
+its words were wrong exactly where it mattered ("Salkal" for "Salkilld").
+[video/caption_retext.py](../video/caption_retext.py) keeps whisper's timings and takes
+the text from the script by `difflib` alignment, which is what made this slot
+caption-ready and unblocked the $0 TTS switch ([free_mode.md](free_mode.md)).
+
+Measured on run 66 (243 words, `py -m scripts.bench_caption_align`), retexting is
+effectively free:
+
+| | words covered | word p50 | line p50 | line p90 |
+|---|---|---|---|---|
+| raw ASR | 243 of 251 heard, **12 misheard** | 42 ms | 47 ms | 117 ms |
+| **+retext** | **243/243, 0 misheard** | 43 ms | 50 ms | 117 ms |
+
+Below `CAPTION_RETEXT_MIN_MATCH` (0.35) it **declines** and the caller falls back to the
+proportional estimate — a transcript that doesn't match the script has timings for
+different audio. Real audio scores **0.87**, unrelated audio ~0.0.
 
 ### The other "parked — needs a GPU" slots are blocked by an install, not hardware
 

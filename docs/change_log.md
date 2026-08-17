@@ -6,6 +6,33 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Captions spelled by the script, timed by whisper — 2026-08-16
+
+*The last thing standing between the project and a $0 voiceover. Suite 1411 green.*
+
+- **`video/caption_retext.py`** — whisper supplies the timing, the script supplies the
+  words, aligned with `difflib.SequenceMatcher` (decisions §23). Local-TTS captions had
+  been burning ASR text, which misspells precisely the fighter and game names the channel
+  is about: run 65 rendered "Salkal" for "Salkilld" and "Mattius Gamarat" for "Mateusz
+  Gamrot". One branch in `video/subtitles.py` wires it; the ElevenLabs sidecar path is
+  untouched.
+- **The matcher handles re-tokenisation, not just spelling** — whisper splits words
+  (`Quillan` → `Quill and`), writes numerals as words (`10` → `ten`), and drops or invents
+  tokens, any one of which desyncs a positional comparison permanently.
+- **Free in timing, measured** — run 66 (243 words): word error p50 42→43ms, caption
+  line p90 **117ms → 117ms**, while covering **243/243** script words instead of the
+  243-of-251 whisper transcribed cleanly, and correcting **12 misheard words**.
+  `scripts/bench_caption_align.py` gained `+retext` columns and now shares one matcher
+  with the shipped code instead of its own lookahead walk.
+- **Declines rather than guesses** — below `CAPTION_RETEXT_MIN_MATCH` (0.35, chosen from
+  measurement: real audio 0.87, unrelated ~0.0) it returns None and captions fall back to
+  the proportional estimate, since a transcript that doesn't match the script carries
+  timings for different audio.
+- **$0 path proven end to end** — a full Piper render with retexted burned captions was
+  produced and checked as pixels. **Nothing was switched:** ElevenLabs stays the default
+  pending the operator's voice judgement and a `bench_script_duration` re-run (Piper reads
+  ~20% slower).
+
 ### Silent-failure repair — six waves — 2026-08-14/15
 
 *Six roadmap passes that kept converging on one shape: **things were failing quietly and

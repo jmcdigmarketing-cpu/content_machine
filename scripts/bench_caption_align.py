@@ -13,6 +13,13 @@ What matters is **line-start error**, not per-word error: captions are grouped i
 ~5-word lines (`CAPTION_WORDS_PER_LINE`) and a line's start time is when it appears on
 screen. A per-word wobble inside a line is invisible; a late line start is not.
 
+Each model also gets a `+retext` row: the same transcript run through
+`video/caption_retext.py`, which keeps whisper's timings but takes the text from the
+script. Because the sidecar supplies both the true text and the true timings, the
+retexted output is 1:1 token-aligned with ground truth — so that row measures *every*
+script word, not just the ones whisper happened to transcribe cleanly, and the trailing
+count says how many misheard words it corrected.
+
 A dev script, deliberately outside the test suite — it downloads models and reads real
 audio (tests/CLAUDE.md: no network in tests).
 """
@@ -47,42 +54,20 @@ def load_truth(audio_path: str) -> list[dict[str, Any]]:
     return [w for w in words if isinstance(w, dict) and w.get("word")]
 
 
-def _norm(word: str) -> str:
-    return "".join(ch for ch in str(word).lower() if ch.isalnum())
-
-
 def align_sequences(truth: list[dict], got: list[dict]) -> list[tuple[dict, dict]]:
-    """Pair up words by order using a simple LCS-style walk on normalised text.
+    """Pair up words by text, so a dropped/merged token is an offset, not a huge error.
 
-    Whisper drops/merges the odd token, so a positional zip would report huge errors
-    that are really just an offset. Matching on text keeps the comparison honest.
+    Delegates to `video.caption_retext.matched_pairs` — the same matcher the shipped
+    retexter uses — so the measurement and the thing being measured agree on what "the
+    same word" means. (This replaced a bespoke lookahead walk; number-words now fold
+    onto their digits too, so "ten" matches "10".)
     """
-    pairs: list[tuple[dict, dict]] = []
-    i = j = 0
-    while i < len(truth) and j < len(got):
-        a, b = _norm(truth[i].get("word", "")), _norm(got[j].get("word", ""))
-        if a == b:
-            pairs.append((truth[i], got[j]))
-            i += 1
-            j += 1
-            continue
-        # Look a short way ahead on each side for a re-sync point.
-        resync = None
-        for lookahead in range(1, 5):
-            if j + lookahead < len(got) and a == _norm(got[j + lookahead].get("word", "")):
-                resync = ("got", lookahead)
-                break
-            if i + lookahead < len(truth) and b == _norm(truth[i + lookahead].get("word", "")):
-                resync = ("truth", lookahead)
-                break
-        if resync is None:
-            i += 1
-            j += 1
-        elif resync[0] == "got":
-            j += resync[1]
-        else:
-            i += resync[1]
-    return pairs
+    from video.caption_retext import matched_pairs
+
+    pairs = matched_pairs(
+        [str(t.get("word", "")) for t in truth], [str(g.get("word", "")) for g in got]
+    )
+    return [(truth[i], got[j]) for i, j in pairs]
 
 
 def _percentile(values: list[float], pct: float) -> float:
@@ -121,6 +106,40 @@ def line_start_errors(pairs: list[tuple[dict, dict]], max_words: int) -> list[fl
     return errors
 
 
+def bench_retext(truth: list[dict], got: list[dict], max_words: int) -> dict[str, Any]:
+    """Measure the shipped retexter: script text on whisper's timings.
+
+    The sidecar is *both* true text and true timing, so feeding its text back in as the
+    "script" makes the retexted output **1:1 token-aligned with ground truth** — every
+    word compared against its own counterpart, with none of the pairing ambiguity the
+    raw comparison above has to live with. That is the honest way to ask "what does
+    painting the script over whisper's timings actually cost?"
+    """
+    from video.caption_retext import retext_words_from_script
+
+    script = " ".join(str(t.get("word", "")) for t in truth)
+    retexted = retext_words_from_script(got, script)
+    if retexted is None:
+        return {"ok": False, "detail": "declined (transcript did not match the script)"}
+    if len(retexted) != len(truth):
+        return {"ok": False, "detail": f"token drift: {len(retexted)} vs {len(truth)}"}
+
+    word_errors = [
+        abs(float(t["start"]) - float(r["start"]))
+        for t, r in zip(truth, retexted, strict=False)
+        if t.get("start") is not None and r.get("start") is not None
+    ]
+    line_errors = line_start_errors(list(zip(truth, retexted, strict=False)), max_words)
+    return {
+        "ok": True,
+        "covered": len(word_errors),
+        "word_p50": _percentile(word_errors, 50),
+        "word_p90": _percentile(word_errors, 90),
+        "line_p50": _percentile(line_errors, 50),
+        "line_p90": _percentile(line_errors, 90),
+    }
+
+
 def bench_model(audio_path: str, truth: list[dict], model: str, max_words: int) -> dict[str, Any]:
     from core import caption_align
 
@@ -151,6 +170,7 @@ def bench_model(audio_path: str, truth: list[dict], model: str, max_words: int) 
         "word_p90": _percentile(word_errors, 90),
         "line_p50": _percentile(line_errors, 50),
         "line_p90": _percentile(line_errors, 90),
+        "retext": bench_retext(truth, got, max_words),
     }
 
 
@@ -203,6 +223,18 @@ def main(argv: list[str] | None = None) -> int:
             f"{row['word_p50'] * 1000:8.0f}ms {row['word_p90'] * 1000:8.0f}ms "
             f"{row['line_p50'] * 1000:8.0f}ms {row['line_p90'] * 1000:8.0f}ms"
         )
+        retext = row.get("retext") or {}
+        if retext.get("ok"):
+            corrected = row["truth_words"] - row["matched"]
+            print(
+                f"  {'+retext':8} {'':9} {'':7} "
+                f"{retext['covered']:4}/{row['truth_words']:<3} "
+                f"{retext['word_p50'] * 1000:8.0f}ms {retext['word_p90'] * 1000:8.0f}ms "
+                f"{retext['line_p50'] * 1000:8.0f}ms {retext['line_p90'] * 1000:8.0f}ms"
+                f"   {corrected} misheard word(s) corrected"
+            )
+        elif retext:
+            print(f"  {'+retext':8} {retext.get('detail')}")
 
     good = [r for r in rows if r.get("ok") and r["line_p90"] <= 0.150]
     print()

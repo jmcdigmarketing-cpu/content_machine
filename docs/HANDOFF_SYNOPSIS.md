@@ -226,10 +226,7 @@ not the script**: run 65 came back with "Salkal" for "Salkilld" and "Mattius Gam
 for "Mateusz Gamrot". Fighter and game names are the channel's entire subject, so burned
 captions would show mangled names despite ~45ms timing accuracy.
 
-**Next step (small, well-defined):** keep whisper's timings, take the *text* from the
-known script by sequence alignment — `generate_subtitle_file` already receives `script`,
-and `scripts/bench_caption_align.align_sequences` is most of the matcher. That unblocks
-the **$0 TTS switch**, worth **$0.25/video (~88% of run cost)**.
+**This was fixed on 2026-08-16 — see the section below.**
 
 Also noted: Piper renders the same script **66.3s vs ElevenLabs 55.2s** (~20% slower),
 which shifts video length and feeds the learned-length loop. A voice sample exists at
@@ -237,6 +234,44 @@ which shifts video length and feeds the learned-length loop. A voice sample exis
 the default and nothing was switched.** Voice: `models/piper/` (gitignored).
 
 ---
+
+## Shipped 2026-08-16 (caption text from the script — the $0 path is open)
+
+`video/caption_retext.py`: whisper's **timings**, the script's **words**, aligned with
+`difflib.SequenceMatcher`. Decisions §23.
+
+The run-65 SRT, before and after, same audio:
+
+| before | after |
+|---|---|
+| `broken, Quill and Salkal just` | `Quillan Salkilld just submitted Mateusz` |
+| `submitted Mattius Gamarat and round` | `Gamrot in round one, and` |
+| `with a top ten lightweight` | `a top-10 lightweight ranking.` |
+
+**Things worth not relearning:**
+
+- **The hard part is re-tokenisation, not misspelling.** Whisper splits (`Quillan` →
+  `Quill and`), writes numerals as words (`10` → `ten`, `top-10` → `top ten`), drops
+  words and invents them. A positional zip desyncs permanently at the first one. Hence
+  number-words folding onto digits in the normaliser, `replace` spans shared by character
+  length, `delete` runs interpolated + clamped monotonic, `insert` tokens dropped.
+- **It costs nothing in timing.** Run 66 (243 words): word p50 42→43ms, line p90
+  **117→117ms**, covering **243/243** script words vs the 243-of-251 whisper heard, and
+  correcting **12 misheard words**. `py -m scripts.bench_caption_align` grew `+retext`
+  columns and now shares its matcher with the shipped code.
+- **The decline threshold is measured, not guessed.** `CAPTION_RETEXT_MIN_MATCH=0.35`:
+  real audio scores **0.87**, unrelated audio ~0.0, and a worst-case 9-word
+  proper-noun-dense line scores 0.44. A first guess of 0.6 sat too close to live values
+  and declined on short scripts — caught by a test, not in production.
+- **A rendered mp4 looks 2.17s out of sync with its SRT, and isn't.**
+  `prepend_channel_intro` adds TapIn's **2.15s intro** *after* the ffmpeg render, shifting
+  audio and burned captions together. Subtract it before concluding anything about drift.
+- **`ffmpeg -ss` before `-i` gave unreliable frame times** when checking burned captions;
+  output-seek (`-i` then `-ss`) agreed with reality.
+
+**Not switched:** ElevenLabs remains the TTS default. The $0 flip is the operator's call
+(voice sample: `output/samples/piper_lessac_run65.mp3`), and Piper's ~20% slower delivery
+means `py -m scripts.bench_script_duration` must be re-run after it.
 
 ## Shipped 2026-08-15 (live-run 66 fixes)
 
@@ -450,10 +485,13 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-> **Start here next session:** finish the caption-text fix described above (whisper
-> timings + script text via sequence alignment). It is small, well-scoped, and it
-> unblocks the **$0 TTS switch — $0.25/video, ~88% of run cost**, the largest remaining
-> cost lever in the project. Everything needed is installed and measured.
+> **Done 2026-08-16** — the caption-text fix shipped (`video/caption_retext.py`, see the
+> section below). The **$0 TTS switch is now unblocked** and waiting on two *operator*
+> calls, not engineering: judge the Piper voice
+> (`output/samples/piper_lessac_run65.mp3`), and re-run
+> `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
+> **Start here next session:** pick the next roadmap item — the audit's 93 silent-`pass`
+> handlers and the thin render/publish test coverage are the standing candidates.
 
 ***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*

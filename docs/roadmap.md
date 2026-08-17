@@ -121,7 +121,8 @@ input + average-based learned post slots). 1382 tests green.*
 - [ ] Free-backend probes — TikTok/Twitter equivalents (only if the Apify bill justifies it)
 
 **Video creation quality (Pillar 6 remainder + Phases Q/R)**
-- [~] **Whisper local — CPU backend landed, caption text still blocked** *(2026-08-14)*.
+- [x] **Whisper local — CPU backend** *(2026-08-14; caption-text blocker closed
+  2026-08-16 by the retext item below)*.
   The roadmap called these backends "parked, needs a GPU box"; in fact `whisperx`,
   `faster_whisper`, `torch` (CPU), `piper` and `ctranslate2` were **already installed**
   and the caption wiring (`subtitles.py` → `words_from_caption_align` →
@@ -134,17 +135,100 @@ input + average-based learned post slots). 1382 tests green.*
     line-start error (p90 111–176ms) at **12–15× realtime on CPU** — and beats `base`
     (73–85ms median) while being half the download. Default set to `tiny` from that
     evidence. Piper synthesis of a real 1,156-char script took **5.1s**.
-  - **Blocker found — why this is `[~]` and not `[x]`:** the path transcribes audio
-    *blind*, so it returns ASR text, not the script. On run 65 it produced "Salkal" for
-    "Salkilld" and "Mattius Gamarat" for "Mateusz Gamrot". Fighter/game names are the
-    channel's whole subject, so burned captions would show mangled names despite
-    accurate timing. **Next step:** keep whisper's timings, take the text from the known
-    script via sequence alignment (`generate_subtitle_file` already has the script) —
-    then the $0 TTS path is genuinely usable.
+  - **Blocker found, and since closed:** the path transcribes audio *blind*, so it
+    returns ASR text, not the script. On run 65 it produced "Salkal" for "Salkilld" and
+    "Mattius Gamarat" for "Mateusz Gamrot". Fighter/game names are the channel's whole
+    subject, so burned captions showed mangled names despite accurate timing. Fixed by
+    the caption-retext item directly below.
   - Also worth knowing: Piper renders the same script **66.3s vs ElevenLabs' 55.2s**
     (~20% slower delivery), which shifts video length and the learned-length loop.
-- [ ] **$0 TTS switch** — gated on the caption-text fix above. Local Piper meters $0 vs
-  **$0.25/video (~88% of run cost)**; voice sample still to be judged by the operator
+- [x] **Caption text from the script, timing from whisper** *(2026-08-16 —
+  `video/caption_retext.py`; decisions §23)*. Whisper's timings, the script's words,
+  aligned with `difflib.SequenceMatcher`. `generate_subtitle_file(script, …)` already
+  received the script, so nothing new had to be plumbed.
+  - **Proven on the real fixture**, not asserted. The run-65 SRT went from
+    `broken, Quill and Salkal just` / `submitted Mattius Gamarat and round` /
+    `with a top ten lightweight` to `Quillan Salkilld just submitted Mateusz` /
+    `Gamrot in round one, and` / `a top-10 lightweight ranking.` — names right,
+    punctuation from the script, and the dropped `the`/`in` restored.
+  - **It costs nothing in timing** (run 66, 243 words): word error p50 42→43ms,
+    line p90 **117ms → 117ms**, while covering **243/243** script words instead of the
+    243-of-251 whisper heard, and correcting **12 misheard words**. Retext columns added
+    to `py -m scripts.bench_caption_align`, which now shares one matcher with the
+    shipped retexter instead of keeping its own lookahead walk.
+  - **Declines rather than guesses** below `CAPTION_RETEXT_MIN_MATCH` (**0.35**, set
+    from measurement: real audio scores **0.87**, unrelated audio ~0.0) — a transcript
+    that doesn't match the script has timings for different audio, so the caller falls
+    back to the proportional estimate. `CAPTION_RETEXT=off` restores raw ASR.
+  - **End-to-end $0 render verified** — Piper VO + retexted burned captions through
+    `render_vertical_video`, checked as burned pixels. *Worth not relearning:* the
+    rendered mp4 looks 2.17s "out of sync" against the SRT until you notice
+    `prepend_channel_intro` adds TapIn's **2.15s intro** after the render, shifting audio
+    and captions together — sync is exact once you subtract it.
+  - 1411 tests green (+29): `tests/test_caption_retext.py` + wiring cases in
+    `tests/test_subtitles.py`.
+
+  *Design notes kept because they were the hard part:* the matcher must survive
+  re-tokenisation, not just misspelling — whisper splits (`Quillan` → `Quill and`),
+  writes numerals as words (`10` → `ten`, `top-10` → `top ten`), drops words and invents
+  them. A positional zip desyncs permanently at the first one, so number-words fold onto
+  their digits in the normaliser, `replace` spans are shared out by character length,
+  `delete` runs are interpolated from their neighbours and clamped monotonic, and
+  `insert` tokens are dropped so their time is absorbed.
+  - **The real difficulty is re-tokenisation, not misspelling.** From the run-65 pair:
+    numerals (script `10` / whisper `ten`; script `top-10` / whisper `top ten`), splits
+    (script `Quillan` / whisper `Quill and`), plus VAD drops and inserted tokens. A
+    positional zip desyncs permanently on the first one; `difflib.SequenceMatcher` over
+    *normalised* tokens gives the opcode stream needed to handle each case honestly.
+  - **`video/caption_retext.py`** (new, pure, no I/O):
+    `retext_words_from_script(words, script) -> list[dict] | None`, returning the same
+    `[{word, start, end}]` shape with **script tokens** on **whisper times**.
+    Tokens via `clean_script_for_tts` (`core/utils.py`) — the same transform
+    `generate_audio` applies, so we align against what was actually spoken — with
+    punctuation left attached, so `group_into_lines` breaks on the *script's* real
+    sentence ends. Normaliser = lowercase alphanumerics **plus a digit↔word table**
+    (0–20/hundred/thousand) so `10` matches `ten`; rankings, rounds and seasons are most
+    of what this channel says. Opcodes: `equal` → 1:1; `replace` (n script ↔ m ASR) →
+    spread the ASR span across the script tokens weighted by character length (the
+    `Quillan Salkilld` ↔ `Quill and Salkal` case); `delete` → untimed, filled by
+    interpolation between known neighbours, clamped non-decreasing; `insert` → dropped,
+    time absorbed by neighbours.
+  - **Decline rather than guess:** below `CAPTION_RETEXT_MIN_MATCH` (0.6) of script
+    tokens landing in `equal` blocks, return `None`. A transcript that doesn't match the
+    script means the *timings* describe different audio too, so painting the script over
+    them yields confidently-wrong captions — decisions §18's failure shape exactly. The
+    caller then falls back to the proportional estimate, which at least spells correctly.
+    `CAPTION_RETEXT=off` keeps raw ASR for benching; empty script ⇒ input unchanged.
+  - **Wiring:** one branch in `video/subtitles.py::generate_subtitle_file` (~line 110),
+    **whisper path only** — the ElevenLabs sidecar came from our own text and is already
+    right. Also export `matched_pairs()` so `scripts/bench_caption_align.py` shares one
+    matcher instead of keeping its own `align_sequences` walk.
+  - **Proof, not assertion:** the sidecar is *both* true text and true timing, so feeding
+    its text in as the "script" makes retexted output **1:1 token-aligned with ground
+    truth** — per-word error with no pairing ambiguity at all. Bench gains raw-vs-retexted
+    columns (line-start error must hold its ~43–56ms band); then the named regression on
+    real audio (the run-65 SRT must read `Quillan Salkilld` / `Mateusz Gamrot` /
+    `top-10`); then a real $0 render so captions are judged as burned pixels.
+  - **Tests** (`tests/test_caption_retext.py`, pure/offline per `tests/CLAUDE.md`): the
+    run-65 regression verbatim; `10`↔`ten` and `top-10`↔`top ten`; whisper drops a word
+    (still timed, still monotonic); whisper inserts one (dropped, no gap); exact match
+    preserves timings byte-for-byte; unrelated transcript ⇒ `None` ⇒ proportional SRT;
+    sidecar path never retexts.
+  - **Docs on landing:** `caption_align.py`'s "Known limitation — ASR text" block (that
+    *is* the thing being fixed), `providers_runbook.md` U1, `free_mode.md` (drop the
+    "not recommended yet" caveat only if the proof earns it), `.env.example` (the caption
+    block still reads `none | whisperx` — stale), decisions §23 (*timing from ASR, text
+    from the script; ASR text is never trusted for proper nouns*).
+- [ ] **$0 TTS switch** — **technically unblocked 2026-08-16** (captions fixed above; a
+  full Piper render was verified end to end), now waiting on two operator calls rather
+  than engineering. Local Piper meters $0 vs **$0.25–0.31/video (~91% of run cost)**.
+  1. **Judge the voice** — `output/samples/piper_lessac_run65.mp3` vs the ElevenLabs
+     render of the same script. Deliberately not decided for you.
+  2. **Re-run `py -m scripts.bench_script_duration` after any flip** — Piper reads the
+     same script ~20% slower (66.3s vs 55.2s), so `WORDS_PER_SECOND` and the
+     learned-length loop go stale otherwise.
+  Flip with `TTS_PROVIDER=piper` + `PIPER_VOICE` + `CAPTION_ALIGN_BACKEND=faster_whisper`
+  ([free_mode.md](free_mode.md)); ElevenLabs remains the default and nothing was switched
 - [ ] Clip-from-source (Phase R) + subject-tracked auto-reframe
 - [ ] Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists
 - [ ] Router vision path → multimodal rendered-video review (Pillar 2)

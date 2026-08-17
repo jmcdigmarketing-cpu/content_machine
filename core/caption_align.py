@@ -20,19 +20,19 @@ offered; faster_whisper is the one to reach for on a CPU box.
 Models download on first use (~75MB tiny, ~145MB base, ~480MB small) and are cached by
 the backend thereafter.
 
-**Known limitation — captions carry ASR text, not the script.** This transcribes the
-audio blind, so unusual proper nouns come back misspelled: a live check on run 65 turned
-"Salkilld" into "Salkal" and "Mateusz Gamrot" into "Mattius Gamarat". Fighter and game
-names are exactly what this channel is about, so burned captions from this path would
-show mangled names even though the *timing* is accurate to ~45ms. The fix is to keep
-whisper's timings but take the text from the known script (we always have it) via
-sequence alignment — not yet implemented. Until then treat this as timing-grade, not
-caption-ready, for anything with proper nouns.
+**This returns ASR text — treat it as timing, not as caption copy.** Transcribing blind
+misspells exactly the words this channel is about: run 65 came back with "Salkal" for
+"Salkilld" and "Mattius Gamarat" for "Mateusz Gamrot". The timings are good (~45ms); the
+words are not. `video/caption_retext.py` closes that gap by keeping these timings and
+taking the text from the known script, so captions are spelled by the script and timed
+by whisper. Anything consuming this module directly (a bench, Phase R clip-from-source)
+must do the same, or accept mangled proper nouns.
 
 Wired: `video/subtitles.py::generate_subtitle_file` calls this via
 `video/caption_timing.words_from_caption_align` when no ElevenLabs sidecar exists for
-the audio. Unselected, uninstalled or failing ⇒ `ProviderResult.fail_open`, so callers
-keep the proportional caption path. Never raises.
+the audio, then retexts the result against the script. Unselected, uninstalled or
+failing ⇒ `ProviderResult.fail_open`, so callers keep the proportional caption path.
+Never raises.
 """
 
 from __future__ import annotations

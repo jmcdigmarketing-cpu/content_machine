@@ -279,7 +279,68 @@ input + average-based learned post slots). 1382 tests green.*
   - Messages were written by hand, which was the point of reading all 98: "loads skipped"
     says nothing; "Unreadable quality_json on run %s" says what was lost.
 - [ ] Tighten the mypy baseline *(the other half of the old combined line)*
-- [ ] Raise test coverage on render + publish paths
+- [~] **Raise test coverage on render + publish paths** — *started 2026-08-17, paused
+  part-way; the remaining design is written out here so it survives the break.*
+  - **First, the framing is wrong in the old roadmap line.** Measured rather than
+    assumed, these paths are not broadly untested: **20 test files** already touch them
+    and publisher-level upload is genuinely well covered (`test_youtube_upload.py` has
+    idempotency, quota block, success, pending-healed). The real gap is narrow — the
+    functions **no test ever names** — and it happens to be the most dangerous code:
+
+    | Module | Never named in a test |
+    |---|---|
+    | `video/channel_intro.py` | ~~`prepend_channel_intro`~~ **done** |
+    | `jobs/worker.py` | **`process_one`** |
+    | `youtube/oauth.py` | 6 of 8 — `load_credentials`, `save_credentials`, `token_has_scope`, `oauth_scopes`, `token_path_for_channel`, `run_interactive_oauth` |
+    | `publishing/registry.py` | `enabled_publish_platforms`, `publishers_for_channel` |
+    | `youtube/upload.py` | `is_upload_configured` |
+    | `youtube/thumbnails.py` | `merge_thumbnail_into_upload_detail` |
+
+  - **[x] Done — `prepend_channel_intro` + a real defect** (commit "Never lose the render
+    when the intro step fails"). It moves the finished mp4 aside with `os.replace` before
+    ffmpeg runs, and the restore was reached **only on a non-zero exit code** — so ffmpeg
+    missing from PATH (subprocess raises before any exit code exists) left the render
+    parked at `<path>.body.tmp.mp4` while `render_vertical_video` logged *"Channel intro
+    skipped (render kept)"*. The pipeline then stored an `mp4_path` with no file behind
+    it and the upload failed much later with "invalid file". Reproduced first — the test
+    failed with *"rendered video vanished from its path"*. Now a `try/finally` covering
+    non-zero exit, raising subprocess, empty output and Ctrl-C, plus an output
+    exists-and-non-empty check before the temp is deleted. 15 tests.
+  - **[ ] Next, in blast-radius order:**
+    1. **`jobs/worker.process_one` — the quota gate** (`tests/test_job_worker_process.py`).
+       `job = repo.claim_next() if has_quota_for_upload() else repo.claim_next(job_type="render")`.
+       If that inverts, the worker burns **~1,600 units per attempt**. Cover: exhausted ⇒
+       only render jobs claimed and no upload handler called; available ⇒ unfiltered
+       claim; unknown `job_type` ⇒ FAILED and returns `True` (no infinite spin); handler
+       raising ⇒ FAILED and the worker survives; no job ⇒ `False`; stuck-job reclaim runs
+       before claiming.
+    2. **`_defer_for_quota`** — a quota deferral must **not** consume a retry
+       (`attempts` is decremented) and must set a future `scheduled_at`. If this
+       regresses, a few quota-blocked days silently exhaust `max_attempts` and the video
+       never posts. Reuse the job/result fakes in `tests/test_job_worker_upload.py`.
+    3. **`build_render_ffmpeg_command`** — `tests/test_render_video.py` has only **two**
+       assertions against a 372-line module. Add: music bed mixed *under* the VO
+       (`amix … normalize=0`, bed at `MUSIC_BED_VOLUME`), `music_path=None` byte-identical
+       to the VO-only command, `-t` bounds the output, subtitles burned from the escaped
+       path; plus `render_vertical_video`'s documented **music-bed failure retries
+       VO-only** behaviour.
+    4. **`youtube/oauth.py`** — `token_has_scope` (gates the dup-upload check),
+       `token_path_for_channel`, `oauth_scopes`, and `load_credentials`/`save_credentials`
+       round-tripped against a **temp** token file. Never `config/secrets/`.
+       Skip `run_interactive_oauth` (needs a browser).
+  - **Tooling, not yet done:** `coverage` isn't installed, which is *why* this item sat
+    open — the gap had to be approximated by grepping function names. Add it to the
+    `[dev]` extra and record the command; **not** a CI percentage gate (that would be
+    churn — a ratchet is only worth it when it catches a real defect class, as `S110` did).
+    ```
+    py -m coverage run -m unittest discover -s tests
+    py -m coverage report --include="video/*,publishing/*,youtube/*,jobs/*"
+    ```
+  - **Method that paid off and should be repeated:** write the test first and watch it
+    fail. The intro defect was found by asserting the *consequence* ("the file is still
+    there") rather than the implementation. Also: no test may touch the real DB, `data/`,
+    `config/secrets/` or the vault — last wave a test wrote a real run row (id 67) into
+    the operator's database.
 
 **Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)** *(shipped 2026-07-24 — detail in the Pillar 7 section below)*
 - [x] C1 — `scripts/ops.py` commands exposed as `skills/content-ops/SKILL.md` (Agent Skills)

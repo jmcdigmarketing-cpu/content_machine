@@ -6,6 +6,28 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### The intro step can no longer lose a render — 2026-08-17
+
+*First step of the render/publish coverage wave (paused part-way — remaining design is
+in [roadmap.md](roadmap.md) under the `[~]` entry). Suite 1432 green.*
+
+- **`prepend_channel_intro` could destroy a just-rendered video.** It moves the finished
+  mp4 aside (`os.replace` to a `.body.tmp.mp4`) before ffmpeg concatenates intro + body
+  back to the original path, and the restore ran **only on a non-zero exit code**. ffmpeg
+  missing from PATH raises before any exit code exists, so the render stayed parked under
+  the temp name while `render_vertical_video` logged *"Channel intro skipped (render
+  kept)"*. The pipeline then recorded an `mp4_path` with no file behind it, surfacing much
+  later as an "invalid file" upload failure.
+- Reproduced before fixing — the test failed with *"rendered video vanished from its
+  path"*. The window is now a `try/finally` covering a non-zero exit, a raising
+  subprocess, an empty output and Ctrl-C, and the output is checked for existence and
+  non-zero size before the temp copy is deleted (exit 0 is not proof of an output).
+- `tests/test_channel_intro.py` (15): the failure window, the success path, the concat
+  command (a **silent** intro must still get synthesized `anullsrc` audio, or concat drops
+  the track and the voiceover slides earlier by the intro's length), and resolution order.
+- Also corrected `_probe_duration(...) or 3.0` → an explicit `None` check; `0.0` is a
+  probe answer, not a miss.
+
 ### Fail-open made fail-visible — 2026-08-16
 
 *The audit's "real debt", paid down. Suite 1421 green.*

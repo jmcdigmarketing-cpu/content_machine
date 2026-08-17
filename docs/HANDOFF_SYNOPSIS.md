@@ -520,8 +520,15 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 > (`output/samples/piper_lessac_run65.mp3`), and re-run
 > `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
 > **The 93 silent-`pass` handlers are done too** (2026-08-16, below).
-> **Start here next session:** thin render/publish test coverage is now the main standing
-> hygiene item; the mypy baseline is the other half of that roadmap line.
+>
+> **Start here next session — a wave was paused mid-flight.** "Raise test coverage on
+> render + publish paths" is **`[~]` in [roadmap.md](roadmap.md)**, which carries the full
+> remaining design (what's covered, what isn't, and why the old roadmap line's framing was
+> wrong). Step 1 done: `prepend_channel_intro` + the render-loss defect it exposed. Next
+> up, in blast-radius order: **`jobs/worker.process_one`'s quota gate** (an inversion
+> burns ~1,600 units per attempt), `_defer_for_quota` (a quota defer must not eat a
+> retry), `build_render_ffmpeg_command`'s music-bed/duration/subtitle paths, then
+> `youtube/oauth` token handling. `coverage` still needs adding to the `[dev]` extra.
 
 ***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*

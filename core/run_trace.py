@@ -90,8 +90,8 @@ def write_run_trace(
             from core.experiments import assignment_for_run
 
             experiment = assignment_for_run(run_id)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("assignment_for_run skipped: %s", exc)
 
         trace = {
             "trace_version": TRACE_VERSION,

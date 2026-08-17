@@ -70,7 +70,10 @@ def _training_rows(channel_id: str) -> list[tuple[float, float, float]]:
                 continue
             try:
                 quality = json.loads(run.quality_json or "{}")
-            except Exception:
+            except Exception as exc:
+                logger.debug(
+                    "Unreadable quality_json on run %s — excluded from the fit: %s", run.id, exc
+                )
                 continue
             hook = quality.get("hook_score")
             auth = quality.get("authenticity_score")

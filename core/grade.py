@@ -39,7 +39,8 @@ def _load_personas() -> list[tuple[str, str]]:
     for path in sorted(_PERSONA_DIR.glob("*.md")):
         try:
             body = path.read_text(encoding="utf-8").strip()
-        except Exception:
+        except Exception as exc:
+            logger.debug("Persona %s unreadable: %s", path.stem, exc)
             continue
         if body:
             personas.append((path.stem, body))

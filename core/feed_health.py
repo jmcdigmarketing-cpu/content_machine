@@ -225,8 +225,8 @@ def cached_warnings() -> list[str]:
         days = (datetime.now(timezone.utc) - when).days
         if days >= 7:
             age_note = f" (feed check is {days}d old — run 'ops feeds')"
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Unparseable feed-health timestamp: %s", exc)
     if age_note:
         out = [line + age_note if i == 0 else line for i, line in enumerate(out)]
     return out

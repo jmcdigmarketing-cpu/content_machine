@@ -6,6 +6,29 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Fail-open made fail-visible — 2026-08-16
+
+*The audit's "real debt", paid down. Suite 1421 green.*
+
+- **All 98 silent handlers now log** (90 `try/except/pass` + 8 `try/except/continue`), and
+  **`S110`/`S112` are enabled in ruff** so a new bare swallow fails CI. `BLE` stays off —
+  it would flag all 420 broad handlers, and the correct ones outnumber the wrong ones.
+- **Level policy over blanket-debug** (decisions §24). `CONTENT_LOG_LEVEL` defaults to
+  `WARNING`, so the audit's own "add a `logger.debug` everywhere" would have produced 93
+  lines nobody reads. `warning` where a guarantee is lost — `quota_governor.llm_add_spend`
+  (a lost write makes the daily-budget guard under-count spend and stop guarding) and
+  `pipeline`'s `write_run_trace` (a miss blinds `ops traces`, `ops dossier` and
+  `data_quality` for that run); `debug` for best-effort enrichment.
+- **Silence is tested too** — `tests/test_fail_open_visibility.py` asserts the warnings
+  fire *and* that a healthy run emits none, because a warning that always fires teaches
+  the operator to ignore warnings.
+- **Migrations were switching off logging.** `alembic/env.py` called `fileConfig()` with
+  the default `disable_existing_loggers=True`, disabling the entire `content_machine.*`
+  tree; `migrate_schema` runs `upgrade_head()` in an ordinary process, so every log line
+  after a migration was dropped in silence. Fixed and pinned
+  (`tests/test_alembic_logging.py`) — found only because the new tests passed alone and
+  failed under `unittest discover`.
+
 ### Captions spelled by the script, timed by whisper — 2026-08-16
 
 *The last thing standing between the project and a $0 voiceover. Suite 1411 green.*

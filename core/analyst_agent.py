@@ -149,14 +149,14 @@ def run_analyst(channel_id: str | None = None) -> str:
         from core.vault_dossiers import write_report_note
 
         write_report_note(channel, "analyst", "Weekly analyst briefing", brief, fenced=False)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Analyst briefing not mirrored to the vault: %s", exc)
     try:
         from core.events import emit_event
 
         emit_event("analyst_briefing", {"channel_id": channel, "briefing": brief})
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("analyst_briefing event not emitted: %s", exc)
     return brief
 
 

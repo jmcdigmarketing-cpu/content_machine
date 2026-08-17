@@ -78,8 +78,8 @@ def summarize(data: dict[str, Any]) -> dict[str, Any]:
 
         counts = feed_summary((load_results() or {}).get("results") or [])
         feeds_ok, feeds_dead = counts.get(STATUS_OK, 0), counts.get(STATUS_DEAD, 0)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("STATUS_DEAD skipped: %s", exc)
 
     return {
         "date": date.today().isoformat(),

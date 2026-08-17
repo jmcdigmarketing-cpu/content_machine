@@ -294,8 +294,11 @@ def main(argv=None) -> int:
 
     try:
         display_recommended_time(get_recommended_time(channel_id, topic))
-    except Exception:
-        pass
+    except Exception as exc:
+        # Local import: see the note in scripts/ops.py — .env loads after this module.
+        from core.logging import get_logger
+
+        get_logger("scripts.auto_generate").debug("Post-time display skipped: %s", exc)
 
     pub_at = next_optimal_post_time(channel_id, topic)
     repurpose = enqueue_repurpose_jobs(

@@ -201,8 +201,13 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
 
         record(data)
         print(render_trend())
-    except Exception:
-        pass
+    except Exception as exc:
+        # Logger resolved here, not at import: this module is an entry point and
+        # `config.settings` (which loads .env) is imported later, so a module-level
+        # get_logger would cache the level before CONTENT_LOG_LEVEL is readable.
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("Reliability trend not recorded: %s", exc)
     return 0
 
 

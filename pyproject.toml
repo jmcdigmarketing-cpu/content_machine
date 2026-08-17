@@ -118,12 +118,21 @@ select = [
     "UP",   # pyupgrade
     "SIM",  # flake8-simplify
     "RUF",  # ruff-specific
+    "S110", # try-except-pass — a swallowed exception must leave a trace
+    "S112", # try-except-continue — same, inside a loop
 ]
-# NOTE: flake8-blind-except (BLE) is intentionally NOT enabled. It flags every
-# broad `except Exception`, including the many that correctly log-and-continue
-# for signal/API resilience (one failing provider must not crash discovery).
-# The real smell — *silent* swallows — is addressed case-by-case in code.
-# Re-enabling BLE is a reasonable future ratchet once those are annotated.
+# NOTE: flake8-blind-except (BLE) is still intentionally NOT enabled. It flags every
+# broad `except Exception`, including the many that correctly log-and-continue for
+# signal/API resilience (one failing provider must not crash discovery) — the correct
+# ones outnumber the wrong ones.
+#
+# The real smell is a *silent* swallow, and that is now enforced: S110/S112 (2026-08-16)
+# require every fail-open handler to say something. Level policy — decisions.md §24:
+#   logger.warning  a guarantee is lost (persisted quota state, the run trace)
+#   logger.debug    best-effort enrichment; diagnosable via CONTENT_LOG_LEVEL=DEBUG
+#   # noqa: S110    silence is deliberate — write the reason on the same line
+# Note `contextlib.suppress(Exception)` does NOT trip these rules; it is for a narrow,
+# expected exception type, not a way to keep swallowing everything quietly.
 ignore = [
     "E501",    # line length is enforced by the formatter, not as a hard error
     "B008",    # function calls in argument defaults — intentional in some CLIs

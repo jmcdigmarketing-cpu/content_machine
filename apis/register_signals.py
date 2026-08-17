@@ -111,8 +111,10 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
 
         detail = result.get("status_detail") or ""
         disable_signal(name, f"{status}: {detail}" if detail else str(status))
-    except Exception:
-        pass  # persistence is an optimization, never load-bearing
+    except Exception as exc:
+        # Persistence is an optimization, never load-bearing: the session breaker above
+        # already disabled the signal. Losing this only costs a repeat probe next run.
+        logger.debug("Cross-run persistence skipped for signal '%s': %s", name, exc)
 
 
 def _persisted_disabled() -> set[str]:
@@ -159,8 +161,8 @@ def reset_session_breaker() -> None:
         from core.quota_governor import clear_all_signals
 
         clear_all_signals()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("clear_all_signals skipped: %s", exc)
 
 
 def disabled_signals() -> set[str]:
@@ -481,7 +483,7 @@ def build_registry(
             from apis.signal_synthesizer import synthesize_signals
 
             results["_synthesis"] = synthesize_signals(results)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("synthesize_signals skipped: %s", exc)
 
     return results

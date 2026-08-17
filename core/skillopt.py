@@ -160,8 +160,8 @@ def run_skillopt(
                     "margin": round(result.margin, 2),
                 },
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("skillopt event not emitted: %s", exc)
     return result
 
 

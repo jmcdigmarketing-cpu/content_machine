@@ -382,8 +382,8 @@ def reset_llm_breaker(*, persisted: bool = True) -> None:
             from core.quota_governor import llm_clear_dead_models
 
             llm_clear_dead_models()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("llm_clear_dead_models skipped: %s", exc)
 
 
 def disabled_providers() -> dict[str, str]:
@@ -612,8 +612,8 @@ def _add_llm_spend(cost: float) -> None:
         from core.quota_governor import llm_add_spend
 
         llm_add_spend(cost)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("llm_add_spend skipped: %s", exc)
 
 
 def _over_llm_budget() -> bool:
@@ -636,8 +636,8 @@ def reset_llm_spend() -> None:
         from core.quota_governor import llm_reset_spend
 
         llm_reset_spend()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("llm_reset_spend skipped: %s", exc)
 
 
 # --- OpenAI-compatible client cache -----------------------------------------

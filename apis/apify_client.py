@@ -71,8 +71,8 @@ def _credit_exhaustion_ttl() -> int:
             secs = seconds_until_reset("apify")
             if secs:
                 return secs
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("reset_window_enabled skipped: %s", exc)
     return _persist_ttl()
 
 
@@ -170,8 +170,8 @@ def _persist_exhausted(purpose: str, reason: str, *, status_code: int | None = N
 
         ttl = _persist_ttl_for_status(status_code) if status_code is not None else _persist_ttl()
         apify_mark_exhausted(purpose, reason, ttl_seconds=ttl)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("apify_mark_exhausted skipped: %s", exc)
 
 
 def apify_disabled() -> bool:

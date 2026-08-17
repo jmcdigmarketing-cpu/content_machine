@@ -106,8 +106,10 @@ def clear_signal(name: str) -> None:
     """Drop one persisted signal record (operator fixed the underlying issue)."""
     try:
         quota_state.clear_exhausted(_SCOPE, name)
-    except Exception:
-        pass
+    except Exception as exc:
+        # Warning, not debug: the record survives, so a paid signal the operator just
+        # fixed stays disabled for up to a billing cycle (CLAUDE.md's expensive case).
+        logger.warning("Could not clear persisted disable for signal '%s': %s", name, exc)
 
 
 def clear_all_signals() -> None:
@@ -115,8 +117,9 @@ def clear_all_signals() -> None:
     try:
         for name in quota_state.list_exhausted(_SCOPE):
             quota_state.clear_exhausted(_SCOPE, name)
-    except Exception:
-        pass
+    except Exception as exc:
+        # The reset silently did nothing — the operator will assume it worked.
+        logger.warning("Could not clear persisted signal disables: %s", exc)
 
 
 def persisted_disabled_signals() -> dict[str, str]:
@@ -175,8 +178,9 @@ def apify_is_exhausted(purpose: str) -> tuple[bool, str]:
 def apify_clear(purpose: str) -> None:
     try:
         quota_state.clear_exhausted(_APIFY_SCOPE, purpose)
-    except Exception:
-        pass
+    except Exception as exc:
+        # Leaves Apify looking exhausted after credits are back — persists to reset day.
+        logger.warning("Could not clear persisted Apify exhaustion for '%s': %s", purpose, exc)
 
 
 def apify_get_usage(purpose: str) -> dict | None:
@@ -215,8 +219,10 @@ def llm_add_spend(cost: float, *, key: str | None = None, ttl_seconds: int = 48 
         return
     try:
         quota_state.increment_value(key or llm_today_spend_key(), cost, ttl_seconds=ttl_seconds)
-    except Exception:
-        pass
+    except Exception as exc:
+        # The daily-budget downgrade reads this ledger. If the write is lost the guard
+        # under-counts spend and quietly stops guarding, so this must be visible.
+        logger.warning("LLM spend of $%.4f not persisted (budget guard blind): %s", cost, exc)
 
 
 def llm_spend_today(key: str | None = None) -> float:
@@ -229,8 +235,8 @@ def llm_spend_today(key: str | None = None) -> float:
 def llm_reset_spend(key: str | None = None) -> None:
     try:
         quota_state.set_value(key or llm_today_spend_key(), 0.0, ttl_seconds=1)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Could not reset the LLM spend ledger: %s", exc)
 
 
 # --------------------------------------------------------------------------- #
@@ -312,8 +318,9 @@ def persisted_dead_models(fingerprints: dict[str, str] | None = None) -> dict[st
 def llm_clear_dead_model(slug: str) -> None:
     try:
         quota_state.clear_exhausted(_LLM_MODEL_SCOPE, slug)
-    except Exception:
-        pass
+    except Exception as exc:
+        # A revived model stays skipped until the TTL expires.
+        logger.warning("Could not clear persisted dead-model '%s': %s", slug, exc)
 
 
 def llm_clear_dead_models() -> None:
@@ -321,8 +328,8 @@ def llm_clear_dead_models() -> None:
     try:
         for slug in quota_state.list_exhausted(_LLM_MODEL_SCOPE):
             llm_clear_dead_model(slug)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Could not clear persisted dead-model records: %s", exc)
 
 
 # --------------------------------------------------------------------------- #

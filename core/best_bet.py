@@ -677,16 +677,16 @@ def _keyless_candidates(
             from apis.reddit_signal import _pick_subreddits
 
             _absorb(fetch_reddit_free(seed, _pick_subreddits(seed, channel_id)[:6]), "Reddit")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("fetch_reddit_free skipped: %s", exc)
 
     if "youtube" in sources:
         try:
             from apis.free_backends import fetch_youtube_free
 
             _absorb(fetch_youtube_free(seed), "YouTube")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("fetch_youtube_free skipped: %s", exc)
 
     return out
 
@@ -722,7 +722,8 @@ def _fresh_candidates(
             for feed in list(rss_feeds_for_channel(channel_id))[:8]:
                 try:
                     rows = _fetch_feed(feed["url"])
-                except Exception:
+                except Exception as exc:
+                    logger.debug("_fetch_feed skipped: %s", exc)
                     continue
                 for row in rows[:20]:
                     cand = _consider_candidate(
@@ -735,8 +736,8 @@ def _fresh_candidates(
                     )
                     if cand:
                         pool.append(cand)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("_fetch_feed skipped: %s", exc)
 
     # Opt-in keyless signal breadth (reddit-free / youtube-free), $0, fail-open.
     pool.extend(
@@ -788,8 +789,8 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         from core.topic_db import graveyard_topics
 
         recent |= {normalize_seed_topic(t).lower() for t in graveyard_topics(channel_id)}
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("graveyard_topics skipped: %s", exc)
 
     options: list[BestBetResult] = []
     seen: set[str] = set(recent)

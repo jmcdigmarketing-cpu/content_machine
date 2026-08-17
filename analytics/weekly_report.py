@@ -16,6 +16,9 @@ from collections import defaultdict
 from typing import Any
 
 from config.channels import resolve_channel_id
+from core.logging import get_logger
+
+logger = get_logger("analytics.weekly_report")
 
 # A feature value needs at least this many videos before we trust its average.
 _MIN_SAMPLES = 3
@@ -180,8 +183,8 @@ def format_report(report: dict[str, Any]) -> str:
 
         for line in summary_lines(channel_economics(report["channel_id"])):
             lines.append(f"  {line}")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("channel_economics skipped: %s", exc)
 
     # Pillar 2 calibration: is the pre-publish report card predictive yet?
     try:
@@ -190,8 +193,8 @@ def format_report(report: dict[str, Any]) -> str:
         calibration = summary_line(build_calibration(report["channel_id"]))
         if calibration:
             lines.append(f"  {calibration}")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("build_calibration skipped: %s", exc)
 
     actions = report.get("next_actions") or []
     if actions:
@@ -217,8 +220,8 @@ def main(argv: list[str] | None = None) -> int:
         path = write_weekly_report_note(channel_id, rendered)
         if path:
             print(f"\n  (saved to vault: {path})")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("write_weekly_report_note skipped: %s", exc)
     return 0
 
 

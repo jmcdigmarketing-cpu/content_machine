@@ -235,6 +235,35 @@ the default and nothing was switched.** Voice: `models/piper/` (gitignored).
 
 ---
 
+## Shipped 2026-08-16 (fail-open made fail-visible)
+
+All **98** silent handlers now log; **`S110`/`S112` enabled in ruff** so new ones fail CI.
+Decisions §24.
+
+**Things worth not relearning:**
+
+- **Don't blanket-`logger.debug` them.** `CONTENT_LOG_LEVEL` defaults to **WARNING**, so
+  the audit's own recommendation would have produced 93 lines nobody ever sees. The split
+  is: `warning` when a *guarantee* dies (`llm_add_spend` → budget guard stops guarding;
+  `write_run_trace` → `ops traces`/`dossier`/`data_quality` blind for that run), `debug`
+  for enrichment, `# noqa: S110` + reason where silence is right.
+- **Test the silence, not just the noise.** A warning that fires on healthy runs trains
+  the operator to ignore warnings, so `tests/test_fail_open_visibility.py` asserts both.
+- **`contextlib.suppress(Exception)` does not trip S110** — it's a loophole. `suppress` is
+  for a narrow, expected exception type.
+- **A migration used to switch off all logging.** `alembic/env.py`'s `fileConfig()`
+  defaulted to `disable_existing_loggers=True`, killing the whole `content_machine.*`
+  tree; `migrate_schema` calls `upgrade_head()` in a normal process. Fixed. Symptom to
+  recognise: tests that pass alone and fail under `unittest discover`.
+- **Entry-point scripts can't take a module-level logger.** `scripts/ops.py` and
+  `scripts/auto_generate.py` import before `config.settings` loads `.env`, so a
+  module-level `get_logger()` caches the level before `CONTENT_LOG_LEVEL` is readable —
+  they resolve the logger at the call site instead. `main.py` defines its logger *after*
+  `setup_logging()`.
+- **Auto-derived log messages are worthless** ("loads skipped", "join skipped"). The
+  messages were written by hand against each block; that reading is what surfaced the
+  alembic defect.
+
 ## Shipped 2026-08-16 (caption text from the script — the $0 path is open)
 
 `video/caption_retext.py`: whisper's **timings**, the script's **words**, aligned with
@@ -490,8 +519,9 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 > calls, not engineering: judge the Piper voice
 > (`output/samples/piper_lessac_run65.mp3`), and re-run
 > `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
-> **Start here next session:** pick the next roadmap item — the audit's 93 silent-`pass`
-> handlers and the thin render/publish test coverage are the standing candidates.
+> **The 93 silent-`pass` handlers are done too** (2026-08-16, below).
+> **Start here next session:** thin render/publish test coverage is now the main standing
+> hygiene item; the mypy baseline is the other half of that roadmap line.
 
 ***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*

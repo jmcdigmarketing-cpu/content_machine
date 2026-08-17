@@ -17,6 +17,10 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
+from core.logging import get_logger
+
+logger = get_logger("core.creator_coach")
+
 _DEFAULT_IDEAS = 5
 
 
@@ -47,16 +51,16 @@ def build_coach(channel_id: str, *, n_ideas: int = _DEFAULT_IDEAS) -> dict[str, 
 
         rec = get_recommended_time(channel_id)
         out["post_time"] = {"local": rec.local_str, "why": rec.rationale}
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("get_recommended_time skipped: %s", exc)
 
     try:
         from core.length_recommender import get_recommended_length
 
         rec = get_recommended_length(channel_id)
         out["length"] = {"label": rec.label, "why": rec.rationale}
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("get_recommended_length skipped: %s", exc)
 
     try:
         from core.title_experiments import pattern_leaderboard
@@ -77,8 +81,8 @@ def build_coach(channel_id: str, *, n_ideas: int = _DEFAULT_IDEAS) -> dict[str, 
             "window_days": cad.window_days,
             "ok": cad.ok,
         }
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("cadence_status skipped: %s", exc)
 
     try:
         from core.retention import drop_off_ratio
@@ -86,8 +90,8 @@ def build_coach(channel_id: str, *, n_ideas: int = _DEFAULT_IDEAS) -> dict[str, 
         pos = drop_off_ratio(channel_id)
         if pos is not None:
             out["retention_dropoff"] = pos
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("drop_off_ratio skipped: %s", exc)
 
     return out
 

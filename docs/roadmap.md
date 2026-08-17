@@ -257,7 +257,28 @@ input + average-based learned post slots). 1382 tests green.*
 
 **Engineering hygiene**
 - [x] git private remote — create + push *(done: `jmcdigmarketing-cpu/content_machine`, private)*
-- [ ] Tighten the mypy baseline; annotate/retire the remaining broad `except Exception` handlers
+- [x] **Silent exception handlers annotated + ruff ratchet** *(2026-08-16 — decisions §24)*.
+  The audit sized this at **93 bare `pass` swallows** of 420 broad handlers and called it
+  "the real debt". All **98** (90 `S110` + 8 `S112`) now log, and `S110`/`S112` are
+  enabled in `pyproject.toml` so new ones fail CI.
+  - **Level policy, not blanket-debug.** `core/logging.py` defaults to
+    `CONTENT_LOG_LEVEL=WARNING`, so the audit's own "add a `logger.debug` everywhere"
+    would have produced 93 invisible lines. `warning` where a *guarantee* is lost
+    (`llm_add_spend` — the daily-budget guard under-counts and stops guarding;
+    `write_run_trace` — `ops traces`/`dossier`/`data_quality` go blind for that run);
+    `debug` for best-effort enrichment; `# noqa: S110` + reason where silence is right.
+  - **Both directions tested** (`tests/test_fail_open_visibility.py`): the warnings fire
+    with useful content *and* a healthy run stays silent — a warning that always fires
+    teaches the operator to ignore warnings.
+  - **Found a bigger defect than any handler:** `alembic/env.py` called `fileConfig()`
+    with the default `disable_existing_loggers=True`, disabling the whole
+    `content_machine.*` tree. `migrate_schema` runs `upgrade_head()` in a normal process,
+    so **every log line after a migration was dropped in silence**. Fixed + pinned
+    (`tests/test_alembic_logging.py`). Surfaced only because the new tests passed alone
+    and failed under discovery.
+  - Messages were written by hand, which was the point of reading all 98: "loads skipped"
+    says nothing; "Unreadable quality_json on run %s" says what was lost.
+- [ ] Tighten the mypy baseline *(the other half of the old combined line)*
 - [ ] Raise test coverage on render + publish paths
 
 **Pillar 7 — Self-improving skills (Agent Skills + SkillOpt)** *(shipped 2026-07-24 — detail in the Pillar 7 section below)*

@@ -17,6 +17,10 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from core.logging import get_logger
+
+logger = get_logger("core.reliability")
+
 
 def _f(env: str) -> float | None:
     raw = os.getenv(env, "").strip()
@@ -45,16 +49,16 @@ def _apify_section() -> dict[str, Any]:
         out["persisted_exhausted"] = exhausted
         out["persisted_reason"] = reason
         out["usage_cache"] = apify_get_usage("main")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("apify_get_usage skipped: %s", exc)
     try:
         from core.reset_window import next_reset, reset_window_enabled
 
         if reset_window_enabled():
             nxt = next_reset("apify")
             out["next_reset"] = nxt.isoformat() if nxt else None
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Reset-window line skipped: %s", exc)
     return out
 
 
@@ -79,16 +83,16 @@ def _signals_section() -> dict[str, Any]:
         from core.quota_governor import persisted_disabled_signals
 
         out["persisted"] = dict(sorted(persisted_disabled_signals().items()))
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("persisted_disabled_signals skipped: %s", exc)
     try:
         from apis.register_signals import disabled_signals, signal_cooldowns
 
         cooldowns = signal_cooldowns()
         out["disabled"] = sorted(disabled_signals() - set(cooldowns) - set(out["persisted"]))
         out["cooldowns"] = dict(sorted(cooldowns.items()))
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("disabled_signals skipped: %s", exc)
     return out
 
 
@@ -114,8 +118,8 @@ def _youtube_section() -> dict[str, Any]:
         if reset_window_enabled():
             nxt = next_reset("youtube")
             out["next_reset"] = nxt.isoformat() if nxt else None
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Reset-window line skipped: %s", exc)
     return out
 
 

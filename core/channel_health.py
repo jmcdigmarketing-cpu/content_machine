@@ -95,7 +95,8 @@ def _authenticity_sub(channel_id: str) -> HealthSub:
     for run in get_content_run_repository().list_for_channel(channel)[:15]:
         try:
             q = json.loads(run.quality_json or "{}")
-        except Exception:
+        except Exception as exc:
+            logger.debug("Unreadable quality_json on run %s: %s", run.id, exc)
             continue
         val = q.get("authenticity_score")
         if isinstance(val, int | float):

@@ -29,7 +29,8 @@ def _samples() -> list[dict[str, Any]]:
         try:
             with open(sidecar, encoding="utf-8") as fh:
                 words = json.load(fh)
-        except Exception:
+        except Exception as exc:
+            print(f"  skipping unreadable sidecar {os.path.basename(sidecar)}: {exc}")
             continue
         words = [w for w in words if isinstance(w, dict) and w.get("word")]
         if len(words) < 30:  # too short to be representative

@@ -119,10 +119,10 @@ def run_discovery(
             # Older 3-arg progress callbacks (custom callers) — drop the detail.
             try:
                 progress(phase, done, total)
-            except Exception:
-                pass
-        except Exception:  # never let UI reporting break discovery
-            pass
+            except Exception as exc:
+                logger.debug("3-arg progress callback failed at phase '%s': %s", phase, exc)
+        except Exception as exc:  # never let UI reporting break discovery
+            logger.debug("progress callback failed at phase '%s': %s", phase, exc)
 
     channel_id = resolve_channel_id(channel_id)
     t0 = time.perf_counter()
@@ -203,8 +203,8 @@ def run_discovery(
         from apis.cache_manager import flush_cache_stats
 
         flush_cache_stats()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Cache-stat flush skipped after discovery: %s", exc)
 
     return DiscoveryResult(
         input_topic=topic,
@@ -225,8 +225,8 @@ def finalize_run_observability() -> None:
         from apis.cache_manager import flush_cache_stats
 
         flush_cache_stats()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Final cache-stat flush skipped: %s", exc)
 
 
 def _finalize_run(
@@ -292,15 +292,18 @@ def _finalize_run(
             features=result.features,
             quality=quality,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        # Warning, not debug: the trace is what `ops traces`, `ops dossier` and
+        # data_quality's per-signal failure rates read. A missing one blinds the
+        # observability layer for this run without anything else noticing.
+        logger.warning("Run trace not written for run %s: %s", run_id, exc)
 
     # Pillar 4: mirror the run into the Obsidian vault (no-op without a vault).
     if status in ("drafted", "rendered"):
         try:
             write_run_dossier(run_id)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Vault dossier skipped for run %s: %s", run_id, exc)
 
     if result.score > 0 and status in ("drafted", "rendered"):
         record_learning_outcome(
@@ -325,8 +328,8 @@ def _finalize_run(
                 "abort_reason": result.abort_reason or "",
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("run_completed webhook event not emitted for run %s: %s", run_id, exc)
 
 
 def run_pipeline(
@@ -445,8 +448,8 @@ def run_pipeline(
         from core.source_capture import capture_web_sources
 
         capture_web_sources(channel_id, best_topic, best_signals)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Web-source capture skipped for '%s': %s", best_topic, exc)
 
     from core.cost_meter import estimate_run_cost
 

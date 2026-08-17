@@ -18,6 +18,10 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.logging import get_logger
+
+logger = get_logger("core.unit_economics")
+
 
 @dataclass
 class VideoEconomics:
@@ -82,8 +86,8 @@ def _run_costs_and_titles(channel_id: str) -> tuple[dict[int, float], dict[int, 
             except (TypeError, ValueError):
                 costs[run.id] = 0.0
             titles[run.id] = (run.title or run.selected_topic or "").strip()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Run costs unavailable for unit economics: %s", exc)
     return costs, titles
 
 

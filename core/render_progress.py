@@ -8,6 +8,10 @@ import threading
 import time
 from collections.abc import Callable
 
+from core.logging import get_logger
+
+logger = get_logger("core.render_progress")
+
 OnTick = Callable[[str], None] | None
 
 
@@ -69,8 +73,8 @@ def _drain_stderr(proc: subprocess.Popen, bucket: list[str]) -> None:
     try:
         for line in proc.stderr:
             bucket.append(line)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Stopped draining ffmpeg stderr: %s", exc)
 
 
 def run_ffmpeg_with_progress(

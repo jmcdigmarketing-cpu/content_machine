@@ -23,6 +23,9 @@ from apis.youtube_quota import (
     units_for_lightweight_search,
     units_per_search_call,
 )
+from core.logging import get_logger
+
+logger = get_logger("apis.youtube_api")
 
 
 def _youtube_key() -> str:
@@ -78,8 +81,8 @@ def warmup_youtube_client():
         return
     try:
         _get_youtube_client()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("_get_youtube_client skipped: %s", exc)
 
 
 def start_youtube_warmup_background():

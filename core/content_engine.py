@@ -140,8 +140,8 @@ def _build_prompts(
             measured = pacing_hint(channel_id)
             if measured:
                 retention_rule += f"\n{measured}"
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("pacing_hint skipped: %s", exc)
 
     system_prompt = f"""
 You are a sports and gaming scriptwriter for vertical video (YouTube Shorts and longer vertical formats).

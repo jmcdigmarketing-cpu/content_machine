@@ -48,8 +48,8 @@ def _build_query(topic: str) -> str:
         anchors = extract_anchors(topic)
         if anchors:
             return anchors[0]
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("extract_anchors skipped: %s", exc)
     return topic[:80]
 
 

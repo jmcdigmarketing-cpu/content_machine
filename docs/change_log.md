@@ -6,6 +6,33 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Branch + PR triage; the stack goes up as PR #34 — 2026-08-17
+
+*Six weeks of work had never been reviewed or CI-validated. Suite 1433 green.*
+
+- **21 commits opened as a single PR** (`feat/trade-validation-default-on` 6 →
+  `feat/research-intake-repair` 15). It merges cleanly; merging to `main` is left to the
+  operator.
+- **CI paid for itself on the first run.** It had never executed on any of these commits —
+  `.github/workflows/ci.yml` fires only on push-to-`main` and `pull_request` → `main` — and
+  immediately failed with 3 errors: `test_caption_align` patched the **real**
+  `torch.cuda.is_available`, but torch is in the optional `[providers]` extra, so those
+  tests only ever passed on a machine that happened to have it. Now injects a fake torch
+  and covers the absent-torch case. *Rule: never patch an optional dependency's real
+  module in a test.*
+- **All seven stale PRs closed (#26–#32), every branch deleted.** #27 was the dangerous
+  one — superseded, and it still carried the expired `"2026-07-25 18:00"` that #33
+  replaced, so merging it would have made CI permanently red.
+- **Five orphan docs harvested before closing** (~1,000 lines that existed nowhere else):
+  `llm_provider_strategy.md`, `strategy_2026H2.md`, `next_ideas_2026-07.md`,
+  `code_audit_2026-07.md`, `efficiency_audit_2026-07.md`. Only the new files were taken —
+  their edits to shared docs were superseded, which also avoided every conflict — and each
+  carries a dated header naming what has since replaced it.
+- **Hardened `tests/test_alembic_logging.py`**: it disables every logger on purpose to
+  prove the footgun is real, and the restore was written *after* the assertion. A failure
+  in between would have left the logger tree disabled for all later tests, silently
+  breaking their `assertLogs`. The restore is now an `addCleanup` registered first.
+
 ### The intro step can no longer lose a render — 2026-08-17
 
 *First step of the render/publish coverage wave (paused part-way — remaining design is

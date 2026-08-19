@@ -257,6 +257,13 @@ input + average-based learned post slots). 1382 tests green.*
 
 **Engineering hygiene**
 - [x] git private remote — create + push *(done: `jmcdigmarketing-cpu/content_machine`, private)*
+- [x] **Branch + PR triage** *(2026-08-17)* — the 21-commit stack is in **PR #34**
+  (CI green, operator to merge). All seven stale PRs **#26–#32 closed** and their branches
+  deleted; **#27** would have turned CI permanently red (superseded *and* carrying the
+  expired date #33 fixed). Five orphan docs harvested first, each with a supersession
+  header. *Still open:* `origin/claude/docs-optimization-review-a4l104` — **9 commits, no
+  PR, last touched 2026-07-21**, on an old base, so merging it would revert code that has
+  since landed; same shape as #27 and needs the same decision.
 - [x] **Silent exception handlers annotated + ruff ratchet** *(2026-08-16 — decisions §24)*.
   The audit sized this at **93 bare `pass` swallows** of 420 broad handlers and called it
   "the real debt". All **98** (90 `S110` + 8 `S112`) now log, and `S110`/`S112` are

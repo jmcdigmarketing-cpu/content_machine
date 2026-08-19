@@ -4,9 +4,11 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 ## Branch / PR
 
-- **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`
-  (pushed, **not merged** — no PR opened yet). Both branch from `main` at `95a6646`.
-- **Suite:** 1382 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`.
+  Both branch from `main` at `95a6646`. **Now in
+  [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34) — 21 commits,
+  CI green, awaiting the operator's merge** (2026-08-17).
+- **Suite:** 1433 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -43,13 +45,12 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 5. **Whisper local CPU backend** — landed with measurements; caption-text fix still open
    (see the section below, and "Open (roadmap next)").
 
-**Neither branch is merged and no PR exists.** Also:
-`origin/claude/trade-validation-default-on` is **superseded and should be deleted** — it
-carries a pre-#33 CI time-bomb test that would revert the fix (confirmed 2026-08-17:
-the hardcoded `"2026-07-25 18:00"` is still at `tests/test_ui_length_and_recovery.py:144`),
-and its PR **#27** should be closed rather than merged. **Seven** PRs are open — **#26–#32**,
-not the "#29–#32" earlier notes recorded — all since late July. See the triage block at
-the top of this file.
+**Triaged 2026-08-17 — see the block further down.** Both branches are now in PR #34.
+All seven stale PRs (**#26–#32**, not the "#29–#32" earlier notes claimed) are **closed
+and their branches deleted**, after harvesting five orphan docs that existed nowhere else.
+`claude/trade-validation-default-on` is gone: it was superseded *and* still carried the
+expired `"2026-07-25 18:00"` at `tests/test_ui_length_and_recovery.py:144` that #33 fixed,
+so merging it would have turned CI permanently red.
 
 ---
 
@@ -524,29 +525,38 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 > `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
 > **The 93 silent-`pass` handlers are done too** (2026-08-16, below).
 >
-> ## ▶ Start here next session — 1. Branch + PR triage (decision, not code)
+> ## ▶ Branch + PR triage — DONE 2026-08-17
 >
-> Verified 2026-08-17, not inherited from an older note — earlier synopses said "PRs
-> #29–#32"; it is actually **seven** open PRs, **#26–#32**.
+> **The stack is in [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34),
+> CI green, awaiting the operator's merge.** 21 commits (`feat/trade-validation-default-on`
+> 6 → `feat/research-intake-repair` 15). Merging to `main` is deliberately left to the
+> operator.
 >
-> **The unmerged stack.** `main` → `feat/trade-validation-default-on` (**6** commits) →
-> `feat/research-intake-repair` (**13** more) = **19 commits ahead of main**. Both are
-> pushed; neither is merged and **neither has a PR**. They are genuinely stacked
-> (trade-validation is an ancestor), so landing them means choosing: two PRs in order, or
-> one PR for all 19. That choice is the first thing to make.
+> **CI earned its keep immediately.** It had never run on any of these commits — the
+> workflow fires only on push-to-`main` and `pull_request` → `main` — and the first run
+> failed with 3 errors: `test_caption_align` patched the real `torch.cuda.is_available`,
+> but torch is in the optional `[providers]` extra, so the tests only passed on a box that
+> happened to have it. Fixed by injecting a fake torch, plus a case for torch being absent
+> entirely. **Lesson: never patch an optional dependency's real module in a test.**
 >
-> **PR #27 must be closed, not merged.** It comes from
-> `origin/claude/trade-validation-default-on`, which is **superseded** — its work was
-> redone properly in the local `feat/trade-validation-default-on` — and it **predates
-> #33**. It still carries the hardcoded `"2026-07-25 18:00"` at
-> `tests/test_ui_length_and_recovery.py:144` that #33 replaced with a wall-clock-derived
-> date. That date is now weeks past, so merging #27 turns CI **permanently red**. Close
-> the PR and delete the remote branch.
+> **All seven PRs closed (#26–#32), all their branches deleted.** #27 was the dangerous
+> one — superseded *and* it still carried the expired `"2026-07-25 18:00"` that #33 fixed,
+> so merging it would have made CI permanently red.
 >
-> **The other five** (#26, #28, #29, #30, #31, #32) are docs-only reports from `claude/*`
-> branches, open since late July. Most are superseded by the 2026-08 audit and the docs
-> catch-up already on this branch — read, harvest anything still true, then close.
+> **Five orphan docs were harvested first** (commit `f9307cd`), because each PR added a
+> standalone doc that existed nowhere else — ~1,000 lines that closing would have binned:
+> `llm_provider_strategy.md`, `strategy_2026H2.md`, `next_ideas_2026-07.md`,
+> `code_audit_2026-07.md`, `efficiency_audit_2026-07.md`. Only the new files were taken;
+> their edits to shared docs were dropped as superseded, which also avoided every conflict.
+> Each opens with a dated header naming what has since superseded it.
 >
+> **Still open, flagged not actioned:** `origin/claude/docs-optimization-review-a4l104` —
+> **9 commits, no PR, last touched 2026-07-21**, sitting on an old base, so merging it
+> would revert code that has landed since. Same shape as #27. Needs the same decision.
+> `origin/feat/reddit-free-backend-and-signal-persistence` is fully merged into `main` and
+> is safe to delete.
+>
+
 > ## 2. Then: the paused coverage wave
 >
 > "Raise test coverage on render + publish paths" is **`[~]` in [roadmap.md](roadmap.md)**,

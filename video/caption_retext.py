@@ -190,21 +190,24 @@ def _fill_untimed(words: list[dict]) -> list[dict]:
             end += 1
         run = end - index
 
-        before = words[index - 1]["end"] if index > 0 else None
-        after = words[end]["start"] if end < count else None
-        if before is None and after is None:
+        prev_end = _as_time(words[index - 1]["end"]) if index > 0 else None
+        next_start = _as_time(words[end]["start"]) if end < count else None
+
+        # A missing bound gets a nominal 0.3s per word rather than collapsing the run.
+        if prev_end is not None and next_start is not None:
+            start_at, end_at = prev_end, next_start
+        elif prev_end is not None:
+            start_at, end_at = prev_end, prev_end + 0.3 * run
+        elif next_start is not None:
+            start_at, end_at = max(0.0, next_start - 0.3 * run), next_start
+        else:
             index = end  # nothing known anywhere — leave untimed, _line_span copes
             continue
-        # A missing bound gets a nominal 0.3s per word rather than collapsing the run.
-        if before is None:
-            before = max(0.0, float(after) - 0.3 * run)
-        if after is None:
-            after = float(before) + 0.3 * run
 
-        step = (float(after) - float(before)) / run
+        step = (end_at - start_at) / run
         for offset in range(run):
-            words[index + offset]["start"] = float(before) + step * offset
-            words[index + offset]["end"] = float(before) + step * (offset + 1)
+            words[index + offset]["start"] = start_at + step * offset
+            words[index + offset]["end"] = start_at + step * (offset + 1)
         index = end
     return words
 

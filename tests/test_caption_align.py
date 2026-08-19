@@ -29,19 +29,53 @@ class TestConfig(unittest.TestCase):
         with patch.dict(os.environ, {"CAPTION_ALIGN_MODEL": "small"}, clear=False):
             self.assertEqual(caption_align.align_model(), "small")
 
+    @staticmethod
+    def _fake_torch(*, available=True, raises=None):
+        """A stand-in for torch, so these tests do not require it to be installed.
+
+        torch lives in the optional `[providers]` extra and CI installs only the base
+        deps, so patching the real `torch.cuda.is_available` passed on a dev box and
+        errored on CI with ModuleNotFoundError. `align_device()` imports torch inside the
+        function, so injecting into sys.modules exercises the same path either way — and
+        it is the honest contract: all the code needs is `torch.cuda.is_available`.
+        """
+        torch = MagicMock()
+        if raises is not None:
+            torch.cuda.is_available.side_effect = raises
+        else:
+            torch.cuda.is_available.return_value = available
+        return torch
+
     def test_device_falls_back_to_cpu_without_cuda(self):
         with (
             patch.dict(os.environ, {"CAPTION_ALIGN_DEVICE": "auto"}, clear=False),
-            patch("torch.cuda.is_available", return_value=False),
+            patch.dict("sys.modules", {"torch": self._fake_torch(available=False)}),
         ):
             self.assertEqual(caption_align.align_device(), "cpu")
 
     def test_device_picks_cuda_when_available(self):
         with (
             patch.dict(os.environ, {"CAPTION_ALIGN_DEVICE": "auto"}, clear=False),
-            patch("torch.cuda.is_available", return_value=True),
+            patch.dict("sys.modules", {"torch": self._fake_torch(available=True)}),
         ):
             self.assertEqual(caption_align.align_device(), "cuda")
+
+    def test_device_is_cpu_when_torch_is_not_installed(self):
+        # CI's actual situation: torch is an optional extra and is absent.
+        import builtins
+
+        real_import = builtins.__import__
+
+        def _no_torch(name, *args, **kwargs):
+            if name == "torch":
+                raise ModuleNotFoundError("No module named 'torch'")
+            return real_import(name, *args, **kwargs)
+
+        with (
+            patch.dict(os.environ, {"CAPTION_ALIGN_DEVICE": "auto"}, clear=False),
+            patch.object(builtins, "__import__", _no_torch),
+        ):
+            self.assertEqual(caption_align.align_device(), "cpu")
 
     def test_explicit_device_wins(self):
         with patch.dict(os.environ, {"CAPTION_ALIGN_DEVICE": "cpu"}, clear=False):
@@ -50,7 +84,9 @@ class TestConfig(unittest.TestCase):
     def test_device_detection_never_raises(self):
         with (
             patch.dict(os.environ, {"CAPTION_ALIGN_DEVICE": "auto"}, clear=False),
-            patch("torch.cuda.is_available", side_effect=RuntimeError("no driver")),
+            patch.dict(
+                "sys.modules", {"torch": self._fake_torch(raises=RuntimeError("no driver"))}
+            ),
         ):
             self.assertEqual(caption_align.align_device(), "cpu")
 

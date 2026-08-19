@@ -7,16 +7,16 @@
       "domains": ["nba", "nfl", "ufc", "mma"]
     },
     {
-      "name": "The Athletic RSS (headlines)",
-      "url": "https://theathletic.com/rss/",
+      "name": "CBS Sports",
+      "url": "https://www.cbssports.com/rss/headlines/",
       "domains": ["nba", "nfl", "ufc", "mma"]
     }
   ],
   "domain_rss": {
     "nba": [
       {
-        "name": "ESPN NBA",
-        "url": "https://www.espn.com/espn/rss/nba/news"
+        "name": "Yahoo NBA",
+        "url": "https://sports.yahoo.com/nba/rss"
       },
       {
         "name": "CBS Sports NBA",
@@ -29,8 +29,8 @@
     ],
     "nfl": [
       {
-        "name": "ESPN NFL",
-        "url": "https://www.espn.com/espn/rss/nfl/news"
+        "name": "Yahoo NFL",
+        "url": "https://sports.yahoo.com/nfl/rss"
       },
       {
         "name": "CBS Sports NFL",
@@ -43,12 +43,24 @@
     ],
     "ufc": [
       {
-        "name": "MMA Junkie",
-        "url": "https://mmajunkie.usatoday.com/feed"
-      },
-      {
         "name": "Sherdog",
         "url": "https://www.sherdog.com/rss/news.xml"
+      },
+      {
+        "name": "MMA Fighting",
+        "url": "https://www.mmafighting.com/rss/index.xml"
+      },
+      {
+        "name": "Bloody Elbow",
+        "url": "https://www.bloodyelbow.com/feed"
+      },
+      {
+        "name": "MMA Weekly",
+        "url": "https://www.mmaweekly.com/feed"
+      },
+      {
+        "name": "UFC.com Official",
+        "url": "https://www.ufc.com/rss/news"
       }
     ],
     "gaming": [
@@ -65,12 +77,12 @@
         "url": "https://www.rockpapershotgun.com/feed"
       },
       {
-        "name": "Dot Esports",
-        "url": "https://dotesports.com/feed"
+        "name": "Eurogamer",
+        "url": "https://www.eurogamer.net/feed"
       },
       {
-        "name": "IGN Games",
-        "url": "https://feeds.ign.com/ign/games"
+        "name": "GameSpot",
+        "url": "https://www.gamespot.com/feeds/news/"
       },
       {
         "name": "Game Rant",
@@ -79,8 +91,8 @@
     ],
     "finance": [
       {
-        "name": "Reuters Business",
-        "url": "https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best"
+        "name": "Yahoo Finance",
+        "url": "https://finance.yahoo.com/news/rssindex"
       },
       {
         "name": "MarketWatch",
@@ -97,8 +109,12 @@
         "url": "https://www.animenewsnetwork.com/news/rss.xml"
       },
       {
-        "name": "Crunchyroll News",
-        "url": "https://www.crunchyroll.com/newsrss"
+        "name": "MyAnimeList",
+        "url": "https://myanimelist.net/rss/news.xml"
+      },
+      {
+        "name": "Anime Corner",
+        "url": "https://animecorner.me/feed/"
       }
     ],
     "popculture": [
@@ -131,15 +147,15 @@
     ],
     "neutral": [
       {
-        "name": "Reuters Sports",
-        "url": "https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best"
+        "name": "BBC Sport",
+        "url": "https://feeds.bbci.co.uk/sport/rss.xml"
       }
     ]
   },
   "reference_sites": {
     "nba": ["basketball-reference.com", "site.api.espn.com"],
     "nfl": ["pro-football-reference.com", "site.api.espn.com"],
-    "mma": ["tapology.com", "espn.com/mma"]
+    "mma": ["sherdog.com", "ufc.com", "mmafighting.com"]
   },
   "optional_apis": {
     "notes": "Add keys in .env — see docs/data-sources.md and docs/domain-expansion.md",

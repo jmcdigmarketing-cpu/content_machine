@@ -225,5 +225,5 @@ def reset_cache_stats() -> None:
         _stats.clear()
     try:
         _write_cache_file(_stats_path(), {})
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("_write_cache_file skipped: %s", exc)

@@ -122,8 +122,8 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
         from core.experiments import next_arm
 
         experiment = next_arm(channel_id, kind="script")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("next_arm skipped: %s", exc)
 
     result = run_pipeline(
         topic,
@@ -146,8 +146,8 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
             from core.experiments import record_assignment
 
             record_assignment(channel_id, result.run_id, lever, arm)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("record_assignment skipped: %s", exc)
 
     # Same quality surface the interactive flow prints, persisted instead.
     try:
@@ -155,8 +155,8 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
 
         hook = score_script_hook(result.script)
         out.hook_score, out.hook_verdict = hook.score, hook.verdict
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("score_script_hook skipped: %s", exc)
     fact_count = 0
     try:
         from core.fact_enrichment import _fact_line_count, enrich_facts
@@ -164,16 +164,16 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
         fact_count = _fact_line_count(
             enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("_fact_line_count skipped: %s", exc)
     try:
         from core.authenticity import evaluate_authenticity
 
         out.authenticity_verdict = evaluate_authenticity(
             result.script, channel_id, fact_count=fact_count, exclude_run_id=result.run_id
         ).verdict
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("evaluate_authenticity skipped: %s", exc)
     out.ungrounded = list(result.features.get("ungrounded_entities") or [])
     out.unsupported_claims = len(
         (result.features.get("claim_verification") or {}).get("unsupported") or []
@@ -232,8 +232,8 @@ def run_batch(channel_id: str, topics: list[str]) -> list[DraftOutcome]:
         from core.pipeline import finalize_run_observability
 
         finalize_run_observability()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("finalize_run_observability skipped: %s", exc)
     try:
         from core.events import emit_event
 
@@ -249,8 +249,8 @@ def run_batch(channel_id: str, topics: list[str]) -> list[DraftOutcome]:
                 ],
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("batch_completed event not emitted: %s", exc)
     return outcomes
 
 

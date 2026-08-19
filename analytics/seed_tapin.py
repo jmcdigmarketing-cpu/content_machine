@@ -102,7 +102,10 @@ def _import_videos(videos: list[dict], channel_id: str) -> int:
         }
         publish.create(
             {
-                "content_run_id": 0,
+                # No originating run — these are historical YouTube videos, not
+                # pipeline output. NULL (not the legacy 0 sentinel) so the
+                # content_run_id foreign key accepts them.
+                "content_run_id": None,
                 "channel_id": channel_id,
                 "youtube_video_id": f"seed_{channel_id}_{i}",
                 "privacy_status": "public",

@@ -102,6 +102,14 @@ def classify_exception(exc: BaseException):
     if "invalid api key" in message or "unauthorized" in message or "forbidden" in message:
         return STATUS_AUTH, str(exc)[:120]
 
+    # A timeout is a transient outage, not a broken signal. It used to fall through to
+    # STATUS_ERROR — run 66 reported `youtube: ERROR - The read operation timed out`,
+    # which reads like the signal is faulty. UNAVAILABLE is the honest status and
+    # deliberately does NOT trip the session breaker (that's for quota/auth), so the
+    # signal is simply retried on the next run.
+    if isinstance(exc, TimeoutError) or "timed out" in message or "timeout" in message:
+        return STATUS_UNAVAILABLE, str(exc)[:120]
+
     return STATUS_ERROR, str(exc)[:120]
 
 

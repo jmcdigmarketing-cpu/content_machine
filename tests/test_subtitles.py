@@ -199,5 +199,86 @@ class TestWhisperAlignedCaptions(unittest.TestCase):
         self.assertTrue(path.endswith(".srt"))
 
 
+class TestWhisperCaptionsCarryScriptText(unittest.TestCase):
+    """Whisper transcribes blind, so its captions misspell the proper nouns that ARE
+    this channel's subject. Timing comes from whisper; the text must come from the
+    script (video/caption_retext.py)."""
+
+    ENV: ClassVar[dict[str, str]] = {
+        "CAPTION_ALIGN_BACKEND": "faster_whisper",
+        "CAPTION_STYLE": "word",
+    }
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.audio = os.path.join(self.tmp, "piper.mp3")  # local TTS — no sidecar
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    @staticmethod
+    def _heard(text):
+        from core.providers import ProviderResult
+
+        words, clock = [], 0.0
+        for token in text.split():
+            words.append({"word": token, "start": round(clock, 2), "end": round(clock + 0.4, 2)})
+            clock += 0.4
+        return ProviderResult.success("caption_align", "faster_whisper", data=words)
+
+    def _generate(self, script, heard, duration=5.0):
+        with (
+            patch.dict("os.environ", self.ENV, clear=False),
+            patch("core.caption_align.transcribe_and_align", return_value=self._heard(heard)),
+        ):
+            path = generate_subtitle_file(script, duration, audio_path=self.audio)
+        with open(path, encoding="utf-8") as f:
+            return path, f.read()
+
+    def test_the_script_spelling_wins(self):
+        # The run-65 defect, end to end.
+        _, text = self._generate(
+            "Quillan Salkilld just submitted Mateusz Gamrot in round one.",
+            "Quill and Salkal just submitted Mattius Gamarat and round one.",
+        )
+        self.assertIn("Quillan Salkilld", text)
+        # Caption lines wrap at 5 words, so these two can land on separate cues.
+        self.assertIn("Mateusz", text)
+        self.assertIn("Gamrot", text)
+        for wrong in ("Salkal", "Mattius", "Gamarat"):
+            self.assertNotIn(wrong, text)
+
+    def test_timing_still_comes_from_whisper(self):
+        # Proportional timing over 30s would put nothing at 00:00:00,000 --> 00:00:02,000.
+        _, text = self._generate(
+            "Quillan Salkilld just submitted Mateusz Gamrot in round one.",
+            "Quill and Salkal just submitted Mattius Gamarat and round one.",
+            duration=30.0,
+        )
+        self.assertIn("00:00:00,000 --> ", text)
+        self.assertNotIn("--> 00:00:30,000", text)
+
+    def test_declined_retext_falls_back_to_proportional(self):
+        # An unrelated transcript means the timings describe different audio too.
+        _, text = self._generate(
+            "Rockstar delayed GTA VI again this morning.",
+            "completely different audio about something else entirely",
+        )
+        self.assertIn("Rockstar", text)
+        self.assertIn("--> 00:00:05,000", text)  # proportional: spans the full duration
+
+    def test_sidecar_path_is_never_retexted(self):
+        with open(self.audio + ".words.json", "w", encoding="utf-8") as f:
+            json.dump([{"word": "Salkilld", "start": 0.0, "end": 0.7}], f)
+        with (
+            patch.dict("os.environ", self.ENV, clear=False),
+            patch("video.caption_retext.retext_words_from_script") as mock_retext,
+        ):
+            path = generate_subtitle_file("Salkilld", 5.0, audio_path=self.audio)
+        mock_retext.assert_not_called()
+        with open(path, encoding="utf-8") as f:
+            self.assertIn("Salkilld", f.read())
+
+
 if __name__ == "__main__":
     unittest.main()

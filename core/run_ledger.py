@@ -15,6 +15,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from core.logging import get_logger
+
+logger = get_logger("core.run_ledger")
+
 _PHASE_KEYS = (
     "signals_and_variants",
     "variant_scoring",
@@ -105,8 +109,8 @@ def _publish_for_run(run_id: int, channel_id: str) -> dict[str, Any]:
                     "status": getattr(row, "status", ""),
                     "metrics": _load_json(row.metrics_json),
                 }
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Publish metrics unavailable for the ledger view: %s", exc)
     return {}
 
 
@@ -190,8 +194,8 @@ def render_dossier(run_id: int) -> str:
         exp = assignment_for_run(run_id)
         if exp and exp.get("arm"):
             lines.append(f"Experiment: {exp['lever']} -> arm '{exp['arm']}'")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("assignment_for_run skipped: %s", exc)
 
     publish = _publish_for_run(run_id, record.channel_id)
     if publish:

@@ -144,6 +144,16 @@ def cmd_backfill_features(args: argparse.Namespace) -> int:
     return _run_module("analytics.backfill_features", "--channel", args.channel)
 
 
+@_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
+def cmd_backfill_cost(args: argparse.Namespace) -> int:
+    extra = ["--channel", args.channel]
+    if getattr(args, "dry_run", False):
+        extra.append("--dry-run")
+    if getattr(args, "force", False):
+        extra.append("--force")
+    return _run_module("analytics.backfill_cost", *extra)
+
+
 @_register("vault-sync", "Write machine beliefs + run dossiers into the Obsidian vault")
 def cmd_vault_sync(args: argparse.Namespace) -> int:
     from core.vault_dossiers import refresh_dossiers
@@ -180,10 +190,36 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
 def cmd_reliability(_args: argparse.Namespace) -> int:
-    from core.reliability import render
+    from core.reliability import gather, render
 
-    print(render())
+    data = gather()
+    print(render(data))
+    # Recording on view means the trend builds itself — no separate job to forget.
+    try:
+        from core.reliability_history import record
+        from core.reliability_history import render as render_trend
+
+        record(data)
+        print(render_trend())
+    except Exception as exc:
+        # Logger resolved here, not at import: this module is an entry point and
+        # `config.settings` (which loads .env) is imported later, so a module-level
+        # get_logger would cache the level before CONTENT_LOG_LEVEL is readable.
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("Reliability trend not recorded: %s", exc)
     return 0
+
+
+@_register("feeds", "Check every configured RSS feed — dead/stale sources starve grounding")
+def cmd_feeds(_args: argparse.Namespace) -> int:
+    from core.feed_health import check_feeds, render, save_results, summarize
+
+    results = check_feeds()
+    save_results(results)
+    print(render(results))
+    # Non-zero on a dead feed so `all-checks` fails loudly instead of printing quietly.
+    return 1 if summarize(results).get("dead") else 0
 
 
 @_register(
@@ -516,7 +552,7 @@ def cmd_list(_args: argparse.Namespace) -> int:
     print(
         "  all-setup          migrate-layout, init-db, migrate-schema, seed, validate, check-youtube"
     )
-    print("  all-checks         validate + test")
+    print("  all-checks         validate + test + feeds")
     print("  all-analytics      seed, learn-schedule, weights, sync-metrics")
     print("  daily-sync         competitor-sync + seo-refresh (daily)")
     print(
@@ -552,9 +588,9 @@ def cmd_all_setup(args: argparse.Namespace) -> int:
     return _run_batch(steps, args)
 
 
-@_register("all-checks", "Validate channels + unit tests")
+@_register("all-checks", "Validate channels + unit tests + feed health")
 def cmd_all_checks(args: argparse.Namespace) -> int:
-    return _run_batch(["validate", "test"], args)
+    return _run_batch(["validate", "test", "feeds"], args)
 
 
 @_register("all-analytics", "Seed, schedules, weights, sync metrics")
@@ -660,6 +696,11 @@ def main(argv=None) -> int:
         "--file",
         default=None,
         help="overnight: file of topics (one per line) instead of best-bet",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="backfill-cost: show what would change without writing",
     )
     args = parser.parse_args(argv)
     args.queue_upload = False

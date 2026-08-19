@@ -115,8 +115,8 @@ def run_overnight(
                 "health": result.health_line,
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("overnight event not emitted: %s", exc)
     return result
 
 

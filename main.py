@@ -19,7 +19,7 @@ _configure_stdout_utf8()
 import config.settings  # noqa: F401
 from apis.youtube_api import start_youtube_warmup_background
 from config.channels import get_channel_profile
-from core.logging import setup_logging
+from core.logging import get_logger, setup_logging
 from core.pipeline import run_discovery, run_media_only, run_pipeline
 from core.script_length import PRESETS, format_length_report, get_length_preset
 from core.ui import (
@@ -47,6 +47,10 @@ from publishing.repurpose import enqueue_repurpose_jobs
 from youtube.check_setup import check_channel_setup
 
 setup_logging()
+
+# Defined after setup_logging() (and after config.settings loaded .env above), so the
+# configured CONTENT_LOG_LEVEL is what gets cached.
+logger = get_logger("main")
 
 
 def _run_intelligence_report_flow(channel_id: str) -> None:
@@ -150,14 +154,14 @@ def _drain_stdin() -> None:
         while msvcrt.kbhit():
             msvcrt.getwch()
         return
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("stdin drain (Windows) skipped: %s", exc)
     try:
         import termios
 
         termios.tcflush(sys.stdin, termios.TCIFLUSH)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("stdin drain (POSIX) skipped: %s", exc)
 
 
 def _read_multiline(prompt: str) -> str:
@@ -270,8 +274,8 @@ def _run_new_video_flow_body(
 
     try:
         display_cadence(cadence_status(channel_id))
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("display_cadence skipped: %s", exc)
 
     if seed_topic:
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
@@ -295,8 +299,8 @@ def _run_new_video_flow_body(
 
     try:
         display_recommended_time(get_recommended_time(channel_id, topic))
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("display_recommended_time skipped: %s", exc)
 
     display_database_status()
 
@@ -344,8 +348,8 @@ def _run_new_video_flow_body(
         length_rec = get_recommended_length(channel_id, best_topic)
         display_recommended_length(length_rec)
         length_default = length_rec.length_choice
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("get_recommended_length skipped: %s", exc)
 
     _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
@@ -505,13 +509,22 @@ def _run_new_video_flow_body(
     thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
     thumb_count = len(list_channel_thumbnails(thumb_dir))
 
-    # Render happened here (not via the pipeline), so recompute cost with the
-    # TTS line now included before showing the summary.
-    from core.cost_meter import estimate_run_cost
+    # Render happened here (not via the pipeline). run_media_only has just persisted the
+    # render-inclusive cost, so read it back rather than recomputing: this used to be a
+    # display-only recompute that was never written anywhere, which is exactly how the
+    # ledger ended up with tts=0 on every rendered run. Reading back keeps the number
+    # the operator sees identical to the one economics will report.
+    from core.run_features import load_features
 
-    result.features["cost"] = estimate_run_cost(
-        script=result.script, signals=best_signals, rendered=True
-    )
+    persisted_cost = (load_features(result.run_id) or {}).get("cost")
+    if persisted_cost:
+        result.features["cost"] = persisted_cost
+    else:  # no run id (or DB unavailable) — fall back to an in-memory estimate
+        from core.cost_meter import estimate_run_cost
+
+        result.features["cost"] = estimate_run_cost(
+            script=result.script, signals=best_signals, rendered=True
+        )
     display_summary(
         timings=discovery.timings,
         title=result.title,
@@ -586,8 +599,8 @@ def _run_new_video_flow_body(
                 from analytics.sync_metrics import sync_channel
 
                 sync_channel(channel_id)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("sync_channel skipped: %s", exc)
 
         threading.Thread(target=_bg_analytics, daemon=True, name="analytics-sync").start()
 

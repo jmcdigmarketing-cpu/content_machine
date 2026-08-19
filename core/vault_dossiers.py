@@ -60,16 +60,16 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
         grade = grade_run(run_id)
         if grade is not None:
             grade_line = f"{grade.letter} ({grade.score:.0f}/100)"
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("grade_run skipped: %s", exc)
 
     publish = {}
     try:
         from core.run_ledger import _publish_for_run
 
         publish = _publish_for_run(run_id, record.channel_id)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("_publish_for_run skipped: %s", exc)
     metrics = publish.get("metrics") or {}
 
     cost = features.get("cost") or {}

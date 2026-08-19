@@ -71,8 +71,8 @@ def _credit_exhaustion_ttl() -> int:
             secs = seconds_until_reset("apify")
             if secs:
                 return secs
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("reset_window_enabled skipped: %s", exc)
     return _persist_ttl()
 
 
@@ -170,8 +170,8 @@ def _persist_exhausted(purpose: str, reason: str, *, status_code: int | None = N
 
         ttl = _persist_ttl_for_status(status_code) if status_code is not None else _persist_ttl()
         apify_mark_exhausted(purpose, reason, ttl_seconds=ttl)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("apify_mark_exhausted skipped: %s", exc)
 
 
 def apify_disabled() -> bool:
@@ -217,6 +217,44 @@ def _headers(key: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
 
+def _fail_cache_key(cache_key: str) -> str:
+    """Separate namespace so a remembered failure never sits in the results cache."""
+    return f"apifyfail:{cache_key}"
+
+
+def _actor_fail_ttl() -> int:
+    """How long a deterministic actor failure suppresses the same input. 0 disables."""
+    try:
+        return max(0, int(os.getenv("APIFY_ACTOR_FAIL_TTL_SECONDS", str(60 * 60))))
+    except ValueError:
+        return 60 * 60
+
+
+def is_no_results(items: Any) -> bool:
+    """True when an actor answered with only "I found nothing" sentinel rows.
+
+    Some Apify actors bill a full run and then return placeholder objects such as
+    `[{"noResults": true}]` instead of an empty dataset. A caller that just checks
+    `if not items` reads that as a *successful* search with no matches, so the source
+    looks merely quiet while it is actually broken — the `twitter` signal reported
+    `inactive` on 19/19 runs across five weeks for exactly this reason, at ~32s and
+    real credits per run.
+
+    Sentinel rows carry no payload beyond the flag, so an actor that genuinely returned
+    data is never mistaken for one that failed.
+    """
+    if not isinstance(items, list) or not items:
+        return False
+    sentinel_keys = {"noresults", "no_results", "error", "message"}
+    for row in items:
+        if not isinstance(row, dict):
+            return False
+        keys = {str(k).lower() for k in row}
+        if not keys or not keys.issubset(sentinel_keys):
+            return False
+    return True
+
+
 def run_actor(
     actor_id: str,
     input_data: dict[str, Any],
@@ -252,6 +290,18 @@ def run_actor(
     if cached is not None:
         return cached
 
+    # A deterministic failure (bad input / missing actor) is remembered for a while:
+    # otherwise every new run re-POSTs, and Apify *starts and bills* an actor run that
+    # is guaranteed to fail. The reddit actor did exactly that on every live run.
+    # Kept in a separate key so a failure never pollutes the results cache.
+    fail_key = _fail_cache_key(cache_key)
+    prior_failure = get_cached(fail_key)
+    if prior_failure is not None:
+        logger.debug(
+            "Apify actor %s skipped — same input failed recently (%s)", actor_id, prior_failure
+        )
+        return None
+
     # Apify's REST path uses "username~actor-name", not "username/actor-name".
     path_actor = actor_id.replace("/", "~")
     url = f"{_BASE}/acts/{path_actor}/run-sync-get-dataset-items"
@@ -277,10 +327,37 @@ def run_actor(
             return None
         # run-sync-get-dataset-items returns 200 OR 201 (Created) with the items.
         if resp.status_code not in (200, 201):
-            # Actor-specific error (bad input, 404, 500) — fail just this actor.
+            # Actor-specific error — fail just this actor, but REMEMBER it. This branch
+            # used to return without counting the failure (unlike the timeout/exception
+            # branches below), so a permanently broken actor was re-run, and re-billed,
+            # on every single run.
             logger.warning(
                 "Apify actor %s returned %s: %s", actor_id, resp.status_code, resp.text[:200]
             )
+            if resp.status_code in (400, 404):
+                # Bad input / missing actor: deterministic and specific to THIS actor,
+                # so suppress just this actor+input. Deliberately does not call
+                # `_note_failure()` — that trips the account-wide breaker, and one
+                # actor with bad input must not disable the other paid signals.
+                # `set_cache` treats ttl 0 as falsy and substitutes its default, so an
+                # explicit 0 has to skip the write entirely.
+                if _actor_fail_ttl() > 0:
+                    set_cache(
+                        _fail_cache_key(cache_key),
+                        f"HTTP {resp.status_code}",
+                        ttl_seconds=_actor_fail_ttl(),
+                    )
+                    logger.warning(
+                        "Apify actor %s suppressed for %.0fmin for this input (set "
+                        "APIFY_ACTOR_FAIL_TTL_SECONDS=0 to disable)",
+                        actor_id,
+                        _actor_fail_ttl() / 60.0,
+                    )
+            else:
+                # 5xx and friends: possibly Apify-wide, which is what the global
+                # breaker exists for. Counted, but never suppressed — a server blip
+                # must not pin a working actor off.
+                _note_failure()
             return None
         items = resp.json() if isinstance(resp.json(), list) else []
         set_cache(cache_key, items, ttl_seconds=ttl)

@@ -165,7 +165,8 @@ def _load_eval_files(limit: int = 2) -> list[dict[str, Any]]:
         try:
             with open(os.path.join(EVALS_DIR, name), encoding="utf-8") as f:
                 out.append(json.load(f))
-        except Exception:
+        except Exception as exc:
+            logger.debug("Eval result %s unreadable: %s", name, exc)
             continue
     return out
 

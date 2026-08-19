@@ -111,8 +111,10 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
 
         detail = result.get("status_detail") or ""
         disable_signal(name, f"{status}: {detail}" if detail else str(status))
-    except Exception:
-        pass  # persistence is an optimization, never load-bearing
+    except Exception as exc:
+        # Persistence is an optimization, never load-bearing: the session breaker above
+        # already disabled the signal. Losing this only costs a repeat probe next run.
+        logger.debug("Cross-run persistence skipped for signal '%s': %s", name, exc)
 
 
 def _persisted_disabled() -> set[str]:
@@ -159,8 +161,8 @@ def reset_session_breaker() -> None:
         from core.quota_governor import clear_all_signals
 
         clear_all_signals()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("clear_all_signals skipped: %s", exc)
 
 
 def disabled_signals() -> set[str]:
@@ -192,7 +194,7 @@ def signal_cooldowns() -> dict[str, float]:
 # per run, 5x the Tavily/web-search spend, and Wikipedia 429 cooldowns. Default:
 # pin everything; env-override to re-fetch specific signals per variant.
 _VARIANT_REUSE_DEFAULT = (
-    "youtube,reddit,twitter,tiktok_trends,youtube_competitors,"
+    "youtube,youtube_comments,reddit,twitter,tiktok_trends,youtube_competitors,"
     "web_search,wikipedia,trends,news,blog_rss,twitch,rawg,steam,igdb,"
     "trendingnow,autocomplete"
 )
@@ -292,11 +294,34 @@ def _youtube_cache_ttl():
         return 6 * 60 * 60
 
 
+# Signal name -> Apify catalog key, for signals whose data comes from a catalog actor.
+# Lets `enabled: false` in config/apify_sources.json actually switch a signal off:
+# apify_catalog.source_enabled() existed but had no callers, so the catalog's own
+# kill-switch was dead config.
+_CATALOG_KEY_FOR_SIGNAL = {
+    "reddit": "reddit_community",
+    "twitter": "twitter_breaking",
+    "tiktok_trends": "tiktok_trends",
+    "youtube_competitors": "youtube_competitors",
+}
+
+
+def _catalog_disabled_signals() -> set[str]:
+    """Signals switched off via `enabled: false` in the Apify catalog. Fail-open."""
+    try:
+        from apis.apify_catalog import source_enabled
+
+        return {name for name, key in _CATALOG_KEY_FOR_SIGNAL.items() if not source_enabled(key)}
+    except Exception:
+        return set()
+
+
 def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     registry = get_signal_registry().get_registered_signals()
     pairs = tuple(registry.items())
     skip = _skip_signals()
     skip |= _disabled_signals()
+    skip |= _catalog_disabled_signals()
     if topic:
         skip |= _gated_signal_names(topic, channel_id)
     if not skip:
@@ -350,6 +375,10 @@ def _cache_ttl_for(name):
         return 3 * 60 * 60  # 3h — TikTok trends move faster
     if name == "youtube_competitors":
         return 3 * 60 * 60  # 3h — competitor view velocity
+    if name == "youtube_comments":
+        # 6h — comment threads move slowly, and each miss costs ~103 YouTube units
+        # (one search + one read per video) against the 10k/day budget.
+        return 6 * 60 * 60
     if name == "twitter":
         return 90 * 60  # 1.5h — breaking news moves fastest
     if name == "web_search":
@@ -454,7 +483,7 @@ def build_registry(
             from apis.signal_synthesizer import synthesize_signals
 
             results["_synthesis"] = synthesize_signals(results)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("synthesize_signals skipped: %s", exc)
 
     return results

@@ -17,6 +17,14 @@ from typing import Any
 # Signals that incur a paid Apify actor run.
 _APIFY_SIGNALS = ("reddit", "twitter", "tiktok_trends", "youtube_competitors")
 
+# TTS rate, derived from the operator's plan rather than list price:
+# ElevenLabs **Creator** = $22/month for 100,000 characters -> $0.22 per 1k chars.
+# Re-derive as (monthly cost / monthly character quota) when the plan changes.
+# Note this is the *marginal* rate, matching how Apify and LLM are priced here. On a
+# subscription the allocated cost per video is higher whenever the quota is under-used.
+TTS_RATE_ENV = "COST_TTS_PER_1K_CHARS"
+TTS_RATE_DEFAULT = 0.22
+
 # Per-1M-token public pricing (USD), input/output, by provider+model prefix.
 # Used to price the real token ledger from core/llm_router. Override-friendly:
 # unknown models fall back to a conservative default. Free credits don't change
@@ -65,6 +73,27 @@ def _price_for_model(model: str) -> tuple[float, float]:
     return best or _LLM_PRICE_DEFAULT
 
 
+def llm_cost_by_provider(calls: list[dict[str, Any]] | None) -> dict[str, float]:
+    """Price a token ledger per provider (O12) -> {provider: usd}.
+
+    Free-by-construction calls (local Ollama, OpenRouter ':free' slugs) price at
+    $0 but are still reported, so the operator can see WHERE the free-first chain
+    actually served a run rather than only what it cost.
+    """
+    out: dict[str, float] = {}
+    for c in calls or []:
+        provider = str(c.get("provider", "") or "unknown").lower()
+        model = str(c.get("model", ""))
+        free = provider == "ollama" or ":free" in model.lower()
+        cost = 0.0
+        if not free:
+            in_price, out_price = _price_for_model(model)
+            cost = (int(c.get("input_tokens", 0)) / 1_000_000.0) * in_price
+            cost += (int(c.get("output_tokens", 0)) / 1_000_000.0) * out_price
+        out[provider] = round(out.get(provider, 0.0) + cost, 6)
+    return out
+
+
 def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
     """Price a token ledger (from core.llm_router.get_usage) in USD.
 
@@ -73,19 +102,50 @@ def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
     """
     if not calls:
         return 0.0
-    total = 0.0
-    for c in calls:
-        # Local Ollama has no marginal cost regardless of model name.
-        if str(c.get("provider", "")).lower() == "ollama":
+    return round(sum(llm_cost_by_provider(calls).values()), 6)
+
+
+def local_tts_selected() -> bool:
+    """True when TTS_PROVIDER names a local engine (zero marginal cost).
+
+    Env is read directly rather than importing core.tts — that would be an import cycle.
+    """
+    return os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() in ("kokoro", "xtts", "piper")
+
+
+def render_cost_lines(script: str = "") -> dict[str, float]:
+    """The cost lines that only exist once a render actually happened.
+
+    Split out of `estimate_run_cost` so the render path can persist these *after* the
+    fact. Both operator flows (`main.py`, `scripts/auto_generate.py`) finalize the run
+    before rendering, so the stored cost carried `tts: 0.0` on every rendered run and
+    `unit_economics` computed margin against a cost missing most of itself.
+
+    Deliberately excludes llm/apify/web_search: those are session-metered and already
+    persisted by the pre-render estimate, so recomputing them here (after the session
+    ledger has moved on) would overwrite good values with wrong ones.
+    """
+    chars = len(script or "")
+    tts = 0.0 if local_tts_selected() else (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
+    return {
+        "tts": round(tts, 4),
+        "render": round(_rate("COST_RENDER_PER_VIDEO", 0.0), 4),
+    }
+
+
+def merge_render_cost(existing: dict[str, Any] | None, script: str = "") -> dict[str, float]:
+    """Fold the render lines into an already-persisted cost dict and re-total it."""
+    merged: dict[str, float] = {}
+    for key, value in (existing or {}).items():
+        if key == "total":
             continue
-        model = str(c.get("model", ""))
-        # OpenRouter free models (the `:free` suffix) are $0.
-        if ":free" in model.lower():
+        try:
+            merged[key] = round(float(value), 4)
+        except (TypeError, ValueError):
             continue
-        in_price, out_price = _price_for_model(model)
-        total += (int(c.get("input_tokens", 0)) / 1_000_000.0) * in_price
-        total += (int(c.get("output_tokens", 0)) / 1_000_000.0) * out_price
-    return round(total, 6)
+    merged.update(render_cost_lines(script))
+    merged["total"] = round(sum(v for k, v in merged.items() if k != "total"), 4)
+    return merged
 
 
 def estimate_run_cost(
@@ -97,7 +157,6 @@ def estimate_run_cost(
     """Estimate the fully-loaded cost of a run. Returns a breakdown + total (USD)."""
     signals = signals or {}
     words = len([w for w in script.split() if w])
-    chars = len(script)
 
     # LLM: prefer the real per-provider token ledger (core/llm_router) when a run
     # recorded usage; fall back to the old word-count heuristic otherwise.
@@ -113,17 +172,8 @@ def estimate_run_cost(
         llm_tokens = max(words * 8, 1500)
         llm = (llm_tokens / 1000.0) * _rate("COST_LLM_PER_1K_TOKENS", 0.005)
 
-    # TTS only happens on render. Local providers (Kokoro/XTTS/Piper via
-    # TTS_PROVIDER, core/tts.py) have zero marginal cost — env read directly to
-    # avoid an import cycle with core.tts.
-    _local_tts = os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() in (
-        "kokoro",
-        "xtts",
-        "piper",
-    )
-    tts = (chars / 1000.0) * _rate("COST_TTS_PER_1K_CHARS", 0.30) if rendered else 0.0
-    if _local_tts:
-        tts = 0.0
+    # TTS only happens on render; local providers meter $0 (see render_cost_lines).
+    tts = render_cost_lines(script)["tts"] if rendered else 0.0
 
     # Apify: one actor run per active paid social signal — except youtube_competitors
     # when it was served by a free in-process backend (data.backend == "free"), which
@@ -165,16 +215,32 @@ _COST_PARTS = (
 )
 
 
-def format_cost_line(cost: dict[str, float] | None) -> str:
+def format_cost_line(
+    cost: dict[str, float] | None, *, llm_by_provider: dict[str, float] | None = None
+) -> str:
     """One-line operator summary: total + the non-zero components.
+
+    `llm_by_provider` (O12) appends which provider served the LLM spend, e.g.
+    `llm $0.0049 [deepseek $0.0049 · openrouter $0]` — the free-first chain's whole
+    point is that most calls land on a $0 provider, which the aggregate hides.
 
     Returns "" when there's nothing to show, so callers can skip the line.
     """
     if not cost:
         return ""
     total = float(cost.get("total") or 0.0)
-    parts = [
-        f"{label} ${cost[key]:.4f}" for key, label in _COST_PARTS if float(cost.get(key) or 0.0) > 0
-    ]
+    parts = []
+    for key, label in _COST_PARTS:
+        if float(cost.get(key) or 0.0) <= 0:
+            continue
+        part = f"{label} ${cost[key]:.4f}"
+        if key == "llm" and llm_by_provider:
+            inner = " · ".join(
+                f"{prov} ${amt:.4f}" if amt > 0 else f"{prov} $0"
+                for prov, amt in sorted(llm_by_provider.items(), key=lambda kv: (-kv[1], kv[0]))
+            )
+            if inner:
+                part += f" [{inner}]"
+        parts.append(part)
     breakdown = f" ({' · '.join(parts)})" if parts else ""
     return f"Est. run cost: ${total:.4f}{breakdown}"

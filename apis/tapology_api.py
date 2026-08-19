@@ -1,8 +1,20 @@
 """
 Tapology scraper (no API) — event search + fight card facts for UFC scripts.
 
+**Disabled by default — Tapology is behind a Cloudflare JS challenge.** As of
+2026-08-14 every request (direct *and* via the r.jina.ai reader proxy) returns
+`403 "Just a moment... Enable JavaScript"`, and all 10 cached results had been empty
+for ~33 days. The module is kept, not deleted, so it can be revived if Tapology ever
+becomes reachable again; structured MMA data now comes from `apis/mma_stats_api.py`
+(API-SPORTS MMA host).
+
+Note the failure was invisible for a month because a non-200 was swallowed into an
+empty result list, which `get_tapology` then reported as `STATUS_INACTIVE`
+("no event match") rather than a failure. Non-2xx now raises so the signal reports
+`STATUS_UNAVAILABLE` and shows up in `ops reliability`.
+
 Respects robots: light requests, caching, browser-like User-Agent.
-Set TAPOLOGY_SCRAPE_ENABLED=false to disable.
+Set TAPOLOGY_SCRAPE_ENABLED=true to re-enable.
 """
 
 from __future__ import annotations
@@ -94,8 +106,9 @@ def _set_cached(topic: str, payload: dict) -> None:
 def _search_events(session: requests.Session, query: str) -> list[dict[str, str]]:
     url = f"{BASE_URL}/search?mainSearchFilter=events&term={quote(query)}"
     response = session.get(url, timeout=12)
-    if response.status_code != 200:
-        return []
+    # Raise rather than return [] — an empty list here is indistinguishable from
+    # "no such event", which is exactly how a hard 403 block stayed invisible.
+    response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
     events = []
@@ -115,8 +128,7 @@ def _search_events(session: requests.Session, query: str) -> list[dict[str, str]
 
 def _parse_event_page(session: requests.Session, event_url: str) -> dict[str, Any]:
     response = session.get(event_url, timeout=12)
-    if response.status_code != 200:
-        return {}
+    response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
     title = ""
@@ -167,14 +179,15 @@ def scrape_tapology(topic: str) -> dict[str, Any]:
     session = requests.Session()
     session.headers.update(HEADERS)
 
+    # Search by event number when the topic names one; otherwise the raw topic.
+    # (This used to append the literal fighter names "Topuria Gaethje" to *every*
+    # numbered-event query — an artifact of one past event that poisoned the search.)
     query = topic
     event_num = re.search(r"\bUFC\s*(\d{2,4})\b", topic, re.I)
     if event_num:
-        query = f"UFC {event_num.group(1)} Topuria Gaethje"
+        query = f"UFC {event_num.group(1)}"
 
     events = _search_events(session, query)
-    if not events and event_num:
-        events = _search_events(session, f"UFC Freedom {event_num.group(1)}")
 
     payload: dict[str, Any] = {
         "search_query": query,
@@ -234,7 +247,10 @@ def get_tapology(topic: str):
                 connected=False,
                 active=False,
                 status=STATUS_UNAVAILABLE,
-                status_detail="Tapology blocked request (403) — retry later or use VPN",
+                status_detail=(
+                    "Tapology blocked request (403 Cloudflare JS challenge) — "
+                    "structured MMA data comes from mma_stats instead"
+                ),
             )
         status, detail = classify_exception(e)
         return make_signal(connected=False, active=False, status=status, status_detail=detail)

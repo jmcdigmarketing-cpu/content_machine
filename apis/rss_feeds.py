@@ -21,6 +21,26 @@ _CACHE_TTL = 60 * 60 * 2  # 2 hours
 _TIMEOUT = 12
 
 
+def decode_feed_bytes(raw: bytes) -> str:
+    """Decode feed bytes to text, tolerating a UTF-8 BOM and legacy encodings.
+
+    `requests.Response.text` guesses an encoding and leaves a UTF-8 BOM in the string,
+    which makes `ET.fromstring` raise `ParseError: not well-formed` on byte 0 — the
+    whole feed is then dropped. `utf-8-sig` strips the BOM when present and behaves
+    exactly like `utf-8` when it isn't; latin-1 is the never-raises fallback for
+    legacy feeds. Shared with `core.feed_health` so the checker and the live fetch
+    agree on what "parses" means.
+    """
+    if not raw:
+        return ""
+    for encoding in ("utf-8-sig", "latin-1"):
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", errors="replace")
+
+
 def _topic_tokens(topic: str) -> list[str]:
     words = re.findall(r"[a-z0-9]{3,}", topic.lower())
     stop = {"the", "and", "for", "will", "that", "this", "with", "from", "about"}
@@ -45,11 +65,15 @@ def _matches_topic(text: str, tokens: list[str], *, phrases: list[str] | None = 
     return any(t in lower for t in tokens)
 
 
-def _parse_feed_xml(xml_text: str, *, limit: int = 25) -> list[dict[str, str]]:
+def _parse_feed_xml(xml_text: str, *, limit: int = 25, url: str = "") -> list[dict[str, str]]:
     items: list[dict[str, str]] = []
     try:
         root = ET.fromstring(xml_text)
-    except ET.ParseError:
+    except ET.ParseError as exc:
+        # Fail-open: a malformed feed must never break discovery. But log it — this
+        # branch silently dropped the (valid) Federal Reserve feed for months because
+        # its UTF-8 BOM made ET raise here. See _fetch_feed for the decode fix.
+        logger.warning("RSS parse failed for %s: %s", url or "(unknown feed)", exc)
         return items
 
     # RSS 2.0: channel/item; Atom: entry
@@ -86,7 +110,7 @@ def _fetch_feed(url: str) -> list[dict[str, str]]:
     }
     resp = requests.get(url, headers=headers, timeout=_TIMEOUT)
     resp.raise_for_status()
-    return _parse_feed_xml(resp.text)
+    return _parse_feed_xml(decode_feed_bytes(resp.content), url=url)
 
 
 def fetch_rss_context(

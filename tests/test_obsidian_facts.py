@@ -138,6 +138,33 @@ class TestLoadFacts(unittest.TestCase):
             # Default behavior unchanged: the generic-token leak still exists there.
             self.assertTrue(any("Palworld 1.0" in f for f in loose))
 
+    def test_generic_english_verbs_do_not_establish_topic_relevance(self):
+        # Live-run regression (2026-08-14): the topic "…Salkilld, Thainara break
+        # through" pulled Marvel Rivals facts into a UFC script on the single token
+        # "break" (from "I break down the buffs"). Generic English verbs/adverbs are
+        # not topic identity, only names/events are.
+        with tempfile.TemporaryDirectory() as d:
+            vault = Path(d)
+            (vault / "tapin").mkdir()
+            (vault / "tapin" / "rivals.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# Marvel Rivals\n"
+                "- NetEase redesigning team-ups. I break down the hero buffs\n"
+                "- There are over 50 characters in Marvel Rivals right through Season 9\n",
+                encoding="utf-8",
+            )
+            (vault / "tapin" / "mma.md").write_text(
+                "---\nchannel: tapin\ntags: [facts]\n---\n"
+                "# MMA rankings\n- Quillan Salkilld submitted Mateusz Gamrot in round one\n",
+                encoding="utf-8",
+            )
+            topic = "MMA divisional rankings: Quillan Salkilld, Alexia Thainara break through"
+            with patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": str(vault)}, clear=False):
+                strict = of.load_facts(topic, "tapin", require_distinctive=True)
+            self.assertTrue(any("Salkilld submitted" in f for f in strict))
+            self.assertFalse(any("Marvel Rivals" in f for f in strict))
+            self.assertFalse(any("NetEase" in f for f in strict))
+
     def test_require_distinctive_removes_evergreen_bypass(self):
         # Evergreen zero-overlap notes surface under the default path but must NOT
         # under require_distinctive (the operator-suggestions path).
@@ -234,6 +261,41 @@ class TestPromptKeyFacts(unittest.TestCase):
         self.assertIn("Suggested fact A", facts)
         self.assertIn("Extra manual fact", facts)
         self.assertTrue(any("auto-attached" in o for o in outputs))
+
+    def test_vault_sourced_facts_are_not_written_back(self):
+        # Live-run regression (2026-08-14): re-saving auto-attached vault facts copied
+        # them into a note titled with THIS topic, permanently stamping foreign facts
+        # as this topic's own — a laundering loop that compounds every run. Only facts
+        # new to the vault get persisted; the LLM still receives the full set.
+        inputs = iter(["Brand new operator fact", ""])
+        with (
+            patch("core.obsidian_facts.load_facts", return_value=["Borrowed vault fact"]),
+            patch("core.operator_facts.capture_facts_to_vault") as capture,
+        ):
+            capture.return_value = "some/note.md"
+            facts = prompt_key_facts(
+                "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
+            )
+        # Both reach the LLM...
+        self.assertIn("Borrowed vault fact", facts)
+        self.assertIn("Brand new operator fact", facts)
+        # ...but only the new one is written back to the vault.
+        capture.assert_called_once()
+        persisted = capture.call_args[0][2]
+        self.assertEqual(persisted, ["Brand new operator fact"])
+
+    def test_vault_only_facts_write_nothing_back(self):
+        # Nothing new => no vault write at all (run 65 wrote 8 borrowed facts).
+        inputs = iter([""])
+        with (
+            patch("core.obsidian_facts.load_facts", return_value=["Borrowed A", "Borrowed B"]),
+            patch("core.operator_facts.capture_facts_to_vault") as capture,
+        ):
+            facts = prompt_key_facts(
+                "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
+            )
+        self.assertEqual(facts, ["Borrowed A", "Borrowed B"])
+        capture.assert_not_called()
 
     def test_no_relevant_facts_skips_silently(self):
         outputs: list[str] = []

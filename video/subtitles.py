@@ -108,6 +108,14 @@ def generate_subtitle_file(script: str, duration: float, *, audio_path: str | No
         from video.caption_timing import words_from_caption_align
 
         words = words_from_caption_align(audio_path)
+        if words:
+            # Whisper transcribes blind, so those words are ASR text — "Salkal" for
+            # "Salkilld". Keep its timings, take the text from the script we already
+            # have. None = the transcript didn't match, so its timings can't be
+            # trusted either; fall through to the proportional estimate.
+            from video.caption_retext import retext_words_from_script
+
+            words = retext_words_from_script(words, script)
 
     # Real word timings → accurate SRT or animated karaoke ASS; else the
     # proportional SRT estimate (unchanged behaviour).

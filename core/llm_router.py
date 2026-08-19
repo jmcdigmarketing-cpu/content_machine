@@ -51,6 +51,7 @@ Call ``reset_usage()`` at the start of a run; read it back with ``get_usage()``.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -136,7 +137,20 @@ _DEFAULT_MODELS: dict[str, dict[str, str]] = {
     "openrouter": {
         # Free (`:free`) models by default; override with OPENROUTER_MODEL.
         # Free models are rate-limited — fine for this volume.
-        "cheap": "meta-llama/llama-3.3-70b-instruct:free",
+        #
+        # **Free slugs rotate and get retired.** The previous default
+        # (`meta-llama/llama-3.3-70b-instruct:free`) was withdrawn and cost a failed
+        # probe every 24h; because it is hardcoded here, setting OPENROUTER_MODEL_CHEAP
+        # in .env never fixed it. Re-check https://openrouter.ai/api/v1/models when this
+        # starts 404ing rather than guessing a replacement.
+        #
+        # Chosen by live test on 2026-08-15, not by size: the `google/gemma-4-*:free`
+        # models answered 429 (free-tier contention) and every `nvidia/nemotron-*:free`
+        # leaked its reasoning trace into the reply ("Okay, the user just asked me to…"),
+        # which would corrupt short prompt-shaped outputs. This one returned a clean
+        # exact "OK". A 429 is fine either way — it fails over (O5) rather than being
+        # recorded dead; only a 404 is a retired slug.
+        "cheap": "poolside/laguna-s-2.1:free",
         "extract": "deepseek/deepseek-chat",
         "premium": "deepseek/deepseek-chat",
     },
@@ -200,11 +214,53 @@ def _default_model(provider: str, tier: str) -> str:
     return _DEFAULT_MODELS.get(provider, {}).get(tier, "")
 
 
+_ollama_models_cache: list[str] | None = None
+
+
+def ollama_installed_models(*, refresh: bool = False) -> list[str]:
+    """Model tags actually pulled on the local Ollama daemon ([] when none/unreachable).
+
+    Cached per process: this is a localhost call, but the chain is resolved on every
+    LLM request and the answer cannot change mid-run in practice.
+    """
+    global _ollama_models_cache
+    if _ollama_models_cache is not None and not refresh:
+        return _ollama_models_cache
+    tags: list[str] = []
+    try:
+        import requests
+
+        base = (os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1").rstrip("/")
+        root = base[: -len("/v1")] if base.endswith("/v1") else base
+        resp = requests.get(f"{root}/api/tags", timeout=3)
+        if resp.status_code == 200:
+            tags = [
+                str(m.get("name") or "") for m in (resp.json().get("models") or []) if m.get("name")
+            ]
+    except Exception:
+        tags = []
+    _ollama_models_cache = tags
+    return tags
+
+
 def _provider_available(provider: str, tier: str) -> bool:
     if not _provider_key(provider):
         return False
     # Model-required providers (Doubao, Ollama) need a model id configured.
-    return not (provider in _MODEL_REQUIRED and not _model_override(provider, tier))
+    if provider in _MODEL_REQUIRED and not _model_override(provider, tier):
+        return False
+    if provider == "ollama":
+        # A configured model id is not enough — the daemon may have nothing pulled.
+        # `ollama list` was empty on this box while OLLAMA_MODEL=llama3.1:8b, so every
+        # run spent a request 404ing and then recorded the model "dead" for 24h. A
+        # provider with nothing installed should report unavailable, not fail a lookup.
+        installed = ollama_installed_models()
+        if not installed:
+            return False
+        wanted = _model_override(provider, tier)
+        # Ollama tags are "name:tag"; accept a bare name matching any installed tag.
+        return any(m == wanted or m.split(":")[0] == wanted.split(":")[0] for m in installed)
+    return True
 
 
 # --- LLM session breaker (O6) -----------------------------------------------
@@ -233,10 +289,54 @@ def _disable_llm(provider: str, reason: str) -> None:
 # provider breaker above this is *per model*: OpenRouter's other models and tiers keep
 # working. Skipping it for the session avoids a wasted 404 round-trip on every later call.
 _dead_models: set[tuple[str, str]] = set()
+_dead_models_loaded = False
+
+
+def _dead_model_ttl_hours() -> float:
+    try:
+        from core.quota_governor import llm_dead_model_ttl
+
+        return llm_dead_model_ttl() / 3600.0
+    except Exception:
+        return 24.0
+
+
+def _model_fingerprint(provider: str, model: str) -> str:
+    """Credential + configured-slug fingerprint, so rotating a key or pointing the
+    tier at a different model re-probes instead of staying pinned off."""
+    material = f"{_provider_key(provider)}|{model}"
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
+
+
+def _load_persisted_dead_models() -> None:
+    """Seed the session set from the cross-run store (O11 governor), once."""
+    global _dead_models_loaded
+    if _dead_models_loaded:
+        return
+    _dead_models_loaded = True
+    try:
+        from core.quota_governor import persisted_dead_models
+
+        # Pass 1 (no fingerprints) just lists the stored slugs; pass 2 re-checks them
+        # against what the CURRENT config resolves to, so a rotated key or a retargeted
+        # tier clears the record instead of pinning a live model off.
+        fps = {
+            slug: _model_fingerprint(*slug.split("/", 1))
+            for slug in persisted_dead_models()
+            if "/" in slug
+        }
+        for slug in persisted_dead_models(fps):
+            prov, _, mdl = slug.partition("/")
+            if prov and mdl:
+                _dead_models.add((prov, mdl))
+    except Exception as exc:
+        logger.debug("dead-model load skipped: %s", exc)
 
 
 def _model_is_dead(provider: str, model: str) -> bool:
     with _llm_breaker_lock:
+        if not _dead_models_loaded:
+            _load_persisted_dead_models()
         return (provider, model) in _dead_models
 
 
@@ -245,22 +345,45 @@ def _mark_model_dead(provider: str, model: str, reason: str, tier: str = "") -> 
         if (provider, model) in _dead_models:
             return
         _dead_models.add((provider, model))
+    try:
+        from core.quota_governor import llm_mark_model_dead
+
+        llm_mark_model_dead(
+            provider, model, reason, fingerprint=_model_fingerprint(provider, model)
+        )
+    except Exception as exc:
+        logger.debug("dead-model persistence skipped: %s", exc)
     override = f"{provider.upper()}_MODEL_{tier.upper()}" if tier else f"{provider.upper()}_MODEL"
     logger.warning(
-        "LLM model '%s/%s' unavailable this session (%s) — skipping it. If this is a "
-        "retired free slug, set %s to a live one.",
+        "LLM model '%s/%s' unavailable (%s) — skipping it for %.0fh (persisted across "
+        "runs). If this is a retired free slug, set %s to a live one; changing it "
+        "clears the record.",
         provider,
         model,
         reason,
+        _dead_model_ttl_hours(),
         override,
     )
 
 
-def reset_llm_breaker() -> None:
-    """Test/CLI helper — re-enable all LLM providers and dead models."""
+def reset_llm_breaker(*, persisted: bool = True) -> None:
+    """Test/CLI helper — re-enable all LLM providers and dead models.
+
+    Clears the cross-run dead-model store too: a session-only reset would look like
+    a no-op on the next call, since the persisted records reload immediately.
+    """
+    global _dead_models_loaded
     with _llm_breaker_lock:
         _llm_disabled_state.clear()
         _dead_models.clear()
+        _dead_models_loaded = not persisted
+    if persisted:
+        try:
+            from core.quota_governor import llm_clear_dead_models
+
+            llm_clear_dead_models()
+        except Exception as exc:
+            logger.debug("llm_clear_dead_models skipped: %s", exc)
 
 
 def disabled_providers() -> dict[str, str]:
@@ -489,8 +612,8 @@ def _add_llm_spend(cost: float) -> None:
         from core.quota_governor import llm_add_spend
 
         llm_add_spend(cost)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("llm_add_spend skipped: %s", exc)
 
 
 def _over_llm_budget() -> bool:
@@ -513,8 +636,8 @@ def reset_llm_spend() -> None:
         from core.quota_governor import llm_reset_spend
 
         llm_reset_spend()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("llm_reset_spend skipped: %s", exc)
 
 
 # --- OpenAI-compatible client cache -----------------------------------------

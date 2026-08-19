@@ -34,7 +34,8 @@ def load_cases() -> list[tuple[str, str]]:
             continue
         try:
             cases.append((path.stem, path.read_text(encoding="utf-8")))
-        except Exception:
+        except Exception as exc:
+            logger.debug("Corpus case %s unreadable: %s", path.stem, exc)
             continue
     return cases
 

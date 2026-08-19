@@ -19,6 +19,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from core.logging import get_logger
+
+logger = get_logger("core.data_quality")
+
 # Statuses that mean "the signal did not deliver data" (inactive is a normal
 # no-data outcome, not a failure; skipped/gated signals never appear in traces).
 _FAIL_STATUSES = {
@@ -101,8 +105,8 @@ def _join_checks(channel_id: str | None, limit: int = 25) -> dict[str, Any]:
                 metrics = {}
             if not metrics:
                 out["uploads_without_metrics"] += 1
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("resolve_channel_id skipped: %s", exc)
     return out
 
 
@@ -148,6 +152,14 @@ def warnings(data: dict[str, Any] | None = None, *, channel_id: str | None = Non
             f"{joins['uploads_without_metrics']} uploaded video(s) with no metrics yet "
             "(run sync-metrics)"
         )
+    # Dead/stale research feeds starve the grounding corpus. Read from the last
+    # persisted `ops feeds` run — no network here, the dashboard must stay fast.
+    try:
+        from core.feed_health import cached_warnings
+
+        out.extend(cached_warnings())
+    except Exception as exc:
+        logger.debug("cached_warnings skipped: %s", exc)
     return out
 
 

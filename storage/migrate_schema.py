@@ -9,7 +9,18 @@ Legacy incremental patches (idempotency_key, assets, content_runs columns):
 
     py -m storage.migrate_schema
 
-After Alembic is adopted, stamp baseline on DBs that already have tables:
+**Alembic is the source of truth.** This script now finishes by calling
+`alembic upgrade head`, because the two paths had silently diverged: the hand-patches
+below applied 0002/0003's changes directly, leaving the live DB at 0003's *state* while
+still stamped 0001 — so anything Alembic-only (0004's foreign keys) never arrived.
+The patches are kept for databases predating Alembic; new schema changes belong in a
+migration, not here.
+
+**Migration convention:** every migration is defensively idempotent — inspect the
+current state and return early if already applied (see 0002/0003/0004). That is what
+makes replaying them over a hand-patched database a no-op.
+
+For a DB that already has tables but no stamp at all:
 
     alembic stamp 0001
 """
@@ -120,6 +131,19 @@ def main() -> int:
                     print(f"content_runs.{col} already present")
         else:
             print("content_runs table missing — run py -m storage.init_db first")
+
+    # Hand-patching above and Alembic had drifted apart: this script applied 0002/0003's
+    # changes directly, so the live DB sat at 0003's *state* while stamped 0001, and
+    # anything Alembic-only (0004's foreign keys) never reached it. Finish through
+    # Alembic so both paths converge on head. 0002+ are written defensively idempotent,
+    # so replaying them over a hand-patched DB is a no-op.
+    try:
+        from storage.alembic_runner import upgrade_head
+
+        upgrade_head()
+        print("Alembic: upgraded to head")
+    except Exception as exc:
+        print(f"Alembic upgrade skipped ({exc}) — run 'alembic upgrade head' manually")
 
     print("Schema migration complete.")
     return 0

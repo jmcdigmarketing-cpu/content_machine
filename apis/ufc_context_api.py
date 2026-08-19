@@ -1,7 +1,9 @@
 """
-UFC/MMA research signal — RSS + news API (+ optional Tapology when enabled).
+UFC/MMA research signal — RSS + news API + API-SPORTS fighter stats.
 
 Reddit removed; MMA RSS feeds (Sherdog, MMA Fighting, etc.) via blog_rss path.
+Tapology is retired (Cloudflare 403) but still consulted when its flag is set —
+structured fighter facts now come from `apis/mma_stats_api.py`.
 """
 
 from __future__ import annotations
@@ -113,6 +115,17 @@ def get_ufc_context(topic: str):
         if event_match:
             search_topic = f"UFC {event_match.group(1)} {topic}"
 
+        # Structured fighter facts. Replaces the Tapology scrape, which has been
+        # Cloudflare-blocked (403) since ~2026-07 and returned nothing for a month.
+        # Tapology stays behind its flag for revival; see apis/tapology_api.py.
+        fighter_stats: dict[str, Any] = {}
+        try:
+            from apis.mma_stats_api import gather_mma_stats
+
+            fighter_stats = gather_mma_stats(topic)
+        except Exception:
+            fighter_stats = {}
+
         tapology: dict[str, Any] = {}
         from apis.tapology_api import scrape_enabled as tapology_enabled
 
@@ -126,14 +139,20 @@ def get_ufc_context(topic: str):
 
         headlines = _fetch_news_headlines(search_topic) if NEWS_API_KEY else []
         rss_headlines = _fetch_mma_rss(topic)
+        stat_lines = fighter_stats.get("lines") or []
 
         active = bool(
-            headlines or rss_headlines or tapology.get("bouts") or tapology.get("events_found")
+            headlines
+            or rss_headlines
+            or stat_lines
+            or tapology.get("bouts")
+            or tapology.get("events_found")
         )
         score = min(
             20
             + len(headlines) * 8
             + len(rss_headlines) * 6
+            + len(stat_lines) * 10
             + len(tapology.get("bouts") or []) * 12,
             100,
         )
@@ -142,18 +161,22 @@ def get_ufc_context(topic: str):
             connected=True,
             active=active,
             score=score,
-            confidence=0.9 if tapology.get("bouts") else (0.85 if headlines else 0.7),
+            confidence=0.9
+            if (stat_lines or tapology.get("bouts"))
+            else (0.85 if headlines else 0.7),
             data={
+                "fighter_stats": fighter_stats,
                 "tapology": tapology,
                 "headlines": headlines,
                 "rss_headlines": rss_headlines,
                 "research_note": (
                     "RSS + news headlines are source of truth for event context. "
+                    "Fighter records/physicals come from API-SPORTS. "
                     "Do not invent retired fighters as active contenders."
                 ),
             },
             status=STATUS_OK if active else STATUS_INACTIVE,
-            status_detail=None if active else "No UFC research (RSS/news/tapology)",
+            status_detail=None if active else "No UFC research (RSS/news/fighter stats)",
         )
     except Exception as e:
         status, detail = classify_exception(e)

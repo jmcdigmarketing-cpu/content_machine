@@ -55,6 +55,24 @@ class TestFindUngrounded(unittest.TestCase):
         script = "The Community is divided. Drop Your Thoughts in the comments."
         self.assertEqual(find_ungrounded_entities(script, ""), [])
 
+    def test_sentence_initial_discourse_adverbs_not_flagged(self):
+        # Live-run regression (2026-08-14): "Otherwise, we'll keep seeing…" was
+        # reported as an unsupported specific because _MONONYM matches any 4+ char
+        # capitalised word. It cost a real script 45 grounding points and a letter
+        # grade (A -> B). These words can never be a name.
+        script = (
+            "The UFC needs to overhaul its rankings. Otherwise, we keep seeing this. "
+            "However, the panel disagrees. Instead, they wait. Basically, it is broken. "
+            "Meanwhile, nothing changes. Honestly, that is the problem."
+        )
+        self.assertEqual(find_ungrounded_entities(script, ""), [])
+
+    def test_real_mononym_still_flagged_after_adverb_skip(self):
+        # The adverb skip must not blunt the check: a real invented name still flags.
+        # (Mononyms only extract in sports context — hence the UFC mention.)
+        script = "Otherwise, Salkilld dominates the UFC lightweight division."
+        self.assertIn("Salkilld", find_ungrounded_entities(script, "The UFC rankings updated."))
+
     def test_invented_season_flagged(self):
         script = "Season 7 changes everything."
         facts = "VERIFIED FACTS:\n- The game is popular."

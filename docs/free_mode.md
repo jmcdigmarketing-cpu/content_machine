@@ -84,6 +84,37 @@ Free mode sets `TTS_PROVIDER=piper` for you once `PIPER_VOICE` exists.
 > No local voice yet? Free mode still runs discovery + scripting, but **blocks at render**
 > with the install reminder. Standard mode is unaffected (uses ElevenLabs).
 
+#### Captions are the catch — local TTS emits no word timings
+
+ElevenLabs returns per-character alignment and `core/tts.py` writes an
+`<audio>.words.json` sidecar, which is what makes captions land on the spoken word.
+**Local TTS produces no sidecar**, so `video/subtitles.py` falls back to *proportional*
+timing and captions drift out of sync. Turn the local aligner on alongside Piper:
+
+```powershell
+# in .env — pair these two, or $0 voice costs you caption accuracy
+TTS_PROVIDER=piper
+PIPER_VOICE=C:\voices\en_US-lessac-medium.onnx
+CAPTION_ALIGN_BACKEND=faster_whisper    # CPU; model downloads on first use (~75MB)
+```
+
+Timing accuracy is good — **43–56 ms** median caption line-start error, 12–15× realtime
+on CPU (measured, `py -m scripts.bench_caption_align`).
+
+**Caption text comes from your script, not from the ASR** (2026-08-16). The aligner
+transcribes blind and gets proper nouns wrong — "Salkilld" came back as "Salkal" — so
+[video/caption_retext.py](../video/caption_retext.py) keeps whisper's timings and takes
+the words from the script. It is on by default; `CAPTION_RETEXT=off` restores raw ASR
+text. If the transcript doesn't match the script it declines and captions fall back to
+the proportional estimate, so a mismatch degrades timing rather than spelling.
+
+Two things to know before you switch a published channel over:
+
+- **Judge the voice yourself.** Sample: `output/samples/piper_lessac_run65.mp3`.
+- **Piper speaks ~20% slower** than ElevenLabs for the same script (66.3s vs 55.2s on
+  run 65). That shifts video length and feeds the learned-length loop, so re-run
+  `py -m scripts.bench_script_duration` after switching or `WORDS_PER_SECOND` goes stale.
+
 #### Where to get more free voices
 
 - **Piper** — the full catalog is the **`rhasspy/piper-voices`** repo on HuggingFace

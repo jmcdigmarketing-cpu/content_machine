@@ -28,7 +28,7 @@
   "rss_feeds": [
     {
       "name": "MMA Fighting",
-      "url": "https://www.mmafighting.com/rss/current",
+      "url": "https://www.mmafighting.com/rss/index.xml",
       "domains": ["ufc", "mma"]
     },
     {
@@ -47,8 +47,8 @@
       "domains": ["gaming"]
     },
     {
-      "name": "ESPN MMA",
-      "url": "https://www.espn.com/espn/rss/mma/news",
+      "name": "Sherdog",
+      "url": "https://www.sherdog.com/rss/news.xml",
       "domains": ["ufc", "mma"]
     }
   ],

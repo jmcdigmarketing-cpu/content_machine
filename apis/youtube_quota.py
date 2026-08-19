@@ -17,6 +17,9 @@ from config.paths import (
     migrate_file_if_needed,
     resolve_existing_path,
 )
+from core.logging import get_logger
+
+logger = get_logger("apis.youtube_quota")
 
 _LEGACY_QUOTA = os.path.join(ROOT_DIR, "youtube_quota.json")
 UNITS_SEARCH_LIST = 100
@@ -146,8 +149,8 @@ def next_quota_retry_at():
             if nxt is not None:
                 # Small buffer so the worker doesn't race the reset boundary.
                 return nxt + timedelta(minutes=5)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("YouTube quota reset time unavailable: %s", exc)
     retry = (now + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
     if retry <= now:
         retry = now + timedelta(hours=6)

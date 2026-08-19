@@ -12,6 +12,10 @@ import os
 import shutil
 import sys
 
+from core.logging import get_logger
+
+logger = get_logger("core.ui_theme")
+
 
 def ui_color_enabled() -> bool:
     if os.getenv("CONTENT_UI_COLOR", "true").lower() in ("0", "false", "no"):
@@ -27,8 +31,8 @@ def ui_color_enabled() -> bool:
             mode = ctypes.c_uint32()
             if kernel.GetConsoleMode(handle, ctypes.byref(mode)):
                 kernel.SetConsoleMode(handle, mode.value | 0x0004)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("GetStdHandle skipped: %s", exc)
     return True
 
 

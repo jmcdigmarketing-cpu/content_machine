@@ -22,7 +22,12 @@ config = context.config
 target_metadata = Base.metadata
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # disable_existing_loggers=False is load-bearing, not tidiness. fileConfig defaults
+    # it to True, which sets `.disabled = True` on every logger that already exists —
+    # i.e. the whole `content_machine.*` tree. `storage/migrate_schema.py` calls
+    # `upgrade_head()` inside a normal process, so with the default every log line after
+    # a migration is dropped in silence: fail-open warnings, breaker notices, errors.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 _settings = get_settings()
 _ini_url = config.get_main_option("sqlalchemy.url") or ""

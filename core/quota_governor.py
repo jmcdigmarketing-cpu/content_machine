@@ -106,8 +106,10 @@ def clear_signal(name: str) -> None:
     """Drop one persisted signal record (operator fixed the underlying issue)."""
     try:
         quota_state.clear_exhausted(_SCOPE, name)
-    except Exception:
-        pass
+    except Exception as exc:
+        # Warning, not debug: the record survives, so a paid signal the operator just
+        # fixed stays disabled for up to a billing cycle (CLAUDE.md's expensive case).
+        logger.warning("Could not clear persisted disable for signal '%s': %s", name, exc)
 
 
 def clear_all_signals() -> None:
@@ -115,8 +117,9 @@ def clear_all_signals() -> None:
     try:
         for name in quota_state.list_exhausted(_SCOPE):
             quota_state.clear_exhausted(_SCOPE, name)
-    except Exception:
-        pass
+    except Exception as exc:
+        # The reset silently did nothing — the operator will assume it worked.
+        logger.warning("Could not clear persisted signal disables: %s", exc)
 
 
 def persisted_disabled_signals() -> dict[str, str]:
@@ -175,8 +178,9 @@ def apify_is_exhausted(purpose: str) -> tuple[bool, str]:
 def apify_clear(purpose: str) -> None:
     try:
         quota_state.clear_exhausted(_APIFY_SCOPE, purpose)
-    except Exception:
-        pass
+    except Exception as exc:
+        # Leaves Apify looking exhausted after credits are back — persists to reset day.
+        logger.warning("Could not clear persisted Apify exhaustion for '%s': %s", purpose, exc)
 
 
 def apify_get_usage(purpose: str) -> dict | None:
@@ -215,8 +219,10 @@ def llm_add_spend(cost: float, *, key: str | None = None, ttl_seconds: int = 48 
         return
     try:
         quota_state.increment_value(key or llm_today_spend_key(), cost, ttl_seconds=ttl_seconds)
-    except Exception:
-        pass
+    except Exception as exc:
+        # The daily-budget downgrade reads this ledger. If the write is lost the guard
+        # under-counts spend and quietly stops guarding, so this must be visible.
+        logger.warning("LLM spend of $%.4f not persisted (budget guard blind): %s", cost, exc)
 
 
 def llm_spend_today(key: str | None = None) -> float:
@@ -229,8 +235,131 @@ def llm_spend_today(key: str | None = None) -> float:
 def llm_reset_spend(key: str | None = None) -> None:
     try:
         quota_state.set_value(key or llm_today_spend_key(), 0.0, ttl_seconds=1)
+    except Exception as exc:
+        logger.warning("Could not reset the LLM spend ledger: %s", exc)
+
+
+# --------------------------------------------------------------------------- #
+# LLM dead-model scope — a (provider, model) slug the provider says doesn't exist.
+# The session breaker in llm_router already skips it for the rest of the process;
+# persisting it stops every NEW run paying the same 404 round-trip. Live runs on
+# 2026-08-14 re-probed two retired free slugs on all three runs.
+# The check point stays in llm_router (decisions.md §13) — only persistence here.
+# --------------------------------------------------------------------------- #
+_LLM_MODEL_SCOPE = "llm_model"
+
+
+def llm_dead_model_ttl() -> int:
+    """A retired slug is usually gone for good, but a model can come back, so this
+    expires rather than persisting forever — one probe per TTL, not per run."""
+    try:
+        return int(os.getenv("LLM_DEAD_MODEL_TTL_SECONDS", str(24 * 60 * 60)))
+    except ValueError:
+        return 24 * 60 * 60
+
+
+def _llm_model_slug(provider: str, model: str) -> str:
+    return f"{provider}/{model}"
+
+
+def _llm_model_keyhash_key(provider: str, model: str) -> str:
+    return f"llm_model_keyhash:{_llm_model_slug(provider, model)}"
+
+
+def llm_mark_model_dead(
+    provider: str, model: str, reason: str, *, fingerprint: str = "", ttl_seconds: int | None = None
+) -> None:
+    """Persist a dead (provider, model) slug across runs.
+
+    `fingerprint` is supplied by the caller (llm_router owns the provider->env
+    mapping) so rotating a key or pointing the tier at a new slug invalidates the
+    record instead of pinning a model off forever.
+    """
+    if not persist_enabled():
+        return
+    try:
+        ttl = ttl_seconds if ttl_seconds is not None else llm_dead_model_ttl()
+        quota_state.mark_exhausted(
+            _LLM_MODEL_SCOPE, _llm_model_slug(provider, model), reason, ttl_seconds=ttl
+        )
+        if fingerprint:
+            quota_state.set_value(
+                _llm_model_keyhash_key(provider, model), fingerprint, ttl_seconds=ttl
+            )
+    except Exception as exc:
+        logger.debug("dead-model persistence skipped for '%s/%s': %s", provider, model, exc)
+
+
+def persisted_dead_models(fingerprints: dict[str, str] | None = None) -> dict[str, str]:
+    """Unexpired dead-model records -> {"provider/model": reason}, key-hash checked.
+
+    `fingerprints` maps "provider/model" -> current fingerprint; a record whose
+    stored fingerprint no longer matches is cleared and not returned.
+    """
+    if not persist_enabled():
+        return {}
+    try:
+        records = quota_state.list_exhausted(_LLM_MODEL_SCOPE)
     except Exception:
-        pass
+        return {}
+    out: dict[str, str] = {}
+    for slug, reason in records.items():
+        stored = quota_state.get_value(f"llm_model_keyhash:{slug}")
+        if stored and fingerprints is not None:
+            current = fingerprints.get(slug, "")
+            if current and current != stored:
+                llm_clear_dead_model(slug)
+                logger.info("Persisted dead-model '%s' cleared — config/credential changed", slug)
+                continue
+        out[slug] = reason
+    return out
+
+
+def llm_clear_dead_model(slug: str) -> None:
+    try:
+        quota_state.clear_exhausted(_LLM_MODEL_SCOPE, slug)
+    except Exception as exc:
+        # A revived model stays skipped until the TTL expires.
+        logger.warning("Could not clear persisted dead-model '%s': %s", slug, exc)
+
+
+def llm_clear_dead_models() -> None:
+    """Drop every persisted dead-model record (reset helper)."""
+    try:
+        for slug in quota_state.list_exhausted(_LLM_MODEL_SCOPE):
+            llm_clear_dead_model(slug)
+    except Exception as exc:
+        logger.warning("Could not clear persisted dead-model records: %s", exc)
+
+
+# --------------------------------------------------------------------------- #
+# YouTube scope (O12) — daily unit consumption, reported through the governor.
+#
+# `apis/youtube_quota.py` remains the counter and the *check point* (decisions §13:
+# the governor unifies state + reporting, never the layered checks). It keeps its own
+# per-day file because uploads and the job worker read it outside a run; this scope
+# exists so `snapshot()` reports YouTube alongside Apify and LLM instead of the
+# dashboard reaching into a second store directly.
+# --------------------------------------------------------------------------- #
+
+
+def youtube_usage() -> dict:
+    """Today's YouTube unit usage, fail-open to zeros when the tracker is unreadable."""
+    try:
+        from apis.youtube_quota import get_usage_summary
+
+        summary = get_usage_summary()
+        used = int(summary.get("used") or 0)
+        limit = int(summary.get("limit") or 0)
+        return {
+            "used": used,
+            "limit": limit,
+            "remaining": int(summary.get("remaining") or 0),
+            "pct": round(100.0 * used / limit, 1) if limit else 0.0,
+            "day": summary.get("day", ""),
+        }
+    except Exception:
+        return {"used": 0, "limit": 0, "remaining": 0, "pct": 0.0, "day": ""}
 
 
 # --------------------------------------------------------------------------- #
@@ -246,6 +375,7 @@ def snapshot(apify_purpose: str = "main") -> dict:
             "reason": reason,
             "usage": apify_get_usage(apify_purpose),
         },
-        "llm": {"spend_today": llm_spend_today()},
+        "llm": {"spend_today": llm_spend_today(), "dead_models": persisted_dead_models()},
         "signals": {"persisted": persisted_disabled_signals()},
+        "youtube": youtube_usage(),
     }

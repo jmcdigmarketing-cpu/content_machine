@@ -67,7 +67,8 @@ def ingest_pdf(path: str) -> dict[str, Any]:
         for page in reader.pages:
             try:
                 parts.append(page.extract_text() or "")
-            except Exception:
+            except Exception as exc:
+                logger.debug("PDF page text extraction failed: %s", exc)
                 continue
         text = "\n".join(p.strip() for p in parts if p.strip())
     except Exception as exc:  # missing pypdf / unreadable file — never raise

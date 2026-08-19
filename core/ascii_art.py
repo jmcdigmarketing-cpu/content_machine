@@ -265,8 +265,8 @@ def section_glyph(name: str) -> str:
         from core.themes import active_theme
 
         glyphs = active_theme().section_glyphs  # {} (plain theme) = no glyphs
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("active_theme skipped: %s", exc)
     key = name.strip().lower().split()[0]
     g = glyphs.get(key, "•" if glyphs else "")
     if not g:

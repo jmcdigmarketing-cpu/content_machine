@@ -8,6 +8,9 @@ from functools import lru_cache
 from typing import Any
 
 from config.paths import ROOT_DIR
+from core.logging import get_logger
+
+logger = get_logger("config.seo")
 
 SEO_DIR = os.path.join(ROOT_DIR, "config", "seo")
 HINTS_DIR = os.path.join(ROOT_DIR, "data")
@@ -104,8 +107,8 @@ def default_tags_for_channel(channel_id: str, topic: str | None = None) -> list[
             if domain not in ("ufc", "mma"):
                 drop = {"ufc", "mma", "featherweight", "lightweight"}
                 merged = [t for t in merged if t.lower() not in drop]
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("infer_domain skipped: %s", exc)
 
     return merged
 

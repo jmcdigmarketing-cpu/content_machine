@@ -23,12 +23,20 @@ from __future__ import annotations
 import re
 
 # Initial-capital word (excludes ALL-CAPS acronyms, which are usually known).
-_CAP = r"[A-Z][a-z]+"
+# Hyphenated compounds count as ONE word: "Take-Two", "Spider-Man", "Jean-Luc".
+_CAP = r"[A-Z][a-z]+(?:-[A-Z]?[a-z]+)*"
 # Lowercase connectors allowed *inside* a single proper-noun phrase
 # ("Need for Speed", "Lord of the Rings"). Deliberately excludes "and"/"vs"/etc.
 # which join *separate* entities ("Emma Frost and Black Widow" → two phrases).
 _CONNECT = r"(?:of|for|the)"
 _PHRASE = re.compile(rf"{_CAP}(?:\s+(?:{_CONNECT}\s+)?{_CAP})+")
+
+# A hyphenated proper noun standing alone ("Take-Two", "Spider-Man", "Nova-Strike").
+# `_PHRASE` needs two space-separated capitals, and `_MONONYM` only fires in sports
+# context, so before this a *fabricated* hyphenated name was invisible to grounding
+# entirely — `find_ungrounded_entities("Nova-Strike launches soon.", facts)` returned
+# []. A hyphenated compound is distinctive enough to verify on its own.
+_HYPHEN_NAME = re.compile(r"\b[A-Z][a-z]+(?:-[A-Z][a-z]+)+\b")
 
 # Explicit version / season / patch specifics ("Season 8.5", "Patch 1.2").
 _VERSION = re.compile(r"(?:Season|Patch|Version|Chapter|Act|Update)\s+[0-9][\w.]*", re.IGNORECASE)
@@ -124,7 +132,76 @@ _COMMON_WORDS = {
     "bad",
     "another",
     "other",
+    # Subordinating conjunctions and adverbs that open a sentence. Run 66 flagged
+    # "If Netflix" as an unverified specific — `_CAP` matched sentence-initial "If",
+    # and because "if" was absent here it counted as a *distinctive* token that had to
+    # appear in the facts. It never does, so a clean script got a hallucination warning
+    # and lost a grade. `_LEADING_STOPWORDS` below stops the phrase forming at all;
+    # these entries also keep such words from being treated as distinctive anywhere.
+    "if",
+    "while",
+    "because",
+    "since",
+    "though",
+    "although",
+    "unless",
+    "until",
+    "after",
+    "before",
+    "whether",
+    "so",
+    "yet",
+    "both",
+    "either",
+    "neither",
+    "once",
+    "unlike",
+    "despite",
+    "meanwhile",
+    "instead",
 }
+
+# A proper-noun phrase must not START on one of these. Sentence-initial capitalisation
+# makes "If Netflix", "But Rockstar", "When Sony" look like two-word proper nouns; the
+# entity actually worth verifying is the rest of the phrase.
+#
+# Deliberately a NARROW list of function words, not all of `_COMMON_WORDS`: that set also
+# holds ordinary nouns and colours which are legitimately part of names, and trimming on
+# it destroyed "Black Widow" -> "Widow" and "Season 8.5" -> "8.5". "The" is excluded too
+# ("The Rock", "The Athletic" are real names).
+_LEADING_STOPWORDS = frozenset(
+    {
+        "if",
+        "when",
+        "while",
+        "because",
+        "since",
+        "though",
+        "although",
+        "unless",
+        "until",
+        "whether",
+        "but",
+        "and",
+        "so",
+        "yet",
+        "then",
+        "once",
+        "unlike",
+        "despite",
+        "meanwhile",
+        "instead",
+        "what",
+        "why",
+        "how",
+        "who",
+        "which",
+        "that",
+        "this",
+        "these",
+        "those",
+    }
+)
 
 _TOKEN = re.compile(r"[a-z0-9.]+")
 # Distinctive mononyms common in sports scripts (LeBron, Kawhi, Giannis…).
@@ -137,6 +214,42 @@ _SPORTS_CONTEXT_RE = re.compile(
     re.I,
 )
 _MONONYM_SKIP = _COMMON_WORDS | {
+    # Sentence-initial discourse adverbs. `_MONONYM` matches any capitalised word of
+    # 4+ chars, so "Otherwise, we'll keep seeing…" was reported as an unsupported
+    # specific in a live run — costing a real script 45 grounding points and a full
+    # letter grade. These can never be a name.
+    "otherwise",
+    "however",
+    "therefore",
+    "instead",
+    "basically",
+    "meanwhile",
+    "moreover",
+    "furthermore",
+    "besides",
+    "regardless",
+    "eventually",
+    "suddenly",
+    "clearly",
+    "honestly",
+    "frankly",
+    "obviously",
+    "either",
+    "neither",
+    "though",
+    "although",
+    "because",
+    "since",
+    "unless",
+    "until",
+    "while",
+    "whether",
+    "sure",
+    "both",
+    "here",
+    "there",
+    "then",
+    "thats",
     "the",
     "this",
     "that",
@@ -169,9 +282,6 @@ _MONONYM_SKIP = _COMMON_WORDS | {
     "cbs",
     "let",
     "now",
-    "then",
-    "here",
-    "there",
     "just",
     "still",
     "real",
@@ -206,7 +316,6 @@ _MONONYM_SKIP = _COMMON_WORDS | {
     "friday",
     "saturday",
     "sunday",
-    "meanwhile",
     "rookie",
     "bottom",
     "look",
@@ -276,13 +385,40 @@ def _extract_mononyms(text: str, *, covered_spans: list[tuple[int, int]]) -> lis
     return out
 
 
+def _trim_leading_stopwords(entity: str) -> str:
+    """Drop sentence-initial function words that only look like part of a proper noun.
+
+    "If Netflix" -> "Netflix", "But Rockstar Games" -> "Rockstar Games". The capital is
+    an artefact of starting a sentence, and reporting the whole phrase as the thing that
+    failed verification is both wrong and confusing to read.
+    """
+    words = entity.split()
+    while len(words) > 1 and words[0].lower() in _LEADING_STOPWORDS:
+        words.pop(0)
+    return " ".join(words)
+
+
 def extract_entities(text: str) -> list[str]:
     """Proper-noun phrases, mononyms, and explicit version tokens (order-preserving)."""
     out: list[str] = []
     seen: set[str] = set()
     covered: list[tuple[int, int]] = []
-    for match in list(_PHRASE.finditer(text or "")) + list(_VERSION.finditer(text or "")):
+    # Only phrase matches get trimmed — a _VERSION match is deliberately "Season 8.5",
+    # and its leading word is the whole point of the pattern.
+    phrase_spans = [m.span() for m in _PHRASE.finditer(text or "")]
+    for match, trim in (
+        [(m, True) for m in _PHRASE.finditer(text or "")]
+        + [(m, False) for m in _VERSION.finditer(text or "")]
+        + [(m, False) for m in _HYPHEN_NAME.finditer(text or "")]
+    ):
+        # A hyphenated name inside a longer phrase is already covered by it
+        # ("Jean-Luc Picard" would otherwise also yield "Jean-Luc").
+        start, end = match.span()
+        if not trim and any(s <= start and end <= e for s, e in phrase_spans):
+            continue
         ent = match.group(0).strip()
+        if trim:
+            ent = _trim_leading_stopwords(ent)
         covered.append(match.span())
         key = ent.lower()
         if key not in seen:

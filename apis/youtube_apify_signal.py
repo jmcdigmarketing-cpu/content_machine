@@ -65,8 +65,8 @@ def _fetch_items(backend: str, query: str) -> tuple[list[dict] | None, str]:
                 if free_items:
                     return free_items, "free"
             return [], "apify_off"
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("apify_disabled skipped: %s", exc)
 
     if not os.getenv("APIFY_CONTENT_MACHINE_KEY", "").strip():
         return None, "no_key"
@@ -91,8 +91,8 @@ def _build_query(topic: str) -> str:
         anchors = extract_anchors(topic)
         if anchors:
             return f"{anchors[0]} {topic}"[:90]
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("extract_anchors skipped: %s", exc)
     return topic[:90]
 
 

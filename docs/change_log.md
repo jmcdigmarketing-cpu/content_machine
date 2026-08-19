@@ -6,6 +6,144 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Branch + PR triage; the stack goes up as PR #34 — 2026-08-17
+
+*Six weeks of work had never been reviewed or CI-validated. Suite 1433 green.*
+
+- **21 commits opened as a single PR** (`feat/trade-validation-default-on` 6 →
+  `feat/research-intake-repair` 15). It merges cleanly; merging to `main` is left to the
+  operator.
+- **CI paid for itself on the first run.** It had never executed on any of these commits —
+  `.github/workflows/ci.yml` fires only on push-to-`main` and `pull_request` → `main` — and
+  immediately failed with 3 errors: `test_caption_align` patched the **real**
+  `torch.cuda.is_available`, but torch is in the optional `[providers]` extra, so those
+  tests only ever passed on a machine that happened to have it. Now injects a fake torch
+  and covers the absent-torch case. *Rule: never patch an optional dependency's real
+  module in a test.*
+- **All seven stale PRs closed (#26–#32), every branch deleted.** #27 was the dangerous
+  one — superseded, and it still carried the expired `"2026-07-25 18:00"` that #33
+  replaced, so merging it would have made CI permanently red.
+- **Five orphan docs harvested before closing** (~1,000 lines that existed nowhere else):
+  `llm_provider_strategy.md`, `strategy_2026H2.md`, `next_ideas_2026-07.md`,
+  `code_audit_2026-07.md`, `efficiency_audit_2026-07.md`. Only the new files were taken —
+  their edits to shared docs were superseded, which also avoided every conflict — and each
+  carries a dated header naming what has since replaced it.
+- **Hardened `tests/test_alembic_logging.py`**: it disables every logger on purpose to
+  prove the footgun is real, and the restore was written *after* the assertion. A failure
+  in between would have left the logger tree disabled for all later tests, silently
+  breaking their `assertLogs`. The restore is now an `addCleanup` registered first.
+
+### The intro step can no longer lose a render — 2026-08-17
+
+*First step of the render/publish coverage wave (paused part-way — remaining design is
+in [roadmap.md](roadmap.md) under the `[~]` entry). Suite 1432 green.*
+
+- **`prepend_channel_intro` could destroy a just-rendered video.** It moves the finished
+  mp4 aside (`os.replace` to a `.body.tmp.mp4`) before ffmpeg concatenates intro + body
+  back to the original path, and the restore ran **only on a non-zero exit code**. ffmpeg
+  missing from PATH raises before any exit code exists, so the render stayed parked under
+  the temp name while `render_vertical_video` logged *"Channel intro skipped (render
+  kept)"*. The pipeline then recorded an `mp4_path` with no file behind it, surfacing much
+  later as an "invalid file" upload failure.
+- Reproduced before fixing — the test failed with *"rendered video vanished from its
+  path"*. The window is now a `try/finally` covering a non-zero exit, a raising
+  subprocess, an empty output and Ctrl-C, and the output is checked for existence and
+  non-zero size before the temp copy is deleted (exit 0 is not proof of an output).
+- `tests/test_channel_intro.py` (15): the failure window, the success path, the concat
+  command (a **silent** intro must still get synthesized `anullsrc` audio, or concat drops
+  the track and the voiceover slides earlier by the intro's length), and resolution order.
+- Also corrected `_probe_duration(...) or 3.0` → an explicit `None` check; `0.0` is a
+  probe answer, not a miss.
+
+### Fail-open made fail-visible — 2026-08-16
+
+*The audit's "real debt", paid down. Suite 1421 green.*
+
+- **All 98 silent handlers now log** (90 `try/except/pass` + 8 `try/except/continue`), and
+  **`S110`/`S112` are enabled in ruff** so a new bare swallow fails CI. `BLE` stays off —
+  it would flag all 420 broad handlers, and the correct ones outnumber the wrong ones.
+- **Level policy over blanket-debug** (decisions §24). `CONTENT_LOG_LEVEL` defaults to
+  `WARNING`, so the audit's own "add a `logger.debug` everywhere" would have produced 93
+  lines nobody reads. `warning` where a guarantee is lost — `quota_governor.llm_add_spend`
+  (a lost write makes the daily-budget guard under-count spend and stop guarding) and
+  `pipeline`'s `write_run_trace` (a miss blinds `ops traces`, `ops dossier` and
+  `data_quality` for that run); `debug` for best-effort enrichment.
+- **Silence is tested too** — `tests/test_fail_open_visibility.py` asserts the warnings
+  fire *and* that a healthy run emits none, because a warning that always fires teaches
+  the operator to ignore warnings.
+- **Migrations were switching off logging.** `alembic/env.py` called `fileConfig()` with
+  the default `disable_existing_loggers=True`, disabling the entire `content_machine.*`
+  tree; `migrate_schema` runs `upgrade_head()` in an ordinary process, so every log line
+  after a migration was dropped in silence. Fixed and pinned
+  (`tests/test_alembic_logging.py`) — found only because the new tests passed alone and
+  failed under `unittest discover`.
+
+### Captions spelled by the script, timed by whisper — 2026-08-16
+
+*The last thing standing between the project and a $0 voiceover. Suite 1411 green.*
+
+- **`video/caption_retext.py`** — whisper supplies the timing, the script supplies the
+  words, aligned with `difflib.SequenceMatcher` (decisions §23). Local-TTS captions had
+  been burning ASR text, which misspells precisely the fighter and game names the channel
+  is about: run 65 rendered "Salkal" for "Salkilld" and "Mattius Gamarat" for "Mateusz
+  Gamrot". One branch in `video/subtitles.py` wires it; the ElevenLabs sidecar path is
+  untouched.
+- **The matcher handles re-tokenisation, not just spelling** — whisper splits words
+  (`Quillan` → `Quill and`), writes numerals as words (`10` → `ten`), and drops or invents
+  tokens, any one of which desyncs a positional comparison permanently.
+- **Free in timing, measured** — run 66 (243 words): word error p50 42→43ms, caption
+  line p90 **117ms → 117ms**, while covering **243/243** script words instead of the
+  243-of-251 whisper transcribed cleanly, and correcting **12 misheard words**.
+  `scripts/bench_caption_align.py` gained `+retext` columns and now shares one matcher
+  with the shipped code instead of its own lookahead walk.
+- **Declines rather than guesses** — below `CAPTION_RETEXT_MIN_MATCH` (0.35, chosen from
+  measurement: real audio 0.87, unrelated ~0.0) it returns None and captions fall back to
+  the proportional estimate, since a transcript that doesn't match the script carries
+  timings for different audio.
+- **$0 path proven end to end** — a full Piper render with retexted burned captions was
+  produced and checked as pixels. **Nothing was switched:** ElevenLabs stays the default
+  pending the operator's voice judgement and a `bench_script_duration` re-run (Piper reads
+  ~20% slower).
+
+### Silent-failure repair — six waves — 2026-08-14/15
+
+*Six roadmap passes that kept converging on one shape: **things were failing quietly and
+reporting "nothing found" instead of "I am broken"** (decisions §18). Nothing crashed;
+every run looked fine. Suite 1377 green.*
+
+- **Research intake repair + source health** — Tapology retired (Cloudflare 403 for 33
+  days while reporting "no event match"); **11 of ~37 RSS feeds** were dead and replaced
+  with live-verified ones (**37/37 ok**); the Federal Reserve feed was alive but lost to a
+  **UTF-8 BOM** parse error (`rss_feeds.decode_feed_bytes`). New `core/feed_health.py` +
+  `ops feeds` classify ok/**stale**/dead with newest-item age, wired into `all-checks` and
+  `ops reliability`. `apis/mma_stats_api.py` (API-SPORTS MMA) replaces Tapology's
+  structured fighter data.
+- **`twitter` retired** — `inactive` on **19/19 run traces**, never produced a fact, and
+  as the slowest signal (~32s) it set the wall-clock floor for every discovery.
+  `apify_client.is_no_results()` now reports a sentinel payload as a failure.
+- **`youtube_comments` signal + O12 complete** — wired against the **official Data API**
+  (~1 unit/video) rather than the catalog's billed actor; surfaces unanswered audience
+  questions, labelled *unverified* so a viewer's guess can't become a claim. YouTube units
+  moved under the governor scope, and `core/reliability_history.py` adds the daily trend
+  the dashboard's snapshot could never show.
+- **Post-render cost persisted** — both render paths finalized a run *before* rendering,
+  so `features_json.cost.tts` was `0.0` on every rendered run and contribution margin was
+  overstated by its largest component. `ops economics` went from *$0.32 total ($0.02/video)*
+  to **$6.18 ($0.31/video, TTS 91%)**; `ops backfill-cost` repaired 38 historical runs.
+  TTS repriced from the operator's real plan ($0.22/1k, not a $0.30 guess) — decisions §22.
+- **Whisper CPU caption backend** — `faster_whisper` in `core/caption_align.py`, measured
+  against ElevenLabs sidecars at **43–56 ms** median caption line-start error, 12–15×
+  realtime. Landed deliberately **half-done**: captions still carry ASR text, which mangles
+  proper nouns, so the $0 TTS switch stays blocked.
+- **Run-66 fixes** — duration estimates were **38% wrong** (`WORDS_PER_SECOND` 2.4 vs a
+  measured 3.32); a false hallucination alarm (`"If Netflix"`) cost a run a grade while the
+  claim verifier said 12/12 backed; a timeout reported as a hard ERROR; an off-topic
+  audience question; and both cheap-tier LLM slugs were dead ends — one **hardcoded**, so
+  `.env` never fixed it (decisions §20, §21).
+- **Earlier in the same session** — Alembic `0004` `content_run` foreign keys (836 sentinel
+  rows preserved as `NULL`), vault fact-contamination cleanup, test-suite vault isolation,
+  and O12 part 1.
+
 ### Pillar 5 — Agent layer — 2026-07-07
 
 *Fifth/final pillar (decisions §15): agents that compose Pillars 1–4 into
@@ -59,7 +197,7 @@ Rivals esports while operator key facts were NBA. Suite 860 green.*
 
 ### Pillar 4 — Obsidian knowledge OS — 2026-07-07
 
-*Fourth pillar (decisions §17): the vault stops being a one-way sidecar. Runs
+*Fourth pillar (decisions §17b): the vault stops being a one-way sidecar. Runs
 flow back into it as browsable dossiers, reads are cached, and strategy notes
 finally have a read path. Suite 846 green.*
 

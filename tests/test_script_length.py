@@ -17,15 +17,33 @@ class TestScriptLength(unittest.TestCase):
         script = "one two three four five " * 20
         self.assertEqual(count_spoken_words(script), 100)
 
-    def test_estimate_duration(self):
-        script = "word " * 240
-        seconds = estimate_duration_seconds(script)
-        self.assertGreaterEqual(seconds, 90)
+    def test_estimate_duration_matches_measured_delivery(self):
+        # Run 66 rendered 243 words as 70.2s of audio. The old constant (2.4 w/s)
+        # predicted 101s — a 38% error the operator saw before deciding to render.
+        seconds = estimate_duration_seconds("word " * 243)
+        self.assertAlmostEqual(seconds, 70.2, delta=8.0)
 
-    def test_preset_targets(self):
+    def test_preset_seconds_are_derived_from_words(self):
+        # Durations used to be stored beside the word range and silently disagreed with
+        # it ("Extended (420-900s)" really produced ~300-600s). They are computed now,
+        # so the two can never drift apart again.
+        from core.script_length import WORDS_PER_SECOND
+
+        for preset in (get_length_preset(c) for c in ("1", "2", "3", "4")):
+            self.assertEqual(preset.min_seconds, round(preset.min_words / WORDS_PER_SECOND))
+            self.assertEqual(preset.max_seconds, round(preset.max_words / WORDS_PER_SECOND))
+
+    def test_long_preset_shape(self):
         p = get_length_preset("3")
-        self.assertEqual(p.min_seconds, 120)
         self.assertGreaterEqual(p.min_words, 300)
+        self.assertLess(p.min_seconds, p.max_seconds)
+
+    def test_rate_reflects_measurement(self):
+        # Guards against a silent revert: measured median was 3.29 w/s over 14 renders
+        # (py -m scripts.bench_script_duration).
+        from core.script_length import WORDS_PER_SECOND
+
+        self.assertAlmostEqual(WORDS_PER_SECOND, 3.3, delta=0.4)
 
     def test_nudge_length_up_and_down(self):
         self.assertEqual(nudge_length("1", 1), "2")

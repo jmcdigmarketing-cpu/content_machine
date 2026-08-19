@@ -26,8 +26,14 @@ import re
 from typing import Any
 
 from apis.apify_catalog import build_input, domain_targets, get_source
-from apis.apify_client import run_actor
-from apis.signal_contract import STATUS_INACTIVE, STATUS_NO_KEY, STATUS_OK, make_signal
+from apis.apify_client import is_no_results, run_actor
+from apis.signal_contract import (
+    STATUS_INACTIVE,
+    STATUS_NO_KEY,
+    STATUS_OK,
+    STATUS_UNAVAILABLE,
+    make_signal,
+)
 from core.logging import get_logger
 
 logger = get_logger("apis.twitter_signal")
@@ -42,8 +48,8 @@ def _build_query(topic: str) -> str:
         anchors = extract_anchors(topic)
         if anchors:
             return anchors[0]
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("extract_anchors skipped: %s", exc)
     return topic[:80]
 
 
@@ -128,6 +134,21 @@ def get_twitter_signal(topic: str, channel_id: str = "default") -> dict[str, Any
             data=None,
             status_detail="Twitter/Apify: actor failed or timed out",
             status=STATUS_INACTIVE,
+        )
+    if is_no_results(items):
+        # The actor billed a run and answered with `{"noResults": true}` sentinels
+        # rather than tweets. That is a broken source, not a quiet one — report it as
+        # such so it shows up in `ops reliability` instead of looking merely inactive.
+        return make_signal(
+            connected=False,
+            active=False,
+            score=0,
+            data=None,
+            status_detail=(
+                f"Twitter/Apify: actor returned no-results sentinels for '{query}' "
+                "(X search likely requires auth) — signal retired, see apify_sources.json"
+            ),
+            status=STATUS_UNAVAILABLE,
         )
     if not items:
         return make_signal(

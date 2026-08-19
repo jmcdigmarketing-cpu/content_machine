@@ -441,8 +441,8 @@ class YouTubePublisher(Publisher):
                         else "",
                     },
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("video_published event not emitted: %s", exc)
             return PublishResult(
                 video_id=video_id,
                 status=result_status,

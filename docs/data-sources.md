@@ -73,13 +73,15 @@ Last verified: 2026-06-10
 | `finnhub` | Finnhub | Finance/stock topics | `FINNHUB_API_KEY` |
 | `fred` | FRED | Economic/finance topics | `FRED_API_KEY` |
 | `live_scores` | ESPN API | NBA topics with scoreboard match | — (no key needed) |
-| `tapology` | HTML scrape (off) | MMA/UFC topics | `TAPOLOGY_SCRAPE_ENABLED=true` to enable |
+| `tapology` | HTML scrape (**retired**) | — | Cloudflare 403 since ~2026-07; leave off. Fighter facts come from API-SPORTS MMA via `ufc_context` |
 | `wikipedia` | Wikimedia pageviews REST | Free trends fallback | No key — always on |
 | `odds` | The Odds API | Sports betting angle | `ODDS_API_KEY` |
 | `youtube_competitors` | Apify YouTube scraper | Competitor performance — top videos by view velocity (views/day) | `APIFY_CONTENT_MACHINE_KEY` |
-| `twitter` | Apify tweet scraper | Breaking news + viral moments — UFC/gaming, authority-account weighted | `APIFY_CONTENT_MACHINE_KEY` |
-| `reddit` | Apify reddit scraper | Community sentiment — hot posts from domain subreddits | `APIFY_CONTENT_MACHINE_KEY` |
+| `twitter` | Apify tweet scraper (**retired**) | — | Retired 2026-08-14: `inactive` on 19/19 run traces, never produced a fact, while being the slowest signal (~32s) and billing an actor run each time. The actor returns `{"noResults": true}` sentinels — X search needs auth now |
+| `reddit` | Apify reddit scraper (**retired**) | — | Retired 2026-08-14: actor failed on every live run while still billing; the free OAuth backend needs `REDDIT_CLIENT_ID`/`SECRET`, unset |
 | `tiktok_trends` | Apify TikTok scraper | Viral content discovery — trending angles + hashtags | `APIFY_BENABLE_BOT` (primary), `APIFY_CONTENT_MACHINE_KEY` (fallback) |
+| `youtube_comments` | **YouTube Data API** (not Apify) | Unanswered audience questions on a topic's top videos — the content gaps competitors left, plus audience vocabulary | `YOUTUBE_API_KEY` (~103 units/topic; the catalog's Apify actor is deliberately unused) |
+| `mma_stats` | API-SPORTS MMA host | Fighter records + physicals (replaced the Tapology scrape) | `API_SPORTS_KEY` — free tier 10 req/min, 100/day; `/fights` gated to 2022–2024, so **no upcoming cards** |
 
 Apify data layer detail: [apify-data-sources.md](apify-data-sources.md) · catalog: `config/apify_sources.json`
 
@@ -169,7 +171,12 @@ Finance, anime, and music signals add latency with zero value for TapIn:
 CONTENT_SKIP_SIGNALS=fred,sec_edgar,finnhub,coingecko,anime,tvmaze,lastfm,musicbrainz
 ```
 
-Keep: `youtube`, `rawg`, `steam`, `igdb`, `twitch`, `blog_rss`, `news`, `trends`, `odds`, `tapology` (UFC), `sports`, `live_scores`.
+Keep: `youtube`, `rawg`, `steam`, `igdb`, `twitch`, `blog_rss`, `news`, `trends`, `odds`, `ufc_context` (UFC), `sports`, `live_scores`.
+
+> **Feed rot is silent.** Sources die without telling you — an audit on 2026-08-14 found
+> 11 of ~37 configured feeds dead and one live feed lost to a parser bug, none of it
+> reported. Run `py -m scripts.ops feeds` periodically (it's in `all-checks`); dead and
+> stale feeds also surface in `ops reliability`.
 
 ---
 

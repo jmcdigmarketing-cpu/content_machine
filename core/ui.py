@@ -16,6 +16,9 @@ from config.channels import (
     resolve_channel_id,
 )
 from config.settings import get_settings
+from core.logging import get_logger
+
+logger = get_logger("core.ui")
 
 # ---------------------------------------------------------------------------
 # Live spinner for long-running operations
@@ -77,8 +80,8 @@ class DiscoverySpinner:
                 timings = trace.get("timings") or {}
                 if timings:
                     return {k: float(v) for k, v in timings.items() if isinstance(v, int | float)}
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("list_traces skipped: %s", exc)
         return {}
 
     def report(
@@ -488,8 +491,8 @@ def display_database_status(print_fn=print):
 
                 if "assets" not in inspect(get_engine()).get_table_names():
                     print_fn("  Hint: assets table missing — run: py -m storage.migrate_schema")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("assets-table hint skipped: %s", exc)
 
 
 def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=print) -> None:
@@ -552,8 +555,8 @@ def display_signal_health(signals: dict[str, Any], *, print_fn=print):
                 for name, until in sorted(cooldowns.items())
             ]
             print_fn(f"  {warn('Cooling down')} (rate-limited): " + ", ".join(parts))
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Signal cooldown line skipped: %s", exc)
     print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
     print_fn()
 
@@ -842,15 +845,24 @@ def prompt_key_facts(
             saved = capture_sources(channel_id, topic, pasted_sources)
             if saved:
                 print_fn(f"    Saved {len(pasted_sources)} source URL(s) to your vault.")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("capture_sources skipped: %s", exc)
 
     key_facts = dedupe_facts(manual_facts + link_facts + vault_accepted)
 
-    if key_facts:
-        saved_path = capture_facts_to_vault(channel_id, topic, key_facts)
+    # Persist only facts that are NEW to the vault. Re-saving `vault_accepted` would
+    # copy borrowed facts into a note titled with THIS topic, permanently stamping
+    # them as this topic's facts — a laundering loop: one weak token match pulls a
+    # foreign fact in, the write-back re-titles it, and it then matches strongly
+    # forever. That is how Marvel Rivals facts ended up in an MMA-rankings note.
+    new_facts = dedupe_facts(manual_facts + link_facts)
+
+    if new_facts:
+        saved_path = capture_facts_to_vault(channel_id, topic, new_facts)
         if saved_path:
-            print_fn(f"  Saved all {len(key_facts)} fact(s) to vault (full set, no cap).")
+            print_fn(f"  Saved all {len(new_facts)} fact(s) to vault (full set, no cap).")
+
+    if key_facts:
         sent = key_facts_for_prompt(key_facts)
         budget = operator_key_fact_char_budget()
         print_fn(
@@ -1049,8 +1061,8 @@ def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
     print_fn("  2) Free ($0) - local voice + free models only, no paid calls")
     try:
         print_fn("  " + format_readiness_line(free_backend_readiness()))
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Free-mode readiness line skipped: %s", exc)
     choice = input_fn("  Select 1-2 [1]: ").strip() or "1"
     return COST_MODE_FREE if choice == "2" else COST_MODE_STANDARD
 
@@ -1408,9 +1420,17 @@ def display_summary(
     if thumbnail_path:
         print_fn(f"  Thumbnail: {thumbnail_path}")
 
-    from core.cost_meter import format_cost_line
+    from core.cost_meter import format_cost_line, llm_cost_by_provider
 
-    cost_line = format_cost_line(cost)
+    # Per-provider LLM split (O12): the free-first chain means most calls should land
+    # on a $0 provider, which the aggregate `llm $x` hides. Fail-open to the plain line.
+    try:
+        from core.llm_router import get_usage
+
+        by_provider = llm_cost_by_provider(get_usage())
+    except Exception:
+        by_provider = {}
+    cost_line = format_cost_line(cost, llm_by_provider=by_provider)
     if cost_line:
         print_fn(f"  {cost_line}")
 

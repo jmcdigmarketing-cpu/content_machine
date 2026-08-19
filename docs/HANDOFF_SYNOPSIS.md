@@ -1,17 +1,345 @@
-# Handoff synopsis — 2026-07-17: Pillar 6 mostly shipped + local-TTS voice variety (after Pillars 1–5)
+# Handoff synopsis — 2026-08-14: fact-layer repair wave (after Pillars 1–7)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
-- **Branch:** `main` (Pillars 1–6 merged; tree clean)
-- **Suite:** 1064 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`.
+  Both branch from `main` at `95a6646`. **Now in
+  [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34) — 21 commits,
+  CI green, awaiting the operator's merge** (2026-08-17).
+- **Suite:** 1433 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
-  `analyst` / `overnight`), **live-run hardening**, and **Pillar 6** — baseline provider
-  seams + goose3 (2026-07-08), then seam→live-path wiring (U1 whisper align, U3 music bed,
-  U4 AI-video slot, U5 thumbnail chain + dual-format render, U8 n8n recipes, U9 earnings
-  signal), local TTS (2026-07-09), and **local-TTS voice variety** (2026-07-17).
+  `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
+  **Pillar 7** (Agent Skills + SkillOpt).
+
+### Unmerged work on these two branches (2026-08-14 session)
+
+`feat/trade-validation-default-on` (6 commits):
+
+1. **Trade validation default-on** for NBA/NFL topics (domain-gated; UFC excluded —
+   `signed` false-positives). `infer_domain(key_facts=)` so pasted NBA facts on the
+   gaming channel resolve correctly.
+2. **Vault fact contamination fixed** — `core/ui.py` was re-saving *borrowed* vault
+   facts into a note titled with the new topic, laundering them into "operator facts"
+   for every later run. 131 borrowed bullets cleaned from 31 notes (0 distinct facts
+   lost). Grounding false positives fixed (`_MONONYM_SKIP` discourse adverbs,
+   30 generic tokens added to `_GENERIC_TOKENS`).
+3. **Test-suite vault isolation** — `tests/__init__.py` forces `OBSIDIAN_VAULT_PATH=""`;
+   the suite had been writing into the operator's real vault for weeks.
+4. **O12 part 1** — per-provider LLM cost line + cross-run dead-model persistence.
+5. **Alembic baseline + `0004` content_run FKs** — `publish_log`'s legacy `0` sentinel
+   became `NULL` (836 of 870 rows preserved); `migrate_schema` finishes through Alembic.
+   Reddit signal retired (`enabled: false`) + Apify actor-failure memory.
+
+`feat/research-intake-repair` (5 commits, this session's later waves):
+
+1. **Research intake repair + source health** — Tapology retired (Cloudflare 403),
+   11 dead RSS feeds replaced (37/37 live), BOM parser fix, `ops feeds` monitoring.
+2. **`twitter` signal retired** — 19/19 runs, zero facts, slowest phase (~32s).
+3. **`youtube_comments` + O12 complete** — official-API signal; YouTube units under the
+   governor + reliability time series.
+4. **Post-render cost persisted** — the ledger was missing TTS on every render;
+   `ops economics` went from $0.02 to $0.31/video, 38 historical runs repaired.
+5. **Whisper local CPU backend** — landed with measurements; caption-text fix still open
+   (see the section below, and "Open (roadmap next)").
+
+**Triaged 2026-08-17 — see the block further down.** Both branches are now in PR #34.
+All seven stale PRs (**#26–#32**, not the "#29–#32" earlier notes claimed) are **closed
+and their branches deleted**, after harvesting five orphan docs that existed nowhere else.
+`claude/trade-validation-default-on` is gone: it was superseded *and* still carried the
+expired `"2026-07-25 18:00"` at `tests/test_ui_length_and_recovery.py:144` that #33 fixed,
+so merging it would have turned CI permanently red.
+
+---
+
+## Shipped 2026-08-14 (research intake repair + source health)
+
+**The finding:** TapIn's research intake had been silently dead for over a month and
+nothing reported it. Verified live, not inferred:
+
+- **Tapology is Cloudflare-403'd** ("Just a moment... Enable JavaScript"), direct *and*
+  via the r.jina.ai reader proxy. All 10 cached results were empty across ~33 days.
+  It reported the block as `STATUS_INACTIVE` "no event match", so no breaker or
+  dashboard ever saw a failure. Its query builder also hardcoded `"Topuria Gaethje"`
+  into *every* numbered-event search.
+- **11 of ~37 configured RSS feeds were dead** (404s, a 403, a 501, ESPN's
+  `202`-with-empty-body, a dead host).
+- **The Federal Reserve feed was alive but invisible** — valid RSS with 20 items,
+  dropped because `_parse_feed_xml(resp.text)` chokes on a UTF-8 BOM and the bare
+  `except ET.ParseError` swallowed it.
+
+**The fix:**
+
+1. **Parser** — `apis/rss_feeds.decode_feed_bytes()` (`utf-8-sig` → latin-1 fallback);
+   parse failures now log at warning with the feed URL.
+2. **Feeds** — every dead URL replaced with a live-verified one. **37/37 ok.**
+   MMA went from 1 working source to 5 (Sherdog, MMA Fighting `/rss/index.xml`,
+   Bloody Elbow, MMA Weekly, UFC.com official).
+3. **Honest failure** — `tapology_api` non-2xx now raises, so a 403 reports
+   `STATUS_UNAVAILABLE`. Retired via `TAPOLOGY_SCRAPE_ENABLED=false` (module kept).
+4. **`apis/mma_stats_api.py`** — API-SPORTS MMA host (reuses `API_SPORTS_KEY`) for
+   fighter records + physicals, consumed by `ufc_context`. Guards: rate limits arrive
+   as **HTTP 200 + `errors.rateLimit`** and must not read as "not found";
+   `search=Topuria` returns *Aleksandre*, so `_name_matches` rejects a wrong first name.
+   Free tier: 10 req/min, 100/day, `/fights` gated to 2022–2024 (so **no upcoming
+   cards** — those come from RSS + NewsAPI).
+5. **`core/feed_health.py` + `ops feeds`** — ok/**stale**/dead with newest-item age,
+   persisted to `data/feed_health.json`, surfaced through `data_quality.warnings()`
+   into `ops reliability`, and added to the `all-checks` batch.
+
+**Watch out:** `core/signal_facts.format_signal_facts` formats **per-signal** — adding a
+new key to a signal's `data` silently drops it from the prompt until a branch is added
+there. That is how `fighter_stats` would have been lost.
+
+## Shipped 2026-08-14 (paid-signal audit — `twitter` retired)
+
+Same silent-failure pattern, but this one cost money. Measured against all 19 run
+traces: **`twitter` was `inactive` on 19/19 runs from 2026-07-07 to 08-14** — it has
+never once produced a fact — while being the **slowest signal at ~32s**. Signals run
+concurrently with one worker each (`build_registry`: `workers = max_workers or
+len(sources)`), so wall-clock ≈ the slowest signal: twitter alone set the floor for
+every discovery. Next slowest is `youtube_competitors` at ~15s.
+
+Cause: `apidojo/tweet-scraper` bills a full run and returns `10 x {"noResults": true}`
+sentinel rows instead of tweets (X search almost certainly needs authenticated cookies
+now). The signal only checked `if not items`, so a broken source read as a successful
+empty search. The actor input was verified correct against `input_template`, so unlike
+Reddit this was **not** input drift.
+
+- `apify_client.is_no_results()` — shared sentinel detector; a run of rows carrying
+  nothing but `noResults`/`error`/`message` keys is a failure, and any real row means
+  the actor worked.
+- `twitter_signal` reports `STATUS_UNAVAILABLE` on the sentinel, not `inactive`.
+- `twitter_breaking` → `enabled: false` in `config/apify_sources.json` (the catalog
+  kill-switch in `register_signals._catalog_disabled_signals` does the rest).
+- `tiktok_trends` (~14s) and `youtube_competitors` (~15s) were checked and **kept** —
+  both return real data.
+
+**Remaining Apify tier:** `tiktok_trends`, `youtube_competitors`. Reddit + twitter
+retired; `instagram_figures` still templated only.
+
+## Shipped 2026-08-14 (`youtube_comments` signal + O12 complete)
+
+**1. `youtube_comments` — audience questions as content gaps.** The catalog templated
+this as an Apify actor; wired instead against the **official Data API**, which serves
+the same data under the YouTube key we already hold. ~103 units/topic (one 100-unit
+search + 1 per video) of a 10,000/day budget, versus billed Apify credits.
+
+Surfaces the questions viewers are still asking under the best existing coverage —
+by definition what nobody has answered. Live check on a Marvel Rivals topic returned
+75 comments across 3 videos and 8 usable questions.
+
+Three guards worth knowing about:
+- `signal_facts` labels them **"AUDIENCE QUESTIONS (unverified …never as facts)"** —
+  they are audience *language*, and the whole fact layer depends on not confusing the
+  two.
+- **Profanity filtered** (`_is_clean`) before anything reaches the script prompt; this
+  is an advertiser-facing channel and comment sections are crude.
+- **Pinned in `_VARIANT_REUSE_DEFAULT` + 6h TTL** — without that it re-runs per
+  variant at ~103 units each.
+
+**2. O12 complete.**
+- `quota_governor.youtube_usage()` — `snapshot()` now reports apify/llm/signals/**youtube**
+  together. `apis/youtube_quota` stays the counter *and* the check point (decisions §13:
+  the governor unifies state + reporting, never the layered checks).
+- `core/reliability_history.py` — one row per day (LLM spend, YouTube units, signals
+  disabled, dead feeds, cache hit-rate), capped at `RELIABILITY_HISTORY_DAYS` (90),
+  rendered as an ASCII trend under `ops reliability` and **recorded on view**, so the
+  series builds itself with no job to forget. The dashboard could only answer "how is
+  it now", never "is this getting worse" — which is exactly how every failure found
+  this session stayed invisible while it developed.
+
+---
+
+## Shipped 2026-08-14 (post-render cost reaches the ledger)
+
+Third instance of the session's pattern — something silently wrong that nothing
+reported — and this one corrupted a shipped feature's headline number.
+
+**Both operator render paths finalize the run before rendering it.** `main.py:362` and
+`scripts/auto_generate.py:193` each call `run_pipeline(proceed_video=False)`, then
+render separately. So the persisted cost kept `tts: 0.0` and the trace kept
+`status="drafted"` on every rendered run. `main.py:512` *did* recompute the correct
+cost — into a local dict, for display only, never written back.
+
+`core/unit_economics.py:79` derives contribution margin from
+`features_json.cost.total`, so **every margin was overstated by roughly the whole TTS
+line** — the largest cost of a rendered run. `ops economics` reported *20 uploads,
+$0.32 ($0.02/video)*; the truth was **$6.18 ($0.31/video)**.
+
+- **`core/pipeline.run_media_only`** now persists the render lines + patches the trace.
+  It is the single choke point both flows share, so one fix covers both.
+- **`cost_meter.render_cost_lines()` / `merge_render_cost()`** — render lines only.
+  `llm`/`apify`/`web_search` are session-metered and already persisted; recomputing them
+  after the fact would overwrite good values with wrong ones.
+- **`run_features.merge_features()` / `run_trace.update_trace()`** — merge helpers
+  mirroring the existing `run_quality.merge_quality`.
+- **`ops backfill-cost`** (`--dry-run` first) repaired 38 runs ($0.75 → $11.77) and 13
+  traces. Idempotent; only touches rendered/scheduled/published rows. Flags
+  `cost_estimated` when chars came from `word_count` (`script_preview` truncates at
+  2000) and `cost_partial` for the 18 runs predating cost metering entirely.
+- **TTS priced from the real plan**: ElevenLabs Creator $22/100k chars = **$0.22/1k**
+  (was a $0.30 list-price guess). Re-derive as monthly cost ÷ quota if the plan changes.
+- **`backfill-features --force` no longer wipes cost** — `build_features` has no `cost`
+  block, so a forced rebuild silently destroyed it. It now carries unknown keys forward.
+
+*Open observation, not built:* on a subscription the plan covers ~90 videos/month
+against ~21 actually made, so the **allocated** cost is nearer $1/video than $0.22.
+The metered marginal rate is the right fit for `cost_meter`; utilisation is a later pass.
+
+---
+
+## Shipped 2026-08-14 (Whisper local — CPU backend; caption text still blocked)
+
+**Stopped deliberately mid-item.** The backend and its evidence are landed; the thing
+that would make it *useful* is not, and the reason is written down rather than lost.
+
+The roadmap said these backends were "parked — needs a GPU box". On this machine
+`whisperx`, `faster_whisper` (1.2.1), `torch` (2.8.0+**cpu**), `piper` and
+`ctranslate2` were **all already installed**, and the caption wiring
+(`video/subtitles.py:110` → `caption_timing.words_from_caption_align` →
+`core/caption_align.transcribe_and_align`) was **already complete and fail-open**.
+Only a CPU-capable backend was missing.
+
+**Landed**
+- `core/caption_align.py` — `faster_whisper` backend alongside `whisperx`, plus
+  `CAPTION_ALIGN_MODEL` / `_DEVICE` (auto → cpu here) / `_COMPUTE` (int8 on CPU).
+  Still OFF by default and fail-open.
+- `scripts/bench_caption_align.py` — accuracy against the **ElevenLabs `.words.json`
+  sidecars** already sitting next to our mp3s. Real ground truth, real channel audio.
+
+**Measured** (3 shorts, 55–58s):
+
+| model | line-start p50 | p90 | speed (CPU) |
+|---|---|---|---|
+| **tiny** | **43–56ms** | 111–176ms | 12–15× realtime |
+| base | 73–85ms | 142–159ms | 4–15× realtime |
+
+`tiny` wins and is half the download, so it is the default — evidence, not instinct.
+Piper synthesis of a real 1,156-char script: **5.1s**.
+
+*Benchmark gotcha worth keeping:* grouping each transcript into caption lines
+independently reported ~4s of "error" when per-word error was ~40ms — Whisper punctuates
+differently, so `group_into_lines` split at different points and line N described
+different words. The fix was to pair words first, then group. Don't re-introduce it.
+
+**Why this is not finished.** The path transcribes blind, so captions carry **ASR text,
+not the script**: run 65 came back with "Salkal" for "Salkilld" and "Mattius Gamarat"
+for "Mateusz Gamrot". Fighter and game names are the channel's entire subject, so burned
+captions would show mangled names despite ~45ms timing accuracy.
+
+**This was fixed on 2026-08-16 — see the section below.**
+
+Also noted: Piper renders the same script **66.3s vs ElevenLabs 55.2s** (~20% slower),
+which shifts video length and feeds the learned-length loop. A voice sample exists at
+`output/samples/piper_lessac_run65.mp3` for the operator to judge; **ElevenLabs remains
+the default and nothing was switched.** Voice: `models/piper/` (gitignored).
+
+---
+
+## Shipped 2026-08-16 (fail-open made fail-visible)
+
+All **98** silent handlers now log; **`S110`/`S112` enabled in ruff** so new ones fail CI.
+Decisions §24.
+
+**Things worth not relearning:**
+
+- **Don't blanket-`logger.debug` them.** `CONTENT_LOG_LEVEL` defaults to **WARNING**, so
+  the audit's own recommendation would have produced 93 lines nobody ever sees. The split
+  is: `warning` when a *guarantee* dies (`llm_add_spend` → budget guard stops guarding;
+  `write_run_trace` → `ops traces`/`dossier`/`data_quality` blind for that run), `debug`
+  for enrichment, `# noqa: S110` + reason where silence is right.
+- **Test the silence, not just the noise.** A warning that fires on healthy runs trains
+  the operator to ignore warnings, so `tests/test_fail_open_visibility.py` asserts both.
+- **`contextlib.suppress(Exception)` does not trip S110** — it's a loophole. `suppress` is
+  for a narrow, expected exception type.
+- **A migration used to switch off all logging.** `alembic/env.py`'s `fileConfig()`
+  defaulted to `disable_existing_loggers=True`, killing the whole `content_machine.*`
+  tree; `migrate_schema` calls `upgrade_head()` in a normal process. Fixed. Symptom to
+  recognise: tests that pass alone and fail under `unittest discover`.
+- **Entry-point scripts can't take a module-level logger.** `scripts/ops.py` and
+  `scripts/auto_generate.py` import before `config.settings` loads `.env`, so a
+  module-level `get_logger()` caches the level before `CONTENT_LOG_LEVEL` is readable —
+  they resolve the logger at the call site instead. `main.py` defines its logger *after*
+  `setup_logging()`.
+- **Auto-derived log messages are worthless** ("loads skipped", "join skipped"). The
+  messages were written by hand against each block; that reading is what surfaced the
+  alembic defect.
+
+## Shipped 2026-08-16 (caption text from the script — the $0 path is open)
+
+`video/caption_retext.py`: whisper's **timings**, the script's **words**, aligned with
+`difflib.SequenceMatcher`. Decisions §23.
+
+The run-65 SRT, before and after, same audio:
+
+| before | after |
+|---|---|
+| `broken, Quill and Salkal just` | `Quillan Salkilld just submitted Mateusz` |
+| `submitted Mattius Gamarat and round` | `Gamrot in round one, and` |
+| `with a top ten lightweight` | `a top-10 lightweight ranking.` |
+
+**Things worth not relearning:**
+
+- **The hard part is re-tokenisation, not misspelling.** Whisper splits (`Quillan` →
+  `Quill and`), writes numerals as words (`10` → `ten`, `top-10` → `top ten`), drops
+  words and invents them. A positional zip desyncs permanently at the first one. Hence
+  number-words folding onto digits in the normaliser, `replace` spans shared by character
+  length, `delete` runs interpolated + clamped monotonic, `insert` tokens dropped.
+- **It costs nothing in timing.** Run 66 (243 words): word p50 42→43ms, line p90
+  **117→117ms**, covering **243/243** script words vs the 243-of-251 whisper heard, and
+  correcting **12 misheard words**. `py -m scripts.bench_caption_align` grew `+retext`
+  columns and now shares its matcher with the shipped code.
+- **The decline threshold is measured, not guessed.** `CAPTION_RETEXT_MIN_MATCH=0.35`:
+  real audio scores **0.87**, unrelated audio ~0.0, and a worst-case 9-word
+  proper-noun-dense line scores 0.44. A first guess of 0.6 sat too close to live values
+  and declined on short scripts — caught by a test, not in production.
+- **A rendered mp4 looks 2.17s out of sync with its SRT, and isn't.**
+  `prepend_channel_intro` adds TapIn's **2.15s intro** *after* the ffmpeg render, shifting
+  audio and burned captions together. Subtract it before concluding anything about drift.
+- **`ffmpeg -ss` before `-i` gave unreliable frame times** when checking burned captions;
+  output-seek (`-i` then `-ss`) agreed with reality.
+
+**Not switched:** ElevenLabs remains the TTS default. The $0 flip is the operator's call
+(voice sample: `output/samples/piper_lessac_run65.mp3`), and Piper's ~20% slower delivery
+means `py -m scripts.bench_script_duration` must be re-run after it.
+
+## Shipped 2026-08-15 (live-run 66 fixes)
+
+Run 66 (GTA VI / Netflix) **confirmed the cost fix works live** —
+`$0.3454 (llm $0.0043 · tts $0.3131 · apify $0.0200 · web $0.0080)`, TTS visible at 91%.
+It also exposed five defects, none of which announced itself as a failure. All were
+reproduced before being fixed.
+
+| # | Defect | Fix |
+|---|---|---|
+| 1 | `WORDS_PER_SECOND = 2.4` vs **measured 3.32** (median of all 14 real renders) — run 66 shown "~101s", rendered **70.2s** | rate corrected; preset seconds now **derived** from word ranges so they can't drift apart again |
+| 2 | `"If Netflix"` flagged as a possible hallucination → report card **A→B**, while the claim verifier said 12/12 backed | phrases no longer start on a function word |
+| 3 | `youtube: ERROR — read operation timed out` (no timeout set anywhere) | bounded `YOUTUBE_API_TIMEOUT`; timeouts classify as `STATUS_UNAVAILABLE` |
+| 4 | `youtube_comments` surfaced only *"What about Alaska?"* from 25 comments | questions must share a topic token; `"first"` no longer matches as a substring |
+| 5 | Both cheap-tier LLM slugs dead — one probe each per 24h | OpenRouter repointed; Ollama reports unavailable when nothing is pulled |
+
+**Things worth not relearning:**
+
+- **Preset durations are derived, not stored.** Word ranges are the source of truth
+  (`core/script_length.py`); they were deliberately *not* retuned, so a stored
+  `length_preset` still means the same thing to the learned-length analytics.
+  Re-check the rate with `py -m scripts.bench_script_duration` after any voice change.
+- **Don't trim proper nouns on the whole `_COMMON_WORDS` list.** The first attempt did,
+  and destroyed `"Black Widow" → "Widow"` and `"Season 8.5" → "8.5"`. `_LEADING_STOPWORDS`
+  is deliberately a narrow function-word set, and `"the"` is excluded ("The Rock").
+- **Don't pin a specific `:free` slug in a test.** OpenRouter rotates them; a test naming
+  one goes green while production 404s daily. `test_openrouter_anchors_cheap_tier` now
+  asserts *provider + `:free`*, not the id.
+- **Picking an OpenRouter free model needs a live call, not a spec sheet.** The
+  `gemma-4-*:free` models 429 on contention, and every `nemotron-*:free` leaks its
+  reasoning trace into the reply ("Okay, the user just asked me to…"), which would
+  corrupt short structured outputs. `poolside/laguna-s-2.1:free` returned a clean exact
+  answer. A 429 is fine (fails over, O5); only a **404** means retired.
+- **Ollama:** `ollama list` is empty on this box. `ollama pull llama3.1:8b` (~4.7GB) is
+  the operator's call; until then the provider correctly reports unavailable.
 
 ---
 
@@ -182,12 +510,63 @@ From a real tapin run's pain points:
 3. `py -m scripts.ops vault-sync --channel tapin` — beliefs + dossier refresh into vault
 4. `py -m scripts.ops batch-drafts --channel tapin --count 3` — unattended draft scripts (feeds A/B)
 5. `py -m scripts.ops reliability` — credit/quota/breaker/cache dashboard
+6. `py -m scripts.ops feeds` — RSS source health (ok/stale/dead); run monthly, feeds die quietly
 
 Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ---
 
 ## Open (roadmap next)
+
+> **Done 2026-08-16** — the caption-text fix shipped (`video/caption_retext.py`, see the
+> section below). The **$0 TTS switch is now unblocked** and waiting on two *operator*
+> calls, not engineering: judge the Piper voice
+> (`output/samples/piper_lessac_run65.mp3`), and re-run
+> `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
+> **The 93 silent-`pass` handlers are done too** (2026-08-16, below).
+>
+> ## ▶ Branch + PR triage — DONE 2026-08-17
+>
+> **The stack is in [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34),
+> CI green, awaiting the operator's merge.** 21 commits (`feat/trade-validation-default-on`
+> 6 → `feat/research-intake-repair` 15). Merging to `main` is deliberately left to the
+> operator.
+>
+> **CI earned its keep immediately.** It had never run on any of these commits — the
+> workflow fires only on push-to-`main` and `pull_request` → `main` — and the first run
+> failed with 3 errors: `test_caption_align` patched the real `torch.cuda.is_available`,
+> but torch is in the optional `[providers]` extra, so the tests only passed on a box that
+> happened to have it. Fixed by injecting a fake torch, plus a case for torch being absent
+> entirely. **Lesson: never patch an optional dependency's real module in a test.**
+>
+> **All seven PRs closed (#26–#32), all their branches deleted.** #27 was the dangerous
+> one — superseded *and* it still carried the expired `"2026-07-25 18:00"` that #33 fixed,
+> so merging it would have made CI permanently red.
+>
+> **Five orphan docs were harvested first** (commit `f9307cd`), because each PR added a
+> standalone doc that existed nowhere else — ~1,000 lines that closing would have binned:
+> `llm_provider_strategy.md`, `strategy_2026H2.md`, `next_ideas_2026-07.md`,
+> `code_audit_2026-07.md`, `efficiency_audit_2026-07.md`. Only the new files were taken;
+> their edits to shared docs were dropped as superseded, which also avoided every conflict.
+> Each opens with a dated header naming what has since superseded it.
+>
+> **Still open, flagged not actioned:** `origin/claude/docs-optimization-review-a4l104` —
+> **9 commits, no PR, last touched 2026-07-21**, sitting on an old base, so merging it
+> would revert code that has landed since. Same shape as #27. Needs the same decision.
+> `origin/feat/reddit-free-backend-and-signal-persistence` is fully merged into `main` and
+> is safe to delete.
+>
+
+> ## 2. Then: the paused coverage wave
+>
+> "Raise test coverage on render + publish paths" is **`[~]` in [roadmap.md](roadmap.md)**,
+> which carries the full remaining design (what's covered, what isn't, and why the old
+> roadmap line's framing was wrong). Step 1 done: `prepend_channel_intro` + the
+> render-loss defect it exposed. Next, in blast-radius order:
+> **`jobs/worker.process_one`'s quota gate** (an inversion burns ~1,600 units per
+> attempt), `_defer_for_quota` (a quota defer must not eat a retry),
+> `build_render_ffmpeg_command`'s music-bed/duration/subtitle paths, then `youtube/oauth`
+> token handling. `coverage` still needs adding to the `[dev]` extra.
 
 ***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
 is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
@@ -204,13 +583,23 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
    [video_creation_stack.md](video_creation_stack.md). Excluded: Higgsfield + `[search github]` repos.
 2. **Pillar 2 remainder**: multimodal rendered-video review *(needs router vision path)*;
    calibration/predictor activate as measured volume accrues.
-3. Supporting/unphased: O12 governor follow-ups, router vision path, Whisper local,
-   MoneyWise depth, AI Tools/Tech groundwork.
-4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`);
-   promote `SEMANTIC_TRADE_VALIDATION` default-on if precise in live runs.
+3. Supporting/unphased: router vision path, MoneyWise depth, AI Tools/Tech groundwork.
+   *(O12 complete 2026-08-14. Whisper local: CPU backend landed — see above; the
+   caption-text fix is the open half.)* Still volume-gated: the **recommender backtest**
+   (10 measured run-linked videos vs the predictor's threshold of 15).
+4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`).
+   *(`SEMANTIC_TRADE_VALIDATION` default-on shipped 2026-08-14 — domain-gated NBA/NFL.)*
 5. Vault housekeeping: cross-day dossier refresh leaves prior-day `_runs/` notes (same
    `run_id`, different date prefix) — safe but clutter; stable-path upsert is a follow-up.
+   17 test-fixture `<date>_topic.md` notes remain in the vault (harmless; they no longer
+   regenerate now that the suite is isolated).
 6. One-time ops: re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
+7. **Open PRs to triage — now the first pickup item; see the block at the top of this
+   file.** The stack is 19 commits over `main` with no PR, and **#26–#32** (seven, not
+   the four earlier notes claimed) are open since late July. **#27 must be closed, not
+   merged** — superseded, and it would turn CI permanently red.
+8. Two retired LLM slugs still need repointing (`OPENROUTER_MODEL_CHEAP`,
+   `OLLAMA_MODEL_CHEAP`) — each currently costs one failed probe per 24h.
 
 **Parked / excluded:** Instagram + TikTok platform linking (Phase M, far later) · Benable bot.
 
@@ -218,7 +607,7 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
 ## Docs to read first
 
-- `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17 (vault OS)**
+- `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
 - `docs/roadmap.md` — Pillars 1–5 ✅, Pillar 6 baseline seams landed
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index
@@ -229,6 +618,9 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 ## Key files
 
 ```
+apis/mma_stats_api.py       — API-SPORTS MMA fighter records (replaced Tapology)
+core/feed_health.py         — RSS ok/stale/dead checker behind `ops feeds`
+core/signal_facts.py        — per-signal -> prompt formatting (add a branch for new data keys)
 core/vault_dossiers.py      — Pillar 4: run dossiers + weekly report into vault
 core/vault_index.py         — Pillar 4: mtime-cached vault parse
 core/obsidian_facts.py      — load_facts + load_playbook/playbook_block

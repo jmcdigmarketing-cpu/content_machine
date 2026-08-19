@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from analytics.upload_queue import list_queue_entries
 from config.channels import resolve_channel_id
+from core.logging import get_logger
 from youtube.check_setup import check_channel_setup
+
+logger = get_logger("core.status")
 
 
 def build_status_lines(channel_id: str) -> list[str]:
@@ -27,8 +30,8 @@ def build_status_lines(channel_id: str) -> list[str]:
                 f"YouTube API quota: BLOCKED for uploads — {format_quota_detail()} "
                 "(upload ~1,600 units; discovery search ~101 each)"
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("format_quota_detail skipped: %s", exc)
 
     try:
         from sqlalchemy import select
@@ -64,8 +67,8 @@ def build_status_lines(channel_id: str) -> list[str]:
                 lines.append(f"Pending upload jobs: {len(pending)}")
         finally:
             session.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Pending-jobs count unavailable: %s", exc)
 
     try:
         from scripts.requeue_upload import list_recyclable
@@ -76,8 +79,8 @@ def build_status_lines(channel_id: str) -> list[str]:
                 f"Rendered, not on YouTube: {len(recyclable)} video(s) — "
                 f"py -m scripts.requeue_upload --channel {channel_id}"
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("list_recyclable skipped: %s", exc)
 
     entries = list_queue_entries(channel_id)
     awaiting = [e for e in entries if not e.on_youtube]
@@ -111,8 +114,8 @@ def build_status_lines(channel_id: str) -> list[str]:
             lines.append(f"SEO hints: {hints}")
         else:
             lines.append("SEO hints: (none — run py -m analytics.seo_refresh)")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("SEO hints line skipped: %s", exc)
 
     try:
         from analytics.competitor_context import (
@@ -127,7 +130,7 @@ def build_status_lines(channel_id: str) -> list[str]:
             lines.append(f"Competitors: snapshot {age:.0f}h old")
             for row in list_recent_competitor_titles(channel_id, limit=3):
                 lines.append(f"  - {row.get('title', '')[:45]}")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Database status section skipped: %s", exc)
 
     return lines

@@ -4,10 +4,10 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 ## Branch / PR
 
-- **Branch:** `feat/research-intake-repair`, stacked on `feat/trade-validation-default-on`.
-  Both branch from `main` at `95a6646`. **Now in
-  [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34) — 21 commits,
-  CI green, awaiting the operator's merge** (2026-08-17).
+- **Branch:** `main`. The whole stack **merged 2026-08-19 via
+  [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34)** (24 commits,
+  merge commit `6389e87`) and **CI is green on `main`**. `feat/research-intake-repair` and
+  `feat/trade-validation-default-on` are fully contained in `main` and safe to delete.
 - **Suite:** 1433 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
@@ -525,12 +525,19 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 > `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
 > **The 93 silent-`pass` handlers are done too** (2026-08-16, below).
 >
-> ## ▶ Branch + PR triage — DONE 2026-08-17
+> ## ▶ Branch + PR triage — DONE; stack MERGED 2026-08-19
 >
-> **The stack is in [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34),
-> CI green, awaiting the operator's merge.** 21 commits (`feat/trade-validation-default-on`
-> 6 → `feat/research-intake-repair` 15). Merging to `main` is deliberately left to the
-> operator.
+> **[PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34) is merged into
+> `main`** (24 commits, merge commit `6389e87`), and CI is green on `main`. Six weeks of
+> work that had never been reviewed or CI-validated is now on the trunk.
+>
+> **Pre-merge audit (2026-08-19) re-verified against the live system, all clean:** Alembic
+> stamp `0004`; **4/4 FKs** correct (`SET NULL` ×3, `CASCADE` on `thumbnail_scores`); 871
+> publish_log rows, 836 NULL links, **0 orphans**; **0** cost rows where `total ≠ Σ lines`;
+> **37/37 feeds ok**; 0 signals disabled; every touched entry point imports; 1433 tests
+> green. One thing fixed on the way in — mypy flagged the one new file this branch added
+> to the checked set (`video/caption_retext.py`), so its gap-filler was retyped as explicit
+> branches rather than shipping new code that grows the baseline.
 >
 > **CI earned its keep immediately.** It had never run on any of these commits — the
 > workflow fires only on push-to-`main` and `pull_request` → `main` — and the first run

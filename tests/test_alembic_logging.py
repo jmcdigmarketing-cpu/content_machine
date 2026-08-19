@@ -40,19 +40,27 @@ class TestMigrationsKeepLoggingAlive(unittest.TestCase):
         )
 
     def test_the_default_is_what_would_have_broken_it(self):
-        """Pins WHY the keyword is there: the default really does disable them."""
+        """Pins WHY the keyword is there: the default really does disable them.
+
+        This test has to fire the actual footgun, so it disables every logger in the
+        process on purpose. The restore is registered as a cleanup BEFORE the damage, not
+        written after it: an assertion failure in between would otherwise leave the whole
+        logger tree disabled for every test that follows, silently breaking their
+        `assertLogs` and masking real failures. (Re-running fileConfig with
+        disable_existing_loggers=False re-enables them — `_handle_existing_loggers` sets
+        `.disabled = False` on loggers the config does not name.)
+        """
+        cfg = _alembic_config()
+        self.addCleanup(fileConfig, cfg.config_file_name, disable_existing_loggers=False)
+
         victim = logging.getLogger("content_machine.test_canary")
         victim.disabled = False
 
-        cfg = _alembic_config()
         fileConfig(cfg.config_file_name)  # the old call, defaults to disabling
         self.assertTrue(victim.disabled, "expected the default to disable existing loggers")
 
-        # Restore, and confirm the fixed call shape leaves it alone.
         fileConfig(cfg.config_file_name, disable_existing_loggers=False)
-        victim.disabled = False
-        fileConfig(cfg.config_file_name, disable_existing_loggers=False)
-        self.assertFalse(victim.disabled)
+        self.assertFalse(victim.disabled, "the fixed call shape must re-enable them")
 
     def test_env_py_passes_the_keyword(self):
         """env.py runs under alembic, not under the suite — assert its source."""

@@ -11,6 +11,126 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-20 (evening) — Next 5 pickup order + 35 cost/viability/success candidates
+
+**Prompt:** the next 5 roadmap items, plus 35 more ideas, all around *future
+viability*, *short-term success*, and *real-world cost*.
+
+**Not built.** Pickup order only; Phase M, volume-gated backtest, and the $0 TTS
+voice judgment stay out. None of 56–90 restates Next-up, the morning 20, or
+candidates 21–55.
+
+**Recommended next 5** (existing open lines, sequenced for those three axes):
+
+1. Pre-run completion gate `[S]` — short-term (run-70 class).
+2. `youtube/oauth.py` tests + `coverage` extra `[S]` — short-term (paused
+   coverage wave, last sequenced item).
+3. Pronunciation lexicon for local TTS `[M]` — cost (unblocks the $0.25–0.31
+   TTS line on *ears*, captions already being fixed).
+4. Allocated vs marginal unit economics `[S]` — cost (~$1 allocated vs $0.31
+   metered on the Creator plan).
+5. Numeric/record grounding `[M]` — viability (invented ranks/dates/purses
+   still pass the name-gate; 2026-policy event on a UFC short).
+
+**35 new candidates (56–90)** grouped on [roadmap.md](roadmap.md):
+
+| Axis | Items | Through-line |
+|---|---|---|
+| Short-term success | 56–65 | Next publish happens and earns a measured data point (quota, thin-facts abort, MoneyWise go-live, operator minutes) |
+| Real-world cost | 66–77 | Meter the true bill (Flux, Apify invoice, GPU power, TTS cache) and stop paying for drafts that will fail |
+| Future viability | 78–90 | Stay a media OS: intelligence-report SKU, holdouts, policy canary, non-ad spike with a kill criterion, backup the dataset |
+
+**Rejected this session:** implementing the five; restoring Phase M; treating
+clip-from-source / avatar / Instagram as "next" (they fail the cost and
+viability tests until volume and authenticity are earned).
+
+**Numbers this ranking used (already measured, not assumed):** TTS is ~91% of a
+rendered run ($0.25–0.31 metered, ~$1 allocated at 21/90 Creator-plan
+utilisation); Apify remaining paid tier is two actors; YouTube upload ≈ 1,600
+units of 10k/day; recommenders still sit at 10 measured vs a 15-sample gate.
+
+---
+
+## 2026-08-20 — Next 5 shipped + 35 more candidates (no Phase M)
+
+**Prompt:** close the five sequenced build items from the afternoon plan, then
+append 35 new roadmap candidates. Phase M, volume-gated backtest, and $0 TTS
+voice judgment stay out.
+
+**Built (uncommitted on `fix/live-run-69-70`)**
+
+1. **Run-70 probes.** `llm_router.ollama_probe()` is the single `/api/tags`
+   helper. `_ollama_ready` already delegated; `ops free-doctor` now says **pull**
+   when the daemon is up and empty (not "server unreachable"), **serve** when
+   down, and names OpenRouter as throttled fallback. RUF012 gone
+   (`tests/test_run69_fixes.py`).
+2. **`process_one` + `_defer_for_quota` tests** — quota-exhausted claims only
+   render jobs; a deferral does not consume a retry
+   (`tests/test_job_worker_process.py`). No product change.
+3. **`build_render_ffmpeg_command` assertions** — amix under VO, VO-only
+   identity, `-t`, escaped subtitles, music-bed failure retries VO-only.
+   `youtube/oauth.py` and the `coverage` extra stay for a follow-up.
+4. **Semantic variation.** Stdlib content-word cosine folded into
+   `_variation_check` (`AUTHENTICITY_SEMANTIC`, default-on). Paraphrase of a
+   TapIn-shaped script fails; unrelated topic passes; exact duplicate still
+   fails lexical first. Warn-never-block. No persisted embeddings.
+5. **Router vision.** `complete` accepts OpenAI-style image parts; Anthropic /
+   DeepSeek / Ollama / Groq / Doubao are skipped, not flattened. Thumbnail
+   scorer uses the extract tier; Free mode heuristic + warning.
+   `core/llm_client.py` deleted.
+
+**Docs:** ticked the five on [roadmap.md](roadmap.md). Candidates **21–55**
+appended (aesthetics, operator surface, efficiency, long-term). Architecture
+table and decisions §14 no longer claim a `llm_client` holdout.
+
+**Still parked:** Phase M; `youtube/oauth.py` tests; `coverage` extra; Pillar 2
+multimodal review; overnight still cannot take facts; CUDA torch (`2.8.0+cpu`
+on a 4070 Ti).
+
+---
+
+## 2026-08-20 — Post-merge orientation, 20 ideas (no Phase M), grand audit
+
+**Prompt:** refamiliarize after committed + uncommitted work; brainstorm 20 more
+roadmap ideas that are not multi-platform; then a grand audit.
+
+**Where we actually are**
+
+- **Branch:** `fix/live-run-69-70` at `6a6ec96` (same commit as `main` /
+  `origin/main`). PR #34 merged 2026-08-19. CI green on trunk.
+- **Committed since the 2026-08-15 audit:** caption retext; fail-open visibility
+  (S110/S112); alembic logging fix; intro-step never loses the render; coverage
+  wave paused after that; orphan-doc harvest; stale PRs #26–#32 closed; handoff
+  rewritten as merged.
+- **Uncommitted (important):** `core/run_mode.py` + `tests/test_run69_fixes.py`.
+  Live run 70 (Cejudo, Free) died after 71s of discovery because Free mode printed
+  `llm=ollama OK (local $0)` when the daemon answered `/api/tags` with **zero
+  models pulled**. `_ollama_ready` was a weaker copy of `llm_router.ollama_installed_models`.
+  The patch delegates. **Do not commit as-is:** (1) `ops free-doctor` still prints
+  "server unreachable" whenever `OLLAMA_MODEL` is set and not ready — the run-70
+  case is "pull a model"; (2) the new test's `ENV = {...}` trips **RUF012**.
+
+**Audit headline (see [audit.md](audit.md) 2026-08-20 + canvas):** health held
+(1,433 tests committed / 1,440 with wip, 62.7k LOC, mypy 123/73 unchanged,
+silent `pass` still 0). New debt is the run-70 class again (lying readiness),
+thumbnail vision still silently dead on `llm_client`, overnight still cannot take
+facts, and the roadmap contradicts itself in three shipped items.
+
+**20 ideas added as not-committed candidates** on [roadmap.md](roadmap.md).
+Phase M excluded. None restates Next-up (no clip-from-source, avatar, MoneyWise
+depth, router vision, Instagram). Highest-leverage three if picking:
+
+1. Finish the run-70 branch (free-doctor diagnosis + ClassVar) then commit.
+2. Semantic near-duplicate authenticity — lexical `SequenceMatcher` is the live
+   hole in the 2026 compliance moat.
+3. Pronunciation lexicon + `CAPTION_ALIGN` default-on — what actually makes the
+   $0 TTS flip survivable, now that caption *text* is fixed.
+
+**Rejected this session:** implementing the 20; merging
+`origin/claude/docs-optimization-review-a4l104` (old base, same shape as #27).
+
+---
+
 ## 2026-08-14/15 — Six roadmap waves: the silent-failure session
 
 **Prompt:** a sequence of *"next roadmap task"* passes, punctuated by two pasted live-run

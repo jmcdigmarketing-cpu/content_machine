@@ -111,3 +111,26 @@ guesses), and it leans on a lot of brittle third-party APIs that fail quietly.
 Fix recency grounding and add observability, and this moves from "impressive
 prototype that occasionally embarrasses itself on fresh topics" to "dependable
 daily operator."
+
+---
+
+## Addendum — 2026-08-20 (keep the June body)
+
+The June scorecard is a snapshot. What changed by 20 Aug, without rescoring from
+scratch:
+
+**Shipped against the June weaknesses.** Operator key facts + vault + claim
+verifier (recency is still a risk, but the operator now has a paste path).
+Captions are word-timed and **retexted from the script** (fighter names spell
+correctly). `ops reliability` + O11/O12 + fail-open-made-visible (the quiet API
+failures that scored reliability 2.5/5 now report as failures). Post-render cost
+reaches the ledger: a rendered run is **~$0.31 metered**, TTS **~91%**, allocated
+nearer **$1/video** at 21/90 Creator-plan utilisation. Semantic authenticity
+(paraphrase arm) is default-on, warn-never-block. 1,433+ tests, not 363.
+
+**Ceiling that remains.** Volume-starved learning (10 measured run-linked videos
+vs a 15-sample predictor gate). TTS still dominates real-world cost until the
+operator judges Piper. 2026 inauthentic-content policy is still existential —
+substance over volume. Pickup: [roadmap.md](roadmap.md) recommended next 5.
+Honest session state: [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md). Audit:
+[audit.md](audit.md).

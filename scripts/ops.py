@@ -238,21 +238,17 @@ def _ollama_server_probe(timeout: float = 2.0) -> tuple[bool, int]:
     Unlike run_mode._ollama_ready() - which returns False when OLLAMA_MODEL is unset -
     this reports the server being up even before a model is chosen, so free-doctor can
     tell "Ollama running, just pick a model" apart from "no free LLM installed at all".
+
+    Single HTTP helper: delegates to ``llm_router.ollama_probe`` so we cannot drift
+    into a second, weaker ``/api/tags`` client. ``timeout`` is accepted for call-site
+    compatibility; the router probe uses its own 3s bound.
     """
-    import os
-
-    base = (os.getenv("OLLAMA_BASE_URL", "") or "http://localhost:11434/v1").strip()
-    root = base.rstrip("/")
-    if root.endswith("/v1"):
-        root = root[: -len("/v1")]
+    del timeout  # router probe owns the timeout; kept so existing callers stay valid.
     try:
-        import requests
+        from core.llm_router import ollama_probe
 
-        resp = requests.get(f"{root}/api/tags", timeout=timeout)
-        if resp.status_code != 200:
-            return False, 0
-        models = resp.json().get("models", []) or []
-        return True, len(models)
+        up, tags = ollama_probe(refresh=True)
+        return up, len(tags)
     except Exception:
         return False, 0
 
@@ -270,13 +266,25 @@ def cmd_free_doctor(_args: argparse.Namespace) -> int:
     print("=" * 48)
 
     ready, model = _ollama_ready()
+    configured = os.getenv("OLLAMA_MODEL", "").strip()
     if ready:
         print(f"  LLM        : OK  ollama (local, unlimited) - model {model}")
-    elif os.getenv("OLLAMA_MODEL", "").strip():
-        print(
-            f"  LLM        : X   OLLAMA_MODEL={os.getenv('OLLAMA_MODEL')} set, server unreachable"
-        )
-        print("                   start it: `ollama serve` (+ `ollama pull <model>`)")
+    elif configured:
+        # Reachable is not usable (run 70): distinguish down vs empty vs wrong model.
+        up, n_models = _ollama_server_probe()
+        if not up:
+            print(f"  LLM        : X   OLLAMA_MODEL={configured} set, server unreachable")
+            print("                   start it: `ollama serve` (+ `ollama pull <model>`)")
+        elif n_models == 0:
+            print(f"  LLM        : X   OLLAMA_MODEL={configured} set, nothing pulled")
+            print(f"                   pull it: `ollama pull {configured}`")
+        else:
+            print(f"  LLM        : X   OLLAMA_MODEL={configured} is not among the pulled models")
+            print(f"                   pull it: `ollama pull {configured}`")
+        if os.getenv("OPENROUTER_API_KEY", "").strip():
+            print(
+                "  LLM        : ~   openrouter :free available as throttled fallback (not truly free)"
+            )
     else:
         # OLLAMA_MODEL unset. Tell "Ollama running, just pick a model" apart from the
         # rate-limited cloud fallback and "nothing installed".

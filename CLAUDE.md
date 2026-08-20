@@ -37,9 +37,10 @@ process-level circuit breaker, domain-aware gating, and cache TTLs all live in
 [`apis/register_signals.py`](apis/register_signals.py) — signals run concurrently
 in a `ThreadPoolExecutor`, so a new signal must be thread-safe and must never raise.
 
-The 4 Apify-paid signals (`reddit`, `twitter`, `tiktok_trends`,
-`youtube_competitors`) are the project's main recurring cost — free credits
-exhaust in a handful of runs. See [docs/agent_reach_evaluation.md](docs/agent_reach_evaluation.md)
+The remaining paid Apify signals (`tiktok_trends`, `youtube_competitors`) are the
+project's main recurring actor cost — `reddit` and `twitter` are retired
+(`enabled: false`). Free credits still exhaust in a handful of runs. See
+[docs/agent_reach_evaluation.md](docs/agent_reach_evaluation.md)
 (free/keyless backend evaluation) and [docs/credit_efficiency.md](docs/credit_efficiency.md).
 
 ## LLM router

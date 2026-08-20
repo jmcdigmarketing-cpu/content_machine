@@ -221,7 +221,7 @@ class TestDeadSlugs(unittest.TestCase):
     def test_daemon_unreachable_is_not_an_exception(self):
         from core import llm_router
 
-        with patch.dict("sys.modules", {"requests": MagicMock(get=MagicMock(side_effect=OSError))}):
+        with patch.object(llm_router.requests, "get", side_effect=OSError):
             self.assertEqual(llm_router.ollama_installed_models(refresh=True), [])
 
 

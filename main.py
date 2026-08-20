@@ -116,7 +116,8 @@ def main():
         return
 
     # Cost mode ($0 Free vs Standard) — only the render flows below incur provider cost.
-    _apply_cost_mode_interactive()
+    if not _apply_cost_mode_interactive():
+        return
 
     if startup_mode == "idea_intake":
         _run_idea_intake_flow(channel_id)
@@ -125,21 +126,24 @@ def main():
     _run_new_video_flow(channel_id)
 
 
-def _apply_cost_mode_interactive() -> None:
-    """Prompt for the run's cost mode and apply it to the environment (Free = $0)."""
+def _apply_cost_mode_interactive() -> bool:
+    """Prompt for the run's cost mode and apply it. False = stop before discovery."""
     from core.run_mode import COST_MODE_FREE, apply_cost_mode
     from core.ui import prompt_cost_mode
 
     result = apply_cost_mode(prompt_cost_mode())
     if result.mode != COST_MODE_FREE:
-        return
+        return True
     voice = result.applied.get("TTS_PROVIDER", "BLOCKED")
     llm = result.applied.get("LLM_PREMIUM_PROVIDER", "BLOCKED")
     print(f"  Free mode ($0): voice={voice}  llm={llm}  signals=free (paid signals skipped)")
     for blocker in result.blockers:
         print(f"  ! {blocker}")
-    if not result.can_render:
-        print("  ! Free mode can't render until the above are resolved (docs/free_mode.md).")
+    if result.blocked:
+        print("  ! Free mode can't continue until the above are resolved (docs/free_mode.md).")
+        print("  Stopping before discovery.")
+        return False
+    return True
 
 
 def _drain_stdin() -> None:

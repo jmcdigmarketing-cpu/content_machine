@@ -162,6 +162,23 @@ def parse_pasted_block(text: str) -> list[str]:
     return facts
 
 
+def load_key_facts(facts_file: str = "", fact_lines: list[str] | None = None) -> list[str]:
+    """Headless key facts: a paste-block file and/or repeated ``--fact`` lines.
+
+    Same parser as the interactive paste prompt (trade blocks work). A missing
+    file is a warning, not a crash. Returns [] when neither input is supplied.
+    """
+    collected: list[str] = list(fact_lines or [])
+    path = (facts_file or "").strip()
+    if path:
+        try:
+            with open(path, encoding="utf-8") as f:
+                collected.extend(parse_pasted_block(f.read()))
+        except OSError as exc:
+            logger.warning("Key-facts file skipped (%s)", exc)
+    return dedupe_facts(collected)
+
+
 def dedupe_facts(facts: list[str]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []

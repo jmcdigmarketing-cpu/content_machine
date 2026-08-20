@@ -59,22 +59,10 @@ def _pick_topic(channel_id: str, topic_override: str, use_best_bet: bool) -> str
 
 
 def _collect_key_facts(facts_file: str, fact_lines: list[str]) -> list[str]:
-    """Headless key facts: a paste-block file and/or repeated --fact lines.
+    """Headless key facts: a paste-block file and/or repeated --fact lines."""
+    from core.operator_facts import load_key_facts
 
-    Mirrors the interactive key-facts prompt: the file goes through the same
-    `paste` parser (trade blocks work), everything is deduped and tip-filtered.
-    Returns [] when neither input is supplied.
-    """
-    from core.operator_facts import dedupe_facts, parse_pasted_block
-
-    collected: list[str] = list(fact_lines or [])
-    if facts_file:
-        try:
-            with open(facts_file, encoding="utf-8") as f:
-                collected.extend(parse_pasted_block(f.read()))
-        except OSError as exc:
-            print(f"  Key-facts file skipped ({exc})")
-    return dedupe_facts(collected)
+    return load_key_facts(facts_file, fact_lines)
 
 
 def main(argv=None) -> int:
@@ -158,6 +146,14 @@ def main(argv=None) -> int:
 
     print(f"\n  Topic: {topic}")
     print(f"  Length: {PRESETS[length_choice].label} ({PRESETS[length_choice].duration_hint()})")
+
+    from core.run_mode import CostModeBlocked, apply_and_guard
+
+    try:
+        apply_and_guard()
+    except CostModeBlocked as exc:
+        print(f"  {exc}")
+        return 2
 
     # Discovery
     print("\n  Running discovery...")

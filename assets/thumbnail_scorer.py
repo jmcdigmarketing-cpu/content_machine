@@ -7,12 +7,10 @@ from __future__ import annotations
 import base64
 import json
 import os
-import re
 from dataclasses import asdict, dataclass, field
 from typing import List, Optional
 
 from config.channels import resolve_channel_id
-from core.llm_client import get_model, get_openai_client
 from core.logging import get_logger
 from storage.repositories.thumbnail_scores import get_thumbnail_score_repository
 
@@ -98,11 +96,13 @@ def _heuristic_score(image_path: str, topic: str) -> ThumbnailScore:
 
 
 def _vision_score(image_path: str, topic: str, channel_id: str) -> Optional[ThumbnailScore]:
-    api_key = os.getenv("OPENAI_API_KEY", "")
-    if not api_key:
+    from core.llm_router import complete, parse_json_payload
+    from core.run_mode import free_mode_strict
+
+    if free_mode_strict():
+        logger.warning("Thumbnail vision skipped (Free mode)")
         return None
 
-    model = os.getenv("OPENAI_VISION_MODEL") or get_model()
     ext = os.path.splitext(image_path)[1].lower()
     mime = "image/jpeg"
     if ext == ".png":
@@ -127,32 +127,24 @@ Return ONLY valid JSON:
   "suggestions": ["short tip 1", "short tip 2"]
 }}
 """
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime};base64,{b64}"},
+                },
+            ],
+        }
+    ]
 
     try:
-        client = get_openai_client()
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.2,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime};base64,{b64}",
-                            },
-                        },
-                    ],
-                }
-            ],
-        )
-        raw = (response.choices[0].message.content or "").strip()
-        match = re.search(r"\{.*\}", raw, re.DOTALL)
-        if not match:
+        raw = complete(messages, tier="extract", temperature=0.2, max_tokens=512)
+        data = parse_json_payload(raw) or {}
+        if not data:
             return None
-        data = json.loads(match.group())
         suggestions = [str(s) for s in (data.get("suggestions") or [])[:4] if s]
         return ThumbnailScore(
             curiosity=_clamp(data.get("curiosity", 0)),

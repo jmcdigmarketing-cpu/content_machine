@@ -214,32 +214,45 @@ def _default_model(provider: str, tier: str) -> str:
     return _DEFAULT_MODELS.get(provider, {}).get(tier, "")
 
 
-_ollama_models_cache: list[str] | None = None
+_ollama_probe_cache: tuple[bool, list[str]] | None = None
 
 
-def ollama_installed_models(*, refresh: bool = False) -> list[str]:
-    """Model tags actually pulled on the local Ollama daemon ([] when none/unreachable).
+def ollama_tags_url() -> str:
+    """Local Ollama ``/api/tags`` URL (OpenAI-compat ``/v1`` suffix stripped)."""
+    base = (os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1").rstrip("/")
+    root = base[: -len("/v1")] if base.endswith("/v1") else base
+    return f"{root}/api/tags"
+
+
+def ollama_probe(*, refresh: bool = False) -> tuple[bool, list[str]]:
+    """(reachable, installed tags). HTTP 200 with an empty list is reachable.
 
     Cached per process: this is a localhost call, but the chain is resolved on every
-    LLM request and the answer cannot change mid-run in practice.
+    LLM request and the answer cannot change mid-run in practice. Reachable-and-empty
+    is *not* the same as unreachable (decisions §18 / live run 70).
     """
-    global _ollama_models_cache
-    if _ollama_models_cache is not None and not refresh:
-        return _ollama_models_cache
+    global _ollama_probe_cache
+    if _ollama_probe_cache is not None and not refresh:
+        return _ollama_probe_cache
+    reachable = False
     tags: list[str] = []
     try:
-        import requests
-
-        base = (os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1").rstrip("/")
-        root = base[: -len("/v1")] if base.endswith("/v1") else base
-        resp = requests.get(f"{root}/api/tags", timeout=3)
+        resp = requests.get(ollama_tags_url(), timeout=3)
         if resp.status_code == 200:
+            reachable = True
             tags = [
                 str(m.get("name") or "") for m in (resp.json().get("models") or []) if m.get("name")
             ]
     except Exception:
+        reachable = False
         tags = []
-    _ollama_models_cache = tags
+    _ollama_probe_cache = (reachable, tags)
+    return _ollama_probe_cache
+
+
+def ollama_installed_models(*, refresh: bool = False) -> list[str]:
+    """Model tags actually pulled on the local Ollama daemon ([] when none/unreachable)."""
+    _reachable, tags = ollama_probe(refresh=refresh)
     return tags
 
 
@@ -673,7 +686,7 @@ def _openai_client(provider: str):
 def _openai_complete(
     provider: str,
     model: str,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     temperature: float,
     max_tokens: int,
@@ -699,7 +712,7 @@ def _openai_complete(
 
 def _anthropic_complete(
     model: str,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     temperature: float,
     max_tokens: int,
@@ -734,17 +747,35 @@ def _anthropic_complete(
     return text, int(usage.get("input_tokens", 0)), int(usage.get("output_tokens", 0))
 
 
+# OpenAI-compat providers that accept image_url content-parts on the models we
+# actually route. Others either use a different image schema (Anthropic) or the
+# project's default slugs are text-only — skipping is fail-visible, flattening is not.
+_VISION_SKIP_PROVIDERS = frozenset({"anthropic", "deepseek", "ollama", "doubao", "groq"})
+
+
+def _messages_have_image(messages: list[dict[str, Any]]) -> bool:
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict) and part.get("type") in ("image_url", "image"):
+                    return True
+    return False
+
+
 def _normalize_messages(
-    messages: list[dict[str, str]] | str, system: str | None
-) -> list[dict[str, str]]:
-    out = [{"role": "user", "content": messages}] if isinstance(messages, str) else list(messages)
+    messages: list[dict[str, Any]] | str, system: str | None
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = (
+        [{"role": "user", "content": messages}] if isinstance(messages, str) else list(messages)
+    )
     if system:
         out = [{"role": "system", "content": system}, *out]
     return out
 
 
 def complete(
-    messages: list[dict[str, str]] | str,
+    messages: list[dict[str, Any]] | str,
     *,
     tier: str = "cheap",
     system: str | None = None,
@@ -757,6 +788,7 @@ def complete(
     """Run a completion through the routed provider for ``tier``, with failover.
 
     ``messages`` may be a plain prompt string or a list of role/content dicts.
+    ``content`` may be a string or OpenAI-style content-part lists (text + image_url).
     When ``provider``/``model`` are omitted the tier resolves to a *chain* of
     providers (O5): on a rate-limit/quota/auth/5xx error the next provider in the
     chain is tried, and hard auth/quota failures disable that provider for the
@@ -766,6 +798,12 @@ def complete(
     Raises only when every candidate fails.
     """
     msgs = _normalize_messages(messages, system)
+
+    if _messages_have_image(msgs):
+        from core.run_mode import free_mode_strict
+
+        if free_mode_strict():
+            raise LLMUnavailableError("vision blocked in Free mode")
 
     if provider:
         if not model:
@@ -791,6 +829,15 @@ def complete(
         live = [c for c in candidates if not _model_is_dead(*c)]
         if live:
             candidates = live
+
+    if _messages_have_image(msgs):
+        if provider is not None and provider in _VISION_SKIP_PROVIDERS:
+            raise LLMUnavailableError(f"provider '{provider}' cannot take image content")
+        vision_ok = [c for c in candidates if c[0] not in _VISION_SKIP_PROVIDERS]
+        if vision_ok:
+            candidates = vision_ok
+        else:
+            raise LLMUnavailableError("no vision-capable LLM provider in the chain")
 
     last_exc: Exception | None = None
     for idx, (prov, mdl) in enumerate(candidates):
@@ -873,7 +920,7 @@ def parse_json_payload(raw: str) -> dict[str, Any] | None:
 
 
 def complete_json(
-    messages: list[dict[str, str]] | str,
+    messages: list[dict[str, Any]] | str,
     *,
     tier: str = "cheap",
     system: str | None = None,

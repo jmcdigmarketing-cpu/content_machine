@@ -289,9 +289,12 @@ generation volume, it's probably not.
 
 ## 9. The one-paragraph "what to do Monday"
 
-Build the **reliability + cost dashboard** and **expand the cost meter** (add Flux,
-split LLM). It's cheap, it de-risks the #1 operational threat (API fragility), it
-makes every later "intelligence" trustworthy, and it starts the margin conversation.
-Then Channel Health + Topic Graveyard/Winners (data already exists), then MoneyWise
-depth. Keep generation boring and stable; pour the energy into the data moat and
-monetization. And **get the repo off OneDrive this week.**
+The reliability + cost dashboard (`ops reliability`, O11–O12) **shipped**. The
+cost meter now sees TTS (~91% of a rendered run, ~$0.31 metered / ~$1 allocated).
+Channel Health, graveyard, and winners exist. **Monday pickup** is
+[roadmap.md](roadmap.md) **recommended next 5**: pre-run completion gate, oauth
+tests + `coverage` extra, pronunciation lexicon (what actually unblocks the $0
+TTS flip), allocated vs marginal economics, numeric/record grounding. Do not
+start clip-from-source, avatar, or Phase M. MoneyWise still needs `oauth_setup`
+before a depth wave. CUDA torch (`2.8.0+cpu` on a 4070 Ti) is the GPU gate, not
+hardware.

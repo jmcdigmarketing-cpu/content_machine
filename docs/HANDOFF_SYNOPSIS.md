@@ -1,14 +1,19 @@
-# Handoff synopsis — 2026-08-14: fact-layer repair wave (after Pillars 1–7)
+# Handoff synopsis — 2026-08-20: living state after PR #34 + live-run 69/70
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Branch / PR
 
-- **Branch:** `main`. The whole stack **merged 2026-08-19 via
+- **Branch:** `main` (or the live-run 69/70 working tree landing on it). The stack
+  **merged 2026-08-19 via
   [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34)** (24 commits,
-  merge commit `6389e87`) and **CI is green on `main`**. `feat/research-intake-repair` and
-  `feat/trade-validation-default-on` are fully contained in `main` and safe to delete.
-- **Suite:** 1433 tests green · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+  merge commit `6389e87`); CI is green on `main`. 20 Aug added the run-70 Ollama
+  probe, worker/ffmpeg coverage tests, semantic authenticity, and router vision
+  (`core/llm_client.py` gone).
+- **Suite:** 1,433+ tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Pickup order:** [docs/roadmap.md](roadmap.md) **Recommended next 5** (pre-run
+  gate, oauth tests + `coverage` extra, pronunciation lexicon, allocated vs
+  marginal economics, numeric/record grounding). Candidates 56–90 sit under Next up.
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -518,97 +523,49 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-> **Done 2026-08-16** — the caption-text fix shipped (`video/caption_retext.py`, see the
-> section below). The **$0 TTS switch is now unblocked** and waiting on two *operator*
-> calls, not engineering: judge the Piper voice
-> (`output/samples/piper_lessac_run65.mp3`), and re-run
-> `py -m scripts.bench_script_duration` after any flip because Piper reads ~20% slower.
-> **The 93 silent-`pass` handlers are done too** (2026-08-16, below).
->
-> ## ▶ Branch + PR triage — DONE; stack MERGED 2026-08-19
->
-> **[PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34) is merged into
-> `main`** (24 commits, merge commit `6389e87`), and CI is green on `main`. Six weeks of
-> work that had never been reviewed or CI-validated is now on the trunk.
->
-> **Pre-merge audit (2026-08-19) re-verified against the live system, all clean:** Alembic
-> stamp `0004`; **4/4 FKs** correct (`SET NULL` ×3, `CASCADE` on `thumbnail_scores`); 871
-> publish_log rows, 836 NULL links, **0 orphans**; **0** cost rows where `total ≠ Σ lines`;
-> **37/37 feeds ok**; 0 signals disabled; every touched entry point imports; 1433 tests
-> green. One thing fixed on the way in — mypy flagged the one new file this branch added
-> to the checked set (`video/caption_retext.py`), so its gap-filler was retyped as explicit
-> branches rather than shipping new code that grows the baseline.
->
-> **CI earned its keep immediately.** It had never run on any of these commits — the
-> workflow fires only on push-to-`main` and `pull_request` → `main` — and the first run
-> failed with 3 errors: `test_caption_align` patched the real `torch.cuda.is_available`,
-> but torch is in the optional `[providers]` extra, so the tests only passed on a box that
-> happened to have it. Fixed by injecting a fake torch, plus a case for torch being absent
-> entirely. **Lesson: never patch an optional dependency's real module in a test.**
->
-> **All seven PRs closed (#26–#32), all their branches deleted.** #27 was the dangerous
-> one — superseded *and* it still carried the expired `"2026-07-25 18:00"` that #33 fixed,
-> so merging it would have made CI permanently red.
->
-> **Five orphan docs were harvested first** (commit `f9307cd`), because each PR added a
-> standalone doc that existed nowhere else — ~1,000 lines that closing would have binned:
-> `llm_provider_strategy.md`, `strategy_2026H2.md`, `next_ideas_2026-07.md`,
-> `code_audit_2026-07.md`, `efficiency_audit_2026-07.md`. Only the new files were taken;
-> their edits to shared docs were dropped as superseded, which also avoided every conflict.
-> Each opens with a dated header naming what has since superseded it.
->
-> **Still open, flagged not actioned:** `origin/claude/docs-optimization-review-a4l104` —
-> **9 commits, no PR, last touched 2026-07-21**, sitting on an old base, so merging it
-> would revert code that has landed since. Same shape as #27. Needs the same decision.
-> `origin/feat/reddit-free-backend-and-signal-persistence` is fully merged into `main` and
-> is safe to delete.
->
+**Pickup:** [roadmap.md](roadmap.md) **Recommended next 5** (20 Aug evening) — pre-run
+completion gate, `youtube/oauth.py` tests + `coverage` extra, pronunciation lexicon
+for local TTS, allocated vs marginal unit economics, numeric/record grounding.
+Candidates **21–55** and **56–90** sit at the bottom of Next up. Phase M stays parked.
 
-> ## 2. Then: the paused coverage wave
->
-> "Raise test coverage on render + publish paths" is **`[~]` in [roadmap.md](roadmap.md)**,
-> which carries the full remaining design (what's covered, what isn't, and why the old
-> roadmap line's framing was wrong). Step 1 done: `prepend_channel_intro` + the
-> render-loss defect it exposed. Next, in blast-radius order:
-> **`jobs/worker.process_one`'s quota gate** (an inversion burns ~1,600 units per
-> attempt), `_defer_for_quota` (a quota defer must not eat a retry),
-> `build_render_ffmpeg_command`'s music-bed/duration/subtitle paths, then `youtube/oauth`
-> token handling. `coverage` still needs adding to the `[dev]` extra.
+**Already done (do not re-open):**
+- Caption-text from the script (`video/caption_retext.py`, 2026-08-16). The **$0 TTS
+  switch** is unblocked and waiting on two *operator* calls: judge
+  `output/samples/piper_lessac_run65.mp3`, then re-run
+  `py -m scripts.bench_script_duration` (Piper reads ~20% slower).
+- Silent `pass` handlers (S110/S112, 2026-08-16).
+- **PR #34 merged 2026-08-19** (`6389e87`), CI green on `main`. All seven stale PRs
+  **#26–#32 closed**. Pre-merge check: Alembic `0004`, 4/4 FKs, 37/37 feeds, 1,433
+  tests. `feat/research-intake-repair` and `feat/trade-validation-default-on` are in
+  `main` and safe to delete.
+- Coverage wave: `prepend_channel_intro`, `process_one` quota gate, `_defer_for_quota`,
+  `build_render_ffmpeg_command` **done**. Remaining: **`youtube/oauth.py` tests**
+  (never `config/secrets/`) and the `coverage` extra (report only, no CI %).
+- Router vision path (2026-08-20): thumbnail scorer uses `llm_router.complete` with
+  image parts; `core/llm_client.py` deleted. Pillar 2 *rendered-video* review is still
+  later. Semantic authenticity (`AUTHENTICITY_SEMANTIC`) default-on, warn-never-block.
+- Cheap-tier dead slugs: OpenRouter cheap repointed on live test; Ollama reports
+  unavailable when nothing is pulled (run 66 / run 70). `ops free-doctor` now says
+  **pull** vs **serve** vs OpenRouter throttled fallback.
 
-***Pillars 1–5 all shipped** (decisions §15–17) — the internal-systems reorientation
-is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
+**Still open:**
+1. **Recommended next 5** — see [roadmap.md](roadmap.md) (viability / short-term /
+   cost). Do not start with clip-from-source, avatar, or Phase M.
+2. **Pillar 6 remainder** — seams live; heavy backends wait on a **CUDA torch**
+   build (`2.8.0+cpu` on an RTX 4070 Ti), not on hardware. Clip-from-source and
+   storyboard still not started. [providers_runbook.md](providers_runbook.md),
+   [video_creation_stack.md](video_creation_stack.md).
+3. **Pillar 2 remainder** — multimodal rendered-video review (vision path now
+   exists); calibration/predictor stay volume-gated (10 measured vs threshold 15).
+4. **Unphased:** MoneyWise depth, AI Tools/Tech groundwork, overnight facts-file
+   (`generate_draft` still has no `key_facts=`).
+5. **Vault:** stable-path dossier upsert (date-prefix clones the same `run_id`).
+6. **One-time ops:** re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
+7. **Do not merge** `origin/claude/docs-optimization-review-a4l104` (9 commits, no
+   PR, last touched 2026-07-21, old base — same shape as #27).
+   `origin/feat/reddit-free-backend-and-signal-persistence` is in `main`; delete it.
 
-1. **Pillar 6 — Video Creation Provider Layer** (decisions §17, overrides §8): the
-   seam→live-path wiring is **done** for every slot (U1–U9; local TTS + voice variety
-   shipped) — see the reconciled roadmap + [providers_runbook.md](providers_runbook.md).
-   What's left is **backend + feature work that needs a GPU box** (can't be verified on the
-   Windows/CPU dev machine, so each stays OFF and fails open): real WhisperX / MusicGen /
-   ComfyUI-Wan-LTX AI-video / YOLO auto-reframe / avatar / Real-ESRGAN·RIFE upscaling — plus
-   two **not-started** items: **clip-from-source (Phase R)** and **storyboard shot-lists**
-   (build storyboard *with* the AI-video backend — its real consumer; cinematic prose hurts
-   keyword stock search). Full tool list + build order:
-   [video_creation_stack.md](video_creation_stack.md). Excluded: Higgsfield + `[search github]` repos.
-2. **Pillar 2 remainder**: multimodal rendered-video review *(needs router vision path)*;
-   calibration/predictor activate as measured volume accrues.
-3. Supporting/unphased: router vision path, MoneyWise depth, AI Tools/Tech groundwork.
-   *(O12 complete 2026-08-14. Whisper local: CPU backend landed — see above; the
-   caption-text fix is the open half.)* Still volume-gated: the **recommender backtest**
-   (10 measured run-linked videos vs the predictor's threshold of 15).
-4. Agent follow-ups: overnight facts-file intake (needs `generate_draft(key_facts=)`).
-   *(`SEMANTIC_TRADE_VALIDATION` default-on shipped 2026-08-14 — domain-gated NBA/NFL.)*
-5. Vault housekeeping: cross-day dossier refresh leaves prior-day `_runs/` notes (same
-   `run_id`, different date prefix) — safe but clutter; stable-path upsert is a follow-up.
-   17 test-fixture `<date>_topic.md` notes remain in the vault (harmless; they no longer
-   regenerate now that the suite is isolated).
-6. One-time ops: re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
-7. **Open PRs to triage — now the first pickup item; see the block at the top of this
-   file.** The stack is 19 commits over `main` with no PR, and **#26–#32** (seven, not
-   the four earlier notes claimed) are open since late July. **#27 must be closed, not
-   merged** — superseded, and it would turn CI permanently red.
-8. Two retired LLM slugs still need repointing (`OPENROUTER_MODEL_CHEAP`,
-   `OLLAMA_MODEL_CHEAP`) — each currently costs one failed probe per 24h.
-
-**Parked / excluded:** Instagram + TikTok platform linking (Phase M, far later) · Benable bot.
+**Parked / excluded:** Instagram + TikTok platform linking (Phase M) · Benable bot.
 
 ---
 
@@ -616,7 +573,7 @@ is complete. `ops health` / `analyst` / `overnight` are live. Remaining:*
 
 - `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
-- `docs/roadmap.md` — Pillars 1–5 ✅, Pillar 6 baseline seams landed
+- `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); recommended next 5 + candidates 56–90
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index
 - `docs/debugging.md` — playbook vs facts, hallucination triage
 

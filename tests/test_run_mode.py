@@ -133,16 +133,28 @@ class TestReadiness(unittest.TestCase):
         self.assertIn("OPENROUTER_MODEL_CHEAP", note)
 
     def test_ollama_ready_pings_the_server(self):
-        with mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1"}, clear=True):
-            with mock.patch("requests.get", return_value=mock.Mock(status_code=200)) as g:
-                self.assertEqual(run_mode._ollama_ready(), (True, "llama3.1"))
-                g.assert_called_once()
-            with mock.patch("requests.get", side_effect=OSError("connection refused")):
-                self.assertEqual(run_mode._ollama_ready(), (False, "llama3.1"))  # down -> not ready
-        with mock.patch.dict(os.environ, {}, clear=True):
-            with mock.patch("requests.get") as g:
-                self.assertEqual(run_mode._ollama_ready(), (False, ""))  # no model -> no ping
-                g.assert_not_called()
+        from core import llm_router
+
+        llm_router._ollama_probe_cache = None
+        tags = mock.Mock(status_code=200)
+        tags.json.return_value = {"models": [{"name": "llama3.1:8b"}]}
+        try:
+            with mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1"}, clear=True):
+                with mock.patch.object(llm_router.requests, "get", return_value=tags) as g:
+                    self.assertEqual(run_mode._ollama_ready(), (True, "llama3.1"))
+                    g.assert_called_once()
+                llm_router._ollama_probe_cache = None
+                with mock.patch.object(
+                    llm_router.requests, "get", side_effect=OSError("connection refused")
+                ):
+                    self.assertEqual(run_mode._ollama_ready(), (False, "llama3.1"))
+            llm_router._ollama_probe_cache = None
+            with mock.patch.dict(os.environ, {}, clear=True):
+                with mock.patch.object(llm_router.requests, "get") as g:
+                    self.assertEqual(run_mode._ollama_ready(), (False, ""))
+                    g.assert_not_called()
+        finally:
+            llm_router._ollama_probe_cache = None
 
     def test_readiness_llm_local_flag_and_line(self):
         with mock.patch.object(run_mode, "_free_llm", return_value=("ollama", "llama3.1", "")):
@@ -234,6 +246,7 @@ class TestFreeDoctor(unittest.TestCase):
             mock.patch.object(run_mode, "_local_tts_available", return_value=None),
             mock.patch("apis.free_backends.reddit_available", return_value=False),
             mock.patch("apis.free_backends.youtube_available", return_value=True),
+            mock.patch.object(ops, "_ollama_server_probe", return_value=(False, 0)),
             mock.patch.dict(os.environ, {}, clear=True),
         ):
             rc = ops.cmd_free_doctor(argparse.Namespace())

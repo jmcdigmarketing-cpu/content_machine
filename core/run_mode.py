@@ -82,21 +82,30 @@ def _local_tts_available() -> str | None:
 
 
 def _ollama_ready() -> tuple[bool, str]:
-    """(reachable, model) — local Ollama is truly free only if a model is set AND the
-    server answers. A quick /api/tags ping keeps readiness honest (don't route to a
-    down server, then crash). Never raises."""
+    """(usable, model) — Ollama is truly free only if the configured model is PULLED.
+
+    This used to return `status_code == 200` from `/api/tags`, i.e. "the daemon
+    answered". On a box with Ollama running and nothing pulled that reported
+    `llm=ollama OK (local $0)`, Free mode pinned the premium tier to it, and live run 70
+    died 71 seconds later on `404 model 'llama3.1:8b' not found` — after a full
+    discovery. Reachable is not usable (decisions §18).
+
+    `core.llm_router` already had this right, so this delegates rather than keeping a
+    second, weaker copy of the same probe: the router's list is the single source of
+    truth for what Ollama can actually serve, and it caches the localhost call.
+    """
     model = os.getenv("OLLAMA_MODEL", "").strip()
     if not model:
         return False, ""
-    base = os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1"
-    root = base.rsplit("/v1", 1)[0].rstrip("/")
     try:
-        import requests  # type: ignore[import-untyped]
+        from core.llm_router import ollama_installed_models
 
-        resp = requests.get(f"{root}/api/tags", timeout=2)
-        return resp.status_code == 200, model
+        installed = ollama_installed_models()
     except Exception:
         return False, model
+    # Ollama tags are "name:tag"; a bare name matches any installed tag (router rule).
+    usable = any(m == model or m.split(":")[0] == model.split(":")[0] for m in installed)
+    return usable, model
 
 
 def _openrouter_free_model() -> str:
@@ -140,6 +149,10 @@ def _free_llm() -> tuple[str | None, str, str]:
         if _model_known_dead("openrouter", free_model):
             return None, "", "openrouter free model retired - set OPENROUTER_MODEL_CHEAP"
         return "openrouter", free_model, ""
+    if os.getenv("OLLAMA_MODEL", "").strip():
+        # The model is configured but not pulled — say so, since "run Ollama" would be
+        # wrong advice when the daemon is already up.
+        return None, "", "ollama has no model pulled - run: ollama pull $OLLAMA_MODEL"
     return None, "", "run Ollama or set OPENROUTER_API_KEY"
 
 
@@ -180,6 +193,10 @@ def free_backend_readiness() -> Readiness:
     )
 
 
+class CostModeBlocked(RuntimeError):
+    """Free mode is missing a $0 backend — callers must not start discovery."""
+
+
 @dataclass
 class ApplyResult:
     """Outcome of apply_cost_mode: env keys set + any missing $0 backends (blockers)."""
@@ -192,6 +209,33 @@ class ApplyResult:
     def can_render(self) -> bool:
         """A render needs $0 voice AND a free LLM; signals degrade gracefully."""
         return not any(b.startswith(("voice:", "llm:")) for b in self.blockers)
+
+    @property
+    def blocked(self) -> bool:
+        """True when Free mode was requested but cannot actually run."""
+        return self.mode == COST_MODE_FREE and not self.can_render
+
+
+def abort_if_blocked(result: ApplyResult) -> None:
+    """Raise CostModeBlocked when Free mode cannot proceed. Standard is a no-op.
+
+    Live run 70 already taught us not to *advertise* a dead Ollama. This stops the
+    next step: do not spend discovery (or an overnight batch) after the operator
+    picked Free and the $0 backends are missing.
+    """
+    if not result.blocked:
+        return
+    detail = "; ".join(result.blockers) or "Free mode backends not ready"
+    raise CostModeBlocked(
+        f"{detail}. Free mode can't continue until this is resolved (docs/free_mode.md)."
+    )
+
+
+def apply_and_guard(mode: str | None = None, *, readiness: Readiness | None = None) -> ApplyResult:
+    """Apply a cost mode (default ``RUN_COST_MODE``) and abort if Free cannot proceed."""
+    result = apply_cost_mode(mode or resolve_cost_mode(), readiness=readiness)
+    abort_if_blocked(result)
+    return result
 
 
 def _merge_skip(existing: str) -> str:

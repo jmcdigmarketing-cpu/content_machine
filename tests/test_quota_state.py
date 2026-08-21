@@ -49,6 +49,12 @@ class TestQuotaState(unittest.TestCase):
         quota_state.set_value("apify_usage:main", {"usage": 1.5, "limit": 5.0}, 3600)
         self.assertEqual(quota_state.get_value("apify_usage:main"), {"usage": 1.5, "limit": 5.0})
 
+    def test_clear_value(self):
+        quota_state.set_value("k", "v", 3600)
+        quota_state.clear_value("k")
+        self.assertIsNone(quota_state.get_value("k"))
+        quota_state.clear_value("k")  # missing key is a no-op
+
     def test_increment_value_accumulates(self):
         quota_state.increment_value("llm_spend:test", 1.5, 3600)
         quota_state.increment_value("llm_spend:test", 2.0, 3600)

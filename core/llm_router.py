@@ -214,32 +214,45 @@ def _default_model(provider: str, tier: str) -> str:
     return _DEFAULT_MODELS.get(provider, {}).get(tier, "")
 
 
-_ollama_models_cache: list[str] | None = None
+_ollama_probe_cache: tuple[bool, list[str]] | None = None
 
 
-def ollama_installed_models(*, refresh: bool = False) -> list[str]:
-    """Model tags actually pulled on the local Ollama daemon ([] when none/unreachable).
+def ollama_tags_url() -> str:
+    """Local Ollama ``/api/tags`` URL (OpenAI-compat ``/v1`` suffix stripped)."""
+    base = (os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1").rstrip("/")
+    root = base[: -len("/v1")] if base.endswith("/v1") else base
+    return f"{root}/api/tags"
+
+
+def ollama_probe(*, refresh: bool = False) -> tuple[bool, list[str]]:
+    """(reachable, installed tags). HTTP 200 with an empty list is reachable.
 
     Cached per process: this is a localhost call, but the chain is resolved on every
-    LLM request and the answer cannot change mid-run in practice.
+    LLM request and the answer cannot change mid-run in practice. Reachable-and-empty
+    is *not* the same as unreachable (decisions §18 / live run 70).
     """
-    global _ollama_models_cache
-    if _ollama_models_cache is not None and not refresh:
-        return _ollama_models_cache
+    global _ollama_probe_cache
+    if _ollama_probe_cache is not None and not refresh:
+        return _ollama_probe_cache
+    reachable = False
     tags: list[str] = []
     try:
-        import requests
-
-        base = (os.getenv("OLLAMA_BASE_URL", "").strip() or "http://localhost:11434/v1").rstrip("/")
-        root = base[: -len("/v1")] if base.endswith("/v1") else base
-        resp = requests.get(f"{root}/api/tags", timeout=3)
+        resp = requests.get(ollama_tags_url(), timeout=3)
         if resp.status_code == 200:
+            reachable = True
             tags = [
                 str(m.get("name") or "") for m in (resp.json().get("models") or []) if m.get("name")
             ]
     except Exception:
+        reachable = False
         tags = []
-    _ollama_models_cache = tags
+    _ollama_probe_cache = (reachable, tags)
+    return _ollama_probe_cache
+
+
+def ollama_installed_models(*, refresh: bool = False) -> list[str]:
+    """Model tags actually pulled on the local Ollama daemon ([] when none/unreachable)."""
+    _reachable, tags = ollama_probe(refresh=refresh)
     return tags
 
 
@@ -546,17 +559,28 @@ def get_usage() -> list[dict[str, Any]]:
         return [dict(c) for c in _usage.calls]
 
 
-def _record_usage(provider: str, model: str, tier: str, in_tok: int, out_tok: int) -> None:
+def _record_usage(
+    provider: str,
+    model: str,
+    tier: str,
+    in_tok: int,
+    out_tok: int,
+    *,
+    escaped_free_first: bool = False,
+    stage: str | None = None,
+) -> None:
     with _usage_lock:
-        _usage.calls.append(
-            {
-                "provider": provider,
-                "model": model,
-                "tier": tier,
-                "input_tokens": int(in_tok or 0),
-                "output_tokens": int(out_tok or 0),
-            }
-        )
+        rec: dict[str, Any] = {
+            "provider": provider,
+            "model": model,
+            "tier": tier,
+            "stage": (stage or tier or "unknown"),
+            "input_tokens": int(in_tok or 0),
+            "output_tokens": int(out_tok or 0),
+        }
+        if escaped_free_first:
+            rec["escaped_free_first"] = True
+        _usage.calls.append(rec)
 
 
 # --- Daily spend ceiling (O7) ------------------------------------------------
@@ -673,7 +697,7 @@ def _openai_client(provider: str):
 def _openai_complete(
     provider: str,
     model: str,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     temperature: float,
     max_tokens: int,
@@ -699,7 +723,7 @@ def _openai_complete(
 
 def _anthropic_complete(
     model: str,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     temperature: float,
     max_tokens: int,
@@ -734,17 +758,35 @@ def _anthropic_complete(
     return text, int(usage.get("input_tokens", 0)), int(usage.get("output_tokens", 0))
 
 
+# OpenAI-compat providers that accept image_url content-parts on the models we
+# actually route. Others either use a different image schema (Anthropic) or the
+# project's default slugs are text-only — skipping is fail-visible, flattening is not.
+_VISION_SKIP_PROVIDERS = frozenset({"anthropic", "deepseek", "ollama", "doubao", "groq"})
+
+
+def _messages_have_image(messages: list[dict[str, Any]]) -> bool:
+    for msg in messages:
+        content = msg.get("content")
+        if isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict) and part.get("type") in ("image_url", "image"):
+                    return True
+    return False
+
+
 def _normalize_messages(
-    messages: list[dict[str, str]] | str, system: str | None
-) -> list[dict[str, str]]:
-    out = [{"role": "user", "content": messages}] if isinstance(messages, str) else list(messages)
+    messages: list[dict[str, Any]] | str, system: str | None
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = (
+        [{"role": "user", "content": messages}] if isinstance(messages, str) else list(messages)
+    )
     if system:
         out = [{"role": "system", "content": system}, *out]
     return out
 
 
 def complete(
-    messages: list[dict[str, str]] | str,
+    messages: list[dict[str, Any]] | str,
     *,
     tier: str = "cheap",
     system: str | None = None,
@@ -753,10 +795,12 @@ def complete(
     json_mode: bool = False,
     provider: str | None = None,
     model: str | None = None,
+    stage: str | None = None,
 ) -> str:
     """Run a completion through the routed provider for ``tier``, with failover.
 
     ``messages`` may be a plain prompt string or a list of role/content dicts.
+    ``content`` may be a string or OpenAI-style content-part lists (text + image_url).
     When ``provider``/``model`` are omitted the tier resolves to a *chain* of
     providers (O5): on a rate-limit/quota/auth/5xx error the next provider in the
     chain is tried, and hard auth/quota failures disable that provider for the
@@ -766,6 +810,12 @@ def complete(
     Raises only when every candidate fails.
     """
     msgs = _normalize_messages(messages, system)
+
+    if _messages_have_image(msgs):
+        from core.run_mode import free_mode_strict
+
+        if free_mode_strict():
+            raise LLMUnavailableError("vision blocked in Free mode")
 
     if provider:
         if not model:
@@ -784,6 +834,8 @@ def complete(
             tier = "cheap"
         candidates = _resolve_chain(tier)
 
+    chain_for_escape = list(candidates)
+
     # Skip slugs already proven unavailable this session (e.g. a retired `:free` model) so
     # we don't repeat the same 404 on every call. If that would empty the chain, keep the
     # original list so the failure path still surfaces the provider's real error.
@@ -791,6 +843,15 @@ def complete(
         live = [c for c in candidates if not _model_is_dead(*c)]
         if live:
             candidates = live
+
+    if _messages_have_image(msgs):
+        if provider is not None and provider in _VISION_SKIP_PROVIDERS:
+            raise LLMUnavailableError(f"provider '{provider}' cannot take image content")
+        vision_ok = [c for c in candidates if c[0] not in _VISION_SKIP_PROVIDERS]
+        if vision_ok:
+            candidates = vision_ok
+        else:
+            raise LLMUnavailableError("no vision-capable LLM provider in the chain")
 
     last_exc: Exception | None = None
     for idx, (prov, mdl) in enumerate(candidates):
@@ -812,7 +873,24 @@ def complete(
                         max_tokens=max_tokens,
                         json_mode=json_mode,
                     )
-                _record_usage(prov, mdl, tier, in_tok, out_tok)
+                escaped = False
+                if provider is None and not _is_free_llm(prov, mdl):
+                    # Paid winner after a free candidate earlier in the chain (404'd this
+                    # call, or already marked dead and skipped) — operator-visible flag.
+                    try:
+                        prior = chain_for_escape[: chain_for_escape.index((prov, mdl))]
+                    except ValueError:
+                        prior = chain_for_escape
+                    escaped = any(_is_free_llm(p, m) for p, m in prior)
+                _record_usage(
+                    prov,
+                    mdl,
+                    tier,
+                    in_tok,
+                    out_tok,
+                    escaped_free_first=escaped,
+                    stage=stage,
+                )
                 if _llm_daily_budget() is not None:
                     _add_llm_spend(_price_call(prov, mdl, in_tok, out_tok))
                 return text
@@ -873,7 +951,7 @@ def parse_json_payload(raw: str) -> dict[str, Any] | None:
 
 
 def complete_json(
-    messages: list[dict[str, str]] | str,
+    messages: list[dict[str, Any]] | str,
     *,
     tier: str = "cheap",
     system: str | None = None,
@@ -881,6 +959,7 @@ def complete_json(
     max_tokens: int = 1024,
     provider: str | None = None,
     model: str | None = None,
+    stage: str | None = None,
 ) -> dict[str, Any] | None:
     """``complete`` with ``json_mode`` on, parsed into a dict (or None)."""
     raw = complete(
@@ -892,5 +971,6 @@ def complete_json(
         json_mode=True,
         provider=provider,
         model=model,
+        stage=stage,
     )
     return parse_json_payload(raw)

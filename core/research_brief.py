@@ -185,7 +185,9 @@ Return JSON only:
 
     try:
         # Research brief is product-grade reasoning → premium tier.
-        data = complete_json(prompt, tier="premium", temperature=0.45, max_tokens=1500)
+        data = complete_json(
+            prompt, tier="premium", temperature=0.45, max_tokens=1500, stage="brief"
+        )
         if not isinstance(data, dict):
             return None
         return ResearchBrief(

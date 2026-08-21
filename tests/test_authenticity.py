@@ -1,9 +1,12 @@
 """Tests for the pre-upload authenticity self-check (Phase O)."""
 
+import os
 import unittest
+from difflib import SequenceMatcher
 from unittest.mock import patch
 
 from core.authenticity import (
+    _content_cosine,
     _insight_check,
     _substance_check,
     _variation_check,
@@ -57,6 +60,45 @@ class TestVariationCheck(unittest.TestCase):
             "changes that nobody expected to drop this early in the season."
         )
         c = _variation_check(GOOD_SCRIPT, [other])
+        self.assertTrue(c.passed)
+
+    def test_paraphrase_of_same_facts_fails(self):
+        # Same claims, different wording — SequenceMatcher is low; content overlap is not.
+        paraphrase = (
+            "The roster move shocked everyone. I think it reshapes the whole "
+            "division because matchup data shows the champion never beat a "
+            "southpaw with that reach advantage. Calling it now: a first-round "
+            "upset the panel will not name. Numbers back the styles nightmare, "
+            "fans are sleeping, and the favourite ends badly once the cage door "
+            "closes this weekend."
+        )
+        self.assertLess(
+            SequenceMatcher(None, GOOD_SCRIPT.lower(), paraphrase.lower()).ratio(),
+            0.60,
+            "fixture must be a paraphrase, not a near-copy",
+        )
+        self.assertGreaterEqual(_content_cosine(GOOD_SCRIPT, paraphrase), 0.45)
+        with patch.dict("os.environ", {"AUTHENTICITY_SEMANTIC": "true"}, clear=False):
+            c = _variation_check(GOOD_SCRIPT, [paraphrase])
+        self.assertFalse(c.passed)
+        self.assertIn("rehash", c.detail)
+
+    def test_exact_duplicate_fails_lexical_first(self):
+        c = _variation_check(GOOD_SCRIPT, [GOOD_SCRIPT])
+        self.assertFalse(c.passed)
+        self.assertIn("template-stamped", c.detail)
+
+    def test_semantic_can_be_disabled(self):
+        paraphrase = (
+            "The roster move shocked everyone. I think it reshapes the whole "
+            "division because matchup data shows the champion never beat a "
+            "southpaw with that reach advantage. Calling it now: a first-round "
+            "upset the panel will not name. Numbers back the styles nightmare, "
+            "fans are sleeping, and the favourite ends badly once the cage door "
+            "closes this weekend."
+        )
+        with patch.dict("os.environ", {"AUTHENTICITY_SEMANTIC": "false"}, clear=False):
+            c = _variation_check(GOOD_SCRIPT, [paraphrase])
         self.assertTrue(c.passed)
 
 

@@ -1,5 +1,6 @@
 """display_summary surfaces per-run cost and the Apify out-of-credits warning."""
 
+import os
 import unittest
 from unittest.mock import patch
 
@@ -46,6 +47,31 @@ class TestDisplaySummary(unittest.TestCase):
         with patch("apis.apify_client.apify_disabled", return_value=False):
             out = _capture(timings={}, title="T")
         self.assertNotIn("Apify disabled", out)
+
+    def test_operator_time_line_when_timer_started(self):
+        from core.operator_timer import clear, start_run
+
+        class _Clock:
+            def __init__(self):
+                self.t = 0.0
+
+            def __call__(self):
+                return self.t
+
+        clock = _Clock()
+        start_run(clock=clock)
+        clock.t = 90.0
+        try:
+            out = _capture(timings={}, title="T")
+        finally:
+            clear()
+        self.assertIn("Operator time", out)
+        self.assertIn("1.5 min wall", out)
+
+    def test_standard_billed_when_piper(self):
+        with patch.dict("os.environ", {"TTS_PROVIDER": "piper"}, clear=False):
+            out = _capture(timings={}, title="T", script="x" * 1000)
+        self.assertIn("Standard would have billed", out)
 
 
 if __name__ == "__main__":

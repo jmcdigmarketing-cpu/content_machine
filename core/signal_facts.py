@@ -224,6 +224,25 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                     summary += "\n  Top hashtags: " + ", ".join(f"#{h}" for h in hashtags[:6])
                 lines.append(summary)
 
+        elif name == "earnings" and isinstance(data, dict):
+            symbol = str(data.get("symbol") or "").strip()
+            date = str(data.get("date") or "").strip()
+            days = data.get("days_until")
+            eps = data.get("eps_estimate")
+            parts = []
+            if symbol:
+                parts.append(symbol)
+            if date:
+                parts.append(date)
+            if days is not None and days != "":
+                parts.append(f"in {days}d")
+            line = "Earnings calendar: " + " ".join(parts) if parts else ""
+            if eps is not None and eps != "":
+                extra = f"EPS est. {eps}"
+                line = f"{line} ({extra})" if line else f"Earnings calendar: {extra}"
+            if line:
+                lines.append(line)
+
         elif name == "youtube_competitors" and isinstance(data, dict):
             videos = data.get("videos") or []
             median = data.get("median_duration_secs") or 0

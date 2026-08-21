@@ -5,8 +5,9 @@ YouTube's "inauthentic content" policy (Jul 2025) demonetises templated,
 mass-produced, low-insight uploads. This module scores a freshly generated
 script against three policy-aligned checks before render/upload:
 
-  1. variation — is the script meaningfully different from recent uploads,
-     or does it look template-stamped (same opening / structure)?
+  1. variation — lexical difflib (copy-paste / stamped opening) plus a stdlib
+     content-word cosine check for paraphrased rehash. ``AUTHENTICITY_SEMANTIC=false``
+     disables the cosine arm; exact duplicates still fail lexical first.
   2. original_insight — does it contain an opinion / analysis / prediction
      beat, not just a neutral recap?
   3. substance — enough spoken length and at least one verified fact behind it?
@@ -17,8 +18,10 @@ pipeline treat a "block" verdict as a hard stop the operator must override.
 
 from __future__ import annotations
 
+import math
 import os
 import re
+from collections import Counter
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 
@@ -34,6 +37,73 @@ _RECENT_RUNS = 12
 _FULL_SIM_LIMIT = 0.60
 # Opening-line similarity above this = same intro stamped on every video.
 _OPENING_SIM_LIMIT = 0.80
+# Content-word cosine above this vs any recent upload = the same video rehashed
+# (paraphrase, not copy-paste). Measured against the suite fixtures: a same-facts
+# rewrite of GOOD_SCRIPT vs GOOD_SCRIPT is high; an unrelated topic is near 0.
+# 0.45 sits between with room on both sides.
+_SEMANTIC_SIM_LIMIT = 0.45
+_TOKEN_RE = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
+_CONTENT_STOPWORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "but",
+        "by",
+        "for",
+        "from",
+        "had",
+        "has",
+        "have",
+        "he",
+        "her",
+        "his",
+        "if",
+        "in",
+        "into",
+        "is",
+        "it",
+        "its",
+        "just",
+        "me",
+        "my",
+        "no",
+        "not",
+        "of",
+        "on",
+        "or",
+        "our",
+        "out",
+        "she",
+        "so",
+        "than",
+        "that",
+        "the",
+        "their",
+        "them",
+        "then",
+        "there",
+        "these",
+        "they",
+        "this",
+        "to",
+        "up",
+        "was",
+        "we",
+        "were",
+        "what",
+        "when",
+        "who",
+        "will",
+        "with",
+        "you",
+        "your",
+    }
+)
 # Substance floors.
 _MIN_WORDS = 55
 _MIN_FACTS = 1
@@ -99,6 +169,33 @@ def _opening(text: str, *, words: int = 12) -> str:
     return " ".join(_normalise(text).split()[:words])
 
 
+def _semantic_enabled() -> bool:
+    return os.getenv("AUTHENTICITY_SEMANTIC", "true").strip().lower() in ("1", "true", "yes")
+
+
+def _content_tokens(text: str) -> Counter[str]:
+    return Counter(
+        tok
+        for tok in _TOKEN_RE.findall(_normalise(text))
+        if tok not in _CONTENT_STOPWORDS and len(tok) > 1
+    )
+
+
+def _cosine(left: Counter[str], right: Counter[str]) -> float:
+    if not left or not right:
+        return 0.0
+    dot = sum(left[k] * right[k] for k in left.keys() & right.keys())
+    na = math.sqrt(sum(v * v for v in left.values()))
+    nb = math.sqrt(sum(v * v for v in right.values()))
+    if na == 0.0 or nb == 0.0:
+        return 0.0
+    return dot / (na * nb)
+
+
+def _content_cosine(script: str, other: str) -> float:
+    return _cosine(_content_tokens(script), _content_tokens(other))
+
+
 def _recent_scripts(channel_id: str, *, exclude_run_id: int | None) -> list[str]:
     """Recent uploads' script text (script_preview), newest first."""
     try:
@@ -149,6 +246,17 @@ def _variation_check(script: str, recent: list[str]) -> AuthenticityCheck:
             40,
             f"opening {max_open:.0%} like a recent video — vary the hook",
         )
+    if _semantic_enabled():
+        max_sem = 0.0
+        for other in recent:
+            max_sem = max(max_sem, _content_cosine(script, other))
+        if max_sem >= _SEMANTIC_SIM_LIMIT:
+            return AuthenticityCheck(
+                "variation",
+                False,
+                40,
+                f"content overlap {max_sem:.0%} with a recent upload — looks like a rehash",
+            )
     return AuthenticityCheck(
         "variation", True, 40, f"distinct from recent uploads (peak {max_full:.0%})"
     )

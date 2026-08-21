@@ -324,6 +324,13 @@ def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     skip |= _catalog_disabled_signals()
     if topic:
         skip |= _gated_signal_names(topic, channel_id)
+        try:
+            from core.web_search_skip import should_skip_web_search
+
+            if should_skip_web_search(topic, channel_id):
+                skip.add("web_search")
+        except Exception as exc:
+            logger.debug("web_search density skip skipped: %s", exc)
     if not skip:
         return pairs
     return tuple(pair for pair in pairs if pair[0] not in skip)
@@ -443,6 +450,22 @@ def _apply_topic_fanout(
     return results
 
 
+def _discovery_worker_cap(n_sources: int) -> int:
+    """Cap concurrent signal fetches (candidate 41). 0/off = one worker per source."""
+    if n_sources <= 0:
+        return 1
+    raw = os.getenv("DISCOVERY_MAX_WORKERS", "8").strip().lower()
+    if raw in ("", "0", "off", "false", "no"):
+        return n_sources
+    try:
+        cap = int(float(raw))
+    except ValueError:
+        return n_sources
+    if cap <= 0:
+        return n_sources
+    return max(1, min(cap, n_sources))
+
+
 def build_registry(
     topic,
     max_workers=None,
@@ -460,7 +483,7 @@ def build_registry(
     start_youtube_warmup_background()
 
     sources = _active_signal_sources(topic, channel_id)
-    workers = max_workers or len(sources)
+    workers = max_workers or _discovery_worker_cap(len(sources))
     pinned = {}
     if reuse_signals:
         for name in _variant_reuse():

@@ -6,6 +6,28 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Living-doc sync + live-run 69/70 — 2026-08-20
+
+*Honesty/cost wave after PR #34. Pickup is now the recommended next 5 on
+[roadmap.md](roadmap.md).*
+
+- **Run 70:** Free mode advertised `llm=ollama OK` with zero models pulled;
+  discovery ran 71s then 404'd. `_ollama_ready` delegates to
+  `llm_router.ollama_installed_models`. `ops free-doctor` distinguishes **pull**
+  vs **serve** vs OpenRouter throttled fallback.
+- **Coverage wave (partial):** `process_one` quota gate, `_defer_for_quota`, and
+  `build_render_ffmpeg_command` (music bed under VO, VO-only identity, `-t`,
+  subtitle escape, bed-mix retry). Remaining: `youtube/oauth.py` tests + `coverage`
+  extra.
+- **Semantic authenticity:** content-word cosine paraphrase arm
+  (`AUTHENTICITY_SEMANTIC`, default-on, warn-never-block).
+- **Router vision:** `llm_router.complete` accepts OpenAI-style image parts;
+  thumbnail scorer uses the extract tier. `core/llm_client.py` deleted.
+- **Docs:** living set (HANDOFF, architecture, project brief, assessment addendum,
+  audit A1–A2/C1/C4, this changelog, operating_plan §9, CLAUDE.md Apify count,
+  free_mode) synced to 20 Aug. Roadmap gained recommended next 5 + candidates
+  56–90 (viability / short-term success / real-world cost). Phase M still parked.
+
 ### Branch + PR triage; the stack goes up as PR #34 — 2026-08-17
 
 *Six weeks of work had never been reviewed or CI-validated. Suite 1433 green.*

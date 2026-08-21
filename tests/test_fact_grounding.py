@@ -9,7 +9,11 @@ import os
 import unittest
 from unittest.mock import patch
 
-from core.fact_grounding import extract_entities, find_ungrounded_entities
+from core.fact_grounding import (
+    extract_entities,
+    find_ungrounded_entities,
+    find_ungrounded_numeric,
+)
 
 
 class TestExtractEntities(unittest.TestCase):
@@ -104,6 +108,109 @@ class TestFindUngrounded(unittest.TestCase):
         )
         facts = "VERIFIED FACTS:\n- Oklahoma City Thunder had injury issues in the playoffs."
         self.assertEqual(find_ungrounded_entities(script, facts), [])
+
+
+class TestNumericRecordGrounding(unittest.TestCase):
+    FACTS = (
+        "VERIFIED FACTS:\n"
+        "- UFC featherweight champion Ilia Topuria is 15-0.\n"
+        "- Ranked No. 1 at featherweight.\n"
+        "- The purse is $2 million.\n"
+        "- Fight night is August 16, 2025.\n"
+    )
+    UFC = "The UFC featherweight division is wide open."
+
+    def test_invented_record_flagged(self):
+        script = f"{self.UFC} Topuria is 24-3 after last night."
+        ungrounded = find_ungrounded_entities(script, "VERIFIED FACTS:\n- UFC rankings updated.")
+        self.assertIn("24-3", ungrounded)
+
+    def test_grounded_record_not_flagged(self):
+        script = f"{self.UFC} Topuria is 15-0."
+        self.assertNotIn("15-0", find_ungrounded_entities(script, self.FACTS))
+
+    def test_invented_purse_flagged(self):
+        script = f"{self.UFC} The winner takes home a $500,000 purse."
+        ungrounded = find_ungrounded_entities(script, "VERIFIED FACTS:\n- UFC 311 is this weekend.")
+        self.assertTrue(any("$500,000" in u or "$500000" in u.replace(",", "") for u in ungrounded))
+
+    def test_invented_rank_flagged(self):
+        script = f"{self.UFC} He is ranked #3 at lightweight."
+        ungrounded = find_ungrounded_entities(
+            script, "VERIFIED FACTS:\n- UFC lightweight is stacked."
+        )
+        self.assertTrue(any("ranked" in u.lower() for u in ungrounded))
+
+    def test_invented_date_with_year_flagged(self):
+        script = f"{self.UFC} The rematch is set for March 4, 2027."
+        ungrounded = find_ungrounded_entities(script, "VERIFIED FACTS:\n- UFC announced a rematch.")
+        self.assertTrue(any("2027" in u for u in ungrounded))
+
+    def test_netflix_august_without_year_not_flagged(self):
+        # Run 66: "If Netflix" + "August 27" must not become a numeric grounding hit.
+        script = "My prediction? If Netflix's numbers spike on August 27, publishers follow."
+        facts = "VERIFIED FACTS:\n- Netflix is exploring a UFC media deal."
+        self.assertEqual(find_ungrounded_entities(script, facts), [])
+
+    def test_round_scores_are_not_records(self):
+        # "10-9" / "29-28" are judging cards, not fighter records. Flagging them
+        # would fire GROUNDING_REGEN (a premium LLM call) on well-grounded recaps.
+        script = f"{self.UFC} He took a 10-9 round and a 29-28 on one card."
+        self.assertEqual(
+            find_ungrounded_numeric(script, "VERIFIED FACTS:\n- UFC fight night."),
+            [],
+        )
+
+
+class TestNumericGateSeesCombatSports(unittest.TestCase):
+    """The numeric gate must fire on the content it was built for.
+
+    Every test in TestNumericRecordGrounding above prepends "The UFC featherweight
+    division is wide open." — so the sports context is satisfied by the *fixture*, not by
+    anything a real script would say. `_SPORTS_CONTEXT_RE` was written for the mononym
+    rule and lists leagues, NBA teams and transaction verbs; it has no `mma`, `boxing`,
+    `fight`, `bout`, `champion` or weight classes. Run 70's own topic was Misfits
+    **Boxing**, which never says "UFC".
+
+    Same shape as decisions §21: the tests pinned the implementation, not the contract.
+    """
+
+    FACTS = "VERIFIED FACTS:\n- Henry Cejudo announced a Misfits Boxing debut."
+
+    def test_boxing_script_flags_an_invented_record_and_rank(self):
+        script = (
+            "Henry Cejudo makes his Misfits Boxing debut next month. "
+            "The former champ is now 16-4 and ranked #3 at flyweight."
+        )
+        found = find_ungrounded_numeric(script, self.FACTS)
+        self.assertIn("16-4", found)
+        self.assertTrue(any("ranked" in f.lower() for f in found), found)
+
+    def test_mma_script_without_the_word_ufc(self):
+        script = (
+            "Gaethje is now 25-4 after the knockout. He is ranked #2 in the division "
+            "and fought on August 12, 2025."
+        )
+        found = find_ungrounded_numeric(script, "VERIFIED FACTS:\n- Gaethje fight booked.")
+        self.assertIn("25-4", found)
+        self.assertTrue(any("2025" in f for f in found), found)
+
+    def test_grounded_combat_numbers_are_not_flagged(self):
+        # The gate must not become a false-positive machine: this feeds the report card.
+        script = "Cejudo is now 16-4 and ranked #3. The purse was $500,000."
+        facts = "VERIFIED FACTS:\n- Cejudo is now 16-4, ranked #3, purse $500,000. Boxing debut."
+        self.assertEqual(find_ungrounded_numeric(script, facts), [])
+
+    def test_non_sports_script_still_ignores_records(self):
+        # A gaming script must not have version numbers read as fight records.
+        script = "The patch notes went 2-1 on balance changes and the update is live."
+        self.assertEqual(
+            find_ungrounded_numeric(script, "VERIFIED FACTS:\n- Patch 2.1 shipped."), []
+        )
+
+    def test_round_scores_still_ignored_in_boxing_context(self):
+        script = "Cejudo took a 10-9 round and a 29-28 card in the boxing bout."
+        self.assertEqual(find_ungrounded_numeric(script, self.FACTS), [])
 
 
 class TestKeyFactsPriority(unittest.TestCase):

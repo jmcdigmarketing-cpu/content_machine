@@ -10,7 +10,7 @@ already know is pointless:
 
 - **Exhaustion records** (`mark_exhausted`/`is_exhausted`): "provider X is out of
   credits / unauthorized until time T". A later run skips it without re-paying.
-- **TTL'd key/values** (`set_value`/`get_value`): e.g. the last Apify usage reading,
+- **TTL'd key/values** (`set_value`/`get_value`/`clear_value`): e.g. the last Apify usage reading,
   so back-to-back runs reuse it instead of re-hitting `/users/me`.
 
 This is the seed of the eventual unified quota governor (credit_efficiency.md O11);
@@ -139,6 +139,14 @@ def clear_exhausted(scope: str, name: str) -> None:
     with _lock:
         data = _load()
         if data.get("disabled", {}).pop(_key(scope, name), None) is not None:
+            _save(data)
+
+
+def clear_value(key: str) -> None:
+    """Remove a cached key (e.g. a dead-model keyhash companion)."""
+    with _lock:
+        data = _load()
+        if data.get("kv", {}).pop(key, None) is not None:
             _save(data)
 
 

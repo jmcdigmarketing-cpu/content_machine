@@ -97,6 +97,21 @@ def main():
 
     print_startup_panel(channel_id)
     print(f"  Using: {profile.name} ({channel_id})")
+    try:
+        from core.human_presence import touch
+        from core.operator_timer import install_input_wrapper, start_run
+
+        start_run()
+        install_input_wrapper()
+        touch()
+    except Exception as exc:
+        logger.debug("operator timer/heartbeat skipped: %s", exc)
+    try:
+        from apis.youtube_quota import format_uploads_left
+
+        print(f"  YouTube: {format_uploads_left()}")
+    except Exception as exc:
+        logger.debug("uploads-left startup line skipped: %s", exc)
     if intelligence_mode_enabled():
         print("  Mode: intelligence only (CONTENT_MODE=intelligence)")
 
@@ -116,7 +131,8 @@ def main():
         return
 
     # Cost mode ($0 Free vs Standard) — only the render flows below incur provider cost.
-    _apply_cost_mode_interactive()
+    if not _apply_cost_mode_interactive():
+        return
 
     if startup_mode == "idea_intake":
         _run_idea_intake_flow(channel_id)
@@ -125,21 +141,38 @@ def main():
     _run_new_video_flow(channel_id)
 
 
-def _apply_cost_mode_interactive() -> None:
-    """Prompt for the run's cost mode and apply it to the environment (Free = $0)."""
-    from core.run_mode import COST_MODE_FREE, apply_cost_mode
+def _apply_cost_mode_interactive() -> bool:
+    """Prompt for the run's cost mode and apply it. False = stop before discovery."""
+    from core.run_mode import (
+        COST_MODE_FREE,
+        CostModeBlocked,
+        abort_if_first_call_unusable,
+        apply_cost_mode,
+        inspect_first_calls,
+    )
     from core.ui import prompt_cost_mode
 
     result = apply_cost_mode(prompt_cost_mode())
     if result.mode != COST_MODE_FREE:
-        return
+        for warning in inspect_first_calls().warnings:
+            print(f"  ! {warning}")
+        return True
     voice = result.applied.get("TTS_PROVIDER", "BLOCKED")
     llm = result.applied.get("LLM_PREMIUM_PROVIDER", "BLOCKED")
     print(f"  Free mode ($0): voice={voice}  llm={llm}  signals=free (paid signals skipped)")
     for blocker in result.blockers:
         print(f"  ! {blocker}")
-    if not result.can_render:
-        print("  ! Free mode can't render until the above are resolved (docs/free_mode.md).")
+    if result.blocked:
+        print("  ! Free mode can't continue until the above are resolved (docs/free_mode.md).")
+        print("  Stopping before discovery.")
+        return False
+    try:
+        abort_if_first_call_unusable(result)
+    except CostModeBlocked as exc:
+        print(f"  ! {exc}")
+        print("  Stopping before discovery.")
+        return False
+    return True
 
 
 def _drain_stdin() -> None:
@@ -276,6 +309,16 @@ def _run_new_video_flow_body(
         display_cadence(cadence_status(channel_id))
     except Exception as exc:
         logger.debug("display_cadence skipped: %s", exc)
+
+    from core.metrics_gate import metrics_gate_reason
+
+    metrics_reason = metrics_gate_reason(channel_id)
+    if metrics_reason:
+        print(f"\n  ! {metrics_reason}")
+        go = input("  Start the next video anyway? [y/N]: ").strip().lower()
+        if go != "y":
+            print("  Stopped — sync analytics first: py -m scripts.ops sync-metrics")
+            return
 
     if seed_topic:
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
@@ -461,6 +504,40 @@ def _run_new_video_flow_body(
                 print("\n  Stopped by grounding gate (GROUNDING_GATE=block).")
                 return
 
+        from core.thin_facts import thin_facts_abort_reason
+
+        thin_reason = thin_facts_abort_reason(
+            fact_count=_fact_line_count(_facts_preview),
+            features=result.features,
+        )
+        if thin_reason:
+            print(f"\n  ! {thin_reason}")
+            override = input("  Thin facts — render anyway and pay TTS? [y/N]: ").strip().lower()
+            if override != "y":
+                display_summary(
+                    timings=discovery.timings,
+                    title=result.title,
+                    cost=result.features.get("cost"),
+                )
+                print("\n  Stopped before TTS (thin facts). Draft is saved.")
+                return
+
+        from core.tts_char_cap import tts_char_cap_reason
+
+        cap_reason = tts_char_cap_reason(result.script)
+        if cap_reason:
+            print(f"\n  ! {cap_reason}")
+            override = input("  Over length for TTS — render anyway? [y/N]: ").strip().lower()
+            if override != "y":
+                display_summary(
+                    timings=discovery.timings,
+                    title=result.title,
+                    cost=result.features.get("cost"),
+                    script=result.script,
+                )
+                print("\n  Stopped before TTS (character cap). Draft is saved.")
+                return
+
         if needs_grounding_review:
             print(
                 "\n  Grounding check flagged unsupported specifics (see Fact grounding above). "
@@ -531,6 +608,7 @@ def _run_new_video_flow_body(
         mp4_path=result.mp4_path or "",
         thumbnail_path=thumb_path,
         cost=result.features.get("cost"),
+        script=result.script,
     )
     from core.ui import print_celebration
 

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from apis.wikipedia_pageviews_api import get_wikipedia_pageviews_signal
 
@@ -24,11 +24,13 @@ class TestWikipediaPageviews(unittest.TestCase):
         self.assertGreater(sig["score"], 20)
 
     @patch("apis.wikipedia_pageviews_api.get_cached", return_value=None)
+    @patch("apis.wikipedia_pageviews_api.set_cache")
     @patch("apis.wikipedia_pageviews_api._fetch_pageviews", return_value=None)
-    def test_no_article_match(self, _fetch, _cached):
+    def test_no_article_match(self, _fetch, _set_cache, _cached):
         sig = get_wikipedia_pageviews_signal("xyznonexistent123")
         self.assertTrue(sig["connected"])
         self.assertFalse(sig["active"])
+        _set_cache.assert_called_once()
 
 
 if __name__ == "__main__":

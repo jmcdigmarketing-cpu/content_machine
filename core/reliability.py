@@ -72,8 +72,16 @@ def _llm_section() -> dict[str, Any]:
 
         out["spend_today"] = llm_spend_today()
         out["dead_models"] = dict(sorted(persisted_dead_models().items()))
-    except Exception:
+    except Exception as exc:
+        logger.debug("llm reliability section skipped: %s", exc)
         out["disabled_providers"] = {}
+    try:
+        from core.cost_meter import escaped_free_first
+
+        out["escaped_free_first"] = escaped_free_first()
+    except Exception as exc:
+        logger.debug("escaped_free_first skipped: %s", exc)
+        out["escaped_free_first"] = False
     return out
 
 
@@ -107,10 +115,13 @@ def _cache_section() -> dict[str, Any]:
 
 def _youtube_section() -> dict[str, Any]:
     try:
-        from apis.youtube_quota import get_usage_summary
+        from apis.youtube_quota import get_usage_summary, uploads_remaining
 
-        out: dict[str, Any] = dict(get_usage_summary())
-    except Exception:
+        summary = get_usage_summary()
+        out: dict[str, Any] = dict(summary)
+        out["uploads_left"] = uploads_remaining(summary)
+    except Exception as exc:
+        logger.debug("youtube quota section skipped: %s", exc)
         return {}
     try:
         from core.reset_window import next_reset, reset_window_enabled
@@ -118,8 +129,8 @@ def _youtube_section() -> dict[str, Any]:
         if reset_window_enabled():
             nxt = next_reset("youtube")
             out["next_reset"] = nxt.isoformat() if nxt else None
-    except Exception as exc:
-        logger.debug("Reset-window line skipped: %s", exc)
+    except Exception as ext:
+        logger.debug("Reset-window line skipped: %s", ext)
     return out
 
 
@@ -132,6 +143,60 @@ def _data_quality_section() -> list[str]:
         return []
 
 
+def _elevenlabs_section() -> dict[str, Any]:
+    raw = os.getenv("ELEVENLABS_MONTHLY_CHAR_BUDGET", "").strip()
+    budget: int | None = None
+    if raw.lower() not in ("", "0", "off", "false", "no"):
+        try:
+            val = int(raw)
+            budget = val if val > 0 else None
+        except ValueError:
+            budget = None
+    out: dict[str, Any] = {"budget": budget}
+    try:
+        from core.quota_governor import elevenlabs_chars_used
+
+        out["chars_used"] = elevenlabs_chars_used()
+    except Exception as exc:
+        logger.debug("elevenlabs_chars_used skipped: %s", exc)
+        out["chars_used"] = 0
+    return out
+
+
+def _competitor_health_section() -> list[str]:
+    try:
+        from config.channels import resolve_channel_id
+        from core.competitor_health import inspect_competitors, warning_lines
+
+        cid = resolve_channel_id(os.getenv("CONTENT_CHANNEL_ID") or None)
+        report = inspect_competitors(cid, missing_snapshot_ok=True)
+        return warning_lines(report)
+    except Exception as exc:
+        logger.debug("competitor health section skipped: %s", exc)
+        return []
+
+
+def _fact_expiry_section() -> list[str]:
+    try:
+        from core.fact_expiry import warning_lines
+
+        return warning_lines(os.getenv("CONTENT_CHANNEL_ID") or None)
+    except Exception as exc:
+        logger.debug("fact expiry section skipped: %s", exc)
+        return []
+
+
+def _policy_canary_section() -> list[str]:
+    """Snapshot only — no HTTP (same shape as competitor health)."""
+    try:
+        from core.policy_canary import warning_lines
+
+        return warning_lines()
+    except Exception as exc:
+        logger.debug("policy canary section skipped: %s", exc)
+        return []
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {
@@ -140,7 +205,11 @@ def gather() -> dict[str, Any]:
         "signals": _signals_section(),
         "cache": _cache_section(),
         "youtube": _youtube_section(),
+        "elevenlabs": _elevenlabs_section(),
         "data_quality": _data_quality_section(),
+        "competitor_health": _competitor_health_section(),
+        "fact_expiry": _fact_expiry_section(),
+        "policy_canary": _policy_canary_section(),
     }
 
 
@@ -151,6 +220,51 @@ def _hhmm(unix_ts: float) -> str:
         return datetime.fromtimestamp(float(unix_ts)).strftime("%H:%M")
     except (ValueError, OSError, OverflowError):
         return "?"
+
+
+def _utilization_lines(data: dict[str, Any]) -> list[str]:
+    """Unused quota as allocated leftover — generalizes ops economics item 4."""
+    out: list[str] = []
+    el = data.get("elevenlabs") or {}
+    budget = el.get("budget")
+    if budget:
+        used = int(el.get("chars_used") or 0)
+        left = max(0, int(budget) - used)
+        try:
+            from core.unit_economics import _plan_chars, _plan_usd
+
+            chars = _plan_chars()
+            leftover_usd = (left / chars) * _plan_usd() if chars else 0.0
+        except Exception as exc:
+            logger.debug("TTS leftover allocation skipped: %s", exc)
+            leftover_usd = 0.0
+        out.append(
+            f"ElevenLabs: {left:,} chars unused"
+            + (f" (~${leftover_usd:.2f} allocated leftover)" if leftover_usd else "")
+        )
+    cache = (data.get("apify") or {}).get("usage_cache")
+    if isinstance(cache, dict):
+        try:
+            limit = float(cache.get("limit") or 0)
+            usage = float(cache.get("usage") or 0)
+        except (TypeError, ValueError):
+            limit, usage = 0.0, 0.0
+        if limit > 0:
+            leftover = max(0.0, limit - usage)
+            out.append(f"Apify: ${leftover:.2f} unused of ${limit:.2f} cached limit")
+    yt = data.get("youtube") or {}
+    if yt.get("limit"):
+        left = yt.get("uploads_left")
+        if left is None:
+            try:
+                from apis.youtube_quota import uploads_remaining
+
+                left = uploads_remaining(yt)
+            except Exception as exc:
+                logger.debug("uploads_remaining skipped: %s", exc)
+                left = 0
+        out.append(f"YouTube: ~{left} uploads leftover this reset")
+    return out
 
 
 def _budget_line(used: float | None, budget: float | None) -> str:
@@ -194,6 +308,8 @@ def render(data: dict[str, Any] | None = None) -> str:
     disabled = llm.get("disabled_providers") or {}
     lines.append(f"  disabled: {', '.join(disabled) if disabled else '(none this process)'}")
     lines.append(f"  spend   : {_budget_line(llm.get('spend_today'), llm.get('daily_budget'))}")
+    if llm.get("escaped_free_first"):
+        lines.append("  escaped : this process used a paid LLM after a free-first miss")
     dead = llm.get("dead_models") or {}
     if dead:
         # Retired slugs (e.g. an OpenRouter ':free' variant that was withdrawn).
@@ -236,16 +352,61 @@ def render(data: dict[str, Any] | None = None) -> str:
             gauge = meter(yt.get("used", 0), yt.get("limit", 0), width=16)
         except Exception:
             gauge = f"{yt.get('used', 0):,}/{yt.get('limit', 0):,}"
-        line = f"YouTube units: {gauge} used " f"(~{yt.get('remaining', 0):,} left today)"
+        uploads_left = yt.get("uploads_left")
+        if uploads_left is None:
+            try:
+                from apis.youtube_quota import uploads_remaining
+
+                uploads_left = uploads_remaining(yt)
+            except Exception as exc:
+                logger.debug("uploads_remaining skipped: %s", exc)
+                uploads_left = 0
+        line = (
+            f"YouTube units: {gauge} used "
+            f"(~{yt.get('remaining', 0):,} left today; ~{uploads_left} uploads left this reset)"
+        )
         if yt.get("next_reset"):
             line += f" — resets {str(yt['next_reset'])[:16]} UTC"
         lines.append(line)
+
+    util = _utilization_lines(data)
+    if util:
+        lines.append("Subscription utilization")
+        lines.extend(f"  {u}" for u in util)
+
+    el = data.get("elevenlabs") or {}
+    if el.get("budget"):
+        used = int(el.get("chars_used") or 0)
+        budget = int(el["budget"])
+        pct = (used / budget * 100) if budget else 0.0
+        flag = " !" if used >= budget else ""
+        lines.append(f"ElevenLabs chars: {used:,}/{budget:,} ({pct:.0f}%){flag}")
 
     dq = data.get("data_quality") or []
     if dq:
         lines.append("Data quality:")
         # ASCII marker for the same cp1252-console reason as the cooldown arrow above.
         lines.extend(f"  ! {w}" for w in dq)
+
+    ch = data.get("competitor_health") or []
+    if ch:
+        lines.append("Competitor health:")
+        lines.extend(f"  ! {w}" for w in ch)
+
+    fe = data.get("fact_expiry") or []
+    if fe:
+        lines.append("Fact expiry:")
+        lines.extend(f"  ! {w}" for w in fe)
+
+    pc = data.get("policy_canary") or []
+    if pc:
+        lines.append("Policy canary:")
+        lines.extend(f"  ! {w}" for w in pc)
+
+    inc = data.get("incidents") or []
+    if inc:
+        lines.append("Incidents (count x recency):")
+        lines.extend(f"  ! {w}" for w in inc)
     return "\n".join(lines)
 
 

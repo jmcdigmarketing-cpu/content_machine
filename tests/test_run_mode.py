@@ -78,6 +78,79 @@ class TestApplyCostMode(unittest.TestCase):
             self.assertTrue(any(b.startswith("llm:") for b in result.blockers))
             self.assertFalse(result.can_render)
 
+    def test_abort_if_blocked_raises_in_free(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            result = run_mode.apply_cost_mode("free", readiness=self._ready(tts_provider=None))
+            with self.assertRaises(run_mode.CostModeBlocked):
+                run_mode.abort_if_blocked(result)
+
+    def test_abort_if_blocked_is_noop_in_standard(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            result = run_mode.apply_cost_mode("standard")
+            run_mode.abort_if_blocked(result)  # must not raise
+
+    def test_apply_and_guard_rejects_stale_ollama(self):
+        ready = self._ready(llm_provider="ollama", llm_model="llama3.1:8b", llm_local=True)
+        with (
+            mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1:8b"}, clear=True),
+            mock.patch("core.llm_router.ollama_installed_models", return_value=[]),
+        ):
+            with self.assertRaises(run_mode.CostModeBlocked):
+                run_mode.apply_and_guard("free", readiness=ready)
+
+    def test_guard_before_discovery_is_noop_without_strict(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(run_mode.guard_before_discovery(), [])
+
+    def test_guard_before_discovery_raises_in_free_strict(self):
+        env = {"FREE_MODE_STRICT": "1", "TTS_PROVIDER": "elevenlabs"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(run_mode.CostModeBlocked):
+                run_mode.guard_before_discovery()
+
+    def test_qwen_ready_needs_module_and_voice(self):
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            wav = f.name
+        try:
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {"QWEN_VOICE": wav}, clear=True),
+            ):
+                self.assertEqual(run_mode._local_tts_available(), "qwen")
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {"QWEN_VOICE": "Vivian"}, clear=True),
+            ):
+                self.assertEqual(run_mode._local_tts_available(), "qwen")
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {}, clear=True),
+            ):
+                self.assertIsNone(run_mode._local_tts_available())
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {"QWEN_VOICE": "C:\\missing\\clone.wav"}, clear=True),
+            ):
+                self.assertIsNone(run_mode._local_tts_available())
+        finally:
+            os.unlink(wav)
+
+    def test_qwen_does_not_outrank_piper(self):
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx = f.name
+        try:
+            with (
+                mock.patch.object(
+                    run_mode, "_module_available", lambda m: m in ("piper", "qwen_tts")
+                ),
+                mock.patch.dict(
+                    os.environ, {"PIPER_VOICE": onnx, "QWEN_VOICE": "Vivian"}, clear=True
+                ),
+            ):
+                self.assertEqual(run_mode._local_tts_available(), "piper")
+        finally:
+            os.unlink(onnx)
+
 
 class TestReadiness(unittest.TestCase):
     def test_piper_ready_needs_module_and_voice_file(self):
@@ -133,16 +206,28 @@ class TestReadiness(unittest.TestCase):
         self.assertIn("OPENROUTER_MODEL_CHEAP", note)
 
     def test_ollama_ready_pings_the_server(self):
-        with mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1"}, clear=True):
-            with mock.patch("requests.get", return_value=mock.Mock(status_code=200)) as g:
-                self.assertEqual(run_mode._ollama_ready(), (True, "llama3.1"))
-                g.assert_called_once()
-            with mock.patch("requests.get", side_effect=OSError("connection refused")):
-                self.assertEqual(run_mode._ollama_ready(), (False, "llama3.1"))  # down -> not ready
-        with mock.patch.dict(os.environ, {}, clear=True):
-            with mock.patch("requests.get") as g:
-                self.assertEqual(run_mode._ollama_ready(), (False, ""))  # no model -> no ping
-                g.assert_not_called()
+        from core import llm_router
+
+        llm_router._ollama_probe_cache = None
+        tags = mock.Mock(status_code=200)
+        tags.json.return_value = {"models": [{"name": "llama3.1:8b"}]}
+        try:
+            with mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1"}, clear=True):
+                with mock.patch.object(llm_router.requests, "get", return_value=tags) as g:
+                    self.assertEqual(run_mode._ollama_ready(), (True, "llama3.1"))
+                    g.assert_called_once()
+                llm_router._ollama_probe_cache = None
+                with mock.patch.object(
+                    llm_router.requests, "get", side_effect=OSError("connection refused")
+                ):
+                    self.assertEqual(run_mode._ollama_ready(), (False, "llama3.1"))
+            llm_router._ollama_probe_cache = None
+            with mock.patch.dict(os.environ, {}, clear=True):
+                with mock.patch.object(llm_router.requests, "get") as g:
+                    self.assertEqual(run_mode._ollama_ready(), (False, ""))
+                    g.assert_not_called()
+        finally:
+            llm_router._ollama_probe_cache = None
 
     def test_readiness_llm_local_flag_and_line(self):
         with mock.patch.object(run_mode, "_free_llm", return_value=("ollama", "llama3.1", "")):
@@ -234,6 +319,7 @@ class TestFreeDoctor(unittest.TestCase):
             mock.patch.object(run_mode, "_local_tts_available", return_value=None),
             mock.patch("apis.free_backends.reddit_available", return_value=False),
             mock.patch("apis.free_backends.youtube_available", return_value=True),
+            mock.patch.object(ops, "_ollama_server_probe", return_value=(False, 0)),
             mock.patch.dict(os.environ, {}, clear=True),
         ):
             rc = ops.cmd_free_doctor(argparse.Namespace())

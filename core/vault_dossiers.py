@@ -44,8 +44,18 @@ def _load_json(raw: str | None) -> dict[str, Any]:
         return {}
 
 
-def _dossier_path(vault: Path, channel_id: str, run_id: int, topic: str, day: str) -> Path:
-    return vault / channel_id / _RUNS_DIR / f"{day}_{_slug(topic)}-{run_id}.md"
+def _dossier_path(vault: Path, channel_id: str, run_id: int, topic: str, day: str = "") -> Path:
+    # Identity is run_id. A date-prefix cloned the same run on the next day's refresh.
+    _ = day
+    return vault / channel_id / _RUNS_DIR / f"{int(run_id)}_{_slug(topic)}.md"
+
+
+def _legacy_dossier_paths(vault: Path, channel_id: str, run_id: int) -> list[Path]:
+    runs = vault / channel_id / _RUNS_DIR
+    if not runs.is_dir():
+        return []
+    suffix = f"-{int(run_id)}.md"
+    return [p for p in runs.glob(f"*{suffix}") if p.is_file()]
 
 
 def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
@@ -160,6 +170,12 @@ def write_run_dossier(run_id: int | None) -> Path | None:
         path.write_text(
             _render_dossier(record, run_id=run_id, day=day), encoding="utf-8", newline="\n"
         )
+        for legacy in _legacy_dossier_paths(vault, record.channel_id, run_id):
+            if legacy.resolve() != path.resolve():
+                try:
+                    legacy.unlink()
+                except OSError as exc:
+                    logger.debug("legacy dossier leftover %s: %s", legacy, exc)
         return path
     except Exception as exc:
         logger.debug("dossier write failed for run %s: %s", run_id, exc)
@@ -170,7 +186,7 @@ def refresh_dossiers(channel_id: str | None = None, *, limit: int = 15) -> int:
     """Rewrite recent dossiers so post-sync actuals (views/engaged/revenue) land.
 
     Returns how many were written. Safe to call from daily_sync — no-op without a
-    vault. Rewriting is idempotent (deterministic filename per run+day).
+    vault. Rewriting is idempotent (stable filename per run_id).
     """
     vault = _vault_path()
     if not vault:

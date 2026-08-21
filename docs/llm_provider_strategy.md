@@ -189,26 +189,11 @@ your most quality-sensitive work (script generation, grading, claim-verify).
 *Evaluate, don't blind-bump* — newer models shift cost and prompt behavior, and the
 prompts are tuned. (The OpenAI pins are stale too, but moot until that key returns.)
 
-### 5.2 Give the router an image path — *restores a dead capability* ⚠
-**The only vision capability in the project is hard-pinned to the one provider that is
-currently off.** `assets/thumbnail_scorer._vision_score` builds base64 `image_url`
-blocks and sends them through the legacy `core/llm_client.get_openai_client()` —
-bypassing the router entirely. It guards on `OPENAI_API_KEY`, so with chat paid off it
-returns `None` and `score_thumbnail` falls back to `_heuristic_score`: **thumbnail
-vision scoring is silently dead right now**, with no error.
-
-Meanwhile **Claude — which you are paying for — supports vision**, but the router
-cannot carry an image: `_normalize_messages` is typed `list[dict[str, str]]`, text-only.
-
-So one fix does three things: restores thumbnail vision on an already-paid provider,
-puts that spend under `cost_meter`/failover, and unblocks the open Pillar-2
-"router vision path" roadmap item.
-
-> **Correction to an earlier revision of this doc:** this was previously framed as a
-> Free-mode "never-pay leak." That framing rested on a wrong premise. The real,
-> current impact is a **dead capability**, not an unguarded charge. (A narrow latent
-> case does still exist — an `OPENAI_API_KEY` present *while* `FREE_MODE_STRICT` is
-> set would bypass the guard — but it is not today's situation.)
+### 5.2 Give the router an image path — *shipped 2026-08-20*
+Thumbnail vision now goes through `llm_router.complete` with OpenAI-style image
+content-blocks (extract tier). Anthropic / DeepSeek / Ollama / Groq / Doubao are
+**skipped**, not flattened. Free mode never calls vision (heuristic + warning).
+`core/llm_client.py` is deleted. Pillar 2 rendered-video review is still later.
 
 ### 5.3 Pick the local model — *only when running Free mode*
 `llama3.1:8b` (documented default) vs `qwen2.5:7b` (documented alternative). Worth a
@@ -240,11 +225,11 @@ but this only affects runs you deliberately start in Free mode, not the default 
 
 ## Cross-references
 - [free_mode.md](free_mode.md) — the $0 stack, setup, `ops free-doctor`.
-- [roadmap.md](roadmap.md) — open Pillar-2 vision path, Phase R, Pillars 4/7.
+- [roadmap.md](roadmap.md) — Pillar 2 multimodal review (later), Phase R, Pillars 4/7.
 - [credit_efficiency.md](credit_efficiency.md) — budget ceiling, failover, breakers.
 - [assessment.md](assessment.md) — recency as the #1 content weakness.
 - [tooling_landscape.md](tooling_landscape.md), [groundwork_2026Q3.md](groundwork_2026Q3.md).
 - Code seams: `core/run_mode.py` (`_PAID_NO_FREE_BACKEND`, cost modes),
   `core/llm_router.py` (`_free_mode_strict`, `_PROVIDERS`, `_DEFAULT_MODELS`),
-  `core/cost_meter.py`, `core/llm_client.py` (legacy),
-  `assets/thumbnail_scorer.py` (`_vision_score`).
+  `core/cost_meter.py`,
+  `assets/thumbnail_scorer.py` (`_vision_score` via `llm_router.complete`).

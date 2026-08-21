@@ -8,6 +8,35 @@ from unittest.mock import patch
 
 from core import llm_router, quota_state
 
+# Module-level isolation of the persisted store.
+#
+# Several classes here drive dead-model persistence and the daily-spend ledger.
+# Un-isolated they wrote 24h dead-model records for the project's LIVE cheap and
+# extract anchors into the operator's real data/quota_state.json - the exact
+# poisoning tests/CLAUDE.md forbids. Bisected from a full-suite run that left an
+# "openrouter/some:free" record - a pure test fixture - sitting in live state.
+#
+# Done at module scope so it also covers any class added later; the per-class
+# QUOTA_STATE_FILE patches below still work (they just nest inside this one).
+_MODULE_STATE_TMP: str | None = None
+_MODULE_STATE_PATCH = None
+
+
+def setUpModule() -> None:
+    global _MODULE_STATE_TMP, _MODULE_STATE_PATCH
+    _MODULE_STATE_TMP = tempfile.mkdtemp()
+    _MODULE_STATE_PATCH = patch.object(
+        quota_state, "QUOTA_STATE_FILE", os.path.join(_MODULE_STATE_TMP, "module_q.json")
+    )
+    _MODULE_STATE_PATCH.start()
+
+
+def tearDownModule() -> None:
+    if _MODULE_STATE_PATCH is not None:
+        _MODULE_STATE_PATCH.stop()
+    if _MODULE_STATE_TMP:
+        shutil.rmtree(_MODULE_STATE_TMP, ignore_errors=True)
+
 
 def _clear_router_env(env: dict[str, str]) -> dict[str, str]:
     """Return env overrides that blank every provider key + tier override."""
@@ -202,6 +231,18 @@ class TestComplete(unittest.TestCase):
         usage = llm_router.get_usage()
         self.assertEqual(usage[0]["input_tokens"], 12)
         self.assertEqual(usage[0]["output_tokens"], 7)
+        self.assertEqual(usage[0]["stage"], "premium")  # default stage = tier
+
+    def test_complete_records_pipeline_stage(self):
+        def fake_openai(provider, model, messages, **kwargs):
+            return "ok", 1, 1
+
+        env = _clear_router_env({"DEEPSEEK_API_KEY": "x"})
+        llm_router.reset_usage()
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake_openai):
+                llm_router.complete("hi", tier="cheap", stage="title")
+        self.assertEqual(llm_router.get_usage()[0]["stage"], "title")
 
     def test_complete_json_parses(self):
         def fake_openai(provider, model, messages, **kwargs):
@@ -407,6 +448,9 @@ class TestModelUnavailable(unittest.TestCase):
         self.assertEqual(out, "ok")
         self.assertEqual(calls, ["openrouter", "deepseek"])
 
+        usage = llm_router.get_usage()
+        self.assertTrue(usage[0].get("escaped_free_first"))
+
     def test_404_does_not_disable_whole_provider(self):
         # Only the dead *model* is skipped — OpenRouter's other models/tiers still work.
         env = _clear_router_env({"OPENROUTER_API_KEY": "x", "DEEPSEEK_API_KEY": "x"})
@@ -456,6 +500,40 @@ class TestModelUnavailable(unittest.TestCase):
         self.assertTrue(llm_router._model_is_dead("openrouter", "some:free"))
         llm_router.reset_llm_breaker()
         self.assertFalse(llm_router._model_is_dead("openrouter", "some:free"))
+
+
+class TestEscapedFreeFirst(unittest.TestCase):
+    def setUp(self):
+        llm_router.reset_usage()
+        llm_router.reset_llm_breaker()
+
+    def tearDown(self):
+        llm_router.reset_llm_breaker()
+        llm_router.reset_usage()
+
+    def test_premium_first_hit_deepseek_is_not_escaped(self):
+        env = _clear_router_env({"DEEPSEEK_API_KEY": "x"})
+
+        def fake(provider, model, messages, **kwargs):
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("hi", tier="premium")
+        usage = llm_router.get_usage()
+        self.assertEqual(usage[0]["provider"], "deepseek")
+        self.assertFalse(usage[0].get("escaped_free_first"))
+
+    def test_pinned_provider_never_flags(self):
+        env = _clear_router_env({"DEEPSEEK_API_KEY": "x", "OPENROUTER_API_KEY": "x"})
+
+        def fake(provider, model, messages, **kwargs):
+            return "ok", 1, 1
+
+        with patch.dict("os.environ", env, clear=False):
+            with patch.object(llm_router, "_openai_complete", side_effect=fake):
+                llm_router.complete("hi", provider="deepseek", model="deepseek-chat")
+        self.assertFalse(llm_router.get_usage()[0].get("escaped_free_first"))
 
 
 class TestDailyBudget(unittest.TestCase):

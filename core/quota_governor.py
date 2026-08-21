@@ -106,6 +106,7 @@ def clear_signal(name: str) -> None:
     """Drop one persisted signal record (operator fixed the underlying issue)."""
     try:
         quota_state.clear_exhausted(_SCOPE, name)
+        quota_state.clear_value(_keyhash_key(name))
     except Exception as exc:
         # Warning, not debug: the record survives, so a paid signal the operator just
         # fixed stays disabled for up to a billing cycle (CLAUDE.md's expensive case).
@@ -116,7 +117,7 @@ def clear_all_signals() -> None:
     """Drop every persisted signal record (reset helper)."""
     try:
         for name in quota_state.list_exhausted(_SCOPE):
-            quota_state.clear_exhausted(_SCOPE, name)
+            clear_signal(name)
     except Exception as exc:
         # The reset silently did nothing — the operator will assume it worked.
         logger.warning("Could not clear persisted signal disables: %s", exc)
@@ -318,6 +319,7 @@ def persisted_dead_models(fingerprints: dict[str, str] | None = None) -> dict[st
 def llm_clear_dead_model(slug: str) -> None:
     try:
         quota_state.clear_exhausted(_LLM_MODEL_SCOPE, slug)
+        quota_state.clear_value(f"llm_model_keyhash:{slug}")
     except Exception as exc:
         # A revived model stays skipped until the TTL expires.
         logger.warning("Could not clear persisted dead-model '%s': %s", slug, exc)
@@ -330,6 +332,52 @@ def llm_clear_dead_models() -> None:
             llm_clear_dead_model(slug)
     except Exception as exc:
         logger.warning("Could not clear persisted dead-model records: %s", exc)
+
+
+# --------------------------------------------------------------------------- #
+# ElevenLabs character quota — same shape as APIFY_MONTHLY_BUDGET_USD.
+# Check point stays in core/tts.py (decisions §13); only persistence lives here.
+# Keyed by calendar month so a new month is a fresh counter; TTL is a safety net.
+# --------------------------------------------------------------------------- #
+
+
+def elevenlabs_chars_key() -> str:
+    import datetime
+
+    return f"elevenlabs_chars:{datetime.date.today().strftime('%Y-%m')}"
+
+
+def elevenlabs_add_chars(
+    n: int, *, key: str | None = None, ttl_seconds: int = 40 * 24 * 3600
+) -> None:
+    if n <= 0:
+        return
+    try:
+        quota_state.increment_value(
+            key or elevenlabs_chars_key(), float(n), ttl_seconds=ttl_seconds
+        )
+    except Exception as exc:
+        logger.warning("ElevenLabs %s chars not persisted (quota guard blind): %s", n, exc)
+
+
+def elevenlabs_chars_used(key: str | None = None) -> int:
+    try:
+        return int(float(quota_state.get_value(key or elevenlabs_chars_key(), 0.0) or 0.0))
+    except Exception:
+        return 0
+
+
+def elevenlabs_would_exceed(chars: int, budget: int, *, key: str | None = None) -> bool:
+    if budget <= 0 or chars <= 0:
+        return False
+    return elevenlabs_chars_used(key) + chars > budget
+
+
+def elevenlabs_reset(key: str | None = None) -> None:
+    try:
+        quota_state.set_value(key or elevenlabs_chars_key(), 0.0, ttl_seconds=1)
+    except Exception as exc:
+        logger.warning("Could not reset the ElevenLabs character ledger: %s", exc)
 
 
 # --------------------------------------------------------------------------- #
@@ -378,4 +426,5 @@ def snapshot(apify_purpose: str = "main") -> dict:
         "llm": {"spend_today": llm_spend_today(), "dead_models": persisted_dead_models()},
         "signals": {"persisted": persisted_disabled_signals()},
         "youtube": youtube_usage(),
+        "elevenlabs": {"chars_used": elevenlabs_chars_used()},
     }

@@ -23,6 +23,29 @@ from core.logging import get_logger
 
 logger = get_logger("assets.flux_thumbnail")
 
+# Report-card letters ranked high→low. Missing grade fail-opens (don't change
+# the current paid path when the card hasn't been persisted yet).
+_GRADE_RANK = {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
+
+
+def _min_grade_for_paid() -> str | None:
+    raw = os.getenv("THUMBNAIL_MIN_GRADE", "B").strip().upper()
+    if raw in ("", "OFF", "FALSE", "NO", "0"):
+        return None
+    return raw if raw in _GRADE_RANK else "B"
+
+
+def paid_thumbnail_blocked(grade_letter: str | None) -> bool:
+    """True when the report card is below the paid-image floor (Pillow-first)."""
+    min_g = _min_grade_for_paid()
+    if min_g is None or not grade_letter:
+        return False
+    letter = grade_letter.strip().upper()
+    if letter not in _GRADE_RANK:
+        return False
+    return _GRADE_RANK[letter] < _GRADE_RANK[min_g]
+
+
 BFL_BASE_URL = os.getenv("BFL_API_BASE", "https://api.bfl.ai")
 FLUX_MODEL = os.getenv("FLUX_MODEL", "flux-2-pro-preview")
 FLUX_POLL_TIMEOUT = int(os.getenv("FLUX_POLL_TIMEOUT", "120"))
@@ -35,6 +58,7 @@ class ThumbnailResult:
     path: str | None
     status: str
     detail: str | None = None
+    provider: str = ""  # flux | ideogram | recraft | pillow | ""
 
 
 def _flux_api_key() -> str:
@@ -183,6 +207,7 @@ def _flux_thumbnail(
             path=out_path,
             status="generated",
             detail=f"Flux {FLUX_MODEL}",
+            provider="flux",
         )
     except Exception as e:
         logger.warning("Flux failed (%s), falling back to Pillow", e)
@@ -236,7 +261,9 @@ def _ideogram_thumbnail(
             raise RuntimeError(f"Ideogram response missing image url: {data}")
         _download_image(url, out_path)
         logger.info("Ideogram thumbnail saved: %s", out_path)
-        return ThumbnailResult(path=out_path, status="generated", detail="Ideogram")
+        return ThumbnailResult(
+            path=out_path, status="generated", detail="Ideogram", provider="ideogram"
+        )
     except Exception as e:
         logger.warning("Ideogram failed (%s), falling back", e)
         return ThumbnailResult(path=None, status="ideogram_failed", detail=str(e)[:200])
@@ -279,7 +306,9 @@ def _recraft_thumbnail(
             raise RuntimeError(f"Recraft response missing image url: {data}")
         _download_image(url, out_path)
         logger.info("Recraft thumbnail saved: %s", out_path)
-        return ThumbnailResult(path=out_path, status="generated", detail="Recraft")
+        return ThumbnailResult(
+            path=out_path, status="generated", detail="Recraft", provider="recraft"
+        )
     except Exception as e:
         logger.warning("Recraft failed (%s), falling back", e)
         return ThumbnailResult(path=None, status="recraft_failed", detail=str(e)[:200])
@@ -355,11 +384,16 @@ def _chain_thumbnail(
                     record_assignment(
                         resolve_channel_id(channel_id), content_run_id, experiment[0], experiment[1]
                     )
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("thumbnail experiment assignment skipped: %s", exc)
             if skipped:
                 detail = f"{result.detail} (skipped: {'; '.join(skipped)})"[:200]
-                result = ThumbnailResult(path=result.path, status=result.status, detail=detail)
+                result = ThumbnailResult(
+                    path=result.path,
+                    status=result.status,
+                    detail=detail,
+                    provider=result.provider,
+                )
             return result
         skipped.append(f"{name}: {result.detail or result.status}")
 
@@ -452,6 +486,7 @@ def _pillow_thumbnail(
         path=out_path,
         status="generated",
         detail=f"Pillow title card ({size_kb} KB)",
+        provider="pillow",
     )
 
 
@@ -462,6 +497,7 @@ def generate_thumbnail(
     *,
     content_run_id: int | None = None,
     channel_id: str | None = None,
+    grade_letter: str | None = None,
 ) -> ThumbnailResult:
     """
     One thumbnail per render (Flux if configured, always Pillow as usable fallback).
@@ -471,7 +507,22 @@ def generate_thumbnail(
     Set THUMBNAIL_PROVIDER=ideogram|recraft|flux|pillow to pick an explicit
     provider instead (fails open to Flux, then Pillow). Unset keeps the
     default behavior below unchanged.
+
+    Report card below THUMBNAIL_MIN_GRADE (default B) skips paid APIs — don't
+    pay Flux for a draft that already failed authenticity/grade.
     """
+    if paid_thumbnail_blocked(grade_letter):
+        logger.info(
+            "Pillow-first: report card %s below %s — skipping paid thumbnail APIs",
+            (grade_letter or "").strip().upper(),
+            _min_grade_for_paid(),
+        )
+        run_tag = f"run{content_run_id}" if content_run_id else "thumb"
+        pillow_name = _thumbnail_basename(title, topic, suffix=f"pillow_{run_tag}")
+        return _pillow_thumbnail(
+            topic, title, output_dir, filename=pillow_name, channel_id=channel_id
+        )
+
     selected = (os.getenv("THUMBNAIL_PROVIDER") or "").strip().lower()
     if selected:
         return _chain_thumbnail(
@@ -527,14 +578,15 @@ def generate_thumbnail(
                     record_assignment(
                         resolve_channel_id(channel_id), content_run_id, experiment[0], experiment[1]
                     )
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("thumbnail experiment assignment skipped: %s", exc)
         elif flux.detail:
             logger.info("Using Pillow thumbnail; Flux: %s", flux.detail)
             primary = ThumbnailResult(
                 path=pillow.path,
                 status="generated",
                 detail=f"Pillow (Flux skipped: {flux.detail[:80]})",
+                provider="pillow",
             )
 
     return primary

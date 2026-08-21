@@ -11,7 +11,7 @@ content_machine/
 ├── alembic.ini
 ├── ROADMAP.md              # Pointer → docs/roadmap.md
 │
-├── alembic/                # Schema migrations (baseline + thumbnail_scores)
+├── alembic/                # Schema migrations (0001 baseline → 0004 content_run FKs)
 ├── config/
 │   ├── channels.json       # Channel profiles
 │   ├── paths.py            # data/, secrets/, cache paths
@@ -25,7 +25,7 @@ content_machine/
 │   ├── data/luffy_ascii.txt
 │   ├── tts.py
 │   └── ui.py
-├── apis/                   # Signals, scoring, cache (tapology, ufc_context, scrapers)
+├── apis/                   # Signals, scoring, cache (mma_stats, ufc_context, scrapers)
 ├── assets/                 # Providers, hybrid composite, catalog, thumbnails
 ├── analytics/              # Metrics sync, post timing, TapIn seed
 ├── publishing/             # YouTube publisher, repurpose scaffold
@@ -52,7 +52,7 @@ content_machine/
 ├── README.md · ROADMAP.md · requirements.txt · alembic.ini · .env.example
 ├── .github/workflows/ci.yml
 │
-├── alembic/versions/          # 0001_baseline, 0002_thumbnail_scores
+├── alembic/versions/          # 0001_baseline → 0004_content_run_fks
 ├── analytics/                 # metrics, queue, SEO refresh, competitor sync
 ├── apis/                      # signals, scoring, scrapers/
 ├── assets/                    # providers, composite, thumbnails, flux
@@ -64,7 +64,7 @@ content_machine/
 ├── scripts/                   # ops, queue_manage, requeue_upload, status, …
 ├── sports/espn.py             # live_scores scoreboard
 ├── storage/                   # models, repositories/, alembic_runner
-├── tests/                     # 34 test modules
+├── tests/                     # 1,433+ tests (unittest discover)
 ├── video/                     # render, subtitles, backgrounds/, intro/
 └── youtube/                   # oauth, upload, thumbnails, check_setup
 ```
@@ -87,8 +87,9 @@ The repo serves two products:
 | `core/run_recorder.py` | Persists `content_runs`, calls learning outcome recording |
 | `core/ui.py` | CLI sections, signal health, variant display |
 | `core/logging.py` | Centralized log setup |
-| `core/llm_router.py` | **Multi-provider LLM router** — task tiers (cheap/extract/premium) across DeepSeek/OpenRouter/Ollama/OpenAI/Claude; per-provider token ledger. All runtime LLM calls route here |
-| `core/llm_client.py` | Legacy OpenAI client — now only the multimodal thumbnail vision scorer (router has no vision path yet) |
+| `core/llm_router.py` | **Multi-provider LLM router** — task tiers (cheap/extract/premium) across DeepSeek/OpenRouter/Ollama/OpenAI/Claude; per-provider token ledger; OpenAI-style image content-blocks (Anthropic/DeepSeek/Ollama skipped, not flattened). All runtime LLM calls route here. `core/llm_client.py` is gone |
+| `core/authenticity.py` | 2026-policy variation / insight / substance check; content-word cosine paraphrase arm (`AUTHENTICITY_SEMANTIC`) |
+| `core/run_mode.py` | Standard vs Free ($0) cost mode; Ollama readiness delegates to `llm_router.ollama_installed_models` |
 | `core/cost_meter.py` | Per-run fully-loaded cost; prices the `llm_router` token ledger per provider/model |
 | `core/quota_state.py` | Cross-run, TTL'd, fail-open credit/quota store (`data/quota_state.json`) |
 | `core/quota_governor.py` | **O11 governor** — single façade over the store for Apify/LLM/signal persistence; `snapshot()` for the dashboard |
@@ -96,6 +97,7 @@ The repo serves two products:
 | `core/reliability_history.py` | **O12** daily reliability time series (`data/reliability_history.json`) — the *trend* the dashboard's snapshot can't show; recorded on view |
 | `core/feed_health.py` | RSS source health (`ops feeds`): ok/**stale**/dead + newest-item age; feeds `data_quality.warnings()` |
 | `core/caption_align.py` | Local word-timing for audio with no ElevenLabs sidecar (`faster_whisper` on CPU, or `whisperx`); fail-open to proportional captions |
+| `video/caption_retext.py` | Whisper timings + script tokens (decisions §23); names come from the script, not ASR |
 | `core/run_trace.py` | **Pillar 1** per-run trace (`data/traces/<id>.json`): timings, signals, LLM ledger, experiment arm |
 | `core/run_quality.py` | **Pillar 1** quality persistence — hook/authenticity/grounding scores → `content_runs.quality_json` |
 | `core/run_ledger.py` | `ops traces` + `ops dossier` viewers over the run ledger |
@@ -117,7 +119,8 @@ The repo serves two products:
 | `core/overnight.py` | **Pillar 5** overnight operator — best-bet drafts + grade + dossiers (`ops overnight`) |
 | `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
-| `apis/tapology_api.py` | Tapology event/bout scrape (cached) |
+| `apis/mma_stats_api.py` | API-SPORTS MMA fighter records/physicals (replaced Tapology) |
+| `apis/tapology_api.py` | Retired scrape (`TAPOLOGY_SCRAPE_ENABLED=false`; Cloudflare 403) |
 | `assets/composite.py` | Hybrid local + stock FFmpeg concat |
 | `scripts/ops.py` | Operator batch commands (setup, checks, analytics) |
 | `apis/topic_scorer.py` | Domain inference, weights, `composite_score` + learning boosts |
@@ -209,7 +212,7 @@ All research signals are invoked through `build_registry(topic)` unless skipped 
 | Signal key | Source module | Env keys (typical) |
 |------------|---------------|-------------------|
 | `youtube` | `apis/youtube_api.py` | `YOUTUBE_API_KEY` |
-| `reddit` | `apis/reddit_api.py` | `REDDIT_CLIENT_ID`, `REDDIT_SECRET` |
+| `reddit` | `apis/reddit_api.py` / `apis/reddit_signal.py` | Official OAuth free backend; Apify actor **retired** (`enabled: false`) |
 | `trends` | `apis/trends_api.py` | (pytrends, no key) |
 | `news` | `apis/news_api.py` | `NEWS_API_KEY` |
 | `sports` | `apis/sports_data_api.py` | `SPORTSDB_API_KEY`, etc. |
@@ -218,8 +221,13 @@ All research signals are invoked through `build_registry(topic)` unless skipped 
 | `rawg` | `apis/rawg_api.py` | `RAWG_API_KEY` |
 | `steam` | `apis/steam_api.py` | `STEAM_API_KEY` |
 | `autocomplete` | `apis/autocomplete_api.py` | — |
-| `tapology` | `apis/tapology_api.py` | HTML scrape; cache `data/tapology_cache.json` |
-| `ufc_context` | `apis/ufc_context_api.py` | News + Reddit MMA; may embed Tapology data |
+| `mma_stats` | `apis/mma_stats_api.py` | `API_SPORTS_KEY` — fighter records; replaced Tapology |
+| `tapology` | `apis/tapology_api.py` | **Retired** (`TAPOLOGY_SCRAPE_ENABLED=false`; Cloudflare 403) |
+| `ufc_context` | `apis/ufc_context_api.py` | News + MMA RSS + `mma_stats` |
+| `youtube_comments` | `apis/youtube_comments_signal.py` | Official Data API (~103 units/topic); audience questions, unverified |
+| `tiktok_trends` | catalog / Apify | Remaining paid Apify actor |
+| `youtube_competitors` | `apis/youtube_apify_signal.py` | Remaining paid Apify actor; free yt-dlp backend when `SIGNAL_BACKEND=free\|auto` |
+| `web_search` | `apis/web_search_api.py` | `TAVILY_API_KEY` / `BRAVE_SEARCH_API_KEY`; DuckDuckGo in Free mode |
 | `stats_context` | `apis/stats_context_api.py` + `apis/scrapers/*` | BBR, PFR, ESPN JSON; cache `data/scraper_cache/` |
 | `blog_rss` | `apis/blog_rss_api.py` | RSS from `config/seo/` + `config/data_sources.json` |
 
@@ -245,9 +253,11 @@ Signal cache: `apis/cache_manager.py` → `data/signal_cache.json` (atomic write
 |-------|---------|
 | `topic_scores` | Per-channel topic scores (channel memory / learning) |
 | `performance_entries` | Domain-level alignment log with JSON payload |
-| `content_runs` | Pipeline execution audit (signals snapshot, outputs, status) |
-| `publish_log` | Upload attempts and future analytics metrics |
-| `jobs` | Async work queue (`upload`, `render`, etc.) |
+| `content_runs` | Pipeline execution audit (signals snapshot, outputs, status, `quality_json`) |
+| `publish_log` | Upload attempts and analytics metrics; `content_run_id` FK (`SET NULL`) |
+| `jobs` | Async work queue (`upload`, `render`, etc.); `content_run_id` FK |
+| `assets` | Rendered asset history; `content_run_id` FK |
+| `thumbnail_scores` | Pre-publish thumbnail scores; `content_run_id` FK (`CASCADE`) |
 
 ### Repository pattern
 
@@ -293,18 +303,20 @@ video/render_video.py
 
 **Removed:** `video/background_selector.py` (use `assets.manager` directly).
 
-## Intelligence phase (planned — Phases H–K)
+## Intelligence phase (H–K complete; pillars 1–7 shipped)
 
-See **`docs/intelligence_phase.md`**. Summary:
+See **`docs/intelligence_phase.md`** for the original spec and **`docs/roadmap.md`**
+for current pickup (recommended next 5). Summary of what actually landed:
 
-| Change | Design |
+| Change | Status |
 |--------|--------|
-| Research brief | New `core/research_brief.py`; runs **once** after variant selection in `run_pipeline`, not per-variant in `run_discovery` |
-| Script rules | Existing `core/script_brief.py` (UFC matrix) remains; complements dynamic brief |
-| RSS / Reddit agent | Registered providers → brief inputs; RSS reduces Tapology scrape reliance |
-| Competitors | Daily job + DB tables; shares `youtube_quota`; not per-run |
-| Provenance | `brief_version`, `prompt_version` on `content_runs` (with Alembic) |
-| Deferred | CTR thumbnail models, prompt/asset outcome analysis until publish volume sufficient |
+| Research brief | Shipped — `core/research_brief.py`; runs **once** after variant selection |
+| Script rules | Shipped — `core/script_brief.py` (UFC matrix) complements the dynamic brief |
+| RSS / Reddit agent | RSS live (37/37 feeds, `ops feeds`); Reddit Apify actor retired; free OAuth backend exists |
+| Competitors | Daily job + snapshot cache; shares `youtube_quota`; not per-run |
+| Provenance | `brief_version`, `prompt_version` on `content_runs`; Alembic `0001`–`0004` |
+| Pillars 1–7 | Run ledger, grading, fact engine, vault OS, agents, provider layer, SkillOpt |
+| Deferred | CTR thumbnail models, prompt/asset outcome analysis, recommender backtest until publish volume (10 measured vs gate 15) |
 
 ## Inconsistencies and undocumented systems
 
@@ -315,7 +327,7 @@ See **`docs/intelligence_phase.md`**. Summary:
 | Phase naming | Phases 5–9 (Research, Analytics, Scaling, Upload, Multi-channel) | Product roadmap uses Research Intelligence, Channel Profiles, etc. (`docs/roadmap.md` reconciles) |
 | Channel Profiles | Phase 9 “partial” | Overlaps planned **Channel Profiles** — partially delivered early |
 | Upload Queue | Phase 7 partial | Matches **Upload Queue** planned item |
-| Asset Management | Phase 4 complete | **Asset Intelligence** items (Postgres assets, thumbnails) still open |
+| Asset Management | Phase 4 complete | Postgres `assets` + thumbnails shipped; **asset-effectiveness ranking** stays volume-gated |
 
 ### Supporting modules (not pipeline entry points)
 
@@ -334,6 +346,6 @@ See **`docs/intelligence_phase.md`**. Summary:
 
 - **Publish idempotency:** `idempotency_key` is unique; pending rows are reused and healed via YouTube title lookup before re-upload. Run `py -m storage.migrate_schema` on existing DBs for the partial unique index.
 - **Analytics timing:** Do not sync metrics immediately after upload — use `py -m analytics.sync_metrics` after views accumulate (24h+).
-- **Referential integrity:** `content_run_id` on `publish_log`, `jobs`, and `assets` are not FK-constrained yet (planned with Alembic).
+- **Referential integrity:** `content_run_id` FKs shipped in Alembic `0004` (`SET NULL` on `publish_log` / `jobs` / `assets`; `CASCADE` on `thumbnail_scores`). Legacy `publish_log.content_run_id = 0` became `NULL`.
 - **Performance memory JSON** does not shard by `channel_id` (Postgres does).
 - **Learned weights:** `performance_entries` ingestion exists; static `channels.json` overrides are skipped once outcome data exists, but full dynamic weight profiles are still evolving.

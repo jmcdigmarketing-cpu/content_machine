@@ -1,3 +1,148 @@
+# Grand Audit — Content Machine (2026-08-20)
+
+Scope: **(A)** correctness review of the uncommitted live-run 69/70 work on
+`fix/live-run-69-70`, **(B)** delta since the 2026-08-15 audit (now that PR #34
+is on `main`), **(C)** platform health + alignment. Companion canvas:
+session artifact beside chat. Previous audits kept below.
+
+Health snapshot: **1,433 tests committed** (this commit adds the wip suite).
+**62,698+ LOC**. **0 TODO/FIXME**, **0 bare `except:`**, **0 silent `except Exception: pass`**,
+mypy **123 / 73** (held). `torch 2.8.0+cpu`, `cuda False`, GPU **RTX 4070 Ti 12 GB**.
+
+> **Resolved in this commit (20 Aug evening):** A1 (free-doctor pull vs serve), A2
+> (RUF012 — `_OLLAMA_ENV` module constant), A3 (probe delegates to
+> `llm_router.ollama_probe`), C1 (router vision; `llm_client.py` gone), C4
+> (`process_one` + `_defer_for_quota` + ffmpeg command tests). Evening planning:
+> recommended next 5 + candidates 56–90 on [roadmap.md](roadmap.md).
+
+> LOC via `git ls-files '*.py'` line count, same convention as 15 Aug.
+
+---
+
+## A. Uncommitted change review (run 70)
+
+Run 69 (GTA 6 leaks, Standard) rendered and published. Run 70 (Cejudo, Free)
+died after **71 seconds of discovery** on `404 model 'llama3.1:8b' not found`.
+The startup line had just said `llm=ollama OK (local $0)`.
+
+`core/run_mode._ollama_ready` pinged `/api/tags` and treated `status_code == 200`
+as usable. The router already had the right probe
+(`ollama_installed_models` — tags must include the configured model). This is
+decisions §18 again: **reachable is not usable**.
+
+The patch is the right shape: delete the weaker copy, delegate, and when the
+daemon is up but empty, say `ollama pull` rather than `run Ollama`. Tests in
+`tests/test_run69_fixes.py` cover empty / pulled / bare-name / mismatch /
+no-probe-when-unset / readiness≡apply. Good.
+
+**A1 — BLOCKING: `ops free-doctor` now lies about the same case.** *(resolved 2026-08-20)*
+`cmd_free_doctor` used to print "server unreachable" whenever `_ollama_ready()`
+was False and `OLLAMA_MODEL` was set. It now probes with `ollama_probe` and
+prints **serve** (down), **pull** (up, empty or wrong model), and names OpenRouter
+as throttled fallback when a key is set.
+
+**A2 — BLOCKING: RUF012 on `TestFreeModeOllamaReadiness.ENV`.** *(resolved 2026-08-20)*
+Mutable class attribute replaced with module constant `_OLLAMA_ENV`.
+
+**A3 — Accepted: `_ollama_server_probe` remaining as a second HTTP client.** *(resolved 2026-08-20)*
+Now delegates to `llm_router.ollama_probe`; no private `requests.get`.
+
+---
+
+## B. Delta since 2026-08-15
+
+| | 15 Aug | 20 Aug |
+|---|---|---|
+| Tests | 1,382 | **1,433** committed / 1,440 wip |
+| LOC (tracked) | 61,497 | **62,698** |
+| Files | 405 | **409** |
+| mypy | 123 / 73 | **123 / 73** (held) |
+| Silent `pass` | 0 (ratcheted) | **0** |
+| ruff | clean | 1 RUF012 in wip → **resolved** (`_OLLAMA_ENV` module constant) |
+| torch / CUDA | 2.8.0+cpu / False | unchanged |
+| `except Exception` | 420 | 420 |
+
+Shipped on the way to merge: caption retext (§23); fail-open visibility (§24);
+alembic no longer disables loggers; `prepend_channel_intro` cannot lose the
+render; coverage wave **paused** after that item; PR #34 merged; #26–#32 closed.
+
+The 15 Aug "housekeeping owed" (no PR, seven stale PRs, superseded trade-validation
+branch) is **done**. Remaining remotes: `origin/claude/docs-optimization-review-a4l104`
+(do not merge — old base) and `origin/feat/reddit-free-backend-and-signal-persistence`
+(fully in `main`, delete).
+
+---
+
+## C. Findings beyond the wip
+
+**C1 — Thumbnail vision is silently dead.** *(resolved 2026-08-20)* Thumbnail
+scorer uses `llm_router.complete` with image content-blocks; `core/llm_client.py`
+deleted. Pillar 2 *rendered-video* review is still later.
+
+**C2 — Overnight cannot take operator facts.** `generate_draft(topic, channel_id)`
+only. `auto_generate --facts-file` exists. Headless overnight drafts are still
+ungrounded on fresh events.
+
+**C3 — Roadmap contradicts itself in three shipped items.** Phase L2 still marks
+`youtube_comments` unwired. Whisper local and the cost dashboard are `[x]` in
+Next-up and `[ ]` in later sections. `vision.md` still says the graveyard is not
+wired into discovery; `best_bet` already unions `graveyard_topics`. *(partial:
+L2 `youtube_comments` is `[x]` in Next-up; living docs synced 20 Aug evening.)*
+
+**C4 — Coverage wave still paused at the dangerous bit.** *(partial 2026-08-20)*
+`process_one` quota gate, `_defer_for_quota`, and `build_render_ffmpeg_command`
+are tested. Remaining: `youtube/oauth.py` (never `config/secrets/`) and the
+`coverage` extra.
+
+**C5 — `CAPTION_ALIGN` still default-off.** Retext made the $0 caption path
+*usable*. Nothing turns it on.
+
+**C6 — Free TTS readiness omits `qwen`.** Runtime provider exists; `_LOCAL_TTS_ORDER`
+is piper/kokoro/xtts. Free mode can block voice while a $0 clone is installed.
+
+**C7 — Dead competitor channel id still configured.**
+`UCq-Fj5jknLsUf-MWSik4vhQ` in `config/competitors/tapin.json`. `ops feeds` does
+not cover competitor RSS.
+
+**C8 — `coverage` still not in `[dev]`.** Why the gap had to be grepped.
+
+**C9 — Suite leaked a live HTTPS connection during discover** (`ResourceWarning`,
+unclosed SSLSocket to `172.217.116.4:443`). Isolation rule in `tests/CLAUDE.md`
+is not fully held; not chased to a test name this pass.
+
+**Not defects:** 10 measured run-linked videos vs predictor threshold 15 — still
+do not build the recommender backtest. Phase M still parked. BLE (broad-except)
+still correctly off.
+
+---
+
+## D. Alignment
+
+The moat is still verified substance + the closed learning loop. 15 Aug repaired
+intake and cost truth; 16–19 Aug made fail-open visible and captions spell the
+script. Run 70 shows the remaining failure shape is **duplicate probes that
+advertise a capability the first real call does not have**. That is cheaper to
+hunt now that the 98 silent handlers are gone — the lie moved into *readiness
+lines*, which is progress (you can read it) and also the next place it will hide.
+
+GPU backends remain a pip install, not a purchase.
+
+---
+
+## Appendix — reproducing these numbers
+
+```powershell
+python -c "import unittest; print(unittest.TestLoader().discover('tests').countTestCases())"
+git ls-files '*.py' | % { (Get-Content $_).Count } | Measure-Object -Sum
+python -m mypy analytics apis core config storage
+ruff check .
+python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+```
+
+---
+---
+
 # Grand Audit — Content Machine (2026-08-15)
 
 Scope: **(A)** correctness review of the six-wave silent-failure cycle on

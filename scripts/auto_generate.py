@@ -59,22 +59,10 @@ def _pick_topic(channel_id: str, topic_override: str, use_best_bet: bool) -> str
 
 
 def _collect_key_facts(facts_file: str, fact_lines: list[str]) -> list[str]:
-    """Headless key facts: a paste-block file and/or repeated --fact lines.
+    """Headless key facts: a paste-block file and/or repeated --fact lines."""
+    from core.operator_facts import load_key_facts
 
-    Mirrors the interactive key-facts prompt: the file goes through the same
-    `paste` parser (trade blocks work), everything is deduped and tip-filtered.
-    Returns [] when neither input is supplied.
-    """
-    from core.operator_facts import dedupe_facts, parse_pasted_block
-
-    collected: list[str] = list(fact_lines or [])
-    if facts_file:
-        try:
-            with open(facts_file, encoding="utf-8") as f:
-                collected.extend(parse_pasted_block(f.read()))
-        except OSError as exc:
-            print(f"  Key-facts file skipped ({exc})")
-    return dedupe_facts(collected)
+    return load_key_facts(facts_file, fact_lines)
 
 
 def main(argv=None) -> int:
@@ -144,6 +132,20 @@ def main(argv=None) -> int:
         print("  Skipping to protect cadence. Use --force or raise MAX_VIDEOS_PER_WEEK.")
         return 0
 
+    from core.metrics_gate import metrics_gate_reason
+
+    metrics_reason = metrics_gate_reason(channel_id)
+    if metrics_reason and not args.force:
+        print(f"  {metrics_reason}. Use --force or py -m scripts.ops sync-metrics.")
+        return 0
+
+    from core.rpm_cost_gate import rpm_cost_gate_reason
+
+    rpm_reason = rpm_cost_gate_reason(channel_id)
+    if rpm_reason and not args.force:
+        print(f"  {rpm_reason}. Use --force or wait for RPM to recover.")
+        return 0
+
     # Length selection — learn from engagement history when --length auto
     length_choice = args.length
     if length_choice == "auto":
@@ -158,6 +160,14 @@ def main(argv=None) -> int:
 
     print(f"\n  Topic: {topic}")
     print(f"  Length: {PRESETS[length_choice].label} ({PRESETS[length_choice].duration_hint()})")
+
+    from core.run_mode import CostModeBlocked, apply_and_guard
+
+    try:
+        apply_and_guard()
+    except CostModeBlocked as exc:
+        print(f"  {exc}")
+        return 2
 
     # Discovery
     print("\n  Running discovery...")
@@ -260,6 +270,47 @@ def main(argv=None) -> int:
 
     if gate_blocks(result.features.get("claim_verification")) and not args.force:
         print("\n  Blocked by grounding gate (GROUNDING_GATE=block). Use --force to override.")
+        return 0
+
+    from core.thin_facts import thin_facts_abort_reason
+
+    thin_reason = thin_facts_abort_reason(
+        fact_count=_fact_line_count(facts_preview),
+        features=result.features,
+    )
+    if thin_reason and not args.force:
+        print(f"\n  {thin_reason}. Use --force to render anyway.")
+        return 0
+
+    from core.render_gate import unattended_render_block_reason
+    from core.video_grade import grade_run
+
+    letter = None
+    try:
+        graded = grade_run(result.run_id) if result.run_id else None
+        letter = graded.letter if graded else None
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.auto_generate").debug("grade_run skipped: %s", exc)
+        letter = None
+    render_reason = unattended_render_block_reason(letter=letter, authenticity_verdict=auth.verdict)
+    if render_reason and not args.force:
+        print(f"\n  {render_reason}. Use --force to render anyway.")
+        return 0
+
+    from core.human_presence import unattended_render_block_reason as human_block
+
+    human_reason = human_block()
+    if human_reason and not args.force:
+        print(f"\n  {human_reason}. Use --force to render anyway.")
+        return 0
+
+    from core.tts_char_cap import tts_char_cap_reason
+
+    cap_reason = tts_char_cap_reason(result.script)
+    if cap_reason and not args.force:
+        print(f"\n  {cap_reason}. Use --force to render anyway.")
         return 0
 
     if args.dry_run:

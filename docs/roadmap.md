@@ -13,7 +13,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-07-22 — **Pillars 1–5 shipped** and **Pillar 6 (Video Creation Provider Layer) largely shipped**: provider seams wired into every live path (U1 whisper align, U3 music bed, U4 AI-video slot, U5 thumbnail chain + dual-format render), local TTS with **per-channel voice variety** (`core/tts.resolve_local_voice`), goose3 extraction, multi-source `vault_ingest`. Remaining Pillar 6 items are either **heavy backends parked** or **not started** (clip-from-source, storyboard). *Correction (2026-08-15 audit): "parked" meant "needs a GPU box", but this machine **has** an RTX 4070 Ti — `torch` is simply installed as `2.8.0+cpu`. Those slots are waiting on a CUDA torch build, not hardware. See [audit.md](audit.md).* 1382 tests green. This cycle added a config-driven **voice catalog** (`config/voices.json`) with honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider, LLM-router/title/voice crash fixes, and **scheduling upgrades** (clock-time upload input + average-based learned post slots). Earlier: **Pillar 4 (Obsidian knowledge OS)**; **Pillar 3 (Fact Engine 2.0)** (decisions §16); Pillars 1–2 (run ledger, video grading); **O11 complete**.
+Last updated: 2026-08-20 (follow-on 4) — **next 20 after night + evening +
+wave 3:** C9 HTTPS leak / 68 / 70 / 67 / 77 / 80 / 84 / 85 / 87 / per-stage LLM
+/ docs lint / stable dossiers / LUFS / clip anti-repeat / 29 / 30 / 41 / 45 /
+91 / 55. PR #34 still on `main`; live-run 69/70 on `fix/live-run-69-70`.
+Phase M still excluded.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -29,7 +33,29 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). 1382 tests green.*
+input + average-based learned post slots). 1526 tests on this branch.*
+
+**Recommended next 5 (2026-08-20 evening)** — **shipped 2026-08-20 night.**
+Pickup order was *future viability*, *short-term success*, and *real-world cost*.
+Volume-gated backtest, the $0 TTS *voice judgment*, and Phase M stay out.
+
+1. **Pre-run completion gate** `[S]` — *short-term.* Run 70 burned 71s of discovery
+   then 404'd a missing Ollama model. Readiness line ≡ applied env ≡ first LLM/TTS
+   call, *before* discovery starts.
+2. **`youtube/oauth.py` tests + `coverage` extra** `[S]` — *short-term.* Last
+   sequenced item on the paused render/publish coverage wave. `token_has_scope`
+   gates the dup-upload check; a broken token is a silent missed publish. Add
+   `coverage` to `[dev]` (report only — no CI percentage gate).
+3. **Pronunciation lexicon for local TTS** `[M]` — *cost.* Captions already spell
+   Salkilld; Piper still says it wrong. ElevenLabs is **$0.25–0.31/video (~91% of
+   a rendered run)**; the $0 flip is unblocked on captions and blocked on *ears*.
+4. **Allocated vs marginal unit economics** `[S]` — *cost.* Metered TTS is
+   $0.22/1k (~$0.31/video). Creator plan covers ~90 videos against ~21 made, so
+   **allocated is nearer $1/video**. `ops economics` currently answers the
+   engineering question, not the business one.
+5. **Numeric/record grounding** `[M]` — *viability.* The name-gate catches
+   invented fighters; invented ranks, dates, and purses still pass. A fake record
+   on a UFC short is a 2026-policy event, not a grade ding.
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -297,8 +323,8 @@ input + average-based learned post slots). 1382 tests green.*
     | Module | Never named in a test |
     |---|---|
     | `video/channel_intro.py` | ~~`prepend_channel_intro`~~ **done** |
-    | `jobs/worker.py` | **`process_one`** |
-    | `youtube/oauth.py` | 6 of 8 — `load_credentials`, `save_credentials`, `token_has_scope`, `oauth_scopes`, `token_path_for_channel`, `run_interactive_oauth` |
+    | `jobs/worker.py` | ~~`process_one`~~ **done** (quota gate + `_defer_for_quota`) |
+    | `youtube/oauth.py` | ~~6 of 8~~ **done** — `load_credentials`, `save_credentials`, `token_has_scope`, `oauth_scopes`, `token_path_for_channel` (`tests/test_youtube_oauth.py`; `run_interactive_oauth` skipped — needs a browser) |
     | `publishing/registry.py` | `enabled_publish_platforms`, `publishers_for_channel` |
     | `youtube/upload.py` | `is_upload_configured` |
     | `youtube/thumbnails.py` | `merge_thumbnail_into_upload_detail` |
@@ -313,32 +339,26 @@ input + average-based learned post slots). 1382 tests green.*
     failed with *"rendered video vanished from its path"*. Now a `try/finally` covering
     non-zero exit, raising subprocess, empty output and Ctrl-C, plus an output
     exists-and-non-empty check before the temp is deleted. 15 tests.
+  - **[x] Done — `process_one` quota gate + `_defer_for_quota`** *(2026-08-20)* —
+    `tests/test_job_worker_process.py`. Exhausted quota claims only render jobs;
+    a quota deferral decrements `attempts` and sets a future `scheduled_at` so
+    blocked days cannot silently exhaust `max_attempts`.
+  - **[x] Done — `build_render_ffmpeg_command`** *(2026-08-20)* —
+    music bed mixed *under* the VO (`amix … normalize=0`, bed at `MUSIC_BED_VOLUME`),
+    `music_path=None` byte-identical to the VO-only command, `-t` bounds the output,
+    subtitles burned from the escaped path; `render_vertical_video` retries VO-only
+    when the bed mix fails (`tests/test_render_video.py`).
   - **[ ] Next, in blast-radius order:**
-    1. **`jobs/worker.process_one` — the quota gate** (`tests/test_job_worker_process.py`).
-       `job = repo.claim_next() if has_quota_for_upload() else repo.claim_next(job_type="render")`.
-       If that inverts, the worker burns **~1,600 units per attempt**. Cover: exhausted ⇒
-       only render jobs claimed and no upload handler called; available ⇒ unfiltered
-       claim; unknown `job_type` ⇒ FAILED and returns `True` (no infinite spin); handler
-       raising ⇒ FAILED and the worker survives; no job ⇒ `False`; stuck-job reclaim runs
-       before claiming.
-    2. **`_defer_for_quota`** — a quota deferral must **not** consume a retry
-       (`attempts` is decremented) and must set a future `scheduled_at`. If this
-       regresses, a few quota-blocked days silently exhaust `max_attempts` and the video
-       never posts. Reuse the job/result fakes in `tests/test_job_worker_upload.py`.
-    3. **`build_render_ffmpeg_command`** — `tests/test_render_video.py` has only **two**
-       assertions against a 372-line module. Add: music bed mixed *under* the VO
-       (`amix … normalize=0`, bed at `MUSIC_BED_VOLUME`), `music_path=None` byte-identical
-       to the VO-only command, `-t` bounds the output, subtitles burned from the escaped
-       path; plus `render_vertical_video`'s documented **music-bed failure retries
-       VO-only** behaviour.
-    4. **`youtube/oauth.py`** — `token_has_scope` (gates the dup-upload check),
+    1. ~~**`jobs/worker.process_one` — the quota gate**~~ **done 2026-08-20**.
+    2. ~~**`_defer_for_quota`**~~ **done 2026-08-20**.
+    3. ~~**`build_render_ffmpeg_command`**~~ **done 2026-08-20**.
+    4. ~~**`youtube/oauth.py`**~~ **done 2026-08-20** — `token_has_scope`,
        `token_path_for_channel`, `oauth_scopes`, and `load_credentials`/`save_credentials`
        round-tripped against a **temp** token file. Never `config/secrets/`.
-       Skip `run_interactive_oauth` (needs a browser).
-  - **Tooling, not yet done:** `coverage` isn't installed, which is *why* this item sat
-    open — the gap had to be approximated by grepping function names. Add it to the
-    `[dev]` extra and record the command; **not** a CI percentage gate (that would be
-    churn — a ratchet is only worth it when it catches a real defect class, as `S110` did).
+       `run_interactive_oauth` still skipped (needs a browser).
+  - **[x] Tooling:** `coverage` is in the `[dev]` extra. Report only — **not** a CI
+    percentage gate (a ratchet is only worth it when it catches a real defect class,
+    as `S110` did).
     ```
     py -m coverage run -m unittest discover -s tests
     py -m coverage report --include="video/*,publishing/*,youtube/*,jobs/*"
@@ -363,6 +383,303 @@ input + average-based learned post slots). 1382 tests green.*
 
 *Excluded: **Phase M — multi-platform distribution** (TikTok/Instagram/Reels + cross-platform
 learning) stays parked under [Later horizons](#later-horizons).*
+
+**Candidate ideas (2026-08-20 session — Phase M excluded)**
+
+*Brainstorm. Rationale: [planning_log.md](planning_log.md) 2026-08-20 and
+[audit.md](audit.md). None of these restates an open Next-up line
+(clip-from-source, avatar, MoneyWise depth, Instagram figures). Items 1 and 4
+plus the coverage-wave and router-vision Next-up lines shipped the same day.*
+
+- [x] Capability-probe consolidation — one SoT for Ollama/TTS readiness; teach
+  `ops free-doctor` "up but empty" vs "down" (the run-70 class) `[S]`
+  *(2026-08-20: `ollama_probe` shared; free-doctor pull vs serve vs OpenRouter)*
+- [x] Pre-run completion gate — readiness line ≡ applied env ≡ first LLM/TTS call
+  before discovery starts `[S]`
+  *(2026-08-20: `inspect_first_calls` / `guard_before_discovery`; Free fail-closed,
+  Standard warns; stale Readiness cannot start discovery)*
+- [ ] Clone-this-winner into discovery — `winners()` is display-only; `best_bet`
+  already consumes the graveyard `[M]`
+- [x] Semantic near-duplicate authenticity — `SequenceMatcher` misses paraphrases;
+  2026 policy targets rehash `[M]`
+  *(2026-08-20: stdlib content-word cosine in `_variation_check`; `AUTHENTICITY_SEMANTIC`)*
+- [x] Integration incident ledger — persist signal/provider failures; rank by
+  count × recency `[S]`
+  *(2026-08-20: `ops incidents` + reliability view; score = count / (1 + days);
+  writes `data/incidents.json` on view, not from the signal thread pool; tests
+  persist to a temp path)*
+- [x] Per-stage LLM cost attribution — tag router calls by pipeline step `[S]`
+  *(2026-08-20: `complete(..., stage=)`; default stage=tier; script/brief/title
+  tagged; `ops` cost line `stages[...]`; cost_meter `llm_cost_by_stage`)*
+- [ ] Recommender simulation harness — synthetic histories so the loop is
+  validatable before n=15 `[M]`
+- [x] Docs metric lint in CI — test counts, shipped checkboxes, relative links `[S]`
+  *(2026-08-20: `tests/test_docs_lint.py` + CI step; relative links in `docs/*.md`;
+  no network; does not rewrite July docs)*
+- [x] Include Qwen3 in Free TTS readiness — runtime provider exists, `_LOCAL_TTS_ORDER`
+  skips it `[S]`
+  *(2026-08-20: qwen in `_LOCAL_TTS_ORDER` when `qwen_tts` + `QWEN_VOICE` are ready;
+  does not load the 1.7B model)*
+- [x] `signal_facts` formatter ratchet — live signals (earnings) currently JSON-dump `[S]`
+  *(2026-08-20: `earnings` renders symbol/date/days/EPS; no JSON dump; unknown
+  signals still snippet as JSON)*
+- [x] Allocated vs marginal unit economics — Creator plan ~$1/video allocated vs
+  $0.31 metered `[S]`
+  *(2026-08-20: `ops economics` shows both; `COST_TTS_PLAN_USD` / `COST_TTS_PLAN_CHARS`;
+  cost_meter marginal rates unchanged)*
+- [x] Stable vault dossier paths — date-prefix clones the same `run_id` `[S]`
+  *(2026-08-20: `{run_id}_{slug}.md`; refresh overwrites; date-prefixed clones unlinked)*
+- [x] Competitor-channel health — dead Pat McAfee UC id still in
+  `config/competitors/tapin.json` `[S]`
+  *(2026-08-20: `ops competitor-health` RSS probe; reliability uses snapshot only
+  — no extra HTTP; McAfee UC flagged `unverified`, not auto-replaced)*
+- [x] Pronunciation lexicon for local TTS — captions now spell names; Piper still
+  says them wrong `[M]`
+  *(2026-08-20: `config/pronunciations.json` applied on the local TTS path only;
+  captions/retext keep the original script; ElevenLabs unchanged)*
+- [ ] Hook-score vs retention calibration — 0–100 heuristic never checked against
+  `audienceWatchRatio` `[M]`
+- [ ] Semantic vault fact retrieval — token overlap misses related notes `[M]`
+- [ ] CUDA torch as an ops enablement — RTX 4070 Ti is in the box; `2.8.0+cpu` is
+  the actual gate `[M]`
+- [x] Audio LUFS normalize — ffmpeg `loudnorm` for Shorts level consistency `[S]`
+  *(2026-08-20: `LUFS_NORMALIZE` opt-in; default command byte-identical; I=-14)*
+- [x] Background clip anti-repeat — variation guard checks scripts, not pictures `[S]`
+  *(2026-08-20: `assets/clip_memory.py` in-process deque; `CLIP_MEMORY` file persist
+  opt-in; fail-open if every clip was used)*
+- [x] Numeric/record grounding — gate catches names; invented ranks/dates/purses pass `[M]`
+  *(2026-08-20: `find_ungrounded_numeric`; sports-context records/ranks/dates; purses
+  always; warn/fail-open; round scores like 10-9 are not records; "If Netflix" intact)*
+
+**Candidates 21–55 (2026-08-20 afternoon — docs only; Phase M still parked)**
+
+*None of these restates Next-up or the 20-item morning list. Volume-gated
+backtest, $0 TTS voice judgment, and Instagram/TikTok publishers stay out.*
+
+Aesthetics / on-screen
+
+- [ ] 21. Per-channel caption skin in `channels.json` (font, karaoke vs boxed, fill color) — themes already exist for the CLI, not the video `[S]`
+- [ ] 22. Thumbnail safe-area / YouTube chrome checker (PIL: keep faces and title text out of the bottom 20%) `[S]`
+- [ ] 23. End-card / subscribe sting after VO, fail-open, per-channel asset `[S]`
+- [ ] 24. Lower-thirds for fighter/game names from the fact corpus (the names captions already get right) `[M]`
+- [ ] 25. Channel LUT / color grade on the stock loop so TapIn and MoneyWise do not share the same ungraded look `[M]`
+- [ ] 26. Hook-line Ken Burns / zoom on the first caption beat only (retention cliff is already measured) `[M]`
+- [ ] 27. Dual thumbnail: high-contrast text-on vs face-forward, operator pick, logged as the thumbnail experiment arm `[M]`
+- [ ] 28. Intro/outro duration learned from the channel drop-off point instead of a fixed 2.15s TapIn sting `[M]`
+
+Organization / operator surface
+
+- [x] 29. `ops postmortem --run-id` — slowest phase, failed signals, ungrounded claims, cost, next fix; assembled from traces that already exist `[S]`
+  *(2026-08-20: `core/postmortem.py`; no new I/O beyond existing traces/run row)*
+- [x] 30. `ops doctor` — one command: free-doctor + feeds + oauth scopes + quota snapshot + caption/TTS readiness `[S]`
+  *(2026-08-20: also CUDA probe; oauth is token-file + scopes, no refresh HTTP;
+  feeds from cached `ops feeds` snapshot)*
+- [ ] 31. Artifact retention job: cap `output/*/drafts`, `data/traces`, old `_runs/` clones; dry-run first `[S]`
+- [ ] 32. Split `core/ui.py` (~1,400 LOC and growing) into prompt / display / recovery modules — the July audit’s compounding smell `[M]`
+- [ ] 33. `channels.json` JSON Schema ratchet in CI so a missing `persona` or bad `ui_theme` fails before a run `[S]`
+- [ ] 34. Vault note templates in-repo (`_operator_facts`, strategy, sources) so hand-written notes always carry `tier`/`verified_at` `[S]`
+- [ ] 35. Alembic-only schema path — stop teaching two migration stories (`migrate_schema` vs Alembic) `[M]`
+- [ ] 36. `ops topic-clone --run-id` — seed a new draft from a winner (angles new, facts refreshed); the missing write path behind display-only `winners()` `[M]`
+- [ ] 37. Playbook lint: strategy bullets that never got a `[strategy]` tag silently feed facts today in the inverse direction; warn `[S]`
+
+Efficiency
+
+- [ ] 38. NVENC hardware encode on the 4070 Ti (`h264_nvenc`) for render; CPU libx264 stays fallback. Render is the longest paid-adjacent wait `[M]`
+- [ ] 39. Draft-vs-publish render preset: 480p `ultrafast` for operator preview, 1080p film for upload `[S]`
+- [ ] 40. Overlap thumbnail + TTS while the operator is still on the report-card prompt (interactive path only) `[M]`
+- [x] 41. Cap discovery workers so one slow Apify actor cannot set wall-clock for every run (twitter’s lesson, still true for tiktok ~14s) `[S]`
+  *(2026-08-20: `DISCOVERY_MAX_WORKERS` default 8; 0/off = one worker per source;
+  explicit `max_workers=` still wins)*
+- [ ] 42. Shared discovery cache across `batch-drafts` topics that share a franchise anchor (GTA 6 leaks × N) `[M]`
+- [ ] 43. Script **trim** pass (cut padding sentences) instead of a full premium regen when over length `[S]`
+- [ ] 44. ffmpeg `-ss` output-seek already documented; bake a `scripts/probe_sync.py` so intro-offset mistakes stop getting relearned `[S]`
+- [x] 45. Overnight quota-aware: skip or shrink `--count` when YouTube remaining < 1,600 or Apify breaker is in `[S]`
+  *(2026-08-20: `OVERNIGHT_QUOTA_GATE` opt-in; fail-open on store errors; suite sets false)*
+
+Long-term / intelligence
+
+- [ ] 46. UFC/NBA/game **seasonal calendar** as a $0 best-bet source (cards, earnings weeks, launch dates) — best-bet is RSS-only at startup by design `[M]`
+- [ ] 47. Topic graph: franchise arcs (GTA VI week 1 → week 4) so best-bet can continue a story instead of only avoiding the graveyard `[L]`
+- [ ] 48. Multi-run series (`part 1/2/3`) with a vault-backed outline; cadence still capped `[L]`
+- [ ] 49. Post-publish first-hour anomaly (views or engaged-rate vs channel baseline) → webhook. Uses metrics sync, not a new API `[M]`
+- [ ] 50. Learned insight-marker list: replace the hardcoded `_INSIGHT_MARKERS` from scripts that actually retained `[L]`
+- [ ] 51. Channel DNA export → new-channel playbook (the AI Tools/Tech groundwork, but as a dump of what TapIn learned) `[M]`
+- [ ] 52. Graveyard reason codes (thin facts / recap / wrong domain) so avoid-list is explained, not just a mute set `[S]`
+- [ ] 53. Prompt-version auto-bump from a hash of `content_engine` prompt builders so `ops prompt-eval --compare` is meaningful after silent edits `[S]`
+- [ ] 54. Retention-informed `scene_plan`: force a cut/stance beat before the measured channel cliff `[L]`
+- [x] 55. Fact-expiry watchdog in `ops reliability` — vault notes with `expires` in the past that still rank into prompts `[S]`
+  *(2026-08-20: notes already dropped from `load_facts`; watchdog flags leftovers on disk;
+  no HTTP; empty vault path is a no-op)*
+
+**Candidates 56–90 (2026-08-20 evening — viability / short-term success / real-world cost)**
+
+*Brainstorm. Rationale: [planning_log.md](planning_log.md) 2026-08-20 evening.
+None restates Next-up, the morning 20, or candidates 21–55. Phase M, volume-gated
+backtest, and the $0 TTS voice judgment stay out. Grouped by the three axes; a
+few items serve two axes and sit under the dominant one.*
+
+Short-term success — the next publish happens, and it earns a data point
+
+- [x] 56. ElevenLabs **character-quota governor** (same shape as `APIFY_MONTHLY_BUDGET_USD`) — trip to Piper or block render *before* the Creator 100k chars exhaust mid-month `[S]`
+  *(2026-08-20: `ELEVENLABS_MONTHLY_CHAR_BUDGET` opt-in; persist via `quota_governor` only; check point in `tts.py`)*
+- [x] 57. **Paid-signal outcome attribution** — did `tiktok_trends` / `youtube_competitors` move composite score or engaged-rate on measured runs? Drop or demote if they didn't (operating_plan §4 item 2) `[M]`
+  *(2026-08-20: `ops paid-signals`; engaged-rate then composite; never writes the catalog)*
+- [x] 58. Overnight **render-queue gate**: only enqueue render when report-card ≥ B *and* authenticity pass — unattended volume cannot tank the 2026 policy `[S]`
+  *(2026-08-20: `OVERNIGHT_RENDER_GATE` default on; auto_generate + `job_type=render` worker; interactive `main.py` unchanged; missing grade fail-closes)*
+- [x] 59. YouTube remaining units → **"N uploads left this reset"** on `ops reliability` / startup (upload ≈ 1,600 units) — cadence currently ignores the hard ceiling `[S]`
+  *(2026-08-20: `uploads_remaining` / `format_uploads_left`; reliability + `main.py` startup; check point stays `youtube_quota`)*
+- [x] 60. `ops channel-go-live --channel moneywise` — fail until OAuth + SEO + feeds + brand kit exist; MoneyWise is still a one-time ops footnote and the highest-RPM channel `[S]`
+  *(2026-08-20: checklist also requires persona tone+audience; MoneyWise brand/SEO/feeds pass, persona still FAIL; never reads token contents except via existing oauth helpers)*
+- [x] 61. **Thin-facts abort before TTS** — if claim-support or fact-line count is below a bar, stop *before* the $0.31 voice line; drafts stay free `[S]`
+  *(2026-08-20: default on, 3 lines + 50% support; verifier missing fail-opens; `--force` / interactive y overrides)*
+- [x] 62. **Don't start the next video until yesterday has metrics** — optional `ops` gate so the learning loop actually feeds the next pick instead of another unmeasured draft `[S]`
+  *(2026-08-20: `METRICS_BEFORE_NEXT` opt-in, empty/0/off = disabled; no yesterday upload = pass; store failures fail-open)*
+- [x] 63. Skip a scheduled slot when trailing-7d **RPM < fully-loaded cost** — posting to lose money is not "staying consistent" `[M]`
+  *(2026-08-20: `RPM_COST_GATE` opt-in; last 7 monetized uploads as the 7d proxy;
+  no revenue fail-open; worker defers without consuming a retry)*
+- [x] 64. Free-mode **"what Standard would have billed"** dry-run line — operator confidence to flip $0 without a surprise invoice `[S]`
+  *(2026-08-20: counterfactual ElevenLabs TTS + paid thumbnail; does not mutate persisted cost; silent on Standard ElevenLabs runs)*
+- [x] 65. **Operator minutes-per-run** timer (interactive prompts + wait) — short-term success is also human hours; the CLI currently meters APIs only `[S]`
+  *(2026-08-20: in-memory wall vs `input()` wait; summary line; never writes `data/`)*
+
+Real-world cost — meter the true bill, kill spend that doesn't move the needle
+
+- [x] 66. **Meter Flux / Ideogram / Recraft** in `cost_meter` (~$0.04–0.05/image) — operating_plan §4 still lists this as an unmetered gap; `ops economics` cannot include it `[S]`
+  *(2026-08-20: `COST_THUMBNAIL_PER_IMAGE` default $0.045; Pillow / no image = $0; TTS re-merge does not drop a stored thumbnail line)*
+- [x] 67. TTS **provider experiment arm** (ElevenLabs vs Piper) on engaged-rate, same Bayesian gate as `hook_style` — the $0 flip is currently a taste judgment `[M]`
+  *(2026-08-20: **report-only** — `ops tts-arms`; same Bayesian gate; never writes
+  experiments.json; never auto-assigns Piper / never changes TTS_PROVIDER)*
+- [x] 68. **Apify monthly true-up** — $0.02/run model vs the actual invoice; twitter already proved billed-for-nothing `[S]`
+  *(2026-08-20: synthetic fixture `tests/fixtures/apify_invoice_synthetic.json`; no
+  network, no real invoice, no secrets; `ops apify-trueup`)*
+- [x] 69. **Subscription utilization** dashboard — ElevenLabs / Apify / YouTube / Brave unused quota as allocated $/video (generalizes item 4 of the next-5) `[S]`
+  *(2026-08-20: `ops reliability` Utilization section; ElevenLabs leftover chars × plan rate; Apify cached limit; YouTube uploads left; Brave has no usage counter yet)*
+- [x] 70. **Electricity / GPU-hour** line once CUDA torch is on — MusicGen/Comfy/XTTS meter $0 in `cost_meter` but not on the 4070 Ti power bill `[S]`
+  *(2026-08-20: Windows-safe `core/cuda_probe.py` readiness only — no pip install,
+  no CUDA download; `COST_GPU_HOUR_USD` stays 0 until CUDA torch is actually on;
+  wired into `ops doctor`)*
+- [x] 71. **TTS cache by script hash** — never re-synth the same script on a re-render (operating_plan §4 item 3) `[S]`
+  *(2026-08-20: hash of spoken text + provider + voice; copies `.words.json` sidecar; cache hit meters TTS $0; `TTS_CACHE` opt-in so unittest discover cannot write `data/tts_cache`)*
+- [x] 72. **Skip web-search** when vault + RSS already clear a density bar — Tavily/Brave $0.008 is small; the round-trip and junk-line risk are not `[S]`
+  *(2026-08-20: vault distinctive facts only — no extra RSS HTTP and no cache-stat probes; default 6; 0/off disables; skip is in `register_signals` orchestration, not a second signal cache)*
+- [x] 73. **Justify or `enabled: false` the remaining Apify tier** (`tiktok_trends` + `youtube_competitors`) — only two paid actors left; RSS + Data API may already cover them `[M]`
+  *(2026-08-20: same `ops paid-signals` report; `disable` is a recommendation at
+  n>=5 per arm, never an `apify_sources.json` write)*
+- [x] 74. **Pillow-first thumbnail** until report-card ≥ B — don't pay an image API for a draft that fails authenticity `[S]`
+  *(2026-08-20: `THUMBNAIL_MIN_GRADE=B`; missing letter fail-opens to the current Flux path; C/D/F skip paid APIs)*
+- [x] 75. **Hard character cap before TTS** — Extended is a cost multiplier; clip the script (or refuse the preset) rather than regen-then-pay `[S]`
+  *(2026-08-20: refuse, do not clip; default `TTS_MAX_CHARS=5000` ≈ Long; 0/off disables; `--force` / interactive y)*
+- [x] 76. Surface **"this run escaped free-first LLM"** — O5 failover can land on a paid slug with no operator-visible flag `[S]`
+  *(2026-08-20: usage record + cost line `! escaped free-first LLM` + reliability; pinned provider never flags)*
+- [x] 77. Cap `output/` **by gigabytes**, not just file count — artifact retention (#31) is hygiene; this is SSD / backup cost `[S]`
+  *(2026-08-20: `ops artifacts`; `OUTPUT_MAX_GB` / `OUTPUT_MAX_FILES`; dry-run
+  default, `--apply` deletes oldest; never touches `data/`)*
+
+Future viability — stay a media OS, not a GPT-wrapper that the platforms replace
+
+- [ ] 78. **Intelligence-report SKU** (research brief + competitor pulse + authenticity notes, **no video**) — operating_plan §6.2: first external dollar without TTS `[M]`
+- [ ] 79. **Affiliate / Benable spike with a kill criterion** (2 weeks, drop if video→click→sale cannot close) — vision.md Phase G; non-ad revenue on a low-CPM niche `[L]`
+- [x] 80. **YouTube inauthentic-content help-page hash canary** — weekly fetch; alert when the existential constraint moves `[S]`
+  *(2026-08-20: `ops policy-canary` hashes a local fixture; reliability reads the
+  snapshot only — no HTTP; `POLICY_CANARY_FETCH` opt-in for a live fetch)*
+- [ ] 81. **Cross-channel prior for MoneyWise cold-start** — a new channel has n=0; don't wait for 15 measured videos to recommend anything (vision challenge #6) `[M]`
+- [ ] 82. Optional **2-second operator-on-camera sting** (real face, fail-open) — 2026 policy punishes synthetic-and-shallow; this is cheaper than the GPU avatar stack and is not avatar mode `[M]`
+- [ ] 83. **Holdout videos** (recommender off, one per N publishes) — without this the learning loop learns superstitions (vision challenge #2) `[M]`
+- [x] 84. **RPM × cost by domain** — UFC vs GTA vs NBA contribution margin decides what TapIn should actually be; views-by-domain already exist `[S]`
+  *(2026-08-20: `ops economics` adds RPM x cost by domain from `features.domain`)*
+- [x] 85. **Weekly moat backup** — `pg_dump` + vault + `data/traces` (encrypted secrets excluded); the dataset *is* the company (operating_plan §7) `[S]`
+  *(2026-08-20: `ops moat-backup` dry-run plan; `--apply --file dest` copies traces/vault;
+  `.env` / `config/secrets/` / `quota_state.json` excluded; pg_dump is listed not executed)*
+- [ ] 86. **Prompt-eval as a CI regression** on one frozen golden topic per channel — a prompt edit that increases ungrounded claims fails the job `[M]`
+- [x] 87. **YPP / membership readiness checklist** — watch-hours, disclosure, cadence headroom; description CTAs exist, the unlock path does not `[S]`
+  *(2026-08-20: `ops ypp`; fail-open without metrics; hours OR Shorts-views path)*
+- [x] 88. **Competitor-sync daily YouTube-unit cap** — competitor genome will eat the 10k/day budget (vision challenge #4); hard ceiling before "more intelligence" `[S]`
+  *(2026-08-20: RSS still free; API fallback capped (`COMPETITOR_SYNC_MAX_UNITS=30`)
+  and reserves one upload (`COMPETITOR_SYNC_RESERVE_UNITS=1600`); 0/off = unlimited)*
+- [ ] 89. **Public-safe dossier redaction** — if #78 is sold, vault notes must not leak operator facts, unpublished scripts, or key material `[M]`
+- [x] 90. Overnight **never auto-renders** unless a human ran `main.py` / `ops` in the last 24h — autonomy vs the 2026 policy gate (vision challenge #5); drafts stay safe `[S]`
+  *(2026-08-20: `HUMAN_PRESENCE_HOURS` opt-in, empty/0/off = disabled; overnight /
+  daily-sync / worker do not stamp the heartbeat; drafts unchanged)*
+
+**Candidates 91–140 (2026-08-20 late — any-way, Phase M still parked)**
+
+*Brainstorm. Rationale: [planning_log.md](planning_log.md) 2026-08-20 late.
+None restates Next-up, the morning 20, or candidates 21–90. Volume-gated
+backtest, the $0 TTS voice judgment, and TikTok/Reels publishers stay out.
+Pickup order for the 2026-08-20 late-night follow-on was remaining evening `[S]`
+after the night wave (58/59/60/62/64/69/71/72/74/75). This 91–140 list is still
+not a new sequence.*
+
+Machine / Windows hygiene
+
+- [x] 91. Disk-space preflight before ffmpeg (fail with GB free, not a half-written mp4) `[S]`
+  *(2026-08-20: `DISK_MIN_FREE_GB` opt-in; missing `disk_usage` fail-opens; ASCII `>=`)*
+- [ ] 92. Windows `MAX_PATH` / long `output/` paths — render-then-upload dies on 260-char titles `[S]`
+- [ ] 93. FFmpeg file-lock retry (Defender locking the mp4; same class as the vanished-intro bug) `[S]`
+- [ ] 94. NVIDIA driver + NVENC *capability* probe in `ops doctor` (distinct from #38 actually encoding) `[S]`
+- [ ] 95. RAM/VRAM preflight before whisper / local TTS so Free mode does not OOM mid-run `[S]`
+- [ ] 96. `ops secrets-doctor` — keys present, not obviously expired, never copied into traces `[S]`
+- [ ] 97. Redact API bodies from `data/traces` (402/403 payloads can leak) `[S]`
+- [ ] 98. `pip-audit` / Dependabot in CI (supply chain; report-only like coverage) `[S]`
+- [x] 99. Close the suite’s live Google HTTPS leak (audit C9 `ResourceWarning`) `[M]`
+  *(2026-08-20: skip YouTube warmup in tests; `static_discovery=True` on `build()`;
+  `CONTENT_FORBID_LIVE_YOUTUBE` blocks Data/Analytics clients and OAuth refresh;
+  suite also forces `YOUTUBE_ANALYTICS_SYNC=false` so operator .env cannot leak)*
+- [ ] 100. OneDrive/`.git` hazard check in `ops doctor` (operating_plan §7; specific, not a generic doctor) `[S]`
+
+YouTube surface (still YouTube-only)
+
+- [ ] 101. Upload a caption *track* (not only burned) — accessibility + search `[S]`
+- [ ] 102. Auto-set YouTube category from `infer_domain` (Sports vs Gaming) `[S]`
+- [ ] 103. Description **sources** block from vault `source_url`s `[S]`
+- [ ] 104. Playlist-per-franchise via Data API (GTA, UFC cards) `[M]`
+- [ ] 105. Pin a comment that answers the top `youtube_comments` question `[S]`
+- [ ] 106. Detect Studio-deleted videos and cancel `publish_log` (re-queue path exists; detection does not) `[S]`
+- [ ] 107. `madeForKids=false` self-declared audit on every insert `[S]`
+- [ ] 108. Default language + audio language on `videos.insert` `[S]`
+- [ ] 109. Unlisted review link before public (operator eyeball, cadence-safe) `[S]`
+- [ ] 110. Chapter timestamps for Extended `[S]`
+- [ ] 111. End-screen / cards pointing at the previous franchise video (YouTube API) `[M]`
+- [ ] 112. Correction dossier + community-post template when post-publish facts reverse `[M]`
+
+Content / learning
+
+- [ ] 113. Prediction ledger — persist “we called X” vs later outcome `[M]`
+- [ ] 114. Audience-question series: cluster `youtube_comments` across runs into a mailbag `[M]`
+- [ ] 115. Don’t publish during a live UFC PPV window (cannibalize the niche) `[S]`
+- [ ] 116. Blackout / quiet-hours calendar in `channels.json` `[S]`
+- [ ] 117. Title uniqueness vs own catalog (no colliding titles) `[S]`
+- [ ] 118. Description first-line SEO (search; not hashtag stuffing) `[S]`
+- [ ] 119. Stock-clip **watermark detector** — skip footage that shows another channel `[M]`
+- [ ] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]`
+- [ ] 121. Stock query rewriter: never Pexels-search trademarked “UFC” fight footage `[S]`
+- [ ] 122. `license.yaml` beside local clips (we own this file) `[S]`
+- [ ] 123. Number/SSML reading rules (`29-1`, UFC 317, `$50k`) — distinct from the name lexicon `[M]`
+- [ ] 124. Pause-after-hook: 200–400ms silence after line 1 `[S]`
+
+Legal / policy / MoneyWise (not Phase M, not the #79 spike)
+
+- [ ] 125. MoneyWise finance disclaimer in description (separate from AI disclosure) `[S]`
+- [ ] 126. Odds-derived scripts must say “market”, never “will” `[S]`
+- [ ] 127. Gambling/odds advertiser-safe mode (strip implied betting CTAs) `[S]`
+- [ ] 128. FTC affiliate disclosure *line* (copy; #79 is the tracking spike) `[S]`
+- [ ] 129. UFC/trademark title linter (`UFC` vs “fight night”) `[S]`
+- [ ] 130. Right-of-publicity: refuse stock thumbs that look like a real fighter’s face `[M]`
+- [ ] 131. Demonetization detector (`estimatedRevenue` cliff vs channel baseline) `[S]`
+- [ ] 132. Policy-incident runbook (strike / Content ID / appeal template in-repo) `[S]`
+
+Operator product
+
+- [ ] 133. `.ics` calendar of scheduled publishes `[S]`
+- [ ] 134. n8n/email recipe for `weekly-report` (events exist; this is the recipe) `[S]`
+- [ ] 135. CSV export of `ops economics` `[S]`
+- [ ] 136. Vault Dataview-friendly dossier frontmatter `[S]`
+- [ ] 137. Wiki-links between related `_runs/` dossiers `[S]`
+- [ ] 138. Long-form length preset that is **not** a Short (16:9 sibling already exists) `[M]`
+- [x] 139. Channel trailer / handle / banner checklist inside `channel-go-live` `[S]`
+  *(2026-08-20: banner file + `youtube_handle` + trailer id/file; MoneyWise banner
+  passes, handle/trailer still FAIL)*
+- [ ] 140. YouTube quota-increase request playbook (when 10k/day is the ceiling) `[S]`
 
 ---
 
@@ -492,8 +809,9 @@ learning) stays parked under [Later horizons](#later-horizons).*
 - [x] `reddit`, `tiktok_trends` — community sentiment + viral angles
 - [x] Per-domain targeting (`domain_targets`); fact formatting keeps competitor titles as context, not verified facts
 - [x] Docs: [apify-data-sources.md](apify-data-sources.md)
-- [ ] `youtube_comments` / `instagram_figures` — templated in catalog, not yet wired as signals
-- [ ] Live-run tuning of actor inputs once observed against real topics
+- [x] `youtube_comments` — wired 2026-08-14 against the official Data API (not Apify)
+- [ ] `instagram_figures` — still templated only; catalog `enabled: false`
+- [x] Live-run tuning of actor inputs *(2026-08-14 — twitter retired; tiktok + youtube_competitors kept)*
 
 ### Phase L3 — Idea intake (2026-06)
 
@@ -585,7 +903,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 ### Phase O — Authenticity & monetisation safety  *(highest priority — existential)*
 Turn the research spine into a compliance moat.
 - [x] **Pre-upload authenticity self-check** — `core/authenticity.py`: variation / original-insight / substance score + checklist; `AUTHENTICITY_GATE=block` to enforce.
-- [x] **Per-video variation guard** — shipped as the authenticity "variation" check (difflib vs recent uploads' script_preview).
+- [x] **Per-video variation guard** — shipped as the authenticity "variation" check (difflib vs recent uploads' script_preview). Content-word cosine paraphrase arm added 2026-08-20 (`AUTHENTICITY_SEMANTIC`, default-on, warn-never-block).
 - [x] **AI-content disclosure** — `core/description_extras.py`: in-description disclosure on every upload (YouTube's #1 compliance "do"); `AI_DISCLOSURE_ENABLED`, per-channel `ai_disclosure`.
 - [x] **Cadence guardrail** — `core/cadence.py`: caps videos/rolling-week (recent + scheduled); `MAX_VIDEOS_PER_WEEK` (default 5); gates `auto_generate` (`--force` to override). Pairs with the variation check (variety + volume).
 - [x] **Original-insight injection** — when a script reads as a neutral recap, inject one opinion/prediction/"why it matters" beat grounded only in verified facts (`content_engine._maybe_inject_insight`, `core/authenticity.has_insight`, `INSIGHT_INJECTION_ENABLED`). Runs before the grounding regen; default-on; no-op when a take already exists. Prompt also gained a detector-aligned STANCE bullet.
@@ -634,11 +952,11 @@ Turn the research spine into a compliance moat.
 
 ### Efficiency & integrations
 > **Credit/quota/spend optimization backlog:** [credit_efficiency.md](credit_efficiency.md) — Apify preflight skip, cross-run breaker persistence, operator budgets, LLM provider failover, reliability dashboard, unified quota governor (O1–O11).
-- [ ] **Whisper** locally for caption timing + clip transcription (enables Phases Q & R).
-- [ ] **Cost / quota dashboard** — per-run API spend (OpenAI / Apify / YouTube units) in status. *(spec'd as O9 in [credit_efficiency.md](credit_efficiency.md); LLM half now ledger-priced.)*
+- [x] **Whisper** locally for caption timing — CPU `faster_whisper` + caption retext (2026-08-14/16). Clip-from-source transcription still sits with Phase R.
+- [x] **Cost / quota dashboard** — shipped as `ops reliability` (O9) + O12.
 - [x] **Multi-provider LLM router** (`core/llm_router.py`) — task-tier routing (cheap/extract/premium) across **DeepSeek, OpenRouter, Ollama (local), OpenAI, Anthropic** (Groq wired but not default — signup gated; Doubao wired but skipped — China-region-locked, ~$0 savings); OpenAI-compatible client shape + native Claude. Free-first defaults (**OpenRouter** free `:free` models anchor cheap, Ollama local fallback; **DeepSeek-V3** anchors extract+premium ≈ gpt-4o quality, ~10× cheaper), env-overridable per tier + per-provider `{PROVIDER}_MODEL_<TIER>`, graceful degradation, loads `.env` standalone. Consolidated the 3 ad-hoc Claude call sites + migrated content_engine / research_brief / fact_enrichment / topic_variants / background_query / local_provider. Real **per-provider token ledger** prices `cost_meter` (free `:free`/Ollama = $0). (`DEEPSEEK_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_MODEL`.)
 - [x] **Local-LLM option (Ollama)** — folded into the router as the `ollama` provider (OpenAI-compatible, `OLLAMA_MODEL` + optional `OLLAMA_BASE_URL`); zero marginal cost in the ledger.
-- [ ] **Router follow-ups** — route thumbnail vision scorer once multimodal is added to the router; add a provider failover (premium→cheaper on auth/quota error); surface per-provider spend in the cost line.
+- [x] **Router follow-ups** — thumbnail vision scorer now uses `llm_router.complete` with image content-blocks (2026-08-20). `core/llm_client.py` deleted. Failover + per-provider spend already shipped as O5/O6 + O12. Pillar 2 rendered-video review is still later.
 - [x] **Free in-process signal backends (Option 3)** — *spike done 2026-06-29; YouTube backend shipped 2026-07-01:* `apis/free_backends.py` (hybrid `yt-dlp` flat-rank → full-extract top-N) behind `SIGNAL_BACKEND=apify|free|auto` (default `apify` — unchanged behavior; `free` = keyless/zero-cost; `auto` = free-first with Apify fallback). Cost meter no longer bills a free-served `youtube_competitors` as an Apify run. *Reddit OAuth free backend shipped 2026-07-06* (`fetch_reddit_free`, official API via free script app — Reddit keyless *scraping* is 403-blocked; 429s feed the rate-limit cooldown). Twitter/TikTok stay Apify. Tests: `tests/test_free_backends.py`. Full write-up: [agent_reach_evaluation.md](agent_reach_evaluation.md).
 - [x] **Per-platform rate-limit cooldown** — *shipped 2026-07-01:* free backends fail by 429 (rate-limit), not 402 (credit). Session breaker (`apis/register_signals.py`) now gives transient 429s a *disabled-until-T* cooldown (`SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS`, default 15 min, 0 = off) instead of ignoring them; hard statuses still trip permanently, and `SIGNAL_BREAKER_INCLUDE_RATE_LIMIT=true` still promotes 429s to a full-session trip. "Next available" surfaces in `ops reliability` and the post-discovery signal-health panel (`youtube_competitors → 14:32`). Tests in `tests/test_circuit_breaker.py`.
 - [x] **Script-accuracy follow-ups (2026-07-01)** — Apify 403 vs 402 messaging + shorter auth-failure TTL; `MAX_OPERATOR_KEY_FACTS` env cap; pipeline-end `finalize_run_observability()` for cache stats; `auto_generate` mirrors fact-grounding gate.
@@ -727,8 +1045,8 @@ data-gated — they activate as measured volume accrues):*
   live prompts and saves tagged with `prompt_version`, `compare` diffs the last two;
   `ops prompt-eval [--compare]`.
 - [ ] **Multimodal rendered-video review** `[L]` *(later)* — sampled frames +
-  transcript → LLM rubric (pacing, caption readability, visual interest); needs the
-  router vision path first (see supporting track).
+  transcript → LLM rubric (pacing, caption readability, visual interest); the
+  router vision path shipped 2026-08-20 (supporting track).
 - Tests: `tests/test_video_grade.py` (18).
 
 ### Pillar 3 — Fact Engine 2.0
@@ -910,15 +1228,17 @@ with a local frozen model (Bonsai/Ollama) into a self-improving $0 factory.*
 - [ ] **Governor follow-ups (O12 candidates)** — YouTube units under a governor
   scope; per-provider LLM spend in the run cost line; reliability time series
   ([credit_efficiency.md](credit_efficiency.md) O11 follow-ups).
-- [ ] **Router vision path** — migrate the multimodal thumbnail scorer off legacy
-  `core/llm_client.py`; unlocks Pillar 2's rendered-video review.
+- [x] **Router vision path** *(2026-08-20)* — thumbnail scorer uses
+  `llm_router.complete` with OpenAI-style image parts; Anthropic/DeepSeek/Ollama
+  skipped rather than flattened; Free mode heuristic + warning. `core/llm_client.py`
+  deleted. Unlocks Pillar 2's rendered-video review (still later).
 - [ ] **Free-backend probes (optional)** — TikTok/Twitter equivalents of the
   yt-dlp / Reddit-OAuth backends, only if the Apify bill justifies it
   ([agent_reach_evaluation.md](agent_reach_evaluation.md)).
 
 ### Unphased levers (carried over, independently shippable)
-- [ ] **Whisper local** *(promoted from Efficiency backlog)* — caption timing without
-  ElevenLabs timestamps; unlocks Phase R clip-from-source transcription.
+- [x] **Whisper local** — CPU backend + retext shipped 2026-08-14/16; still OFF by default.
+  Clip-from-source transcription remains with Phase R.
 - [ ] **MoneyWise depth wave** ([domain-expansion.md](domain-expansion.md) ROI 9.5) —
   earnings-calendar signal (free API), ticker-watchlist tracking, finance-tuned research
   brief sections.

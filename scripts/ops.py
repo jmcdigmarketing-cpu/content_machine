@@ -124,6 +124,125 @@ def cmd_check_youtube(args: argparse.Namespace) -> int:
     return _run_module("youtube.check_setup", "--channel", args.channel)
 
 
+@_register(
+    "channel-go-live",
+    "Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel)",
+)
+def cmd_channel_go_live(args: argparse.Namespace) -> int:
+    from core.channel_go_live import inspect_channel, render_report
+
+    report = inspect_channel(args.channel)
+    print(render_report(report))
+    return 0 if report.ok else 1
+
+
+@_register(
+    "competitor-health",
+    "Flag dead/unverified competitor YouTube UC ids (RSS probe, no Data API)",
+)
+def cmd_competitor_health(args: argparse.Namespace) -> int:
+    from analytics.youtube_rss import fetch_channel_uploads_rss
+    from core.competitor_health import inspect_competitors, render_report
+
+    report = inspect_competitors(
+        args.channel,
+        fetch=lambda cid: fetch_channel_uploads_rss(cid, max_results=4),
+    )
+    print(render_report(report))
+    return 0 if report.ok else 1
+
+
+@_register(
+    "paid-signals",
+    "Attribute tiktok_trends / youtube_competitors lift; recommend keep/disable (no catalog write)",
+)
+def cmd_paid_signals(args: argparse.Namespace) -> int:
+    from core.paid_signal_attribution import report_from_traces
+
+    print(report_from_traces(channel_id=args.channel, limit=args.limit or 50))
+    return 0
+
+
+@_register("incidents", "Rank recent signal/provider failures by count x recency")
+def cmd_incidents(args: argparse.Namespace) -> int:
+    from core.incident_ledger import gather_and_record, render
+
+    incidents = gather_and_record(limit=args.limit or 40)
+    print(render(incidents))
+    return 0
+
+
+@_register("postmortem", "Slowest phase, failed signals, ungrounded claims, cost (--run-id)")
+def cmd_postmortem(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("postmortem requires --run-id")
+        return 2
+    from core.postmortem import from_store, render
+
+    print(render(from_store(args.run_id)))
+    return 0
+
+
+@_register("doctor", "One shot: free stack + feeds snapshot + oauth file + quota + CUDA")
+def cmd_doctor(args: argparse.Namespace) -> int:
+    from core.ops_doctor import render
+
+    print(render(channel_id=args.channel))
+    return 0
+
+
+@_register("apify-trueup", "Compare synthetic Apify invoice vs $0.02/run model (no network)")
+def cmd_apify_trueup(args: argparse.Namespace) -> int:
+    from core.apify_trueup import DEFAULT_FIXTURE, parse_invoice, render, trueup
+
+    path = args.file or str(DEFAULT_FIXTURE)
+    print(render(trueup(parse_invoice(path))))
+    return 0
+
+
+@_register("tts-arms", "ElevenLabs vs Piper Bayesian report (no auto-switch)")
+def cmd_tts_arms(args: argparse.Namespace) -> int:
+    from core.tts_provider_report import render_report, report
+
+    print(render_report(report(args.channel)))
+    return 0
+
+
+@_register("artifacts", "Cap output/ by GB (dry-run default; --apply deletes oldest)")
+def cmd_artifacts(args: argparse.Namespace) -> int:
+    from core.artifact_retention import run
+
+    out = run(apply=bool(getattr(args, "apply", False)))
+    print(out["text"])
+    return 0
+
+
+@_register(
+    "policy-canary", "Hash YouTube inauthentic-content page (local fixture; no HTTP default)"
+)
+def cmd_policy_canary(args: argparse.Namespace) -> int:
+    from core.policy_canary import inspect, render
+
+    print(render(inspect(source_path=args.file, fetch=False)))
+    return 0
+
+
+@_register("moat-backup", "Plan pg_dump + vault + traces backup (secrets excluded; dry-run)")
+def cmd_moat_backup(args: argparse.Namespace) -> int:
+    from core.moat_backup import run
+
+    print(run(dest=args.file, apply=bool(getattr(args, "apply", False)))["text"])
+    return 0
+
+
+@_register("ypp", "YPP / membership readiness: watch-hours proxy, disclosure, cadence")
+def cmd_ypp(args: argparse.Namespace) -> int:
+    from core.ypp_readiness import inspect_ypp, render_report
+
+    print(render_report(inspect_ypp(args.channel)))
+    return 0
+
+
 @_register("sync-metrics", "Pull YouTube Analytics into performance memory")
 def cmd_sync_metrics(args: argparse.Namespace) -> int:
     return _run_module("analytics.sync_metrics", "--channel", args.channel)
@@ -208,6 +327,18 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
         from core.logging import get_logger
 
         get_logger("scripts.ops").debug("Reliability trend not recorded: %s", exc)
+    try:
+        from core.incident_ledger import gather_and_record
+        from core.incident_ledger import render as render_incidents
+
+        incidents = gather_and_record()
+        blob = render_incidents(incidents)
+        if blob:
+            print(blob)
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("Incident ledger skipped: %s", exc)
     return 0
 
 
@@ -238,21 +369,17 @@ def _ollama_server_probe(timeout: float = 2.0) -> tuple[bool, int]:
     Unlike run_mode._ollama_ready() - which returns False when OLLAMA_MODEL is unset -
     this reports the server being up even before a model is chosen, so free-doctor can
     tell "Ollama running, just pick a model" apart from "no free LLM installed at all".
+
+    Single HTTP helper: delegates to ``llm_router.ollama_probe`` so we cannot drift
+    into a second, weaker ``/api/tags`` client. ``timeout`` is accepted for call-site
+    compatibility; the router probe uses its own 3s bound.
     """
-    import os
-
-    base = (os.getenv("OLLAMA_BASE_URL", "") or "http://localhost:11434/v1").strip()
-    root = base.rstrip("/")
-    if root.endswith("/v1"):
-        root = root[: -len("/v1")]
+    del timeout  # router probe owns the timeout; kept so existing callers stay valid.
     try:
-        import requests
+        from core.llm_router import ollama_probe
 
-        resp = requests.get(f"{root}/api/tags", timeout=timeout)
-        if resp.status_code != 200:
-            return False, 0
-        models = resp.json().get("models", []) or []
-        return True, len(models)
+        up, tags = ollama_probe(refresh=True)
+        return up, len(tags)
     except Exception:
         return False, 0
 
@@ -270,13 +397,25 @@ def cmd_free_doctor(_args: argparse.Namespace) -> int:
     print("=" * 48)
 
     ready, model = _ollama_ready()
+    configured = os.getenv("OLLAMA_MODEL", "").strip()
     if ready:
         print(f"  LLM        : OK  ollama (local, unlimited) - model {model}")
-    elif os.getenv("OLLAMA_MODEL", "").strip():
-        print(
-            f"  LLM        : X   OLLAMA_MODEL={os.getenv('OLLAMA_MODEL')} set, server unreachable"
-        )
-        print("                   start it: `ollama serve` (+ `ollama pull <model>`)")
+    elif configured:
+        # Reachable is not usable (run 70): distinguish down vs empty vs wrong model.
+        up, n_models = _ollama_server_probe()
+        if not up:
+            print(f"  LLM        : X   OLLAMA_MODEL={configured} set, server unreachable")
+            print("                   start it: `ollama serve` (+ `ollama pull <model>`)")
+        elif n_models == 0:
+            print(f"  LLM        : X   OLLAMA_MODEL={configured} set, nothing pulled")
+            print(f"                   pull it: `ollama pull {configured}`")
+        else:
+            print(f"  LLM        : X   OLLAMA_MODEL={configured} is not among the pulled models")
+            print(f"                   pull it: `ollama pull {configured}`")
+        if os.getenv("OPENROUTER_API_KEY", "").strip():
+            print(
+                "  LLM        : ~   openrouter :free available as throttled fallback (not truly free)"
+            )
     else:
         # OLLAMA_MODEL unset. Tell "Ollama running, just pick a model" apart from the
         # rate-limited cloud fallback and "nothing installed".
@@ -507,7 +646,7 @@ def cmd_worker(args: argparse.Namespace) -> int:
 
 @_register("test", "Run unit tests")
 def cmd_test(_args: argparse.Namespace) -> int:
-    return _run_module("unittest", "discover", "-s", "tests", "-v")
+    return _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
 
 
 @_register("list-uploads", "Rendered MP4s not yet on YouTube")
@@ -702,12 +841,26 @@ def main(argv=None) -> int:
         action="store_true",
         help="backfill-cost: show what would change without writing",
     )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="artifacts / moat-backup: actually delete or copy (default is dry-run)",
+    )
     args = parser.parse_args(argv)
     args.queue_upload = False
     args.queue_requeue = False
     args.queue_reset = False
     args.queue_schedule = False
     args.force = False
+
+    try:
+        from core.human_presence import maybe_touch_ops
+
+        maybe_touch_ops(args.command)
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("ops heartbeat skipped: %s", exc)
 
     _, fn = COMMANDS[args.command]
     return fn(args)

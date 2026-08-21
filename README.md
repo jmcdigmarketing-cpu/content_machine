@@ -4,7 +4,9 @@ Python CLI for short-form video: discover signals → score topics → LLM scrip
 
 **Channels** (`config/channels.json`, domain-driven): `tapin` — gaming & UFC shorts · `moneywise` — finance (markets/crypto/personal finance). Add another by adding a profile + `config/seo/{id}.json`.
 
-Roadmap & current fix queue: [docs/roadmap.md](docs/roadmap.md). Honest assessment: [docs/assessment.md](docs/assessment.md).
+Roadmap & current fix queue: [docs/roadmap.md](docs/roadmap.md). Honest assessment:
+[docs/assessment.md](docs/assessment.md) (June scorecard + 2026-08-20 addendum).
+Session state: [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
 
 ## Quick start
 
@@ -103,7 +105,7 @@ ruff check .                 # lint
 ruff check . --fix           # lint + autofix
 ruff format .                # format
 mypy analytics apis core config storage   # type check (lenient baseline)
-python -m unittest discover -s tests       # tests (pytest also works: `pytest`)
+python -m unittest discover -s tests -t .  # tests (pytest also works: `pytest`)
 ```
 
 Tooling is configured in [`pyproject.toml`](pyproject.toml) (canonical deps +

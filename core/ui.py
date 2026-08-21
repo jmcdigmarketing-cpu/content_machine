@@ -1407,6 +1407,7 @@ def display_summary(
     mp4_path: str = "",
     thumbnail_path: str = "",
     cost: dict[str, float] | None = None,
+    script: str = "",
     print_fn=print,
 ):
     subsection("Summary", print_fn)
@@ -1420,19 +1421,44 @@ def display_summary(
     if thumbnail_path:
         print_fn(f"  Thumbnail: {thumbnail_path}")
 
-    from core.cost_meter import format_cost_line, llm_cost_by_provider
+    from core.cost_meter import escaped_free_first, format_cost_line, llm_cost_by_provider
 
     # Per-provider LLM split (O12): the free-first chain means most calls should land
     # on a $0 provider, which the aggregate `llm $x` hides. Fail-open to the plain line.
     try:
+        from core.cost_meter import llm_cost_by_stage
         from core.llm_router import get_usage
 
-        by_provider = llm_cost_by_provider(get_usage())
+        usage = get_usage()
+        by_provider = llm_cost_by_provider(usage)
+        by_stage = llm_cost_by_stage(usage)
     except Exception:
         by_provider = {}
-    cost_line = format_cost_line(cost, llm_by_provider=by_provider)
+        by_stage = {}
+    cost_line = format_cost_line(
+        cost,
+        llm_by_provider=by_provider,
+        llm_by_stage=by_stage,
+        escaped_free_first_llm=escaped_free_first(),
+    )
     if cost_line:
         print_fn(f"  {cost_line}")
+    try:
+        from core.operator_timer import format_line as operator_time_line
+
+        op_line = operator_time_line()
+        if op_line:
+            print_fn(f"  {op_line}")
+    except Exception as exc:
+        logger.debug("operator timer line skipped: %s", exc)
+    try:
+        from core.cost_meter import format_standard_billed_line
+
+        std = format_standard_billed_line(script)
+        if std:
+            print_fn(f"  {std}")
+    except Exception as exc:
+        logger.debug("standard-billed line skipped: %s", exc)
 
     from apis.apify_client import apify_disabled, apify_status
 

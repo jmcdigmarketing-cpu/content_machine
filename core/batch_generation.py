@@ -98,8 +98,14 @@ def _length_choice(channel_id: str, topic: str) -> str:
         return "2"
 
 
-def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
-    """One headless draft: discovery → best variant → script → saved folder."""
+def generate_draft(
+    topic: str, channel_id: str, *, key_facts: list[str] | None = None
+) -> DraftOutcome:
+    """One headless draft: discovery → best variant → script → saved folder.
+
+    ``key_facts`` (optional) are shared operator ground truth applied to this
+    topic — same ``run_pipeline(key_facts=)`` path as ``auto_generate --facts-file``.
+    """
     from core.pipeline import run_discovery, run_pipeline
 
     out = DraftOutcome(topic=topic)
@@ -133,6 +139,7 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
         proceed_video=False,
         channel_id=channel_id,
         creative_brief=experiment[2] if experiment else "",
+        key_facts=key_facts,
     )
     if result.aborted or not (result.script or "").strip():
         out.error = result.abort_reason or "pipeline produced no script"
@@ -218,13 +225,18 @@ def generate_draft(topic: str, channel_id: str) -> DraftOutcome:
     return out
 
 
-def run_batch(channel_id: str, topics: list[str]) -> list[DraftOutcome]:
-    """Generate a draft per topic; one failure never kills the batch."""
+def run_batch(
+    channel_id: str, topics: list[str], *, key_facts: list[str] | None = None
+) -> list[DraftOutcome]:
+    """Generate a draft per topic; one failure never kills the batch.
+
+    ``key_facts`` apply to every topic (one overnight digest, N drafts).
+    """
     outcomes: list[DraftOutcome] = []
     for i, topic in enumerate(topics, 1):
         logger.info("Batch draft %d/%d: %s", i, len(topics), topic)
         try:
-            outcomes.append(generate_draft(topic, channel_id))
+            outcomes.append(generate_draft(topic, channel_id, key_facts=key_facts))
         except Exception as exc:
             logger.warning("Draft failed for %r: %s", topic, exc)
             outcomes.append(DraftOutcome(topic=topic, error=str(exc)))
@@ -284,13 +296,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--count", type=int, default=3, help="How many best-bet topics when none given"
     )
+    parser.add_argument(
+        "--facts-file",
+        default="",
+        help="Operator key facts (paste-block file) applied to every draft in the batch",
+    )
     args = parser.parse_args(argv)
 
+    from core.run_mode import CostModeBlocked, apply_and_guard
+
+    try:
+        apply_and_guard()
+    except CostModeBlocked as exc:
+        print(f"  {exc}")
+        return 2
+
+    from core.operator_facts import load_key_facts
+
+    key_facts = load_key_facts(args.facts_file)
     topics = collect_topics(args.channel, args.topics, args.file, args.count)
     if not topics:
         print("No topics to draft (give topics, --file, or record analytics for best bets).")
         return 1
-    outcomes = run_batch(args.channel, topics)
+    outcomes = run_batch(args.channel, topics, key_facts=key_facts or None)
     print(render_summary(outcomes))
     return 0 if any(o.ok for o in outcomes) else 1
 

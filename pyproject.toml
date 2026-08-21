@@ -43,6 +43,7 @@ dev = [
     "pre-commit==4.0.1",
     "types-requests",
     "types-beautifulsoup4",
+    "coverage>=7.6.0",
 ]
 # Optional sports stats providers (NFL/MLB stat lines)
 sports = [

@@ -25,6 +25,11 @@ _APIFY_SIGNALS = ("reddit", "twitter", "tiktok_trends", "youtube_competitors")
 TTS_RATE_ENV = "COST_TTS_PER_1K_CHARS"
 TTS_RATE_DEFAULT = 0.22
 
+# Paid thumbnail APIs (Flux / Ideogram / Recraft). Pillow title cards are $0.
+THUMBNAIL_RATE_ENV = "COST_THUMBNAIL_PER_IMAGE"
+THUMBNAIL_RATE_DEFAULT = 0.045
+_PAID_THUMBNAIL_PROVIDERS = frozenset({"flux", "ideogram", "recraft"})
+
 # Per-1M-token public pricing (USD), input/output, by provider+model prefix.
 # Used to price the real token ledger from core/llm_router. Override-friendly:
 # unknown models fall back to a conservative default. Free credits don't change
@@ -94,6 +99,23 @@ def llm_cost_by_provider(calls: list[dict[str, Any]] | None) -> dict[str, float]
     return out
 
 
+def llm_cost_by_stage(calls: list[dict[str, Any]] | None) -> dict[str, float]:
+    """Price a token ledger per pipeline stage (script/brief/title/...)."""
+    out: dict[str, float] = {}
+    for c in calls or []:
+        stage = str(c.get("stage") or c.get("tier") or "unknown").lower()
+        provider = str(c.get("provider", "") or "unknown").lower()
+        model = str(c.get("model", ""))
+        free = provider == "ollama" or ":free" in model.lower()
+        cost = 0.0
+        if not free:
+            in_price, out_price = _price_for_model(model)
+            cost = (int(c.get("input_tokens", 0)) / 1_000_000.0) * in_price
+            cost += (int(c.get("output_tokens", 0)) / 1_000_000.0) * out_price
+        out[stage] = round(out.get(stage, 0.0) + cost, 6)
+    return out
+
+
 def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
     """Price a token ledger (from core.llm_router.get_usage) in USD.
 
@@ -110,10 +132,37 @@ def local_tts_selected() -> bool:
 
     Env is read directly rather than importing core.tts — that would be an import cycle.
     """
-    return os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() in ("kokoro", "xtts", "piper")
+    return os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() in (
+        "kokoro",
+        "xtts",
+        "piper",
+        "qwen",
+    )
 
 
-def render_cost_lines(script: str = "") -> dict[str, float]:
+def thumbnail_cost(provider: str | None) -> float:
+    """USD for one generated image. Pillow / missing / unknown → $0 (don't invent billing)."""
+    name = (provider or "").strip().lower()
+    if name not in _PAID_THUMBNAIL_PROVIDERS:
+        return 0.0
+    return round(_rate(THUMBNAIL_RATE_ENV, THUMBNAIL_RATE_DEFAULT), 4)
+
+
+def escaped_free_first(calls: list[dict[str, Any]] | None = None) -> bool:
+    """True when a cheap/extract/premium call landed on a paid provider after a free miss."""
+    if calls is None:
+        try:
+            from core.llm_router import get_usage
+
+            calls = get_usage()
+        except Exception:
+            calls = []
+    return any(bool(c.get("escaped_free_first")) for c in (calls or []))
+
+
+def render_cost_lines(
+    script: str = "", *, thumbnail_provider: str = "", tts_cached: bool = False
+) -> dict[str, float]:
     """The cost lines that only exist once a render actually happened.
 
     Split out of `estimate_run_cost` so the render path can persist these *after* the
@@ -126,15 +175,31 @@ def render_cost_lines(script: str = "") -> dict[str, float]:
     ledger has moved on) would overwrite good values with wrong ones.
     """
     chars = len(script or "")
-    tts = 0.0 if local_tts_selected() else (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
+    tts = (
+        0.0
+        if local_tts_selected() or tts_cached
+        else (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
+    )
     return {
         "tts": round(tts, 4),
         "render": round(_rate("COST_RENDER_PER_VIDEO", 0.0), 4),
     }
 
 
-def merge_render_cost(existing: dict[str, Any] | None, script: str = "") -> dict[str, float]:
-    """Fold the render lines into an already-persisted cost dict and re-total it."""
+def merge_render_cost(
+    existing: dict[str, Any] | None,
+    script: str = "",
+    *,
+    thumbnail_provider: str | None = None,
+    tts_cached: bool = False,
+) -> dict[str, float]:
+    """Fold the render lines into an already-persisted cost dict and re-total it.
+
+    `thumbnail_provider` is the backend that actually wrote the image (`flux` /
+    `ideogram` / `recraft` / `pillow`). Omit it to leave a previously stored
+    thumbnail line alone (idempotent TTS-only re-merge). Pillow and missing
+    images meter $0.
+    """
     merged: dict[str, float] = {}
     for key, value in (existing or {}).items():
         if key == "total":
@@ -143,7 +208,9 @@ def merge_render_cost(existing: dict[str, Any] | None, script: str = "") -> dict
             merged[key] = round(float(value), 4)
         except (TypeError, ValueError):
             continue
-    merged.update(render_cost_lines(script))
+    merged.update(render_cost_lines(script, tts_cached=tts_cached))
+    if thumbnail_provider is not None:
+        merged["thumbnail"] = thumbnail_cost(thumbnail_provider)
     merged["total"] = round(sum(v for k, v in merged.items() if k != "total"), 4)
     return merged
 
@@ -211,12 +278,58 @@ _COST_PARTS = (
     ("tts", "tts"),
     ("apify", "apify"),
     ("web_search", "web"),
+    ("thumbnail", "thumb"),
     ("render", "render"),
 )
 
 
+def standard_would_have_billed(
+    script: str = "",
+    *,
+    include_thumbnail: bool = True,
+) -> dict[str, float]:
+    """Counterfactual Standard bill: ElevenLabs TTS + paid thumbnail rates.
+
+    Ignores TTS_PROVIDER so a Free/Piper run can show what the Creator plan
+    would have charged. Does not mutate the persisted cost dict (no double-bill).
+    """
+    chars = len(script or "")
+    tts = (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
+    thumb = thumbnail_cost("flux") if include_thumbnail else 0.0
+    return {
+        "tts": round(tts, 4),
+        "thumbnail": round(thumb, 4),
+        "total": round(tts + thumb, 4),
+    }
+
+
+def format_standard_billed_line(
+    script: str = "",
+    *,
+    include_thumbnail: bool = True,
+) -> str:
+    """Operator dry-run line when this run did not pay ElevenLabs/Flux."""
+    if not (script or "").strip():
+        return ""
+    if not local_tts_selected() and os.getenv("FREE_MODE_STRICT", "").strip().lower() not in (
+        "1",
+        "true",
+        "yes",
+    ):
+        return ""
+    billed = standard_would_have_billed(script, include_thumbnail=include_thumbnail)
+    return (
+        f"Standard would have billed: ${billed['total']:.4f} "
+        f"(tts ${billed['tts']:.4f} · thumb ${billed['thumbnail']:.4f})"
+    )
+
+
 def format_cost_line(
-    cost: dict[str, float] | None, *, llm_by_provider: dict[str, float] | None = None
+    cost: dict[str, float] | None,
+    *,
+    llm_by_provider: dict[str, float] | None = None,
+    llm_by_stage: dict[str, float] | None = None,
+    escaped_free_first_llm: bool | None = None,
 ) -> str:
     """One-line operator summary: total + the non-zero components.
 
@@ -234,13 +347,24 @@ def format_cost_line(
         if float(cost.get(key) or 0.0) <= 0:
             continue
         part = f"{label} ${cost[key]:.4f}"
-        if key == "llm" and llm_by_provider:
-            inner = " · ".join(
-                f"{prov} ${amt:.4f}" if amt > 0 else f"{prov} $0"
-                for prov, amt in sorted(llm_by_provider.items(), key=lambda kv: (-kv[1], kv[0]))
-            )
-            if inner:
-                part += f" [{inner}]"
+        if key == "llm":
+            if llm_by_provider:
+                inner = " · ".join(
+                    f"{prov} ${amt:.4f}" if amt > 0 else f"{prov} $0"
+                    for prov, amt in sorted(llm_by_provider.items(), key=lambda kv: (-kv[1], kv[0]))
+                )
+                if inner:
+                    part += f" [{inner}]"
+            if llm_by_stage:
+                stages = " · ".join(
+                    f"{stg} ${amt:.4f}" if amt > 0 else f"{stg} $0"
+                    for stg, amt in sorted(llm_by_stage.items(), key=lambda kv: (-kv[1], kv[0]))
+                )
+                if stages:
+                    part += f" stages[{stages}]"
         parts.append(part)
     breakdown = f" ({' · '.join(parts)})" if parts else ""
-    return f"Est. run cost: ${total:.4f}{breakdown}"
+    line = f"Est. run cost: ${total:.4f}{breakdown}"
+    if escaped_free_first_llm:
+        line += "  ! escaped free-first LLM"
+    return line

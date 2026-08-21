@@ -61,6 +61,16 @@ def _scopes_from_token_file(path: str) -> list[str]:
         return list(OAUTH_SCOPES_FULL)
 
 
+def live_youtube_forbidden() -> bool:
+    """Suite isolation (audit C9): never open googleapis HTTPS during tests."""
+    return os.getenv("CONTENT_FORBID_LIVE_YOUTUBE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
 def load_credentials(channel_id: str | None = None) -> Credentials | None:
     path = token_path_for_channel(channel_id)
     if not os.path.isfile(path):
@@ -69,6 +79,9 @@ def load_credentials(channel_id: str | None = None) -> Credentials | None:
     scopes = _scopes_from_token_file(path)
     creds = Credentials.from_authorized_user_file(path, scopes)
     if creds.expired and creds.refresh_token:
+        if live_youtube_forbidden():
+            logger.debug("OAuth refresh skipped (live YouTube forbidden)")
+            return None
         try:
             creds.refresh(Request())
             save_credentials(creds, channel_id)
@@ -102,13 +115,19 @@ def save_credentials(creds: Credentials, channel_id: str | None = None) -> str:
 
 
 def get_youtube_service(channel_id: str | None = None):
+    if live_youtube_forbidden():
+        logger.debug("live YouTube client forbidden (C9)")
+        return None
     creds = load_credentials(channel_id)
     if not creds:
         return None
-    return build("youtube", "v3", credentials=creds, cache_discovery=False)
+    return build("youtube", "v3", credentials=creds, cache_discovery=False, static_discovery=True)
 
 
 def get_youtube_analytics_service(channel_id: str | None = None):
+    if live_youtube_forbidden():
+        logger.debug("live YouTube Analytics client forbidden (C9)")
+        return None
     creds = load_credentials(channel_id)
     if not creds:
         return None
@@ -119,7 +138,9 @@ def get_youtube_analytics_service(channel_id: str | None = None):
             resolve_channel_id(channel_id),
         )
         return None
-    return build("youtubeAnalytics", "v2", credentials=creds, cache_discovery=False)
+    return build(
+        "youtubeAnalytics", "v2", credentials=creds, cache_discovery=False, static_discovery=True
+    )
 
 
 def run_interactive_oauth(

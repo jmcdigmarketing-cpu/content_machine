@@ -1,8 +1,14 @@
 # tests/ — isolation rules
 
 Supplement to the root [CLAUDE.md](../CLAUDE.md). Runner is **unittest** (CI:
-`python -m unittest discover -s tests`) — write `unittest.TestCase` classes, not
+`python -m unittest discover -s tests -t .`) — write `unittest.TestCase` classes, not
 pytest fixtures (pytest runs them fine, the reverse isn't true).
+
+`-t .` is required so this package's `__init__.py` is imported. Without it,
+discover treats `tests/` as the top-level dir, loads modules as `test_foo`
+instead of `tests.test_foo`, and never runs the suite-wide store redirect
+(which is what keeps `data/quota_state.json` / `cache_stats.json` /
+`youtube_quota.json` / `signal_cache.json` off-limits).
 
 - **Any test that can touch persisted quota state must isolate the store**: patch
   `quota_state.QUOTA_STATE_FILE` to a temp dir. Poisoning the real

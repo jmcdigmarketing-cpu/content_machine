@@ -11,6 +11,330 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-20 (follow-on 4) — Next 20 after night + evening + wave 3
+
+**Prompt:** complete the next 20 roadmap candidates in pickup/importance order on
+top of the three uncommitted waves, then audit.
+
+**Pickup:** no new "Next 20" list after wave 3. Ranked previously skipped-but-eligible
+items (C9, 68 fixture, 70 diagnostic, 67 report-only) then remaining evening `[S]`,
+morning leftover `[S]`, and afternoon `[S]` for operator safety / suite hygiene.
+Parked: Phase M, volume-gated backtest, $0 TTS *voice judgment* (no auto-flip Piper).
+
+**Skipped:** none of the 20. **67** shipped report-only (no auto-assign). **70**
+shipped as a CUDA readiness probe (no pip install / no kWh meter until CUDA torch
+is actually on). **68** used a synthetic fixture in `tests/fixtures/` (no real
+invoice, no network).
+
+**Shipped:**
+
+1. C9 Google HTTPS leak (99) — skip YouTube warmup in tests; `static_discovery=True`.
+2. Apify monthly true-up (68) — synthetic invoice vs $0.02/run; `ops apify-trueup`.
+3. CUDA / GPU diagnostic (70) — `core/cuda_probe.py`; no install; `ops doctor`.
+4. TTS provider Bayesian report (67) — `ops tts-arms`; never writes experiments.json.
+5. Cap `output/` by GB (77) — `ops artifacts`; dry-run default; `--apply` deletes oldest.
+6. Inauthentic-content hash canary (80) — snapshot-only on reliability; no HTTP.
+7. RPM x cost by domain (84) — `ops economics` domain lines.
+8. Weekly moat backup (85) — dry-run plan; secrets excluded; pg_dump listed not run.
+9. YPP checklist (87) — `ops ypp`; fail-open without metrics.
+10. Per-stage LLM cost — `complete(..., stage=)`; script/brief/title tagged.
+11. Docs metric lint in CI — `tests/test_docs_lint.py` + CI step; relative links.
+12. Stable vault dossier paths — `{run_id}_{slug}.md`; date-prefix clones unlinked.
+13. Audio LUFS — `LUFS_NORMALIZE` opt-in; default ffmpeg command unchanged.
+14. Background clip anti-repeat — in-process deque; `CLIP_MEMORY` file opt-in.
+15. `ops postmortem --run-id` (29) — traces already on disk.
+16. `ops doctor` (30) — free stack + cached feeds + oauth file + quota + CUDA.
+17. Cap discovery workers (41) — `DISCOVERY_MAX_WORKERS` default 8; 0 = unlimited.
+18. Overnight quota-aware (45) — `OVERNIGHT_QUOTA_GATE` opt-in; skip/shrink count.
+19. Disk-space preflight (91) — `DISK_MIN_FREE_GB` opt-in; ASCII `>=`.
+20. Fact-expiry watchdog (55) — vault leftovers; `load_facts` already drops them.
+
+**Audit (same pass):** warmup/live YouTube client forbidden in the suite. Overnight
+quota / disk / LUFS / clip-file / policy fetch stay opt-in so leftover env cannot
+abort tests or write `data/`. Policy canary and fact-expiry do not HTTP from
+`reliability.gather()`. Artifact retention never deletes without `--apply` and
+never walks `data/`. Moat backup never copies `.env` / `config/secrets/` /
+`quota_state.json`. TTS arm report cannot start a lever. Nested tries on doctor
+optional imports. Residual C9 leak: Analytics `HttpError` for `abc123` when
+operator `.env` had `YOUTUBE_ANALYTICS_SYNC` on — `get_youtube_*_service` now
+returns None under `CONTENT_FORBID_LIVE_YOUTUBE` before `load_credentials`,
+OAuth refresh is skipped, competitor-sync API-key `build()` is gated, and the
+suite forces `YOUTUBE_ANALYTICS_SYNC=false`.
+
+**Deferred:** afternoon leftovers (31 file-count retention as a separate job,
+caption skin, schema ratchet, …); remaining `[M]`/`[L]` in 78–89 and 91–140
+except 91/99.
+
+---
+
+## 2026-08-20 (follow-on 3) — Next 10 after night + evening waves
+
+**Prompt:** complete the next 10 roadmap candidates in pickup/importance order on
+top of the two uncommitted waves, then audit.
+
+**Pickup:** no new "Next 10" list after the evening ship. Ranked remaining
+evening leftovers (now including skipped `[M]`s) plus morning/late `[S]` that
+the evening wave deferred. Parked: Phase M, volume-gated backtest, $0 TTS voice
+judgment.
+
+**Skipped:** **67** TTS provider Bayesian arm (would auto-assign Piper; same
+shape as the parked voice judgment). **70** CUDA/electricity (no GPU torch
+install). **68** Apify invoice true-up (no invoice fixture in-repo).
+
+**Shipped:**
+
+1. Operator minutes-per-run (65) — `core/operator_timer.py`. Wall vs `input()`
+   wait; summary line; in-memory only.
+2. Human-presence unattended render (90) — `HUMAN_PRESENCE_HOURS` opt-in;
+   overnight/daily-sync/worker do not stamp; drafts unchanged.
+3. Competitor-sync YouTube-unit cap (88) — RSS free; API fallback capped + one
+   upload reserved. Suite sets both knobs to 0.
+4. Paid-signal outcome attribution (57) — `ops paid-signals`; engaged-rate then
+   composite. Catalog untouched.
+5. Justify remaining Apify (73) — same report; `disable` at n>=5/arm is a
+   recommendation only.
+6. RPM < cost skip slot (63) — `RPM_COST_GATE` opt-in; last 7 monetized uploads;
+   worker defers without consuming a retry.
+7. Channel-go-live trailer/handle/banner (139) — MoneyWise banner passes;
+   handle/trailer still FAIL.
+8. Integration incident ledger — rank count/(1+days); persist on `ops
+   reliability` / `ops incidents`, not inside the signal pool.
+9. `signal_facts` earnings ratchet — symbol/date/days/EPS, not JSON dump.
+10. Competitor-channel health — RSS probe in ops; snapshot-only on reliability;
+    McAfee UC flagged unverified, not auto-replaced.
+
+**Audit (same pass):** heartbeat is a no-op on the default path unless
+`HUMAN_PRESENCE_HOURS` is on (a first-pass `ops.main()` in the suite had written
+`data/operator_heartbeat.json` — deleted, gate-off skip added). Competitor
+health does not HTTP from `reliability.gather()`. Paid-signal report never
+writes `apify_sources.json`. RPM / human-presence stay opt-in. ASCII in gate
+strings. C9 Google HTTPS `ResourceWarning` still present (not this wave).
+
+**Deferred:** 67/70/68 as above; C9 HTTPS ResourceWarning; remaining afternoon
+21–55 `[S]`.
+
+---
+
+## 2026-08-20 (late-night follow-on) — Evening remaining [S] after the night wave
+
+**Prompt:** complete the next 10 roadmap candidates in pickup/importance order on top of
+the uncommitted night wave, then audit.
+
+**Pickup:** no new "Next 10" list was written after the night ship, so remaining evening
+`[S]` items (short-term / cost / honesty / operator safety). Skipped `[M]` 57/63/67/73,
+CUDA 70, operator-parked Phase M / volume-gated backtest / $0 TTS voice judgment.
+Skipped **65** (operator minutes) and **68** (Apify invoice true-up) — lower leverage
+than the TTS/thumbnail cost gates.
+
+**Shipped:**
+
+1. Overnight/unattended render-queue gate (58) — `core/render_gate.py`. Auto-generate +
+   render worker; interactive `main.py` unchanged. Missing grade fail-closes.
+2. YouTube "N uploads left this reset" (59) — `youtube_quota.uploads_remaining`; reliability
+   + startup. Check point stays `apis/youtube_quota.py`.
+3. `ops channel-go-live` (60) — OAuth/SEO/feeds/brand kit/persona. MoneyWise still FAIL on
+   persona. Never reads token contents except via existing oauth helpers.
+4. Metrics-before-next gate (62) — `METRICS_BEFORE_NEXT` opt-in; no yesterday upload = pass.
+5. Free-mode Standard billed dry-run (64) — counterfactual ElevenLabs+thumb; does not
+   mutate persisted cost.
+6. Hard character cap before TTS (75) — refuse, do not clip; default 5000; 0/off disables.
+7. TTS cache by script hash (71) — spoken+provider+voice; sidecar copied; cache hit meters
+   $0. `TTS_CACHE` opt-in (discover does not load `tests/__init__.py`).
+8. Pillow-first thumbnail until ≥ B (74) — missing letter fail-opens; C/D/F skip paid APIs.
+9. Subscription utilization dashboard (69) — reliability Utilization section; Brave has no
+   usage counter yet.
+10. Skip web-search on vault density (72) — distinctive vault facts only (no extra RSS HTTP
+    / cache-stat probes); skip in `register_signals` orchestration.
+
+**Audit fixes in the same pass:** cache-hit TTS line is $0 (no double-bill); nested tries
+on optional reliability imports; no second cache inside `web_search`; governors/gates that
+can abort stay opt-in (`METRICS_BEFORE_NEXT`, `TTS_CACHE`) so leftover `RUN_COST_MODE=free`
+/ `FREE_MODE_STRICT` cannot abort the unit suite, and unittest discover cannot write
+`data/tts_cache`. Render-gate messages stay ASCII (`>=`) so a cp1252 console cannot
+swallow a block and then render anyway.
+
+**Deferred:** 65 operator minutes; 68 Apify invoice true-up; morning leftovers (incident
+ledger, `signal_facts` ratchet, competitor-channel health); 57 paid-signal attribution.
+
+---
+
+## 2026-08-20 (night) — Shipped recommended next 5 + cost/honesty 56/61/66/76 + Qwen3 + oauth coverage
+
+
+**Prompt:** implement the top 10 roadmap candidates in importance order, then audit for optimization, efficiency, and debug quality.
+
+**Shipped:**
+
+1. Pre-run completion gate — `inspect_first_calls` / `guard_before_discovery` / `apply_and_guard`. Free fail-closed (stale Readiness cannot start discovery); Standard warns. `FREE_MODE_STRICT` is the raise switch so a leftover `RUN_COST_MODE=free` cannot abort unit tests.
+2. `youtube/oauth.py` tests + `coverage` extra — temp token files only; `run_interactive_oauth` skipped. `coverage>=7.6.0` in `[dev]`; command recorded under the coverage wave; not a CI % gate.
+3. Pronunciation lexicon — `config/pronunciations.json` on the local TTS path only. Captions/retext keep the caller script. ElevenLabs unchanged.
+4. Allocated vs marginal unit economics — `ops economics` shows both. `COST_TTS_PLAN_USD` / `COST_TTS_PLAN_CHARS`. `cost_meter` marginal rates unchanged.
+5. Numeric/record grounding — `find_ungrounded_numeric` (records/ranks/dates in sports context; purses always). Warn/fail-open; does not change `GROUNDING_GATE`. Round scores like 10-9 are not records (would have fired a premium regen). Run-66 "If Netflix" intact.
+6. Thin-facts abort before TTS — default on, 3 lines + 50% support; missing verifier fail-opens. Interactive prompt / `--force`. Drafts stay saved.
+7. ElevenLabs character-quota governor — `ELEVENLABS_MONTHLY_CHAR_BUDGET` opt-in (empty = off, same shape as Apify). Persist via `quota_governor` only. Trip to Piper or block before ElevenLabs. Tests isolate the store.
+8. Qwen3 in Free TTS readiness — `qwen` in `_LOCAL_TTS_ORDER` when `qwen_tts` + `QWEN_VOICE` are ready; does not load the 1.7B model. Piper still preferred.
+9. Meter Flux / Ideogram / Recraft — `COST_THUMBNAIL_PER_IMAGE` default $0.045. Pillow / no image = $0. TTS-only re-merge leaves a stored thumbnail line alone.
+10. Escaped free-first LLM — usage record + cost line + reliability. Pinned provider never flags. First-hit DeepSeek premium is not an escape.
+
+**Audit fixes in the same pass:** restored `reliability.gather()` (had been swallowed into `_elevenlabs_section`); nested the escaped-flag read so a cost_meter import failure cannot wipe LLM breaker state; tightened fighter-record regex so 10-9/29-28 judging cards do not trigger `GROUNDING_REGEN`; ElevenLabs governor stays opt-in so tests cannot poison `data/quota_state.json`.
+
+**Deferred:** none of 1–10. Phase M, volume-gated backtest, and the $0 TTS voice judgment stay out. Did not pull integration incident ledger, `signal_facts` formatter ratchet, or competitor-channel health.
+
+---
+
+## 2026-08-20 (late) — Next 5 unchanged + 50 any-way candidates (91–140)
+
+**Prompt:** the next 5 roadmap items, plus a final 50 ideas regarding this
+project in any way.
+
+**Not built.** Pickup order is still the evening recommended next 5. Phase M
+stays parked (operator choice). Volume-gated backtest and the $0 TTS voice
+judgment stay out. None of 91–140 restates Next-up, the morning 20, or
+candidates 21–90.
+
+**Recommended next 5** (unchanged):
+
+1. Pre-run completion gate `[S]`
+2. `youtube/oauth.py` tests + `coverage` extra `[S]`
+3. Pronunciation lexicon for local TTS `[M]`
+4. Allocated vs marginal unit economics `[S]`
+5. Numeric/record grounding `[M]`
+
+**50 new candidates (91–140)** grouped on [roadmap.md](roadmap.md):
+
+| Group | Items | Through-line |
+|---|---|---|
+| Machine / Windows | 91–100 | Preflights, secrets, traces, supply chain, the C9 HTTPS leak |
+| YouTube surface | 101–112 | Caption tracks, category, playlists, unlisted review — still YouTube-only |
+| Content / learning | 113–124 | Prediction ledger, mailbag, PPV blackout, stock watermarks, SSML numbers |
+| Legal / policy | 125–132 | Disclaimers, trademark, right-of-publicity, demonetization, incident runbook |
+| Operator product | 133–140 | `.ics`, CSV economics, vault wiki-links, long-form preset, quota-increase playbook |
+
+**Rejected this session:** implementing the five; restoring Phase M; treating
+clip-from-source / avatar / Instagram as "next".
+
+---
+
+## 2026-08-20 (evening) — Next 5 pickup order + 35 cost/viability/success candidates
+
+**Prompt:** the next 5 roadmap items, plus 35 more ideas, all around *future
+viability*, *short-term success*, and *real-world cost*.
+
+**Not built.** Pickup order only; Phase M, volume-gated backtest, and the $0 TTS
+voice judgment stay out. None of 56–90 restates Next-up, the morning 20, or
+candidates 21–55.
+
+**Recommended next 5** (existing open lines, sequenced for those three axes):
+
+1. Pre-run completion gate `[S]` — short-term (run-70 class).
+2. `youtube/oauth.py` tests + `coverage` extra `[S]` — short-term (paused
+   coverage wave, last sequenced item).
+3. Pronunciation lexicon for local TTS `[M]` — cost (unblocks the $0.25–0.31
+   TTS line on *ears*, captions already being fixed).
+4. Allocated vs marginal unit economics `[S]` — cost (~$1 allocated vs $0.31
+   metered on the Creator plan).
+5. Numeric/record grounding `[M]` — viability (invented ranks/dates/purses
+   still pass the name-gate; 2026-policy event on a UFC short).
+
+**35 new candidates (56–90)** grouped on [roadmap.md](roadmap.md):
+
+| Axis | Items | Through-line |
+|---|---|---|
+| Short-term success | 56–65 | Next publish happens and earns a measured data point (quota, thin-facts abort, MoneyWise go-live, operator minutes) |
+| Real-world cost | 66–77 | Meter the true bill (Flux, Apify invoice, GPU power, TTS cache) and stop paying for drafts that will fail |
+| Future viability | 78–90 | Stay a media OS: intelligence-report SKU, holdouts, policy canary, non-ad spike with a kill criterion, backup the dataset |
+
+**Rejected this session:** implementing the five; restoring Phase M; treating
+clip-from-source / avatar / Instagram as "next" (they fail the cost and
+viability tests until volume and authenticity are earned).
+
+**Numbers this ranking used (already measured, not assumed):** TTS is ~91% of a
+rendered run ($0.25–0.31 metered, ~$1 allocated at 21/90 Creator-plan
+utilisation); Apify remaining paid tier is two actors; YouTube upload ≈ 1,600
+units of 10k/day; recommenders still sit at 10 measured vs a 15-sample gate.
+
+---
+
+## 2026-08-20 — Next 5 shipped + 35 more candidates (no Phase M)
+
+**Prompt:** close the five sequenced build items from the afternoon plan, then
+append 35 new roadmap candidates. Phase M, volume-gated backtest, and $0 TTS
+voice judgment stay out.
+
+**Built (uncommitted on `fix/live-run-69-70`)**
+
+1. **Run-70 probes.** `llm_router.ollama_probe()` is the single `/api/tags`
+   helper. `_ollama_ready` already delegated; `ops free-doctor` now says **pull**
+   when the daemon is up and empty (not "server unreachable"), **serve** when
+   down, and names OpenRouter as throttled fallback. RUF012 gone
+   (`tests/test_run69_fixes.py`).
+2. **`process_one` + `_defer_for_quota` tests** — quota-exhausted claims only
+   render jobs; a deferral does not consume a retry
+   (`tests/test_job_worker_process.py`). No product change.
+3. **`build_render_ffmpeg_command` assertions** — amix under VO, VO-only
+   identity, `-t`, escaped subtitles, music-bed failure retries VO-only.
+   `youtube/oauth.py` and the `coverage` extra stay for a follow-up.
+4. **Semantic variation.** Stdlib content-word cosine folded into
+   `_variation_check` (`AUTHENTICITY_SEMANTIC`, default-on). Paraphrase of a
+   TapIn-shaped script fails; unrelated topic passes; exact duplicate still
+   fails lexical first. Warn-never-block. No persisted embeddings.
+5. **Router vision.** `complete` accepts OpenAI-style image parts; Anthropic /
+   DeepSeek / Ollama / Groq / Doubao are skipped, not flattened. Thumbnail
+   scorer uses the extract tier; Free mode heuristic + warning.
+   `core/llm_client.py` deleted.
+
+**Docs:** ticked the five on [roadmap.md](roadmap.md). Candidates **21–55**
+appended (aesthetics, operator surface, efficiency, long-term). Architecture
+table and decisions §14 no longer claim a `llm_client` holdout.
+
+**Still parked:** Phase M; `youtube/oauth.py` tests; `coverage` extra; Pillar 2
+multimodal review; overnight still cannot take facts; CUDA torch (`2.8.0+cpu`
+on a 4070 Ti).
+
+---
+
+## 2026-08-20 — Post-merge orientation, 20 ideas (no Phase M), grand audit
+
+**Prompt:** refamiliarize after committed + uncommitted work; brainstorm 20 more
+roadmap ideas that are not multi-platform; then a grand audit.
+
+**Where we actually are**
+
+- **Branch:** `fix/live-run-69-70` at `6a6ec96` (same commit as `main` /
+  `origin/main`). PR #34 merged 2026-08-19. CI green on trunk.
+- **Committed since the 2026-08-15 audit:** caption retext; fail-open visibility
+  (S110/S112); alembic logging fix; intro-step never loses the render; coverage
+  wave paused after that; orphan-doc harvest; stale PRs #26–#32 closed; handoff
+  rewritten as merged.
+- **Uncommitted (important):** `core/run_mode.py` + `tests/test_run69_fixes.py`.
+  Live run 70 (Cejudo, Free) died after 71s of discovery because Free mode printed
+  `llm=ollama OK (local $0)` when the daemon answered `/api/tags` with **zero
+  models pulled**. `_ollama_ready` was a weaker copy of `llm_router.ollama_installed_models`.
+  The patch delegates. **Do not commit as-is:** (1) `ops free-doctor` still prints
+  "server unreachable" whenever `OLLAMA_MODEL` is set and not ready — the run-70
+  case is "pull a model"; (2) the new test's `ENV = {...}` trips **RUF012**.
+
+**Audit headline (see [audit.md](audit.md) 2026-08-20 + canvas):** health held
+(1,433 tests committed / 1,440 with wip, 62.7k LOC, mypy 123/73 unchanged,
+silent `pass` still 0). New debt is the run-70 class again (lying readiness),
+thumbnail vision still silently dead on `llm_client`, overnight still cannot take
+facts, and the roadmap contradicts itself in three shipped items.
+
+**20 ideas added as not-committed candidates** on [roadmap.md](roadmap.md).
+Phase M excluded. None restates Next-up (no clip-from-source, avatar, MoneyWise
+depth, router vision, Instagram). Highest-leverage three if picking:
+
+1. Finish the run-70 branch (free-doctor diagnosis + ClassVar) then commit.
+2. Semantic near-duplicate authenticity — lexical `SequenceMatcher` is the live
+   hole in the 2026 compliance moat.
+3. Pronunciation lexicon + `CAPTION_ALIGN` default-on — what actually makes the
+   $0 TTS flip survivable, now that caption *text* is fixed.
+
+**Rejected this session:** implementing the 20; merging
+`origin/claude/docs-optimization-review-a4l104` (old base, same shape as #27).
+
+---
+
 ## 2026-08-14/15 — Six roadmap waves: the silent-failure session
 
 **Prompt:** a sequence of *"next roadmap task"* passes, punctuated by two pasted live-run

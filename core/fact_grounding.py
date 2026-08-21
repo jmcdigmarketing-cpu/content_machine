@@ -41,6 +41,49 @@ _HYPHEN_NAME = re.compile(r"\b[A-Z][a-z]+(?:-[A-Z][a-z]+)+\b")
 # Explicit version / season / patch specifics ("Season 8.5", "Patch 1.2").
 _VERSION = re.compile(r"(?:Season|Patch|Version|Chapter|Act|Update)\s+[0-9][\w.]*", re.IGNORECASE)
 
+# Numeric / record claims the name-gate cannot see. Conservative: sports-context
+# for records/ranks/dates (avoids "August 27" in the run-66 Netflix sentence);
+# $ purses are distinctive enough to always check.
+# Fighter records only — "is 24-3", "record of 15-0". Bare "10-9" / "29-28"
+# round scores must not fire (they would trigger a premium grounding regen).
+_RECORD = re.compile(
+    r"\b(?:is|now|went|sits|stands|moves(?:\s+to)?|record(?:ed)?(?:\s+of)?)\s+"
+    r"(\d{1,2}-\d{1,2}(?:-\d{1,2})?)\b",
+    re.IGNORECASE,
+)
+_RANK = re.compile(
+    r"\b(?:ranked\s+#?\d{1,2}|rank(?:ed)?\s+\d{1,2}|No\.?\s+\d{1,2})\b",
+    re.IGNORECASE,
+)
+_PURSE = re.compile(
+    r"\$[\d,]+(?:\.\d+)?(?:\s*(?:million|billion|thousand|k|m))?\b",
+    re.IGNORECASE,
+)
+# Context for the NUMERIC gate only. Deliberately NOT `_SPORTS_CONTEXT_RE`: that one is
+# shared with the mononym rule, so widening it would change entity flagging (and every
+# report-card grounding score) far beyond this feature. It also lists only leagues, NBA
+# teams and transaction verbs — a UFC or boxing script that never says "UFC" scored
+# False, so invented records/ranks/dates sailed through on exactly the content this gate
+# exists for (live run 70's topic was Misfits *Boxing*).
+_NUMERIC_SPORTS_CONTEXT_RE = re.compile(
+    r"\b(?:nba|nfl|mlb|nhl|ufc|wnba|mma|ufc\d+|bellator|pfl|one championship|"
+    r"box(?:ing|er)|misfits|fight(?:s|er|ers|ing|night)?|bout|octagon|knockout|ko|tko|"
+    r"submission|decision|split[- ]decision|unanimous|"
+    r"champ(?:ion|ionship)?|title|belt|contender|division|rematch|undercard|main event|"
+    r"flyweight|bantamweight|featherweight|lightweight|welterweight|middleweight|"
+    r"heavyweight|cruiserweight|"
+    r"traded|trade|trades|signing|signed|draft|offseason|playoffs|playoff|"
+    r"finals|roster|free agency|purse|payout|"
+    r"lakers|celtics|knicks|bucks|heat|spurs|raptors|warriors|nets|76ers|sixers)\b",
+    re.I,
+)
+_DATE_WITH_YEAR = re.compile(
+    r"\b(?:January|February|March|April|May|June|July|August|September|October|"
+    r"November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+"
+    r"\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\b",
+    re.IGNORECASE,
+)
+
 # Common words that, alone, never make a phrase a "specific" worth verifying.
 # Used both to drop all-common phrases and to pick out distinctive tokens.
 _COMMON_WORDS = {
@@ -448,6 +491,42 @@ def mentions(text: str, entity: str) -> bool:
     return bool(tokens) and all(_token_in_grounding(t, low) for t in tokens)
 
 
+def find_ungrounded_numeric(script: str, grounding_text: str) -> list[str]:
+    """Flag unmatched records, ranks, purses, and dated events.
+
+    Warn-only / fail-open: callers merge into the existing ungrounded list. Does
+    not block unless GROUNDING_GATE already would (claim verifier, not this list).
+    """
+    text = script or ""
+    grounding = (grounding_text or "").lower().replace(",", "")
+    sports = bool(_NUMERIC_SPORTS_CONTEXT_RE.search(text))
+    found: list[str] = []
+    seen: set[str] = set()
+
+    def _consider(span: str, *, require_sports: bool) -> None:
+        if require_sports and not sports:
+            return
+        key = span.lower()
+        if key in seen:
+            return
+        norm = span.lower().replace(",", "")
+        if norm in grounding or span.lower() in (grounding_text or "").lower():
+            return
+        seen.add(key)
+        found.append(span)
+
+    if sports:
+        for match in _RECORD.finditer(text):
+            _consider(match.group(1), require_sports=True)
+        for match in _RANK.finditer(text):
+            _consider(match.group(0), require_sports=True)
+        for match in _DATE_WITH_YEAR.finditer(text):
+            _consider(match.group(0), require_sports=True)
+    for match in _PURSE.finditer(text):
+        _consider(match.group(0), require_sports=False)
+    return found
+
+
 def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
     """
     Entities named in `script` whose distinctive tokens don't all appear in
@@ -464,4 +543,5 @@ def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
         if all(_token_in_grounding(tok, grounding) for tok in tokens):
             continue  # every distinctive token is backed by the facts
         ungrounded.append(entity)
+    ungrounded.extend(find_ungrounded_numeric(script, grounding_text))
     return ungrounded

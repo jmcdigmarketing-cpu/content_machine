@@ -56,4 +56,6 @@ jobs:
       - name: Install dependencies
         run: pip install -e .
       - name: Run unit tests
-        run: python -m unittest discover -s tests -v
+        run: python -m unittest discover -s tests -t . -v
+      - name: Docs metric lint
+        run: python -m unittest tests.test_docs_lint

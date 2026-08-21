@@ -136,6 +136,29 @@ def _process_upload(job) -> None:
     payload = json.loads(job.payload_json or "{}")
     channel_id = resolve_channel_id(job.channel_id)
 
+    try:
+        from core.rpm_cost_gate import next_retry_utc, rpm_cost_gate_reason
+
+        rpm_blocked = rpm_cost_gate_reason(channel_id)
+    except Exception as exc:
+        logger.debug("rpm-cost check skipped: %s", exc)
+        rpm_blocked = None
+    if rpm_blocked:
+        repo = get_job_repository()
+        retry_at = next_retry_utc()
+        repo.update(
+            job.id,
+            {
+                "status": JOB_PENDING,
+                "last_error": rpm_blocked[:500],
+                "scheduled_at": retry_at,
+                "attempts": max(0, (job.attempts or 1) - 1),
+            },
+        )
+        logger.warning("Upload job %s deferred: %s", job.id, rpm_blocked)
+        print(rpm_blocked)
+        return
+
     request = PublishRequest(
         file_path=payload.get("file_path", ""),
         title=payload.get("title", ""),
@@ -162,6 +185,33 @@ def _process_render(job) -> None:
     topic = payload.get("topic", "")
     script = payload.get("script", "")
     channel_id = resolve_channel_id(job.channel_id)
+
+    blocked = None
+    try:
+        from core.render_gate import block_reason_for_run
+
+        blocked = block_reason_for_run(job.content_run_id)
+    except Exception as exc:
+        logger.debug("render-gate check skipped: %s", exc)
+        blocked = None
+    if blocked:
+        repo.update(job.id, {"status": JOB_FAILED, "last_error": blocked[:500]})
+        logger.warning("Render job %s skipped: %s", job.id, blocked)
+        print(blocked)
+        return
+
+    try:
+        from core.human_presence import unattended_render_block_reason as human_block
+
+        blocked = human_block()
+    except Exception as exc:
+        logger.debug("human-presence check skipped: %s", exc)
+        blocked = None
+    if blocked:
+        repo.update(job.id, {"status": JOB_FAILED, "last_error": blocked[:500]})
+        logger.warning("Render job %s skipped: %s", job.id, blocked)
+        print(blocked)
+        return
 
     try:
         mp3_path, mp4_path, _thumb = run_media_only(

@@ -166,6 +166,8 @@ class TestRunDossiers(VaultCase):
             self.assertIsNotNone(path)
             body = Path(path).read_text(encoding="utf-8")
             self.assertIn("_runs", str(path))
+            self.assertIn("5_", Path(path).name)
+            self.assertNotRegex(Path(path).name, r"^\d{4}-\d{2}-\d{2}_")
             self.assertIn("Topuria", body)
             self.assertIn("tags: [run, machine]", body)
             # A dossier is a record, not a fact — it must not surface via load_facts.
@@ -175,6 +177,27 @@ class TestRunDossiers(VaultCase):
 
     def test_write_dossier_noop_without_run(self):
         self.assertIsNone(vault_dossiers.write_run_dossier(None))
+
+    def test_refresh_same_run_does_not_clone_path(self):
+        record = _run_record(5)
+        repo = MagicMock()
+        repo.get.return_value = record
+        publish_repo = MagicMock()
+        publish_repo.list_uploaded_for_channel.return_value = []
+        with (
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+            ),
+            patch(
+                "storage.repositories.publish_log.get_publish_log_repository",
+                return_value=publish_repo,
+            ),
+        ):
+            a = vault_dossiers.write_run_dossier(5)
+            b = vault_dossiers.write_run_dossier(5)
+        self.assertEqual(a, b)
+        runs = list((self.vault / "tapin" / "_runs").glob("*.md"))
+        self.assertEqual(len(runs), 1)
 
     def test_refresh_dossiers_counts_written(self):
         runs = [_run_record(5), _run_record(6)]

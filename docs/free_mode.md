@@ -36,6 +36,11 @@ Check what's ready any time:
 py -m scripts.ops free-doctor
 ```
 
+**Run 70:** a 200 from `ollama /api/tags` is not "ready". If the daemon is up with
+**nothing pulled**, free-doctor says `ollama pull <model>` — not `ollama serve`.
+If the daemon is down it says **serve**. If `OPENROUTER_API_KEY` is set it names
+the `:free` tier as a throttled fallback (not truly unlimited $0).
+
 Headless: `RUN_COST_MODE=free py main.py` selects Free without the prompt.
 
 ---

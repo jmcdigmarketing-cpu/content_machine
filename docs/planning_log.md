@@ -11,6 +11,113 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-20 (late-night brainstorm) — 180 ideas (UI / app / aesthetics / sibling software)
+
+**Prompt:** brainstorm **180 unique** ideas after the 20 Aug waves on `main`
+(operator: PR #35), persist them, and leave a readable ranking. Counts must
+hit exactly: **5 massive / 25 larger / 50 moderate / 100 small.** Cover
+future viability, short-term success, and real-world cost (the house ranking
+used all cycle) **and** more aesthetics/UI, application development / getting
+out of the terminal, and expansion of this project **or different software**
+beside it. Honest about YouTube-only and Phase M parked. Planning only — no
+features, no commit, no push, no `.env` / secrets / `data/` / `output/`.
+
+**Constraints honored:** skip anything already `[x]`; do not restate shipped
+items (pre-run gate through F3 keyhash clear, including the 20 Aug night /
+evening / follow-on waves); skip Next-up duplicates and candidates **1–140**
+unless reframed as a *new product* with a new number; Phase M, the
+volume-gated recommender backtest, and the $0 TTS *voice judgment* may appear
+only as massive/larger labeled **PARKED**. TTS remains ~91% of a rendered
+run; YouTube upload ≈ 1,600/10k units; remaining paid Apify is
+`tiktok_trends` + `youtube_competitors`; Windows/PowerShell; unittest; no
+second signal cache; breakers via `quota_governor` only.
+
+**How ranked**
+
+1. **Did not overwrite** the 2026-08-20 evening **Recommended next 5** — those
+   five are already marked **shipped** (night wave). A new **Brainstorm next-5
+   (UI/app)** sits beside them so the house ranking stays the historical
+   record.
+2. **House axes still bind:** future viability, short-term success, real-world
+   cost. This pass *covers* them; it does not pretend the CLI cost/honesty
+   work is unfinished.
+3. **Operator themes this prompt asked to cover** (not 100% one theme):
+   aesthetics/UI, leaving the terminal (desktop, web, tray, canvas, operator
+   console), expansion **or sibling software**. Massive ideas are new product
+   surfaces / years of work; small ideas are hours / a PR.
+4. **Short-term UI/app pickup** is five *small/moderate* items that help the
+   next publish (see the toast, leave a doomed run unstarted, review without
+   scrolling `main.py`) **without** restarting Phase M.
+5. PARKED items are labeled in-title. Sibling apps are called out as *not
+   this CLI*.
+
+**Lists:** [roadmap.md](roadmap.md) **Candidates 141–320 (2026-08-20 late-night
+brainstorm)** — Massive 141–145 `[XL]`, Larger 146–170 `[L]`, Moderate
+171–220 `[M]`, Small 221–320 `[S]`. **Brainstorm next-5 (UI/app)** is under
+Next up, below the shipped evening five.
+
+**Brainstorm next-5 (UI/app)** — small/moderate, short-term, no Phase M:
+
+1. **221** Windows toast when ffmpeg finishes `[S]`
+2. **222** System-tray quota chip (uploads-left + ElevenLabs chars + Apify
+   breaker) `[S]`
+3. **223** `ops reliability --html` themed snapshot `[S]`
+4. **224** Thumbnail lightbox for the last Pillow thumb `[S]`
+5. **171** Last-run review booth (localhost play / grade / approve) `[M]`
+
+**The 5 massive (full)**
+
+1. **141 — Content OS Desktop (local-first operator console)** `[XL]`
+   The operator's bottleneck is no longer a missing governor; it is living in
+   PowerShell. A Tauri or WinUI shell over existing `core/` (discovery,
+   review, job queue, publish, reliability, economics) is years of UX, a11y,
+   packaging, and Windows integration. Python stays the engine: same
+   `make_signal()` shape, same `quota_governor` façade, no second signal
+   cache. This is different software that *hosts* Content Machine, not a
+   prettier `main.py`.
+
+2. **142 — Shorts Visual Studio (aesthetics as a product)** `[XL]`
+   Look today is a stock loop, Pillow/Flux thumbs, burned captions, and ANSI
+   `ui_theme` skins. A sibling design app — type, motion, brand kits,
+   thumbnail composition, caption choreography, shared design tokens with
+   any future GUI — is a years-long product sitting *beside* the CLI.
+   Distinct from candidates 21–28 (JSON skins, PIL checkers, one Ken Burns
+   beat): those are flags; this is a studio.
+
+3. **143 — Portfolio Intelligence Web OS** `[XL]`
+   Vision v3 ("operate media businesses"): multi-channel margin, opportunity
+   scanner, channel launch, holdouts, YPP. Honest: operating_plan still says
+   **don't go SaaS** until the YouTube-only data moat is real (~10 measured
+   vs a 15-sample recommender gate). This is the 12-month architecture as a
+   product surface, not a CLI dashboard restyle, and it stays YouTube-only
+   until Phase M is unparked.
+
+4. **144 — PARKED — Distribution Sidecar (TikTok / Reels)** `[XL]`
+   Phase M as *different software* that consumes an already-rendered 9:16 —
+   never as Content Machine feature flags, never as the next pickup. Live
+   constraint remains YouTube Data API (upload ≈ 1,600 of 10k/day). Parked
+   by operator choice; listed so the idea isn't lost and so it cannot
+   masquerade as a small YouTube tweak.
+
+5. **145 — Moat Suite: Vault Companion + Clip Librarian + Cost Tower** `[XL]`
+   The dataset *is* the company (operating_plan §7). Three sibling apps —
+   facts/playbooks/dossiers with tier/expiry UX; licensed clip memory with
+   anti-repeat and performance; spend control for TTS (~91% of a rendered
+   run), the two remaining paid Apify actors, and YouTube units — that
+   outlive any one renderer. Not this CLI; they read traces, vault, and
+   `quota_governor.snapshot()` only.
+
+**Rejected this session:** implementing any of the 180; restoring Phase M as
+a near-term YouTube checkbox; auto-flipping Piper; treating clip-from-source /
+avatar / Instagram figures as "next"; rewriting July docs; merging
+`docs-optimization` branches; touching `.env` / secrets / `data/` / `output/`.
+No commit.
+
+**Canvas:** `brainstorm-141-320-ui-app.canvas.tsx` in the Cursor canvases
+folder for this workspace.
+
+---
+
 ## 2026-08-20 (follow-on 4) — Next 20 after night + evening + wave 3
 
 **Prompt:** complete the next 20 roadmap candidates in pickup/importance order on

@@ -73,6 +73,19 @@ class TestOpsHtmlAndHelpers(unittest.TestCase):
                 self.assertEqual(ops.cmd_grade(args), 0)
             self.assertTrue(any(name.endswith(".html") for name in os.listdir(tmp)))
 
+    def test_intelligence_report_requires_topic(self):
+        args = argparse.Namespace(topic="", channel="tapin", sku=False, no_brief=False)
+        self.assertEqual(ops.cmd_intelligence_report(args), 1)
+
+    def test_tray_passes_channel_to_run_tray(self):
+        args = argparse.Namespace(
+            channel="moneywise", stay=False, open_output=False, doctor_html=False
+        )
+        with patch("core.win_notify.run_tray", return_value=0) as tray:
+            self.assertEqual(ops.cmd_tray(args), 0)
+        tray.assert_called_once()
+        self.assertEqual(tray.call_args.kwargs.get("channel_id"), "moneywise")
+
 
 if __name__ == "__main__":
     unittest.main()

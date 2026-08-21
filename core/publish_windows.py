@@ -17,6 +17,12 @@ from core.logging import get_logger
 logger = get_logger("core.publish_windows")
 
 _UFC_TOPIC = re.compile(r"\b(ufc|mma|ppv|fight night)\b", re.IGNORECASE)
+# EA UFC 1-5 / Undisputed — a TapIn *game* topic, not a live card. Must not
+# inherit Saturday PPV blackout or the Pexels "ufc" -> "mma" rewrite.
+_UFC_GAME = re.compile(
+    r"\b(?:ea sports\s+)?ufc\s*[1-5]\b|\bufc undisputed\b|\bea sports ufc\b",
+    re.IGNORECASE,
+)
 
 _DEFAULT_PPV = {
     "weekday": 5,  # Saturday (Mon=0)
@@ -111,7 +117,14 @@ def _clear_after(
     return local.replace(hour=end_hour, minute=0, second=0, microsecond=0)
 
 
+def is_ufc_videogame_topic(topic: str = "") -> bool:
+    """True for EA UFC / Undisputed titles — not a live-card topic."""
+    return bool(_UFC_GAME.search(topic or ""))
+
+
 def is_ufc_topic(topic: str = "", domain: str = "") -> bool:
+    if is_ufc_videogame_topic(topic):
+        return False
     if (domain or "").strip().lower() in ("ufc", "mma"):
         return True
     return bool(_UFC_TOPIC.search(topic or ""))
@@ -262,10 +275,18 @@ def adjust_publish_at(
     target = going_public_at(publish_at, privacy=privacy, unlisted_review=unlisted_review, now=now)
     if target is None:
         return publish_at, None
-    why = window_reason(channel_id=channel_id, topic=topic, domain=domain, when=target)
-    if not why:
+    reasons: list[str] = []
+    current = target
+    for _ in range(4):
+        why = window_reason(channel_id=channel_id, topic=topic, domain=domain, when=current)
+        if not why:
+            break
+        if why not in reasons:
+            reasons.append(why)
+        clear = next_clear_utc(channel_id=channel_id, topic=topic, domain=domain, when=current)
+        if clear is None or clear <= current:
+            break
+        current = clear
+    if not reasons or current == target:
         return publish_at, None
-    clear = next_clear_utc(channel_id=channel_id, topic=topic, domain=domain, when=target)
-    if clear is None:
-        return publish_at, None
-    return clear, why
+    return current, "; ".join(reasons)

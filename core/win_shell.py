@@ -17,6 +17,10 @@ logger = get_logger("core.win_shell")
 SHORTCUT_NAME = "Content OS.lnk"
 
 
+def _ps_single_quote(text: str) -> str:
+    return str(text).replace("'", "''")
+
+
 def last_trace_file(channel_id: str | None = None) -> str | None:
     """Newest run-trace JSON on disk (data/traces/<id>.json)."""
     try:
@@ -78,6 +82,8 @@ def reveal_in_explorer(path: str | None) -> bool:
             ["explorer", f"/select,{abs_path}"],
             check=False,
             timeout=15,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         return True
     except Exception as exc:
@@ -164,16 +170,16 @@ def install_start_menu_shortcut() -> str:
         with open(dest, "w", encoding="utf-8") as f:
             f.write(f"{target} {script}\n")
         return dest
-    work = ROOT_DIR.replace("\\", "\\\\")
-    script_esc = script.replace("\\", "\\\\")
-    target_esc = target.replace("\\", "\\\\")
-    dest_esc = dest.replace("\\", "\\\\")
+    dest_q = _ps_single_quote(dest)
+    target_q = _ps_single_quote(target)
+    script_q = _ps_single_quote(script)
+    work_q = _ps_single_quote(ROOT_DIR)
     ps = (
         "$s = New-Object -ComObject WScript.Shell; "
-        f"$lnk = $s.CreateShortcut('{dest_esc}'); "
-        f"$lnk.TargetPath = '{target_esc}'; "
-        f"$lnk.Arguments = '\"{script_esc}\"'; "
-        f"$lnk.WorkingDirectory = '{work}'; "
+        f"$lnk = $s.CreateShortcut('{dest_q}'); "
+        f"$lnk.TargetPath = '{target_q}'; "
+        f"$lnk.Arguments = '\"{script_q}\"'; "
+        f"$lnk.WorkingDirectory = '{work_q}'; "
         "$lnk.Description = 'Content OS operator (no console flash)'; "
         "$lnk.Save()"
     )
@@ -182,6 +188,8 @@ def install_start_menu_shortcut() -> str:
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=20,
         check=False,
         creationflags=creation,

@@ -103,7 +103,7 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
 def render(data: dict[str, Any] | None = None, *, channel_id: str = "tapin") -> str:
     data = data or gather(channel_id)
     lines = [
-        f"ops secrets-doctor — {data.get('channel_id') or channel_id}",
+        f"ops secrets-doctor - {data.get('channel_id') or channel_id}",
         "=" * 48,
         (
             f"  env keys: {data.get('present', 0)} present, "

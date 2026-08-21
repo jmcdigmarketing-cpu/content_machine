@@ -925,10 +925,6 @@ def generate_content_package(
             script, verification, corpus.factual_text, topic, clean_key_facts
         )
 
-    script, trimmed_n = trim_overlength(script, max_words=max_words, min_words=min_words)
-    if trimmed_n:
-        logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
-
     try:
         from core.odds_language import apply_odds_language
 
@@ -937,6 +933,22 @@ def generate_content_package(
             logger.info("%s", note)
     except Exception as exc:
         logger.debug("odds language skipped: %s", exc)
+
+    tts_cap = None
+    try:
+        from core.tts_char_cap import max_chars as tts_max
+
+        tts_cap = tts_max()
+    except Exception as exc:
+        logger.debug("tts cap for trim skipped: %s", exc)
+
+    # Odds rewrite can add words ("will win" -> "is favored to win"); trim after
+    # that so a post-trim cap check cannot refuse a script we just made fit.
+    script, trimmed_n = trim_overlength(
+        script, max_words=max_words, min_words=min_words, max_chars=tts_cap
+    )
+    if trimmed_n:
+        logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
 
     from core.title_generator import generate_title
 

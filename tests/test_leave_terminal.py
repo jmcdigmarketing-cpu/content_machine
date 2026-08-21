@@ -31,9 +31,11 @@ class TestHtmlReport(unittest.TestCase):
             self.assertIn("Content OS", text)
 
     def test_ascii_safe_strips_emoji_and_dashes(self):
-        cleaned = html_report.ascii_safe("tts $0.31 \u2014 91% \U0001f525")
+        cleaned = html_report.ascii_safe("tts $0.31 \u2014 91% \U0001f525 \u2265 B")
         self.assertIn("tts $0.31 - 91%", cleaned)
+        self.assertIn(">= B", cleaned)
         self.assertNotIn("\u2014", cleaned)
+        self.assertNotIn("\u2265", cleaned)
         self.assertTrue(all(ord(c) < 128 for c in cleaned))
 
 
@@ -150,6 +152,10 @@ class TestFileLock(unittest.TestCase):
         self.assertEqual(file_lock.retry_locked(flaky, attempts=5, delay=0.0), "ok")
         self.assertEqual(n["i"], 3)
 
+    def test_acl_permissionerror_is_not_a_lock(self):
+        self.assertFalse(file_lock.is_lock_error(PermissionError("ACL denied")))
+        self.assertFalse(file_lock.is_lock_error(None, "Permission denied: codec"))
+
 
 class TestScriptTrim(unittest.TestCase):
     def test_drops_padding_not_hook(self):
@@ -175,6 +181,18 @@ class TestScriptTrim(unittest.TestCase):
             out, removed = trim_overlength(script, max_words=2, min_words=1)
         self.assertEqual(removed, 0)
         self.assertEqual(out, script)
+
+    def test_max_chars_drops_padding_not_hook(self):
+        hook = "Topuria walks in as champion."
+        pad = "Anyway filler. In conclusion more filler. Basically yes."
+        script = hook + " " + pad
+        with patch.dict(os.environ, {"SCRIPT_TRIM": "true"}):
+            out, removed = trim_overlength(
+                script, max_words=500, min_words=3, max_chars=len(hook) + 5
+            )
+        self.assertGreater(removed, 0)
+        self.assertIn("Topuria", out)
+        self.assertNotIn("Anyway", out)
 
 
 class TestPublishBlockers(unittest.TestCase):
@@ -224,6 +242,15 @@ class TestBoothAndLightbox(unittest.TestCase):
         self.assertIn("Reject", html)
         self.assertIn("91%", html)
 
+    def test_booth_http_src_is_relative(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            mp4 = os.path.join(tmp, "clip.mp4")
+            with open(mp4, "wb") as fh:
+                fh.write(b"x")
+            html = review_booth.booth_html(mp4_path=mp4, mp4_href="booth.mp4", run_id=7)
+        self.assertIn("src='booth.mp4'", html)
+        self.assertNotIn("file://", html)
+
     def test_tts_share_line(self):
         line = review_booth.tts_share_line(0.31, 0.34)
         self.assertIn("tts $0.31", line)
@@ -236,10 +263,6 @@ class TestBoothAndLightbox(unittest.TestCase):
                     path = review_booth.write_booth("tapin", open_browser=False)
             self.assertTrue(path.endswith("booth.html"))
             self.assertTrue(os.path.isfile(path))
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestToastQuotingIsSafe(unittest.TestCase):
@@ -287,3 +310,7 @@ class TestToastQuotingIsSafe(unittest.TestCase):
             0,
             "an unescaped quote would terminate the PowerShell string: " + payload,
         )
+
+
+if __name__ == "__main__":
+    unittest.main()

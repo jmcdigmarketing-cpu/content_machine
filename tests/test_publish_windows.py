@@ -29,6 +29,8 @@ class TestUfcPpvWindow(unittest.TestCase):
         self.assertTrue(is_ufc_topic("UFC 319 main card", "gaming"))
         self.assertTrue(is_ufc_topic("fight night", "ufc"))
         self.assertFalse(is_ufc_topic("GTA 6 leaks", "gaming"))
+        self.assertFalse(is_ufc_topic("UFC 5 career mode", "gaming"))
+        self.assertFalse(is_ufc_topic("EA Sports UFC 5", "ufc"))
 
     def test_saturday_late_blocks_ufc_only(self):
         sat = datetime(2026, 8, 22, 22, 0, tzinfo=ET)
@@ -80,6 +82,28 @@ class TestAdjustPublishAt(unittest.TestCase):
         self.assertIsNotNone(bumped)
         self.assertGreater(bumped, sat)
 
+    def test_ppv_clear_does_not_land_in_quiet_hours(self):
+        sat = datetime(2026, 8, 22, 22, 0, tzinfo=ET)
+        ppv = {"weekday": 5, "start_hour": 21, "end_hour": 2, "timezone": "America/New_York"}
+        quiet = {"start_hour": 1, "end_hour": 8, "timezone": "America/New_York"}
+        with patch.dict(os.environ, {"UFC_PPV_BLACKOUT": "true", "QUIET_HOURS": "true"}):
+            with (
+                patch("core.publish_windows.ppv_config", return_value=ppv),
+                patch("core.publish_windows.quiet_hours_config", return_value=quiet),
+            ):
+                bumped, why = adjust_publish_at(
+                    sat,
+                    topic="UFC 319 Topuria",
+                    domain="ufc",
+                    privacy="public",
+                    channel_id="tapin",
+                )
+        self.assertIsNotNone(why)
+        self.assertIsNotNone(bumped)
+        local = bumped.astimezone(ET)
+        self.assertGreaterEqual(local.hour, 8)
+        self.assertNotEqual(local.hour, 2)
+
     def test_unlisted_review_skips_immediate_public(self):
         sat = datetime(2026, 8, 22, 22, 0, tzinfo=ET)
         with patch.dict(
@@ -116,6 +140,12 @@ class TestAdjustPublishAt(unittest.TestCase):
                 )
         self.assertEqual(status["privacyStatus"], "private")
         self.assertIn("publishAt", status)
+        self.assertIn("_window_reason", status)
+        status.pop("_window_reason")
+        self.assertLessEqual(
+            set(status),
+            {"privacyStatus", "publishAt", "selfDeclaredMadeForKids"},
+        )
 
 
 if __name__ == "__main__":

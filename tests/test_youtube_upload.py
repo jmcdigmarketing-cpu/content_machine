@@ -221,10 +221,6 @@ class TestYouTubeUpload(unittest.TestCase):
         mock_service.videos.return_value.insert.assert_not_called()
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestQueuedPrivacyIsHonest(unittest.TestCase):
     """The queue confirmation must not promise "public" when the hold is on.
 
@@ -265,3 +261,7 @@ class TestQueuedPrivacyIsHonest(unittest.TestCase):
             effective, held = apply_unlisted_review("public")
             self.assertFalse(held)
             self.assertEqual(queued_privacy_label("public", None), effective)
+
+
+if __name__ == "__main__":
+    unittest.main()

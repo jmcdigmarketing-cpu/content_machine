@@ -31,6 +31,15 @@ def last_trace(channel_id: str | None = None) -> dict[str, Any] | None:
     return traces[0] if traces else None
 
 
+def _run_label(run_id: Any) -> str:
+    if run_id is None or run_id == "":
+        return "(last render)"
+    try:
+        return f"#{int(run_id)}"
+    except (TypeError, ValueError):
+        return f"#{run_id}"
+
+
 def _file_uri(path: str) -> str:
     abs_path = os.path.abspath(path).replace("\\", "/")
     if not abs_path.startswith("/"):
@@ -58,7 +67,7 @@ def thin_facts_html(reason: str, *, fact_count: int | None = None) -> str:
     extra = f"<p>Verified fact lines: {int(fact_count)}</p>" if fact_count is not None else ""
     body = (
         "<div class='card'>"
-        "<p class='fail'><strong>Thin-facts abort</strong> — TTS skipped so the "
+        "<p class='fail'><strong>Thin-facts abort</strong> - TTS skipped so the "
         "$0.31 voice line is not burned.</p>"
         f"<p>{escape(reason)}</p>{extra}"
         "<p>The draft is saved. Add operator facts and re-run, or override in the CLI.</p>"
@@ -92,7 +101,7 @@ def booth_markdown(
     run_id: int | None = None,
 ) -> str:
     """Copy-as-markdown payload for the report card (vault / chat)."""
-    rid = f"#{int(run_id)}" if run_id else "(last render)"
+    rid = _run_label(run_id)
     lines = [
         f"# Report card {grade or 'n/a'} ({rid})",
         "",
@@ -135,7 +144,7 @@ def escaped_llm_pill_html(trace: dict[str, Any] | None) -> str:
             break
     if not hit:
         return ""
-    return "<p class='redpill'>Escaped free-first LLM — this run landed on a paid slug.</p>"
+    return "<p class='redpill'>Escaped free-first LLM - this run landed on a paid slug.</p>"
 
 
 def booth_html(
@@ -157,12 +166,14 @@ def booth_html(
     allocated_line: str = "",
     thin_banner: str = "",
     markdown: str = "",
+    mp4_href: str = "",
+    thumb_href: str = "",
 ) -> str:
     share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
     if mp4_path and os.path.isfile(mp4_path):
-        uri = _file_uri(mp4_path)
+        src = mp4_href or _file_uri(mp4_path)
         vid = (
-            f"<video id='player' controls src='{escape(uri)}'></video>"
+            f"<video id='player' controls src='{escape(src)}'></video>"
             f"{share}<p>{escape(mp4_path)}</p>"
         )
     else:
@@ -172,11 +183,18 @@ def booth_html(
         )
     thumb = ""
     if thumb_path and os.path.isfile(thumb_path):
-        thumb = f"<img class='thumb' src='{escape(_file_uri(thumb_path))}' alt='thumb'>"
-    rid = f"#{int(run_id)}" if run_id else "(last render)"
+        tsrc = thumb_href or _file_uri(thumb_path)
+        thumb = f"<img class='thumb' src='{escape(tsrc)}' alt='thumb'>"
+    rid = _run_label(run_id)
+    run_id_int = None
+    try:
+        if run_id is not None and run_id != "":
+            run_id_int = int(run_id)
+    except (TypeError, ValueError):
+        run_id_int = None
     cmd = approve_cmd or (
-        f"py -m scripts.ops requeue-upload --run-id {int(run_id)}"
-        if run_id
+        f"py -m scripts.ops requeue-upload --run-id {run_id_int}"
+        if run_id_int is not None
         else "py -m scripts.ops list-uploads"
     )
     md = markdown or booth_markdown(
@@ -282,7 +300,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     try:
         from core.win_notify import quota_chip_lines
 
-        for line in quota_chip_lines():
+        for line in quota_chip_lines(channel_id=channel_id):
             if line.startswith("YouTube:"):
                 uploads_left = line
             elif line.startswith("ElevenLabs:"):
@@ -346,12 +364,34 @@ def write_booth(channel_id: str | None = None, *, open_browser: bool = True) -> 
 
 def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
     """Tiny stdlib HTTP host for the booth (not FastAPI, not #141). Returns the URL."""
-    html_path = write_booth(channel_id, open_browser=False)
+    ctx = gather_booth_context(channel_id)
+    mp4 = ctx.get("mp4_path")
+    thumb = ctx.get("thumb_path")
+    if mp4 and os.path.isfile(str(mp4)):
+        ctx["mp4_href"] = "booth.mp4"
+    thumb_name = ""
+    if thumb and os.path.isfile(str(thumb)):
+        ext = os.path.splitext(str(thumb))[1].lower() or ".jpg"
+        if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+            ext = ".jpg"
+        thumb_name = f"booth{ext}"
+        ctx["thumb_href"] = thumb_name
+    html_path = write_html(booth_html(**ctx), filename="booth.html")
     directory = os.path.dirname(html_path)
 
     class _Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=directory, **kwargs)
+
+        def translate_path(self, path: str) -> str:
+            from urllib.parse import unquote, urlparse
+
+            name = unquote(urlparse(path).path).rsplit("/", 1)[-1]
+            if name == "booth.mp4" and mp4 and os.path.isfile(str(mp4)):
+                return str(mp4)
+            if thumb_name and name == thumb_name and thumb and os.path.isfile(str(thumb)):
+                return str(thumb)
+            return super().translate_path(path)
 
         def log_message(self, fmt: str, *args: Any) -> None:
             logger.debug("booth http: " + fmt, *args)

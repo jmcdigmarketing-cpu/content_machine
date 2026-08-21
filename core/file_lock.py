@@ -18,7 +18,7 @@ logger = get_logger("core.file_lock")
 
 T = TypeVar("T")
 
-_WIN_LOCK = {5, 32, 33}  # ACCESS_DENIED, SHARING_VIOLATION, LOCK_VIOLATION
+_WIN_LOCK = {32, 33}  # SHARING_VIOLATION, LOCK_VIOLATION (not 5 ACCESS_DENIED)
 
 
 def lock_retries() -> int:
@@ -40,22 +40,16 @@ def lock_delay_sec() -> float:
 
 def is_lock_error(exc: BaseException | None, stderr: str = "") -> bool:
     blob = (stderr or "").lower()
-    if "being used by another process" in blob or "access is denied" in blob:
-        return True
-    if "permission denied" in blob and ("mp4" in blob or "output" in blob):
+    if "being used by another process" in blob or "sharing violation" in blob:
         return True
     if exc is None:
         return False
-    if isinstance(exc, PermissionError):
-        return True
     if isinstance(exc, OSError):
         win = getattr(exc, "winerror", None)
         if win in _WIN_LOCK:
             return True
-        if getattr(exc, "errno", None) in (13, 11):
-            return True
         msg = str(exc).lower()
-        if "being used by another process" in msg or "access is denied" in msg:
+        if "being used by another process" in msg or "sharing violation" in msg:
             return True
     return False
 

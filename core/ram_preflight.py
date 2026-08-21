@@ -85,6 +85,8 @@ def available_vram_gb() -> float | None:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=8,
             check=False,
             creationflags=creation,

@@ -128,7 +128,10 @@ def _llm_query(topic: str, category: str) -> Optional[str]:
 
 
 def sanitize_trademark_stock_query(query: str) -> str:
-    """Never Pexels-search the UFC trademark — use generic MMA footage terms."""
+    """Never Pexels-search the UFC org trademark — use generic MMA footage terms.
+
+    EA UFC / Undisputed game titles are left alone so we do not search "mma 5".
+    """
     if os.getenv("STOCK_QUERY_UFC_REWRITE", "true").strip().lower() in (
         "0",
         "false",
@@ -137,6 +140,10 @@ def sanitize_trademark_stock_query(query: str) -> str:
     ):
         return (query or "").strip()
     text = query or ""
+    from core.publish_windows import is_ufc_videogame_topic
+
+    if is_ufc_videogame_topic(text):
+        return re.sub(r"\s+", " ", text).strip()
     cleaned = re.sub(r"\bufc\b", "mma", text, flags=re.I)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned or "mixed martial arts octagon"

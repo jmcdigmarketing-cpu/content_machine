@@ -140,7 +140,7 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
 
 def render(data: dict[str, Any] | None = None, *, channel_id: str = "tapin") -> str:
     data = data or gather(channel_id)
-    lines = [f"ops doctor — {data.get('channel_id') or channel_id}", "=" * 48]
+    lines = [f"ops doctor - {data.get('channel_id') or channel_id}", "=" * 48]
     for c in data.get("checks") or []:
         mark = "PASS" if c.get("ok") else "FAIL"
         lines.append(f"  [{mark}] {c.get('name')}: {c.get('detail')}")

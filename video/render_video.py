@@ -29,7 +29,13 @@ def _ffmpeg_run(cmd, *, duration_sec=None, progress=None, use_progress=False):
         if use_progress and progress is not None:
             process = run_ffmpeg_with_progress(cmd, duration_sec=duration_sec, progress=progress)
         else:
-            process = subprocess.run(cmd, capture_output=True, text=True)
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
         if process.returncode == 0:
             return process
         err = process.stderr or ""

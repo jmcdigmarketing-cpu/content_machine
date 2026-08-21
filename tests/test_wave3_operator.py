@@ -59,6 +59,11 @@ class TestStockUfcRewrite(unittest.TestCase):
         self.assertNotIn("ufc", sanitize_trademark_stock_query("UFC octagon fight").lower())
         self.assertIn("mma", sanitize_trademark_stock_query("UFC octagon fight").lower())
 
+    def test_ufc5_game_query_is_not_rewritten_to_mma5(self):
+        q = sanitize_trademark_stock_query("UFC 5 career mode gameplay")
+        self.assertIn("ufc", q.lower())
+        self.assertNotIn("mma 5", q.lower())
+
     def test_resolve_never_sends_ufc_to_pexels(self):
         resolve_background_query.cache_clear()
         with patch.dict(

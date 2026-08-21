@@ -69,6 +69,10 @@ class TestYoutubeMeta(unittest.TestCase):
         with patch.dict(os.environ, {"UFC_TITLE_LINT": "true"}):
             self.assertEqual(lint_ufc_title("UFC 317 preview", domain="ufc"), [])
 
+    def test_ufc5_game_title_is_not_a_trademark_hit(self):
+        with patch.dict(os.environ, {"UFC_TITLE_LINT": "true"}):
+            self.assertEqual(lint_ufc_title("UFC 5 career mode", domain="gaming"), [])
+
 
 if __name__ == "__main__":
     unittest.main()

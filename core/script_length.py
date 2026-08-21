@@ -85,6 +85,16 @@ def count_spoken_words(script: str) -> int:
     return len(text.split())
 
 
+def _char_len(script: str) -> int:
+    """Same measurement TTS_MAX_CHARS uses, so trim and refuse cannot disagree."""
+    try:
+        from core.utils import clean_script_for_tts
+
+        return len(clean_script_for_tts(script or ""))
+    except Exception:
+        return len(script or "")
+
+
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _PADDING_LEAD = re.compile(
     r"^(anyway|that said|in conclusion|to wrap(?: it)? up|so yeah|basically|"
@@ -113,16 +123,22 @@ def trim_overlength(
     *,
     max_words: int,
     min_words: int = 0,
+    max_chars: int | None = None,
 ) -> tuple[str, int]:
     """Drop trailing padding sentences when over length.
 
     Never clips mid-sentence (hard cap remains refuse in TTS). Never drops the
     hook (first sentence). Never goes below min_words. Returns (script, words_removed).
+    Optional ``max_chars`` is the TTS ceiling so we trim padding before refusing.
     """
-    if not trim_enabled() or max_words <= 0:
+    if not trim_enabled():
+        return script, 0
+    if max_words <= 0 and not (max_chars and max_chars > 0):
         return script, 0
     current = count_spoken_words(script)
-    if current <= max_words:
+    over_chars = bool(max_chars and max_chars > 0 and _char_len(script) > max_chars)
+    over_words = bool(max_words > 0 and current > max_words)
+    if not over_words and not over_chars:
         return script, 0
     sentences = split_spoken_sentences(script)
     if len(sentences) <= 1:
@@ -134,8 +150,14 @@ def trim_overlength(
     def _ok(parts: list[str]) -> bool:
         return count_spoken_words(_join(parts)) >= min_words and len(parts) >= 1
 
+    def _too_long(parts: list[str]) -> bool:
+        joined = _join(parts)
+        if max_words > 0 and count_spoken_words(joined) > max_words:
+            return True
+        return bool(max_chars and max_chars > 0 and _char_len(joined) > max_chars)
+
     changed = True
-    while changed and count_spoken_words(_join(sentences)) > max_words and len(sentences) > 1:
+    while changed and _too_long(sentences) and len(sentences) > 1:
         changed = False
         for i in range(len(sentences) - 1, 0, -1):
             if not _PADDING_LEAD.search(sentences[i]):
@@ -145,7 +167,7 @@ def trim_overlength(
                 sentences = trial
                 changed = True
                 break
-    while count_spoken_words(_join(sentences)) > max_words and len(sentences) > 1:
+    while _too_long(sentences) and len(sentences) > 1:
         trial = sentences[:-1]
         if not _ok(trial):
             break

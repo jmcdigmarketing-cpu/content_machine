@@ -22,7 +22,13 @@ CommandFn = Callable[[argparse.Namespace], int]
 
 def _emit_text(title: str, text: str, args: argparse.Namespace) -> None:
     """Print ASCII; optionally dump a themed HTML snapshot (--html). Nested try."""
-    print(text)
+    try:
+        from core.html_report import ascii_safe
+
+        printable = ascii_safe(text)
+    except Exception:
+        printable = str(text).encode("ascii", "replace").decode("ascii")
+    print(printable)
     if not getattr(args, "html", False):
         return
     try:
@@ -31,9 +37,7 @@ def _emit_text(title: str, text: str, args: argparse.Namespace) -> None:
         path = dump_pre(title, text)
         print(f"HTML: {path}")
     except Exception as exc:
-        from core.logging import get_logger
-
-        get_logger("scripts.ops").debug("html dump skipped: %s", exc)
+        print(f"HTML dump skipped: {exc}")
 
 
 COMMANDS: dict[str, tuple[str, CommandFn]] = {}
@@ -538,9 +542,7 @@ def cmd_economics(args: argparse.Namespace) -> int:
                 fh.write(to_csv(econ))
             print(f"CSV: {dest}")
         except Exception as exc:
-            from core.logging import get_logger
-
-            get_logger("scripts.ops").debug("economics csv skipped: %s", exc)
+            print(f"CSV skipped: {exc}")
     return 0
 
 
@@ -579,9 +581,7 @@ def cmd_grade(args: argparse.Namespace) -> int:
             path = dump_pre("Report card", text)
             print(f"HTML: {path}")
         except Exception as exc:
-            from core.logging import get_logger
-
-            get_logger("scripts.ops").debug("grade html skipped: %s", exc)
+            print(f"HTML dump skipped: {exc}")
     return 0
 
 
@@ -758,6 +758,7 @@ def cmd_tray(args: argparse.Namespace) -> int:
         stay=bool(getattr(args, "stay", False)),
         open_output=bool(getattr(args, "open_output", False)),
         doctor_html=bool(getattr(args, "doctor_html", False)),
+        channel_id=getattr(args, "channel", None) or "tapin",
     )
 
 
@@ -768,6 +769,14 @@ def cmd_booth(args: argparse.Namespace) -> int:
     if getattr(args, "serve", False):
         url = serve_booth(args.channel)
         print(url)
+        print("Serving review booth. Ctrl+C to stop.")
+        try:
+            import time
+
+            while True:
+                time.sleep(3600)
+        except KeyboardInterrupt:
+            print("Stopped.")
         return 0
     path = write_booth(args.channel)
     print(path)
@@ -952,8 +961,8 @@ def main(argv=None) -> int:
     )
     parser.add_argument(
         "--topic",
-        default="UFC 250 Topuria Gaethje",
-        help="Topic for tapology-test or intelligence-report",
+        default="",
+        help="Topic for intelligence-report (required) or tapology-test",
     )
     parser.add_argument(
         "--no-brief",

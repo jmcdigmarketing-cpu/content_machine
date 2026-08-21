@@ -137,11 +137,18 @@ def lint_ufc_title(title: str, *, domain: str | None = None) -> list[str]:
     if not _flag("UFC_TITLE_LINT", True):
         return []
     text = title or ""
+    try:
+        from core.publish_windows import is_ufc_videogame_topic
+
+        if is_ufc_videogame_topic(text):
+            return []
+    except Exception as exc:
+        logger.debug("ufc videogame title check skipped: %s", exc)
     warnings: list[str] = []
     if _UFC_OFFICIAL.search(text):
-        warnings.append("title claims official UFC branding — use fight-night wording")
+        warnings.append("title claims official UFC branding - use fight-night wording")
     if _UFC_WORD.search(text):
         dom = (domain or "").strip().lower()
         if dom and dom not in ("ufc", "mma"):
-            warnings.append("UFC in title on a non-UFC topic — trademark/SEO mismatch")
+            warnings.append("UFC in title on a non-UFC topic - trademark/SEO mismatch")
     return warnings

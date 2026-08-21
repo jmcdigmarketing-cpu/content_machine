@@ -14,18 +14,22 @@ from core.logging import get_logger
 
 logger = get_logger("core.odds_language")
 
+# Bare "favorite" / "the market" / "underdog" are ordinary gaming copy
+# ("fan favorite", "skin market"). Require betting/odds vocabulary.
 _ODDS_CONTEXT = re.compile(
-    r"\b(odds|favorite|favourite|underdog|moneyline|money line|"
-    r"implied probability|betting line|the market)\b",
+    r"\b(odds|moneyline|money line|implied probability|betting line|"
+    r"sportsbook|as the favorite|as the favourite|"
+    r"the favorite to|the favourite to)\b",
     re.IGNORECASE,
 )
 _WILL_FIGHT = re.compile(
     r"\bwill (win|beat|finish|submit|knock out|take (?:it|this))\b",
     re.IGNORECASE,
 )
+# "lock it in" and bare "use code" are gaming slang / console copy — not CTAs.
 _BETTING_CTA = re.compile(
-    r"\b(?:bet now|place your bets?|put money on|lock it in|"
-    r"this parlay|odds boost|use (?:code|promo))\b[^.!?\n]*[.!?]?",
+    r"\b(?:bet now|place your bets?|put money on|"
+    r"this parlay|odds boost|use promo(?:\s+code)?)\b[^.!?\n]*[.!?]?",
     re.IGNORECASE,
 )
 

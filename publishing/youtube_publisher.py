@@ -117,7 +117,8 @@ def build_video_status(request: PublishRequest, *, channel_id: str | None = None
             from apis.topic_scorer import infer_domain
 
             domain = infer_domain(request.title or "", channel_id)
-        except Exception:
+        except Exception as exc:
+            logger.debug("publish window domain skipped: %s", exc)
             domain = ""
         bumped, why = adjust_publish_at(
             publish_at,
@@ -128,9 +129,18 @@ def build_video_status(request: PublishRequest, *, channel_id: str | None = None
         )
         if why and bumped:
             logger.warning("publish window: %s - scheduling %s", why, bumped.isoformat())
+            try:
+                print(f"  Publish window: {why}; going public at {bumped.isoformat()}")
+            except Exception as print_exc:
+                logger.debug("publish window operator print skipped: %s", print_exc)
             publish_at = bumped
+            status["_window_reason"] = why
     except Exception as exc:
-        logger.debug("publish window skipped: %s", exc)
+        logger.warning("publish window check failed (uploading anyway): %s", exc)
+        try:
+            print(f"  Publish window check failed (uploading anyway): {exc}")
+        except Exception as print_exc:
+            logger.debug("publish window operator print skipped: %s", print_exc)
         publish_at = request.publish_at
 
     if not publish_at:
@@ -450,9 +460,13 @@ class YouTubePublisher(Publisher):
         )
 
         video_status = build_video_status(request, channel_id=channel_id)
+        window_why = video_status.pop("_window_reason", None)
         is_youtube_scheduled = "publishAt" in video_status
+        held_at = request.publish_at
+        if not held_at and is_youtube_scheduled:
+            held_at = datetime.now(timezone.utc)
         effective_privacy, held_review = apply_unlisted_review(
-            request.privacy_status, publish_at=request.publish_at
+            request.privacy_status, publish_at=held_at
         )
         target_privacy = request.privacy_status
 
@@ -512,11 +526,13 @@ class YouTubePublisher(Publisher):
                 if is_youtube_scheduled
                 else "videos.insert completed"
             )
+            if window_why and is_youtube_scheduled:
+                detail = f"{detail} [window: {window_why}]"
             if held_review and video_id:
                 watch = f"https://www.youtube.com/watch?v={video_id}"
                 detail = (
                     f"Unlisted for review (requested public): {watch} "
-                    "— promote to public after eyeball"
+                    "- promote to public after eyeball"
                 )
             if is_youtube_scheduled:
                 try:

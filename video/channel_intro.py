@@ -222,7 +222,13 @@ def prepend_channel_intro(
         attempts = lock_retries()
         delay = lock_delay_sec()
         for i in range(attempts):
-            process = subprocess.run(cmd, capture_output=True, text=True)
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
             if process.returncode == 0:
                 break
             err = process.stderr or ""

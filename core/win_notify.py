@@ -91,18 +91,17 @@ def _toast_script(title: str, body: str, *, launch: str = "") -> str:
 
 
 def _toast_powershell(title: str, body: str, *, launch: str = "") -> bool:
-    """WinRT toast via PowerShell (no extra pip). Fail-open."""
+    """WinRT toast via PowerShell (no extra pip). Fire-and-forget; never blocks discovery."""
     script = _toast_script(title, body, launch=launch)
     creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-    result = subprocess.run(
+    subprocess.Popen(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-        capture_output=True,
-        text=True,
-        timeout=12,
-        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL,
         creationflags=creation,
     )
-    return result.returncode == 0
+    return True
 
 
 def toast(title: str, body: str, *, key: str | None = None, launch: str = "") -> bool:
@@ -113,8 +112,15 @@ def toast(title: str, body: str, *, key: str | None = None, launch: str = "") ->
     if token in _toasted:
         return False
     try:
-        set_app_user_model_id()
-        ok = _toast_powershell(title, body, launch=launch)
+        try:
+            set_app_user_model_id()
+        except Exception as exc:
+            logger.debug("AppUserModelID skipped: %s", exc)
+        try:
+            ok = _toast_powershell(title, body, launch=launch)
+        except Exception as exc:
+            logger.debug("toast powershell skipped: %s", exc)
+            return False
         if ok:
             _toasted.add(token)
         return ok
@@ -223,7 +229,9 @@ def cost_mode_label() -> str:
         return "Standard"
 
 
-def quota_chip_lines(snap: dict[str, Any] | None = None) -> list[str]:
+def quota_chip_lines(
+    snap: dict[str, Any] | None = None, *, channel_id: str | None = None
+) -> list[str]:
     """Uploads-left, ElevenLabs leftover chars, Apify breaker — one line each."""
     data = snap
     if data is None:
@@ -264,7 +272,7 @@ def quota_chip_lines(snap: dict[str, Any] | None = None) -> list[str]:
     else:
         lines.append("Apify: ON")
     lines.append(f"Mode: {cost_mode_label()}")
-    letter = last_grade_letter()
+    letter = last_grade_letter(channel_id)
     lines.append(f"Grade: {letter or 'n/a'}")
     return lines
 
@@ -299,39 +307,46 @@ def open_doctor_html(channel_id: str = "tapin") -> str:
     return dump_pre("ops doctor", render(channel_id=channel_id), filename="doctor.html")
 
 
-def chip_text(snap: dict[str, Any] | None = None) -> str:
-    return " | ".join(quota_chip_lines(snap))
+def chip_text(snap: dict[str, Any] | None = None, *, channel_id: str | None = None) -> str:
+    return " | ".join(quota_chip_lines(snap, channel_id=channel_id))
 
 
-def show_quota_chip(*, toast_it: bool = True) -> str:
+def show_quota_chip(*, toast_it: bool = True, channel_id: str | None = None) -> str:
     """Print + optional toast of the three quota numbers. Returns the chip text."""
     try:
         set_app_user_model_id()
     except Exception as exc:
         logger.debug("AppUserModelID on chip skipped: %s", exc)
-    text = chip_text()
+    text = chip_text(channel_id=channel_id)
     if toast_it:
         toast(f"{APP_NAME} quota", text, key="quota-chip")
         notify_uploads_left()
     return text
 
 
-def run_tray(*, stay: bool = False, open_output: bool = False, doctor_html: bool = False) -> int:
+def run_tray(
+    *,
+    stay: bool = False,
+    open_output: bool = False,
+    doctor_html: bool = False,
+    channel_id: str | None = None,
+) -> int:
     """Quota chip: toast + print. Optional always-on-top tkinter chip (not a daemon)."""
-    text = show_quota_chip(toast_it=True)
+    cid = channel_id or "tapin"
+    text = show_quota_chip(toast_it=True, channel_id=cid)
     print(text)
     if open_output:
         try:
             from core.win_shell import open_last_output_folder
 
-            folder = open_last_output_folder()
+            folder = open_last_output_folder(channel_id=cid)
             if folder:
                 print(folder)
         except Exception as exc:
             logger.debug("tray open-output skipped: %s", exc)
     if doctor_html:
         try:
-            path = open_doctor_html()
+            path = open_doctor_html(cid)
             print(path)
         except Exception as exc:
             logger.debug("tray doctor html skipped: %s", exc)
@@ -351,13 +366,13 @@ def run_tray(*, stay: bool = False, open_output: bool = False, doctor_html: bool
             try:
                 from core.win_shell import open_last_output_folder
 
-                open_last_output_folder()
+                open_last_output_folder(channel_id=cid)
             except Exception as exc:
                 logger.debug("tray folder button skipped: %s", exc)
 
         def _doctor() -> None:
             try:
-                open_doctor_html()
+                open_doctor_html(cid)
             except Exception as exc:
                 logger.debug("tray doctor button skipped: %s", exc)
 
@@ -386,11 +401,17 @@ def main() -> int:
         action="store_true",
         help="Write ops doctor as themed HTML and open it",
     )
+    parser.add_argument(
+        "--channel",
+        default="tapin",
+        help="Channel id for last-output folder / doctor / grade chip",
+    )
     args = parser.parse_args()
     return run_tray(
         stay=bool(args.stay),
         open_output=bool(args.open_output),
         doctor_html=bool(args.doctor_html),
+        channel_id=args.channel,
     )
 
 

@@ -132,6 +132,12 @@ def run_overnight(
         )
     except Exception as exc:
         logger.debug("overnight event not emitted: %s", exc)
+    try:
+        from core.win_notify import notify_overnight_done
+
+        notify_overnight_done(result.drafted, result.requested)
+    except Exception as exc:
+        logger.debug("overnight toast skipped: %s", exc)
     return result
 
 

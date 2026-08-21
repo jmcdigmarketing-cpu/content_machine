@@ -97,6 +97,13 @@ def build_video_status(request: PublishRequest) -> dict[str, Any]:
     if not request.publish_at:
         privacy, _held = apply_unlisted_review(request.privacy_status)
         status["privacyStatus"] = privacy
+        try:
+            from core.youtube_meta import audit_made_for_kids
+
+            status = audit_made_for_kids(status)
+        except Exception as exc:
+            logger.debug("madeForKids audit skipped: %s", exc)
+            status["selfDeclaredMadeForKids"] = False
         return status
 
     publish_at = _to_utc(request.publish_at)
@@ -106,6 +113,13 @@ def build_video_status(request: PublishRequest) -> dict[str, Any]:
 
     status["privacyStatus"] = "private"
     status["publishAt"] = _to_publish_at_rfc3339(publish_at)
+    try:
+        from core.youtube_meta import audit_made_for_kids
+
+        status = audit_made_for_kids(status)
+    except Exception as exc:
+        logger.debug("madeForKids audit skipped: %s", exc)
+        status["selfDeclaredMadeForKids"] = False
     return status
 
 
@@ -362,6 +376,31 @@ class YouTubePublisher(Publisher):
                 platform=PLATFORM_YOUTUBE,
             )
 
+        try:
+            from core.youtube_meta import lint_ufc_title, title_collision, uniqueness_mode
+
+            hit = title_collision(request.title, channel_id, exclude_run_id=content_run_id)
+            if hit:
+                logger.warning("%s", hit)
+                if uniqueness_mode() == "block":
+                    return PublishResult(
+                        video_id=None,
+                        status="blocked",
+                        detail=hit,
+                        platform=PLATFORM_YOUTUBE,
+                    )
+            domain = ""
+            try:
+                from apis.topic_scorer import infer_domain
+
+                domain = infer_domain(request.title, channel_id)
+            except Exception as exc:
+                logger.debug("title lint domain skipped: %s", exc)
+            for warn in lint_ufc_title(request.title, domain=domain):
+                logger.warning("%s", warn)
+        except Exception as exc:
+            logger.debug("title uniqueness/lint skipped: %s", exc)
+
         log_id = _ensure_publish_log(
             content_run_id=content_run_id,
             channel_id=channel_id,
@@ -378,13 +417,23 @@ class YouTubePublisher(Publisher):
         )
         target_privacy = request.privacy_status
 
+        snippet = {
+            "title": request.title[:100],
+            "description": request.description[:5000],
+            "tags": (request.tags or [])[:30],
+            "categoryId": request.category_id or "",
+        }
+        try:
+            from core.youtube_meta import apply_snippet_defaults
+
+            snippet = apply_snippet_defaults(snippet, topic=request.title, channel_id=channel_id)
+        except Exception as exc:
+            logger.debug("snippet defaults skipped: %s", exc)
+            if not snippet.get("categoryId"):
+                snippet["categoryId"] = "20"
+
         body = {
-            "snippet": {
-                "title": request.title[:100],
-                "description": request.description[:5000],
-                "tags": (request.tags or [])[:30],
-                "categoryId": request.category_id,
-            },
+            "snippet": snippet,
             "status": video_status,
         }
 
@@ -430,6 +479,13 @@ class YouTubePublisher(Publisher):
                     f"Unlisted for review (requested public): {watch} "
                     "— promote to public after eyeball"
                 )
+            if is_youtube_scheduled:
+                try:
+                    from core.win_notify import notify_upload_scheduled
+
+                    notify_upload_scheduled(request.title, video_status.get("publishAt") or "")
+                except Exception as exc:
+                    logger.debug("scheduled toast skipped: %s", exc)
 
             _update_publish_log(
                 log_id,

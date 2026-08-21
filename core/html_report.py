@@ -36,8 +36,36 @@ img.thumb { max-width: 100%; height: auto; cursor: zoom-in; border: 1px solid #2
 dialog { border: none; padding: 0; background: #000; max-width: 96vw; }
 dialog img { max-width: 96vw; max-height: 96vh; }
 video { width: 100%; max-height: 70vh; background: #000; }
+.cost-sub { color: #fdd663; font-size: 16px; margin: 0.35rem 0 0; }
 a { color: #8ab4f8; }
 """
+
+_ASCII_REPLACEMENTS = {
+    "\u2014": "-",
+    "\u2013": "-",
+    "\u2018": "'",
+    "\u2019": "'",
+    "\u201c": '"',
+    "\u201d": '"',
+    "\u00a0": " ",
+    "\u2026": "...",
+    "\u2265": ">=",
+    "\u2264": "<=",
+    "\u2192": "->",
+}
+
+
+def ascii_safe(text: Any) -> str:
+    """Strip emoji / smart punctuation so dumps survive cp1252 consoles."""
+    out: list[str] = []
+    for ch in str(text if text is not None else ""):
+        if ch in _ASCII_REPLACEMENTS:
+            out.append(_ASCII_REPLACEMENTS[ch])
+        elif ord(ch) < 128:
+            out.append(ch)
+        else:
+            out.append("?")
+    return "".join(out)
 
 
 def html_dir() -> str:
@@ -64,18 +92,19 @@ def escape(text: Any) -> str:
 
 
 def themed_page(title: str, body_html: str, *, subtitle: str = "") -> str:
-    sub = subtitle or "Content OS operator snapshot"
+    sub = ascii_safe(subtitle or "Content OS operator snapshot")
+    safe_title = ascii_safe(title)
     return (
         "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        f"<title>{escape(title)}</title><style>{_CSS}</style></head><body>"
-        f"<header><h1>{escape(title)}</h1><div class='sub'>{escape(sub)}</div></header>"
+        f"<title>{escape(safe_title)}</title><style>{_CSS}</style></head><body>"
+        f"<header><h1>{escape(safe_title)}</h1><div class='sub'>{escape(sub)}</div></header>"
         f"<main>{body_html}</main></body></html>"
     )
 
 
 def pre_body(text: str) -> str:
-    return f"<pre>{escape(text)}</pre>"
+    return f"<pre>{escape(ascii_safe(text))}</pre>"
 
 
 def write_html(html_text: str, *, filename: str) -> str:

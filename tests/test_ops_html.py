@@ -6,7 +6,7 @@ import argparse
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from scripts import ops
 
@@ -42,8 +42,36 @@ class TestOpsHtmlAndHelpers(unittest.TestCase):
             self.assertTrue(os.path.isfile(written))
 
     def test_registry_includes_new_commands(self):
-        for name in ("tray", "booth", "lightbox", "reveal", "shortcut", "blocking"):
+        for name in (
+            "tray",
+            "booth",
+            "lightbox",
+            "reveal",
+            "shortcut",
+            "blocking",
+            "secrets-doctor",
+        ):
             self.assertIn(name, ops.COMMANDS)
+
+    def test_grade_html_flag_dumps(self):
+        args = argparse.Namespace(run_id=1, html=True, channel="tapin")
+        fake_grade = type("G", (), {"letter": "B", "score": 80, "components": []})()
+        record = MagicMock(script_preview="x", channel_id="tapin")
+        repo = MagicMock()
+        repo.get.return_value = record
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.dict(os.environ, {"CONTENT_HTML_DIR": tmp, "CONTENT_HTML_OPEN": "false"}),
+                patch(
+                    "storage.repositories.content_runs.get_content_run_repository",
+                    return_value=repo,
+                ),
+                patch("core.video_grade.grade_from_record", return_value=fake_grade),
+                patch("core.video_grade.render_grade", return_value="Report card: B (80/100)"),
+                patch("core.video_grade.render_expert_panel", return_value=""),
+            ):
+                self.assertEqual(ops.cmd_grade(args), 0)
+            self.assertTrue(any(name.endswith(".html") for name in os.listdir(tmp)))
 
 
 if __name__ == "__main__":

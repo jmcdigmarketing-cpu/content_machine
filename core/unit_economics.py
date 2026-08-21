@@ -241,6 +241,29 @@ def domain_margin_lines(econ: ChannelEconomics) -> list[str]:
     return lines
 
 
+def to_csv(econ: ChannelEconomics) -> str:
+    """CSV export of per-video unit economics (candidate 135). ASCII only."""
+    import csv
+    import io
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["run_id", "title", "domain", "cost_usd", "revenue_usd", "views", "margin_usd"])
+    for v in econ.videos:
+        writer.writerow(
+            [
+                v.run_id,
+                v.title,
+                v.domain,
+                f"{v.cost_usd:.4f}",
+                "" if v.revenue_usd is None else f"{v.revenue_usd:.4f}",
+                v.views,
+                "" if v.margin_usd is None else f"{v.margin_usd:.4f}",
+            ]
+        )
+    return buf.getvalue()
+
+
 def render(channel_id: str | None = None, *, limit: int = 25) -> str:
     econ = channel_economics(channel_id, limit=limit)
     lines = [f"Unit economics - {econ.channel_id}", "=" * 64]

@@ -33,6 +33,23 @@ def _stack() -> ExitStack:
     stack.enter_context(
         patch("core.cuda_probe.render", return_value="CUDA\n  torch : not installed")
     )
+    stack.enter_context(
+        patch(
+            "core.ram_preflight.snapshot",
+            return_value={"ram_gb": 16.0, "vram_gb": 12.0, "ram_min_gb": None, "vram_min_gb": None},
+        )
+    )
+    stack.enter_context(patch("core.ram_preflight.render", return_value="RAM 16.00 GB free"))
+    stack.enter_context(
+        patch(
+            "core.secrets_doctor.gather",
+            return_value={"present": 2, "missing": 1, "placeholder": 0},
+        )
+    )
+    stack.enter_context(
+        patch("core.workspace_hazards.gather", return_value={"hazards": [], "onedrive": False})
+    )
+    stack.enter_context(patch("core.workspace_hazards.render", return_value="workspace: ok"))
     return stack
 
 
@@ -44,6 +61,10 @@ class TestOpsDoctor(unittest.TestCase):
         self.assertIn("oauth", names)
         self.assertIn("feeds", names)
         self.assertIn("cuda", names)
+        self.assertIn("nvenc", names)
+        self.assertIn("ram", names)
+        self.assertIn("secrets", names)
+        self.assertIn("workspace", names)
         blob = render(data, channel_id="tapin")
         self.assertIn("ops doctor", blob)
 

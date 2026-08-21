@@ -55,6 +55,21 @@ class TestDescriptionExtras(unittest.TestCase):
             out = apply_description_extras("", "tapin")
         self.assertEqual(out, DEFAULT_AI_DISCLOSURE)
 
+    def test_moneywise_finance_disclaimer(self):
+        from core.description_extras import DEFAULT_FINANCE_DISCLAIMER
+
+        with patch("core.description_extras.get_seo_profile", return_value={}):
+            out = apply_description_extras("Rates rose.", "moneywise")
+        self.assertIn(DEFAULT_FINANCE_DISCLAIMER, out)
+        self.assertIn(DEFAULT_AI_DISCLOSURE, out)
+
+    def test_tapin_has_no_finance_disclaimer(self):
+        from core.description_extras import DEFAULT_FINANCE_DISCLAIMER
+
+        with patch("core.description_extras.get_seo_profile", return_value={}):
+            out = apply_description_extras("Great fight breakdown.", "tapin")
+        self.assertNotIn(DEFAULT_FINANCE_DISCLAIMER, out)
+
 
 if __name__ == "__main__":
     unittest.main()

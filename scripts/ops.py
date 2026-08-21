@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from collections.abc import Callable
@@ -200,11 +201,19 @@ def cmd_postmortem(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("doctor", "One shot: free stack + feeds snapshot + oauth file + quota + CUDA")
+@_register("doctor", "One shot: free stack + feeds + oauth + quota + CUDA + RAM + secrets")
 def cmd_doctor(args: argparse.Namespace) -> int:
     from core.ops_doctor import render
 
     _emit_text("ops doctor", render(channel_id=args.channel), args)
+    return 0
+
+
+@_register("secrets-doctor", "Keys present/missing/placeholder (never prints values)")
+def cmd_secrets_doctor(args: argparse.Namespace) -> int:
+    from core.secrets_doctor import render
+
+    _emit_text("ops secrets-doctor", render(channel_id=args.channel), args)
     return 0
 
 
@@ -514,9 +523,24 @@ def cmd_dossier(args: argparse.Namespace) -> int:
 
 @_register("economics", "Per-video cost vs revenue -> contribution margin (Pillar 1)")
 def cmd_economics(args: argparse.Namespace) -> int:
+    from core.unit_economics import channel_economics, to_csv
     from core.unit_economics import render as render_economics
 
-    _emit_text("Unit economics", render_economics(args.channel, limit=args.limit or 25), args)
+    limit = args.limit or 25
+    _emit_text("Unit economics", render_economics(args.channel, limit=limit), args)
+    if getattr(args, "csv", False):
+        try:
+            from core.html_report import html_dir
+
+            econ = channel_economics(args.channel, limit=limit)
+            dest = os.path.join(html_dir(), "economics.csv")
+            with open(dest, "w", encoding="utf-8", newline="") as fh:
+                fh.write(to_csv(econ))
+            print(f"CSV: {dest}")
+        except Exception as exc:
+            from core.logging import get_logger
+
+            get_logger("scripts.ops").debug("economics csv skipped: %s", exc)
     return 0
 
 
@@ -540,6 +564,19 @@ def cmd_grade(args: argparse.Namespace) -> int:
     if panel:
         print()
         print(panel)
+    text = render_grade(grade)
+    if panel:
+        text = f"{text}\n\n{panel}"
+    if getattr(args, "html", False):
+        try:
+            from core.html_report import dump_pre
+
+            path = dump_pre("Report card", text)
+            print(f"HTML: {path}")
+        except Exception as exc:
+            from core.logging import get_logger
+
+            get_logger("scripts.ops").debug("grade html skipped: %s", exc)
     return 0
 
 
@@ -712,7 +749,10 @@ def cmd_requeue_upload(args: argparse.Namespace) -> int:
 def cmd_tray(args: argparse.Namespace) -> int:
     from core.win_notify import run_tray
 
-    return run_tray(stay=bool(getattr(args, "stay", False)))
+    return run_tray(
+        stay=bool(getattr(args, "stay", False)),
+        open_output=bool(getattr(args, "open_output", False)),
+    )
 
 
 @_register("booth", "Last-run review booth (play + grade + authenticity + cost)")
@@ -738,7 +778,7 @@ def cmd_lightbox(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("reveal", "Reveal last mp4 (or --kind thumb) in Explorer")
+@_register("reveal", "Reveal last mp4 (or --kind thumb|trace) in Explorer")
 def cmd_reveal(args: argparse.Namespace) -> int:
     from core.win_shell import reveal_last
 
@@ -937,7 +977,12 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--html",
         action="store_true",
-        help="Write a themed HTML snapshot and open it (reliability/economics/doctor/status)",
+        help="Write a themed HTML snapshot and open it (reliability/economics/doctor/status/grade)",
+    )
+    parser.add_argument(
+        "--csv",
+        action="store_true",
+        help="economics: write a CSV next to HTML dumps (not under data/)",
     )
     parser.add_argument(
         "--stay",
@@ -945,9 +990,14 @@ def main(argv=None) -> int:
         help="tray: keep the on-top quota chip window",
     )
     parser.add_argument(
+        "--open-output",
+        action="store_true",
+        help="tray: open the last channel output folder",
+    )
+    parser.add_argument(
         "--kind",
         default="mp4",
-        help="reveal: mp4 or thumb (default: mp4)",
+        help="reveal: mp4, thumb, or trace (default: mp4)",
     )
     parser.add_argument(
         "--sku",

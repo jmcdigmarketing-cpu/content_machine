@@ -85,9 +85,55 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         detail = rendered.splitlines()[1].strip() if rendered else "probed"
         add("cuda", True, detail)
         out["cuda"] = cuda
+        nvenc_ok = bool(cuda.get("nvenc_capable"))
+        add("nvenc", True, "h264_nvenc yes" if nvenc_ok else "h264_nvenc no (CPU libx264)")
     except Exception as exc:
         logger.debug("doctor cuda skipped: %s", exc)
         add("cuda", True, f"n/a ({type(exc).__name__})")
+        add("nvenc", True, f"n/a ({type(exc).__name__})")
+
+    try:
+        from core import ram_preflight
+
+        ram = ram_preflight.snapshot()
+        add("ram", True, ram_preflight.render(ram))
+        out["ram"] = ram
+    except Exception as exc:
+        logger.debug("doctor ram skipped: %s", exc)
+        add("ram", True, f"n/a ({type(exc).__name__})")
+
+    try:
+        from core import secrets_doctor
+
+        secrets = secrets_doctor.gather(channel_id)
+        add(
+            "secrets",
+            secrets.get("missing", 0) == 0,
+            (
+                f"{secrets.get('present', 0)} present / "
+                f"{secrets.get('missing', 0)} missing / "
+                f"{secrets.get('placeholder', 0)} placeholder (values not shown)"
+            ),
+        )
+        out["secrets"] = {
+            "present": secrets.get("present"),
+            "missing": secrets.get("missing"),
+            "placeholder": secrets.get("placeholder"),
+        }
+    except Exception as exc:
+        logger.debug("doctor secrets skipped: %s", exc)
+        add("secrets", True, f"n/a ({type(exc).__name__})")
+
+    try:
+        from core import workspace_hazards
+
+        hazards = workspace_hazards.gather()
+        names = hazards.get("hazards") or []
+        add("workspace", not names, workspace_hazards.render(hazards))
+        out["workspace"] = hazards
+    except Exception as exc:
+        logger.debug("doctor workspace skipped: %s", exc)
+        add("workspace", True, f"n/a ({type(exc).__name__})")
 
     return out
 

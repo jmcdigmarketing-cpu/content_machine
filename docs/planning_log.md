@@ -11,6 +11,40 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-21 — Honesty + leave-the-terminal wave 2 (shipped)
+
+**Prompt:** implement **20 more** roadmap items on top of unpushed `48a062f`,
+commit, do not push / amend / PR. Advising allowed. Prefer `[S]` then `[M]`.
+
+**Swap vs numerical next:** did **not** pick 21 caption skin, 22 thumbnail
+safe-area, 23 end-card, 146 tray daemon, 147 FastAPI, or 172 HTML design
+system. Ranked leftover `[S]` that (1) keep the next publish honest
+(category / kids / language / unique titles / UFC lint / MoneyWise
+disclaimer), (2) stop doomed Free-mode sessions (RAM/VRAM, NVENC *probe*
+not encode, secrets-doctor, OneDrive), (3) surface TTS 91% and quota
+outside PowerShell (booth subtitle, economics CSV, scheduled/overnight/
+uploads-left toasts, tray folder + Free/Standard). **#147 still skipped.**
+No #141/#142/#143/#144/#145, no Phase M, no volume-gated backtest, no
+auto-flip Piper.
+
+**Shipped (20):** 94 NVENC capability probe, 95 RAM/VRAM preflight, 96
+secrets-doctor, 100 OneDrive/.git hazard, 102 YouTube category from
+`infer_domain`, 107 madeForKids audit, 108 default language, 117 title
+uniqueness, 125 MoneyWise finance disclaimer, 129 UFC title lint, 135
+economics `--csv`, 225 scheduled-upload toast, 227 overnight-drafts toast,
+228 uploads-left balloon, 242 `ops grade --html`, 250 ASCII-safe HTML, 256
+reveal trace, 272 booth TTS 91% subtitle, 312 tray open-output folder, 317
+tray Free vs Standard.
+
+**Knobs:** `RAM_MIN_GB`, `VRAM_MIN_GB`, `YOUTUBE_DEFAULT_LANGUAGE`,
+`TITLE_UNIQUENESS`, `UFC_TITLE_LINT`, `FINANCE_DISCLAIMER`. Suite forces
+`RAM_MIN_GB=0`, `VRAM_MIN_GB=0`, `TITLE_UNIQUENESS=off`.
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI
+host, `.env` / secrets / `data/` / `output/`.
+
+---
+
 ## 2026-08-21 — Leave-the-terminal wave (shipped)
 
 **Prompt:** implement the **Recommended next 20 (2026-08-20 night)**, commit,

@@ -30,6 +30,12 @@ class TestHtmlReport(unittest.TestCase):
             self.assertIn("Apify ON", text)
             self.assertIn("Content OS", text)
 
+    def test_ascii_safe_strips_emoji_and_dashes(self):
+        cleaned = html_report.ascii_safe("tts $0.31 \u2014 91% \U0001f525")
+        self.assertIn("tts $0.31 - 91%", cleaned)
+        self.assertNotIn("\u2014", cleaned)
+        self.assertTrue(all(ord(c) < 128 for c in cleaned))
+
 
 class TestQuotaChipAndToasts(unittest.TestCase):
     def test_chip_lines_from_snapshot(self):
@@ -45,10 +51,14 @@ class TestQuotaChipAndToasts(unittest.TestCase):
         self.assertIn("uploads left", blob)
         self.assertIn("ElevenLabs", blob)
         self.assertIn("Apify: OFF", blob)
+        self.assertIn("Mode:", blob)
 
     def test_toast_disabled_in_suite(self):
         self.assertFalse(win_notify.toast_enabled())
         self.assertFalse(win_notify.toast("t", "b", key="x"))
+        win_notify.notify_upload_scheduled("T", "2026-08-21T12:00:00.000Z")
+        win_notify.notify_overnight_done(2, 3)
+        win_notify.notify_uploads_left(6)
 
     def test_notify_breaker_is_fail_open(self):
         win_notify.notify_breaker("Apify", "402")  # must not raise
@@ -75,6 +85,18 @@ class TestExplorerAndPaths(unittest.TestCase):
     def test_reveal_missing_is_false(self):
         self.assertFalse(reveal_in_explorer(""))
         self.assertFalse(reveal_in_explorer(os.path.join("nope", "missing.mp4")))
+
+    def test_last_trace_kind(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "12.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("{}")
+            with (
+                patch("core.win_shell.last_trace_file", return_value=path),
+            ):
+                from core.win_shell import last_media_file
+
+                self.assertEqual(last_media_file("trace"), path)
 
     def test_max_path_clips_filename(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -192,10 +214,20 @@ class TestBoothAndLightbox(unittest.TestCase):
 
     def test_booth_approve_mentions_requeue(self):
         html = review_booth.booth_html(
-            run_id=12, grade="B (80)", authenticity="ok", cost="tts $0.31"
+            run_id=12,
+            grade="B (80)",
+            authenticity="ok",
+            cost="tts $0.31",
+            cost_share="tts $0.31 · 91% of this render",
         )
         self.assertIn("requeue-upload --run-id 12", html)
         self.assertIn("Reject", html)
+        self.assertIn("91%", html)
+
+    def test_tts_share_line(self):
+        line = review_booth.tts_share_line(0.31, 0.34)
+        self.assertIn("tts $0.31", line)
+        self.assertIn("91%", line)
 
     def test_write_booth_uses_html_dir(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -208,3 +240,50 @@ class TestBoothAndLightbox(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestToastQuotingIsSafe(unittest.TestCase):
+    """A title with an apostrophe must not break out of the PowerShell string.
+
+    The toast body is interpolated into a SINGLE-QUOTED PowerShell literal
+    (`$xml = '<toast>...'`). _xml_escape handles & < > " but not `'`, which is that
+    literal's own delimiter. Live run 69's real title was
+    "GTA 6 Leaks Persist Despite Stop Killing Games' Condemnation of Leaker Manifesto"
+    - an apostrophe is ordinary in LLM-written titles, so this is the common case, not
+    an exotic one. Unescaped it ends the string early: the toast silently fails to
+    parse, and the remainder is parsed as PowerShell.
+    """
+
+    REAL_TITLE = "GTA 6 Leaks Persist Despite Stop Killing Games' Condemnation"
+
+    def test_apostrophe_is_doubled_for_powershell(self):
+        from core.win_notify import _ps_single_quote
+
+        self.assertEqual(_ps_single_quote("it" + chr(39) + "s"), "it" + chr(39) * 2 + "s")
+
+    def test_real_title_cannot_terminate_the_literal(self):
+        from core.win_notify import _toast_script
+
+        script = _toast_script(self.REAL_TITLE, "rendered")
+        head = script.split("$xml = " + chr(39), 1)[1]
+        literal = head.split(chr(39) + "; ", 1)[0]
+        self.assertIn("Condemnation", literal, "title was cut short by its apostrophe")
+
+    def test_injection_attempt_stays_inside_the_string(self):
+        """Every apostrophe in the payload must be doubled, so nothing escapes the
+        literal. Checking for a raw substring is not enough - the escaped form
+        contains it too - so strip the doubled pairs and assert none is left.
+        """
+        from core.win_notify import _toast_script
+
+        q = chr(39)
+        evil = "x" + q + "; Remove-Item C:" + chr(92) + " -Recurse; " + q
+        script = _toast_script(evil, "body")
+
+        payload = script.split("$xml = " + q, 1)[1].rsplit(q + "; $doc", 1)[0]
+        self.assertIn("Remove-Item", payload, "payload should be inside the literal")
+        self.assertEqual(
+            payload.replace(q + q, "".join([])).count(q),
+            0,
+            "an unescaped quote would terminate the PowerShell string: " + payload,
+        )

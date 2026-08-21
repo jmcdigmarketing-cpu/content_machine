@@ -70,6 +70,18 @@ class TestAllocatedVsMarginal(unittest.TestCase):
         with patch.dict(os.environ, {"COST_TTS_PLAN_USD": "99"}):
             self.assertAlmostEqual(ue.allocated_per_video(9), 11.0, places=4)
 
+    def test_csv_export_ascii(self):
+        econ = ChannelEconomics(
+            channel_id="tapin",
+            videos=[
+                VideoEconomics(run_id=1, title="a", cost_usd=0.31, revenue_usd=None, domain="ufc"),
+            ],
+        )
+        blob = ue.to_csv(econ)
+        self.assertIn("run_id,title,domain,cost_usd", blob)
+        self.assertIn("0.3100", blob)
+        self.assertNotIn("\u2014", blob)
+
 
 if __name__ == "__main__":
     unittest.main()

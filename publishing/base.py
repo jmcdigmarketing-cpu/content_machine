@@ -13,7 +13,7 @@ PLATFORM_YOUTUBE = "youtube"
 
 PUBLISH_STATUS_SUCCESS = frozenset({"uploaded", "scheduled"})
 PUBLISH_STATUS_TERMINAL_FAILURE = frozenset(
-    {"not_configured", "not_implemented", "invalid_file", "auth_error"}
+    {"not_configured", "not_implemented", "invalid_file", "auth_error", "blocked"}
 )
 PUBLISH_STATUS_RETRYABLE = frozenset(
     {"quota_exceeded", "rate_limited", "error", "failed", "upstream_error"}
@@ -26,7 +26,7 @@ class PublishRequest:
     title: str
     description: str
     tags: list[str] | None = None
-    category_id: str = "20"
+    category_id: str = ""
     privacy_status: str = "private"
     publish_at: datetime | None = None
     thumbnail_path: str | None = None

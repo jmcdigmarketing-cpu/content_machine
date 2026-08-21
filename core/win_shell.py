@@ -17,8 +17,30 @@ logger = get_logger("core.win_shell")
 SHORTCUT_NAME = "Content OS.lnk"
 
 
+def last_trace_file(channel_id: str | None = None) -> str | None:
+    """Newest run-trace JSON on disk (data/traces/<id>.json)."""
+    try:
+        from config.paths import TRACES_DIR
+        from core.run_trace import list_traces
+
+        traces = list_traces(limit=5, channel_id=channel_id)
+    except Exception as exc:
+        logger.debug("list_traces skipped: %s", exc)
+        return None
+    for t in traces:
+        rid = t.get("run_id")
+        if rid is None:
+            continue
+        path = os.path.join(TRACES_DIR, f"{int(rid)}.json")
+        if os.path.isfile(path):
+            return os.path.abspath(path)
+    return None
+
+
 def last_media_file(kind: str = "mp4", *, channel_id: str | None = None) -> str | None:
     """Newest mp4 under output/{channel}/video or newest thumb under thumbnails/."""
+    if kind in ("trace", "json", "traces"):
+        return last_trace_file(channel_id)
     try:
         from core.output_paths import ensure_channel_output_dirs
 
@@ -68,6 +90,39 @@ def reveal_last(*, kind: str = "mp4", channel_id: str | None = None) -> str | No
     if path:
         reveal_in_explorer(path)
     return path
+
+
+def open_folder(path: str | None) -> bool:
+    """Open a directory in Explorer. Fail-open."""
+    if not path or not os.path.isdir(path):
+        return False
+    abs_path = os.path.abspath(path)
+    try:
+        if os.name == "nt":
+            os.startfile(abs_path)  # type: ignore[attr-defined]
+            return True
+        import webbrowser
+
+        return bool(webbrowser.open(abs_path))
+    except Exception as exc:
+        logger.debug("open folder skipped: %s", exc)
+        return False
+
+
+def open_last_output_folder(*, channel_id: str | None = None) -> str | None:
+    """Open output/{channel}/ (video dir if present). Tray menu helper."""
+    try:
+        from core.output_paths import ensure_channel_output_dirs
+
+        dirs = ensure_channel_output_dirs(channel_id)
+    except Exception as exc:
+        logger.debug("output dirs skipped: %s", exc)
+        return None
+    folder = dirs.get("video") or dirs.get("root") or ""
+    if folder and os.path.isdir(folder):
+        open_folder(folder)
+        return os.path.abspath(folder)
+    return None
 
 
 def pyw_launcher_path() -> str:

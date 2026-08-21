@@ -55,11 +55,24 @@ def _xml_escape(text: str) -> str:
     )[:180]
 
 
-def _toast_powershell(title: str, body: str) -> bool:
-    """WinRT toast via PowerShell (no extra pip). Fail-open."""
-    title_x = _xml_escape(title)
-    body_x = _xml_escape(body)
-    script = (
+def _ps_single_quote(text: str) -> str:
+    """Escape for embedding inside a PowerShell SINGLE-quoted string.
+
+    _xml_escape covers & < > " for the XML payload, but the payload is itself
+    pasted into a PowerShell literal delimited by '. PowerShell escapes that
+    delimiter by doubling it. Without this an ordinary title - live run 69's was
+    "...Stop Killing Games' Condemnation..." - ends the literal early: the toast
+    fails to parse, and whatever follows is read as PowerShell.
+    """
+    return str(text).replace("'", "''")
+
+
+def _toast_script(title: str, body: str) -> str:
+    """Build the PowerShell one-liner. Split out so the quoting is testable."""
+    title_x = _ps_single_quote(_xml_escape(title))
+    body_x = _ps_single_quote(_xml_escape(body))
+    app_id = _ps_single_quote(APP_ID)
+    return (
         "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications,"
         " ContentType = WindowsRuntime] | Out-Null; "
         "[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom,"
@@ -69,8 +82,13 @@ def _toast_powershell(title: str, body: str) -> bool:
         "$doc = New-Object Windows.Data.Xml.Dom.XmlDocument; $doc.LoadXml($xml); "
         "$t = [Windows.UI.Notifications.ToastNotification]::new($doc); "
         f"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("
-        f"'{APP_ID}').Show($t)"
+        f"'{app_id}').Show($t)"
     )
+
+
+def _toast_powershell(title: str, body: str) -> bool:
+    """WinRT toast via PowerShell (no extra pip). Fail-open."""
+    script = _toast_script(title, body)
     creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     result = subprocess.run(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
@@ -123,6 +141,57 @@ def notify_ffmpeg_done(path: str) -> None:
         logger.debug("notify_ffmpeg_done skipped: %s", exc)
 
 
+def notify_upload_scheduled(title: str, publish_at: str) -> None:
+    try:
+        when = (publish_at or "queued").strip() or "queued"
+        toast(
+            f"{APP_NAME}: upload scheduled",
+            f"{(title or 'video')[:80]} at {when}",
+            key=f"scheduled:{title}:{when}",
+        )
+    except Exception as exc:
+        logger.debug("notify_upload_scheduled skipped: %s", exc)
+
+
+def notify_overnight_done(drafted: int, requested: int) -> None:
+    try:
+        toast(
+            f"{APP_NAME}: overnight drafts",
+            f"{int(drafted)}/{int(requested)} drafts ready (cadence-safe, no TTS)",
+            key="overnight-drafts",
+        )
+    except Exception as exc:
+        logger.debug("notify_overnight_done skipped: %s", exc)
+
+
+def notify_uploads_left(n: int | None = None) -> None:
+    """Action Center balloon: N uploads left this reset (~1,600 units each)."""
+    try:
+        left = n
+        if left is None:
+            from apis.youtube_quota import uploads_remaining
+
+            left = uploads_remaining()
+        toast(
+            f"{APP_NAME}: uploads left",
+            f"~{int(left)} uploads left this reset",
+            key="uploads-left",
+        )
+    except Exception as exc:
+        logger.debug("notify_uploads_left skipped: %s", exc)
+
+
+def cost_mode_label() -> str:
+    try:
+        from core.run_mode import COST_MODE_FREE, resolve_cost_mode
+
+        mode = resolve_cost_mode()
+        return "Free" if mode == COST_MODE_FREE else "Standard"
+    except Exception as exc:
+        logger.debug("cost mode label skipped: %s", exc)
+        return "Standard"
+
+
 def quota_chip_lines(snap: dict[str, Any] | None = None) -> list[str]:
     """Uploads-left, ElevenLabs leftover chars, Apify breaker — one line each."""
     data = snap
@@ -163,6 +232,7 @@ def quota_chip_lines(snap: dict[str, Any] | None = None) -> list[str]:
         lines.append(f"Apify: OFF - {ap.get('reason') or 'exhausted'}")
     else:
         lines.append("Apify: ON")
+    lines.append(f"Mode: {cost_mode_label()}")
     return lines
 
 
@@ -179,13 +249,23 @@ def show_quota_chip(*, toast_it: bool = True) -> str:
     text = chip_text()
     if toast_it:
         toast(f"{APP_NAME} quota", text, key="quota-chip")
+        notify_uploads_left()
     return text
 
 
-def run_tray(*, stay: bool = False) -> int:
+def run_tray(*, stay: bool = False, open_output: bool = False) -> int:
     """Quota chip: toast + print. Optional always-on-top tkinter chip (not a daemon)."""
     text = show_quota_chip(toast_it=True)
     print(text)
+    if open_output:
+        try:
+            from core.win_shell import open_last_output_folder
+
+            folder = open_last_output_folder()
+            if folder:
+                print(folder)
+        except Exception as exc:
+            logger.debug("tray open-output skipped: %s", exc)
     if not stay:
         return 0
     try:
@@ -197,6 +277,17 @@ def run_tray(*, stay: bool = False) -> int:
         root.resizable(False, False)
         lbl = tk.Label(root, text=text, justify="left", padx=12, pady=10, font=("Segoe UI", 11))
         lbl.pack()
+
+        def _open_folder() -> None:
+            try:
+                from core.win_shell import open_last_output_folder
+
+                open_last_output_folder()
+            except Exception as exc:
+                logger.debug("tray folder button skipped: %s", exc)
+
+        btn = tk.Button(root, text="Open last output folder", command=_open_folder)
+        btn.pack(padx=12, pady=(0, 10))
         root.mainloop()
     except Exception as exc:
         logger.debug("tray window skipped: %s", exc)
@@ -208,8 +299,13 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description="Content OS quota chip / toasts")
     parser.add_argument("--stay", action="store_true", help="Keep a small on-top chip window")
+    parser.add_argument(
+        "--open-output",
+        action="store_true",
+        help="Open the last channel output folder in Explorer",
+    )
     args = parser.parse_args()
-    return run_tray(stay=bool(args.stay))
+    return run_tray(stay=bool(args.stay), open_output=bool(args.open_output))
 
 
 if __name__ == "__main__":

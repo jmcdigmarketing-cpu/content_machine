@@ -45,6 +45,9 @@ os.environ["POLICY_CANARY_FETCH"] = "false"
 os.environ["CONTENT_TOAST"] = "false"
 os.environ["CONTENT_HTML_OPEN"] = "false"
 os.environ["YOUTUBE_UNLISTED_REVIEW"] = "false"
+os.environ["RAM_MIN_GB"] = "0"
+os.environ["VRAM_MIN_GB"] = "0"
+os.environ["TITLE_UNIQUENESS"] = "off"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move

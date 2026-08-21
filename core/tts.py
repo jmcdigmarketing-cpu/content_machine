@@ -355,6 +355,19 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         print(f"[TTS] Channel: {channel_id} | cache hit")
         return output_path
 
+    if is_local_tts_provider():
+        try:
+            from core.ram_preflight import block_reason as ram_block
+
+            why = ram_block(kind="tts")
+        except Exception as exc:
+            logger.debug("ram preflight skipped: %s", exc)
+            why = None
+        if why:
+            logger.warning("%s", why)
+            if _free_mode_strict():
+                raise RuntimeError(why)
+
     # Provider seam (Pillar 6): a non-ElevenLabs TTS_PROVIDER (local Kokoro/XTTS) is
     # tried first; on any failure it falls back to the ElevenLabs default below.
     alt = _try_alt_tts_provider(spoken_for_alt, output_path, channel_id)

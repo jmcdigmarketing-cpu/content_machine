@@ -110,6 +110,12 @@ def main():
         from apis.youtube_quota import format_uploads_left
 
         print(f"  YouTube: {format_uploads_left()}")
+        try:
+            from core.win_notify import notify_uploads_left
+
+            notify_uploads_left()
+        except Exception as exc:
+            logger.debug("uploads-left toast skipped: %s", exc)
     except Exception as exc:
         logger.debug("uploads-left startup line skipped: %s", exc)
     if intelligence_mode_enabled():

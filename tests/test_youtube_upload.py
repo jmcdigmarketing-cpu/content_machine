@@ -173,6 +173,12 @@ class TestYouTubeUpload(unittest.TestCase):
         self.assertGreaterEqual(mock_repo.update.call_count, 1)
         first_update = mock_repo.update.call_args_list[0][0][1]
         self.assertEqual(first_update.get("youtube_video_id"), "yt999")
+        insert_kwargs = mock_service.videos.return_value.insert.call_args.kwargs
+        body = insert_kwargs["body"]
+        self.assertIs(body["status"]["selfDeclaredMadeForKids"], False)
+        self.assertEqual(body["snippet"]["defaultLanguage"], "en")
+        self.assertEqual(body["snippet"]["defaultAudioLanguage"], "en")
+        self.assertTrue(str(body["snippet"]["categoryId"]))
 
     def test_pending_healed_without_reupload(self):
         pending = PublishLogRecord(

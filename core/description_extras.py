@@ -26,6 +26,9 @@ from core.logging import get_logger
 logger = get_logger("core.description_extras")
 
 DEFAULT_AI_DISCLOSURE = "Made with AI-assisted narration and editing."
+DEFAULT_FINANCE_DISCLAIMER = (
+    "Not financial advice. For informational purposes only. Do your own research."
+)
 
 
 def _flag(name: str, default: bool) -> bool:
@@ -59,6 +62,19 @@ def monetization_ctas(channel_id: str) -> list[str]:
     return [str(x).strip() for x in raw if str(x).strip()]
 
 
+def finance_disclaimer_line(channel_id: str) -> str:
+    """MoneyWise description disclaimer (separate from AI disclosure)."""
+    if (channel_id or "").strip().lower() != "moneywise":
+        return ""
+    if not _flag("FINANCE_DISCLAIMER", True):
+        return ""
+    try:
+        custom = get_seo_profile(channel_id).get("finance_disclaimer")
+    except Exception:
+        custom = None
+    return (custom or DEFAULT_FINANCE_DISCLAIMER).strip()
+
+
 def apply_description_extras(description: str, channel_id: str) -> str:
     """
     Append the AI disclosure and any monetization CTAs to a description.
@@ -70,6 +86,10 @@ def apply_description_extras(description: str, channel_id: str) -> str:
     disclosure = ai_disclosure_line(channel_id)
     if disclosure and disclosure not in body:
         additions.append(disclosure)
+
+    finance = finance_disclaimer_line(channel_id)
+    if finance and finance not in body:
+        additions.append(finance)
 
     for cta in monetization_ctas(channel_id):
         if cta not in body and cta not in additions:

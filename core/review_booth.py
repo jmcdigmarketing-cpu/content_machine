@@ -67,6 +67,21 @@ def thin_facts_html(reason: str, *, fact_count: int | None = None) -> str:
     return themed_page("Thin-facts abort", body, subtitle="gate already saved the TTS spend")
 
 
+def tts_share_line(tts: Any, total: Any) -> str:
+    """`tts $0.31 · 91% of this render` — the number that should stay on-screen."""
+    try:
+        tts_f = float(tts or 0)
+        total_f = float(total or 0)
+    except (TypeError, ValueError):
+        return ""
+    if total_f > 0:
+        pct = 100.0 * tts_f / total_f
+        return f"tts ${tts_f:.2f} · {pct:.0f}% of this render"
+    if tts_f:
+        return f"tts ${tts_f:.2f}"
+    return ""
+
+
 def booth_html(
     *,
     mp4_path: str | None = None,
@@ -77,13 +92,14 @@ def booth_html(
     blocking: str = "",
     run_id: int | None = None,
     approve_cmd: str = "",
+    cost_share: str = "",
 ) -> str:
-    vid = ""
+    share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
     if mp4_path and os.path.isfile(mp4_path):
         uri = _file_uri(mp4_path)
-        vid = f"<video controls src='{escape(uri)}'></video><p>{escape(mp4_path)}</p>"
+        vid = f"<video controls src='{escape(uri)}'></video>{share}<p>{escape(mp4_path)}</p>"
     else:
-        vid = "<p>No last mp4 on disk. Render first, then reopen the booth.</p>"
+        vid = f"<p>No last mp4 on disk. Render first, then reopen the booth.</p>{share}"
     thumb = ""
     if thumb_path and os.path.isfile(thumb_path):
         thumb = f"<img class='thumb' src='{escape(_file_uri(thumb_path))}' alt='thumb'>"
@@ -168,6 +184,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "grade": grade,
         "authenticity": str(quality.get("authenticity_verdict") or ""),
         "cost": cost_s,
+        "cost_share": tts_share_line(tts, total),
         "blocking": blocking,
         "run_id": run_id,
     }

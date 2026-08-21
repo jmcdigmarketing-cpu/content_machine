@@ -127,4 +127,16 @@ def blocking_publish_reasons(
     except Exception as exc:
         logger.debug("disk preflight blocker skipped: %s", exc)
 
+    try:
+        from core.publish_windows import window_reason
+
+        topic = ""
+        if isinstance(features, dict):
+            topic = str(features.get("selected_topic") or features.get("topic") or "")
+        why = window_reason(channel_id=channel_id, topic=topic)
+        if why:
+            out.append(why)
+    except Exception as exc:
+        logger.debug("publish-window blocker skipped: %s", exc)
+
     return out

@@ -221,6 +221,15 @@ def render_grade(grade: VideoGrade) -> str:
     return "\n".join(lines)
 
 
+def grade_as_markdown(grade: VideoGrade) -> str:
+    """Copy-as-markdown for `ops grade --md` and the booth report card."""
+    lines = [f"# Report card {grade.letter} ({grade.score:.0f}/100)", ""]
+    for c in grade.components:
+        note = f" - {c.note}" if c.note else ""
+        lines.append(f"- **{c.name}**: {c.score:.0f}{note}")
+    return "\n".join(lines)
+
+
 def render_expert_panel(draft: str, channel_id: str | None = None) -> str:
     """Optional qualitative Expert-Panel section shown beside the numeric card.
 

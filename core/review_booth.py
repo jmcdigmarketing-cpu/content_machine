@@ -82,6 +82,62 @@ def tts_share_line(tts: Any, total: Any) -> str:
     return ""
 
 
+def booth_markdown(
+    *,
+    grade: str = "",
+    authenticity: str = "",
+    cost: str = "",
+    blocking: str = "",
+    cost_share: str = "",
+    run_id: int | None = None,
+) -> str:
+    """Copy-as-markdown payload for the report card (vault / chat)."""
+    rid = f"#{int(run_id)}" if run_id else "(last render)"
+    lines = [
+        f"# Report card {grade or 'n/a'} ({rid})",
+        "",
+        f"- Authenticity: {authenticity or 'n/a'}",
+        f"- Cost: {cost or 'n/a'}",
+        f"- TTS share: {cost_share or 'n/a'}",
+        f"- Blocking publish: {blocking or 'n/a'}",
+    ]
+    return "\n".join(lines)
+
+
+def apify_pills_html() -> str:
+    """Remaining paid Apify actors as pills. Never implies reddit/twitter still bill."""
+    try:
+        from apis.apify_catalog import remaining_enabled_actors
+
+        names = remaining_enabled_actors()
+    except Exception as exc:
+        logger.debug("apify pills skipped: %s", exc)
+        names = ["tiktok_trends", "youtube_competitors"]
+    parts = [f"<span class='pill'>{escape(n)}</span>" for n in names]
+    return "<p>Apify (still billing): " + "".join(parts) + "</p>" if parts else ""
+
+
+def thin_facts_banner_html(blocking: str = "") -> str:
+    if "thin" in (blocking or "").lower():
+        return (
+            "<p class='banner'>Thin-facts: TTS was skipped or the draft is under "
+            "the fact bar. Add operator facts before burning the $0.31 voice line.</p>"
+        )
+    return ""
+
+
+def escaped_llm_pill_html(trace: dict[str, Any] | None) -> str:
+    calls = (trace or {}).get("llm_calls") or []
+    hit = False
+    for call in calls:
+        if isinstance(call, dict) and call.get("escaped_free_first"):
+            hit = True
+            break
+    if not hit:
+        return ""
+    return "<p class='redpill'>Escaped free-first LLM — this run landed on a paid slug.</p>"
+
+
 def booth_html(
     *,
     mp4_path: str | None = None,
@@ -93,13 +149,27 @@ def booth_html(
     run_id: int | None = None,
     approve_cmd: str = "",
     cost_share: str = "",
+    uploads_left: str = "",
+    elevenlabs_chars: str = "",
+    apify_pills: str = "",
+    escaped_pill: str = "",
+    standard_billed: str = "",
+    allocated_line: str = "",
+    thin_banner: str = "",
+    markdown: str = "",
 ) -> str:
     share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
     if mp4_path and os.path.isfile(mp4_path):
         uri = _file_uri(mp4_path)
-        vid = f"<video controls src='{escape(uri)}'></video>{share}<p>{escape(mp4_path)}</p>"
+        vid = (
+            f"<video id='player' controls src='{escape(uri)}'></video>"
+            f"{share}<p>{escape(mp4_path)}</p>"
+        )
     else:
-        vid = f"<p>No last mp4 on disk. Render first, then reopen the booth.</p>{share}"
+        vid = (
+            "<p id='player'>No last mp4 on disk. Render first, then reopen the booth.</p>"
+            f"{share}"
+        )
     thumb = ""
     if thumb_path and os.path.isfile(thumb_path):
         thumb = f"<img class='thumb' src='{escape(_file_uri(thumb_path))}' alt='thumb'>"
@@ -109,22 +179,51 @@ def booth_html(
         if run_id
         else "py -m scripts.ops list-uploads"
     )
+    md = markdown or booth_markdown(
+        grade=grade,
+        authenticity=authenticity,
+        cost=cost,
+        blocking=blocking,
+        cost_share=cost_share,
+        run_id=run_id,
+    )
+    extra_cost = ""
+    if standard_billed:
+        extra_cost += f"<p>{escape(standard_billed)}</p>"
+    if allocated_line:
+        extra_cost += f"<p>{escape(allocated_line)}</p>"
     body = (
+        f"{thin_banner}{escaped_pill}"
         f"<div class='card'>{vid}{thumb}</div>"
         "<div class='card'>"
         f"<p><strong>Run</strong> {escape(rid)}</p>"
         f"<p><strong>Grade</strong> {escape(grade or 'n/a')}</p>"
         f"<p><strong>Authenticity</strong> {escape(authenticity or 'n/a')}</p>"
         f"<p><strong>Cost</strong> {escape(cost or 'n/a')}</p>"
+        f"{extra_cost}"
         f"<p><strong>Blocking publish</strong> {escape(blocking or 'n/a')}</p>"
+        f"{apify_pills}"
         "</div>"
         "<div class='card'>"
         "<p><strong>Approve</strong> (unlisted review, cadence-safe):</p>"
         f"<pre>{escape(cmd)}</pre>"
         "<p><strong>Reject</strong>: leave the mp4 in output/; do not queue an upload.</p>"
+        "<p><label for='md'>Copy as markdown</label></p>"
+        f"<textarea id='md' class='md' readonly>{escape(md)}</textarea>"
+        "<p><button type='button' "
+        "onclick=\"navigator.clipboard.writeText(document.getElementById('md').value)\">"
+        "Copy as markdown</button></p>"
         "</div>"
     )
-    return themed_page("Last-run review booth", body, subtitle="play + grade + authenticity + cost")
+    quota_bits = [b for b in (uploads_left, elevenlabs_chars) if b]
+    header_html = f"<div class='quota'>{escape(' · '.join(quota_bits))}</div>" if quota_bits else ""
+    return themed_page(
+        "Last-run review booth",
+        body,
+        subtitle="play + grade + authenticity + cost",
+        skip_href="#player",
+        header_html=header_html,
+    )
 
 
 def write_lightbox(thumb_path: str | None, *, open_browser: bool = True) -> str:
@@ -178,6 +277,38 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     cost_s = ""
     if total is not None:
         cost_s = f"tts ${float(tts or 0):.2f} · total ${float(total):.2f}"
+    uploads_left = ""
+    elevenlabs_chars = ""
+    try:
+        from core.win_notify import quota_chip_lines
+
+        for line in quota_chip_lines():
+            if line.startswith("YouTube:"):
+                uploads_left = line
+            elif line.startswith("ElevenLabs:"):
+                elevenlabs_chars = line
+    except Exception as exc:
+        logger.debug("booth quota header skipped: %s", exc)
+    standard_billed = ""
+    try:
+        from core.cost_meter import format_standard_billed_line, local_tts_selected
+
+        script = str((trace or {}).get("script_preview") or "")
+        standard_billed = format_standard_billed_line(script)
+        if not standard_billed and local_tts_selected():
+            standard_billed = "Standard would have billed ElevenLabs TTS (~$0.31/video, 91%)"
+    except Exception as exc:
+        logger.debug("booth standard-billed skipped: %s", exc)
+    allocated_line = ""
+    try:
+        from core.unit_economics import allocated_vs_marginal_oneliner
+
+        allocated_line = allocated_vs_marginal_oneliner(
+            n_videos=None,
+            marginal=float(total) if total is not None else None,
+        )
+    except Exception as exc:
+        logger.debug("booth allocated line skipped: %s", exc)
     return {
         "mp4_path": mp4,
         "thumb_path": thumb,
@@ -187,6 +318,21 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "cost_share": tts_share_line(tts, total),
         "blocking": blocking,
         "run_id": run_id,
+        "uploads_left": uploads_left,
+        "elevenlabs_chars": elevenlabs_chars,
+        "apify_pills": apify_pills_html(),
+        "escaped_pill": escaped_llm_pill_html(trace),
+        "standard_billed": standard_billed,
+        "allocated_line": allocated_line,
+        "thin_banner": thin_facts_banner_html(blocking),
+        "markdown": booth_markdown(
+            grade=grade,
+            authenticity=str(quality.get("authenticity_verdict") or ""),
+            cost=cost_s,
+            blocking=blocking,
+            cost_share=tts_share_line(tts, total),
+            run_id=run_id,
+        ),
     }
 
 

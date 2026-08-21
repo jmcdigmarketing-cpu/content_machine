@@ -21,12 +21,16 @@ _CSS = """
 :root { color-scheme: dark; }
 html, body { margin: 0; padding: 0; background: #111318; color: #e8eaed;
   font-family: "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.45; }
+.skip { position: absolute; left: -999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+.skip:focus { left: 1rem; top: 1rem; width: auto; height: auto; z-index: 20;
+  background: #000; color: #fff; padding: 0.5rem 0.75rem; }
 header { padding: 1rem 1.25rem; background: #1a1d24; border-bottom: 3px solid #c62828; }
 header h1 { margin: 0; font-size: 1.25rem; letter-spacing: 0.02em; }
 header .sub { color: #9aa0a6; font-size: 0.9rem; margin-top: 0.25rem; }
+header .quota { font-size: 16px; color: #e8eaed; margin-top: 0.35rem; }
 main { padding: 1.25rem; max-width: 960px; }
 pre { background: #0d0f14; border: 1px solid #2a2f3a; padding: 1rem; overflow: auto;
-  font-family: "Cascadia Mono", Consolas, monospace; font-size: 14px; white-space: pre-wrap; }
+  font-family: "Cascadia Mono", Consolas, monospace; font-size: 16px; white-space: pre-wrap; }
 table { border-collapse: collapse; width: 100%; font-size: 16px; }
 th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid #2a2f3a; }
 th { color: #9aa0a6; font-weight: 600; }
@@ -37,7 +41,24 @@ dialog { border: none; padding: 0; background: #000; max-width: 96vw; }
 dialog img { max-width: 96vw; max-height: 96vh; }
 video { width: 100%; max-height: 70vh; background: #000; }
 .cost-sub { color: #fdd663; font-size: 16px; margin: 0.35rem 0 0; }
+.redpill { color: #f28b82; font-weight: 700; }
+.banner { background: #3c1f1f; border: 1px solid #f28b82; padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
+.pill { display: inline-block; border: 1px solid #2a2f3a; padding: 0.15rem 0.5rem;
+  margin: 0.15rem; font-size: 16px; }
+textarea.md { width: 100%; min-height: 7rem; background: #0d0f14; color: #e8eaed;
+  border: 1px solid #2a2f3a; font-family: "Cascadia Mono", Consolas, monospace; font-size: 16px; }
 a { color: #8ab4f8; }
+@media (prefers-contrast: more) {
+  html, body { background: #000; color: #fff; }
+  header { background: #000; border-bottom-color: #fff; }
+  header .sub, th, .pill { color: #fff; }
+  a { color: #fff; text-decoration: underline; }
+  .cost-sub, .warn { color: #fff; }
+  pre, .card, textarea.md { border-color: #fff; background: #000; }
+}
+@media (forced-colors: active) {
+  header { border-bottom: 3px solid CanvasText; }
+}
 """
 
 _ASCII_REPLACEMENTS = {
@@ -91,15 +112,25 @@ def escape(text: Any) -> str:
     return html.escape(str(text if text is not None else ""), quote=True)
 
 
-def themed_page(title: str, body_html: str, *, subtitle: str = "") -> str:
+def themed_page(
+    title: str,
+    body_html: str,
+    *,
+    subtitle: str = "",
+    skip_href: str = "#main",
+    header_html: str = "",
+) -> str:
     sub = ascii_safe(subtitle or "Content OS operator snapshot")
     safe_title = ascii_safe(title)
+    skip = f"<a class='skip' href='{escape(skip_href)}'>Skip to content</a>" if skip_href else ""
+    extra = header_html or ""
     return (
         "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
         f"<title>{escape(safe_title)}</title><style>{_CSS}</style></head><body>"
-        f"<header><h1>{escape(safe_title)}</h1><div class='sub'>{escape(sub)}</div></header>"
-        f"<main>{body_html}</main></body></html>"
+        f"{skip}<header><h1>{escape(safe_title)}</h1>"
+        f"<div class='sub'>{escape(sub)}</div>{extra}</header>"
+        f"<main id='main'>{body_html}</main></body></html>"
     )
 
 

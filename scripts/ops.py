@@ -558,6 +558,11 @@ def cmd_grade(args: argparse.Namespace) -> int:
         print(f"No persisted quality for run #{args.run_id} (pre-ledger run?)")
         return 1
     print(render_grade(grade))
+    if getattr(args, "md", False):
+        from core.video_grade import grade_as_markdown
+
+        print()
+        print(grade_as_markdown(grade))
     panel = render_expert_panel(
         record.script_preview, record.channel_id
     )  # EXPERT_PANEL_ENABLED-gated
@@ -752,6 +757,7 @@ def cmd_tray(args: argparse.Namespace) -> int:
     return run_tray(
         stay=bool(getattr(args, "stay", False)),
         open_output=bool(getattr(args, "open_output", False)),
+        doctor_html=bool(getattr(args, "doctor_html", False)),
     )
 
 
@@ -993,6 +999,16 @@ def main(argv=None) -> int:
         "--open-output",
         action="store_true",
         help="tray: open the last channel output folder",
+    )
+    parser.add_argument(
+        "--doctor-html",
+        action="store_true",
+        help="tray: write ops doctor as themed HTML",
+    )
+    parser.add_argument(
+        "--md",
+        action="store_true",
+        help="grade: print copy-as-markdown instead of ASCII",
     )
     parser.add_argument(
         "--kind",

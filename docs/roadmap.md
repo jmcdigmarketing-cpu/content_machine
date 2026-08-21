@@ -13,11 +13,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-08-21 — **honesty + leave-the-terminal wave 2 shipped** (20
-working pieces on top of the morning UI wave). FastAPI shell **#147 still
+Last updated: 2026-08-21 — **honesty + leave-the-terminal wave 3 shipped** (20
+working pieces on top of waves 1–2). FastAPI shell **#147 still
 skipped**. No Content OS Desktop (#141), Visual Studio (#142), Web OS (#143),
 Phase M, volume-gated backtest, or $0 TTS voice judgment.
-Rationale: [planning_log.md](planning_log.md) 2026-08-21 (wave 2).
+Rationale: [planning_log.md](planning_log.md) 2026-08-21 (wave 3).
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -133,6 +133,39 @@ and keeps the operator out of PowerShell. **#147 FastAPI still skipped.**
 20. **317** Tray: Free vs Standard mode `[S]` — *shipped.* Chip line `Mode: Free|Standard`.
 
 **Swaps vs numerical next:** skipped 21–28 (need a real render), 31/33/34 (hygiene that is not the next publish), 38 NVENC *encode* (probe #94 instead), 39 draft preset, 44 `probe_sync`, 98 pip-audit CI, 101 caption *track*, 103 vault sources, 146 tray daemon `[L]`, 147 FastAPI `[L]`, 172 HTML design system `[M]`.
+
+**Honesty + leave-the-terminal wave 3 (2026-08-21)** — **shipped.** Pickup was *not*
+numerical next (21 caption skin / 31 artifact retention / 101 caption track /
+146 tray daemon). Ranked leftover `[S]` that keep the next *public* honest
+(PPV + quiet hours, SEO first line, UFC stock-query rewrite, odds “market”
+voice, gambling-safe CTAs, FTC copy), surface TTS 91% / quota on the booth
+(escaped-LLM pill, Standard-would-have-billed, allocated vs marginal, uploads
++ ElevenLabs header, Apify pills, thin-facts banner), and leave PowerShell
+(click-toast opens the mp4, high-contrast CSS, skip-link, copy-as-markdown,
+tray doctor HTML + last grade). **#147 FastAPI still skipped.**
+
+1. **115** Don’t publish during a live UFC PPV window `[S]` — *shipped.* Sat 21:00–02:00 ET; UFC topics only; bumps `publishAt`. Unlisted review holds are not “publishing”.
+2. **116** Blackout / quiet-hours calendar in `channels.json` `[S]` — *shipped.* TapIn + MoneyWise `quiet_hours` 1–8 ET; `QUIET_HOURS` master switch.
+3. **118** Description first-line SEO `[S]` — *shipped.* Prepend title when the first line is hashtags / Subscribe / empty.
+4. **121** Stock query rewriter: never Pexels-search “UFC” `[S]` — *shipped.* `sanitize_trademark_stock_query` → `mma`.
+5. **126** Odds scripts say “market” / “favored”, never “will win” `[S]` — *shipped.* Odds-context only.
+6. **127** Gambling/odds advertiser-safe mode `[S]` — *shipped.* Strips bet-now / parlay CTAs.
+7. **128** FTC affiliate disclosure *line* `[S]` — *shipped.* Copy only, when `monetization_cta` is set. #79 is still the tracking spike.
+8. **229** Click-toast opens last mp4 `[S]` — *shipped.* Toast `activationType=protocol` + `file:` URI.
+9. **234** High-contrast CSS for HTML reports `[S]` — *shipped.* `prefers-contrast: more`.
+10. **251** Copy-as-markdown on the report card `[S]` — *shipped.* Booth textarea + `ops grade --md`.
+11. **261** Skip-link a11y on the booth `[S]` — *shipped.* Skip to `#player`; all dumps skip to `#main`.
+12. **273** Escaped free-first LLM red pill `[S]` — *shipped.* Booth reads `llm_calls[].escaped_free_first`.
+13. **274** Thin-facts warning banner `[S]` — *shipped.* Same gate as #200, one strip.
+14. **278** Standard-would-have-billed on Free runs `[S]` — *shipped.* Existing dry-run line on the booth.
+15. **279** Allocated vs marginal one-liner `[S]` — *shipped.* Booth footer; no new economics engine.
+16. **286** Uploads-left in booth header `[S]` — *shipped.* Same figure as the tray chip.
+17. **287** ElevenLabs chars in booth header `[S]` — *shipped.*
+18. **288** Remaining Apify actors as pills `[S]` — *shipped.* Catalog-enabled only (`tiktok_trends`, `youtube_competitors`).
+19. **314** Tray: run doctor → HTML `[S]` — *shipped.* `--doctor-html` + stay-window button.
+20. **315** Tray: last grade letter `[S]` — *shipped.* Chip line `Grade: B`. Suite sets `CONTENT_TRAY_GRADE=false`.
+
+**Swaps vs numerical next (wave 3):** skipped 21–28 (need a real render), 31/33/34, 38 NVENC encode, 39 draft preset, 44 `probe_sync`, 52 graveyard codes, 98 pip-audit, 101 caption track, 103 vault sources, 132 policy runbook (doc-only), 146 tray daemon `[L]`, 147 FastAPI `[L]`, 172 HTML design system `[M]`, 316 last-domain (companion to 315; next chip).
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -723,13 +756,13 @@ Content / learning
 
 - [ ] 113. Prediction ledger — persist “we called X” vs later outcome `[M]`
 - [ ] 114. Audience-question series: cluster `youtube_comments` across runs into a mailbag `[M]`
-- [ ] 115. Don’t publish during a live UFC PPV window (cannibalize the niche) `[S]`
-- [ ] 116. Blackout / quiet-hours calendar in `channels.json` `[S]`
+- [x] **115. Don’t publish during a live UFC PPV window** *(2026-08-21)* — Sat 21:00–02:00 ET; UFC topics only; bumps `publishAt` `[S]`
+- [x] **116. Blackout / quiet-hours calendar in `channels.json`** *(2026-08-21)* — TapIn + MoneyWise 1–8 ET `[S]`
 - [x] **117. Title uniqueness vs own catalog** *(2026-08-21)* — `TITLE_UNIQUENESS=warn|block|off` `[S]`
-- [ ] 118. Description first-line SEO (search; not hashtag stuffing) `[S]`
+- [x] **118. Description first-line SEO** *(2026-08-21)* — prepend title when first line is hashtags / Subscribe `[S]`
 - [ ] 119. Stock-clip **watermark detector** — skip footage that shows another channel `[M]`
 - [ ] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]`
-- [ ] 121. Stock query rewriter: never Pexels-search trademarked “UFC” fight footage `[S]`
+- [x] **121. Stock query rewriter: never Pexels-search trademarked “UFC”** *(2026-08-21)* — rewrite to `mma` `[S]`
 - [ ] 122. `license.yaml` beside local clips (we own this file) `[S]`
 - [ ] 123. Number/SSML reading rules (`29-1`, UFC 317, `$50k`) — distinct from the name lexicon `[M]`
 - [ ] 124. Pause-after-hook: 200–400ms silence after line 1 `[S]`
@@ -737,9 +770,9 @@ Content / learning
 Legal / policy / MoneyWise (not Phase M, not the #79 spike)
 
 - [x] **125. MoneyWise finance disclaimer** *(2026-08-21)* — description line, separate from AI disclosure `[S]`
-- [ ] 126. Odds-derived scripts must say “market”, never “will” `[S]`
-- [ ] 127. Gambling/odds advertiser-safe mode (strip implied betting CTAs) `[S]`
-- [ ] 128. FTC affiliate disclosure *line* (copy; #79 is the tracking spike) `[S]`
+- [x] **126. Odds-derived scripts must say “market”, never “will”** *(2026-08-21)* — odds-context only; `is favored to` `[S]`
+- [x] **127. Gambling/odds advertiser-safe mode** *(2026-08-21)* — strip bet-now / parlay CTAs `[S]`
+- [x] **128. FTC affiliate disclosure *line*** *(2026-08-21)* — copy when `monetization_cta` is set; #79 is the tracking spike `[S]`
 - [x] **129. UFC/trademark title linter** *(2026-08-21)* — warns `UFC` on a non-UFC topic `[S]`
 - [ ] 130. Right-of-publicity: refuse stock thumbs that look like a real fighter’s face `[M]`
 - [ ] 131. Demonetization detector (`estimatedRevenue` cliff vs channel baseline) `[S]`
@@ -871,12 +904,12 @@ Small — hours / a PR
 - [x] 226. Toast when a **breaker trips** *(2026-08-21)* (Apify / LLM / ElevenLabs / signals) `[S]` — *cost / UI.* Notify only.
 - [x] **227. Toast when overnight finishes drafts** *(2026-08-21)* `[S]` — *UI.*
 - [x] **228. Balloon: N uploads left this reset** *(2026-08-21)* — tray + `main.py` startup `[S]` — *cost / UI.*
-- [ ] 229. Click-toast **opens last mp4** in the default player `[S]` — *UI.* Fastest review path that is not a booth.
+- [x] **229. Click-toast opens last mp4** *(2026-08-21)* — protocol launch `file:` URI `[S]`
 - [ ] 230. Taskbar **overlay badge** (queue depth) `[S]` — *UI.* Worker progress without a window.
 - [x] 231. Start-menu shortcut via **pyw** *(2026-08-21)* — `ops shortcut` + `content_os.pyw` `[S]` — *new-app.*
 - [ ] 232. Desktop `.lnk` to the **review-booth URL** `[S]` — *new-app.* Depends on #171; the shortcut is the PR.
 - [ ] 233. Per-channel **notification sound** `[S]` — *aesthetics.* TapIn vs MoneyWise should not share one ding.
-- [ ] 234. High-contrast CSS for HTML reports `[S]` — *aesthetics / UI.* Respect Windows contrast themes.
+- [x] **234. High-contrast CSS for HTML reports** *(2026-08-21)* — `prefers-contrast: more` `[S]`
 - [ ] 235. TapIn **swatch strip** in HTML headers `[S]` — *aesthetics.* Channel color without a full language pack.
 - [ ] 236. MoneyWise **serif header** on HTML reports `[S]` — *aesthetics.* Editorial vs neon, typeset only.
 - [ ] 237. Favicon for localhost booth (channel mark) `[S]` — *aesthetics.* Browser tab literacy.
@@ -893,7 +926,7 @@ Small — hours / a PR
 - [ ] 248. Caption **font specimen strip** (three faces) `[S]` — *aesthetics.* Pick writes a note, not `channels.json` yet (#21).
 - [ ] 249. Title-card mock: **2-line vs 3-line wrap** `[S]` — *aesthetics.* YouTube chrome rehearsal without uploading.
 - [x] **250. ASCII-safe HTML** *(2026-08-21)* — emoji/smart-punct stripped (cp1252) `[S]` — *UI.*
-- [ ] 251. **Copy-as-markdown** on the report card `[S]` — *UI.* Paste into vault or chat.
+- [x] **251. Copy-as-markdown on the report card** *(2026-08-21)* — booth textarea + `ops grade --md` `[S]`
 - [ ] 252. **Copy last unlisted URL** button `[S]` — *UI.* Distinct from implementing #109; clipboard only.
 - [x] 253. **Reveal mp4 in Explorer** *(2026-08-21)* — `ops reveal` (`explorer /select,`) `[S]` — *UI.*
 - [x] 254. **Reveal thumbnail in Explorer** *(2026-08-21)* — `ops reveal --kind thumb` `[S]` — *UI.* Bundled with #253 (swap leftover for skipped #147).
@@ -903,7 +936,7 @@ Small — hours / a PR
 - [ ] 258. Paste-facts textarea + **4500-char meter** `[S]` — *UI.* Operator fact budget is already a number; show it.
 - [ ] 259. HTML **channel switcher** (tapin / moneywise) `[S]` — *UI.* Same constraint as #211: never an `.env` editor.
 - [ ] 260. Keyboard **`?` cheat-sheet** overlay `[S]` — *UI.* Booth/palette discoverability.
-- [ ] 261. **Skip-link** a11y on the booth `[S]` — *UI.* Keyboard users skip chrome to the player.
+- [x] **261. Skip-link a11y on the booth** *(2026-08-21)* — skip to `#player`; dumps skip to `#main` `[S]`
 - [ ] 262. HTML5 **captions from SRT** `[S]` — *aesthetics / UI.* Review names without burning a new mp4.
 - [ ] 263. Playback-rate **1.25×** toggle `[S]` — *UI.* Operator minutes.
 - [ ] 264. **Loop last 3s of hook** `[S]` — *aesthetics.* Retention cliff rehearsal; no new render.
@@ -915,26 +948,26 @@ Small — hours / a PR
 - [ ] 270. **Waveform under the player** (from existing mp3) `[S]` — *aesthetics.* No new TTS spend.
 - [ ] 271. Spoken vs **estimated duration** readout `[S]` — *cost / UI.* Measured 3.32 wps vs Piper ~20% slower — show both.
 - [x] **272. Cost subtitle under the player** *(2026-08-21)* — `tts $0.31 · 91%` on the booth `[S]` — *cost.*
-- [ ] 273. **Escaped free-first LLM** red pill `[S]` — *cost / UI.* Flag already ships; put it on the booth.
-- [ ] 274. **Thin-facts warning banner** `[S]` — *cost / UI.* Same gate as #200, one strip.
+- [x] **273. Escaped free-first LLM red pill** *(2026-08-21)* — booth reads `llm_calls[].escaped_free_first` `[S]`
+- [x] **274. Thin-facts warning banner** *(2026-08-21)* — same gate as #200, one strip `[S]`
 - [ ] 275. Ungrounded **numeric chips** `[S]` — *viability / UI.* Record/rank/purse hits as chips, not a paragraph.
 - [ ] 276. Authenticity **semantic-arm bar** `[S]` — *viability / UI.* Cosine arm is live; a bar is the surface.
 - [ ] 277. Report-card **component breakdown** `[S]` — *UI.* Hook / grounding / authenticity as three numbers.
-- [ ] 278. **Standard-would-have-billed** line on Free runs `[S]` — *cost / UI.* Dry-run already exists; show it on the booth.
-- [ ] 279. **Allocated vs marginal** one-liner `[S]` — *cost.* Booth footer, not a new economics engine.
+- [x] **278. Standard-would-have-billed line on Free runs** *(2026-08-21)* — existing dry-run on the booth `[S]`
+- [x] **279. Allocated vs marginal one-liner** *(2026-08-21)* — booth footer; no new economics engine `[S]`
 - [ ] 280. TTS **cache-hit $0** pill `[S]` — *cost / UI.* Cache shipped opt-in; celebrate a $0 re-render.
 - [ ] 281. **Pillow vs Flux** thumb badge `[S]` — *cost / aesthetics.* Grade gate already chooses; label what the operator is seeing.
 - [ ] 282. Human-presence **last-seen relative time** `[S]` — *UI.* Companion to #205, one string.
 - [ ] 283. Render-gate **blocked reason** in plain English `[S]` — *UI.* ASCII `>=` stays in logs; the booth gets a sentence.
 - [ ] 284. RPM-cost-gate **deferred reason** `[S]` — *cost / UI.* Trailing-7d RPM < cost is a business event; say it.
 - [ ] 285. Metrics-before-next **"yesterday unsynced"** copy `[S]` — *viability / UI.*
-- [ ] 286. **Uploads-left in booth header** `[S]` — *cost / UI.* Same figure as the tray chip.
-- [ ] 287. **ElevenLabs chars in booth header** `[S]` — *cost / UI.*
-- [ ] 288. Remaining Apify actors as **pills** (`tiktok_trends`, `youtube_competitors`) `[S]` — *cost / UI.* Never imply reddit/twitter still bill.
+- [x] **286. Uploads-left in booth header** *(2026-08-21)* — same figure as the tray chip `[S]`
+- [x] **287. ElevenLabs chars in booth header** *(2026-08-21)* `[S]`
+- [x] **288. Remaining Apify actors as pills** *(2026-08-21)* — catalog-enabled only (`tiktok_trends`, `youtube_competitors`) `[S]`
 - [ ] 289. Last-run **signal-health dots** `[S]` — *UI.* Discovery health without opening the spinner replay.
 - [ ] 290. **Feed-stale strip** `[S]` — *UI.* Rot that used to hide for a month.
 - [x] 291. Set Windows **AppUserModelID** *(2026-08-21)* — toasts group as "Content OS" (`ContentOS.Operator`) `[S]` — *new-app.*
-- [ ] 292. **Mute toasts during quiet hours** `[S]` — *UI.* Read `channels.json` blackout if present; do not implement #116.
+- [ ] 292. **Mute toasts during quiet hours** `[S]` — *UI.* Read `channels.json` `quiet_hours` (#116 shipped); this item is toast DND only.
 - [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
 - [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight facts-file gap stays a pipeline issue.
 - [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.
@@ -956,8 +989,8 @@ Small — hours / a PR
 - [ ] 311. Copy last **postmortem as markdown** `[S]` — *UI.*
 - [x] **312. Tray: open last output folder** *(2026-08-21)* — `--open-output` + `--stay` button `[S]` — *new-app / UI.*
 - [ ] 313. Tray action: **pause overnight** (flag file) `[S]` — *UI.* Does not change overnight code paths beyond an existing opt-in gate file.
-- [ ] 314. Tray action: **run doctor → HTML** `[S]` — *UI.* Pairs with #198.
-- [ ] 315. Tray: **last grade letter** `[S]` — *UI.*
+- [x] **314. Tray action: run doctor → HTML** *(2026-08-21)* — `--doctor-html` + stay-window button `[S]`
+- [x] **315. Tray: last grade letter** *(2026-08-21)* — chip line `Grade: B` `[S]`
 - [ ] 316. Tray: **last domain** (UFC / GTA / NBA) `[S]` — *viability / UI.* RPM×cost by domain is useless if you cannot see what you just made.
 - [x] **317. Tray: Free vs Standard mode** *(2026-08-21)* — chip line `Mode:` `[S]` — *cost / UI.*
 - [ ] 318. Remember **second-monitor bounds** `[S]` — *UI.* Booth on the 9:16 monitor.
@@ -967,6 +1000,10 @@ Small — hours / a PR
 ---
 
 ## Completed
+
+### Honesty + leave-the-terminal wave 3 (2026-08-21)
+
+- [x] **20 operator-visible pieces** — UFC PPV + quiet-hours publish windows, description SEO first line + FTC affiliate copy, UFC stock-query rewrite, odds market voice + gambling-safe CTAs, click-toast opens mp4, high-contrast CSS, booth skip-link / copy-markdown / escaped-LLM pill / thin-facts banner / Standard-would-have-billed / allocated-vs-marginal / uploads + ElevenLabs header / Apify pills, tray doctor HTML + last grade. **#147 FastAPI still skipped.** No Phase M, no #141/#142/#143.
 
 ### Leave-the-terminal wave 2 (2026-08-21)
 

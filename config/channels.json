@@ -68,6 +68,19 @@
             {"weekday": 6, "hour": 19, "minute": 0}
           ]
         }
+      },
+      "quiet_hours": {
+        "start_hour": 1,
+        "end_hour": 8,
+        "timezone": "America/New_York",
+        "comment": "Do not go public 1am-8am ET"
+      },
+      "ufc_ppv_blackout": {
+        "weekday": 5,
+        "start_hour": 21,
+        "end_hour": 2,
+        "timezone": "America/New_York",
+        "comment": "Saturday PPV main-card window; UFC topics only"
       }
     },
     "moneywise": {
@@ -96,6 +109,12 @@
           {"weekday": 5, "hour": 10, "minute": 0},
           {"weekday": 6, "hour": 18, "minute": 0}
         ]
+      },
+      "quiet_hours": {
+        "start_hour": 1,
+        "end_hour": 8,
+        "timezone": "America/New_York",
+        "comment": "Do not go public 1am-8am ET"
       }
     }
   }

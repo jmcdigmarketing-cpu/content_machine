@@ -795,7 +795,7 @@ def generate_content_package(
         return {
             "title": topic,
             "script": payload if isinstance(payload, str) else "",
-            "description": apply_description_extras("", channel_id),
+            "description": apply_description_extras("", channel_id, title=topic),
             "tags": normalize_youtube_tags(
                 default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
             ),
@@ -929,6 +929,15 @@ def generate_content_package(
     if trimmed_n:
         logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
 
+    try:
+        from core.odds_language import apply_odds_language
+
+        script, odds_notes = apply_odds_language(script, topic=topic)
+        for note in odds_notes:
+            logger.info("%s", note)
+    except Exception as exc:
+        logger.debug("odds language skipped: %s", exc)
+
     from core.title_generator import generate_title
 
     title = generate_title(
@@ -942,7 +951,9 @@ def generate_content_package(
     return {
         "title": title,
         "script": script,
-        "description": apply_description_extras(payload.get("description") or "", channel_id),
+        "description": apply_description_extras(
+            payload.get("description") or "", channel_id, title=title
+        ),
         "tags": tags,
         "prompt_version": PROMPT_VERSION,
         "brief_version": research_brief.version if research_brief else "",

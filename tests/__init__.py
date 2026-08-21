@@ -48,6 +48,12 @@ os.environ["YOUTUBE_UNLISTED_REVIEW"] = "false"
 os.environ["RAM_MIN_GB"] = "0"
 os.environ["VRAM_MIN_GB"] = "0"
 os.environ["TITLE_UNIQUENESS"] = "off"
+os.environ["UFC_PPV_BLACKOUT"] = "false"
+os.environ["QUIET_HOURS"] = "false"
+os.environ["ODDS_MARKET_VOICE"] = "false"
+os.environ["GAMBLING_SAFE"] = "false"
+os.environ["DESCRIPTION_SEO_FIRST_LINE"] = "false"
+os.environ["CONTENT_TRAY_GRADE"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move

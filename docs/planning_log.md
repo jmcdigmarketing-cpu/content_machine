@@ -11,6 +11,42 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-21 — Honesty + leave-the-terminal wave 3 (shipped)
+
+**Prompt:** implement **20 more** roadmap items on top of unpushed `7c243b0`,
+commit, do not push / amend / PR. Advising allowed. Prefer `[S]` then `[M]`.
+
+**Swap vs numerical next:** did **not** pick 21 caption skin, 22 thumbnail
+safe-area, 31 artifact retention, 101 caption track, 146 tray daemon, 147
+FastAPI, or 172 HTML design system. Ranked leftover `[S]` that (1) keep the
+next *public* honest (UFC PPV window, quiet hours, SEO first line, UFC
+stock-query rewrite, odds "favored" not "will", gambling-safe CTAs, FTC
+copy), (2) surface TTS 91% / quota on the booth (escaped-LLM pill,
+Standard-would-have-billed, allocated vs marginal, uploads + ElevenLabs
+header, Apify pills, thin-facts banner), (3) leave PowerShell (click-toast
+opens the mp4, high-contrast CSS, skip-link, copy-as-markdown, tray doctor
+HTML + last grade). **#147 still skipped.** No #141/#142/#143/#144/#145, no
+Phase M, no volume-gated backtest, no auto-flip Piper.
+
+**Shipped (20):** 115 UFC PPV blackout, 116 quiet hours, 118 description
+SEO first line, 121 UFC stock-query rewrite, 126 odds market voice, 127
+gambling-safe CTAs, 128 FTC affiliate line, 229 click-toast opens mp4, 234
+high-contrast CSS, 251 copy-as-markdown, 261 skip-link, 273 escaped-LLM
+pill, 274 thin-facts banner, 278 Standard-would-have-billed, 279 allocated
+vs marginal one-liner, 286 uploads-left booth header, 287 ElevenLabs chars
+header, 288 Apify remaining pills, 314 tray doctor HTML, 315 tray last
+grade.
+
+**Knobs:** `UFC_PPV_BLACKOUT`, `QUIET_HOURS`, `DESCRIPTION_SEO_FIRST_LINE`,
+`FTC_DISCLOSURE`, `ODDS_MARKET_VOICE`, `GAMBLING_SAFE`,
+`STOCK_QUERY_UFC_REWRITE`, `CONTENT_TOAST_OPEN_MP4`, `CONTENT_TRAY_GRADE`.
+Suite forces PPV/quiet/odds/gambling/SEO/tray-grade off.
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI
+host, `.env` / secrets / `data/` / `output/`.
+
+---
+
 ## 2026-08-21 — Honesty + leave-the-terminal wave 2 (shipped)
 
 **Prompt:** implement **20 more** roadmap items on top of unpushed `48a062f`,

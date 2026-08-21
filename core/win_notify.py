@@ -67,17 +67,21 @@ def _ps_single_quote(text: str) -> str:
     return str(text).replace("'", "''")
 
 
-def _toast_script(title: str, body: str) -> str:
+def _toast_script(title: str, body: str, *, launch: str = "") -> str:
     """Build the PowerShell one-liner. Split out so the quoting is testable."""
     title_x = _ps_single_quote(_xml_escape(title))
     body_x = _ps_single_quote(_xml_escape(body))
     app_id = _ps_single_quote(APP_ID)
+    attrs = ""
+    if launch:
+        launch_x = _ps_single_quote(_xml_escape(launch))
+        attrs = f' activationType="protocol" launch="{launch_x}"'
     return (
         "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications,"
         " ContentType = WindowsRuntime] | Out-Null; "
         "[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom,"
         " ContentType = WindowsRuntime] | Out-Null; "
-        f'$xml = \'<toast><visual><binding template="ToastGeneric">'
+        f'$xml = \'<toast{attrs}><visual><binding template="ToastGeneric">'
         f"<text>{title_x}</text><text>{body_x}</text></binding></visual></toast>'; "
         "$doc = New-Object Windows.Data.Xml.Dom.XmlDocument; $doc.LoadXml($xml); "
         "$t = [Windows.UI.Notifications.ToastNotification]::new($doc); "
@@ -86,9 +90,9 @@ def _toast_script(title: str, body: str) -> str:
     )
 
 
-def _toast_powershell(title: str, body: str) -> bool:
+def _toast_powershell(title: str, body: str, *, launch: str = "") -> bool:
     """WinRT toast via PowerShell (no extra pip). Fail-open."""
-    script = _toast_script(title, body)
+    script = _toast_script(title, body, launch=launch)
     creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     result = subprocess.run(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
@@ -101,7 +105,7 @@ def _toast_powershell(title: str, body: str) -> bool:
     return result.returncode == 0
 
 
-def toast(title: str, body: str, *, key: str | None = None) -> bool:
+def toast(title: str, body: str, *, key: str | None = None, launch: str = "") -> bool:
     """Show a Windows toast. Dedupes on `key` within the process. Never raises."""
     if not toast_enabled():
         return False
@@ -110,7 +114,7 @@ def toast(title: str, body: str, *, key: str | None = None) -> bool:
         return False
     try:
         set_app_user_model_id()
-        ok = _toast_powershell(title, body)
+        ok = _toast_powershell(title, body, launch=launch)
         if ok:
             _toasted.add(token)
         return ok
@@ -133,10 +137,37 @@ def notify_breaker(kind: str, reason: str) -> None:
         logger.debug("notify_breaker skipped: %s", exc)
 
 
+def _toast_open_mp4_enabled() -> bool:
+    return os.getenv("CONTENT_TOAST_OPEN_MP4", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def _file_launch_uri(path: str) -> str:
+    if not path or not os.path.isfile(path):
+        return ""
+    try:
+        from pathlib import Path
+
+        return Path(path).resolve().as_uri()
+    except Exception as exc:
+        logger.debug("toast launch uri skipped: %s", exc)
+        return ""
+
+
 def notify_ffmpeg_done(path: str) -> None:
     try:
         name = os.path.basename(path) if path else "render"
-        toast(f"{APP_NAME}: ffmpeg finished", name or "render complete", key=f"ffmpeg:{path}")
+        launch = _file_launch_uri(path) if _toast_open_mp4_enabled() else ""
+        toast(
+            f"{APP_NAME}: ffmpeg finished",
+            name or "render complete",
+            key=f"ffmpeg:{path}",
+            launch=launch,
+        )
     except Exception as exc:
         logger.debug("notify_ffmpeg_done skipped: %s", exc)
 
@@ -233,7 +264,39 @@ def quota_chip_lines(snap: dict[str, Any] | None = None) -> list[str]:
     else:
         lines.append("Apify: ON")
     lines.append(f"Mode: {cost_mode_label()}")
+    letter = last_grade_letter()
+    lines.append(f"Grade: {letter or 'n/a'}")
     return lines
+
+
+def last_grade_letter(channel_id: str | None = None) -> str:
+    """Last-run report-card letter for the tray chip. Fail-open to ''."""
+    if os.getenv("CONTENT_TRAY_GRADE", "true").strip().lower() in (
+        "0",
+        "false",
+        "no",
+        "off",
+    ):
+        return ""
+    try:
+        from core.review_booth import last_trace
+        from core.video_grade import grade_from_parts
+
+        quality = (last_trace(channel_id) or {}).get("quality") or {}
+        if not quality:
+            return ""
+        return str(grade_from_parts(quality=quality).letter or "")
+    except Exception as exc:
+        logger.debug("last grade skipped: %s", exc)
+        return ""
+
+
+def open_doctor_html(channel_id: str = "tapin") -> str:
+    """Write ops doctor as themed HTML (pairs with #198)."""
+    from core.html_report import dump_pre
+    from core.ops_doctor import render
+
+    return dump_pre("ops doctor", render(channel_id=channel_id), filename="doctor.html")
 
 
 def chip_text(snap: dict[str, Any] | None = None) -> str:
@@ -253,7 +316,7 @@ def show_quota_chip(*, toast_it: bool = True) -> str:
     return text
 
 
-def run_tray(*, stay: bool = False, open_output: bool = False) -> int:
+def run_tray(*, stay: bool = False, open_output: bool = False, doctor_html: bool = False) -> int:
     """Quota chip: toast + print. Optional always-on-top tkinter chip (not a daemon)."""
     text = show_quota_chip(toast_it=True)
     print(text)
@@ -266,6 +329,12 @@ def run_tray(*, stay: bool = False, open_output: bool = False) -> int:
                 print(folder)
         except Exception as exc:
             logger.debug("tray open-output skipped: %s", exc)
+    if doctor_html:
+        try:
+            path = open_doctor_html()
+            print(path)
+        except Exception as exc:
+            logger.debug("tray doctor html skipped: %s", exc)
     if not stay:
         return 0
     try:
@@ -286,8 +355,16 @@ def run_tray(*, stay: bool = False, open_output: bool = False) -> int:
             except Exception as exc:
                 logger.debug("tray folder button skipped: %s", exc)
 
+        def _doctor() -> None:
+            try:
+                open_doctor_html()
+            except Exception as exc:
+                logger.debug("tray doctor button skipped: %s", exc)
+
         btn = tk.Button(root, text="Open last output folder", command=_open_folder)
-        btn.pack(padx=12, pady=(0, 10))
+        btn.pack(padx=12, pady=(0, 6))
+        btn2 = tk.Button(root, text="Doctor HTML", command=_doctor)
+        btn2.pack(padx=12, pady=(0, 10))
         root.mainloop()
     except Exception as exc:
         logger.debug("tray window skipped: %s", exc)
@@ -304,8 +381,17 @@ def main() -> int:
         action="store_true",
         help="Open the last channel output folder in Explorer",
     )
+    parser.add_argument(
+        "--doctor-html",
+        action="store_true",
+        help="Write ops doctor as themed HTML and open it",
+    )
     args = parser.parse_args()
-    return run_tray(stay=bool(args.stay), open_output=bool(args.open_output))
+    return run_tray(
+        stay=bool(args.stay),
+        open_output=bool(args.open_output),
+        doctor_html=bool(args.doctor_html),
+    )
 
 
 if __name__ == "__main__":

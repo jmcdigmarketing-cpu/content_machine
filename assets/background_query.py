@@ -46,7 +46,7 @@ _DOMAIN_QUERIES = {
         "american football field action",
     ],
     "ufc": [
-        "ufc mma octagon fight",
+        "mma octagon fight cage",
         "mixed martial arts training",
     ],
     "gaming": [
@@ -127,6 +127,21 @@ def _llm_query(topic: str, category: str) -> Optional[str]:
         return None
 
 
+def sanitize_trademark_stock_query(query: str) -> str:
+    """Never Pexels-search the UFC trademark — use generic MMA footage terms."""
+    if os.getenv("STOCK_QUERY_UFC_REWRITE", "true").strip().lower() in (
+        "0",
+        "false",
+        "no",
+        "off",
+    ):
+        return (query or "").strip()
+    text = query or ""
+    cleaned = re.sub(r"\bufc\b", "mma", text, flags=re.I)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or "mixed martial arts octagon"
+
+
 @lru_cache(maxsize=128)
 def resolve_background_query(
     topic: str,
@@ -141,4 +156,4 @@ def resolve_background_query(
     query = llm_q or rule_q
     if is_abstract_stock_text(query):
         query = rule_q
-    return query
+    return sanitize_trademark_stock_query(query)

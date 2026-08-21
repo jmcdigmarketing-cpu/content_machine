@@ -106,9 +106,34 @@ def queued_privacy_label(privacy_status: str, publish_at=None) -> str:
     return f"{privacy_status} -> {effective} first, for review"
 
 
-def build_video_status(request: PublishRequest) -> dict[str, Any]:
+def build_video_status(request: PublishRequest, *, channel_id: str | None = None) -> dict[str, Any]:
     status: dict[str, Any] = {"selfDeclaredMadeForKids": False}
-    if not request.publish_at:
+    publish_at = request.publish_at
+    try:
+        from core.publish_windows import adjust_publish_at
+
+        domain = ""
+        try:
+            from apis.topic_scorer import infer_domain
+
+            domain = infer_domain(request.title or "", channel_id)
+        except Exception:
+            domain = ""
+        bumped, why = adjust_publish_at(
+            publish_at,
+            channel_id=channel_id,
+            topic=request.title or "",
+            domain=domain,
+            privacy=request.privacy_status,
+        )
+        if why and bumped:
+            logger.warning("publish window: %s - scheduling %s", why, bumped.isoformat())
+            publish_at = bumped
+    except Exception as exc:
+        logger.debug("publish window skipped: %s", exc)
+        publish_at = request.publish_at
+
+    if not publish_at:
         privacy, _held = apply_unlisted_review(request.privacy_status)
         status["privacyStatus"] = privacy
         try:
@@ -120,7 +145,7 @@ def build_video_status(request: PublishRequest) -> dict[str, Any]:
             status["selfDeclaredMadeForKids"] = False
         return status
 
-    publish_at = _to_utc(request.publish_at)
+    publish_at = _to_utc(publish_at)
     min_at = datetime.now(timezone.utc) + timedelta(minutes=YOUTUBE_PUBLISH_MIN_LEAD_MINUTES)
     if publish_at < min_at:
         publish_at = min_at
@@ -424,7 +449,7 @@ class YouTubePublisher(Publisher):
             idempotency_key_value=idem,
         )
 
-        video_status = build_video_status(request)
+        video_status = build_video_status(request, channel_id=channel_id)
         is_youtube_scheduled = "publishAt" in video_status
         effective_privacy, held_review = apply_unlisted_review(
             request.privacy_status, publish_at=request.publish_at

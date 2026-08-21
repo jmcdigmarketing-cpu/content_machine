@@ -26,7 +26,7 @@ from core.run_recorder import (
 )
 from core.run_trace import write_run_trace
 from core.script_length import count_spoken_words, get_length_preset, word_range
-from core.tts import generate_audio
+from core.tts import generate_audio, last_tts_was_cache_hit
 from core.utils import clean_script_for_tts
 from core.vault_dossiers import write_run_dossier
 from video.render_video import render_vertical_video
@@ -126,6 +126,13 @@ def run_discovery(
 
     channel_id = resolve_channel_id(channel_id)
     t0 = time.perf_counter()
+
+    # Pre-run completion gate: Free fail-closed if the first LLM/TTS call would 404
+    # a missing Ollama (run 70). Standard may warn. Cheap — uses the cached tags probe.
+    from core.run_mode import guard_before_discovery
+
+    for warning in guard_before_discovery():
+        print(f"  ! {warning}")
 
     # Start a fresh per-run LLM token ledger so cost_meter prices only this run.
     from core.llm_router import reset_usage
@@ -291,6 +298,7 @@ def _finalize_run(
             signals=result.signals,
             features=result.features,
             quality=quality,
+            composite_score=result.score,
         )
     except Exception as exc:
         # Warning, not debug: the trace is what `ops traces`, `ops dossier` and
@@ -503,6 +511,12 @@ def run_media_only(
     progress.note(f"MP3 → {mp3_path}")
     progress.note(f"MP4 → {mp4_path}")
 
+    from core.tts_char_cap import tts_char_cap_reason
+
+    cap_reason = tts_char_cap_reason(script)
+    if cap_reason:
+        raise RuntimeError(cap_reason)
+
     progress.stage("ElevenLabs TTS...")
     t_tts = time.perf_counter()
     generate_audio(script, mp3_path, channel_id=channel_id)
@@ -518,6 +532,7 @@ def run_media_only(
     )
 
     thumb_path = ""
+    thumb_provider: str | None = None
     if os.getenv("THUMBNAIL_MODE", "auto").lower() != "off":
         progress.stage("Thumbnail (Flux or Pillow)...")
         t_thumb = time.perf_counter()
@@ -525,15 +540,26 @@ def run_media_only(
         from core.output_paths import ensure_channel_output_dirs
 
         thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
+        grade_letter = None
+        if content_run_id:
+            try:
+                from core.video_grade import grade_run
+
+                graded = grade_run(content_run_id)
+                grade_letter = graded.letter if graded else None
+            except Exception as exc:
+                logger.debug("thumbnail grade lookup skipped: %s", exc)
         thumb = generate_thumbnail(
             topic,
             display_title,
             output_dir=thumb_dir,
             content_run_id=content_run_id,
             channel_id=channel_id,
+            grade_letter=grade_letter,
         )
         if thumb.path:
             thumb_path = thumb.path
+            thumb_provider = thumb.provider or ""
             from assets.flux_thumbnail import list_channel_thumbnails
 
             total = len(list_channel_thumbnails(thumb_dir))
@@ -577,7 +603,12 @@ def run_media_only(
             from core.run_features import load_features, merge_features
             from core.run_trace import update_trace
 
-            cost = merge_render_cost((load_features(content_run_id) or {}).get("cost"), script)
+            cost = merge_render_cost(
+                (load_features(content_run_id) or {}).get("cost"),
+                script,
+                thumbnail_provider=thumb_provider,
+                tts_cached=last_tts_was_cache_hit(),
+            )
             merge_features(content_run_id, {"cost": cost})
             update_trace(content_run_id, {"status": "rendered", "cost": cost})
         except Exception as exc:

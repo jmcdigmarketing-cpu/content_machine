@@ -32,7 +32,7 @@ class TestRenderCostLines(unittest.TestCase):
             self.assertAlmostEqual(cost_meter.render_cost_lines("x" * 1135)["tts"], 0.2497, 3)
 
     def test_local_provider_is_free(self):
-        for provider in ("piper", "kokoro", "xtts"):
+        for provider in ("piper", "kokoro", "xtts", "qwen"):
             with patch.dict("os.environ", {"TTS_PROVIDER": provider}, clear=False):
                 self.assertEqual(cost_meter.render_cost_lines("x" * 5000)["tts"], 0.0)
 

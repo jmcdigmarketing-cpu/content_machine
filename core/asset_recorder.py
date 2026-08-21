@@ -80,12 +80,21 @@ def record_render_assets(
         )
     elif os.getenv("THUMBNAIL_MODE", "auto").lower() != "off":
         thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
+        grade_letter = None
+        try:
+            from core.video_grade import grade_run
+
+            graded = grade_run(content_run_id)
+            grade_letter = graded.letter if graded else None
+        except Exception as exc:
+            logger.debug("thumbnail grade lookup skipped: %s", exc)
         thumb = generate_thumbnail(
             topic,
             title or topic,
             output_dir=thumb_dir,
             content_run_id=content_run_id,
             channel_id=channel_id,
+            grade_letter=grade_letter,
         )
         if thumb.path:
             _safe_create(

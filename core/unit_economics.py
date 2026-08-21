@@ -15,12 +15,55 @@ the weekly report.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
 from core.logging import get_logger
 
 logger = get_logger("core.unit_economics")
+
+# Creator plan defaults — documented in cost_meter comments ($22 / 100k chars).
+# Marginal rates stay in cost_meter; these are the *allocated* subscription numbers.
+TTS_PLAN_USD_ENV = "COST_TTS_PLAN_USD"
+TTS_PLAN_USD_DEFAULT = 22.0
+TTS_PLAN_CHARS_ENV = "COST_TTS_PLAN_CHARS"
+TTS_PLAN_CHARS_DEFAULT = 100_000
+TTS_TYPICAL_CHARS_PER_VIDEO = 1100  # ~90 videos at Creator quota
+
+
+def _plan_usd() -> float:
+    try:
+        val = float(os.getenv(TTS_PLAN_USD_ENV, str(TTS_PLAN_USD_DEFAULT)))
+        return val if val > 0 else TTS_PLAN_USD_DEFAULT
+    except (TypeError, ValueError):
+        return TTS_PLAN_USD_DEFAULT
+
+
+def _plan_chars() -> int:
+    try:
+        val = int(float(os.getenv(TTS_PLAN_CHARS_ENV, str(TTS_PLAN_CHARS_DEFAULT))))
+        return val if val > 0 else TTS_PLAN_CHARS_DEFAULT
+    except (TypeError, ValueError):
+        return TTS_PLAN_CHARS_DEFAULT
+
+
+def allocated_per_video(n_videos: int, *, plan_usd: float | None = None) -> float:
+    """Subscription cost spread across videos actually made this window."""
+    if n_videos <= 0:
+        return 0.0
+    return round((plan_usd if plan_usd is not None else _plan_usd()) / n_videos, 4)
+
+
+def plan_capacity_videos(
+    *, plan_chars: int | None = None, chars_per_video: int | None = None
+) -> int:
+    """How many typical scripts the monthly character quota covers."""
+    chars = plan_chars if plan_chars is not None else _plan_chars()
+    typical = chars_per_video if chars_per_video is not None else TTS_TYPICAL_CHARS_PER_VIDEO
+    if typical <= 0:
+        return 0
+    return chars // typical
 
 
 @dataclass
@@ -31,6 +74,13 @@ class VideoEconomics:
     revenue_usd: float | None  # None = no revenue data (not monetized/synced)
     views: int = 0
     engaged_rate: float = 0.0
+    domain: str = ""
+
+    @property
+    def rpm_usd(self) -> float | None:
+        if self.revenue_usd is None or self.views <= 0:
+            return None
+        return round(self.revenue_usd / self.views * 1000.0, 4)
 
     @property
     def margin_usd(self) -> float | None:
@@ -68,27 +118,37 @@ def _load_json(raw: str | None) -> dict[str, Any]:
         return {}
 
 
-def _run_costs_and_titles(channel_id: str) -> tuple[dict[int, float], dict[int, str]]:
-    """run_id -> fully-loaded cost (features_json.cost.total) and run title.
-
-    Titles come from the run row — publish_log.detail holds status text, not
-    the video title.
-    """
+def _run_costs_and_titles(
+    channel_id: str,
+) -> tuple[dict[int, float], dict[int, str], dict[int, str]]:
+    """run_id -> fully-loaded cost, title, domain."""
     costs: dict[int, float] = {}
     titles: dict[int, str] = {}
+    domains: dict[int, str] = {}
     try:
         from storage.repositories.content_runs import get_content_run_repository
 
         for run in get_content_run_repository().list_for_channel(channel_id):
-            cost = _load_json(run.features_json).get("cost") or {}
+            features = _load_json(run.features_json)
+            cost = features.get("cost") or {}
             try:
                 costs[run.id] = float(cost.get("total") or 0.0)
             except (TypeError, ValueError):
                 costs[run.id] = 0.0
             titles[run.id] = (run.title or run.selected_topic or "").strip()
+            domains[run.id] = str(features.get("domain") or "").strip()
+            if not domains[run.id] and (run.selected_topic or run.input_topic):
+                try:
+                    from apis.topic_scorer import infer_domain
+
+                    domains[run.id] = str(
+                        infer_domain(run.selected_topic or run.input_topic, channel_id) or ""
+                    )
+                except Exception:
+                    domains[run.id] = ""
     except Exception as exc:
         logger.debug("Run costs unavailable for unit economics: %s", exc)
-    return costs, titles
+    return costs, titles, domains
 
 
 def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> ChannelEconomics:
@@ -97,7 +157,7 @@ def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> Chan
 
     channel = resolve_channel_id(channel_id)
     econ = ChannelEconomics(channel_id=channel)
-    costs, titles = _run_costs_and_titles(channel)
+    costs, titles, domains = _run_costs_and_titles(channel)
     try:
         from storage.repositories.publish_log import get_publish_log_repository
 
@@ -120,6 +180,7 @@ def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> Chan
                 revenue_usd=float(revenue) if revenue is not None else None,
                 views=int(float(metrics.get("views", 0) or 0)),
                 engaged_rate=float(metrics.get("engaged_rate", 0) or 0),
+                domain=domains.get(row.content_run_id, ""),
             )
         )
     return econ
@@ -132,8 +193,15 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
     lines = []
     n = len(econ.videos)
     lines.append(
-        f"Unit economics ({n} uploaded): cost ${econ.total_cost:.2f}"
+        f"Unit economics ({n} uploaded): marginal ${econ.total_cost:.2f}"
         f" (${econ.total_cost / n:.2f}/video)"
+        f" · allocated ${allocated_per_video(n):.2f}/video"
+        f" (plan ${_plan_usd():.0f}/mo ÷ {n})"
+    )
+    cap = plan_capacity_videos()
+    lines.append(
+        f"  Creator quota ~{cap} videos/mo at {TTS_TYPICAL_CHARS_PER_VIDEO} chars; "
+        f"{n} used this window"
     )
     if econ.total_revenue is not None:
         margin = econ.total_margin or 0.0
@@ -144,6 +212,32 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
         lines.append(
             "  revenue: no data yet (needs monetized channel + yt-analytics-monetary scope)"
         )
+    lines.extend(domain_margin_lines(econ))
+    return lines
+
+
+def domain_margin_lines(econ: ChannelEconomics) -> list[str]:
+    """RPM x cost by domain (candidate 84). Views-by-domain already exist on runs."""
+    buckets: dict[str, dict[str, float]] = {}
+    for v in econ.videos:
+        name = (v.domain or "unknown").strip() or "unknown"
+        b = buckets.setdefault(name, {"cost": 0.0, "rev": 0.0, "views": 0.0, "n": 0, "n_rev": 0})
+        b["cost"] += v.cost_usd
+        b["views"] += v.views
+        b["n"] += 1
+        if v.revenue_usd is not None:
+            b["rev"] += v.revenue_usd
+            b["n_rev"] += 1
+    if not buckets:
+        return []
+    lines = ["  RPM x cost by domain:"]
+    for name in sorted(buckets, key=lambda k: -buckets[k]["rev"]):
+        b = buckets[name]
+        rpm = (b["rev"] / b["views"] * 1000.0) if b["views"] and b["n_rev"] else None
+        margin = (b["rev"] - b["cost"]) if b["n_rev"] else None
+        rpm_s = f"RPM ${rpm:.2f}" if rpm is not None else "RPM n/a"
+        mar_s = f"margin ${margin:+.2f}" if margin is not None else "margin n/a"
+        lines.append(f"    {name:<12} n={int(b['n'])} cost ${b['cost']:.2f} {rpm_s} {mar_s}")
     return lines
 
 

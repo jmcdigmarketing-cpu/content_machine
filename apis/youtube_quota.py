@@ -92,7 +92,8 @@ def format_quota_detail():
     s = get_usage_summary()
     return (
         f"~{s['remaining']:,} units remaining today "
-        f"({s['used']:,}/{s['limit']:,} used; ~{s['per_call']} per search)"
+        f"({s['used']:,}/{s['limit']:,} used; ~{s['per_call']} per search; "
+        f"~{uploads_remaining(s)} uploads left this reset)"
     )
 
 
@@ -106,6 +107,26 @@ def units_for_lightweight_search():
 
 def units_per_upload():
     return UNITS_VIDEO_INSERT
+
+
+def uploads_remaining(summary: dict | None = None) -> int:
+    """How many ~1,600-unit uploads fit in today's remaining quota."""
+    s = summary if summary is not None else get_usage_summary()
+    remaining = int(s.get("remaining") or 0)
+    need = units_per_upload()
+    if need <= 0:
+        return 0
+    return max(0, remaining // need)
+
+
+def format_uploads_left(summary: dict | None = None) -> str:
+    """Operator line: remaining units as a hard upload ceiling."""
+    s = summary if summary is not None else get_usage_summary()
+    n = uploads_remaining(s)
+    return (
+        f"~{n} upload(s) left this reset "
+        f"(~{s.get('remaining', 0):,} units; upload needs ~{units_per_upload():,})"
+    )
 
 
 def has_quota_for_upload() -> bool:

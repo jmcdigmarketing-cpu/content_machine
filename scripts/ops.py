@@ -124,6 +124,125 @@ def cmd_check_youtube(args: argparse.Namespace) -> int:
     return _run_module("youtube.check_setup", "--channel", args.channel)
 
 
+@_register(
+    "channel-go-live",
+    "Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel)",
+)
+def cmd_channel_go_live(args: argparse.Namespace) -> int:
+    from core.channel_go_live import inspect_channel, render_report
+
+    report = inspect_channel(args.channel)
+    print(render_report(report))
+    return 0 if report.ok else 1
+
+
+@_register(
+    "competitor-health",
+    "Flag dead/unverified competitor YouTube UC ids (RSS probe, no Data API)",
+)
+def cmd_competitor_health(args: argparse.Namespace) -> int:
+    from analytics.youtube_rss import fetch_channel_uploads_rss
+    from core.competitor_health import inspect_competitors, render_report
+
+    report = inspect_competitors(
+        args.channel,
+        fetch=lambda cid: fetch_channel_uploads_rss(cid, max_results=4),
+    )
+    print(render_report(report))
+    return 0 if report.ok else 1
+
+
+@_register(
+    "paid-signals",
+    "Attribute tiktok_trends / youtube_competitors lift; recommend keep/disable (no catalog write)",
+)
+def cmd_paid_signals(args: argparse.Namespace) -> int:
+    from core.paid_signal_attribution import report_from_traces
+
+    print(report_from_traces(channel_id=args.channel, limit=args.limit or 50))
+    return 0
+
+
+@_register("incidents", "Rank recent signal/provider failures by count x recency")
+def cmd_incidents(args: argparse.Namespace) -> int:
+    from core.incident_ledger import gather_and_record, render
+
+    incidents = gather_and_record(limit=args.limit or 40)
+    print(render(incidents))
+    return 0
+
+
+@_register("postmortem", "Slowest phase, failed signals, ungrounded claims, cost (--run-id)")
+def cmd_postmortem(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("postmortem requires --run-id")
+        return 2
+    from core.postmortem import from_store, render
+
+    print(render(from_store(args.run_id)))
+    return 0
+
+
+@_register("doctor", "One shot: free stack + feeds snapshot + oauth file + quota + CUDA")
+def cmd_doctor(args: argparse.Namespace) -> int:
+    from core.ops_doctor import render
+
+    print(render(channel_id=args.channel))
+    return 0
+
+
+@_register("apify-trueup", "Compare synthetic Apify invoice vs $0.02/run model (no network)")
+def cmd_apify_trueup(args: argparse.Namespace) -> int:
+    from core.apify_trueup import DEFAULT_FIXTURE, parse_invoice, render, trueup
+
+    path = args.file or str(DEFAULT_FIXTURE)
+    print(render(trueup(parse_invoice(path))))
+    return 0
+
+
+@_register("tts-arms", "ElevenLabs vs Piper Bayesian report (no auto-switch)")
+def cmd_tts_arms(args: argparse.Namespace) -> int:
+    from core.tts_provider_report import render_report, report
+
+    print(render_report(report(args.channel)))
+    return 0
+
+
+@_register("artifacts", "Cap output/ by GB (dry-run default; --apply deletes oldest)")
+def cmd_artifacts(args: argparse.Namespace) -> int:
+    from core.artifact_retention import run
+
+    out = run(apply=bool(getattr(args, "apply", False)))
+    print(out["text"])
+    return 0
+
+
+@_register(
+    "policy-canary", "Hash YouTube inauthentic-content page (local fixture; no HTTP default)"
+)
+def cmd_policy_canary(args: argparse.Namespace) -> int:
+    from core.policy_canary import inspect, render
+
+    print(render(inspect(source_path=args.file, fetch=False)))
+    return 0
+
+
+@_register("moat-backup", "Plan pg_dump + vault + traces backup (secrets excluded; dry-run)")
+def cmd_moat_backup(args: argparse.Namespace) -> int:
+    from core.moat_backup import run
+
+    print(run(dest=args.file, apply=bool(getattr(args, "apply", False)))["text"])
+    return 0
+
+
+@_register("ypp", "YPP / membership readiness: watch-hours proxy, disclosure, cadence")
+def cmd_ypp(args: argparse.Namespace) -> int:
+    from core.ypp_readiness import inspect_ypp, render_report
+
+    print(render_report(inspect_ypp(args.channel)))
+    return 0
+
+
 @_register("sync-metrics", "Pull YouTube Analytics into performance memory")
 def cmd_sync_metrics(args: argparse.Namespace) -> int:
     return _run_module("analytics.sync_metrics", "--channel", args.channel)
@@ -208,6 +327,18 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
         from core.logging import get_logger
 
         get_logger("scripts.ops").debug("Reliability trend not recorded: %s", exc)
+    try:
+        from core.incident_ledger import gather_and_record
+        from core.incident_ledger import render as render_incidents
+
+        incidents = gather_and_record()
+        blob = render_incidents(incidents)
+        if blob:
+            print(blob)
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("Incident ledger skipped: %s", exc)
     return 0
 
 
@@ -710,12 +841,26 @@ def main(argv=None) -> int:
         action="store_true",
         help="backfill-cost: show what would change without writing",
     )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="artifacts / moat-backup: actually delete or copy (default is dry-run)",
+    )
     args = parser.parse_args(argv)
     args.queue_upload = False
     args.queue_requeue = False
     args.queue_reset = False
     args.queue_schedule = False
     args.force = False
+
+    try:
+        from core.human_presence import maybe_touch_ops
+
+        maybe_touch_ops(args.command)
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("ops heartbeat skipped: %s", exc)
 
     _, fn = COMMANDS[args.command]
     return fn(args)

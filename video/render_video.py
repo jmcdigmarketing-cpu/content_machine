@@ -24,6 +24,10 @@ TARGET_H = 1920
 MUSIC_BED_VOLUME = 0.2
 
 
+def _loudnorm_enabled() -> bool:
+    return os.getenv("LUFS_NORMALIZE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def _probe_video_duration(path: str) -> float | None:
     try:
         result = subprocess.run(
@@ -107,6 +111,12 @@ def build_render_ffmpeg_command(
             f";[2:a]volume={MUSIC_BED_VOLUME}[bed];"
             f"[1:a][bed]amix=inputs=2:duration=first:normalize=0[aout]"
         )
+        audio_map = "[aout]"
+        if _loudnorm_enabled():
+            filter_complex += ";[aout]loudnorm=I=-14:TP=-1.5:LRA=11[anorm]"
+            audio_map = "[anorm]"
+    elif _loudnorm_enabled():
+        filter_complex += ";[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[aout]"
         audio_map = "[aout]"
     cmd += [
         "-t",
@@ -232,6 +242,17 @@ def render_vertical_video(
     mp3_path = os.path.abspath(mp3_path).replace("\\", "/")
     subtitle_path = os.path.abspath(subtitle_path).replace("\\", "/")
     output_path = os.path.abspath(output_path).replace("\\", "/")
+
+    try:
+        from core.disk_preflight import block_reason as disk_block
+
+        why = disk_block(output_path)
+        if why:
+            raise RuntimeError(why)
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        logger.debug("disk preflight skipped: %s", exc)
 
     # Music bed (Pillar 6): mixed under the VO when MUSIC_PROVIDER delivers; any miss
     # keeps music_path None and the command below byte-identical to the VO-only render.

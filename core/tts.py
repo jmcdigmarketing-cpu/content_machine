@@ -4,17 +4,28 @@ import hashlib
 import json
 import os
 import random
+import re
+import shutil
 from typing import Any
 
 from elevenlabs.client import ElevenLabs
 
 from config.channels import get_channel_profile, resolve_channel_id
-from config.paths import VOICES_FILE
+from config.paths import PRONUNCIATIONS_FILE, VOICES_FILE
 from core.logging import get_logger
 from core.utils import clean_script_for_tts
 from video.caption_timing import words_from_alignment
 
 logger = get_logger("core.tts")
+
+# Set by generate_audio so merge_render_cost can zero the TTS line on a cache hit
+# (re-synth skipped — do not double-bill the ledger).
+_last_cache_hit = False
+
+
+def last_tts_was_cache_hit() -> bool:
+    return _last_cache_hit
+
 
 # Fallback catalog, used only when config/voices.json is missing or unusable. The
 # operator-facing catalog lives in that file so adding a voice never needs a code change
@@ -61,6 +72,69 @@ def _load_voice_catalog() -> dict[str, Any]:
         data = {}
     _voice_catalog_cache = (mtime, data)
     return data
+
+
+# (mtime, parsed) — pronunciations.json is re-read only when it changes.
+_lexicon_cache: tuple[float, dict[str, Any]] | None = None
+
+
+def _load_pronunciation_lexicon() -> dict[str, Any]:
+    """Parsed config/pronunciations.json, mtime-cached. Fail-open to {}."""
+    global _lexicon_cache
+    try:
+        mtime = os.path.getmtime(PRONUNCIATIONS_FILE)
+    except OSError:
+        _lexicon_cache = None
+        return {}
+    if _lexicon_cache is not None and _lexicon_cache[0] == mtime:
+        return _lexicon_cache[1]
+    try:
+        with open(PRONUNCIATIONS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            data = {}
+    except (OSError, ValueError) as exc:
+        logger.warning("pronunciations.json unreadable (%s) - lexicon disabled", exc)
+        data = {}
+    _lexicon_cache = (mtime, data)
+    return data
+
+
+def _lexicon_for_channel(channel_id: str | None) -> dict[str, str]:
+    """Default replacements, overlaid by an optional per-channel map."""
+    data = _load_pronunciation_lexicon()
+    table: dict[str, str] = {}
+    default = data.get("default")
+    if isinstance(default, dict):
+        table.update({str(k): str(v) for k, v in default.items() if k and v})
+    channels = data.get("channels")
+    if isinstance(channels, dict) and channel_id:
+        overlay = channels.get(channel_id)
+        if isinstance(overlay, dict):
+            table.update({str(k): str(v) for k, v in overlay.items() if k and v})
+    return table
+
+
+def apply_pronunciation_lexicon(text: str, channel_id: str | None = None) -> str:
+    """Return a spoken copy of `text` with lexicon substitutions. Does not mutate `text`.
+
+    Longest key first so "Ilia Topuria" wins over "Topuria". Empty lexicon is a no-op
+    (returns the original string object). Local TTS only — callers must not apply this
+    to the caption/retext script.
+    """
+    if not text:
+        return text
+    table = _lexicon_for_channel(channel_id)
+    if not table:
+        return text
+    keys = sorted(table, key=len, reverse=True)
+    lower_map = {k.lower(): v for k, v in table.items()}
+    pattern = re.compile("|".join(re.escape(k) for k in keys), re.IGNORECASE)
+
+    def _repl(match: re.Match[str]) -> str:
+        return lower_map.get(match.group(0).lower(), match.group(0))
+
+    return pattern.sub(_repl, text)
 
 
 def _entries_to_pool(entries: Any) -> dict[str, int]:
@@ -181,15 +255,111 @@ def resolve_tts_config(channel_id: str | None = None) -> tuple[str, str]:
     return weighted_random_voice(), model_id
 
 
+def tts_cache_enabled() -> bool:
+    """Re-synth skip for identical scripts. Opt-in (empty/0/off = disabled).
+
+    Default off so ``unittest discover -s tests`` (which does not import
+    ``tests/__init__.py``) cannot write ``data/tts_cache``. Production: set
+    ``TTS_CACHE=true``.
+    """
+    return os.getenv("TTS_CACHE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def tts_cache_dir() -> str:
+    override = os.getenv("TTS_CACHE_DIR", "").strip()
+    if override:
+        return override
+    from config.paths import DATA_DIR
+
+    return os.path.join(DATA_DIR, "tts_cache")
+
+
+def tts_cache_key(text: str, provider: str, voice: str = "") -> str:
+    payload = f"{provider}\n{voice}\n{text}".encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _tts_cache_paths(key: str) -> tuple[str, str]:
+    root = tts_cache_dir()
+    mp3 = os.path.join(root, f"{key}.mp3")
+    return mp3, mp3 + ".words.json"
+
+
+def tts_cache_lookup(key: str, dest_path: str) -> bool:
+    if not tts_cache_enabled() or not key:
+        return False
+    src, src_words = _tts_cache_paths(key)
+    if not os.path.isfile(src) or os.path.getsize(src) <= 0:
+        return False
+    try:
+        os.makedirs(os.path.dirname(dest_path) or ".", exist_ok=True)
+        shutil.copy2(src, dest_path)
+        if os.path.isfile(src_words):
+            shutil.copy2(src_words, dest_path + ".words.json")
+        return True
+    except Exception as exc:
+        logger.debug("TTS cache lookup skipped: %s", exc)
+        return False
+
+
+def tts_cache_store(key: str, src_path: str) -> None:
+    if not tts_cache_enabled() or not key or not src_path or not os.path.isfile(src_path):
+        return
+    try:
+        os.makedirs(tts_cache_dir(), exist_ok=True)
+        dest, dest_words = _tts_cache_paths(key)
+        shutil.copy2(src_path, dest)
+        words = src_path + ".words.json"
+        if os.path.isfile(words):
+            shutil.copy2(words, dest_words)
+    except Exception as exc:
+        logger.debug("TTS cache store skipped: %s", exc)
+
+
+def _tts_cache_voice(channel_id: str | None) -> str:
+    provider = _resolve_tts_provider()
+    if is_local_tts_provider():
+        return resolve_local_voice(provider, channel_id) or os.getenv(
+            _LOCAL_VOICE_ENV.get(provider, ""), ""
+        )
+    try:
+        voice_id, _ = resolve_tts_config(channel_id)
+        return voice_id or ""
+    except Exception as exc:
+        logger.debug("TTS cache voice resolve skipped: %s", exc)
+        return ""
+
+
 def generate_audio(script, output_path, channel_id: str | None = None):
+    global _last_cache_hit
+    _last_cache_hit = False
     channel_id = resolve_channel_id(channel_id)
-    script = clean_script_for_tts(script)
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    spoken = clean_script_for_tts(script)
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+
+    # Lexicon is for EARS (local TTS) only. Captions/retext keep `script` from the
+    # caller; ElevenLabs already handles names, so it gets the cleaned original.
+    local_spoken = spoken
+    if is_local_tts_provider():
+        local_spoken = apply_pronunciation_lexicon(spoken, channel_id)
+
+    spoken_for_alt = local_spoken if is_local_tts_provider() else spoken
+    cache_key = tts_cache_key(spoken_for_alt, _resolve_tts_provider(), _tts_cache_voice(channel_id))
+    if tts_cache_lookup(cache_key, output_path):
+        _last_cache_hit = True
+        print(f"[TTS] Channel: {channel_id} | cache hit")
+        return output_path
 
     # Provider seam (Pillar 6): a non-ElevenLabs TTS_PROVIDER (local Kokoro/XTTS) is
     # tried first; on any failure it falls back to the ElevenLabs default below.
-    alt = _try_alt_tts_provider(script, output_path, channel_id)
+    alt = _try_alt_tts_provider(spoken_for_alt, output_path, channel_id)
     if alt:
+        tts_cache_store(cache_key, alt)
         return alt
 
     # Free mode (strict): local $0 voice failed/absent and paid ElevenLabs is
@@ -199,6 +369,17 @@ def generate_audio(script, output_path, channel_id: str | None = None):
             "Free mode ($0, strict): no local TTS produced audio and paid ElevenLabs "
             "is disallowed. Install a local voice - pip install piper-tts, set "
             "PIPER_VOICE=<voice.onnx> and TTS_PROVIDER=piper. See docs/free_mode.md."
+        )
+
+    if _elevenlabs_quota_would_exceed(len(spoken)):
+        piped = _synth_piper_for_quota(spoken, output_path, channel_id)
+        if piped:
+            tts_cache_store(cache_key, piped)
+            return piped
+        raise RuntimeError(
+            "ElevenLabs monthly character budget exhausted "
+            f"({_elevenlabs_budget_display()}). Set ELEVENLABS_MONTHLY_CHAR_BUDGET "
+            "or install Piper (PIPER_VOICE) to keep rendering."
         )
 
     eleven_key = os.getenv("ELEVEN_API_KEY")
@@ -220,18 +401,20 @@ def generate_audio(script, output_path, channel_id: str | None = None):
             # karaoke captions (video/caption_timing). Best-effort — any failure falls
             # back to the plain stream, so captions revert to the proportional estimate.
             if _word_timestamps_enabled() and _save_word_timestamps(
-                client, voice_id, model_id, script, output_path
+                client, voice_id, model_id, spoken, output_path
             ):
                 print(
                     f"[TTS] Channel: {channel_id} | Voice: {voice_id} | "
                     f"Model: {model_id} | +timestamps"
                 )
+                _elevenlabs_record_chars(len(spoken))
+                tts_cache_store(cache_key, output_path)
                 return output_path
 
             audio = client.text_to_speech.convert(
                 voice_id=voice_id,
                 model_id=model_id,
-                text=script,
+                text=spoken,
             )
             with open(output_path, "wb") as f:
                 for chunk in audio:
@@ -242,7 +425,9 @@ def generate_audio(script, output_path, channel_id: str | None = None):
                 raise
             _mark_voice_dead(voice_id, exc)
 
+    _elevenlabs_record_chars(len(spoken))
     print(f"[TTS] Channel: {channel_id} | Voice: {last_voice} | Model: {model_id}")
+    tts_cache_store(cache_key, output_path)
     return output_path
 
 
@@ -281,6 +466,91 @@ _VARIETY_MIN, _VARIETY_MAX = 0.94, 1.06
 def is_local_tts_provider() -> bool:
     """True when TTS_PROVIDER selects a local (zero-marginal-cost) voice backend."""
     return _resolve_tts_provider() in _LOCAL_TTS_PROVIDERS
+
+
+def _elevenlabs_budget() -> int | None:
+    """Creator-plan character ceiling. Unset/0/off = governor disabled (Apify-shaped)."""
+    raw = os.getenv("ELEVENLABS_MONTHLY_CHAR_BUDGET", "").strip()
+    if raw.lower() in ("", "0", "off", "false", "no"):
+        return None
+    try:
+        val = int(raw)
+    except ValueError:
+        return None
+    return val if val > 0 else None
+
+
+def _elevenlabs_budget_display() -> str:
+    budget = _elevenlabs_budget()
+    if budget is None:
+        return "no budget"
+    try:
+        from core.quota_governor import elevenlabs_chars_used
+
+        used = elevenlabs_chars_used()
+    except Exception:
+        used = 0
+    return f"{used:,}/{budget:,} chars"
+
+
+def _elevenlabs_quota_would_exceed(chars: int) -> bool:
+    budget = _elevenlabs_budget()
+    if budget is None or chars <= 0:
+        return False
+    try:
+        from core.quota_governor import elevenlabs_would_exceed
+
+        return elevenlabs_would_exceed(chars, budget)
+    except Exception as exc:
+        logger.debug("ElevenLabs quota check skipped: %s", exc)
+        return False  # fail-open: never block a render because the store is unreadable
+
+
+def _elevenlabs_record_chars(chars: int) -> None:
+    if chars <= 0 or _elevenlabs_budget() is None:
+        return
+    try:
+        from core.quota_governor import elevenlabs_add_chars
+
+        elevenlabs_add_chars(chars)
+    except Exception as exc:
+        logger.warning(
+            "ElevenLabs char count of %s not persisted (quota guard blind): %s",
+            chars,
+            exc,
+        )
+
+
+def _piper_voice_ready() -> bool:
+    voice = os.getenv("PIPER_VOICE", "").strip()
+    if not voice or not os.path.isfile(voice):
+        return False
+    try:
+        import importlib.util
+
+        return importlib.util.find_spec("piper") is not None
+    except (ImportError, ValueError, ModuleNotFoundError):
+        return False
+
+
+def _synth_piper_for_quota(script: str, output_path: str, channel_id: str | None) -> str | None:
+    """Trip ElevenLabs → Piper when the monthly character budget would exhaust."""
+    if not _piper_voice_ready():
+        return None
+    try:
+        path = _piper_synth(script, output_path, channel_id)
+    except Exception as exc:
+        logger.warning("Piper fallback after ElevenLabs quota failed: %s", exc)
+        return None
+    if not path:
+        return None
+    os.environ["TTS_PROVIDER"] = "piper"  # so merge_render_cost meters tts at $0
+    logger.warning(
+        "ElevenLabs character budget would exceed (%s) — using Piper for this render",
+        _elevenlabs_budget_display(),
+    )
+    print(f"[TTS] Channel: {channel_id} | Provider: piper (ElevenLabs quota trip)")
+    return path
 
 
 def _env_pool(env_key: str) -> list[str]:

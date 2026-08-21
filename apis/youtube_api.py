@@ -64,20 +64,38 @@ def _get_youtube_client():
         return _youtube_client
     with _client_lock:
         if _youtube_client is None:
-            # cache_discovery=False avoids disk cache; client is reused after first build
+            if _skip_live_youtube_client():
+                raise RuntimeError("live YouTube client forbidden in tests (C9)")
+            # static_discovery=True uses the bundled doc — no googleapis HTTPS (C9).
             _youtube_client = build(
                 "youtube",
                 "v3",
                 developerKey=_youtube_key(),
                 cache_discovery=False,
+                static_discovery=True,
                 http=httplib2.Http(timeout=api_timeout()),
             )
     return _youtube_client
 
 
+def _skip_live_youtube_client() -> bool:
+    """Suite isolation (audit C9): never open googleapis HTTPS during tests."""
+    return os.getenv("CONTENT_SKIP_YOUTUBE_WARMUP", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    ) or os.getenv("CONTENT_FORBID_LIVE_YOUTUBE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
 def warmup_youtube_client():
     """Pay the slow google-api-client startup cost before discovery (optional)."""
-    if not _youtube_key():
+    if _skip_live_youtube_client() or not _youtube_key():
         return
     try:
         _get_youtube_client()
@@ -88,7 +106,7 @@ def warmup_youtube_client():
 def start_youtube_warmup_background():
     """Non-blocking warmup while the user reads prompts."""
     global _warmup_started
-    if _warmup_started or not _youtube_key():
+    if _skip_live_youtube_client() or _warmup_started or not _youtube_key():
         return
     _warmup_started = True
     threading.Thread(target=warmup_youtube_client, daemon=True).start()

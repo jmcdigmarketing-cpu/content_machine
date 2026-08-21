@@ -168,6 +168,7 @@ class TestSnapshot(GovernorCase):
                     "pct": 0.0,
                     "day": "2026-01-01",
                 },
+                "elevenlabs": {"chars_used": 0},
             },
         )
 
@@ -181,6 +182,9 @@ class TestSnapshot(GovernorCase):
         self.assertEqual(snap["apify"]["usage"], {"usage": 2.0, "limit": 5.0})
         self.assertAlmostEqual(snap["llm"]["spend_today"], 0.25)
         self.assertEqual(snap["signals"]["persisted"], {"finnhub": "no_key"})
+        qg.elevenlabs_add_chars(25)
+        snap = qg.snapshot()
+        self.assertEqual(snap["elevenlabs"]["chars_used"], 25)
 
 
 class TestDeadModelPersistence(GovernorCase):

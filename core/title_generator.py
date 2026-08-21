@@ -113,7 +113,12 @@ Title:"""
 def _complete_or_none(prompt: str, *, temperature: float, max_tokens: int) -> str | None:
     """Cheap-tier completion, or None when the LLM is unavailable (never raises)."""
     try:
-        return complete(prompt, tier="cheap", temperature=temperature, max_tokens=max_tokens) or ""
+        return (
+            complete(
+                prompt, tier="cheap", temperature=temperature, max_tokens=max_tokens, stage="title"
+            )
+            or ""
+        )
     except Exception as exc:
         logger.warning("Title LLM unavailable (%s) — using the script hook", exc)
         return None

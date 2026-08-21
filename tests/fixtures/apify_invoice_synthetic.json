@@ -1,0 +1,9 @@
+{
+  "period": "2026-07",
+  "currency": "USD",
+  "total_usd": 1.40,
+  "line_items": [
+    {"actor": "clockworks/tiktok-scraper", "runs": 40, "usd": 0.80},
+    {"actor": "streamers/youtube-scraper", "runs": 30, "usd": 0.60}
+  ]
+}

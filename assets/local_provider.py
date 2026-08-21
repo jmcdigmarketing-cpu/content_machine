@@ -6,6 +6,9 @@ from typing import Optional
 from assets.base import AssetProvider
 from assets.category import detect_category
 from assets.types import AssetResult
+from core.logging import get_logger
+
+logger = get_logger("assets.local")
 
 BASE_VIDEO_DIR = os.path.join("video", "backgrounds")
 
@@ -89,4 +92,12 @@ class LocalAssetProvider(AssetProvider):
             return None
 
         path = random.choice(video_files)
+        try:
+            from assets.clip_memory import pick_unseen
+
+            chosen = pick_unseen(video_files)
+            if chosen:
+                path = chosen
+        except Exception as exc:
+            logger.debug("clip anti-repeat skipped: %s", exc)
         return AssetResult(path=path, provider=self.name, query=topic)

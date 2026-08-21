@@ -30,12 +30,14 @@ def get_competitor_channels(channel_id: str) -> list[dict[str, str]]:
     out = []
     for item in channels:
         if isinstance(item, dict) and item.get("id"):
-            out.append(
-                {
-                    "id": str(item["id"]),
-                    "label": str(item.get("label", item["id"])),
-                }
-            )
+            row = {
+                "id": str(item["id"]),
+                "label": str(item.get("label", item["id"])),
+            }
+            note = str(item.get("note") or item.get("status") or "").strip()
+            if note:
+                row["note"] = note
+            out.append(row)
         elif isinstance(item, str):
             out.append({"id": item, "label": item})
     return out

@@ -78,6 +78,79 @@ class TestApplyCostMode(unittest.TestCase):
             self.assertTrue(any(b.startswith("llm:") for b in result.blockers))
             self.assertFalse(result.can_render)
 
+    def test_abort_if_blocked_raises_in_free(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            result = run_mode.apply_cost_mode("free", readiness=self._ready(tts_provider=None))
+            with self.assertRaises(run_mode.CostModeBlocked):
+                run_mode.abort_if_blocked(result)
+
+    def test_abort_if_blocked_is_noop_in_standard(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            result = run_mode.apply_cost_mode("standard")
+            run_mode.abort_if_blocked(result)  # must not raise
+
+    def test_apply_and_guard_rejects_stale_ollama(self):
+        ready = self._ready(llm_provider="ollama", llm_model="llama3.1:8b", llm_local=True)
+        with (
+            mock.patch.dict(os.environ, {"OLLAMA_MODEL": "llama3.1:8b"}, clear=True),
+            mock.patch("core.llm_router.ollama_installed_models", return_value=[]),
+        ):
+            with self.assertRaises(run_mode.CostModeBlocked):
+                run_mode.apply_and_guard("free", readiness=ready)
+
+    def test_guard_before_discovery_is_noop_without_strict(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(run_mode.guard_before_discovery(), [])
+
+    def test_guard_before_discovery_raises_in_free_strict(self):
+        env = {"FREE_MODE_STRICT": "1", "TTS_PROVIDER": "elevenlabs"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(run_mode.CostModeBlocked):
+                run_mode.guard_before_discovery()
+
+    def test_qwen_ready_needs_module_and_voice(self):
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            wav = f.name
+        try:
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {"QWEN_VOICE": wav}, clear=True),
+            ):
+                self.assertEqual(run_mode._local_tts_available(), "qwen")
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {"QWEN_VOICE": "Vivian"}, clear=True),
+            ):
+                self.assertEqual(run_mode._local_tts_available(), "qwen")
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {}, clear=True),
+            ):
+                self.assertIsNone(run_mode._local_tts_available())
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "qwen_tts"),
+                mock.patch.dict(os.environ, {"QWEN_VOICE": "C:\\missing\\clone.wav"}, clear=True),
+            ):
+                self.assertIsNone(run_mode._local_tts_available())
+        finally:
+            os.unlink(wav)
+
+    def test_qwen_does_not_outrank_piper(self):
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as f:
+            onnx = f.name
+        try:
+            with (
+                mock.patch.object(
+                    run_mode, "_module_available", lambda m: m in ("piper", "qwen_tts")
+                ),
+                mock.patch.dict(
+                    os.environ, {"PIPER_VOICE": onnx, "QWEN_VOICE": "Vivian"}, clear=True
+                ),
+            ):
+                self.assertEqual(run_mode._local_tts_available(), "piper")
+        finally:
+            os.unlink(onnx)
+
 
 class TestReadiness(unittest.TestCase):
     def test_piper_ready_needs_module_and_voice_file(self):

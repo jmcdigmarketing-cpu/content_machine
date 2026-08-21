@@ -333,6 +333,52 @@ def llm_clear_dead_models() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# ElevenLabs character quota — same shape as APIFY_MONTHLY_BUDGET_USD.
+# Check point stays in core/tts.py (decisions §13); only persistence lives here.
+# Keyed by calendar month so a new month is a fresh counter; TTL is a safety net.
+# --------------------------------------------------------------------------- #
+
+
+def elevenlabs_chars_key() -> str:
+    import datetime
+
+    return f"elevenlabs_chars:{datetime.date.today().strftime('%Y-%m')}"
+
+
+def elevenlabs_add_chars(
+    n: int, *, key: str | None = None, ttl_seconds: int = 40 * 24 * 3600
+) -> None:
+    if n <= 0:
+        return
+    try:
+        quota_state.increment_value(
+            key or elevenlabs_chars_key(), float(n), ttl_seconds=ttl_seconds
+        )
+    except Exception as exc:
+        logger.warning("ElevenLabs %s chars not persisted (quota guard blind): %s", n, exc)
+
+
+def elevenlabs_chars_used(key: str | None = None) -> int:
+    try:
+        return int(float(quota_state.get_value(key or elevenlabs_chars_key(), 0.0) or 0.0))
+    except Exception:
+        return 0
+
+
+def elevenlabs_would_exceed(chars: int, budget: int, *, key: str | None = None) -> bool:
+    if budget <= 0 or chars <= 0:
+        return False
+    return elevenlabs_chars_used(key) + chars > budget
+
+
+def elevenlabs_reset(key: str | None = None) -> None:
+    try:
+        quota_state.set_value(key or elevenlabs_chars_key(), 0.0, ttl_seconds=1)
+    except Exception as exc:
+        logger.warning("Could not reset the ElevenLabs character ledger: %s", exc)
+
+
+# --------------------------------------------------------------------------- #
 # YouTube scope (O12) — daily unit consumption, reported through the governor.
 #
 # `apis/youtube_quota.py` remains the counter and the *check point* (decisions §13:
@@ -378,4 +424,5 @@ def snapshot(apify_purpose: str = "main") -> dict:
         "llm": {"spend_today": llm_spend_today(), "dead_models": persisted_dead_models()},
         "signals": {"persisted": persisted_disabled_signals()},
         "youtube": youtube_usage(),
+        "elevenlabs": {"chars_used": elevenlabs_chars_used()},
     }

@@ -31,6 +31,34 @@ class TestFluxThumbnail(unittest.TestCase):
             self.assertTrue(os.path.isfile(result.path))
             self.assertGreaterEqual(len(list_channel_thumbnails(tmp)), 1)
 
+    def test_grade_c_skips_flux(self):
+        from assets.flux_thumbnail import ThumbnailResult
+
+        paid = ThumbnailResult(path="paid.jpg", status="generated", detail="Flux", provider="flux")
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.dict(os.environ, {"THUMBNAIL_MIN_GRADE": "B"}, clear=False),
+                patch("assets.flux_thumbnail.is_flux_configured", return_value=True),
+                patch("assets.flux_thumbnail._flux_thumbnail", return_value=paid) as fx,
+            ):
+                result = generate_thumbnail(
+                    "NBA",
+                    "Title",
+                    output_dir=tmp,
+                    grade_letter="C",
+                )
+            fx.assert_not_called()
+            self.assertEqual(result.provider, "pillow")
+            self.assertTrue(result.path)
+
+    def test_paid_blocked_helper(self):
+        from assets.flux_thumbnail import paid_thumbnail_blocked
+
+        self.assertFalse(paid_thumbnail_blocked("A"))
+        self.assertFalse(paid_thumbnail_blocked("B"))
+        self.assertTrue(paid_thumbnail_blocked("C"))
+        self.assertFalse(paid_thumbnail_blocked(None))
+
 
 if __name__ == "__main__":
     unittest.main()

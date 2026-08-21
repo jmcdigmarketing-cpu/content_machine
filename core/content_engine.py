@@ -322,6 +322,7 @@ def _call_content_llm(
         tier=tier,
         temperature=temperature,
         max_tokens=3000,
+        stage="script",
     )
 
 
@@ -664,7 +665,9 @@ ORIGINAL:
 """
     try:
         # Expansion adds substance to the final script → premium tier.
-        data = complete_json(prompt, tier="premium", temperature=0.5, max_tokens=3000)
+        data = complete_json(
+            prompt, tier="premium", temperature=0.5, max_tokens=3000, stage="script_expand"
+        )
         if isinstance(data, dict) and data.get("script"):
             expanded = str(data["script"]).strip()
             if count_spoken_words(expanded) > current:

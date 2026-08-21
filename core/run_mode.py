@@ -23,6 +23,10 @@ import importlib.util
 import os
 from dataclasses import dataclass, field
 
+from core.logging import get_logger
+
+logger = get_logger("core.run_mode")
+
 COST_MODE_STANDARD = "standard"
 COST_MODE_FREE = "free"
 
@@ -38,8 +42,9 @@ _OPENROUTER_FREE_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 _FREE_WEB_SEARCH_BACKEND = "duckduckgo"
 
 # Local (zero-cost) TTS providers, best first. Each needs its backend installed
-# and (piper/xtts) a voice model configured — mirrors core/tts.py._ALT_TTS.
-_LOCAL_TTS_ORDER = ("piper", "kokoro", "xtts")
+# and (piper/xtts/qwen) a voice model configured — mirrors core/tts.py._ALT_TTS.
+# Qwen is included only when qwen_tts + a voice are actually ready (not merely imported).
+_LOCAL_TTS_ORDER = ("piper", "kokoro", "xtts", "qwen")
 
 
 def resolve_cost_mode() -> str:
@@ -63,22 +68,58 @@ def _module_available(name: str) -> bool:
         return False
 
 
+def _tts_provider_ready(provider: str) -> bool:
+    """True when this local TTS backend can actually synth — no model load, no GPU probe.
+
+    Reachable-is-not-usable (decisions §18): a module on sys.path is not enough for
+    piper/xtts/qwen; they need a configured voice (file on disk for paths, name for
+    speakers). Kokoro ships a default voice so the module is the bar.
+    """
+    provider = (provider or "").strip().lower()
+    if provider == "piper":
+        if not _module_available("piper"):
+            return False
+        voice = os.getenv("PIPER_VOICE", "").strip()
+        return bool(voice and os.path.isfile(voice))
+    if provider == "kokoro":
+        return _module_available("kokoro")
+    if provider == "xtts":
+        return bool(_module_available("TTS") and os.getenv("XTTS_SPEAKER_WAV", "").strip())
+    if provider == "qwen":
+        if not _module_available("qwen_tts"):
+            return False
+        voice = os.getenv("QWEN_VOICE", "").strip()
+        if not voice:
+            pool = [v.strip() for v in os.getenv("QWEN_VOICES", "").split(",") if v.strip()]
+            voice = pool[0] if pool else ""
+        if not voice:
+            return False
+        if voice.lower().endswith((".wav", ".mp3", ".flac")):
+            return os.path.isfile(voice)
+        return True  # built-in speaker name — don't load the 1.7B model to check
+    return False
+
+
 def _local_tts_available() -> str | None:
     """First local TTS provider whose backend AND voice model are ready, else None."""
     for provider in _LOCAL_TTS_ORDER:
-        if provider == "piper" and _module_available("piper"):
-            voice = os.getenv("PIPER_VOICE", "").strip()
-            if voice and os.path.isfile(voice):
-                return "piper"
-        elif provider == "kokoro" and _module_available("kokoro"):
-            return "kokoro"  # ships a default voice (KOKORO_VOICE optional)
-        elif (
-            provider == "xtts"
-            and _module_available("TTS")
-            and os.getenv("XTTS_SPEAKER_WAV", "").strip()
-        ):
-            return "xtts"
+        if _tts_provider_ready(provider):
+            return provider
     return None
+
+
+def _ollama_model_pulled(model: str) -> bool:
+    """True when `model` is among the tags the local Ollama daemon actually serves."""
+    if not (model or "").strip():
+        return False
+    try:
+        from core.llm_router import ollama_installed_models
+
+        installed = ollama_installed_models()
+    except Exception:
+        return False
+    wanted = model.strip()
+    return any(m == wanted or m.split(":")[0] == wanted.split(":")[0] for m in installed)
 
 
 def _ollama_ready() -> tuple[bool, str]:
@@ -97,15 +138,7 @@ def _ollama_ready() -> tuple[bool, str]:
     model = os.getenv("OLLAMA_MODEL", "").strip()
     if not model:
         return False, ""
-    try:
-        from core.llm_router import ollama_installed_models
-
-        installed = ollama_installed_models()
-    except Exception:
-        return False, model
-    # Ollama tags are "name:tag"; a bare name matches any installed tag (router rule).
-    usable = any(m == model or m.split(":")[0] == model.split(":")[0] for m in installed)
-    return usable, model
+    return _ollama_model_pulled(model), model
 
 
 def _openrouter_free_model() -> str:
@@ -232,9 +265,14 @@ def abort_if_blocked(result: ApplyResult) -> None:
 
 
 def apply_and_guard(mode: str | None = None, *, readiness: Readiness | None = None) -> ApplyResult:
-    """Apply a cost mode (default ``RUN_COST_MODE``) and abort if Free cannot proceed."""
+    """Apply a cost mode (default ``RUN_COST_MODE``) and abort if Free cannot proceed.
+
+    After pinning env, also verifies the *first* LLM/TTS call would actually hit a
+    usable backend (run 70: apply trusted a stale Readiness, then Ollama 404'd).
+    """
     result = apply_cost_mode(mode or resolve_cost_mode(), readiness=readiness)
     abort_if_blocked(result)
+    abort_if_first_call_unusable(result)
     return result
 
 
@@ -291,6 +329,112 @@ def apply_cost_mode(mode: str, *, readiness: Readiness | None = None) -> ApplyRe
     _set("CONTENT_SKIP_SIGNALS", _merge_skip(os.getenv("CONTENT_SKIP_SIGNALS", "")))
 
     return result
+
+
+@dataclass
+class FirstCallCheck:
+    """What the first LLM/TTS call would actually hit, given current env.
+
+    Distinct from Readiness (probe) and ApplyResult (env pins): this is the
+    *completion* check — resolve_tier / TTS_PROVIDER after apply, including the
+    forced-provider hole where ``_resolve_chain`` skips ``_provider_available``.
+    """
+
+    llm_by_tier: dict[str, tuple[str, str]] = field(default_factory=dict)
+    tts_provider: str = ""
+    blockers: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+
+def inspect_first_calls() -> FirstCallCheck:
+    """Inspect the first LLM/TTS call without making a paid API request.
+
+    Ollama is the cached localhost tags probe (same SoT as the router). Standard
+    only warns for a pinned-but-unpulled Ollama or a local TTS env that isn't
+    ready — it does not warn that OpenAI would be used when that's the normal
+    chain. Free fail-closes when a first call would 404 or hit a paid seam.
+    """
+    check = FirstCallCheck()
+    check.tts_provider = (os.getenv("TTS_PROVIDER") or "elevenlabs").strip().lower() or "elevenlabs"
+    strict = free_mode_strict()
+
+    if strict and check.tts_provider in ("", "elevenlabs"):
+        # Apply failed to pin a local voice — first synth would pay ElevenLabs.
+        check.blockers.append("tts: first call would hit paid ElevenLabs")
+    elif (
+        not strict
+        and check.tts_provider not in ("", "elevenlabs")
+        and not _tts_provider_ready(check.tts_provider)
+    ):
+        check.warnings.append(
+            f"TTS_PROVIDER={check.tts_provider} is set but that backend is not ready"
+        )
+
+    try:
+        from core.llm_router import _is_free_llm, _model_is_dead, resolve_tier
+    except Exception as exc:
+        msg = f"llm: router unavailable ({exc})"
+        if strict:
+            check.blockers.append(msg)
+        return check
+
+    for tier in ("cheap", "extract", "premium"):
+        try:
+            provider, model = resolve_tier(tier)
+        except RuntimeError as exc:
+            if strict:
+                check.blockers.append(f"llm {tier}: {exc}")
+            continue
+        check.llm_by_tier[tier] = (provider, model)
+        if provider == "ollama" and not _ollama_model_pulled(model):
+            msg = (
+                f"llm {tier}: first call would hit ollama {model!r} which is not pulled "
+                f"(ollama pull {model})"
+            )
+            if strict:
+                check.blockers.append(msg)
+            else:
+                check.warnings.append(msg)
+        elif strict and not _is_free_llm(provider, model):
+            check.blockers.append(f"llm {tier}: first call would hit paid {provider}/{model}")
+        elif strict and provider == "openrouter" and _model_is_dead(provider, model):
+            check.blockers.append(
+                f"llm {tier}: openrouter model {model!r} is retired — "
+                f"set OPENROUTER_MODEL_{tier.upper()}"
+            )
+
+    return check
+
+
+def abort_if_first_call_unusable(result: ApplyResult | None = None) -> None:
+    """Fail closed in Free when the first LLM/TTS call is not actually usable."""
+    if result is not None and result.mode != COST_MODE_FREE and not free_mode_strict():
+        return
+    if result is None and not free_mode_strict():
+        return
+    check = inspect_first_calls()
+    if not check.blockers:
+        return
+    detail = "; ".join(check.blockers)
+    raise CostModeBlocked(
+        f"{detail}. Free mode can't continue until this is resolved (docs/free_mode.md)."
+    )
+
+
+def guard_before_discovery() -> list[str]:
+    """Choke point before discovery: Free fail-closed, Standard may warn.
+
+    Only raises when ``FREE_MODE_STRICT`` is on (set by apply_cost_mode) so a
+    leftover RUN_COST_MODE in the operator .env cannot abort unit tests.
+    Returns Standard-mode warnings for the CLI to print.
+    """
+    check = inspect_first_calls()
+    if free_mode_strict() and check.blockers:
+        detail = "; ".join(check.blockers)
+        raise CostModeBlocked(f"{detail}. Stopping before discovery (docs/free_mode.md).")
+    for warning in check.warnings:
+        logger.warning("%s", warning)
+    return check.warnings
 
 
 def format_readiness_line(r: Readiness | None = None) -> str:

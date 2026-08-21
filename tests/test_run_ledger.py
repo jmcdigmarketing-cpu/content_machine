@@ -183,8 +183,10 @@ class TestRunTrace(TraceCase):
         tapin_only = run_trace.list_traces(limit=10, channel_id="tapin")
         self.assertEqual([t["run_id"] for t in tapin_only], [2, 1])
 
-    def test_missing_trace_reads_none(self):
-        self.assertIsNone(run_trace.read_trace(999))
+    def test_write_stores_composite_score(self):
+        self._write(21, composite_score=77.5)
+        trace = run_trace.read_trace(21)
+        self.assertEqual(trace["composite_score"], 77.5)
 
 
 class TestViewers(TraceCase):

@@ -559,17 +559,28 @@ def get_usage() -> list[dict[str, Any]]:
         return [dict(c) for c in _usage.calls]
 
 
-def _record_usage(provider: str, model: str, tier: str, in_tok: int, out_tok: int) -> None:
+def _record_usage(
+    provider: str,
+    model: str,
+    tier: str,
+    in_tok: int,
+    out_tok: int,
+    *,
+    escaped_free_first: bool = False,
+    stage: str | None = None,
+) -> None:
     with _usage_lock:
-        _usage.calls.append(
-            {
-                "provider": provider,
-                "model": model,
-                "tier": tier,
-                "input_tokens": int(in_tok or 0),
-                "output_tokens": int(out_tok or 0),
-            }
-        )
+        rec: dict[str, Any] = {
+            "provider": provider,
+            "model": model,
+            "tier": tier,
+            "stage": (stage or tier or "unknown"),
+            "input_tokens": int(in_tok or 0),
+            "output_tokens": int(out_tok or 0),
+        }
+        if escaped_free_first:
+            rec["escaped_free_first"] = True
+        _usage.calls.append(rec)
 
 
 # --- Daily spend ceiling (O7) ------------------------------------------------
@@ -784,6 +795,7 @@ def complete(
     json_mode: bool = False,
     provider: str | None = None,
     model: str | None = None,
+    stage: str | None = None,
 ) -> str:
     """Run a completion through the routed provider for ``tier``, with failover.
 
@@ -822,6 +834,8 @@ def complete(
             tier = "cheap"
         candidates = _resolve_chain(tier)
 
+    chain_for_escape = list(candidates)
+
     # Skip slugs already proven unavailable this session (e.g. a retired `:free` model) so
     # we don't repeat the same 404 on every call. If that would empty the chain, keep the
     # original list so the failure path still surfaces the provider's real error.
@@ -859,7 +873,24 @@ def complete(
                         max_tokens=max_tokens,
                         json_mode=json_mode,
                     )
-                _record_usage(prov, mdl, tier, in_tok, out_tok)
+                escaped = False
+                if provider is None and not _is_free_llm(prov, mdl):
+                    # Paid winner after a free candidate earlier in the chain (404'd this
+                    # call, or already marked dead and skipped) — operator-visible flag.
+                    try:
+                        prior = chain_for_escape[: chain_for_escape.index((prov, mdl))]
+                    except ValueError:
+                        prior = chain_for_escape
+                    escaped = any(_is_free_llm(p, m) for p, m in prior)
+                _record_usage(
+                    prov,
+                    mdl,
+                    tier,
+                    in_tok,
+                    out_tok,
+                    escaped_free_first=escaped,
+                    stage=stage,
+                )
                 if _llm_daily_budget() is not None:
                     _add_llm_spend(_price_call(prov, mdl, in_tok, out_tok))
                 return text
@@ -928,6 +959,7 @@ def complete_json(
     max_tokens: int = 1024,
     provider: str | None = None,
     model: str | None = None,
+    stage: str | None = None,
 ) -> dict[str, Any] | None:
     """``complete`` with ``json_mode`` on, parsed into a dict (or None)."""
     raw = complete(
@@ -939,5 +971,6 @@ def complete_json(
         json_mode=True,
         provider=provider,
         model=model,
+        stage=stage,
     )
     return parse_json_payload(raw)

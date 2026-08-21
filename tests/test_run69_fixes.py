@@ -99,6 +99,57 @@ class TestFreeModeOllamaReadiness(unittest.TestCase):
         self.assertFalse(result.can_render, "must block rather than route to a dead model")
         self.assertTrue(any(b.startswith("llm:") for b in result.blockers))
 
+    def test_stale_readiness_cannot_start_discovery(self):
+        """Completion gate: apply pinned ollama from a stale Readiness; first call would 404.
+
+        ``_resolve_chain`` skips ``_provider_available`` for a forced provider, so
+        env pins alone are not enough — inspect the first call before discovery.
+        """
+        ready = run_mode.Readiness(
+            tts_provider="piper",
+            llm_provider="ollama",
+            llm_model="llama3.1:8b",
+            llm_local=True,
+        )
+        with (
+            patch.dict(os.environ, _OLLAMA_ENV, clear=True),
+            patch("core.llm_router.ollama_installed_models", return_value=[]),
+        ):
+            result = run_mode.apply_cost_mode(run_mode.COST_MODE_FREE, readiness=ready)
+            self.assertTrue(result.can_render, "apply trusted the stale Readiness")
+            check = run_mode.inspect_first_calls()
+            self.assertTrue(
+                any("not pulled" in b for b in check.blockers),
+                check.blockers,
+            )
+            with self.assertRaises(run_mode.CostModeBlocked) as ctx:
+                run_mode.abort_if_first_call_unusable(result)
+        self.assertIn("not pulled", str(ctx.exception).lower())
+        self.assertIn("can't continue", str(ctx.exception).lower())
+
+    def test_standard_warns_when_forced_ollama_is_empty(self):
+        env = {**_OLLAMA_ENV, "LLM_PREMIUM_PROVIDER": "ollama", "LLM_PREMIUM_MODEL": "llama3.1:8b"}
+        with (
+            patch.dict(os.environ, env, clear=True),
+            patch("core.llm_router.ollama_installed_models", return_value=[]),
+        ):
+            check = run_mode.inspect_first_calls()
+        self.assertFalse(check.blockers, "Standard must not fail closed")
+        self.assertTrue(any("not pulled" in w for w in check.warnings), check.warnings)
+
+    def test_free_openrouter_first_call_is_usable(self):
+        ready = run_mode.Readiness(
+            tts_provider="piper",
+            llm_provider="openrouter",
+            llm_model="poolside/laguna-s-2.1:free",
+        )
+        with patch.dict(os.environ, {"OPENROUTER_API_KEY": "sk-or-x"}, clear=True):
+            result = run_mode.apply_cost_mode(run_mode.COST_MODE_FREE, readiness=ready)
+            run_mode.abort_if_first_call_unusable(result)
+            check = run_mode.inspect_first_calls()
+        self.assertEqual(check.blockers, [])
+        self.assertEqual(check.llm_by_tier["premium"][0], "openrouter")
+
 
 class TestFreeDoctorOllamaDiagnosis(unittest.TestCase):
     """After the run-70 probe fix, free-doctor must not call an empty Ollama 'unreachable'."""

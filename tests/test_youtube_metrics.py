@@ -6,9 +6,19 @@ from analytics.youtube_metrics import fetch_video_metrics, refresh_publish_metri
 
 
 class TestYoutubeMetrics(unittest.TestCase):
-    @patch.dict(os.environ, {}, clear=False)
+    @patch.dict(os.environ, {"YOUTUBE_ANALYTICS_SYNC": ""}, clear=False)
     def test_fetch_disabled_without_env(self):
         self.assertIsNone(fetch_video_metrics("abc123", channel_id="tapin"))
+
+    @patch.dict(
+        os.environ,
+        {"YOUTUBE_ANALYTICS_SYNC": "true", "CONTENT_FORBID_LIVE_YOUTUBE": "1"},
+        clear=False,
+    )
+    @patch("youtube.oauth.load_credentials")
+    def test_forbid_live_skips_analytics_client(self, load):
+        self.assertIsNone(fetch_video_metrics("abc123", channel_id="tapin"))
+        load.assert_not_called()
 
     @patch.dict(os.environ, {"YOUTUBE_ANALYTICS_SYNC": "true"}, clear=False)
     @patch("analytics.youtube_metrics.get_youtube_analytics_service")

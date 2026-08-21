@@ -38,6 +38,7 @@ class OvernightResult:
     outcomes: list[Any] = field(default_factory=list)
     health_line: str = ""
     skillopt_line: str = ""
+    quota_line: str = ""
 
 
 def run_overnight(
@@ -55,7 +56,21 @@ def run_overnight(
 
     from core.batch_generation import collect_topics, run_batch
 
-    picked = collect_topics(channel, topics, file, count)
+    want = count
+    try:
+        from core.overnight_quota import adjust_count
+
+        want, quota_reason = adjust_count(count)
+        if quota_reason:
+            result.quota_line = quota_reason
+        if want <= 0:
+            logger.warning("overnight skipped by quota gate: %s", quota_reason)
+            result.requested = 0
+            return result
+    except Exception as exc:
+        logger.debug("overnight quota gate skipped: %s", exc)
+
+    picked = collect_topics(channel, topics, file, want)
     result.requested = len(picked)
     if not picked:
         logger.warning("overnight: no topics (best bets unavailable) for %s", channel)
@@ -124,8 +139,13 @@ def render_overnight(result: OvernightResult) -> str:
     from core.batch_generation import render_summary
 
     lines = [f"Overnight operator — {result.channel_id}", "=" * 44]
+    if result.quota_line:
+        lines.append(f"Quota: {result.quota_line}")
     if not result.requested:
-        lines.append("No topics to draft (best bets unavailable). Nothing done.")
+        if result.quota_line:
+            lines.append("Overnight skipped (quota gate). Nothing drafted.")
+        else:
+            lines.append("No topics to draft (best bets unavailable). Nothing done.")
         return "\n".join(lines)
     try:
         lines.append(render_summary(result.outcomes).strip())

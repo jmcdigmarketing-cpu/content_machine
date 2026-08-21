@@ -84,7 +84,17 @@ class TestCacheStats(unittest.TestCase):
 class TestReliability(unittest.TestCase):
     def test_gather_has_all_sections(self):
         data = reliability.gather()
-        for key in ("apify", "llm", "signals", "cache", "youtube"):
+        for key in (
+            "apify",
+            "llm",
+            "signals",
+            "cache",
+            "youtube",
+            "elevenlabs",
+            "competitor_health",
+            "fact_expiry",
+            "policy_canary",
+        ):
             self.assertIn(key, data)
 
     def test_budget_line(self):
@@ -105,13 +115,70 @@ class TestReliability(unittest.TestCase):
                     "hit_rate": 0.75,
                     "by_prefix": {"reddit": {"hits": 3, "misses": 1}},
                 },
-                "youtube": {"used": 100, "limit": 10000, "remaining": 9900},
+                "youtube": {"used": 100, "limit": 10000, "remaining": 9900, "uploads_left": 6},
             }
         )
         self.assertIn("Reliability", out)
         self.assertIn("Apify", out)
         self.assertIn("75% hit rate", out)
         self.assertIn("YouTube units", out)
+        self.assertIn("6 uploads left", out)
+
+    def test_utilization_section(self):
+        out = reliability.render(
+            {
+                "apify": {"usage_cache": {"usage": 1.5, "limit": 5.0}},
+                "llm": {},
+                "signals": {},
+                "cache": {"hits": 0, "total": 0, "hit_rate": 0.0},
+                "youtube": {"used": 1600, "limit": 10000, "remaining": 8400, "uploads_left": 5},
+                "elevenlabs": {"budget": 100000, "chars_used": 10000},
+            }
+        )
+        self.assertIn("Subscription utilization", out)
+        self.assertIn("ElevenLabs", out)
+        self.assertIn("Apify", out)
+        self.assertIn("5 uploads leftover", out)
+
+    def test_render_escaped_free_first_and_elevenlabs(self):
+        out = reliability.render(
+            {
+                "apify": {},
+                "llm": {"escaped_free_first": True, "disabled_providers": {}},
+                "signals": {"disabled": []},
+                "cache": {"hits": 0, "total": 0, "hit_rate": 0.0},
+                "elevenlabs": {"budget": 100000, "chars_used": 50000},
+            }
+        )
+        self.assertIn("escaped", out)
+        self.assertIn("ElevenLabs chars", out)
+        self.assertIn("50,000/100,000", out)
+
+    def test_competitor_health_section_renders(self):
+        out = reliability.render(
+            {
+                "apify": {},
+                "llm": {},
+                "signals": {},
+                "cache": {"hits": 0, "total": 0, "hit_rate": 0.0},
+                "competitor_health": ["competitor 'Pat' empty rss"],
+            }
+        )
+        self.assertIn("Competitor health", out)
+        self.assertIn("Pat", out)
+
+    def test_incidents_section_renders(self):
+        out = reliability.render(
+            {
+                "apify": {},
+                "llm": {},
+                "signals": {},
+                "cache": {"hits": 0, "total": 0, "hit_rate": 0.0},
+                "incidents": ["signal tiktok_trends: n=4 score=3.20"],
+            }
+        )
+        self.assertIn("Incidents", out)
+        self.assertIn("tiktok_trends", out)
 
     def test_render_apify_auth_hint(self):
         out = reliability.render(

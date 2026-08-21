@@ -53,6 +53,19 @@ class TestRenderFfmpegCommand(unittest.TestCase):
         b = self._vo_only(music_path=None)
         self.assertEqual(a, b)
 
+    def test_loudnorm_off_by_default(self):
+        joined = " ".join(self._vo_only())
+        self.assertNotIn("loudnorm", joined)
+
+    def test_loudnorm_opt_in(self):
+        import os
+        from unittest.mock import patch
+
+        with patch.dict(os.environ, {"LUFS_NORMALIZE": "true"}):
+            joined = " ".join(self._vo_only())
+        self.assertIn("loudnorm=I=-14", joined)
+        self.assertIn("[aout]", joined)
+
     def test_t_bounds_output(self):
         cmd = self._vo_only(duration=12.25)
         self.assertEqual(cmd[cmd.index("-t") + 1], "12.250")

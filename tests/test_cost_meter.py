@@ -4,10 +4,16 @@ import unittest
 from unittest.mock import patch
 
 from core.cost_meter import (
+    escaped_free_first,
     estimate_run_cost,
     format_cost_line,
+    format_standard_billed_line,
     llm_cost_by_provider,
+    llm_cost_by_stage,
     llm_cost_from_usage,
+    merge_render_cost,
+    standard_would_have_billed,
+    thumbnail_cost,
 )
 
 
@@ -32,7 +38,7 @@ class TestCostMeter(unittest.TestCase):
     def test_local_tts_provider_is_zero_cost(self):
         # Pillar 6: a local voice (Kokoro/XTTS/Piper) has no marginal TTS cost.
         script = "word " * 200
-        for provider in ("kokoro", "xtts", "piper"):
+        for provider in ("kokoro", "xtts", "piper", "qwen"):
             with patch.dict("os.environ", {"TTS_PROVIDER": provider}, clear=False):
                 cost = estimate_run_cost(script=script, rendered=True)
             self.assertEqual(cost["tts"], 0.0, provider)
@@ -205,6 +211,100 @@ class TestLLMCostByProvider(unittest.TestCase):
         # Back-compat: existing callers that pass no split get the old format.
         line = format_cost_line({"llm": 0.004, "total": 0.004})
         self.assertEqual(line, "Est. run cost: $0.0040 (llm $0.0040)")
+
+    def test_cost_line_appends_stage_split(self):
+        line = format_cost_line(
+            {"llm": 0.004, "total": 0.004},
+            llm_by_stage={"script": 0.003, "title": 0.001},
+        )
+        self.assertIn("stages[script $0.0030 · title $0.0010]", line)
+
+    def test_llm_cost_by_stage(self):
+        calls = [
+            {
+                "provider": "deepseek",
+                "model": "deepseek-chat",
+                "stage": "script",
+                "input_tokens": 1000,
+                "output_tokens": 1000,
+            }
+        ]
+        by_stage = llm_cost_by_stage(calls)
+        self.assertIn("script", by_stage)
+        self.assertGreater(by_stage["script"], 0.0)
+
+
+class TestThumbnailCost(unittest.TestCase):
+    def test_paid_providers_bill(self):
+        with patch.dict("os.environ", {"COST_THUMBNAIL_PER_IMAGE": "0.045"}, clear=False):
+            for provider in ("flux", "ideogram", "recraft"):
+                self.assertAlmostEqual(thumbnail_cost(provider), 0.045, places=4, msg=provider)
+
+    def test_pillow_and_missing_are_zero(self):
+        self.assertEqual(thumbnail_cost("pillow"), 0.0)
+        self.assertEqual(thumbnail_cost(""), 0.0)
+        self.assertEqual(thumbnail_cost(None), 0.0)
+        self.assertEqual(thumbnail_cost("unknown"), 0.0)
+
+    def test_merge_adds_thumbnail_only_when_asked(self):
+        with patch.dict("os.environ", {"TTS_PROVIDER": "piper"}, clear=False):
+            stored = {"llm": 0.01, "tts": 0.0, "total": 0.01}
+            tts_only = merge_render_cost(stored, "x" * 100)
+            self.assertNotIn("thumbnail", tts_only)
+            billed = merge_render_cost(stored, "x" * 100, thumbnail_provider="flux")
+            self.assertGreater(billed["thumbnail"], 0.0)
+            pillow = merge_render_cost(stored, "x" * 100, thumbnail_provider="pillow")
+            self.assertEqual(pillow["thumbnail"], 0.0)
+
+    def test_cached_synth_is_zero_tts_line(self):
+        with patch.dict("os.environ", {"TTS_PROVIDER": "elevenlabs"}, clear=False):
+            billed = merge_render_cost({}, "x" * 1000, tts_cached=False)
+            cached = merge_render_cost({}, "x" * 1000, tts_cached=True)
+        self.assertGreater(billed["tts"], 0.0)
+        self.assertEqual(cached["tts"], 0.0)
+
+    def test_remerge_preserves_existing_thumbnail_line(self):
+        with patch.dict("os.environ", {"TTS_PROVIDER": "piper"}, clear=False):
+            once = merge_render_cost({"llm": 0.01}, "hi", thumbnail_provider="flux")
+            twice = merge_render_cost(once, "hi")
+        self.assertAlmostEqual(once["thumbnail"], twice["thumbnail"], places=4)
+
+
+class TestEscapedFreeFirstFlag(unittest.TestCase):
+    def test_helper_reads_usage_records(self):
+        self.assertTrue(escaped_free_first([{"escaped_free_first": True}]))
+        self.assertFalse(escaped_free_first([{"provider": "deepseek"}]))
+        self.assertFalse(escaped_free_first([]))
+
+    def test_cost_line_appends_flag(self):
+        line = format_cost_line({"llm": 0.004, "total": 0.004}, escaped_free_first_llm=True)
+        self.assertIn("escaped free-first LLM", line)
+        plain = format_cost_line({"llm": 0.004, "total": 0.004})
+        self.assertNotIn("escaped", plain)
+
+
+class TestStandardWouldHaveBilled(unittest.TestCase):
+    def test_prices_elevenlabs_even_when_piper_selected(self):
+        script = "x" * 1000
+        with patch.dict("os.environ", {"TTS_PROVIDER": "piper"}, clear=False):
+            billed = standard_would_have_billed(script, include_thumbnail=True)
+            line = format_standard_billed_line(script)
+        self.assertGreater(billed["tts"], 0.0)
+        self.assertGreater(billed["thumbnail"], 0.0)
+        self.assertIn("Standard would have billed", line)
+        self.assertAlmostEqual(billed["total"], billed["tts"] + billed["thumbnail"], places=4)
+
+    def test_hidden_on_standard_elevenlabs_run(self):
+        with patch.dict(
+            "os.environ",
+            {"TTS_PROVIDER": "elevenlabs", "FREE_MODE_STRICT": ""},
+            clear=False,
+        ):
+            self.assertEqual(format_standard_billed_line("x" * 200), "")
+
+    def test_empty_script_is_silent(self):
+        with patch.dict("os.environ", {"TTS_PROVIDER": "piper"}, clear=False):
+            self.assertEqual(format_standard_billed_line(""), "")
 
 
 if __name__ == "__main__":

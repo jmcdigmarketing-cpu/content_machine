@@ -188,6 +188,16 @@ class TestOvernight(unittest.TestCase):
         self.assertEqual(mock_evt.call_args[0][0], "overnight_completed")
         self.assertEqual(result.health_line, "Health: GREEN")
 
+    def test_quota_skip_message(self):
+        with (
+            patch("core.overnight_quota.adjust_count", return_value=(0, "YouTube remaining 100")),
+            patch("core.batch_generation.collect_topics") as mock_topics,
+        ):
+            result = overnight.run_overnight("tapin", count=3)
+        mock_topics.assert_not_called()
+        self.assertEqual(result.requested, 0)
+        self.assertIn("YouTube remaining", overnight.render_overnight(result))
+
     def test_no_topics_is_noop(self):
         with (
             patch("core.batch_generation.collect_topics", return_value=[]),

@@ -73,6 +73,7 @@ def write_run_trace(
     signals: dict[str, Any] | None = None,
     features: dict[str, Any] | None = None,
     quality: dict[str, Any] | None = None,
+    composite_score: float | None = None,
 ) -> str | None:
     """Write the trace file; returns its path or None (fail-open)."""
     if not run_id:
@@ -109,6 +110,7 @@ def write_run_trace(
             "cache_post_discovery": cache,
             "experiment": experiment,
             "quality": dict(quality or {}),
+            "composite_score": composite_score,
         }
         os.makedirs(TRACES_DIR, exist_ok=True)
         path = _trace_path(run_id)

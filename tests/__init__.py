@@ -19,3 +19,22 @@ Tests that genuinely exercise vault behaviour set the variable themselves via
 import os
 
 os.environ["OBSIDIAN_VAULT_PATH"] = ""
+# TTS cache writes under data/tts_cache when on; isolate the suite (tests that
+# exercise the cache patch TTS_CACHE / TTS_CACHE_DIR themselves).
+os.environ["TTS_CACHE"] = "false"
+# Competitor-sync caps default on in production; disable in the suite so a test
+# that reads youtube_quota cannot skip API because the operator's real remaining
+# units are below the upload reserve.
+os.environ["COMPETITOR_SYNC_MAX_UNITS"] = "0"
+os.environ["COMPETITOR_SYNC_RESERVE_UNITS"] = "0"
+# C9: do not open googleapis HTTPS (discovery warmup / unclosed SSLSocket).
+os.environ["CONTENT_SKIP_YOUTUBE_WARMUP"] = "1"
+os.environ["CONTENT_FORBID_LIVE_YOUTUBE"] = "1"
+# Operator .env can leave analytics sync on; never hit youtubeanalytics from tests.
+os.environ["YOUTUBE_ANALYTICS_SYNC"] = "false"
+# Opt-in governors that would abort the suite or read the operator's quota file.
+os.environ["DISK_MIN_FREE_GB"] = "0"
+os.environ["OVERNIGHT_QUOTA_GATE"] = "false"
+os.environ["LUFS_NORMALIZE"] = "false"
+os.environ["CLIP_MEMORY"] = "false"
+os.environ["POLICY_CANARY_FETCH"] = "false"

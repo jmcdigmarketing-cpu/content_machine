@@ -13,11 +13,13 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-08-20 (follow-on 4) — **next 20 after night + evening +
-wave 3:** C9 HTTPS leak / 68 / 70 / 67 / 77 / 80 / 84 / 85 / 87 / per-stage LLM
-/ docs lint / stable dossiers / LUFS / clip anti-repeat / 29 / 30 / 41 / 45 /
-91 / 55. PR #34 still on `main`; live-run 69/70 on `fix/live-run-69-70`.
-Phase M still excluded.
+Last updated: 2026-08-20 (late-night brainstorm) — candidates **141–320**
+(5 `[XL]` / 25 `[L]` / 50 `[M]` / 100 `[S]`). Evening **Recommended next 5**
+remain **shipped** (not overwritten). Added **Brainstorm next-5 (UI/app)**
+(221 / 222 / 223 / 224 / 171). Rationale: [planning_log.md](planning_log.md)
+2026-08-20 late-night brainstorm. Phase M still excluded. Operator notes the
+20 Aug waves on `main` via PR #35; this session did not re-verify the merge
+SHA.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -56,6 +58,25 @@ Volume-gated backtest, the $0 TTS *voice judgment*, and Phase M stay out.
 5. **Numeric/record grounding** `[M]` — *viability.* The name-gate catches
    invented fighters; invented ranks, dates, and purses still pass. A fake record
    on a UFC short is a 2026-policy event, not a grade ding.
+
+**Brainstorm next-5 (UI/app)** *(2026-08-20 late-night — docs only; does not
+replace the shipped evening five.)* Pickup for *leaving the terminal* without
+restarting Phase M. Hours first, then the days-sized booth. Detail: candidates
+**221, 222, 223, 224, 171**.
+
+1. **Windows toast when ffmpeg finishes** `[S]` — *short-term / UI.* The
+   operator currently babysits a spinner; a toast unblocks other work.
+2. **System-tray quota chip** `[S]` — *cost / UI.* Uploads-left (≈1,600 units),
+   ElevenLabs leftover chars, Apify breaker — so a doomed session never starts
+   (run-70 class, visible without `ops reliability`).
+3. **`ops reliability --html` themed snapshot** `[S]` — *UI.* Same breakers /
+   utilization / incidents, opened in the browser. Zero new backend.
+4. **Thumbnail lightbox for the last Pillow thumb** `[S]` — *cost / aesthetics.*
+   Pillow-first already skips paid image APIs on C/D/F; the operator still
+   cannot *see* the thumb without Explorer.
+5. **Last-run review booth** `[M]` — *UI / new-app.* Localhost play + grade +
+   authenticity + cost + Approve/Reject. Replaces scrolling `main.py` for the
+   last render only (the full review *room* is larger #168).
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -680,6 +701,210 @@ Operator product
   *(2026-08-20: banner file + `youtube_handle` + trailer id/file; MoneyWise banner
   passes, handle/trailer still FAIL)*
 - [ ] 140. YouTube quota-increase request playbook (when 10k/day is the ceiling) `[S]`
+
+**Candidates 141–320 (2026-08-20 late-night brainstorm — UI / app / aesthetics / sibling software)**
+
+*Brainstorm. Rationale: [planning_log.md](planning_log.md) 2026-08-20 (late-night
+brainstorm). Exactly **5 `[XL]` / 25 `[L]` / 50 `[M]` / 100 `[S]`**. None restates
+a shipped checkbox, Next-up, or candidates 1–140 unless reframed as a **new
+product** (called out). Phase M, the volume-gated backtest, and the $0 TTS voice
+judgment appear only as **PARKED** massive/larger. Evening recommended next 5
+stay shipped; **Brainstorm next-5 (UI/app)** = 221, 222, 223, 224, 171.
+Honest constants: TTS ~91% of a rendered run; YouTube upload ≈ 1,600/10k;
+remaining paid Apify = `tiktok_trends` + `youtube_competitors`; Windows;
+unittest; no second signal cache; breakers via `quota_governor` only.*
+
+Massive — new product surfaces / years of work / could be different software
+
+- [ ] 141. **Content OS Desktop** (local-first Tauri/WinUI console over `core/`) `[XL]` — *new-app.* Years of UX/packaging; Python stays the engine; never a second signal cache or a breaker bypass.
+- [ ] 142. **Shorts Visual Studio** (caption/type/motion/thumbs/brand as a studio) `[XL]` — *aesthetics.* Sibling design product beside the CLI; not candidates 21–28 (those are flags).
+- [ ] 143. **Portfolio Intelligence Web OS** (vision v3, multi-channel margin) `[XL]` — *viability.* Honest: premature as SaaS until the YouTube-only data moat is real; still the 12-month architecture, not a CLI restyle.
+- [ ] 144. **PARKED — Distribution Sidecar** (TikTok/Reels as different software) `[XL]` — *new-app / parked.* Phase M consumes already-rendered 9:16; never Content Machine feature flags; not the next pickup.
+- [ ] 145. **Moat Suite** (Vault Companion + Clip Librarian + Cost Tower) `[XL]` — *new-app / cost.* Sibling apps over vault, clips, and `quota_governor.snapshot()`; the dataset *is* the company.
+
+Larger — multi-week systems
+
+- [ ] 146. Windows **system-tray daemon** wrapping worker + overnight `[L]` — *new-app.* Overnight is a forgotten PowerShell window today.
+- [ ] 147. Localhost **FastAPI operator shell** (static UI, not SaaS) `[L]` — *new-app.* Thinnest "out of the terminal" without pretending to be #141.
+- [ ] 148. **Job-queue visualizer** with drag-reorder (render vs upload vs quota-defer) `[L]` — *UI.* Worker stalls are invisible; 1,600-unit ceiling needs a picture.
+- [ ] 149. **Analytics Studio** (retention / CTR / RPM local web) `[L]` — *viability.* Weekly-report ASCII cannot show curves; still honest that n≈10 is thin.
+- [ ] 150. **TapIn vs MoneyWise visual language packs** (GUI + video chrome) `[L]` — *aesthetics.* `ui_theme` is ANSI; the two channels still share one ungraded look.
+- [ ] 151. **Brand-kit compiler** (fonts/palette/sting/handle/banner → render + GUI) `[L]` — *aesthetics.* `channel-go-live` checks files exist; it does not apply a kit.
+- [ ] 152. **Thumbnail composition canvas** (operator drag layers) `[L]` — *aesthetics / UI.* Distinct from #22 PIL safe-area *checker*: this is an editor.
+- [ ] 153. **Caption choreography timeline** (karaoke beats vs SRT) `[L]` — *aesthetics.* Distinct from #21 JSON font skin: timing and placement, not fill color.
+- [ ] 154. **MSIX / Inno installer** bundling Python + ffmpeg + tray `[L]` — *new-app.* Packaging is what makes #141 software instead of a repo.
+- [ ] 155. **MCP + local plugin API** over `core/` `[L]` — *new-app.* Agents scrape CLI today; contract must not add a signal cache or skip `quota_governor`.
+- [ ] 156. **Vault Companion** (Obsidian-lite for facts / playbooks / dossiers) `[L]` — *new-app.* Pillar 4 dumps markdown; tier/expiry UX is sibling software.
+- [ ] 157. **Clip Librarian** (search, license, anti-repeat, performance) `[L]` — *new-app.* Distinct from shipped clip-memory deque and from #120 CLIP match.
+- [ ] 158. **Cost Control Tower** (TTS 91% / two Apify actors / YouTube units) `[L]` — *cost.* Allocated vs marginal already ships as ASCII; this is the dashboard app.
+- [ ] 159. **MoneyWise earnings-floor board** (calendar/ticker UI) `[L]` — *UI / viability.* Distinct from Next-up MoneyWise *depth signals*: a board, not new APIs.
+- [ ] 160. **Legal / disclosure review wizard** (AI, finance, FTC, trademark) `[L]` — *viability.* Distinct from #125–129 copy lines: a publish-blocking UX.
+- [ ] 161. **Publish calendar GUI** (week view + overlays) `[L]` — *UI.* Distinct from #133 `.ics` export: a visual week, not a file dump.
+- [ ] 162. **Experiment cockpit** over `experiments.json` `[L]` — *viability.* TTS arms are report-only; this UI still must not auto-assign Piper.
+- [ ] 163. **Script desk** with grounding heat-map `[L]` — *UI / viability.* Numeric/record + claim verifier already compute; painting the script is the surface.
+- [ ] 164. **Overnight factory monitor** (gates, progress, human-presence) `[L]` — *UI.* Overnight + render-gate + heartbeat shipped; watching them is still log-tailing.
+- [ ] 165. **Notification center + DND** (history, quiet hours, click-through) `[L]` — *UI.* Broader than a single toast (#221): Action Center as a product slice.
+- [ ] 166. **PARKED — Voice Judgment Booth** (Piper vs ElevenLabs A/B ears) `[L]` — *cost / parked.* Captions unblocked the $0 path; this booth never auto-flips `TTS_PROVIDER`.
+- [ ] 167. **PARKED — Recommender Backtest Studio** `[L]` — *viability / parked.* Next-up backtest stays volume-gated; the studio must refuse to fit before n is honest.
+- [ ] 168. **Unlisted review room** (player + Approve, around unlisted upload) `[L]` — *UI.* Distinct from #109 unlisted *flag*: this is the room; #171 is last-run HTML only.
+- [ ] 169. **Channel Command Center v1** as a local single-operator app `[L]` — *new-app.* Reframe of deferred "full operator dashboard": local, no SaaS billing — first slice of #141.
+- [ ] 170. **Design-token pipeline** (one JSON for GUI + video) `[L]` — *aesthetics.* Stops ANSI themes, Pillow thumbs, and captions drifting into three palettes.
+
+Moderate — days
+
+- [ ] 171. **Last-run review booth** (localhost play / grade / authenticity / Approve) `[M]` — *UI / new-app.* **Brainstorm next-5.** Last render only; not #168.
+- [ ] 172. Operator **HTML design system** (type, density, buttons) `[M]` — *aesthetics / UI.* Shared chrome for every `--html` dump so they do not look like five blogs.
+- [ ] 173. Per-channel **GUI chrome** (TapIn neon vs MoneyWise editorial) `[M]` — *aesthetics.* Smaller than language packs #150; header/type/accent only.
+- [ ] 174. Windows **jump list** for last five drafts `[M]` — *new-app.* Taskbar right-click → open mp4 / booth, no console.
+- [ ] 175. **Command palette** over `ops` subcommands `[M]` — *UI.* ~38 commands are unlistable from memory; palette is not a rewrite of `ops.py`.
+- [ ] 176. Dark-mode **dossier HTML viewer** `[M]` — *UI.* Vault `_runs/` in the browser; does not change dossier schema.
+- [ ] 177. Dual-channel **status wall** (TapIn | MoneyWise) `[M]` — *UI.* Two-pane health/quota/cadence; MoneyWise go-live FAILs stay visible.
+- [ ] 178. **Render-progress pane** (ffmpeg % as a UI, not a spinner) `[M]` — *UI.* `CONTENT_RENDER_PROGRESS` exists; this is a window the operator can glance at.
+- [ ] 179. **Authenticity visual checklist** (variation / insight / substance) `[M]` — *viability / UI.* Policy gate as boxes, not a log line.
+- [ ] 180. **Report-card poster** layout (letter + cost subtitle) `[M]` — *aesthetics.* A–F as a designed artifact for review, not ASCII.
+- [ ] 181. Thumbnail **A/B click-picker** that logs the experiment arm `[M]` — *UI.* Distinct from #27 dual *generation*: pick between already-rendered thumbs.
+- [ ] 182. **Caption overlay on a still** (proofread names before burn) `[M]` — *aesthetics.* Fighter/game names are the subject; catch "Salkilld" on a frame.
+- [ ] 183. **Font-pairing picker** (title vs body captions) `[M]` — *aesthetics.* Writes a note / token; not the full #21 skin schema.
+- [ ] 184. Named **motion-style presets** (punch-in, snap zoom) `[M]` — *aesthetics.* Distinct from #26 first-caption-beat Ken Burns: a library of named styles.
+- [ ] 185. Caption-vs-background **contrast auditor** `[M]` — *aesthetics.* WCAG-ish ratio on sampled frames; burned captions fail on busy clips.
+- [ ] 186. Player **safe-title grid overlay** `[M]` — *UI / aesthetics.* Distinct from #22 PIL checker: live overlay in the review player.
+- [ ] 187. **End-card preview compositor** `[M]` — *aesthetics.* Distinct from #23 fail-open sting *asset*: see the last 1s before render.
+- [ ] 188. **Intro-sting waveform** (see the 2.15s TapIn hit) `[M]` — *aesthetics / cost.* Stops relearning intro-offset sync against the SRT.
+- [ ] 189. Brand-kit **screenshot linter** (banner vs in-video palette) `[M]` — *aesthetics.* MoneyWise handle/trailer already FAIL; this diffs colors, not file presence.
+- [ ] 190. MoneyWise **on-screen disclaimer bug** layout `[M]` — *viability / aesthetics.* Distinct from #125 description copy: a burned or overlay bug.
+- [ ] 191. **AI-disclosure lower-third template** `[M]` — *viability / aesthetics.* Policy UX, not the authenticity gate itself.
+- [ ] 192. **YPP progress UI** (`ops ypp` as a designed page) `[M]` — *viability / UI.* Checklist exists as ASCII; hours-or-Shorts-views needs a bar.
+- [ ] 193. **Utilization rings** (ElevenLabs / YouTube / Apify leftover) `[M]` — *cost / UI.* Utilization section shipped; rings are the graphic.
+- [ ] 194. Allocated-vs-marginal **waterfall chart** `[M]` — *cost.* ~$0.31 metered vs ~$1 allocated at 21/90 Creator-plan videos — picture, not two lines.
+- [ ] 195. **Paid-signal sparklines** (`tiktok_trends` / `youtube_competitors` only) `[M]` — *cost.* Attribution report exists; this is the two-actor chart.
+- [ ] 196. **Incident timeline UI** `[M]` — *UI.* `ops incidents` ranks count/(1+days); a timeline is the missing surface.
+- [ ] 197. **Feed-health widget** (ok/stale/dead) `[M]` — *UI.* `ops feeds` is ASCII; Tapology-class silent death needs a traffic light on a wall.
+- [ ] 198. **Doctor HTML page** (CUDA / oauth / feeds / quota) `[M]` — *UI.* `ops doctor` one-pager in the browser; still no pip install, still no secrets.
+- [ ] 199. Pre-run gate as a **blocking modal** `[M]` — *short-term / UI.* Run-70 class: do not start discovery behind a wall of logs.
+- [ ] 200. **Thin-facts abort screen** before TTS `[M]` — *cost / UI.* Gate shipped; a dedicated screen stops burying the $0.31 save in CLI.
+- [ ] 201. Script **character-cap meter** while editing `[M]` — *cost / UI.* `TTS_MAX_CHARS` refuses; a meter would have shown Extended as a cost multiplier.
+- [ ] 202. ElevenLabs **leftover-chars fuel gauge** `[M]` — *cost.* Governor is opt-in; the gauge is how the operator sees 100k/month burn down.
+- [ ] 203. **Uploads-left fuel gauge** (1,600 units) `[M]` — *cost / UI.* Startup line exists; a gauge belongs on tray + booth.
+- [ ] 204. RPM × cost by domain as **small-multiples** `[M]` — *cost / viability.* Domain lines shipped in `ops economics`; UFC vs GTA vs NBA needs charts.
+- [ ] 205. **Human-presence indicator** in the tray `[M]` — *UI.* Heartbeat is opt-in; overnight must show "human last seen" without opening a log.
+- [ ] 206. Render-queue **skip explanation card** `[M]` — *UI.* Grade/authenticity gate shipped; overnight skipped-why is currently tribal knowledge.
+- [ ] 207. **Metrics-before-next lock screen** `[M]` — *viability / UI.* Opt-in gate shipped; a lock screen is why the learning loop actually waits.
+- [ ] 208. Unlisted vs public **toggle in the booth** `[M]` — *UI.* Distinct from #109 implementing unlisted upload: this is the control chrome.
+- [ ] 209. **Keyboard-first review** (J/K/L like an NLE) `[M]` — *UI.* Short-term success is also operator minutes; keyboard is faster than prompts.
+- [ ] 210. **Windows Hello** before marking public `[M]` — *viability / UI.* Accidental public is a 2026-policy event; biometric confirm, fail-open if Hello absent.
+- [ ] 211. **Channel-picker overlay** (no `.env` editor) `[M]` — *UI.* Switch tapin/moneywise without teaching dotenv; never show secrets.
+- [ ] 212. **Secrets-present dots** (never values) on a status strip `[M]` — *viability / UI.* Distinct from #96 secrets-doctor: display-only dots.
+- [ ] 213. Trace **timing waterfall** (phases from existing traces) `[M]` — *UI.* Traces already on disk; twitter-class 32s floors should be a picture.
+- [ ] 214. **Postmortem HTML one-pager** `[M]` — *UI.* `ops postmortem` shipped; a designed page is what you paste into a chat.
+- [ ] 215. Weekly-report **magazine layout** `[M]` — *aesthetics.* Analyst markdown exists; this is typeset HTML, not a new agent.
+- [ ] 216. Dossier reader with **run-id search** `[M]` — *UI.* Stable `{run_id}_{slug}.md` shipped; search is the missing index UI.
+- [ ] 217. **Pronunciation lexicon editor** `[M]` — *cost / UI.* `config/pronunciations.json` shipped on the local TTS path; no UI to add "Salkilld".
+- [ ] 218. Clip-memory **filmstrip** `[M]` — *aesthetics / UI.* Anti-repeat deque shipped; pictures of recent backgrounds are the point.
+- [ ] 219. **LUFS meter graphic** `[M]` — *aesthetics.* `LUFS_NORMALIZE` opt-in shipped; a meter shows whether the toggle mattered.
+- [ ] 220. MCP **plugin-settings pane** (read-only first) `[M]` — *new-app.* Companion to #155: what tools are exposed, none that write `quota_state`.
+
+Small — hours / a PR
+
+- [ ] 221. Windows **toast when ffmpeg finishes** `[S]` — *UI / short-term.* **Brainstorm next-5.**
+- [ ] 222. System-tray **quota chip** (uploads-left + TTS chars + Apify breaker) `[S]` — *cost / UI.* **Brainstorm next-5.**
+- [ ] 223. `ops reliability --html` themed snapshot `[S]` — *UI.* **Brainstorm next-5.** Zero new backend.
+- [ ] 224. **Thumbnail lightbox** for the last Pillow thumb `[S]` — *cost / aesthetics.* **Brainstorm next-5.**
+- [ ] 225. Toast on **upload scheduled** / `publishAt` `[S]` — *UI.* Cadence is easy to miss after the worker claims the job.
+- [ ] 226. Toast when a **breaker trips** (Apify / LLM / ElevenLabs) `[S]` — *cost / UI.* Silent disablement is how paid signals die for a session.
+- [ ] 227. Toast when **overnight finishes drafts** `[S]` — *UI.* Drafts are cadence-safe; nobody knows they exist until morning CLI.
+- [ ] 228. Balloon: **"N uploads left this reset"** `[S]` — *cost / UI.* Same number as reliability; push it to Action Center.
+- [ ] 229. Click-toast **opens last mp4** in the default player `[S]` — *UI.* Fastest review path that is not a booth.
+- [ ] 230. Taskbar **overlay badge** (queue depth) `[S]` — *UI.* Worker progress without a window.
+- [ ] 231. Start-menu shortcut via **pyw** (no console flash) `[S]` — *new-app.* First "this is an app" hour on Windows.
+- [ ] 232. Desktop `.lnk` to the **review-booth URL** `[S]` — *new-app.* Depends on #171; the shortcut is the PR.
+- [ ] 233. Per-channel **notification sound** `[S]` — *aesthetics.* TapIn vs MoneyWise should not share one ding.
+- [ ] 234. High-contrast CSS for HTML reports `[S]` — *aesthetics / UI.* Respect Windows contrast themes.
+- [ ] 235. TapIn **swatch strip** in HTML headers `[S]` — *aesthetics.* Channel color without a full language pack.
+- [ ] 236. MoneyWise **serif header** on HTML reports `[S]` — *aesthetics.* Editorial vs neon, typeset only.
+- [ ] 237. Favicon for localhost booth (channel mark) `[S]` — *aesthetics.* Browser tab literacy.
+- [ ] 238. Local **poster image** for the review page `[S]` — *aesthetics.* 9:16 frame as page chrome; no network OG.
+- [ ] 239. **Print stylesheet** for weekly-report HTML `[S]` — *aesthetics.* Magazine #215 is days; print CSS is hours.
+- [ ] 240. `ops status --html` `[S]` — *UI.* Queue + health without a terminal font.
+- [ ] 241. `ops economics --html` `[S]` — *cost / UI.* Allocated vs marginal already in the command.
+- [ ] 242. `ops grade --html --run-id` `[S]` — *UI.* Report card as a page.
+- [ ] 243. Startup **PNG wordmark** option beside ASCII `[S]` — *aesthetics.* `ascii_art` stays; a mark is for windows and HTML.
+- [ ] 244. Windows Terminal **profile snippet** (channel colors) `[S]` — *aesthetics.* Docs + JSON fragment; not a theme rewrite.
+- [ ] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` — *aesthetics.* One CSS file; design-system #172 can adopt it later.
+- [ ] 246. Blurred **9:16 poster** as booth background `[S]` — *aesthetics.* Last frame, CSS blur only — no new ffmpeg.
+- [ ] 247. CSS **grain/vignette preview** toggle `[S]` — *aesthetics.* Preview-only; does not change the render command.
+- [ ] 248. Caption **font specimen strip** (three faces) `[S]` — *aesthetics.* Pick writes a note, not `channels.json` yet (#21).
+- [ ] 249. Title-card mock: **2-line vs 3-line wrap** `[S]` — *aesthetics.* YouTube chrome rehearsal without uploading.
+- [ ] 250. Emoji-free / **ASCII-safe HTML** (cp1252 lesson) `[S]` — *UI.* Same class as render-gate `>=` — consoles and files that cannot swallow glyphs.
+- [ ] 251. **Copy-as-markdown** on the report card `[S]` — *UI.* Paste into vault or chat.
+- [ ] 252. **Copy last unlisted URL** button `[S]` — *UI.* Distinct from implementing #109; clipboard only.
+- [ ] 253. **Reveal mp4 in Explorer** `[S]` — *UI.* `explorer /select,` on Windows.
+- [ ] 254. **Reveal thumbnail in Explorer** `[S]` — *UI.* Pillow-first thumbs live in `output/{channel}/thumbnails/`.
+- [ ] 255. **Open dossier** via Obsidian URI (if vault set) `[S]` — *UI.* Fail-open when path empty.
+- [ ] 256. **Reveal trace JSON** `[S]` — *UI.* `data/traces/<id>.json` without hunting.
+- [ ] 257. **Drag-drop facts `.txt`** onto the booth `[S]` — *UI / short-term.* Overnight still cannot take `key_facts=`; this is intake chrome only.
+- [ ] 258. Paste-facts textarea + **4500-char meter** `[S]` — *UI.* Operator fact budget is already a number; show it.
+- [ ] 259. HTML **channel switcher** (tapin / moneywise) `[S]` — *UI.* Same constraint as #211: never an `.env` editor.
+- [ ] 260. Keyboard **`?` cheat-sheet** overlay `[S]` — *UI.* Booth/palette discoverability.
+- [ ] 261. **Skip-link** a11y on the booth `[S]` — *UI.* Keyboard users skip chrome to the player.
+- [ ] 262. HTML5 **captions from SRT** `[S]` — *aesthetics / UI.* Review names without burning a new mp4.
+- [ ] 263. Playback-rate **1.25×** toggle `[S]` — *UI.* Operator minutes.
+- [ ] 264. **Loop last 3s of hook** `[S]` — *aesthetics.* Retention cliff rehearsal; no new render.
+- [ ] 265. **Frame-step** with `,` / `.` `[S]` — *UI.* Proofread burned captions on a frame.
+- [ ] 266. **Save current frame** as a still `[S]` — *aesthetics.* Operator stills folder; not a thumbnail API.
+- [ ] 267. **9:16 letterbox** in a landscape window `[S]` — *aesthetics / UI.* Stop stretching Shorts in the booth.
+- [ ] 268. **Safe-area overlay toggle** (YouTube UI chrome) `[S]` — *aesthetics.* Player overlay; not the #22 PIL test.
+- [ ] 269. **Burned vs sidecar** caption toggle `[S]` — *UI.* Compare retext vs proportional without re-encoding.
+- [ ] 270. **Waveform under the player** (from existing mp3) `[S]` — *aesthetics.* No new TTS spend.
+- [ ] 271. Spoken vs **estimated duration** readout `[S]` — *cost / UI.* Measured 3.32 wps vs Piper ~20% slower — show both.
+- [ ] 272. **Cost subtitle under the player** (`tts $0.31 · 91%`) `[S]` — *cost.* The number that should never be off-screen.
+- [ ] 273. **Escaped free-first LLM** red pill `[S]` — *cost / UI.* Flag already ships; put it on the booth.
+- [ ] 274. **Thin-facts warning banner** `[S]` — *cost / UI.* Same gate as #200, one strip.
+- [ ] 275. Ungrounded **numeric chips** `[S]` — *viability / UI.* Record/rank/purse hits as chips, not a paragraph.
+- [ ] 276. Authenticity **semantic-arm bar** `[S]` — *viability / UI.* Cosine arm is live; a bar is the surface.
+- [ ] 277. Report-card **component breakdown** `[S]` — *UI.* Hook / grounding / authenticity as three numbers.
+- [ ] 278. **Standard-would-have-billed** line on Free runs `[S]` — *cost / UI.* Dry-run already exists; show it on the booth.
+- [ ] 279. **Allocated vs marginal** one-liner `[S]` — *cost.* Booth footer, not a new economics engine.
+- [ ] 280. TTS **cache-hit $0** pill `[S]` — *cost / UI.* Cache shipped opt-in; celebrate a $0 re-render.
+- [ ] 281. **Pillow vs Flux** thumb badge `[S]` — *cost / aesthetics.* Grade gate already chooses; label what the operator is seeing.
+- [ ] 282. Human-presence **last-seen relative time** `[S]` — *UI.* Companion to #205, one string.
+- [ ] 283. Render-gate **blocked reason** in plain English `[S]` — *UI.* ASCII `>=` stays in logs; the booth gets a sentence.
+- [ ] 284. RPM-cost-gate **deferred reason** `[S]` — *cost / UI.* Trailing-7d RPM < cost is a business event; say it.
+- [ ] 285. Metrics-before-next **"yesterday unsynced"** copy `[S]` — *viability / UI.*
+- [ ] 286. **Uploads-left in booth header** `[S]` — *cost / UI.* Same figure as the tray chip.
+- [ ] 287. **ElevenLabs chars in booth header** `[S]` — *cost / UI.*
+- [ ] 288. Remaining Apify actors as **pills** (`tiktok_trends`, `youtube_competitors`) `[S]` — *cost / UI.* Never imply reddit/twitter still bill.
+- [ ] 289. Last-run **signal-health dots** `[S]` — *UI.* Discovery health without opening the spinner replay.
+- [ ] 290. **Feed-stale strip** `[S]` — *UI.* Rot that used to hide for a month.
+- [ ] 291. Set Windows **AppUserModelID** so toasts group as "Content OS" `[S]` — *new-app.* Otherwise they look like Python.
+- [ ] 292. **Mute toasts during quiet hours** `[S]` — *UI.* Read `channels.json` blackout if present; do not implement #116.
+- [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
+- [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight facts-file gap stays a pipeline issue.
+- [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.
+- [ ] 296. **Print stylesheet** for the contact sheet `[S]` — *aesthetics.*
+- [ ] 297. Caption fill **contrast ratio number** vs sampled frame `[S]` — *aesthetics.* Hours version of auditor #185.
+- [ ] 298. YouTube-title **100-char meter** `[S]` — *UI.* Truncation rehearsal in the booth.
+- [ ] 299. Description **first-line preview card** `[S]` — *UI / viability.* Search snippet chrome; not hashtag stuffing (#118 is the writer).
+- [ ] 300. Local **tag chips** (edit in booth, apply writes the package) `[S]` — *UI.*
+- [ ] 301. **Phone-bezel CSS** around the 9:16 player `[S]` — *aesthetics.* Review how a Short actually sits in a hand.
+- [ ] 302. **YouTube chrome mock** (like/comment/subscribe) as an overlay `[S]` — *aesthetics.* Safe-area rehearsal distinct from #268's boxes.
+- [ ] 303. Booth **theme toggle** (TapIn red vs MoneyWise green) `[S]` — *aesthetics.* Hours; packs #150 are weeks.
+- [ ] 304. **Reduced-chroma** mode for OLED `[S]` — *aesthetics.* Accessibility + night reviewing.
+- [ ] 305. **16px minimum type** on all HTML dumps `[S]` — *UI.* CLI font size is the current accessibility failure.
+- [ ] 306. **Sticky cost bar** (TTS 91% always visible) `[S]` — *cost / UI.*
+- [ ] 307. **Sticky quota bar** `[S]` — *cost / UI.*
+- [ ] 308. Collapsible **raw trace JSON** `[S]` — *UI.* Debug without leaving the booth.
+- [ ] 309. Collapsible **ffmpeg command** `[S]` — *UI.* Sync/intro bugs are command bugs.
+- [ ] 310. **Copy ffmpeg command** `[S]` — *UI.*
+- [ ] 311. Copy last **postmortem as markdown** `[S]` — *UI.*
+- [ ] 312. Tray menu: **open last output folder** `[S]` — *new-app / UI.*
+- [ ] 313. Tray action: **pause overnight** (flag file) `[S]` — *UI.* Does not change overnight code paths beyond an existing opt-in gate file.
+- [ ] 314. Tray action: **run doctor → HTML** `[S]` — *UI.* Pairs with #198.
+- [ ] 315. Tray: **last grade letter** `[S]` — *UI.*
+- [ ] 316. Tray: **last domain** (UFC / GTA / NBA) `[S]` — *viability / UI.* RPM×cost by domain is useless if you cannot see what you just made.
+- [ ] 317. Tray: **Free vs Standard** mode `[S]` — *cost / UI.* Run-70 class: lying readiness should be visible from the tray.
+- [ ] 318. Remember **second-monitor bounds** `[S]` — *UI.* Booth on the 9:16 monitor.
+- [ ] 319. **"What's blocking publish"** one-sentence generator `[S]` — *short-term / UI.* Compose existing gates (grade, authenticity, quota, thin-facts, Hello) into one line.
+- [ ] 320. Tray: **local git describe** when `ops` gains commands `[S]` — *UI.* Changelog awareness without opening GitHub.
 
 ---
 

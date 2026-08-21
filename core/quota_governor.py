@@ -106,6 +106,7 @@ def clear_signal(name: str) -> None:
     """Drop one persisted signal record (operator fixed the underlying issue)."""
     try:
         quota_state.clear_exhausted(_SCOPE, name)
+        quota_state.clear_value(_keyhash_key(name))
     except Exception as exc:
         # Warning, not debug: the record survives, so a paid signal the operator just
         # fixed stays disabled for up to a billing cycle (CLAUDE.md's expensive case).
@@ -116,7 +117,7 @@ def clear_all_signals() -> None:
     """Drop every persisted signal record (reset helper)."""
     try:
         for name in quota_state.list_exhausted(_SCOPE):
-            quota_state.clear_exhausted(_SCOPE, name)
+            clear_signal(name)
     except Exception as exc:
         # The reset silently did nothing — the operator will assume it worked.
         logger.warning("Could not clear persisted signal disables: %s", exc)
@@ -318,6 +319,7 @@ def persisted_dead_models(fingerprints: dict[str, str] | None = None) -> dict[st
 def llm_clear_dead_model(slug: str) -> None:
     try:
         quota_state.clear_exhausted(_LLM_MODEL_SCOPE, slug)
+        quota_state.clear_value(f"llm_model_keyhash:{slug}")
     except Exception as exc:
         # A revived model stays skipped until the TTL expires.
         logger.warning("Could not clear persisted dead-model '%s': %s", slug, exc)

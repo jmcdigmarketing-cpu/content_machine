@@ -35,6 +35,13 @@ class TestPersistRoundtrip(GovernorCase):
         qg.clear_signal("finnhub")
         self.assertEqual(qg.persisted_disabled_signals(), {})
 
+    def test_clear_signal_drops_keyhash(self):
+        with patch.dict("os.environ", {"FINNHUB_API_KEY": "k1"}):
+            qg.disable_signal("finnhub", "auth_error")
+            self.assertIsNotNone(quota_state.get_value("signal_keyhash:finnhub"))
+            qg.clear_signal("finnhub")
+            self.assertIsNone(quota_state.get_value("signal_keyhash:finnhub"))
+
     def test_clear_all_signals(self):
         qg.disable_signal("finnhub", "no_key")
         qg.disable_signal("rawg", "quota_exceeded")
@@ -215,6 +222,14 @@ class TestDeadModelPersistence(GovernorCase):
         qg.llm_mark_model_dead("ollama", "b", "NotFoundError")
         qg.llm_clear_dead_models()
         self.assertEqual(qg.persisted_dead_models(), {})
+
+    def test_clear_also_drops_keyhash(self):
+        qg.llm_mark_model_dead("openrouter", "some:free", "NotFoundError", fingerprint="abc")
+        self.assertEqual(qg.persisted_dead_models(), {"openrouter/some:free": "NotFoundError"})
+        self.assertEqual(quota_state.get_value("llm_model_keyhash:openrouter/some:free"), "abc")
+        qg.llm_clear_dead_model("openrouter/some:free")
+        self.assertEqual(qg.persisted_dead_models(), {})
+        self.assertIsNone(quota_state.get_value("llm_model_keyhash:openrouter/some:free"))
 
     def test_persistence_switch_off(self):
         with patch.dict(os.environ, {"SIGNAL_BREAKER_PERSIST": "false"}, clear=False):

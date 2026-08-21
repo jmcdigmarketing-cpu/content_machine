@@ -673,7 +673,15 @@ def _run_new_video_flow_body(
             when = "now"
             if upload_plan.scheduled_at:
                 when = upload_plan.scheduled_at.astimezone().strftime("%Y-%m-%d %H:%M")
-            print(f"\n  Upload queued (job {job.id}, {upload_plan.privacy_status}, {when}).")
+            # Report what will actually happen: an immediate public upload is held
+            # unlisted for review by default, so echoing the request would promise
+            # public and deliver unlisted (run 69).
+            from publishing.youtube_publisher import queued_privacy_label
+
+            privacy_label = queued_privacy_label(
+                upload_plan.privacy_status, upload_plan.youtube_publish_at
+            )
+            print(f"\n  Upload queued (job {job.id}, {privacy_label}, {when}).")
             print("  Run worker:  py -m jobs.worker --loop 30")
         from core.ui import maybe_print_milestone
 

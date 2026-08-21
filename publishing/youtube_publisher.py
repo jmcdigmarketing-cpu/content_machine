@@ -92,6 +92,20 @@ def apply_unlisted_review(privacy_status: str, *, publish_at=None) -> tuple[str,
     return "unlisted", True
 
 
+def queued_privacy_label(privacy_status: str, publish_at=None) -> str:
+    """What the operator should be told at queue time, not what they asked for.
+
+    The queue confirmation used to echo the requested privacy, so an immediate
+    public upload printed "public" and then landed unlisted because the review
+    hold is on by default (live run 69). Routed through apply_unlisted_review so
+    the message and the upload cannot drift apart.
+    """
+    effective, held = apply_unlisted_review(privacy_status, publish_at=publish_at)
+    if not held:
+        return effective
+    return f"{privacy_status} -> {effective} first, for review"
+
+
 def build_video_status(request: PublishRequest) -> dict[str, Any]:
     status: dict[str, Any] = {"selfDeclaredMadeForKids": False}
     if not request.publish_at:

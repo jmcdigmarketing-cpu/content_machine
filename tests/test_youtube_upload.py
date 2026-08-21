@@ -223,3 +223,45 @@ class TestYouTubeUpload(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestQueuedPrivacyIsHonest(unittest.TestCase):
+    """The queue confirmation must not promise "public" when the hold is on.
+
+    YOUTUBE_UNLISTED_REVIEW defaults to true, so an immediate public upload is
+    uploaded unlisted for an eyeball. Live run 69 printed
+    "Upload queued (job 41, public, ...)" - the operator is told public and gets
+    unlisted, with nothing on screen saying so.
+    """
+
+    def test_public_immediate_is_labelled_as_held(self):
+        from publishing.youtube_publisher import queued_privacy_label
+
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "true"}, clear=False):
+            label = queued_privacy_label("public", None)
+        self.assertIn("unlisted", label.lower())
+        self.assertIn("public", label.lower())
+
+    def test_scheduled_public_is_not_relabelled(self):
+        from datetime import datetime, timedelta, timezone
+
+        from publishing.youtube_publisher import queued_privacy_label
+
+        later = datetime.now(timezone.utc) + timedelta(days=1)
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "true"}, clear=False):
+            self.assertEqual(queued_privacy_label("public", later), "public")
+
+    def test_private_is_unchanged(self):
+        from publishing.youtube_publisher import queued_privacy_label
+
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "true"}, clear=False):
+            self.assertEqual(queued_privacy_label("private", None), "private")
+
+    def test_label_matches_what_the_publisher_will_do(self):
+        # One source of truth: the label must agree with apply_unlisted_review.
+        from publishing.youtube_publisher import apply_unlisted_review, queued_privacy_label
+
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "false"}, clear=False):
+            effective, held = apply_unlisted_review("public")
+            self.assertFalse(held)
+            self.assertEqual(queued_privacy_label("public", None), effective)

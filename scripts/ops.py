@@ -646,7 +646,7 @@ def cmd_worker(args: argparse.Namespace) -> int:
 
 @_register("test", "Run unit tests")
 def cmd_test(_args: argparse.Namespace) -> int:
-    return _run_module("unittest", "discover", "-s", "tests", "-v")
+    return _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
 
 
 @_register("list-uploads", "Rendered MP4s not yet on YouTube")

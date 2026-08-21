@@ -105,7 +105,7 @@ ruff check .                 # lint
 ruff check . --fix           # lint + autofix
 ruff format .                # format
 mypy analytics apis core config storage   # type check (lenient baseline)
-python -m unittest discover -s tests       # tests (pytest also works: `pytest`)
+python -m unittest discover -s tests -t .  # tests (pytest also works: `pytest`)
 ```
 
 Tooling is configured in [`pyproject.toml`](pyproject.toml) (canonical deps +

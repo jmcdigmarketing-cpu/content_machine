@@ -57,7 +57,7 @@ new provider or changing tier routing.
 ruff check .                                   # lint — CI-blocking
 ruff format --check .                          # format — CI-blocking
 mypy analytics apis core config storage        # type check — non-blocking baseline
-python -m unittest discover -s tests -v        # tests — CI-blocking (or: pytest -q)
+python -m unittest discover -s tests -t . -v        # tests — CI-blocking (or: pytest -q)
 ```
 
 ## Hard rules

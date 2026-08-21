@@ -258,9 +258,9 @@ def resolve_tts_config(channel_id: str | None = None) -> tuple[str, str]:
 def tts_cache_enabled() -> bool:
     """Re-synth skip for identical scripts. Opt-in (empty/0/off = disabled).
 
-    Default off so ``unittest discover -s tests`` (which does not import
-    ``tests/__init__.py``) cannot write ``data/tts_cache``. Production: set
-    ``TTS_CACHE=true``.
+    Default off so a bare ``unittest discover -s tests`` (no ``-t .``, which
+    does not import ``tests/__init__.py``) cannot write ``data/tts_cache``.
+    Production: set ``TTS_CACHE=true``.
     """
     return os.getenv("TTS_CACHE", "").strip().lower() in (
         "1",

@@ -8,6 +8,35 @@ from unittest.mock import patch
 
 from core import llm_router, quota_state
 
+# Module-level isolation of the persisted store.
+#
+# Several classes here drive dead-model persistence and the daily-spend ledger.
+# Un-isolated they wrote 24h dead-model records for the project's LIVE cheap and
+# extract anchors into the operator's real data/quota_state.json - the exact
+# poisoning tests/CLAUDE.md forbids. Bisected from a full-suite run that left an
+# "openrouter/some:free" record - a pure test fixture - sitting in live state.
+#
+# Done at module scope so it also covers any class added later; the per-class
+# QUOTA_STATE_FILE patches below still work (they just nest inside this one).
+_MODULE_STATE_TMP: str | None = None
+_MODULE_STATE_PATCH = None
+
+
+def setUpModule() -> None:
+    global _MODULE_STATE_TMP, _MODULE_STATE_PATCH
+    _MODULE_STATE_TMP = tempfile.mkdtemp()
+    _MODULE_STATE_PATCH = patch.object(
+        quota_state, "QUOTA_STATE_FILE", os.path.join(_MODULE_STATE_TMP, "module_q.json")
+    )
+    _MODULE_STATE_PATCH.start()
+
+
+def tearDownModule() -> None:
+    if _MODULE_STATE_PATCH is not None:
+        _MODULE_STATE_PATCH.stop()
+    if _MODULE_STATE_TMP:
+        shutil.rmtree(_MODULE_STATE_TMP, ignore_errors=True)
+
 
 def _clear_router_env(env: dict[str, str]) -> dict[str, str]:
     """Return env overrides that blank every provider key + tier override."""

@@ -59,6 +59,24 @@ _PURSE = re.compile(
     r"\$[\d,]+(?:\.\d+)?(?:\s*(?:million|billion|thousand|k|m))?\b",
     re.IGNORECASE,
 )
+# Context for the NUMERIC gate only. Deliberately NOT `_SPORTS_CONTEXT_RE`: that one is
+# shared with the mononym rule, so widening it would change entity flagging (and every
+# report-card grounding score) far beyond this feature. It also lists only leagues, NBA
+# teams and transaction verbs — a UFC or boxing script that never says "UFC" scored
+# False, so invented records/ranks/dates sailed through on exactly the content this gate
+# exists for (live run 70's topic was Misfits *Boxing*).
+_NUMERIC_SPORTS_CONTEXT_RE = re.compile(
+    r"\b(?:nba|nfl|mlb|nhl|ufc|wnba|mma|ufc\d+|bellator|pfl|one championship|"
+    r"box(?:ing|er)|misfits|fight(?:s|er|ers|ing|night)?|bout|octagon|knockout|ko|tko|"
+    r"submission|decision|split[- ]decision|unanimous|"
+    r"champ(?:ion|ionship)?|title|belt|contender|division|rematch|undercard|main event|"
+    r"flyweight|bantamweight|featherweight|lightweight|welterweight|middleweight|"
+    r"heavyweight|cruiserweight|"
+    r"traded|trade|trades|signing|signed|draft|offseason|playoffs|playoff|"
+    r"finals|roster|free agency|purse|payout|"
+    r"lakers|celtics|knicks|bucks|heat|spurs|raptors|warriors|nets|76ers|sixers)\b",
+    re.I,
+)
 _DATE_WITH_YEAR = re.compile(
     r"\b(?:January|February|March|April|May|June|July|August|September|October|"
     r"November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+"
@@ -481,7 +499,7 @@ def find_ungrounded_numeric(script: str, grounding_text: str) -> list[str]:
     """
     text = script or ""
     grounding = (grounding_text or "").lower().replace(",", "")
-    sports = bool(_SPORTS_CONTEXT_RE.search(text))
+    sports = bool(_NUMERIC_SPORTS_CONTEXT_RE.search(text))
     found: list[str] = []
     seen: set[str] = set()
 

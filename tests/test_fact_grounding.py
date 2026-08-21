@@ -162,6 +162,57 @@ class TestNumericRecordGrounding(unittest.TestCase):
         )
 
 
+class TestNumericGateSeesCombatSports(unittest.TestCase):
+    """The numeric gate must fire on the content it was built for.
+
+    Every test in TestNumericRecordGrounding above prepends "The UFC featherweight
+    division is wide open." — so the sports context is satisfied by the *fixture*, not by
+    anything a real script would say. `_SPORTS_CONTEXT_RE` was written for the mononym
+    rule and lists leagues, NBA teams and transaction verbs; it has no `mma`, `boxing`,
+    `fight`, `bout`, `champion` or weight classes. Run 70's own topic was Misfits
+    **Boxing**, which never says "UFC".
+
+    Same shape as decisions §21: the tests pinned the implementation, not the contract.
+    """
+
+    FACTS = "VERIFIED FACTS:\n- Henry Cejudo announced a Misfits Boxing debut."
+
+    def test_boxing_script_flags_an_invented_record_and_rank(self):
+        script = (
+            "Henry Cejudo makes his Misfits Boxing debut next month. "
+            "The former champ is now 16-4 and ranked #3 at flyweight."
+        )
+        found = find_ungrounded_numeric(script, self.FACTS)
+        self.assertIn("16-4", found)
+        self.assertTrue(any("ranked" in f.lower() for f in found), found)
+
+    def test_mma_script_without_the_word_ufc(self):
+        script = (
+            "Gaethje is now 25-4 after the knockout. He is ranked #2 in the division "
+            "and fought on August 12, 2025."
+        )
+        found = find_ungrounded_numeric(script, "VERIFIED FACTS:\n- Gaethje fight booked.")
+        self.assertIn("25-4", found)
+        self.assertTrue(any("2025" in f for f in found), found)
+
+    def test_grounded_combat_numbers_are_not_flagged(self):
+        # The gate must not become a false-positive machine: this feeds the report card.
+        script = "Cejudo is now 16-4 and ranked #3. The purse was $500,000."
+        facts = "VERIFIED FACTS:\n- Cejudo is now 16-4, ranked #3, purse $500,000. Boxing debut."
+        self.assertEqual(find_ungrounded_numeric(script, facts), [])
+
+    def test_non_sports_script_still_ignores_records(self):
+        # A gaming script must not have version numbers read as fight records.
+        script = "The patch notes went 2-1 on balance changes and the update is live."
+        self.assertEqual(
+            find_ungrounded_numeric(script, "VERIFIED FACTS:\n- Patch 2.1 shipped."), []
+        )
+
+    def test_round_scores_still_ignored_in_boxing_context(self):
+        script = "Cejudo took a 10-9 round and a 29-28 card in the boxing bout."
+        self.assertEqual(find_ungrounded_numeric(script, self.FACTS), [])
+
+
 class TestKeyFactsPriority(unittest.TestCase):
     def test_manual_facts_win_over_vault_when_capped(self):
         from core.content_engine import key_facts_for_prompt

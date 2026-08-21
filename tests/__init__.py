@@ -42,6 +42,9 @@ os.environ["OVERNIGHT_QUOTA_GATE"] = "false"
 os.environ["LUFS_NORMALIZE"] = "false"
 os.environ["CLIP_MEMORY"] = "false"
 os.environ["POLICY_CANARY_FETCH"] = "false"
+os.environ["CONTENT_TOAST"] = "false"
+os.environ["CONTENT_HTML_OPEN"] = "false"
+os.environ["YOUTUBE_UNLISTED_REVIEW"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move

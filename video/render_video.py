@@ -15,6 +15,32 @@ from video.subtitles import generate_subtitle_file
 
 logger = get_logger("video.render")
 
+
+def _ffmpeg_run(cmd, *, duration_sec=None, progress=None, use_progress=False):
+    """Run ffmpeg, retrying Windows file-lock (Defender) errors."""
+    import time as _time
+
+    from core.file_lock import is_lock_error, lock_delay_sec, lock_retries
+
+    attempts = lock_retries()
+    delay = lock_delay_sec()
+    process = None
+    for i in range(attempts):
+        if use_progress and progress is not None:
+            process = run_ffmpeg_with_progress(cmd, duration_sec=duration_sec, progress=progress)
+        else:
+            process = subprocess.run(cmd, capture_output=True, text=True)
+        if process.returncode == 0:
+            return process
+        err = process.stderr or ""
+        if is_lock_error(None, err) and i < attempts - 1:
+            logger.warning("FFmpeg file-lock retry %s/%s", i + 1, attempts)
+            _time.sleep(delay * (i + 1))
+            continue
+        return process
+    return process
+
+
 TARGET_W = 1080
 TARGET_H = 1920
 
@@ -275,14 +301,14 @@ def render_vertical_video(
         )
 
     use_progress = progress and progress.enabled and not ffmpeg_simple_run()
-    if use_progress:
-        process = run_ffmpeg_with_progress(cmd, duration_sec=duration, progress=progress)
-    else:
+    if not use_progress:
         logger.info(
             "Rendering with FFmpeg (loop bg, mute stock audio, duration=%ss)",
             f"{duration:.3f}",
         )
-        process = subprocess.run(cmd, capture_output=True, text=True)
+    process = _ffmpeg_run(
+        cmd, duration_sec=duration, progress=progress, use_progress=bool(use_progress)
+    )
 
     if process.returncode != 0 and music_path is not None:
         # The music bed must never break a render: drop it and retry VO-only once
@@ -300,7 +326,7 @@ def render_vertical_video(
             subtitle_path=subtitle_path,
             duration=duration,
         )
-        process = subprocess.run(cmd, capture_output=True, text=True)
+        process = _ffmpeg_run(cmd)
 
     if process.returncode != 0:
         logger.error("FFmpeg failed: %s", (process.stderr or "")[-1200:])
@@ -378,7 +404,7 @@ def _render_extra_formats(
                 music_path=music_path,
             )
             stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")
-            proc = subprocess.run(cmd, capture_output=True, text=True)
+            proc = _ffmpeg_run(cmd)
             if proc.returncode == 0 and os.path.isfile(alt_output):
                 written.append(alt_output)
                 logger.info("Extra-format render saved: %s", alt_output)

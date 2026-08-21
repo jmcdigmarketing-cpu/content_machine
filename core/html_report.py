@@ -1,0 +1,117 @@
+"""Themed HTML snapshots for operator dumps (reliability, economics, doctor, booth).
+
+Zero new backend: wrap existing ASCII/gather output in a dark page, optionally
+open it in the default browser. CONTENT_HTML_OPEN=false skips the open (the
+test suite sets this). Nested-try fail-open so a dump cannot wipe a command.
+"""
+
+from __future__ import annotations
+
+import html
+import os
+import tempfile
+import time
+from typing import Any
+
+from core.logging import get_logger
+
+logger = get_logger("core.html_report")
+
+_CSS = """
+:root { color-scheme: dark; }
+html, body { margin: 0; padding: 0; background: #111318; color: #e8eaed;
+  font-family: "Segoe UI", system-ui, sans-serif; font-size: 16px; line-height: 1.45; }
+header { padding: 1rem 1.25rem; background: #1a1d24; border-bottom: 3px solid #c62828; }
+header h1 { margin: 0; font-size: 1.25rem; letter-spacing: 0.02em; }
+header .sub { color: #9aa0a6; font-size: 0.9rem; margin-top: 0.25rem; }
+main { padding: 1.25rem; max-width: 960px; }
+pre { background: #0d0f14; border: 1px solid #2a2f3a; padding: 1rem; overflow: auto;
+  font-family: "Cascadia Mono", Consolas, monospace; font-size: 14px; white-space: pre-wrap; }
+table { border-collapse: collapse; width: 100%; font-size: 16px; }
+th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid #2a2f3a; }
+th { color: #9aa0a6; font-weight: 600; }
+.ok { color: #81c995; } .fail { color: #f28b82; } .warn { color: #fdd663; }
+.card { background: #1a1d24; border: 1px solid #2a2f3a; padding: 1rem; margin: 0.75rem 0; }
+img.thumb { max-width: 100%; height: auto; cursor: zoom-in; border: 1px solid #2a2f3a; }
+dialog { border: none; padding: 0; background: #000; max-width: 96vw; }
+dialog img { max-width: 96vw; max-height: 96vh; }
+video { width: 100%; max-height: 70vh; background: #000; }
+a { color: #8ab4f8; }
+"""
+
+
+def html_dir() -> str:
+    override = (os.getenv("CONTENT_HTML_DIR") or "").strip()
+    if override:
+        os.makedirs(override, exist_ok=True)
+        return override
+    path = os.path.join(tempfile.gettempdir(), "content_os_html")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def open_html_enabled() -> bool:
+    return os.getenv("CONTENT_HTML_OPEN", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def escape(text: Any) -> str:
+    return html.escape(str(text if text is not None else ""), quote=True)
+
+
+def themed_page(title: str, body_html: str, *, subtitle: str = "") -> str:
+    sub = subtitle or "Content OS operator snapshot"
+    return (
+        "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+        f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
+        f"<title>{escape(title)}</title><style>{_CSS}</style></head><body>"
+        f"<header><h1>{escape(title)}</h1><div class='sub'>{escape(sub)}</div></header>"
+        f"<main>{body_html}</main></body></html>"
+    )
+
+
+def pre_body(text: str) -> str:
+    return f"<pre>{escape(text)}</pre>"
+
+
+def write_html(html_text: str, *, filename: str) -> str:
+    """Write UTF-8 HTML under html_dir(); returns the path."""
+    safe = "".join(c if c.isalnum() or c in "._-" else "_" for c in filename)
+    if not safe.lower().endswith(".html"):
+        safe += ".html"
+    path = os.path.join(html_dir(), safe)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(html_text)
+    return path
+
+
+def open_local(path: str) -> bool:
+    """Open a local file in the default app. Fail-open; never raises."""
+    if not open_html_enabled():
+        return False
+    try:
+        if os.name == "nt":
+            os.startfile(path)  # type: ignore[attr-defined]
+            return True
+        import webbrowser
+
+        return bool(webbrowser.open(path))
+    except Exception as exc:
+        logger.debug("open_local skipped: %s", exc)
+        return False
+
+
+def dump_pre(
+    title: str, text: str, *, filename: str | None = None, open_browser: bool = True
+) -> str:
+    """Themed <pre> snapshot. Returns the written path."""
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    name = filename or f"{title.lower().replace(' ', '_')}_{stamp}.html"
+    path = write_html(themed_page(title, pre_body(text)), filename=name)
+    if open_browser:
+        open_local(path)
+    return path

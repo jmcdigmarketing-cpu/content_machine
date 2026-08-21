@@ -512,6 +512,14 @@ def _run_new_video_flow_body(
         )
         if thin_reason:
             print(f"\n  ! {thin_reason}")
+            try:
+                from core.review_booth import write_thin_facts_screen
+
+                write_thin_facts_screen(thin_reason, fact_count=_fact_line_count(_facts_preview))
+            except Exception as exc:
+                from core.logging import get_logger
+
+                get_logger("main").debug("thin-facts HTML skipped: %s", exc)
             override = input("  Thin facts — render anyway and pay TTS? [y/N]: ").strip().lower()
             if override != "y":
                 display_summary(

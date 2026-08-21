@@ -18,6 +18,23 @@ from collections.abc import Callable
 
 CommandFn = Callable[[argparse.Namespace], int]
 
+
+def _emit_text(title: str, text: str, args: argparse.Namespace) -> None:
+    """Print ASCII; optionally dump a themed HTML snapshot (--html). Nested try."""
+    print(text)
+    if not getattr(args, "html", False):
+        return
+    try:
+        from core.html_report import dump_pre
+
+        path = dump_pre(title, text)
+        print(f"HTML: {path}")
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("html dump skipped: %s", exc)
+
+
 COMMANDS: dict[str, tuple[str, CommandFn]] = {}
 
 
@@ -187,7 +204,7 @@ def cmd_postmortem(args: argparse.Namespace) -> int:
 def cmd_doctor(args: argparse.Namespace) -> int:
     from core.ops_doctor import render
 
-    print(render(channel_id=args.channel))
+    _emit_text("ops doctor", render(channel_id=args.channel), args)
     return 0
 
 
@@ -304,26 +321,31 @@ def cmd_queue_manage(args: argparse.Namespace) -> int:
 
 @_register("status", "Queue, uploads, recent runs, SEO/competitors")
 def cmd_status(args: argparse.Namespace) -> int:
-    return _run_module("scripts.status", "--channel", args.channel)
+    from config.channels import resolve_channel_id
+    from core.status import build_status_lines
+
+    channel_id = resolve_channel_id(args.channel)
+    lines = [f"Status - {channel_id}", ""] + [
+        f"  {line}" for line in build_status_lines(channel_id)
+    ]
+    _emit_text("Status", "\n".join(lines) + "\n", args)
+    return 0
 
 
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
-def cmd_reliability(_args: argparse.Namespace) -> int:
+def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render
 
     data = gather()
-    print(render(data))
+    chunks = [render(data)]
     # Recording on view means the trend builds itself — no separate job to forget.
     try:
         from core.reliability_history import record
         from core.reliability_history import render as render_trend
 
         record(data)
-        print(render_trend())
+        chunks.append(render_trend())
     except Exception as exc:
-        # Logger resolved here, not at import: this module is an entry point and
-        # `config.settings` (which loads .env) is imported later, so a module-level
-        # get_logger would cache the level before CONTENT_LOG_LEVEL is readable.
         from core.logging import get_logger
 
         get_logger("scripts.ops").debug("Reliability trend not recorded: %s", exc)
@@ -334,11 +356,12 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
         incidents = gather_and_record()
         blob = render_incidents(incidents)
         if blob:
-            print(blob)
+            chunks.append(blob)
     except Exception as exc:
         from core.logging import get_logger
 
         get_logger("scripts.ops").debug("Incident ledger skipped: %s", exc)
+    _emit_text("Reliability", "\n".join(chunks), args)
     return 0
 
 
@@ -493,7 +516,7 @@ def cmd_dossier(args: argparse.Namespace) -> int:
 def cmd_economics(args: argparse.Namespace) -> int:
     from core.unit_economics import render as render_economics
 
-    print(render_economics(args.channel, limit=args.limit or 25))
+    _emit_text("Unit economics", render_economics(args.channel, limit=args.limit or 25), args)
     return 0
 
 
@@ -617,6 +640,8 @@ def cmd_intelligence_report(args: argparse.Namespace) -> int:
     extra = ["--topic", topic, "--channel", args.channel]
     if getattr(args, "no_brief", False):
         extra.append("--no-brief")
+    if getattr(args, "sku", False):
+        extra.append("--sku")
     return _run_module("core.intelligence_report", *extra)
 
 
@@ -678,6 +703,69 @@ def cmd_requeue_upload(args: argparse.Namespace) -> int:
         str(args.run_id),
         "--queue",
     )
+
+
+@_register(
+    "tray",
+    "System-tray / quota chip (uploads-left + TTS chars + Apify breaker)",
+)
+def cmd_tray(args: argparse.Namespace) -> int:
+    from core.win_notify import run_tray
+
+    return run_tray(stay=bool(getattr(args, "stay", False)))
+
+
+@_register("booth", "Last-run review booth (play + grade + authenticity + cost)")
+def cmd_booth(args: argparse.Namespace) -> int:
+    from core.review_booth import serve_booth, write_booth
+
+    if getattr(args, "serve", False):
+        url = serve_booth(args.channel)
+        print(url)
+        return 0
+    path = write_booth(args.channel)
+    print(path)
+    return 0
+
+
+@_register("lightbox", "Thumbnail lightbox for the last Pillow thumb")
+def cmd_lightbox(args: argparse.Namespace) -> int:
+    from core.review_booth import write_lightbox
+    from core.win_shell import last_media_file
+
+    path = write_lightbox(last_media_file("thumb", channel_id=args.channel))
+    print(path)
+    return 0
+
+
+@_register("reveal", "Reveal last mp4 (or --kind thumb) in Explorer")
+def cmd_reveal(args: argparse.Namespace) -> int:
+    from core.win_shell import reveal_last
+
+    path = reveal_last(kind=getattr(args, "kind", None) or "mp4", channel_id=args.channel)
+    if not path:
+        print("Nothing on disk to reveal.")
+        return 1
+    print(path)
+    return 0
+
+
+@_register("shortcut", "Install Start Menu shortcut via pythonw / content_os.pyw")
+def cmd_shortcut(_args: argparse.Namespace) -> int:
+    from core.win_shell import install_start_menu_shortcut
+
+    path = install_start_menu_shortcut()
+    print(path)
+    return 0
+
+
+@_register("blocking", "One-sentence: what's blocking publish (existing gates only)")
+def cmd_blocking(args: argparse.Namespace) -> int:
+    from core.publish_blockers import blocking_publish_sentence
+
+    line = blocking_publish_sentence(channel_id=args.channel)
+    _emit_text("What's blocking publish", line, args)
+    return 0
 
 
 @_register("list", "List all operator commands")
@@ -845,6 +933,31 @@ def main(argv=None) -> int:
         "--apply",
         action="store_true",
         help="artifacts / moat-backup: actually delete or copy (default is dry-run)",
+    )
+    parser.add_argument(
+        "--html",
+        action="store_true",
+        help="Write a themed HTML snapshot and open it (reliability/economics/doctor/status)",
+    )
+    parser.add_argument(
+        "--stay",
+        action="store_true",
+        help="tray: keep the on-top quota chip window",
+    )
+    parser.add_argument(
+        "--kind",
+        default="mp4",
+        help="reveal: mp4 or thumb (default: mp4)",
+    )
+    parser.add_argument(
+        "--sku",
+        action="store_true",
+        help="intelligence-report: write the no-video SKU markdown",
+    )
+    parser.add_argument(
+        "--serve",
+        action="store_true",
+        help="booth: tiny stdlib localhost host (not FastAPI)",
     )
     args = parser.parse_args(argv)
     args.queue_upload = False

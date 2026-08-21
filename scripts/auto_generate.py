@@ -280,6 +280,14 @@ def main(argv=None) -> int:
     )
     if thin_reason and not args.force:
         print(f"\n  {thin_reason}. Use --force to render anyway.")
+        try:
+            from core.review_booth import write_thin_facts_screen
+
+            write_thin_facts_screen(thin_reason, fact_count=_fact_line_count(facts_preview))
+        except Exception as exc:
+            from core.logging import get_logger
+
+            get_logger("auto_generate").debug("thin-facts HTML skipped: %s", exc)
         return 0
 
     from core.render_gate import unattended_render_block_reason

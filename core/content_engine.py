@@ -17,6 +17,7 @@ from core.script_length import (
     count_spoken_words,
     get_length_preset,
     length_system_addendum,
+    trim_overlength,
 )
 from core.seo import normalize_youtube_tags, tags_from_topic
 from core.signal_facts import format_signal_facts
@@ -923,6 +924,10 @@ def generate_content_package(
         script, verification = _maybe_rewrite_unsupported_claims(
             script, verification, corpus.factual_text, topic, clean_key_facts
         )
+
+    script, trimmed_n = trim_overlength(script, max_words=max_words, min_words=min_words)
+    if trimmed_n:
+        logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
 
     from core.title_generator import generate_title
 

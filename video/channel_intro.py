@@ -198,7 +198,9 @@ def prepend_channel_intro(
     if final_path == body_path:
         temp_body = body_path + ".body.tmp.mp4"
         work_body = temp_body
-        os.replace(body_path, temp_body)
+        from core.file_lock import retry_locked
+
+        retry_locked(lambda: os.replace(body_path, temp_body))
 
     intro_dur = _probe_duration(intro_path)
     if intro_dur is None:  # not `or 3.0` — a real 0.0 is a probe answer, not a miss
@@ -214,9 +216,25 @@ def prepend_channel_intro(
     logger.info("Prepending channel intro (%s)", os.path.basename(intro_path))
     concat_ok = False
     try:
-        process = subprocess.run(cmd, capture_output=True, text=True)
-        if process.returncode != 0:
-            raise RuntimeError(f"Intro concat failed: {(process.stderr or '')[-800:]}")
+        from core.file_lock import is_lock_error, lock_delay_sec, lock_retries
+
+        process = None
+        attempts = lock_retries()
+        delay = lock_delay_sec()
+        for i in range(attempts):
+            process = subprocess.run(cmd, capture_output=True, text=True)
+            if process.returncode == 0:
+                break
+            err = process.stderr or ""
+            if is_lock_error(None, err) and i < attempts - 1:
+                logger.warning("Intro concat file-lock retry %s/%s", i + 1, attempts)
+                import time as _time
+
+                _time.sleep(delay * (i + 1))
+                continue
+            break
+        if process is None or process.returncode != 0:
+            raise RuntimeError(f"Intro concat failed: {(process.stderr if process else '')[-800:]}")
         # Exit 0 is not proof of an output: a truncated or empty file here would be
         # "successful" right up until we delete the temp holding the real render.
         if not os.path.isfile(final_path) or os.path.getsize(final_path) == 0:

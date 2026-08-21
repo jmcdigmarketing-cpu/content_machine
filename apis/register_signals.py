@@ -107,6 +107,15 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
         result.get("status_detail") or "",
     )
     try:
+        from core.win_notify import notify_breaker
+
+        notify_breaker(
+            f"signal {name}",
+            f"{status}: {result.get('status_detail') or ''}".strip(),
+        )
+    except Exception as exc:
+        logger.debug("breaker toast skipped: %s", exc)
+    try:
         from core.quota_governor import disable_signal
 
         detail = result.get("status_detail") or ""

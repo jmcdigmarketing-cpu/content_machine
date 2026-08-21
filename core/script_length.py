@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 
@@ -82,6 +83,75 @@ def count_spoken_words(script: str) -> int:
     if not text:
         return 0
     return len(text.split())
+
+
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+_PADDING_LEAD = re.compile(
+    r"^(anyway|that said|in conclusion|to wrap(?: it)? up|so yeah|basically|"
+    r"at the end of the day|all in all|in other words|as i (?:said|mentioned)|"
+    r"let that sink in|you already know|moving on)\b",
+    re.I,
+)
+
+
+def trim_enabled() -> bool:
+    return os.getenv("SCRIPT_TRIM", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def split_spoken_sentences(script: str) -> list[str]:
+    parts = _SENTENCE_SPLIT.split((script or "").strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
+def trim_overlength(
+    script: str,
+    *,
+    max_words: int,
+    min_words: int = 0,
+) -> tuple[str, int]:
+    """Drop trailing padding sentences when over length.
+
+    Never clips mid-sentence (hard cap remains refuse in TTS). Never drops the
+    hook (first sentence). Never goes below min_words. Returns (script, words_removed).
+    """
+    if not trim_enabled() or max_words <= 0:
+        return script, 0
+    current = count_spoken_words(script)
+    if current <= max_words:
+        return script, 0
+    sentences = split_spoken_sentences(script)
+    if len(sentences) <= 1:
+        return script, 0
+
+    def _join(parts: list[str]) -> str:
+        return " ".join(parts)
+
+    def _ok(parts: list[str]) -> bool:
+        return count_spoken_words(_join(parts)) >= min_words and len(parts) >= 1
+
+    changed = True
+    while changed and count_spoken_words(_join(sentences)) > max_words and len(sentences) > 1:
+        changed = False
+        for i in range(len(sentences) - 1, 0, -1):
+            if not _PADDING_LEAD.search(sentences[i]):
+                continue
+            trial = sentences[:i] + sentences[i + 1 :]
+            if _ok(trial):
+                sentences = trial
+                changed = True
+                break
+    while count_spoken_words(_join(sentences)) > max_words and len(sentences) > 1:
+        trial = sentences[:-1]
+        if not _ok(trial):
+            break
+        sentences = trial
+    out = _join(sentences)
+    return out, max(0, current - count_spoken_words(out))
 
 
 def estimate_duration_seconds(script: str, *, wps: float = WORDS_PER_SECOND) -> float:

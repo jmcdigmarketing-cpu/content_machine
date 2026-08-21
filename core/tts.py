@@ -372,6 +372,12 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         )
 
     if _elevenlabs_quota_would_exceed(len(spoken)):
+        try:
+            from core.win_notify import notify_breaker
+
+            notify_breaker("ElevenLabs", _elevenlabs_budget_display())
+        except Exception as exc:
+            logger.debug("breaker toast skipped: %s", exc)
         piped = _synth_piper_for_quota(spoken, output_path, channel_id)
         if piped:
             tts_cache_store(cache_key, piped)

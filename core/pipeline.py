@@ -625,4 +625,10 @@ def run_media_only(
         )
 
     progress.done("Render complete")
+    try:
+        from core.win_notify import notify_ffmpeg_done
+
+        notify_ffmpeg_done(mp4_path)
+    except Exception as exc:
+        logger.debug("ffmpeg toast skipped: %s", exc)
     return mp3_path, mp4_path, thumb_path

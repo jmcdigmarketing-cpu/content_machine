@@ -105,5 +105,39 @@ class TestMusicBedFailureRetriesVoOnly(unittest.TestCase):
         self.assertNotIn("amix", second)
 
 
+class TestFfmpegFileLockRetry(unittest.TestCase):
+    def test_retries_sharing_violation_then_succeeds(self):
+        audio = MagicMock()
+        audio.duration = 10.0
+        asset = MagicMock(path="C:/tmp/bg.mp4", provider="local", attribution="")
+        locked = MagicMock(
+            returncode=1,
+            stderr="Permission denied: being used by another process",
+        )
+        ok = MagicMock(returncode=0, stderr="")
+        with (
+            patch("video.render_video.AudioFileClip", return_value=audio),
+            patch("video.render_video.get_background_asset", return_value=asset),
+            patch("video.render_video.generate_subtitle_file", return_value="C:/tmp/s.srt"),
+            patch("video.render_video._resolve_music_bed", return_value=None),
+            patch("video.render_video._probe_video_duration", return_value=60.0),
+            patch("video.render_video._render_extra_formats", return_value=[]),
+            patch("video.render_video.os.makedirs"),
+            patch("video.render_video.is_render_progress_enabled", return_value=False),
+            patch("assets.manager.get_scene_matched_background", return_value=None),
+            patch("video.channel_intro.resolve_intro_path", return_value=None),
+            patch("video.render_video.subprocess.run", side_effect=[locked, ok]) as run,
+            patch.dict(
+                "os.environ",
+                {"FFMPEG_LOCK_RETRIES": "3", "FFMPEG_LOCK_DELAY_SEC": "0"},
+                clear=False,
+            ),
+        ):
+            from video.render_video import render_vertical_video
+
+            render_vertical_video("C:/tmp/a.mp3", "topic", "out.mp4", "script words")
+        self.assertEqual(run.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

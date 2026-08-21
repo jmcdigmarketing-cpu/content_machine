@@ -25,6 +25,40 @@ logger = get_logger("core.run_trace")
 
 TRACE_VERSION = "v1"
 
+# Keys whose values can hold API request/response bodies or secrets.
+_REDACT_KEYS = frozenset(
+    {
+        "body",
+        "request",
+        "response",
+        "payload",
+        "prompt",
+        "messages",
+        "content",
+        "api_key",
+        "apikey",
+        "authorization",
+        "token",
+        "secret",
+        "password",
+        "input_data",
+        "raw",
+        "stderr",
+    }
+)
+_REDACTED = "[redacted]"
+
+
+def redact_trace_value(value: Any, *, key: str = "") -> Any:
+    """Drop API bodies / secrets from a trace subtree. Keeps status/cost/tokens."""
+    if key.lower() in _REDACT_KEYS:
+        return _REDACTED
+    if isinstance(value, dict):
+        return {str(k): redact_trace_value(v, key=str(k)) for k, v in value.items()}
+    if isinstance(value, list):
+        return [redact_trace_value(v, key=key) for v in value]
+    return value
+
 
 def _trace_path(run_id: int) -> str:
     return os.path.join(TRACES_DIR, f"{int(run_id)}.json")
@@ -104,18 +138,18 @@ def write_run_trace(
             "status": status,
             "timings": dict(timings or {}),
             "signals": _slim_signals(signals),
-            "llm_calls": llm_calls,
+            "llm_calls": redact_trace_value(llm_calls),
             "llm_cost_usd": llm_cost,
             "cost": (features or {}).get("cost") or {},
             "cache_post_discovery": cache,
             "experiment": experiment,
-            "quality": dict(quality or {}),
+            "quality": redact_trace_value(dict(quality or {})),
             "composite_score": composite_score,
         }
         os.makedirs(TRACES_DIR, exist_ok=True)
         path = _trace_path(run_id)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(trace, f, indent=2, default=str)
+            json.dump(redact_trace_value(trace), f, indent=2, default=str)
         return path
     except Exception as exc:
         logger.debug("run trace skipped for run %s: %s", run_id, exc)
@@ -145,9 +179,9 @@ def update_trace(run_id: int | None, patch: dict[str, Any]) -> bool:
         current = read_trace(run_id)
         if current is None:
             return False
-        current.update(patch)
+        current.update(redact_trace_value(patch) if isinstance(patch, dict) else patch)
         with open(_trace_path(run_id), "w", encoding="utf-8") as f:
-            json.dump(current, f, indent=2)
+            json.dump(redact_trace_value(current), f, indent=2)
         return True
     except Exception as exc:
         logger.debug("trace update skipped for run %s: %s", run_id, exc)

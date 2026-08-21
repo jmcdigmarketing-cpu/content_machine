@@ -13,13 +13,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-08-20 (late-night brainstorm) — candidates **141–320**
-(5 `[XL]` / 25 `[L]` / 50 `[M]` / 100 `[S]`). Evening **Recommended next 5**
-remain **shipped** (not overwritten). Added **Brainstorm next-5 (UI/app)**
-(221 / 222 / 223 / 224 / 171). Rationale: [planning_log.md](planning_log.md)
-2026-08-20 late-night brainstorm. Phase M still excluded. Operator notes the
-20 Aug waves on `main` via PR #35; this session did not re-verify the merge
-SHA.
+Last updated: 2026-08-21 — **leave-the-terminal wave shipped** (20 working
+operator-visible pieces). FastAPI shell **#147 skipped** (would swallow the
+wave); swapped for **#240** `ops status --html` and bundled **#254** reveal-thumb
+on the same Explorer helper as #253. Evening next-5 and Phase M stay out.
+Rationale: [planning_log.md](planning_log.md) 2026-08-21.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -35,7 +33,7 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). 1526 tests on this branch.*
+input + average-based learned post slots). Leave-the-terminal wave 2026-08-21.
 
 **Recommended next 5 (2026-08-20 evening)** — **shipped 2026-08-20 night.**
 Pickup order was *future viability*, *short-term success*, and *real-world cost*.
@@ -60,9 +58,10 @@ Volume-gated backtest, the $0 TTS *voice judgment*, and Phase M stay out.
    on a UFC short is a 2026-policy event, not a grade ding.
 
 **Brainstorm next-5 (UI/app)** *(2026-08-20 late-night — docs only; does not
-replace the shipped evening five.)* Pickup for *leaving the terminal* without
-restarting Phase M. Hours first, then the days-sized booth. Detail: candidates
-**221, 222, 223, 224, 171**.
+replace the shipped evening five.)* Historical short list for *leaving the
+terminal* without restarting Phase M. **Superseded as pickup order** by
+**Recommended next 20 (2026-08-20 night)** below — 221/222/223/224/171 are
+still in that 20, reordered. Detail: candidates **221, 222, 223, 224, 171**.
 
 1. **Windows toast when ffmpeg finishes** `[S]` — *short-term / UI.* The
    operator currently babysits a spinner; a toast unblocks other work.
@@ -77,6 +76,35 @@ restarting Phase M. Hours first, then the days-sized booth. Detail: candidates
 5. **Last-run review booth** `[M]` — *UI / new-app.* Localhost play + grade +
    authenticity + cost + Approve/Reject. Replaces scrolling `main.py` for the
    last render only (the full review *room* is larger #168).
+
+**Recommended next 20 (2026-08-20 night)** — **shipped 2026-08-21.**
+Pickup order stood; **#147 FastAPI skipped** (would swallow the wave). Slot 20
+is **#240** `ops status --html`; **#254** reveal-thumb ships on the same
+`ops reveal` helper as #253. No Content OS Desktop (#141), no Visual Studio
+(#142), no Phase M. Detail + surfaces below.
+
+1. **223** `ops reliability --html` themed snapshot `[S]` — *shipped.* `ops reliability --html` (themed `<pre>` over existing `gather()`).
+2. **222** System-tray quota chip `[S]` — *shipped.* `ops tray` (uploads-left + EL chars + Apify breaker; toast + optional on-top chip).
+3. **291** Set Windows AppUserModelID `[S]` — *shipped.* `ContentOS.Operator` on the toast/tray helper.
+4. **226** Toast when a breaker trips `[S]` — *shipped.* Notify-only at Apify / signal / LLM / ElevenLabs trip points.
+5. **221** Windows toast when ffmpeg finishes `[S]` — *shipped.* `run_media_only` → toast helper.
+6. **224** Thumbnail lightbox for the last Pillow thumb `[S]` — *shipped.* `ops lightbox`.
+7. **253** Reveal mp4 in Explorer `[S]` — *shipped.* `ops reveal` (`explorer /select,`).
+8. **241** `ops economics --html` `[S]` — *shipped.* Same themed dump over unit economics ASCII.
+9. **92** Windows `MAX_PATH` / long `output/` paths `[S]` — *shipped.* Filename clip + optional `\\?\` prefix.
+10. **93** FFmpeg file-lock retry `[S]` — *shipped.* Defender WinError 32 retries on encode + intro replace.
+11. **109** Unlisted review link before public `[S]` — *shipped.* Immediate `public` → `unlisted` (`YOUTUBE_UNLISTED_REVIEW`).
+12. **319** "What's blocking publish" one-sentence `[S]` — *shipped.* `ops blocking` (existing gates only).
+13. **43** Script **trim** pass `[S]` — *shipped.* Drop trailing padding sentences; never clip; hard cap still refuse.
+14. **97** Redact API bodies from `data/traces` `[S]` — *shipped.* `run_trace.redact_trace_value` on write/update.
+15. **231** Start-menu shortcut via **pyw** `[S]` — *shipped.* `ops shortcut` + `content_os.pyw`.
+16. **171** Last-run review booth `[M]` — *shipped.* `ops booth` (stdlib HTML; `--serve` is not FastAPI).
+17. **200** Thin-facts abort screen `[M]` — *shipped.* Dedicated HTML when the TTS abort fires.
+18. **198** Doctor HTML page `[M]` — *shipped.* `ops doctor --html`.
+19. **78** Intelligence-report SKU `[M]` — *shipped.* `ops intelligence-report --sku` (research + competitors + authenticity; no TTS).
+20. **240** `ops status --html` `[S]` — *shipped (swap for #147).* Same HTML path as reliability/economics.
+
+**Skipped this wave:** **147** Localhost FastAPI operator shell `[L]` — thinnest host is stdlib `ops booth --serve`; do not start #141.
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -512,7 +540,7 @@ Efficiency
   *(2026-08-20: `DISCOVERY_MAX_WORKERS` default 8; 0/off = one worker per source;
   explicit `max_workers=` still wins)*
 - [ ] 42. Shared discovery cache across `batch-drafts` topics that share a franchise anchor (GTA 6 leaks × N) `[M]`
-- [ ] 43. Script **trim** pass (cut padding sentences) instead of a full premium regen when over length `[S]`
+- [x] **43. Script trim pass** *(2026-08-21)* — drop trailing padding sentences when over length; never clip; hard cap remains refuse `[S]`
 - [ ] 44. ffmpeg `-ss` output-seek already documented; bake a `scripts/probe_sync.py` so intro-offset mistakes stop getting relearned `[S]`
 - [x] 45. Overnight quota-aware: skip or shrink `--count` when YouTube remaining < 1,600 or Apify breaker is in `[S]`
   *(2026-08-20: `OVERNIGHT_QUOTA_GATE` opt-in; fail-open on store errors; suite sets false)*
@@ -598,7 +626,7 @@ Real-world cost — meter the true bill, kill spend that doesn't move the needle
 
 Future viability — stay a media OS, not a GPT-wrapper that the platforms replace
 
-- [ ] 78. **Intelligence-report SKU** (research brief + competitor pulse + authenticity notes, **no video**) — operating_plan §6.2: first external dollar without TTS `[M]`
+- [x] **78. Intelligence-report SKU** *(2026-08-21)* — `ops intelligence-report --sku` (research + competitor pulse + authenticity notes, **no video / no TTS**) `[M]`
 - [ ] 79. **Affiliate / Benable spike with a kill criterion** (2 weeks, drop if video→click→sale cannot close) — vision.md Phase G; non-ad revenue on a low-CPM niche `[L]`
 - [x] 80. **YouTube inauthentic-content help-page hash canary** — weekly fetch; alert when the existential constraint moves `[S]`
   *(2026-08-20: `ops policy-canary` hashes a local fixture; reliability reads the
@@ -635,12 +663,12 @@ Machine / Windows hygiene
 
 - [x] 91. Disk-space preflight before ffmpeg (fail with GB free, not a half-written mp4) `[S]`
   *(2026-08-20: `DISK_MIN_FREE_GB` opt-in; missing `disk_usage` fail-opens; ASCII `>=`)*
-- [ ] 92. Windows `MAX_PATH` / long `output/` paths — render-then-upload dies on 260-char titles `[S]`
-- [ ] 93. FFmpeg file-lock retry (Defender locking the mp4; same class as the vanished-intro bug) `[S]`
+- [x] **92. Windows MAX_PATH / long output paths** *(2026-08-21)* — clip filenames + optional `\\?\` prefix `[S]`
+- [x] **93. FFmpeg file-lock retry** *(2026-08-21)* — Defender WinError 32 on encode + intro replace `[S]`
 - [ ] 94. NVIDIA driver + NVENC *capability* probe in `ops doctor` (distinct from #38 actually encoding) `[S]`
 - [ ] 95. RAM/VRAM preflight before whisper / local TTS so Free mode does not OOM mid-run `[S]`
 - [ ] 96. `ops secrets-doctor` — keys present, not obviously expired, never copied into traces `[S]`
-- [ ] 97. Redact API bodies from `data/traces` (402/403 payloads can leak) `[S]`
+- [x] **97. Redact API bodies from traces** *(2026-08-21)* — 402/403 payloads stripped on write `[S]`
 - [ ] 98. `pip-audit` / Dependabot in CI (supply chain; report-only like coverage) `[S]`
 - [x] 99. Close the suite’s live Google HTTPS leak (audit C9 `ResourceWarning`) `[M]`
   *(2026-08-20: skip YouTube warmup in tests; `static_discovery=True` on `build()`;
@@ -658,7 +686,7 @@ YouTube surface (still YouTube-only)
 - [ ] 106. Detect Studio-deleted videos and cancel `publish_log` (re-queue path exists; detection does not) `[S]`
 - [ ] 107. `madeForKids=false` self-declared audit on every insert `[S]`
 - [ ] 108. Default language + audio language on `videos.insert` `[S]`
-- [ ] 109. Unlisted review link before public (operator eyeball, cadence-safe) `[S]`
+- [x] **109. Unlisted review before public** *(2026-08-21)* — immediate public held as unlisted (`YOUTUBE_UNLISTED_REVIEW`) `[S]`
 - [ ] 110. Chapter timestamps for Extended `[S]`
 - [ ] 111. End-screen / cards pointing at the previous franchise video (YouTube API) `[M]`
 - [ ] 112. Correction dossier + community-post template when post-publish facts reverse `[M]`
@@ -710,6 +738,8 @@ a shipped checkbox, Next-up, or candidates 1–140 unless reframed as a **new
 product** (called out). Phase M, the volume-gated backtest, and the $0 TTS voice
 judgment appear only as **PARKED** massive/larger. Evening recommended next 5
 stay shipped; **Brainstorm next-5 (UI/app)** = 221, 222, 223, 224, 171.
+**Pickup order** is now **Recommended next 20 (2026-08-20 night)** under
+Next up — this 141–320 list is not a sequence and is not rewritten here.
 Honest constants: TTS ~91% of a rendered run; YouTube upload ≈ 1,600/10k;
 remaining paid Apify = `tiktok_trends` + `youtube_competitors`; Windows;
 unittest; no second signal cache; breakers via `quota_governor` only.*
@@ -725,7 +755,7 @@ Massive — new product surfaces / years of work / could be different software
 Larger — multi-week systems
 
 - [ ] 146. Windows **system-tray daemon** wrapping worker + overnight `[L]` — *new-app.* Overnight is a forgotten PowerShell window today.
-- [ ] 147. Localhost **FastAPI operator shell** (static UI, not SaaS) `[L]` — *new-app.* Thinnest "out of the terminal" without pretending to be #141.
+- [ ] 147. Localhost **FastAPI operator shell** (static UI, not SaaS) `[L]` — *new-app.* **Skipped 2026-08-21** (would swallow the leave-the-terminal wave). Booth uses stdlib `--serve`; swapped this slot for #240 + #254. Not #141.
 - [ ] 148. **Job-queue visualizer** with drag-reorder (render vs upload vs quota-defer) `[L]` — *UI.* Worker stalls are invisible; 1,600-unit ceiling needs a picture.
 - [ ] 149. **Analytics Studio** (retention / CTR / RPM local web) `[L]` — *viability.* Weekly-report ASCII cannot show curves; still honest that n≈10 is thin.
 - [ ] 150. **TapIn vs MoneyWise visual language packs** (GUI + video chrome) `[L]` — *aesthetics.* `ui_theme` is ANSI; the two channels still share one ungraded look.
@@ -752,7 +782,7 @@ Larger — multi-week systems
 
 Moderate — days
 
-- [ ] 171. **Last-run review booth** (localhost play / grade / authenticity / Approve) `[M]` — *UI / new-app.* **Brainstorm next-5.** Last render only; not #168.
+- [x] 171. **Last-run review booth** *(2026-08-21)* — `ops booth` (play / grade / authenticity / Approve; stdlib HTML, not FastAPI) `[M]` — *UI / new-app.* **Brainstorm next-5.** Last render only; not #168.
 - [ ] 172. Operator **HTML design system** (type, density, buttons) `[M]` — *aesthetics / UI.* Shared chrome for every `--html` dump so they do not look like five blogs.
 - [ ] 173. Per-channel **GUI chrome** (TapIn neon vs MoneyWise editorial) `[M]` — *aesthetics.* Smaller than language packs #150; header/type/accent only.
 - [ ] 174. Windows **jump list** for last five drafts `[M]` — *new-app.* Taskbar right-click → open mp4 / booth, no console.
@@ -779,9 +809,9 @@ Moderate — days
 - [ ] 195. **Paid-signal sparklines** (`tiktok_trends` / `youtube_competitors` only) `[M]` — *cost.* Attribution report exists; this is the two-actor chart.
 - [ ] 196. **Incident timeline UI** `[M]` — *UI.* `ops incidents` ranks count/(1+days); a timeline is the missing surface.
 - [ ] 197. **Feed-health widget** (ok/stale/dead) `[M]` — *UI.* `ops feeds` is ASCII; Tapology-class silent death needs a traffic light on a wall.
-- [ ] 198. **Doctor HTML page** (CUDA / oauth / feeds / quota) `[M]` — *UI.* `ops doctor` one-pager in the browser; still no pip install, still no secrets.
+- [x] 198. **Doctor HTML page** *(2026-08-21)* — `ops doctor --html` (CUDA / oauth / feeds / quota) `[M]` — *UI.* Still no pip install, still no secrets.
 - [ ] 199. Pre-run gate as a **blocking modal** `[M]` — *short-term / UI.* Run-70 class: do not start discovery behind a wall of logs.
-- [ ] 200. **Thin-facts abort screen** before TTS `[M]` — *cost / UI.* Gate shipped; a dedicated screen stops burying the $0.31 save in CLI.
+- [x] 200. **Thin-facts abort screen** *(2026-08-21)* — dedicated HTML when the TTS abort fires `[M]` — *cost / UI.*
 - [ ] 201. Script **character-cap meter** while editing `[M]` — *cost / UI.* `TTS_MAX_CHARS` refuses; a meter would have shown Extended as a cost multiplier.
 - [ ] 202. ElevenLabs **leftover-chars fuel gauge** `[M]` — *cost.* Governor is opt-in; the gauge is how the operator sees 100k/month burn down.
 - [ ] 203. **Uploads-left fuel gauge** (1,600 units) `[M]` — *cost / UI.* Startup line exists; a gauge belongs on tray + booth.
@@ -805,17 +835,17 @@ Moderate — days
 
 Small — hours / a PR
 
-- [ ] 221. Windows **toast when ffmpeg finishes** `[S]` — *UI / short-term.* **Brainstorm next-5.**
-- [ ] 222. System-tray **quota chip** (uploads-left + TTS chars + Apify breaker) `[S]` — *cost / UI.* **Brainstorm next-5.**
-- [ ] 223. `ops reliability --html` themed snapshot `[S]` — *UI.* **Brainstorm next-5.** Zero new backend.
-- [ ] 224. **Thumbnail lightbox** for the last Pillow thumb `[S]` — *cost / aesthetics.* **Brainstorm next-5.**
+- [x] 221. Windows **toast when ffmpeg finishes** *(2026-08-21)* `[S]` — *UI / short-term.* **Brainstorm next-5.**
+- [x] 222. System-tray **quota chip** *(2026-08-21)* — `ops tray` (uploads-left + TTS chars + Apify breaker) `[S]` — *cost / UI.* **Brainstorm next-5.**
+- [x] 223. `ops reliability --html` themed snapshot *(2026-08-21)* `[S]` — *UI.* **Brainstorm next-5.** Zero new backend.
+- [x] 224. **Thumbnail lightbox** *(2026-08-21)* — `ops lightbox` for the last Pillow thumb `[S]` — *cost / aesthetics.* **Brainstorm next-5.**
 - [ ] 225. Toast on **upload scheduled** / `publishAt` `[S]` — *UI.* Cadence is easy to miss after the worker claims the job.
-- [ ] 226. Toast when a **breaker trips** (Apify / LLM / ElevenLabs) `[S]` — *cost / UI.* Silent disablement is how paid signals die for a session.
+- [x] 226. Toast when a **breaker trips** *(2026-08-21)* (Apify / LLM / ElevenLabs / signals) `[S]` — *cost / UI.* Notify only.
 - [ ] 227. Toast when **overnight finishes drafts** `[S]` — *UI.* Drafts are cadence-safe; nobody knows they exist until morning CLI.
 - [ ] 228. Balloon: **"N uploads left this reset"** `[S]` — *cost / UI.* Same number as reliability; push it to Action Center.
 - [ ] 229. Click-toast **opens last mp4** in the default player `[S]` — *UI.* Fastest review path that is not a booth.
 - [ ] 230. Taskbar **overlay badge** (queue depth) `[S]` — *UI.* Worker progress without a window.
-- [ ] 231. Start-menu shortcut via **pyw** (no console flash) `[S]` — *new-app.* First "this is an app" hour on Windows.
+- [x] 231. Start-menu shortcut via **pyw** *(2026-08-21)* — `ops shortcut` + `content_os.pyw` `[S]` — *new-app.*
 - [ ] 232. Desktop `.lnk` to the **review-booth URL** `[S]` — *new-app.* Depends on #171; the shortcut is the PR.
 - [ ] 233. Per-channel **notification sound** `[S]` — *aesthetics.* TapIn vs MoneyWise should not share one ding.
 - [ ] 234. High-contrast CSS for HTML reports `[S]` — *aesthetics / UI.* Respect Windows contrast themes.
@@ -824,8 +854,8 @@ Small — hours / a PR
 - [ ] 237. Favicon for localhost booth (channel mark) `[S]` — *aesthetics.* Browser tab literacy.
 - [ ] 238. Local **poster image** for the review page `[S]` — *aesthetics.* 9:16 frame as page chrome; no network OG.
 - [ ] 239. **Print stylesheet** for weekly-report HTML `[S]` — *aesthetics.* Magazine #215 is days; print CSS is hours.
-- [ ] 240. `ops status --html` `[S]` — *UI.* Queue + health without a terminal font.
-- [ ] 241. `ops economics --html` `[S]` — *cost / UI.* Allocated vs marginal already in the command.
+- [x] 240. `ops status --html` *(2026-08-21)* `[S]` — *UI.* Swap for skipped #147 FastAPI.
+- [x] 241. `ops economics --html` *(2026-08-21)* `[S]` — *cost / UI.* Allocated vs marginal already in the command.
 - [ ] 242. `ops grade --html --run-id` `[S]` — *UI.* Report card as a page.
 - [ ] 243. Startup **PNG wordmark** option beside ASCII `[S]` — *aesthetics.* `ascii_art` stays; a mark is for windows and HTML.
 - [ ] 244. Windows Terminal **profile snippet** (channel colors) `[S]` — *aesthetics.* Docs + JSON fragment; not a theme rewrite.
@@ -837,8 +867,8 @@ Small — hours / a PR
 - [ ] 250. Emoji-free / **ASCII-safe HTML** (cp1252 lesson) `[S]` — *UI.* Same class as render-gate `>=` — consoles and files that cannot swallow glyphs.
 - [ ] 251. **Copy-as-markdown** on the report card `[S]` — *UI.* Paste into vault or chat.
 - [ ] 252. **Copy last unlisted URL** button `[S]` — *UI.* Distinct from implementing #109; clipboard only.
-- [ ] 253. **Reveal mp4 in Explorer** `[S]` — *UI.* `explorer /select,` on Windows.
-- [ ] 254. **Reveal thumbnail in Explorer** `[S]` — *UI.* Pillow-first thumbs live in `output/{channel}/thumbnails/`.
+- [x] 253. **Reveal mp4 in Explorer** *(2026-08-21)* — `ops reveal` (`explorer /select,`) `[S]` — *UI.*
+- [x] 254. **Reveal thumbnail in Explorer** *(2026-08-21)* — `ops reveal --kind thumb` `[S]` — *UI.* Bundled with #253 (swap leftover for skipped #147).
 - [ ] 255. **Open dossier** via Obsidian URI (if vault set) `[S]` — *UI.* Fail-open when path empty.
 - [ ] 256. **Reveal trace JSON** `[S]` — *UI.* `data/traces/<id>.json` without hunting.
 - [ ] 257. **Drag-drop facts `.txt`** onto the booth `[S]` — *UI / short-term.* Overnight still cannot take `key_facts=`; this is intake chrome only.
@@ -875,7 +905,7 @@ Small — hours / a PR
 - [ ] 288. Remaining Apify actors as **pills** (`tiktok_trends`, `youtube_competitors`) `[S]` — *cost / UI.* Never imply reddit/twitter still bill.
 - [ ] 289. Last-run **signal-health dots** `[S]` — *UI.* Discovery health without opening the spinner replay.
 - [ ] 290. **Feed-stale strip** `[S]` — *UI.* Rot that used to hide for a month.
-- [ ] 291. Set Windows **AppUserModelID** so toasts group as "Content OS" `[S]` — *new-app.* Otherwise they look like Python.
+- [x] 291. Set Windows **AppUserModelID** *(2026-08-21)* — toasts group as "Content OS" (`ContentOS.Operator`) `[S]` — *new-app.*
 - [ ] 292. **Mute toasts during quiet hours** `[S]` — *UI.* Read `channels.json` blackout if present; do not implement #116.
 - [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
 - [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight facts-file gap stays a pipeline issue.
@@ -903,12 +933,16 @@ Small — hours / a PR
 - [ ] 316. Tray: **last domain** (UFC / GTA / NBA) `[S]` — *viability / UI.* RPM×cost by domain is useless if you cannot see what you just made.
 - [ ] 317. Tray: **Free vs Standard** mode `[S]` — *cost / UI.* Run-70 class: lying readiness should be visible from the tray.
 - [ ] 318. Remember **second-monitor bounds** `[S]` — *UI.* Booth on the 9:16 monitor.
-- [ ] 319. **"What's blocking publish"** one-sentence generator `[S]` — *short-term / UI.* Compose existing gates (grade, authenticity, quota, thin-facts, Hello) into one line.
+- [x] 319. **"What's blocking publish"** *(2026-08-21)* — `ops blocking` one-sentence from existing gates `[S]` — *short-term / UI.*
 - [ ] 320. Tray: **local git describe** when `ops` gains commands `[S]` — *UI.* Changelog awareness without opening GitHub.
 
 ---
 
 ## Completed
+
+### Leave-the-terminal wave (2026-08-21)
+
+- [x] **20 operator-visible pieces** — HTML dumps (`reliability` / `economics` / `doctor` / `status --html`), tray quota chip + AppUserModelID + breaker/ffmpeg toasts, lightbox, Explorer reveal (mp4 + thumb), MAX_PATH clip, FFmpeg file-lock retry, unlisted-before-public, blocking-publish sentence, script trim, trace redaction, pyw Start Menu shortcut, last-run booth, thin-facts abort screen, intelligence-report SKU. **#147 FastAPI skipped** (swapped for #240 + #254). No Phase M, no #141/#142.
 
 ### Phase 1 — Foundation
 

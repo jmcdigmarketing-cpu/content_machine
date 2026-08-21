@@ -1130,6 +1130,7 @@ def _prompt_timing_and_privacy(
     default_key = next((k for k, v in privacy_map.items() if v == default_priv), "1")
     subsection("Privacy", print_fn)
     print_fn(f"  1) Private  2) Unlisted  3) Public  (default: {default_priv})")
+    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
     privacy = privacy_map.get(priv, default_priv)
 
@@ -1241,6 +1242,7 @@ def _requeue_deleted(channel_id, candidates, *, print_fn=print, input_fn=input) 
     default_key = next((k for k, v in privacy_map.items() if v == default_priv), "1")
     subsection("Privacy", print_fn)
     print_fn(f"  1) Private  2) Unlisted  3) Public  (default: {default_priv})")
+    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
     privacy = privacy_map.get(priv, default_priv)
 
@@ -1348,6 +1350,7 @@ def prompt_upload_plan(
     )
     subsection("Privacy", print_fn)
     print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
+    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
     privacy_status = privacy_map.get(priv, default_priv)
 

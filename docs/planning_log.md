@@ -11,6 +11,125 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-21 — Leave-the-terminal wave (shipped)
+
+**Prompt:** implement the **Recommended next 20 (2026-08-20 night)**, commit,
+do not push. Advising allowed: prefer 20 *working* operator-visible pieces
+over a half-done FastAPI shell.
+
+**Swap:** skip **#147** FastAPI operator shell (`[L]` — would swallow the
+wave; booth uses stdlib `http.server` via `ops booth --serve` instead). Slot
+20 is **#240** `ops status --html`. **#254** reveal-thumb ships on the same
+`ops reveal` helper as #253 (the two `[S]` leftovers named in the prompt).
+Did **not** start Content OS Desktop #141, Shorts Visual Studio #142, or
+Phase M.
+
+**Shipped (20 + bundled 254):** 223 reliability `--html`, 222 tray quota
+chip, 291 AppUserModelID, 226 breaker toast, 221 ffmpeg toast, 224 lightbox,
+253 reveal mp4, 241 economics `--html`, 92 MAX_PATH, 93 FFmpeg lock retry,
+109 unlisted-before-public, 319 blocking-publish sentence, 43 script trim,
+97 trace redaction, 231 pyw Start Menu shortcut, 171 last-run booth, 200
+thin-facts abort screen, 198 doctor `--html`, 78 intelligence-report SKU,
+240 status `--html`. 254 bundled.
+
+**Knobs:** `CONTENT_TOAST`, `CONTENT_HTML_OPEN`, `YOUTUBE_UNLISTED_REVIEW`,
+`SCRIPT_TRIM`, `WIN_MAX_PATH`, `WIN_LONG_PATHS`, `FFMPEG_LOCK_RETRIES`.
+Suite forces toast/HTML-open/unlisted-review off.
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI
+host, `.env` / secrets / `data/` / `output/`.
+
+---
+
+## 2026-08-20 (night) — Recommended next 20 pickup order
+
+**Prompt:** produce the **next 20** roadmap items in pickup/importance order
+after PR #35 (live-run wave) and PR #36 (candidates 141–320). Ranking + docs
+only — no features, no commit, no push, no `.env` / secrets / `data/` /
+`output/`. Rank by the cycle’s three axes (**future viability**, **short-term
+success**, **real-world cost**) plus the operator’s last theme (**get out of
+the terminal / UI / aesthetics / app**) without unparking Phase M. Do not
+re-list shipped 20 Aug waves or F1/F2/F3. Brainstorm next-5 (221, 222, 223,
+224, 171) is a hint, not a cage. Prefer `[S]` then `[M]`; at most one `[XL]`
+as item 20 with a warning — none used. PARKED items out unless labeled, never
+as #1.
+
+**Ranking rationale**
+
+1. **The cost/honesty CLI wave is largely shipped.** Remaining pickup is not
+   another ASCII dashboard; it is *surfacing* what already exists (reliability,
+   economics, quota, gates) outside PowerShell — then the leftover Windows /
+   leak / policy `[S]` that can still kill the next publish.
+2. **Brainstorm next-5 does not survive as 1–5.** All five stay *in* the 20;
+   the order changes. A ffmpeg-finished toast is operator minutes; a **breaker
+   toast** and a **browser reliability dump** prevent doomed sessions and
+   silent disablement (the cycle’s actual failure shape). **AppUserModelID
+   (#291)** sits before the toasts so they group as Content OS, not
+   `python.exe`. The **review booth (#171)** stays `[M]` at #16 — after HTML
+   dumps, Explorer reveal, and unlisted-before-public — not as the first
+   “app.”
+3. **Leftover 1–140 still beats decorative CSS.** `#92` MAX_PATH and `#93`
+   Defender file-lock can waste a render after you left the terminal. `#43`
+   script trim still moves TTS (~91% of a rendered run). `#97` trace redaction
+   and `#109` unlisted-before-public are honesty/policy, not chrome. Phone
+   bezels, grain toggles, and magazine layouts stayed out.
+4. **Viability still gets a slot.** `#78` intelligence-report SKU (no video,
+   no TTS) is #19 so the UI theme cannot erase operating_plan §6.2.
+5. **No `[XL]` in the 20.** `#147` FastAPI shell is item 20 with an `[L]`
+   warning — thinnest host for the booth, not Content OS Desktop (#141).
+   Phase M, volume-gated backtest, and the $0 TTS *voice judgment* stay out
+   (not even as labeled PARKED pickups).
+
+**The 20** (id · title · size) — detail + surfaces in
+[roadmap.md](roadmap.md) **Recommended next 20 (2026-08-20 night)**:
+
+1. **223** `ops reliability --html` `[S]`
+2. **222** System-tray quota chip `[S]`
+3. **291** Windows AppUserModelID `[S]`
+4. **226** Toast when a breaker trips `[S]`
+5. **221** Toast when ffmpeg finishes `[S]`
+6. **224** Thumbnail lightbox (last Pillow thumb) `[S]`
+7. **253** Reveal mp4 in Explorer `[S]`
+8. **241** `ops economics --html` `[S]`
+9. **92** Windows MAX_PATH / long output paths `[S]`
+10. **93** FFmpeg file-lock retry `[S]`
+11. **109** Unlisted review before public `[S]`
+12. **319** “What’s blocking publish” one-sentence `[S]`
+13. **43** Script trim pass `[S]`
+14. **97** Redact API bodies from traces `[S]`
+15. **231** Start-menu shortcut via pyw `[S]`
+16. **171** Last-run review booth `[M]`
+17. **200** Thin-facts abort screen `[M]`
+18. **198** Doctor HTML page `[M]`
+19. **78** Intelligence-report SKU `[M]`
+20. **147** Localhost FastAPI operator shell `[L]` — warning: not the next hour; not #141.
+
+**What stayed out**
+
+- Shipped evening next-5 (pre-run gate, oauth tests + coverage extra,
+  pronunciation lexicon, allocated vs marginal, numeric/record grounding) and
+  the 20 Aug follow-on waves / F1–F3.
+- PARKED: Phase M, volume-gated recommender backtest, $0 TTS voice judgment
+  (including #144 / #166 / #167). Not in this 20.
+- Massive **141–145** (Desktop, Visual Studio, Portfolio Web OS, Distribution
+  Sidecar, Moat Suite). Item 20 is `#147` `[L]`, not an `[XL]`.
+- Clip-from-source, avatar, storyboard, `instagram_figures`, MoneyWise *depth
+  signals* (a board is #159 `[L]`, not this wave).
+- Decorative CSS / aesthetics-only hours (phone bezel, grain, magazine
+  layout, 2×2 contact sheets) until HTML dumps exist.
+- Full review room **#168**, tray *daemon* **#146**, HTML design system **#172**
+  (themed `--html` is enough until several dumps exist), file-count retention
+  **#31** (`ops artifacts` already caps GB).
+
+**Rejected this session:** implementing any of the 20; restoring Phase M;
+auto-flipping Piper; rewriting July docs; overwriting the 141–320 candidate
+lists; touching `.env` / secrets / `data/` / `output/`. No commit.
+
+**Canvas:** `roadmap-next20-night.canvas.tsx` in the Cursor canvases folder
+(grouped UI/app vs cost vs honesty vs ops).
+
+---
+
 ## 2026-08-20 (late-night brainstorm) — 180 ideas (UI / app / aesthetics / sibling software)
 
 **Prompt:** brainstorm **180 unique** ideas after the 20 Aug waves on `main`

@@ -68,10 +68,35 @@ def _to_publish_at_rfc3339(dt: datetime) -> str:
     return _to_utc(dt).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+def unlisted_review_enabled() -> bool:
+    return os.getenv("YOUTUBE_UNLISTED_REVIEW", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def apply_unlisted_review(privacy_status: str, *, publish_at=None) -> tuple[str, bool]:
+    """Hold immediate public uploads as unlisted for an operator eyeball.
+
+    Scheduled publishAt already lands private until the slot — leave that path.
+    Returns (effective_privacy, held_for_review).
+    """
+    if publish_at:
+        return privacy_status, False
+    if (privacy_status or "").strip().lower() != "public":
+        return privacy_status, False
+    if not unlisted_review_enabled():
+        return privacy_status, False
+    return "unlisted", True
+
+
 def build_video_status(request: PublishRequest) -> dict[str, Any]:
     status: dict[str, Any] = {"selfDeclaredMadeForKids": False}
     if not request.publish_at:
-        status["privacyStatus"] = request.privacy_status
+        privacy, _held = apply_unlisted_review(request.privacy_status)
+        status["privacyStatus"] = privacy
         return status
 
     publish_at = _to_utc(request.publish_at)
@@ -348,6 +373,9 @@ class YouTubePublisher(Publisher):
 
         video_status = build_video_status(request)
         is_youtube_scheduled = "publishAt" in video_status
+        effective_privacy, held_review = apply_unlisted_review(
+            request.privacy_status, publish_at=request.publish_at
+        )
         target_privacy = request.privacy_status
 
         body = {
@@ -363,8 +391,10 @@ class YouTubePublisher(Publisher):
         try:
             record_upload_usage()
 
+            from core.output_paths import windows_long_prefix
+
             media = MediaFileUpload(
-                request.file_path,
+                windows_long_prefix(request.file_path),
                 mimetype="video/mp4",
                 chunksize=1024 * 1024,
                 resumable=True,
@@ -394,6 +424,12 @@ class YouTubePublisher(Publisher):
                 if is_youtube_scheduled
                 else "videos.insert completed"
             )
+            if held_review and video_id:
+                watch = f"https://www.youtube.com/watch?v={video_id}"
+                detail = (
+                    f"Unlisted for review (requested public): {watch} "
+                    "— promote to public after eyeball"
+                )
 
             _update_publish_log(
                 log_id,
@@ -402,7 +438,7 @@ class YouTubePublisher(Publisher):
                     "youtube_video_id": video_id,
                     "detail": detail,
                     "privacy_status": (
-                        target_privacy if is_youtube_scheduled else request.privacy_status
+                        target_privacy if is_youtube_scheduled else effective_privacy
                     ),
                     "published_at": publish_when or datetime.now(timezone.utc),
                 },

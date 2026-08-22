@@ -586,8 +586,8 @@ Organization / operator surface
   feeds from cached `ops feeds` snapshot)*
 - [ ] 31. Artifact retention job: cap `output/*/drafts`, `data/traces`, old `_runs/` clones; dry-run first `[S]`
 - [ ] 32. Split `core/ui.py` (~1,400 LOC and growing) into prompt / display / recovery modules — the July audit’s compounding smell `[M]`
-- [ ] 33. `channels.json` JSON Schema ratchet in CI so a missing `persona` or bad `ui_theme` fails before a run `[S]`
-- [ ] 34. Vault note templates in-repo (`_operator_facts`, strategy, sources) so hand-written notes always carry `tier`/`verified_at` `[S]`
+- [x] 33. `channels.json` schema ratchet in CI *(2026-08-22)* - `validate_channel` now checks `ui_theme` against the theme registry (unknown = error) and `persona` (missing = warning, non-object = error); `tests/test_validate_channels.py::TestShippedConfigRatchet` validates the REAL `config/channels.json`, which every other test avoided. **It found a live gap: `moneywise` has no persona**, so the highest-RPM channel ships without the human-context block
+- [x] 34. Vault note templates in-repo *(2026-08-22)* - `docs/vault_templates/` (`_operator_facts`, `_strategy`, `_sources`), each parsed in `tests/test_vault_templates.py` through the real `_parse_frontmatter` and checked against `TIER_WEIGHTS`, so a contract change breaks in CI instead of in the operator's vault
 - [ ] 35. Alembic-only schema path — stop teaching two migration stories (`migrate_schema` vs Alembic) `[M]`
 - [ ] 36. `ops topic-clone --run-id` — seed a new draft from a winner (angles new, facts refreshed); the missing write path behind display-only `winners()` `[M]`
 - [ ] 37. Playbook lint: strategy bullets that never got a `[strategy]` tag silently feed facts today in the inverse direction; warn `[S]`
@@ -602,7 +602,7 @@ Efficiency
   explicit `max_workers=` still wins)*
 - [ ] 42. Shared discovery cache across `batch-drafts` topics that share a franchise anchor (GTA 6 leaks × N) `[M]`
 - [x] **43. Script trim pass** *(2026-08-21)* — drop trailing padding sentences when over length; never clip; hard cap remains refuse `[S]`
-- [ ] 44. ffmpeg `-ss` output-seek already documented; bake a `scripts/probe_sync.py` so intro-offset mistakes stop getting relearned `[S]`
+- [x] 44. `scripts/probe_sync.py` *(2026-08-22)* - answers "is this render out of sync?" in one sentence. Verified on a real mp4: 2.207s leading pad vs the 2.15s TapIn intro -> **IN SYNC**, because `prepend_channel_intro` runs after ffmpeg. Encodes both traps that cost real time: input-seek `-ss` reports the wrong frame (uses output-seek), and `silence_start: 0` is the intro, not a defect
 - [x] 45. Overnight quota-aware: skip or shrink `--count` when YouTube remaining < 1,600 or Apify breaker is in `[S]`
   *(2026-08-20: `OVERNIGHT_QUOTA_GATE` opt-in; fail-open on store errors; suite sets false)*
 
@@ -614,7 +614,7 @@ Long-term / intelligence
 - [ ] 49. Post-publish first-hour anomaly (views or engaged-rate vs channel baseline) → webhook. Uses metrics sync, not a new API `[M]`
 - [ ] 50. Learned insight-marker list: replace the hardcoded `_INSIGHT_MARKERS` from scripts that actually retained `[L]`
 - [ ] 51. Channel DNA export → new-channel playbook (the AI Tools/Tech groundwork, but as a dump of what TapIn learned) `[M]`
-- [ ] 52. Graveyard reason codes (thin facts / recap / wrong domain) so avoid-list is explained, not just a mute set `[S]`
+- [x] 52. Graveyard reason codes *(2026-08-22)* - `reason_codes_for_quality` / `explain_reason_codes` derive `thin_facts` / `recap` / `weak_hook` / `ungrounded` **only** from the `quality_json` a run already persisted; a run predating quality persistence returns an honest `[]` rather than a guess
 - [ ] 53. Prompt-version auto-bump from a hash of `content_engine` prompt builders so `ops prompt-eval --compare` is meaningful after silent edits `[S]`
 - [ ] 54. Retention-informed `scene_plan`: force a cut/stance beat before the measured channel cliff `[L]`
 - [x] 55. Fact-expiry watchdog in `ops reliability` — vault notes with `expires` in the past that still rank into prompts `[S]`
@@ -730,7 +730,7 @@ Machine / Windows hygiene
 - [x] **95. RAM/VRAM preflight** *(2026-08-21)* — `RAM_MIN_GB` / `VRAM_MIN_GB` opt-in before whisper / local TTS; ASCII `>=` `[S]`
 - [x] **96. `ops secrets-doctor`** *(2026-08-21)* — keys present/missing/placeholder; values never printed `[S]`
 - [x] **97. Redact API bodies from traces** *(2026-08-21)* — 402/403 payloads stripped on write `[S]`
-- [ ] 98. `pip-audit` / Dependabot in CI (supply chain; report-only like coverage) `[S]`
+- [x] 98. `pip-audit` in CI *(2026-08-22)* - report-only job + `[dev]` pin. **Baseline is not clean: 75 known vulns across 19 packages.** Worst is `Pillow 9.5.0` with **26** (fix 10.0.1) - pinned for moviepy 1.0.3 compat, and it parses untrusted image bytes (stock footage, Flux/Ideogram output), so it is real attack surface not a lint nit. `requests 2.32.3`->2.32.4 is a trivial safe bump. Upgrades deliberately NOT done here: moviepy/Pillow coupling can break rendering, so that is its own wave
 - [x] 99. Close the suite’s live Google HTTPS leak (audit C9 `ResourceWarning`) `[M]`
   *(2026-08-20: skip YouTube warmup in tests; `static_discovery=True` on `build()`;
   `CONTENT_FORBID_LIVE_YOUTUBE` blocks Data/Analytics clients and OAuth refresh;

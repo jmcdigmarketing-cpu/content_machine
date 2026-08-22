@@ -198,6 +198,34 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
     if token_file and not os.path.isfile(token_file):
         warnings.append(f"{channel_id}: OAuth token file not found: {token_file}")
 
+    # ui_theme must name a registered skin: an unknown one silently falls back to
+    # the default mid-run instead of failing here (candidate 33).
+    theme = raw_cfg.get("ui_theme")
+    if theme is not None:
+        try:
+            from core.themes import THEMES
+
+            if str(theme).strip().lower() not in THEMES:
+                errors.append(
+                    f"{channel_id}: unknown ui_theme {theme!r} "
+                    f"(known: {', '.join(sorted(THEMES))})"
+                )
+        except Exception as exc:  # registry unavailable - do not invent an error
+            warnings.append(f"{channel_id}: could not check ui_theme: {exc}")
+
+    # persona feeds the human-context block the 2026 authenticity policy leans on;
+    # without it a channel's scripts read as a neutral recap.
+    persona = raw_cfg.get("persona")
+    if persona is None:
+        warnings.append(
+            f"{channel_id}: no persona - scripts lose the human-context block "
+            "(core/channel_persona.py)"
+        )
+    elif not isinstance(persona, dict):
+        errors.append(f"{channel_id}: persona must be an object, not {type(persona).__name__}")
+    elif not any(str(v).strip() for v in persona.values()):
+        warnings.append(f"{channel_id}: persona is present but every field is empty")
+
     errors.extend(_check_post_schedule(raw_cfg.get("post_schedule") or {}, channel_id))
     return errors, warnings
 

@@ -116,6 +116,49 @@ def graveyard(channel_id: str, n: int = 25, *, min_measured: int = 1) -> list[To
     return recs[:n]
 
 
+# Candidate 52: an avoid-list that is only a mute set teaches the operator nothing.
+# Every code below is read from quality_json the run already persisted - nothing new
+# is computed or inferred, so a reason is either evidenced or absent.
+GRAVEYARD_REASONS: tuple[tuple[str, str], ...] = (
+    ("thin_facts", "few verified claims behind the script"),
+    ("recap", "read as a neutral recap (no original insight)"),
+    ("weak_hook", "weak first-3-seconds hook"),
+    ("ungrounded", "unsupported claims or fact conflicts"),
+)
+
+
+def reason_codes_for_quality(quality: dict | None) -> list[str]:
+    """Why a topic flopped, from the quality block the run already stored.
+
+    Returns [] when the run predates quality persistence - an honest blank rather
+    than a guess.
+    """
+    q = quality or {}
+    if not isinstance(q, dict) or not q:
+        return []
+    codes: list[str] = []
+    support = q.get("claim_support_rate")
+    if isinstance(support, int | float) and support < 0.5:
+        codes.append("thin_facts")
+    if str(q.get("authenticity_verdict") or "").lower() in ("review", "block"):
+        codes.append("recap")
+    hook = q.get("hook_score")
+    if isinstance(hook, int | float) and hook < 60:
+        codes.append("weak_hook")
+    if (q.get("fact_conflict_count") or 0) or (q.get("tier_warning_count") or 0):
+        codes.append("ungrounded")
+    return codes
+
+
+def explain_reason_codes(codes: list[str]) -> str:
+    """Human sentence for a set of codes ('' when there is no evidence)."""
+    labels = dict(GRAVEYARD_REASONS)
+    seen = [c for c in codes if c in labels]
+    if not seen:
+        return ""
+    return "; ".join(labels[c] for c in dict.fromkeys(seen))
+
+
 def graveyard_topics(channel_id: str) -> set[str]:
     """Normalized topics to avoid re-suggesting. Empty when the avoid-list is off."""
     if os.getenv("GRAVEYARD_AVOID", "true").lower() not in ("1", "true", "yes"):

@@ -44,6 +44,7 @@ dev = [
     "types-requests",
     "types-beautifulsoup4",
     "coverage>=7.6.0",
+    "pip-audit>=2.7.3",
 ]
 # Optional sports stats providers (NFL/MLB stat lines)
 sports = [

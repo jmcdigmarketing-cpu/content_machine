@@ -137,7 +137,13 @@ def reason_codes_for_quality(quality: dict | None) -> list[str]:
     if not isinstance(q, dict) or not q:
         return []
     codes: list[str] = []
+    # Candidate 322: on a rewritten run `claim_support_rate` is measured AFTER the
+    # rewrite pass hedged the unsupported claims, so a heavily-hedged script reports
+    # 1.0 and never earns `thin_facts`. Judge it on what it asserted first.
     support = q.get("claim_support_rate")
+    pre_support = q.get("pre_rewrite_support_rate")
+    if q.get("claims_rewritten") and isinstance(pre_support, int | float):
+        support = pre_support
     if isinstance(support, int | float) and support < 0.5:
         codes.append("thin_facts")
     if str(q.get("authenticity_verdict") or "").lower() in ("review", "block"):

@@ -479,6 +479,12 @@ def _maybe_rewrite_unsupported_claims(script, verification, corpus_text, topic, 
             len(verification.unsupported),
             len(re_check.unsupported),
         )
+        # Candidate 322: keep the pre-rewrite verdict on the record. The claims were
+        # restated as attributed speculation, not evidenced, and the persisted numbers
+        # would otherwise show a run that was right first time.
+        re_check.rewritten = True
+        re_check.pre_rewrite_unsupported = len(verification.unsupported)
+        re_check.pre_rewrite_total = verification.total
         return candidate, re_check
     return script, verification
 

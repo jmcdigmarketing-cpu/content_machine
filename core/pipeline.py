@@ -445,6 +445,8 @@ def run_pipeline(
     result.features["trade_warnings"] = content.get("trade_warnings") or []
     # Pillar 3 (Fact Engine): tier lint, pre-script conflicts, claim verifier.
     result.features["tier_warnings"] = content.get("tier_warnings") or []
+    # Candidate 321: title claim check (generated after every other gate has passed).
+    result.features["title_warnings"] = content.get("title_warnings") or []
     result.features["fact_conflicts"] = content.get("fact_conflicts") or []
     result.features["fact_conflicts_dropped"] = int(content.get("fact_conflicts_dropped") or 0)
     if content.get("claim_verification"):

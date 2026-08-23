@@ -152,3 +152,56 @@ def lint_ufc_title(title: str, *, domain: str | None = None) -> list[str]:
         if dom and dom not in ("ufc", "mma"):
             warnings.append("UFC in title on a non-UFC topic - trademark/SEO mismatch")
     return warnings
+
+
+def title_grounding_mode() -> str:
+    """`warn` (default) or `off` — mirrors TITLE_UNIQUENESS's shape (#117)."""
+    raw = (os.getenv("TITLE_GROUNDING", "warn") or "warn").strip().lower()
+    return raw if raw in ("warn", "off") else "warn"
+
+
+def lint_title_grounding(
+    title: str,
+    *,
+    facts_text: str,
+    priority_facts: list[str] | None = None,
+    topic: str = "",
+) -> list[str]:
+    """Warn when the TITLE asserts something the facts do not back (candidate 321).
+
+    The title is generated after grounding and the claim verifier have already passed
+    on the *script*, and nothing re-checks the string `generate_title` returns. Live-run
+    71 shipped "GTA 6 Leak Forces Rockstar to Subpoena Microsoft and Discord Records"
+    when the operator's own key fact said the subpoenas came from Rockstar's *parent*
+    (Take-Two).
+
+    Token grounding cannot catch that: `Rockstar`, `Microsoft` and `Discord` are all
+    present in the facts, so `find_ungrounded_entities` passes the title clean. The
+    error is *relational* — the wrong actor performed the action — which is exactly what
+    `verify_claims` checks ("direction, names, and numbers must match"). So this reuses
+    the claim verifier with the title as the text, rather than adding a second extractor.
+
+    One extra extract-tier call (free-first router) per generated title. Warn-only and
+    fail-open: a `None` verdict is "no opinion", never "ok".
+    """
+    if title_grounding_mode() == "off":
+        return []
+    if not (title or "").strip():
+        return []
+    try:
+        from core.claim_verifier import verify_claims
+
+        verification = verify_claims(
+            title,
+            facts_text,
+            topic=topic,
+            priority_facts=priority_facts,
+        )
+    except Exception as exc:
+        logger.debug("title grounding skipped: %s", exc)
+        return []
+    if verification is None:
+        return []
+    return [
+        f"title claim not backed by the facts: {c.claim[:140]}" for c in verification.unsupported
+    ]

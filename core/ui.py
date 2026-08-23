@@ -943,6 +943,15 @@ def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
             print_fn(f"    · {warning}")
         needs_review = True
 
+    # Candidate 321 — the title used to be the one string no check read.
+    title_warnings = features.get("title_warnings") or []
+    if title_warnings:
+        print_fn(f"\n  ⚠ Title check ({len(title_warnings)}):")
+        for warning in title_warnings[:4]:
+            print_fn(f"    · {warning}")
+        print_fn("    The title is the first thing viewers read — fix it before publishing.")
+        needs_review = True
+
     if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
         needs_review = True
     return needs_review

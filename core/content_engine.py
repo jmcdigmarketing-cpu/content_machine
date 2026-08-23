@@ -960,8 +960,27 @@ def generate_content_package(
         channel_id=channel_id,
     )
 
+    # Candidate 321: the title is the last thing generated and was the only operator-
+    # facing string no check ever read. Verified here (not at publish time) so the
+    # warning reaches the report card BEFORE the operator answers "Proceed?".
+    from core.youtube_meta import lint_title_grounding
+
+    title_warnings = lint_title_grounding(
+        title,
+        facts_text=corpus.factual_text,
+        priority_facts=clean_key_facts,
+        topic=topic,
+    )
+    if title_warnings:
+        logger.warning(
+            "Title check flagged %d claim(s): %s",
+            len(title_warnings),
+            "; ".join(title_warnings),
+        )
+
     return {
         "title": title,
+        "title_warnings": title_warnings,
         "script": script,
         "description": apply_description_extras(
             payload.get("description") or "", channel_id, title=title

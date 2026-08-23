@@ -1099,6 +1099,19 @@ def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
     return COST_MODE_FREE if choice == "2" else COST_MODE_STANDARD
 
 
+def _looks_pasted(raw: str) -> bool:
+    """True when an answer is plainly prose, not a fat-fingered menu key (candidate 325).
+
+    Deliberately narrow: a stray character is still a stop (the operator meant to
+    decline and missed), while a sentence, a URL or a multi-line block gets one
+    re-prompt instead of silently discarding the run.
+    """
+    text = (raw or "").strip()
+    if len(text) > 24 or "\n" in text:
+        return True
+    return len(text.split()) > 1
+
+
 def prompt_proceed_or_length(
     current_choice: str,
     *,
@@ -1110,27 +1123,47 @@ def prompt_proceed_or_length(
     Returns one of:
       ("render", current_choice)  -- y: proceed to render
       ("relength", new_choice)    -- +/-/1-4: regenerate at a new length target
-      ("stop", current_choice)    -- n / empty / anything else: stop before render
+      ("stop", current_choice)    -- n / empty / an unrecognised answer twice
 
     "+"/"-" nudge the current preset one step (core.script_length.nudge_length); a 1-4
     entry jumps to that preset. Regeneration is a fresh generate at the new target, so
     grounding + authenticity are re-checked — it is not an in-place trim.
+
+    Candidate 325: this used to stop on *anything* that was not a menu key, so the
+    pasted article paragraph that ended live-run 71 discarded 30.6 minutes of work
+    (25.6 of them at prompts) without a word. The trap is structural — the key-facts
+    loop immediately above accepts pasted blocks, so the habit carries straight into a
+    prompt where a paste means "throw it away". Declining is still instant: `n` / `N` /
+    Enter stop on the first answer. Only input that is obviously not a menu key gets a
+    second chance.
     """
     from core.script_length import nudge_length
 
-    raw = (
-        input_fn("  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: ")
-        .strip()
-        .lower()
-    )
-    if raw == "y":
-        return ("render", current_choice)
-    if raw == "+":
-        return ("relength", nudge_length(current_choice, 1))
-    if raw == "-":
-        return ("relength", nudge_length(current_choice, -1))
-    if raw in ("1", "2", "3", "4"):
-        return ("relength", raw)
+    prompt = "  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: "
+    for attempt in range(2):
+        raw = input_fn(prompt).strip().lower()
+        if raw == "y":
+            return ("render", current_choice)
+        if raw == "+":
+            return ("relength", nudge_length(current_choice, 1))
+        if raw == "-":
+            return ("relength", nudge_length(current_choice, -1))
+        if raw in ("1", "2", "3", "4"):
+            return ("relength", raw)
+        # An explicit decline, or an empty line, stops immediately as it always has.
+        if raw in ("", "n", "no"):
+            return ("stop", current_choice)
+        if attempt == 0 and _looks_pasted(raw):
+            print_fn(
+                f"  That looks like pasted text ({len(raw)} chars), not a menu choice — "
+                "the script is still here."
+            )
+            print_fn(
+                "  y = render · N = stop · +/- or 1-4 = different length. "
+                "(Article text belongs at the Fact prompt, via `paste`.)"
+            )
+            continue
+        return ("stop", current_choice)
     return ("stop", current_choice)
 
 

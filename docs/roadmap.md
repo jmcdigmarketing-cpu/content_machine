@@ -167,6 +167,48 @@ tray doctor HTML + last grade). **#147 FastAPI still skipped.**
 
 **Swaps vs numerical next (wave 3):** skipped 21–28 (need a real render), 31/33/34, 38 NVENC encode, 39 draft preset, 44 `probe_sync`, 52 graveyard codes, 98 pip-audit, 101 caption track, 103 vault sources, 132 policy runbook (doc-only), 146 tray daemon `[L]`, 147 FastAPI `[L]`, 172 HTML design system `[M]`, 316 last-domain (companion to 315; next chip).
 
+**Run-71 correctness wave (2026-08-22)** - **shipped.** Pickup was *not* the deferred
+skip list (21-28 need a real render; 31/38/39/101/103/146/147/172 are not the next
+publish) but the four defects **live-run 71 proved**, each verified in code before it
+was planned. They share one shape: *a check passes because it measures the wrong
+thing, then reports a clean number that hides the miss* (decisions.md SS18/SS24). The
+run graded **A (91/100)** with grounding **100/100** and was not that good.
+
+1. **321** Title claim check `[M]` - *shipped.* Run 71 shipped "GTA 6 Leak Forces
+   **Rockstar** to Subpoena Microsoft and Discord Records"; the operator's own key fact
+   said **Take-Two**, Rockstar's parent. `generate_title` runs after grounding and the
+   claim verifier and is fail-open, so nothing read its output. Token grounding cannot
+   close this - measured, it returns `[]` for *both* actors, because the error is
+   relational. Reuses `verify_claims`; checked at generation so the warning reaches the
+   report card **before** `Proceed?`. `TITLE_GROUNDING=warn|off`.
+2. **322** Pre-rewrite claim verdict `[S]` - *shipped.* The verifier found **7 of 12
+   unsupported**; the rewrite pass restated them as attributed speculation and the
+   re-check printed **12/12**. Only the post-rewrite numbers persisted, so quality_json
+   read 1.0, the card graded A, and **#52's `thin_facts` could never fire**. `to_dict()`
+   now carries the pre-rewrite figures (only on a rewritten run - existing readers
+   unchanged). Records and surfaces; does **not** gate or re-grade.
+3. **323** Variant tie-break on the pre-clamp score `[M]` - *shipped.* All five angles
+   read **100.0** because `composite_score` ends `min(final_score, 100)`, so the menu
+   offered a tie dressed as a ranking. Split out `composite_score_raw`; the stored 0-100
+   contract is untouched and `best_variant_index` is now the one ranking rule, shared by
+   the menu and `run_pipeline`. A visible score difference can never be overridden.
+4. **324** RAWG release-era gate `[S]` - *shipped.* Three 1990s Wolverine games reached a
+   2026 GTA 6 story and counted toward the authenticity gate's "18 verified fact(s)".
+   The overlap rule passed them correctly - it was incomplete, not broken. Release era
+   is the discriminator (`RAWG_MAX_AGE_YEARS`, default 15); fail-open on a missing date,
+   retro topics exempt, `GTA -> Grand Theft Auto` covered by a test.
+5. **325** `Proceed?` re-prompts on a paste `[S]` - *shipped.* The run cost 30.6 min wall
+   (**25.6 at prompts**, 5.0 machine) and produced no video because a pasted paragraph
+   read as "stop". Structural, not carelessness: the key-facts loop directly above
+   accepts pastes. Obvious prose gets one re-prompt; `n`/`N`/Enter still stop instantly.
+
+**Deliberately out of this wave:** gating or re-grading hedged scripts (322 records
+only - the operator's call); **vault-side** subject relevance
+(`obsidian_facts.load_facts` attached four Marvel Rivals / SEGA bullets to the same run,
+same root cause as 324) so one wave does not touch both fact paths; the **dependency
+wave** (#98's 75 vulns / 19 packages, Pillow 9.5.0 pinned for moviepy - needs a real
+render); **MoneyWise persona**, the live gap #33's ratchet found (operator-authored).
+
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
   `content_run_id` foreign keys on `publish_log` / `jobs` / `assets` /
@@ -996,6 +1038,14 @@ Small — hours / a PR
 - [ ] 318. Remember **second-monitor bounds** `[S]` — *UI.* Booth on the 9:16 monitor.
 - [x] 319. **"What's blocking publish"** *(2026-08-21)* — `ops blocking` one-sentence from existing gates `[S]` — *short-term / UI.*
 - [ ] 320. Tray: **local git describe** when `ops` gains commands `[S]` — *UI.* Changelog awareness without opening GitHub.
+
+Run-71 correctness (2026-08-22)
+
+- [x] 321. **Title claim check** - the title was the one operator-facing string no gate ever read `[M]` *(2026-08-22)* - `lint_title_grounding` (`core/youtube_meta.py`) reuses `verify_claims` because token grounding provably cannot discriminate the actor; wired at the `generate_title` call site so it lands on the report card before `Proceed?`. `TITLE_GROUNDING=warn|off`, fail-open
+- [x] 322. **Pre-rewrite claim verdict survives the rewrite pass** `[S]` *(2026-08-22)* - `ClaimVerification.to_dict()` carries `rewritten` / `pre_rewrite_unsupported` / `pre_rewrite_total` / `pre_rewrite_support_rate`, stamped where the adopted-rewrite branch already logged both counts; keys appear only on a rewritten run. #52's graveyard codes judge a hedged run on what it asserted first
+- [x] 323. **Variant ranking survives the 0-100 clamp** `[M]` *(2026-08-22)* - `composite_score_raw` + `best_variant_index` (one rule, shared by the menu and `run_pipeline`); `DiscoveryResult.raw_scores` sits beside `evaluated` so the 3-tuple stays as it was. The operator is told whether an all-equal list was ordered by headroom or is a genuine tie
+- [x] 324. **RAWG results must be current-era, not just name-matched** `[S]` *(2026-08-22)* - `_is_current_era` drops matches older than `RAWG_MAX_AGE_YEARS` (default 15) unless the topic is itself retro; fail-open on missing/unparseable dates. Vault-side equivalent deliberately deferred
+- [x] 325. **`Proceed?` distinguishes decline from unrecognised** `[S]` *(2026-08-22)* - obvious prose (>24 chars, multi-word, or multi-line) gets one re-prompt pointing at the Fact prompt's `paste` mode; `n`/`N`/`no`/Enter and every menu key resolve on the first ask exactly as before
 
 ---
 

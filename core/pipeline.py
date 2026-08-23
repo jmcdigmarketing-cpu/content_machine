@@ -43,6 +43,11 @@ class DiscoveryResult:
     evaluated: list[tuple[str, float, dict[str, Any]]]  # variant, score, signals
     timings: dict[str, float] = field(default_factory=dict)
     channel_id: str = "default"
+    # Candidate 323: variant -> pre-clamp composite. The displayed score is capped at
+    # 100, so on a hot topic every variant reads 100.0 and the ranking carries no
+    # information. Kept beside `evaluated` (not inside it) so the 3-tuple shape that
+    # batch_generation / intelligence_report unpack stays exactly as it was.
+    raw_scores: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,6 +74,25 @@ class PipelineResult:
     features: dict[str, Any] = field(default_factory=dict)
 
 
+def best_variant_index(
+    evaluated: list[tuple[str, float, Any]],
+    raw_scores: dict[str, float] | None = None,
+) -> int:
+    """Index of the best variant, breaking display ties on the pre-clamp score (323).
+
+    `composite_score` clamps to 100, so on a hot topic every variant shows the same
+    number and "best" degenerates to "first in the list" — run 71 offered five angles
+    at exactly 100.00. The displayed score still leads: raw only decides among equals.
+    """
+    if not evaluated:
+        raise ValueError("evaluated must be non-empty")
+    raw = raw_scores or {}
+    return max(
+        range(len(evaluated)),
+        key=lambda i: (evaluated[i][1], raw.get(evaluated[i][0], evaluated[i][1])),
+    )
+
+
 def _score_variant(
     variant: str,
     channel_id: str,
@@ -76,16 +100,19 @@ def _score_variant(
     *,
     seed_topic: str = "",
 ):
+    from apis.topic_scorer import composite_score_raw
+
     variant_signals = build_registry(variant, reuse_signals=base_signals, channel_id=channel_id)
     score = composite_score(variant_signals, variant, channel_id)
+    # Candidate 323: same number without the 0-100 clamp, for tie-breaking only.
+    raw = composite_score_raw(variant_signals, variant, channel_id)
     if seed_topic:
-        score = max(
-            0.0,
-            score
-            - anchor_preservation_penalty(variant, seed_topic)
-            - mcu_drift_penalty(variant, seed_topic),
+        penalty = anchor_preservation_penalty(variant, seed_topic) + mcu_drift_penalty(
+            variant, seed_topic
         )
-    return variant, score, variant_signals
+        score = max(0.0, score - penalty)
+        raw = raw - penalty
+    return variant, score, variant_signals, raw
 
 
 def _word_range(length_choice: str) -> tuple[int, int]:
@@ -191,13 +218,16 @@ def run_discovery(
     total = len(candidates)
     _report("Scoring variants", 0, total)
     evaluated: list[tuple[str, float, dict[str, Any]]] = []
+    raw_scores: dict[str, float] = {}
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
             executor.submit(_score_variant, v, channel_id, base_signals, seed_topic=topic): v
             for v in candidates
         }
         for done, future in enumerate(as_completed(futures), start=1):
-            evaluated.append(future.result())
+            variant, score, variant_signals, raw = future.result()
+            evaluated.append((variant, score, variant_signals))
+            raw_scores[variant] = raw
             # Show which angle just finished scoring — engagement during the wait.
             _report("Scoring variants", done, total, detail=futures[future])
     # Restore deterministic candidate order (as_completed yields by completion time).
@@ -217,6 +247,7 @@ def run_discovery(
         input_topic=topic,
         base_signals=base_signals,
         evaluated=evaluated,
+        raw_scores=raw_scores,
         timings=timings,
         channel_id=channel_id,
     )
@@ -383,7 +414,7 @@ def run_pipeline(
     if variant_index is not None and 0 <= variant_index < len(evaluated):
         index = variant_index
     else:
-        index = max(range(len(evaluated)), key=lambda i: evaluated[i][1])
+        index = best_variant_index(evaluated, discovery.raw_scores)
 
     best_topic, best_score, best_signals = evaluated[index]
     result.topic = best_topic

@@ -68,7 +68,9 @@ def _run_intelligence_report_flow(channel_id: str) -> None:
     section("Intelligence")
     discovery = run_discovery(topic, channel_id=channel_id)
     display_signal_health(discovery.base_signals)
-    best_default = display_variants(discovery.evaluated, channel_id=channel_id)
+    best_default = display_variants(
+        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+    )
 
     choice = input("\n  Choose 1-5 for report (Enter = best): ").strip()
     variant_index = int(choice) - 1 if choice.isdigit() else best_default
@@ -369,7 +371,9 @@ def _run_new_video_flow_body(
 
     display_outlier(get_competitor_outlier(discovery.base_signals))
 
-    best_default = display_variants(discovery.evaluated, channel_id=channel_id)
+    best_default = display_variants(
+        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+    )
 
     choice = input("\n  Choose 1-5 (Enter = best): ").strip()
 

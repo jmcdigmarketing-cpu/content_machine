@@ -575,6 +575,7 @@ def display_variants(
     evaluated: list[tuple[str, float, Any]],
     *,
     channel_id: str | None = None,
+    raw_scores: dict[str, float] | None = None,
     print_fn=print,
 ) -> int:
     """Print variant list; return index of highest score.
@@ -583,9 +584,31 @@ def display_variants(
     has historically over-engaged on this channel is annotated "▲ proven pattern"
     — the A/B title-pattern loop surfacing learned winners at selection time.
     """
-    best_i = max(range(len(evaluated)), key=lambda i: evaluated[i][1])
+    # Candidate 323: the displayed score is clamped to 100, so on a hot topic every
+    # variant prints the same number. Rank on the pre-clamp score when we have it, and
+    # say so — a tie presented as a ranking is worse than an admitted tie.
+    from core.pipeline import best_variant_index
+
+    raw = raw_scores or {}
+    best_i = best_variant_index(evaluated, raw)
+    shown = [round(float(s), 2) for _, s, *_ in evaluated]
+    display_tied = len(evaluated) > 1 and len(set(shown)) == 1
+    raw_values = [raw.get(v) for v, *_ in evaluated]
+    raw_known = all(r is not None for r in raw_values)
+
     subsection("Scored angles (Enter = best)", print_fn)
     print_fn("  (YouTube title is generated after key facts + script — not here.)")
+    if display_tied:
+        if raw_known and len({round(float(r), 2) for r in raw_values}) > 1:  # type: ignore[arg-type]
+            print_fn(
+                f"  All {len(evaluated)} angles hit the {shown[0]:.0f} ceiling — "
+                "ordered by headroom above it, not by the printed number."
+            )
+        else:
+            print_fn(
+                f"  All {len(evaluated)} angles scored {shown[0]:.1f} — this is a tie, "
+                "not a ranking. Pick on editorial judgement."
+            )
     from core.ui_theme import paint, score_badge
 
     winning: frozenset[str] = frozenset()

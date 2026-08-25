@@ -207,7 +207,7 @@ run graded **A (91/100)** with grounding **100/100** and was not that good.
 only - the operator's call); **vault-side** subject relevance
 (`obsidian_facts.load_facts` attached four Marvel Rivals / SEGA bullets to the same run,
 same root cause as 324) so one wave does not touch both fact paths; the **dependency
-wave** (#98's 75 vulns / 19 packages, Pillow 9.5.0 pinned for moviepy - needs a real
+wave** (#98's 75 vulns / 19 packages, Pillow 9.5.0 = 26 of them; nothing caps it - needs a real
 render); **MoneyWise persona**, the live gap #33's ratchet found (operator-authored).
 
 **Honesty + leave-the-terminal wave 4 (2026-08-22)** — **shipped.** Pickup was
@@ -807,7 +807,7 @@ Machine / Windows hygiene
 - [x] **95. RAM/VRAM preflight** *(2026-08-21)* — `RAM_MIN_GB` / `VRAM_MIN_GB` opt-in before whisper / local TTS; ASCII `>=` `[S]`
 - [x] **96. `ops secrets-doctor`** *(2026-08-21)* — keys present/missing/placeholder; values never printed `[S]`
 - [x] **97. Redact API bodies from traces** *(2026-08-21)* — 402/403 payloads stripped on write `[S]`
-- [x] 98. `pip-audit` in CI *(2026-08-22)* - report-only job + `[dev]` pin. **Baseline is not clean: 75 known vulns across 19 packages.** Worst is `Pillow 9.5.0` with **26** (fix 10.0.1) - pinned for moviepy 1.0.3 compat, and it parses untrusted image bytes (stock footage, Flux/Ideogram output), so it is real attack surface not a lint nit. `requests 2.32.3`->2.32.4 is a trivial safe bump. Upgrades deliberately NOT done here: moviepy/Pillow coupling can break rendering, so that is its own wave
+- [x] 98. `pip-audit` in CI *(2026-08-22)* - report-only job + `[dev]` pin. **Baseline is not clean: 75 known vulns across 19 packages.** Worst is `Pillow 9.5.0` with **26**, and it parses untrusted image bytes (stock footage, Flux/Ideogram output), so it is real attack surface not a lint nit. **Correction (2026-08-23):** this entry first said Pillow was "pinned for moviepy 1.0.3 compat" - that is wrong, and it was the stated reason to defer. moviepy does not depend on Pillow at all; `imageio` sets a floor (`>=8.3.2`), `goose3` is unbounded, and `pyproject.toml:26` is a bare `==9.5.0` with no rationale. **Nothing caps Pillow** and the four API calls used survive Pillow 10-12, so the upgrade is unblocked. Separately, moviepy is carried for ONE call (`AudioFileClip(...).duration`) that `_probe_video_duration` in the same file already does - a cut, not an upgrade. Still its own wave because both need a real render to verify. Analysis: planning_log 2026-08-23
 - [x] 99. Close the suite’s live Google HTTPS leak (audit C9 `ResourceWarning`) `[M]`
   *(2026-08-20: skip YouTube warmup in tests; `static_discovery=True` on `build()`;
   `CONTENT_FORBID_LIVE_YOUTUBE` blocks Data/Analytics clients and OAuth refresh;

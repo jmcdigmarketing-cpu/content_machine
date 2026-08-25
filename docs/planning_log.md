@@ -11,6 +11,135 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-23 - MoneyWise persona + the Pillow decision (docs only)
+
+**Prompt:** "give moneywise a persona, then how would we deal with pillow?
+different software or cut entirely, update? document and answer only, no loc"
+
+---
+
+### 1. MoneyWise persona
+
+**Why it was missing:** candidate 33's `channels.json` ratchet found it on its first
+run. Every prior test built its own dict, so the *shipped* config was never validated
+and the gap sat there unseen. `moneywise` is the higher-RPM channel and it was
+publishing with no human-context block at all.
+
+**What consumes it:** `core/channel_persona.py` reads `perspective`, `tone`,
+`audience`, `recurring_segment`, `signoff` (in that order, extras appended) and folds
+them into an advisory prompt block. `core/channel_go_live.py:81` requires **`tone` +
+`audience`** at minimum to report the channel ready.
+
+**The constraint that shapes it:** finance content cannot sound like advice. The
+description already carries "Not financial advice. For informational purposes only."
+(#125), and the script prompt forbids personalised recommendations. A persona that
+reads as a stock picker would fight both. So the point of view is deliberately
+*explanatory* - the person who reads the filing and translates it - not predictive.
+That is also the honest differentiator against the "5 stocks to buy now" tier the
+2026 authenticity policy is aimed at.
+
+**Ready to paste into `config/channels.json` under `moneywise`:**
+
+```json
+"persona": {
+  "perspective": "someone who reads the filing, the print, or the fine print before having an opinion - and says plainly what it means for a normal paycheck",
+  "tone": "calm, plain-spoken, mildly sceptical of hype - explains, never sells",
+  "audience": "working adults who want to understand the money story behind the headline, not be told what to buy",
+  "recurring_segment": "Week ahead: the two or three numbers that actually move things, and why",
+  "signoff": "Numbers first. Opinions after."
+}
+```
+
+Notes on the choices:
+
+- **`recurring_segment`** maps to the schedule that already exists in the config -
+  Sunday 18:00 ET is the "week ahead" slot, alongside weekday 08:30 pre-market and
+  Saturday 10:00 evergreen. A recurring segment the schedule cannot support would be
+  invented continuity, which is the thing the persona is meant to prevent.
+- **Deliberately ASCII.** The persona text flows into prompts, logs and cp1252
+  PowerShell output; `tapin`'s em dash is fine in the file but there is no reason to
+  add more (candidate 250's ASCII-safe rule).
+- **Tone contrasts with TapIn on purpose** ("high-energy, confident, a little
+  irreverent"). Two channels sharing one voice is exactly the templated-at-scale
+  pattern the policy penalises.
+- Not written into `channels.json` this pass - the prompt was document-and-answer.
+  Dropping it in is a config edit, after which `py -m config.validate_channels
+  --channel moneywise` should report 0 warnings (it currently warns on the gap).
+
+---
+
+### 2. Pillow: update. The blocker was not real.
+
+**Answer to "different software or cut entirely, update?" - update, and it is
+unblocked today.** Pillow is 26 of the 75 known vulnerabilities that candidate 98's
+pip-audit baseline found, the worst single package by a wide margin.
+
+**Correcting the record:** this was previously written up as "pinned for moviepy 1.0.3
+compat", which is wrong and had been the reason to defer. Measured:
+
+```
+moviepy 1.0.3 requires: decorator, imageio, imageio_ffmpeg, tqdm, numpy,
+                        requests, proglog          <- no Pillow at all
+imageio    2.37.3  ->  pillow>=8.3.2               <- floor
+goose3     3.1.21  ->  Pillow                      <- unbounded
+torchvision        ->  pillow!=8.3.*,>=5.3.0       <- no ceiling ([providers] only)
+matplotlib         ->  pillow>=9                    <- floor ([providers] only)
+```
+
+**Nothing in the tree caps Pillow.** `pyproject.toml:26` is a bare `Pillow==9.5.0`
+with no rationale comment. The constraint was folklore.
+
+**The API surface is four calls**, none removed in Pillow 10, 11 or 12:
+
+| Call | File | Status |
+|---|---|---|
+| `Image.new("RGB", ...)`, `ImageDraw.Draw`, `ImageFont` | `assets/flux_thumbnail.py:425` | stable |
+| `Image.open`, `ImageStat` | `assets/thumbnail_scorer.py:63` | stable |
+
+No `Image.ANTIALIAS`, no `draw.textsize`, no `font.getsize` - the three removals that
+break most Pillow 10 upgrades. Verified by grep across `assets/`, `video/`, `core/`.
+
+**Recommendation:** bump to **Pillow 11.3.0**, not 12.x. 11.x clears all 26 CVEs and
+is the conservative choice while 12 is new; the four calls above are identical in
+both, so 12 is a later no-op bump if wanted. Verify with one real render (thumbnail
+generation is the only consumer) plus `py -m scripts.ops all-checks`.
+
+**"Cut entirely" is the wrong question for Pillow, and the right one for moviepy.**
+`moviepy` appears in exactly one line of production code:
+
+```python
+video/render_video.py:4    from moviepy.editor import AudioFileClip
+video/render_video.py:220  audio_clip = AudioFileClip(mp3_path); duration = audio_clip.duration
+```
+
+One import, to read a duration. **The same file already has an ffprobe duration
+helper** - `_probe_video_duration` at `video/render_video.py:63`, which uses
+`format=duration` and works on audio containers too. So moviepy (and its decorator /
+tqdm / proglog / imageio chain) is carried for a call the file can already make.
+Cutting it is a genuine simplification independent of the security question - and
+ffmpeg is already a hard requirement, so it adds no new dependency.
+
+**Also worth noting:** the remaining 49 vulnerabilities are concentrated in the
+optional `[providers]` extra - `torch` (8), `transformers` (5) - plus `setuptools`
+(7), which is build tooling, not runtime. Only Pillow, `requests` (a trivial
+2.32.3 -> 2.32.4 bump) and `cryptography` are in the core runtime path. That reframes
+"75 vulns" considerably: the core install is a much smaller problem than the number
+suggests.
+
+**Suggested wave order:**
+
+1. `Pillow==9.5.0` -> `11.3.0` + `requests` 2.32.3 -> 2.32.4. Verify with a real
+   render and a Pillow-fallback thumbnail.
+2. Drop `moviepy` from `pyproject.toml`; swap the one `AudioFileClip` call for
+   `_probe_video_duration`. Verify the rendered mp4 duration matches.
+3. Leave `[providers]` alone until a provider is actually in use; pin `setuptools`
+   only if CI starts flagging it.
+
+Both items need a **real render** to verify, which is why they stay their own wave
+rather than riding along with a correctness pass.
+
+---
+
 ## 2026-08-22 — Honesty + leave-the-terminal wave 4 (shipped)
 
 **Prompt:** "back to work roadmap back to work" — resume the roadmap. Implement a

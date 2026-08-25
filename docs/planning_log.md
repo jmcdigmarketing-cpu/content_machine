@@ -11,6 +11,46 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-22 — Honesty + leave-the-terminal wave 4 (shipped)
+
+**Prompt:** "back to work roadmap back to work" — resume the roadmap. Implement a
+coherent wave of leftover `[S]` then `[M]`. Do not commit or push. Prefer
+honesty / leave-the-terminal / operator-safety. Skip #147 FastAPI, #146 tray
+daemon, caption skin (#21), thumbnail safe-area (#22), Phase M, volume-gated
+backtest.
+
+**Swap vs numerical next:** did **not** pick 21 caption skin, 22 thumbnail
+safe-area, 31 artifact retention, 101 caption track, 146 tray daemon, 147
+FastAPI, or 172 HTML design system. Ranked leftover `[S]` that (1) keep the
+next *public* honest (playbook lint, vault sources in the description,
+ungrounded numeric chips, authenticity semantic bar, grade breakdown,
+overnight-render / RPM / yesterday-unsynced copy), (2) surface TTS 91% /
+quota on the booth (cache-hit $0, Pillow vs Flux, signal dots, feed-stale,
+sticky cost + quota, 16px type), (3) leave PowerShell (copy unlisted URL,
+Obsidian dossier URI, postmortem markdown, quiet-hours toast DND, tray last
+domain). **#147 still skipped.** No #141/#142/#143/#144/#145, no Phase M, no
+volume-gated backtest, no auto-flip Piper.
+
+**Shipped (20):** 37 playbook lint, 103 description sources, 252 copy unlisted
+URL, 255 Obsidian dossier URI, 275 numeric chips, 276 semantic-arm bar, 277
+grade breakdown, 280 TTS cache-hit $0, 281 Pillow vs Flux badge, 283
+overnight-render plain English, 284 RPM deferred reason, 285 yesterday
+unsynced copy, 289 signal-health dots, 290 feed-stale strip, 292 mute toasts
+in quiet hours, 305 16px min type, 306 sticky cost bar, 307 sticky quota bar,
+311 postmortem markdown, 316 tray last domain.
+
+**Knobs:** `DESCRIPTION_SOURCES`, `CONTENT_TOAST_DND`, `CONTENT_TRAY_DOMAIN`.
+Suite forces `CONTENT_TRAY_DOMAIN=false`. Playbook lint and yesterday-unsynced
+copy have no kill switch (read-only / informational).
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI host,
+`.env` / secrets / `data/` / `output/`. Leftover next: 313 pause-overnight,
+282 human-presence last-seen, 308–310 collapsible/copy ffmpeg, 232 booth
+`.lnk`, 122 `license.yaml`. Live-run 71 docs (already dirty) left as
+documentation-only.
+
+---
+
 ## 2026-08-21 — Honesty + leave-the-terminal wave 3 (shipped)
 
 **Prompt:** implement **20 more** roadmap items on top of unpushed `7c243b0`,

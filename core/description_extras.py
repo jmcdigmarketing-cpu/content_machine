@@ -16,16 +16,20 @@ Env toggles:
   AI_DISCLOSURE_ENABLED   = true (default) | false
   DESCRIPTION_SEO_FIRST_LINE = true (default) | false
   FTC_DISCLOSURE          = true (default) | false  # only when monetization_cta is set
+  DESCRIPTION_SOURCES     = true (default) | false  # vault source_url + pasted http(s)
 """
 
 from __future__ import annotations
 
 import os
+import re
 
 from config.seo import get_seo_profile
 from core.logging import get_logger
 
 logger = get_logger("core.description_extras")
+
+_URL_RE = re.compile(r"https?://[^\s)>\]]+", re.I)
 
 DEFAULT_AI_DISCLOSURE = "Made with AI-assisted narration and editing."
 DEFAULT_FINANCE_DISCLAIMER = (
@@ -116,7 +120,62 @@ def ensure_seo_first_line(description: str, title: str = "") -> str:
     return f"{headline}\n\n{body}" if body else headline
 
 
-def apply_description_extras(description: str, channel_id: str, *, title: str = "") -> str:
+def collect_source_urls(
+    *,
+    channel_id: str = "",
+    topic: str = "",
+    key_facts: list[str] | None = None,
+    extra_urls: list[str] | None = None,
+) -> list[str]:
+    """http(s) from operator paste + vault FactRecord.source_url. Deduped, capped."""
+    found: list[str] = []
+    seen: set[str] = set()
+
+    def _add(raw: str) -> None:
+        url = (raw or "").strip().rstrip(".,);")
+        if not url.lower().startswith(("http://", "https://")):
+            return
+        key = url.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        found.append(url)
+
+    for line in extra_urls or []:
+        _add(str(line))
+    for line in key_facts or []:
+        for match in _URL_RE.findall(str(line)):
+            _add(match)
+    if channel_id and topic:
+        try:
+            from core.obsidian_facts import load_fact_records
+
+            for rec in load_fact_records(topic, channel_id, limit=24):
+                _add(getattr(rec, "source_url", "") or "")
+        except Exception as exc:
+            logger.debug("vault source_url collect skipped: %s", exc)
+    return found[:8]
+
+
+def format_sources_block(urls: list[str] | None) -> str:
+    cleaned = [u.strip() for u in (urls or []) if str(u).strip()]
+    if not cleaned:
+        return ""
+    lines = ["Sources:"]
+    for url in cleaned[:8]:
+        lines.append(url)
+    return "\n".join(lines)
+
+
+def apply_description_extras(
+    description: str,
+    channel_id: str,
+    *,
+    title: str = "",
+    source_urls: list[str] | None = None,
+    topic: str = "",
+    key_facts: list[str] | None = None,
+) -> str:
     """
     Append the AI disclosure and any monetization CTAs to a description.
     Idempotent — lines already present are not duplicated.
@@ -146,6 +205,18 @@ def apply_description_extras(description: str, channel_id: str, *, title: str = 
     for cta in monetization_ctas(channel_id):
         if cta not in body and cta not in additions:
             additions.append(cta)
+
+    if _flag("DESCRIPTION_SOURCES", True):
+        urls = list(source_urls or [])
+        if not urls:
+            urls = collect_source_urls(
+                channel_id=channel_id,
+                topic=topic or title,
+                key_facts=key_facts,
+            )
+        block = format_sources_block(urls)
+        if block and "Sources:" not in body and block not in additions:
+            additions.append(block)
 
     if not additions:
         return body

@@ -70,6 +70,18 @@ def rpm_below_cost_reason(
     )
 
 
+def deferred_plain_reason(
+    channel_id: str,
+    *,
+    econ: ChannelEconomics | None = None,
+) -> str:
+    """Booth sentence when trailing RPM < cost, or ''."""
+    why = rpm_cost_gate_reason(channel_id, econ=econ)
+    if not why:
+        return ""
+    return str(why).replace("rpm-cost gate:", "Deferred:", 1)
+
+
 def rpm_cost_gate_reason(
     channel_id: str,
     *,

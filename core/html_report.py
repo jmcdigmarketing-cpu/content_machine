@@ -24,10 +24,13 @@ html, body { margin: 0; padding: 0; background: #111318; color: #e8eaed;
 .skip { position: absolute; left: -999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
 .skip:focus { left: 1rem; top: 1rem; width: auto; height: auto; z-index: 20;
   background: #000; color: #fff; padding: 0.5rem 0.75rem; }
-header { padding: 1rem 1.25rem; background: #1a1d24; border-bottom: 3px solid #c62828; }
+header { position: sticky; top: 0; z-index: 10; padding: 1rem 1.25rem;
+  background: #1a1d24; border-bottom: 3px solid #c62828; }
 header h1 { margin: 0; font-size: 1.25rem; letter-spacing: 0.02em; }
-header .sub { color: #9aa0a6; font-size: 0.9rem; margin-top: 0.25rem; }
-header .quota { font-size: 16px; color: #e8eaed; margin-top: 0.35rem; }
+header .sub { color: #9aa0a6; font-size: 1rem; margin-top: 0.25rem; }
+header .quota, #quotabar { font-size: 16px; color: #e8eaed; margin-top: 0.35rem; }
+.sticky-cost, #costbar { font-size: 16px; color: #fdd663; margin-top: 0.25rem; font-weight: 600; }
+button, input, select, textarea { font-size: 16px; }
 main { padding: 1.25rem; max-width: 960px; }
 pre { background: #0d0f14; border: 1px solid #2a2f3a; padding: 1rem; overflow: auto;
   font-family: "Cascadia Mono", Consolas, monospace; font-size: 16px; white-space: pre-wrap; }
@@ -48,6 +51,18 @@ video { width: 100%; max-height: 70vh; background: #000; }
 textarea.md { width: 100%; min-height: 7rem; background: #0d0f14; color: #e8eaed;
   border: 1px solid #2a2f3a; font-family: "Cascadia Mono", Consolas, monospace; font-size: 16px; }
 a { color: #8ab4f8; }
+.bar { height: 10px; background: #2a2f3a; border: 1px solid #2a2f3a; margin: 0.35rem 0 0.6rem; }
+.bar > span { display: block; height: 100%; background: #fdd663; }
+.dot { display: inline-block; width: 0.65rem; height: 0.65rem; border-radius: 50%;
+  margin-right: 0.25rem; vertical-align: middle; }
+.dot.ok { background: #81c995; } .dot.fail { background: #f28b82; }
+.dot.warn { background: #fdd663; } .dot.skip { background: #5f6368; }
+.breakdown { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; list-style: none; }
+.breakdown li { border: 1px solid #2a2f3a; padding: 0.2rem 0.5rem; font-size: 16px; }
+.chip { display: inline-block; border: 1px solid #fdd663; color: #fdd663;
+  padding: 0.1rem 0.45rem; margin: 0.15rem; font-size: 16px; }
+.badge { display: inline-block; border: 1px solid #2a2f3a; padding: 0.1rem 0.45rem;
+  margin-left: 0.35rem; font-size: 16px; }
 @media (prefers-contrast: more) {
   html, body { background: #000; color: #fff; }
   header { background: #000; border-bottom-color: #fff; }

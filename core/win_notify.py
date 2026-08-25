@@ -108,6 +108,8 @@ def toast(title: str, body: str, *, key: str | None = None, launch: str = "") ->
     """Show a Windows toast. Dedupes on `key` within the process. Never raises."""
     if not toast_enabled():
         return False
+    if _toasts_muted():
+        return False
     token = key or f"{title}|{body}"
     if token in _toasted:
         return False
@@ -141,6 +143,24 @@ def notify_breaker(kind: str, reason: str) -> None:
         )
     except Exception as exc:
         logger.debug("notify_breaker skipped: %s", exc)
+
+
+def _toasts_muted() -> bool:
+    """Quiet-hours DND for Action Center toasts (#292). Reads shipped #116."""
+    if os.getenv("CONTENT_TOAST_DND", "true").strip().lower() in (
+        "0",
+        "false",
+        "no",
+        "off",
+    ):
+        return False
+    try:
+        from core.publish_windows import quiet_hours_reason
+
+        return bool(quiet_hours_reason())
+    except Exception as exc:
+        logger.debug("toast DND skipped: %s", exc)
+        return False
 
 
 def _toast_open_mp4_enabled() -> bool:
@@ -274,6 +294,8 @@ def quota_chip_lines(
     lines.append(f"Mode: {cost_mode_label()}")
     letter = last_grade_letter(channel_id)
     lines.append(f"Grade: {letter or 'n/a'}")
+    domain = last_domain_label(channel_id)
+    lines.append(f"Domain: {domain or 'n/a'}")
     return lines
 
 
@@ -296,6 +318,51 @@ def last_grade_letter(channel_id: str | None = None) -> str:
         return str(grade_from_parts(quality=quality).letter or "")
     except Exception as exc:
         logger.debug("last grade skipped: %s", exc)
+        return ""
+
+
+def domain_chip_text(topic: str, domain: str = "") -> str:
+    """UFC / GTA / NBA (etc.) for the tray chip — RPM×cost is useless without this."""
+    import re
+
+    text = topic or ""
+    if re.search(r"\bgta\b|grand theft auto", text, re.I):
+        return "GTA"
+    key = (domain or "").strip().lower()
+    labels = {
+        "ufc": "UFC",
+        "nba": "NBA",
+        "nfl": "NFL",
+        "finance": "Finance",
+        "gaming": "Gaming",
+    }
+    return labels.get(key, key)
+
+
+def last_domain_label(channel_id: str | None = None) -> str:
+    """Last-run inferred domain for the tray chip. Fail-open to ''."""
+    if os.getenv("CONTENT_TRAY_DOMAIN", "true").strip().lower() in (
+        "0",
+        "false",
+        "no",
+        "off",
+    ):
+        return ""
+    try:
+        from apis.topic_scorer import infer_domain
+        from core.review_booth import last_trace
+
+        trace = last_trace(channel_id) or {}
+        topic = str(trace.get("selected_topic") or trace.get("input_topic") or "")
+        domain = str(trace.get("domain") or "")
+        feats = trace.get("features") or {}
+        if not domain and isinstance(feats, dict):
+            domain = str(feats.get("domain") or "")
+        if not domain:
+            domain = str(infer_domain(topic) or "")
+        return domain_chip_text(topic, domain)
+    except Exception as exc:
+        logger.debug("last domain skipped: %s", exc)
         return ""
 
 

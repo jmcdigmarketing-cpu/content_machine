@@ -51,6 +51,14 @@ def unattended_render_block_reason(
     return None
 
 
+def overnight_plain_reason(quality: dict[str, Any] | None) -> str:
+    """Booth sentence: why overnight will not render, or ''."""
+    why = block_reason_from_quality(quality)
+    if not why:
+        return ""
+    return str(why).replace("unattended render gate:", "Overnight will not render:", 1)
+
+
 def block_reason_from_quality(quality: dict[str, Any] | None) -> str | None:
     """Roll a persisted quality dict into the same gate (worker / auto_generate)."""
     if not gate_enabled():

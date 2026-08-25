@@ -545,3 +545,37 @@ def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
         ungrounded.append(entity)
     ungrounded.extend(find_ungrounded_numeric(script, grounding_text))
     return ungrounded
+
+
+_BARE_RECORD = re.compile(r"^\d{1,2}-\d{1,2}(?:-\d{1,2})?$")
+
+
+def looks_like_numeric_claim(span: str) -> bool:
+    """True for record / rank / purse / dated-event spans (booth chips)."""
+    text = (span or "").strip()
+    if not text:
+        return False
+    if _BARE_RECORD.match(text):
+        return True
+    return bool(
+        _PURSE.search(text)
+        or _RANK.search(text)
+        or _DATE_WITH_YEAR.search(text)
+        or _RECORD.search(text)
+    )
+
+
+def numeric_claims_among(entities: list[str] | None) -> list[str]:
+    """Subset of an ungrounded-entity list that looks like a record/rank/purse/date."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in entities or []:
+        span = str(raw or "").strip()
+        if not span or not looks_like_numeric_claim(span):
+            continue
+        key = span.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(span)
+    return out

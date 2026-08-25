@@ -492,3 +492,58 @@ def playbook_block(channel_id: str = "default", *, limit: int = 8, char_budget: 
         "shape tone and angle with these; they are NOT facts and never override "
         f"the verified source facts below):\n{body}"
     )
+
+
+def lint_playbook(channel_id: str = "default", *, limit: int = 24) -> list[dict[str, str]]:
+    """Untagged strategy-shaped bullets that can still feed load_facts.
+
+    A `[strategy]` tag (or a strategy/ path) parks the whole note in the playbook
+    layer. Without it, a heuristic that also matches `_FACT_ANCHOR_RE` (a rank,
+    a year, a `$`) is treated as ground truth — the inverse of playbook intent.
+    """
+    vault = _vault_path()
+    if not vault:
+        return []
+    hits: list[dict[str, str]] = []
+    for note in iter_notes(vault):
+        rel = Path(note.rel_path)
+        if not _note_matches_channel(note.meta, rel, channel_id) or _is_machine_record(rel):
+            continue
+        if _is_playbook_only_note(note.meta, rel):
+            continue
+        for bullet in note.bullets:
+            low = (bullet or "").lower()
+            if not any(m in low for m in _STRATEGY_BULLET_MARKERS):
+                continue
+            anchored = bool(_FACT_ANCHOR_RE.search(bullet or ""))
+            reason = (
+                "untagged playbook with a fact-looking anchor — "
+                "load_facts will treat this as ground truth"
+                if anchored
+                else (
+                    "untagged playbook bullet — tag [strategy] so wording "
+                    "changes cannot drift it into facts"
+                )
+            )
+            hits.append(
+                {
+                    "path": str(rel).replace("\\", "/"),
+                    "reason": reason,
+                    "bullet": (bullet or "")[:160],
+                }
+            )
+            if len(hits) >= limit:
+                return hits
+    return hits
+
+
+def render_playbook_lint(hits: list[dict[str, str]]) -> str:
+    if not hits:
+        return "Playbook lint: no untagged strategy bullets."
+    lines = [f"Playbook lint: {len(hits)} warning(s)", ""]
+    for hit in hits:
+        lines.append(f"  {hit.get('path')}: {hit.get('reason')}")
+        bullet = (hit.get("bullet") or "").strip()
+        if bullet:
+            lines.append(f"    - {bullet}")
+    return "\n".join(lines)

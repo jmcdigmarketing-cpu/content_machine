@@ -54,6 +54,7 @@ os.environ["ODDS_MARKET_VOICE"] = "false"
 os.environ["GAMBLING_SAFE"] = "false"
 os.environ["DESCRIPTION_SEO_FIRST_LINE"] = "false"
 os.environ["CONTENT_TRAY_GRADE"] = "false"
+os.environ["CONTENT_TRAY_DOMAIN"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move

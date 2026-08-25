@@ -199,9 +199,21 @@ def cmd_postmortem(args: argparse.Namespace) -> int:
     if not args.run_id:
         print("postmortem requires --run-id")
         return 2
-    from core.postmortem import from_store, render
+    from core.postmortem import as_markdown, from_store, render
 
-    print(render(from_store(args.run_id)))
+    data = from_store(args.run_id)
+    if getattr(args, "md", False):
+        print(as_markdown(data))
+    else:
+        print(render(data))
+    return 0
+
+
+@_register("playbook-lint", "Warn when untagged strategy bullets can still feed facts")
+def cmd_playbook_lint(args: argparse.Namespace) -> int:
+    from core.obsidian_facts import lint_playbook, render_playbook_lint
+
+    print(render_playbook_lint(lint_playbook(args.channel)))
     return 0
 
 
@@ -1017,7 +1029,7 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--md",
         action="store_true",
-        help="grade: print copy-as-markdown instead of ASCII",
+        help="grade / postmortem: print copy-as-markdown instead of ASCII",
     )
     parser.add_argument(
         "--kind",

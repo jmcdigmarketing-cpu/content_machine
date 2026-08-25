@@ -13,11 +13,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-08-21 — **honesty + leave-the-terminal wave 3 shipped** (20
-working pieces on top of waves 1–2). FastAPI shell **#147 still
+Last updated: 2026-08-22 — **honesty + leave-the-terminal wave 4 shipped** (20
+working pieces on top of waves 1–3). FastAPI shell **#147 still
 skipped**. No Content OS Desktop (#141), Visual Studio (#142), Web OS (#143),
 Phase M, volume-gated backtest, or $0 TTS voice judgment.
-Rationale: [planning_log.md](planning_log.md) 2026-08-21 (wave 3).
+Rationale: [planning_log.md](planning_log.md) 2026-08-22 (wave 4).
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -33,7 +33,8 @@ Detail lives in the phase/pillar sections further down. **Multi-platform distrib
 [Later horizons](#later-horizons). Shipped this cycle: Pillars 1–6, the config-driven
 voice catalog + honest Free-mode readiness, the **Qwen3-TTS** local voice-cloning provider,
 the router/title/voice crash fixes, and the **scheduling upgrades** (clock-time upload
-input + average-based learned post slots). Leave-the-terminal wave 2026-08-21.
+input + average-based learned post slots). Leave-the-terminal waves 2026-08-21
+(1–3) and honesty wave 4 2026-08-22.
 
 **Recommended next 5 (2026-08-20 evening)** — **shipped 2026-08-20 night.**
 Pickup order was *future viability*, *short-term success*, and *real-world cost*.
@@ -208,6 +209,40 @@ only - the operator's call); **vault-side** subject relevance
 same root cause as 324) so one wave does not touch both fact paths; the **dependency
 wave** (#98's 75 vulns / 19 packages, Pillow 9.5.0 pinned for moviepy - needs a real
 render); **MoneyWise persona**, the live gap #33's ratchet found (operator-authored).
+
+**Honesty + leave-the-terminal wave 4 (2026-08-22)** — **shipped.** Pickup was
+*not* numerical next (21 caption skin / 22 safe-area / 31 artifact retention /
+101 caption track / 146 tray daemon). Ranked leftover `[S]` that keep the next
+*public* honest (playbook lint so strategy cannot feed facts, vault `source_url`
+in the description, ungrounded numeric chips, authenticity semantic bar, grade
+breakdown, render/RPM/metrics gate copy), surface TTS 91% / quota on the booth
+(TTS cache-hit $0, Pillow vs Flux badge, signal dots, feed-stale strip, sticky
+cost + quota, 16px type), and leave PowerShell (copy unlisted URL + dossier URI
++ postmortem markdown, mute toasts in quiet hours, tray last domain). **#147
+FastAPI still skipped.**
+
+1. **37** Playbook lint `[S]` — *shipped.* `ops playbook-lint`; untagged strategy bullets that also look fact-anchored (rank / year / `$`) warn because `load_facts` will treat them as ground truth.
+2. **103** Description **sources** block from vault `source_url`s `[S]` — *shipped.* `DESCRIPTION_SOURCES`; also http(s) from pasted key facts. Idempotent.
+3. **252** Copy last unlisted URL `[S]` — *shipped.* Booth textarea + clipboard; prefers `privacy_status=unlisted`.
+4. **255** Open dossier via Obsidian URI `[S]` — *shipped.* `obsidian://open?vault=&file=`; `''` when vault unset.
+5. **275** Ungrounded **numeric chips** `[S]` — *shipped.* Record / rank / purse / date spans as chips.
+6. **276** Authenticity **semantic-arm bar** `[S]` — *shipped.* Peak content-word cosine persisted as `authenticity_semantic`; warn at 45%.
+7. **277** Report-card **component breakdown** `[S]` — *shipped.* Hook / grounding / authenticity (and present components) as numbers.
+8. **280** TTS **cache-hit $0** pill `[S]` — *shipped.* Reads `tts_cached` from the post-render trace/features merge.
+9. **281** **Pillow vs Flux** thumb badge `[S]` — *shipped.* Label from provider / thumbnail cost.
+10. **283** Render-gate **blocked reason** in plain English `[S]` — *shipped.* `Overnight will not render: …`
+11. **284** RPM-cost-gate **deferred reason** `[S]` — *shipped.* `Deferred: …` when the opt-in gate fires.
+12. **285** Metrics-before-next **"yesterday unsynced"** copy `[S]` — *shipped.* Informational even when the gate is off.
+13. **289** Last-run **signal-health dots** `[S]` — *shipped.* Trace `signals[].status` as ok / warn / fail / skip.
+14. **290** **Feed-stale strip** `[S]` — *shipped.* Cached `ops feeds` snapshot only — no HTTP.
+15. **292** **Mute toasts during quiet hours** `[S]` — *shipped.* `CONTENT_TOAST_DND`; reads shipped `#116`.
+16. **305** **16px minimum type** on HTML dumps `[S]` — *shipped.* Buttons/inputs/textareas join the existing 16px body; header sticky.
+17. **306** **Sticky cost bar** `[S]` — *shipped.* `#costbar` in the booth header (TTS 91% line).
+18. **307** **Sticky quota bar** `[S]` — *shipped.* `#quotabar` (uploads-left + ElevenLabs chars).
+19. **311** Copy last **postmortem as markdown** `[S]` — *shipped.* Booth field + `ops postmortem --md`.
+20. **316** Tray: **last domain** (UFC / GTA / NBA) `[S]` — *shipped.* Chip line `Domain: UFC`. Suite sets `CONTENT_TRAY_DOMAIN=false`.
+
+**Swaps vs numerical next (wave 4):** skipped 21–28 (need a real render), 31 artifact retention, 38 NVENC encode, 39 draft preset, 101 caption track, 122 `license.yaml`, 132 policy runbook (doc-only), 133 `.ics`, 146 tray daemon `[L]`, 147 FastAPI `[L]`, 172 HTML design system `[M]`, 232 booth `.lnk`, 237 favicon, 282 human-presence last-seen, 308–310 collapsible/copy ffmpeg, 313 tray pause-overnight (companion to 316).
 
 **Data spine & storage**
 - [x] **Alembic baseline + FKs** *(2026-08-14)* — `0004_content_run_fks`: real
@@ -632,7 +667,7 @@ Organization / operator surface
 - [x] 34. Vault note templates in-repo *(2026-08-22)* - `docs/vault_templates/` (`_operator_facts`, `_strategy`, `_sources`), each parsed in `tests/test_vault_templates.py` through the real `_parse_frontmatter` and checked against `TIER_WEIGHTS`, so a contract change breaks in CI instead of in the operator's vault
 - [ ] 35. Alembic-only schema path — stop teaching two migration stories (`migrate_schema` vs Alembic) `[M]`
 - [ ] 36. `ops topic-clone --run-id` — seed a new draft from a winner (angles new, facts refreshed); the missing write path behind display-only `winners()` `[M]`
-- [ ] 37. Playbook lint: strategy bullets that never got a `[strategy]` tag silently feed facts today in the inverse direction; warn `[S]`
+- [x] **37. Playbook lint** *(2026-08-22)* — `ops playbook-lint`; untagged strategy-shaped bullets that also look fact-anchored warn because `load_facts` treats them as ground truth `[S]`
 
 Efficiency
 
@@ -783,7 +818,7 @@ YouTube surface (still YouTube-only)
 
 - [ ] 101. Upload a caption *track* (not only burned) — accessibility + search `[S]`
 - [x] **102. Auto-set YouTube category from `infer_domain`** *(2026-08-21)* — Sports 17 / Gaming 20 / finance 25 `[S]`
-- [ ] 103. Description **sources** block from vault `source_url`s `[S]`
+- [x] **103. Description sources block** *(2026-08-22)* — vault `source_url` + pasted http(s); `DESCRIPTION_SOURCES` `[S]`
 - [ ] 104. Playlist-per-franchise via Data API (GTA, UFC cards) `[M]`
 - [ ] 105. Pin a comment that answers the top `youtube_comments` question `[S]`
 - [ ] 106. Detect Studio-deleted videos and cancel `publish_log` (re-queue path exists; detection does not) `[S]`
@@ -841,8 +876,9 @@ a shipped checkbox, Next-up, or candidates 1–140 unless reframed as a **new
 product** (called out). Phase M, the volume-gated backtest, and the $0 TTS voice
 judgment appear only as **PARKED** massive/larger. Evening recommended next 5
 stay shipped; **Brainstorm next-5 (UI/app)** = 221, 222, 223, 224, 171.
-**Pickup order** is now **Recommended next 20 (2026-08-20 night)** under
-Next up — this 141–320 list is not a sequence and is not rewritten here.
+**Pickup order** after honesty wave 4 is leftover `[S]` (313 pause-overnight,
+282 last-seen, 308–310 ffmpeg dump, 232 booth `.lnk`, 122 `license.yaml`) —
+this 141–320 list is not a sequence and is not rewritten here.
 Honest constants: TTS ~91% of a rendered run; YouTube upload ≈ 1,600/10k;
 remaining paid Apify = `tiktok_trends` + `youtube_competitors`; Windows;
 unittest; no second signal cache; breakers via `quota_governor` only.*
@@ -969,10 +1005,10 @@ Small — hours / a PR
 - [ ] 249. Title-card mock: **2-line vs 3-line wrap** `[S]` — *aesthetics.* YouTube chrome rehearsal without uploading.
 - [x] **250. ASCII-safe HTML** *(2026-08-21)* — emoji/smart-punct stripped (cp1252) `[S]` — *UI.*
 - [x] **251. Copy-as-markdown on the report card** *(2026-08-21)* — booth textarea + `ops grade --md` `[S]`
-- [ ] 252. **Copy last unlisted URL** button `[S]` — *UI.* Distinct from implementing #109; clipboard only.
+- [x] **252. Copy last unlisted URL** *(2026-08-22)* — booth textarea + clipboard; prefers unlisted `[S]`
 - [x] 253. **Reveal mp4 in Explorer** *(2026-08-21)* — `ops reveal` (`explorer /select,`) `[S]` — *UI.*
 - [x] 254. **Reveal thumbnail in Explorer** *(2026-08-21)* — `ops reveal --kind thumb` `[S]` — *UI.* Bundled with #253 (swap leftover for skipped #147).
-- [ ] 255. **Open dossier** via Obsidian URI (if vault set) `[S]` — *UI.* Fail-open when path empty.
+- [x] **255. Open dossier via Obsidian URI** *(2026-08-22)* — `obsidian://open`; fail-open when vault unset `[S]`
 - [x] **256. Reveal trace JSON** *(2026-08-21)* — `ops reveal --kind trace` `[S]` — *UI.*
 - [ ] 257. **Drag-drop facts `.txt`** onto the booth `[S]` — *UI / short-term.* Overnight still cannot take `key_facts=`; this is intake chrome only.
 - [ ] 258. Paste-facts textarea + **4500-char meter** `[S]` — *UI.* Operator fact budget is already a number; show it.
@@ -992,24 +1028,24 @@ Small — hours / a PR
 - [x] **272. Cost subtitle under the player** *(2026-08-21)* — `tts $0.31 · 91%` on the booth `[S]` — *cost.*
 - [x] **273. Escaped free-first LLM red pill** *(2026-08-21)* — booth reads `llm_calls[].escaped_free_first` `[S]`
 - [x] **274. Thin-facts warning banner** *(2026-08-21)* — same gate as #200, one strip `[S]`
-- [ ] 275. Ungrounded **numeric chips** `[S]` — *viability / UI.* Record/rank/purse hits as chips, not a paragraph.
-- [ ] 276. Authenticity **semantic-arm bar** `[S]` — *viability / UI.* Cosine arm is live; a bar is the surface.
-- [ ] 277. Report-card **component breakdown** `[S]` — *UI.* Hook / grounding / authenticity as three numbers.
+- [x] **275. Ungrounded numeric chips** *(2026-08-22)* — record/rank/purse/date as chips `[S]`
+- [x] **276. Authenticity semantic-arm bar** *(2026-08-22)* — peak cosine as `authenticity_semantic`; warn at 45% `[S]`
+- [x] **277. Report-card component breakdown** *(2026-08-22)* — hook / grounding / authenticity numbers on the booth `[S]`
 - [x] **278. Standard-would-have-billed line on Free runs** *(2026-08-21)* — existing dry-run on the booth `[S]`
 - [x] **279. Allocated vs marginal one-liner** *(2026-08-21)* — booth footer; no new economics engine `[S]`
-- [ ] 280. TTS **cache-hit $0** pill `[S]` — *cost / UI.* Cache shipped opt-in; celebrate a $0 re-render.
-- [ ] 281. **Pillow vs Flux** thumb badge `[S]` — *cost / aesthetics.* Grade gate already chooses; label what the operator is seeing.
+- [x] **280. TTS cache-hit $0 pill** *(2026-08-22)* — booth reads post-render `tts_cached` `[S]`
+- [x] **281. Pillow vs Flux thumb badge** *(2026-08-22)* — label from provider / thumbnail cost `[S]`
 - [ ] 282. Human-presence **last-seen relative time** `[S]` — *UI.* Companion to #205, one string.
-- [ ] 283. Render-gate **blocked reason** in plain English `[S]` — *UI.* ASCII `>=` stays in logs; the booth gets a sentence.
-- [ ] 284. RPM-cost-gate **deferred reason** `[S]` — *cost / UI.* Trailing-7d RPM < cost is a business event; say it.
-- [ ] 285. Metrics-before-next **"yesterday unsynced"** copy `[S]` — *viability / UI.*
+- [x] **283. Render-gate blocked reason** *(2026-08-22)* — `Overnight will not render: …` `[S]`
+- [x] **284. RPM-cost-gate deferred reason** *(2026-08-22)* — `Deferred: …` when the opt-in gate fires `[S]`
+- [x] **285. Yesterday unsynced copy** *(2026-08-22)* — informational even when `METRICS_BEFORE_NEXT` is off `[S]`
 - [x] **286. Uploads-left in booth header** *(2026-08-21)* — same figure as the tray chip `[S]`
 - [x] **287. ElevenLabs chars in booth header** *(2026-08-21)* `[S]`
 - [x] **288. Remaining Apify actors as pills** *(2026-08-21)* — catalog-enabled only (`tiktok_trends`, `youtube_competitors`) `[S]`
-- [ ] 289. Last-run **signal-health dots** `[S]` — *UI.* Discovery health without opening the spinner replay.
-- [ ] 290. **Feed-stale strip** `[S]` — *UI.* Rot that used to hide for a month.
+- [x] **289. Last-run signal-health dots** *(2026-08-22)* — trace `signals[].status` as ok/warn/fail/skip `[S]`
+- [x] **290. Feed-stale strip** *(2026-08-22)* — cached `ops feeds` snapshot; no HTTP `[S]`
 - [x] 291. Set Windows **AppUserModelID** *(2026-08-21)* — toasts group as "Content OS" (`ContentOS.Operator`) `[S]` — *new-app.*
-- [ ] 292. **Mute toasts during quiet hours** `[S]` — *UI.* Read `channels.json` `quiet_hours` (#116 shipped); this item is toast DND only.
+- [x] **292. Mute toasts during quiet hours** *(2026-08-22)* — `CONTENT_TOAST_DND`; reads shipped `#116` `[S]`
 - [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
 - [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight facts-file gap stays a pipeline issue.
 - [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.
@@ -1022,18 +1058,18 @@ Small — hours / a PR
 - [ ] 302. **YouTube chrome mock** (like/comment/subscribe) as an overlay `[S]` — *aesthetics.* Safe-area rehearsal distinct from #268's boxes.
 - [ ] 303. Booth **theme toggle** (TapIn red vs MoneyWise green) `[S]` — *aesthetics.* Hours; packs #150 are weeks.
 - [ ] 304. **Reduced-chroma** mode for OLED `[S]` — *aesthetics.* Accessibility + night reviewing.
-- [ ] 305. **16px minimum type** on all HTML dumps `[S]` — *UI.* CLI font size is the current accessibility failure.
-- [ ] 306. **Sticky cost bar** (TTS 91% always visible) `[S]` — *cost / UI.*
-- [ ] 307. **Sticky quota bar** `[S]` — *cost / UI.*
+- [x] **305. 16px minimum type** *(2026-08-22)* — buttons/inputs/textareas join the 16px body `[S]`
+- [x] **306. Sticky cost bar** *(2026-08-22)* — booth `#costbar` (TTS 91% line) `[S]`
+- [x] **307. Sticky quota bar** *(2026-08-22)* — booth `#quotabar` `[S]`
 - [ ] 308. Collapsible **raw trace JSON** `[S]` — *UI.* Debug without leaving the booth.
 - [ ] 309. Collapsible **ffmpeg command** `[S]` — *UI.* Sync/intro bugs are command bugs.
 - [ ] 310. **Copy ffmpeg command** `[S]` — *UI.*
-- [ ] 311. Copy last **postmortem as markdown** `[S]` — *UI.*
+- [x] **311. Copy last postmortem as markdown** *(2026-08-22)* — booth field + `ops postmortem --md` `[S]`
 - [x] **312. Tray: open last output folder** *(2026-08-21)* — `--open-output` + `--stay` button `[S]` — *new-app / UI.*
 - [ ] 313. Tray action: **pause overnight** (flag file) `[S]` — *UI.* Does not change overnight code paths beyond an existing opt-in gate file.
 - [x] **314. Tray action: run doctor → HTML** *(2026-08-21)* — `--doctor-html` + stay-window button `[S]`
 - [x] **315. Tray: last grade letter** *(2026-08-21)* — chip line `Grade: B` `[S]`
-- [ ] 316. Tray: **last domain** (UFC / GTA / NBA) `[S]` — *viability / UI.* RPM×cost by domain is useless if you cannot see what you just made.
+- [x] **316. Tray last domain** *(2026-08-22)* — chip line `Domain: UFC`; suite sets `CONTENT_TRAY_DOMAIN=false` `[S]`
 - [x] **317. Tray: Free vs Standard mode** *(2026-08-21)* — chip line `Mode:` `[S]` — *cost / UI.*
 - [ ] 318. Remember **second-monitor bounds** `[S]` — *UI.* Booth on the 9:16 monitor.
 - [x] 319. **"What's blocking publish"** *(2026-08-21)* — `ops blocking` one-sentence from existing gates `[S]` — *short-term / UI.*
@@ -1050,6 +1086,10 @@ Run-71 correctness (2026-08-22)
 ---
 
 ## Completed
+
+### Honesty + leave-the-terminal wave 4 (2026-08-22)
+
+- [x] **20 operator-visible pieces** — playbook lint + description sources, ungrounded numeric chips + authenticity semantic bar + grade breakdown, TTS cache-hit / Pillow-vs-Flux / signal dots / feed-stale / overnight-render + RPM-deferred + yesterday-unsynced copy, copy unlisted URL + Obsidian dossier URI + postmortem markdown, quiet-hours toast DND, sticky cost/quota + 16px type, tray last domain. **#147 FastAPI still skipped.** No Phase M, no #141/#142/#143.
 
 ### Honesty + leave-the-terminal wave 3 (2026-08-21)
 

@@ -801,7 +801,9 @@ def generate_content_package(
         return {
             "title": topic,
             "script": payload if isinstance(payload, str) else "",
-            "description": apply_description_extras("", channel_id, title=topic),
+            "description": apply_description_extras(
+                "", channel_id, title=topic, topic=topic, key_facts=clean_key_facts
+            ),
             "tags": normalize_youtube_tags(
                 default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
             ),
@@ -989,7 +991,11 @@ def generate_content_package(
         "title_warnings": title_warnings,
         "script": script,
         "description": apply_description_extras(
-            payload.get("description") or "", channel_id, title=title
+            payload.get("description") or "",
+            channel_id,
+            title=title,
+            topic=topic,
+            key_facts=clean_key_facts,
         ),
         "tags": tags,
         "prompt_version": PROMPT_VERSION,

@@ -1,6 +1,37 @@
-# Handoff synopsis — 2026-08-20: living state after PR #34 + live-run 69/70
+# Handoff synopsis — 2026-08-22: living state after honesty wave 4
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
+
+## Last implementation wave — honesty + leave-the-terminal 4 (2026-08-22)
+
+20 leftover `[S]` on the honesty / leave-PowerShell theme. **No commit** this
+session unless the operator asks. **#147 FastAPI still skipped.**
+
+Shipped: playbook lint, description sources, numeric chips, semantic bar,
+grade breakdown, TTS cache-hit / Pillow-vs-Flux / signal dots / feed-stale,
+overnight-render + RPM-deferred + yesterday-unsynced copy, copy unlisted URL
++ Obsidian URI + postmortem markdown, quiet-hours toast DND, sticky
+cost/quota + 16px type, tray last domain. Detail:
+[planning_log.md](planning_log.md) 2026-08-22 (wave 4).
+
+**Pickup:** leftover `[S]` after wave 4 — **313** tray pause-overnight (flag
+file), **282** human-presence last-seen, **308–310** collapsible/copy ffmpeg,
+**232** desktop `.lnk` to the booth, **122** `license.yaml`. Still skip #147
+FastAPI, #146 tray daemon, #21 caption skin, #22 thumbnail safe-area, Phase M,
+volume-gated backtest, $0 TTS voice judgment.
+
+## Last live run — 71 (2026-08-21, documented 2026-08-22)
+
+TapIn / Standard / best-bet 3 (GTA 6 leak + Wolverine “summer of hate”). **Draft
+only** — operator did not type `y` at Proceed. Full narrative:
+[debugging.md — Live-run 71](debugging.md#live-run-71-2026-08-21--pasted-article-hit-powershell-not-the-cli).
+
+- `all-setup` OK; YouTube READY; discovery ~58s; est. **$0.028**; no MP4.
+- Facts: MSN URL headline-only; one typed Take-Two sentence; vault mixed in
+  Marvel Rivals / SEGA lines. Article body never entered the fact window.
+- After *Stopped before render*, pasted IGN/ad/store text went to **PowerShell**
+  (`Fast` / `Sponsored` / `user(s)` as commands). Re-enter via `py main.py`;
+  use key-facts **`paste`** for the article if you continue this topic.
 
 ## Branch / PR
 
@@ -10,10 +41,11 @@ Use in a fresh session to continue `content_machine` without re-reading the full
   merge commit `6389e87`); CI is green on `main`. 20 Aug added the run-70 Ollama
   probe, worker/ffmpeg coverage tests, semantic authenticity, and router vision
   (`core/llm_client.py` gone).
-- **Suite:** 1,433+ tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
-- **Pickup order:** [docs/roadmap.md](roadmap.md) **Recommended next 5** (pre-run
-  gate, oauth tests + `coverage` extra, pronunciation lexicon, allocated vs
-  marginal economics, numeric/record grounding). Candidates 56–90 sit under Next up.
+- **Suite:** 1,904+ tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
+- **Pickup order:** leftover `[S]` after honesty wave 4 — 313 pause-overnight,
+  282 human-presence last-seen, 308–310 collapsible/copy ffmpeg, 232 booth
+  `.lnk`, 122 `license.yaml`. Candidates 21–28 (caption/thumb aesthetics) and
+  56–90 leftovers still sit under Next up.
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -523,10 +555,11 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-**Pickup:** [roadmap.md](roadmap.md) **Recommended next 5** (20 Aug evening) — pre-run
-completion gate, `youtube/oauth.py` tests + `coverage` extra, pronunciation lexicon
-for local TTS, allocated vs marginal unit economics, numeric/record grounding.
-Candidates **21–55** and **56–90** sit at the bottom of Next up. Phase M stays parked.
+**Pickup:** leftover `[S]` after honesty wave 4 (2026-08-22) — **313** tray
+pause-overnight, **282** human-presence last-seen, **308–310** collapsible/copy
+ffmpeg, **232** booth `.lnk`, **122** `license.yaml`. Candidates **21–28**
+(caption/thumb aesthetics) and **56–90** leftovers sit at the bottom of Next
+up. Phase M stays parked. **#147 FastAPI still skipped.**
 
 **Already done (do not re-open):**
 - Caption-text from the script (`video/caption_retext.py`, 2026-08-16). The **$0 TTS
@@ -549,8 +582,10 @@ Candidates **21–55** and **56–90** sit at the bottom of Next up. Phase M sta
   **pull** vs **serve** vs OpenRouter throttled fallback.
 
 **Still open:**
-1. **Recommended next 5** — see [roadmap.md](roadmap.md) (viability / short-term /
-   cost). Do not start with clip-from-source, avatar, or Phase M.
+1. **Leftover `[S]` after honesty wave 4** — 313 pause-overnight, 282
+   human-presence last-seen, 308–310 collapsible/copy ffmpeg, 232 booth `.lnk`,
+   122 `license.yaml`. Do not start with clip-from-source, avatar, #147 FastAPI,
+   or Phase M.
 2. **Pillar 6 remainder** — seams live; heavy backends wait on a **CUDA torch**
    build (`2.8.0+cpu` on an RTX 4070 Ti), not on hardware. Clip-from-source and
    storyboard still not started. [providers_runbook.md](providers_runbook.md),
@@ -573,7 +608,7 @@ Candidates **21–55** and **56–90** sit at the bottom of Next up. Phase M sta
 
 - `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
-- `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); recommended next 5 + candidates 56–90
+- `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); honesty wave 4 shipped; leftover `[S]` 313/282/308–310/232/122
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index
 - `docs/debugging.md` — playbook vs facts, hallucination triage
 

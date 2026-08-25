@@ -642,8 +642,23 @@ def run_media_only(
                 thumbnail_provider=thumb_provider,
                 tts_cached=last_tts_was_cache_hit(),
             )
-            merge_features(content_run_id, {"cost": cost})
-            update_trace(content_run_id, {"status": "rendered", "cost": cost})
+            merge_features(
+                content_run_id,
+                {
+                    "cost": cost,
+                    "tts_cached": last_tts_was_cache_hit(),
+                    "thumbnail_provider": thumb_provider or "",
+                },
+            )
+            update_trace(
+                content_run_id,
+                {
+                    "status": "rendered",
+                    "cost": cost,
+                    "tts_cached": last_tts_was_cache_hit(),
+                    "thumbnail_provider": thumb_provider or "",
+                },
+            )
         except Exception as exc:
             logger.debug("post-render cost update skipped for run %s: %s", content_run_id, exc)
 

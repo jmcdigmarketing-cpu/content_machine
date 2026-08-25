@@ -6,6 +6,50 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Honesty + leave-the-terminal wave 4 — 2026-08-22
+
+*20 leftover `[S]` on the honesty / leave-the-terminal / operator-safety
+theme. FastAPI #147 and tray daemon #146 still skipped.*
+
+- Playbook lint (`ops playbook-lint`) warns when untagged strategy-shaped
+  bullets also look fact-anchored (rank / year / `$`) — those currently feed
+  `load_facts` as ground truth.
+- Description **Sources:** block from vault `source_url` + pasted http(s)
+  (`DESCRIPTION_SOURCES`).
+- Booth: ungrounded numeric chips, authenticity semantic bar, grade
+  breakdown, TTS cache-hit $0, Pillow vs Flux badge, signal-health dots,
+  feed-stale strip (cached `ops feeds` only), overnight-render / RPM-deferred
+  / yesterday-unsynced copy, copy unlisted URL + Obsidian dossier URI +
+  postmortem markdown, sticky cost (`#costbar`) + quota (`#quotabar`), 16px
+  type on buttons/inputs.
+- Tray chip `Domain: UFC|GTA|NBA` (`CONTENT_TRAY_DOMAIN`). Toasts mute during
+  quiet hours (`CONTENT_TOAST_DND`).
+- `ops postmortem --md`. Post-render features/trace now record `tts_cached`
+  and `thumbnail_provider` (not folded into cost totals).
+
+### Live-run 71 documented — 2026-08-22
+
+*TapIn Standard run id 71 (GTA 6 leak / Wolverine angle). Drafted, not rendered.*
+
+- Operator pasted article/ad clipboard text at **Proceed?** (treated as stop) then
+  at the PowerShell prompt (`CommandNotFoundException` on `Fast`, `Sponsored`,
+  `user(s)`, store headings). Not a CLI crash. Write-up:
+  [debugging.md](debugging.md#live-run-71-2026-08-21--pasted-article-hit-powershell-not-the-cli).
+- Same run: MSN link scrape headline-only; vault auto-attached off-topic
+  Marvel/SEGA bullets; YouTube + youtube_comments timed out; `trendingnow.games`
+  unreachable.
+- Claim verifier logged **7/12 unsupported**, then the claim-rewrite pass
+  (`_maybe_rewrite_unsupported_claims`) restated them as attributed speculation
+  and the re-check printed **12/12**. Same check, rewritten script — the claims
+  were hedged, not evidenced. Corrected an earlier note that called these two
+  different checks.
+- Quality observations recorded, **not fixed**: the generated title attributed
+  the subpoenas to Rockstar when the operator's own fact says Take-Two (titles
+  run after every check and are never verified); RAWG matched three 1990s
+  Wolverine games into the corpus behind the authenticity gate's "18 verified
+  fact(s)"; all five angle variants tied at 100.0; 30.6 min wall (25.6 at
+  prompts) produced no video.
+
 ### Living-doc sync + live-run 69/70 — 2026-08-20
 
 *Honesty/cost wave after PR #34. Pickup is now the recommended next 5 on

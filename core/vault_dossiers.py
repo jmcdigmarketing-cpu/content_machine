@@ -21,6 +21,7 @@ import re
 from datetime import date
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from core.logging import get_logger
 from core.obsidian_facts import _vault_path
@@ -245,3 +246,32 @@ def write_report_note(
 def write_weekly_report_note(channel_id: str, rendered: str) -> Path | None:
     """Land the rendered weekly report in `{channel}/_reports/{date}_weekly.md`."""
     return write_report_note(channel_id, "weekly", "Weekly report", rendered)
+
+
+def dossier_obsidian_uri(run_id: int | None, channel_id: str | None = None) -> str:
+    """`obsidian://open` for a run dossier. '' when the vault or file is missing."""
+    vault = _vault_path()
+    if not vault or not run_id:
+        return ""
+    try:
+        rid = int(run_id)
+    except (TypeError, ValueError):
+        return ""
+    cid = (channel_id or "tapin").strip() or "tapin"
+    folder = vault / cid / _RUNS_DIR
+    matches: list[Path] = []
+    try:
+        if folder.is_dir():
+            matches = sorted(folder.glob(f"{rid}_*.md"))
+        if not matches:
+            matches = _legacy_dossier_paths(vault, cid, rid)
+    except Exception as exc:
+        logger.debug("dossier glob skipped: %s", exc)
+        return ""
+    if not matches:
+        return ""
+    try:
+        rel = matches[0].resolve().relative_to(vault.resolve()).as_posix()
+    except Exception:
+        rel = matches[0].as_posix()
+    return f"obsidian://open?vault={quote(vault.name)}&file={quote(rel)}"

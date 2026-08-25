@@ -470,6 +470,27 @@ None of these were fixed in this pass — recorded here as observed behaviour.
 
 ---
 
+### Toasts and quiet hours
+
+A silent overnight run is not necessarily a broken toast. `CONTENT_TOAST_DND` (default
+on) mutes Action Center toasts while **any** configured channel is inside its
+`quiet_hours` window - `tapin` and `moneywise` are both 1-8am ET, so routine toasts
+(ffmpeg done, overnight drafts, upload scheduled, uploads-left) are expected to be
+silent overnight.
+
+**Breaker toasts are exempt** and still fire at 3am: Apify, signal, LLM and ElevenLabs
+trips pass `urgent=True`. If one of *those* is missing, it is a real fault - check
+`CONTENT_TOAST` first, then whether `_toast_powershell` is failing.
+
+Resolution is deliberately machine-level, not per-channel: `toast()` has no channel to
+hand down, and a desktop notification interrupts the person, not a channel. The first
+version of this asked `quiet_hours_reason()` with no channel at all, which resolved to
+the `default` channel - which has no `quiet_hours` block - so it muted nothing at any
+hour. `QUIET_HOURS=false` disables the window entirely; `CONTENT_TOAST_DND=false`
+disables only the toast muting.
+
+---
+
 ## Render progress and YouTube thumbnails (Phase K)
 
 **Render:** Staged CLI progress with elapsed timer (`CONTENT_RENDER_PROGRESS=1`). Thumbnails written to `output/{channel}/thumbnails/` when `THUMBNAIL_MODE=auto`.

@@ -6,6 +6,42 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave-4 audit: three green-but-broken fixes + agent rules - 2026-08-23
+
+*Every defect below passed CI. None was a crash, a lint error, or a failing test.*
+
+- **#292 quiet-hours toast DND muted nothing.** `_toasts_muted()` called
+  `quiet_hours_reason()` with no channel; that resolves to `default`, which has no
+  `quiet_hours` block (only `tapin`/`moneywise` do). Measured:
+  `quiet_hours_reason(channel_id="tapin", when=3am ET)` returns a reason,
+  `quiet_hours_reason(when=3am ET)` returns `None`. **It passed CI because the test
+  mocked `quiet_hours_reason`** - proving "given a reason, mute", never that a reason
+  could occur. Now resolved machine-level across every configured channel; breaker
+  toasts pass `urgent=True` and bypass DND, since the overnight batch runs inside the
+  1-8am window. `tests/test_toast_dnd.py` drives the clock and leaves the channel
+  lookup live; it fails against the old code.
+- **The public `Sources:` block cited off-topic notes.** It collected vault URLs with
+  the default loose relevance - the gate that on run 71 attached Marvel Rivals and SEGA
+  notes to a GTA 6 story. A description is public, so that is a visible error, not
+  prompt noise. Vault path now requires a topic-distinctive token; pasted URLs are
+  untouched. The ambiguous-token case is asserted as a **known gap** rather than
+  claimed fixed - candidate 324's deferred vault-side sibling.
+- **`docs/vault_templates/_sources.md` used the wrong frontmatter key.** It told
+  operators to write `source_url:`; `note_metadata` reads `source:`. Every note copied
+  from the shipped template lost its provenance URL and could never reach the Sources
+  block. From candidate 34, and the test missed it for the same reason as #292: it
+  asserted a *key existed* instead of asserting the parser extracted a URL. Template
+  now uses the canonical `source:`, `note_metadata` accepts either so notes already
+  written still resolve, and the test goes through `note_metadata`.
+- **Agent rules, so this stops recurring.** [AGENTS.md](../AGENTS.md) and
+  [.cursor/rules/content-machine.mdc](../.cursor/rules/content-machine.mdc) - Cursor
+  never read `CLAUDE.md`, so it had been working without the repo's rules. They lead
+  with the four green-but-broken defects and the rules that catch them: never mock the
+  thing under test, watch the test fail first, assert behaviour not shape, exercise the
+  shipped config, every helper needs a real caller.
+  `docs/cursor_audit_prompt.md` is marked stale (it still cited a 363-test baseline).
+
+
 ### Honesty + leave-the-terminal wave 4 — 2026-08-22
 
 *20 leftover `[S]` on the honesty / leave-the-terminal / operator-safety

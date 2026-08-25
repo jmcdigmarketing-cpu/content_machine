@@ -1,5 +1,13 @@
 # Cursor audit prompt — Content Machine
 
+> **Historical, and stale.** This was a one-off audit prompt written against commit
+> `e6d5c9c` when the suite was 363 tests (it is now ~1958). The repo-state paragraph
+> below is no longer accurate — do not treat it as current.
+>
+> For standing agent instructions use **[../AGENTS.md](../AGENTS.md)** and
+> **[../.cursor/rules/content-machine.mdc](../.cursor/rules/content-machine.mdc)**.
+> Keep this file only for the audit *framing* in the ground rules section.
+
 Paste the section below into Cursor (Composer/Agent, with the repo open). It is
 self-contained. Work at a **senior software engineer** standard.
 

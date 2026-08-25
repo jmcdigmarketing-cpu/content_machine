@@ -1,0 +1,114 @@
+---
+description: Content Machine — working rules for AI agents. Always applied.
+alwaysApply: true
+---
+
+# Content Machine — agent working rules
+
+Read [CLAUDE.md](../../CLAUDE.md) for what this project is, its entry points, the
+signal contract and the LLM router. This file is about **how to work here**, not what
+the code does. It exists because a specific class of defect keeps reaching `main`.
+
+## The one failure mode that matters
+
+**Every defect found in the last three audit passes was green in CI.** Not one was a
+crash, a lint error, or a failing test. They were features that reported healthy and
+did nothing:
+
+| Shipped | What CI saw | What was true |
+|---|---|---|
+| `#292` quiet-hours toast DND | test passed | `quiet_hours_reason()` was called with no channel, resolved to `default`, which has no `quiet_hours` block — **muted nothing, ever** |
+| `_sources.md` vault template | test passed | template said `source_url:`, the parser reads `source:` — **every note lost its URL** |
+| Claim verifier "12/12 backed" | run graded **A** | 7 of 12 claims had been hedged to "reports claim…" by a rewrite pass; only the post-rewrite number was persisted |
+| `youtube` signal, Tapology | "no match" for 33 days | both were **blocked**, reporting absence instead of failure |
+
+The DND test **mocked `quiet_hours_reason`** — the exact call that was broken. The
+template test asserted `"source_url" in meta` — that a *key existed*, never that the
+parser read it. Both tests were sincere and both were structurally incapable of
+failing. That is the thing to avoid.
+
+This is the project's own principle, written down in `docs/decisions.md` §18, §24 and
+§25. Read those three before adding any gate, check, or repair pass.
+
+## Rules for tests
+
+1. **Never mock the thing you are testing.** If the change is in `X`, the test calls
+   `X` for real. Mock the network, the clock, the filesystem, the LLM — never the
+   function whose behaviour you are asserting, and never the call that the change
+   depends on.
+2. **Watch the test fail before you make it pass.** Run it against the unmodified code
+   and confirm the failure. Say so in the commit message. A test that was green before
+   the fix is not testing the fix.
+3. **Assert behaviour, not shape.** Not `assertIn("source_url", meta)` — call the
+   parser and assert it returns a URL. Not "the function exists" — call it and check
+   what it does with a real input.
+4. **Exercise the shipped config** when production reads the shipped config. A fixture
+   dict proves your fixture works. `config/channels.json` is what runs.
+   `tests/test_validate_channels.py::TestShippedConfigRatchet` is the pattern; it found
+   a live gap on its first run.
+5. **Reproduce the real case.** If a live run exposed the bug, put that run's actual
+   strings in the test. `tests/test_title_grounding.py` uses run 71's real title and
+   fact; that is why it is convincing.
+6. **When a fix does not cover a case, assert the gap.** Write the test for the
+   remaining hole asserting *current* behaviour, with a docstring saying why and what
+   would close it (see `test_known_gap_a_shared_token_still_pulls_the_other_subject_in`
+   in `tests/test_description_sources.py`). Never let a partial fix read as a whole one.
+
+## Rules for features
+
+7. **A new helper needs a real caller.** Before finishing, trace the path from a
+   production entry point (`main.py`, `scripts/ops.py`, the pipeline, a signal) to your
+   function. If nothing reaches it, it is not shipped — it is dead code with a test.
+8. **Run the thing.** For an operator-facing change, actually invoke it —
+   `py -m scripts.ops <verb>`, or the CLI path — and paste what it printed. Several
+   "shipped" items have been inert on first real invocation.
+9. **Fail-open must be fail-visible** (§24). A swallowed exception logs: `warning` when
+   a guarantee is lost, `debug` for best-effort enrichment, or `# noqa: S110` with the
+   reason on the line. And a healthy run must emit **zero** new warnings — a warning
+   that always fires trains the operator to ignore warnings.
+10. **A pass that rewrites its input reports both numbers** (§25). If you repair,
+    regenerate, or hedge something a check just judged, persist the pre-repair verdict
+    too. Otherwise the fix erases the evidence that there was anything to fix.
+11. **Public surfaces get stricter rules than internal ones.** The YouTube title,
+    description, and tags are seen by viewers and by YouTube's policy systems. Loose
+    internal relevance is a prompt-quality problem; the same looseness in a description
+    is a visible error.
+
+## Repo rules that break things when ignored
+
+- **Tests:** `python -m unittest discover -s tests -t .` — the `-t .` is load-bearing.
+  Without it `tests/__init__.py` never loads and the suite writes the operator's real
+  `data/` files. Write `unittest.TestCase`, not pytest fixtures.
+- **Never write real `data/`** — `quota_state.json`, `youtube_quota.json`,
+  `cache_stats.json`, `signal_cache.json`, `data/traces/`. Reuse `GovernorCase` or
+  `_IsolatedStateCase`. See `tests/CLAUDE.md`.
+- **Never write the operator's real Obsidian vault** from a test. Point
+  `OBSIDIAN_VAULT_PATH` at a tempdir.
+- **Never commit** `.env`, `config/secrets/`, `.vault_backups/`, `.db_backups/`.
+- **Signals** must return `make_signal()`'s shape, be thread-safe, and never raise.
+  Don't add a second cache inside a signal. See `apis/CLAUDE.md`.
+- **Don't touch** budget or circuit-breaker logic (`core/cost_meter.py`,
+  `apis/apify_client.py`, `core/quota_governor.py`) without first reading how the
+  breaker trips — a wrong change silently disables a paid signal across runs.
+- **`ops secrets-doctor` must never print a secret value.**
+- **No network in tests.**
+- **No AI attribution** in commit messages or PR bodies — no `Co-Authored-By`, no
+  "Generated with". The operator has rejected this explicitly.
+
+## Definition of done
+
+Not "the tests pass" — they passed for every defect in the table above.
+
+- [ ] `ruff check .` and `ruff format --check .` clean
+- [ ] `python -m unittest discover -s tests -t .` green, count **increased**
+- [ ] The new test **failed** before the change (state it in the commit)
+- [ ] Nothing under `data/` changed — `git status --short data/` is empty
+- [ ] Every new function is reachable from a production caller
+- [ ] Operator-facing changes were actually run, and the output pasted
+- [ ] A healthy run emits no new WARNING
+
+## Commit messages
+
+Say what was broken and how you know. The message is the audit trail: name the
+measurement, not the intention. "Measured: entity grounding returns `[]` for both the
+right and wrong actor" beats "improved title checking".

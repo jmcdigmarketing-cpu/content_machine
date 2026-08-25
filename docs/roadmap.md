@@ -235,7 +235,7 @@ FastAPI still skipped.**
 12. **285** Metrics-before-next **"yesterday unsynced"** copy `[S]` — *shipped.* Informational even when the gate is off.
 13. **289** Last-run **signal-health dots** `[S]` — *shipped.* Trace `signals[].status` as ok / warn / fail / skip.
 14. **290** **Feed-stale strip** `[S]` — *shipped.* Cached `ops feeds` snapshot only — no HTTP.
-15. **292** **Mute toasts during quiet hours** `[S]` — *shipped.* `CONTENT_TOAST_DND`; reads shipped `#116`.
+15. **292** **Mute toasts during quiet hours** `[S]` — *shipped, then fixed the same day.* As written it muted **nothing**: `_toasts_muted()` asked `quiet_hours_reason()` with no channel, which resolves to `default`, and only `tapin`/`moneywise` carry a `quiet_hours` block. Now resolved machine-level across every configured channel, with breaker toasts exempt (`urgent=True`) because the overnight batch runs inside the 1-8am window. `CONTENT_TOAST_DND`.
 16. **305** **16px minimum type** on HTML dumps `[S]` — *shipped.* Buttons/inputs/textareas join the existing 16px body; header sticky.
 17. **306** **Sticky cost bar** `[S]` — *shipped.* `#costbar` in the booth header (TTS 91% line).
 18. **307** **Sticky quota bar** `[S]` — *shipped.* `#quotabar` (uploads-left + ElevenLabs chars).
@@ -1045,7 +1045,7 @@ Small — hours / a PR
 - [x] **289. Last-run signal-health dots** *(2026-08-22)* — trace `signals[].status` as ok/warn/fail/skip `[S]`
 - [x] **290. Feed-stale strip** *(2026-08-22)* — cached `ops feeds` snapshot; no HTTP `[S]`
 - [x] 291. Set Windows **AppUserModelID** *(2026-08-21)* — toasts group as "Content OS" (`ContentOS.Operator`) `[S]` — *new-app.*
-- [x] **292. Mute toasts during quiet hours** *(2026-08-22)* — `CONTENT_TOAST_DND`; reads shipped `#116` `[S]`
+- [x] **292. Mute toasts during quiet hours** *(2026-08-22)* — `CONTENT_TOAST_DND`, resolved machine-level over every configured channel; breaker toasts bypass it via `urgent=True`. The first cut was inert (no channel → `default` → no `quiet_hours`) and its test mocked `quiet_hours_reason`, so CI never saw it; `tests/test_toast_dnd.py` now drives the clock against the shipped `channels.json` instead `[S]`
 - [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
 - [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight facts-file gap stays a pipeline issue.
 - [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.

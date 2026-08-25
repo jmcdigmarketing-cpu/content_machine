@@ -48,9 +48,25 @@ class TestTemplatesParse(unittest.TestCase):
         self.assertEqual(self._meta("_operator_facts.md").get("tier"), "operator")
 
     def test_sources_template_is_the_link_tier_and_has_a_url(self):
+        # This used to assert `"source_url" in meta` — that a KEY was present. It was
+        # green while the template was broken: `note_metadata` reads `source:`, so a
+        # note copied from the template produced source_url="" and silently lost its
+        # provenance (and could never reach the description Sources block). Assert what
+        # the parser actually extracts, not what the frontmatter happens to spell.
+        from pathlib import PurePosixPath
+
+        from core.fact_store import note_metadata
+
         meta = self._meta("_sources.md")
         self.assertEqual(meta.get("tier"), "link")
-        self.assertIn("source_url", meta)
+        tier, _verified, _expires, source_url = note_metadata(
+            meta, PurePosixPath("tapin/_sources/example.md")
+        )
+        self.assertEqual(tier, "link")
+        self.assertTrue(
+            source_url.startswith("http"),
+            f"template's source key did not survive note_metadata: {source_url!r}",
+        )
 
     def test_strategy_template_is_tagged_strategy(self):
         from core.obsidian_facts import _tag_set

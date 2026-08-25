@@ -263,25 +263,13 @@ class TestTrayDomainAndQuietToasts(unittest.TestCase):
             blob = " | ".join(win_notify.quota_chip_lines(snap))
         self.assertIn("Domain: UFC", blob)
 
-    def test_quiet_hours_mutes_toast(self):
-        win_notify._toasted.clear()
-        with (
-            patch.dict(
-                os.environ,
-                {
-                    "CONTENT_TOAST": "true",
-                    "CONTENT_TOAST_FORCE": "true",
-                    "CONTENT_TOAST_DND": "true",
-                },
-            ),
-            patch("core.win_notify._toast_powershell", return_value=True) as ps,
-            patch(
-                "core.publish_windows.quiet_hours_reason",
-                return_value="quiet hours: 01:00-08:00 America/New_York",
-            ),
-        ):
-            self.assertFalse(win_notify.toast("t", "b", key="wave4-dnd"))
-        ps.assert_not_called()
+    # Quiet-hours toast DND (#292) is covered by tests/test_toast_dnd.py.
+    #
+    # The version that lived here mocked `quiet_hours_reason` to return a string, so it
+    # proved "given a reason, mute" and passed green while the feature was inert: the
+    # real call passed no channel, resolved to `default`, and `default` has no
+    # quiet_hours block. Mocking the broken half is what hid the bug, so the replacement
+    # drives the clock instead and lets the channel lookup run for real.
 
 
 class TestHtmlMinTypeAndSticky(unittest.TestCase):

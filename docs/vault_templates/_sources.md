@@ -5,7 +5,7 @@ topic: REPLACE - the topic this source backs
 date: YYYY-MM-DD
 tier: link
 verified_at: YYYY-MM-DD
-source_url: https://REPLACE
+source: https://REPLACE
 ---
 
 # Source - REPLACE headline
@@ -14,7 +14,7 @@ source_url: https://REPLACE
 Copy to: <vault>/<channel>/_sources/<date>_<slug>.md
 
 tier: link means "a real URL I opened", one step below `operator` and above
-`web`. Set source_url so the claim is traceable and can appear in the
+`web`. Set `source` to the URL so the claim is traceable and can appear in the
 description sources block.
 
 Paste the LINES YOU WILL USE, not the whole article - the grounding corpus is

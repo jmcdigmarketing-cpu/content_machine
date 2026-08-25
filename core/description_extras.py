@@ -150,7 +150,14 @@ def collect_source_urls(
         try:
             from core.obsidian_facts import load_fact_records
 
-            for rec in load_fact_records(topic, channel_id, limit=24):
+            # `require_distinctive=True` because this block is PUBLIC. The default
+            # (loose) vault relevance is what attached four Marvel Rivals / SEGA notes
+            # to run 71's GTA 6 story — a shared token like "wolverine" can name two
+            # different subjects. Citing those under the video would be a visible
+            # error, so the vault must share a topic-distinctive token to contribute a
+            # URL. Operator-pasted URLs above are unaffected: they were chosen for
+            # this run.
+            for rec in load_fact_records(topic, channel_id, limit=24, require_distinctive=True):
                 _add(getattr(rec, "source_url", "") or "")
         except Exception as exc:
             logger.debug("vault source_url collect skipped: %s", exc)

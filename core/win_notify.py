@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from datetime import datetime
 from typing import Any
 
 from core.logging import get_logger
@@ -104,11 +105,23 @@ def _toast_powershell(title: str, body: str, *, launch: str = "") -> bool:
     return True
 
 
-def toast(title: str, body: str, *, key: str | None = None, launch: str = "") -> bool:
-    """Show a Windows toast. Dedupes on `key` within the process. Never raises."""
+def toast(
+    title: str,
+    body: str,
+    *,
+    key: str | None = None,
+    launch: str = "",
+    urgent: bool = False,
+) -> bool:
+    """Show a Windows toast. Dedupes on `key` within the process. Never raises.
+
+    `urgent=True` bypasses quiet-hours DND (#292). Reserved for breaker trips: the
+    overnight batch runs *inside* the 1-8am window, so muting everything would silence
+    exactly the notifications worth waking for.
+    """
     if not toast_enabled():
         return False
-    if _toasts_muted():
+    if not urgent and _toasts_muted():
         return False
     token = key or f"{title}|{body}"
     if token in _toasted:
@@ -140,13 +153,27 @@ def notify_breaker(kind: str, reason: str) -> None:
             f"{APP_NAME}: {kind_s} breaker",
             reason_s,
             key=f"breaker:{kind_s}:{reason_s[:80]}",
+            # A tripped breaker is the one thing worth waking the operator for, and the
+            # overnight batch runs inside the quiet window — so it bypasses DND (#292).
+            urgent=True,
         )
     except Exception as exc:
         logger.debug("notify_breaker skipped: %s", exc)
 
 
-def _toasts_muted() -> bool:
-    """Quiet-hours DND for Action Center toasts (#292). Reads shipped #116."""
+def _toasts_muted(*, when: datetime | None = None) -> bool:
+    """Quiet-hours DND for Action Center toasts (#292). Reads shipped #116.
+
+    Resolved **machine-level**: muted when *any* configured channel is inside its quiet
+    window. A desktop toast interrupts the human, not a channel, and `toast()` has no
+    channel to hand down — which is what made the first cut inert. It called
+    `quiet_hours_reason()` with no channel, that resolved to `default`, and `default`
+    carries no `quiet_hours` block (only `tapin` and `moneywise` do), so the answer was
+    always None and nothing was ever muted at any hour.
+
+    `when` exists so the tests can drive the clock while the channel lookup stays live;
+    production never passes it.
+    """
     if os.getenv("CONTENT_TOAST_DND", "true").strip().lower() in (
         "0",
         "false",
@@ -155,9 +182,14 @@ def _toasts_muted() -> bool:
     ):
         return False
     try:
+        from config.channels import list_channel_ids
         from core.publish_windows import quiet_hours_reason
 
-        return bool(quiet_hours_reason())
+        # quiet_hours_reason still honours the QUIET_HOURS master flag and returns
+        # None for a channel with no window configured.
+        return any(
+            bool(quiet_hours_reason(channel_id=cid, when=when)) for cid in list_channel_ids()
+        )
     except Exception as exc:
         logger.debug("toast DND skipped: %s", exc)
         return False

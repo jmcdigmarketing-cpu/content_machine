@@ -207,10 +207,16 @@ class _RenderHarness(unittest.TestCase):
             return_value=mock.MagicMock(returncode=0, stderr=""),
         )
 
-    def _render(self):
+    def _render(self, *, command_callback=None):
         from video.render_video import render_vertical_video
 
-        return render_vertical_video(self.mp3_path, "topic", "out.mp4", "script text")
+        return render_vertical_video(
+            self.mp3_path,
+            "topic",
+            "out.mp4",
+            "script text",
+            command_callback=command_callback,
+        )
 
     def _write_bed(self) -> str:
         bed = os.path.join(self.tmp.name, "bed.wav")
@@ -268,6 +274,22 @@ class TestRenderFailsOpenToVoOnly(_RenderHarness):
         self.assertIn("amix=inputs=2", " ".join(first))
         self.assertNotIn("amix", " ".join(second))
         self.assertIn("1:a:0", second)
+
+    def test_command_callback_reports_the_command_that_succeeds(self):
+        bed = self._write_bed()
+        self.run_mock.side_effect = [
+            mock.MagicMock(returncode=1, stderr="mix failed"),
+            mock.MagicMock(returncode=0, stderr=""),
+        ]
+        seen = []
+        with mock.patch(
+            "core.music.generate_bed",
+            return_value=ProviderResult.success("music", "musicgen", data=bed),
+        ):
+            self._render(command_callback=lambda kind, argv: seen.append((kind, argv)))
+        self.assertEqual([kind for kind, _ in seen], ["primary", "primary"])
+        self.assertIn("amix", " ".join(seen[0][1]))
+        self.assertNotIn("amix", " ".join(seen[-1][1]))
 
 
 if __name__ == "__main__":

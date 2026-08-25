@@ -77,6 +77,23 @@ def last_human_at(*, path: str | None = None) -> float | None:
         return None
 
 
+def last_seen_label(*, now: float | None = None, path: str | None = None) -> str:
+    """Compact, honest heartbeat age for the tray."""
+    if not gate_enabled():
+        return "Human: heartbeat off"
+    stamp = last_human_at(path=path)
+    if stamp is None:
+        return "Human: never"
+    age_s = max(0.0, float(now if now is not None else time.time()) - stamp)
+    if age_s < 60:
+        return "Human: just now"
+    if age_s < 3600:
+        return f"Human: {int(age_s // 60)}m ago"
+    if age_s < 86400:
+        return f"Human: {int(age_s // 3600)}h ago"
+    return f"Human: {int(age_s // 86400)}d ago"
+
+
 def unattended_render_block_reason(
     *,
     now: float | None = None,

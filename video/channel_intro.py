@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from collections.abc import Callable
 
 from config.channels import get_channel_profile, resolve_channel_id
 from config.paths import ROOT_DIR
@@ -180,6 +181,7 @@ def prepend_channel_intro(
     *,
     channel_id: str | None = None,
     output_path: str | None = None,
+    command_callback: Callable[[str, list[str]], None] | None = None,
 ) -> str:
     """
     Prepend intro to body_path. Returns final output path (overwrites body in place by default).
@@ -212,6 +214,11 @@ def prepend_channel_intro(
         intro_has_audio=_has_audio_stream(intro_path),
         intro_duration=intro_dur,
     )
+    if command_callback is not None:
+        try:
+            command_callback("intro", list(cmd))
+        except Exception as exc:
+            logger.debug("intro command capture skipped: %s", exc)
 
     logger.info("Prepending channel intro (%s)", os.path.basename(intro_path))
     concat_ok = False

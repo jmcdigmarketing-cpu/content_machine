@@ -48,6 +48,7 @@ class TestOpsHtmlAndHelpers(unittest.TestCase):
             "lightbox",
             "reveal",
             "shortcut",
+            "booth-shortcut",
             "blocking",
             "secrets-doctor",
         ):

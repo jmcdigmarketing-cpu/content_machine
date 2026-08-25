@@ -6,6 +6,7 @@ Approve). Not FastAPI, not the full review room. Stdlib only.
 
 from __future__ import annotations
 
+import json
 import os
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -253,6 +254,19 @@ def copy_field_html(label: str, value: str, *, field_id: str) -> str:
     )
 
 
+def _command_line(argv: Any) -> str:
+    if isinstance(argv, list):
+        quoted = ["'" + str(part).replace("'", "''") + "'" for part in argv]
+        return "& " + " ".join(quoted)
+    return str(argv or "")
+
+
+def _details_html(summary: str, body: str) -> str:
+    if not (body or "").strip():
+        return ""
+    return "<details class='card'>" f"<summary>{escape(summary)}</summary>" f"{body}" "</details>"
+
+
 def last_watch_url(channel_id: str | None = None) -> str:
     """Newest uploaded YouTube URL, preferring unlisted review holds."""
     try:
@@ -306,6 +320,9 @@ def booth_html(
     unlisted_url: str = "",
     dossier_uri: str = "",
     postmortem_md: str = "",
+    trace_json: str = "",
+    ffmpeg_command: str = "",
+    ffmpeg_intro_command: str = "",
 ) -> str:
     share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
     if mp4_path and os.path.isfile(mp4_path):
@@ -363,6 +380,23 @@ def booth_html(
         + copy_field_html("Obsidian dossier URI", dossier_uri, field_id="dossier")
         + copy_field_html("postmortem markdown", postmortem_md, field_id="pmm")
     )
+    trace_details = _details_html(
+        "Raw trace JSON",
+        f"<pre>{escape(trace_json)}</pre>" if trace_json else "",
+    )
+    command_body = ""
+    if ffmpeg_command:
+        command_body += f"<p><strong>Primary render</strong></p><pre>{escape(ffmpeg_command)}</pre>"
+        command_body += copy_field_html(
+            "ffmpeg command",
+            ffmpeg_command,
+            field_id="ffmpeg-command",
+        )
+    if ffmpeg_intro_command:
+        command_body += (
+            f"<p><strong>Intro concat</strong></p><pre>{escape(ffmpeg_intro_command)}</pre>"
+        )
+    command_details = _details_html("FFmpeg commands", command_body)
     body = (
         f"{banners}"
         f"<div class='card'>{vid}{thumb}</div>"
@@ -386,6 +420,7 @@ def booth_html(
         "Copy as markdown</button></p>"
         f"{copy_bits}"
         "</div>"
+        f"{trace_details}{command_details}"
     )
     quota_bits = [b for b in (uploads_left, elevenlabs_chars) if b]
     header_html = ""
@@ -596,6 +631,19 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     except Exception as exc:
         logger.debug("booth postmortem md skipped: %s", exc)
 
+    trace_json = ""
+    ffmpeg_command = ""
+    ffmpeg_intro_command = ""
+    try:
+        from core.run_trace import redact_trace_value
+
+        if trace:
+            trace_json = json.dumps(redact_trace_value(trace), indent=2, default=str)
+            ffmpeg_command = _command_line(trace.get("ffmpeg_command"))
+            ffmpeg_intro_command = _command_line(trace.get("ffmpeg_intro_command"))
+    except Exception as exc:
+        logger.debug("booth trace details skipped: %s", exc)
+
     return {
         "mp4_path": mp4,
         "thumb_path": thumb,
@@ -633,6 +681,9 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "unlisted_url": unlisted_url,
         "dossier_uri": dossier_uri,
         "postmortem_md": postmortem_md,
+        "trace_json": trace_json,
+        "ffmpeg_command": ffmpeg_command,
+        "ffmpeg_intro_command": ffmpeg_intro_command,
     }
 
 

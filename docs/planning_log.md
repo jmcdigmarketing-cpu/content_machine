@@ -11,6 +11,64 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-25 - Post-wave-4 operator pickup (shipped)
+
+**Prompt:** take the next five roadmap pickups, plan them, then implement them
+without committing. The five work units were #313, #282, #308-310 together,
+#232, and #122.
+
+**Two roadmap assumptions were false when traced through production:**
+
+1. #313 said the tray action would use an "existing opt-in gate file". No
+   overnight pause file or check existed. The wave added one
+   (`core/overnight_pause.py`) and checks it at the start of `run_overnight`,
+   before topic collection or batch generation.
+2. #232 described a Desktop link to the booth URL. `serve_booth` binds an
+   ephemeral port and the server dies with its process, so a literal URL would
+   be a dead shortcut. `booth_os.pyw` starts the server, opens the browser, and
+   keeps the process alive; `ops booth-shortcut` installs that launcher.
+
+**Shipped:**
+
+- **#313:** tray pause/resume button and CLI flags. The paused batch returns an
+  explicit result and performs no topic collection.
+- **#282:** deterministic `Human: just now / Nm / Nh / Nd ago`, plus honest
+  `heartbeat off` and `never` states on the real tray chip.
+- **#308-310:** the successful primary ffmpeg argv is captured at render time;
+  a music-bed failure replaces it with the VO-only retry argv. The separate
+  intro-concat argv is captured too. Both persist in the existing redacted run
+  trace. The booth renders native collapsible trace/command sections and copies
+  a PowerShell-safe command. Nothing is reconstructed from incomplete paths.
+- **#232:** persistent Desktop booth shortcut via `pythonw`, reusing the proven
+  WScript.Shell installer rather than adding a second shortcut mechanism.
+- **#122:** root `video/backgrounds/license.yaml` records owned/commercial use.
+  A nearer folder sidecar overrides it; `LocalAssetProvider` carries the
+  resolved metadata into `AssetResult.attribution`, and the existing asset
+  recorder persists it.
+
+**Behavioral proof:** `tests/test_next_five_pickups.py` failed against the
+unmodified implementation with 2 failures + 6 errors (missing pause module,
+formatter, callback/persistence, booth kwargs, shortcut, and attribution).
+After wiring, the full isolated suite ran **1,969 tests OK**. `ruff check .`
+passed; formatting was applied to the two files identified by
+`ruff format --check`.
+
+**Operator proof:**
+
+- Pause -> `ops overnight --count 1` printed `Overnight paused by operator
+  flag` and drafted nothing; resume removed the temp override flag.
+- `ops booth --channel tapin` wrote the real last-run booth, whose HTML contains
+  the redacted raw trace section. That historical run predates command capture,
+  so ffmpeg details will first appear after the next render.
+- `ops booth-shortcut` installed
+  `C:\Users\jonma\Desktop\Content OS Review Booth.lnk`.
+
+**Still out:** MoneyWise persona config, the Pillow/requests/MoviePy dependency
+wave (needs a real thumbnail/render), FastAPI #147, tray daemon #146, Phase M,
+and the operator's Piper voice judgment.
+
+---
+
 ## 2026-08-23 - MoneyWise persona + the Pillow decision (docs only)
 
 **Prompt:** "give moneywise a persona, then how would we deal with pillow?

@@ -766,10 +766,17 @@ def cmd_requeue_upload(args: argparse.Namespace) -> int:
 def cmd_tray(args: argparse.Namespace) -> int:
     from core.win_notify import run_tray
 
+    pause_overnight = bool(getattr(args, "pause_overnight", False))
+    resume_overnight = bool(getattr(args, "resume_overnight", False))
+    if pause_overnight and resume_overnight:
+        print("Choose only one of --pause-overnight or --resume-overnight.")
+        return 1
     return run_tray(
         stay=bool(getattr(args, "stay", False)),
         open_output=bool(getattr(args, "open_output", False)),
         doctor_html=bool(getattr(args, "doctor_html", False)),
+        pause_overnight=pause_overnight,
+        resume_overnight=resume_overnight,
         channel_id=getattr(args, "channel", None) or "tapin",
     )
 
@@ -822,6 +829,15 @@ def cmd_shortcut(_args: argparse.Namespace) -> int:
     from core.win_shell import install_start_menu_shortcut
 
     path = install_start_menu_shortcut()
+    print(path)
+    return 0
+
+
+@_register("booth-shortcut", "Install Desktop shortcut for the persistent review booth")
+def cmd_booth_shortcut(_args: argparse.Namespace) -> int:
+    from core.win_shell import install_booth_desktop_shortcut
+
+    path = install_booth_desktop_shortcut()
     print(path)
     return 0
 
@@ -1025,6 +1041,16 @@ def main(argv=None) -> int:
         "--doctor-html",
         action="store_true",
         help="tray: write ops doctor as themed HTML",
+    )
+    parser.add_argument(
+        "--pause-overnight",
+        action="store_true",
+        help="tray: pause future scheduled overnight batches",
+    )
+    parser.add_argument(
+        "--resume-overnight",
+        action="store_true",
+        help="tray: resume future scheduled overnight batches",
     )
     parser.add_argument(
         "--md",

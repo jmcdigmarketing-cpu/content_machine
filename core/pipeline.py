@@ -555,6 +555,11 @@ def run_media_only(
     generate_audio(script, mp3_path, channel_id=channel_id)
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
 
+    ffmpeg_commands: dict[str, list[str]] = {}
+
+    def _capture_ffmpeg_command(kind: str, argv: list[str]) -> None:
+        ffmpeg_commands[str(kind)] = [str(part) for part in argv]
+
     _, background = render_vertical_video(
         mp3_path,
         topic,
@@ -562,6 +567,7 @@ def run_media_only(
         script,
         channel_id,
         progress=progress,
+        command_callback=_capture_ffmpeg_command,
     )
 
     thumb_path = ""
@@ -657,6 +663,16 @@ def run_media_only(
                     "cost": cost,
                     "tts_cached": last_tts_was_cache_hit(),
                     "thumbnail_provider": thumb_provider or "",
+                    **(
+                        {"ffmpeg_command": ffmpeg_commands["primary"]}
+                        if ffmpeg_commands.get("primary")
+                        else {}
+                    ),
+                    **(
+                        {"ffmpeg_intro_command": ffmpeg_commands["intro"]}
+                        if ffmpeg_commands.get("intro")
+                        else {}
+                    ),
                 },
             )
         except Exception as exc:

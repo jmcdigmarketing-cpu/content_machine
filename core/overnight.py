@@ -39,6 +39,7 @@ class OvernightResult:
     health_line: str = ""
     skillopt_line: str = ""
     quota_line: str = ""
+    pause_line: str = ""
 
 
 def run_overnight(
@@ -53,6 +54,15 @@ def run_overnight(
 
     channel = resolve_channel_id(channel_id)
     result = OvernightResult(channel_id=channel)
+
+    try:
+        from core.overnight_pause import is_paused
+
+        if is_paused():
+            result.pause_line = "Overnight paused by operator flag."
+            return result
+    except Exception as exc:
+        logger.debug("overnight pause check skipped: %s", exc)
 
     from core.batch_generation import collect_topics, run_batch
 
@@ -145,6 +155,10 @@ def render_overnight(result: OvernightResult) -> str:
     from core.batch_generation import render_summary
 
     lines = [f"Overnight operator — {result.channel_id}", "=" * 44]
+    if result.pause_line:
+        lines.append(result.pause_line)
+        lines.append("Nothing drafted. Resume from the tray before the next scheduled run.")
+        return "\n".join(lines)
     if result.quota_line:
         lines.append(f"Quota: {result.quota_line}")
     if not result.requested:

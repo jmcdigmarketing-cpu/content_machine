@@ -55,6 +55,7 @@ os.environ["GAMBLING_SAFE"] = "false"
 os.environ["DESCRIPTION_SEO_FIRST_LINE"] = "false"
 os.environ["CONTENT_TRAY_GRADE"] = "false"
 os.environ["CONTENT_TRAY_DOMAIN"] = "false"
+os.environ["CONTENT_TRAY_PRESENCE"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move
@@ -76,6 +77,9 @@ atexit.register(shutil.rmtree, _SUITE_DATA_TMP, True)
 
 def _suite_store(name: str) -> str:
     return os.path.join(_SUITE_DATA_TMP, name)
+
+
+os.environ["OVERNIGHT_PAUSE_FILE"] = _suite_store("overnight.paused")
 
 
 _SUITE_STORE_PATCHES = (

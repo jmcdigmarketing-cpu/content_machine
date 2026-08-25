@@ -13,11 +13,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-08-22 — **honesty + leave-the-terminal wave 4 shipped** (20
-working pieces on top of waves 1–3). FastAPI shell **#147 still
-skipped**. No Content OS Desktop (#141), Visual Studio (#142), Web OS (#143),
-Phase M, volume-gated backtest, or $0 TTS voice judgment.
-Rationale: [planning_log.md](planning_log.md) 2026-08-22 (wave 4).
+Last updated: 2026-08-25 — **post-wave-4 pickup shipped** (#122, #232, #282,
+#308–310, #313). FastAPI shell **#147 still skipped**. No Content OS Desktop
+(#141), Visual Studio (#142), Web OS (#143), Phase M, volume-gated backtest,
+or $0 TTS voice judgment. Rationale: [planning_log.md](planning_log.md)
+2026-08-25.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -840,7 +840,7 @@ Content / learning
 - [ ] 119. Stock-clip **watermark detector** — skip footage that shows another channel `[M]`
 - [ ] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]`
 - [x] **121. Stock query rewriter: never Pexels-search trademarked “UFC”** *(2026-08-21)* — rewrite to `mma` `[S]`
-- [ ] 122. `license.yaml` beside local clips (we own this file) `[S]`
+- [x] **122. `license.yaml` beside local clips** *(2026-08-25)* — inherited nearest-folder metadata reaches the persisted local-asset attribution; root file records owned/commercial use `[S]`
 - [ ] 123. Number/SSML reading rules (`29-1`, UFC 317, `$50k`) — distinct from the name lexicon `[M]`
 - [ ] 124. Pause-after-hook: 200–400ms silence after line 1 `[S]`
 
@@ -876,9 +876,9 @@ a shipped checkbox, Next-up, or candidates 1–140 unless reframed as a **new
 product** (called out). Phase M, the volume-gated backtest, and the $0 TTS voice
 judgment appear only as **PARKED** massive/larger. Evening recommended next 5
 stay shipped; **Brainstorm next-5 (UI/app)** = 221, 222, 223, 224, 171.
-**Pickup order** after honesty wave 4 is leftover `[S]` (313 pause-overnight,
-282 last-seen, 308–310 ffmpeg dump, 232 booth `.lnk`, 122 `license.yaml`) —
-this 141–320 list is not a sequence and is not rewritten here.
+**The post-wave-4 pickup shipped 2026-08-25:** 313 pause-overnight, 282
+last-seen, 308–310 ffmpeg dump, 232 booth `.lnk`, 122 `license.yaml`. This
+141–320 list is not a sequence and is not rewritten here.
 Honest constants: TTS ~91% of a rendered run; YouTube upload ≈ 1,600/10k;
 remaining paid Apify = `tiktok_trends` + `youtube_competitors`; Windows;
 unittest; no second signal cache; breakers via `quota_governor` only.*
@@ -985,7 +985,7 @@ Small — hours / a PR
 - [x] **229. Click-toast opens last mp4** *(2026-08-21)* — protocol launch `file:` URI `[S]`
 - [ ] 230. Taskbar **overlay badge** (queue depth) `[S]` — *UI.* Worker progress without a window.
 - [x] 231. Start-menu shortcut via **pyw** *(2026-08-21)* — `ops shortcut` + `content_os.pyw` `[S]` — *new-app.*
-- [ ] 232. Desktop `.lnk` to the **review-booth URL** `[S]` — *new-app.* Depends on #171; the shortcut is the PR.
+- [x] **232. Desktop `.lnk` to the review booth** *(2026-08-25)* — `ops booth-shortcut` targets a persistent `pythonw` launcher because the localhost port is ephemeral and a literal URL would be dead `[S]` — *new-app.*
 - [ ] 233. Per-channel **notification sound** `[S]` — *aesthetics.* TapIn vs MoneyWise should not share one ding.
 - [x] **234. High-contrast CSS for HTML reports** *(2026-08-21)* — `prefers-contrast: more` `[S]`
 - [ ] 235. TapIn **swatch strip** in HTML headers `[S]` — *aesthetics.* Channel color without a full language pack.
@@ -1035,7 +1035,7 @@ Small — hours / a PR
 - [x] **279. Allocated vs marginal one-liner** *(2026-08-21)* — booth footer; no new economics engine `[S]`
 - [x] **280. TTS cache-hit $0 pill** *(2026-08-22)* — booth reads post-render `tts_cached` `[S]`
 - [x] **281. Pillow vs Flux thumb badge** *(2026-08-22)* — label from provider / thumbnail cost `[S]`
-- [ ] 282. Human-presence **last-seen relative time** `[S]` — *UI.* Companion to #205, one string.
+- [x] **282. Human-presence last-seen relative time** *(2026-08-25)* — real heartbeat age in the tray, with honest off/never states `[S]` — *UI.*
 - [x] **283. Render-gate blocked reason** *(2026-08-22)* — `Overnight will not render: …` `[S]`
 - [x] **284. RPM-cost-gate deferred reason** *(2026-08-22)* — `Deferred: …` when the opt-in gate fires `[S]`
 - [x] **285. Yesterday unsynced copy** *(2026-08-22)* — informational even when `METRICS_BEFORE_NEXT` is off `[S]`
@@ -1061,12 +1061,12 @@ Small — hours / a PR
 - [x] **305. 16px minimum type** *(2026-08-22)* — buttons/inputs/textareas join the 16px body `[S]`
 - [x] **306. Sticky cost bar** *(2026-08-22)* — booth `#costbar` (TTS 91% line) `[S]`
 - [x] **307. Sticky quota bar** *(2026-08-22)* — booth `#quotabar` `[S]`
-- [ ] 308. Collapsible **raw trace JSON** `[S]` — *UI.* Debug without leaving the booth.
-- [ ] 309. Collapsible **ffmpeg command** `[S]` — *UI.* Sync/intro bugs are command bugs.
-- [ ] 310. **Copy ffmpeg command** `[S]` — *UI.*
+- [x] **308. Collapsible raw trace JSON** *(2026-08-25)* — redacted trace rendered in native `<details>` inside the booth `[S]` — *UI.*
+- [x] **309. Collapsible ffmpeg commands** *(2026-08-25)* — actual successful primary argv plus attempted intro concat persisted at render time, never reconstructed `[S]` — *UI.*
+- [x] **310. Copy ffmpeg command** *(2026-08-25)* — PowerShell-safe command from the persisted argv `[S]` — *UI.*
 - [x] **311. Copy last postmortem as markdown** *(2026-08-22)* — booth field + `ops postmortem --md` `[S]`
 - [x] **312. Tray: open last output folder** *(2026-08-21)* — `--open-output` + `--stay` button `[S]` — *new-app / UI.*
-- [ ] 313. Tray action: **pause overnight** (flag file) `[S]` — *UI.* Does not change overnight code paths beyond an existing opt-in gate file.
+- [x] **313. Tray action: pause overnight** *(2026-08-25)* — new operator flag checked before topic collection; tray button plus `--pause-overnight` / `--resume-overnight`. The roadmap previously claimed an existing gate file; none existed `[S]` — *UI.*
 - [x] **314. Tray action: run doctor → HTML** *(2026-08-21)* — `--doctor-html` + stay-window button `[S]`
 - [x] **315. Tray: last grade letter** *(2026-08-21)* — chip line `Grade: B` `[S]`
 - [x] **316. Tray last domain** *(2026-08-22)* — chip line `Domain: UFC`; suite sets `CONTENT_TRAY_DOMAIN=false` `[S]`

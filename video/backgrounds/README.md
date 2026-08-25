@@ -6,6 +6,12 @@ Vague topics (e.g. `trendy nba finals video`) used to pull **abstract fog/bokeh*
 
 Drop `.mp4` / `.mov` clips here for **hybrid** mode (default on TapIn).
 
+`license.yaml` is JSON-compatible YAML so the runtime can read it without an
+extra dependency. The file in this directory covers every local clip below it.
+Place another `license.yaml` in a subfolder to override the metadata for that
+folder; the nearest file to the selected clip wins. The selected metadata is
+persisted as the background asset's attribution.
+
 Suggested layout:
 
 ```

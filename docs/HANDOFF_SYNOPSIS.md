@@ -1,24 +1,22 @@
-# Handoff synopsis — 2026-08-22: living state after honesty wave 4
+# Handoff synopsis — 2026-08-25: post-wave-4 operator pickup
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — honesty + leave-the-terminal 4 (2026-08-22)
+## Last implementation wave — five post-wave-4 pickup units (2026-08-25)
 
-20 leftover `[S]` on the honesty / leave-PowerShell theme. **No commit** this
-session unless the operator asks. **#147 FastAPI still skipped.**
+The documented leftover `[S]` queue is shipped. It was behavior-audited before
+the requested commit and push. **#147 FastAPI still skipped.**
 
-Shipped: playbook lint, description sources, numeric chips, semantic bar,
-grade breakdown, TTS cache-hit / Pillow-vs-Flux / signal dots / feed-stale,
-overnight-render + RPM-deferred + yesterday-unsynced copy, copy unlisted URL
-+ Obsidian URI + postmortem markdown, quiet-hours toast DND, sticky
-cost/quota + 16px type, tray last domain. Detail:
-[planning_log.md](planning_log.md) 2026-08-22 (wave 4).
+Shipped: tray pause/resume for the render-free overnight draft batch; honest
+human-heartbeat age; redacted raw trace + actual primary/intro ffmpeg argv in
+the booth with copy; persistent Desktop booth launcher; inherited local-clip
+ownership metadata persisted as asset attribution. Detail:
+[planning_log.md](planning_log.md) 2026-08-25.
 
-**Pickup:** leftover `[S]` after wave 4 — **313** tray pause-overnight (flag
-file), **282** human-presence last-seen, **308–310** collapsible/copy ffmpeg,
-**232** desktop `.lnk` to the booth, **122** `license.yaml`. Still skip #147
-FastAPI, #146 tray daemon, #21 caption skin, #22 thumbnail safe-area, Phase M,
-volume-gated backtest, $0 TTS voice judgment.
+**Pickup:** the documented MoneyWise persona is ready for `channels.json`.
+The separate dependency wave (Pillow 11.3, requests 2.32.4, remove MoviePy)
+still requires a real thumbnail/render. Still skip #147 FastAPI, #146 tray
+daemon, Phase M, volume-gated backtest, and auto-flipping the $0 TTS voice.
 
 ## Last live run — 71 (2026-08-21, documented 2026-08-22)
 
@@ -35,17 +33,17 @@ only** — operator did not type `y` at Proceed. Full narrative:
 
 ## Branch / PR
 
-- **Branch:** `main` (or the live-run 69/70 working tree landing on it). The stack
+- **Branch:** `docs/brainstorm-141-320`; this implementation wave follows the
+  MoneyWise/Pillow documentation commit `b26ce23`. The earlier stack
   **merged 2026-08-19 via
   [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34)** (24 commits,
   merge commit `6389e87`); CI is green on `main`. 20 Aug added the run-70 Ollama
   probe, worker/ffmpeg coverage tests, semantic authenticity, and router vision
   (`core/llm_client.py` gone).
-- **Suite:** 1,904+ tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
-- **Pickup order:** leftover `[S]` after honesty wave 4 — 313 pause-overnight,
-  282 human-presence last-seen, 308–310 collapsible/copy ffmpeg, 232 booth
-  `.lnk`, 122 `license.yaml`. Candidates 21–28 (caption/thumb aesthetics) and
-  56–90 leftovers still sit under Next up.
+- **Suite:** 1,969 tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests -t .`
+- **Pickup order:** MoneyWise persona config, then the dependency/render wave
+  when a real render can prove Pillow and MoviePy changes. Candidates 21–28
+  (caption/thumb aesthetics) and 56–90 leftovers still sit under Next up.
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -555,13 +553,13 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-**Pickup:** leftover `[S]` after honesty wave 4 (2026-08-22) — **313** tray
-pause-overnight, **282** human-presence last-seen, **308–310** collapsible/copy
-ffmpeg, **232** booth `.lnk`, **122** `license.yaml`. Candidates **21–28**
-(caption/thumb aesthetics) and **56–90** leftovers sit at the bottom of Next
-up. Phase M stays parked. **#147 FastAPI still skipped.**
+**Pickup:** apply the documented MoneyWise persona, then take the
+Pillow/requests/MoviePy dependency wave when a real render can verify it.
+Candidates **21–28** (caption/thumb aesthetics) and **56–90** leftovers sit at
+the bottom of Next up. Phase M stays parked. **#147 FastAPI still skipped.**
 
 **Already done (do not re-open):**
+- Post-wave-4 pickup (2026-08-25): #313, #282, #308–310, #232 and #122.
 - Caption-text from the script (`video/caption_retext.py`, 2026-08-16). The **$0 TTS
   switch** is unblocked and waiting on two *operator* calls: judge
   `output/samples/piper_lessac_run65.mp3`, then re-run
@@ -582,9 +580,9 @@ up. Phase M stays parked. **#147 FastAPI still skipped.**
   **pull** vs **serve** vs OpenRouter throttled fallback.
 
 **Still open:**
-1. **Leftover `[S]` after honesty wave 4** — 313 pause-overnight, 282
-   human-presence last-seen, 308–310 collapsible/copy ffmpeg, 232 booth `.lnk`,
-   122 `license.yaml`. Do not start with clip-from-source, avatar, #147 FastAPI,
+1. **MoneyWise persona config + dependency/render wave.** Persona text is
+   documented in `planning_log.md`; Pillow/requests/MoviePy needs a real
+   thumbnail/render. Do not start with clip-from-source, avatar, #147 FastAPI,
    or Phase M.
 2. **Pillar 6 remainder** — seams live; heavy backends wait on a **CUDA torch**
    build (`2.8.0+cpu` on an RTX 4070 Ti), not on hardware. Clip-from-source and
@@ -608,7 +606,7 @@ up. Phase M stays parked. **#147 FastAPI still skipped.**
 
 - `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
-- `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); honesty wave 4 shipped; leftover `[S]` 313/282/308–310/232/122
+- `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); post-wave-4 pickup shipped
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index
 - `docs/debugging.md` — playbook vs facts, hallucination triage
 

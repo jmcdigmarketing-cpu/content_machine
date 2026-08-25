@@ -15,6 +15,7 @@ from core.logging import get_logger
 logger = get_logger("core.win_shell")
 
 SHORTCUT_NAME = "Content OS.lnk"
+BOOTH_SHORTCUT_NAME = "Content OS Review Booth.lnk"
 
 
 def _ps_single_quote(text: str) -> str:
@@ -137,6 +138,12 @@ def pyw_launcher_path() -> str:
     return os.path.join(ROOT_DIR, "content_os.pyw")
 
 
+def booth_launcher_path() -> str:
+    from config.paths import ROOT_DIR
+
+    return os.path.join(ROOT_DIR, "booth_os.pyw")
+
+
 def start_menu_dir() -> str:
     appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
     return os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs")
@@ -144,6 +151,15 @@ def start_menu_dir() -> str:
 
 def start_menu_shortcut_path() -> str:
     return os.path.join(start_menu_dir(), SHORTCUT_NAME)
+
+
+def desktop_dir() -> str:
+    home = os.environ.get("USERPROFILE") or os.path.expanduser("~")
+    return os.path.join(home, "Desktop")
+
+
+def desktop_booth_shortcut_path() -> str:
+    return os.path.join(desktop_dir(), BOOTH_SHORTCUT_NAME)
 
 
 def pythonw_executable() -> str:
@@ -157,13 +173,10 @@ def pythonw_executable() -> str:
     return exe
 
 
-def install_start_menu_shortcut() -> str:
-    """Write a Start Menu .lnk that launches content_os.pyw via pythonw. Returns path."""
+def _install_pythonw_shortcut(*, dest: str, script: str, description: str) -> str:
     from config.paths import ROOT_DIR
 
     target = pythonw_executable()
-    script = pyw_launcher_path()
-    dest = start_menu_shortcut_path()
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     if os.name != "nt":
         # Non-Windows: drop a tiny .cmd/.desktop stand-in so tests can still assert a file.
@@ -180,7 +193,7 @@ def install_start_menu_shortcut() -> str:
         f"$lnk.TargetPath = '{target_q}'; "
         f"$lnk.Arguments = '\"{script_q}\"'; "
         f"$lnk.WorkingDirectory = '{work_q}'; "
-        "$lnk.Description = 'Content OS operator (no console flash)'; "
+        f"$lnk.Description = '{_ps_single_quote(description)}'; "
         "$lnk.Save()"
     )
     creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -197,3 +210,21 @@ def install_start_menu_shortcut() -> str:
     if result.returncode != 0:
         raise RuntimeError((result.stderr or result.stdout or "shortcut failed")[:400])
     return dest
+
+
+def install_start_menu_shortcut() -> str:
+    """Write a Start Menu .lnk that launches content_os.pyw via pythonw. Returns path."""
+    return _install_pythonw_shortcut(
+        dest=start_menu_shortcut_path(),
+        script=pyw_launcher_path(),
+        description="Content OS operator (no console flash)",
+    )
+
+
+def install_booth_desktop_shortcut() -> str:
+    """Write a Desktop .lnk that starts and keeps the review booth alive."""
+    return _install_pythonw_shortcut(
+        dest=desktop_booth_shortcut_path(),
+        script=booth_launcher_path(),
+        description="Content OS last-run review booth",
+    )

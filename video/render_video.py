@@ -1,5 +1,6 @@
 import os
 import subprocess
+from collections.abc import Callable
 
 from moviepy.editor import AudioFileClip
 
@@ -206,6 +207,7 @@ def render_vertical_video(
     channel_id=None,
     *,
     progress: RenderProgress | None = None,
+    command_callback: Callable[[str, list[str]], None] | None = None,
 ):
     if progress is None and is_render_progress_enabled():
         progress = RenderProgress()
@@ -298,6 +300,11 @@ def render_vertical_video(
         duration=duration,
         music_path=music_path,
     )
+    if command_callback is not None:
+        try:
+            command_callback("primary", list(cmd))
+        except Exception as exc:
+            logger.debug("render command capture skipped: %s", exc)
 
     stage(f"FFmpeg render (~{duration:.0f}s video)...")
     if progress and progress.enabled:
@@ -332,6 +339,11 @@ def render_vertical_video(
             subtitle_path=subtitle_path,
             duration=duration,
         )
+        if command_callback is not None:
+            try:
+                command_callback("primary", list(cmd))
+            except Exception as exc:
+                logger.debug("fallback command capture skipped: %s", exc)
         process = _ffmpeg_run(cmd)
 
     if process.returncode != 0:
@@ -343,7 +355,11 @@ def render_vertical_video(
     if resolve_intro_path(channel_id):
         stage("Prepending channel intro...")
         try:
-            prepend_channel_intro(output_path, channel_id=channel_id)
+            prepend_channel_intro(
+                output_path,
+                channel_id=channel_id,
+                command_callback=command_callback,
+            )
             if progress:
                 progress.note("Channel intro prepended")
         except Exception as e:

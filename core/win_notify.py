@@ -328,6 +328,24 @@ def quota_chip_lines(
     lines.append(f"Grade: {letter or 'n/a'}")
     domain = last_domain_label(channel_id)
     lines.append(f"Domain: {domain or 'n/a'}")
+    try:
+        from core.overnight_pause import status_line
+
+        lines.append(status_line())
+    except Exception as exc:
+        logger.debug("overnight pause status skipped: %s", exc)
+    if os.getenv("CONTENT_TRAY_PRESENCE", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    ):
+        try:
+            from core.human_presence import last_seen_label
+
+            lines.append(last_seen_label())
+        except Exception as exc:
+            logger.debug("human last-seen skipped: %s", exc)
     return lines
 
 
@@ -428,10 +446,23 @@ def run_tray(
     stay: bool = False,
     open_output: bool = False,
     doctor_html: bool = False,
+    pause_overnight: bool = False,
+    resume_overnight: bool = False,
     channel_id: str | None = None,
 ) -> int:
     """Quota chip: toast + print. Optional always-on-top tkinter chip (not a daemon)."""
     cid = channel_id or "tapin"
+    if pause_overnight or resume_overnight:
+        try:
+            from core.overnight_pause import set_paused
+
+            wanted = bool(pause_overnight and not resume_overnight)
+            if not set_paused(wanted):
+                print("Overnight pause state was not changed.")
+                return 1
+        except Exception as exc:
+            logger.warning("overnight pause action failed: %s", exc)
+            return 1
     text = show_quota_chip(toast_it=True, channel_id=cid)
     print(text)
     if open_output:
@@ -475,10 +506,29 @@ def run_tray(
             except Exception as exc:
                 logger.debug("tray doctor button skipped: %s", exc)
 
+        def _pause_label() -> str:
+            try:
+                from core.overnight_pause import is_paused
+
+                return "Resume overnight" if is_paused() else "Pause overnight"
+            except Exception:
+                return "Pause overnight"
+
+        def _toggle_overnight() -> None:
+            try:
+                from core.overnight_pause import is_paused, set_paused
+
+                if set_paused(not is_paused()):
+                    btn3.configure(text=_pause_label())
+            except Exception as exc:
+                logger.warning("tray overnight toggle failed: %s", exc)
+
         btn = tk.Button(root, text="Open last output folder", command=_open_folder)
         btn.pack(padx=12, pady=(0, 6))
         btn2 = tk.Button(root, text="Doctor HTML", command=_doctor)
-        btn2.pack(padx=12, pady=(0, 10))
+        btn2.pack(padx=12, pady=(0, 6))
+        btn3 = tk.Button(root, text=_pause_label(), command=_toggle_overnight)
+        btn3.pack(padx=12, pady=(0, 10))
         root.mainloop()
     except Exception as exc:
         logger.debug("tray window skipped: %s", exc)
@@ -501,6 +551,16 @@ def main() -> int:
         help="Write ops doctor as themed HTML and open it",
     )
     parser.add_argument(
+        "--pause-overnight",
+        action="store_true",
+        help="Pause future scheduled overnight batches",
+    )
+    parser.add_argument(
+        "--resume-overnight",
+        action="store_true",
+        help="Resume future scheduled overnight batches",
+    )
+    parser.add_argument(
         "--channel",
         default="tapin",
         help="Channel id for last-output folder / doctor / grade chip",
@@ -510,6 +570,8 @@ def main() -> int:
         stay=bool(args.stay),
         open_output=bool(args.open_output),
         doctor_html=bool(args.doctor_html),
+        pause_overnight=bool(args.pause_overnight),
+        resume_overnight=bool(args.resume_overnight),
         channel_id=args.channel,
     )
 

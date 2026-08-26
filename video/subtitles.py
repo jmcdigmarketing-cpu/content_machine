@@ -14,6 +14,10 @@ import json
 import os
 import re
 
+from core.logging import get_logger
+
+logger = get_logger("video.subtitles")
+
 _DEFAULT_WORDS_PER_LINE = 5
 
 
@@ -131,6 +135,52 @@ def _load_word_timings(audio_path: str | None) -> list[dict] | None:
         return None
 
 
+def resolve_word_timings(
+    audio_path: str | None,
+    script: str,
+    *,
+    channel_id: str | None = None,
+) -> list[dict] | None:
+    """Real per-word timings for this audio, or None when there are none to trust.
+
+    The single source of truth: the ElevenLabs sidecar first, then the whisper aligner
+    with the script's own spelling painted back on (decisions.md §23). Public because
+    captions are not the only consumer — hook motion (#26) and lower thirds (#24) need
+    the same timings, and reading only the sidecar left both dead on every local-TTS
+    run while the captions on that same render had whisper timings.
+
+    Fail-open: any aligner failure returns None, which callers must treat as "no
+    timings", never as "zero-length timings".
+    """
+    style = caption_style(channel_id)
+    if style not in ("word", "karaoke"):
+        return None
+    words = _load_word_timings(audio_path)
+    if words is not None:
+        return words
+    # No sidecar (local TTS, imported audio) — try the alignment seam
+    # (CAPTION_ALIGN_BACKEND; off by default, fail-open).
+    try:
+        from video.caption_timing import words_from_caption_align
+
+        words = words_from_caption_align(audio_path)
+    except Exception as exc:
+        logger.debug("caption alignment skipped: %s", exc)
+        return None
+    if not words:
+        return None
+    # Whisper transcribes blind, so those words are ASR text — "Salkal" for
+    # "Salkilld". Keep its timings, take the text from the script we already have.
+    # None = the transcript didn't match, so its timings can't be trusted either.
+    try:
+        from video.caption_retext import retext_words_from_script
+
+        return retext_words_from_script(words, script)
+    except Exception as exc:
+        logger.debug("caption retext skipped: %s", exc)
+        return None
+
+
 def generate_subtitle_file(
     script: str,
     duration: float,
@@ -138,27 +188,16 @@ def generate_subtitle_file(
     audio_path: str | None = None,
     channel_id: str | None = None,
     output_path: str | None = None,
+    words: list[dict] | None = None,
 ) -> str:
     output_dir = os.path.join("output", "video")
     os.makedirs(output_dir, exist_ok=True)
 
     style = caption_style(channel_id)
-    words = _load_word_timings(audio_path) if style in ("word", "karaoke") else None
-    if words is None and style in ("word", "karaoke"):
-        # No ElevenLabs sidecar (local TTS, imported audio) — try the whisper
-        # alignment seam (CAPTION_ALIGN_BACKEND; off by default, fail-open to
-        # the proportional estimate below).
-        from video.caption_timing import words_from_caption_align
-
-        words = words_from_caption_align(audio_path)
-        if words:
-            # Whisper transcribes blind, so those words are ASR text — "Salkal" for
-            # "Salkilld". Keep its timings, take the text from the script we already
-            # have. None = the transcript didn't match, so its timings can't be
-            # trusted either; fall through to the proportional estimate.
-            from video.caption_retext import retext_words_from_script
-
-            words = retext_words_from_script(words, script)
+    # Resolved by the caller when the render already needed them (hook motion, lower
+    # thirds), so alignment runs once per render rather than once per consumer.
+    if words is None:
+        words = resolve_word_timings(audio_path, script, channel_id=channel_id)
 
     # Real word timings → accurate SRT or animated karaoke ASS; else the
     # proportional SRT estimate (unchanged behaviour).

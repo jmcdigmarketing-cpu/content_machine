@@ -337,16 +337,21 @@ def render_vertical_video(
     stable_subtitle = os.path.splitext(output_path)[0] + subtitle_ext
 
     stage("Generating subtitles...")
+    # Resolve the real timings ONCE and share them. This used to read only the
+    # ElevenLabs sidecar, so on any local-TTS run (Piper, imported audio) hook motion
+    # and lower thirds silently did nothing while the captions on the same render had
+    # whisper timings all along.
+    from video.subtitles import resolve_word_timings
+
+    word_timings = resolve_word_timings(mp3_path, script, channel_id=channel_id)
     subtitle_path = generate_subtitle_file(
         script,
         duration,
         audio_path=mp3_path,
         channel_id=channel_id,
         output_path=stable_subtitle,
+        words=word_timings,
     )
-    from video.subtitles import _load_word_timings
-
-    word_timings = _load_word_timings(mp3_path)
     lower_thirds_path: str | None = None
     if lower_thirds:
         try:
@@ -360,7 +365,14 @@ def render_vertical_video(
                 if progress:
                     progress.note(f"Lower thirds: {len(lower_thirds)} grounded label(s)")
             elif progress:
-                progress.note("Lower thirds skipped: no real matching word timings")
+                progress.note(
+                    "Lower thirds skipped: "
+                    + (
+                        "no word timings for this audio (no sidecar and no aligner)"
+                        if not word_timings
+                        else "no label matched a real word timing"
+                    )
+                )
         except Exception as exc:
             logger.warning("Lower thirds skipped: %s", exc)
 
@@ -395,7 +407,14 @@ def render_vertical_video(
             word_timings, get_channel_profile(channel_id).hook_motion
         )
         if get_channel_profile(channel_id).hook_motion and not hook_motion_filter and progress:
-            progress.note("Hook motion skipped: no real first-cue timing")
+            progress.note(
+                "Hook motion skipped: "
+                + (
+                    "no word timings for this audio (no sidecar and no aligner)"
+                    if not word_timings
+                    else "the first cue had no usable timing"
+                )
+            )
     except Exception as exc:
         logger.warning("Hook motion skipped for channel=%s: %s", channel_id, exc)
 

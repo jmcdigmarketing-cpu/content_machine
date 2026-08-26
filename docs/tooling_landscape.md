@@ -389,3 +389,51 @@ Spans the moat (grounding) **and** the new video-quality investment (decisions �
 *Honorable mentions (free, next-in): XTTS-v2 (voice cloning → multilingual dub),
 LatentSync (lip-sync avatar), Ultralytics YOLO (auto-reframe — note AGPL),
 system_prompts_leaks (prompt reference).*
+
+---
+
+## Addendum — 14 operator-submitted tools (2026-08-25)
+
+Same lens and vocabulary as above; ranked 0–10 **for this project**, not for general
+quality. Maturity figures are from an August-2026 web scan and carry the same
+order-of-magnitude caveat as the header — several fetched star counts looked inflated
+(a four-principles CLAUDE.md repo reporting ~200k stars, an AI gateway reporting ~55k)
+and are treated as "alive and adopted", not as fact.
+
+> **Correction to row 2 above.** The table's MoneyPrinter entry covers
+> **MoneyPrinterV2** (`FujiwaraChoki`, AGPL-3.0 — pattern-borrow only). The repo
+> assessed here is **MoneyPrinterTurbo** (`harry0703`) — a *different project* under
+> **MIT**. The copyleft warning does not carry over: Turbo's code is reusable, which is
+> most of why it tops this list.
+
+| 0-10 | Tool | Verdict | How it can be used here |
+|---|------|---------|-------------------------|
+| **7** | [MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | **Borrow** | MIT, same stack (Python 3.11, ffmpeg, whisper). Two concrete gaps it fills: **Edge TTS** as a free `TTS_PROVIDER` slot in [core/tts.py](../core/tts.py) (we have ElevenLabs/Piper/Kokoro/XTTS/Qwen — no Edge), and **Coverr** as a third stock source beside Pexels/Pixabay. Its WebUI/publishing overlap our pipeline — ignore that, take the two pieces. |
+| **6** | [public-apis](https://github.com/public-apis/public-apis) | **Intel** | The standard directory of free APIs (~470k★). Aims straight at the recurring Apify cost problem and [agent_reach_evaluation.md](agent_reach_evaluation.md)'s free-backend hunt — a shortlist source for keyless signal backends. Research input, never a dependency. |
+| **6** | [awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2) | **Borrow (patterns)** | 530+ structured image prompts ("prompt as code"). Thumbnail CTR is an untested lever and [core/experiment_levers.py](../core/experiment_levers.py) already has a `thumbnail` kind feeding [assets/flux_thumbnail.py](../assets/flux_thumbnail.py) — ready home, measurable. Targets GPT-Image-2; the *structures* port to Flux, the exact prompts may not. |
+| **6** | [mattpocock/skills](https://github.com/mattpocock/skills) | **Reference** | Composable agent skills. `/tdd` enforces watch-it-fail-first — the discipline that would have caught all four defects in the 21–28 audit (see [.cursor/rules/content-machine.mdc](../.cursor/rules/content-machine.mdc)). JS/TS-flavoured; the philosophy ports, `/handoff` duplicates HANDOFF_SYNOPSIS. |
+| **5** | [senior-prompt-engineer skill](https://github.com/alirezarezvani/claude-skills/blob/main/engineering-team/skills/senior-prompt-engineer/SKILL.md) | **Reference** | One rule is a real gap: *"never change a prompt without a baseline"* — `PROMPT_VERSION` in [core/content_engine.py](../core/content_engine.py) is bumped by hand with no A/B behind it. Its three CLI tools duplicate `ops grade`/the report card. Take the discipline, skip the tooling. |
+| **5** | [hister](https://github.com/asciimoo/hister) | **Complement (evaluate)** | Go/AGPL personal search: a browser extension indexes pages you visit, MCP-searchable. Interesting because it addresses a *live* failure — run 71's MSN link came back headline-only because [core/link_facts.py](../core/link_facts.py) can't render JS pages, while a browser that already rendered it can. AGPL + separate service: evaluate standalone, never couple. |
+| **5** | [OmniRoute](https://github.com/diegosouzapw/OmniRoute) | **Overlap** | An LLM gateway — a direct competitor to [core/llm_router.py](../core/llm_router.py), which already has tier routing, failover, a session breaker and the cost-meter wiring. Do not adopt; a gateway between us and providers would blind the breaker. Mine its free-tier provider list for slugs to add to *our* router. Its token-compression claims (~89% avg) warrant scepticism. |
+| **4** | [claude-plugins-community](https://github.com/anthropics/claude-plugins-community) | **Reference** | Anthropic-managed mirror of security-reviewed community plugins (`claude plugin marketplace add anthropics/claude-plugins-community`). Worth knowing it exists as the vetted channel; nothing in it today is specific to this pipeline. |
+| **4** | [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) | **Reference** | Four generic principles in a CLAUDE.md (think first, simplicity, surgical changes, goal-driven). Duplicates the repo-specific, evidence-based rules already in `.cursor/rules`. "Surgical changes" is the one worth absorbing — the last Cursor drop was 1384 lines in one body. |
+| **3** | [ai-memory](https://github.com/akitaonrails/ai-memory) | **Overlap** | Rust MCP memory server (git-versioned markdown + SQLite FTS). Well built — but a second markdown memory store would compete with the Obsidian vault, which is a *product* surface (Pillar 4, provenance tiers in [core/fact_store.py](../core/fact_store.py)), not agent scratch. Cross-vendor handoff is real; HANDOFF_SYNOPSIS covers it. |
+| **2** | [cs-senior-engineer agent](https://alirezarezvani.github.io/claude-skills/agents/cs-senior-engineer/) | **Reference (thin)** | A generic senior-engineer persona (architecture/review/CI/security workflows). This repo's problem was never a missing persona — it was specific failure patterns, now encoded with evidence in `.cursor/rules`. Little marginal value. |
+| **2** | [PostHog](https://github.com/PostHog/posthog) | **Irrelevant (for now)** | Product analytics for *apps* (events, replays, flags; MIT core, generous free tier). Our loop measures **YouTube content** performance, which PostHog does not. Revisit only if the operator surface ever becomes a hosted app — #147 FastAPI is explicitly skipped. |
+| **1** | [openhuman](https://github.com/tinyhumansai/openhuman) | **Avoid** | Early-beta Rust/Node personal-agent framework, **GPL-3.0**, "expect rough edges". Overlaps memory + orchestration that already exist here and fit the pipeline better; copyleft beside this codebase is a hazard with no offsetting gain. Not avatar/video software despite the name. |
+| **0** | [reverse-skill](https://github.com/zhaoxuya520/reverse-skill) | **Irrelevant** | Security/reverse-engineering task routing — APKs, Ghidra, Frida, CTF sandboxes. No intersection with a video pipeline. The honest zero. |
+
+### The one action to take — Edge TTS behind a flag (next wave)
+
+The roadmap's pronunciation-lexicon item says the $0 flip is *"unblocked on captions
+and blocked on ears"*: Piper mispronounces the fighter/game names that are the
+channel's whole subject, and ElevenLabs is **$0.25–0.31/video (~91% of a rendered
+run)**. MoneyPrinterTurbo's lead voice is **Edge TTS** — free, keyless, zero-install,
+neural voices well above Piper's — which could retire the lexicon item outright
+instead of working around it.
+
+**The risk, stated plainly:** Edge TTS drives an undocumented Microsoft endpoint. That
+is a terms grey area and can break without notice. So it enters as one more
+`TTS_PROVIDER` slot that **fails open to the existing chain**, never as the only $0
+path, and earns trust by one real render compared against Piper. Decision taken
+2026-08-25 (operator): worth trying behind a flag.

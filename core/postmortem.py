@@ -148,3 +148,25 @@ def render(data: dict[str, Any]) -> str:
     lines.append(f"  cost      : ${float(data.get('cost_usd') or 0):.4f}")
     lines.append(f"  next fix  : {data.get('next_fix')}")
     return "\n".join(lines)
+
+
+def as_markdown(data: dict[str, Any]) -> str:
+    """Copy-as-markdown for `ops postmortem --md` and the booth."""
+    rid = data.get("run_id")
+    lines = [
+        f"# Postmortem run #{rid}",
+        "",
+        f"- Topic: {data.get('topic') or 'n/a'}",
+        f"- Status: {data.get('status') or 'n/a'}",
+    ]
+    slow = data.get("slowest")
+    if slow:
+        lines.append(f"- Slowest: {slow.get('phase')} ({slow.get('seconds')}s)")
+    else:
+        lines.append("- Slowest: n/a")
+    failed = data.get("failed_signals") or []
+    lines.append(f"- Signals: {', '.join(failed) if failed else '(all ok / none recorded)'}")
+    lines.append(f"- Ungrounded: {int(data.get('ungrounded_count') or 0)}")
+    lines.append(f"- Cost: ${float(data.get('cost_usd') or 0):.4f}")
+    lines.append(f"- Next fix: {data.get('next_fix')}")
+    return "\n".join(lines)

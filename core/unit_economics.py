@@ -66,6 +66,27 @@ def plan_capacity_videos(
     return chars // typical
 
 
+def allocated_vs_marginal_oneliner(
+    *,
+    n_videos: int | None = None,
+    marginal: float | None = None,
+) -> str:
+    """Booth footer: allocated (plan / N) vs this-run metered TTS."""
+    n = int(n_videos or 0)
+    if n <= 0:
+        n = plan_capacity_videos() or 90
+    alloc = allocated_per_video(n)
+    try:
+        marg = float(marginal) if marginal is not None else 0.31
+    except (TypeError, ValueError):
+        marg = 0.31
+    if marg <= 0:
+        marg = 0.31
+    return (
+        f"allocated ${alloc:.2f}/video (plan ${_plan_usd():.0f}/mo / {n}) vs marginal ${marg:.2f}"
+    )
+
+
 @dataclass
 class VideoEconomics:
     run_id: int
@@ -239,6 +260,29 @@ def domain_margin_lines(econ: ChannelEconomics) -> list[str]:
         mar_s = f"margin ${margin:+.2f}" if margin is not None else "margin n/a"
         lines.append(f"    {name:<12} n={int(b['n'])} cost ${b['cost']:.2f} {rpm_s} {mar_s}")
     return lines
+
+
+def to_csv(econ: ChannelEconomics) -> str:
+    """CSV export of per-video unit economics (candidate 135). ASCII only."""
+    import csv
+    import io
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["run_id", "title", "domain", "cost_usd", "revenue_usd", "views", "margin_usd"])
+    for v in econ.videos:
+        writer.writerow(
+            [
+                v.run_id,
+                v.title,
+                v.domain,
+                f"{v.cost_usd:.4f}",
+                "" if v.revenue_usd is None else f"{v.revenue_usd:.4f}",
+                v.views,
+                "" if v.margin_usd is None else f"{v.margin_usd:.4f}",
+            ]
+        )
+    return buf.getvalue()
 
 
 def render(channel_id: str | None = None, *, limit: int = 25) -> str:

@@ -82,6 +82,7 @@ class IntelligenceReport:
     opportunity_window: dict[str, Any] = field(default_factory=dict)
     explainability: dict[str, Any] = field(default_factory=dict)
     accuracy: dict[str, Any] = field(default_factory=dict)
+    authenticity_notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -157,7 +158,7 @@ def build_intelligence_report(
     )
     accuracy = build_accuracy_report(channel_id)
 
-    return IntelligenceReport(
+    report = IntelligenceReport(
         generated_at=datetime.now(timezone.utc).isoformat(),
         channel_id=channel_id,
         channel_name=profile.name or channel_id,
@@ -183,6 +184,54 @@ def build_intelligence_report(
         explainability=explainability,
         accuracy=accuracy,
     )
+    report.authenticity_notes = sku_authenticity_notes(report)
+    return report
+
+
+def sku_authenticity_notes(report: IntelligenceReport) -> list[str]:
+    """Honesty notes for the no-video SKU (operating_plan §6.2). No extra LLM."""
+    notes = [
+        "SKU is research-only: no TTS, no render, no YouTube upload.",
+        "2026 inauthentic-content: do not stamp this brief into a templated voiceover.",
+    ]
+    try:
+        conf = float((report.corroboration or {}).get("confidence") or 0)
+    except (TypeError, ValueError):
+        conf = 0.0
+    if conf < 0.5:
+        notes.append("Corroboration is thin — treat unverified lines as leads, never as facts.")
+    window = str((report.opportunity_window or {}).get("window_status") or "")
+    if window.lower() in ("closed", "missed", "too_late"):
+        notes.append(
+            "Opportunity window is closed; selling this brief as 'post now' would be dishonest."
+        )
+    return notes
+
+
+def to_sku_markdown(report: IntelligenceReport) -> str:
+    notes = report.authenticity_notes or sku_authenticity_notes(report)
+    lines = [
+        "# Intelligence-report SKU",
+        "",
+        "_No video. No TTS. First external dollar without a $0.31 voice line._",
+        "",
+        to_markdown(report).rstrip(),
+        "",
+        "## Authenticity notes",
+        "",
+    ]
+    lines.extend(f"- {n}" for n in notes)
+    raw = "\n".join(lines) + "\n"
+    from core.public_redact import redact_for_public
+
+    redacted, stats = redact_for_public(raw)
+    if stats.get("stripped"):
+        redacted += (
+            "\n## Redaction\n\n"
+            f"- redaction_pre_lines: {stats['pre_lines']}\n"
+            f"- redaction_post_lines: {stats['post_lines']}\n"
+        )
+    return redacted
 
 
 def run_intelligence(
@@ -241,6 +290,12 @@ def save_report(
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(to_markdown(report))
         paths["md"] = md_path
+
+    if "sku" in formats:
+        sku_path = os.path.join(out_dir, f"{base}_sku.md")
+        with open(sku_path, "w", encoding="utf-8") as f:
+            f.write(to_sku_markdown(report))
+        paths["sku"] = sku_path
 
     return paths
 
@@ -435,6 +490,11 @@ def _cli_main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print Markdown to stdout instead of saving files",
     )
+    parser.add_argument(
+        "--sku",
+        action="store_true",
+        help="Also write the no-video SKU markdown (research + competitors + authenticity)",
+    )
     args = parser.parse_args(argv)
 
     setup_logging()
@@ -452,9 +512,11 @@ def _cli_main(argv: list[str] | None = None) -> int:
     )
 
     formats = tuple(f.strip() for f in args.format.split(",") if f.strip())
+    if getattr(args, "sku", False) and "sku" not in formats:
+        formats = (*formats, "sku")
 
     if args.stdout:
-        print(to_markdown(report))
+        print(to_sku_markdown(report) if getattr(args, "sku", False) else to_markdown(report))
         return 0
 
     paths = save_report(

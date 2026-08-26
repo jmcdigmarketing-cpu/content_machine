@@ -23,6 +23,24 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
 
+  audit:
+    name: Dependency audit (report-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install pip-audit
+        run: pip install pip-audit==2.7.3
+      # Report-only, like the mypy baseline and coverage: a CVE in a transitive
+      # pin must be visible without blocking an unrelated publish. Promote to
+      # blocking once the backlog is zero.
+      - name: Audit dependencies
+        run: pip-audit --desc
+        continue-on-error: true
+
   typecheck:
     name: Type check (non-blocking baseline)
     runs-on: ubuntu-latest

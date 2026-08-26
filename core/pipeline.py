@@ -43,6 +43,11 @@ class DiscoveryResult:
     evaluated: list[tuple[str, float, dict[str, Any]]]  # variant, score, signals
     timings: dict[str, float] = field(default_factory=dict)
     channel_id: str = "default"
+    # Candidate 323: variant -> pre-clamp composite. The displayed score is capped at
+    # 100, so on a hot topic every variant reads 100.0 and the ranking carries no
+    # information. Kept beside `evaluated` (not inside it) so the 3-tuple shape that
+    # batch_generation / intelligence_report unpack stays exactly as it was.
+    raw_scores: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -69,6 +74,25 @@ class PipelineResult:
     features: dict[str, Any] = field(default_factory=dict)
 
 
+def best_variant_index(
+    evaluated: list[tuple[str, float, Any]],
+    raw_scores: dict[str, float] | None = None,
+) -> int:
+    """Index of the best variant, breaking display ties on the pre-clamp score (323).
+
+    `composite_score` clamps to 100, so on a hot topic every variant shows the same
+    number and "best" degenerates to "first in the list" — run 71 offered five angles
+    at exactly 100.00. The displayed score still leads: raw only decides among equals.
+    """
+    if not evaluated:
+        raise ValueError("evaluated must be non-empty")
+    raw = raw_scores or {}
+    return max(
+        range(len(evaluated)),
+        key=lambda i: (evaluated[i][1], raw.get(evaluated[i][0], evaluated[i][1])),
+    )
+
+
 def _score_variant(
     variant: str,
     channel_id: str,
@@ -76,16 +100,19 @@ def _score_variant(
     *,
     seed_topic: str = "",
 ):
+    from apis.topic_scorer import composite_score_raw
+
     variant_signals = build_registry(variant, reuse_signals=base_signals, channel_id=channel_id)
     score = composite_score(variant_signals, variant, channel_id)
+    # Candidate 323: same number without the 0-100 clamp, for tie-breaking only.
+    raw = composite_score_raw(variant_signals, variant, channel_id)
     if seed_topic:
-        score = max(
-            0.0,
-            score
-            - anchor_preservation_penalty(variant, seed_topic)
-            - mcu_drift_penalty(variant, seed_topic),
+        penalty = anchor_preservation_penalty(variant, seed_topic) + mcu_drift_penalty(
+            variant, seed_topic
         )
-    return variant, score, variant_signals
+        score = max(0.0, score - penalty)
+        raw = raw - penalty
+    return variant, score, variant_signals, raw
 
 
 def _word_range(length_choice: str) -> tuple[int, int]:
@@ -191,13 +218,16 @@ def run_discovery(
     total = len(candidates)
     _report("Scoring variants", 0, total)
     evaluated: list[tuple[str, float, dict[str, Any]]] = []
+    raw_scores: dict[str, float] = {}
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {
             executor.submit(_score_variant, v, channel_id, base_signals, seed_topic=topic): v
             for v in candidates
         }
         for done, future in enumerate(as_completed(futures), start=1):
-            evaluated.append(future.result())
+            variant, score, variant_signals, raw = future.result()
+            evaluated.append((variant, score, variant_signals))
+            raw_scores[variant] = raw
             # Show which angle just finished scoring — engagement during the wait.
             _report("Scoring variants", done, total, detail=futures[future])
     # Restore deterministic candidate order (as_completed yields by completion time).
@@ -217,6 +247,7 @@ def run_discovery(
         input_topic=topic,
         base_signals=base_signals,
         evaluated=evaluated,
+        raw_scores=raw_scores,
         timings=timings,
         channel_id=channel_id,
     )
@@ -287,6 +318,16 @@ def _finalize_run(
         persist_quality(run_id, quality)
     except Exception:
         quality = {}
+    try:
+        from core.grade import expert_panel_review, persist_expert_panel
+        from core.providers import flag_enabled
+
+        if flag_enabled("EXPERT_PANEL_ENABLED") and run_id and (result.script or "").strip():
+            panel = expert_panel_review(result.script, channel_id)
+            if panel.ok and panel.data:
+                persist_expert_panel(run_id, panel.data)
+    except Exception as exc:
+        logger.debug("expert panel persistence skipped: %s", exc)
     try:
         write_run_trace(
             run_id=run_id,
@@ -383,7 +424,7 @@ def run_pipeline(
     if variant_index is not None and 0 <= variant_index < len(evaluated):
         index = variant_index
     else:
-        index = max(range(len(evaluated)), key=lambda i: evaluated[i][1])
+        index = best_variant_index(evaluated, discovery.raw_scores)
 
     best_topic, best_score, best_signals = evaluated[index]
     result.topic = best_topic
@@ -445,8 +486,11 @@ def run_pipeline(
     result.features["trade_warnings"] = content.get("trade_warnings") or []
     # Pillar 3 (Fact Engine): tier lint, pre-script conflicts, claim verifier.
     result.features["tier_warnings"] = content.get("tier_warnings") or []
+    # Candidate 321: title claim check (generated after every other gate has passed).
+    result.features["title_warnings"] = content.get("title_warnings") or []
     result.features["fact_conflicts"] = content.get("fact_conflicts") or []
     result.features["fact_conflicts_dropped"] = int(content.get("fact_conflicts_dropped") or 0)
+    result.features["lower_thirds"] = list(content.get("lower_thirds") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]
 
@@ -478,6 +522,7 @@ def run_pipeline(
         result.script,
         channel_id=channel_id,
         title=result.title,
+        lower_thirds=result.features.get("lower_thirds"),
     )
     result.mp3_path = mp3_path
     result.mp4_path = mp4_path
@@ -500,14 +545,34 @@ def run_media_only(
     channel_id: str | None = None,
     content_run_id: int | None = None,
     title: str | None = None,
+    render_preset: str = "publish",
+    lower_thirds: list[str] | None = None,
 ) -> tuple[str, str, str]:
-    """Generate audio + video (+ thumbnail). Returns (mp3, mp4, thumbnail_path)."""
+    """Generate audio + video (+ publish thumbnail). Draft preset never updates upload media."""
     channel_id = resolve_channel_id(channel_id)
     display_title = title or topic
+    render_preset = str(render_preset or "publish").strip().lower()
+    if render_preset not in {"publish", "draft"}:
+        raise ValueError(f"Unknown render preset: {render_preset}")
     progress = RenderProgress(enabled=is_render_progress_enabled())
+    if lower_thirds is None and content_run_id:
+        try:
+            from core.run_features import load_features
+
+            stored_labels = (load_features(content_run_id) or {}).get("lower_thirds")
+            if isinstance(stored_labels, list):
+                lower_thirds = [str(label) for label in stored_labels if str(label).strip()]
+        except Exception as exc:
+            logger.debug("stored lower thirds unavailable for run %s: %s", content_run_id, exc)
 
     progress.stage("Preparing output paths...")
     mp3_path, mp4_filename, mp4_path = media_paths_for_topic(topic, channel_id=channel_id)
+    if render_preset == "draft":
+        audio_stem, audio_ext = os.path.splitext(mp3_path)
+        mp3_path = f"{audio_stem}_preview{audio_ext}"
+        stem, ext = os.path.splitext(mp4_filename)
+        mp4_filename = f"{stem}_preview{ext}"
+        mp4_path = os.path.join(os.path.dirname(mp4_path), mp4_filename)
     progress.note(f"MP3 → {mp3_path}")
     progress.note(f"MP4 → {mp4_path}")
 
@@ -522,6 +587,22 @@ def run_media_only(
     generate_audio(script, mp3_path, channel_id=channel_id)
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
 
+    ffmpeg_commands: dict[str, list[str]] = {}
+    ffmpeg_attempts: dict[str, list[list[str]]] = {}
+
+    def _capture_ffmpeg_command(kind: str, argv: list[str]) -> None:
+        label = str(kind)
+        command = [str(part) for part in argv]
+        if label.endswith("_attempt"):
+            base = label.removesuffix("_attempt")
+            ffmpeg_attempts.setdefault(base, []).append(command)
+        elif label.endswith("_success"):
+            ffmpeg_commands[label.removesuffix("_success")] = command
+        else:
+            # Compatibility for callers/tests using the original callback contract:
+            # an unqualified command means the caller reports it as successful.
+            ffmpeg_commands[label] = command
+
     _, background = render_vertical_video(
         mp3_path,
         topic,
@@ -529,15 +610,21 @@ def run_media_only(
         script,
         channel_id,
         progress=progress,
+        command_callback=_capture_ffmpeg_command,
+        render_preset=render_preset,
+        lower_thirds=lower_thirds,
     )
 
     thumb_path = ""
     thumb_provider: str | None = None
-    if os.getenv("THUMBNAIL_MODE", "auto").lower() != "off":
+    thumb_safe_area: dict[str, Any] = {}
+    thumbnail_candidates: list[dict[str, Any]] = []
+    if render_preset == "publish" and os.getenv("THUMBNAIL_MODE", "auto").lower() != "off":
         progress.stage("Thumbnail (Flux or Pillow)...")
         t_thumb = time.perf_counter()
-        from assets.flux_thumbnail import generate_thumbnail
+        from assets.flux_thumbnail import generate_dual_thumbnails, generate_thumbnail
         from core.output_paths import ensure_channel_output_dirs
+        from core.thumbnail_pick import dual_thumbnail_enabled
 
         thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
         grade_letter = None
@@ -549,15 +636,37 @@ def run_media_only(
                 grade_letter = graded.letter if graded else None
             except Exception as exc:
                 logger.debug("thumbnail grade lookup skipped: %s", exc)
-        thumb = generate_thumbnail(
-            topic,
-            display_title,
-            output_dir=thumb_dir,
-            content_run_id=content_run_id,
-            channel_id=channel_id,
-            grade_letter=grade_letter,
-        )
-        if thumb.path:
+        if dual_thumbnail_enabled(channel_id) and content_run_id:
+            thumbnail_candidates = generate_dual_thumbnails(
+                topic,
+                display_title,
+                output_dir=thumb_dir,
+                content_run_id=content_run_id,
+                channel_id=channel_id,
+                grade_letter=grade_letter,
+            )
+            for candidate in thumbnail_candidates:
+                progress.note(
+                    "Thumbnail "
+                    f"{candidate.get('arm')}: {candidate.get('provider')} — "
+                    f"{candidate.get('path')}"
+                )
+            progress.note("Dual thumbnails generated; operator pick required before publish")
+            thumb = None
+        else:
+            if dual_thumbnail_enabled(channel_id) and not content_run_id:
+                progress.note(
+                    "Dual thumbnails skipped: run id unavailable; generated one safe thumbnail"
+                )
+            thumb = generate_thumbnail(
+                topic,
+                display_title,
+                output_dir=thumb_dir,
+                content_run_id=content_run_id,
+                channel_id=channel_id,
+                grade_letter=grade_letter,
+            )
+        if thumb is not None and thumb.path:
             thumb_path = thumb.path
             thumb_provider = thumb.provider or ""
             from assets.flux_thumbnail import list_channel_thumbnails
@@ -565,7 +674,20 @@ def run_media_only(
             total = len(list_channel_thumbnails(thumb_dir))
             progress.note(f"{thumb.detail or 'thumbnail'} — {thumb_path}")
             progress.note(f"Thumbnails in folder: {total} ({thumb_dir})")
-        else:
+            try:
+                from core.thumbnail_safe_area import inspect_thumbnail, render_check
+
+                checked = inspect_thumbnail(thumb_path)
+                thumb_safe_area = {
+                    "bottom_quiet": checked.bottom_quiet,
+                    "bottom_detail": checked.bottom_detail,
+                    "detail": checked.detail,
+                    "method": "bottom_20_percent_edge_density",
+                }
+                progress.note(render_check(checked))
+            except Exception as exc:
+                logger.warning("Thumbnail safe-area check failed for %s: %s", thumb_path, exc)
+        elif thumb is not None:
             progress.note(thumb.detail or "thumbnail skipped")
         progress.note(f"Thumbnail step {time.perf_counter() - t_thumb:.1f}s")
 
@@ -588,7 +710,7 @@ def run_media_only(
                         {"thumbnail_overall": scored.overall, "thumbnail_source": scored.source},
                     )
 
-    if content_run_id:
+    if content_run_id and render_preset == "publish":
         update_content_run_media(
             content_run_id, mp3_path=mp3_path, mp4_path=mp4_path, status="rendered"
         )
@@ -609,8 +731,55 @@ def run_media_only(
                 thumbnail_provider=thumb_provider,
                 tts_cached=last_tts_was_cache_hit(),
             )
-            merge_features(content_run_id, {"cost": cost})
-            update_trace(content_run_id, {"status": "rendered", "cost": cost})
+            if thumbnail_candidates:
+                cost["thumbnail"] = round(
+                    sum(
+                        float((candidate.get("cost") or {}).get("known_incurred_usd") or 0)
+                        for candidate in thumbnail_candidates
+                    ),
+                    4,
+                )
+                cost["total"] = round(
+                    sum(float(value) for key, value in cost.items() if key != "total"),
+                    4,
+                )
+            merge_features(
+                content_run_id,
+                {
+                    "cost": cost,
+                    "tts_cached": last_tts_was_cache_hit(),
+                    "thumbnail_provider": thumb_provider or "",
+                    "thumbnail_safe_area": thumb_safe_area,
+                    "thumbnail_candidates": thumbnail_candidates,
+                },
+            )
+            update_trace(
+                content_run_id,
+                {
+                    "status": "rendered",
+                    "cost": cost,
+                    "tts_cached": last_tts_was_cache_hit(),
+                    "thumbnail_provider": thumb_provider or "",
+                    "thumbnail_safe_area": thumb_safe_area,
+                    "thumbnail_candidates": thumbnail_candidates,
+                    **(
+                        {"ffmpeg_command": ffmpeg_commands["primary"]}
+                        if ffmpeg_commands.get("primary")
+                        else {}
+                    ),
+                    **(
+                        {"ffmpeg_intro_command": ffmpeg_commands["intro"]}
+                        if ffmpeg_commands.get("intro")
+                        else {}
+                    ),
+                    **(
+                        {"ffmpeg_outro_command": ffmpeg_commands["outro"]}
+                        if ffmpeg_commands.get("outro")
+                        else {}
+                    ),
+                    **({"ffmpeg_attempted_commands": ffmpeg_attempts} if ffmpeg_attempts else {}),
+                },
+            )
         except Exception as exc:
             logger.debug("post-render cost update skipped for run %s: %s", content_run_id, exc)
 
@@ -625,4 +794,10 @@ def run_media_only(
         )
 
     progress.done("Render complete")
+    try:
+        from core.win_notify import notify_ffmpeg_done
+
+        notify_ffmpeg_done(mp4_path)
+    except Exception as exc:
+        logger.debug("ffmpeg toast skipped: %s", exc)
     return mp3_path, mp4_path, thumb_path

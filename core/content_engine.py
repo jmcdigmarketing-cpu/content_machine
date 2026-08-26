@@ -1,4 +1,7 @@
+import hashlib
+import inspect
 import os
+from types import CodeType
 from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
@@ -17,6 +20,7 @@ from core.script_length import (
     count_spoken_words,
     get_length_preset,
     length_system_addendum,
+    trim_overlength,
 )
 from core.seo import normalize_youtube_tags, tags_from_topic
 from core.signal_facts import format_signal_facts
@@ -26,6 +30,68 @@ logger = get_logger("core.content_engine")
 PROMPT_VERSION = "content_engine_v7"
 MAX_EXPAND_ATTEMPTS = 2
 MAX_EXPAND_ATTEMPTS_EXTENDED = 4  # Extended format needs more passes to hit 1000+ words
+
+_PROMPT_BUILDER_NAMES = (
+    "_build_prompts",
+    "_maybe_improve_hook",
+    "_maybe_reground_script",
+    "_maybe_rewrite_unsupported_claims",
+    "_maybe_inject_insight",
+    "_maybe_recenter_on_key_facts",
+    "_expand_script",
+)
+
+
+def prompt_version_for_sources(sources: list[str] | tuple[str, ...]) -> str:
+    """Stable version whose suffix changes whenever prompt-builder source changes."""
+    blob = "\n\n".join(str(source).replace("\r\n", "\n") for source in sources)
+    return f"{PROMPT_VERSION}-{hashlib.sha256(blob.encode('utf-8')).hexdigest()[:12]}"
+
+
+def _stable_code_text(code: CodeType) -> str:
+    """Deterministic source fallback without repr() memory addresses or file paths."""
+
+    def stable_constant(value: object) -> str:
+        if isinstance(value, CodeType):
+            return _stable_code_text(value)
+        if isinstance(value, tuple):
+            return "(" + ",".join(stable_constant(item) for item in value) + ")"
+        if isinstance(value, bytes):
+            return f"bytes:{value.hex()}"
+        if value is None or isinstance(value, str | int | float | complex | bool):
+            return repr(value)
+        return f"<{type(value).__module__}.{type(value).__qualname__}>"
+
+    return "|".join(
+        (
+            code.co_name,
+            str(code.co_argcount),
+            str(code.co_kwonlyargcount),
+            code.co_code.hex(),
+            ",".join(code.co_names),
+            ",".join(code.co_varnames),
+            ",".join(stable_constant(value) for value in code.co_consts),
+        )
+    )
+
+
+def _prompt_source_blob() -> str:
+    sources: list[str] = []
+    for name in _PROMPT_BUILDER_NAMES:
+        builder = globals().get(name)
+        if builder is None:
+            continue
+        try:
+            source = inspect.getsource(builder)
+        except (OSError, TypeError):
+            code = getattr(builder, "__code__", None)
+            source = _stable_code_text(code) if isinstance(code, CodeType) else name
+        sources.append(f"{name}\n{source}".replace("\r\n", "\n"))
+    return "\n\n".join(sources)
+
+
+def current_prompt_version() -> str:
+    return prompt_version_for_sources([_prompt_source_blob()])
 
 
 def _format_signal_facts(signals):
@@ -478,6 +544,12 @@ def _maybe_rewrite_unsupported_claims(script, verification, corpus_text, topic, 
             len(verification.unsupported),
             len(re_check.unsupported),
         )
+        # Candidate 322: keep the pre-rewrite verdict on the record. The claims were
+        # restated as attributed speculation, not evidenced, and the persisted numbers
+        # would otherwise show a run that was right first time.
+        re_check.rewritten = True
+        re_check.pre_rewrite_unsupported = len(verification.unsupported)
+        re_check.pre_rewrite_total = verification.total
         return candidate, re_check
     return script, verification
 
@@ -794,11 +866,13 @@ def generate_content_package(
         return {
             "title": topic,
             "script": payload if isinstance(payload, str) else "",
-            "description": apply_description_extras("", channel_id),
+            "description": apply_description_extras(
+                "", channel_id, title=topic, topic=topic, key_facts=clean_key_facts
+            ),
             "tags": normalize_youtube_tags(
                 default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
             ),
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": current_prompt_version(),
             "brief_version": research_brief.version if research_brief else "",
             "word_count": 0,
         }
@@ -924,6 +998,31 @@ def generate_content_package(
             script, verification, corpus.factual_text, topic, clean_key_facts
         )
 
+    try:
+        from core.odds_language import apply_odds_language
+
+        script, odds_notes = apply_odds_language(script, topic=topic)
+        for note in odds_notes:
+            logger.info("%s", note)
+    except Exception as exc:
+        logger.debug("odds language skipped: %s", exc)
+
+    tts_cap = None
+    try:
+        from core.tts_char_cap import max_chars as tts_max
+
+        tts_cap = tts_max()
+    except Exception as exc:
+        logger.debug("tts cap for trim skipped: %s", exc)
+
+    # Odds rewrite can add words ("will win" -> "is favored to win"); trim after
+    # that so a post-trim cap check cannot refuse a script we just made fit.
+    script, trimmed_n = trim_overlength(
+        script, max_words=max_words, min_words=min_words, max_chars=tts_cap
+    )
+    if trimmed_n:
+        logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
+
     from core.title_generator import generate_title
 
     title = generate_title(
@@ -934,12 +1033,43 @@ def generate_content_package(
         channel_id=channel_id,
     )
 
+    # Candidate 321: the title is the last thing generated and was the only operator-
+    # facing string no check ever read. Verified here (not at publish time) so the
+    # warning reaches the report card BEFORE the operator answers "Proceed?".
+    from core.youtube_meta import lint_title_grounding
+
+    title_warnings = lint_title_grounding(
+        title,
+        facts_text=corpus.factual_text,
+        priority_facts=clean_key_facts,
+        topic=topic,
+    )
+    if title_warnings:
+        logger.warning(
+            "Title check flagged %d claim(s): %s",
+            len(title_warnings),
+            "; ".join(title_warnings),
+        )
+
+    # Public overlay metadata: keep only grounded display labels. Source fact lines
+    # stay inside this generation call and are never persisted as lower-third data.
+    from video.lower_thirds import select_grounded_labels
+
+    lower_thirds = select_grounded_labels(script, corpus.factual_text)
+
     return {
         "title": title,
+        "title_warnings": title_warnings,
         "script": script,
-        "description": apply_description_extras(payload.get("description") or "", channel_id),
+        "description": apply_description_extras(
+            payload.get("description") or "",
+            channel_id,
+            title=title,
+            topic=topic,
+            key_facts=clean_key_facts,
+        ),
         "tags": tags,
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": current_prompt_version(),
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
         "ungrounded_entities": ungrounded,
@@ -948,4 +1078,5 @@ def generate_content_package(
         "fact_conflicts": [c.render() for c in conflicts],
         "fact_conflicts_dropped": conflicts_dropped,
         "claim_verification": verification.to_dict() if verification else None,
+        "lower_thirds": lower_thirds,
     }

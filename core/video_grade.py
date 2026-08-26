@@ -221,6 +221,15 @@ def render_grade(grade: VideoGrade) -> str:
     return "\n".join(lines)
 
 
+def grade_as_markdown(grade: VideoGrade) -> str:
+    """Copy-as-markdown for `ops grade --md` and the booth report card."""
+    lines = [f"# Report card {grade.letter} ({grade.score:.0f}/100)", ""]
+    for c in grade.components:
+        note = f" - {c.note}" if c.note else ""
+        lines.append(f"- **{c.name}**: {c.score:.0f}{note}")
+    return "\n".join(lines)
+
+
 def render_expert_panel(draft: str, channel_id: str | None = None) -> str:
     """Optional qualitative Expert-Panel section shown beside the numeric card.
 
@@ -266,6 +275,8 @@ def render_expert_panel(draft: str, channel_id: str | None = None) -> str:
 def expert_panel_for_run(run_id: int) -> str:
     """Panel section for a persisted run's script preview ("" when off/failed)."""
     try:
+        import json
+
         from core.providers import flag_enabled
 
         if not flag_enabled("EXPERT_PANEL_ENABLED"):
@@ -275,6 +286,30 @@ def expert_panel_for_run(run_id: int) -> str:
         record = get_content_run_repository().get(run_id)
         if record is None:
             return ""
+        try:
+            quality = json.loads(record.quality_json or "{}")
+        except Exception:
+            quality = {}
+        stored = quality.get("expert_panel") if isinstance(quality, dict) else None
+        if stored:
+            import textwrap
+
+            lines = ["Expert panel (qualitative, does not affect the score):"]
+            for entry in stored:
+                persona = str(entry.get("persona") or "").strip() or "persona"
+                review = " ".join(str(entry.get("review") or "").split())
+                if not review:
+                    continue
+                lines.extend(
+                    textwrap.wrap(
+                        f"{persona}: {review}",
+                        width=92,
+                        initial_indent="    ",
+                        subsequent_indent=" " * 8,
+                    )
+                )
+            if len(lines) > 1:
+                return "\n".join(lines)
         return render_expert_panel(record.script_preview, record.channel_id)
     except Exception as exc:
         logger.debug("expert panel skipped: %s", exc)

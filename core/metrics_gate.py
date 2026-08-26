@@ -90,3 +90,35 @@ def metrics_gate_reason(
         f"metrics gate: {n} yesterday upload(s) still have no views "
         f"({day.isoformat()}) — sync analytics before the next video"
     )
+
+
+def yesterday_unsynced_copy(
+    channel_id: str,
+    *,
+    today: date | None = None,
+    rows: list[Any] | None = None,
+) -> str:
+    """Booth sentence when yesterday's uploads still have no views.
+
+    Informational — does not require METRICS_BEFORE_NEXT. Store failures fail-open.
+    """
+    day = (today or datetime.now(timezone.utc).date()) - timedelta(days=1)
+    if rows is None:
+        try:
+            from storage.repositories.publish_log import get_publish_log_repository
+
+            rows = get_publish_log_repository().list_uploaded_for_channel(channel_id)
+        except Exception as exc:
+            logger.debug("yesterday-unsynced publish_log skipped: %s", exc)
+            return ""
+    yesterday = [r for r in (rows or []) if _published_on(r, day)]
+    if not yesterday:
+        return ""
+    missing = [r for r in yesterday if not _has_metrics(getattr(r, "metrics_json", "") or "")]
+    if not missing:
+        return ""
+    n = len(missing)
+    return (
+        f"Yesterday unsynced: {n} upload(s) from {day.isoformat()} still have no views. "
+        "Sync analytics before the next video so the learning loop has a data point."
+    )

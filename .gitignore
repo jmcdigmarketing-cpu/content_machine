@@ -64,6 +64,7 @@ dist/
 # Eval corpus: keep verbatim leaked/adversarial prompts local (README is the marker).
 prompts/eval_corpus/*
 !prompts/eval_corpus/README.md
+!prompts/eval_corpus/invented_release_date.md
 # ComfyUI graph exports can be large / machine-specific.
 workflows/*.json
 

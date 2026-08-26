@@ -14,9 +14,11 @@ graded, verified, and dossier'd for the operator to approve. Emits an
 
     py -m scripts.ops overnight --channel tapin --count 3
     py -m core.overnight --channel tapin --file ideas.txt
+    py -m scripts.ops overnight --facts-file facts.txt --file ideas.txt
 
-Facts-file intake (like `auto_generate --facts-file`) is a planned follow-up —
-it needs `batch_generation.generate_draft` to accept key facts first.
+`--file` is topics (one per line). `--facts-file` is operator key facts, parsed
+the same way as `auto_generate --facts-file` and passed through
+`run_batch(..., key_facts=)`.
 """
 
 from __future__ import annotations
@@ -39,6 +41,7 @@ class OvernightResult:
     health_line: str = ""
     skillopt_line: str = ""
     quota_line: str = ""
+    pause_line: str = ""
 
 
 def run_overnight(
@@ -47,6 +50,7 @@ def run_overnight(
     count: int = 3,
     topics: list[str] | None = None,
     file: str | None = None,
+    facts_file: str | None = None,
 ) -> OvernightResult:
     """Chain best-bet → drafts → dossiers → health. Fail-open at every step."""
     from config.channels import resolve_channel_id
@@ -54,7 +58,17 @@ def run_overnight(
     channel = resolve_channel_id(channel_id)
     result = OvernightResult(channel_id=channel)
 
+    try:
+        from core.overnight_pause import is_paused
+
+        if is_paused():
+            result.pause_line = "Overnight paused by operator flag."
+            return result
+    except Exception as exc:
+        logger.debug("overnight pause check skipped: %s", exc)
+
     from core.batch_generation import collect_topics, run_batch
+    from core.operator_facts import load_key_facts
 
     want = count
     try:
@@ -76,7 +90,11 @@ def run_overnight(
         logger.warning("overnight: no topics (best bets unavailable) for %s", channel)
         return result
 
-    result.outcomes = run_batch(channel, picked)
+    key_facts = load_key_facts(facts_file) if facts_file else None
+    if key_facts:
+        result.outcomes = run_batch(channel, picked, key_facts=key_facts)
+    else:
+        result.outcomes = run_batch(channel, picked)
     result.drafted = sum(1 for o in result.outcomes if getattr(o, "ok", False))
 
     # Mirror each drafted run into the vault (Pillar 4). run_batch persists a
@@ -132,6 +150,12 @@ def run_overnight(
         )
     except Exception as exc:
         logger.debug("overnight event not emitted: %s", exc)
+    try:
+        from core.win_notify import notify_overnight_done
+
+        notify_overnight_done(result.drafted, result.requested)
+    except Exception as exc:
+        logger.debug("overnight toast skipped: %s", exc)
     return result
 
 
@@ -139,6 +163,10 @@ def render_overnight(result: OvernightResult) -> str:
     from core.batch_generation import render_summary
 
     lines = [f"Overnight operator — {result.channel_id}", "=" * 44]
+    if result.pause_line:
+        lines.append(result.pause_line)
+        lines.append("Nothing drafted. Resume from the tray before the next scheduled run.")
+        return "\n".join(lines)
     if result.quota_line:
         lines.append(f"Quota: {result.quota_line}")
     if not result.requested:
@@ -168,10 +196,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--channel", default=None)
     parser.add_argument("--count", type=int, default=3, help="Best-bet topics when none given")
     parser.add_argument("--file", default=None, help="File of topics (one per line)")
+    parser.add_argument(
+        "--facts-file",
+        default=None,
+        help="Operator key facts (paste-block file; same as auto_generate --facts-file)",
+    )
     parser.add_argument("topics", nargs="*", help="Explicit topics")
     args = parser.parse_args(argv)
     result = run_overnight(
-        args.channel, count=args.count, topics=args.topics or None, file=args.file
+        args.channel,
+        count=args.count,
+        topics=args.topics or None,
+        file=args.file,
+        facts_file=args.facts_file,
     )
     print(render_overnight(result))
     return 0

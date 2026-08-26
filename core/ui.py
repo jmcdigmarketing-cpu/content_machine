@@ -575,6 +575,7 @@ def display_variants(
     evaluated: list[tuple[str, float, Any]],
     *,
     channel_id: str | None = None,
+    raw_scores: dict[str, float] | None = None,
     print_fn=print,
 ) -> int:
     """Print variant list; return index of highest score.
@@ -583,9 +584,31 @@ def display_variants(
     has historically over-engaged on this channel is annotated "▲ proven pattern"
     — the A/B title-pattern loop surfacing learned winners at selection time.
     """
-    best_i = max(range(len(evaluated)), key=lambda i: evaluated[i][1])
+    # Candidate 323: the displayed score is clamped to 100, so on a hot topic every
+    # variant prints the same number. Rank on the pre-clamp score when we have it, and
+    # say so — a tie presented as a ranking is worse than an admitted tie.
+    from core.pipeline import best_variant_index
+
+    raw = raw_scores or {}
+    best_i = best_variant_index(evaluated, raw)
+    shown = [round(float(s), 2) for _, s, *_ in evaluated]
+    display_tied = len(evaluated) > 1 and len(set(shown)) == 1
+    raw_values = [raw.get(v) for v, *_ in evaluated]
+    raw_known = all(r is not None for r in raw_values)
+
     subsection("Scored angles (Enter = best)", print_fn)
     print_fn("  (YouTube title is generated after key facts + script — not here.)")
+    if display_tied:
+        if raw_known and len({round(float(r), 2) for r in raw_values}) > 1:  # type: ignore[arg-type]
+            print_fn(
+                f"  All {len(evaluated)} angles hit the {shown[0]:.0f} ceiling — "
+                "ordered by headroom above it, not by the printed number."
+            )
+        else:
+            print_fn(
+                f"  All {len(evaluated)} angles scored {shown[0]:.1f} — this is a tie, "
+                "not a ranking. Pick on editorial judgement."
+            )
     from core.ui_theme import paint, score_badge
 
     winning: frozenset[str] = frozenset()
@@ -943,6 +966,15 @@ def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
             print_fn(f"    · {warning}")
         needs_review = True
 
+    # Candidate 321 — the title used to be the one string no check read.
+    title_warnings = features.get("title_warnings") or []
+    if title_warnings:
+        print_fn(f"\n  ⚠ Title check ({len(title_warnings)}):")
+        for warning in title_warnings[:4]:
+            print_fn(f"    · {warning}")
+        print_fn("    The title is the first thing viewers read — fix it before publishing.")
+        needs_review = True
+
     if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
         needs_review = True
     return needs_review
@@ -1067,6 +1099,19 @@ def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
     return COST_MODE_FREE if choice == "2" else COST_MODE_STANDARD
 
 
+def _looks_pasted(raw: str) -> bool:
+    """True when an answer is plainly prose, not a fat-fingered menu key (candidate 325).
+
+    Deliberately narrow: a stray character is still a stop (the operator meant to
+    decline and missed), while a sentence, a URL or a multi-line block gets one
+    re-prompt instead of silently discarding the run.
+    """
+    text = (raw or "").strip()
+    if len(text) > 24 or "\n" in text:
+        return True
+    return len(text.split()) > 1
+
+
 def prompt_proceed_or_length(
     current_choice: str,
     *,
@@ -1078,27 +1123,47 @@ def prompt_proceed_or_length(
     Returns one of:
       ("render", current_choice)  -- y: proceed to render
       ("relength", new_choice)    -- +/-/1-4: regenerate at a new length target
-      ("stop", current_choice)    -- n / empty / anything else: stop before render
+      ("stop", current_choice)    -- n / empty / an unrecognised answer twice
 
     "+"/"-" nudge the current preset one step (core.script_length.nudge_length); a 1-4
     entry jumps to that preset. Regeneration is a fresh generate at the new target, so
     grounding + authenticity are re-checked — it is not an in-place trim.
+
+    Candidate 325: this used to stop on *anything* that was not a menu key, so the
+    pasted article paragraph that ended live-run 71 discarded 30.6 minutes of work
+    (25.6 of them at prompts) without a word. The trap is structural — the key-facts
+    loop immediately above accepts pasted blocks, so the habit carries straight into a
+    prompt where a paste means "throw it away". Declining is still instant: `n` / `N` /
+    Enter stop on the first answer. Only input that is obviously not a menu key gets a
+    second chance.
     """
     from core.script_length import nudge_length
 
-    raw = (
-        input_fn("  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: ")
-        .strip()
-        .lower()
-    )
-    if raw == "y":
-        return ("render", current_choice)
-    if raw == "+":
-        return ("relength", nudge_length(current_choice, 1))
-    if raw == "-":
-        return ("relength", nudge_length(current_choice, -1))
-    if raw in ("1", "2", "3", "4"):
-        return ("relength", raw)
+    prompt = "  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: "
+    for attempt in range(2):
+        raw = input_fn(prompt).strip().lower()
+        if raw == "y":
+            return ("render", current_choice)
+        if raw == "+":
+            return ("relength", nudge_length(current_choice, 1))
+        if raw == "-":
+            return ("relength", nudge_length(current_choice, -1))
+        if raw in ("1", "2", "3", "4"):
+            return ("relength", raw)
+        # An explicit decline, or an empty line, stops immediately as it always has.
+        if raw in ("", "n", "no"):
+            return ("stop", current_choice)
+        if attempt == 0 and _looks_pasted(raw):
+            print_fn(
+                f"  That looks like pasted text ({len(raw)} chars), not a menu choice — "
+                "the script is still here."
+            )
+            print_fn(
+                "  y = render · N = stop · +/- or 1-4 = different length. "
+                "(Article text belongs at the Fact prompt, via `paste`.)"
+            )
+            continue
+        return ("stop", current_choice)
     return ("stop", current_choice)
 
 
@@ -1130,6 +1195,7 @@ def _prompt_timing_and_privacy(
     default_key = next((k for k, v in privacy_map.items() if v == default_priv), "1")
     subsection("Privacy", print_fn)
     print_fn(f"  1) Private  2) Unlisted  3) Public  (default: {default_priv})")
+    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
     privacy = privacy_map.get(priv, default_priv)
 
@@ -1145,6 +1211,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
     """Queue an upload for a rendered-but-never-uploaded run (folds in requeue_upload)."""
     import json
 
+    from core.thumbnail_pick import ensure_thumbnail_ready
     from scripts.requeue_upload import _resolve_mp4_path
     from storage.repositories.jobs import enqueue_upload_job
 
@@ -1179,6 +1246,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
             tags = []
     except (TypeError, ValueError):
         tags = []
+    thumbnail_path = ensure_thumbnail_ready(run.id)
 
     job = enqueue_upload_job(
         channel_id=channel_id,
@@ -1190,6 +1258,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
         privacy_status=privacy,
         scheduled_at=scheduled_at,
         youtube_publish_at=publish_at,
+        thumbnail_path=thumbnail_path,
     )
     print_fn(f"\n  Queued upload job {job.id} for run {run.id}. Run: py -m jobs.worker --loop 30")
     print_fn(f"  File: {mp4}")
@@ -1241,6 +1310,7 @@ def _requeue_deleted(channel_id, candidates, *, print_fn=print, input_fn=input) 
     default_key = next((k for k, v in privacy_map.items() if v == default_priv), "1")
     subsection("Privacy", print_fn)
     print_fn(f"  1) Private  2) Unlisted  3) Public  (default: {default_priv})")
+    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
     privacy = privacy_map.get(priv, default_priv)
 
@@ -1348,6 +1418,7 @@ def prompt_upload_plan(
     )
     subsection("Privacy", print_fn)
     print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
+    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
     privacy_status = privacy_map.get(priv, default_priv)
 

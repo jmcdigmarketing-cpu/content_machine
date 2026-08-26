@@ -44,6 +44,28 @@ YOUTUBE_PUBLISH_MIN_LEAD_MINUTES = 15
 TERMINAL_LOG_STATUSES = PUBLISH_STATUS_SUCCESS
 
 
+def _post_upload_extras(service, video_id: str | None, request: PublishRequest) -> None:
+    """Caption track + opt-in comment. Fail-open; never blocks the publish result."""
+    if not service or not video_id:
+        return
+    try:
+        from youtube.captions import maybe_upload_captions, resolve_caption_path
+
+        maybe_upload_captions(
+            service,
+            video_id=video_id,
+            caption_path=resolve_caption_path(request.file_path, request.caption_path),
+        )
+    except Exception as exc:
+        logger.debug("caption track skipped: %s", exc)
+    try:
+        from youtube.pin_comment import maybe_pin_top_answer
+
+        maybe_pin_top_answer(service, video_id=video_id, topic=request.title)
+    except Exception as exc:
+        logger.debug("pin comment skipped: %s", exc)
+
+
 def is_youtube_configured(channel_id: str | None = None) -> bool:
     channel_id = resolve_channel_id(channel_id)
     enabled = os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() in (
@@ -68,19 +90,107 @@ def _to_publish_at_rfc3339(dt: datetime) -> str:
     return _to_utc(dt).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-def build_video_status(request: PublishRequest) -> dict[str, Any]:
+def unlisted_review_enabled() -> bool:
+    return os.getenv("YOUTUBE_UNLISTED_REVIEW", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def apply_unlisted_review(privacy_status: str, *, publish_at=None) -> tuple[str, bool]:
+    """Hold immediate public uploads as unlisted for an operator eyeball.
+
+    Scheduled publishAt already lands private until the slot — leave that path.
+    Returns (effective_privacy, held_for_review).
+    """
+    if publish_at:
+        return privacy_status, False
+    if (privacy_status or "").strip().lower() != "public":
+        return privacy_status, False
+    if not unlisted_review_enabled():
+        return privacy_status, False
+    return "unlisted", True
+
+
+def queued_privacy_label(privacy_status: str, publish_at=None) -> str:
+    """What the operator should be told at queue time, not what they asked for.
+
+    The queue confirmation used to echo the requested privacy, so an immediate
+    public upload printed "public" and then landed unlisted because the review
+    hold is on by default (live run 69). Routed through apply_unlisted_review so
+    the message and the upload cannot drift apart.
+    """
+    effective, held = apply_unlisted_review(privacy_status, publish_at=publish_at)
+    if not held:
+        return effective
+    return f"{privacy_status} -> {effective} first, for review"
+
+
+def build_video_status(request: PublishRequest, *, channel_id: str | None = None) -> dict[str, Any]:
     status: dict[str, Any] = {"selfDeclaredMadeForKids": False}
-    if not request.publish_at:
-        status["privacyStatus"] = request.privacy_status
+    publish_at = request.publish_at
+    try:
+        from core.publish_windows import adjust_publish_at
+
+        domain = ""
+        try:
+            from apis.topic_scorer import infer_domain
+
+            domain = infer_domain(request.title or "", channel_id)
+        except Exception as exc:
+            logger.debug("publish window domain skipped: %s", exc)
+            domain = ""
+        bumped, why = adjust_publish_at(
+            publish_at,
+            channel_id=channel_id,
+            topic=request.title or "",
+            domain=domain,
+            privacy=request.privacy_status,
+        )
+        if why and bumped:
+            logger.warning("publish window: %s - scheduling %s", why, bumped.isoformat())
+            try:
+                print(f"  Publish window: {why}; going public at {bumped.isoformat()}")
+            except Exception as print_exc:
+                logger.debug("publish window operator print skipped: %s", print_exc)
+            publish_at = bumped
+            status["_window_reason"] = why
+    except Exception as exc:
+        logger.warning("publish window check failed (uploading anyway): %s", exc)
+        try:
+            print(f"  Publish window check failed (uploading anyway): {exc}")
+        except Exception as print_exc:
+            logger.debug("publish window operator print skipped: %s", print_exc)
+        publish_at = request.publish_at
+
+    if not publish_at:
+        privacy, _held = apply_unlisted_review(request.privacy_status)
+        status["privacyStatus"] = privacy
+        try:
+            from core.youtube_meta import audit_made_for_kids
+
+            status = audit_made_for_kids(status)
+        except Exception as exc:
+            logger.debug("madeForKids audit skipped: %s", exc)
+            status["selfDeclaredMadeForKids"] = False
         return status
 
-    publish_at = _to_utc(request.publish_at)
+    publish_at = _to_utc(publish_at)
     min_at = datetime.now(timezone.utc) + timedelta(minutes=YOUTUBE_PUBLISH_MIN_LEAD_MINUTES)
     if publish_at < min_at:
         publish_at = min_at
 
     status["privacyStatus"] = "private"
     status["publishAt"] = _to_publish_at_rfc3339(publish_at)
+    try:
+        from core.youtube_meta import audit_made_for_kids
+
+        status = audit_made_for_kids(status)
+    except Exception as exc:
+        logger.debug("madeForKids audit skipped: %s", exc)
+        status["selfDeclaredMadeForKids"] = False
     return status
 
 
@@ -134,6 +244,7 @@ def _result_from_existing_log(
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
+            _post_upload_extras(service, existing.youtube_video_id, request)
             return PublishResult(
                 video_id=existing.youtube_video_id,
                 status=existing.status,
@@ -213,6 +324,7 @@ def _resolve_prior_upload(
         content_run_id=content_run_id,
         thumbnail_path=request.thumbnail_path,
     )
+    _post_upload_extras(service, video_id, request)
     return PublishResult(
         video_id=video_id,
         status=log_status,
@@ -286,6 +398,14 @@ class YouTubePublisher(Publisher):
         channel_id = resolve_channel_id(channel_id)
         idem = idempotency_key(content_run_id, channel_id, PLATFORM_YOUTUBE)
 
+        if os.path.splitext(request.file_path)[0].lower().endswith("_preview"):
+            return PublishResult(
+                video_id=None,
+                status="blocked",
+                detail="Draft preview files are review-only and cannot be uploaded",
+                platform=PLATFORM_YOUTUBE,
+            )
+
         if not self.is_configured(channel_id):
             log_id = _ensure_publish_log(
                 content_run_id=content_run_id,
@@ -337,6 +457,31 @@ class YouTubePublisher(Publisher):
                 platform=PLATFORM_YOUTUBE,
             )
 
+        try:
+            from core.youtube_meta import lint_ufc_title, title_collision, uniqueness_mode
+
+            hit = title_collision(request.title, channel_id, exclude_run_id=content_run_id)
+            if hit:
+                logger.warning("%s", hit)
+                if uniqueness_mode() == "block":
+                    return PublishResult(
+                        video_id=None,
+                        status="blocked",
+                        detail=hit,
+                        platform=PLATFORM_YOUTUBE,
+                    )
+            domain = ""
+            try:
+                from apis.topic_scorer import infer_domain
+
+                domain = infer_domain(request.title, channel_id)
+            except Exception as exc:
+                logger.debug("title lint domain skipped: %s", exc)
+            for warn in lint_ufc_title(request.title, domain=domain):
+                logger.warning("%s", warn)
+        except Exception as exc:
+            logger.debug("title uniqueness/lint skipped: %s", exc)
+
         log_id = _ensure_publish_log(
             content_run_id=content_run_id,
             channel_id=channel_id,
@@ -346,25 +491,44 @@ class YouTubePublisher(Publisher):
             idempotency_key_value=idem,
         )
 
-        video_status = build_video_status(request)
+        video_status = build_video_status(request, channel_id=channel_id)
+        window_why = video_status.pop("_window_reason", None)
         is_youtube_scheduled = "publishAt" in video_status
+        held_at = request.publish_at
+        if not held_at and is_youtube_scheduled:
+            held_at = datetime.now(timezone.utc)
+        effective_privacy, held_review = apply_unlisted_review(
+            request.privacy_status, publish_at=held_at
+        )
         target_privacy = request.privacy_status
 
+        snippet = {
+            "title": request.title[:100],
+            "description": request.description[:5000],
+            "tags": (request.tags or [])[:30],
+            "categoryId": request.category_id or "",
+        }
+        try:
+            from core.youtube_meta import apply_snippet_defaults
+
+            snippet = apply_snippet_defaults(snippet, topic=request.title, channel_id=channel_id)
+        except Exception as exc:
+            logger.debug("snippet defaults skipped: %s", exc)
+            if not snippet.get("categoryId"):
+                snippet["categoryId"] = "20"
+
         body = {
-            "snippet": {
-                "title": request.title[:100],
-                "description": request.description[:5000],
-                "tags": (request.tags or [])[:30],
-                "categoryId": request.category_id,
-            },
+            "snippet": snippet,
             "status": video_status,
         }
 
         try:
             record_upload_usage()
 
+            from core.output_paths import windows_long_prefix
+
             media = MediaFileUpload(
-                request.file_path,
+                windows_long_prefix(request.file_path),
                 mimetype="video/mp4",
                 chunksize=1024 * 1024,
                 resumable=True,
@@ -394,6 +558,21 @@ class YouTubePublisher(Publisher):
                 if is_youtube_scheduled
                 else "videos.insert completed"
             )
+            if window_why and is_youtube_scheduled:
+                detail = f"{detail} [window: {window_why}]"
+            if held_review and video_id:
+                watch = f"https://www.youtube.com/watch?v={video_id}"
+                detail = (
+                    f"Unlisted for review (requested public): {watch} "
+                    "- promote to public after eyeball"
+                )
+            if is_youtube_scheduled:
+                try:
+                    from core.win_notify import notify_upload_scheduled
+
+                    notify_upload_scheduled(request.title, video_status.get("publishAt") or "")
+                except Exception as exc:
+                    logger.debug("scheduled toast skipped: %s", exc)
 
             _update_publish_log(
                 log_id,
@@ -402,7 +581,7 @@ class YouTubePublisher(Publisher):
                     "youtube_video_id": video_id,
                     "detail": detail,
                     "privacy_status": (
-                        target_privacy if is_youtube_scheduled else request.privacy_status
+                        target_privacy if is_youtube_scheduled else effective_privacy
                     ),
                     "published_at": publish_when or datetime.now(timezone.utc),
                 },
@@ -417,6 +596,7 @@ class YouTubePublisher(Publisher):
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
+            _post_upload_extras(service, video_id, request)
             if thumb.status == "set":
                 detail_suffix = thumb.detail or "Thumbnail set"
                 _update_publish_log(

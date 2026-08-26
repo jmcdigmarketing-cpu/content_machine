@@ -117,6 +117,28 @@ class TestSuccessPath(_IntroCase):
         self.assertEqual(self._body_text(), "INTRO+BODY-CONCATENATED")
         self.assertEqual(self._strays(), [])
 
+    def test_reports_the_exact_intro_command_before_running_it(self):
+        seen = []
+
+        def _write_output(cmd, **kwargs):
+            with open(cmd[-1], "w", encoding="utf-8") as f:
+                f.write("INTRO+BODY")
+            return _fake_completed(0)
+
+        with (
+            patch.object(channel_intro, "resolve_intro_path", return_value=self.intro),
+            patch.object(channel_intro.subprocess, "run", side_effect=_write_output),
+        ):
+            channel_intro.prepend_channel_intro(
+                self.body,
+                command_callback=lambda kind, argv: seen.append((kind, argv)),
+            )
+
+        self.assertEqual([kind for kind, _ in seen], ["intro_attempt", "intro_success"])
+        self.assertEqual(seen[0][1][0], "ffmpeg")
+        self.assertIn(self.intro, seen[0][1])
+        self.assertEqual(seen[0][1], seen[1][1])
+
     def test_no_intro_configured_is_a_no_op(self):
         with (
             patch.object(channel_intro, "resolve_intro_path", return_value=None),

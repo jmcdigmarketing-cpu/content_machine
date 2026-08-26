@@ -185,10 +185,18 @@ def apify_status() -> str:
 
 
 def disable_apify(reason: str) -> None:
-    if not _state["disabled"]:
+    first = not _state["disabled"]
+    if first:
         logger.warning("Apify disabled for this session: %s", reason)
     _state["disabled"] = True
     _state["reason"] = reason
+    if first:
+        try:
+            from core.win_notify import notify_breaker
+
+            notify_breaker("Apify", reason)
+        except Exception as exc:
+            logger.debug("breaker toast skipped: %s", exc)
 
 
 def reset_apify_state() -> None:

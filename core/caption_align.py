@@ -147,6 +147,16 @@ def transcribe_and_align(audio_path: str, *, device: str | None = None) -> Provi
             SLOT, f"audio not found: {audio_path!r}", status=STATUS_NOT_CONFIGURED
         )
 
+    try:
+        from core.ram_preflight import block_reason as ram_block
+
+        why = ram_block(kind="whisper")
+    except Exception as exc:
+        logger.debug("ram preflight skipped: %s", exc)
+        why = None
+    if why:
+        return ProviderResult.fail_open(SLOT, why, status=STATUS_NOT_CONFIGURED)
+
     resolved_device = device or align_device()
     runner = _words_from_faster_whisper if backend == "faster_whisper" else _words_from_whisperx
     try:

@@ -355,6 +355,19 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         print(f"[TTS] Channel: {channel_id} | cache hit")
         return output_path
 
+    if is_local_tts_provider():
+        try:
+            from core.ram_preflight import block_reason as ram_block
+
+            why = ram_block(kind="tts")
+        except Exception as exc:
+            logger.debug("ram preflight skipped: %s", exc)
+            why = None
+        if why:
+            logger.warning("%s", why)
+            if _free_mode_strict():
+                raise RuntimeError(why)
+
     # Provider seam (Pillar 6): a non-ElevenLabs TTS_PROVIDER (local Kokoro/XTTS) is
     # tried first; on any failure it falls back to the ElevenLabs default below.
     alt = _try_alt_tts_provider(spoken_for_alt, output_path, channel_id)
@@ -372,6 +385,12 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         )
 
     if _elevenlabs_quota_would_exceed(len(spoken)):
+        try:
+            from core.win_notify import notify_breaker
+
+            notify_breaker("ElevenLabs", _elevenlabs_budget_display())
+        except Exception as exc:
+            logger.debug("breaker toast skipped: %s", exc)
         piped = _synth_piper_for_quota(spoken, output_path, channel_id)
         if piped:
             tts_cache_store(cache_key, piped)
@@ -651,7 +670,7 @@ def _transcode_to_mp3(src_path: str, output_path: str) -> str | None:
     """Transcode a local-synth wav to the mp3 path the render pipeline expects.
 
     The pipeline ignores generate_audio's return and reads `mp3_path` directly
-    (core/pipeline.py → video/render_video.py: AudioFileClip, subtitles, ffmpeg mux),
+    (core/pipeline.py → video/render_video.py: ffprobe duration, subtitles, ffmpeg mux),
     so a local provider MUST leave a real mp3 at `output_path`. Fail-open → None on
     any ffmpeg failure (caller falls back to ElevenLabs); removes the temp wav.
     """

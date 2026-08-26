@@ -13,18 +13,18 @@ class TestChannelGoLive(unittest.TestCase):
     def _oauth(self, ok=True):
         return SimpleNamespace(ok=ok, issues=[] if ok else ["missing token"])
 
-    def test_moneywise_has_seo_feeds_brand_kit_fails_persona(self):
+    def test_moneywise_persona_gap_is_closed_but_launch_still_has_other_gaps(self):
         with patch("youtube.check_setup.check_channel_setup", return_value=self._oauth(True)):
             report = inspect_channel("moneywise")
         names = {c.name: c for c in report.checks}
         self.assertTrue(names["seo"].ok)
         self.assertTrue(names["feeds"].ok)
         self.assertTrue(names["brand_kit"].ok)
-        self.assertFalse(names["persona"].ok)
+        self.assertTrue(names["persona"].ok)
         self.assertFalse(report.ok)
         blob = render_report(report)
         self.assertIn("NOT READY", blob)
-        self.assertIn("persona", blob)
+        self.assertIn("handle", blob)
 
     def test_tapin_has_persona_and_seo(self):
         with patch("youtube.check_setup.check_channel_setup", return_value=self._oauth(True)):

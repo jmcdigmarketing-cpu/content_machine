@@ -283,6 +283,7 @@ assets/manager.get_background_asset()
        │
        ├── hybrid: assets/composite.py — local_ratio of audio duration from
        │            LocalAssetProvider, remainder from stock chain
+       │            (hard concat, no xfade — decisions.md §26)
        │
        ├── detect_category(topic)  [assets/category.py]
        │
@@ -290,11 +291,12 @@ assets/manager.get_background_asset()
                LocalAssetProvider   → video/backgrounds/
                PexelsAssetProvider  → download → assets/cache/
                PixabayAssetProvider → download → assets/cache/
+               CoverrAssetProvider  → download → assets/cache/  (fail-open if no key)
                (catalog dedupe via assets/catalog.json)
        │
        ▼
 video/render_video.py
-       ├── MoviePy: audio duration
+       ├── duration from ffprobe (_probe_video_duration); moviepy removed
        ├── subtitles: generate_subtitle_file → temp SRT
        └── FFmpeg: background + audio + burn-in subtitles → output/video/*.mp4
 ```

@@ -4,7 +4,6 @@ YouTube custom thumbnail upload via thumbnails.set (after videos.insert).
 
 from __future__ import annotations
 
-import glob
 import os
 from dataclasses import dataclass
 
@@ -18,7 +17,6 @@ from apis.youtube_quota import (
 )
 from config.channels import resolve_channel_id
 from core.logging import get_logger
-from core.output_paths import ensure_channel_output_dirs
 from storage.repositories.assets import get_asset_repository
 
 logger = get_logger("youtube.thumbnails")
@@ -52,7 +50,13 @@ def resolve_thumbnail_path(
     content_run_id: int | None = None,
     explicit_path: str | None = None,
 ) -> str | None:
-    """Prefer explicit path, then assets row for run, then newest channel thumbnail."""
+    """Resolve a deliberate run-linked path; never guess from directory mtime."""
+    if content_run_id:
+        from core.thumbnail_pick import ensure_thumbnail_ready
+
+        picked = ensure_thumbnail_ready(content_run_id)
+        if picked:
+            return picked
     if explicit_path and os.path.isfile(explicit_path):
         return explicit_path
 
@@ -64,17 +68,8 @@ def resolve_thumbnail_path(
         except Exception as exc:
             logger.debug("Asset lookup for thumbnail failed: %s", exc)
 
-    channel_id = resolve_channel_id(channel_id)
-    thumb_dir = ensure_channel_output_dirs(channel_id)["thumbnails"]
-    if not os.path.isdir(thumb_dir):
-        return None
-
-    candidates: list[str] = []
-    for ext in _IMAGE_EXTS:
-        candidates.extend(glob.glob(os.path.join(thumb_dir, f"*{ext}")))
-    if not candidates:
-        return None
-    return max(candidates, key=os.path.getmtime)
+    resolve_channel_id(channel_id)  # validate/fallback for consistent caller semantics
+    return None
 
 
 def set_video_thumbnail(service, video_id: str, image_path: str) -> ThumbnailUploadResult:

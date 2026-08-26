@@ -11,11 +11,19 @@ from core.cuda_probe import probe, render
 class TestCudaProbe(unittest.TestCase):
     def test_probe_keys_without_raising(self):
         data = probe()
-        for key in ("torch_version", "cuda_available", "nvidia_smi", "gpu_hour_usd"):
+        for key in (
+            "torch_version",
+            "cuda_available",
+            "nvidia_smi",
+            "gpu_hour_usd",
+            "nvenc_capable",
+        ):
             self.assertIn(key, data)
         self.assertIsInstance(data["cuda_available"], bool)
+        self.assertIsInstance(data["nvenc_capable"], bool)
         blob = render(data)
         self.assertIn("CUDA", blob)
+        self.assertIn("nvenc", blob.lower())
         self.assertNotIn("pip install", blob.lower())
 
     def test_missing_torch_is_nested_fail_open(self):

@@ -14,6 +14,7 @@ from publishing.base import (
 from publishing.youtube_publisher import (
     YouTubePublisher,
     _result_from_existing_log,
+    apply_unlisted_review,
     build_video_status,
     is_youtube_configured,
 )
@@ -59,6 +60,7 @@ __all__ = [
     "UploadRequest",
     "UploadResult",
     "_result_from_existing_log",
+    "apply_unlisted_review",
     "build_video_status",
     "is_upload_configured",
     "upload_video",

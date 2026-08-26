@@ -395,7 +395,17 @@ def get_weights(domain, channel_id=None):
     return _normalize_weights(weights)
 
 
-def composite_score(signals, topic, channel_id=None):
+def composite_score_raw(signals, topic, channel_id=None):
+    """The composite BEFORE the 0-100 clamp (candidate 323).
+
+    `composite_score` ends `min(final_score, 100)`, which is correct for the stored
+    0-100 contract and destructive for *ranking*: on a hot topic the boost pushes every
+    variant past the ceiling, so they all display 100.0 and the menu offers a tie
+    dressed as a ranking. Run 71 showed five angles at exactly 100.00.
+
+    This returns the uncompressed number so callers can order variants by the real
+    headroom. Nothing persists it — the stored score stays clamped.
+    """
     from apis.signal_corroboration import assess_corroboration, corroboration_score_adjustment
 
     channel_id = resolve_channel_id(channel_id)
@@ -439,4 +449,9 @@ def composite_score(signals, topic, channel_id=None):
     final_score = final_score * (0.7 + 0.3 * domain_factor) + boost
     final_score = corroboration_score_adjustment(final_score, assess_corroboration(signals))
 
-    return round(min(final_score, 100), 2)
+    return final_score
+
+
+def composite_score(signals, topic, channel_id=None):
+    """Topic score on the stored 0-100 scale. Unchanged — every caller keeps its contract."""
+    return round(min(composite_score_raw(signals, topic, channel_id), 100), 2)

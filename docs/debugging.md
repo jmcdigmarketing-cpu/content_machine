@@ -300,7 +300,7 @@ render gate (interactive asks to override; headless needs `--force`).
 1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault fact suggestions (`core/obsidian_facts.py`). Since Pillar 4, those same notes **do** feed the bounded `CHANNEL PLAYBOOK` prompt block (clearly labeled NOT facts). At the prompt, type `n` to skip vault suggestions when unsure.
 2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/`; LLM gets a **char budget** (default 4500, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Pasted + link facts rank before vault. Type **`paste`** + Enter to drop a whole trade tracker block. UI shows collected vs packed-for-LLM counts.
 3. **Discovery angles ≠ YouTube title** — discovery picks editorial angles; the publishable title is generated **after** key facts + script (`core/title_generator.py`). Ignore slop-looking angle lines — the final title uses your facts.
-4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs. Yahoo/MSN article links can also pull sidebar "Related:" items — `link_facts` now scopes to `<article>` and drops nav noise; if a link still looks polluted, **`paste`** the paragraph block instead.
+4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs. Yahoo/MSN article links can also pull sidebar "Related:" items — `link_facts` now scopes to `<article>` and drops nav noise; if a link still looks polluted, **`paste`** the paragraph block instead. Live-run 71: an MSN GTA-6-leaker URL returned **headline only**; the operator later pasted the body at **Proceed?** / the PowerShell prompt instead of the key-facts `paste` mode — see **Live-run 71** below.
 5. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”). Set `SIGNAL_BACKEND=auto` for yt-dlp YouTube when Apify is dead.
 6. **Single-name athletes** — grounding flags mononyms (e.g. `LeBron`) when absent from the facts corpus. Common transition words (`Meanwhile`, `Rookie`, `Bottom line`) are **not** flagged.
 7. **Claim verifier vs token grounding** — token grounding can pass while the claim verifier fails: the verifier checks whether the *claim* is backed, not just whether names appear. Operator key facts are now **prioritized** in the verifier's fact window (signal corpus used to crowd them out past the 6000-char cap). If pay-cut lines are in your pasted facts but still flag unsupported, re-run after pull — or add the exact stat as a key fact.
@@ -355,6 +355,139 @@ Composite implementation: `assets/composite.py` + `assets/manager.py`.
 - Prefer **one** Python for CLI and deps: system `Python311` or project `.venv`, not mixed.
 - `tzdata` required for `zoneinfo` post scheduling on Windows: `pip install tzdata`
 - FFmpeg must be on `PATH` for render and hybrid concat
+
+---
+
+### Live-run 71 (2026-08-21) — pasted article hit PowerShell, not the CLI
+
+This was **not** a Python crash, a broken `all-setup`, or PowerShell “randomly
+executing” the article. After `py main.py` stopped, the **same window** was a
+normal PowerShell prompt. Clipboard text (article body + sidebar ads) was then
+typed as shell commands.
+
+#### What the session actually did
+
+1. **`py -m scripts.ops all-setup`** completed: layout 0 files moved, DB tables
+   verified, Alembic at head, 44 TapIn videos seeded, channel config OK,
+   YouTube **READY** (`config/secrets/youtube_token_tapin.json`).
+2. **`python main.py`** — TapIn (2), create video (1), Standard cost mode,
+   best-bet **3** (Polygon: *GTA 6 Leak and Wolverine Rage Are Symptoms of
+   Gaming's Summer of Hate*). Discovery **~58s**. Cadence 2/5. Run **id 71**.
+3. **Signals:** 8 active. YouTube + youtube_comments **timed out**.
+   `trendingnow.games` **max retries**. Wikipedia/news/IGDB/Steam inactive
+   (no match). RSS/trends/web_search/competitors/TikTok/autocomplete/Twitch/RAWG
+   on. RSS 404 on one YouTube channel id (`UCq-Fj5jknLsUf-MWSik4vhQ`).
+4. **Key facts:** vault auto-attached **4 off-topic** bullets (NetEase / Marvel
+   Rivals S9, Wolverine costume, SEGA IP). MSN GTA-6-leaker URL: **headline
+   only** (JS-heavy scrape). Operator typed one Take-Two/Microsoft/Discord
+   sentence; empty line ended the prompt. **6 facts packed** (1017 / 4500
+   chars). Article **body** was **not** in the fact window.
+5. **Script + title** generated (~435 words). The claim verifier found
+   **7 of 12 claims unsupported** (the Rockstar hack, the DMCA takedowns, the
+   Wolverine “rage state” / stiff-animation polish claims). Only **5** were
+   printed — the WARNING truncates the list at `[:5]`
+   (`core/content_engine.py:918`); the count is the honest number.
+   The later **12/12 backed** line is *not* a second opinion from a different
+   check — it is the **same** verifier re-run on a **rewritten** script.
+   `_maybe_rewrite_unsupported_claims` (`core/content_engine.py:435`, default-on
+   via `CLAIM_REGEN_ENABLED`) spends one premium call restating each unsupported
+   claim as attributed speculation, re-verifies, and adopts the rewrite when the
+   count drops. That is why the draft reads “Reports claim a hacker
+   breached…”, “allegedly showed”, “reportedly swift”. **Nothing was verified
+   between the two numbers — the claims were hedged, not evidenced.** Working as
+   designed; read `12/12` as “no bare assertions left”, not “all claims true”.
+6. At **`Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]:`**
+   the operator pasted *“On Thursday, Take-Two Interactive filed subpoenas…”*
+   instead of `y` / `N`. `prompt_proceed_or_length` (`core/ui.py`) only treats
+   `y`, `+`, `-`, and `1`–`4` as continue; **anything else is stop**. Pipeline
+   printed **Stopped before render** (draft kept: title + script, no MP4).
+   Est. cost **$0.028**. Wall **~30.6 min**.
+
+Python then **exited**. The next `PS C:\dev\content_machine>` is the shell,
+not a key-facts `paste` block.
+
+#### Why PowerShell printed `CommandNotFoundException`
+
+Each subsequent paste was a **new command line**. PowerShell takes the first
+token as a cmdlet/program name:
+
+| Pasted line (from the page, not the CLI) | First token PowerShell tried to run |
+|---|---|
+| `Fast Way To Get Rid Of Mice (2026)` | `Fast` (sidebar ad) |
+| `mice` / `Sponsored` / `call to action icon` | same — page chrome |
+| `·` (middle-dot bullet) | `·` |
+| `Amazon:` / `Walmart:` / `PlayStation Store:` / `Xbox Store:` | store headings |
+| `Standard Edition PS5 - $79.97` | `Standard` (pre-order block) |
+
+A longer IGN/Kotaku-style paste also hit PowerShell’s **parser**, not “search”:
+
+- **`user(s)`** — `(s)` is a **subexpression**. PowerShell tried to run a
+  command named `s` → `The term 's' is not recognized` at that character.
+- Unmatched **quotes / parentheses** across lines put the shell in
+  continuation mode (`>>`). More paste was **one incomplete statement**, not
+  a new `py main.py` prompt.
+- Dollar amounts (`$79.97`) are variables; they did not need to resolve for
+  the first-token errors above.
+
+None of those strings were Content Machine commands. The CLI never saw them.
+
+#### What to do next time (same window)
+
+- **Article body as facts:** at **Fact N**, type `paste`, Enter, then paste,
+  then an empty line. Do **not** paste at **Proceed?**
+- **Proceed?:** `y` (render), `N` (stop), `+`/`-`/`1`–`4` (relength). A URL
+  or paragraph is a stop.
+- If you already see `PS C:\dev\content_machine>`: **Ctrl+C** once to cancel
+  a `>>` continuation, then `py main.py` again. Run 71 is a **draft** — Queue
+  manager will not have an MP4 until you render.
+- If the scrape warning says **headline only**, do not assume the article is
+  in the vault; use `paste` or `LINK_READER_PROXY=1`.
+
+#### The quality read-out from the same run (the draft graded **A**)
+
+The draft that stopped at Proceed scored **A (91/100)** with grounding
+**100/100**. Four things in the same log argue against trusting that grade here:
+
+- **The title was never checked, and it is wrong.** `GTA 6 Leak Forces Rockstar
+  to Subpoena Microsoft and Discord Records` — the subpoenas were filed by
+  **Take-Two Interactive**, Rockstar's parent, which is what the operator's own
+  key fact said (“the parent company of Rockstar Games has resorted to filing
+  subpoenas”). `generate_title` runs *after* grounding and the claim verifier
+  and is deliberately fail-open (`core/title_generator.py:89`); **no check reads
+  the title it returns.** A grounding score of 100 says nothing about the
+  headline — the one line the audience reads first.
+- **The fact corpus was polluted, and the polluted count fed the grade.** RAWG
+  keyword-matched “Wolverine rage” to three 1990s games (*Adamantium Rage* 1994,
+  *Wolverine's Rage* 2001, *Wolverine* 1991), and the vault auto-attached four
+  Marvel Rivals / SEGA bullets. None relate to a GTA 6 leak. The authenticity
+  gate still cited **“18 verified fact(s)”** as its substance evidence.
+- **Variant scoring produced no ranking.** All five angles scored exactly
+  **100.0**, so `Choose 1-5 (Enter = best)` offered a tie dressed as a ranking.
+- **The operator was the run, not the machine.** 30.6 min wall = **25.6 min at
+  prompts** + 5.0 min machine, $0.028 spent, **no video produced**.
+
+None of these were fixed in this pass — recorded here as observed behaviour.
+
+---
+
+### Toasts and quiet hours
+
+A silent overnight run is not necessarily a broken toast. `CONTENT_TOAST_DND` (default
+on) mutes Action Center toasts while **any** configured channel is inside its
+`quiet_hours` window - `tapin` and `moneywise` are both 1-8am ET, so routine toasts
+(ffmpeg done, overnight drafts, upload scheduled, uploads-left) are expected to be
+silent overnight.
+
+**Breaker toasts are exempt** and still fire at 3am: Apify, signal, LLM and ElevenLabs
+trips pass `urgent=True`. If one of *those* is missing, it is a real fault - check
+`CONTENT_TOAST` first, then whether `_toast_powershell` is failing.
+
+Resolution is deliberately machine-level, not per-channel: `toast()` has no channel to
+hand down, and a desktop notification interrupts the person, not a channel. The first
+version of this asked `quiet_hours_reason()` with no channel at all, which resolved to
+the `default` channel - which has no `quiet_hours` block - so it muted nothing at any
+hour. `QUIET_HOURS=false` disables the window entirely; `CONTENT_TOAST_DND=false`
+disables only the toast muting.
 
 ---
 
@@ -449,4 +582,4 @@ Notable suites:
 
 ---
 
-*Last updated: 2026-06 — aligns with layout cleanup, hybrid backgrounds, UFC research signals, ops/requeue CLIs, and cache hardening.*
+*Last updated: 2026-08-22 — live-run 71 (article paste into PowerShell after Proceed? stop); layout cleanup, hybrid backgrounds, UFC research signals, ops/requeue CLIs, and cache hardening.*

@@ -193,6 +193,14 @@ def get_post_schedule(channel_id: str | None = None) -> PostScheduleConfig:
         learned = learn_slots_from_analytics(channel_id)
         if learned:
             return learned
+        if channel_id == "moneywise":
+            donor = learn_slots_from_analytics("tapin")
+            if donor:
+                return PostScheduleConfig(
+                    timezone=donor.timezone,
+                    slots=tuple(donor.slots),
+                    domain_slots={},
+                )
     return _load_static_post_schedule(channel_id)
 
 
@@ -490,6 +498,18 @@ def get_recommended_time(
             rationale = "learned from your post history (best-engagement weekday/hours)"
         return RecommendedTime(when_utc, local_str, "analytics", rate, n, rationale)
 
+    if channel_id == "moneywise" and _use_learned_post_slots():
+        donor = learn_slots_from_analytics("tapin")
+        if donor:
+            return RecommendedTime(
+                when_utc,
+                local_str,
+                "cross_channel_prior",
+                0.0,
+                0,
+                "TapIn slot shape as MoneyWise cold-start prior — not a gaming topic copy",
+            )
+
     n_samples = len(_collect_timed_samples(channel_id))
     if n_samples:
         need = max(0, 8 - n_samples)
@@ -504,7 +524,13 @@ def get_recommended_time(
 
 def display_recommended_time(rec: RecommendedTime) -> None:
     """Print the recommended post time, mirroring display_best_bet()."""
-    tag = "analytics" if rec.source == "analytics" else "default schedule"
+    tag = (
+        "analytics"
+        if rec.source == "analytics"
+        else rec.source
+        if rec.source == "cross_channel_prior"
+        else "default schedule"
+    )
     print(f"\n  Recommended post time ({tag}): {rec.local_str}")
     print(f"  Reason : {rec.rationale}")
 

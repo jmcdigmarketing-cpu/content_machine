@@ -12,11 +12,33 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from collections.abc import Callable
 
 CommandFn = Callable[[argparse.Namespace], int]
+
+
+def _emit_text(title: str, text: str, args: argparse.Namespace) -> None:
+    """Print ASCII; optionally dump a themed HTML snapshot (--html). Nested try."""
+    try:
+        from core.html_report import ascii_safe
+
+        printable = ascii_safe(text)
+    except Exception:
+        printable = str(text).encode("ascii", "replace").decode("ascii")
+    print(printable)
+    if not getattr(args, "html", False):
+        return
+    try:
+        from core.html_report import dump_pre
+
+        path = dump_pre(title, text)
+        print(f"HTML: {path}")
+    except Exception as exc:
+        print(f"HTML dump skipped: {exc}")
+
 
 COMMANDS: dict[str, tuple[str, CommandFn]] = {}
 
@@ -177,17 +199,37 @@ def cmd_postmortem(args: argparse.Namespace) -> int:
     if not args.run_id:
         print("postmortem requires --run-id")
         return 2
-    from core.postmortem import from_store, render
+    from core.postmortem import as_markdown, from_store, render
 
-    print(render(from_store(args.run_id)))
+    data = from_store(args.run_id)
+    if getattr(args, "md", False):
+        print(as_markdown(data))
+    else:
+        print(render(data))
     return 0
 
 
-@_register("doctor", "One shot: free stack + feeds snapshot + oauth file + quota + CUDA")
+@_register("playbook-lint", "Warn when untagged strategy bullets can still feed facts")
+def cmd_playbook_lint(args: argparse.Namespace) -> int:
+    from core.obsidian_facts import lint_playbook, render_playbook_lint
+
+    print(render_playbook_lint(lint_playbook(args.channel)))
+    return 0
+
+
+@_register("doctor", "One shot: free stack + feeds + oauth + quota + CUDA + RAM + secrets")
 def cmd_doctor(args: argparse.Namespace) -> int:
     from core.ops_doctor import render
 
-    print(render(channel_id=args.channel))
+    _emit_text("ops doctor", render(channel_id=args.channel), args)
+    return 0
+
+
+@_register("secrets-doctor", "Keys present/missing/placeholder (never prints values)")
+def cmd_secrets_doctor(args: argparse.Namespace) -> int:
+    from core.secrets_doctor import render
+
+    _emit_text("ops secrets-doctor", render(channel_id=args.channel), args)
     return 0
 
 
@@ -214,6 +256,19 @@ def cmd_artifacts(args: argparse.Namespace) -> int:
 
     out = run(apply=bool(getattr(args, "apply", False)))
     print(out["text"])
+    return 0
+
+
+@_register(
+    "artifact-retention",
+    "Report old drafts, traces, and vault _runs clones (dry-run only; never deletes)",
+)
+def cmd_artifact_retention(args: argparse.Namespace) -> int:
+    from core.artifact_retention import retention_report
+
+    if getattr(args, "apply", False):
+        print("NOTE: --apply ignored; artifact-retention is report-only.")
+    print(retention_report())
     return 0
 
 
@@ -304,26 +359,31 @@ def cmd_queue_manage(args: argparse.Namespace) -> int:
 
 @_register("status", "Queue, uploads, recent runs, SEO/competitors")
 def cmd_status(args: argparse.Namespace) -> int:
-    return _run_module("scripts.status", "--channel", args.channel)
+    from config.channels import resolve_channel_id
+    from core.status import build_status_lines
+
+    channel_id = resolve_channel_id(args.channel)
+    lines = [f"Status - {channel_id}", ""] + [
+        f"  {line}" for line in build_status_lines(channel_id)
+    ]
+    _emit_text("Status", "\n".join(lines) + "\n", args)
+    return 0
 
 
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
-def cmd_reliability(_args: argparse.Namespace) -> int:
+def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render
 
     data = gather()
-    print(render(data))
+    chunks = [render(data)]
     # Recording on view means the trend builds itself — no separate job to forget.
     try:
         from core.reliability_history import record
         from core.reliability_history import render as render_trend
 
         record(data)
-        print(render_trend())
+        chunks.append(render_trend())
     except Exception as exc:
-        # Logger resolved here, not at import: this module is an entry point and
-        # `config.settings` (which loads .env) is imported later, so a module-level
-        # get_logger would cache the level before CONTENT_LOG_LEVEL is readable.
         from core.logging import get_logger
 
         get_logger("scripts.ops").debug("Reliability trend not recorded: %s", exc)
@@ -334,11 +394,12 @@ def cmd_reliability(_args: argparse.Namespace) -> int:
         incidents = gather_and_record()
         blob = render_incidents(incidents)
         if blob:
-            print(blob)
+            chunks.append(blob)
     except Exception as exc:
         from core.logging import get_logger
 
         get_logger("scripts.ops").debug("Incident ledger skipped: %s", exc)
+    _emit_text("Reliability", "\n".join(chunks), args)
     return 0
 
 
@@ -491,9 +552,22 @@ def cmd_dossier(args: argparse.Namespace) -> int:
 
 @_register("economics", "Per-video cost vs revenue -> contribution margin (Pillar 1)")
 def cmd_economics(args: argparse.Namespace) -> int:
+    from core.unit_economics import channel_economics, to_csv
     from core.unit_economics import render as render_economics
 
-    print(render_economics(args.channel, limit=args.limit or 25))
+    limit = args.limit or 25
+    _emit_text("Unit economics", render_economics(args.channel, limit=limit), args)
+    if getattr(args, "csv", False):
+        try:
+            from core.html_report import html_dir
+
+            econ = channel_economics(args.channel, limit=limit)
+            dest = os.path.join(html_dir(), "economics.csv")
+            with open(dest, "w", encoding="utf-8", newline="") as fh:
+                fh.write(to_csv(econ))
+            print(f"CSV: {dest}")
+        except Exception as exc:
+            print(f"CSV skipped: {exc}")
     return 0
 
 
@@ -502,7 +576,7 @@ def cmd_grade(args: argparse.Namespace) -> int:
     if not args.run_id:
         print("grade requires --run-id (see 'ops traces' for recent ids)")
         return 1
-    from core.video_grade import grade_from_record, render_expert_panel, render_grade
+    from core.video_grade import grade_from_record, render_grade
     from storage.repositories.content_runs import get_content_run_repository
 
     record = get_content_run_repository().get(args.run_id)  # one fetch for grade + panel
@@ -511,12 +585,28 @@ def cmd_grade(args: argparse.Namespace) -> int:
         print(f"No persisted quality for run #{args.run_id} (pre-ledger run?)")
         return 1
     print(render_grade(grade))
-    panel = render_expert_panel(
-        record.script_preview, record.channel_id
-    )  # EXPERT_PANEL_ENABLED-gated
+    if getattr(args, "md", False):
+        from core.video_grade import grade_as_markdown
+
+        print()
+        print(grade_as_markdown(grade))
+    from core.video_grade import expert_panel_for_run
+
+    panel = expert_panel_for_run(args.run_id)  # EXPERT_PANEL_ENABLED-gated; prefers persisted
     if panel:
         print()
         print(panel)
+    text = render_grade(grade)
+    if panel:
+        text = f"{text}\n\n{panel}"
+    if getattr(args, "html", False):
+        try:
+            from core.html_report import dump_pre
+
+            path = dump_pre("Report card", text)
+            print(f"HTML: {path}")
+        except Exception as exc:
+            print(f"HTML dump skipped: {exc}")
     return 0
 
 
@@ -565,7 +655,12 @@ def cmd_analyst(args: argparse.Namespace) -> int:
 def cmd_overnight(args: argparse.Namespace) -> int:
     from core.overnight import render_overnight, run_overnight
 
-    result = run_overnight(args.channel, count=args.count or 3, file=getattr(args, "file", None))
+    result = run_overnight(
+        args.channel,
+        count=args.count or 3,
+        file=getattr(args, "file", None),
+        facts_file=getattr(args, "facts_file", None),
+    )
     print(render_overnight(result))
     return 0
 
@@ -577,6 +672,44 @@ def cmd_skillopt(args: argparse.Namespace) -> int:
     from core.skillopt import render_skillopt, run_skillopt
 
     print(render_skillopt(run_skillopt(args.channel)))
+    return 0
+
+
+@_register("topic-clone", "Seed a new draft from a winner run (--run-id; angles/facts refresh)")
+def cmd_topic_clone(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("topic-clone requires --run-id")
+        return 1
+    from core.topic_clone import clone_from_run
+
+    result = clone_from_run(args.run_id, channel_id=args.channel)
+    if not result.ok:
+        print(result.error or "clone failed")
+        return 1
+    print(f"Cloned run #{args.run_id} -> draft run #{result.run_id} ({result.topic})")
+    return 0
+
+
+@_register("studio-deleted", "Cancel publish_log rows whose YouTube videos were Studio-deleted")
+def cmd_studio_deleted(args: argparse.Namespace) -> int:
+    from youtube.studio_deleted import detect_studio_deleted
+
+    cancelled = detect_studio_deleted(args.channel)
+    if not cancelled:
+        print(f"Studio-deleted: none for {args.channel}")
+        return 0
+    print(f"Studio-deleted: cancelled {len(cancelled)} publish_log row(s)")
+    for row in cancelled:
+        print(f"  #{row.id} {row.youtube_video_id}")
+    return 0
+
+
+@_register("publish-ics", "Write an .ics of scheduled publishes beside HTML dumps")
+def cmd_publish_ics(args: argparse.Namespace) -> int:
+    from core.publish_ics import write_scheduled_ics
+
+    path = write_scheduled_ics(args.channel)
+    print(path)
     return 0
 
 
@@ -617,6 +750,8 @@ def cmd_intelligence_report(args: argparse.Namespace) -> int:
     extra = ["--topic", topic, "--channel", args.channel]
     if getattr(args, "no_brief", False):
         extra.append("--no-brief")
+    if getattr(args, "sku", False):
+        extra.append("--sku")
     return _run_module("core.intelligence_report", *extra)
 
 
@@ -678,6 +813,172 @@ def cmd_requeue_upload(args: argparse.Namespace) -> int:
         str(args.run_id),
         "--queue",
     )
+
+
+@_register("pick-thumbnail", "Pick text_on or face_forward for a dual-thumbnail run")
+def cmd_pick_thumbnail(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("pick-thumbnail requires --run-id")
+        return 2
+    if not getattr(args, "arm", "") and not getattr(args, "path", ""):
+        print("pick-thumbnail requires --arm text_on|face_forward or --path")
+        return 2
+    from core.thumbnail_pick import pick_thumbnail
+    from storage.repositories.content_runs import get_content_run_repository
+
+    record = get_content_run_repository().get(args.run_id)
+    if record is None:
+        print(f"No content run #{args.run_id}")
+        return 1
+    try:
+        selected = pick_thumbnail(
+            args.run_id,
+            getattr(args, "path", "") or None,
+            arm=getattr(args, "arm", "") or None,
+            channel_id=record.channel_id,
+        )
+    except (ValueError, RuntimeError) as exc:
+        print(str(exc))
+        return 1
+    print(
+        f"Picked {selected['arm']} ({selected['provider']}) for run "
+        f"#{args.run_id}: {selected['path']}"
+    )
+    return 0
+
+
+@_register(
+    "tray",
+    "System-tray / quota chip (uploads-left + TTS chars + Apify breaker)",
+)
+def cmd_tray(args: argparse.Namespace) -> int:
+    from core.win_notify import run_tray
+
+    pause_overnight = bool(getattr(args, "pause_overnight", False))
+    resume_overnight = bool(getattr(args, "resume_overnight", False))
+    if pause_overnight and resume_overnight:
+        print("Choose only one of --pause-overnight or --resume-overnight.")
+        return 1
+    return run_tray(
+        stay=bool(getattr(args, "stay", False)),
+        open_output=bool(getattr(args, "open_output", False)),
+        doctor_html=bool(getattr(args, "doctor_html", False)),
+        pause_overnight=pause_overnight,
+        resume_overnight=resume_overnight,
+        channel_id=getattr(args, "channel", None) or "tapin",
+    )
+
+
+@_register("booth", "Last-run review booth (play + grade + authenticity + cost)")
+def cmd_booth(args: argparse.Namespace) -> int:
+    from core.review_booth import serve_booth, write_booth
+
+    if getattr(args, "serve", False):
+        url = serve_booth(args.channel)
+        print(url)
+        print("Serving review booth. Ctrl+C to stop.")
+        try:
+            import time
+
+            while True:
+                time.sleep(3600)
+        except KeyboardInterrupt:
+            print("Stopped.")
+        return 0
+    path = write_booth(args.channel)
+    print(path)
+    return 0
+
+
+@_register(
+    "render-preview",
+    "Render a 480p ultrafast review copy without changing publish media (--run-id)",
+)
+def cmd_render_preview(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("render-preview requires --run-id")
+        return 2
+    from core.pipeline import run_media_only
+    from storage.repositories.content_runs import get_content_run_repository
+
+    record = get_content_run_repository().get(args.run_id)
+    if record is None:
+        print(f"No content run #{args.run_id}")
+        return 1
+    script = str(record.script_preview or "")
+    source_file = getattr(args, "file", None)
+    if source_file:
+        with open(source_file, encoding="utf-8") as handle:
+            script = handle.read().strip()
+    elif len(script) >= 2000:
+        print(
+            "Stored script is truncated at 2,000 characters; pass --file with the full "
+            "script so the preview cannot silently omit the ending."
+        )
+        return 2
+    if not script:
+        print(f"Run #{args.run_id} has no stored script")
+        return 1
+    _mp3, mp4, _thumb = run_media_only(
+        record.selected_topic or record.input_topic,
+        script,
+        channel_id=record.channel_id,
+        content_run_id=record.id,
+        title=record.title,
+        render_preset="draft",
+    )
+    print(f"Draft preview: {mp4}")
+    print("Publish media unchanged; previews are never queued or uploaded.")
+    return 0
+
+
+@_register("lightbox", "Thumbnail lightbox for the last Pillow thumb")
+def cmd_lightbox(args: argparse.Namespace) -> int:
+    from core.review_booth import write_lightbox
+    from core.win_shell import last_media_file
+
+    path = write_lightbox(last_media_file("thumb", channel_id=args.channel))
+    print(path)
+    return 0
+
+
+@_register("reveal", "Reveal last mp4 (or --kind thumb|trace) in Explorer")
+def cmd_reveal(args: argparse.Namespace) -> int:
+    from core.win_shell import reveal_last
+
+    path = reveal_last(kind=getattr(args, "kind", None) or "mp4", channel_id=args.channel)
+    if not path:
+        print("Nothing on disk to reveal.")
+        return 1
+    print(path)
+    return 0
+
+
+@_register("shortcut", "Install Start Menu shortcut via pythonw / content_os.pyw")
+def cmd_shortcut(_args: argparse.Namespace) -> int:
+    from core.win_shell import install_start_menu_shortcut
+
+    path = install_start_menu_shortcut()
+    print(path)
+    return 0
+
+
+@_register("booth-shortcut", "Install Desktop shortcut for the persistent review booth")
+def cmd_booth_shortcut(_args: argparse.Namespace) -> int:
+    from core.win_shell import install_booth_desktop_shortcut
+
+    path = install_booth_desktop_shortcut()
+    print(path)
+    return 0
+
+
+@_register("blocking", "One-sentence: what's blocking publish (existing gates only)")
+def cmd_blocking(args: argparse.Namespace) -> int:
+    from core.publish_blockers import blocking_publish_sentence
+
+    line = blocking_publish_sentence(channel_id=args.channel)
+    _emit_text("What's blocking publish", line, args)
+    return 0
 
 
 @_register("list", "List all operator commands")
@@ -810,6 +1111,8 @@ def main(argv=None) -> int:
         default=0,
         help="Content run id (list-uploads / requeue-upload / dossier)",
     )
+    parser.add_argument("--arm", default="", help="pick-thumbnail: text_on or face_forward")
+    parser.add_argument("--path", default="", help="pick-thumbnail: exact candidate image path")
     parser.add_argument(
         "--limit",
         type=int,
@@ -818,8 +1121,8 @@ def main(argv=None) -> int:
     )
     parser.add_argument(
         "--topic",
-        default="UFC 250 Topuria Gaethje",
-        help="Topic for tapology-test or intelligence-report",
+        default="",
+        help="Topic for intelligence-report (required) or tapology-test",
     )
     parser.add_argument(
         "--no-brief",
@@ -837,6 +1140,12 @@ def main(argv=None) -> int:
         help="overnight: file of topics (one per line) instead of best-bet",
     )
     parser.add_argument(
+        "--facts-file",
+        dest="facts_file",
+        default=None,
+        help="overnight: operator key facts (same as auto_generate --facts-file)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="backfill-cost: show what would change without writing",
@@ -845,6 +1154,61 @@ def main(argv=None) -> int:
         "--apply",
         action="store_true",
         help="artifacts / moat-backup: actually delete or copy (default is dry-run)",
+    )
+    parser.add_argument(
+        "--html",
+        action="store_true",
+        help="Write a themed HTML snapshot and open it (reliability/economics/doctor/status/grade)",
+    )
+    parser.add_argument(
+        "--csv",
+        action="store_true",
+        help="economics: write a CSV next to HTML dumps (not under data/)",
+    )
+    parser.add_argument(
+        "--stay",
+        action="store_true",
+        help="tray: keep the on-top quota chip window",
+    )
+    parser.add_argument(
+        "--open-output",
+        action="store_true",
+        help="tray: open the last channel output folder",
+    )
+    parser.add_argument(
+        "--doctor-html",
+        action="store_true",
+        help="tray: write ops doctor as themed HTML",
+    )
+    parser.add_argument(
+        "--pause-overnight",
+        action="store_true",
+        help="tray: pause future scheduled overnight batches",
+    )
+    parser.add_argument(
+        "--resume-overnight",
+        action="store_true",
+        help="tray: resume future scheduled overnight batches",
+    )
+    parser.add_argument(
+        "--md",
+        action="store_true",
+        help="grade / postmortem: print copy-as-markdown instead of ASCII",
+    )
+    parser.add_argument(
+        "--kind",
+        default="mp4",
+        help="reveal: mp4, thumb, or trace (default: mp4)",
+    )
+    parser.add_argument(
+        "--sku",
+        action="store_true",
+        help="intelligence-report: write the no-video SKU markdown",
+    )
+    parser.add_argument(
+        "--serve",
+        action="store_true",
+        help="booth: tiny stdlib localhost host (not FastAPI)",
     )
     args = parser.parse_args(argv)
     args.queue_upload = False

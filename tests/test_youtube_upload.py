@@ -173,6 +173,12 @@ class TestYouTubeUpload(unittest.TestCase):
         self.assertGreaterEqual(mock_repo.update.call_count, 1)
         first_update = mock_repo.update.call_args_list[0][0][1]
         self.assertEqual(first_update.get("youtube_video_id"), "yt999")
+        insert_kwargs = mock_service.videos.return_value.insert.call_args.kwargs
+        body = insert_kwargs["body"]
+        self.assertIs(body["status"]["selfDeclaredMadeForKids"], False)
+        self.assertEqual(body["snippet"]["defaultLanguage"], "en")
+        self.assertEqual(body["snippet"]["defaultAudioLanguage"], "en")
+        self.assertTrue(str(body["snippet"]["categoryId"]))
 
     def test_pending_healed_without_reupload(self):
         pending = PublishLogRecord(
@@ -213,6 +219,48 @@ class TestYouTubeUpload(unittest.TestCase):
         self.assertEqual(result.video_id, "healed123")
         self.assertIn("Healed", result.detail or "")
         mock_service.videos.return_value.insert.assert_not_called()
+
+
+class TestQueuedPrivacyIsHonest(unittest.TestCase):
+    """The queue confirmation must not promise "public" when the hold is on.
+
+    YOUTUBE_UNLISTED_REVIEW defaults to true, so an immediate public upload is
+    uploaded unlisted for an eyeball. Live run 69 printed
+    "Upload queued (job 41, public, ...)" - the operator is told public and gets
+    unlisted, with nothing on screen saying so.
+    """
+
+    def test_public_immediate_is_labelled_as_held(self):
+        from publishing.youtube_publisher import queued_privacy_label
+
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "true"}, clear=False):
+            label = queued_privacy_label("public", None)
+        self.assertIn("unlisted", label.lower())
+        self.assertIn("public", label.lower())
+
+    def test_scheduled_public_is_not_relabelled(self):
+        from datetime import datetime, timedelta, timezone
+
+        from publishing.youtube_publisher import queued_privacy_label
+
+        later = datetime.now(timezone.utc) + timedelta(days=1)
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "true"}, clear=False):
+            self.assertEqual(queued_privacy_label("public", later), "public")
+
+    def test_private_is_unchanged(self):
+        from publishing.youtube_publisher import queued_privacy_label
+
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "true"}, clear=False):
+            self.assertEqual(queued_privacy_label("private", None), "private")
+
+    def test_label_matches_what_the_publisher_will_do(self):
+        # One source of truth: the label must agree with apply_unlisted_review.
+        from publishing.youtube_publisher import apply_unlisted_review, queued_privacy_label
+
+        with patch.dict(os.environ, {"YOUTUBE_UNLISTED_REVIEW": "false"}, clear=False):
+            effective, held = apply_unlisted_review("public")
+            self.assertFalse(held)
+            self.assertEqual(queued_privacy_label("public", None), effective)
 
 
 if __name__ == "__main__":

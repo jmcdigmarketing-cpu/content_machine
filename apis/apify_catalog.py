@@ -47,6 +47,22 @@ def source_enabled(name: str) -> bool:
     return get_source(name).get("enabled", True) is not False
 
 
+def remaining_enabled_actors() -> list[str]:
+    """Catalog keys that still bill Apify (enabled, have an actor).
+
+    Reddit/twitter stay out while ``enabled: false``. Used as booth pills so
+    the operator never infers retired actors still cost credits.
+    """
+    names: list[str] = []
+    for name, entry in _load().items():
+        if not isinstance(entry, dict) or not entry.get("actor"):
+            continue
+        if entry.get("enabled", True) is False:
+            continue
+        names.append(str(name))
+    return sorted(names)
+
+
 def domain_targets(domain: str) -> dict[str, Any]:
     """Return the target lists (subreddits, twitter_accounts, ...) for a domain."""
     targets = _load().get("domain_targets", {})

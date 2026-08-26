@@ -122,6 +122,18 @@ class TestFailOpen(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertEqual(result.status, STATUS_NOT_CONFIGURED)
 
+    def test_ram_preflight_fail_opens_before_whisper(self):
+        with (
+            patch.dict(os.environ, {"CAPTION_ALIGN_BACKEND": "faster_whisper"}, clear=False),
+            patch.object(caption_align.os.path, "exists", return_value=True),
+            patch("core.ram_preflight.block_reason", return_value="whisper preflight: 1.00 GB"),
+            patch.object(caption_align, "_words_from_faster_whisper") as runner,
+        ):
+            result = caption_align.transcribe_and_align("a.mp3")
+        self.assertFalse(result.ok)
+        runner.assert_not_called()
+        self.assertIn("preflight", result.detail)
+
     def test_backend_not_installed(self):
         with (
             patch.dict(os.environ, {"CAPTION_ALIGN_BACKEND": "faster_whisper"}, clear=False),

@@ -19,6 +19,7 @@ from datetime import datetime
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
+from core import experiment_levers
 from core.logging import get_logger
 
 logger = get_logger("assets.flux_thumbnail")
@@ -376,7 +377,12 @@ def _chain_thumbnail(
                 topic, title, output_dir, filename=filename, channel_id=channel_id
             )
         if result.path:
-            if name != "pillow" and experiment and content_run_id:
+            if (
+                name != "pillow"
+                and experiment
+                and experiment[0] != "thumbnail_format"
+                and content_run_id
+            ):
                 try:
                     from config.channels import resolve_channel_id
                     from core.experiments import record_assignment
@@ -418,6 +424,7 @@ def _pillow_thumbnail(
     *,
     filename: str,
     channel_id: str | None = None,
+    variant: str = "text_on",
 ) -> ThumbnailResult:
     os.makedirs(output_dir, exist_ok=True)
     width, height = 1280, 720
@@ -461,12 +468,18 @@ def _pillow_thumbnail(
     if not wrapped:
         wrapped = [display[:22] or "Video"]
 
+    if variant == "face_forward":
+        # Deterministic local fallback that remains visibly distinct from text_on:
+        # a subject-led composition with the copy held to the left.
+        draw.ellipse((760, 90, 1260, 590), fill=accent, outline=(255, 255, 255), width=8)
+        draw.ellipse((900, 165, 1120, 385), fill=bg_bottom)
+        draw.rounded_rectangle((845, 360, 1175, 680), radius=90, fill=bg_bottom)
     y = height // 2 - len(wrapped) * 34
     for text_line in wrapped[:4]:
         bbox = draw.textbbox((0, 0), text_line, font=font_lg)
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
-        x = (width - tw) // 2
+        x = max(40, (640 - tw) // 2) if variant == "face_forward" else (width - tw) // 2
         draw.rectangle(
             [(x - 14, y - 10), (x + tw + 14, y + th + 10)],
             fill=(0, 0, 0),
@@ -488,6 +501,96 @@ def _pillow_thumbnail(
         detail=f"Pillow title card ({size_kb} KB)",
         provider="pillow",
     )
+
+
+def generate_dual_thumbnails(
+    topic: str,
+    title: str,
+    output_dir: str,
+    *,
+    content_run_id: int | None,
+    channel_id: str | None,
+    grade_letter: str | None = None,
+) -> list[dict]:
+    """Generate text_on + face_forward independently, each fail-open to Pillow."""
+    from core.cost_meter import thumbnail_cost
+
+    os.makedirs(output_dir, exist_ok=True)
+    run_tag = f"run{content_run_id}" if content_run_id else "thumb"
+    candidates: list[dict] = []
+    for arm in ("text_on", "face_forward"):
+        if paid_thumbnail_blocked(grade_letter):
+            preferred = "pillow"
+        elif arm == "text_on" and os.getenv("IDEOGRAM_API_KEY"):
+            preferred = "ideogram"
+        elif arm == "text_on" and os.getenv("RECRAFT_API_KEY"):
+            preferred = "recraft"
+        elif arm == "face_forward" and is_flux_configured():
+            preferred = "flux"
+        elif arm == "face_forward" and os.getenv("RECRAFT_API_KEY"):
+            preferred = "recraft"
+        else:
+            preferred = "pillow"
+        filename = _thumbnail_basename(title, topic, suffix=f"{arm}_{preferred}_{run_tag}")
+        directive = experiment_levers.directive("thumbnail_format", arm)
+        if preferred == "ideogram":
+            result = _ideogram_thumbnail(
+                topic, title, output_dir, filename=filename, style_directive=directive
+            )
+        elif preferred == "recraft":
+            result = _recraft_thumbnail(
+                topic, title, output_dir, filename=filename, style_directive=directive
+            )
+        elif preferred == "flux":
+            result = _flux_thumbnail(
+                topic, title, output_dir, filename=filename, style_directive=directive
+            )
+        else:
+            result = _pillow_thumbnail(
+                topic,
+                title,
+                output_dir,
+                filename=filename,
+                channel_id=channel_id,
+                variant=arm,
+            )
+        failed_paid = preferred != "pillow" and not result.path
+        if not result.path:
+            fallback_name = _thumbnail_basename(
+                title, topic, suffix=f"{arm}_pillow_{run_tag}"
+            )
+            result = _pillow_thumbnail(
+                topic,
+                title,
+                output_dir,
+                filename=fallback_name,
+                channel_id=channel_id,
+                variant=arm,
+            )
+        candidates.append(
+            {
+                "path": result.path,
+                "arm": arm,
+                "provider": result.provider,
+                "features": {
+                    "layout": arm,
+                    "headline": arm == "text_on",
+                    "subject_led": arm == "face_forward",
+                },
+                "provider_evidence": {
+                    "pre_provider": preferred,
+                    "post_provider": result.provider,
+                    "failed_paid_attempt": failed_paid,
+                },
+                "cost": {
+                    "pre_fallback_usd": thumbnail_cost(preferred),
+                    "post_fallback_usd": thumbnail_cost(result.provider),
+                    "known_incurred_usd": thumbnail_cost(result.provider),
+                    "failed_attempt_billing": "unknown" if failed_paid else "none",
+                },
+            }
+        )
+    return candidates
 
 
 def generate_thumbnail(
@@ -570,7 +673,7 @@ def generate_thumbnail(
         )
         if flux.path:
             primary = flux
-            if experiment and content_run_id:
+            if experiment and experiment[0] != "thumbnail_format" and content_run_id:
                 try:
                     from config.channels import resolve_channel_id
                     from core.experiments import record_assignment

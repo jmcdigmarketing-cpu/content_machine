@@ -1,19 +1,114 @@
-# Handoff synopsis — 2026-08-20: living state after PR #34 + live-run 69/70
+# Handoff synopsis — 2026-08-26: next-20 mixed S/M wave
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
+## Last implementation wave — next 20 (2026-08-26)
+
+Implemented in order 1→20 on top of uncommitted prior waves. **Do not commit from
+this step.** Tests were written first and observed failing on unmodified code.
+No Step 3 full audit and no Step 4 commit in this pass.
+
+**Visual constraint (2026-08-26, decisions §26):** do not pull more unrelated
+stock. Hybrid TapIn is ~55% live-action after a hard concat; that cut is
+disorienting. Coverr is not a quality lever. Compare:
+[moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md). Prefer owned
+gameplay / `background_mode: local` / a higher local ratio; do not enable
+`SCENE_MATCHED_BROLL` on TapIn.
+
+Pickup: Coverr (`COVERR_API_KEY` empty = chain continues, no warning); overnight
+`--facts-file`; `ops topic-clone` / `studio-deleted` / `publish-ics`; caption track
+and opt-in pin comment on publish; Studio-deleted cancel in daily_sync; MoneyWise
+cross-channel prior; learned intro duration plumbing; Expert Panel `shorts_pacing`
+persisted when `EXPERT_PANEL_ENABLED`; frozen prompt-eval goldens; public-safe
+SKU/dossier redaction; eval-corpus `invented_release_date` fixture; `/tdd` skill.
+
+**Honest leftover:** Data API has no comment pin (channel `commentThreads.insert`
+instead); wolverine-only vault bullets still attach; intro duration does not
+pretend to learn below `RETENTION_MIN_VIDEOS`; Pillow/requests pins updated in
+lockfiles — reinstall the venv before a real render. **#147 FastAPI, #146 tray
+daemon, Phase M, NVENC, CUDA torch still skipped.**
+
+## Last implementation wave — roadmap #23–27 (2026-08-25)
+
+Implemented in strict order without a commit or push, on top of the uncommitted
+ten-task wave. The initial 15 behavioral tests were observed red first; the real
+FFmpeg proof added one Fontconfig regression test. The full isolated suite is now
+**2,010 tests** after the behavior/safety audit below.
+
+- **#23:** generated validated per-channel end card, publish-only after the existing
+  intro/body, robust in-place restoration, exact outro argv persisted and shown.
+- **#24:** grounded public-safe lower-third labels persist without raw operator facts;
+  real word timings generate escaped ASS. No timings means an honest skip and unchanged
+  command shape.
+- **#25:** bounded per-channel `eq` grade after crop/before overlays. TapIn and
+  MoneyWise ship distinct values across publish, preview, fallback, and extra formats.
+- **#26:** bounded first-cue zoom from the real word-timing sidecar only, propagated
+  through every render variant. No timing means no motion filter.
+- **#27:** dual `text_on` / `face_forward` thumbnails only under the
+  `thumbnail_format` experiment or `THUMBNAIL_DUAL`; up to two configured paid
+  providers may run, each independently falls back to a distinct Pillow layout, and
+  provider/cost evidence persists. `ops pick-thumbnail` and booth POST controls make
+  the pick; publish is blocked while unpicked; assignment occurs only at pick time;
+  main/requeue/YouTube use the selected path and never guess by mtime.
+
+Audit proof: focused render/thumbnail/pipeline integration **112 tests**; full suite **2,010**;
+`ruff check .` and `ruff format --check .` clean; shipped channel config validates.
+The audit fixed eight confirmed gaps: exact-phrase public grounding; identity-grade
+no-op; first-valid-cue motion; attempted-vs-successful FFmpeg trace evidence; bounded
+booth POST run binding; HTTP-served dual images; pre/post fallback cost evidence; and
+picked-thumbnail propagation through both requeue paths.
+A real temporary FFmpeg proof caught this Windows build's missing Fontconfig default;
+the card now binds to installed Arial/DejaVu. The retry produced a **2.133s**
+intro-free body+card from a 0.6s body and captured the outro argv (the audit now records
+separate attempt/success events). Full visual
+inspection of grade/motion/lower thirds remains the next operator proof.
+
+## Last implementation wave — ten small production-complete units (2026-08-25)
+
+The requested coherent `[S]` wave is implemented without a commit or push.
+Behavioral tests were written and observed failing before production edits.
+**#147 FastAPI still skipped.**
+
+Shipped: documented MoneyWise persona; content-engine prompt-source hash;
+booth title meter, description first line, duration comparison, and HTML5
+caption track; Pillow bottom-20% thumbnail checker; channel caption skins;
+isolated 480p draft preview preset; and report-only artifact retention. Detail:
+[planning_log.md](planning_log.md) 2026-08-25.
+
+**Boundary:** thumbnail safe-area checking is a conservative Pillow visual-density
+heuristic, not OCR/face detection. Artifact retention is intentionally dry-run only.
+`render-preview` refuses a stored script truncated at 2,000 characters unless the
+operator supplies `--file`; preview audio/video are suffixed, never update upload media,
+and the YouTube publisher rejects `_preview.mp4` files.
+The separate dependency wave (Pillow 11.3, requests 2.32.4, remove MoviePy)
+still requires a real dependency/render pass. Still skip #147 FastAPI, #146 tray
+daemon, Phase M, volume-gated backtest, and auto-flipping the $0 TTS voice.
+
+## Last live run — 71 (2026-08-21, documented 2026-08-22)
+
+TapIn / Standard / best-bet 3 (GTA 6 leak + Wolverine “summer of hate”). **Draft
+only** — operator did not type `y` at Proceed. Full narrative:
+[debugging.md — Live-run 71](debugging.md#live-run-71-2026-08-21--pasted-article-hit-powershell-not-the-cli).
+
+- `all-setup` OK; YouTube READY; discovery ~58s; est. **$0.028**; no MP4.
+- Facts: MSN URL headline-only; one typed Take-Two sentence; vault mixed in
+  Marvel Rivals / SEGA lines. Article body never entered the fact window.
+- After *Stopped before render*, pasted IGN/ad/store text went to **PowerShell**
+  (`Fast` / `Sponsored` / `user(s)` as commands). Re-enter via `py main.py`;
+  use key-facts **`paste`** for the article if you continue this topic.
+
 ## Branch / PR
 
-- **Branch:** `main` (or the live-run 69/70 working tree landing on it). The stack
+- **Branch:** `docs/brainstorm-141-320`; this implementation wave follows the
+  MoneyWise/Pillow documentation commit `b26ce23`. The earlier stack
   **merged 2026-08-19 via
   [PR #34](https://github.com/jmcdigmarketing-cpu/content_machine/pull/34)** (24 commits,
   merge commit `6389e87`); CI is green on `main`. 20 Aug added the run-70 Ollama
   probe, worker/ffmpeg coverage tests, semantic authenticity, and router vision
   (`core/llm_client.py` gone).
-- **Suite:** 1,433+ tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests`
-- **Pickup order:** [docs/roadmap.md](roadmap.md) **Recommended next 5** (pre-run
-  gate, oauth tests + `coverage` extra, pronunciation lexicon, allocated vs
-  marginal economics, numeric/record grounding). Candidates 56–90 sit under Next up.
+- **Suite:** 2,010 tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests -t .`
+- **Pickup order:** real visual render proof for #23–27 / dependency wave, then
+  candidate 28 and 56–90 under Next up.
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -523,12 +618,14 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-**Pickup:** [roadmap.md](roadmap.md) **Recommended next 5** (20 Aug evening) — pre-run
-completion gate, `youtube/oauth.py` tests + `coverage` extra, pronunciation lexicon
-for local TTS, allocated vs marginal unit economics, numeric/record grounding.
-Candidates **21–55** and **56–90** sit at the bottom of Next up. Phase M stays parked.
+**Pickup:** take the Pillow/requests/MoviePy dependency wave when a real render
+can verify it. Candidates **23–28** (remaining caption/thumb aesthetics) and **56–90** leftovers sit at
+the bottom of Next up. Phase M stays parked. **#147 FastAPI still skipped.**
 
 **Already done (do not re-open):**
+- Ten-small-task wave (2026-08-25): MoneyWise persona; #21, #22, #31, #39,
+  #53, #262, #271, #298, and #299.
+- Post-wave-4 pickup (2026-08-25): #313, #282, #308–310, #232 and #122.
 - Caption-text from the script (`video/caption_retext.py`, 2026-08-16). The **$0 TTS
   switch** is unblocked and waiting on two *operator* calls: judge
   `output/samples/piper_lessac_run65.mp3`, then re-run
@@ -549,16 +646,17 @@ Candidates **21–55** and **56–90** sit at the bottom of Next up. Phase M sta
   **pull** vs **serve** vs OpenRouter throttled fallback.
 
 **Still open:**
-1. **Recommended next 5** — see [roadmap.md](roadmap.md) (viability / short-term /
-   cost). Do not start with clip-from-source, avatar, or Phase M.
+1. **Reinstall the venv** after the Pillow 11.3 / requests 2.32.4 / moviepy-drop
+   pin change, then do a real thumbnail/render. Do not start with clip-from-source,
+   avatar, #147 FastAPI, or Phase M.
 2. **Pillar 6 remainder** — seams live; heavy backends wait on a **CUDA torch**
    build (`2.8.0+cpu` on an RTX 4070 Ti), not on hardware. Clip-from-source and
    storyboard still not started. [providers_runbook.md](providers_runbook.md),
    [video_creation_stack.md](video_creation_stack.md).
 3. **Pillar 2 remainder** — multimodal rendered-video review (vision path now
    exists); calibration/predictor stay volume-gated (10 measured vs threshold 15).
-4. **Unphased:** MoneyWise depth, AI Tools/Tech groundwork, overnight facts-file
-   (`generate_draft` still has no `key_facts=`).
+4. **Unphased:** MoneyWise depth, AI Tools/Tech groundwork. Overnight `--facts-file`
+   is wired. Vault wolverine-only bullets (no franchise string) still attach.
 5. **Vault:** stable-path dossier upsert (date-prefix clones the same `run_id`).
 6. **One-time ops:** re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
 7. **Do not merge** `origin/claude/docs-optimization-review-a4l104` (9 commits, no
@@ -573,7 +671,7 @@ Candidates **21–55** and **56–90** sit at the bottom of Next up. Phase M sta
 
 - `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
-- `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); recommended next 5 + candidates 56–90
+- `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); post-wave-4 pickup shipped
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index
 - `docs/debugging.md` — playbook vs facts, hallucination triage
 

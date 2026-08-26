@@ -276,3 +276,26 @@ A Reddit 429 returns `STATUS_RATE_LIMIT`, which the breaker's timed cooldown
 absorbs (`SIGNAL_RATE_LIMIT_COOLDOWN_SECONDS`). With this, two of the four paid
 signals have free backends; Twitter/TikTok remain Apify-only per the verdict
 table above.
+
+## Wave C — public-apis shortlist (2026-08-26)
+
+Research only. Remaining paid Apify actors are **`tiktok_trends`** and
+**`youtube_competitors`**. Anything that cannot answer *key vs keyless* and
+*survives discovery-load rate limits* is not a candidate. No new dependency.
+
+Checked against [public-apis](https://github.com/public-apis/public-apis)
+(Video / Social) plus each API's current published docs.
+
+| Candidate | `apis/` signal it would serve | Paid call it displaces | Key vs keyless | Discovery-load rate limits |
+|---|---|---|---|---|
+| **YouTube Data API `search.list` / channel RSS** (`https://www.youtube.com/feeds/videos.xml?channel_id=`) | `youtube_competitors` | Apify youtube actor | Official Data API needs a key we already hold; channel RSS is **keyless** | RSS: one GET per competitor per run, well under typical feed limits. Data API: 100 units/search against 10k/day — already budgeted. **Already shipped** as `fetch_youtube_free` / competitor snapshot. Not a new candidate. |
+| **Twitch Helix `Get Top Games` / `Get Streams`** | new gaming-trend helper (does **not** replace TikTok) | none of the remaining Apify actors (different platform) | **Key** (app client-credentials) | 800 points/minute documented. One or two calls per discovery run survives. Honest boundary: it is a *supplement* for TapIn gaming, not a `tiktok_trends` replacement. |
+| **TikTok unofficial / RapidAPI scrapers listed on public-apis** | `tiktok_trends` | Apify tiktok actor | Usually a vendor key; some "keyless" HTML scrapes | No published SLA that survives concurrent discovery (one run × variants). Historical 403/ban pattern matches retired `twitter`/`tapology`. **Not a candidate.** |
+| **Reddit JSON / OAuth** | `reddit` (retired) | already displaced | OAuth key (free script app) | 429 handled as `STATUS_RATE_LIMIT`. **Already shipped** as `fetch_reddit_free`. |
+
+**Verdict:** there is **no licence-clear, documented-limit, keyless public-apis
+entry that displaces `tiktok_trends`**. `youtube_competitors` already has a
+free backend. Twitch Helix is the only remaining shortlist item with a
+published rate limit that would survive a real discovery load, and it does
+not replace either remaining Apify actor. Do not add a dependency until that
+changes.

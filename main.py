@@ -68,7 +68,9 @@ def _run_intelligence_report_flow(channel_id: str) -> None:
     section("Intelligence")
     discovery = run_discovery(topic, channel_id=channel_id)
     display_signal_health(discovery.base_signals)
-    best_default = display_variants(discovery.evaluated, channel_id=channel_id)
+    best_default = display_variants(
+        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+    )
 
     choice = input("\n  Choose 1-5 for report (Enter = best): ").strip()
     variant_index = int(choice) - 1 if choice.isdigit() else best_default
@@ -110,6 +112,12 @@ def main():
         from apis.youtube_quota import format_uploads_left
 
         print(f"  YouTube: {format_uploads_left()}")
+        try:
+            from core.win_notify import notify_uploads_left
+
+            notify_uploads_left()
+        except Exception as exc:
+            logger.debug("uploads-left toast skipped: %s", exc)
     except Exception as exc:
         logger.debug("uploads-left startup line skipped: %s", exc)
     if intelligence_mode_enabled():
@@ -363,7 +371,9 @@ def _run_new_video_flow_body(
 
     display_outlier(get_competitor_outlier(discovery.base_signals))
 
-    best_default = display_variants(discovery.evaluated, channel_id=channel_id)
+    best_default = display_variants(
+        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+    )
 
     choice = input("\n  Choose 1-5 (Enter = best): ").strip()
 
@@ -512,6 +522,14 @@ def _run_new_video_flow_body(
         )
         if thin_reason:
             print(f"\n  ! {thin_reason}")
+            try:
+                from core.review_booth import write_thin_facts_screen
+
+                write_thin_facts_screen(thin_reason, fact_count=_fact_line_count(_facts_preview))
+            except Exception as exc:
+                from core.logging import get_logger
+
+                get_logger("main").debug("thin-facts HTML skipped: %s", exc)
             override = input("  Thin facts — render anyway and pay TTS? [y/N]: ").strip().lower()
             if override != "y":
                 display_summary(
@@ -659,7 +677,15 @@ def _run_new_video_flow_body(
             when = "now"
             if upload_plan.scheduled_at:
                 when = upload_plan.scheduled_at.astimezone().strftime("%Y-%m-%d %H:%M")
-            print(f"\n  Upload queued (job {job.id}, {upload_plan.privacy_status}, {when}).")
+            # Report what will actually happen: an immediate public upload is held
+            # unlisted for review by default, so echoing the request would promise
+            # public and deliver unlisted (run 69).
+            from publishing.youtube_publisher import queued_privacy_label
+
+            privacy_label = queued_privacy_label(
+                upload_plan.privacy_status, upload_plan.youtube_publish_at
+            )
+            print(f"\n  Upload queued (job {job.id}, {privacy_label}, {when}).")
             print("  Run worker:  py -m jobs.worker --loop 30")
         from core.ui import maybe_print_milestone
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from collections.abc import Callable
 
 from config.channels import get_channel_profile, resolve_channel_id
 from config.paths import ROOT_DIR
@@ -22,6 +23,7 @@ TARGET_W = 1080
 TARGET_H = 1920
 
 DEFAULT_INTRO_REL = os.path.join("video", "intro", "channel_intro.mp4")
+DEFAULT_INTRO_DURATION = 2.15
 
 
 def _intro_enabled() -> bool:
@@ -62,6 +64,25 @@ def resolve_intro_path(channel_id: str | None = None) -> str | None:
 
     logger.debug("No channel intro file found for channel=%s", channel_id)
     return None
+
+
+def learned_intro_duration(
+    channel_id: str | None = None,
+    *,
+    fallback: float = DEFAULT_INTRO_DURATION,
+) -> float:
+    """Shorten the sting only when drop-off samples exist; otherwise keep fallback."""
+    try:
+        from core.retention import drop_off_ratio
+
+        ratio = drop_off_ratio(resolve_channel_id(channel_id))
+    except Exception as exc:
+        logger.debug("learned intro duration skipped: %s", exc)
+        return fallback
+    if ratio is None:
+        return fallback
+    shortened = max(0.5, min(fallback, float(ratio) * 30.0))
+    return shortened
 
 
 def _probe_duration(path: str) -> float | None:
@@ -180,6 +201,7 @@ def prepend_channel_intro(
     *,
     channel_id: str | None = None,
     output_path: str | None = None,
+    command_callback: Callable[[str, list[str]], None] | None = None,
 ) -> str:
     """
     Prepend intro to body_path. Returns final output path (overwrites body in place by default).
@@ -198,11 +220,20 @@ def prepend_channel_intro(
     if final_path == body_path:
         temp_body = body_path + ".body.tmp.mp4"
         work_body = temp_body
-        os.replace(body_path, temp_body)
+        from core.file_lock import retry_locked
+
+        retry_locked(lambda: os.replace(body_path, temp_body))
 
     intro_dur = _probe_duration(intro_path)
     if intro_dur is None:  # not `or 3.0` — a real 0.0 is a probe answer, not a miss
         intro_dur = 3.0
+    try:
+        from core.retention import drop_off_ratio
+
+        if drop_off_ratio(resolve_channel_id(channel_id)) is not None:
+            intro_dur = learned_intro_duration(channel_id)
+    except Exception as exc:
+        logger.debug("learned intro duration not applied: %s", exc)
     cmd = build_intro_concat_command(
         intro_path=intro_path,
         body_path=work_body,
@@ -210,18 +241,50 @@ def prepend_channel_intro(
         intro_has_audio=_has_audio_stream(intro_path),
         intro_duration=intro_dur,
     )
+    if command_callback is not None:
+        try:
+            command_callback("intro_attempt", list(cmd))
+        except Exception as exc:
+            logger.debug("intro attempt capture skipped: %s", exc)
 
     logger.info("Prepending channel intro (%s)", os.path.basename(intro_path))
     concat_ok = False
     try:
-        process = subprocess.run(cmd, capture_output=True, text=True)
-        if process.returncode != 0:
-            raise RuntimeError(f"Intro concat failed: {(process.stderr or '')[-800:]}")
+        from core.file_lock import is_lock_error, lock_delay_sec, lock_retries
+
+        process = None
+        attempts = lock_retries()
+        delay = lock_delay_sec()
+        for i in range(attempts):
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if process.returncode == 0:
+                break
+            err = process.stderr or ""
+            if is_lock_error(None, err) and i < attempts - 1:
+                logger.warning("Intro concat file-lock retry %s/%s", i + 1, attempts)
+                import time as _time
+
+                _time.sleep(delay * (i + 1))
+                continue
+            break
+        if process is None or process.returncode != 0:
+            raise RuntimeError(f"Intro concat failed: {(process.stderr if process else '')[-800:]}")
         # Exit 0 is not proof of an output: a truncated or empty file here would be
         # "successful" right up until we delete the temp holding the real render.
         if not os.path.isfile(final_path) or os.path.getsize(final_path) == 0:
             raise RuntimeError(f"Intro concat exited 0 but wrote no usable file: {final_path}")
         concat_ok = True
+        if command_callback is not None:
+            try:
+                command_callback("intro_success", list(cmd))
+            except Exception as exc:
+                logger.debug("intro success capture skipped: %s", exc)
     finally:
         # From the os.replace above to here, the rendered video exists ONLY under the
         # temp name. Every exit from that window has to put it back — a non-zero exit,

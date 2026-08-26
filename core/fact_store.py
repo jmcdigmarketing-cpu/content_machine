@@ -147,6 +147,10 @@ def note_metadata(
     tier = declared if declared in TIER_WEIGHTS else infer_tier_from_path(rel_path)
     verified_at = parse_iso_date(meta.get("verified_at")) or parse_iso_date(meta.get("date"))
     expires = parse_iso_date(meta.get("expires"))
-    source = (meta.get("source") or "").strip()
+    # `source:` is canonical — both writers emit it (core/source_capture.py,
+    # core/operator_facts.py). `source_url:` is accepted because the shipped
+    # docs/vault_templates/_sources.md briefly told operators to use that key, and a
+    # hand-written note must not lose its provenance over the spelling.
+    source = ((meta.get("source") or "") or (meta.get("source_url") or "")).strip()
     source_url = source if source.lower().startswith(("http://", "https://")) else ""
     return tier, verified_at, expires, source_url

@@ -155,6 +155,7 @@ class AuthenticityReport:
     score: int  # 0-100
     verdict: str  # "ok" | "review" | "block"
     checks: list[AuthenticityCheck]
+    semantic_overlap: float = 0.0  # peak content-word cosine vs recent (0-1)
 
     @property
     def passed(self) -> bool:
@@ -320,7 +321,11 @@ def evaluate_authenticity(
     else:
         verdict = "block"
 
-    return AuthenticityReport(score=score, verdict=verdict, checks=checks)
+    overlap = 0.0
+    if _semantic_enabled() and recent:
+        overlap = max(_content_cosine(script, other) for other in recent)
+
+    return AuthenticityReport(score=score, verdict=verdict, checks=checks, semantic_overlap=overlap)
 
 
 def gate_mode() -> str:

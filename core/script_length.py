@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 
@@ -82,6 +83,97 @@ def count_spoken_words(script: str) -> int:
     if not text:
         return 0
     return len(text.split())
+
+
+def _char_len(script: str) -> int:
+    """Same measurement TTS_MAX_CHARS uses, so trim and refuse cannot disagree."""
+    try:
+        from core.utils import clean_script_for_tts
+
+        return len(clean_script_for_tts(script or ""))
+    except Exception:
+        return len(script or "")
+
+
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+_PADDING_LEAD = re.compile(
+    r"^(anyway|that said|in conclusion|to wrap(?: it)? up|so yeah|basically|"
+    r"at the end of the day|all in all|in other words|as i (?:said|mentioned)|"
+    r"let that sink in|you already know|moving on)\b",
+    re.I,
+)
+
+
+def trim_enabled() -> bool:
+    return os.getenv("SCRIPT_TRIM", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def split_spoken_sentences(script: str) -> list[str]:
+    parts = _SENTENCE_SPLIT.split((script or "").strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
+def trim_overlength(
+    script: str,
+    *,
+    max_words: int,
+    min_words: int = 0,
+    max_chars: int | None = None,
+) -> tuple[str, int]:
+    """Drop trailing padding sentences when over length.
+
+    Never clips mid-sentence (hard cap remains refuse in TTS). Never drops the
+    hook (first sentence). Never goes below min_words. Returns (script, words_removed).
+    Optional ``max_chars`` is the TTS ceiling so we trim padding before refusing.
+    """
+    if not trim_enabled():
+        return script, 0
+    if max_words <= 0 and not (max_chars and max_chars > 0):
+        return script, 0
+    current = count_spoken_words(script)
+    over_chars = bool(max_chars and max_chars > 0 and _char_len(script) > max_chars)
+    over_words = bool(max_words > 0 and current > max_words)
+    if not over_words and not over_chars:
+        return script, 0
+    sentences = split_spoken_sentences(script)
+    if len(sentences) <= 1:
+        return script, 0
+
+    def _join(parts: list[str]) -> str:
+        return " ".join(parts)
+
+    def _ok(parts: list[str]) -> bool:
+        return count_spoken_words(_join(parts)) >= min_words and len(parts) >= 1
+
+    def _too_long(parts: list[str]) -> bool:
+        joined = _join(parts)
+        if max_words > 0 and count_spoken_words(joined) > max_words:
+            return True
+        return bool(max_chars and max_chars > 0 and _char_len(joined) > max_chars)
+
+    changed = True
+    while changed and _too_long(sentences) and len(sentences) > 1:
+        changed = False
+        for i in range(len(sentences) - 1, 0, -1):
+            if not _PADDING_LEAD.search(sentences[i]):
+                continue
+            trial = sentences[:i] + sentences[i + 1 :]
+            if _ok(trial):
+                sentences = trial
+                changed = True
+                break
+    while _too_long(sentences) and len(sentences) > 1:
+        trial = sentences[:-1]
+        if not _ok(trial):
+            break
+        sentences = trial
+    out = _join(sentences)
+    return out, max(0, current - count_spoken_words(out))
 
 
 def estimate_duration_seconds(script: str, *, wps: float = WORDS_PER_SECOND) -> float:

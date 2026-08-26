@@ -6,6 +6,127 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### 21-28 render wave + its audit - 2026-08-25
+
+The aesthetics block every prior wave deferred as "needs a real render" (21 caption
+skin, 22 safe-area, 23 end card, 24 lower thirds, 25 colour grade, 26 hook motion,
+27 dual thumbnail, 39 draft preset). Committed as written, then audited. **Four
+defects, none of which failed CI** - the same shape as the last two passes.
+
+- **Lower thirds could never have rendered on Windows.** The filter graph carried two
+  `subtitles=` entries escaped differently: the captions quoted manually
+  (`'C\:/...'`), the lower third via Python `repr` (`'C\:/...'`). `repr` escaped
+  the backslash `_escape_subtitle_path` deliberately puts before the drive-letter
+  colon. Proved against real ffmpeg rather than argued - old form `-22 Invalid
+  argument`, new form exit 0. `force_style` had the same `repr` bug, plus repr flips
+  its delimiter to `"` on any apostrophe. **Green because the only test reaching that
+  code passed `lower_thirds_path=None`** - the feature was switched off in the test
+  covering it.
+- **Hook motion and lower thirds were dead on the $0 local-TTS path.** The render read
+  word timings from the ElevenLabs `.words.json` sidecar only; the whisper ->
+  `retext_words_from_script` path lived inside `generate_subtitle_file` and never
+  returned its result. On Piper / Free-mode runs both features silently no-opped while
+  the captions burned into the same render carried real whisper timings. The skip note
+  misread its own cause ("no real first-cue timing" when nothing had asked the
+  aligner). `video.subtitles.resolve_word_timings` is now the shared seam, resolved
+  once per render.
+- **`ThumbnailSafeAreaCheck.threshold` did nothing** - `inspect_thumbnail` hardcoded
+  18.0, so a caller passing its own value got default behaviour with a misleading
+  number attached. Now a real parameter.
+- **Both channels were pinned to one voice.** `validate_channels` had been warning;
+  nothing acted. That undercuts the MoneyWise persona shipped the session before -
+  "calm, plain-spoken" and "high-energy, irreverent" read by the identical synthetic
+  voice, and channel-level sameness is what the 2026 policy assesses. MoneyWise moved
+  to `XjLkpWUlnhS8i7gGz3lZ` (already in the default pool, so known-good against this
+  account). Warnings 3 -> 2, both expected. **Listen to one sample before publishing.**
+
+Also: the AI-attribution rule is now enforced by `.githooks/commit-msg`, not prose.
+`e4d2242` landed a Cursor co-author trailer the commit *after* the rule was written
+into `.cursor/rules`, which settles whether a paragraph is sufficient. Human co-authors
+are unaffected; enable per clone with `git config core.hooksPath .githooks`. The
+existing trailer stays in pushed history - not worth a force-push.
+
+
+### Wave-4 audit: three green-but-broken fixes + agent rules - 2026-08-23
+
+*Every defect below passed CI. None was a crash, a lint error, or a failing test.*
+
+- **#292 quiet-hours toast DND muted nothing.** `_toasts_muted()` called
+  `quiet_hours_reason()` with no channel; that resolves to `default`, which has no
+  `quiet_hours` block (only `tapin`/`moneywise` do). Measured:
+  `quiet_hours_reason(channel_id="tapin", when=3am ET)` returns a reason,
+  `quiet_hours_reason(when=3am ET)` returns `None`. **It passed CI because the test
+  mocked `quiet_hours_reason`** - proving "given a reason, mute", never that a reason
+  could occur. Now resolved machine-level across every configured channel; breaker
+  toasts pass `urgent=True` and bypass DND, since the overnight batch runs inside the
+  1-8am window. `tests/test_toast_dnd.py` drives the clock and leaves the channel
+  lookup live; it fails against the old code.
+- **The public `Sources:` block cited off-topic notes.** It collected vault URLs with
+  the default loose relevance - the gate that on run 71 attached Marvel Rivals and SEGA
+  notes to a GTA 6 story. A description is public, so that is a visible error, not
+  prompt noise. Vault path now requires a topic-distinctive token; pasted URLs are
+  untouched. The ambiguous-token case is asserted as a **known gap** rather than
+  claimed fixed - candidate 324's deferred vault-side sibling.
+- **`docs/vault_templates/_sources.md` used the wrong frontmatter key.** It told
+  operators to write `source_url:`; `note_metadata` reads `source:`. Every note copied
+  from the shipped template lost its provenance URL and could never reach the Sources
+  block. From candidate 34, and the test missed it for the same reason as #292: it
+  asserted a *key existed* instead of asserting the parser extracted a URL. Template
+  now uses the canonical `source:`, `note_metadata` accepts either so notes already
+  written still resolve, and the test goes through `note_metadata`.
+- **Agent rules, so this stops recurring.** [AGENTS.md](../AGENTS.md) and
+  [.cursor/rules/content-machine.mdc](../.cursor/rules/content-machine.mdc) - Cursor
+  never read `CLAUDE.md`, so it had been working without the repo's rules. They lead
+  with the four green-but-broken defects and the rules that catch them: never mock the
+  thing under test, watch the test fail first, assert behaviour not shape, exercise the
+  shipped config, every helper needs a real caller.
+  `docs/cursor_audit_prompt.md` is marked stale (it still cited a 363-test baseline).
+
+
+### Honesty + leave-the-terminal wave 4 — 2026-08-22
+
+*20 leftover `[S]` on the honesty / leave-the-terminal / operator-safety
+theme. FastAPI #147 and tray daemon #146 still skipped.*
+
+- Playbook lint (`ops playbook-lint`) warns when untagged strategy-shaped
+  bullets also look fact-anchored (rank / year / `$`) — those currently feed
+  `load_facts` as ground truth.
+- Description **Sources:** block from vault `source_url` + pasted http(s)
+  (`DESCRIPTION_SOURCES`).
+- Booth: ungrounded numeric chips, authenticity semantic bar, grade
+  breakdown, TTS cache-hit $0, Pillow vs Flux badge, signal-health dots,
+  feed-stale strip (cached `ops feeds` only), overnight-render / RPM-deferred
+  / yesterday-unsynced copy, copy unlisted URL + Obsidian dossier URI +
+  postmortem markdown, sticky cost (`#costbar`) + quota (`#quotabar`), 16px
+  type on buttons/inputs.
+- Tray chip `Domain: UFC|GTA|NBA` (`CONTENT_TRAY_DOMAIN`). Toasts mute during
+  quiet hours (`CONTENT_TOAST_DND`).
+- `ops postmortem --md`. Post-render features/trace now record `tts_cached`
+  and `thumbnail_provider` (not folded into cost totals).
+
+### Live-run 71 documented — 2026-08-22
+
+*TapIn Standard run id 71 (GTA 6 leak / Wolverine angle). Drafted, not rendered.*
+
+- Operator pasted article/ad clipboard text at **Proceed?** (treated as stop) then
+  at the PowerShell prompt (`CommandNotFoundException` on `Fast`, `Sponsored`,
+  `user(s)`, store headings). Not a CLI crash. Write-up:
+  [debugging.md](debugging.md#live-run-71-2026-08-21--pasted-article-hit-powershell-not-the-cli).
+- Same run: MSN link scrape headline-only; vault auto-attached off-topic
+  Marvel/SEGA bullets; YouTube + youtube_comments timed out; `trendingnow.games`
+  unreachable.
+- Claim verifier logged **7/12 unsupported**, then the claim-rewrite pass
+  (`_maybe_rewrite_unsupported_claims`) restated them as attributed speculation
+  and the re-check printed **12/12**. Same check, rewritten script — the claims
+  were hedged, not evidenced. Corrected an earlier note that called these two
+  different checks.
+- Quality observations recorded, **not fixed**: the generated title attributed
+  the subpoenas to Rockstar when the operator's own fact says Take-Two (titles
+  run after every check and are never verified); RAWG matched three 1990s
+  Wolverine games into the corpus behind the authenticity gate's "18 verified
+  fact(s)"; all five angle variants tied at 100.0; 30.6 min wall (25.6 at
+  prompts) produced no video.
+
 ### Living-doc sync + live-run 69/70 — 2026-08-20
 
 *Honesty/cost wave after PR #34. Pickup is now the recommended next 5 on

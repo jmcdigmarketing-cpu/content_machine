@@ -291,10 +291,19 @@ def _llm_disabled(provider: str) -> bool:
 
 
 def _disable_llm(provider: str, reason: str) -> None:
+    first = False
     with _llm_breaker_lock:
         if provider not in _llm_disabled_state:
             logger.warning("LLM provider '%s' disabled this session: %s", provider, reason)
+            first = True
         _llm_disabled_state[provider] = reason
+    if first:
+        try:
+            from core.win_notify import notify_breaker
+
+            notify_breaker(f"LLM {provider}", reason)
+        except Exception as exc:
+            logger.debug("breaker toast skipped: %s", exc)
 
 
 # A specific (provider, model) slug that the provider says doesn't exist / isn't

@@ -186,16 +186,18 @@ class _RenderHarness(unittest.TestCase):
             self.addCleanup(p.stop)
             return m
 
-        clip = mock.MagicMock()
-        clip.duration = self.duration
-        _patch("video.render_video.AudioFileClip", return_value=clip)
         asset = mock.MagicMock()
         asset.path = os.path.join(self.tmp.name, "bg.mp4")
         asset.provider = "local"
         asset.attribution = None
         _patch("video.render_video.get_background_asset", return_value=asset)
         _patch("assets.manager.get_scene_matched_background", return_value=None)
-        _patch("video.render_video._probe_video_duration", return_value=None)
+        _patch(
+            "video.render_video._probe_video_duration",
+            side_effect=lambda path: self.duration
+            if str(path).lower().endswith(".mp3") or "voice" in str(path).lower()
+            else None,
+        )
         _patch(
             "video.render_video.generate_subtitle_file",
             return_value=os.path.join(self.tmp.name, "subs.srt"),
@@ -207,10 +209,16 @@ class _RenderHarness(unittest.TestCase):
             return_value=mock.MagicMock(returncode=0, stderr=""),
         )
 
-    def _render(self):
+    def _render(self, *, command_callback=None):
         from video.render_video import render_vertical_video
 
-        return render_vertical_video(self.mp3_path, "topic", "out.mp4", "script text")
+        return render_vertical_video(
+            self.mp3_path,
+            "topic",
+            "out.mp4",
+            "script text",
+            command_callback=command_callback,
+        )
 
     def _write_bed(self) -> str:
         bed = os.path.join(self.tmp.name, "bed.wav")
@@ -268,6 +276,26 @@ class TestRenderFailsOpenToVoOnly(_RenderHarness):
         self.assertIn("amix=inputs=2", " ".join(first))
         self.assertNotIn("amix", " ".join(second))
         self.assertIn("1:a:0", second)
+
+    def test_command_callback_reports_the_command_that_succeeds(self):
+        bed = self._write_bed()
+        self.run_mock.side_effect = [
+            mock.MagicMock(returncode=1, stderr="mix failed"),
+            mock.MagicMock(returncode=0, stderr=""),
+        ]
+        seen = []
+        with mock.patch(
+            "core.music.generate_bed",
+            return_value=ProviderResult.success("music", "musicgen", data=bed),
+        ):
+            self._render(command_callback=lambda kind, argv: seen.append((kind, argv)))
+        self.assertEqual(
+            [kind for kind, _ in seen],
+            ["primary_attempt", "primary_attempt", "primary_success"],
+        )
+        self.assertIn("amix", " ".join(seen[0][1]))
+        self.assertNotIn("amix", " ".join(seen[1][1]))
+        self.assertEqual(seen[1][1], seen[2][1])
 
 
 if __name__ == "__main__":

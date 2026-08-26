@@ -232,6 +232,14 @@ def cached_warnings() -> list[str]:
     return out
 
 
+def stale_strip_text(*, limit: int = 3) -> str:
+    """Cached dead/stale feed lines for the booth. No network. '' when none."""
+    warns = cached_warnings()
+    if not warns:
+        return ""
+    return "; ".join(warns[: max(1, int(limit))])
+
+
 def summarize(results: list[dict[str, Any]]) -> dict[str, int]:
     counts = {STATUS_OK: 0, STATUS_STALE: 0, STATUS_DEAD: 0}
     for row in results or []:

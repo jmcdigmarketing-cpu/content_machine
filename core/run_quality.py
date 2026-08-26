@@ -18,6 +18,9 @@ Shape (all keys optional — consumers must tolerate absence):
       "fact_conflict_count": 0,         # Pillar 3: operator-vs-source conflicts
       "claim_support_rate": 0.9,        # Pillar 3: LLM claim verifier (when it ran)
       "unsupported_claim_count": 1,
+      "claims_rewritten": True,         # 322: the rewrite pass hedged unsupported claims
+      "pre_rewrite_unsupported_count": 7,   # ...what the script asserted before that
+      "pre_rewrite_support_rate": 0.417,
       "thumbnail_overall": 61.0, "thumbnail_source": "llm",   # merged post-render
       "quality_version": "v2",
     }
@@ -71,6 +74,7 @@ def build_quality(
         )
         quality["authenticity_score"] = auth.score
         quality["authenticity_verdict"] = auth.verdict
+        quality["authenticity_semantic"] = round(float(auth.semantic_overlap or 0.0), 3)
     except Exception as exc:
         logger.debug("authenticity scoring skipped: %s", exc)
 
@@ -78,6 +82,14 @@ def build_quality(
     quality["ungrounded_count"] = len(ungrounded)
     if ungrounded:
         quality["ungrounded_entities"] = list(ungrounded)[:20]
+    try:
+        from core.fact_grounding import numeric_claims_among
+
+        numeric = numeric_claims_among(list(ungrounded) if ungrounded else [])
+        if numeric:
+            quality["ungrounded_numeric"] = numeric[:12]
+    except Exception as exc:
+        logger.debug("ungrounded numeric split skipped: %s", exc)
     quality["trade_warning_count"] = len(features.get("trade_warnings") or [])
 
     # Pillar 3 (Fact Engine): tier lint + conflicts always count; the claim
@@ -93,6 +105,17 @@ def build_quality(
         if isinstance(support_rate, int | float):
             quality["claim_support_rate"] = float(support_rate)
         quality["unsupported_claim_count"] = len(verification.get("unsupported") or [])
+        # Candidate 322: a hedged run scores like a clean one, because the rate above
+        # is measured after the rewrite pass restated the unsupported claims as
+        # attributed speculation. Keep what the script asserted before that.
+        if verification.get("rewritten"):
+            quality["claims_rewritten"] = True
+            quality["pre_rewrite_unsupported_count"] = int(
+                verification.get("pre_rewrite_unsupported") or 0
+            )
+            pre_rate = verification.get("pre_rewrite_support_rate")
+            if isinstance(pre_rate, int | float):
+                quality["pre_rewrite_support_rate"] = float(pre_rate)
 
     # Pillar 2: freeze the data-gated engaged-rate prediction at generation time
     # so the calibration loop can score it against the realized outcome later.

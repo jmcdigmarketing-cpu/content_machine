@@ -14,18 +14,30 @@ Config (per-channel `config/seo/{channel}.json`, all optional):
 
 Env toggles:
   AI_DISCLOSURE_ENABLED   = true (default) | false
+  DESCRIPTION_SEO_FIRST_LINE = true (default) | false
+  FTC_DISCLOSURE          = true (default) | false  # only when monetization_cta is set
+  DESCRIPTION_SOURCES     = true (default) | false  # vault source_url + pasted http(s)
 """
 
 from __future__ import annotations
 
 import os
+import re
 
 from config.seo import get_seo_profile
 from core.logging import get_logger
 
 logger = get_logger("core.description_extras")
 
+_URL_RE = re.compile(r"https?://[^\s)>\]]+", re.I)
+
 DEFAULT_AI_DISCLOSURE = "Made with AI-assisted narration and editing."
+DEFAULT_FINANCE_DISCLAIMER = (
+    "Not financial advice. For informational purposes only. Do your own research."
+)
+DEFAULT_FTC_DISCLOSURE = (
+    "Some links may be affiliate links. We may earn a commission at no extra cost to you."
+)
 
 
 def _flag(name: str, default: bool) -> bool:
@@ -59,21 +71,159 @@ def monetization_ctas(channel_id: str) -> list[str]:
     return [str(x).strip() for x in raw if str(x).strip()]
 
 
-def apply_description_extras(description: str, channel_id: str) -> str:
+def finance_disclaimer_line(channel_id: str) -> str:
+    """MoneyWise description disclaimer (separate from AI disclosure)."""
+    if (channel_id or "").strip().lower() != "moneywise":
+        return ""
+    if not _flag("FINANCE_DISCLAIMER", True):
+        return ""
+    try:
+        custom = get_seo_profile(channel_id).get("finance_disclaimer")
+    except Exception:
+        custom = None
+    return (custom or DEFAULT_FINANCE_DISCLAIMER).strip()
+
+
+def ftc_affiliate_line(channel_id: str) -> str:
+    """FTC affiliate disclosure — copy only; #79 is the tracking spike."""
+    if not _flag("FTC_DISCLOSURE", True):
+        return ""
+    ctas = monetization_ctas(channel_id)
+    if not ctas:
+        return ""
+    try:
+        custom = get_seo_profile(channel_id).get("ftc_disclosure")
+    except Exception:
+        custom = None
+    return (custom or DEFAULT_FTC_DISCLOSURE).strip()
+
+
+def ensure_seo_first_line(description: str, title: str = "") -> str:
+    """First line is a search snippet (topic/title), not hashtags or Subscribe."""
+    if not _flag("DESCRIPTION_SEO_FIRST_LINE", True):
+        return description or ""
+    body = (description or "").strip()
+    headline = (title or "").strip()
+    if not headline:
+        return body
+    first = body.splitlines()[0].strip() if body else ""
+    weak = (
+        not first
+        or first.startswith("#")
+        or first.lower().startswith("subscribe")
+        or first.lower().startswith("http")
+    )
+    if not weak:
+        return body
+    if headline in body:
+        return body
+    return f"{headline}\n\n{body}" if body else headline
+
+
+def collect_source_urls(
+    *,
+    channel_id: str = "",
+    topic: str = "",
+    key_facts: list[str] | None = None,
+    extra_urls: list[str] | None = None,
+) -> list[str]:
+    """http(s) from operator paste + vault FactRecord.source_url. Deduped, capped."""
+    found: list[str] = []
+    seen: set[str] = set()
+
+    def _add(raw: str) -> None:
+        url = (raw or "").strip().rstrip(".,);")
+        if not url.lower().startswith(("http://", "https://")):
+            return
+        key = url.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        found.append(url)
+
+    for line in extra_urls or []:
+        _add(str(line))
+    for line in key_facts or []:
+        for match in _URL_RE.findall(str(line)):
+            _add(match)
+    if channel_id and topic:
+        try:
+            from core.obsidian_facts import load_fact_records
+
+            # `require_distinctive=True` because this block is PUBLIC. The default
+            # (loose) vault relevance is what attached four Marvel Rivals / SEGA notes
+            # to run 71's GTA 6 story — a shared token like "wolverine" can name two
+            # different subjects. Citing those under the video would be a visible
+            # error, so the vault must share a topic-distinctive token to contribute a
+            # URL. Operator-pasted URLs above are unaffected: they were chosen for
+            # this run.
+            for rec in load_fact_records(topic, channel_id, limit=24, require_distinctive=True):
+                _add(getattr(rec, "source_url", "") or "")
+        except Exception as exc:
+            logger.debug("vault source_url collect skipped: %s", exc)
+    return found[:8]
+
+
+def format_sources_block(urls: list[str] | None) -> str:
+    cleaned = [u.strip() for u in (urls or []) if str(u).strip()]
+    if not cleaned:
+        return ""
+    lines = ["Sources:"]
+    for url in cleaned[:8]:
+        lines.append(url)
+    return "\n".join(lines)
+
+
+def apply_description_extras(
+    description: str,
+    channel_id: str,
+    *,
+    title: str = "",
+    source_urls: list[str] | None = None,
+    topic: str = "",
+    key_facts: list[str] | None = None,
+) -> str:
     """
     Append the AI disclosure and any monetization CTAs to a description.
     Idempotent — lines already present are not duplicated.
     """
     body = (description or "").rstrip()
+    try:
+        from core.odds_language import strip_betting_ctas
+
+        body, _n = strip_betting_ctas(body)
+    except Exception as exc:
+        logger.debug("description betting-cta strip skipped: %s", exc)
+    body = ensure_seo_first_line(body, title).rstrip()
     additions: list[str] = []
 
     disclosure = ai_disclosure_line(channel_id)
     if disclosure and disclosure not in body:
         additions.append(disclosure)
 
+    finance = finance_disclaimer_line(channel_id)
+    if finance and finance not in body:
+        additions.append(finance)
+
+    ftc = ftc_affiliate_line(channel_id)
+    if ftc and ftc not in body:
+        additions.append(ftc)
+
     for cta in monetization_ctas(channel_id):
         if cta not in body and cta not in additions:
             additions.append(cta)
+
+    if _flag("DESCRIPTION_SOURCES", True):
+        urls = list(source_urls or [])
+        if not urls:
+            urls = collect_source_urls(
+                channel_id=channel_id,
+                topic=topic or title,
+                key_facts=key_facts,
+            )
+        block = format_sources_block(urls)
+        if block and "Sources:" not in body and block not in additions:
+            additions.append(block)
 
     if not additions:
         return body

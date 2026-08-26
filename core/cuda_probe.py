@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 from typing import Any
 
 from core.logging import get_logger
@@ -16,13 +17,38 @@ from core.logging import get_logger
 logger = get_logger("core.cuda_probe")
 
 
+def ffmpeg_has_nvenc() -> bool:
+    """True when `ffmpeg -encoders` lists h264_nvenc. Never encodes. Fail-open."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        return False
+    try:
+        creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+        result = subprocess.run(
+            [ffmpeg, "-hide_banner", "-encoders"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=8,
+            check=False,
+            creationflags=creation,
+        )
+        blob = (result.stdout or "") + (result.stderr or "")
+        return "h264_nvenc" in blob
+    except Exception as exc:
+        logger.debug("ffmpeg NVENC probe skipped: %s", exc)
+        return False
+
+
 def probe() -> dict[str, Any]:
-    """Read-only snapshot of torch/CUDA/nvidia-smi. Fail-open, no GPU work."""
+    """Read-only snapshot of torch/CUDA/nvidia-smi/NVENC. Fail-open, no GPU work."""
     out: dict[str, Any] = {
         "torch_version": None,
         "cuda_available": False,
         "cuda_built": False,
         "nvidia_smi": False,
+        "nvenc_capable": False,
         "nvenc_hint": "",
     }
     try:
@@ -44,12 +70,15 @@ def probe() -> dict[str, Any]:
 
     smi = shutil.which("nvidia-smi")
     out["nvidia_smi"] = bool(smi)
-    if smi:
-        out["nvenc_hint"] = "nvidia-smi present; NVENC encode is candidate 38 (not this probe)"
+    out["nvenc_capable"] = ffmpeg_has_nvenc()
+    if out["nvenc_capable"]:
+        out["nvenc_hint"] = "h264_nvenc listed by ffmpeg (capability only; encode is candidate 38)"
+    elif smi:
+        out["nvenc_hint"] = "nvidia-smi present; ffmpeg has no h264_nvenc (driver/ffmpeg build)"
     elif out["cuda_available"]:
         out["nvenc_hint"] = "torch CUDA yes, nvidia-smi missing from PATH"
     else:
-        out["nvenc_hint"] = "no CUDA torch / no nvidia-smi — CPU torch is the current gate"
+        out["nvenc_hint"] = "no CUDA torch / no nvidia-smi — CPU libx264 is the current gate"
 
     # Electricity line stays $0 until CUDA torch is actually on (candidate 70).
     out["gpu_hour_usd"] = 0.0
@@ -68,12 +97,14 @@ def render(data: dict[str, Any] | None = None) -> str:
     cuda = "yes" if data.get("cuda_available") else "no"
     built = "yes" if data.get("cuda_built") else "no"
     smi = "yes" if data.get("nvidia_smi") else "no"
+    nvenc = "yes" if data.get("nvenc_capable") else "no"
     lines = [
         "CUDA / GPU readiness (no install, no download)",
         f"  torch     : {tv}",
         f"  cuda built: {built}",
         f"  cuda avail: {cuda}",
         f"  nvidia-smi: {smi}",
+        f"  nvenc     : {nvenc}",
         f"  note      : {data.get('nvenc_hint') or ''}",
     ]
     if data.get("torch_error"):

@@ -45,10 +45,24 @@ class VerifiedClaim:
 @dataclass
 class ClaimVerification:
     claims: list[VerifiedClaim] = field(default_factory=list)
+    # Candidate 322 — set only when the claim-rewrite pass replaced the script it
+    # verified. Without these, a rewritten run is indistinguishable from a run that
+    # was right first time: the persisted numbers are all post-rewrite.
+    rewritten: bool = False
+    pre_rewrite_unsupported: int = 0
+    pre_rewrite_total: int = 0
 
     @property
     def total(self) -> int:
         return len(self.claims)
+
+    @property
+    def pre_rewrite_support_rate(self) -> float | None:
+        """Support rate of the script as first written, before any hedging."""
+        if not self.rewritten or not self.pre_rewrite_total:
+            return None
+        supported = self.pre_rewrite_total - self.pre_rewrite_unsupported
+        return round(supported / self.pre_rewrite_total, 3)
 
     @property
     def supported_count(self) -> int:
@@ -66,12 +80,19 @@ class ClaimVerification:
 
     def to_dict(self) -> dict[str, Any]:
         """Compact shape persisted into features_json / quality."""
-        return {
+        out: dict[str, Any] = {
             "total": self.total,
             "supported": self.supported_count,
             "support_rate": self.support_rate,
             "unsupported": [c.claim[:200] for c in self.unsupported[:_MAX_UNSUPPORTED_KEPT]],
         }
+        # Only present on a rewritten run, so existing readers see no change.
+        if self.rewritten:
+            out["rewritten"] = True
+            out["pre_rewrite_unsupported"] = self.pre_rewrite_unsupported
+            out["pre_rewrite_total"] = self.pre_rewrite_total
+            out["pre_rewrite_support_rate"] = self.pre_rewrite_support_rate
+        return out
 
 
 def verifier_enabled() -> bool:
@@ -214,8 +235,20 @@ def display_claim_verification(verification_dict: dict[str, Any] | None, *, prin
     unsupported = list(verification_dict.get("unsupported") or [])
     if not total:
         return False
+    rewritten = bool(verification_dict.get("rewritten"))
+    pre_unsupported = int(verification_dict.get("pre_rewrite_unsupported") or 0)
     if not unsupported:
         print_fn(f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts.")
+        # Candidate 322 — run 71 printed exactly the line above after 7 of 12 claims had
+        # been restated as "reports claim..." by the rewrite pass. Same check, rewritten
+        # script: nothing was verified between the two numbers.
+        if rewritten and pre_unsupported:
+            print_fn(
+                f"  ! {pre_unsupported} of those were restated as attributed speculation "
+                '("reports claim...") by the rewrite pass, not evidenced.'
+            )
+            print_fn("    Read this as 'no bare assertions left', not 'all claims true'.")
+            return True
         return False
     print_fn(
         f"  ! Claim check: {len(unsupported)} of {total} claim(s) in the SCRIPT aren't in your facts:"

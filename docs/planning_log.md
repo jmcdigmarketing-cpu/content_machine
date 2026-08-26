@@ -11,6 +11,567 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-26 - Stock-footage preference + MoneyPrinter hyper-compare (docs)
+
+**Prompt (step 3 of the four-step session):** note that the operator does not
+like taking that much unnecessary stock footage — it is often unrelated, and a
+cut from gaming to live-action reality with no transition is disorienting. Also:
+what does MoneyPrinter actually do for video clips, and which project is better.
+
+**Two different MoneyPrinters.** Do not conflate them.
+
+- **MoneyPrinterV2** (`FujiwaraChoki`) — AGPL-3.0, ~30k★, velocity/cost play
+  (gpt4free, KittenTTS). Pattern-borrow only; never clone near this repo.
+- **MoneyPrinterTurbo** (`harry0703`) — MIT, the Aug-25 Wave A source. Same
+  commodity generator shape as ShortGPT: topic → LLM script → stock clips →
+  TTS → MoviePy/FFmpeg. **No fact engine, no claim verifier, no YouTube
+  learning loop.**
+
+**What Turbo does for clips** (read from `app/services/material.py`, not from
+marketing):
+
+1. After the script, an LLM emits a list of search terms (default **5**).
+2. For each term it searches **one** configured source: Pexels, Pixabay,
+   Coverr, or `local` (a folder). Exclusive — not a hybrid mix.
+3. It downloads until summed `min(max_clip_duration, clip.duration)` covers
+   VO length. Default **max clip = 5s**. Concat mode **random** (shuffle) or
+   **sequential**. Optional transitions: none / fade / slide / shuffle.
+4. `match_script_order` can keep term order; otherwise random shuffle is the
+   default. Coverr: `GET https://api.coverr.co/videos` Bearer + `urls=true`.
+5. Separate path: **WaveSpeed** on-demand AI clips (paid, stop when duration
+   is filled) — closest analogue to our parked ComfyUI/LTX slot, not to Pexels.
+
+**What we do:** TapIn ships `background_mode: hybrid` at `hybrid_local_ratio:
+0.45`. `get_background_asset` takes one local gameplay clip and one stock
+clip (Pexels → Pixabay → Coverr). `build_hybrid_concat_command` hard-concats
+local then stock with **no fade**. Keyword rewrite + abstract-tag skip exist;
+they do not make live-action "GTA" footage. `SCENE_MATCHED_BROLL` (opt-in) is
+one stock clip per beat — more of the same problem.
+
+**Verdict:** Content OS is the better *media OS* for TapIn/MoneyWise
+(grounding, loop, compliance, cost meter, YouTube ops). Turbo is the better
+*stock-b-roll concatenator* (transitions, 5-term LLM search, clip duration).
+For the operator's actual complaint, **Turbo would make it worse** — more
+live-action cuts per Short. The useful borrow is a crossfade at our hybrid
+join, not Coverr-as-quality and not enabling scene-matched stock. Owned
+gameplay (`background_mode: local` or a higher local ratio) is the fix; that
+config was not flipped this session.
+
+**Recorded as:** [decisions.md](decisions.md) §26,
+[moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md). No production
+render change.
+
+---
+
+## 2026-08-26 - Next-20 mixed S/M wave (implemented, not committed)
+
+**Prompt:** user said "next 20" — implement the approved 20-item wave
+(`new_repos_next_20_3a743bff.plan.md`) as Step 2 of a four-step session. No
+commit. No Step 3 audit. No Step 4 commit.
+
+**Shipped (in order 1→20):**
+
+1. Original `/tdd` skill at `.claude/skills/tdd/SKILL.md` + Cursor copy (fail-then-fix; never mock the function under test; not a third-party copy).
+2. Coverr stock provider (`GET https://api.coverr.co/videos`, Bearer, `urls=true`); registered; both channels + settings default; no-key fail-open, no healthy-run warning; prefer no-face tags.
+3. Thumbnail composition arms `subject_scale` / `text_negative_space` / `hard_light` in our own words; kind stays `thumbnail`.
+4. Wave C public-apis shortlist in `docs/agent_reach_evaluation.md` — no keyless candidate displaces `tiktok_trends`; `youtube_competitors` already has a free backend.
+5. In-repo eval-corpus fixture `prompts/eval_corpus/invented_release_date.md` (gitignore exception); runner lists it with EVAL_CORPUS_LLM off.
+6. Overnight `--facts-file` through existing `run_batch(..., key_facts=)`; `--file` remains topics.
+7. Pillow==11.3.0, requests==2.32.4, drop moviepy; duration from `_probe_video_duration`.
+8. #101 `captions.insert` on the publish path; fail-open if no track.
+9. #124 250ms pause after line 1; skip is byte-identical.
+10. #36 `ops topic-clone --run-id` calls `generate_draft` for real.
+11. Vault competing-franchise gate (run-71 Marvel Rivals/SEGA vs GTA); remaining gap is a wolverine-only bullet with no franchise string.
+12. #86 frozen golden scripts per channel on heuristic `score_script` (no LLM judge).
+13. #89 `redact_for_public` + unpublished dossier withhold + SKU; pre/post line counts (§25).
+14. #81 MoneyWise TapIn length/slot shape prior; never topics or `domain_slots`.
+15. #28 learned intro duration; keep 2.15s until drop-off samples exist.
+16. Expert Panel second original persona `shorts_pacing`; persist on the run; ops grade/booth when enabled; default off.
+17. #105 opt-in channel comment (Data API has no pin); profanity first.
+18. #106 Studio-deleted detection cancels `publish_log`; `ops studio-deleted` + daily_sync.
+19. #133 `.ics` beside HTML dumps; `ops publish-ics`.
+20. Tests that actually call `enabled_publish_platforms` / `publishers_for_channel` / `is_upload_configured`.
+
+**Honest remaining gaps:** YouTube Data API cannot pin a comment; Coverr face filter is tag-based not vision; intro learning needs RETENTION_MIN_VIDEOS curves; wolverine-only vault bullets still attach; pins upgraded in files, local venv not reinstalled in this step.
+
+**Parked:** Phase M, #141–#145, #146 tray daemon, #147 FastAPI, clip-from-source/avatar, volume-gated backtest, auto-flip TTS_PROVIDER, Benable #79, Edge TTS Wave B, CUDA torch, NVENC (#38).
+
+---
+
+## 2026-08-25 - Ten small tasks, production-complete wave (shipped)
+
+**Prompt:** implement the documented MoneyWise persona plus #53, #298, #299,
+#271, #262, #22, #21, #39, and #31 end-to-end on the current branch.
+
+**Decisions and boundaries:**
+
+- The persona is the exact finance-safe text documented in the 2026-08-23
+  planning entry, including the schedule-backed Week Ahead recurring segment.
+- Prompt versions are `content_engine_v7-<12 hex>` from SHA-256 over every
+  content-engine function that constructs or repairs an LLM prompt. This catches
+  silent source edits without hashing run-specific facts, dates, or topics; the
+  source-unavailable fallback hashes stable code fields, never object addresses.
+- Review metadata comes from the persisted content-run row, not a display
+  fixture. Spoken duration comes from ffprobe on the persisted MP3 (not the
+  intro-bearing final MP4); estimate uses persisted word count and the measured
+  3.3 words/second constant.
+- The burned-caption path now preserves a sibling SRT even for karaoke output.
+  The booth converts that SRT to WebVTT because HTML5 `<track>` does not
+  reliably consume SRT directly.
+- #22 is deliberately a conservative Pillow visual-density check over the
+  bottom 20%. It catches risky high-contrast composition but does not claim
+  face or OCR detection, and reports QUIET/REVIEW rather than SAFE.
+- `ops render-preview` writes `_preview.mp4` at 480x854 / ultrafast / CRF 30,
+  uses a separate `_preview.mp3`, skips intro, extra formats, thumbnails,
+  media-row updates, and asset records. The publisher blocks `_preview.mp4`.
+  Default publish rendering remains 1080x1920 / fast / CRF 23.
+- `ops artifact-retention` is a report, not a job yet. It lists old drafts,
+  traces, and vault `_runs` clones, ignores `--apply`, and has no delete call.
+  The older `ops artifacts --apply` output-cap command remains a separate,
+  explicitly destructive pre-existing surface.
+
+**Behavioral proof:** the initial red run recorded 11 tests (3 failures, 8
+errors); the completed first pass had 13 wave tests. The audit added 3 more
+behavior tests and observed 7 failures/errors before the fixes. The 16-test
+module now exercises shipped config/persona, deterministic source-hash drift,
+stored booth metadata and spoken-audio duration, escaped SRT-to-WebVTT,
+thumbnail risk detection through the production caller, caption skin in the
+real render caller, isolated preview output plus upload rejection, and
+report-only retention.
+
+**Operator proof:** shipped MoneyWise validation reached the real config path
+(persona warning gone; the expected missing local OAuth-token warning remains);
+`ops artifact-retention` printed `DRY RUN ONLY` against a temp root and selected
+zero files; `ops booth --channel moneywise` wrote `booth.html` under a temp
+HTML directory; `ops render-preview --run-id 999999` returned the explicit
+`No content run` guard without writing media.
+
+**Still out:** no dependency upgrades, no real paid TTS/ffmpeg preview render,
+no OCR/face model, and no retention deletion mode. Those are materially larger
+or require operator media/cost approval.
+
+**Final verification:** `ruff check .` and `ruff format --check .` passed;
+the full isolated suite ran **1,985 tests OK** (up from 1,969), and
+`git status --short data/` was empty.
+
+---
+
+## 2026-08-25 - Post-wave-4 operator pickup (shipped)
+
+**Prompt:** take the next five roadmap pickups, plan them, then implement them
+without committing. The five work units were #313, #282, #308-310 together,
+#232, and #122.
+
+**Two roadmap assumptions were false when traced through production:**
+
+1. #313 said the tray action would use an "existing opt-in gate file". No
+   overnight pause file or check existed. The wave added one
+   (`core/overnight_pause.py`) and checks it at the start of `run_overnight`,
+   before topic collection or batch generation.
+2. #232 described a Desktop link to the booth URL. `serve_booth` binds an
+   ephemeral port and the server dies with its process, so a literal URL would
+   be a dead shortcut. `booth_os.pyw` starts the server, opens the browser, and
+   keeps the process alive; `ops booth-shortcut` installs that launcher.
+
+**Shipped:**
+
+- **#313:** tray pause/resume button and CLI flags. The paused batch returns an
+  explicit result and performs no topic collection.
+- **#282:** deterministic `Human: just now / Nm / Nh / Nd ago`, plus honest
+  `heartbeat off` and `never` states on the real tray chip.
+- **#308-310:** the successful primary ffmpeg argv is captured at render time;
+  a music-bed failure replaces it with the VO-only retry argv. The separate
+  intro-concat argv is captured too. Both persist in the existing redacted run
+  trace. The booth renders native collapsible trace/command sections and copies
+  a PowerShell-safe command. Nothing is reconstructed from incomplete paths.
+- **#232:** persistent Desktop booth shortcut via `pythonw`, reusing the proven
+  WScript.Shell installer rather than adding a second shortcut mechanism.
+- **#122:** root `video/backgrounds/license.yaml` records owned/commercial use.
+  A nearer folder sidecar overrides it; `LocalAssetProvider` carries the
+  resolved metadata into `AssetResult.attribution`, and the existing asset
+  recorder persists it.
+
+**Behavioral proof:** `tests/test_next_five_pickups.py` failed against the
+unmodified implementation with 2 failures + 6 errors (missing pause module,
+formatter, callback/persistence, booth kwargs, shortcut, and attribution).
+After wiring, the full isolated suite ran **1,969 tests OK**. `ruff check .`
+passed; formatting was applied to the two files identified by
+`ruff format --check`.
+
+**Operator proof:**
+
+- Pause -> `ops overnight --count 1` printed `Overnight paused by operator
+  flag` and drafted nothing; resume removed the temp override flag.
+- `ops booth --channel tapin` wrote the real last-run booth, whose HTML contains
+  the redacted raw trace section. That historical run predates command capture,
+  so ffmpeg details will first appear after the next render.
+- `ops booth-shortcut` installed
+  `C:\Users\jonma\Desktop\Content OS Review Booth.lnk`.
+
+**Still out:** MoneyWise persona config, the Pillow/requests/MoviePy dependency
+wave (needs a real thumbnail/render), FastAPI #147, tray daemon #146, Phase M,
+and the operator's Piper voice judgment.
+
+---
+
+## 2026-08-23 - MoneyWise persona + the Pillow decision (docs only)
+
+**Prompt:** "give moneywise a persona, then how would we deal with pillow?
+different software or cut entirely, update? document and answer only, no loc"
+
+---
+
+### 1. MoneyWise persona
+
+**Why it was missing:** candidate 33's `channels.json` ratchet found it on its first
+run. Every prior test built its own dict, so the *shipped* config was never validated
+and the gap sat there unseen. `moneywise` is the higher-RPM channel and it was
+publishing with no human-context block at all.
+
+**What consumes it:** `core/channel_persona.py` reads `perspective`, `tone`,
+`audience`, `recurring_segment`, `signoff` (in that order, extras appended) and folds
+them into an advisory prompt block. `core/channel_go_live.py:81` requires **`tone` +
+`audience`** at minimum to report the channel ready.
+
+**The constraint that shapes it:** finance content cannot sound like advice. The
+description already carries "Not financial advice. For informational purposes only."
+(#125), and the script prompt forbids personalised recommendations. A persona that
+reads as a stock picker would fight both. So the point of view is deliberately
+*explanatory* - the person who reads the filing and translates it - not predictive.
+That is also the honest differentiator against the "5 stocks to buy now" tier the
+2026 authenticity policy is aimed at.
+
+**Ready to paste into `config/channels.json` under `moneywise`:**
+
+```json
+"persona": {
+  "perspective": "someone who reads the filing, the print, or the fine print before having an opinion - and says plainly what it means for a normal paycheck",
+  "tone": "calm, plain-spoken, mildly sceptical of hype - explains, never sells",
+  "audience": "working adults who want to understand the money story behind the headline, not be told what to buy",
+  "recurring_segment": "Week ahead: the two or three numbers that actually move things, and why",
+  "signoff": "Numbers first. Opinions after."
+}
+```
+
+Notes on the choices:
+
+- **`recurring_segment`** maps to the schedule that already exists in the config -
+  Sunday 18:00 ET is the "week ahead" slot, alongside weekday 08:30 pre-market and
+  Saturday 10:00 evergreen. A recurring segment the schedule cannot support would be
+  invented continuity, which is the thing the persona is meant to prevent.
+- **Deliberately ASCII.** The persona text flows into prompts, logs and cp1252
+  PowerShell output; `tapin`'s em dash is fine in the file but there is no reason to
+  add more (candidate 250's ASCII-safe rule).
+- **Tone contrasts with TapIn on purpose** ("high-energy, confident, a little
+  irreverent"). Two channels sharing one voice is exactly the templated-at-scale
+  pattern the policy penalises.
+- Not written into `channels.json` this pass - the prompt was document-and-answer.
+  Dropping it in is a config edit, after which `py -m config.validate_channels
+  --channel moneywise` should report 0 warnings (it currently warns on the gap).
+
+---
+
+### 2. Pillow: update. The blocker was not real.
+
+**Answer to "different software or cut entirely, update?" - update, and it is
+unblocked today.** Pillow is 26 of the 75 known vulnerabilities that candidate 98's
+pip-audit baseline found, the worst single package by a wide margin.
+
+**Correcting the record:** this was previously written up as "pinned for moviepy 1.0.3
+compat", which is wrong and had been the reason to defer. Measured:
+
+```
+moviepy 1.0.3 requires: decorator, imageio, imageio_ffmpeg, tqdm, numpy,
+                        requests, proglog          <- no Pillow at all
+imageio    2.37.3  ->  pillow>=8.3.2               <- floor
+goose3     3.1.21  ->  Pillow                      <- unbounded
+torchvision        ->  pillow!=8.3.*,>=5.3.0       <- no ceiling ([providers] only)
+matplotlib         ->  pillow>=9                    <- floor ([providers] only)
+```
+
+**Nothing in the tree caps Pillow.** `pyproject.toml:26` is a bare `Pillow==9.5.0`
+with no rationale comment. The constraint was folklore.
+
+**The API surface is four calls**, none removed in Pillow 10, 11 or 12:
+
+| Call | File | Status |
+|---|---|---|
+| `Image.new("RGB", ...)`, `ImageDraw.Draw`, `ImageFont` | `assets/flux_thumbnail.py:425` | stable |
+| `Image.open`, `ImageStat` | `assets/thumbnail_scorer.py:63` | stable |
+
+No `Image.ANTIALIAS`, no `draw.textsize`, no `font.getsize` - the three removals that
+break most Pillow 10 upgrades. Verified by grep across `assets/`, `video/`, `core/`.
+
+**Recommendation:** bump to **Pillow 11.3.0**, not 12.x. 11.x clears all 26 CVEs and
+is the conservative choice while 12 is new; the four calls above are identical in
+both, so 12 is a later no-op bump if wanted. Verify with one real render (thumbnail
+generation is the only consumer) plus `py -m scripts.ops all-checks`.
+
+**"Cut entirely" is the wrong question for Pillow, and the right one for moviepy.**
+`moviepy` appears in exactly one line of production code:
+
+```python
+video/render_video.py:4    from moviepy.editor import AudioFileClip
+video/render_video.py:220  audio_clip = AudioFileClip(mp3_path); duration = audio_clip.duration
+```
+
+One import, to read a duration. **The same file already has an ffprobe duration
+helper** - `_probe_video_duration` at `video/render_video.py:63`, which uses
+`format=duration` and works on audio containers too. So moviepy (and its decorator /
+tqdm / proglog / imageio chain) is carried for a call the file can already make.
+Cutting it is a genuine simplification independent of the security question - and
+ffmpeg is already a hard requirement, so it adds no new dependency.
+
+**Also worth noting:** the remaining 49 vulnerabilities are concentrated in the
+optional `[providers]` extra - `torch` (8), `transformers` (5) - plus `setuptools`
+(7), which is build tooling, not runtime. Only Pillow, `requests` (a trivial
+2.32.3 -> 2.32.4 bump) and `cryptography` are in the core runtime path. That reframes
+"75 vulns" considerably: the core install is a much smaller problem than the number
+suggests.
+
+**Suggested wave order:**
+
+1. `Pillow==9.5.0` -> `11.3.0` + `requests` 2.32.3 -> 2.32.4. Verify with a real
+   render and a Pillow-fallback thumbnail.
+2. Drop `moviepy` from `pyproject.toml`; swap the one `AudioFileClip` call for
+   `_probe_video_duration`. Verify the rendered mp4 duration matches.
+3. Leave `[providers]` alone until a provider is actually in use; pin `setuptools`
+   only if CI starts flagging it.
+
+Both items need a **real render** to verify, which is why they stay their own wave
+rather than riding along with a correctness pass.
+
+---
+
+## 2026-08-22 — Honesty + leave-the-terminal wave 4 (shipped)
+
+**Prompt:** "back to work roadmap back to work" — resume the roadmap. Implement a
+coherent wave of leftover `[S]` then `[M]`. Do not commit or push. Prefer
+honesty / leave-the-terminal / operator-safety. Skip #147 FastAPI, #146 tray
+daemon, caption skin (#21), thumbnail safe-area (#22), Phase M, volume-gated
+backtest.
+
+**Swap vs numerical next:** did **not** pick 21 caption skin, 22 thumbnail
+safe-area, 31 artifact retention, 101 caption track, 146 tray daemon, 147
+FastAPI, or 172 HTML design system. Ranked leftover `[S]` that (1) keep the
+next *public* honest (playbook lint, vault sources in the description,
+ungrounded numeric chips, authenticity semantic bar, grade breakdown,
+overnight-render / RPM / yesterday-unsynced copy), (2) surface TTS 91% /
+quota on the booth (cache-hit $0, Pillow vs Flux, signal dots, feed-stale,
+sticky cost + quota, 16px type), (3) leave PowerShell (copy unlisted URL,
+Obsidian dossier URI, postmortem markdown, quiet-hours toast DND, tray last
+domain). **#147 still skipped.** No #141/#142/#143/#144/#145, no Phase M, no
+volume-gated backtest, no auto-flip Piper.
+
+**Shipped (20):** 37 playbook lint, 103 description sources, 252 copy unlisted
+URL, 255 Obsidian dossier URI, 275 numeric chips, 276 semantic-arm bar, 277
+grade breakdown, 280 TTS cache-hit $0, 281 Pillow vs Flux badge, 283
+overnight-render plain English, 284 RPM deferred reason, 285 yesterday
+unsynced copy, 289 signal-health dots, 290 feed-stale strip, 292 mute toasts
+in quiet hours, 305 16px min type, 306 sticky cost bar, 307 sticky quota bar,
+311 postmortem markdown, 316 tray last domain.
+
+**Knobs:** `DESCRIPTION_SOURCES`, `CONTENT_TOAST_DND`, `CONTENT_TRAY_DOMAIN`.
+Suite forces `CONTENT_TRAY_DOMAIN=false`. Playbook lint and yesterday-unsynced
+copy have no kill switch (read-only / informational).
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI host,
+`.env` / secrets / `data/` / `output/`. Leftover next: 313 pause-overnight,
+282 human-presence last-seen, 308–310 collapsible/copy ffmpeg, 232 booth
+`.lnk`, 122 `license.yaml`. Live-run 71 docs (already dirty) left as
+documentation-only.
+
+---
+
+## 2026-08-21 — Honesty + leave-the-terminal wave 3 (shipped)
+
+**Prompt:** implement **20 more** roadmap items on top of unpushed `7c243b0`,
+commit, do not push / amend / PR. Advising allowed. Prefer `[S]` then `[M]`.
+
+**Swap vs numerical next:** did **not** pick 21 caption skin, 22 thumbnail
+safe-area, 31 artifact retention, 101 caption track, 146 tray daemon, 147
+FastAPI, or 172 HTML design system. Ranked leftover `[S]` that (1) keep the
+next *public* honest (UFC PPV window, quiet hours, SEO first line, UFC
+stock-query rewrite, odds "favored" not "will", gambling-safe CTAs, FTC
+copy), (2) surface TTS 91% / quota on the booth (escaped-LLM pill,
+Standard-would-have-billed, allocated vs marginal, uploads + ElevenLabs
+header, Apify pills, thin-facts banner), (3) leave PowerShell (click-toast
+opens the mp4, high-contrast CSS, skip-link, copy-as-markdown, tray doctor
+HTML + last grade). **#147 still skipped.** No #141/#142/#143/#144/#145, no
+Phase M, no volume-gated backtest, no auto-flip Piper.
+
+**Shipped (20):** 115 UFC PPV blackout, 116 quiet hours, 118 description
+SEO first line, 121 UFC stock-query rewrite, 126 odds market voice, 127
+gambling-safe CTAs, 128 FTC affiliate line, 229 click-toast opens mp4, 234
+high-contrast CSS, 251 copy-as-markdown, 261 skip-link, 273 escaped-LLM
+pill, 274 thin-facts banner, 278 Standard-would-have-billed, 279 allocated
+vs marginal one-liner, 286 uploads-left booth header, 287 ElevenLabs chars
+header, 288 Apify remaining pills, 314 tray doctor HTML, 315 tray last
+grade.
+
+**Knobs:** `UFC_PPV_BLACKOUT`, `QUIET_HOURS`, `DESCRIPTION_SEO_FIRST_LINE`,
+`FTC_DISCLOSURE`, `ODDS_MARKET_VOICE`, `GAMBLING_SAFE`,
+`STOCK_QUERY_UFC_REWRITE`, `CONTENT_TOAST_OPEN_MP4`, `CONTENT_TRAY_GRADE`.
+Suite forces PPV/quiet/odds/gambling/SEO/tray-grade off.
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI
+host, `.env` / secrets / `data/` / `output/`.
+
+---
+
+## 2026-08-21 — Honesty + leave-the-terminal wave 2 (shipped)
+
+**Prompt:** implement **20 more** roadmap items on top of unpushed `48a062f`,
+commit, do not push / amend / PR. Advising allowed. Prefer `[S]` then `[M]`.
+
+**Swap vs numerical next:** did **not** pick 21 caption skin, 22 thumbnail
+safe-area, 23 end-card, 146 tray daemon, 147 FastAPI, or 172 HTML design
+system. Ranked leftover `[S]` that (1) keep the next publish honest
+(category / kids / language / unique titles / UFC lint / MoneyWise
+disclaimer), (2) stop doomed Free-mode sessions (RAM/VRAM, NVENC *probe*
+not encode, secrets-doctor, OneDrive), (3) surface TTS 91% and quota
+outside PowerShell (booth subtitle, economics CSV, scheduled/overnight/
+uploads-left toasts, tray folder + Free/Standard). **#147 still skipped.**
+No #141/#142/#143/#144/#145, no Phase M, no volume-gated backtest, no
+auto-flip Piper.
+
+**Shipped (20):** 94 NVENC capability probe, 95 RAM/VRAM preflight, 96
+secrets-doctor, 100 OneDrive/.git hazard, 102 YouTube category from
+`infer_domain`, 107 madeForKids audit, 108 default language, 117 title
+uniqueness, 125 MoneyWise finance disclaimer, 129 UFC title lint, 135
+economics `--csv`, 225 scheduled-upload toast, 227 overnight-drafts toast,
+228 uploads-left balloon, 242 `ops grade --html`, 250 ASCII-safe HTML, 256
+reveal trace, 272 booth TTS 91% subtitle, 312 tray open-output folder, 317
+tray Free vs Standard.
+
+**Knobs:** `RAM_MIN_GB`, `VRAM_MIN_GB`, `YOUTUBE_DEFAULT_LANGUAGE`,
+`TITLE_UNIQUENESS`, `UFC_TITLE_LINT`, `FINANCE_DISCLAIMER`. Suite forces
+`RAM_MIN_GB=0`, `VRAM_MIN_GB=0`, `TITLE_UNIQUENESS=off`.
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI
+host, `.env` / secrets / `data/` / `output/`.
+
+---
+
+## 2026-08-21 — Leave-the-terminal wave (shipped)
+
+**Prompt:** implement the **Recommended next 20 (2026-08-20 night)**, commit,
+do not push. Advising allowed: prefer 20 *working* operator-visible pieces
+over a half-done FastAPI shell.
+
+**Swap:** skip **#147** FastAPI operator shell (`[L]` — would swallow the
+wave; booth uses stdlib `http.server` via `ops booth --serve` instead). Slot
+20 is **#240** `ops status --html`. **#254** reveal-thumb ships on the same
+`ops reveal` helper as #253 (the two `[S]` leftovers named in the prompt).
+Did **not** start Content OS Desktop #141, Shorts Visual Studio #142, or
+Phase M.
+
+**Shipped (20 + bundled 254):** 223 reliability `--html`, 222 tray quota
+chip, 291 AppUserModelID, 226 breaker toast, 221 ffmpeg toast, 224 lightbox,
+253 reveal mp4, 241 economics `--html`, 92 MAX_PATH, 93 FFmpeg lock retry,
+109 unlisted-before-public, 319 blocking-publish sentence, 43 script trim,
+97 trace redaction, 231 pyw Start Menu shortcut, 171 last-run booth, 200
+thin-facts abort screen, 198 doctor `--html`, 78 intelligence-report SKU,
+240 status `--html`. 254 bundled.
+
+**Knobs:** `CONTENT_TOAST`, `CONTENT_HTML_OPEN`, `YOUTUBE_UNLISTED_REVIEW`,
+`SCRIPT_TRIM`, `WIN_MAX_PATH`, `WIN_LONG_PATHS`, `FFMPEG_LOCK_RETRIES`.
+Suite forces toast/HTML-open/unlisted-review off.
+
+**Out:** Phase M, volume-gated backtest, $0 TTS voice judgment, FastAPI
+host, `.env` / secrets / `data/` / `output/`.
+
+---
+
+## 2026-08-20 (night) — Recommended next 20 pickup order
+
+**Prompt:** produce the **next 20** roadmap items in pickup/importance order
+after PR #35 (live-run wave) and PR #36 (candidates 141–320). Ranking + docs
+only — no features, no commit, no push, no `.env` / secrets / `data/` /
+`output/`. Rank by the cycle’s three axes (**future viability**, **short-term
+success**, **real-world cost**) plus the operator’s last theme (**get out of
+the terminal / UI / aesthetics / app**) without unparking Phase M. Do not
+re-list shipped 20 Aug waves or F1/F2/F3. Brainstorm next-5 (221, 222, 223,
+224, 171) is a hint, not a cage. Prefer `[S]` then `[M]`; at most one `[XL]`
+as item 20 with a warning — none used. PARKED items out unless labeled, never
+as #1.
+
+**Ranking rationale**
+
+1. **The cost/honesty CLI wave is largely shipped.** Remaining pickup is not
+   another ASCII dashboard; it is *surfacing* what already exists (reliability,
+   economics, quota, gates) outside PowerShell — then the leftover Windows /
+   leak / policy `[S]` that can still kill the next publish.
+2. **Brainstorm next-5 does not survive as 1–5.** All five stay *in* the 20;
+   the order changes. A ffmpeg-finished toast is operator minutes; a **breaker
+   toast** and a **browser reliability dump** prevent doomed sessions and
+   silent disablement (the cycle’s actual failure shape). **AppUserModelID
+   (#291)** sits before the toasts so they group as Content OS, not
+   `python.exe`. The **review booth (#171)** stays `[M]` at #16 — after HTML
+   dumps, Explorer reveal, and unlisted-before-public — not as the first
+   “app.”
+3. **Leftover 1–140 still beats decorative CSS.** `#92` MAX_PATH and `#93`
+   Defender file-lock can waste a render after you left the terminal. `#43`
+   script trim still moves TTS (~91% of a rendered run). `#97` trace redaction
+   and `#109` unlisted-before-public are honesty/policy, not chrome. Phone
+   bezels, grain toggles, and magazine layouts stayed out.
+4. **Viability still gets a slot.** `#78` intelligence-report SKU (no video,
+   no TTS) is #19 so the UI theme cannot erase operating_plan §6.2.
+5. **No `[XL]` in the 20.** `#147` FastAPI shell is item 20 with an `[L]`
+   warning — thinnest host for the booth, not Content OS Desktop (#141).
+   Phase M, volume-gated backtest, and the $0 TTS *voice judgment* stay out
+   (not even as labeled PARKED pickups).
+
+**The 20** (id · title · size) — detail + surfaces in
+[roadmap.md](roadmap.md) **Recommended next 20 (2026-08-20 night)**:
+
+1. **223** `ops reliability --html` `[S]`
+2. **222** System-tray quota chip `[S]`
+3. **291** Windows AppUserModelID `[S]`
+4. **226** Toast when a breaker trips `[S]`
+5. **221** Toast when ffmpeg finishes `[S]`
+6. **224** Thumbnail lightbox (last Pillow thumb) `[S]`
+7. **253** Reveal mp4 in Explorer `[S]`
+8. **241** `ops economics --html` `[S]`
+9. **92** Windows MAX_PATH / long output paths `[S]`
+10. **93** FFmpeg file-lock retry `[S]`
+11. **109** Unlisted review before public `[S]`
+12. **319** “What’s blocking publish” one-sentence `[S]`
+13. **43** Script trim pass `[S]`
+14. **97** Redact API bodies from traces `[S]`
+15. **231** Start-menu shortcut via pyw `[S]`
+16. **171** Last-run review booth `[M]`
+17. **200** Thin-facts abort screen `[M]`
+18. **198** Doctor HTML page `[M]`
+19. **78** Intelligence-report SKU `[M]`
+20. **147** Localhost FastAPI operator shell `[L]` — warning: not the next hour; not #141.
+
+**What stayed out**
+
+- Shipped evening next-5 (pre-run gate, oauth tests + coverage extra,
+  pronunciation lexicon, allocated vs marginal, numeric/record grounding) and
+  the 20 Aug follow-on waves / F1–F3.
+- PARKED: Phase M, volume-gated recommender backtest, $0 TTS voice judgment
+  (including #144 / #166 / #167). Not in this 20.
+- Massive **141–145** (Desktop, Visual Studio, Portfolio Web OS, Distribution
+  Sidecar, Moat Suite). Item 20 is `#147` `[L]`, not an `[XL]`.
+- Clip-from-source, avatar, storyboard, `instagram_figures`, MoneyWise *depth
+  signals* (a board is #159 `[L]`, not this wave).
+- Decorative CSS / aesthetics-only hours (phone bezel, grain, magazine
+  layout, 2×2 contact sheets) until HTML dumps exist.
+- Full review room **#168**, tray *daemon* **#146**, HTML design system **#172**
+  (themed `--html` is enough until several dumps exist), file-count retention
+  **#31** (`ops artifacts` already caps GB).
+
+**Rejected this session:** implementing any of the 20; restoring Phase M;
+auto-flipping Piper; rewriting July docs; overwriting the 141–320 candidate
+lists; touching `.env` / secrets / `data/` / `output/`. No commit.
+
+**Canvas:** `roadmap-next20-night.canvas.tsx` in the Cursor canvases folder
+(grouped UI/app vs cost vs honesty vs ops).
+
+---
+
 ## 2026-08-20 (late-night brainstorm) — 180 ideas (UI / app / aesthetics / sibling software)
 
 **Prompt:** brainstorm **180 unique** ideas after the 20 Aug waves on `main`
@@ -591,3 +1152,88 @@ frozen `core/prompt_evals.py` gate (C2) — compounds with the local frozen Bons
 self-improving $0 factory.
 
 **Excluded throughout:** multi-platform distribution (Phase M) stays parked.
+
+---
+
+## 2026-08-25 — Roadmap #23–27 render + thumbnail wave
+
+**Sequence:** implemented #23, #24, #25, #26, then #27 on top of the current
+uncommitted ten-task wave. No Cursor plan file, commit, push, live network call, or
+real `data/` store was intentionally touched.
+
+**Decisions and boundaries:**
+- End cards are generated from validated channel config rather than requiring a
+  hand-authored asset. The in-place concat uses the intro's restoration discipline:
+  the body has to be restored after subprocess launch errors, non-zero exits, and
+  empty outputs. Draft previews never get intro/outro.
+- Lower thirds reuse `fact_grounding.specific_entities`, then require the complete
+  label phrase in one supplied fact line; only capped display labels persist. Raw fact
+  lines do not. Overlay ASS is emitted only when a
+  label can be located in a real word-timing sidecar; proportional timing is not
+  presented as measured timing.
+- Color "LUT" scope is the smallest production-complete parametric equivalent:
+  validated FFmpeg `eq` saturation/contrast/brightness. This avoids claiming a LUT
+  file exists and propagates through every command-building path.
+- Hook motion uses `zoompan` only through the first measured cue and returns exactly
+  to 1.0 afterward. A missing timing sidecar leaves argv unchanged.
+- `thumbnail_format` is a dual-generation experiment, unlike the existing
+  single-image `thumbnail_style`. Dual mode runs only for that active experiment or
+  explicit `THUMBNAIL_DUAL=true`. Text-on prefers a configured text-capable provider;
+  face-forward prefers Flux; each arm has an independent, visibly distinct Pillow
+  fallback. Failed paid-attempt billing is persisted as `unknown`, not silently
+  priced at zero.
+- Generation does not assign an experiment arm. The validated operator pick writes
+  `thumbnail_pick`, creates the selected thumbnail asset, then records assignment.
+  Dual-unpicked runs cannot enqueue. Resolution is run-linked only; newest-mtime
+  fallback was removed.
+
+**Initial proof:** 15 new behavioral tests were run before production edits and failed
+(13 errors + 2 failures); the real FFmpeg failure added one focused font-binding
+regression. The later safety audit brought focused integration to 112 tests and the
+full isolated suite to 2,010 tests (up from 1,985). `ruff check .` and
+`ruff format --check .` are clean. `py -m config.validate_channels` returned OK for
+all three profiles with the same three pre-existing operational warnings. Operator
+registry lists `pick-thumbnail`; its missing-run path returned `No content run
+#999999` without mutation.
+
+**Real temp proof:** the first FFmpeg end-card encode failed because the installed
+Windows FFmpeg has no Fontconfig default. The failure restored the original body as
+designed. Binding `drawtext` to installed Arial (DejaVu fallback on Linux) made the
+same proof pass: a 0.6s synthetic body became a 2.133s body+card and the callback
+captured the outro argv. The later audit split that callback into explicit
+`outro_attempt` and `outro_success` events.
+
+**Remaining visual proof:** no paid thumbnail call was made in this offline/no-network
+wave. Run one full publish render with a temp/output override and inspect the first
+cue, lower thirds, grade, and final card, then activate `thumbnail_format` for a
+disposable run and pick in `ops booth --serve`.
+
+## 2026-08-25 — Roadmap #23–27 behavior/safety audit
+
+The audit added nine behavioral regressions; eight were observed failing before their
+fixes. Confirmed defects and fixes:
+
+- FFmpeg callbacks had only an unqualified command emitted before execution, so a
+  failed intro/outro looked successful in the trace. Callbacks now emit
+  `*_attempt`/`*_success`; traces retain every attempt and expose a successful command
+  only after a usable output exists.
+- Public lower thirds inherited the internal token-anywhere grounding rule, allowing
+  two unrelated fact fragments to "ground" one display name. Public labels now require
+  the exact ordered phrase in one supplied fact line.
+- An explicit identity grade inserted an `eq` filter despite being the documented
+  default. Identity values now produce byte-equivalent argv to an absent grade.
+- Hook motion stopped at an empty/malformed sidecar row instead of finding the first
+  real cue. It now skips invalid rows and uses the first finite, positive timed cue.
+- Booth POST trusted a submitted run id, and the served booth used `file://` URLs that
+  Chrome blocks on an HTTP page. POST bodies are bounded/strict, tied to the displayed
+  run and known arms, and candidate images use fixed booth-local HTTP routes.
+- Dual fallback evidence named pre/post providers but omitted their cost values.
+  Candidate evidence now reports both pre- and post-fallback rates while preserving
+  failed paid-attempt billing as `unknown`.
+- The standalone and interactive requeue paths did not explicitly carry the picked
+  thumbnail. Both now block unpicked dual runs and enqueue the validated selected path.
+
+Proof: roadmap regressions 25/25; focused render/thumbnail/pipeline suite 112/112; full
+isolated suite 2,010/2,010. Shipped config: 3 profiles valid with the same three
+operational warnings. Safe operator checks: command registry listed `pick-thumbnail`;
+missing `--run-id` returned 2 without mutation. No `data/` changes.

@@ -6,6 +6,47 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### 21-28 render wave + its audit - 2026-08-25
+
+The aesthetics block every prior wave deferred as "needs a real render" (21 caption
+skin, 22 safe-area, 23 end card, 24 lower thirds, 25 colour grade, 26 hook motion,
+27 dual thumbnail, 39 draft preset). Committed as written, then audited. **Four
+defects, none of which failed CI** - the same shape as the last two passes.
+
+- **Lower thirds could never have rendered on Windows.** The filter graph carried two
+  `subtitles=` entries escaped differently: the captions quoted manually
+  (`'C\:/...'`), the lower third via Python `repr` (`'C\:/...'`). `repr` escaped
+  the backslash `_escape_subtitle_path` deliberately puts before the drive-letter
+  colon. Proved against real ffmpeg rather than argued - old form `-22 Invalid
+  argument`, new form exit 0. `force_style` had the same `repr` bug, plus repr flips
+  its delimiter to `"` on any apostrophe. **Green because the only test reaching that
+  code passed `lower_thirds_path=None`** - the feature was switched off in the test
+  covering it.
+- **Hook motion and lower thirds were dead on the $0 local-TTS path.** The render read
+  word timings from the ElevenLabs `.words.json` sidecar only; the whisper ->
+  `retext_words_from_script` path lived inside `generate_subtitle_file` and never
+  returned its result. On Piper / Free-mode runs both features silently no-opped while
+  the captions burned into the same render carried real whisper timings. The skip note
+  misread its own cause ("no real first-cue timing" when nothing had asked the
+  aligner). `video.subtitles.resolve_word_timings` is now the shared seam, resolved
+  once per render.
+- **`ThumbnailSafeAreaCheck.threshold` did nothing** - `inspect_thumbnail` hardcoded
+  18.0, so a caller passing its own value got default behaviour with a misleading
+  number attached. Now a real parameter.
+- **Both channels were pinned to one voice.** `validate_channels` had been warning;
+  nothing acted. That undercuts the MoneyWise persona shipped the session before -
+  "calm, plain-spoken" and "high-energy, irreverent" read by the identical synthetic
+  voice, and channel-level sameness is what the 2026 policy assesses. MoneyWise moved
+  to `XjLkpWUlnhS8i7gGz3lZ` (already in the default pool, so known-good against this
+  account). Warnings 3 -> 2, both expected. **Listen to one sample before publishing.**
+
+Also: the AI-attribution rule is now enforced by `.githooks/commit-msg`, not prose.
+`e4d2242` landed a Cursor co-author trailer the commit *after* the rule was written
+into `.cursor/rules`, which settles whether a paragraph is sufficient. Human co-authors
+are unaffected; enable per clone with `git config core.hooksPath .githooks`. The
+existing trailer stays in pushed history - not worth a force-push.
+
+
 ### Wave-4 audit: three green-but-broken fixes + agent rules - 2026-08-23
 
 *Every defect below passed CI. None was a crash, a lint error, or a failing test.*

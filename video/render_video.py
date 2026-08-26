@@ -166,6 +166,15 @@ def build_render_ffmpeg_command(
         hook_motion_filter.format(width=width, height=height) + "," if hook_motion_filter else ""
     )
 
+    # Quote these by hand rather than with {...!r}. `_escape_subtitle_path` already puts
+    # a backslash before the drive-letter colon, and repr escapes THAT backslash — so
+    # ffmpeg reads `\\` as a literal backslash, the colon is left unescaped, and the
+    # filter fails to parse on Windows. repr also switches its delimiter to `"` as soon
+    # as the value contains an apostrophe, so it is not even a stable quote character.
+    # The main-caption line below has always used this manual form; these now match it.
+    lower_thirds_filter = f"subtitles='{lower_thirds_escaped}'," if lower_thirds_escaped else ""
+    force_style_arg = f":force_style='{style_escaped}'" if style_escaped else ""
+
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
     filter_complex = (
         f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
@@ -173,9 +182,9 @@ def build_render_ffmpeg_command(
         f"{grade_filter}"
         f"{motion_filter}"
         f"setpts=PTS-STARTPTS,"
-        f"{f'subtitles={lower_thirds_escaped!r},' if lower_thirds_escaped else ''}"
+        f"{lower_thirds_filter}"
         f"subtitles='{subtitle_escaped}'"
-        f"{f':force_style={style_escaped!r}' if style_escaped else ''}[vout]"
+        f"{force_style_arg}[vout]"
     )
 
     cmd = [

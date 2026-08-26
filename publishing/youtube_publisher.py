@@ -44,6 +44,28 @@ YOUTUBE_PUBLISH_MIN_LEAD_MINUTES = 15
 TERMINAL_LOG_STATUSES = PUBLISH_STATUS_SUCCESS
 
 
+def _post_upload_extras(service, video_id: str | None, request: PublishRequest) -> None:
+    """Caption track + opt-in comment. Fail-open; never blocks the publish result."""
+    if not service or not video_id:
+        return
+    try:
+        from youtube.captions import maybe_upload_captions, resolve_caption_path
+
+        maybe_upload_captions(
+            service,
+            video_id=video_id,
+            caption_path=resolve_caption_path(request.file_path, request.caption_path),
+        )
+    except Exception as exc:
+        logger.debug("caption track skipped: %s", exc)
+    try:
+        from youtube.pin_comment import maybe_pin_top_answer
+
+        maybe_pin_top_answer(service, video_id=video_id, topic=request.title)
+    except Exception as exc:
+        logger.debug("pin comment skipped: %s", exc)
+
+
 def is_youtube_configured(channel_id: str | None = None) -> bool:
     channel_id = resolve_channel_id(channel_id)
     enabled = os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() in (
@@ -222,6 +244,7 @@ def _result_from_existing_log(
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
+            _post_upload_extras(service, existing.youtube_video_id, request)
             return PublishResult(
                 video_id=existing.youtube_video_id,
                 status=existing.status,
@@ -301,6 +324,7 @@ def _resolve_prior_upload(
         content_run_id=content_run_id,
         thumbnail_path=request.thumbnail_path,
     )
+    _post_upload_extras(service, video_id, request)
     return PublishResult(
         video_id=video_id,
         status=log_status,
@@ -572,6 +596,7 @@ class YouTubePublisher(Publisher):
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
+            _post_upload_extras(service, video_id, request)
             if thumb.status == "set":
                 detail_suffix = thumb.detail or "Thumbnail set"
                 _update_publish_log(

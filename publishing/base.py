@@ -30,6 +30,7 @@ class PublishRequest:
     privacy_status: str = "private"
     publish_at: datetime | None = None
     thumbnail_path: str | None = None
+    caption_path: str | None = None
 
 
 @dataclass

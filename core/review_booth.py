@@ -477,6 +477,7 @@ def booth_html(
     captions_href: str = "",
     thumbnail_safe_area: str = "",
     thumbnail_picker: str = "",
+    expert_panel_html: str = "",
 ) -> str:
     share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
     if mp4_path and os.path.isfile(mp4_path):
@@ -581,6 +582,7 @@ def booth_html(
         "<div class='card'>"
         f"<p><strong>Run</strong> {escape(rid)}</p>"
         f"<p><strong>Grade</strong> {escape(grade or 'n/a')}</p>"
+        f"{expert_panel_html}"
         f"<p><strong>Authenticity</strong> {escape(authenticity or 'n/a')}</p>"
         f"<p><strong>Cost</strong> {escape(cost or 'n/a')}</p>"
         f"{extra_cost}"
@@ -692,6 +694,23 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
             grade = f"{grade_obj.letter} ({grade_obj.score:.0f})"
     except Exception as exc:
         logger.debug("booth grade skipped: %s", exc)
+    expert_panel_html = ""
+    try:
+        from core.providers import flag_enabled
+
+        if flag_enabled("EXPERT_PANEL_ENABLED"):
+            stored = quality.get("expert_panel") if isinstance(quality, dict) else None
+            if stored:
+                bits = []
+                for entry in stored:
+                    persona = str(entry.get("persona") or "").strip()
+                    review = str(entry.get("review") or "").strip()
+                    if persona and review:
+                        bits.append(f"<strong>{escape(persona)}</strong>: {escape(review)}")
+                if bits:
+                    expert_panel_html = "<p>" + "<br>".join(bits) + "</p>"
+    except Exception as exc:
+        logger.debug("booth expert panel skipped: %s", exc)
     blocking = ""
     try:
         from core.publish_blockers import blocking_publish_sentence
@@ -931,6 +950,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "thumbnail_safe_area": thumbnail_safe_area,
         "thumbnail_picker": thumbnail_picker,
         "thumbnail_candidates": thumbnail_candidates,
+        "expert_panel_html": expert_panel_html,
     }
 
 

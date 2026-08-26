@@ -78,13 +78,10 @@ class TestRenderFfmpegCommand(unittest.TestCase):
 
 class TestMusicBedFailureRetriesVoOnly(unittest.TestCase):
     def test_render_retries_vo_only_when_bed_mix_fails(self):
-        audio = MagicMock()
-        audio.duration = 10.0
         asset = MagicMock(path="C:/tmp/bg.mp4", provider="local", attribution="")
         fail = MagicMock(returncode=1, stderr="amix failed")
         ok = MagicMock(returncode=0, stderr="")
         with (
-            patch("video.render_video.AudioFileClip", return_value=audio),
             patch("video.render_video.get_background_asset", return_value=asset),
             patch("video.render_video.generate_subtitle_file", return_value="C:/tmp/s.srt"),
             patch("video.render_video._resolve_music_bed", return_value="C:/tmp/bed.mp3"),
@@ -107,8 +104,6 @@ class TestMusicBedFailureRetriesVoOnly(unittest.TestCase):
 
 class TestFfmpegFileLockRetry(unittest.TestCase):
     def test_retries_sharing_violation_then_succeeds(self):
-        audio = MagicMock()
-        audio.duration = 10.0
         asset = MagicMock(path="C:/tmp/bg.mp4", provider="local", attribution="")
         locked = MagicMock(
             returncode=1,
@@ -116,7 +111,6 @@ class TestFfmpegFileLockRetry(unittest.TestCase):
         )
         ok = MagicMock(returncode=0, stderr="")
         with (
-            patch("video.render_video.AudioFileClip", return_value=audio),
             patch("video.render_video.get_background_asset", return_value=asset),
             patch("video.render_video.generate_subtitle_file", return_value="C:/tmp/s.srt"),
             patch("video.render_video._resolve_music_bed", return_value=None),

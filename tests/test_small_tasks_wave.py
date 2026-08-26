@@ -213,12 +213,10 @@ class TestPerChannelCaptionSkin(unittest.TestCase):
     def test_shipped_skin_controls_real_ffmpeg_caption_filter(self):
         from video.render_video import render_vertical_video
 
-        audio = MagicMock(duration=10.0)
         asset = MagicMock(path="C:/tmp/bg.mp4", provider="local", attribution="")
         rendered = MagicMock(returncode=0, stderr="")
         captured: list[str] = []
         with (
-            patch("video.render_video.AudioFileClip", return_value=audio),
             patch("assets.manager.get_scene_matched_background", return_value=None),
             patch("video.render_video.get_background_asset", return_value=asset),
             patch("video.render_video.generate_subtitle_file", return_value="C:/tmp/subs.ass"),

@@ -670,7 +670,7 @@ def _transcode_to_mp3(src_path: str, output_path: str) -> str | None:
     """Transcode a local-synth wav to the mp3 path the render pipeline expects.
 
     The pipeline ignores generate_audio's return and reads `mp3_path` directly
-    (core/pipeline.py → video/render_video.py: AudioFileClip, subtitles, ffmpeg mux),
+    (core/pipeline.py → video/render_video.py: ffprobe duration, subtitles, ffmpeg mux),
     so a local provider MUST leave a real mp3 at `output_path`. Fail-open → None on
     any ffmpeg failure (caller falls back to ElevenLabs); removes the temp wav.
     """

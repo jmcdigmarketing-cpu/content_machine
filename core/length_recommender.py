@@ -128,6 +128,21 @@ def get_recommended_length(
             ),
         )
 
+    if channel_id == "moneywise":
+        donor = get_recommended_length("tapin", "")
+        if donor.source == "analytics":
+            return LengthRecommendation(
+                length_choice=donor.length_choice,
+                label=donor.label,
+                source="cross_channel_prior",
+                avg_engaged_rate=donor.avg_engaged_rate,
+                supporting_runs=donor.supporting_runs,
+                rationale=(
+                    f"TapIn length shape as MoneyWise cold-start prior "
+                    f"(option {donor.length_choice}) — not a gaming topic copy"
+                ),
+            )
+
     choice = _DEFAULT_BY_DOMAIN.get(domain, "2")
     preset = get_length_preset(choice)
     have = len(samples)
@@ -148,7 +163,7 @@ def get_recommended_length(
 
 def display_recommended_length(rec: LengthRecommendation) -> None:
     """Print the recommended length, mirroring display_best_bet()."""
-    tag = "analytics" if rec.source == "analytics" else "default"
+    tag = rec.source if rec.source in ("analytics", "cross_channel_prior") else "default"
     print(f"\n  Recommended length ({tag}): {rec.label} (option {rec.length_choice})")
     print(f"  Reason : {rec.rationale}")
 

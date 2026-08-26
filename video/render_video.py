@@ -2,8 +2,6 @@ import os
 import subprocess
 from collections.abc import Callable
 
-from moviepy.editor import AudioFileClip
-
 from assets.manager import get_background_asset
 from core.logging import get_logger
 from core.render_progress import (
@@ -284,9 +282,24 @@ def render_vertical_video(
             logger.info(msg)
 
     stage("Loading audio (duration probe)...")
-    audio_clip = AudioFileClip(mp3_path)
-    duration = audio_clip.duration
-    audio_clip.close()
+    try:
+        from core.tts import word_timing_path
+        from video.hook_pause import maybe_insert_hook_pause
+
+        words = None
+        sidecar = word_timing_path(mp3_path)
+        if os.path.exists(sidecar):
+            import json
+
+            with open(sidecar, encoding="utf-8") as f:
+                words = json.load(f)
+        maybe_insert_hook_pause(mp3_path, words=words, script=script)
+    except Exception as exc:
+        logger.debug("hook pause skipped: %s", exc)
+    duration = _probe_video_duration(os.path.abspath(mp3_path))
+    if duration is None:
+        logger.warning("Could not probe voice duration (%s)", mp3_path)
+        duration = 0.0
     if progress:
         progress.note(f"Audio length: {duration:.1f}s")
 

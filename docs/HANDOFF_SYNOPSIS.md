@@ -1,6 +1,32 @@
-# Handoff synopsis — 2026-08-25: render aesthetics + thumbnail pick wave
+# Handoff synopsis — 2026-08-26: next-20 mixed S/M wave
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
+
+## Last implementation wave — next 20 (2026-08-26)
+
+Implemented in order 1→20 on top of uncommitted prior waves. **Do not commit from
+this step.** Tests were written first and observed failing on unmodified code.
+No Step 3 full audit and no Step 4 commit in this pass.
+
+**Visual constraint (2026-08-26, decisions §26):** do not pull more unrelated
+stock. Hybrid TapIn is ~55% live-action after a hard concat; that cut is
+disorienting. Coverr is not a quality lever. Compare:
+[moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md). Prefer owned
+gameplay / `background_mode: local` / a higher local ratio; do not enable
+`SCENE_MATCHED_BROLL` on TapIn.
+
+Pickup: Coverr (`COVERR_API_KEY` empty = chain continues, no warning); overnight
+`--facts-file`; `ops topic-clone` / `studio-deleted` / `publish-ics`; caption track
+and opt-in pin comment on publish; Studio-deleted cancel in daily_sync; MoneyWise
+cross-channel prior; learned intro duration plumbing; Expert Panel `shorts_pacing`
+persisted when `EXPERT_PANEL_ENABLED`; frozen prompt-eval goldens; public-safe
+SKU/dossier redaction; eval-corpus `invented_release_date` fixture; `/tdd` skill.
+
+**Honest leftover:** Data API has no comment pin (channel `commentThreads.insert`
+instead); wolverine-only vault bullets still attach; intro duration does not
+pretend to learn below `RETENTION_MIN_VIDEOS`; Pillow/requests pins updated in
+lockfiles — reinstall the venv before a real render. **#147 FastAPI, #146 tray
+daemon, Phase M, NVENC, CUDA torch still skipped.**
 
 ## Last implementation wave — roadmap #23–27 (2026-08-25)
 
@@ -620,17 +646,17 @@ the bottom of Next up. Phase M stays parked. **#147 FastAPI still skipped.**
   **pull** vs **serve** vs OpenRouter throttled fallback.
 
 **Still open:**
-1. **Dependency/render wave.** Pillow/requests/MoviePy needs a real
-   thumbnail/render. Do not start with clip-from-source, avatar, #147 FastAPI,
-   or Phase M.
+1. **Reinstall the venv** after the Pillow 11.3 / requests 2.32.4 / moviepy-drop
+   pin change, then do a real thumbnail/render. Do not start with clip-from-source,
+   avatar, #147 FastAPI, or Phase M.
 2. **Pillar 6 remainder** — seams live; heavy backends wait on a **CUDA torch**
    build (`2.8.0+cpu` on an RTX 4070 Ti), not on hardware. Clip-from-source and
    storyboard still not started. [providers_runbook.md](providers_runbook.md),
    [video_creation_stack.md](video_creation_stack.md).
 3. **Pillar 2 remainder** — multimodal rendered-video review (vision path now
    exists); calibration/predictor stay volume-gated (10 measured vs threshold 15).
-4. **Unphased:** MoneyWise depth, AI Tools/Tech groundwork, overnight facts-file
-   (`generate_draft` still has no `key_facts=`).
+4. **Unphased:** MoneyWise depth, AI Tools/Tech groundwork. Overnight `--facts-file`
+   is wired. Vault wolverine-only bullets (no franchise string) still attach.
 5. **Vault:** stable-path dossier upsert (date-prefix clones the same `run_id`).
 6. **One-time ops:** re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
 7. **Do not merge** `origin/claude/docs-optimization-review-a4l104` (9 commits, no

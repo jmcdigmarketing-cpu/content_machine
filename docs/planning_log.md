@@ -11,6 +11,93 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-26 - Stock-footage preference + MoneyPrinter hyper-compare (docs)
+
+**Prompt (step 3 of the four-step session):** note that the operator does not
+like taking that much unnecessary stock footage — it is often unrelated, and a
+cut from gaming to live-action reality with no transition is disorienting. Also:
+what does MoneyPrinter actually do for video clips, and which project is better.
+
+**Two different MoneyPrinters.** Do not conflate them.
+
+- **MoneyPrinterV2** (`FujiwaraChoki`) — AGPL-3.0, ~30k★, velocity/cost play
+  (gpt4free, KittenTTS). Pattern-borrow only; never clone near this repo.
+- **MoneyPrinterTurbo** (`harry0703`) — MIT, the Aug-25 Wave A source. Same
+  commodity generator shape as ShortGPT: topic → LLM script → stock clips →
+  TTS → MoviePy/FFmpeg. **No fact engine, no claim verifier, no YouTube
+  learning loop.**
+
+**What Turbo does for clips** (read from `app/services/material.py`, not from
+marketing):
+
+1. After the script, an LLM emits a list of search terms (default **5**).
+2. For each term it searches **one** configured source: Pexels, Pixabay,
+   Coverr, or `local` (a folder). Exclusive — not a hybrid mix.
+3. It downloads until summed `min(max_clip_duration, clip.duration)` covers
+   VO length. Default **max clip = 5s**. Concat mode **random** (shuffle) or
+   **sequential**. Optional transitions: none / fade / slide / shuffle.
+4. `match_script_order` can keep term order; otherwise random shuffle is the
+   default. Coverr: `GET https://api.coverr.co/videos` Bearer + `urls=true`.
+5. Separate path: **WaveSpeed** on-demand AI clips (paid, stop when duration
+   is filled) — closest analogue to our parked ComfyUI/LTX slot, not to Pexels.
+
+**What we do:** TapIn ships `background_mode: hybrid` at `hybrid_local_ratio:
+0.45`. `get_background_asset` takes one local gameplay clip and one stock
+clip (Pexels → Pixabay → Coverr). `build_hybrid_concat_command` hard-concats
+local then stock with **no fade**. Keyword rewrite + abstract-tag skip exist;
+they do not make live-action "GTA" footage. `SCENE_MATCHED_BROLL` (opt-in) is
+one stock clip per beat — more of the same problem.
+
+**Verdict:** Content OS is the better *media OS* for TapIn/MoneyWise
+(grounding, loop, compliance, cost meter, YouTube ops). Turbo is the better
+*stock-b-roll concatenator* (transitions, 5-term LLM search, clip duration).
+For the operator's actual complaint, **Turbo would make it worse** — more
+live-action cuts per Short. The useful borrow is a crossfade at our hybrid
+join, not Coverr-as-quality and not enabling scene-matched stock. Owned
+gameplay (`background_mode: local` or a higher local ratio) is the fix; that
+config was not flipped this session.
+
+**Recorded as:** [decisions.md](decisions.md) §26,
+[moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md). No production
+render change.
+
+---
+
+## 2026-08-26 - Next-20 mixed S/M wave (implemented, not committed)
+
+**Prompt:** user said "next 20" — implement the approved 20-item wave
+(`new_repos_next_20_3a743bff.plan.md`) as Step 2 of a four-step session. No
+commit. No Step 3 audit. No Step 4 commit.
+
+**Shipped (in order 1→20):**
+
+1. Original `/tdd` skill at `.claude/skills/tdd/SKILL.md` + Cursor copy (fail-then-fix; never mock the function under test; not a third-party copy).
+2. Coverr stock provider (`GET https://api.coverr.co/videos`, Bearer, `urls=true`); registered; both channels + settings default; no-key fail-open, no healthy-run warning; prefer no-face tags.
+3. Thumbnail composition arms `subject_scale` / `text_negative_space` / `hard_light` in our own words; kind stays `thumbnail`.
+4. Wave C public-apis shortlist in `docs/agent_reach_evaluation.md` — no keyless candidate displaces `tiktok_trends`; `youtube_competitors` already has a free backend.
+5. In-repo eval-corpus fixture `prompts/eval_corpus/invented_release_date.md` (gitignore exception); runner lists it with EVAL_CORPUS_LLM off.
+6. Overnight `--facts-file` through existing `run_batch(..., key_facts=)`; `--file` remains topics.
+7. Pillow==11.3.0, requests==2.32.4, drop moviepy; duration from `_probe_video_duration`.
+8. #101 `captions.insert` on the publish path; fail-open if no track.
+9. #124 250ms pause after line 1; skip is byte-identical.
+10. #36 `ops topic-clone --run-id` calls `generate_draft` for real.
+11. Vault competing-franchise gate (run-71 Marvel Rivals/SEGA vs GTA); remaining gap is a wolverine-only bullet with no franchise string.
+12. #86 frozen golden scripts per channel on heuristic `score_script` (no LLM judge).
+13. #89 `redact_for_public` + unpublished dossier withhold + SKU; pre/post line counts (§25).
+14. #81 MoneyWise TapIn length/slot shape prior; never topics or `domain_slots`.
+15. #28 learned intro duration; keep 2.15s until drop-off samples exist.
+16. Expert Panel second original persona `shorts_pacing`; persist on the run; ops grade/booth when enabled; default off.
+17. #105 opt-in channel comment (Data API has no pin); profanity first.
+18. #106 Studio-deleted detection cancels `publish_log`; `ops studio-deleted` + daily_sync.
+19. #133 `.ics` beside HTML dumps; `ops publish-ics`.
+20. Tests that actually call `enabled_publish_platforms` / `publishers_for_channel` / `is_upload_configured`.
+
+**Honest remaining gaps:** YouTube Data API cannot pin a comment; Coverr face filter is tag-based not vision; intro learning needs RETENTION_MIN_VIDEOS curves; wolverine-only vault bullets still attach; pins upgraded in files, local venv not reinstalled in this step.
+
+**Parked:** Phase M, #141–#145, #146 tray daemon, #147 FastAPI, clip-from-source/avatar, volume-gated backtest, auto-flip TTS_PROVIDER, Benable #79, Edge TTS Wave B, CUDA torch, NVENC (#38).
+
+---
+
 ## 2026-08-25 - Ten small tasks, production-complete wave (shipped)
 
 **Prompt:** implement the documented MoneyWise persona plus #53, #298, #299,

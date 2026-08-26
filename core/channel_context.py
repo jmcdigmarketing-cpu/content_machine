@@ -10,6 +10,7 @@ from config.channels import get_channel_profile, resolve_channel_id
 
 # Franchise / game strings worth preserving on gaming channels (longest first).
 _GAME_ANCHORS = (
+    "grand theft auto",
     "marvel rivals",
     "call of duty",
     "gta vi",
@@ -23,6 +24,7 @@ _GAME_ANCHORS = (
     "cod zombies",
     "gta",
     "cod",
+    "sega",
     "ufc",
 )
 
@@ -44,8 +46,25 @@ def extract_anchors(text: str) -> list[str]:
     found: list[str] = []
     for anchor in _GAME_ANCHORS:
         if anchor in lower:
-            found.append(anchor.title() if anchor != "ufc" else "UFC")
+            if anchor == "ufc":
+                found.append("UFC")
+            elif anchor == "gta":
+                found.append("GTA")
+            else:
+                found.append(anchor.title())
     return found
+
+
+def anchor_families(text: str) -> set[str]:
+    """Collapse alias anchors (GTA / Grand Theft Auto) into one family."""
+    families: set[str] = set()
+    for raw in extract_anchors(text):
+        key = raw.lower()
+        if key in ("gta", "gta v", "gta vi", "grand theft auto"):
+            families.add("gta")
+        else:
+            families.add(key)
+    return families
 
 
 def dominant_anchor(topics: Iterable[str]) -> str | None:

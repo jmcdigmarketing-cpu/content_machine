@@ -221,7 +221,17 @@ def to_sku_markdown(report: IntelligenceReport) -> str:
         "",
     ]
     lines.extend(f"- {n}" for n in notes)
-    return "\n".join(lines) + "\n"
+    raw = "\n".join(lines) + "\n"
+    from core.public_redact import redact_for_public
+
+    redacted, stats = redact_for_public(raw)
+    if stats.get("stripped"):
+        redacted += (
+            "\n## Redaction\n\n"
+            f"- redaction_pre_lines: {stats['pre_lines']}\n"
+            f"- redaction_post_lines: {stats['post_lines']}\n"
+        )
+    return redacted
 
 
 def run_intelligence(

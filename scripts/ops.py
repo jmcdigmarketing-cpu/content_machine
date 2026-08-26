@@ -576,7 +576,7 @@ def cmd_grade(args: argparse.Namespace) -> int:
     if not args.run_id:
         print("grade requires --run-id (see 'ops traces' for recent ids)")
         return 1
-    from core.video_grade import grade_from_record, render_expert_panel, render_grade
+    from core.video_grade import grade_from_record, render_grade
     from storage.repositories.content_runs import get_content_run_repository
 
     record = get_content_run_repository().get(args.run_id)  # one fetch for grade + panel
@@ -590,9 +590,9 @@ def cmd_grade(args: argparse.Namespace) -> int:
 
         print()
         print(grade_as_markdown(grade))
-    panel = render_expert_panel(
-        record.script_preview, record.channel_id
-    )  # EXPERT_PANEL_ENABLED-gated
+    from core.video_grade import expert_panel_for_run
+
+    panel = expert_panel_for_run(args.run_id)  # EXPERT_PANEL_ENABLED-gated; prefers persisted
     if panel:
         print()
         print(panel)
@@ -655,7 +655,12 @@ def cmd_analyst(args: argparse.Namespace) -> int:
 def cmd_overnight(args: argparse.Namespace) -> int:
     from core.overnight import render_overnight, run_overnight
 
-    result = run_overnight(args.channel, count=args.count or 3, file=getattr(args, "file", None))
+    result = run_overnight(
+        args.channel,
+        count=args.count or 3,
+        file=getattr(args, "file", None),
+        facts_file=getattr(args, "facts_file", None),
+    )
     print(render_overnight(result))
     return 0
 
@@ -667,6 +672,44 @@ def cmd_skillopt(args: argparse.Namespace) -> int:
     from core.skillopt import render_skillopt, run_skillopt
 
     print(render_skillopt(run_skillopt(args.channel)))
+    return 0
+
+
+@_register("topic-clone", "Seed a new draft from a winner run (--run-id; angles/facts refresh)")
+def cmd_topic_clone(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("topic-clone requires --run-id")
+        return 1
+    from core.topic_clone import clone_from_run
+
+    result = clone_from_run(args.run_id, channel_id=args.channel)
+    if not result.ok:
+        print(result.error or "clone failed")
+        return 1
+    print(f"Cloned run #{args.run_id} -> draft run #{result.run_id} ({result.topic})")
+    return 0
+
+
+@_register("studio-deleted", "Cancel publish_log rows whose YouTube videos were Studio-deleted")
+def cmd_studio_deleted(args: argparse.Namespace) -> int:
+    from youtube.studio_deleted import detect_studio_deleted
+
+    cancelled = detect_studio_deleted(args.channel)
+    if not cancelled:
+        print(f"Studio-deleted: none for {args.channel}")
+        return 0
+    print(f"Studio-deleted: cancelled {len(cancelled)} publish_log row(s)")
+    for row in cancelled:
+        print(f"  #{row.id} {row.youtube_video_id}")
+    return 0
+
+
+@_register("publish-ics", "Write an .ics of scheduled publishes beside HTML dumps")
+def cmd_publish_ics(args: argparse.Namespace) -> int:
+    from core.publish_ics import write_scheduled_ics
+
+    path = write_scheduled_ics(args.channel)
+    print(path)
     return 0
 
 
@@ -1095,6 +1138,12 @@ def main(argv=None) -> int:
         "--file",
         default=None,
         help="overnight: file of topics (one per line) instead of best-bet",
+    )
+    parser.add_argument(
+        "--facts-file",
+        dest="facts_file",
+        default=None,
+        help="overnight: operator key facts (same as auto_generate --facts-file)",
     )
     parser.add_argument(
         "--dry-run",

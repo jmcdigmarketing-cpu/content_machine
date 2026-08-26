@@ -405,6 +405,15 @@ def load_fact_records(
                 bullet_distinctive = len(topic_distinctive & _distinctive_tokens(bullet))
                 if note_distinctive == 0 and bullet_distinctive == 0:
                     continue  # genre-only match (e.g. "patch"/"massive") — not this topic
+                # Competing-franchise gate: a Marvel Rivals / SEGA bullet must not
+                # attach to a GTA topic just because they share "Wolverine".
+                from core.channel_context import anchor_families
+
+                topic_fam = anchor_families(topic)
+                if topic_fam:
+                    blob_fam = anchor_families(f"{note.stem} {note.headings} {bullet}")
+                    if blob_fam - topic_fam:
+                        continue
             record = FactRecord(
                 claim=bullet,
                 tier=tier,

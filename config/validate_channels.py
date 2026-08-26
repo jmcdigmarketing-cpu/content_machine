@@ -166,7 +166,7 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
         if not isinstance(order, list):
             errors.append(f"{channel_id}: asset_provider_order must be a list or comma string")
         else:
-            allowed = {"local", "pexels", "pixabay"}
+            allowed = {"local", "pexels", "pixabay", "coverr"}
             bad = [p for p in order if str(p).lower() not in allowed]
             if bad:
                 errors.append(f"{channel_id}: unknown asset_provider_order entries: {bad}")

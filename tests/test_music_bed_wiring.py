@@ -186,16 +186,18 @@ class _RenderHarness(unittest.TestCase):
             self.addCleanup(p.stop)
             return m
 
-        clip = mock.MagicMock()
-        clip.duration = self.duration
-        _patch("video.render_video.AudioFileClip", return_value=clip)
         asset = mock.MagicMock()
         asset.path = os.path.join(self.tmp.name, "bg.mp4")
         asset.provider = "local"
         asset.attribution = None
         _patch("video.render_video.get_background_asset", return_value=asset)
         _patch("assets.manager.get_scene_matched_background", return_value=None)
-        _patch("video.render_video._probe_video_duration", return_value=None)
+        _patch(
+            "video.render_video._probe_video_duration",
+            side_effect=lambda path: self.duration
+            if str(path).lower().endswith(".mp3") or "voice" in str(path).lower()
+            else None,
+        )
         _patch(
             "video.render_video.generate_subtitle_file",
             return_value=os.path.join(self.tmp.name, "subs.srt"),

@@ -319,6 +319,16 @@ def _finalize_run(
     except Exception:
         quality = {}
     try:
+        from core.grade import expert_panel_review, persist_expert_panel
+        from core.providers import flag_enabled
+
+        if flag_enabled("EXPERT_PANEL_ENABLED") and run_id and (result.script or "").strip():
+            panel = expert_panel_review(result.script, channel_id)
+            if panel.ok and panel.data:
+                persist_expert_panel(run_id, panel.data)
+    except Exception as exc:
+        logger.debug("expert panel persistence skipped: %s", exc)
+    try:
         write_run_trace(
             run_id=run_id,
             channel_id=channel_id,

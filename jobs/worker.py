@@ -167,6 +167,12 @@ def _process_upload(job) -> None:
         privacy_status=payload.get("privacy_status", "private"),
         publish_at=_parse_publish_at(payload),
         thumbnail_path=payload.get("thumbnail_path"),
+        caption_path=payload.get("caption_path")
+        or (
+            os.path.splitext(payload.get("file_path", "") or "")[0] + ".srt"
+            if payload.get("file_path")
+            else None
+        ),
     )
     from publishing.youtube_publisher import YouTubePublisher
 

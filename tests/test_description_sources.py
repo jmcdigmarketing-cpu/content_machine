@@ -77,24 +77,21 @@ class TestVaultRelevance(unittest.TestCase):
             urls = collect_source_urls(channel_id="tapin", topic=TOPIC)
         self.assertNotIn("https://example.com/marvel-rivals-season-9", urls)
 
-    def test_known_gap_a_shared_token_still_pulls_the_other_subject_in(self):
-        """Documents what `require_distinctive=True` does NOT fix.
+    def test_competing_franchise_no_longer_attaches_to_gta_wolverine_topic(self):
+        """Inverted 2026-08-26 when the competing-franchise gate landed.
 
-        Run 71's real angle was "GTA 6 Leak and Wolverine Rage…", and "wolverine" is a
-        genuinely distinctive token that happens to name two different subjects — the
-        Insomniac game in the story and the Marvel Rivals costume in the vault. The
-        distinctiveness gate cannot tell them apart, so this case still leaks.
-
-        That is candidate 324's deferred vault-side sibling, not something this change
-        claimed to solve. Asserting the real behaviour keeps the gap visible; when the
-        subject-identity work lands, this test will fail and should be inverted.
+        Run 71's angle shared 'Wolverine' with a Marvel Rivals vault bullet. The
+        distinctiveness gate could not tell them apart; `anchor_families` now drops
+        the Rivals note because the topic is GTA and the note names a different
+        franchise. Remaining gap: a wolverine-only bullet with no franchise string
+        — asserted in tests/test_vault_subject_relevance.py.
         """
         with _Vault():
             urls = collect_source_urls(
                 channel_id="tapin",
                 topic="GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash",
             )
-        self.assertIn("https://example.com/marvel-rivals-season-9", urls)
+        self.assertNotIn("https://example.com/marvel-rivals-season-9", urls)
 
 
 class TestOperatorUrlsAreUnaffected(unittest.TestCase):

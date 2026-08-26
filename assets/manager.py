@@ -4,6 +4,7 @@ from assets.ai_video_provider import AIVideoProvider
 from assets.base import AssetProvider
 from assets.category import detect_category
 from assets.composite import try_compose_hybrid
+from assets.coverr_provider import CoverrAssetProvider
 from assets.local_provider import LocalAssetProvider
 from assets.pexels_provider import PexelsAssetProvider
 from assets.pixabay_provider import PixabayAssetProvider
@@ -17,6 +18,7 @@ _PROVIDERS = {
     "local": LocalAssetProvider,
     "pexels": PexelsAssetProvider,
     "pixabay": PixabayAssetProvider,
+    "coverr": CoverrAssetProvider,
     "ai_video": AIVideoProvider,
 }
 

@@ -48,6 +48,19 @@ _LEVERS: dict[str, dict] = {
                 "wide dramatic composition, subject small against an epic environment, "
                 "cinematic lighting, high-stakes atmosphere"
             ),
+            "subject_scale": (
+                "named slot — subject scale: the main subject occupies most of the "
+                "frame, large enough to read at phone size, with a single clear focal point"
+            ),
+            "text_negative_space": (
+                "named slot — negative space for text: keep the upper third or a side "
+                "panel clear and unbusy so a short headline can sit there without covering "
+                "the subject"
+            ),
+            "hard_light": (
+                "named slot — lighting: hard directional light with a crisp rim, high "
+                "contrast, no flat even fill"
+            ),
         },
     },
     "thumbnail_format": {

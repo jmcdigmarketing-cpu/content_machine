@@ -77,3 +77,23 @@ def expert_panel_review(draft: str, channel_id: str | None = None) -> ProviderRe
     if not reviews:
         return ProviderResult.fail_open(SLOT, "no persona returned a review", status=STATUS_ERROR)
     return ProviderResult.success(SLOT, "expert_panel", data=reviews)
+
+
+def persist_expert_panel(run_id: int, reviews: list[dict[str, str]]) -> None:
+    """Merge panel output onto the run's quality_json (pre-existing keys stay)."""
+    import json
+
+    from storage.repositories.content_runs import get_content_run_repository
+
+    repo = get_content_run_repository()
+    record = repo.get(run_id)
+    quality: dict = {}
+    if record is not None:
+        try:
+            loaded = json.loads(record.quality_json or "{}")
+            if isinstance(loaded, dict):
+                quality = loaded
+        except Exception:
+            quality = {}
+    quality["expert_panel"] = reviews
+    repo.update(run_id, {"quality_json": json.dumps(quality)})

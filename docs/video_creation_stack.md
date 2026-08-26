@@ -16,7 +16,7 @@ the video layer is *additive*, not a replacement; (2) richer/realistic AI video
 
 Don't bolt on a second pipeline. Add each capability as a **provider chain** in
 the shape Content OS already uses (`assets/` provider chain: local → Pexels →
-Pixabay; [core/llm_router.py](../core/llm_router.py) tier chains). Every slot:
+Pixabay → Coverr; [core/llm_router.py](../core/llm_router.py) tier chains). Every slot:
 
 - **free/local-first**, paid upgrade opt-in, **env-gated**, **priced in the cost
   meter** ([core/cost_meter.py](../core/cost_meter.py)) so the margin math stays honest;
@@ -24,6 +24,14 @@ Pixabay; [core/llm_router.py](../core/llm_router.py) tier chains). Every slot:
   stock/hybrid backgrounds — never breaks a render);
 - optional **ComfyUI / fal.ai / Replicate** as aggregator backends so we add one
   HTTP client, not N SDKs, and swap models without code changes.
+
+**Operator visual constraint (2026-08-26, [decisions.md](decisions.md) §26):**
+do not "improve" generation quality by pulling more unrelated stock. TapIn should
+stay in the game world. Hybrid today is ~55% stock after a **hard concat** with
+no transition — that cut is the defect. MoneyPrinterTurbo's five-term stock
+concatenator would make it worse. Prefer owned clips under
+`video/backgrounds/`, `background_mode: local`, a higher `hybrid_local_ratio`,
+or prompt-matched AI video. Compare: [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md).
 
 > **Licensing (practical, not preachy):** borrow *ideas/patterns* freely. For
 > *code*, MoneyPrinterV2 is **AGPL-3.0** — pattern-only, don't lift source into

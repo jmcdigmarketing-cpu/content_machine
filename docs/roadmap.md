@@ -652,7 +652,7 @@ Aesthetics / on-screen
 - [x] 25. Channel LUT / color grade on the stock loop so TapIn and MoneyWise do not share the same ungraded look `[M]` — shipped 2026-08-25 as bounded `eq` parameters with distinct TapIn/MoneyWise values, applied after crop before every overlay in publish, preview, fallback, and extra-format commands
 - [x] 26. Hook-line Ken Burns / zoom on the first caption beat only (retention cliff is already measured) `[M]` — shipped 2026-08-25; bounded per-channel zoom comes only from real word timings and returns to 1.0 after the first cue (no timing means byte-identical argv). **Fixed 2026-08-25 in audit:** it read only the ElevenLabs sidecar, so this and #24 were both dead on every local-TTS run while the captions on the same render had whisper timings. `video.subtitles.resolve_word_timings` is now the shared seam
 - [x] 27. Dual thumbnail: high-contrast text-on vs face-forward, operator pick, logged as the thumbnail experiment arm `[M]` — shipped 2026-08-25 behind `thumbnail_format` or `THUMBNAIL_DUAL`; two independently fail-open labeled variants, pick-time-only assignment, persisted provider/cost evidence, booth POST controls, `ops pick-thumbnail`, and no newest-mtime publish fallback
-- [ ] 28. Intro/outro duration learned from the channel drop-off point instead of a fixed 2.15s TapIn sting `[M]`
+- [x] 28. Intro/outro duration learned from the channel drop-off point instead of a fixed 2.15s TapIn sting `[M]` — shipped 2026-08-26; `learned_intro_duration` keeps 2.15s until `drop_off_ratio` has samples (honest floor = RETENTION_MIN_VIDEOS). Below that, plumbing exists and the gap is asserted rather than a fake learned value
 
 Organization / operator surface
 
@@ -666,7 +666,7 @@ Organization / operator surface
 - [x] 33. `channels.json` schema ratchet in CI *(2026-08-22; gap closed 2026-08-25)* - `validate_channel` checks `ui_theme`, `persona`, and caption-skin contracts against the REAL shipped config. MoneyWise now carries the documented explanatory, non-selling persona and reaches `human_context_block`
 - [x] 34. Vault note templates in-repo *(2026-08-22)* - `docs/vault_templates/` (`_operator_facts`, `_strategy`, `_sources`), each parsed in `tests/test_vault_templates.py` through the real `_parse_frontmatter` and checked against `TIER_WEIGHTS`, so a contract change breaks in CI instead of in the operator's vault
 - [ ] 35. Alembic-only schema path — stop teaching two migration stories (`migrate_schema` vs Alembic) `[M]`
-- [ ] 36. `ops topic-clone --run-id` — seed a new draft from a winner (angles new, facts refreshed); the missing write path behind display-only `winners()` `[M]`
+- [x] 36. `ops topic-clone --run-id` — seed a new draft from a winner (angles new, facts refreshed); the missing write path behind display-only `winners()` `[M]` — shipped 2026-08-26; `clone_from_run` calls `generate_draft` for real
 - [x] **37. Playbook lint** *(2026-08-22)* — `ops playbook-lint`; untagged strategy-shaped bullets that also look fact-anchored warn because `load_facts` treats them as ground truth `[S]`
 
 Efficiency
@@ -769,7 +769,7 @@ Future viability — stay a media OS, not a GPT-wrapper that the platforms repla
 - [x] 80. **YouTube inauthentic-content help-page hash canary** — weekly fetch; alert when the existential constraint moves `[S]`
   *(2026-08-20: `ops policy-canary` hashes a local fixture; reliability reads the
   snapshot only — no HTTP; `POLICY_CANARY_FETCH` opt-in for a live fetch)*
-- [ ] 81. **Cross-channel prior for MoneyWise cold-start** — a new channel has n=0; don't wait for 15 measured videos to recommend anything (vision challenge #6) `[M]`
+- [x] 81. **Cross-channel prior for MoneyWise cold-start** — a new channel has n=0; don't wait for 15 measured videos to recommend anything (vision challenge #6) `[M]` — shipped 2026-08-26; copies TapIn length/slot *shape* with `source=cross_channel_prior`, never gaming topics or `domain_slots`. MoneyWise's own n stays `analytics`
 - [ ] 82. Optional **2-second operator-on-camera sting** (real face, fail-open) — 2026 policy punishes synthetic-and-shallow; this is cheaper than the GPU avatar stack and is not avatar mode `[M]`
 - [ ] 83. **Holdout videos** (recommender off, one per N publishes) — without this the learning loop learns superstitions (vision challenge #2) `[M]`
 - [x] 84. **RPM × cost by domain** — UFC vs GTA vs NBA contribution margin decides what TapIn should actually be; views-by-domain already exist `[S]`
@@ -777,13 +777,13 @@ Future viability — stay a media OS, not a GPT-wrapper that the platforms repla
 - [x] 85. **Weekly moat backup** — `pg_dump` + vault + `data/traces` (encrypted secrets excluded); the dataset *is* the company (operating_plan §7) `[S]`
   *(2026-08-20: `ops moat-backup` dry-run plan; `--apply --file dest` copies traces/vault;
   `.env` / `config/secrets/` / `quota_state.json` excluded; pg_dump is listed not executed)*
-- [ ] 86. **Prompt-eval as a CI regression** on one frozen golden topic per channel — a prompt edit that increases ungrounded claims fails the job `[M]`
+- [x] 86. **Prompt-eval as a CI regression** on one frozen golden topic per channel — a prompt edit that increases ungrounded claims fails the job `[M]` — shipped 2026-08-26; `config/prompt_eval_goldens.json` + heuristic `score_script` (no LLM judge)
 - [x] 87. **YPP / membership readiness checklist** — watch-hours, disclosure, cadence headroom; description CTAs exist, the unlock path does not `[S]`
   *(2026-08-20: `ops ypp`; fail-open without metrics; hours OR Shorts-views path)*
 - [x] 88. **Competitor-sync daily YouTube-unit cap** — competitor genome will eat the 10k/day budget (vision challenge #4); hard ceiling before "more intelligence" `[S]`
   *(2026-08-20: RSS still free; API fallback capped (`COMPETITOR_SYNC_MAX_UNITS=30`)
   and reserves one upload (`COMPETITOR_SYNC_RESERVE_UNITS=1600`); 0/off = unlimited)*
-- [ ] 89. **Public-safe dossier redaction** — if #78 is sold, vault notes must not leak operator facts, unpublished scripts, or key material `[M]`
+- [x] 89. **Public-safe dossier redaction** — if #78 is sold, vault notes must not leak operator facts, unpublished scripts, or key material `[M]` — shipped 2026-08-26; `redact_for_public` + SKU/export; unpublished dossiers withhold the script and persist pre/post line counts (§25)
 - [x] 90. Overnight **never auto-renders** unless a human ran `main.py` / `ops` in the last 24h — autonomy vs the 2026 policy gate (vision challenge #5); drafts stay safe `[S]`
   *(2026-08-20: `HUMAN_PRESENCE_HOURS` opt-in, empty/0/off = disabled; overnight /
   daily-sync / worker do not stamp the heartbeat; drafts unchanged)*
@@ -807,7 +807,7 @@ Machine / Windows hygiene
 - [x] **95. RAM/VRAM preflight** *(2026-08-21)* — `RAM_MIN_GB` / `VRAM_MIN_GB` opt-in before whisper / local TTS; ASCII `>=` `[S]`
 - [x] **96. `ops secrets-doctor`** *(2026-08-21)* — keys present/missing/placeholder; values never printed `[S]`
 - [x] **97. Redact API bodies from traces** *(2026-08-21)* — 402/403 payloads stripped on write `[S]`
-- [x] 98. `pip-audit` in CI *(2026-08-22)* - report-only job + `[dev]` pin. **Baseline is not clean: 75 known vulns across 19 packages.** Worst is `Pillow 9.5.0` with **26**, and it parses untrusted image bytes (stock footage, Flux/Ideogram output), so it is real attack surface not a lint nit. **Correction (2026-08-23):** this entry first said Pillow was "pinned for moviepy 1.0.3 compat" - that is wrong, and it was the stated reason to defer. moviepy does not depend on Pillow at all; `imageio` sets a floor (`>=8.3.2`), `goose3` is unbounded, and `pyproject.toml:26` is a bare `==9.5.0` with no rationale. **Nothing caps Pillow** and the four API calls used survive Pillow 10-12, so the upgrade is unblocked. Separately, moviepy is carried for ONE call (`AudioFileClip(...).duration`) that `_probe_video_duration` in the same file already does - a cut, not an upgrade. Still its own wave because both need a real render to verify. Analysis: planning_log 2026-08-23
+- [x] 98. `pip-audit` in CI *(2026-08-22)* - report-only job + `[dev]` pin. **Pillow==11.3.0 / requests==2.32.4 / moviepy dropped 2026-08-26** (`AudioFileClip.duration` → existing `_probe_video_duration`). Re-run pip-audit on the new pins before treating the baseline as closed.
 - [x] 99. Close the suite’s live Google HTTPS leak (audit C9 `ResourceWarning`) `[M]`
   *(2026-08-20: skip YouTube warmup in tests; `static_discovery=True` on `build()`;
   `CONTENT_FORBID_LIVE_YOUTUBE` blocks Data/Analytics clients and OAuth refresh;
@@ -816,12 +816,12 @@ Machine / Windows hygiene
 
 YouTube surface (still YouTube-only)
 
-- [ ] 101. Upload a caption *track* (not only burned) — accessibility + search `[S]`
+- [x] 101. Upload a caption *track* (not only burned) — accessibility + search `[S]` — shipped 2026-08-26; `captions.insert` on the publish path, fail-open if no sibling/explicit .srt
 - [x] **102. Auto-set YouTube category from `infer_domain`** *(2026-08-21)* — Sports 17 / Gaming 20 / finance 25 `[S]`
 - [x] **103. Description sources block** *(2026-08-22)* — vault `source_url` + pasted http(s); `DESCRIPTION_SOURCES` `[S]`
 - [ ] 104. Playlist-per-franchise via Data API (GTA, UFC cards) `[M]`
-- [ ] 105. Pin a comment that answers the top `youtube_comments` question `[S]`
-- [ ] 106. Detect Studio-deleted videos and cancel `publish_log` (re-queue path exists; detection does not) `[S]`
+- [x] 105. Pin a comment that answers the top `youtube_comments` question `[S]` — shipped 2026-08-26; opt-in `YOUTUBE_PIN_COMMENT`; Data API has no pin, so this posts a channel `commentThreads.insert`. Profanity filter stays in front
+- [x] 106. Detect Studio-deleted videos and cancel `publish_log` (re-queue path exists; detection does not) `[S]` — shipped 2026-08-26; `ops studio-deleted` + `daily_sync` hook; mocked `videos.list`
 - [x] **107. `madeForKids=false` audit** *(2026-08-21)* — forced False on every insert `[S]`
 - [x] **108. Default language + audio language** *(2026-08-21)* — `YOUTUBE_DEFAULT_LANGUAGE` (default `en`) `[S]`
 - [x] **109. Unlisted review before public** *(2026-08-21)* — immediate public held as unlisted (`YOUTUBE_UNLISTED_REVIEW`) `[S]`
@@ -837,12 +837,12 @@ Content / learning
 - [x] **116. Blackout / quiet-hours calendar in `channels.json`** *(2026-08-21)* — TapIn + MoneyWise 1–8 ET `[S]`
 - [x] **117. Title uniqueness vs own catalog** *(2026-08-21)* — `TITLE_UNIQUENESS=warn|block|off` `[S]`
 - [x] **118. Description first-line SEO** *(2026-08-21)* — prepend title when first line is hashtags / Subscribe `[S]`
-- [ ] 119. Stock-clip **watermark detector** — skip footage that shows another channel `[M]`
-- [ ] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]`
+- [ ] 119. Stock-clip **watermark detector** — skip footage that shows another channel `[M]` *(only if stock remains; §26 prefers dropping stock over policing it)*
+- [ ] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]` *(only if stock remains — §26: more APIs are not a quality upgrade; owned gameplay first)*
 - [x] **121. Stock query rewriter: never Pexels-search trademarked “UFC”** *(2026-08-21)* — rewrite to `mma` `[S]`
 - [x] **122. `license.yaml` beside local clips** *(2026-08-25)* — inherited nearest-folder metadata reaches the persisted local-asset attribution; root file records owned/commercial use `[S]`
 - [ ] 123. Number/SSML reading rules (`29-1`, UFC 317, `$50k`) — distinct from the name lexicon `[M]`
-- [ ] 124. Pause-after-hook: 200–400ms silence after line 1 `[S]`
+- [x] 124. Pause-after-hook: 200–400ms silence after line 1 `[S]` — shipped 2026-08-26; 250ms after first-line timings; skip is byte-identical argv/audio (same honesty as #24/#26)
 
 Legal / policy / MoneyWise (not Phase M, not the #79 spike)
 
@@ -857,7 +857,7 @@ Legal / policy / MoneyWise (not Phase M, not the #79 spike)
 
 Operator product
 
-- [ ] 133. `.ics` calendar of scheduled publishes `[S]`
+- [x] 133. `.ics` calendar of scheduled publishes `[S]` — shipped 2026-08-26; `ops publish-ics` writes beside HTML dumps (`html_dir()`), not under `data/`
 - [ ] 134. n8n/email recipe for `weekly-report` (events exist; this is the recipe) `[S]`
 - [x] **135. CSV export of `ops economics`** *(2026-08-21)* — `--csv` beside HTML dumps, not under `data/` `[S]`
 - [ ] 136. Vault Dataview-friendly dossier frontmatter `[S]`
@@ -1047,7 +1047,7 @@ Small — hours / a PR
 - [x] 291. Set Windows **AppUserModelID** *(2026-08-21)* — toasts group as "Content OS" (`ContentOS.Operator`) `[S]` — *new-app.*
 - [x] **292. Mute toasts during quiet hours** *(2026-08-22)* — `CONTENT_TOAST_DND`, resolved machine-level over every configured channel; breaker toasts bypass it via `urgent=True`. The first cut was inert (no channel → `default` → no `quiet_hours`) and its test mocked `quiet_hours_reason`, so CI never saw it; `tests/test_toast_dnd.py` now drives the clock against the shipped `channels.json` instead `[S]`
 - [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
-- [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight facts-file gap stays a pipeline issue.
+- [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight `--facts-file` is now wired, this is the Explorer helper.
 - [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.
 - [ ] 296. **Print stylesheet** for the contact sheet `[S]` — *aesthetics.*
 - [ ] 297. Caption fill **contrast ratio number** vs sampled frame `[S]` — *aesthetics.* Hours version of auditor #185.
@@ -1356,7 +1356,7 @@ Turn the research spine into a compliance moat.
 
 ### Phase S — Creator coach surface
 - [x] Expand best-bet into a **"daily ideas + why"** coach view (vidIQ-style, but with our sourcing) — `core/creator_coach.py`, `py -m scripts.ops coach`: ranked ideas each with a *why*, plus recommended length/post-time, winning title patterns, retention pacing, and cadence headroom. Read-only + fail-open. *(2026-07-02)*
-- [x] **Thumbnail A/B** — *shipped 2026-07-06 on the experiment harness:* `py -m core.experiments start thumbnail_style` → each Flux render appends the least-used arm's composition directive (`close_up` vs `wide_drama`, `core/experiment_levers.py` kind="thumbnail") to the prompt in `assets/flux_thumbnail.py`; the assignment is recorded only when Flux actually generated (Pillow fallbacks never pollute attribution), and `ops experiment` runs the same low-n-safe Bayesian report against realized engaged-rate. *CTR optimisation still open — needs impressions/CTR in the metrics sync before the report can attribute clicks rather than engagement.*
+- [x] **Thumbnail A/B** — *shipped 2026-07-06 on the experiment harness:* `py -m core.experiments start thumbnail_style` → each Flux render appends the least-used arm's composition directive (`close_up` / `wide_drama` plus 2026-08-26 named slots `subject_scale`, `text_negative_space`, `hard_light`; `core/experiment_levers.py` kind="thumbnail") to the prompt in `assets/flux_thumbnail.py`; the assignment is recorded only when Flux actually generated (Pillow fallbacks never pollute attribution), and `ops experiment` runs the same low-n-safe Bayesian report against realized engaged-rate. *CTR optimisation still open — needs impressions/CTR in the metrics sync before the report can attribute clicks rather than engagement.*
 - [x] Weekly performance digest with concrete next actions — `analytics/weekly_report.build_next_actions`: the winners/losers per dimension become numbered operator instructions ("Lead with the 'fraud' angle again", "Retire the 'recap' angle"), noise-gated at ±3pp vs baseline. *(2026-07-02)*
 
 ### UI / experience — themeable skins  *(fun, on-brand)* — **shipped 2026-07-02**
@@ -1563,8 +1563,8 @@ autonomy is earned, not flipped on (vision.md §6). All three read-only + fail-o
 - [x] **Overnight operator** — `core/overnight.py`: best-bet topics → `batch-drafts`
   (graded + verified, render-free ⇒ cadence-safe) → vault dossiers → health snapshot
   → `overnight_completed` webhook. `ops overnight --channel tapin --count 3`
-  (`--file topics.txt`); schedulable like `daily_sync`. *(facts-file intake is a
-  follow-up — needs `batch_generation.generate_draft` to accept key facts.)*
+  (`--file topics.txt` for topics; `--facts-file` for operator key facts, same
+  parser as `auto_generate`, passed through `run_batch(..., key_facts=)`).
 - Tests: `tests/test_pillar5_agents.py` (health folding + fail-open + cp1252,
   analyst LLM/rules-fallback, overnight chaining).
 

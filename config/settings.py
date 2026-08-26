@@ -48,10 +48,11 @@ class Settings:
     youtube_oauth_token_file: str = os.getenv("YOUTUBE_OAUTH_TOKEN_FILE") or DEFAULT_OAUTH_TOKEN
     pexels_api_key: str = os.getenv("PEXELS_API_KEY", "")
     pixabay_api_key: str = os.getenv("PIXABAY_API_KEY", "")
+    coverr_api_key: str = os.getenv("COVERR_API_KEY", "")
     flux_api_key: str = os.getenv("FLUX_API_KEY", "")
     asset_provider_order: tuple = tuple(
         p.strip().lower()
-        for p in os.getenv("ASSET_PROVIDER_ORDER", "local,pexels,pixabay").split(",")
+        for p in os.getenv("ASSET_PROVIDER_ORDER", "local,pexels,pixabay,coverr").split(",")
         if p.strip()
     )
     background_mode: str = os.getenv("BACKGROUND_MODE", "hybrid").strip().lower() or "hybrid"

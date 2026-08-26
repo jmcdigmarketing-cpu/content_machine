@@ -23,6 +23,7 @@ TARGET_W = 1080
 TARGET_H = 1920
 
 DEFAULT_INTRO_REL = os.path.join("video", "intro", "channel_intro.mp4")
+DEFAULT_INTRO_DURATION = 2.15
 
 
 def _intro_enabled() -> bool:
@@ -63,6 +64,25 @@ def resolve_intro_path(channel_id: str | None = None) -> str | None:
 
     logger.debug("No channel intro file found for channel=%s", channel_id)
     return None
+
+
+def learned_intro_duration(
+    channel_id: str | None = None,
+    *,
+    fallback: float = DEFAULT_INTRO_DURATION,
+) -> float:
+    """Shorten the sting only when drop-off samples exist; otherwise keep fallback."""
+    try:
+        from core.retention import drop_off_ratio
+
+        ratio = drop_off_ratio(resolve_channel_id(channel_id))
+    except Exception as exc:
+        logger.debug("learned intro duration skipped: %s", exc)
+        return fallback
+    if ratio is None:
+        return fallback
+    shortened = max(0.5, min(fallback, float(ratio) * 30.0))
+    return shortened
 
 
 def _probe_duration(path: str) -> float | None:
@@ -207,6 +227,13 @@ def prepend_channel_intro(
     intro_dur = _probe_duration(intro_path)
     if intro_dur is None:  # not `or 3.0` — a real 0.0 is a probe answer, not a miss
         intro_dur = 3.0
+    try:
+        from core.retention import drop_off_ratio
+
+        if drop_off_ratio(resolve_channel_id(channel_id)) is not None:
+            intro_dur = learned_intro_duration(channel_id)
+    except Exception as exc:
+        logger.debug("learned intro duration not applied: %s", exc)
     cmd = build_intro_concat_command(
         intro_path=intro_path,
         body_path=work_body,

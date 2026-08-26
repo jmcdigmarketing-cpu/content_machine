@@ -139,9 +139,16 @@ line-for-line on [`assets/pexels_provider.py`](../assets/pexels_provider.py) —
 `safe_filename`, and `search_query` from `assets.category`). Then one line in
 `_PROVIDERS` and `"coverr"` appended to each channel's order.
 
-**Why it is worth doing:** a third source reduces repeated footage across uploads.
-Visual sameness between videos is the *variation* half of what the 2026 authenticity
-policy assesses — the same reason MoneyWise was just given its own voice.
+**Why it was worth doing (2026-08-25):** a third source reduces repeated footage
+across uploads. Visual sameness between videos is the *variation* half of what
+the 2026 authenticity policy assesses.
+
+**Correction (2026-08-26, decisions §26):** Coverr does **not** fix TapIn's
+visual problem. The operator rejected *unnecessary live-action stock* — often
+unrelated, and a hard cut from gameplay to reality with no transition. A third
+keyword API diversifies the same class of footage. Leave Coverr fail-open with
+no key; do not treat `COVERR_API_KEY` as a quality lever. Full compare:
+[moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md).
 
 **Verification:** it must fail open exactly like the others — no key configured means
 the chain falls through to Pexels with no error. Test with a fake `requests` response

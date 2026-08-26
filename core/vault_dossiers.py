@@ -84,6 +84,11 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
     metrics = publish.get("metrics") or {}
 
     cost = features.get("cost") or {}
+    script_text = (record.script_preview or "").strip()
+    pre_lines = len(script_text.splitlines()) if script_text else 0
+    unpublished = str(record.status or "") not in {"uploaded", "scheduled", "imported"}
+    withheld = unpublished and bool(script_text)
+    post_lines = 0 if withheld else pre_lines
     fm = [
         "---",
         f"channel: {record.channel_id}",
@@ -92,6 +97,8 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
         f"date: {day}",
         f"status: {record.status}",
         "source: content-machine (run dossier)",
+        f"redaction_pre_lines: {pre_lines}",
+        f"redaction_post_lines: {post_lines}",
         "---",
         "",
         f"# {record.title or topic}",
@@ -142,7 +149,10 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
     fm.append("")
     fm.append("## Script")
     fm.append("")
-    fm.append((record.script_preview or "").strip() or "_(no script recorded)_")
+    if withheld:
+        fm.append("_(unpublished script withheld)_")
+    else:
+        fm.append(script_text or "_(no script recorded)_")
     fm.append("")
     return "\n".join(fm)
 

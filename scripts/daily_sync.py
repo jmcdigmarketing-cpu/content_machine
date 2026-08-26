@@ -65,6 +65,17 @@ def main(argv=None) -> int:
     except Exception as exc:
         print(f"  Vault dossiers: skipped ({exc})")
 
+    try:
+        from youtube.studio_deleted import detect_studio_deleted
+
+        gone = detect_studio_deleted(channel_id)
+        if gone:
+            print(f"  Studio-deleted: cancelled {len(gone)} publish_log row(s)")
+        else:
+            print("  Studio-deleted: none")
+    except Exception as exc:
+        print(f"  Studio-deleted: skipped ({exc})")
+
     print("\nDone. Discovery will use this data on next py main.py run.")
     return 0
 

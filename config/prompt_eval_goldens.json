@@ -1,0 +1,11 @@
+{
+  "_comment": "Frozen golden scripts for the heuristic prompt-eval CI gate (#86). Topics/facts live in prompt_evals.json; these scripts are the regression fixtures. Do not LLM-judge.",
+  "tapin": {
+    "grounded_script": "Ilia Topuria defends the featherweight title against Justin Gaethje at UFC 350. Topuria is undefeated at 16-0 with 14 finishes. Gaethje earned the shot by knocking out Dan Hooker in round two in May. The fight headlines the card at the T-Mobile Arena in Las Vegas.",
+    "ungrounded_script": "Ilia Topuria defends against Justin Gaethje at UFC 350. Conor McGregor crashed the presser and promised a six million dollar purse, then named Emma Frost as the new ring-girl."
+  },
+  "moneywise": {
+    "grounded_script": "The Federal Reserve cut its benchmark rate by 25 basis points to a 4.00-4.25 percent target range. High-yield savings accounts averaged 4.1 percent APY before the cut. Analysts expect two more cuts before year end. Savings yields typically fall within weeks of a Fed cut.",
+    "ungrounded_script": "The Federal Reserve cut rates, so Elon Musk is splitting Tesla stock and a secret Bitcoin ETF will double your savings APY overnight."
+  }
+}

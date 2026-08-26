@@ -423,6 +423,12 @@ and are treated as "alive and adopted", not as fact.
 | **1** | [openhuman](https://github.com/tinyhumansai/openhuman) | **Avoid** | Early-beta Rust/Node personal-agent framework, **GPL-3.0**, "expect rough edges". Overlaps memory + orchestration that already exist here and fit the pipeline better; copyleft beside this codebase is a hazard with no offsetting gain. Not avatar/video software despite the name. |
 | **0** | [reverse-skill](https://github.com/zhaoxuya520/reverse-skill) | **Irrelevant** | Security/reverse-engineering task routing — APKs, Ghidra, Frida, CTF sandboxes. No intersection with a video pipeline. The honest zero. |
 
+> **Integration plan:** [tool_integration_plan.md](tool_integration_plan.md) works the
+> top 7 through to what actually ships. Read it alongside this table — a licence pass
+> parked Edge TTS pending a legal read (LGPL-3.0), and three of the seven turned out to
+> be **already built here** (`core/prompt_evals.py`, `LINK_READER_PROXY`,
+> `core/llm_router.py`), including a correction to the senior-prompt-engineer row below.
+
 ### The one action to take — Edge TTS behind a flag (next wave)
 
 The roadmap's pronunciation-lexicon item says the $0 flip is *"unblocked on captions

@@ -7,6 +7,7 @@ config/secrets/, or .env. Tests pass a temp root — not the operator's output/.
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -162,3 +163,48 @@ def run(root: str | os.PathLike[str] | None = None, *, apply: bool = False) -> d
         "apply": apply,
         "text": render(planned, apply=apply),
     }
+
+
+def retention_report(
+    root: str | os.PathLike[str] | None = None,
+    *,
+    older_than_days: float | None = None,
+) -> str:
+    """Report old draft/trace/vault-clone artifacts. This path never deletes."""
+    base = Path(root or os.getenv("ARTIFACT_RETENTION_ROOT", "").strip() or ROOT_DIR)
+    if older_than_days is None:
+        try:
+            older_than_days = float(os.getenv("ARTIFACT_RETENTION_DAYS", "30"))
+        except ValueError:
+            older_than_days = 30.0
+    cutoff = time.time() - max(0.0, older_than_days) * 86400
+    candidates: list[tuple[float, int, Path]] = []
+    scopes = [base]
+    vault = os.getenv("OBSIDIAN_VAULT_PATH", "").strip()
+    if vault:
+        scopes.append(Path(vault))
+    elif (base / "vault").is_dir():
+        scopes.append(base / "vault")
+    for scope in scopes:
+        for mtime, size, path in _iter_files(scope):
+            parts = {part.lower() for part in path.parts}
+            is_target = (
+                "drafts" in parts
+                or ("traces" in parts and path.suffix.lower() == ".json")
+                or "_runs" in parts
+            )
+            if is_target and mtime <= cutoff:
+                candidates.append((mtime, size, path))
+    candidates.sort()
+    total = sum(size for _mtime, size, _path in candidates)
+    lines = [
+        f"Artifact retention report - DRY RUN ONLY ({older_than_days:g}+ days)",
+        f"  root       : {base}",
+        f"  candidates : {len(candidates)} file(s), {total / (1024**2):.2f} MB",
+        "  action     : none (this command is report-only; --apply is ignored)",
+    ]
+    for _mtime, _size, path in candidates[:20]:
+        lines.append(f"    {path}")
+    if len(candidates) > 20:
+        lines.append(f"    ... +{len(candidates) - 20} more")
+    return "\n".join(lines)

@@ -12,7 +12,14 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import quote
 
-from core.html_report import escape, open_html_enabled, open_local, themed_page, write_html
+from core.html_report import (
+    escape,
+    html_dir,
+    open_html_enabled,
+    open_local,
+    themed_page,
+    write_html,
+)
 from core.logging import get_logger
 
 logger = get_logger("core.review_booth")
@@ -90,6 +97,63 @@ def tts_share_line(tts: Any, total: Any) -> str:
     if tts_f:
         return f"tts ${tts_f:.2f}"
     return ""
+
+
+def title_meter_html(title: str) -> str:
+    if not (title or "").strip():
+        return ""
+    count = len(title)
+    over = max(0, count - 100)
+    cls = "fail" if over else "ok"
+    note = f" - over by {over}" if over else ""
+    return (
+        f"<p><strong>YouTube title</strong> {escape(title)}</p>"
+        f"<p class='{cls}' role='meter' aria-valuenow='{count}' "
+        f"aria-valuemin='0' aria-valuemax='100'>{count} / 100{note}</p>"
+    )
+
+
+def description_preview_html(description: str) -> str:
+    first = next((line.strip() for line in (description or "").splitlines() if line.strip()), "")
+    if not first:
+        return ""
+    return f"<p><strong>Description first line</strong> {escape(first)}</p>"
+
+
+def duration_readout(actual_seconds: Any, word_count: Any) -> str:
+    try:
+        from core.script_length import WORDS_PER_SECOND
+
+        estimated = float(word_count or 0) / WORDS_PER_SECOND
+    except (TypeError, ValueError):
+        estimated = 0.0
+    try:
+        actual = float(actual_seconds) if actual_seconds is not None else None
+    except (TypeError, ValueError):
+        actual = None
+    spoken = f"{actual:.1f}s" if actual is not None else "not available"
+    return f"Spoken {spoken} · estimated {estimated:.1f}s"
+
+
+def _srt_to_vtt(srt_path: str, vtt_path: str) -> str:
+    with open(srt_path, encoding="utf-8-sig") as source:
+        lines = source.read().splitlines()
+    converted: list[str] = []
+    in_cue_text = False
+    for line in lines:
+        if "-->" in line:
+            converted.append(line.replace(",", "."))
+            in_cue_text = True
+        elif not line.strip():
+            converted.append("")
+            in_cue_text = False
+        elif in_cue_text:
+            converted.append(escape(line))
+        else:
+            converted.append(line)
+    with open(vtt_path, "w", encoding="utf-8") as dest:
+        dest.write("WEBVTT\n\n" + "\n".join(converted).strip() + "\n")
+    return vtt_path
 
 
 def booth_markdown(
@@ -208,6 +272,89 @@ def thumb_badge_html(provider: str = "", thumbnail_cost: Any = None) -> str:
     return f"<span class='badge'>Thumb: {escape(shown)}</span>"
 
 
+def thumbnail_picker_html(
+    run_id: int | None,
+    candidates: list[dict[str, Any]] | None,
+    *,
+    image_hrefs: list[str] | None = None,
+) -> str:
+    if not run_id or not candidates or len(candidates) < 2:
+        return ""
+    cards: list[str] = []
+    for index, candidate in enumerate(candidates):
+        path = str(candidate.get("path") or "")
+        arm = str(candidate.get("arm") or "")
+        if not path or not arm:
+            continue
+        src = (
+            image_hrefs[index]
+            if image_hrefs is not None and index < len(image_hrefs) and image_hrefs[index]
+            else _file_uri(path)
+        )
+        cards.append(
+            "<div class='card'>"
+            f"<p><strong>{escape(arm)}</strong> · "
+            f"{escape(str(candidate.get('provider') or 'unknown'))}</p>"
+            f"<img class='thumb' src='{escape(src)}' alt='{escape(arm)} thumbnail'>"
+            "<form method='post' action='/pick-thumbnail'>"
+            f"<input type='hidden' name='run_id' value='{int(run_id)}'>"
+            f"<input type='hidden' name='arm' value='{escape(arm)}'>"
+            f"<button type='submit'>Pick {escape(arm)}</button></form></div>"
+        )
+    if len(cards) < 2:
+        return ""
+    return (
+        "<section><h2>Choose thumbnail</h2>"
+        "<p>Publishing is blocked until one arm is picked.</p>"
+        "<div class='thumb-grid'>" + "".join(cards) + "</div></section>"
+    )
+
+
+def thumbnail_candidate_routes(
+    candidates: list[dict[str, Any]] | None,
+) -> tuple[dict[str, str], list[str]]:
+    """Map validated candidate files to fixed booth-local HTTP paths."""
+    routes: dict[str, str] = {}
+    hrefs: list[str] = []
+    for index, candidate in enumerate(candidates or []):
+        path = os.path.abspath(str(candidate.get("path") or ""))
+        ext = os.path.splitext(path)[1].lower()
+        if ext not in {".jpg", ".jpeg", ".png", ".webp"} or not os.path.isfile(path):
+            hrefs.append("")
+            continue
+        href = f"/thumbnail-candidate-{index}{ext}"
+        routes[href] = path
+        hrefs.append(href)
+    return routes, hrefs
+
+
+def parse_thumbnail_pick_post(body: bytes, *, expected_run_id: int) -> tuple[int, str]:
+    """Parse a bounded booth pick and bind it to the run currently being reviewed."""
+    from urllib.parse import parse_qs
+
+    if len(body) > 1024:
+        raise ValueError("Thumbnail pick form is too large")
+    try:
+        fields = parse_qs(
+            body.decode("utf-8", errors="strict"),
+            keep_blank_values=True,
+            strict_parsing=True,
+        )
+        run_values = fields.get("run_id") or []
+        arm_values = fields.get("arm") or []
+        if len(run_values) != 1 or len(arm_values) != 1:
+            raise ValueError("Thumbnail pick requires exactly one run_id and arm")
+        run_id = int(run_values[0])
+        arm = str(arm_values[0])
+    except (UnicodeDecodeError, TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid thumbnail pick form: {exc}") from exc
+    if run_id != int(expected_run_id):
+        raise ValueError(f"Thumbnail pick must target displayed run {expected_run_id}")
+    if arm not in {"text_on", "face_forward"}:
+        raise ValueError("Thumbnail arm must be text_on or face_forward")
+    return run_id, arm
+
+
 def signal_dots_html(signals: dict[str, Any] | None) -> str:
     if not signals:
         return ""
@@ -323,12 +470,25 @@ def booth_html(
     trace_json: str = "",
     ffmpeg_command: str = "",
     ffmpeg_intro_command: str = "",
+    ffmpeg_outro_command: str = "",
+    title: str = "",
+    description: str = "",
+    duration_readout: str = "",
+    captions_href: str = "",
+    thumbnail_safe_area: str = "",
+    thumbnail_picker: str = "",
 ) -> str:
     share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
     if mp4_path and os.path.isfile(mp4_path):
         src = mp4_href or _file_uri(mp4_path)
+        track = (
+            f"<track kind='captions' src='{escape(captions_href)}' srclang='en' "
+            "label='English' default>"
+            if captions_href
+            else ""
+        )
         vid = (
-            f"<video id='player' controls src='{escape(src)}'></video>"
+            f"<video id='player' controls src='{escape(src)}'>{track}</video>"
             f"{share}<p>{escape(mp4_path)}</p>"
         )
     else:
@@ -375,6 +535,20 @@ def booth_html(
         f"{gate_banner_html(yesterday_unsynced)}"
     )
     extras = f"{numeric_chips}{semantic_bar}{grade_breakdown}{tts_cache_pill}{signal_dots}"
+    public_metadata = (
+        title_meter_html(title)
+        + description_preview_html(description)
+        + (
+            f"<p><strong>Duration</strong> {escape(duration_readout)}</p>"
+            if duration_readout
+            else ""
+        )
+        + (
+            f"<p><strong>Thumbnail safe area</strong> {escape(thumbnail_safe_area)}</p>"
+            if thumbnail_safe_area
+            else ""
+        )
+    )
     copy_bits = (
         copy_field_html("last unlisted URL", unlisted_url, field_id="unlisted")
         + copy_field_html("Obsidian dossier URI", dossier_uri, field_id="dossier")
@@ -396,10 +570,14 @@ def booth_html(
         command_body += (
             f"<p><strong>Intro concat</strong></p><pre>{escape(ffmpeg_intro_command)}</pre>"
         )
+    if ffmpeg_outro_command:
+        command_body += (
+            f"<p><strong>End-card concat</strong></p><pre>{escape(ffmpeg_outro_command)}</pre>"
+        )
     command_details = _details_html("FFmpeg commands", command_body)
     body = (
         f"{banners}"
-        f"<div class='card'>{vid}{thumb}</div>"
+        f"<div class='card'>{vid}{thumb}</div>{thumbnail_picker}"
         "<div class='card'>"
         f"<p><strong>Run</strong> {escape(rid)}</p>"
         f"<p><strong>Grade</strong> {escape(grade or 'n/a')}</p>"
@@ -407,6 +585,7 @@ def booth_html(
         f"<p><strong>Cost</strong> {escape(cost or 'n/a')}</p>"
         f"{extra_cost}"
         f"<p><strong>Blocking publish</strong> {escape(blocking or 'n/a')}</p>"
+        f"{public_metadata}"
         f"{apify_pills}{extras}"
         "</div>"
         "<div class='card'>"
@@ -462,6 +641,47 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     quality = (trace or {}).get("quality") or {}
     cost_d = (trace or {}).get("cost") or {}
     run_id = (trace or {}).get("run_id")
+    record = None
+    if run_id:
+        try:
+            from storage.repositories.content_runs import get_content_run_repository
+
+            record = get_content_run_repository().get(int(run_id))
+        except Exception as exc:
+            logger.debug("booth content metadata skipped: %s", exc)
+    title = str(getattr(record, "title", "") or "")
+    description = str(getattr(record, "description", "") or "")
+    timings = (trace or {}).get("timings") or {}
+    if record is not None:
+        try:
+            stored_timings = json.loads(getattr(record, "timings_json", "") or "{}")
+            if isinstance(stored_timings, dict):
+                timings = {**stored_timings, **timings}
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            logger.debug("booth stored timings unreadable for run %s: %s", run_id, exc)
+    actual_duration = None
+    spoken_audio = str(getattr(record, "mp3_path", "") or "")
+    if spoken_audio and os.path.isfile(spoken_audio):
+        try:
+            from video.render_video import _probe_video_duration
+
+            actual_duration = _probe_video_duration(spoken_audio)
+        except Exception as exc:
+            logger.debug("booth spoken-audio duration skipped: %s", exc)
+    duration_line = duration_readout(actual_duration, timings.get("word_count"))
+    captions_path = ""
+    if mp4:
+        candidate = os.path.splitext(str(mp4))[0] + ".srt"
+        if os.path.isfile(candidate):
+            captions_path = candidate
+    thumbnail_safe_area = ""
+    if thumb and os.path.isfile(thumb):
+        try:
+            from core.thumbnail_safe_area import inspect_thumbnail, render_check
+
+            thumbnail_safe_area = render_check(inspect_thumbnail(thumb))
+        except Exception as exc:
+            logger.warning("Booth thumbnail safe-area check failed for %s: %s", thumb, exc)
     grade = ""
     grade_obj = None
     try:
@@ -547,6 +767,23 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         logger.debug("booth grade breakdown skipped: %s", exc)
 
     features = (trace or {}).get("features") or {}
+    thumbnail_picker = ""
+    thumbnail_candidates: list[dict[str, Any]] = []
+    try:
+        if run_id:
+            from core.run_features import load_features
+
+            stored_features = load_features(int(run_id))
+            if isinstance(stored_features, dict):
+                features = {**features, **stored_features}
+            thumbnail_candidates = [
+                dict(item)
+                for item in (features.get("thumbnail_candidates") or [])
+                if isinstance(item, dict)
+            ]
+            thumbnail_picker = thumbnail_picker_html(int(run_id), thumbnail_candidates)
+    except Exception as exc:
+        logger.debug("booth thumbnail picker skipped: %s", exc)
     tts_cache_pill = ""
     try:
         cached = (trace or {}).get("tts_cached")
@@ -634,6 +871,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     trace_json = ""
     ffmpeg_command = ""
     ffmpeg_intro_command = ""
+    ffmpeg_outro_command = ""
     try:
         from core.run_trace import redact_trace_value
 
@@ -641,6 +879,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
             trace_json = json.dumps(redact_trace_value(trace), indent=2, default=str)
             ffmpeg_command = _command_line(trace.get("ffmpeg_command"))
             ffmpeg_intro_command = _command_line(trace.get("ffmpeg_intro_command"))
+            ffmpeg_outro_command = _command_line(trace.get("ffmpeg_outro_command"))
     except Exception as exc:
         logger.debug("booth trace details skipped: %s", exc)
 
@@ -684,11 +923,28 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "trace_json": trace_json,
         "ffmpeg_command": ffmpeg_command,
         "ffmpeg_intro_command": ffmpeg_intro_command,
+        "ffmpeg_outro_command": ffmpeg_outro_command,
+        "title": title,
+        "description": description,
+        "duration_readout": duration_line,
+        "captions_path": captions_path,
+        "thumbnail_safe_area": thumbnail_safe_area,
+        "thumbnail_picker": thumbnail_picker,
+        "thumbnail_candidates": thumbnail_candidates,
     }
 
 
 def write_booth(channel_id: str | None = None, *, open_browser: bool = True) -> str:
     ctx = gather_booth_context(channel_id)
+    ctx.pop("thumbnail_candidates", None)
+    captions_path = str(ctx.pop("captions_path", "") or "")
+    if captions_path:
+        try:
+            vtt_path = os.path.join(html_dir(), "booth.vtt")
+            _srt_to_vtt(captions_path, vtt_path)
+            ctx["captions_href"] = _file_uri(vtt_path)
+        except Exception as exc:
+            logger.warning("Booth captions unavailable: %s", exc)
     path = write_html(booth_html(**ctx), filename="booth.html")
     if open_browser:
         open_local(path)
@@ -698,8 +954,17 @@ def write_booth(channel_id: str | None = None, *, open_browser: bool = True) -> 
 def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
     """Tiny stdlib HTTP host for the booth (not FastAPI, not #141). Returns the URL."""
     ctx = gather_booth_context(channel_id)
+    candidates = ctx.pop("thumbnail_candidates", [])
+    candidate_routes, candidate_hrefs = thumbnail_candidate_routes(candidates)
+    if ctx.get("run_id"):
+        ctx["thumbnail_picker"] = thumbnail_picker_html(
+            int(ctx["run_id"]),
+            candidates,
+            image_hrefs=candidate_hrefs,
+        )
     mp4 = ctx.get("mp4_path")
     thumb = ctx.get("thumb_path")
+    captions_path = str(ctx.pop("captions_path", "") or "")
     if mp4 and os.path.isfile(str(mp4)):
         ctx["mp4_href"] = "booth.mp4"
     thumb_name = ""
@@ -709,8 +974,15 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
             ext = ".jpg"
         thumb_name = f"booth{ext}"
         ctx["thumb_href"] = thumb_name
+    if captions_path and os.path.isfile(captions_path):
+        try:
+            _srt_to_vtt(captions_path, os.path.join(html_dir(), "booth.vtt"))
+            ctx["captions_href"] = "booth.vtt"
+        except Exception as exc:
+            logger.warning("Booth captions unavailable: %s", exc)
     html_path = write_html(booth_html(**ctx), filename="booth.html")
     directory = os.path.dirname(html_path)
+    displayed_run_id = int(ctx.get("run_id") or 0)
 
     class _Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
@@ -719,7 +991,10 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
         def translate_path(self, path: str) -> str:
             from urllib.parse import unquote, urlparse
 
-            name = unquote(urlparse(path).path).rsplit("/", 1)[-1]
+            parsed_path = unquote(urlparse(path).path)
+            if parsed_path in candidate_routes:
+                return candidate_routes[parsed_path]
+            name = parsed_path.rsplit("/", 1)[-1]
             if name == "booth.mp4" and mp4 and os.path.isfile(str(mp4)):
                 return str(mp4)
             if thumb_name and name == thumb_name and thumb and os.path.isfile(str(thumb)):
@@ -728,6 +1003,31 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
 
         def log_message(self, fmt: str, *args: Any) -> None:
             logger.debug("booth http: " + fmt, *args)
+
+        def do_POST(self) -> None:
+            from urllib.parse import urlparse
+
+            if urlparse(self.path).path != "/pick-thumbnail":
+                self.send_error(404)
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length < 1 or length > 1024:
+                    raise ValueError("Thumbnail pick form length must be 1-1024 bytes")
+                picked_run, arm = parse_thumbnail_pick_post(
+                    self.rfile.read(length),
+                    expected_run_id=displayed_run_id,
+                )
+                from core.thumbnail_pick import pick_thumbnail
+
+                pick_thumbnail(picked_run, arm=arm, channel_id=channel_id)
+            except Exception as exc:
+                logger.warning("Booth thumbnail pick failed: %s", exc)
+                self.send_error(400, str(exc))
+                return
+            self.send_response(303)
+            self.send_header("Location", "/booth.html")
+            self.end_headers()
 
     server = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
     host, bound = server.server_address

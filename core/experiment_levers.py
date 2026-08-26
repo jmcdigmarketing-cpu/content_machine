@@ -50,6 +50,20 @@ _LEVERS: dict[str, dict] = {
             ),
         },
     },
+    "thumbnail_format": {
+        "description": "Operator-picked dual thumbnail layout",
+        "kind": "thumbnail",
+        "arms": {
+            "text_on": (
+                "high-contrast editorial composition with generous negative space "
+                "for a large readable headline"
+            ),
+            "face_forward": (
+                "single expressive face or subject filling most of the frame, "
+                "strong eye line, no headline text"
+            ),
+        },
+    },
 }
 
 

@@ -260,6 +260,19 @@ def cmd_artifacts(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "artifact-retention",
+    "Report old drafts, traces, and vault _runs clones (dry-run only; never deletes)",
+)
+def cmd_artifact_retention(args: argparse.Namespace) -> int:
+    from core.artifact_retention import retention_report
+
+    if getattr(args, "apply", False):
+        print("NOTE: --apply ignored; artifact-retention is report-only.")
+    print(retention_report())
+    return 0
+
+
+@_register(
     "policy-canary", "Hash YouTube inauthentic-content page (local fixture; no HTTP default)"
 )
 def cmd_policy_canary(args: argparse.Namespace) -> int:
@@ -759,6 +772,38 @@ def cmd_requeue_upload(args: argparse.Namespace) -> int:
     )
 
 
+@_register("pick-thumbnail", "Pick text_on or face_forward for a dual-thumbnail run")
+def cmd_pick_thumbnail(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("pick-thumbnail requires --run-id")
+        return 2
+    if not getattr(args, "arm", "") and not getattr(args, "path", ""):
+        print("pick-thumbnail requires --arm text_on|face_forward or --path")
+        return 2
+    from core.thumbnail_pick import pick_thumbnail
+    from storage.repositories.content_runs import get_content_run_repository
+
+    record = get_content_run_repository().get(args.run_id)
+    if record is None:
+        print(f"No content run #{args.run_id}")
+        return 1
+    try:
+        selected = pick_thumbnail(
+            args.run_id,
+            getattr(args, "path", "") or None,
+            arm=getattr(args, "arm", "") or None,
+            channel_id=record.channel_id,
+        )
+    except (ValueError, RuntimeError) as exc:
+        print(str(exc))
+        return 1
+    print(
+        f"Picked {selected['arm']} ({selected['provider']}) for run "
+        f"#{args.run_id}: {selected['path']}"
+    )
+    return 0
+
+
 @_register(
     "tray",
     "System-tray / quota chip (uploads-left + TTS chars + Apify breaker)",
@@ -799,6 +844,48 @@ def cmd_booth(args: argparse.Namespace) -> int:
         return 0
     path = write_booth(args.channel)
     print(path)
+    return 0
+
+
+@_register(
+    "render-preview",
+    "Render a 480p ultrafast review copy without changing publish media (--run-id)",
+)
+def cmd_render_preview(args: argparse.Namespace) -> int:
+    if not args.run_id:
+        print("render-preview requires --run-id")
+        return 2
+    from core.pipeline import run_media_only
+    from storage.repositories.content_runs import get_content_run_repository
+
+    record = get_content_run_repository().get(args.run_id)
+    if record is None:
+        print(f"No content run #{args.run_id}")
+        return 1
+    script = str(record.script_preview or "")
+    source_file = getattr(args, "file", None)
+    if source_file:
+        with open(source_file, encoding="utf-8") as handle:
+            script = handle.read().strip()
+    elif len(script) >= 2000:
+        print(
+            "Stored script is truncated at 2,000 characters; pass --file with the full "
+            "script so the preview cannot silently omit the ending."
+        )
+        return 2
+    if not script:
+        print(f"Run #{args.run_id} has no stored script")
+        return 1
+    _mp3, mp4, _thumb = run_media_only(
+        record.selected_topic or record.input_topic,
+        script,
+        channel_id=record.channel_id,
+        content_run_id=record.id,
+        title=record.title,
+        render_preset="draft",
+    )
+    print(f"Draft preview: {mp4}")
+    print("Publish media unchanged; previews are never queued or uploaded.")
     return 0
 
 
@@ -981,6 +1068,8 @@ def main(argv=None) -> int:
         default=0,
         help="Content run id (list-uploads / requeue-upload / dossier)",
     )
+    parser.add_argument("--arm", default="", help="pick-thumbnail: text_on or face_forward")
+    parser.add_argument("--path", default="", help="pick-thumbnail: exact candidate image path")
     parser.add_argument(
         "--limit",
         type=int,

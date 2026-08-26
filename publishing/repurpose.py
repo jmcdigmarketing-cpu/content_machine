@@ -75,6 +75,11 @@ def enqueue_repurpose_jobs(
     TikTok/Instagram in channels.json are skipped until a later development phase.
     """
     channel_id = resolve_channel_id(channel_id)
+    from core.thumbnail_pick import ensure_thumbnail_ready
+
+    picked = ensure_thumbnail_ready(content_run_id)
+    if picked:
+        thumbnail_path = picked
     result = RepurposeResult()
 
     if not _repurpose_enabled(channel_id):

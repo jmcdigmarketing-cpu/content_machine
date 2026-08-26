@@ -226,6 +226,87 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
     elif not any(str(v).strip() for v in persona.values()):
         warnings.append(f"{channel_id}: persona is present but every field is empty")
 
+    caption_skin = raw_cfg.get("caption_skin")
+    if caption_skin is not None:
+        if not isinstance(caption_skin, dict):
+            errors.append(f"{channel_id}: caption_skin must be an object")
+        else:
+            mode = str(caption_skin.get("mode", "word")).strip().lower()
+            if mode not in {"plain", "word", "karaoke"}:
+                errors.append(f"{channel_id}: caption_skin.mode must be plain, word, or karaoke")
+            for key in ("fill_color", "outline_color"):
+                value = caption_skin.get(key)
+                if value is not None and not (
+                    isinstance(value, str)
+                    and len(value) == 7
+                    and value.startswith("#")
+                    and all(ch in "0123456789abcdefABCDEF" for ch in value[1:])
+                ):
+                    errors.append(f"{channel_id}: caption_skin.{key} must be #RRGGBB")
+
+    end_card = raw_cfg.get("end_card")
+    if end_card is not None:
+        if not isinstance(end_card, dict):
+            errors.append(f"{channel_id}: end_card must be an object")
+        else:
+            enabled = end_card.get("enabled", False)
+            if not isinstance(enabled, bool):
+                errors.append(f"{channel_id}: end_card.enabled must be boolean")
+            try:
+                duration = float(end_card.get("duration", 0))
+                if not (0.5 <= duration <= 10.0):
+                    errors.append(f"{channel_id}: end_card.duration must be between 0.5 and 10")
+            except (TypeError, ValueError):
+                errors.append(f"{channel_id}: end_card.duration must be numeric")
+            if enabled and not str(end_card.get("text") or "").strip():
+                errors.append(f"{channel_id}: end_card.text is required when enabled")
+            for key in ("bg", "fg"):
+                value = end_card.get(key)
+                if not (
+                    isinstance(value, str)
+                    and len(value) == 7
+                    and value.startswith("#")
+                    and all(ch in "0123456789abcdefABCDEF" for ch in value[1:])
+                ):
+                    errors.append(f"{channel_id}: end_card.{key} must be #RRGGBB")
+
+    color_grade = raw_cfg.get("color_grade")
+    if color_grade is not None:
+        if not isinstance(color_grade, dict):
+            errors.append(f"{channel_id}: color_grade must be an object")
+        else:
+            limits = {
+                "saturation": (0.5, 2.0),
+                "contrast": (0.5, 2.0),
+                "brightness": (-0.3, 0.3),
+            }
+            unknown = set(color_grade) - set(limits)
+            if unknown:
+                errors.append(f"{channel_id}: unknown color_grade keys: {sorted(unknown)}")
+            for key, (low, high) in limits.items():
+                try:
+                    value = float(color_grade.get(key, 1.0 if key != "brightness" else 0.0))
+                    if not low <= value <= high:
+                        errors.append(
+                            f"{channel_id}: color_grade.{key} must be between {low} and {high}"
+                        )
+                except (TypeError, ValueError):
+                    errors.append(f"{channel_id}: color_grade.{key} must be numeric")
+
+    hook_motion = raw_cfg.get("hook_motion")
+    if hook_motion is not None:
+        if not isinstance(hook_motion, dict):
+            errors.append(f"{channel_id}: hook_motion must be an object")
+        else:
+            if not isinstance(hook_motion.get("enabled", False), bool):
+                errors.append(f"{channel_id}: hook_motion.enabled must be boolean")
+            try:
+                zoom = float(hook_motion.get("zoom", 1.0))
+                if not 1.0 < zoom <= 1.15:
+                    errors.append(f"{channel_id}: hook_motion.zoom must be > 1.0 and <= 1.15")
+            except (TypeError, ValueError):
+                errors.append(f"{channel_id}: hook_motion.zoom must be numeric")
+
     errors.extend(_check_post_schedule(raw_cfg.get("post_schedule") or {}, channel_id))
     return errors, warnings
 

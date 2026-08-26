@@ -216,9 +216,9 @@ def prepend_channel_intro(
     )
     if command_callback is not None:
         try:
-            command_callback("intro", list(cmd))
+            command_callback("intro_attempt", list(cmd))
         except Exception as exc:
-            logger.debug("intro command capture skipped: %s", exc)
+            logger.debug("intro attempt capture skipped: %s", exc)
 
     logger.info("Prepending channel intro (%s)", os.path.basename(intro_path))
     concat_ok = False
@@ -253,6 +253,11 @@ def prepend_channel_intro(
         if not os.path.isfile(final_path) or os.path.getsize(final_path) == 0:
             raise RuntimeError(f"Intro concat exited 0 but wrote no usable file: {final_path}")
         concat_ok = True
+        if command_callback is not None:
+            try:
+                command_callback("intro_success", list(cmd))
+            except Exception as exc:
+                logger.debug("intro success capture skipped: %s", exc)
     finally:
         # From the os.replace above to here, the rendered video exists ONLY under the
         # temp name. Every exit from that window has to put it back — a non-zero exit,

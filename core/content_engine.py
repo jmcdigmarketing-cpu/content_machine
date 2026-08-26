@@ -1,4 +1,7 @@
+import hashlib
+import inspect
 import os
+from types import CodeType
 from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
@@ -27,6 +30,68 @@ logger = get_logger("core.content_engine")
 PROMPT_VERSION = "content_engine_v7"
 MAX_EXPAND_ATTEMPTS = 2
 MAX_EXPAND_ATTEMPTS_EXTENDED = 4  # Extended format needs more passes to hit 1000+ words
+
+_PROMPT_BUILDER_NAMES = (
+    "_build_prompts",
+    "_maybe_improve_hook",
+    "_maybe_reground_script",
+    "_maybe_rewrite_unsupported_claims",
+    "_maybe_inject_insight",
+    "_maybe_recenter_on_key_facts",
+    "_expand_script",
+)
+
+
+def prompt_version_for_sources(sources: list[str] | tuple[str, ...]) -> str:
+    """Stable version whose suffix changes whenever prompt-builder source changes."""
+    blob = "\n\n".join(str(source).replace("\r\n", "\n") for source in sources)
+    return f"{PROMPT_VERSION}-{hashlib.sha256(blob.encode('utf-8')).hexdigest()[:12]}"
+
+
+def _stable_code_text(code: CodeType) -> str:
+    """Deterministic source fallback without repr() memory addresses or file paths."""
+
+    def stable_constant(value: object) -> str:
+        if isinstance(value, CodeType):
+            return _stable_code_text(value)
+        if isinstance(value, tuple):
+            return "(" + ",".join(stable_constant(item) for item in value) + ")"
+        if isinstance(value, bytes):
+            return f"bytes:{value.hex()}"
+        if value is None or isinstance(value, str | int | float | complex | bool):
+            return repr(value)
+        return f"<{type(value).__module__}.{type(value).__qualname__}>"
+
+    return "|".join(
+        (
+            code.co_name,
+            str(code.co_argcount),
+            str(code.co_kwonlyargcount),
+            code.co_code.hex(),
+            ",".join(code.co_names),
+            ",".join(code.co_varnames),
+            ",".join(stable_constant(value) for value in code.co_consts),
+        )
+    )
+
+
+def _prompt_source_blob() -> str:
+    sources: list[str] = []
+    for name in _PROMPT_BUILDER_NAMES:
+        builder = globals().get(name)
+        if builder is None:
+            continue
+        try:
+            source = inspect.getsource(builder)
+        except (OSError, TypeError):
+            code = getattr(builder, "__code__", None)
+            source = _stable_code_text(code) if isinstance(code, CodeType) else name
+        sources.append(f"{name}\n{source}".replace("\r\n", "\n"))
+    return "\n\n".join(sources)
+
+
+def current_prompt_version() -> str:
+    return prompt_version_for_sources([_prompt_source_blob()])
 
 
 def _format_signal_facts(signals):
@@ -807,7 +872,7 @@ def generate_content_package(
             "tags": normalize_youtube_tags(
                 default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
             ),
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": current_prompt_version(),
             "brief_version": research_brief.version if research_brief else "",
             "word_count": 0,
         }
@@ -986,6 +1051,12 @@ def generate_content_package(
             "; ".join(title_warnings),
         )
 
+    # Public overlay metadata: keep only grounded display labels. Source fact lines
+    # stay inside this generation call and are never persisted as lower-third data.
+    from video.lower_thirds import select_grounded_labels
+
+    lower_thirds = select_grounded_labels(script, corpus.factual_text)
+
     return {
         "title": title,
         "title_warnings": title_warnings,
@@ -998,7 +1069,7 @@ def generate_content_package(
             key_facts=clean_key_facts,
         ),
         "tags": tags,
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": current_prompt_version(),
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
         "ungrounded_entities": ungrounded,
@@ -1007,4 +1078,5 @@ def generate_content_package(
         "fact_conflicts": [c.render() for c in conflicts],
         "fact_conflicts_dropped": conflicts_dropped,
         "claim_verification": verification.to_dict() if verification else None,
+        "lower_thirds": lower_thirds,
     }

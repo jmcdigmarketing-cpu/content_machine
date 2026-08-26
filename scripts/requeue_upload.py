@@ -198,6 +198,7 @@ def main(argv=None) -> int:
         upload_channel = run.channel_id
         if args.queue:
             from apis.youtube_quota import format_quota_detail, has_quota_for_upload
+            from core.thumbnail_pick import ensure_thumbnail_ready
 
             if not has_quota_for_upload():
                 print("WARNING: YouTube upload quota is too low for videos.insert (~1,600 units).")
@@ -211,6 +212,7 @@ def main(argv=None) -> int:
                 tags = json.loads(run.tags_json or "[]")
             except json.JSONDecodeError:
                 tags = []
+            thumbnail_path = ensure_thumbnail_ready(run.id)
             job = enqueue_upload_job(
                 channel_id=upload_channel,
                 content_run_id=run.id,
@@ -218,6 +220,7 @@ def main(argv=None) -> int:
                 title=run.title or run.selected_topic,
                 description=run.description or "",
                 tags=tags if isinstance(tags, list) else [],
+                thumbnail_path=thumbnail_path,
             )
             print(f"Queued upload job {job.id} for run {run.id} ({upload_channel})")
             print(f"  File: {mp4}")

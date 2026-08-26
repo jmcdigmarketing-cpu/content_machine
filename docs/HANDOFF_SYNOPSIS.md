@@ -1,21 +1,61 @@
-# Handoff synopsis — 2026-08-25: post-wave-4 operator pickup
+# Handoff synopsis — 2026-08-25: render aesthetics + thumbnail pick wave
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — five post-wave-4 pickup units (2026-08-25)
+## Last implementation wave — roadmap #23–27 (2026-08-25)
 
-The documented leftover `[S]` queue is shipped. It was behavior-audited before
-the requested commit and push. **#147 FastAPI still skipped.**
+Implemented in strict order without a commit or push, on top of the uncommitted
+ten-task wave. The initial 15 behavioral tests were observed red first; the real
+FFmpeg proof added one Fontconfig regression test. The full isolated suite is now
+**2,010 tests** after the behavior/safety audit below.
 
-Shipped: tray pause/resume for the render-free overnight draft batch; honest
-human-heartbeat age; redacted raw trace + actual primary/intro ffmpeg argv in
-the booth with copy; persistent Desktop booth launcher; inherited local-clip
-ownership metadata persisted as asset attribution. Detail:
+- **#23:** generated validated per-channel end card, publish-only after the existing
+  intro/body, robust in-place restoration, exact outro argv persisted and shown.
+- **#24:** grounded public-safe lower-third labels persist without raw operator facts;
+  real word timings generate escaped ASS. No timings means an honest skip and unchanged
+  command shape.
+- **#25:** bounded per-channel `eq` grade after crop/before overlays. TapIn and
+  MoneyWise ship distinct values across publish, preview, fallback, and extra formats.
+- **#26:** bounded first-cue zoom from the real word-timing sidecar only, propagated
+  through every render variant. No timing means no motion filter.
+- **#27:** dual `text_on` / `face_forward` thumbnails only under the
+  `thumbnail_format` experiment or `THUMBNAIL_DUAL`; up to two configured paid
+  providers may run, each independently falls back to a distinct Pillow layout, and
+  provider/cost evidence persists. `ops pick-thumbnail` and booth POST controls make
+  the pick; publish is blocked while unpicked; assignment occurs only at pick time;
+  main/requeue/YouTube use the selected path and never guess by mtime.
+
+Audit proof: focused render/thumbnail/pipeline integration **112 tests**; full suite **2,010**;
+`ruff check .` and `ruff format --check .` clean; shipped channel config validates.
+The audit fixed eight confirmed gaps: exact-phrase public grounding; identity-grade
+no-op; first-valid-cue motion; attempted-vs-successful FFmpeg trace evidence; bounded
+booth POST run binding; HTTP-served dual images; pre/post fallback cost evidence; and
+picked-thumbnail propagation through both requeue paths.
+A real temporary FFmpeg proof caught this Windows build's missing Fontconfig default;
+the card now binds to installed Arial/DejaVu. The retry produced a **2.133s**
+intro-free body+card from a 0.6s body and captured the outro argv (the audit now records
+separate attempt/success events). Full visual
+inspection of grade/motion/lower thirds remains the next operator proof.
+
+## Last implementation wave — ten small production-complete units (2026-08-25)
+
+The requested coherent `[S]` wave is implemented without a commit or push.
+Behavioral tests were written and observed failing before production edits.
+**#147 FastAPI still skipped.**
+
+Shipped: documented MoneyWise persona; content-engine prompt-source hash;
+booth title meter, description first line, duration comparison, and HTML5
+caption track; Pillow bottom-20% thumbnail checker; channel caption skins;
+isolated 480p draft preview preset; and report-only artifact retention. Detail:
 [planning_log.md](planning_log.md) 2026-08-25.
 
-**Pickup:** the documented MoneyWise persona is ready for `channels.json`.
+**Boundary:** thumbnail safe-area checking is a conservative Pillow visual-density
+heuristic, not OCR/face detection. Artifact retention is intentionally dry-run only.
+`render-preview` refuses a stored script truncated at 2,000 characters unless the
+operator supplies `--file`; preview audio/video are suffixed, never update upload media,
+and the YouTube publisher rejects `_preview.mp4` files.
 The separate dependency wave (Pillow 11.3, requests 2.32.4, remove MoviePy)
-still requires a real thumbnail/render. Still skip #147 FastAPI, #146 tray
+still requires a real dependency/render pass. Still skip #147 FastAPI, #146 tray
 daemon, Phase M, volume-gated backtest, and auto-flipping the $0 TTS voice.
 
 ## Last live run — 71 (2026-08-21, documented 2026-08-22)
@@ -40,10 +80,9 @@ only** — operator did not type `y` at Proceed. Full narrative:
   merge commit `6389e87`); CI is green on `main`. 20 Aug added the run-70 Ollama
   probe, worker/ffmpeg coverage tests, semantic authenticity, and router vision
   (`core/llm_client.py` gone).
-- **Suite:** 1,969 tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests -t .`
-- **Pickup order:** MoneyWise persona config, then the dependency/render wave
-  when a real render can prove Pillow and MoviePy changes. Candidates 21–28
-  (caption/thumb aesthetics) and 56–90 leftovers still sit under Next up.
+- **Suite:** 2,010 tests · **Pre-commit:** `ruff check .` · `ruff format .` · `python -m unittest discover -s tests -t .`
+- **Pickup order:** real visual render proof for #23–27 / dependency wave, then
+  candidate 28 and 56–90 under Next up.
 - History carries: morning (free backends, batch/A/B, webhooks, O11), Pillars 1–3,
   **Pillar 4** (Obsidian knowledge OS), **Pillar 5** (agent layer: `ops health` /
   `analyst` / `overnight`), **Pillar 6** (provider seams + local TTS + voice variety),
@@ -553,12 +592,13 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-**Pickup:** apply the documented MoneyWise persona, then take the
-Pillow/requests/MoviePy dependency wave when a real render can verify it.
-Candidates **21–28** (caption/thumb aesthetics) and **56–90** leftovers sit at
+**Pickup:** take the Pillow/requests/MoviePy dependency wave when a real render
+can verify it. Candidates **23–28** (remaining caption/thumb aesthetics) and **56–90** leftovers sit at
 the bottom of Next up. Phase M stays parked. **#147 FastAPI still skipped.**
 
 **Already done (do not re-open):**
+- Ten-small-task wave (2026-08-25): MoneyWise persona; #21, #22, #31, #39,
+  #53, #262, #271, #298, and #299.
 - Post-wave-4 pickup (2026-08-25): #313, #282, #308–310, #232 and #122.
 - Caption-text from the script (`video/caption_retext.py`, 2026-08-16). The **$0 TTS
   switch** is unblocked and waiting on two *operator* calls: judge
@@ -580,8 +620,7 @@ the bottom of Next up. Phase M stays parked. **#147 FastAPI still skipped.**
   **pull** vs **serve** vs OpenRouter throttled fallback.
 
 **Still open:**
-1. **MoneyWise persona config + dependency/render wave.** Persona text is
-   documented in `planning_log.md`; Pillow/requests/MoviePy needs a real
+1. **Dependency/render wave.** Pillow/requests/MoviePy needs a real
    thumbnail/render. Do not start with clip-from-source, avatar, #147 FastAPI,
    or Phase M.
 2. **Pillar 6 remainder** — seams live; heavy backends wait on a **CUDA torch**

@@ -47,6 +47,13 @@ class ChannelProfile:
     persona: dict[str, str] = field(default_factory=dict)
     # Optional terminal skin (core/themes.py) — CONTENT_UI_THEME env overrides.
     ui_theme: str = ""
+    # Burned-caption video skin. Kept as config data so channels do not fork render code.
+    caption_skin: dict[str, Any] = field(default_factory=dict)
+    # Generated publish-only outro and render treatment. Dicts deliberately preserve
+    # forward compatibility while config.validate_channels enforces shipped values.
+    end_card: dict[str, Any] = field(default_factory=dict)
+    color_grade: dict[str, Any] = field(default_factory=dict)
+    hook_motion: dict[str, Any] = field(default_factory=dict)
 
 
 def _load_channels_file() -> dict[str, Any]:
@@ -128,6 +135,10 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
                 if isinstance(v, str | int | float) and str(v).strip()
             },
             ui_theme=str(cfg.get("ui_theme", "")).strip().lower(),
+            caption_skin=dict(cfg.get("caption_skin") or {}),
+            end_card=dict(cfg.get("end_card") or {}),
+            color_grade=dict(cfg.get("color_grade") or {}),
+            hook_motion=dict(cfg.get("hook_motion") or {}),
         )
 
     profiles.setdefault(

@@ -287,9 +287,13 @@ class TestRenderFailsOpenToVoOnly(_RenderHarness):
             return_value=ProviderResult.success("music", "musicgen", data=bed),
         ):
             self._render(command_callback=lambda kind, argv: seen.append((kind, argv)))
-        self.assertEqual([kind for kind, _ in seen], ["primary", "primary"])
+        self.assertEqual(
+            [kind for kind, _ in seen],
+            ["primary_attempt", "primary_attempt", "primary_success"],
+        )
         self.assertIn("amix", " ".join(seen[0][1]))
-        self.assertNotIn("amix", " ".join(seen[-1][1]))
+        self.assertNotIn("amix", " ".join(seen[1][1]))
+        self.assertEqual(seen[1][1], seen[2][1])
 
 
 if __name__ == "__main__":

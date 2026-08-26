@@ -98,8 +98,13 @@ class TestBoothDebugDetails(unittest.TestCase):
 
         def fake_render(*args, command_callback=None, **kwargs):
             captured_callback["value"] = command_callback
-            command_callback("primary", ["ffmpeg", "-i", "voice.mp3", "out.mp4"])
-            command_callback("intro", ["ffmpeg", "-i", "intro.mp4", "out.mp4"])
+            primary = ["ffmpeg", "-i", "voice.mp3", "out.mp4"]
+            intro = ["ffmpeg", "-i", "intro.mp4", "out.mp4"]
+            command_callback("primary_attempt", primary)
+            command_callback("primary_success", primary)
+            command_callback("intro_attempt", intro)
+            command_callback("intro_success", intro)
+            command_callback("outro_attempt", ["ffmpeg", "-i", "broken.mp4", "out.mp4"])
             return "out.mp4", None
 
         with (
@@ -127,6 +132,8 @@ class TestBoothDebugDetails(unittest.TestCase):
         trace_patch = update.call_args[0][1]
         self.assertEqual(trace_patch["ffmpeg_command"][0], "ffmpeg")
         self.assertIn("intro.mp4", trace_patch["ffmpeg_intro_command"])
+        self.assertNotIn("ffmpeg_outro_command", trace_patch)
+        self.assertIn("broken.mp4", trace_patch["ffmpeg_attempted_commands"]["outro"][0])
 
     def test_booth_collapses_escaped_trace_and_copies_ffmpeg(self):
         html = review_booth.booth_html(

@@ -21,6 +21,29 @@
         "audience": "gaming and combat-sports fans who want the real take, fast",
         "signoff": "Tap in for more."
       },
+      "caption_skin": {
+        "mode": "karaoke",
+        "font": "Arial",
+        "fill_color": "#FFFFFF",
+        "outline_color": "#111111",
+        "boxed": false
+      },
+      "end_card": {
+        "enabled": true,
+        "duration": 1.5,
+        "text": "TAP IN FOR MORE",
+        "bg": "#0B0F14",
+        "fg": "#FFFFFF"
+      },
+      "color_grade": {
+        "saturation": 1.18,
+        "contrast": 1.08,
+        "brightness": 0.01
+      },
+      "hook_motion": {
+        "enabled": true,
+        "zoom": 1.08
+      },
       "background_mode": "hybrid",
       "hybrid_local_ratio": 0.45,
       "asset_provider_order": ["local", "pexels", "pixabay"],
@@ -86,6 +109,36 @@
     "moneywise": {
       "name": "MoneyWise",
       "domain": "finance",
+      "persona": {
+        "perspective": "someone who reads the filing, the print, or the fine print before having an opinion - and says plainly what it means for a normal paycheck",
+        "tone": "calm, plain-spoken, mildly sceptical of hype - explains, never sells",
+        "audience": "working adults who want to understand the money story behind the headline, not be told what to buy",
+        "recurring_segment": "Week ahead: the two or three numbers that actually move things, and why",
+        "signoff": "Numbers first. Opinions after."
+      },
+      "caption_skin": {
+        "mode": "word",
+        "font": "Arial",
+        "fill_color": "#F7E7A9",
+        "outline_color": "#1B2430",
+        "boxed": true
+      },
+      "end_card": {
+        "enabled": true,
+        "duration": 1.5,
+        "text": "NUMBERS FIRST. OPINIONS AFTER.",
+        "bg": "#1B2430",
+        "fg": "#F7E7A9"
+      },
+      "color_grade": {
+        "saturation": 0.9,
+        "contrast": 1.04,
+        "brightness": 0.02
+      },
+      "hook_motion": {
+        "enabled": true,
+        "zoom": 1.05
+      },
       "background_mode": "hybrid",
       "hybrid_local_ratio": 0.45,
       "asset_provider_order": ["local", "pexels", "pixabay"],

@@ -374,6 +374,14 @@ class YouTubePublisher(Publisher):
         channel_id = resolve_channel_id(channel_id)
         idem = idempotency_key(content_run_id, channel_id, PLATFORM_YOUTUBE)
 
+        if os.path.splitext(request.file_path)[0].lower().endswith("_preview"):
+            return PublishResult(
+                video_id=None,
+                status="blocked",
+                detail="Draft preview files are review-only and cannot be uploaded",
+                platform=PLATFORM_YOUTUBE,
+            )
+
         if not self.is_configured(channel_id):
             log_id = _ensure_publish_log(
                 content_run_id=content_run_id,

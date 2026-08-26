@@ -1211,6 +1211,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
     """Queue an upload for a rendered-but-never-uploaded run (folds in requeue_upload)."""
     import json
 
+    from core.thumbnail_pick import ensure_thumbnail_ready
     from scripts.requeue_upload import _resolve_mp4_path
     from storage.repositories.jobs import enqueue_upload_job
 
@@ -1245,6 +1246,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
             tags = []
     except (TypeError, ValueError):
         tags = []
+    thumbnail_path = ensure_thumbnail_ready(run.id)
 
     job = enqueue_upload_job(
         channel_id=channel_id,
@@ -1256,6 +1258,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
         privacy_status=privacy,
         scheduled_at=scheduled_at,
         youtube_publish_at=publish_at,
+        thumbnail_path=thumbnail_path,
     )
     print_fn(f"\n  Queued upload job {job.id} for run {run.id}. Run: py -m jobs.worker --loop 30")
     print_fn(f"  File: {mp4}")

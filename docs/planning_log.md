@@ -11,6 +11,64 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-25 - Ten small tasks, production-complete wave (shipped)
+
+**Prompt:** implement the documented MoneyWise persona plus #53, #298, #299,
+#271, #262, #22, #21, #39, and #31 end-to-end on the current branch.
+
+**Decisions and boundaries:**
+
+- The persona is the exact finance-safe text documented in the 2026-08-23
+  planning entry, including the schedule-backed Week Ahead recurring segment.
+- Prompt versions are `content_engine_v7-<12 hex>` from SHA-256 over every
+  content-engine function that constructs or repairs an LLM prompt. This catches
+  silent source edits without hashing run-specific facts, dates, or topics; the
+  source-unavailable fallback hashes stable code fields, never object addresses.
+- Review metadata comes from the persisted content-run row, not a display
+  fixture. Spoken duration comes from ffprobe on the persisted MP3 (not the
+  intro-bearing final MP4); estimate uses persisted word count and the measured
+  3.3 words/second constant.
+- The burned-caption path now preserves a sibling SRT even for karaoke output.
+  The booth converts that SRT to WebVTT because HTML5 `<track>` does not
+  reliably consume SRT directly.
+- #22 is deliberately a conservative Pillow visual-density check over the
+  bottom 20%. It catches risky high-contrast composition but does not claim
+  face or OCR detection, and reports QUIET/REVIEW rather than SAFE.
+- `ops render-preview` writes `_preview.mp4` at 480x854 / ultrafast / CRF 30,
+  uses a separate `_preview.mp3`, skips intro, extra formats, thumbnails,
+  media-row updates, and asset records. The publisher blocks `_preview.mp4`.
+  Default publish rendering remains 1080x1920 / fast / CRF 23.
+- `ops artifact-retention` is a report, not a job yet. It lists old drafts,
+  traces, and vault `_runs` clones, ignores `--apply`, and has no delete call.
+  The older `ops artifacts --apply` output-cap command remains a separate,
+  explicitly destructive pre-existing surface.
+
+**Behavioral proof:** the initial red run recorded 11 tests (3 failures, 8
+errors); the completed first pass had 13 wave tests. The audit added 3 more
+behavior tests and observed 7 failures/errors before the fixes. The 16-test
+module now exercises shipped config/persona, deterministic source-hash drift,
+stored booth metadata and spoken-audio duration, escaped SRT-to-WebVTT,
+thumbnail risk detection through the production caller, caption skin in the
+real render caller, isolated preview output plus upload rejection, and
+report-only retention.
+
+**Operator proof:** shipped MoneyWise validation reached the real config path
+(persona warning gone; the expected missing local OAuth-token warning remains);
+`ops artifact-retention` printed `DRY RUN ONLY` against a temp root and selected
+zero files; `ops booth --channel moneywise` wrote `booth.html` under a temp
+HTML directory; `ops render-preview --run-id 999999` returned the explicit
+`No content run` guard without writing media.
+
+**Still out:** no dependency upgrades, no real paid TTS/ffmpeg preview render,
+no OCR/face model, and no retention deletion mode. Those are materially larger
+or require operator media/cost approval.
+
+**Final verification:** `ruff check .` and `ruff format --check .` passed;
+the full isolated suite ran **1,985 tests OK** (up from 1,969), and
+`git status --short data/` was empty.
+
+---
+
 ## 2026-08-25 - Post-wave-4 operator pickup (shipped)
 
 **Prompt:** take the next five roadmap pickups, plan them, then implement them
@@ -1007,3 +1065,88 @@ frozen `core/prompt_evals.py` gate (C2) — compounds with the local frozen Bons
 self-improving $0 factory.
 
 **Excluded throughout:** multi-platform distribution (Phase M) stays parked.
+
+---
+
+## 2026-08-25 — Roadmap #23–27 render + thumbnail wave
+
+**Sequence:** implemented #23, #24, #25, #26, then #27 on top of the current
+uncommitted ten-task wave. No Cursor plan file, commit, push, live network call, or
+real `data/` store was intentionally touched.
+
+**Decisions and boundaries:**
+- End cards are generated from validated channel config rather than requiring a
+  hand-authored asset. The in-place concat uses the intro's restoration discipline:
+  the body has to be restored after subprocess launch errors, non-zero exits, and
+  empty outputs. Draft previews never get intro/outro.
+- Lower thirds reuse `fact_grounding.specific_entities`, then require the complete
+  label phrase in one supplied fact line; only capped display labels persist. Raw fact
+  lines do not. Overlay ASS is emitted only when a
+  label can be located in a real word-timing sidecar; proportional timing is not
+  presented as measured timing.
+- Color "LUT" scope is the smallest production-complete parametric equivalent:
+  validated FFmpeg `eq` saturation/contrast/brightness. This avoids claiming a LUT
+  file exists and propagates through every command-building path.
+- Hook motion uses `zoompan` only through the first measured cue and returns exactly
+  to 1.0 afterward. A missing timing sidecar leaves argv unchanged.
+- `thumbnail_format` is a dual-generation experiment, unlike the existing
+  single-image `thumbnail_style`. Dual mode runs only for that active experiment or
+  explicit `THUMBNAIL_DUAL=true`. Text-on prefers a configured text-capable provider;
+  face-forward prefers Flux; each arm has an independent, visibly distinct Pillow
+  fallback. Failed paid-attempt billing is persisted as `unknown`, not silently
+  priced at zero.
+- Generation does not assign an experiment arm. The validated operator pick writes
+  `thumbnail_pick`, creates the selected thumbnail asset, then records assignment.
+  Dual-unpicked runs cannot enqueue. Resolution is run-linked only; newest-mtime
+  fallback was removed.
+
+**Initial proof:** 15 new behavioral tests were run before production edits and failed
+(13 errors + 2 failures); the real FFmpeg failure added one focused font-binding
+regression. The later safety audit brought focused integration to 112 tests and the
+full isolated suite to 2,010 tests (up from 1,985). `ruff check .` and
+`ruff format --check .` are clean. `py -m config.validate_channels` returned OK for
+all three profiles with the same three pre-existing operational warnings. Operator
+registry lists `pick-thumbnail`; its missing-run path returned `No content run
+#999999` without mutation.
+
+**Real temp proof:** the first FFmpeg end-card encode failed because the installed
+Windows FFmpeg has no Fontconfig default. The failure restored the original body as
+designed. Binding `drawtext` to installed Arial (DejaVu fallback on Linux) made the
+same proof pass: a 0.6s synthetic body became a 2.133s body+card and the callback
+captured the outro argv. The later audit split that callback into explicit
+`outro_attempt` and `outro_success` events.
+
+**Remaining visual proof:** no paid thumbnail call was made in this offline/no-network
+wave. Run one full publish render with a temp/output override and inspect the first
+cue, lower thirds, grade, and final card, then activate `thumbnail_format` for a
+disposable run and pick in `ops booth --serve`.
+
+## 2026-08-25 — Roadmap #23–27 behavior/safety audit
+
+The audit added nine behavioral regressions; eight were observed failing before their
+fixes. Confirmed defects and fixes:
+
+- FFmpeg callbacks had only an unqualified command emitted before execution, so a
+  failed intro/outro looked successful in the trace. Callbacks now emit
+  `*_attempt`/`*_success`; traces retain every attempt and expose a successful command
+  only after a usable output exists.
+- Public lower thirds inherited the internal token-anywhere grounding rule, allowing
+  two unrelated fact fragments to "ground" one display name. Public labels now require
+  the exact ordered phrase in one supplied fact line.
+- An explicit identity grade inserted an `eq` filter despite being the documented
+  default. Identity values now produce byte-equivalent argv to an absent grade.
+- Hook motion stopped at an empty/malformed sidecar row instead of finding the first
+  real cue. It now skips invalid rows and uses the first finite, positive timed cue.
+- Booth POST trusted a submitted run id, and the served booth used `file://` URLs that
+  Chrome blocks on an HTTP page. POST bodies are bounded/strict, tied to the displayed
+  run and known arms, and candidate images use fixed booth-local HTTP routes.
+- Dual fallback evidence named pre/post providers but omitted their cost values.
+  Candidate evidence now reports both pre- and post-fallback rates while preserving
+  failed paid-attempt billing as `unknown`.
+- The standalone and interactive requeue paths did not explicitly carry the picked
+  thumbnail. Both now block unpicked dual runs and enqueue the validated selected path.
+
+Proof: roadmap regressions 25/25; focused render/thumbnail/pipeline suite 112/112; full
+isolated suite 2,010/2,010. Shipped config: 3 profiles valid with the same three
+operational warnings. Safe operator checks: command registry listed `pick-thumbnail`;
+missing `--run-id` returned 2 without mutation. No `data/` changes.

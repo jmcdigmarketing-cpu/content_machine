@@ -134,10 +134,10 @@ class TestSuccessPath(_IntroCase):
                 command_callback=lambda kind, argv: seen.append((kind, argv)),
             )
 
-        self.assertEqual(len(seen), 1)
-        self.assertEqual(seen[0][0], "intro")
+        self.assertEqual([kind for kind, _ in seen], ["intro_attempt", "intro_success"])
         self.assertEqual(seen[0][1][0], "ffmpeg")
         self.assertIn(self.intro, seen[0][1])
+        self.assertEqual(seen[0][1], seen[1][1])
 
     def test_no_intro_configured_is_a_no_op(self):
         with (

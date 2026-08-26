@@ -12,7 +12,7 @@ from core.render_progress import (
     is_render_progress_enabled,
     run_ffmpeg_with_progress,
 )
-from video.subtitles import generate_subtitle_file
+from video.subtitles import caption_force_style, caption_style, generate_subtitle_file
 
 logger = get_logger("video.render")
 
@@ -90,6 +90,30 @@ def _escape_subtitle_path(path: str) -> str:
     return path.replace("\\", "/").replace(":", r"\:")
 
 
+def _resolve_color_grade(channel_id: str | None) -> dict[str, float] | None:
+    try:
+        from config.channels import get_channel_profile
+
+        raw = dict(get_channel_profile(channel_id).color_grade or {})
+        if not raw:
+            return None
+        grade = {
+            "saturation": float(raw.get("saturation", 1.0)),
+            "contrast": float(raw.get("contrast", 1.0)),
+            "brightness": float(raw.get("brightness", 0.0)),
+        }
+        if not (
+            0.5 <= grade["saturation"] <= 2.0
+            and 0.5 <= grade["contrast"] <= 2.0
+            and -0.3 <= grade["brightness"] <= 0.3
+        ):
+            raise ValueError("values outside validated bounds")
+        return grade
+    except Exception as exc:
+        logger.warning("Color grade skipped for channel=%s: %s", channel_id, exc)
+        return None
+
+
 def build_render_ffmpeg_command(
     *,
     background_path: str,
@@ -99,6 +123,11 @@ def build_render_ffmpeg_command(
     duration: float,
     profile=None,
     music_path: str | None = None,
+    caption_force_style: str = "",
+    render_preset: str = "publish",
+    lower_thirds_path: str | None = None,
+    color_grade: dict[str, float] | None = None,
+    hook_motion_filter: str = "",
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
@@ -111,17 +140,42 @@ def build_render_ffmpeg_command(
     at unit gain, so the voice stays dominant. `music_path=None` emits a command
     byte-identical to the VO-only command of today.
     """
-    width = profile.width if profile is not None else TARGET_W
-    height = profile.height if profile is not None else TARGET_H
+    is_draft = str(render_preset).strip().lower() == "draft"
+    width = 480 if is_draft else (profile.width if profile is not None else TARGET_W)
+    height = 854 if is_draft else (profile.height if profile is not None else TARGET_H)
+    encoder_preset = "ultrafast" if is_draft else "fast"
+    crf = "30" if is_draft else "23"
     subtitle_escaped = _escape_subtitle_path(subtitle_path)
+    style_escaped = caption_force_style.replace("'", r"\'")
+    lower_thirds_escaped = _escape_subtitle_path(lower_thirds_path) if lower_thirds_path else ""
     duration_str = f"{duration:.3f}"
+    grade_filter = ""
+    if color_grade and any(
+        (
+            float(color_grade["saturation"]) != 1.0,
+            float(color_grade["contrast"]) != 1.0,
+            float(color_grade["brightness"]) != 0.0,
+        )
+    ):
+        grade_filter = (
+            f"eq=saturation={float(color_grade['saturation']):.4f}:"
+            f"contrast={float(color_grade['contrast']):.4f}:"
+            f"brightness={float(color_grade['brightness']):.4f},"
+        )
+    motion_filter = (
+        hook_motion_filter.format(width=width, height=height) + "," if hook_motion_filter else ""
+    )
 
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
     filter_complex = (
         f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
         f"crop={width}:{height},"
+        f"{grade_filter}"
+        f"{motion_filter}"
         f"setpts=PTS-STARTPTS,"
-        f"subtitles='{subtitle_escaped}'[vout]"
+        f"{f'subtitles={lower_thirds_escaped!r},' if lower_thirds_escaped else ''}"
+        f"subtitles='{subtitle_escaped}'"
+        f"{f':force_style={style_escaped!r}' if style_escaped else ''}[vout]"
     )
 
     cmd = [
@@ -163,9 +217,9 @@ def build_render_ffmpeg_command(
         "-c:v",
         "libx264",
         "-preset",
-        "fast",
+        encoder_preset,
         "-crf",
-        "23",
+        crf,
         "-c:a",
         "aac",
         "-b:a",
@@ -208,6 +262,8 @@ def render_vertical_video(
     *,
     progress: RenderProgress | None = None,
     command_callback: Callable[[str, list[str]], None] | None = None,
+    render_preset: str = "publish",
+    lower_thirds: list[str] | None = None,
 ):
     if progress is None and is_render_progress_enabled():
         progress = RenderProgress()
@@ -264,17 +320,46 @@ def render_vertical_video(
             duration,
         )
 
-    stage("Generating subtitles...")
-    subtitle_path = generate_subtitle_file(script, duration, audio_path=mp3_path)
-
     audio_dir = os.path.dirname(os.path.abspath(mp3_path))
     video_dir = os.path.join(os.path.dirname(audio_dir), "video")
     os.makedirs(video_dir, exist_ok=True)
     output_path = os.path.join(video_dir, output_filename)
+    subtitle_ext = ".ass" if caption_style(channel_id) == "karaoke" else ".srt"
+    stable_subtitle = os.path.splitext(output_path)[0] + subtitle_ext
+
+    stage("Generating subtitles...")
+    subtitle_path = generate_subtitle_file(
+        script,
+        duration,
+        audio_path=mp3_path,
+        channel_id=channel_id,
+        output_path=stable_subtitle,
+    )
+    from video.subtitles import _load_word_timings
+
+    word_timings = _load_word_timings(mp3_path)
+    lower_thirds_path: str | None = None
+    if lower_thirds:
+        try:
+            from video.lower_thirds import build_lower_thirds_ass
+
+            lower_text = build_lower_thirds_ass(lower_thirds, word_timings)
+            if lower_text:
+                lower_thirds_path = os.path.splitext(output_path)[0] + ".lower_thirds.ass"
+                with open(lower_thirds_path, "w", encoding="utf-8") as handle:
+                    handle.write(lower_text)
+                if progress:
+                    progress.note(f"Lower thirds: {len(lower_thirds)} grounded label(s)")
+            elif progress:
+                progress.note("Lower thirds skipped: no real matching word timings")
+        except Exception as exc:
+            logger.warning("Lower thirds skipped: %s", exc)
 
     background_path = os.path.abspath(background_path).replace("\\", "/")
     mp3_path = os.path.abspath(mp3_path).replace("\\", "/")
     subtitle_path = os.path.abspath(subtitle_path).replace("\\", "/")
+    if lower_thirds_path:
+        lower_thirds_path = os.path.abspath(lower_thirds_path).replace("\\", "/")
     output_path = os.path.abspath(output_path).replace("\\", "/")
 
     try:
@@ -291,6 +376,19 @@ def render_vertical_video(
     # Music bed (Pillar 6): mixed under the VO when MUSIC_PROVIDER delivers; any miss
     # keeps music_path None and the command below byte-identical to the VO-only render.
     music_path = _resolve_music_bed(duration, stage)
+    color_grade = _resolve_color_grade(channel_id)
+    hook_motion_filter = ""
+    try:
+        from config.channels import get_channel_profile
+        from video.hook_motion import first_caption_motion_filter
+
+        hook_motion_filter = first_caption_motion_filter(
+            word_timings, get_channel_profile(channel_id).hook_motion
+        )
+        if get_channel_profile(channel_id).hook_motion and not hook_motion_filter and progress:
+            progress.note("Hook motion skipped: no real first-cue timing")
+    except Exception as exc:
+        logger.warning("Hook motion skipped for channel=%s: %s", channel_id, exc)
 
     cmd = build_render_ffmpeg_command(
         background_path=background_path,
@@ -299,12 +397,17 @@ def render_vertical_video(
         subtitle_path=subtitle_path,
         duration=duration,
         music_path=music_path,
+        caption_force_style=caption_force_style(channel_id),
+        render_preset=render_preset,
+        lower_thirds_path=lower_thirds_path,
+        color_grade=color_grade,
+        hook_motion_filter=hook_motion_filter,
     )
     if command_callback is not None:
         try:
-            command_callback("primary", list(cmd))
+            command_callback("primary_attempt", list(cmd))
         except Exception as exc:
-            logger.debug("render command capture skipped: %s", exc)
+            logger.debug("render attempt capture skipped: %s", exc)
 
     stage(f"FFmpeg render (~{duration:.0f}s video)...")
     if progress and progress.enabled:
@@ -338,21 +441,31 @@ def render_vertical_video(
             output_path=output_path,
             subtitle_path=subtitle_path,
             duration=duration,
+            caption_force_style=caption_force_style(channel_id),
+            render_preset=render_preset,
+            lower_thirds_path=lower_thirds_path,
+            color_grade=color_grade,
+            hook_motion_filter=hook_motion_filter,
         )
         if command_callback is not None:
             try:
-                command_callback("primary", list(cmd))
+                command_callback("primary_attempt", list(cmd))
             except Exception as exc:
-                logger.debug("fallback command capture skipped: %s", exc)
+                logger.debug("fallback attempt capture skipped: %s", exc)
         process = _ffmpeg_run(cmd)
 
     if process.returncode != 0:
         logger.error("FFmpeg failed: %s", (process.stderr or "")[-1200:])
         raise Exception("FFmpeg render failed.")
+    if command_callback is not None:
+        try:
+            command_callback("primary_success", list(cmd))
+        except Exception as exc:
+            logger.debug("render success capture skipped: %s", exc)
 
     from video.channel_intro import prepend_channel_intro, resolve_intro_path
 
-    if resolve_intro_path(channel_id):
+    if render_preset != "draft" and resolve_intro_path(channel_id):
         stage("Prepending channel intro...")
         try:
             prepend_channel_intro(
@@ -367,18 +480,40 @@ def render_vertical_video(
             if progress:
                 progress.note(f"Intro skipped: {e}")
 
+    if render_preset != "draft":
+        from video.channel_outro import append_channel_outro, resolve_end_card
+
+        if resolve_end_card(channel_id):
+            stage("Appending generated end card...")
+            try:
+                append_channel_outro(
+                    output_path,
+                    channel_id=channel_id,
+                    command_callback=command_callback,
+                )
+                if progress:
+                    progress.note("End card appended")
+            except Exception as exc:
+                logger.warning("End card skipped (render kept): %s", exc)
+                if progress:
+                    progress.note(f"End card skipped: {exc}")
+
     # Dual-format reach (Pillar 6): the primary 9:16 output above is untouched. When
     # RENDER_FORMATS names extra aspects, emit those cuts too (same bg/VO/captions),
     # each fail-open so a bonus cut can never break the primary render.
-    _render_extra_formats(
-        background_path=background_path,
-        mp3_path=mp3_path,
-        primary_output=output_path,
-        subtitle_path=subtitle_path,
-        duration=duration,
-        stage=stage,
-        music_path=music_path,
-    )
+    if render_preset != "draft":
+        _render_extra_formats(
+            background_path=background_path,
+            mp3_path=mp3_path,
+            primary_output=output_path,
+            subtitle_path=subtitle_path,
+            duration=duration,
+            stage=stage,
+            music_path=music_path,
+            lower_thirds_path=lower_thirds_path,
+            color_grade=color_grade,
+            hook_motion_filter=hook_motion_filter,
+        )
 
     if progress:
         progress.done(f"Video saved: {output_path}")
@@ -395,6 +530,9 @@ def _render_extra_formats(
     duration: float,
     stage,
     music_path: str | None = None,
+    lower_thirds_path: str | None = None,
+    color_grade: dict[str, float] | None = None,
+    hook_motion_filter: str = "",
 ) -> list[str]:
     """Render each non-vertical RENDER_FORMATS profile as a suffixed sibling file.
 
@@ -424,6 +562,9 @@ def _render_extra_formats(
                 duration=duration,
                 profile=profile,
                 music_path=music_path,
+                lower_thirds_path=lower_thirds_path,
+                color_grade=color_grade,
+                hook_motion_filter=hook_motion_filter,
             )
             stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")
             proc = _ffmpeg_run(cmd)

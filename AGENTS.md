@@ -9,8 +9,11 @@ One source of truth, three files — read them in this order:
    Read this even if your tool does not auto-load `.cursor/rules`.
 2. **[CLAUDE.md](CLAUDE.md)** — *what this is.* Pipeline, entry points, the signal
    contract, the LLM router, and the hard rules.
-3. **[docs/decisions.md](docs/decisions.md)** — *why.* ADR-lite. §18, §24 and §25 are
-   required reading before you add any gate, check, or repair pass.
+3. **[docs/decisions.md](docs/decisions.md)** — *why.* ADR-lite. §18, §24, §25 and §26
+   are required reading before you add any gate, check, or repair pass.
+4. **[docs/agent_collaboration.md](docs/agent_collaboration.md)** — *how we work
+   together.* Read it **before starting a project**: who decides what gets built, what
+   each agent is reliably good at, and the two mistakes that keep recurring. Short.
 
 Directory-scoped rules exist and are more specific than the above — obey them when you
 are working in that directory:

@@ -6,6 +6,52 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Audit of the 2026-08-26 wave + a working agreement - 2026-08-26
+
+*2118 tests green, ruff clean, zero `data/` mutation. All three findings were **green in
+CI** - the fourth audit running for which that is true. Documented, not fixed:
+candidates 326-328.*
+
+- **The dependency wave was declared but never installed.** `pyproject.toml` moved to
+  `Pillow==11.3.0` / `requests==2.32.4`; the environment still runs **9.5.0 / 2.32.3**.
+  So the 26 Pillow CVEs are live on the machine that parses untrusted stock-footage and
+  thumbnail bytes, **CI now runs a different Pillow major than the operator**, and the
+  upgrade's entire risk - does the render still work - is untested because nothing has
+  run on 11.3.0. The moviepy cut itself was done correctly
+  (`_probe_video_duration` reused, `AudioFileClip` mocks removed), and moviepy 1.0.3 is
+  still installed though nothing imports it. #326.
+- **`spoken_numbers` mangles ranges on every render, with no off switch.** Measured:
+  "5-10 years" -> "five ten years", "10-15%" -> "ten fifteen%", "9-5" -> "nine five".
+  It runs unconditionally in `generate_audio` for every channel, so it is worst on
+  **MoneyWise** - all ranges and percentages, and freshly given its own voice.
+  `core/fact_grounding.py:47` had already solved that exact ambiguity 40 lines away by
+  requiring a verb cue. The three shipped tests use no range and no percent. #327.
+- **One bad match silently disables the whole expansion.** `UFC 2000` raises
+  `IndexError`; the call site swallows it at `logger.debug`, so at the default WARNING
+  level the operator sees nothing and *every* expansion stops for that script.
+  decisions §24 shape. #328.
+
+**What went right, recorded because a one-sided audit is not honest.** Cursor respected
+the Edge TTS licence park (LGPL-3.0, pending a legal read) even though it was the top
+item on its own list - `edge_tts` appears nowhere. It extended test isolation to a class
+nobody had noticed (`DATABASE_URL` / `DATABASE_KEY` blanked before import,
+`TOPIC_GRAPH_FILE` in the store patches, plus its own tripwire test). It improved on the
+commit-msg hook by adding `prepare-commit-msg`, which strips an injected trailer instead
+of only rejecting it. Every new `core/` module has a real production caller.
+`demonetization.py` opens with "Missing is not $0". And in
+[decisions.md](decisions.md) §26 it **overruled a Claude Code recommendation with
+measured evidence** - Coverr, ranked the #1 borrow, does not fix TapIn's visual problem,
+because ~55% of runtime is already stock behind a hard concat and a fourth keyword API
+diversifies the same class of footage.
+
+**New:** [agent_collaboration.md](agent_collaboration.md) - the doc to point an agent at
+before starting a project. Who decides what gets built (the operator; §26 is why),
+what each agent is reliably good and bad at including Claude Code's own misses, and the
+one pattern behind both findings: *ask what else this catches, and whether the edit
+actually took effect*. Distilled into two new rules in `.cursor/rules/content-machine.mdc`
+and linked from `AGENTS.md`.
+
+
 ### 21-28 render wave + its audit - 2026-08-25
 
 The aesthetics block every prior wave deferred as "needs a real render" (21 caption

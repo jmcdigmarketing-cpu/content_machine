@@ -1083,6 +1083,12 @@ Run-71 correctness (2026-08-22)
 - [x] 324. **RAWG results must be current-era, not just name-matched** `[S]` *(2026-08-22)* - `_is_current_era` drops matches older than `RAWG_MAX_AGE_YEARS` (default 15) unless the topic is itself retro; fail-open on missing/unparseable dates. Vault-side equivalent deliberately deferred
 - [x] 325. **`Proceed?` distinguishes decline from unrecognised** `[S]` *(2026-08-22)* - obvious prose (>24 chars, multi-word, or multi-line) gets one re-prompt pointing at the Fact prompt's `paste` mode; `n`/`N`/`no`/Enter and every menu key resolve on the first ask exactly as before
 
+Audit of the 2026-08-26 wave (all three were GREEN in CI)
+
+- [ ] 326. **Install the dependency wave that was only declared** `[S]` - *security.* `pyproject.toml` reads `Pillow==11.3.0` / `requests==2.32.4`; the environment runs **9.5.0 / 2.32.3**, so all 26 Pillow CVEs are still live on the machine that parses untrusted stock-footage and thumbnail bytes. CI installs fresh and now runs a **different Pillow major** than the operator, and the upgrade's whole risk ("does the render still work on a new Pillow") is untested because nothing has run on 11.3.0. Fix is `pip install -e .` + one real render, not a code change. moviepy 1.0.3 is also still installed though nothing imports it
+- [ ] 327. **`spoken_numbers` mangles ranges on every render** `[M]` - *quality.* `_RECORD_RE` matches any two-digit hyphenated pair, so `expand_spoken_numbers` - which runs unconditionally in `generate_audio` for every channel - turns "5-10 years" into "five ten years", "10-15%" into "ten fifteen%", and "9-5" into "nine five". Worst on **MoneyWise**, which is made of ranges and percentages and has just been given its own voice. `core/fact_grounding.py:47` already solves the identical ambiguity by requiring a verb cue (`is|now|went|record of`) - reuse that guard. The three shipped tests use no range and no percent. **No env gate exists**, so it cannot be turned off without a code change
+- [ ] 328. **One bad match silently disables all number expansion** `[S]` - *visibility.* `_UFC_RE` accepts 2-4 digits but `_event_number` indexes a 20-entry tuple with `n // 100`, so `UFC 2000` raises `IndexError`. The call site wraps the whole pass in `try/except ... logger.debug`, so at the default WARNING level the operator sees nothing and *every* expansion stops for that script, not just the bad match. decisions §24 shape: fail-open but not fail-visible, at the wrong granularity
+
 ---
 
 ## Completed

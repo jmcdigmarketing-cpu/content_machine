@@ -54,22 +54,35 @@ This is the project's own principle, written down in `docs/decisions.md` §18, �
    would close it (see `test_known_gap_a_shared_token_still_pulls_the_other_subject_in`
    in `tests/test_description_sources.py`). Never let a partial fix read as a whole one.
 
+7. **Ask what else your pattern matches.** A regex, guard or flag that is right for the
+   case you meant is not finished. Write the test for the case you did *not* mean to
+   catch, then check whether this repo already resolved the same ambiguity — twice now
+   it had. `core/spoken_numbers.py` rewrote `25-4` correctly and also turned
+   "5-10 years" into "five ten years" and "10-15%" into "ten fifteen%" on every channel;
+   `core/fact_grounding.py` had solved that exact case 40 lines away by requiring a verb
+   cue. Why: [agent_collaboration.md](../../docs/agent_collaboration.md).
+8. **A manifest edit is not an applied upgrade.** Changing a pin in `pyproject.toml`
+   changes nothing until something installs it. Verify with the *runtime* version, never
+   the file — `pyproject.toml` read `Pillow==11.3.0` while the environment ran 9.5.0,
+   so 26 CVEs stayed live and CI diverged from the operator's machine on a major
+   version. The same applies to config: check the value the code actually reads.
+
 ## Rules for features
 
-7. **A new helper needs a real caller.** Before finishing, trace the path from a
+9. **A new helper needs a real caller.** Before finishing, trace the path from a
    production entry point (`main.py`, `scripts/ops.py`, the pipeline, a signal) to your
    function. If nothing reaches it, it is not shipped — it is dead code with a test.
-8. **Run the thing.** For an operator-facing change, actually invoke it —
+10. **Run the thing.** For an operator-facing change, actually invoke it —
    `py -m scripts.ops <verb>`, or the CLI path — and paste what it printed. Several
    "shipped" items have been inert on first real invocation.
-9. **Fail-open must be fail-visible** (§24). A swallowed exception logs: `warning` when
+11. **Fail-open must be fail-visible** (§24). A swallowed exception logs: `warning` when
    a guarantee is lost, `debug` for best-effort enrichment, or `# noqa: S110` with the
    reason on the line. And a healthy run must emit **zero** new warnings — a warning
    that always fires trains the operator to ignore warnings.
-10. **A pass that rewrites its input reports both numbers** (§25). If you repair,
+12. **A pass that rewrites its input reports both numbers** (§25). If you repair,
     regenerate, or hedge something a check just judged, persist the pre-repair verdict
     too. Otherwise the fix erases the evidence that there was anything to fix.
-11. **Public surfaces get stricter rules than internal ones.** The YouTube title,
+13. **Public surfaces get stricter rules than internal ones.** The YouTube title,
     description, and tags are seen by viewers and by YouTube's policy systems. Loose
     internal relevance is a prompt-quality problem; the same looseness in a description
     is a visible error.

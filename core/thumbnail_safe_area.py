@@ -11,17 +11,27 @@ from pathlib import Path
 
 from PIL import Image, ImageFilter, ImageStat
 
+DEFAULT_THRESHOLD = 18.0
+
 
 @dataclass(frozen=True)
 class ThumbnailSafeAreaCheck:
     path: str
     bottom_quiet: bool
     bottom_detail: float
-    threshold: float = 18.0
+    threshold: float = DEFAULT_THRESHOLD
     detail: str = ""
 
 
-def inspect_thumbnail(path: str | Path) -> ThumbnailSafeAreaCheck:
+def inspect_thumbnail(
+    path: str | Path, *, threshold: float = DEFAULT_THRESHOLD
+) -> ThumbnailSafeAreaCheck:
+    """Flag high-contrast detail in the bottom 20%, where YouTube draws its chrome.
+
+    `threshold` is a real input: it used to be a dataclass field that nothing read,
+    so the verdict was hardcoded and a caller passing its own value silently got the
+    default behaviour with a misleading number attached.
+    """
     source = str(path)
     with Image.open(source) as image:
         gray = image.convert("L")
@@ -29,13 +39,15 @@ def inspect_thumbnail(path: str | Path) -> ThumbnailSafeAreaCheck:
         bottom = gray.crop((0, int(height * 0.8), width, height))
         edges = bottom.filter(ImageFilter.FIND_EDGES)
         detail = float(ImageStat.Stat(edges).mean[0])
-    bottom_quiet = detail < 18.0
+    bottom_quiet = detail < float(threshold)
     message = (
         "bottom 20% is visually quiet"
         if bottom_quiet
         else "bottom 20% has high-contrast detail; check title text/faces against YouTube chrome"
     )
-    return ThumbnailSafeAreaCheck(source, bottom_quiet, round(detail, 2), detail=message)
+    return ThumbnailSafeAreaCheck(
+        source, bottom_quiet, round(detail, 2), threshold=float(threshold), detail=message
+    )
 
 
 def render_check(check: ThumbnailSafeAreaCheck) -> str:

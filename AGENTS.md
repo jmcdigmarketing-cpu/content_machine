@@ -33,5 +33,22 @@ change**, `git status --short data/` is empty, and every function you added is
 reachable from a real caller. Green tests alone have never been sufficient here — read
 the table at the top of the rules file for four defects that were green.
 
+## Commit messages
+
+**No AI attribution.** No `Co-authored-by:` naming an agent, no "Generated with ...".
+The operator rejected this explicitly. It is enforced by a hook, not just by this
+paragraph — a written rule was not enough, since `e4d2242` landed one the commit after
+the rule was added.
+
+Enable it once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`.githooks/commit-msg` rejects agent co-author trailers and "Generated with" lines. Human
+co-authors are unaffected. If your commit is refused, delete the trailer — do not pass
+`--no-verify`.
+
 More than one agent works in this repo at a time. Re-read a file immediately before
 editing it, and never `git checkout` a file to discard changes you did not make.

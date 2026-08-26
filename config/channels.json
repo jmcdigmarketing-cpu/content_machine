@@ -147,7 +147,7 @@
       "youtube_oauth_token_file": "config/secrets/youtube_token_moneywise.json",
       "privacy_status_default": "private",
       "tts": {
-        "voice_id": "nPczCjzI2devNBz1zQrb",
+        "voice_id": "XjLkpWUlnhS8i7gGz3lZ",
         "model_id": "eleven_multilingual_v2"
       },
       "post_schedule": {

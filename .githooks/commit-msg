@@ -1,0 +1,21 @@
+#!/bin/sh
+# Reject AI-attribution trailers. The operator rejected these explicitly; a written
+# rule in AGENTS.md was not enough (e4d2242 landed one the commit after the rule).
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+msg_file="$1"
+
+if grep -qiE '^[[:space:]]*(co-authored-by:.*(claude|cursor|copilot|codex|chatgpt|openai|anthropic|\[bot\]|agent@))' "$msg_file"; then
+    echo "commit-msg: AI co-author trailer is not allowed in this repo." >&2
+    echo "  Remove the Co-authored-by line naming an AI agent, then commit again." >&2
+    echo "  See AGENTS.md > Commit messages." >&2
+    exit 1
+fi
+
+if grep -qiE '(generated with \[?claude|generated with \[?cursor|🤖 generated)' "$msg_file"; then
+    echo "commit-msg: 'Generated with ...' attribution is not allowed in this repo." >&2
+    echo "  See AGENTS.md > Commit messages." >&2
+    exit 1
+fi
+
+exit 0

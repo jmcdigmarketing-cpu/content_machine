@@ -27,13 +27,20 @@ def build_hybrid_concat_command(
     duration: float,
     local_ratio: float = 0.45,
 ) -> List[str]:
-    """FFmpeg: loop both inputs, scale/crop, concat local segment then stock (no audio)."""
+    """FFmpeg: loop both inputs, scale/crop, xfade local segment into stock (no audio)."""
     ratio = max(0.15, min(local_ratio, 0.85))
     local_dur = duration * ratio
-    stock_dur = max(0.1, duration - local_dur)
+    base_stock = max(0.1, duration - local_dur)
 
-    # Normalize fps + yuv420p before concat (avoids libx264 "external library" errors
-    # when mixing HEVC/MOV local clips with stock MP4 on Windows).
+    # Short xfade at the local→stock join (decisions §26). An xfade output runs
+    # `offset + len(second input)`, so the stock segment must be EXTENDED by the fade,
+    # not left alone — otherwise every hybrid background came out exactly `fade` short
+    # (measured: a 6.000s request produced 5.500s). The render loops the background
+    # with `-stream_loop -1`, so a short clip never errored; it wrapped early and
+    # showed a jump.
+    fade = min(0.5, local_dur / 2, base_stock / 2)
+    stock_dur = base_stock + fade
+    offset = max(0.0, local_dur - fade)
     filter_complex = (
         f"[0:v]fps=30,scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
         f"crop={TARGET_W}:{TARGET_H},format=yuv420p,trim=duration={local_dur:.3f},"
@@ -41,7 +48,8 @@ def build_hybrid_concat_command(
         f"[1:v]fps=30,scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
         f"crop={TARGET_W}:{TARGET_H},format=yuv420p,trim=duration={stock_dur:.3f},"
         f"setpts=PTS-STARTPTS[v1];"
-        f"[v0][v1]concat=n=2:v=1:a=0,format=yuv420p[vout]"
+        f"[v0][v1]xfade=transition=fade:duration={fade:.3f}:offset={offset:.3f},"
+        f"format=yuv420p[vout]"
     )
 
     return [

@@ -1,0 +1,72 @@
+{
+  "_comment": "Frozen labelled cases for vault subject-relevance (candidate 329 P1). Each case is (topic, corpus, bullet, expected) drawn from a REAL run - do NOT edit an existing case casually, because changing it invalidates comparison against earlier eval runs. Add a new entry instead. `corpus` is the run's operator key facts + signal headlines, NOT the angle: the angle is the ambiguous thing being disambiguated. This file is JSON - never run `ruff format` on it.",
+  "rubric_version": "v1",
+  "cases": [
+    {
+      "id": "run71-rockstar-company",
+      "source": "live-run 71",
+      "topic": "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash",
+      "corpus": "To find the Grand Theft Auto 6 leaker, the parent company of Rockstar Games has resorted to filing subpoenas in a US court to force Microsoft and Discord to hand over their records. Rockstar Games Reportedly Remains In The Dark About Who's Leaking GTA 6.",
+      "note_stem": "rockstar",
+      "note_headings": "Rockstar investigation",
+      "bullet": "Rockstar Games confirms the leak investigation is ongoing.",
+      "expected": true,
+      "why": "The company at the centre of the story. Names no franchise anchor, which is why the anchor gate dropped it."
+    },
+    {
+      "id": "run71-subpoena-detail",
+      "source": "live-run 71",
+      "topic": "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash",
+      "corpus": "To find the Grand Theft Auto 6 leaker, the parent company of Rockstar Games has resorted to filing subpoenas in a US court to force Microsoft and Discord to hand over their records.",
+      "note_stem": "gta6-subpoenas",
+      "note_headings": "GTA 6 leak",
+      "bullet": "The subpoena demands account IDs and last-login IP addresses.",
+      "expected": true,
+      "why": "A follow-up bullet with no entities of its own - the note carries the subject. Tests note-level inheritance."
+    },
+    {
+      "id": "run71-gta-direct",
+      "source": "live-run 71",
+      "topic": "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash",
+      "corpus": "Take-Two Interactive filed subpoenas against Microsoft and Discord over the Grand Theft Auto 6 leak.",
+      "note_stem": "gta6",
+      "note_headings": "GTA 6 leak",
+      "bullet": "Grand Theft Auto 6 leak footage spread across Discord servers.",
+      "expected": true,
+      "why": "The unambiguous case. Any scorer that misses this is broken."
+    },
+    {
+      "id": "run71-marvel-rivals",
+      "source": "live-run 71",
+      "topic": "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash",
+      "corpus": "To find the Grand Theft Auto 6 leaker, the parent company of Rockstar Games has resorted to filing subpoenas in a US court to force Microsoft and Discord to hand over their records.",
+      "note_stem": "rivals",
+      "note_headings": "Marvel Rivals season 9",
+      "bullet": "Marvel Rivals season 9 adds a Wolverine costume from the Horseman of Death era.",
+      "expected": false,
+      "why": "Attached on the shared token 'Wolverine' during run 71 and reached the LLM prompt. Names a competing franchise."
+    },
+    {
+      "id": "run71-sega",
+      "source": "live-run 71",
+      "topic": "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash",
+      "corpus": "To find the Grand Theft Auto 6 leaker, the parent company of Rockstar Games has resorted to filing subpoenas in a US court to force Microsoft and Discord to hand over their records.",
+      "note_stem": "sega",
+      "note_headings": "SEGA revival",
+      "bullet": "SEGA announced a new Sonic racing title for next spring.",
+      "expected": false,
+      "why": "Also attached during run 71. ALL-CAPS acronyms are not extracted as entities, so the entity axis scores 0/0 here - this case exists to keep that limitation measured."
+    },
+    {
+      "id": "run71-wolverine-shared-token",
+      "source": "live-run 71 (constructed)",
+      "topic": "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash",
+      "corpus": "To find the Grand Theft Auto 6 leaker, the parent company of Rockstar Games has resorted to filing subpoenas in a US court to force Microsoft and Discord to hand over their records.",
+      "note_stem": "wolverine",
+      "note_headings": "Wolverine rage",
+      "bullet": "Wolverine Rage is trending after the summer of hate trailer.",
+      "expected": false,
+      "why": "The hard case. Shares a distinctive token with the topic and names no franchise, so it is indistinguishable from the Rockstar case by anchors alone. This is what the scoring matrix has to separate."
+    }
+  ]
+}

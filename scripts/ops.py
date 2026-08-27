@@ -618,6 +618,14 @@ def cmd_calibration(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("vault-eval", "Vault subject-relevance evals: precision/recall, or compare last two")
+def cmd_vault_eval(args: argparse.Namespace) -> int:
+    """Frozen labelled cases (329 P1). No LLM cost - deterministic, safe to re-run."""
+    from core.vault_evals import main as vault_main
+
+    return vault_main(["--compare"] if getattr(args, "compare", False) else [])
+
+
 @_register("prompt-eval", "Golden-topic prompt evals: run (LLM cost) or compare last two")
 def cmd_prompt_eval(args: argparse.Namespace) -> int:
     from core.prompt_evals import main as evals_main
@@ -972,6 +980,46 @@ def cmd_booth_shortcut(_args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("policy-runbook", "Print the strike / Content ID / appeal runbook path")
+def cmd_policy_runbook(args: argparse.Namespace) -> int:
+    from core.policy_runbook import runbook_path, runbook_text
+
+    path = runbook_path()
+    print(path)
+    if getattr(args, "html", False):
+        try:
+            from core.html_report import dump_pre
+
+            dump_pre("Policy runbook", runbook_text(), filename="policy_runbook.html")
+        except Exception as exc:
+            print(f"HTML dump skipped: {exc}")
+    return 0
+
+
+@_register("demonetization", "estimatedRevenue cliff vs channel baseline (missing is unmeasured)")
+def cmd_demonetization(args: argparse.Namespace) -> int:
+    from core.demonetization import detect_revenue_cliff
+
+    result = detect_revenue_cliff(args.channel)
+    if result:
+        print(result)
+    else:
+        print("Revenue unmeasured — not treated as zero.")
+    return 0
+
+
+@_register("sendto-facts", "Install Explorer Send-to shortcut targeting facts.txt")
+def cmd_sendto_facts(args: argparse.Namespace) -> int:
+    from core.win_shell import install_sendto_facts_shortcut
+
+    dest = install_sendto_facts_shortcut(
+        sendto_dir=getattr(args, "sendto_dir", None) or None,
+        facts_path=getattr(args, "facts_file", None) or None,
+    )
+    print(dest)
+    return 0
+
+
 @_register("blocking", "One-sentence: what's blocking publish (existing gates only)")
 def cmd_blocking(args: argparse.Namespace) -> int:
     from core.publish_blockers import blocking_publish_sentence
@@ -1209,6 +1257,12 @@ def main(argv=None) -> int:
         "--serve",
         action="store_true",
         help="booth: tiny stdlib localhost host (not FastAPI)",
+    )
+    parser.add_argument(
+        "--sendto-dir",
+        dest="sendto_dir",
+        default=None,
+        help="sendto-facts: write the shortcut here (tests; default is %%APPDATA%%/SendTo)",
     )
     args = parser.parse_args(argv)
     args.queue_upload = False

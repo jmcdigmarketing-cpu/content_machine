@@ -1,7 +1,7 @@
 """Test package.
 
-Suite-wide isolation guard: neutralise `OBSIDIAN_VAULT_PATH` before any test
-imports run.
+Suite-wide isolation guard: neutralise `OBSIDIAN_VAULT_PATH` and `DATABASE_URL`
+before any test imports run.
 
 `core.obsidian_facts` / `core.operator_facts` read the vault path from the
 environment, and `.env` is loaded for real runs, so any test that exercised the
@@ -23,6 +23,10 @@ import os
 # Bare `discover -s tests` (no `-t .`) never imports this file — see tests/CLAUDE.md.
 
 os.environ["OBSIDIAN_VAULT_PATH"] = ""
+# Same class as vault isolation: dotenv override=False, so blanking before
+# config.settings import freezes Settings.database_url empty for the process.
+os.environ["DATABASE_URL"] = ""
+os.environ["DATABASE_KEY"] = ""
 # TTS cache writes under data/tts_cache when on; isolate the suite (tests that
 # exercise the cache patch TTS_CACHE / TTS_CACHE_DIR themselves).
 os.environ["TTS_CACHE"] = "false"
@@ -87,6 +91,7 @@ _SUITE_STORE_PATCHES = (
     patch.object(_paths, "CACHE_STATS_FILE", _suite_store("cache_stats.json")),
     patch.object(_paths, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_paths, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),
+    patch.object(_paths, "TOPIC_GRAPH_FILE", _suite_store("topic_graph.json")),
     patch.object(_quota_state, "QUOTA_STATE_FILE", _suite_store("quota_state.json")),
     patch.object(_cache_manager, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_youtube_quota, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),

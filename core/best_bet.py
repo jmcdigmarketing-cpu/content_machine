@@ -35,7 +35,7 @@ class BestBetResult:
     topic: str
     domain: str
     avg_engaged_rate: float
-    source: str  # "analytics" | "score" | "continuity"
+    source: str  # "analytics" | "score" | "continuity" | "arc" | "calendar" | "trending"
     supporting_runs: int
     rationale: str
 
@@ -797,6 +797,50 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     used_domains: set[str] = set()
     used_anchors: set[str] = set()  # per-franchise cap so gaming isn't all one game (e.g. GTA)
 
+    try:
+        from core.topic_graph import follow_up_seed
+
+        arc = follow_up_seed(channel_id)
+        if arc:
+            key = normalize_seed_topic(arc.topic).lower()
+            if key and key not in seen:
+                options.append(arc)
+                seen.add(key)
+                used_domains.add(arc.domain)
+                anchor = _first_anchor(arc.topic)
+                if anchor:
+                    used_anchors.add(anchor)
+    except Exception as exc:
+        logger.debug("topic graph skipped: %s", exc)
+
+    try:
+        from core.seasonal_calendar import due_topics
+
+        for item in due_topics(channel_id):
+            topic = str(item.get("topic") or "").strip()
+            key = normalize_seed_topic(topic).lower()
+            if not key or key in seen:
+                continue
+            domain = str(item.get("domain") or "").strip() or _infer_domain(topic, channel_id)
+            cal = BestBetResult(
+                topic=topic,
+                domain=domain,
+                avg_engaged_rate=0.0,
+                source="calendar",
+                supporting_runs=0,
+                rationale=f"seasonal calendar ({item.get('date')})",
+            )
+            options.append(cal)
+            seen.add(key)
+            used_domains.add(domain)
+            anchor = _first_anchor(topic)
+            if anchor:
+                used_anchors.add(anchor)
+            if len(options) >= n:
+                return options[:n]
+    except Exception as exc:
+        logger.debug("seasonal calendar skipped: %s", exc)
+
     def _domain_key(d: str) -> tuple:
         return _domain_priority(d, adjusted, domain_counts)
 
@@ -936,6 +980,8 @@ def display_best_bet(result: BestBetResult) -> None:
         "analytics": "analytics",
         "continuity": "channel history",
         "score": "score-based",
+        "arc": "franchise arc",
+        "calendar": "seasonal calendar",
     }.get(result.source, result.source)
     print(f"\n  Best Bet ({tag}): {result.topic}")
     print(f"  Domain : {result.domain}")

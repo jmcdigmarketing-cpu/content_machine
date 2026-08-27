@@ -60,13 +60,41 @@ def _get_subfolders(base_path):
     return folders
 
 
+_GENERIC_FOLDER_NAMES = frozenset({"gaming", "sports", "general", "video", "backgrounds"})
+
+
+def _keyword_choose_folder(topic: str, folders: list[str]) -> str | None:
+    """Pick a library folder whose name appears in the original topic.
+
+    Stock-query rewrite turns "Fortnite reload" into "video game gameplay
+    esports", so this must run on the operator topic — not the rewrite.
+    """
+    hay = (topic or "").lower()
+    if not hay or not folders:
+        return None
+    scored: list[tuple[int, str]] = []
+    for folder in folders:
+        name = os.path.basename(folder).lower().replace("_", " ").replace("-", " ").strip()
+        if not name or name in _GENERIC_FOLDER_NAMES:
+            continue
+        if name in hay:
+            scored.append((len(name), folder))
+            continue
+        tokens = [tok for tok in name.split() if len(tok) >= 3 and tok not in _GENERIC_FOLDER_NAMES]
+        hits = [tok for tok in tokens if tok in hay]
+        if hits:
+            scored.append((max(len(tok) for tok in hits), folder))
+    if not scored:
+        return None
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return scored[0][1]
+
+
 def _ai_choose_folder(topic, folders):
     if not folders:
         return None
 
-    folder_list_text = "\n".join(
-        f"- {os.path.relpath(f, BASE_VIDEO_DIR)}" for f in folders
-    )
+    folder_list_text = "\n".join(f"- {os.path.relpath(f, BASE_VIDEO_DIR)}" for f in folders)
 
     prompt = f"""
 Select the most relevant folder for this topic.
@@ -118,8 +146,10 @@ class LocalAssetProvider(AssetProvider):
         from assets.background_query import resolve_background_query
 
         pick_topic = resolve_background_query(topic, category, channel_id)
-        chosen_folder = _ai_choose_folder(pick_topic, candidate_folders) or random.choice(
-            candidate_folders
+        chosen_folder = (
+            _keyword_choose_folder(topic, candidate_folders)
+            or _ai_choose_folder(pick_topic, candidate_folders)
+            or random.choice(candidate_folders)
         )
 
         video_files = [

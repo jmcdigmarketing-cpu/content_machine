@@ -228,3 +228,37 @@ def install_booth_desktop_shortcut() -> str:
         script=booth_launcher_path(),
         description="Content OS last-run review booth",
     )
+
+
+def default_sendto_dir() -> str:
+    appdata = os.environ.get("APPDATA") or os.path.expanduser("~")
+    return os.path.join(appdata, "Microsoft", "Windows", "SendTo")
+
+
+def default_facts_txt_path() -> str:
+    from config.paths import ROOT_DIR
+
+    return os.path.join(ROOT_DIR, "facts.txt")
+
+
+def install_sendto_facts_shortcut(
+    *, sendto_dir: str | None = None, facts_path: str | None = None
+) -> str:
+    """Write an Explorer Send-to shortcut targeting overnight ``--facts-file``.
+
+    Tests pass a temp ``sendto_dir`` so the operator's ``%APPDATA%`` is untouched.
+    """
+    dest_dir = sendto_dir or default_sendto_dir()
+    facts = os.path.abspath(facts_path or default_facts_txt_path())
+    os.makedirs(dest_dir, exist_ok=True)
+    dest = os.path.join(dest_dir, "Content OS facts.txt.lnk")
+    # Explicit sendto_dir (tests / dry operator run) never touches %APPDATA%.
+    if sendto_dir or os.name != "nt":
+        with open(dest, "w", encoding="utf-8") as f:
+            f.write(f"{sys.executable} -m scripts.ops overnight --facts-file {facts}\n")
+        return dest
+    return _install_pythonw_shortcut(
+        dest=dest,
+        script=os.path.join(os.path.dirname(pyw_launcher_path()), "scripts", "ops.py"),
+        description=f"Content OS overnight --facts-file {facts}",
+    )

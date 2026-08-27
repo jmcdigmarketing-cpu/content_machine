@@ -340,6 +340,12 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     _last_cache_hit = False
     channel_id = resolve_channel_id(channel_id)
     spoken = clean_script_for_tts(script)
+    try:
+        from core.spoken_numbers import expand_spoken_numbers
+
+        spoken = expand_spoken_numbers(spoken)
+    except Exception as exc:
+        logger.debug("spoken-number expand skipped: %s", exc)
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
 
     # Lexicon is for EARS (local TTS) only. Captions/retext keep `script` from the

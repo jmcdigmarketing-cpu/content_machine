@@ -228,6 +228,27 @@ Leave `EVENT_WEBHOOK_EVENTS` unset when routing in n8n; use it only when a
 single recipe is active and you want the emitter itself to drop everything else
 (e.g. `EVENT_WEBHOOK_EVENTS=video_published`).
 
+## Recipe 4: weekly-report cron
+
+**File:** [`workflows/n8n/weekly_report.json`](../workflows/n8n/weekly_report.json)
+
+**What it does:** once a week, runs `py -m scripts.ops weekly-report` on the
+operator machine (Execute Command). This is **not** a pipeline stall: Content
+Machine events stay fire-and-forget; this recipe is an inbound cron that shells
+out to ops.
+
+**Triggers on:** n8n Schedule (Monday 09:00 by default). No webhook required.
+
+**Flow:** Schedule Trigger -> Execute Command (`py -m scripts.ops weekly-report`).
+
+**Setup:**
+
+1. Import the workflow. Set the Execute Command node's working directory to the
+   Content Machine repo (or use an absolute `py -m` from a wrapper script).
+2. Activate. Adjust the cron if Monday 09:00 is the wrong slot.
+3. Optional: swap Execute Command for an HTTP Request to a local helper — still
+   do not hook this into `run_pipeline`.
+
 ## Notes for maintainers
 
 - The example JSONs are minimal by design: Webhook -> If -> action, no

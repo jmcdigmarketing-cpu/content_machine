@@ -22,7 +22,9 @@ dependencies = [
     "beautifulsoup4==4.14.3",
     "imageio-ffmpeg==0.6.0",
     "elevenlabs==2.45.0",
-    "Pillow==11.3.0",
+    # 12.3.0, not 11.x: 25 advisories (font/PDF/JPEG2000/TGA parsers - the
+    # untrusted-bytes surface the thumbnail path uses) are fixed only in 12.x.
+    "Pillow==12.3.0",
     "numpy==2.4.4",
     "sqlalchemy==2.0.41",
     "psycopg2-binary==2.9.10",

@@ -11,7 +11,78 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
-## 2026-08-26 - Stock-footage preference + MoneyPrinter hyper-compare (docs)
+## 2026-08-27 - Next 5 shipped; the POA for subject relevance
+
+**Prompt:** "review cursor, edit as needed, and roadmap next 5", then: "what about
+changing the scoring matrix itself? its not perfect isnt good enough ... brainstorm a
+way to do so even if its the long route".
+
+**Shipped:** 326 (install the declared deps, and 12.3.0 not 11.3.0), 327/328
+(spoken-number ranges + the IndexError), 329 P0+P1 (surface anchor-less notes, and the
+eval harness), 330 (the crossfade duration bug). 2160 tests green.
+
+### Reviewing Cursor
+
+Rule 6 worked end to end: it closed the run-71 vault gap **and** inverted the documented
+gap test exactly as that test's docstring instructed. Marvel Rivals and SEGA genuinely
+no longer attach to a GTA topic, and still do not.
+
+The fix over-corrected. Requiring a shared *franchise anchor* also dropped notes about
+the people and companies in the story - "Rockstar Games confirms the leak investigation
+is ongoing" vanished from a GTA topic that names Rockstar, silently, on the interactive
+vault prompt. `_GAME_ANCHORS` is a hand-kept list of **games**, so companies are invisible
+to it.
+
+### The POA: change the scoring matrix, not the filters
+
+The operator's framing was right and it is the architectural answer.
+`load_fact_records` is a **chain of boolean gates** - token overlap `and` distinctive
+tokens `and` anchor family. A chain of ANDs can only get stricter, so every fix trades a
+false positive for a false negative, and strong evidence on one axis can never
+compensate for weak evidence on another. "Rockstar Games confirms..." has high corpus
+similarity and zero anchor family; the chain kills it on the anchor gate and never sees
+the similarity.
+
+**This repo already solves this class of problem correctly elsewhere** -
+`apis/topic_scorer.composite_score` is a weighted evidence model with
+`core/opportunity.signal_breakdown` explaining the result. The vault path is the odd one
+out. Make it match.
+
+**Measured on run 71's real five bullets, against run 71's real corpus:**
+
+| Axis | GOOD Rockstar | GOOD subpoena | BAD Wolverine | BAD Marvel | BAD SEGA |
+|---|---|---|---|---|---|
+| Entity-in-corpus (bullet) | **1/1** | 0/0 | **0/1** | **0/3** | 0/0 |
+| Entity-in-corpus (note) | - | **1/2** | **0/0** | - | - |
+| Corpus cosine (bullet) | **0.309** | 0.000 | 0.143 | 0.063 | 0.000 |
+| Corpus cosine (note) | - | **0.296** | **0.000** | - | - |
+
+No single axis separates all five; together they do. Entity-less bullets are decided at
+the **note** level. And decisively: against the **topic** the bad Wolverine bullet
+*beats* the good one (0.286 > 0.154) because the topic itself says "Wolverine"; against
+the **corpus** the ordering is right at 2.2x. **The corpus is the disambiguator, not the
+angle.**
+
+Every input already exists - `fact_grounding.specific_entities` / `mentions`,
+`authenticity._content_tokens` / `_cosine`, `fact_store.TIER_WEIGHTS`. No new dependency,
+no model, **no hand list**. `_GAME_ANCHORS` becomes one weighted feature among six, so it
+can shrink or retire without a cliff, and `topic_graph.py`'s second hand list stops being
+load-bearing.
+
+**Getting past "not perfect isn't good enough": make it a number.** P1 shipped
+`core/vault_evals.py` (`ops vault-eval`), frozen labelled cases, deterministic rubric,
+no LLM judge - **baseline precision 0.667, recall 0.667**. P2 has to beat that, measured.
+
+**Phases:** P0 stop the silent drop (done) - P1 harness + baseline (done) - P2 scorer
+behind a flag - P3 flip on a measured win, demote `_GAME_ANCHORS` - P4 optional
+extract-tier tiebreak for whatever band remains. Never silent: the score and its
+breakdown surface in the fact prompt.
+
+**Limits recorded:** ALL-CAPS acronyms are not extracted as entities, so SEGA scores 0/0
+on that axis; a short corpus weakens every axis; six fixtures is indicative, not
+conclusive - grow the set from real runs before trusting a tuning decision.
+
+### 2026-08-26 - Stock-footage preference + MoneyPrinter hyper-compare (docs)
 
 **Prompt (step 3 of the four-step session):** note that the operator does not
 like taking that much unnecessary stock footage — it is often unrelated, and a

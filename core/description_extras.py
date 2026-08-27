@@ -126,6 +126,7 @@ def collect_source_urls(
     topic: str = "",
     key_facts: list[str] | None = None,
     extra_urls: list[str] | None = None,
+    relevance_corpus: str = "",
 ) -> list[str]:
     """http(s) from operator paste + vault FactRecord.source_url. Deduped, capped."""
     found: list[str] = []
@@ -150,14 +151,18 @@ def collect_source_urls(
         try:
             from core.obsidian_facts import load_fact_records
 
-            # `require_distinctive=True` because this block is PUBLIC. The default
-            # (loose) vault relevance is what attached four Marvel Rivals / SEGA notes
-            # to run 71's GTA 6 story — a shared token like "wolverine" can name two
-            # different subjects. Citing those under the video would be a visible
-            # error, so the vault must share a topic-distinctive token to contribute a
-            # URL. Operator-pasted URLs above are unaffected: they were chosen for
-            # this run.
-            for rec in load_fact_records(topic, channel_id, limit=24, require_distinctive=True):
+            # Public citations use the same corpus as the scorer (signals + operator
+            # facts), never the angle. `relevance_policy="public"` attaches only
+            # confident records so a shared token like "wolverine" cannot put a
+            # Marvel URL under a GTA video.
+            for rec in load_fact_records(
+                topic,
+                channel_id,
+                limit=24,
+                require_distinctive=True,
+                corpus=relevance_corpus,
+                relevance_policy="public",
+            ):
                 _add(getattr(rec, "source_url", "") or "")
         except Exception as exc:
             logger.debug("vault source_url collect skipped: %s", exc)
@@ -182,6 +187,10 @@ def apply_description_extras(
     source_urls: list[str] | None = None,
     topic: str = "",
     key_facts: list[str] | None = None,
+    relevance_corpus: str = "",
+    length_choice: str = "",
+    script: str = "",
+    duration_s: float | None = None,
 ) -> str:
     """
     Append the AI disclosure and any monetization CTAs to a description.
@@ -220,10 +229,20 @@ def apply_description_extras(
                 channel_id=channel_id,
                 topic=topic or title,
                 key_facts=key_facts,
+                relevance_corpus=relevance_corpus,
             )
         block = format_sources_block(urls)
         if block and "Sources:" not in body and block not in additions:
             additions.append(block)
+
+    try:
+        from core.chapters import chapter_block
+
+        chapters = chapter_block(script, duration=duration_s, length_choice=length_choice)
+        if chapters and "0:00" not in body and chapters not in additions:
+            additions.append(chapters)
+    except Exception as exc:
+        logger.debug("chapter timestamps skipped: %s", exc)
 
     if not additions:
         return body

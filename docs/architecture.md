@@ -111,13 +111,15 @@ The repo serves two products:
 | `core/grounding_tiers.py` | **Pillar 3** tiered grounding corpus (operator/link/web/signal/brief/context) + high-stakes tier warnings |
 | `core/claim_verifier.py` | **Pillar 3** claim-level LLM verifier (extract tier) + `GROUNDING_GATE` |
 | `core/fact_conflicts.py` | **Pillar 3** pre-script contradiction detection — operator facts win, conflicting source lines dropped |
-| `core/obsidian_facts.py` | Vault fact reader (`load_facts`) + **Pillar 4** playbook read path (`load_playbook`/`playbook_block`) |
+| `core/obsidian_facts.py` | Vault fact reader (`load_facts` / `load_fact_records`) + **Pillar 4** playbook read path (`load_playbook`/`playbook_block`). Scored mode uses `core/vault_relevance.py`; competing-family `_GAME_ANCHORS` remain a weighted feature, not a hard gate |
+| `core/vault_relevance.py` | Additive subject-relevance scorer (`vault_relevance_v1`) + optional extract-tier tiebreak (`VAULT_RELEVANCE_TIEBREAK`, default off). Corpus = signal headlines + operator/link facts, never the angle |
+| `core/vault_evals.py` | Frozen labelled cases (`config/vault_evals.json`) + `ops vault-eval`. Holdout (runs 66+70) precision/recall **1.0/1.0** vs P1 baseline 0.667; shipped `default_mode` is `scored` |
 | `core/vault_index.py` | **Pillar 4** per-process mtime-cached vault parse (behind `load_fact_records`) |
 | `core/vault_dossiers.py` | **Pillar 4** run dossiers + reports into the vault (`_runs/`, `_reports/`) |
 | `core/channel_health.py` | **Pillar 5** Green/Yellow/Red channel health agent (`ops health`) |
 | `core/analyst_agent.py` | **Pillar 5** weekly analyst briefing (premium LLM → vault + webhook; `ops analyst`) |
 | `core/overnight.py` | **Pillar 5** overnight operator — best-bet drafts + grade + dossiers (`ops overnight`) |
-| `apis/register_signals.py` | Parallel fetch of all signal sources with cache |
+| `apis/register_signals.py` | Parallel fetch of all signal sources with cache. Scored/shadow: non-web first, then `web_search` once or `STATUS_SKIPPED` when vault coverage is dense (`core/web_search_skip.py`). Legacy still density-skips before any fetch |
 | `apis/ufc_context_api.py` | UFC news + Reddit MMA context signal |
 | `apis/mma_stats_api.py` | API-SPORTS MMA fighter records/physicals (replaced Tapology) |
 | `apis/tapology_api.py` | Retired scrape (`TAPOLOGY_SCRAPE_ENABLED=false`; Cloudflare 403) |
@@ -227,7 +229,7 @@ All research signals are invoked through `build_registry(topic)` unless skipped 
 | `youtube_comments` | `apis/youtube_comments_signal.py` | Official Data API (~103 units/topic); audience questions, unverified |
 | `tiktok_trends` | catalog / Apify | Remaining paid Apify actor |
 | `youtube_competitors` | `apis/youtube_apify_signal.py` | Remaining paid Apify actor; free yt-dlp backend when `SIGNAL_BACKEND=free\|auto` |
-| `web_search` | `apis/web_search_api.py` | `TAVILY_API_KEY` / `BRAVE_SEARCH_API_KEY`; DuckDuckGo in Free mode |
+| `web_search` | `apis/web_search_api.py` | `TAVILY_API_KEY` / `BRAVE_SEARCH_API_KEY`; DuckDuckGo in Free mode. Scored mode skips with `STATUS_SKIPPED` after a dense confident vault, not before the corpus exists |
 | `stats_context` | `apis/stats_context_api.py` + `apis/scrapers/*` | BBR, PFR, ESPN JSON; cache `data/scraper_cache/` |
 | `blog_rss` | `apis/blog_rss_api.py` | RSS from `config/seo/` + `config/data_sources.json` |
 

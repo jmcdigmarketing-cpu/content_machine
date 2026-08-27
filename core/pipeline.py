@@ -392,6 +392,9 @@ def run_pipeline(
     channel_id: str | None = None,
     creative_brief: str = "",
     key_facts: list[str] | None = None,
+    vault_relevance_audit: list[dict[str, Any]] | None = None,
+    source_urls: list[str] | None = None,
+    relevance_corpus: str = "",
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -458,6 +461,8 @@ def run_pipeline(
         seed_topic=input_topic,
         creative_brief=creative_brief,
         key_facts=key_facts or [],
+        source_urls=source_urls or [],
+        relevance_corpus=relevance_corpus,
     )
     result.timings["length_preset"] = preset.choice
     result.timings["content_package"] = time.perf_counter() - t_content
@@ -480,6 +485,7 @@ def run_pipeline(
         length_choice=length_choice,
         key_facts=key_facts,
         fact_source="manual" if key_facts else "signals",
+        vault_relevance_audit=vault_relevance_audit,
     )
 
     result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []

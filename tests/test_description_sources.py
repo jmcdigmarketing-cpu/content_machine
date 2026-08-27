@@ -17,7 +17,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.description_extras import collect_source_urls, format_sources_block
+from core.description_extras import (
+    apply_description_extras,
+    collect_source_urls,
+    format_sources_block,
+)
 
 ON_TOPIC = """---
 tier: link
@@ -119,6 +123,102 @@ class TestOperatorUrlsAreUnaffected(unittest.TestCase):
     def test_cap_is_eight(self):
         urls = collect_source_urls(extra_urls=[f"https://example.com/{i}" for i in range(20)])
         self.assertEqual(len(urls), 8)
+
+
+RUN71_TOPIC = "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash"
+RUN71_CORPUS = (
+    "To find the Grand Theft Auto 6 leaker, the parent company of Rockstar Games "
+    "has resorted to filing subpoenas in a US court to force Microsoft and Discord "
+    "to hand over their records. Rockstar Games Reportedly Remains In The Dark "
+    "About Who's Leaking GTA 6."
+)
+ROCKSTAR_NOTE = """---
+tier: link
+channel: tapin
+source: https://example.com/rockstar-investigation
+tags: [facts]
+---
+
+# Rockstar investigation
+- Rockstar Games confirms the leak investigation is ongoing.
+"""
+WOLVERINE_NOTE = """---
+tier: vault
+channel: tapin
+source: https://example.com/wolverine-rage
+tags: [facts]
+---
+
+# Wolverine rage
+- Wolverine Rage is trending after the summer of hate trailer.
+"""
+
+
+class TestCorpusAwarePublicSources(unittest.TestCase):
+    def test_apply_description_extras_accepts_relevance_corpus(self):
+        """generate_content_package already passes this kwarg; extras must not TypeError."""
+        with patch("core.description_extras.get_seo_profile", return_value={}):
+            out = apply_description_extras(
+                "Body.",
+                "tapin",
+                title=RUN71_TOPIC,
+                topic=RUN71_TOPIC,
+                source_urls=[],
+                relevance_corpus=RUN71_CORPUS,
+            )
+        self.assertIn("Body.", out)
+
+    def test_headless_sources_cite_only_confident_urls_for_the_corpus(self):
+        """Without a corpus, the shared 'Wolverine' token still pulls the wrong URL.
+
+        Measured: run 71's angle names Wolverine, so distinctive matching cannot
+        tell Rockstar from Wolverine Rage. Public Sources: must use the operator
+        / signal corpus the way the scorer does, not reload the vault loosely.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "vault" / "tapin"
+            root.mkdir(parents=True)
+            (root / "rockstar.md").write_text(ROCKSTAR_NOTE, encoding="utf-8")
+            (root / "wolverine.md").write_text(WOLVERINE_NOTE, encoding="utf-8")
+            env = {
+                "OBSIDIAN_VAULT_PATH": str(Path(tmp) / "vault"),
+                "VAULT_RELEVANCE_MODE": "scored",
+                "DESCRIPTION_SOURCES": "true",
+                "AI_DISCLOSURE_ENABLED": "false",
+            }
+            with (
+                patch.dict(os.environ, env, clear=False),
+                patch("core.description_extras.get_seo_profile", return_value={}),
+            ):
+                out = apply_description_extras(
+                    "Body.",
+                    "tapin",
+                    title=RUN71_TOPIC,
+                    topic=RUN71_TOPIC,
+                    source_urls=[],
+                    relevance_corpus=RUN71_CORPUS,
+                )
+        self.assertIn("https://example.com/rockstar-investigation", out)
+        self.assertNotIn("https://example.com/wolverine-rage", out)
+
+    def test_apply_description_extras_keeps_chosen_urls_without_vault_reload(self):
+        with (
+            patch("core.description_extras.get_seo_profile", return_value={}),
+            patch("core.description_extras.collect_source_urls") as collect,
+            patch.dict(
+                os.environ,
+                {"DESCRIPTION_SOURCES": "true", "AI_DISCLOSURE_ENABLED": "false"},
+                clear=False,
+            ),
+        ):
+            out = apply_description_extras(
+                "Body.",
+                "tapin",
+                source_urls=["https://example.com/operator-chosen"],
+                relevance_corpus=RUN71_CORPUS,
+            )
+        collect.assert_not_called()
+        self.assertIn("https://example.com/operator-chosen", out)
 
 
 class TestBlockRendering(unittest.TestCase):

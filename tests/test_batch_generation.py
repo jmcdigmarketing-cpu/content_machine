@@ -117,6 +117,34 @@ class TestGenerateDraft(BatchCase):
         self.assertIn("Hook line!", body)
         self.assertIn("A Great Title", body)
 
+    def test_headless_draft_passes_a_signal_corpus(self):
+        signals = {
+            "news": {
+                "connected": True,
+                "active": True,
+                "data": {
+                    "headlines": [{"title": "Rockstar Games filed subpoenas", "source": "wire"}]
+                },
+            }
+        }
+        discovery = SimpleNamespace(
+            evaluated=[("GTA 6 leak", 80.0, signals)],
+            channel_id="tapin",
+            timings={},
+        )
+        with (
+            patch("core.pipeline.run_discovery", return_value=discovery),
+            patch("core.pipeline.run_pipeline", return_value=_pipeline_result()) as rp,
+        ):
+            bg.generate_draft(
+                "GTA 6 leak",
+                "tapin",
+                key_facts=["Microsoft received the subpoena."],
+            )
+        corpus = rp.call_args.kwargs.get("relevance_corpus") or ""
+        self.assertIn("Rockstar Games filed subpoenas", corpus)
+        self.assertIn("Microsoft received the subpoena.", corpus)
+
     def test_empty_discovery_fails_cleanly(self):
         empty = SimpleNamespace(evaluated=[], channel_id="tapin", timings={})
         with patch("core.pipeline.run_discovery", return_value=empty):

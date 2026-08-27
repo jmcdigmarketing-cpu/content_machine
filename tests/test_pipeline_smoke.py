@@ -95,6 +95,43 @@ class TestPipelineSmoke(unittest.TestCase):
         self.assertEqual(result.features["fact_conflicts_dropped"], 1)
         self.assertEqual(result.features["claim_verification"], verification)
 
+    @patch("core.pipeline.write_run_dossier")
+    @patch("core.pipeline.write_run_trace")
+    @patch("core.pipeline.persist_quality")
+    @patch("core.pipeline.build_quality", return_value={})
+    @patch("core.pipeline.record_learning_outcome")
+    @patch("core.pipeline.record_content_run", return_value=8)
+    @patch("core.pipeline.generate_content_package")
+    def test_vault_selection_audit_and_sources_flow_through_pipeline(
+        self, mock_content, _record, _learn, _bq, _pq, _trace, _dossier
+    ):
+        discovery = DiscoveryResult(
+            input_topic="GTA 6 leak",
+            base_signals={},
+            evaluated=[("GTA 6 leak", 70.0, {})],
+            channel_id="tapin",
+        )
+        mock_content.return_value = {
+            "title": "T",
+            "script": "S",
+            "description": "D",
+        }
+        audit = [{"claim": "Rockstar confirmed it.", "band": "confident", "score": 0.8}]
+        result = run_pipeline(
+            "GTA 6 leak",
+            discovery=discovery,
+            proceed_video=False,
+            channel_id="tapin",
+            key_facts=["Rockstar confirmed it."],
+            vault_relevance_audit=audit,
+            source_urls=["https://example.com/rockstar"],
+            relevance_corpus="signal and operator evidence",
+        )
+        self.assertEqual(result.features["vault_relevance"], audit)
+        kwargs = mock_content.call_args.kwargs
+        self.assertEqual(kwargs["source_urls"], ["https://example.com/rockstar"])
+        self.assertEqual(kwargs["relevance_corpus"], "signal and operator evidence")
+
 
 if __name__ == "__main__":
     unittest.main()

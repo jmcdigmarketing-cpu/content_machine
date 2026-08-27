@@ -35,7 +35,7 @@ from core.ui import (
     print_bonus_art,
     print_domain_art,
     prompt_channel_selection,
-    prompt_key_facts,
+    prompt_key_facts_result,
     prompt_proceed_or_length,
     prompt_startup_mode,
     prompt_upload_plan,
@@ -407,7 +407,12 @@ def _run_new_video_flow_body(
     _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
-    key_facts = prompt_key_facts(topic, channel_id)
+    fact_selection = prompt_key_facts_result(
+        topic,
+        channel_id,
+        signals=best_signals,
+    )
+    key_facts = fact_selection.facts
 
     section("Content")
     print_bonus_art(key="mario")
@@ -425,6 +430,9 @@ def _run_new_video_flow_body(
             channel_id=channel_id,
             creative_brief=creative_brief,
             key_facts=key_facts or None,
+            vault_relevance_audit=fact_selection.vault_audit,
+            source_urls=fact_selection.source_urls,
+            relevance_corpus=fact_selection.relevance_corpus,
         )
 
         print()

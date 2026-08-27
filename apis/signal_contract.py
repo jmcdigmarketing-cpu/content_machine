@@ -18,6 +18,7 @@ STATUS_UPSTREAM = "upstream_error"
 STATUS_HTTP = "http_error"
 STATUS_UNAVAILABLE = "unavailable"
 STATUS_ERROR = "error"
+STATUS_SKIPPED = "skipped"
 
 HEALTH_LABELS = {
     STATUS_OK: "ON",
@@ -30,6 +31,7 @@ HEALTH_LABELS = {
     STATUS_HTTP: "HTTP ERROR",
     STATUS_UNAVAILABLE: "OFF",
     STATUS_ERROR: "ERROR",
+    STATUS_SKIPPED: "SKIPPED (vault coverage)",
 }
 
 

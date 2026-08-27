@@ -200,6 +200,8 @@ def main(argv=None) -> int:
 
     # Script
     print("\n  Generating script...")
+    from core.vault_relevance import build_relevance_corpus
+
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -208,6 +210,7 @@ def main(argv=None) -> int:
         proceed_video=False,
         channel_id=channel_id,
         key_facts=key_facts or None,
+        relevance_corpus=build_relevance_corpus(best_signals, operator_facts=key_facts or []),
     )
 
     preset = get_length_preset(length_choice)

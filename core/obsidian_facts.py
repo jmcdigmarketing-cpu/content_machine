@@ -320,6 +320,8 @@ def load_facts(
     *,
     limit: int = 8,
     require_distinctive: bool = False,
+    corpus: str = "",
+    relevance_policy: str = "operator",
 ) -> list[str]:
     """Return relevant fact bullet lines from the vault for this topic + channel.
 
@@ -337,7 +339,12 @@ def load_facts(
     return [
         r.claim
         for r in load_fact_records(
-            topic, channel_id, limit=limit, require_distinctive=require_distinctive
+            topic,
+            channel_id,
+            limit=limit,
+            require_distinctive=require_distinctive,
+            corpus=corpus,
+            relevance_policy=relevance_policy,
         )
     ]
 
@@ -349,6 +356,8 @@ def load_fact_records(
     limit: int = 8,
     today: date | None = None,
     require_distinctive: bool = False,
+    corpus: str = "",
+    relevance_policy: str = "operator",
 ) -> list[FactRecord]:
     """`load_facts` with provenance — one FactRecord per relevant bullet (Pillar 3).
 
@@ -365,6 +374,21 @@ def load_fact_records(
     topic_tokens = _tokens(topic)
     topic_distinctive = _distinctive_tokens(topic)
     scored: list[tuple[float, FactRecord]] = []
+    relevance_mode = "legacy"
+    score_vault_fact = None
+    if require_distinctive:
+        from core.vault_relevance import relevance_mode as _relevance_mode
+
+        relevance_mode = _relevance_mode()
+        if relevance_mode in ("shadow", "scored") and corpus.strip():
+            from core.vault_relevance import score_vault_fact as _score_vault_fact
+
+            score_vault_fact = _score_vault_fact
+        elif relevance_mode in ("shadow", "scored"):
+            logger.debug(
+                "Vault relevance %s requested without a corpus; using legacy decision",
+                relevance_mode,
+            )
 
     for note in iter_notes(vault):
         rel = Path(note.rel_path)
@@ -398,31 +422,60 @@ def load_fact_records(
         for bullet in note.bullets:
             if _is_strategy_bullet(bullet):
                 continue
-            uncertain = False
             bullet_overlap = len(topic_tokens & _tokens(bullet))
-            if overlap == 0 and not evergreen and bullet_overlap == 0:
-                continue
+            legacy_attaches = not (overlap == 0 and not evergreen and bullet_overlap == 0)
+            legacy_uncertain = False
             if require_distinctive:
                 bullet_distinctive = len(topic_distinctive & _distinctive_tokens(bullet))
                 if note_distinctive == 0 and bullet_distinctive == 0:
-                    continue  # genre-only match (e.g. "patch"/"massive") — not this topic
-                # Competing-franchise gate: a Marvel Rivals / SEGA bullet must not
-                # attach to a GTA topic just because they share "Wolverine".
-                from core.channel_context import anchor_families
+                    legacy_attaches = False
+                if legacy_attaches:
+                    # Legacy path retained byte-for-byte in meaning for P2 shadow mode.
+                    # In scored mode this is only comparison evidence; the anchor is a
+                    # feature inside the matrix rather than a hidden hard gate.
+                    from core.channel_context import anchor_families
 
-                topic_fam = anchor_families(topic)
-                if topic_fam:
-                    blob_fam = anchor_families(f"{note.stem} {note.headings} {bullet}")
-                    if blob_fam - topic_fam:
+                    topic_fam = anchor_families(topic)
+                    if topic_fam:
+                        blob_fam = anchor_families(f"{note.stem} {note.headings} {bullet}")
+                        if blob_fam - topic_fam:
+                            legacy_attaches = False
+                        elif not (blob_fam & topic_fam):
+                            legacy_uncertain = True
+
+            decision = None
+            if score_vault_fact is not None:
+                decision = score_vault_fact(
+                    topic=topic,
+                    corpus=corpus,
+                    bullet=bullet,
+                    note_context=f"{note.stem} {note.headings}",
+                    tier=tier,
+                    policy=relevance_policy,
+                )
+                if decision.band == "uncertain" and relevance_policy == "operator":
+                    from core.vault_relevance import maybe_tiebreak_uncertain
+
+                    decision = maybe_tiebreak_uncertain(
+                        decision,
+                        topic=topic,
+                        corpus=corpus,
+                        bullet=bullet,
+                        note_context=f"{note.stem} {note.headings}",
+                    )
+
+            if relevance_mode == "scored" and decision is not None:
+                if not decision.attaches:
+                    from core.vault_relevance import is_inspect_reject
+
+                    if not is_inspect_reject(decision):
                         continue
-                    if not (blob_fam & topic_fam):
-                        # No franchise anchor either way. This used to be dropped, which
-                        # also dropped notes about the people and companies in the story
-                        # — "Rockstar Games confirms the leak investigation" vanished
-                        # from a GTA topic that names Rockstar, because `_GAME_ANCHORS`
-                        # is a hand-kept list of *games*. Anchors cannot settle subject
-                        # identity here, so mark it and let the operator see it.
-                        uncertain = True
+                uncertain = decision.band == "uncertain"
+            else:
+                if not legacy_attaches:
+                    continue
+                uncertain = legacy_uncertain
+
             record = FactRecord(
                 claim=bullet,
                 tier=tier,
@@ -431,8 +484,24 @@ def load_fact_records(
                 expires=expires,
                 note_path=str(rel),
                 uncertain=uncertain,
+                relevance_score=decision.score if decision is not None else None,
+                relevance_band=decision.band if decision is not None else "",
+                relevance_breakdown=decision.breakdown if decision is not None else {},
+                relevance_scorer_version=(decision.scorer_version if decision is not None else ""),
+                legacy_attaches=legacy_attaches if decision is not None else None,
+                relevance_pre_tiebreak_band=(
+                    decision.pre_tiebreak_band if decision is not None else ""
+                ),
+                relevance_tiebreak_status=(
+                    decision.tiebreak_status if decision is not None else ""
+                ),
             )
-            scored.append((note_weight + bullet_overlap + provenance, record))
+            rank = (
+                decision.score * 100 + provenance
+                if relevance_mode == "scored" and decision is not None
+                else note_weight + bullet_overlap + provenance
+            )
+            scored.append((rank, record))
 
     if not scored:
         return []

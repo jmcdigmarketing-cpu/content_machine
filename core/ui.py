@@ -736,19 +736,29 @@ def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
             print_fn(f"  {name.capitalize()}: {score}")
 
 
-def prompt_key_facts(
+@dataclass
+class KeyFactSelection:
+    """Facts plus the evidence needed to audit and publish their provenance."""
+
+    facts: list[str]
+    source_urls: list[str]
+    relevance_corpus: str
+    vault_audit: list[dict[str, Any]]
+
+
+def prompt_key_facts_result(
     topic: str,
     channel_id: str = "default",
     *,
+    signals: dict[str, Any] | None = None,
     print_fn=print,
     input_fn=input,
-) -> list[str]:
-    """Collect operator key facts (ground truth) for the script.
+) -> KeyFactSelection:
+    """Collect operator facts and return their vault-relevance audit.
 
-    Pre-fills suggestions from the Obsidian vault (if configured), then lets the
-    operator accept/edit them and add more. Entry is open-ended (not capped) and
-    guided across the relevancy categories that actually go stale, so the facts
-    cover identity, latest result, hard numbers, and a recency anchor.
+    Manual/link facts are collected before the authoritative vault scan so the scorer
+    can use them with signal text. Candidate vault facts are never put in their own
+    corpus.
     """
     from core.obsidian_facts import is_playbook_line
 
@@ -763,48 +773,6 @@ def prompt_key_facts(
     vault_accepted: list[str] = []
     manual_facts: list[str] = []
     link_facts: list[str] = []
-
-    # Vault scan: only TOPIC-distinctive facts are considered (a Palworld topic can
-    # never surface NBA facts). Relevant matches auto-attach by default — no manual
-    # accept/reject step; VAULT_FACTS_AUTO=false restores the pick prompt.
-    try:
-        from core.obsidian_facts import load_fact_records
-
-        records = load_fact_records(topic, channel_id, require_distinctive=True)
-    except Exception:
-        records = []
-    from core.operator_facts import is_writing_tip
-
-    records = [r for r in records if not is_writing_tip(r.claim) and not is_playbook_line(r.claim)]
-    suggestions = [r.claim for r in records]
-    uncertain_count = sum(1 for r in records if getattr(r, "uncertain", False))
-    auto_attach = os.getenv("VAULT_FACTS_AUTO", "true").lower() not in ("0", "false", "no")
-    if not suggestions:
-        print_fn("")
-        print_fn("  Vault scan: no topic-relevant facts — skipped.")
-    elif auto_attach:
-        print_fn("")
-        print_fn(
-            format_vault_scan_line(
-                confident=len(suggestions) - uncertain_count, uncertain=uncertain_count
-            )
-        )
-        for i, record in enumerate(records, 1):
-            mark = " [uncertain]" if getattr(record, "uncertain", False) else ""
-            print_fn(f"    {i}. {record.claim[:120]}{mark}")
-        vault_accepted.extend(suggestions)
-    else:
-        print_fn("")
-        print_fn(f"  From your Obsidian vault ({len(suggestions)} topic-relevant match(es)):")
-        for i, fact in enumerate(suggestions, 1):
-            print_fn(f"    {i}. {fact}")
-        choice = input_fn("  Use these? [Enter=all / n=none / e.g. '1 3'=pick]: ").strip().lower()
-        if choice in ("", "y", "yes", "all"):
-            vault_accepted.extend(suggestions)
-        elif choice not in ("n", "no", "none"):
-            for tok in choice.replace(",", " ").split():
-                if tok.isdigit() and 1 <= int(tok) <= len(suggestions):
-                    vault_accepted.append(suggestions[int(tok) - 1])
 
     print_fn("")
     print_fn("  Add facts — paste a URL, one line, or type `paste` + Enter for a multi-line block.")
@@ -870,6 +838,162 @@ def prompt_key_facts(
         else:
             manual_facts.append(fact)
 
+    # Authoritative vault scan. The scorer sees signal evidence plus facts the
+    # operator/link fetch supplied, never the candidate fact itself.
+    from core.operator_facts import is_writing_tip
+    from core.vault_relevance import build_relevance_corpus, compact_reasons
+
+    relevance_corpus = build_relevance_corpus(
+        signals or {},
+        operator_facts=[*manual_facts, *link_facts],
+    )
+    vault_error: Exception | None = None
+    try:
+        from core.obsidian_facts import load_fact_records
+
+        records = load_fact_records(
+            topic,
+            channel_id,
+            require_distinctive=True,
+            corpus=relevance_corpus,
+        )
+    except Exception as exc:
+        vault_error = exc
+        logger.debug("Vault fact scan unavailable for %r: %s", topic, exc)
+        records = []
+    records = [
+        record
+        for record in records
+        if not is_writing_tip(record.claim) and not is_playbook_line(record.claim)
+    ]
+    suggestions = [record.claim for record in records]
+
+    def _is_inspect_reject(record: Any) -> bool:
+        return (getattr(record, "relevance_band", "") or "") == "reject"
+
+    uncertain_records = [
+        record
+        for record in records
+        if getattr(record, "uncertain", False) and not _is_inspect_reject(record)
+    ]
+    confident_records = [
+        record
+        for record in records
+        if not getattr(record, "uncertain", False) and not _is_inspect_reject(record)
+    ]
+    inspect_rejects = [record for record in records if _is_inspect_reject(record)]
+    auto_attach = os.getenv("VAULT_FACTS_AUTO", "true").lower() not in (
+        "0",
+        "false",
+        "no",
+    )
+    selected_records: list[Any] = []
+    overrides: dict[str, str] = {}
+
+    def _record_line(index: int, record: Any) -> str:
+        band = getattr(record, "relevance_band", "") or (
+            "uncertain" if getattr(record, "uncertain", False) else "confident"
+        )
+        score = getattr(record, "relevance_score", None)
+        suffix = f" [{band}]"
+        if isinstance(score, int | float):
+            from core.vault_relevance import VaultRelevanceDecision
+
+            decision = VaultRelevanceDecision(
+                score=float(score),
+                band=band,
+                scorer_version=getattr(record, "relevance_scorer_version", ""),
+                policy="operator",
+                breakdown=dict(getattr(record, "relevance_breakdown", {}) or {}),
+            )
+            reasons = compact_reasons(decision)
+            suffix = f" [{band} {float(score):.2f}"
+            if reasons:
+                suffix += "; " + ", ".join(reasons)
+            suffix += "]"
+        return f"    {index}. {record.claim[:120]}{suffix}"
+
+    if vault_error is not None:
+        print_fn("")
+        print_fn("  Vault scan unavailable — continuing without suggestions.")
+    elif not suggestions:
+        print_fn("")
+        print_fn("  Vault scan: no topic-relevant facts — skipped.")
+    elif auto_attach:
+        print_fn("")
+        print_fn(
+            format_vault_scan_line(
+                confident=len(confident_records),
+                uncertain=len(uncertain_records),
+            )
+        )
+        for index, record in enumerate(records, 1):
+            print_fn(_record_line(index, record))
+        if inspect_rejects:
+            print_fn(
+                f"  {len(inspect_rejects)} near-threshold exclusion(s) listed "
+                "above are not attached."
+            )
+        selected_records.extend(confident_records)
+        overrides.update({record.claim: "auto" for record in confident_records})
+        overrides.update({record.claim: "rejected" for record in inspect_rejects})
+        if uncertain_records:
+            choice = (
+                input_fn("  Use uncertain facts? [Enter=all / n=none / e.g. '2'=printed number]: ")
+                .strip()
+                .lower()
+            )
+            if choice in ("", "y", "yes", "all"):
+                chosen = list(uncertain_records)
+            elif choice in ("n", "no", "none"):
+                chosen = []
+            else:
+                picked = {
+                    int(tok)
+                    for tok in choice.replace(",", " ").split()
+                    if tok.isdigit() and 1 <= int(tok) <= len(records)
+                }
+                chosen = [
+                    record
+                    for index, record in enumerate(records, 1)
+                    if index in picked and record in uncertain_records
+                ]
+            selected_records.extend(chosen)
+            chosen_claims = {record.claim for record in chosen}
+            overrides.update(
+                {
+                    record.claim: ("accepted" if record.claim in chosen_claims else "rejected")
+                    for record in uncertain_records
+                }
+            )
+    else:
+        print_fn("")
+        print_fn(f"  From your Obsidian vault ({len(suggestions)} topic-relevant match(es)):")
+        for index, record in enumerate(records, 1):
+            print_fn(_record_line(index, record))
+        choice = input_fn("  Use these? [Enter=all / n=none / e.g. '1 3'=pick]: ").strip().lower()
+        if choice in ("", "y", "yes", "all"):
+            selected_records = [record for record in records if not _is_inspect_reject(record)]
+        elif choice not in ("n", "no", "none"):
+            picked = {
+                int(tok)
+                for tok in choice.replace(",", " ").split()
+                if tok.isdigit() and 1 <= int(tok) <= len(records)
+            }
+            selected_records = [
+                record
+                for index, record in enumerate(records, 1)
+                if index in picked and not _is_inspect_reject(record)
+            ]
+        selected_claims = {record.claim for record in selected_records}
+        overrides.update(
+            {
+                record.claim: ("accepted" if record.claim in selected_claims else "rejected")
+                for record in records
+            }
+        )
+    vault_accepted.extend(record.claim for record in selected_records)
+
     if pasted_sources:
         try:
             from core.source_capture import capture_sources
@@ -907,7 +1031,79 @@ def prompt_key_facts(
                 f"  Note: {skipped} fact(s) stored in vault but omitted from prompt "
                 f"(char budget — raise OPERATOR_KEY_FACT_CHAR_BUDGET if needed)."
             )
-    return key_facts
+    selected_claims = {record.claim for record in selected_records}
+    vault_audit: list[dict[str, Any]] = []
+    for record in records:
+        legacy_attaches = getattr(record, "legacy_attaches", None)
+        if legacy_attaches is True:
+            pre_score = (
+                "legacy_uncertain"
+                if not getattr(record, "legacy_attaches", False)
+                or getattr(record, "uncertain", False)
+                else "legacy_attach"
+            )
+        elif legacy_attaches is False:
+            pre_score = "legacy_reject"
+        else:
+            pre_score = (
+                "legacy_uncertain" if getattr(record, "uncertain", False) else "legacy_attach"
+            )
+        band = getattr(record, "relevance_band", "") or (
+            "uncertain" if getattr(record, "uncertain", False) else "confident"
+        )
+        vault_audit.append(
+            {
+                "claim": record.claim,
+                "note_path": getattr(record, "note_path", ""),
+                "source_url": getattr(record, "source_url", ""),
+                "pre_score_verdict": pre_score,
+                "band": band,
+                "score": getattr(record, "relevance_score", None),
+                "breakdown": dict(getattr(record, "relevance_breakdown", {}) or {}),
+                "scorer_version": getattr(record, "relevance_scorer_version", ""),
+                "pre_tiebreak_band": getattr(record, "relevance_pre_tiebreak_band", ""),
+                "tiebreak_status": getattr(record, "relevance_tiebreak_status", ""),
+                "selected": record.claim in selected_claims,
+                "operator_override": overrides.get(record.claim, "rejected"),
+            }
+        )
+
+    source_urls: list[str] = []
+    seen_urls: set[str] = set()
+    for url in [
+        *(str(item.get("url") or "") for item in pasted_sources),
+        *(str(getattr(record, "source_url", "") or "") for record in selected_records),
+    ]:
+        clean = url.strip()
+        if not clean or clean.lower() in seen_urls:
+            continue
+        seen_urls.add(clean.lower())
+        source_urls.append(clean)
+
+    return KeyFactSelection(
+        facts=key_facts,
+        source_urls=source_urls,
+        relevance_corpus=relevance_corpus,
+        vault_audit=vault_audit,
+    )
+
+
+def prompt_key_facts(
+    topic: str,
+    channel_id: str = "default",
+    *,
+    signals: dict[str, Any] | None = None,
+    print_fn=print,
+    input_fn=input,
+) -> list[str]:
+    """Backward-compatible list-only wrapper around the audited operator flow."""
+    return prompt_key_facts_result(
+        topic,
+        channel_id,
+        signals=signals,
+        print_fn=print_fn,
+        input_fn=input_fn,
+    ).facts
 
 
 def display_grounding_report(
@@ -963,8 +1159,8 @@ def format_vault_scan_line(*, confident: int, uncertain: int) -> str:
     if not uncertain:
         return f"  Vault scan: auto-attached {total} topic-relevant fact(s):"
     return (
-        f"  Vault scan: auto-attached {total} fact(s) — {confident} confident, "
-        f"{uncertain} uncertain (subject unproven; say `n` next round to drop):"
+        f"  Vault scan: {confident} confident fact(s) auto-attached; "
+        f"{uncertain} uncertain (subject unproven; review below):"
     )
 
 

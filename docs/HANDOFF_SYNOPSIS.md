@@ -1,6 +1,63 @@
-# Handoff synopsis — 2026-08-26: next-20 mixed S/M wave
+# Handoff synopsis — 2026-08-27: vault relevance scored
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
+
+## Last implementation wave — vault relevance P2–P4 (2026-08-27)
+
+Item 329 is finished. `config/vault_relevance.json` `default_mode` is **scored**
+after holdout precision/recall **1.0/1.0** (live runs 66+70) beat the P1
+baseline of **0.667**. Scorer version `vault_relevance_v1`. Corpus = signal
+headlines + operator/link facts, never the angle.
+
+- Public `Sources:` accept `relevance_corpus`; headless uses
+  `relevance_policy=public`; already-chosen URLs skip a vault reload.
+- Two-stage discovery: non-web fetch, then `web_search` once or `STATUS_SKIPPED`.
+- Operator pick indexes match printed `1. …`; `n` drops all uncertain;
+  near-threshold rejects are inspect-only.
+- P4 extract-tier tiebreak exists and is **off** (`VAULT_RELEVANCE_TIEBREAK`).
+  Residual uncertain band was 4/14. `_GAME_ANCHORS` stay for topic-graph.
+- Wolverine-only vault bullets no longer attach to a GTA topic in scored mode.
+
+**Still parked / skipped:** P4 stays opt-in; FastAPI #147; Phase M; NVENC;
+CUDA torch; flipping TapIn to `background_mode: local`.
+
+## Last implementation wave — next 20 mixed (2026-08-26)
+
+Implemented 1→20 from the next-20 mixed plan (topic graph → TapIn swatch).
+Tests were written first. **Do not treat green tests as the audit** — Step 3
+still needs ruff + full suite + green-and-inert checks (topic graph moves
+`get_best_bets`; xfade in argv; `DATABASE_URL` isolated). No Step 4 commit in
+this pass unless asked.
+
+- **#47** franchise arcs: `data/topic_graph.json` sidecar; `get_best_bets`
+  source=`arc`; graveyard still wins; recorded on publish.
+- **§26** TapIn `hybrid_local_ratio: 0.70` + `xfade` at the local→stock join.
+  `background_mode` remains `hybrid`. MoneyWise ratio 0.45.
+- **#46** local seasonal calendar (no HTTP). **#123** TTS spoken numbers;
+  captions keep digits. **#42** franchise-anchor discovery cache via existing
+  `_fetch_one` keys inside `run_batch`.
+- Smalls: suite blanks `DATABASE_URL`/`DATABASE_KEY`; real PDF fixture;
+  wolverine-only vault notes no longer attach to GTA; Extended chapters;
+  `ops demonetization` / `policy-runbook` / `sendto-facts`; n8n weekly-report
+  cron; Dataview + wiki-links on dossiers; quota-increase playbook beside
+  uploads-left; booth favicon + 1.25×; tray `git describe`; TapIn swatch.
+
+**Still parked / skipped:** Edge TTS Wave B, Phase M, #141–#147 FastAPI/tray
+daemon/XL apps, NVENC, CUDA torch, `SCENE_MATCHED_BROLL` on TapIn, Coverr as a
+quality lever, flipping TapIn to `background_mode: local`, merge of
+`origin/claude/docs-optimization-review-a4l104`.
+
+Pickup: Coverr (`COVERR_API_KEY` empty = chain continues, no warning); overnight
+`--facts-file`; `ops topic-clone` / `studio-deleted` / `publish-ics`; caption track
+and opt-in pin comment on publish; Studio-deleted cancel in daily_sync; MoneyWise
+cross-channel prior; learned intro duration plumbing; Expert Panel `shorts_pacing`
+persisted when `EXPERT_PANEL_ENABLED`; frozen prompt-eval goldens; public-safe
+SKU/dossier redaction; eval-corpus `invented_release_date` fixture; `/tdd` skill.
+
+**Honest leftover:** Data API has no comment pin (channel `commentThreads.insert`
+instead); intro duration does not pretend to learn below `RETENTION_MIN_VIDEOS`;
+Pillow/requests pins updated in lockfiles — reinstall the venv before a real
+render. **#147 FastAPI, #146 tray daemon, Phase M, NVENC, CUDA torch still skipped.**
 
 ## Last implementation wave — next 20 (2026-08-26)
 
@@ -23,10 +80,11 @@ persisted when `EXPERT_PANEL_ENABLED`; frozen prompt-eval goldens; public-safe
 SKU/dossier redaction; eval-corpus `invented_release_date` fixture; `/tdd` skill.
 
 **Honest leftover:** Data API has no comment pin (channel `commentThreads.insert`
-instead); wolverine-only vault bullets still attach; intro duration does not
-pretend to learn below `RETENTION_MIN_VIDEOS`; Pillow/requests pins updated in
-lockfiles — reinstall the venv before a real render. **#147 FastAPI, #146 tray
-daemon, Phase M, NVENC, CUDA torch still skipped.**
+instead); intro duration does not pretend to learn below `RETENTION_MIN_VIDEOS`;
+Pillow/requests pins updated in lockfiles — reinstall the venv before a real
+render. Vault relevance default is scored (see top of this file) — wolverine-only
+bullets no longer attach. **#147 FastAPI, #146 tray daemon, Phase M, NVENC, CUDA
+torch still skipped.**
 
 ## Last implementation wave — roadmap #23–27 (2026-08-25)
 

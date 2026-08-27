@@ -17,6 +17,7 @@ from core.operator_facts import (
 from core.research_brief import ResearchBrief
 from core.script_brief import build_script_brief
 from core.script_length import (
+    WORDS_PER_SECOND,
     count_spoken_words,
     get_length_preset,
     length_system_addendum,
@@ -762,6 +763,8 @@ def generate_content_package(
     creative_brief: str = "",
     key_facts: list[str] | None = None,
     extra_directive: str = "",
+    source_urls: list[str] | None = None,
+    relevance_corpus: str = "",
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -867,7 +870,14 @@ def generate_content_package(
             "title": topic,
             "script": payload if isinstance(payload, str) else "",
             "description": apply_description_extras(
-                "", channel_id, title=topic, topic=topic, key_facts=clean_key_facts
+                "",
+                channel_id,
+                title=topic,
+                topic=topic,
+                key_facts=clean_key_facts,
+                length_choice=length_choice,
+                source_urls=source_urls,
+                relevance_corpus=relevance_corpus,
             ),
             "tags": normalize_youtube_tags(
                 default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
@@ -1067,6 +1077,11 @@ def generate_content_package(
             title=title,
             topic=topic,
             key_facts=clean_key_facts,
+            source_urls=source_urls,
+            relevance_corpus=relevance_corpus,
+            length_choice=length_choice,
+            script=script,
+            duration_s=count_spoken_words(script) / max(WORDS_PER_SECOND, 0.1),
         ),
         "tags": tags,
         "prompt_version": current_prompt_version(),

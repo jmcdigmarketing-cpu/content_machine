@@ -1,0 +1,29 @@
+{
+  "_comment": "P3 default is scored after holdout precision/recall 1.0/1.0 beat the 0.667 baseline (runs 66+70). Weights are additive evidence; tier remains a small tie-breaker.",
+  "schema_version": "v1",
+  "scorer_version": "vault_relevance_v1",
+  "default_mode": "scored",
+  "cosine_reference": 0.35,
+  "weights": {
+    "bullet_entity": 0.3,
+    "note_entity": 0.18,
+    "bullet_cosine": 0.22,
+    "note_cosine": 0.15,
+    "anchor": 0.12,
+    "tier": 0.03
+  },
+  "thresholds": {
+    "operator": {
+      "uncertain": 0.3,
+      "confident": 0.68
+    },
+    "public": {
+      "uncertain": 0.68,
+      "confident": 0.68
+    },
+    "web_skip": {
+      "uncertain": 0.72,
+      "confident": 0.72
+    }
+  }
+}

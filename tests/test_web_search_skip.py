@@ -17,14 +17,22 @@ class TestWebSearchSkip(unittest.TestCase):
     def test_dense_vault_skips(self):
         facts = [f"fact {i} distinctive token" for i in range(6)]
         with (
-            patch.dict(os.environ, {"WEB_SEARCH_SKIP_MIN_FACTS": "6"}, clear=False),
+            patch.dict(
+                os.environ,
+                {"WEB_SEARCH_SKIP_MIN_FACTS": "6", "VAULT_RELEVANCE_MODE": "legacy"},
+                clear=False,
+            ),
             patch("core.obsidian_facts.load_facts", return_value=facts),
         ):
             self.assertTrue(should_skip_web_search("topic", "tapin"))
 
     def test_thin_vault_does_not_skip(self):
         with (
-            patch.dict(os.environ, {"WEB_SEARCH_SKIP_MIN_FACTS": "6"}, clear=False),
+            patch.dict(
+                os.environ,
+                {"WEB_SEARCH_SKIP_MIN_FACTS": "6", "VAULT_RELEVANCE_MODE": "legacy"},
+                clear=False,
+            ),
             patch("core.obsidian_facts.load_facts", return_value=["one fact"]),
         ):
             self.assertFalse(should_skip_web_search("topic", "tapin"))
@@ -40,7 +48,7 @@ class TestWebSearchSkip(unittest.TestCase):
     def test_register_signals_drops_web_search(self):
         from apis import register_signals as rs
 
-        env = {"CONTENT_SKIP_SIGNALS": ""}
+        env = {"CONTENT_SKIP_SIGNALS": "", "VAULT_RELEVANCE_MODE": "legacy"}
         with (
             patch.dict(os.environ, env, clear=False),
             patch("core.web_search_skip.should_skip_web_search", return_value=True),
@@ -51,7 +59,7 @@ class TestWebSearchSkip(unittest.TestCase):
     def test_register_signals_keeps_web_search_when_thin(self):
         from apis import register_signals as rs
 
-        env = {"CONTENT_SKIP_SIGNALS": ""}
+        env = {"CONTENT_SKIP_SIGNALS": "", "VAULT_RELEVANCE_MODE": "legacy"}
         with (
             patch.dict(os.environ, env, clear=False),
             patch("core.web_search_skip.should_skip_web_search", return_value=False),

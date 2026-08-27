@@ -2,6 +2,7 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 from typing import Any
 
 from apis.cache_manager import build_key, get_cached, set_cache
@@ -11,6 +12,8 @@ from apis.signal_contract import (
     STATUS_NO_KEY,
     STATUS_QUOTA,
     STATUS_RATE_LIMIT,
+    STATUS_SKIPPED,
+    make_signal,
     normalize_signal,
 )
 from apis.signals_bootstrap import get_signal_registry
@@ -18,6 +21,56 @@ from apis.youtube_api import start_youtube_warmup_background
 from core.logging import get_logger
 
 logger = get_logger("apis.register_signals")
+
+# Franchise-anchor batch: reuse build_key/get_cached/set_cache (no second cache).
+# Module-level so ThreadPoolExecutor workers in the same run_batch see it.
+_franchise_batch_anchor: str | None = None
+_franchise_batch_lock = threading.Lock()
+
+
+@contextmanager
+def franchise_batch_cache(topics: list[str], channel_id: str = "tapin"):
+    """Share discovery cache keys across topics with the same dominant franchise."""
+    del channel_id  # reserved: cache key is franchise-only, not channel-prefixed
+    global _franchise_batch_anchor
+    anchor = None
+    try:
+        from core.channel_context import dominant_anchor
+
+        raw = dominant_anchor(topics or [])
+        if raw:
+            from core.channel_context import anchor_families
+
+            fams = anchor_families(raw)
+            anchor = sorted(fams)[0] if fams else str(raw).lower()
+    except Exception as exc:
+        logger.debug("franchise batch anchor skipped: %s", exc)
+        anchor = None
+    with _franchise_batch_lock:
+        prev = _franchise_batch_anchor
+        _franchise_batch_anchor = anchor
+    try:
+        yield
+    finally:
+        with _franchise_batch_lock:
+            _franchise_batch_anchor = prev
+
+
+def _cache_topic(name: str, topic: str) -> str:
+    """Same signal + overlapping franchise inside run_batch → one paid fetch."""
+    del name
+    anchor = _franchise_batch_anchor
+    if not anchor or not topic:
+        return topic
+    try:
+        from core.channel_context import anchor_families
+
+        fams = anchor_families(topic)
+        if anchor in fams:
+            return f"franchise:{anchor}"
+    except Exception as exc:
+        logger.debug("franchise cache topic skipped: %s", exc)
+    return topic
 
 
 def _skip_signals() -> set[str]:
@@ -334,10 +387,14 @@ def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     if topic:
         skip |= _gated_signal_names(topic, channel_id)
         try:
-            from core.web_search_skip import should_skip_web_search
+            from core.vault_relevance import relevance_mode
 
-            if should_skip_web_search(topic, channel_id):
-                skip.add("web_search")
+            # Scored/shadow skip after non-web fetch (build_registry two-stage).
+            if relevance_mode() not in ("shadow", "scored"):
+                from core.web_search_skip import should_skip_web_search
+
+                if should_skip_web_search(topic, channel_id):
+                    skip.add("web_search")
         except Exception as exc:
             logger.debug("web_search density skip skipped: %s", exc)
     if not skip:
@@ -406,7 +463,7 @@ def _fetch_one(name, func, topic, pinned: dict[str, Any] | None = None):
     if pinned and name in pinned and pinned[name]:
         return name, normalize_signal(pinned[name])
 
-    key = build_key(name, topic)
+    key = build_key(name, _cache_topic(name, topic))
     cached = get_cached(key)
     if cached is not None:
         return name, normalize_signal(cached)
@@ -415,6 +472,49 @@ def _fetch_one(name, func, topic, pinned: dict[str, Any] | None = None):
     _record_signal_health(name, result)
     set_cache(key, result, ttl_seconds=_cache_ttl_for(name))
     return name, result
+
+
+def _two_stage_web() -> bool:
+    try:
+        from core.vault_relevance import relevance_mode
+
+        return relevance_mode() in ("shadow", "scored")
+    except Exception:
+        return False
+
+
+def _maybe_fetch_web_search(
+    topic: str,
+    channel_id: str | None,
+    func,
+    non_web: dict[str, Any],
+    pinned: dict[str, Any],
+) -> dict[str, Any]:
+    """Fetch web_search once, or emit STATUS_SKIPPED when vault coverage is enough."""
+    if pinned.get("web_search"):
+        return normalize_signal(pinned["web_search"])
+    key = build_key("web_search", _cache_topic("web_search", topic))
+    cached = get_cached(key)
+    if cached is not None:
+        return normalize_signal(cached)
+    skip = False
+    try:
+        from core.web_search_skip import should_skip_web_search
+
+        skip = should_skip_web_search(topic, channel_id, signals=non_web)
+    except Exception as exc:
+        logger.warning("web-search skip scoring failed; fetching web: %s", exc)
+    if skip:
+        skipped = make_signal(
+            connected=True,
+            active=False,
+            status=STATUS_SKIPPED,
+            status_detail="vault coverage sufficient; web_search not called",
+        )
+        set_cache(key, skipped, ttl_seconds=_cache_ttl_for("web_search"))
+        return skipped
+    _, result = _fetch_one("web_search", func, topic, pinned)
+    return result
 
 
 def _fanout_enabled() -> bool:
@@ -492,7 +592,11 @@ def build_registry(
     start_youtube_warmup_background()
 
     sources = _active_signal_sources(topic, channel_id)
-    workers = max_workers or _discovery_worker_cap(len(sources))
+    web_source = None
+    if _two_stage_web():
+        web_source = next(((name, func) for name, func in sources if name == "web_search"), None)
+        sources = tuple((name, func) for name, func in sources if name != "web_search")
+    workers = max_workers or _discovery_worker_cap(len(sources) + (1 if web_source else 0))
     pinned = {}
     if reuse_signals:
         for name in _variant_reuse():
@@ -506,6 +610,11 @@ def build_registry(
         for future in as_completed(futures):
             name, data = future.result()
             results[name] = data
+
+    if web_source is not None:
+        results["web_search"] = _maybe_fetch_web_search(
+            topic, channel_id, web_source[1], results, pinned
+        )
 
     if _fanout_enabled() and not reuse_signals:
         results = _apply_topic_fanout(topic, results, sources)

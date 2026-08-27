@@ -78,6 +78,7 @@ def build_features(
     length_choice: str = "2",
     key_facts: list[str] | None = None,
     fact_source: str = "",
+    vault_relevance_audit: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Assemble the normalized feature dict for a content run."""
     pkg = content_package or {}
@@ -101,7 +102,7 @@ def build_features(
 
     preset = get_length_preset(length_choice)
 
-    return {
+    features = {
         "domain": infer_domain(topic, channel_id),
         "format": preset.label,
         "length_preset": preset.choice,
@@ -120,6 +121,9 @@ def build_features(
         "key_facts_count": len(key_facts or []),
         "feature_version": "v1",
     }
+    if vault_relevance_audit is not None:
+        features["vault_relevance"] = list(vault_relevance_audit)
+    return features
 
 
 def load_features(run_id: int | None) -> dict[str, Any]:

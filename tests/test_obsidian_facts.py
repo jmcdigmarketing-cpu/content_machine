@@ -248,6 +248,43 @@ class TestLoadFacts(unittest.TestCase):
 
 
 class TestPromptKeyFacts(unittest.TestCase):
+    def test_uncertain_suggestion_can_really_be_dropped_with_n(self):
+        """The prompt promised `n` would drop uncertainty, but stored it as a fact."""
+        outputs: list[str] = []
+        # Manual/link facts now come first so they can join the relevance corpus.
+        inputs = iter(["", "n"])
+        with patch(
+            "core.obsidian_facts.load_fact_records",
+            return_value=[FactRecord(claim="Possibly related", uncertain=True)],
+        ):
+            facts = prompt_key_facts(
+                "topic",
+                "tapin",
+                print_fn=lambda *a, **k: outputs.append(" ".join(str(x) for x in a)),
+                input_fn=lambda *_: next(inputs),
+            )
+        self.assertEqual(facts, [])
+        self.assertNotIn("n", facts)
+        self.assertTrue(any("uncertain" in line.lower() for line in outputs))
+
+    def test_failed_vault_scan_is_not_reported_as_no_match(self):
+        outputs: list[str] = []
+        inputs = iter([""])
+        with patch(
+            "core.obsidian_facts.load_fact_records",
+            side_effect=RuntimeError("broken index"),
+        ):
+            facts = prompt_key_facts(
+                "topic",
+                "tapin",
+                print_fn=lambda *a, **k: outputs.append(" ".join(str(x) for x in a)),
+                input_fn=lambda *_: next(inputs),
+            )
+        rendered = "\n".join(outputs).lower()
+        self.assertEqual(facts, [])
+        self.assertIn("unavailable", rendered)
+        self.assertNotIn("no topic-relevant facts", rendered)
+
     def test_auto_attaches_suggestions_and_takes_manual(self):
         # Default (VAULT_FACTS_AUTO on): relevant vault facts attach with NO prompt.
         outputs: list[str] = []
@@ -323,7 +360,7 @@ class TestPromptKeyFacts(unittest.TestCase):
 
     def test_pick_specific_suggestions(self):
         # Interactive pick survives behind VAULT_FACTS_AUTO=false.
-        inputs = iter(["1 3", ""])  # pick suggestions 1 and 3, no manual additions
+        inputs = iter(["", "1 3"])  # no manual additions, then pick suggestions 1 and 3
         with (
             patch.dict("os.environ", {"VAULT_FACTS_AUTO": "false"}, clear=False),
             patch(

@@ -131,6 +131,8 @@ def generate_draft(
     except Exception as exc:
         logger.debug("next_arm skipped: %s", exc)
 
+    from core.vault_relevance import build_relevance_corpus
+
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -140,6 +142,7 @@ def generate_draft(
         channel_id=channel_id,
         creative_brief=experiment[2] if experiment else "",
         key_facts=key_facts,
+        relevance_corpus=build_relevance_corpus(best_signals, operator_facts=key_facts or []),
     )
     if result.aborted or not (result.script or "").strip():
         out.error = result.abort_reason or "pipeline produced no script"
@@ -232,14 +235,17 @@ def run_batch(
 
     ``key_facts`` apply to every topic (one overnight digest, N drafts).
     """
+    from apis.register_signals import franchise_batch_cache
+
     outcomes: list[DraftOutcome] = []
-    for i, topic in enumerate(topics, 1):
-        logger.info("Batch draft %d/%d: %s", i, len(topics), topic)
-        try:
-            outcomes.append(generate_draft(topic, channel_id, key_facts=key_facts))
-        except Exception as exc:
-            logger.warning("Draft failed for %r: %s", topic, exc)
-            outcomes.append(DraftOutcome(topic=topic, error=str(exc)))
+    with franchise_batch_cache(topics, channel_id=channel_id):
+        for i, topic in enumerate(topics, 1):
+            logger.info("Batch draft %d/%d: %s", i, len(topics), topic)
+            try:
+                outcomes.append(generate_draft(topic, channel_id, key_facts=key_facts))
+            except Exception as exc:
+                logger.warning("Draft failed for %r: %s", topic, exc)
+                outcomes.append(DraftOutcome(topic=topic, error=str(exc)))
     try:
         from core.pipeline import finalize_run_observability
 

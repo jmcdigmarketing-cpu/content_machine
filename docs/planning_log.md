@@ -11,6 +11,37 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-27 - Vault relevance engine finished (P2–P4)
+
+**Prompt:** finish the vault relevance engine (public-corpus crash, two-stage web skip,
+measured P3 flip, conditional P4). Do not restart P2; do not mix Fortnite clip-picker
+work; do not demote `_GAME_ANCHORS` from topic-graph.
+
+**Measured (`ops vault-eval --no-save`):** holdout from live runs 66 and 70, both labels,
+scored precision **1.0** and recall **1.0** vs P1 baseline **0.667**. Overall on the
+14-case set: 4 uncertain / 3 confident / 7 reject. The encoded P3 gate passed, so
+`config/vault_relevance.json` `default_mode` flipped to `scored`.
+
+**Shipped:**
+- Public `Sources:` accept `relevance_corpus`; headless loads with `relevance_policy=public`;
+  already-chosen URLs skip a corpus-less vault reload (`generate_content_package` no longer
+  TypeErrors).
+- Two-stage discovery: fetch non-web, score vault, then `_fetch_one("web_search")` or
+  `STATUS_SKIPPED`. Scorer failure fails open to web and logs a warning. Legacy keeps the
+  pre-fetch density skip. No second cache inside the signal.
+- Operator pick indexes match the printed `1. …` numbers; near-threshold rejects are
+  inspect-only and never auto-attached.
+- P4 extract-tier JSON tiebreak (`VAULT_RELEVANCE_TIEBREAK`, default off) for
+  operator-facing uncertain rows only. Cache key = topic + bullet + corpus hash + scorer
+  version. Pre- and post-tiebreak bands persist on `FactRecord` and the run audit (§25).
+  Never called from public Sources: or web-search skip.
+
+**Not done:** P4 is not turned on. 4/14 uncertain is a real residual band, which is why
+the code shipped; an extra extract-tier call on every operator vault scan is still an
+operator opt-in.
+
+---
+
 ## 2026-08-27 - Next 5 shipped; the POA for subject relevance
 
 **Prompt:** "review cursor, edit as needed, and roadmap next 5", then: "what about
@@ -82,7 +113,48 @@ breakdown surface in the fact prompt.
 on that axis; a short corpus weakens every axis; six fixtures is indicative, not
 conclusive - grow the set from real runs before trusting a tuning decision.
 
-### 2026-08-26 - Stock-footage preference + MoneyPrinter hyper-compare (docs)
+### Worth not relearning
+
+- **A manifest edit is not an applied upgrade.** The whole dependency wave was declared
+  and never installed; the pin test now asserts installed-vs-declared.
+- **11.3.0 was not the safe choice.** It still carried 25 advisories - all fixed only in
+  12.x, and all in font/PDF/JPEG2000/TGA parsers, i.e. the untrusted-bytes surface.
+- **A filter graph ffmpeg accepts can still be wrong.** The crossfade ran clean and
+  shortened every background by the fade; only a real render with `ffprobe` showed it.
+
+---
+
+## 2026-08-26 - Next 20 (1L / 4M / 15S) implemented
+
+**Prompt (step 2):** implement the mixed wave on `main` after PR #37. Same
+exclusions (Phase M, #141–#147 FastAPI/tray/XL, Edge TTS, NVENC, CUDA torch,
+`SCENE_MATCHED_BROLL` on TapIn, Coverr-as-quality, do not flip
+`background_mode` to `local`).
+
+**Shipped in order:**
+
+1. **#47 topic graph `[L]`** — JSON sidecar; `get_best_bets` continues week-1 →
+   week-2; graveyarded follow-up excluded; empty graph fail-open.
+2. **§26 hybrid xfade `[M]`** — TapIn `hybrid_local_ratio` 0.70 (still hybrid,
+   not local); `xfade` at the local→stock join. MoneyWise ratio unchanged.
+3. **#46 seasonal calendar `[M]`** — `config/seasonal_calendar.json`; frozen
+   `now=`; no HTTP.
+4. **#123 spoken numbers `[M]`** — TTS path expands `29-1` / UFC 317 / `$50k`;
+   captions keep digits.
+5. **#42 franchise batch cache `[M]`** — same `build_key`/`_fetch_one` cache,
+   franchise key inside `run_batch` only.
+6–20. DATABASE_URL suite blanking; real PDF fixture; wolverine-only vault gap
+   closed; Extended chapters; demonetization detector; policy runbook ops verb;
+   n8n weekly-report cron; Dataview dossier keys; wiki-links; quota-increase
+   playbook; booth favicon; 1.25× playback; Send-to facts.txt; tray git
+   describe; TapIn swatch strip.
+
+**Honesty:** Edge TTS Wave B still parked (LGPL-3.0). `background_mode` is still
+`hybrid`. `origin/claude/docs-optimization-review-a4l104` stays unmerged.
+
+---
+
+## 2026-08-26 - Stock-footage preference + MoneyPrinter hyper-compare (docs)
 
 **Prompt (step 3 of the four-step session):** note that the operator does not
 like taking that much unnecessary stock footage — it is often unrelated, and a

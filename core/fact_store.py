@@ -23,9 +23,10 @@ fresh, high-provenance facts surface first and stale ones age out.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 TIER_OPERATOR = "operator"
 TIER_LINK = "link"
@@ -80,6 +81,15 @@ class FactRecord:
     # review rather than dropped — a silent exclusion is worse than a visible guess,
     # because the operator never learns their own note was withheld.
     uncertain: bool = False
+    # Candidate 329 P2: the additive scorer's evidence. Empty on the legacy loose path
+    # so existing callers keep the old shape and cost.
+    relevance_score: float | None = None
+    relevance_band: str = ""
+    relevance_breakdown: dict[str, Any] = field(default_factory=dict)
+    relevance_scorer_version: str = ""
+    legacy_attaches: bool | None = None
+    relevance_pre_tiebreak_band: str = ""
+    relevance_tiebreak_status: str = ""
 
     def is_expired(self, today: date | None = None) -> bool:
         if self.expires is None:
@@ -91,14 +101,30 @@ class FactRecord:
             return None
         return max(0, ((today or date.today()) - self.verified_at).days)
 
-    def to_dict(self) -> dict[str, str]:
-        return {
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
             "claim": self.claim,
             "tier": self.tier,
             "source_url": self.source_url,
             "verified_at": self.verified_at.isoformat() if self.verified_at else "",
             "expires": self.expires.isoformat() if self.expires else "",
         }
+        if self.relevance_score is not None:
+            out.update(
+                {
+                    "relevance_score": self.relevance_score,
+                    "relevance_band": self.relevance_band,
+                    "relevance_breakdown": dict(self.relevance_breakdown),
+                    "relevance_scorer_version": self.relevance_scorer_version,
+                }
+            )
+            if self.legacy_attaches is not None:
+                out["legacy_attaches"] = self.legacy_attaches
+            if self.relevance_pre_tiebreak_band:
+                out["relevance_pre_tiebreak_band"] = self.relevance_pre_tiebreak_band
+            if self.relevance_tiebreak_status:
+                out["relevance_tiebreak_status"] = self.relevance_tiebreak_status
+        return out
 
 
 def tier_weight(tier: str) -> float:

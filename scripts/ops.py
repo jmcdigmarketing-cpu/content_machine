@@ -34,7 +34,7 @@ def _emit_text(title: str, text: str, args: argparse.Namespace) -> None:
     try:
         from core.html_report import dump_pre
 
-        path = dump_pre(title, text)
+        path = dump_pre(title, text, channel_id=str(getattr(args, "channel", "") or ""))
         print(f"HTML: {path}")
     except Exception as exc:
         print(f"HTML dump skipped: {exc}")
@@ -603,7 +603,11 @@ def cmd_grade(args: argparse.Namespace) -> int:
         try:
             from core.html_report import dump_pre
 
-            path = dump_pre("Report card", text)
+            path = dump_pre(
+                "Report card",
+                text,
+                channel_id=str(getattr(args, "channel", "") or ""),
+            )
             print(f"HTML: {path}")
         except Exception as exc:
             print(f"HTML dump skipped: {exc}")
@@ -623,7 +627,18 @@ def cmd_vault_eval(args: argparse.Namespace) -> int:
     """Frozen labelled cases (329 P1). No LLM cost - deterministic, safe to re-run."""
     from core.vault_evals import main as vault_main
 
-    return vault_main(["--compare"] if getattr(args, "compare", False) else [])
+    forwarded: list[str] = []
+    if getattr(args, "compare", False):
+        forwarded.append("--compare")
+    if getattr(args, "vault_eval_mode", ""):
+        forwarded.extend(["--mode", args.vault_eval_mode])
+    if getattr(args, "tune", False):
+        forwarded.append("--tune")
+    if getattr(args, "no_save", False):
+        forwarded.append("--no-save")
+    if getattr(args, "output_dir", ""):
+        forwarded.extend(["--output-dir", args.output_dir])
+    return vault_main(forwarded)
 
 
 @_register("prompt-eval", "Golden-topic prompt evals: run (LLM cost) or compare last two")
@@ -1181,6 +1196,29 @@ def main(argv=None) -> int:
         "--compare",
         action="store_true",
         help="prompt-eval: compare the two most recent eval runs instead of generating",
+    )
+    parser.add_argument(
+        "--mode",
+        dest="vault_eval_mode",
+        choices=("legacy", "shadow", "scored", "both"),
+        default="",
+        help="vault-eval: legacy, shadow, scored, or both (default)",
+    )
+    parser.add_argument(
+        "--tune",
+        action="store_true",
+        help="vault-eval: print an advisory calibration without changing config",
+    )
+    parser.add_argument(
+        "--no-save",
+        dest="no_save",
+        action="store_true",
+        help="vault-eval: report without writing data/vault_evals",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="",
+        help="vault-eval: save results outside the default data directory",
     )
     parser.add_argument(
         "--file",

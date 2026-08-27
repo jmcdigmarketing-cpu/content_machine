@@ -398,6 +398,7 @@ def load_fact_records(
         for bullet in note.bullets:
             if _is_strategy_bullet(bullet):
                 continue
+            uncertain = False
             bullet_overlap = len(topic_tokens & _tokens(bullet))
             if overlap == 0 and not evergreen and bullet_overlap == 0:
                 continue
@@ -414,6 +415,14 @@ def load_fact_records(
                     blob_fam = anchor_families(f"{note.stem} {note.headings} {bullet}")
                     if blob_fam - topic_fam:
                         continue
+                    if not (blob_fam & topic_fam):
+                        # No franchise anchor either way. This used to be dropped, which
+                        # also dropped notes about the people and companies in the story
+                        # — "Rockstar Games confirms the leak investigation" vanished
+                        # from a GTA topic that names Rockstar, because `_GAME_ANCHORS`
+                        # is a hand-kept list of *games*. Anchors cannot settle subject
+                        # identity here, so mark it and let the operator see it.
+                        uncertain = True
             record = FactRecord(
                 claim=bullet,
                 tier=tier,
@@ -421,6 +430,7 @@ def load_fact_records(
                 verified_at=verified_at,
                 expires=expires,
                 note_path=str(rel),
+                uncertain=uncertain,
             )
             scored.append((note_weight + bullet_overlap + provenance, record))
 

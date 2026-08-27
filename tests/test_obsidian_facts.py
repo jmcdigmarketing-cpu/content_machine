@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from core import obsidian_facts as of
 from core import vault_index
+from core.fact_store import FactRecord
 from core.ui import prompt_key_facts
 
 
@@ -251,7 +252,10 @@ class TestPromptKeyFacts(unittest.TestCase):
         # Default (VAULT_FACTS_AUTO on): relevant vault facts attach with NO prompt.
         outputs: list[str] = []
         inputs = iter(["Extra manual fact", ""])  # only fact-entry inputs consumed
-        with patch("core.obsidian_facts.load_facts", return_value=["Suggested fact A"]):
+        with patch(
+            "core.obsidian_facts.load_fact_records",
+            return_value=[FactRecord(claim="Suggested fact A")],
+        ):
             facts = prompt_key_facts(
                 "topic",
                 "tapin",
@@ -269,7 +273,10 @@ class TestPromptKeyFacts(unittest.TestCase):
         # new to the vault get persisted; the LLM still receives the full set.
         inputs = iter(["Brand new operator fact", ""])
         with (
-            patch("core.obsidian_facts.load_facts", return_value=["Borrowed vault fact"]),
+            patch(
+                "core.obsidian_facts.load_fact_records",
+                return_value=[FactRecord(claim="Borrowed vault fact")],
+            ),
             patch("core.operator_facts.capture_facts_to_vault") as capture,
         ):
             capture.return_value = "some/note.md"
@@ -288,7 +295,10 @@ class TestPromptKeyFacts(unittest.TestCase):
         # Nothing new => no vault write at all (run 65 wrote 8 borrowed facts).
         inputs = iter([""])
         with (
-            patch("core.obsidian_facts.load_facts", return_value=["Borrowed A", "Borrowed B"]),
+            patch(
+                "core.obsidian_facts.load_fact_records",
+                return_value=[FactRecord(claim="Borrowed A"), FactRecord(claim="Borrowed B")],
+            ),
             patch("core.operator_facts.capture_facts_to_vault") as capture,
         ):
             facts = prompt_key_facts(
@@ -300,7 +310,7 @@ class TestPromptKeyFacts(unittest.TestCase):
     def test_no_relevant_facts_skips_silently(self):
         outputs: list[str] = []
         inputs = iter([""])
-        with patch("core.obsidian_facts.load_facts", return_value=[]):
+        with patch("core.obsidian_facts.load_fact_records", return_value=[]):
             facts = prompt_key_facts(
                 "topic",
                 "tapin",
@@ -316,7 +326,10 @@ class TestPromptKeyFacts(unittest.TestCase):
         inputs = iter(["1 3", ""])  # pick suggestions 1 and 3, no manual additions
         with (
             patch.dict("os.environ", {"VAULT_FACTS_AUTO": "false"}, clear=False),
-            patch("core.obsidian_facts.load_facts", return_value=["A", "B", "C"]),
+            patch(
+                "core.obsidian_facts.load_fact_records",
+                return_value=[FactRecord(claim="A"), FactRecord(claim="B"), FactRecord(claim="C")],
+            ),
         ):
             facts = prompt_key_facts(
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
@@ -325,7 +338,7 @@ class TestPromptKeyFacts(unittest.TestCase):
 
     def test_no_suggestions_open_ended(self):
         inputs = iter(["Fact one", "Fact two", ""])
-        with patch("core.obsidian_facts.load_facts", return_value=[]):
+        with patch("core.obsidian_facts.load_fact_records", return_value=[]):
             facts = prompt_key_facts(
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
             )
@@ -333,7 +346,10 @@ class TestPromptKeyFacts(unittest.TestCase):
 
     def test_dedupes(self):
         inputs = iter(["Suggested fact A", ""])  # auto-attached, then re-typed manually
-        with patch("core.obsidian_facts.load_facts", return_value=["Suggested fact A"]):
+        with patch(
+            "core.obsidian_facts.load_fact_records",
+            return_value=[FactRecord(claim="Suggested fact A")],
+        ):
             facts = prompt_key_facts(
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
             )
@@ -342,7 +358,10 @@ class TestPromptKeyFacts(unittest.TestCase):
     def test_manual_facts_prioritized_over_vault_in_prompt_order(self):
         # Vault auto-attached first in UX, but manual facts must sort ahead for the LLM cap.
         inputs = iter(["Manual trade fact", ""])
-        with patch("core.obsidian_facts.load_facts", return_value=["Vault suggestion"]):
+        with patch(
+            "core.obsidian_facts.load_fact_records",
+            return_value=[FactRecord(claim="Vault suggestion")],
+        ):
             facts = prompt_key_facts(
                 "topic", "tapin", print_fn=lambda *a, **k: None, input_fn=lambda *_: next(inputs)
             )

@@ -54,23 +54,32 @@ class TestVaultSubjectRelevance(unittest.TestCase):
         self.assertNotIn("Marvel Rivals", joined)
         self.assertNotIn("SEGA", joined)
 
-    def test_known_gap_a_shared_token_without_a_named_franchise_still_matches(self):
-        """Documents what the competing-anchor gate does NOT fix.
+    def test_competing_character_title_without_franchise_is_uncertain_not_dropped(self):
+        """Anchor-less notes are surfaced and flagged, not silently discarded (329 P0).
 
-        Run 71's angle contained 'Wolverine'. A vault bullet that also says
-        Wolverine but names no other franchise still shares a distinctive token
-        and will attach. Invert this when subject-identity work can tell the
-        Insomniac game from a costume mention without a franchise string.
+        This case used to assert the bullet did not attach at all. That was too strong
+        for the mechanism behind it: excluding every note with no franchise anchor also
+        excluded notes about the *people and companies* in the story — measured, a note
+        saying "Rockstar Games confirms the leak investigation is ongoing" vanished from
+        a GTA topic that names Rockstar, because `_GAME_ANCHORS` is a hand-kept list of
+        games. Both cases produce an empty anchor set, so anchors cannot separate them.
+
+        Until the scoring matrix can (329 P1-P4), such a bullet is returned marked
+        `uncertain` and shown to the operator as such. A visible guess they can decline
+        beats a silent exclusion they never learn about. Notes naming a *competing*
+        franchise — Marvel Rivals, SEGA — are still dropped outright; see the test above.
         """
         tmp, env = self._vault(
             ("wolverine.md", f"# Wolverine rage\n- {SHARED_TOKEN_ONLY}"),
         )
         try:
-            facts = of.load_facts(GTA_TOPIC, "tapin", require_distinctive=True)
+            records = of.load_fact_records(GTA_TOPIC, "tapin", require_distinctive=True)
         finally:
             env.stop()
             tmp.cleanup()
-        self.assertTrue(any("Wolverine Rage" in f for f in facts))
+        matched = [r for r in records if "Wolverine Rage" in r.claim]
+        self.assertTrue(matched, "surfaced rather than silently dropped")
+        self.assertTrue(matched[0].uncertain, "and flagged, because the subject is unproven")
 
 
 if __name__ == "__main__":

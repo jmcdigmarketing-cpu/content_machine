@@ -750,7 +750,7 @@ def prompt_key_facts(
     guided across the relevancy categories that actually go stale, so the facts
     cover identity, latest result, hard numbers, and a recency anchor.
     """
-    from core.obsidian_facts import is_playbook_line, load_facts
+    from core.obsidian_facts import is_playbook_line
 
     subsection("Key facts (ground truth — highest priority)", print_fn)
     print_fn("  Cover the things that go stale — add as many as apply:")
@@ -768,21 +768,30 @@ def prompt_key_facts(
     # never surface NBA facts). Relevant matches auto-attach by default — no manual
     # accept/reject step; VAULT_FACTS_AUTO=false restores the pick prompt.
     try:
-        suggestions = load_facts(topic, channel_id, require_distinctive=True)
+        from core.obsidian_facts import load_fact_records
+
+        records = load_fact_records(topic, channel_id, require_distinctive=True)
     except Exception:
-        suggestions = []
+        records = []
     from core.operator_facts import is_writing_tip
 
-    suggestions = [s for s in suggestions if not is_writing_tip(s) and not is_playbook_line(s)]
+    records = [r for r in records if not is_writing_tip(r.claim) and not is_playbook_line(r.claim)]
+    suggestions = [r.claim for r in records]
+    uncertain_count = sum(1 for r in records if getattr(r, "uncertain", False))
     auto_attach = os.getenv("VAULT_FACTS_AUTO", "true").lower() not in ("0", "false", "no")
     if not suggestions:
         print_fn("")
         print_fn("  Vault scan: no topic-relevant facts — skipped.")
     elif auto_attach:
         print_fn("")
-        print_fn(f"  Vault scan: auto-attached {len(suggestions)} topic-relevant fact(s):")
-        for i, fact in enumerate(suggestions, 1):
-            print_fn(f"    {i}. {fact[:120]}")
+        print_fn(
+            format_vault_scan_line(
+                confident=len(suggestions) - uncertain_count, uncertain=uncertain_count
+            )
+        )
+        for i, record in enumerate(records, 1):
+            mark = " [uncertain]" if getattr(record, "uncertain", False) else ""
+            print_fn(f"    {i}. {record.claim[:120]}{mark}")
         vault_accepted.extend(suggestions)
     else:
         print_fn("")
@@ -940,6 +949,23 @@ def display_grounding_report(
             short = fact[:90] + ("…" if len(fact) > 90 else "")
             print_fn(f"    {i}. {short}")
     return True
+
+
+def format_vault_scan_line(*, confident: int, uncertain: int) -> str:
+    """The vault-scan headline, splitting proven matches from unproven ones (329 P0).
+
+    A note relevant on token evidence but sharing no franchise anchor with the topic
+    used to be dropped silently — which also dropped notes about the people and
+    companies in the story. It is kept and counted here instead, so a wrong call is
+    visible and correctable rather than invisible.
+    """
+    total = confident + uncertain
+    if not uncertain:
+        return f"  Vault scan: auto-attached {total} topic-relevant fact(s):"
+    return (
+        f"  Vault scan: auto-attached {total} fact(s) — {confident} confident, "
+        f"{uncertain} uncertain (subject unproven; say `n` next round to drop):"
+    )
 
 
 def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:

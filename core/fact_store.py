@@ -75,6 +75,11 @@ class FactRecord:
     verified_at: date | None = None
     expires: date | None = None
     note_path: str = ""
+    # Candidate 329 P0: relevant on token evidence but with no franchise anchor shared
+    # with the topic, so subject identity is unproven either way. Kept and surfaced for
+    # review rather than dropped — a silent exclusion is worse than a visible guess,
+    # because the operator never learns their own note was withheld.
+    uncertain: bool = False
 
     def is_expired(self, today: date | None = None) -> bool:
         if self.expires is None:

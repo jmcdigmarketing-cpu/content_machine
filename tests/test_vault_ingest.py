@@ -53,6 +53,19 @@ class TestIngestPdf(unittest.TestCase):
         self.assertIn("Page one facts.", rec["text"])
         self.assertIn("Page two facts.", rec["text"])
 
+    def test_real_pdf_fixture_extracts_text(self):
+        fixture = Path(__file__).resolve().parent / "fixtures" / "ingest_sample.pdf"
+        rec = vi.ingest_pdf(str(fixture))
+        try:
+            import pypdf
+        except ImportError:
+            self.assertEqual(rec["text"], "")
+            self.assertEqual(rec["confidence"], "low")
+            return
+        self.assertEqual(rec["kind"], "pdf")
+        self.assertIn("Take-Two", rec["text"])
+        self.assertEqual(rec["confidence"], "high")
+
     def test_missing_pypdf_fails_open(self):
         # No pypdf in sys.modules and not installed → empty record, never raises.
         with mock.patch.dict(sys.modules, {"pypdf": None}):

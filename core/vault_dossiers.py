@@ -89,6 +89,10 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
     unpublished = str(record.status or "") not in {"uploaded", "scheduled", "imported"}
     withheld = unpublished and bool(script_text)
     post_lines = 0 if withheld else pre_lines
+    published = not unpublished
+    grade_letter = ""
+    if grade_line:
+        grade_letter = grade_line.split()[0]
     fm = [
         "---",
         f"channel: {record.channel_id}",
@@ -96,6 +100,8 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
         f"run_id: {run_id}",
         f"date: {day}",
         f"status: {record.status}",
+        f"grade: {grade_letter}" if grade_letter else "grade: ",
+        f"published: {'true' if published else 'false'}",
         "source: content-machine (run dossier)",
         f"redaction_pre_lines: {pre_lines}",
         f"redaction_post_lines: {post_lines}",
@@ -157,6 +163,33 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
     return "\n".join(fm)
 
 
+def _previous_franchise_stem(runs_dir: Path, run_id: int, topic: str) -> str | None:
+    """Newest earlier `_runs/` dossier sharing this franchise, else None."""
+    if not runs_dir.is_dir():
+        return None
+    try:
+        from core.channel_context import anchor_families
+    except Exception:
+        return None
+    want = anchor_families(topic)
+    if not want:
+        return None
+    best: tuple[int, str] | None = None
+    for path in runs_dir.glob("*.md"):
+        m = re.match(r"^(\d+)_", path.name)
+        if not m:
+            continue
+        rid = int(m.group(1))
+        if rid >= int(run_id):
+            continue
+        fam = anchor_families(path.stem.replace("-", " "))
+        if not (fam & want):
+            continue
+        if best is None or rid > best[0]:
+            best = (rid, path.stem)
+    return best[1] if best else None
+
+
 def write_run_dossier(run_id: int | None) -> Path | None:
     """Write/overwrite one run's dossier note. Returns the path or None (fail-open)."""
     if not run_id:
@@ -178,9 +211,11 @@ def write_run_dossier(run_id: int | None) -> Path | None:
     try:
         path = _dossier_path(vault, record.channel_id, run_id, topic, day)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            _render_dossier(record, run_id=run_id, day=day), encoding="utf-8", newline="\n"
-        )
+        body = _render_dossier(record, run_id=run_id, day=day)
+        prev = _previous_franchise_stem(path.parent, run_id, topic)
+        if prev:
+            body = body.rstrip() + f"\n\nRelated: [[{prev}]]\n"
+        path.write_text(body, encoding="utf-8", newline="\n")
         for legacy in _legacy_dossier_paths(vault, record.channel_id, run_id):
             if legacy.resolve() != path.resolve():
                 try:

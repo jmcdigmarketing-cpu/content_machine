@@ -368,6 +368,13 @@ def render(data: dict[str, Any] | None = None) -> str:
         if yt.get("next_reset"):
             line += f" — resets {str(yt['next_reset'])[:16]} UTC"
         lines.append(line)
+        if int(uploads_left or 0) < 1:
+            try:
+                from apis.youtube_quota import quota_increase_advice
+
+                lines.append(quota_increase_advice(yt if yt.get("remaining") is not None else None))
+            except Exception as exc:
+                logger.debug("quota increase playbook skipped: %s", exc)
 
     util = _utilization_lines(data)
     if util:

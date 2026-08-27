@@ -45,7 +45,7 @@
         "zoom": 1.08
       },
       "background_mode": "hybrid",
-      "hybrid_local_ratio": 0.45,
+      "hybrid_local_ratio": 0.70,
       "asset_provider_order": ["local", "pexels", "pixabay", "coverr"],
       "output_subdir": "tapin",
       "intro_video_file": "video/intro/channel_intro.mp4",

@@ -623,6 +623,18 @@ class YouTubePublisher(Publisher):
                 )
             except Exception as exc:
                 logger.debug("video_published event not emitted: %s", exc)
+            try:
+                from core.topic_graph import record_published_topic
+                from storage.repositories.content_runs import get_content_run_repository
+
+                seed = request.title
+                if content_run_id:
+                    run = get_content_run_repository().get(content_run_id)
+                    if run is not None:
+                        seed = run.input_topic or run.selected_topic or request.title
+                record_published_topic(channel_id, seed)
+            except Exception as exc:
+                logger.debug("topic graph record skipped: %s", exc)
             return PublishResult(
                 video_id=video_id,
                 status=result_status,

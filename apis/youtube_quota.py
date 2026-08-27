@@ -119,14 +119,38 @@ def uploads_remaining(summary: dict | None = None) -> int:
     return max(0, remaining // need)
 
 
+def quota_increase_advice(summary: dict | None = None) -> str:
+    """Uploads-left line; attach the in-repo request checklist when one upload cannot fit."""
+    s = summary if summary is not None else get_usage_summary()
+    n = uploads_remaining(s)
+    line = f"~{n} upload(s) left this reset"
+    if n >= 1:
+        return line
+    from config.paths import ROOT_DIR
+
+    playbook = os.path.join(ROOT_DIR, "docs", "youtube_quota_increase.md")
+    return (
+        f"{line}\n"
+        "YouTube quota increase checklist (do not invent numbers):\n"
+        "- Confirm remaining units cannot cover one upload (~1,600).\n"
+        "- Request an increase in Google Cloud Console for YouTube Data API v3.\n"
+        f"- Follow {playbook}"
+    )
+
+
 def format_uploads_left(summary: dict | None = None) -> str:
     """Operator line: remaining units as a hard upload ceiling."""
     s = summary if summary is not None else get_usage_summary()
     n = uploads_remaining(s)
-    return (
+    line = (
         f"~{n} upload(s) left this reset "
         f"(~{s.get('remaining', 0):,} units; upload needs ~{units_per_upload():,})"
     )
+    if n < 1:
+        extra = quota_increase_advice(s)
+        if "quota increase" in extra.lower():
+            line = f"{line}\n{extra}"
+    return line
 
 
 def has_quota_for_upload() -> bool:

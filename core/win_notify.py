@@ -16,6 +16,28 @@ from core.logging import get_logger
 
 logger = get_logger("core.win_notify")
 
+
+def git_describe() -> str:
+    """``git describe --dirty`` for the tray chip. Timeout and fail-open to empty."""
+    try:
+        from config.paths import ROOT_DIR
+
+        result = subprocess.run(
+            ["git", "describe", "--dirty", "--always"],
+            cwd=ROOT_DIR,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+        if result.returncode != 0:
+            return ""
+        return (result.stdout or "").strip()
+    except Exception as exc:
+        logger.debug("git describe failed: %s", exc)
+        return ""
+
+
 APP_ID = "ContentOS.Operator"
 APP_NAME = "Content OS"
 
@@ -346,6 +368,12 @@ def quota_chip_lines(
             lines.append(last_seen_label())
         except Exception as exc:
             logger.debug("human last-seen skipped: %s", exc)
+    try:
+        desc = git_describe()
+        if desc:
+            lines.append(f"Git: {desc}")
+    except Exception as exc:
+        logger.debug("git describe skipped: %s", exc)
     return lines
 
 
@@ -421,7 +449,12 @@ def open_doctor_html(channel_id: str = "tapin") -> str:
     from core.html_report import dump_pre
     from core.ops_doctor import render
 
-    return dump_pre("ops doctor", render(channel_id=channel_id), filename="doctor.html")
+    return dump_pre(
+        "ops doctor",
+        render(channel_id=channel_id),
+        filename="doctor.html",
+        channel_id=channel_id or "",
+    )
 
 
 def chip_text(snap: dict[str, Any] | None = None, *, channel_id: str | None = None) -> str:

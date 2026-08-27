@@ -478,8 +478,37 @@ def booth_html(
     thumbnail_safe_area: str = "",
     thumbnail_picker: str = "",
     expert_panel_html: str = "",
+    channel_id: str = "",
 ) -> str:
     share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
+    poster_attr = ""
+    poster_chrome = ""
+    if thumb_path and os.path.isfile(thumb_path):
+        tsrc = thumb_href or _file_uri(thumb_path)
+        poster_attr = f" poster='{escape(tsrc)}'"
+        poster_chrome = (
+            f"<div class='poster-chrome' style='background-image:url({escape(tsrc)})'></div>"
+        )
+    rate_controls = (
+        "<p>"
+        "<button type='button' class='rate' onclick='setBoothRate(1)'>1×</button>"
+        "<button type='button' class='rate' onclick='setBoothRate(1.25)'>1.25×</button>"
+        "<button type='button' class='rate' onclick='toggleSafeArea()'>Safe area</button>"
+        "</p>"
+        "<script>"
+        "(function(){var player=document.getElementById('player');"
+        "if(player && player.playbackRate !== undefined){player.playbackRate = 1;}"
+        "window.setBoothRate=function(r){var p=document.getElementById('player');"
+        "if(p && p.playbackRate !== undefined){p.playbackRate=r;}};"
+        "window.toggleSafeArea=function(){var s=document.getElementById('stage');"
+        "if(s){s.classList.toggle('safe-on');}};"
+        "})();"
+        "</script>"
+    )
+    safe_boxes = (
+        "<div class='safe-area' aria-hidden='true'>"
+        "<span class='yt-top'></span><span class='yt-bottom'></span></div>"
+    )
     if mp4_path and os.path.isfile(mp4_path):
         src = mp4_href or _file_uri(mp4_path)
         track = (
@@ -489,13 +518,17 @@ def booth_html(
             else ""
         )
         vid = (
-            f"<video id='player' controls src='{escape(src)}'>{track}</video>"
-            f"{share}<p>{escape(mp4_path)}</p>"
+            f"<div class='stage' id='stage'>{poster_chrome}"
+            f"<video id='player' class='player' controls src='{escape(src)}'"
+            f"{poster_attr}>{track}</video>{safe_boxes}</div>"
+            f"{rate_controls}{share}<p>{escape(mp4_path)}</p>"
         )
     else:
         vid = (
+            f"<div class='stage' id='stage'>{poster_chrome}"
             "<p id='player'>No last mp4 on disk. Render first, then reopen the booth.</p>"
-            f"{share}"
+            f"{safe_boxes}</div>"
+            f"{rate_controls}{share}"
         )
     thumb = ""
     if thumb_path and os.path.isfile(thumb_path):
@@ -615,6 +648,7 @@ def booth_html(
         subtitle="play + grade + authenticity + cost",
         skip_href="#player",
         header_html=header_html,
+        channel_id=channel_id,
     )
 
 
@@ -905,6 +939,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     return {
         "mp4_path": mp4,
         "thumb_path": thumb,
+        "channel_id": channel_id or "",
         "grade": grade,
         "authenticity": str(quality.get("authenticity_verdict") or ""),
         "cost": cost_s,
@@ -1014,7 +1049,19 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
             parsed_path = unquote(urlparse(path).path)
             if parsed_path in candidate_routes:
                 return candidate_routes[parsed_path]
+            if parsed_path in ("/favicon.ico", "/favicon.svg", "favicon.ico", "favicon.svg"):
+                from config.paths import ROOT_DIR
+
+                mark = os.path.join(ROOT_DIR, "core", "data", "booth_favicon.svg")
+                if os.path.isfile(mark):
+                    return mark
             name = parsed_path.rsplit("/", 1)[-1]
+            if name in ("favicon.ico", "favicon.svg"):
+                from config.paths import ROOT_DIR
+
+                mark = os.path.join(ROOT_DIR, "core", "data", "booth_favicon.svg")
+                if os.path.isfile(mark):
+                    return mark
             if name == "booth.mp4" and mp4 and os.path.isfile(str(mp4)):
                 return str(mp4)
             if thumb_name and name == thumb_name and thumb and os.path.isfile(str(thumb)):

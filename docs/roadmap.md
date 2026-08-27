@@ -13,11 +13,11 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-08-25 — **ten-small-task wave shipped** (MoneyWise persona,
-#21, #22, #31, #39, #53, #262, #271, #298, #299). FastAPI shell **#147 still skipped**. No Content OS Desktop
-(#141), Visual Studio (#142), Web OS (#143), Phase M, volume-gated backtest,
-or $0 TTS voice judgment. Rationale: [planning_log.md](planning_log.md)
-2026-08-25.
+Last updated: 2026-08-27 — vault relevance default **scored** (holdout 1.0/1.0);
+HTML/booth **#245 #236 #238 #267 #268**. **178 open** checkboxes remain (`- [ ]`;
+386 shipped). FastAPI shell **#147 still skipped**. No Content OS Desktop (#141),
+Visual Studio (#142), Web OS (#143), Phase M, volume-gated backtest, or $0 TTS
+voice judgment.
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -677,7 +677,8 @@ Efficiency
 - [x] 41. Cap discovery workers so one slow Apify actor cannot set wall-clock for every run (twitter’s lesson, still true for tiktok ~14s) `[S]`
   *(2026-08-20: `DISCOVERY_MAX_WORKERS` default 8; 0/off = one worker per source;
   explicit `max_workers=` still wins)*
-- [ ] 42. Shared discovery cache across `batch-drafts` topics that share a franchise anchor (GTA 6 leaks × N) `[M]`
+- [x] 42. Shared discovery cache across `batch-drafts` topics that share a franchise anchor (GTA 6 leaks × N) `[M]`
+  *(2026-08-26: `franchise_batch_cache` rewrites `build_key` to `franchise:{anchor}` inside `run_batch`; no second cache)*
 - [x] **43. Script trim pass** *(2026-08-21)* — drop trailing padding sentences when over length; never clip; hard cap remains refuse `[S]`
 - [x] 44. `scripts/probe_sync.py` *(2026-08-22)* - answers "is this render out of sync?" in one sentence. Verified on a real mp4: 2.207s leading pad vs the 2.15s TapIn intro -> **IN SYNC**, because `prepend_channel_intro` runs after ffmpeg. Encodes both traps that cost real time: input-seek `-ss` reports the wrong frame (uses output-seek), and `silence_start: 0` is the intro, not a defect
 - [x] 45. Overnight quota-aware: skip or shrink `--count` when YouTube remaining < 1,600 or Apify breaker is in `[S]`
@@ -685,8 +686,10 @@ Efficiency
 
 Long-term / intelligence
 
-- [ ] 46. UFC/NBA/game **seasonal calendar** as a $0 best-bet source (cards, earnings weeks, launch dates) — best-bet is RSS-only at startup by design `[M]`
-- [ ] 47. Topic graph: franchise arcs (GTA VI week 1 → week 4) so best-bet can continue a story instead of only avoiding the graveyard `[L]`
+- [x] 46. UFC/NBA/game **seasonal calendar** as a $0 best-bet source (cards, earnings weeks, launch dates) — best-bet is RSS-only at startup by design `[M]`
+  *(2026-08-26: `config/seasonal_calendar.json`; past dates expired; `get_best_bets` source=`calendar`)*
+- [x] 47. Topic graph: franchise arcs (GTA VI week 1 → week 4) so best-bet can continue a story instead of only avoiding the graveyard `[L]`
+  *(2026-08-26: JSON sidecar `data/topic_graph.json`; `get_best_bets` prefers week-N+1; graveyard still wins)*
 - [ ] 48. Multi-run series (`part 1/2/3`) with a vault-backed outline; cadence still capped `[L]`
 - [ ] 49. Post-publish first-hour anomaly (views or engaged-rate vs channel baseline) → webhook. Uses metrics sync, not a new API `[M]`
 - [ ] 50. Learned insight-marker list: replace the hardcoded `_INSIGHT_MARKERS` from scripts that actually retained `[L]`
@@ -825,7 +828,8 @@ YouTube surface (still YouTube-only)
 - [x] **107. `madeForKids=false` audit** *(2026-08-21)* — forced False on every insert `[S]`
 - [x] **108. Default language + audio language** *(2026-08-21)* — `YOUTUBE_DEFAULT_LANGUAGE` (default `en`) `[S]`
 - [x] **109. Unlisted review before public** *(2026-08-21)* — immediate public held as unlisted (`YOUTUBE_UNLISTED_REVIEW`) `[S]`
-- [ ] 110. Chapter timestamps for Extended `[S]`
+- [x] 110. Chapter timestamps for Extended `[S]`
+  *(2026-08-26: `0:00` beat labels from the script; Shorts skip)*
 - [ ] 111. End-screen / cards pointing at the previous franchise video (YouTube API) `[M]`
 - [ ] 112. Correction dossier + community-post template when post-publish facts reverse `[M]`
 
@@ -841,7 +845,8 @@ Content / learning
 - [ ] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]` *(only if stock remains — §26: more APIs are not a quality upgrade; owned gameplay first)*
 - [x] **121. Stock query rewriter: never Pexels-search trademarked “UFC”** *(2026-08-21)* — rewrite to `mma` `[S]`
 - [x] **122. `license.yaml` beside local clips** *(2026-08-25)* — inherited nearest-folder metadata reaches the persisted local-asset attribution; root file records owned/commercial use `[S]`
-- [ ] 123. Number/SSML reading rules (`29-1`, UFC 317, `$50k`) — distinct from the name lexicon `[M]`
+- [x] 123. Number/SSML reading rules (`29-1`, UFC 317, `$50k`) — distinct from the name lexicon `[M]`
+  *(2026-08-26: TTS path only; captions keep digits)*
 - [x] 124. Pause-after-hook: 200–400ms silence after line 1 `[S]` — shipped 2026-08-26; 250ms after first-line timings; skip is byte-identical argv/audio (same honesty as #24/#26)
 
 Legal / policy / MoneyWise (not Phase M, not the #79 spike)
@@ -852,21 +857,27 @@ Legal / policy / MoneyWise (not Phase M, not the #79 spike)
 - [x] **128. FTC affiliate disclosure *line*** *(2026-08-21)* — copy when `monetization_cta` is set; #79 is the tracking spike `[S]`
 - [x] **129. UFC/trademark title linter** *(2026-08-21)* — warns `UFC` on a non-UFC topic `[S]`
 - [ ] 130. Right-of-publicity: refuse stock thumbs that look like a real fighter’s face `[M]`
-- [ ] 131. Demonetization detector (`estimatedRevenue` cliff vs channel baseline) `[S]`
-- [ ] 132. Policy-incident runbook (strike / Content ID / appeal template in-repo) `[S]`
+- [x] 131. Demonetization detector (`estimatedRevenue` cliff vs channel baseline) `[S]`
+  *(2026-08-26: `ops demonetization`; missing revenue is unmeasured, not zero)*
+- [x] 132. Policy-incident runbook (strike / Content ID / appeal template in-repo) `[S]`
+  *(2026-08-26: `ops policy-runbook` prints `docs/policy_incident_runbook.md`)*
 
 Operator product
 
 - [x] 133. `.ics` calendar of scheduled publishes `[S]` — shipped 2026-08-26; `ops publish-ics` writes beside HTML dumps (`html_dir()`), not under `data/`
-- [ ] 134. n8n/email recipe for `weekly-report` (events exist; this is the recipe) `[S]`
+- [x] 134. n8n/email recipe for `weekly-report` (events exist; this is the recipe) `[S]`
+  *(2026-08-26: `workflows/n8n/weekly_report.json` cron → `ops weekly-report`)*
 - [x] **135. CSV export of `ops economics`** *(2026-08-21)* — `--csv` beside HTML dumps, not under `data/` `[S]`
-- [ ] 136. Vault Dataview-friendly dossier frontmatter `[S]`
-- [ ] 137. Wiki-links between related `_runs/` dossiers `[S]`
+- [x] 136. Vault Dataview-friendly dossier frontmatter `[S]`
+  *(2026-08-26: `channel` / `run_id` / `grade` / `published` via real parser)*
+- [x] 137. Wiki-links between related `_runs/` dossiers `[S]`
+  *(2026-08-26: previous same-franchise stem `[[…]]` on write)*
 - [ ] 138. Long-form length preset that is **not** a Short (16:9 sibling already exists) `[M]`
 - [x] 139. Channel trailer / handle / banner checklist inside `channel-go-live` `[S]`
   *(2026-08-20: banner file + `youtube_handle` + trailer id/file; MoneyWise banner
   passes, handle/trailer still FAIL)*
-- [ ] 140. YouTube quota-increase request playbook (when 10k/day is the ceiling) `[S]`
+- [x] 140. YouTube quota-increase request playbook (when 10k/day is the ceiling) `[S]`
+  *(2026-08-26: `quota_increase_advice` next to uploads-left when one upload cannot fit)*
 
 **Candidates 141–320 (2026-08-20 late-night brainstorm — UI / app / aesthetics / sibling software)**
 
@@ -988,17 +999,19 @@ Small — hours / a PR
 - [x] **232. Desktop `.lnk` to the review booth** *(2026-08-25)* — `ops booth-shortcut` targets a persistent `pythonw` launcher because the localhost port is ephemeral and a literal URL would be dead `[S]` — *new-app.*
 - [ ] 233. Per-channel **notification sound** `[S]` — *aesthetics.* TapIn vs MoneyWise should not share one ding.
 - [x] **234. High-contrast CSS for HTML reports** *(2026-08-21)* — `prefers-contrast: more` `[S]`
-- [ ] 235. TapIn **swatch strip** in HTML headers `[S]` — *aesthetics.* Channel color without a full language pack.
-- [ ] 236. MoneyWise **serif header** on HTML reports `[S]` — *aesthetics.* Editorial vs neon, typeset only.
-- [ ] 237. Favicon for localhost booth (channel mark) `[S]` — *aesthetics.* Browser tab literacy.
-- [ ] 238. Local **poster image** for the review page `[S]` — *aesthetics.* 9:16 frame as page chrome; no network OG.
+- [x] 235. TapIn **swatch strip** in HTML headers `[S]` — *aesthetics.* Channel color without a full language pack.
+  *(2026-08-26: shipped `end_card` bg/fg; **2026-08-27:** `booth_html` / `ops --html` now pass `channel_id`, so the swatch actually appears on the booth)*
+- [x] 236. MoneyWise **serif header** on HTML reports `[S]` *(2026-08-27)* — Georgia on `body.channel-moneywise header h1`; `dump_pre` and the booth thread `channel_id`
+- [x] 237. Favicon for localhost booth (channel mark) `[S]` — *aesthetics.* Browser tab literacy.
+  *(2026-08-26: `rel="icon"` + `/favicon.svg` on `ops booth --serve`)*
+- [x] 238. Local **poster image** for the review page `[S]` *(2026-08-27)* — `<video poster>` plus `.poster-chrome` from the last thumb; 9:16 stage, no network OG
 - [ ] 239. **Print stylesheet** for weekly-report HTML `[S]` — *aesthetics.* Magazine #215 is days; print CSS is hours.
 - [x] 240. `ops status --html` *(2026-08-21)* `[S]` — *UI.* Swap for skipped #147 FastAPI.
 - [x] 241. `ops economics --html` *(2026-08-21)* `[S]` — *cost / UI.* Allocated vs marginal already in the command.
 - [x] **242. `ops grade --html --run-id`** *(2026-08-21)* `[S]` — *UI.*
 - [ ] 243. Startup **PNG wordmark** option beside ASCII `[S]` — *aesthetics.* `ascii_art` stays; a mark is for windows and HTML.
 - [ ] 244. Windows Terminal **profile snippet** (channel colors) `[S]` — *aesthetics.* Docs + JSON fragment; not a theme rewrite.
-- [ ] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` — *aesthetics.* One CSS file; design-system #172 can adopt it later.
+- [x] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` *(2026-08-27)* — body stays Segoe UI; `pre` / `textarea.md` use JetBrains Mono
 - [ ] 246. Blurred **9:16 poster** as booth background `[S]` — *aesthetics.* Last frame, CSS blur only — no new ffmpeg.
 - [ ] 247. CSS **grain/vignette preview** toggle `[S]` — *aesthetics.* Preview-only; does not change the render command.
 - [ ] 248. Caption **font specimen strip** (three faces) `[S]` — *aesthetics.* Pick writes a note, not `channels.json` yet (#21).
@@ -1016,12 +1029,13 @@ Small — hours / a PR
 - [ ] 260. Keyboard **`?` cheat-sheet** overlay `[S]` — *UI.* Booth/palette discoverability.
 - [x] **261. Skip-link a11y on the booth** *(2026-08-21)* — skip to `#player`; dumps skip to `#main` `[S]`
 - [x] 262. HTML5 **captions from SRT** *(2026-08-25)* — stable render-side SRT is converted to WebVTT and attached as the booth player's default English `<track>` `[S]`
-- [ ] 263. Playback-rate **1.25×** toggle `[S]` — *UI.* Operator minutes.
+- [x] 263. Playback-rate **1.25×** toggle `[S]` — *UI.* Operator minutes.
+  *(2026-08-26: booth buttons; default `playbackRate = 1`)*
 - [ ] 264. **Loop last 3s of hook** `[S]` — *aesthetics.* Retention cliff rehearsal; no new render.
 - [ ] 265. **Frame-step** with `,` / `.` `[S]` — *UI.* Proofread burned captions on a frame.
 - [ ] 266. **Save current frame** as a still `[S]` — *aesthetics.* Operator stills folder; not a thumbnail API.
-- [ ] 267. **9:16 letterbox** in a landscape window `[S]` — *aesthetics / UI.* Stop stretching Shorts in the booth.
-- [ ] 268. **Safe-area overlay toggle** (YouTube UI chrome) `[S]` — *aesthetics.* Player overlay; not the #22 PIL test.
+- [x] 267. **9:16 letterbox** in a landscape window `[S]` *(2026-08-27)* — `.stage` with `aspect-ratio: 9 / 16` and `object-fit: contain`
+- [x] 268. **Safe-area overlay toggle** (YouTube UI chrome) `[S]` *(2026-08-27)* — default off; `toggleSafeArea` adds `.safe-on`; not the #22 PIL test
 - [ ] 269. **Burned vs sidecar** caption toggle `[S]` — *UI.* Compare retext vs proportional without re-encoding.
 - [ ] 270. **Waveform under the player** (from existing mp3) `[S]` — *aesthetics.* No new TTS spend.
 - [x] 271. Spoken vs **estimated duration** readout *(2026-08-25)* — booth compares ffprobe duration of the persisted spoken-audio MP3 (not the intro-bearing MP4) with the persisted word count / measured 3.3 wps estimate `[S]`
@@ -1047,7 +1061,8 @@ Small — hours / a PR
 - [x] 291. Set Windows **AppUserModelID** *(2026-08-21)* — toasts group as "Content OS" (`ContentOS.Operator`) `[S]` — *new-app.*
 - [x] **292. Mute toasts during quiet hours** *(2026-08-22)* — `CONTENT_TOAST_DND`, resolved machine-level over every configured channel; breaker toasts bypass it via `urgent=True`. The first cut was inert (no channel → `default` → no `quiet_hours`) and its test mocked `quiet_hours_reason`, so CI never saw it; `tests/test_toast_dnd.py` now drives the clock against the shipped `channels.json` instead `[S]`
 - [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
-- [ ] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight `--facts-file` is now wired, this is the Explorer helper.
+- [x] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight `--facts-file` is now wired, this is the Explorer helper.
+  *(2026-08-26: `ops sendto-facts`; tests use a temp SendTo dir)*
 - [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.
 - [ ] 296. **Print stylesheet** for the contact sheet `[S]` — *aesthetics.*
 - [ ] 297. Caption fill **contrast ratio number** vs sampled frame `[S]` — *aesthetics.* Hours version of auditor #185.
@@ -1073,7 +1088,8 @@ Small — hours / a PR
 - [x] **317. Tray: Free vs Standard mode** *(2026-08-21)* — chip line `Mode:` `[S]` — *cost / UI.*
 - [ ] 318. Remember **second-monitor bounds** `[S]` — *UI.* Booth on the 9:16 monitor.
 - [x] 319. **"What's blocking publish"** *(2026-08-21)* — `ops blocking` one-sentence from existing gates `[S]` — *short-term / UI.*
-- [ ] 320. Tray: **local git describe** when `ops` gains commands `[S]` — *UI.* Changelog awareness without opening GitHub.
+- [x] 320. Tray: **local git describe** when `ops` gains commands `[S]` — *UI.* Changelog awareness without opening GitHub.
+  *(2026-08-26: `git describe --dirty` timeout, fail-open; tests mock the helper)*
 
 Run-71 correctness (2026-08-22)
 
@@ -1088,7 +1104,7 @@ Audit of the 2026-08-26 wave (all three were GREEN in CI)
 - [x] 326. **Install the dependency wave that was only declared** *(2026-08-27)* - installed; then measured, which corrected the plan: 11.3.0 still carried **25** advisories and only 12.x fixes them, so the pin is now **Pillow 12.3.0** (0 advisories; tree 75 -> 48). Verified by `PIL.__version__`, not the file, and the pin test gained an installed-vs-declared assertion. Original finding: `[S]` - *security.* `pyproject.toml` reads `Pillow==11.3.0` / `requests==2.32.4`; the environment runs **9.5.0 / 2.32.3**, so all 26 Pillow CVEs are still live on the machine that parses untrusted stock-footage and thumbnail bytes. CI installs fresh and now runs a **different Pillow major** than the operator, and the upgrade's whole risk ("does the render still work on a new Pillow") is untested because nothing has run on 11.3.0. Fix is `pip install -e .` + one real render, not a code change. moviepy 1.0.3 is also still installed though nothing imports it
 - [x] 327. **`spoken_numbers` mangles ranges on every render** *(2026-08-27)* - reuses `fact_grounding._RECORD`'s verb cue, so the two modules now agree on what a record is; three-part records spell properly too. Original finding: `[M]` - *quality.* `_RECORD_RE` matches any two-digit hyphenated pair, so `expand_spoken_numbers` - which runs unconditionally in `generate_audio` for every channel - turns "5-10 years" into "five ten years", "10-15%" into "ten fifteen%", and "9-5" into "nine five". Worst on **MoneyWise**, which is made of ranges and percentages and has just been given its own voice. `core/fact_grounding.py:47` already solves the identical ambiguity by requiring a verb cue (`is|now|went|record of`) - reuse that guard. The three shipped tests use no range and no percent. **No env gate exists**, so it cannot be turned off without a code change
 - [x] 328. **One bad match silently disables all number expansion** *(2026-08-27)* - out-of-range event numbers return their digits instead of raising; a test asserts a purse and a record in the same script still expand alongside one. Original finding: `[S]` - *visibility.* `_UFC_RE` accepts 2-4 digits but `_event_number` indexes a 20-entry tuple with `n // 100`, so `UFC 2000` raises `IndexError`. The call site wraps the whole pass in `try/except ... logger.debug`, so at the default WARNING level the operator sees nothing and *every* expansion stops for that script, not just the bad match. decisions §24 shape: fail-open but not fail-visible, at the wrong granularity
-- [x] 329. **Subject relevance without hand-tagged franchises - P0 + P1** *(2026-08-27)* - the competing-franchise fix over-corrected: requiring a shared *franchise anchor* also dropped notes about the people and companies in the story (measured - "Rockstar Games confirms the leak investigation" vanished from a GTA topic naming Rockstar, silently, on `core/ui.py`'s vault prompt). Both the good and bad cases produce an EMPTY anchor set, so anchors cannot separate them. **P0:** such bullets are surfaced marked `uncertain` ("N confident, M uncertain") instead of dropped - a visible guess beats a silent exclusion. **P1:** `core/vault_evals.py` + `ops vault-eval`, six frozen labelled cases from run 71, deterministic, no LLM. **Baseline: precision 0.667, recall 0.667** (1 leaked, 1 missed). **P2-P4 remain open** - replace the boolean chain with an additive evidence score (entity-in-corpus + corpus cosine + tier + competing-family penalty), measured against this baseline, then demote `_GAME_ANCHORS` from gate to feature. Design: planning_log 2026-08-27
+- [x] 329. **Subject relevance without hand-tagged franchises - P0–P4** *(2026-08-27)* - the competing-franchise fix over-corrected: requiring a shared *franchise anchor* also dropped notes about the people and companies in the story (measured - "Rockstar Games confirms the leak investigation" vanished from a GTA topic naming Rockstar, silently, on `core/ui.py`'s vault prompt). Both the good and bad cases produce an EMPTY anchor set, so anchors cannot separate them. **P0:** such bullets are surfaced marked `uncertain` ("N confident, M uncertain") instead of dropped. **P1:** `core/vault_evals.py` + `ops vault-eval`; baseline precision/recall **0.667**. **P2:** additive scorer `vault_relevance_v1` (entity-in-corpus + corpus cosine + tier + anchors as a feature). **P3:** holdout from live runs 66+70 scored precision **and** recall **1.0**; shipped `default_mode` flipped to `scored`. **P4:** extract-tier tiebreak exists, **default off** (`VAULT_RELEVANCE_TIEBREAK`); residual uncertain band was 4/14. Two-stage discovery skips `web_search` with `STATUS_SKIPPED` only *after* a non-web corpus. `_GAME_ANCHORS` remain for topic-graph. Design: planning_log 2026-08-27; decisions §27
 - [x] 330. **Crossfade at the hybrid join** *(2026-08-27)* - decisions §26's one surviving MoneyPrinterTurbo borrow. The xfade was already in and ffmpeg accepted it, but it **shortened every background by exactly the fade**: an xfade output runs `offset + len(second input)` and the stock segment was never extended, so a 6.000s request produced 5.500s against real ffmpeg. The render loops the background, so it never raised - it wrapped early and showed a jump. Now exact at 6.000s and 30.000s; the test asserts the *sum* across six durations and five ratios so the arithmetic cannot drift again
 
 ---

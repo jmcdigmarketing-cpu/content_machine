@@ -6,6 +6,7 @@ import argparse
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from scripts import ops
@@ -19,6 +20,15 @@ class TestOpsHtmlAndHelpers(unittest.TestCase):
                 ops._emit_text("Reliability", "Apify ON", args)
             files = os.listdir(tmp)
             self.assertTrue(any(name.endswith(".html") for name in files))
+
+    def test_emit_text_passes_channel_into_the_html_dump(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = argparse.Namespace(html=True, channel="moneywise")
+            with patch.dict(os.environ, {"CONTENT_HTML_DIR": tmp, "CONTENT_HTML_OPEN": "false"}):
+                ops._emit_text("Reliability", "Apify ON", args)
+            text = Path(os.path.join(tmp, os.listdir(tmp)[0])).read_text(encoding="utf-8")
+        self.assertIn("channel-moneywise", text)
+        self.assertIn("Georgia", text)
 
     def test_blocking_command_prints_sentence(self):
         args = argparse.Namespace(channel="tapin", html=False)

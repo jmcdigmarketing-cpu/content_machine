@@ -33,7 +33,7 @@ header .quota, #quotabar { font-size: 16px; color: #e8eaed; margin-top: 0.35rem;
 button, input, select, textarea { font-size: 16px; }
 main { padding: 1.25rem; max-width: 960px; }
 pre { background: #0d0f14; border: 1px solid #2a2f3a; padding: 1rem; overflow: auto;
-  font-family: "Cascadia Mono", Consolas, monospace; font-size: 16px; white-space: pre-wrap; }
+  font-family: "JetBrains Mono", Consolas, monospace; font-size: 16px; white-space: pre-wrap; }
 table { border-collapse: collapse; width: 100%; font-size: 16px; }
 th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid #2a2f3a; }
 th { color: #9aa0a6; font-weight: 600; }
@@ -42,14 +42,27 @@ th { color: #9aa0a6; font-weight: 600; }
 img.thumb { max-width: 100%; height: auto; cursor: zoom-in; border: 1px solid #2a2f3a; }
 dialog { border: none; padding: 0; background: #000; max-width: 96vw; }
 dialog img { max-width: 96vw; max-height: 96vh; }
-video { width: 100%; max-height: 70vh; background: #000; }
+video { width: 100%; max-height: 70vh; background: #000; object-fit: contain; }
+.stage { position: relative; width: 100%; max-width: 420px; margin: 0 auto;
+  background: #000; aspect-ratio: 9 / 16; display: flex; align-items: center;
+  justify-content: center; overflow: hidden; }
+.stage video { width: 100%; height: 100%; max-height: none; object-fit: contain; }
+.stage .poster-chrome { position: absolute; inset: 0; background-size: cover;
+  background-position: center; opacity: 0.22; pointer-events: none; }
+.safe-area { display: none; position: absolute; inset: 0; pointer-events: none; }
+.stage.safe-on .safe-area { display: block; }
+.safe-area .yt-top { position: absolute; top: 0; left: 0; right: 0; height: 12%;
+  border-bottom: 1px dashed #fdd663; }
+.safe-area .yt-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 20%;
+  border-top: 1px dashed #fdd663; }
+body.channel-moneywise header h1 { font-family: Georgia, "Times New Roman", serif; }
 .cost-sub { color: #fdd663; font-size: 16px; margin: 0.35rem 0 0; }
 .redpill { color: #f28b82; font-weight: 700; }
 .banner { background: #3c1f1f; border: 1px solid #f28b82; padding: 0.6rem 0.8rem; margin: 0.5rem 0; }
 .pill { display: inline-block; border: 1px solid #2a2f3a; padding: 0.15rem 0.5rem;
   margin: 0.15rem; font-size: 16px; }
 textarea.md { width: 100%; min-height: 7rem; background: #0d0f14; color: #e8eaed;
-  border: 1px solid #2a2f3a; font-family: "Cascadia Mono", Consolas, monospace; font-size: 16px; }
+  border: 1px solid #2a2f3a; font-family: "JetBrains Mono", Consolas, monospace; font-size: 16px; }
 a { color: #8ab4f8; }
 .bar { height: 10px; background: #2a2f3a; border: 1px solid #2a2f3a; margin: 0.35rem 0 0.6rem; }
 .bar > span { display: block; height: 100%; background: #fdd663; }
@@ -63,6 +76,9 @@ a { color: #8ab4f8; }
   padding: 0.1rem 0.45rem; margin: 0.15rem; font-size: 16px; }
 .badge { display: inline-block; border: 1px solid #2a2f3a; padding: 0.1rem 0.45rem;
   margin-left: 0.35rem; font-size: 16px; }
+.swatch { display: flex; height: 6px; margin: 0.35rem 0 0; gap: 0; }
+.swatch span { flex: 1; display: block; min-height: 6px; }
+button.rate { margin: 0.35rem 0.35rem 0 0; }
 @media (prefers-contrast: more) {
   html, body { background: #000; color: #fff; }
   header { background: #000; border-bottom-color: #fff; }
@@ -134,17 +150,40 @@ def themed_page(
     subtitle: str = "",
     skip_href: str = "#main",
     header_html: str = "",
+    channel_id: str = "",
 ) -> str:
     sub = ascii_safe(subtitle or "Content OS operator snapshot")
     safe_title = ascii_safe(title)
     skip = f"<a class='skip' href='{escape(skip_href)}'>Skip to content</a>" if skip_href else ""
     extra = header_html or ""
+    swatch = ""
+    cid = (channel_id or "").strip().lower()
+    if cid == "tapin":
+        try:
+            from config.channels import get_channel_profile
+
+            card = get_channel_profile("tapin").end_card or {}
+            bg = str(card.get("bg") or "").strip()
+            fg = str(card.get("fg") or "").strip()
+            if bg:
+                swatch = (
+                    "<div class='swatch' aria-hidden='true'>"
+                    f"<span style='background:{escape(bg)}'></span>"
+                    f"<span style='background:{escape(fg or '#FFFFFF')}'></span>"
+                    "</div>"
+                )
+        except Exception as exc:
+            logger.debug("tapin swatch skipped: %s", exc)
+    icon = '<link rel="icon" href="favicon.svg" type="image/svg+xml">'
+    body_class = f" class='channel-{escape(cid)}'" if cid else ""
     return (
         "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        f"<title>{escape(safe_title)}</title><style>{_CSS}</style></head><body>"
+        f"{icon}"
+        f"<title>{escape(safe_title)}</title><style>{_CSS}</style></head>"
+        f"<body{body_class}>"
         f"{skip}<header><h1>{escape(safe_title)}</h1>"
-        f"<div class='sub'>{escape(sub)}</div>{extra}</header>"
+        f"<div class='sub'>{escape(sub)}</div>{swatch}{extra}</header>"
         f"<main id='main'>{body_html}</main></body></html>"
     )
 
@@ -181,12 +220,17 @@ def open_local(path: str) -> bool:
 
 
 def dump_pre(
-    title: str, text: str, *, filename: str | None = None, open_browser: bool = True
+    title: str,
+    text: str,
+    *,
+    filename: str | None = None,
+    open_browser: bool = True,
+    channel_id: str = "",
 ) -> str:
     """Themed <pre> snapshot. Returns the written path."""
     stamp = time.strftime("%Y%m%d_%H%M%S")
     name = filename or f"{title.lower().replace(' ', '_')}_{stamp}.html"
-    path = write_html(themed_page(title, pre_body(text)), filename=name)
+    path = write_html(themed_page(title, pre_body(text), channel_id=channel_id), filename=name)
     if open_browser:
         open_local(path)
     return path

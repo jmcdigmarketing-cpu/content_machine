@@ -1795,3 +1795,63 @@ and the article budget each verified against the live path, not a mock.
 blocker is `main.py`'s 15 blocking `input()` calls, not HTML; the cheapest exit is
 the booth (which already POSTs) gaining a start-a-run form over the already-headless
 `generate_draft`, not #141 Desktop.
+
+## 2026-08-28 (evening) — the roadmap split, and a decision on every XL and L
+
+The operator asked for a full plan for a real Windows 11 desktop application, with
+the same depth applied to cutting every remaining XL and L. Everything stays
+**private, local, single-operator, never published** — a constraint that retires
+work rather than deferring it.
+
+**Why the roadmap had to move first.** 1,981 lines, of which "Next up — all open
+items" was 1,282: 291 open items in one flat list with August's shipped-wave
+narratives above the actual next work. The header was already wrong ("318 open"
+vs a real 317). Split by job into roadmap.md (111) / desktop_app.md (229) /
+backlog.md (778) / roadmap_archive.md (1,224). Counts reconcile exactly — 291
+open, 424 shipped, nothing lost. The 30 open items stranded inside historical
+phase and pillar sections moved to the backlog so the archive holds no open work.
+
+**The reframing that makes the app tractable.** #141 was never one item. It is the
+container for twenty-one others — #148 queue, #149 analytics, #152 canvas, #156
+vault, #158 cost tower, #161 calendar, #163 script desk, #168 review room and the
+rest are each a *panel inside it*. Read as one XL it is unapproachable; read as a
+shell plus panels, each already backed by data `core/` computes today, it is
+sixteen to nineteen ordinary waves.
+
+**The "years of UX/packaging" estimate was true for what #141 specified and false
+for what will be built.** #141 said Tauri/WinUI — a JavaScript front end in a
+separate process, which reintroduces the request/response boundary the terminal
+does not have. A PySide6 window is one process with memory, exactly like the
+terminal, so `main.py`'s 15 blocking `input()` calls become an `ask()` seam with a
+pluggable backend, not a resumable state machine. Stage 0 is one wave.
+
+**Toolkit: PySide6 over WebView2**, reversing my own first recommendation. I had
+argued WebView2 partly because it reuses the booth HTML — then measured it: ~113
+tags and ~182 CSS rules, and most of review_booth.py's 1,124 lines is Python
+building strings. What carries over is the design, not the markup, so the reuse
+was worth about a week, not a head start. Against that: three L items are drag
+canvases (#152 layers, #153 timeline keyframes, #148 reorder) and two need real
+video playback (#168, #209) — `QGraphicsView` and `QMediaPlayer` versus bespoke
+JavaScript each time. The canvas gap never closes; the polish gap does. Qt is also
+one language, which matters because the operator wants to run this machine without
+an agent.
+
+**Every XL decided:** 141 becomes the programme · 142 absorbed into Stage 4 · 143
+retired (a SaaS framing for something never published; its useful content is #169
+and #476) · 144 stays parked with Phase M · 145 dissolved into #156/#157/#158 ·
+468 retired (nothing is published, so a standalone fact-engine surface has no
+consumer). Six open XL become zero.
+
+**Every L decided:** 21 absorbed into app stages · 5 stay on the engine track
+(#48 #50 #54 #416 + multimodal review) · 3 standalone (#79 affiliate spike with a
+kill criterion, #155 MCP API, #478 channel kit) · 3 retired (#120 CLIP b-roll,
+settled by §26 in favour of owned gameplay; #467 second operator seat, single
+operator; #143's remains) · 2 stay parked (#166, #167).
+
+**Guards, because the old header rotted quietly for months:** the archive must
+hold no open checkbox, roadmap.md must stay under 200 lines, no numbered item may
+be open in two files, and `ops roadmap-index` reads the counts from the files. It
+immediately found 49 open items carrying no size tag — the next tidy.
+
+Proof: suite 2,408 → 2,415 green; ruff clean; `data/` untouched; counts verified
+against the 1,981-line original.

@@ -48,31 +48,32 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-08-28 · **HEAD at write:** `48ef260` · **Tree:** clean
+**Written:** 2026-08-28 · **HEAD at write:** `c66a250` · **Tree:** clean
 
-- Fixed four defects a real GTA 6 reaction run (run 73) exposed. Suite 2,408 green,
-  ruff clean, `data/` untouched. Detail: planning_log 2026-08-28 (run 73).
-- **Angles ignored the operator entirely.** `generate_variants` never read the topic
-  string — angle types came from domain + repeat count, and the prompt told the model
-  to CRITIQUE once a franchise was established. `core/angle_intent.py` fixes it; the
-  mode prints on the angle screen and can be overridden.
-- **Web search had taught itself to stop.** Run 1 saved its own findings to the vault,
-  clearing the density bar, so runs 2–3 skipped the web on an hours-old reveal.
-  Event-shaped topics never skip now; backing facts must be dated and recent.
-- **yt-dlp**: `quiet`/`no_warnings` never suppressed extractor errors — only a
-  `logger` does. Age gates are counted at debug. `YTDLP_COOKIES_FROM_BROWSER` opt-in.
-- **No 18-fact cap ever existed** (that was the count). Real limits were 24/4500 and
-  could not hold one article; now 60/12000, both halves shown, and drops are logged
-  instead of a bare `break`.
-- **Watch for this**: two more test doubles mirrored the caller instead of the real
-  library ( `_full_one(url)` missing its new arg; an undated vault fixture ). That is
-  three this week counting edge-tts. When you add a parameter, check the fakes.
-- **Open, operator's call**: the terminal. The blocker is `main.py`'s 15 blocking
-  `input()` calls, not HTML. Cheapest exit is the booth (already POSTs) gaining a
-  start-a-run form over the already-headless `generate_draft` — not #141 Desktop.
-  Operator said "will stay in terminal as long as it takes" for now.
-- Still unbuilt from the parked list: #333 negative-fact store (narrowed to a hard
-  block backstop), #349 folded into research, CUDA wheel not installed.
+- **The roadmap is now four files.** `roadmap.md` (111 lines, what to do now) ·
+  [`desktop_app.md`](desktop_app.md) (the Windows app programme) ·
+  [`backlog.md`](backlog.md) (all 291 open items) ·
+  [`roadmap_archive.md`](roadmap_archive.md) (history, no open work). Counts
+  reconcile exactly against the 1,981-line original. **Use `ops roadmap-index`,
+  never hand-count** — the old header was wrong by one for months.
+- **Read `desktop_app.md` before touching anything app-shaped.** #141 is retired
+  as a checkbox: it was the container for 21 other items, and it is now 8 staged
+  waves. Toolkit is **PySide6/Qt**, decided against WebView2 and written down with
+  the reasoning.
+- **Every XL and L now has a decision** — 6 XL → 0 (two retired outright on the
+  private/local constraint), and of 34 L, 21 became app stages and 3 were retired.
+  Do not re-open a retired item without reading why in `desktop_app.md`.
+- **Next is Stage 0 — Seams** (one wave, no window): the `ask()` seam over
+  `main.py`'s 15 blocking prompts, the `emit()` output sink, design tokens (#170).
+  The terminal must stay byte-identical; there is a scripted test backend for
+  `ask()` so this is provable rather than assumed.
+- Earlier today: the run-73 defect wave (reaction angles, web-search recency,
+  yt-dlp quiet, fact budgets). Detail in planning_log 2026-08-28.
+- **Known, not yet done:** 49 open items carry no `[S/M/L/XL]` size tag —
+  `ops roadmap-index` reports the count. Worth a tidy pass.
+- **Watch for this**: three test doubles this week mirrored the caller instead of
+  the real library and passed while the real path was broken. When you add a
+  parameter, check the fakes.
 
 ## Slot — Cursor
 

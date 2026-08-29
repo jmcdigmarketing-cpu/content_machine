@@ -48,32 +48,34 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-08-28 · **HEAD at write:** `c66a250` · **Tree:** clean
+**Written:** 2026-08-28 · **HEAD at write:** `43a34bf` · **Tree:** clean
 
-- **The roadmap is now four files.** `roadmap.md` (111 lines, what to do now) ·
-  [`desktop_app.md`](desktop_app.md) (the Windows app programme) ·
-  [`backlog.md`](backlog.md) (all 291 open items) ·
-  [`roadmap_archive.md`](roadmap_archive.md) (history, no open work). Counts
-  reconcile exactly against the 1,981-line original. **Use `ops roadmap-index`,
-  never hand-count** — the old header was wrong by one for months.
-- **Read `desktop_app.md` before touching anything app-shaped.** #141 is retired
-  as a checkbox: it was the container for 21 other items, and it is now 8 staged
-  waves. Toolkit is **PySide6/Qt**, decided against WebView2 and written down with
-  the reasoning.
-- **Every XL and L now has a decision** — 6 XL → 0 (two retired outright on the
-  private/local constraint), and of 34 L, 21 became app stages and 3 were retired.
-  Do not re-open a retired item without reading why in `desktop_app.md`.
-- **Next is Stage 0 — Seams** (one wave, no window): the `ask()` seam over
-  `main.py`'s 15 blocking prompts, the `emit()` output sink, design tokens (#170).
-  The terminal must stay byte-identical; there is a scripted test backend for
-  `ask()` so this is provable rather than assumed.
-- Earlier today: the run-73 defect wave (reaction angles, web-search recency,
-  yt-dlp quiet, fact budgets). Detail in planning_log 2026-08-28.
-- **Known, not yet done:** 49 open items carry no `[S/M/L/XL]` size tag —
-  `ops roadmap-index` reports the count. Worth a tidy pass.
-- **Watch for this**: three test doubles this week mirrored the caller instead of
-  the real library and passed while the real path was broken. When you add a
-  parameter, check the fakes.
+- **Backlog is now 455 open, highest #644.** Added #481–#644 (164 items) weighted
+  to what the desktop programme does not cover. `ops roadmap-index` for counts —
+  never hand-count.
+- **The Craft wave is in `roadmap.md`, and its ordering rule matters:** video craft
+  is permanent (burned into every video, no toolkit change touches it), terminal is
+  the daily driver for the 16–19 waves the app takes, and **booth chrome dies with
+  Stage 3** — so only the cheapest booth items are worth doing at all. Do not
+  reorder this without reading why.
+- **Stage 0 still goes first** because the Craft wave reads its design tokens
+  (#170). Polishing before tokens exist invents the palette twice.
+- **Five inert features found by reading, filed as #641–#644:** six ANSI themes
+  that no channel can reach (`ui_theme` is `None` everywhere, so "themeable skins
+  shipped 2026-07-02" has never rendered), an empty `tts_voice_pool`, unset
+  `local_tts_voice`, and two `.env.example` keys read nowhere. **#644 is the
+  config-coverage test that catches this class** — build it before hunting more by
+  hand.
+- **Measured, if you touch performance:** CLI start 1.89s, of which
+  `elevenlabs.client` 0.51s + `googleapiclient` and `sports.espn` 0.68s are eager
+  imports a session may never use (#607–#609). Env surface 392 read vs 273
+  documented (#639).
+- **Two signals are failing on every run** and should be retired rather than
+  repaired per decisions §19: `trendingnow.games` DNS, and YouTube RSS id
+  `UCq-Fj5jknLsUf-MWSik4vhQ` 404 (#583, #584).
+- **Still open from before:** 49 items carry no size tag (#632). Three test doubles
+  drifted from their real signatures this week (#625) — when you add a parameter,
+  check the fakes.
 
 ## Slot — Cursor
 

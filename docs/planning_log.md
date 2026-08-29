@@ -1855,3 +1855,55 @@ immediately found 49 open items carrying no size tag — the next tidy.
 
 Proof: suite 2,408 → 2,415 green; ruff clean; `data/` untouched; counts verified
 against the 1,981-line original.
+
+## 2026-08-28 (late) — the craft reframe, 164 candidates, and five inert features
+
+**The reframe.** The operator asked to finish terminal aesthetics now so they are
+not stranded half-done when the desktop app lands. Inventorying all 44 open
+aesthetics items moved the target: **only two are terminal-only** (#243 wordmark,
+#244 Windows Terminal profile). About twenty are booth chrome, which Stage 3's Qt
+panels replace — so that dies too. And about twenty are **video craft, which no
+toolkit change ever touches.**
+
+The instinct was right and the bucket was wrong. What is genuinely at risk of
+being wasted is the *booth* work; what has the highest lifetime value is video
+craft, because it is burned into every video for the life of the channel. The
+Craft wave therefore orders by what survives: video first, terminal second (it is
+the daily driver for the 16–19 waves the app takes), config-only loopholes third,
+and only the cheapest booth items at all.
+
+Stage 0 keeps its place in front because the Craft wave reads its design tokens
+(#170). Polishing before tokens exist invents the palette twice and throws the
+second away — the exact drift #170 was written to prevent.
+
+**Five loopholes, found by reading rather than running.** All are the repo's
+signature defect: shipped, green, doing nothing.
+
+1. **Six ANSI themes are unreachable.** `core/themes.py` ships `onepiece`,
+   `zelda`, `pokemon`, `dbz`, `jjba`, `plain`. `ui_theme` is `None` on all three
+   channels, so `set_channel_theme()` resolves to `""` and everything renders
+   `default`. "UI/experience — themeable skins **shipped 2026-07-02**" has never
+   once rendered in production. One config line per channel.
+2. **`tts_voice_pool` unset on both channels** — voice variety has no pool.
+3. **`local_tts_voice` / `local_tts_voices` unset on both** — the per-channel
+   local-TTS seam is inert, which matters more now Edge TTS is wired.
+4. **`SPORTSDATA_API_KEY` and `STEAM_API_KEY`** are declared in `.env.example` and
+   appear nowhere in the code. An operator can set them and nothing happens. (A
+   first pass flagged 27 orphans; 25 were false positives read through helper
+   functions. Only these two are real — worth stating, because the cheap version
+   of this check would have produced a list that was 93% noise.)
+5. **Startup is 1.89s before the menu**, ~1s of it imports a session may never
+   use: `elevenlabs.client` 0.51s (module-level in `core/tts.py`), `sports.espn`
+   0.45s, `googleapiclient.discovery` 0.23s. The env surface is **392 vars read
+   against 273 documented**.
+
+Filed as #641–#644 rather than fixed silently, so they carry their evidence. #644
+is the config-coverage test that would have caught 1–3 and will catch the next.
+
+**164 new candidates, #481–#644**, in thirteen groups, weighted to what the
+desktop programme does not cover. Measurements are real ones from this machine,
+not estimates. Two observed signal failures became items: `trendingnow.games`
+fails DNS on every run and a YouTube RSS id 404s — both decisions §19 candidates
+for retirement rather than repair.
+
+Backlog 291 → 455 open; highest #644; untagged unchanged at 49; suite 2,415 green.

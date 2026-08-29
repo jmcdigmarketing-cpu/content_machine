@@ -776,3 +776,219 @@ Strategy & bigger bets
 
 ---
 
+
+---
+
+## Numbered candidates 481–644 (2026-08-28 — docs only; no pickup order)
+
+*None restates an open item. Weighted toward the two things the desktop programme
+does not cover: **video craft**, which survives every toolkit change and is burned
+into each video forever, and **the terminal**, which is the daily driver for the
+16–19 waves the app will take. Items ending in a measurement name a real number
+taken from this machine.*
+
+Terminal & TUI craft
+
+- [ ] 481. **Pinned status line** — channel, uploads-left, run cost, held at the bottom of the terminal instead of scrolled away `[M]`
+- [ ] 482. **Collapse the mascot after the first run of the day** — the ASCII art is ~60 lines before every menu; `--art` to force it back `[S]`
+- [ ] 483. **Redraw signal health in place** — discovery reprints the whole 15-line block each pass instead of updating it `[M]`
+- [ ] 484. **`Ctrl+C` at a prompt returns to the menu** — run 73 lost two complete runs this way, 38s of discovery each, because the frozen process was the only copy `[M]`
+- [ ] 485. **Persist discovery so a re-entered topic skips the refetch** — pairs with 484; the data was already paid for `[M]`
+- [ ] 486. **Colour-blind-safe palette variant** for the ANSI themes `[S]`
+- [ ] 487. **`NO_COLOR` and non-TTY detection** so piped or redirected output carries no escape codes `[S]`
+- [ ] 488. **Terminal-width awareness** — fact lines truncate at ~90 chars today, which is what made the operator think facts were being cut `[S]`
+- [ ] 489. **Single-key menu mode** — press `1`, no Enter, for the high-frequency prompts `[S]`
+- [ ] 490. **Progress ETA from measured history** rather than the hardcoded "typ ~33s"; real runs were 38s, 56s, 39s `[S]`
+- [ ] 491. **Spinner frames respect the active theme's glyph set** — `themes.py` already defines per-theme glyphs and the spinner ignores them `[S]`
+- [ ] 492. **Up-arrow recall for topics** — retyping a long topic after an abort is the common case `[S]`
+- [ ] 493. **`--quiet` run mode** — gates and the report card only, no narration `[S]`
+- [ ] 494. **`--replay <run-id>`** — reprint a past run's console output from its stored trace `[M]`
+- [ ] 495. **Bell or flash when a gate needs an answer** — discovery is long enough to walk away from `[S]`
+- [ ] 496. **OSC 8 terminal hyperlinks** on run ids, file paths and YouTube URLs `[S]`
+
+Video & render craft — permanent, survives every toolkit change
+
+- [ ] 497. **Per-channel LUT files** instead of #25's three `eq` scalars — a real grade, not brightness/contrast/saturation `[M]`
+- [ ] 498. **Loudness *range* check**, not only integrated LUFS — a flat-but-correct mix still sounds dead `[S]`
+- [ ] 499. **Silence-trim the VO head and tail** before the render rather than after `[S]`
+- [ ] 500. **Beat-matched cut points** when a music bed is present `[L]`
+- [ ] 501. **Automatic hook re-cut** — when the first 3s scores low, re-render that segment only `[L]`
+- [ ] 502. **Safe-area guides burned into the draft preset only** — visible while reviewing, never in the publish render `[S]`
+- [ ] 503. **Per-channel caption entrance animation** (pop, slide, none) `[M]`
+- [ ] 504. **Emoji in captions** — libass drops them silently today `[M]`
+- [ ] 505. **Two-line caption balancing** — near-equal lines instead of greedy fill; the sibling of #419's orphan fix `[S]`
+- [ ] 506. **Speaker-adaptive caption colour** when a line is an attributed quote `[M]`
+- [ ] 507. **Do not burn captions over on-screen text** in the background clip `[L]`
+- [ ] 508. **Thumbnail face-crop bias** using the existing Pillow stack — no new image API (§26) `[M]`
+- [ ] 509. **Thumbnail A/B on text variants**, not only #27's image variants `[M]`
+- [ ] 510. **Chapter thumbnails** for the 16:9 sibling `[M]`
+- [ ] 511. **Five-second vertical teaser** cut from the finished video, for community posts `[M]`
+- [ ] 512. **Grain and vignette as real ffmpeg filters**, per channel, driven by #170 tokens — #247 is only a CSS preview `[M]`
+- [ ] 513. **Reject a black or frozen first frame** before upload — it is the worst possible auto-thumbnail `[S]`
+- [ ] 514. **Duck the intro sting** where it overlaps the first caption `[S]`
+
+Desktop application — Qt specifics
+
+- [ ] 515. **`ask()` backend contract test** — the same scripted answers must drive terminal and Qt identically `[M]`
+- [ ] 516. **Crash-safe run journal** — `input()` held the run in memory by accident; a Qt crash must not lose it `[M]`
+- [ ] 517. **Panel registry** — a panel is one class, discovered rather than wired into the window `[M]`
+- [ ] 518. **One Qt model over the run ledger**, shared by the queue, analytics and review panels `[M]`
+- [ ] 519. **Background-thread policy** — exactly one worker, cancellable, never on the UI thread `[M]`
+- [ ] 520. **Cancel mid-discovery and keep what was already fetched** `[M]`
+- [ ] 521. **Command palette over all 92 `ops` verbs** (#175) as the Qt entry point `[M]`
+- [ ] 522. **Per-panel keyboard maps** with a discoverable `?` sheet `[M]`
+- [ ] 523. **Persist window state per channel** — size, position, monitor, open panel `[S]`
+- [ ] 524. **Toast → in-app notification bridge** so #165 is one history rather than two `[M]`
+- [ ] 525. **Drag a `.txt` or a URL onto the window** to become key facts `[S]`
+- [ ] 526. **"What changed since I last looked"** panel driven by the run ledger `[M]`
+- [ ] 527. **High-contrast and reduced-motion Qt themes** from the same #170 tokens `[M]`
+- [ ] 528. **Live log tail with level filtering**, replacing terminal scrollback `[M]`
+- [ ] 529. **Screenshot any panel to the clipboard** for the planning log `[S]`
+- [ ] 530. **Panel-level error boundary** — one broken panel must not take the window down `[M]`
+- [ ] 531. **First-run wizard** that writes `.env` and validates keys before the first run `[M]`
+- [ ] 532. **In-app changelog** fed by `git log` since the last launch `[S]`
+
+Content engine & angles
+
+- [ ] 533. **Angle intents beyond reaction** — explainer, tier-list, tutorial, debunk; `core/angle_intent.py` is built for exactly this `[M]`
+- [ ] 534. **Pin an angle phrase** that must survive into the generated title `[S]`
+- [ ] 535. **Reject an angle that repeats one used in the last N videos**, by embedding rather than string match `[M]`
+- [ ] 536. **An editable outline step** before prose generation `[M]`
+- [ ] 537. **Per-section regeneration** — rewrite the hook without re-running the body or re-billing it `[M]`
+- [ ] 538. **Generate two hooks in one run** and keep both for the thumbnail experiment `[M]`
+- [ ] 539. **Reading-level target per channel**, measured and enforced `[S]`
+- [ ] 540. **Sentence-length rhythm check** — uniform sentence length is the clearest LLM tell `[S]`
+- [ ] 541. **Per-channel ban-list of LLM tells** — "delve", "in today's video", "let's dive in" `[S]`
+- [ ] 542. **Cut the summary paragraph** models insert before a CTA `[S]`
+- [ ] 543. **Quote the operator verbatim** when they paste an opinion rather than paraphrasing it `[M]`
+- [ ] 544. **Script memory** — never reuse the same opening construction twice in a week `[M]`
+- [ ] 545. **A "what I got wrong last time" beat** when a correction exists for the franchise `[M]`
+- [ ] 546. **Script length learned from retention** rather than the fixed preset table `[M]`
+
+Grounding & truth
+
+- [ ] 547. **Inline provenance** — which source each script line came from, shown at review `[M]`
+- [ ] 548. **Confidence per fact**, not only per source tier `[M]`
+- [ ] 549. **Script-vs-title contradiction check** — #321 compares the title to the facts, not to the script `[M]`
+- [ ] 550. **Refuse superlatives without a source** — "first ever", "biggest", "only" `[S]`
+- [ ] 551. **Date arithmetic check** — "18 months since" must match the actual dates in the facts `[M]`
+- [ ] 552. **Number-unit sanity** — "80 hours" against a source that said minutes `[M]`
+- [ ] 553. **Entity-role check** — developer vs parent company in the sentence that names them; run 71 shipped exactly this error `[L]`
+- [ ] 554. **Flag a fact only one source carries** when several were fetched `[S]`
+- [ ] 555. **Vault deduplication** — the same fact from three ingests should be one fact `[M]`
+- [ ] 556. **Fact editor** — correct one pasted line without re-pasting the block `[M]`
+- [ ] 557. **Fact age at the prompt** so a three-week-old note is visibly stale before it is used `[S]`
+- [ ] 558. **Auto-expire notes about events that have now happened** `[M]`
+
+Analytics & learning rigor
+
+- [ ] 559. **Record the prediction at publish time** — fixes #355, whose residual is currently recomputed on every sync `[M]`
+- [ ] 560. **A hold-out set the recommenders never see**, for honest error bars `[M]`
+- [ ] 561. **Report the loop's own accuracy** on the report card, beside its advice `[M]`
+- [ ] 562. **Distinguish "no data" from "data says no"** in every recommender message `[S]`
+- [ ] 563. **Time-to-first-100-views** as a faster signal than 7-day engaged rate `[M]`
+- [ ] 564. **Exclude the operator's own views** from every metric `[S]`
+- [ ] 565. **Retention-curve diffing** between two videos on the same franchise `[M]`
+- [ ] 566. **Title-pattern lift against the channel baseline**, not the raw average `[M]`
+- [ ] 567. **Publish-hour experiment that actually randomises** inside a safe window `[M]`
+- [ ] 568. **Flag a recommendation that flips week to week** — instability is information `[S]`
+- [ ] 569. **Sample count beside every dashboard number**, unavoidably `[S]`
+- [ ] 570. **Archive the analytics snapshot per run** so a later code change cannot rewrite history `[M]`
+
+Cost & efficiency
+
+- [ ] 571. **A cost ceiling that degrades instead of refusing** — draft preset and cheap tier rather than a hard stop `[M]`
+- [ ] 572. **Show cost before the expensive step**, not after it `[S]`
+- [ ] 573. **Cache the research brief across variants** of the same topic `[M]`
+- [ ] 574. **Skip a signal whose data never reaches the script** `[M]`
+- [ ] 575. **Measure which signals actually contribute facts** and retire the rest (decisions §19) `[M]`
+- [ ] 576. **Batch TTS across a `batch-drafts` run** to amortise connection overhead `[M]`
+- [ ] 577. **Reuse the existing render when only the description changed** `[M]`
+- [ ] 578. **Cost per finished minute of video**, not per run `[S]`
+- [ ] 579. **Warn when a run costs more than the channel's measured RPM returns** `[M]`
+- [ ] 580. **Free-mode cost report** — prove the $0 path actually cost $0 `[S]`
+- [ ] 581. **Track Edge TTS availability** so a silent fallback to paid ElevenLabs is visible `[S]`
+- [ ] 582. **Per-provider latency budget** — a slow provider is a cost too `[M]`
+
+Signals & reliability
+
+- [ ] 583. **`trendingnow.games` fails DNS on every run** — retire it or replace it; decisions §19 says do not keep repairing `[S]`
+- [ ] 584. **YouTube RSS 404 on `UCq-Fj5jknLsUf-MWSik4vhQ`** — same treatment as the dead McAfee channel id `[S]`
+- [ ] 585. **Per-signal contribution score** in the health block — "active" is not the same as "useful" `[M]`
+- [ ] 586. **Signal result diffing between runs** on the same topic `[M]`
+- [ ] 587. **A retry budget per run**, shared across signals, rather than per call `[M]`
+- [ ] 588. **Detect a signal returning identical payloads every time** — a frozen cache reads as healthy `[M]`
+- [ ] 589. **Fall back to a second search provider** when the first returns nothing `[M]`
+- [ ] 590. **Rate-limit headroom shown before discovery**, not after exhaustion `[S]`
+- [ ] 591. **Signal timing histogram** to replace the hardcoded estimate in the spinner `[S]`
+- [ ] 592. **Cache warming for the franchise anchors** this channel covers weekly `[M]`
+- [ ] 593. **Show domain gating in the health block** when gating is why a signal skipped `[S]`
+- [ ] 594. **Offline mode** — run from cache only, no network, for script editing `[M]`
+
+Publish, policy & channel ops
+
+- [ ] 595. **Dry-render the description exactly as YouTube will show it**, including the fold `[S]`
+- [ ] 596. **Detect a title that duplicates a competitor's word for word** `[S]`
+- [ ] 597. **Generate the community post from the finished video** `[M]`
+- [ ] 598. **Track scheduled vs immediate uploads** and how each performed `[S]`
+- [ ] 599. **Verify the thumbnail actually applied** after upload — it fails silently today `[S]`
+- [ ] 600. **Re-check monetisation status 48h after publish** `[M]`
+- [ ] 601. **Playlist auto-assignment by franchise** (#104) driven from the fact corpus `[M]`
+- [ ] 602. **End-screen placement that avoids the caption safe area** `[M]`
+- [ ] 603. **Surface a Content-ID claim** from the API rather than finding it in Studio `[M]`
+- [ ] 604. **Localise the description's first line** per audience region `[M]`
+- [ ] 605. **Publish dead-man's switch** — nothing uploads if the operator has not reviewed in N days `[S]`
+- [ ] 606. **Per-channel upload checklist** that must be green before the button enables `[M]`
+
+Performance & startup
+
+- [ ] 607. **Defer `elevenlabs.client` past import** — 0.51s of a measured 1.89s CLI start, paid even when no audio is made `[S]`
+- [ ] 608. **Defer `googleapiclient.discovery` and `sports.espn`** — another ~0.68s of the same 1.89s `[S]`
+- [ ] 609. **Startup budget test** that fails CI when import time regresses past a threshold `[S]`
+- [ ] 610. **Lazy-import the 92 `ops` verbs** so running one does not load all of them `[M]`
+- [ ] 611. **Parallelise the render's independent ffmpeg passes** `[M]`
+- [ ] 612. **Cache Pillow font objects** across thumbnail variants `[S]`
+- [ ] 613. **Profile `core/ui.py`** — 1,783 lines of display code runs around every prompt `[M]`
+- [ ] 614. **Stream the LLM script** so the operator reads while it generates `[M]`
+- [ ] 615. **One HTTP session across signals**, pairing with #391's single client `[M]`
+- [ ] 616. **Measure and cap peak render memory**, which the packaged app will be judged on `[M]`
+
+Data model & storage
+
+- [ ] 617. **Run every Alembic revision against a real snapshot** in CI `[M]`
+- [ ] 618. **Retire `migrate_schema`** once Alembic is the only story (#35) `[M]`
+- [ ] 619. **Stamp a schema version on every run-ledger row** `[S]`
+- [ ] 620. **Soft-delete runs** so a mistaken purge is recoverable `[M]`
+- [ ] 621. **Export a run as one portable folder** — mp4, script, facts, trace `[M]`
+- [ ] 622. **Import that folder back**, for moving between machines `[M]`
+- [ ] 623. **Database size and vacuum report** in `ops reliability` `[S]`
+- [ ] 624. **Separate the operational store from the analytics store** before the app reads both `[L]`
+
+Testing & ops hygiene
+
+- [ ] 625. **Audit every test double against its target's real signature** — three drifted this week alone (`_full_one`, the edge-tts fake, an undated vault fixture), each passing while the real path was broken `[M]`
+- [ ] 626. **Contract tests generated from each signal's recorded payload** `[M]`
+- [ ] 627. **Mutation testing on the gate modules** — do the tests actually detect a broken gate `[L]`
+- [ ] 628. **Flaky-test detector** across repeated CI runs `[M]`
+- [ ] 629. **Test-time budget** — the suite is 45s and growing `[S]`
+- [ ] 630. **`ops selftest`** — run the five safety gates against fixtures and report `[M]`
+- [ ] 631. **Coverage reporting for `core/` only**, non-blocking, to find untested gates `[S]`
+- [ ] 632. **Size-tag the 49 open items that carry none** — `ops roadmap-index` counts them `[S]`
+- [ ] 633. **A docs test that every `ops` verb named in a doc exists** `[S]`
+- [ ] 634. **Run the docs lint in pre-commit**, not only ruff `[S]`
+
+Security & privacy — local
+
+- [ ] 635. **Redact the vault path and username** from every HTML dump and trace `[S]`
+- [ ] 636. **Prove no secret reaches `data/traces`** — #97 redacts API bodies, not env echoes `[M]`
+- [ ] 637. **Encrypt `config/secrets/` at rest** with a machine-bound key `[M]`
+- [ ] 638. **`SPORTSDATA_API_KEY` and `STEAM_API_KEY` are declared in `.env.example` and read nowhere** — wire them or delete them; an operator can set them and nothing happens `[S]`
+- [ ] 639. **An `.env` linter** for keys read but undocumented and documented but unread — measured 392 read vs 273 declared `[M]`
+- [ ] 640. **Audit what a packaged app would ship** — no keys, no vault, no `data/` `[M]`
+
+Loopholes found 2026-08-28 — shipped, green, and inert
+
+- [ ] 641. **Six ANSI themes are unreachable** — `core/themes.py` ships `onepiece`, `zelda`, `pokemon`, `dbz`, `jjba`, `plain`; `ui_theme` is `None` on all three channels, so `set_channel_theme()` resolves to `""` and everything renders `default`. "Themeable skins **shipped 2026-07-02**" has never rendered in production. One config line per channel `[S]`
+- [ ] 642. **`tts_voice_pool` is unset on both channels** — the voice-variety feature has no pool to vary across `[S]`
+- [ ] 643. **`local_tts_voice` / `local_tts_voices` unset on both channels** — the per-channel local-TTS seam is inert, which matters more now Edge TTS is wired `[S]`
+- [ ] 644. **Config-coverage test** — any channel-profile field unset on *every* channel is either wired or removed. This found 641–643; without it the next one hides just as long `[M]`

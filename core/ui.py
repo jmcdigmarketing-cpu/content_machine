@@ -1027,17 +1027,22 @@ def prompt_key_facts_result(
             print_fn(f"  Saved all {len(new_facts)} fact(s) to vault (full set, no cap).")
 
     if key_facts:
+        from core.operator_facts import last_fact_budget_report, max_operator_key_facts
+
         sent = key_facts_for_prompt(key_facts)
         budget = operator_key_fact_char_budget()
+        report = last_fact_budget_report()
+        # Both limits, always — the operator read "18 packed" as a hard 18-fact cap
+        # because only the char side of the budget was ever shown.
         print_fn(
             f"  {len(key_facts)} fact(s) collected; {len(sent)} packed for the LLM "
-            f"({sum(len(s) for s in sent)} / {budget} chars)."
+            f"({len(sent)}/{max_operator_key_facts()} lines · "
+            f"{sum(len(s) for s in sent)}/{budget} chars)."
         )
-        if len(sent) < len(key_facts):
-            skipped = len(key_facts) - len(sent)
+        if report.get("dropped"):
             print_fn(
-                f"  Note: {skipped} fact(s) stored in vault but omitted from prompt "
-                f"(char budget — raise OPERATOR_KEY_FACT_CHAR_BUDGET if needed)."
+                f"  Note: {report['dropped']} fact(s) stored in vault but omitted "
+                f"from the prompt — {report.get('reason') or 'budget reached'}."
             )
     selected_claims = {record.claim for record in selected_records}
     vault_audit: list[dict[str, Any]] = []

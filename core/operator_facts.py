@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import re
 from datetime import date
+from typing import Any
 
 from core.logging import get_logger
 
@@ -64,21 +65,33 @@ _WRITING_TIP_MARKERS = (
 
 
 def max_operator_key_facts() -> int:
-    """Soft line cap (default 24). Char budget is the real limiter."""
-    raw = os.getenv("MAX_OPERATOR_KEY_FACTS", "24").strip()
+    """Soft line cap (default 60). Char budget is the real limiter.
+
+    `link_facts` chops a fetched page into ~400-char lines, so one news article is
+    already a dozen-plus lines and a long read is dozens. The old cap of 24 could
+    not hold a single article alongside vault facts.
+    """
+    raw = os.getenv("MAX_OPERATOR_KEY_FACTS", "60").strip()
     try:
-        return max(1, min(40, int(raw)))
+        return max(1, min(120, int(raw)))
     except ValueError:
-        return 24
+        return 60
 
 
 def operator_key_fact_char_budget() -> int:
-    """Total chars of operator facts injected into the script prompt."""
-    raw = os.getenv("OPERATOR_KEY_FACT_CHAR_BUDGET", "4500").strip()
+    """Total chars of operator facts injected into the script prompt.
+
+    12000 holds a full news article (~8k chars once `link_facts` has chopped it)
+    plus the vault facts beside it. The old 4500 did not, which is what the
+    operator hit when a pasted article came back shortened. The ceiling is
+    deliberate - facts are ~1 token per 4 chars, so this block is already ~3k
+    tokens of every script prompt.
+    """
+    raw = os.getenv("OPERATOR_KEY_FACT_CHAR_BUDGET", "12000").strip()
     try:
-        return max(500, min(12000, int(raw)))
+        return max(500, min(20000, int(raw)))
     except ValueError:
-        return 4500
+        return 12000
 
 
 def is_writing_tip(text: str) -> bool:
@@ -221,13 +234,29 @@ def dedupe_facts(facts: list[str]) -> list[str]:
     return out
 
 
+_last_budget_report: dict[str, Any] = {"kept": 0, "dropped": 0, "reason": "", "chars": 0}
+
+
+def last_fact_budget_report() -> dict[str, Any]:
+    """What the most recent `facts_for_prompt` kept and dropped, and why."""
+    return dict(_last_budget_report)
+
+
 def facts_for_prompt(facts: list[str] | None) -> list[str]:
-    """Facts sent to the LLM — char budget + line cap, manual order preserved."""
+    """Facts sent to the LLM — char budget + line cap, manual order preserved.
+
+    Operator key facts are the highest-priority ground truth in the system
+    (decisions §4), so a truncation here is never silent: the drop is logged and
+    recorded in `last_fact_budget_report()` for callers that render it.
+    """
+    global _last_budget_report
+    _last_budget_report = {"kept": 0, "dropped": 0, "reason": "", "chars": 0}
     if not facts:
         return []
     budget = operator_key_fact_char_budget()
     line_cap = max_operator_key_facts()
     used = 0
+    reason = ""
     out: list[str] = []
     for raw in facts:
         if not isinstance(raw, str):
@@ -236,10 +265,24 @@ def facts_for_prompt(facts: list[str] | None) -> list[str]:
         if not line or is_writing_tip(line):
             continue
         cost = len(line) + 2
-        if used + cost > budget or len(out) >= line_cap:
+        if len(out) >= line_cap:
+            reason = f"line cap {line_cap} reached (raise MAX_OPERATOR_KEY_FACTS)"
+            break
+        if used + cost > budget:
+            reason = f"char budget {budget} reached (raise OPERATOR_KEY_FACT_CHAR_BUDGET)"
             break
         out.append(line)
         used += cost
+
+    dropped = max(0, len(facts) - len(out))
+    _last_budget_report = {
+        "kept": len(out),
+        "dropped": dropped,
+        "reason": reason if dropped else "",
+        "chars": used,
+    }
+    if dropped and reason:
+        logger.warning("%d operator fact(s) omitted from the prompt: %s", dropped, reason)
     return out
 
 

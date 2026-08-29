@@ -1743,3 +1743,55 @@ correctly, and "GTA 6 review" is still blocked.
 `core/voice_catalog.py`, `docs/roadmap.md`). Three suite failures and one F401 at
 the time of writing belong to that in-flight work, not to anything above; the 164
 tests covering the modules changed here pass in isolation.
+
+## 2026-08-28 (run 73) — four defects from a real GTA 6 reaction run
+
+Three runs on the same topic. The operator typed reaction-shaped topics every
+time — "GTA 6 Extended look reactions, looks great!", "GTA 6 looks amazing!!!" —
+and got critique angles, ending in "GTA 6 Community Predicts Toxic Meta Before
+Launch — Why They're Wrong". Three of the four defects share the shape this repo
+keeps hitting: **a check measuring the wrong thing, then reporting clean.**
+
+- **Angles ignored the operator.** `generate_variants` chose `angle_types` from
+  `profile.domain` and `repeat_count` only — the topic string never reached the
+  decision. GTA 6 is established, so the gaming branch handed over
+  `whats_broken_needs_fixing` / `community_wishlist` / `is_it_still_worth_playing`,
+  and `generate_ai_angles` additionally instructed the model to "focus on
+  ANALYSIS, PREDICTION, COMMUNITY debate, or CRITIQUE". A reaction video was
+  structurally impossible to ask for. `core/angle_intent.py` now reads intent from
+  the topic, selects a reaction angle set, drops the contradictory critique
+  instruction, and prints the mode so it can be overridden. Measured on the live
+  model: "predicts toxic meta" became "proves the hype is real".
+- **Web search taught itself to stop.** Run 1 called Tavily and saved its findings
+  to the vault; that cleared `WEB_SEARCH_SKIP_MIN_FACTS` (6), so runs 2 and 3
+  printed `SKIPPED (vault coverage)`. Each run made the next less fresh, and a
+  reveal hours old was grounded on notes the system had just written about itself.
+  The bar counted density with no recency term. An event-shaped topic now never
+  skips, and backing facts must carry a `verified_at` inside
+  `WEB_SEARCH_SKIP_MAX_AGE_DAYS` (21). Evergreen topics still skip.
+- **yt-dlp shouted through the spinner.** `quiet`/`no_warnings` do not stop
+  extractor errors — only a `logger` does, and none was supplied. One shared
+  `_YtdlpLogger` across the search and every extract; age-gated videos are counted
+  at debug rather than printed. `YTDLP_COOKIES_FROM_BROWSER` is opt-in, unset by
+  default, because reading the operator's cookie jar is their choice.
+- **The "18-fact cap" does not exist** — 18 was the run's count and nothing was
+  dropped. But the real limits (24 lines / 4500 chars) could not hold one article,
+  since `link_facts` emits ~400-char lines and a BBC read is ~20 of them. Now
+  60/12000, the default and the clamp agree (they disagreed: default 4500, clamp
+  12000), and the prompt shows both halves. `facts_for_prompt` dropped facts with a
+  bare `break` — `ui.py` compared counts afterwards but `title_generator`,
+  `auto_generate` and `content_engine` got a silently shortened set of the
+  highest-priority ground truth in the system (§4). Now logged and reported.
+
+Two test doubles mirrored the caller instead of the real thing again, the same
+shape as the edge-tts fake: `test_free_backends`'s `_full_one` accepted only
+`(url)`, and `test_web_search_two_stage`'s fixture note carried no `verified_at`
+though every note the machine writes is dated. Both corrected.
+
+Proof: suite 2,387 → 2,408 green; ruff clean; `data/` untouched; angles, yt-dlp
+and the article budget each verified against the live path, not a mock.
+
+**Not done, still the operator's call:** the terminal. Assessment recorded — the
+blocker is `main.py`'s 15 blocking `input()` calls, not HTML; the cheapest exit is
+the booth (which already POSTs) gaining a start-a-run form over the already-headless
+`generate_draft`, not #141 Desktop.

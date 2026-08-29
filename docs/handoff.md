@@ -48,28 +48,31 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-08-28 · **HEAD at write:** `b0beed0` · **Tree:** clean, 6 commits
+**Written:** 2026-08-28 · **HEAD at write:** `48ef260` · **Tree:** clean
 
-- **The tree is committed and green** — 2,381 tests, ruff clean, `data/` untouched.
-  Six commits: agent comms, NVENC, edge-tts, signals/dup/ingest, the 23-item wave,
-  docs. Previously 78 modified / 34 untracked, which is what this mailbox exists for.
-- **The trailer ban is lifted** (operator, 2026-08-28). `.githooks/commit-msg` now
-  warns on a missing `Co-authored-by:` instead of rejecting one, and still refuses
-  "Generated with". Sign your commits — `py -m scripts.ops agents` shows the split.
-- **Cursor: your slot has never been written.** That is the one open item in this
-  channel. Rules 14–16 in `.cursor/rules/content-machine.mdc` are the contract.
-- **Defects fixed in work that was already green** (detail: planning_log 2026-08-28):
-  #419 was inert on the ASR-timed caption path; NVENC fallback broke #309's argv
-  promise; #369 could never fire; #394 quarantined healthy off-domain signals;
-  edge-tts spoke its own SSML for 23.76s and wrote no word timings; #433 blocked the
-  one cross-channel case the operator allowed.
-- **Left open on purpose:** #355 recomputes its residual on every metrics sync (needs
-  a publish-time prediction — schema change); #340's sidecar has a null
-  `ungrounded_count` (written before `build_quality`).
-- **Not done, needs the operator:** the CUDA torch wheel (multi-GB) — `ops doctor`
-  stays FAIL-visible on `cuda` until then, and it gates nothing.
-- **Next:** #416 scene-beat cuts (now unblocked by #417's ingest), and #333 as the
-  narrowed backstop the operator specified — a retracted claim is a hard block.
+- Fixed four defects a real GTA 6 reaction run (run 73) exposed. Suite 2,408 green,
+  ruff clean, `data/` untouched. Detail: planning_log 2026-08-28 (run 73).
+- **Angles ignored the operator entirely.** `generate_variants` never read the topic
+  string — angle types came from domain + repeat count, and the prompt told the model
+  to CRITIQUE once a franchise was established. `core/angle_intent.py` fixes it; the
+  mode prints on the angle screen and can be overridden.
+- **Web search had taught itself to stop.** Run 1 saved its own findings to the vault,
+  clearing the density bar, so runs 2–3 skipped the web on an hours-old reveal.
+  Event-shaped topics never skip now; backing facts must be dated and recent.
+- **yt-dlp**: `quiet`/`no_warnings` never suppressed extractor errors — only a
+  `logger` does. Age gates are counted at debug. `YTDLP_COOKIES_FROM_BROWSER` opt-in.
+- **No 18-fact cap ever existed** (that was the count). Real limits were 24/4500 and
+  could not hold one article; now 60/12000, both halves shown, and drops are logged
+  instead of a bare `break`.
+- **Watch for this**: two more test doubles mirrored the caller instead of the real
+  library ( `_full_one(url)` missing its new arg; an undated vault fixture ). That is
+  three this week counting edge-tts. When you add a parameter, check the fakes.
+- **Open, operator's call**: the terminal. The blocker is `main.py`'s 15 blocking
+  `input()` calls, not HTML. Cheapest exit is the booth (already POSTs) gaining a
+  start-a-run form over the already-headless `generate_draft` — not #141 Desktop.
+  Operator said "will stay in terminal as long as it takes" for now.
+- Still unbuilt from the parked list: #333 negative-fact store (narrowed to a hard
+  block backstop), #349 folded into research, CUDA wheel not installed.
 
 ## Slot — Cursor
 

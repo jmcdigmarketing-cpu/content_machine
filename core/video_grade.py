@@ -64,6 +64,7 @@ class VideoGrade:
     components: list[GradeComponent] = field(default_factory=list)
     predicted_engaged_rate: float | None = None
     prediction_note: str = ""
+    engagement_surprise: float | None = None
 
 
 def _letter(score: float) -> str:
@@ -102,6 +103,8 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
         notes.append(f"{unsupported} unsupported claim(s)")
     if conflicts:
         notes.append(f"{conflicts} fact conflict(s)")
+    if quality.get("disputed"):
+        notes.append("DISPUTED")
     if tiers:
         notes.append(f"{tiers} tier warning(s)")
     return score, "; ".join(notes) or "fully grounded"
@@ -112,6 +115,7 @@ def grade_from_parts(
     quality: dict[str, Any],
     composite_score: float | None = None,
     channel_id: str | None = None,
+    run_id: int | None = None,
 ) -> VideoGrade:
     """Pure rollup — quality dict (+ optional composite topic score) → grade."""
     raw: list[GradeComponent] = []
@@ -171,6 +175,21 @@ def grade_from_parts(
             if prediction is not None:
                 grade.predicted_engaged_rate = prediction.rate
                 grade.prediction_note = prediction.note
+                try:
+                    from core.engagement import engaged_rate
+                    from core.engagement_predictor import surprise_residual
+                    from storage.repositories.publish_log import get_publish_log_repository
+
+                    for log in get_publish_log_repository().list_timed_outcomes(channel_id):
+                        if run_id and log.content_run_id == int(run_id):
+                            grade.engagement_surprise = surprise_residual(
+                                engaged_rate(log.metrics_json), prediction.rate
+                            )
+                            break
+                    if grade.engagement_surprise is None and quality.get("surprise") is not None:
+                        grade.engagement_surprise = float(quality["surprise"])
+                except Exception as exc:
+                    logger.debug("engagement surprise skipped: %s", exc)
         except Exception as exc:
             logger.debug("engagement prediction skipped: %s", exc)
     return grade
@@ -192,6 +211,7 @@ def grade_from_record(record) -> VideoGrade | None:
         quality=quality,
         composite_score=float(record.composite_score or 0),
         channel_id=record.channel_id,
+        run_id=getattr(record, "id", None),
     )
 
 
@@ -218,6 +238,8 @@ def render_grade(grade: VideoGrade) -> str:
         )
     elif grade.prediction_note:
         lines.append(f"    prediction: {grade.prediction_note}")
+    if grade.engagement_surprise is not None:
+        lines.append(f"    surprise (actual − predicted): {grade.engagement_surprise * 100:+.1f}pp")
     return "\n".join(lines)
 
 

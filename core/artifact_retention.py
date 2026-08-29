@@ -7,6 +7,7 @@ config/secrets/, or .env. Tests pass a temp root — not the operator's output/.
 from __future__ import annotations
 
 import os
+import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -207,4 +208,12 @@ def retention_report(
         lines.append(f"    {path}")
     if len(candidates) > 20:
         lines.append(f"    ... +{len(candidates) - 20} more")
+    try:
+        from core.disk_growth import project_days_until_full
+
+        output_root = base / "output" if (base / "output").is_dir() else base
+        free = shutil.disk_usage(str(output_root)).free
+        lines.append(f"  growth    : {project_days_until_full(output_root, free_bytes=free)}")
+    except Exception as exc:
+        logger.debug("disk growth skipped: %s", exc)
     return "\n".join(lines)

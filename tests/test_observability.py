@@ -38,7 +38,8 @@ class TestCacheStats(unittest.TestCase):
         self.assertEqual(stats["hits"], 2)
         self.assertEqual(stats["misses"], 1)
         self.assertAlmostEqual(stats["hit_rate"], 2 / 3, places=3)
-        self.assertEqual(stats["by_prefix"]["reddit"], {"hits": 1, "misses": 1})
+        self.assertEqual(stats["by_prefix"]["reddit"], {"hits": 1, "misses": 1, "stale": 0})
+        self.assertEqual(stats.get("stale_served", 0), 0)
 
     def test_flush_persists_and_clears_in_process(self):
         cache_manager._record_cache_access("reddit::t", True)
@@ -179,6 +180,42 @@ class TestReliability(unittest.TestCase):
         )
         self.assertIn("Incidents", out)
         self.assertIn("tiktok_trends", out)
+
+    def test_cache_hit_dollars_saved_for_apify_prefix(self):
+        with patch.dict("os.environ", {"COST_APIFY_PER_RUN": "0.02"}):
+            out = reliability.render(
+                {
+                    "apify": {},
+                    "llm": {},
+                    "signals": {},
+                    "cache": {
+                        "hits": 5,
+                        "misses": 0,
+                        "total": 5,
+                        "hit_rate": 1.0,
+                        "by_prefix": {"tiktok_trends": {"hits": 5, "misses": 0}},
+                    },
+                }
+            )
+        self.assertRegex(out, r"\$0\.10")
+        self.assertIn("saved", out.lower())
+
+    def test_zero_apify_hits_does_not_print_dollars_saved(self):
+        out = reliability.render(
+            {
+                "apify": {},
+                "llm": {},
+                "signals": {},
+                "cache": {
+                    "hits": 4,
+                    "misses": 0,
+                    "total": 4,
+                    "hit_rate": 1.0,
+                    "by_prefix": {"youtube": {"hits": 4, "misses": 0}},
+                },
+            }
+        )
+        self.assertNotIn("saved", out.lower())
 
     def test_render_apify_auth_hint(self):
         out = reliability.render(

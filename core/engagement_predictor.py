@@ -149,3 +149,13 @@ def predict_engaged_rate(channel_id: str, *, quality: dict) -> Prediction | None
         n=n,
         note=f"{', '.join(parts)}; n={n}, ±{band * 100:.1f}pp",
     )
+
+
+def surprise_residual(actual: float | None, predicted: float | None) -> float | None:
+    """actual − predicted engaged-rate. None when either side is missing."""
+    if actual is None or predicted is None:
+        return None
+    try:
+        return round(float(actual) - float(predicted), 4)
+    except (TypeError, ValueError):
+        return None

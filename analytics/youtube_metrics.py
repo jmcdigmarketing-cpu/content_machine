@@ -211,6 +211,20 @@ def refresh_publish_metrics(
         if row:
             log_id = row.id
     if log_id:
+        try:
+            from core.engagement_predictor import predict_engaged_rate, surprise_residual
+            from storage.repositories.content_runs import get_content_run_repository
+
+            rec = get_content_run_repository().get(content_run_id)
+            quality = json.loads(getattr(rec, "quality_json", None) or "{}") if rec else {}
+            pred = predict_engaged_rate(channel_id, quality=quality) if quality else None
+            if pred is not None:
+                metrics["predicted_engaged_rate"] = pred.rate
+                residual = surprise_residual(engaged_rate, pred.rate)
+                if residual is not None:
+                    metrics["surprise"] = residual
+        except Exception as exc:
+            logger.debug("engagement surprise skipped: %s", exc)
         repo.update(log_id, {"metrics_json": json.dumps(metrics)})
 
     record_publish_outcome(

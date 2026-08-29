@@ -96,6 +96,9 @@ def build_quality(
     # verifier's keys appear only when it actually ran (absence ≠ perfect).
     quality["tier_warning_count"] = len(features.get("tier_warnings") or [])
     quality["fact_conflict_count"] = len(features.get("fact_conflicts") or [])
+    if features.get("disputed"):
+        quality["disputed"] = True
+        quality["disputed_claims"] = list(features.get("disputed_claims") or [])[:8]
     verification = features.get("claim_verification") or {}
     if verification.get("total"):
         # Only persist a numeric support_rate — a malformed/None value would
@@ -116,6 +119,12 @@ def build_quality(
             pre_rate = verification.get("pre_rewrite_support_rate")
             if isinstance(pre_rate, int | float):
                 quality["pre_rewrite_support_rate"] = float(pre_rate)
+            pre_script = verification.get("script_pre_rewrite")
+            post_script = verification.get("script_post_rewrite")
+            if pre_script:
+                quality["script_pre_rewrite"] = str(pre_script)
+            if post_script:
+                quality["script_post_rewrite"] = str(post_script)
 
     # Pillar 2: freeze the data-gated engaged-rate prediction at generation time
     # so the calibration loop can score it against the realized outcome later.

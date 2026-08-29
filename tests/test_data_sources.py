@@ -1,4 +1,6 @@
+import json
 import unittest
+from pathlib import Path
 
 from config.data_sources import _feed_matches_domain, domain_rss_feeds, rss_feeds_for_topic
 
@@ -45,6 +47,35 @@ class TestRssDomainRouting(unittest.TestCase):
         names = {f["name"] for f in rss_feeds_for_topic("UFC 320 Topuria title defense", "tapin")}
         self.assertNotIn("IGN", names)
         self.assertIn("MMA Fighting", names)
+
+
+class TestShippedRssNoSherdog(unittest.TestCase):
+    """Sherdog's RSS 403s; doctor FAILs feeds. Dropped from shipped config, not a key."""
+
+    def test_data_sources_and_tapin_seo_have_no_sherdog_url(self):
+        root = Path(__file__).resolve().parents[1]
+        for rel in ("config/data_sources.json", "config/seo/tapin.json"):
+            blob = json.loads((root / rel).read_text(encoding="utf-8"))
+            for url in _json_urls(blob):
+                self.assertNotIn(
+                    "sherdog.com",
+                    url.lower(),
+                    f"{rel} still points at Sherdog: {url}",
+                )
+
+
+def _json_urls(obj: object) -> list[str]:
+    found: list[str] = []
+    if isinstance(obj, dict):
+        url = obj.get("url")
+        if isinstance(url, str):
+            found.append(url)
+        for val in obj.values():
+            found.extend(_json_urls(val))
+    elif isinstance(obj, list):
+        for val in obj:
+            found.extend(_json_urls(val))
+    return found
 
 
 if __name__ == "__main__":

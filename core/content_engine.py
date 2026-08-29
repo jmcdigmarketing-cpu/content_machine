@@ -551,6 +551,8 @@ def _maybe_rewrite_unsupported_claims(script, verification, corpus_text, topic, 
         re_check.rewritten = True
         re_check.pre_rewrite_unsupported = len(verification.unsupported)
         re_check.pre_rewrite_total = verification.total
+        re_check.script_pre_rewrite = script
+        re_check.script_post_rewrite = candidate
         return candidate, re_check
     return script, verification
 
@@ -800,11 +802,13 @@ def generate_content_package(
     from core.fact_conflicts import (
         conflict_filter_enabled,
         drop_conflicting_lines,
+        features_from_conflicts,
         find_fact_conflicts,
     )
 
     clean_key_facts = clean_key_facts_early
     conflicts = find_fact_conflicts(clean_key_facts, signal_facts)
+    conflict_features = features_from_conflicts(conflicts, dropped=0)
     conflicts_dropped = 0
     if conflicts:
         logger.warning(
@@ -819,6 +823,7 @@ def generate_content_package(
                     "Dropped %d source line(s) conflicting with operator facts",
                     conflicts_dropped,
                 )
+        conflict_features = features_from_conflicts(conflicts, dropped=conflicts_dropped)
 
     # Detect thin-facts mode — warn the LLM when verified (non-YouTube) data is sparse.
     # _fact_line_count counts only lines with "-" or ":" (not YouTube bullet "•" lines),
@@ -885,6 +890,10 @@ def generate_content_package(
             "prompt_version": current_prompt_version(),
             "brief_version": research_brief.version if research_brief else "",
             "word_count": 0,
+            "disputed": conflict_features["disputed"],
+            "disputed_claims": conflict_features["disputed_claims"],
+            "fact_conflicts": conflict_features["fact_conflicts"],
+            "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
         }
 
     script = str(payload["script"])
@@ -1017,6 +1026,15 @@ def generate_content_package(
     except Exception as exc:
         logger.debug("odds language skipped: %s", exc)
 
+    try:
+        from core.rumor_language import apply_rumor_language
+
+        script, rumor_notes = apply_rumor_language(script, topic=topic)
+        for note in rumor_notes:
+            logger.info("%s", note)
+    except Exception as exc:
+        logger.debug("rumor language skipped: %s", exc)
+
     tts_cap = None
     try:
         from core.tts_char_cap import max_chars as tts_max
@@ -1067,6 +1085,17 @@ def generate_content_package(
 
     lower_thirds = select_grounded_labels(script, corpus.factual_text)
 
+    persona_hits: list[str] = []
+    try:
+        from core.persona_lint import lint_persona_script
+
+        persona_hits = lint_persona_script(script, channel_id=channel_id)
+        if persona_hits:
+            logger.warning("persona lint: %s", ", ".join(persona_hits))
+    except Exception as exc:
+        logger.debug("persona lint skipped: %s", exc)
+        persona_hits = []
+
     return {
         "title": title,
         "title_warnings": title_warnings,
@@ -1090,8 +1119,11 @@ def generate_content_package(
         "ungrounded_entities": ungrounded,
         "trade_warnings": trade_warnings,
         "tier_warnings": tier_warnings,
-        "fact_conflicts": [c.render() for c in conflicts],
-        "fact_conflicts_dropped": conflicts_dropped,
+        "fact_conflicts": conflict_features["fact_conflicts"],
+        "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
+        "disputed": conflict_features["disputed"],
+        "disputed_claims": conflict_features["disputed_claims"],
         "claim_verification": verification.to_dict() if verification else None,
         "lower_thirds": lower_thirds,
+        "persona_lint": persona_hits,
     }

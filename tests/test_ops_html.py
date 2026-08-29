@@ -61,6 +61,8 @@ class TestOpsHtmlAndHelpers(unittest.TestCase):
             "booth-shortcut",
             "blocking",
             "secrets-doctor",
+            "vault-decay",
+            "next",
         ):
             self.assertIn(name, ops.COMMANDS)
 

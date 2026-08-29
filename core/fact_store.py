@@ -50,6 +50,8 @@ TIER_WEIGHTS: dict[str, float] = {
 
 # A dated fact's freshness bonus decays to zero over this many days.
 _FRESHNESS_WINDOW_DAYS = 90
+# Spoken "as of" clock (#331): age at or above this is dated in the packed facts.
+_AS_OF_MIN_DAYS = 7
 _DATE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
 
 
@@ -125,6 +127,32 @@ class FactRecord:
             if self.relevance_tiebreak_status:
                 out["relevance_tiebreak_status"] = self.relevance_tiebreak_status
         return out
+
+
+def as_of_label(age_days: int) -> str:
+    """Relative clock for packed facts. Empty when the fact is still fresh."""
+    if age_days < _AS_OF_MIN_DAYS:
+        return ""
+    if age_days < 14:
+        return "as of last week"
+    if age_days < 45:
+        return "as of last month"
+    return "as of earlier"
+
+
+def stamp_as_of(record: FactRecord, *, today: date | None = None) -> str:
+    """Prefix a kept vault fact with an as-of clock. Does not rewrite scripts.
+
+    Operator paste without ``verified_at`` is left alone (just-pasted key facts).
+    """
+    claim = (record.claim or "").strip()
+    age = record.age_days(today)
+    if age is None:
+        return claim
+    label = as_of_label(age)
+    if not label:
+        return claim
+    return f"{label}: {claim}"
 
 
 def tier_weight(tier: str) -> float:

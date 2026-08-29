@@ -45,11 +45,6 @@
       "name": "Polygon",
       "url": "https://www.polygon.com/rss/index.xml",
       "domains": ["gaming"]
-    },
-    {
-      "name": "Sherdog",
-      "url": "https://www.sherdog.com/rss/news.xml",
-      "domains": ["ufc", "mma"]
     }
   ],
   "seo_refresh_queries": [

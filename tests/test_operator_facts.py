@@ -50,6 +50,51 @@ Celtics get:
         )
         self.assertEqual(len(facts), 2)
 
+    def test_long_paragraph_is_kept_as_one_fact(self):
+        para = (
+            "Jon Jones remains the UFC heavyweight champion after a dominant "
+            "decision, and the division's next title shot is expected to be "
+            "announced once the winner of the number-one contender bout is booked. "
+        ) * 4
+        self.assertGreaterEqual(len(para), 600)
+        facts = parse_pasted_block(para)
+        self.assertEqual(len(facts), 1)
+        self.assertGreaterEqual(len(facts[0]), 600)
+        self.assertLessEqual(len(facts[0]), 800)
+
+
+class TestReadMultilinePaste(unittest.TestCase):
+    def test_stops_on_lone_dot(self):
+        from core.operator_facts import read_multiline_paste
+
+        lines = iter(["First paragraph stays in the paste.", ".", "ignored"])
+        out = read_multiline_paste(lambda _p: next(lines))
+        self.assertIn("First paragraph", out)
+        self.assertNotIn("ignored", out)
+
+    def test_stops_on_end(self):
+        from core.operator_facts import read_multiline_paste
+
+        lines = iter(["Kept sentence about a fight result here.", "END"])
+        out = read_multiline_paste(lambda _p: next(lines))
+        self.assertIn("Kept sentence", out)
+
+    def test_single_blank_does_not_end_multi_paragraph(self):
+        from core.operator_facts import read_multiline_paste
+
+        lines = iter(
+            [
+                "First paragraph about Jones beating Pereira at UFC 300 in Vegas.",
+                "",
+                "Second paragraph about the next title shot being booked in 2026.",
+                "",
+                "",
+            ]
+        )
+        out = read_multiline_paste(lambda _p: next(lines))
+        self.assertIn("First paragraph", out)
+        self.assertIn("Second paragraph", out)
+
 
 class TestFactsForPrompt(unittest.TestCase):
     def test_char_budget_fits_more_than_five(self):

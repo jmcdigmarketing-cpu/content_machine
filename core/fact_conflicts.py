@@ -30,6 +30,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from core.trade_validation import extract_trade_claims
 
@@ -241,6 +242,27 @@ def drop_conflicting_lines(source_text: str, conflicts: list[FactConflict]) -> t
             continue
         kept.append(line)
     return "\n".join(kept), dropped
+
+
+def features_from_conflicts(
+    conflicts: list[FactConflict],
+    *,
+    dropped: int = 0,
+) -> dict[str, Any]:
+    """First-class disputed flag for the report card (#332)."""
+    if not conflicts:
+        return {
+            "fact_conflicts": [],
+            "fact_conflicts_dropped": int(dropped or 0),
+            "disputed": False,
+            "disputed_claims": [],
+        }
+    return {
+        "fact_conflicts": [c.render() for c in conflicts],
+        "fact_conflicts_dropped": int(dropped or 0),
+        "disputed": True,
+        "disputed_claims": [c.other_line for c in conflicts],
+    }
 
 
 def display_fact_conflicts(

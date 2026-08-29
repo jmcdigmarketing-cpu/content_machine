@@ -162,6 +162,53 @@ class TestRewriteStampedAtTheSource(unittest.TestCase):
                 )
         self.assertFalse(result.rewritten)
 
+    def test_adopted_rewrite_keeps_both_script_texts(self):
+        from unittest.mock import patch
+
+        import core.content_engine as ce
+
+        before = _verification(12, 7)
+        after = _verification(12, 0)
+        original = "w " * 400
+        rewritten = ("reports claim " + "w ") * 200
+        kept = rewritten.strip()
+        with patch.object(ce, "_call_content_llm", return_value={"script": rewritten}):
+            with patch("core.claim_verifier.verify_claims", return_value=after):
+                script, result = ce._maybe_rewrite_unsupported_claims(
+                    original, before, "corpus", "topic", None
+                )
+        self.assertEqual(script, kept)
+        self.assertEqual(result.script_pre_rewrite, original)
+        self.assertEqual(result.script_post_rewrite, kept)
+        d = result.to_dict()
+        self.assertEqual(d["script_pre_rewrite"], original)
+        self.assertEqual(d["script_post_rewrite"], kept)
+
+    def test_clean_run_omits_script_diff_keys(self):
+        d = _verification(12, 0).to_dict()
+        self.assertNotIn("script_pre_rewrite", d)
+        self.assertNotIn("script_post_rewrite", d)
+
+    def test_quality_and_dossier_show_both_texts(self):
+        after = _run71_rewritten()
+        after.script_pre_rewrite = "GTA 6 is delayed to 2027."
+        after.script_post_rewrite = "Reports claim GTA 6 is delayed to 2027."
+        quality = _quality(after)
+        self.assertEqual(quality["script_pre_rewrite"], after.script_pre_rewrite)
+        self.assertEqual(quality["script_post_rewrite"], after.script_post_rewrite)
+        from core.run_ledger import _quality_script_diff_lines
+
+        blob = "\n".join(_quality_script_diff_lines(quality))
+        self.assertIn("GTA 6 is delayed to 2027.", blob)
+        self.assertIn("Reports claim", blob)
+        from core.review_booth import booth_html, script_diff_html
+
+        self.assertIn("GTA 6 is delayed", script_diff_html(quality))
+        html = booth_html(grade_breakdown=script_diff_html(quality), channel_id="tapin")
+        self.assertIn("Script diff", html)
+        self.assertIn("GTA 6 is delayed", html)
+        self.assertEqual(script_diff_html({"unsupported_claim_count": 0}), "")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -255,6 +255,19 @@ def grade_breakdown_html(components: list[Any] | None) -> str:
     )
 
 
+def script_diff_html(quality: dict[str, Any] | None) -> str:
+    """Both script texts when a rewrite pass ran (#405)."""
+    quality = quality or {}
+    pre = str(quality.get("script_pre_rewrite") or "").strip()
+    post = str(quality.get("script_post_rewrite") or "").strip()
+    if not pre or not post:
+        return ""
+    return (
+        "<p><strong>Script diff</strong> LLM draft vs post-gate rewrite</p>"
+        f"<pre class='md'>{escape(pre[:800])}\n---\n{escape(post[:800])}</pre>"
+    )
+
+
 def tts_cache_pill_html(cached: Any) -> str:
     if not cached:
         return ""
@@ -963,7 +976,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         ),
         "numeric_chips": numeric_chips,
         "semantic_bar": semantic_bar,
-        "grade_breakdown": grade_breakdown,
+        "grade_breakdown": grade_breakdown + script_diff_html(quality),
         "tts_cache_pill": tts_cache_pill,
         "thumb_badge": thumb_badge,
         "signal_dots": signal_dots,

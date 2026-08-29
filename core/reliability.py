@@ -197,6 +197,50 @@ def _policy_canary_section() -> list[str]:
         return []
 
 
+def _metrics_sync_section() -> dict[str, Any]:
+    """Stalled metrics sync is an incident (#366). Fresh sync is not a WARNING."""
+    try:
+        import json
+        from datetime import datetime, timezone
+
+        from config.channels import resolve_channel_id
+        from core.metrics_sync_health import metrics_sync_incident
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        cid = resolve_channel_id(os.getenv("CONTENT_CHANNEL_ID") or None)
+        rows = get_publish_log_repository().list_uploaded_for_channel(cid)
+        uploads = len(rows)
+        now = datetime.now(timezone.utc)
+        ages: list[float] = []
+        for row in rows:
+            try:
+                metrics = json.loads(row.metrics_json or "{}")
+            except Exception:
+                metrics = {}
+            if not isinstance(metrics, dict) or not metrics:
+                continue
+            when = row.published_at
+            if when is None:
+                ages.append(0.0)
+                continue
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            ages.append(max(0.0, (now - when).total_seconds() / 86400.0))
+        last_age = min(ages) if ages else (None if uploads else 0.0)
+        incident = metrics_sync_incident(
+            uploads=uploads, last_metrics_age_days=last_age, stall_days=7.0
+        )
+        detail = incident or (
+            f"metrics sync fresh ({last_age:.0f}d)"
+            if last_age is not None
+            else "metrics sync fresh"
+        )
+        return {"incident": incident, "detail": detail}
+    except Exception as exc:
+        logger.debug("metrics sync section skipped: %s", exc)
+        return {"incident": None, "detail": "metrics sync n/a"}
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {
@@ -210,6 +254,7 @@ def gather() -> dict[str, Any]:
         "competitor_health": _competitor_health_section(),
         "fact_expiry": _fact_expiry_section(),
         "policy_canary": _policy_canary_section(),
+        "metrics_sync": _metrics_sync_section(),
     }
 
 
@@ -274,6 +319,24 @@ def _budget_line(used: float | None, budget: float | None) -> str:
     pct = (used / budget * 100) if budget else 0.0
     flag = " ⚠" if used >= budget else ""
     return f"${used:.2f}/${budget:.2f} ({pct:.0f}%){flag}"
+
+
+def _apify_cache_dollars_saved(by_prefix: dict[str, Any]) -> float:
+    """Hits on paid Apify signal prefixes × COST_APIFY_PER_RUN (#372)."""
+    try:
+        from core.cost_meter import _APIFY_SIGNALS, _rate
+    except Exception:
+        return 0.0
+    hits = 0
+    for name in _APIFY_SIGNALS:
+        bucket = (by_prefix or {}).get(name) or {}
+        try:
+            hits += int(bucket.get("hits") or 0)
+        except (TypeError, ValueError):
+            continue
+    if hits <= 0:
+        return 0.0
+    return round(hits * _rate("COST_APIFY_PER_RUN", 0.02), 4)
 
 
 def render(data: dict[str, Any] | None = None) -> str:
@@ -343,6 +406,9 @@ def render(data: dict[str, Any] | None = None) -> str:
         tot = h + m
         if tot:
             lines.append(f"  {name:<16} {h}/{tot} ({h / tot * 100:.0f}%)")
+    saved = _apify_cache_dollars_saved(by_prefix)
+    if saved > 0:
+        lines.append(f"  Apify cache hits saved ~${saved:.2f}")
 
     yt = data.get("youtube", {})
     if yt:
@@ -409,6 +475,10 @@ def render(data: dict[str, Any] | None = None) -> str:
     if pc:
         lines.append("Policy canary:")
         lines.extend(f"  ! {w}" for w in pc)
+
+    ms = data.get("metrics_sync") or {}
+    if isinstance(ms, dict) and (ms.get("incident") or ms.get("detail")):
+        lines.append(f"  metrics : {ms.get('incident') or ms.get('detail')}")
 
     inc = data.get("incidents") or []
     if inc:

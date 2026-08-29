@@ -157,5 +157,80 @@ class TestFactEngineReportUI(unittest.TestCase):
         self.assertFalse(needs)
 
 
+class TestDisputedFlag(unittest.TestCase):
+    """#332: arbitration must leave a first-class disputed flag, not just a string list."""
+
+    def test_conflicts_stamp_disputed_and_the_losing_claim(self):
+        from core.fact_conflicts import features_from_conflicts
+
+        source = "- Giannis traded to the Golden State Warriors (rumor mill)"
+        conflicts = find_fact_conflicts(_OPERATOR, source)
+        filtered, dropped = drop_conflicting_lines(source, conflicts)
+        feats = features_from_conflicts(conflicts, dropped=dropped)
+        self.assertTrue(feats["disputed"])
+        self.assertEqual(dropped, 1)
+        self.assertNotIn("Warriors", filtered)
+        self.assertTrue(any("Warriors" in c for c in feats["disputed_claims"]))
+
+    def test_report_card_prints_disputed_not_just_a_bullet_list(self):
+        from core.ui import display_fact_engine_report
+
+        out: list[str] = []
+        needs = display_fact_engine_report(
+            {
+                "disputed": True,
+                "disputed_claims": ["Giannis traded to the Golden State Warriors"],
+                "fact_conflicts": ["Trade direction disagrees for Giannis: Heat vs Warriors"],
+                "fact_conflicts_dropped": 1,
+            },
+            print_fn=lambda *a: out.append(" ".join(str(x) for x in a)),
+        )
+        self.assertTrue(needs)
+        joined = "\n".join(out).lower()
+        self.assertIn("disputed", joined)
+        self.assertIn("warriors", joined)
+
+    def test_no_conflicts_is_not_disputed(self):
+        from core.fact_conflicts import features_from_conflicts
+
+        feats = features_from_conflicts([], dropped=0)
+        self.assertFalse(feats.get("disputed"))
+        self.assertEqual(feats.get("disputed_claims"), [])
+
+    def test_generate_content_package_stamps_disputed(self):
+        from unittest.mock import patch
+
+        from core.content_engine import generate_content_package
+
+        payload = {
+            "script": "Giannis is headed to the Heat after the trade. " * 8,
+            "title": "Heat trade",
+            "description": "desc",
+            "tags": ["nba"],
+        }
+        with (
+            patch(
+                "core.content_engine.enrich_facts",
+                return_value="- Giannis traded to the Golden State Warriors",
+            ),
+            patch("core.content_engine._call_content_llm", return_value=payload),
+            patch("core.claim_verifier.verify_claims", return_value=None),
+            patch("core.title_generator.generate_title", return_value="Heat trade"),
+            patch("core.content_engine._maybe_improve_hook", side_effect=lambda s: s),
+            patch("core.content_engine._maybe_inject_insight", side_effect=lambda s, *_a, **_k: s),
+        ):
+            result = generate_content_package(
+                "Giannis trade",
+                {},
+                (40, 80),
+                "2026-08-21",
+                channel_id="tapin",
+                key_facts=_OPERATOR,
+                length_choice="1",
+            )
+        self.assertTrue(result.get("disputed"))
+        self.assertGreater(result.get("fact_conflicts_dropped") or 0, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

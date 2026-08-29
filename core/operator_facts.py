@@ -162,6 +162,33 @@ def parse_pasted_block(text: str) -> list[str]:
     return facts
 
 
+def read_multiline_paste(input_fn) -> str:
+    """Read a paste until a lone `.` / `END`, two consecutive blank lines, or EOF.
+
+    A single blank line is a paragraph break, not an end — otherwise a pasted
+    article dies at the first empty line (the interactive `paste` prompt).
+    """
+    lines: list[str] = []
+    blank_run = 0
+    while True:
+        try:
+            raw = input_fn("    ")
+        except EOFError:
+            break
+        stripped = (raw or "").replace("\r", "").strip()
+        if stripped.lower() in (".", "end"):
+            break
+        if not stripped:
+            blank_run += 1
+            if blank_run >= 2:
+                break
+            lines.append("")
+            continue
+        blank_run = 0
+        lines.append(stripped)
+    return "\n".join(lines)
+
+
 def load_key_facts(facts_file: str = "", fact_lines: list[str] | None = None) -> list[str]:
     """Headless key facts: a paste-block file and/or repeated ``--fact`` lines.
 

@@ -26,12 +26,30 @@ from core.run_recorder import (
 )
 from core.run_trace import write_run_trace
 from core.script_length import count_spoken_words, get_length_preset, word_range
-from core.tts import generate_audio, last_tts_was_cache_hit
+from core.tts import generate_audio, last_tts_was_cache_hit, last_tts_was_piper_mix
 from core.utils import clean_script_for_tts
 from core.vault_dossiers import write_run_dossier
 from video.render_video import render_vertical_video
 
 logger = get_logger("pipeline")
+
+
+def _tts_forecast_features() -> dict[str, int]:
+    try:
+        from core.tts_char_cap import last_tts_forecast
+
+        snap = last_tts_forecast() or {}
+    except Exception as exc:
+        logger.debug("tts forecast features skipped: %s", exc)
+        return {}
+    out: dict[str, int] = {}
+    if snap.get("forecast_chars") is not None:
+        out["tts_forecast_chars"] = int(snap["forecast_chars"])
+    if snap.get("actual_chars") is not None:
+        out["tts_actual_chars"] = int(snap["actual_chars"])
+    if snap.get("delta_chars") is not None:
+        out["tts_char_delta"] = int(snap["delta_chars"])
+    return out
 
 
 @dataclass
@@ -283,6 +301,24 @@ def _finalize_run(
     else:
         status = "drafted"
 
+    if result.mp4_path:
+        try:
+            from core.render_artifacts import write_render_sidecars
+
+            side = write_render_sidecars(
+                result.mp4_path,
+                script=result.script or "",
+                features=result.features,
+                quality={},
+            )
+            if side.get("mp4_sha256") or side.get("script_sha256"):
+                result.features["artifact_manifest"] = {
+                    "mp4_sha256": side.get("mp4_sha256"),
+                    "script_sha256": side.get("script_sha256"),
+                }
+        except Exception as exc:
+            logger.warning("render sidecars skipped: %s", exc)
+
     run_id = record_content_run(
         channel_id=channel_id,
         input_topic=input_topic,
@@ -380,6 +416,33 @@ def _finalize_run(
     except Exception as exc:
         logger.debug("run_completed webhook event not emitted for run %s: %s", run_id, exc)
 
+    try:
+        from core.spend_anomaly import maybe_toast_spend_anomaly
+
+        total = 0.0
+        cost = (result.features or {}).get("cost") or {}
+        if isinstance(cost, dict):
+            total = float(cost.get("total") or 0.0)
+        trailing: list[float] = []
+        try:
+            from storage.repositories.content_runs import get_content_run_repository
+
+            for rec in get_content_run_repository().list_for_channel(channel_id)[-20:]:
+                try:
+                    feats = json.loads(getattr(rec, "features_json", None) or "{}")
+                    prev = (feats.get("cost") or {}).get("total")
+                    if prev:
+                        trailing.append(float(prev))
+                except Exception as exc:
+                    # One unreadable historical row must not cost us the median.
+                    logger.debug("trailing cost row skipped: %s", exc)
+                    continue
+        except Exception as exc:
+            logger.debug("trailing costs skipped: %s", exc)
+        maybe_toast_spend_anomaly(total, trailing)
+    except Exception as exc:
+        logger.debug("spend anomaly skipped: %s", exc)
+
 
 def run_pipeline(
     topic: str,
@@ -404,6 +467,9 @@ def run_pipeline(
     result = PipelineResult(topic=topic, score=0.0, signals={}, channel_id=channel_id)
 
     if discovery is None:
+        from core.run_mode import guard_before_discovery
+
+        guard_before_discovery()
         discovery = run_discovery(topic, variant_limit=variant_limit, channel_id=channel_id)
         result.timings.update(discovery.timings)
     else:
@@ -433,6 +499,21 @@ def run_pipeline(
     result.topic = best_topic
     result.score = best_score
     result.signals = best_signals
+
+    try:
+        from core.cross_channel_dup import cross_channel_dup_block_reason
+
+        why = cross_channel_dup_block_reason(best_topic, channel_id, key_facts=key_facts)
+    except Exception as exc:
+        logger.debug("cross-channel dup skipped: %s", exc)
+        why = None
+    if why:
+        result.aborted = True
+        result.abort_reason = why
+        _finalize_run(
+            channel_id=channel_id, input_topic=input_topic, result=result, discovery=discovery
+        )
+        return result
 
     preset = get_length_preset(length_choice)
     wr = _word_range(length_choice)
@@ -496,7 +577,10 @@ def run_pipeline(
     result.features["title_warnings"] = content.get("title_warnings") or []
     result.features["fact_conflicts"] = content.get("fact_conflicts") or []
     result.features["fact_conflicts_dropped"] = int(content.get("fact_conflicts_dropped") or 0)
+    result.features["disputed"] = bool(content.get("disputed"))
+    result.features["disputed_claims"] = list(content.get("disputed_claims") or [])
     result.features["lower_thirds"] = list(content.get("lower_thirds") or [])
+    result.features["persona_lint"] = list(content.get("persona_lint") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]
 
@@ -592,6 +676,14 @@ def run_media_only(
     t_tts = time.perf_counter()
     generate_audio(script, mp3_path, channel_id=channel_id)
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
+    try:
+        from core.voice_consistency import voice_mix_warning
+
+        mix = voice_mix_warning()
+        if mix:
+            logger.warning("%s", mix)
+    except Exception as exc:
+        logger.debug("voice consistency skipped: %s", exc)
 
     ffmpeg_commands: dict[str, list[str]] = {}
     ffmpeg_attempts: dict[str, list[list[str]]] = {}
@@ -735,7 +827,7 @@ def run_media_only(
                 (load_features(content_run_id) or {}).get("cost"),
                 script,
                 thumbnail_provider=thumb_provider,
-                tts_cached=last_tts_was_cache_hit(),
+                tts_cached=last_tts_was_cache_hit() or last_tts_was_piper_mix(),
             )
             if thumbnail_candidates:
                 cost["thumbnail"] = round(
@@ -754,6 +846,7 @@ def run_media_only(
                 {
                     "cost": cost,
                     "tts_cached": last_tts_was_cache_hit(),
+                    **_tts_forecast_features(),
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,
                     "thumbnail_candidates": thumbnail_candidates,

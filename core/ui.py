@@ -723,7 +723,10 @@ def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
             continue
         sig = signals[name]
         score = sig.get("score", 0)
-        if sig.get("connected") and sig.get("active") and score > 0:
+        if sig.get("stale"):
+            detail = sig.get("status_detail") or "STALE cache"
+            print_fn(f"  {name.capitalize()}: — ({detail})")
+        elif sig.get("connected") and sig.get("active") and score > 0:
             print_fn(f"  {name.capitalize()}: {score}")
         else:
             detail = sig.get("status_detail") or sig.get("status", "inactive")
@@ -789,6 +792,7 @@ def prompt_key_facts_result(
         dedupe_facts,
         operator_key_fact_char_budget,
         parse_pasted_block,
+        read_multiline_paste,
     )
 
     pasted_sources: list[dict[str, str]] = []
@@ -800,14 +804,8 @@ def prompt_key_facts_result(
         if not fact:
             break
         if fact.lower() == "paste":
-            print_fn("  >> Paste your block below (blank line when finished):")
-            block_lines: list[str] = []
-            while True:
-                line = input_fn("    ").strip()
-                if not line:
-                    break
-                block_lines.append(line)
-            parsed = parse_pasted_block("\n".join(block_lines))
+            print_fn("  >> Paste your block below ('.' / END / two blank lines when finished):")
+            parsed = parse_pasted_block(read_multiline_paste(input_fn))
             if parsed:
                 print_fn(f"    Parsed {len(parsed)} fact line(s) from block.")
                 manual_facts.extend(parsed)
@@ -992,7 +990,9 @@ def prompt_key_facts_result(
                 for record in records
             }
         )
-    vault_accepted.extend(record.claim for record in selected_records)
+    from core.fact_store import stamp_as_of
+
+    vault_accepted.extend(stamp_as_of(record) for record in selected_records)
 
     if pasted_sources:
         try:
@@ -1014,6 +1014,14 @@ def prompt_key_facts_result(
     new_facts = dedupe_facts(manual_facts + link_facts)
 
     if new_facts:
+        try:
+            from core.fact_intake import lint_fact_intake
+
+            vault_claims = [str(getattr(r, "claim", "") or "") for r in records]
+            for warn in lint_fact_intake(new_facts, vault_claims=vault_claims):
+                print_fn(f"  intake: {warn}")
+        except Exception as exc:
+            logger.debug("fact intake lint skipped: %s", exc)
         saved_path = capture_facts_to_vault(channel_id, topic, new_facts)
         if saved_path:
             print_fn(f"  Saved all {len(new_facts)} fact(s) to vault (full set, no cap).")
@@ -1180,6 +1188,11 @@ def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
         dropped=int(features.get("fact_conflicts_dropped") or 0),
         print_fn=print_fn,
     )
+    if features.get("disputed"):
+        print_fn("\n  DISPUTED — operator facts won; these source claims lost:")
+        for claim in (features.get("disputed_claims") or [])[:6]:
+            print_fn(f"    - {claim}")
+        needs_review = True
 
     tier_warnings = features.get("tier_warnings") or []
     if tier_warnings:
@@ -1307,7 +1320,18 @@ def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
 
     # Non-interactive override: RUN_COST_MODE=free skips the prompt.
     if resolve_cost_mode() == COST_MODE_FREE:
-        print_fn("  Cost mode: Free ($0) [RUN_COST_MODE=free]")
+        why = (
+            "PAID_CALLS=off"
+            if os.getenv("PAID_CALLS", "").strip().lower()
+            in (
+                "0",
+                "off",
+                "false",
+                "no",
+            )
+            else "RUN_COST_MODE=free"
+        )
+        print_fn(f"  Cost mode: Free ($0) [{why}]")
         return COST_MODE_FREE
 
     subsection("Cost mode", print_fn)

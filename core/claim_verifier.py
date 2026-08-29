@@ -51,6 +51,8 @@ class ClaimVerification:
     rewritten: bool = False
     pre_rewrite_unsupported: int = 0
     pre_rewrite_total: int = 0
+    script_pre_rewrite: str = ""
+    script_post_rewrite: str = ""
 
     @property
     def total(self) -> int:
@@ -92,6 +94,10 @@ class ClaimVerification:
             out["pre_rewrite_unsupported"] = self.pre_rewrite_unsupported
             out["pre_rewrite_total"] = self.pre_rewrite_total
             out["pre_rewrite_support_rate"] = self.pre_rewrite_support_rate
+            if self.script_pre_rewrite:
+                out["script_pre_rewrite"] = self.script_pre_rewrite
+            if self.script_post_rewrite:
+                out["script_post_rewrite"] = self.script_post_rewrite
         return out
 
 

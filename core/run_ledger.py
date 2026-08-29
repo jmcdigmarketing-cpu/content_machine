@@ -34,6 +34,18 @@ def _fmt_secs(value: Any) -> str:
         return "?"
 
 
+def _quality_script_diff_lines(quality: dict[str, Any]) -> list[str]:
+    """Both script texts when a rewrite pass ran (#405). Empty on a clean run."""
+    pre = str(quality.get("script_pre_rewrite") or "").strip()
+    post = str(quality.get("script_post_rewrite") or "").strip()
+    if not pre or not post:
+        return []
+    lines = ["  script diff (LLM draft vs post-gate rewrite):"]
+    lines.append(f"    before: {pre[:240]}")
+    lines.append(f"    after : {post[:240]}")
+    return lines
+
+
 def _phase_times(timings: dict[str, Any]) -> list[tuple[str, float]]:
     out = []
     for key in _PHASE_KEYS:
@@ -160,6 +172,9 @@ def render_dossier(run_id: int) -> str:
             )
         if quality.get("fact_conflict_count"):
             lines.append(f"  fact conflicts: {quality['fact_conflict_count']}")
+            if quality.get("disputed"):
+                lines.append("  DISPUTED")
+        lines.extend(_quality_script_diff_lines(quality))
         if quality.get("tier_warning_count"):
             lines.append(f"  tier warnings: {quality['tier_warning_count']}")
         if quality.get("thumbnail_overall") is not None:
@@ -207,7 +222,10 @@ def render_dossier(run_id: int) -> str:
                 f"engaged {float(metrics.get('engaged_rate', 0) or 0) * 100:.1f}%, "
                 f"likes {metrics.get('likes', '?')}"
             )
-            if metrics.get("estimated_revenue_usd") is not None:
+            if metrics.get("surprise") is not None:
+                lines.append(
+                    f"  surprise (actual − predicted): {float(metrics['surprise']) * 100:+.1f}pp"
+                )
                 revenue = float(metrics["estimated_revenue_usd"] or 0)
                 total_cost = float((cost or {}).get("total") or 0)
                 lines.append(

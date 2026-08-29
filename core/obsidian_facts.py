@@ -27,7 +27,7 @@ import re
 from datetime import date
 from pathlib import Path
 
-from core.fact_store import FactRecord, note_metadata, rank_bonus
+from core.fact_store import FactRecord, note_metadata, rank_bonus, stamp_as_of
 from core.logging import get_logger
 from core.vault_index import iter_notes
 
@@ -337,7 +337,7 @@ def load_facts(
     can never surface NBA facts.
     """
     return [
-        r.claim
+        stamp_as_of(r)
         for r in load_fact_records(
             topic,
             channel_id,

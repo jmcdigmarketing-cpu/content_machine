@@ -1,18 +1,25 @@
 import os
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from typing import Any
 
-from apis.cache_manager import build_key, get_cached, set_cache
+from apis.cache_manager import build_key, get_cached, get_expired, record_stale_served, set_cache
 from apis.live_scores_api import live_scores_cache_ttl
 from apis.signal_contract import (
     STATUS_AUTH,
+    STATUS_ERROR,
+    STATUS_HTTP,
+    STATUS_INACTIVE,
     STATUS_NO_KEY,
+    STATUS_OK,
     STATUS_QUOTA,
     STATUS_RATE_LIMIT,
     STATUS_SKIPPED,
+    STATUS_UNAVAILABLE,
+    STATUS_UPSTREAM,
     make_signal,
     normalize_signal,
 )
@@ -103,6 +110,21 @@ def _skip_signals() -> set[str]:
 _TRIP_STATUSES = {STATUS_QUOTA, STATUS_AUTH, STATUS_NO_KEY}
 _SESSION_DISABLED: set[str] = set()
 _COOLDOWN_UNTIL: dict[str, float] = {}  # signal name -> unix ts when it may run again
+_EMPTY_STREAK: dict[str, int] = {}  # consecutive empty-200 per signal (#394)
+_EMPTY_QUARANTINE_N = 3
+# Scraper-class signals only. An empty HTTP 200 is ambiguous -- it means "dead
+# scraper" for a source that scrapes a page, and "no entity for this topic" for a
+# lookup API. This is an ALLOWLIST, not a denylist, because the safe default is to
+# never quarantine: rawg (apis/rawg_api.py:166), odds (odds_api.py:61) and sports
+# (sports_data_api.py:76) all return connected+INACTIVE with NO status_detail when
+# a topic is outside their domain, and a denylist disabled them after three
+# off-domain topics in one batch -- costing the NEXT topic data they could answer.
+_EMPTY_QUARANTINE_SIGNALS = frozenset({"tapology"})
+# Domain-skip / kill-switch details — not an empty HTTP 200.
+_EMPTY_SKIP_DETAIL = re.compile(
+    r"disabled|not an |gated|skipped|no page",
+    re.IGNORECASE,
+)
 # Hard trips also persist across runs via core/quota_governor.py (scope "signal",
 # key-hash invalidated). Loaded once per process into this memo.
 _PERSISTED_DISABLED: set[str] = set()
@@ -128,6 +150,23 @@ def _cooldown_seconds() -> int:
         return 900
 
 
+def _is_empty_200_inactive(name: str, result: dict[str, Any]) -> bool:
+    """Tapology-class 200+nothing, not a healthy topic-miss INACTIVE.
+
+    ``STATUS_INACTIVE`` is the contract for a live source with no match (Wikipedia
+    has no page; RAWG has no game for a UFC topic). Those must not session-disable.
+    Empty-200 is: a scraper-class signal, connected, inactive, and no skip-detail.
+    """
+    if result.get("status") != STATUS_INACTIVE:
+        return False
+    if name not in _EMPTY_QUARANTINE_SIGNALS:
+        return False
+    if result.get("connected") is False:
+        return False
+    detail = str(result.get("status_detail") or "")
+    return _EMPTY_SKIP_DETAIL.search(detail) is None
+
+
 def _record_signal_health(name: str, result: dict[str, Any]) -> None:
     """Trip the session breaker (hard failure) or start a cooldown (rate limit)."""
     if not _breaker_enabled() or not isinstance(result, dict):
@@ -146,6 +185,29 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
             secs,
             result.get("status_detail") or "",
         )
+        return
+    if status == STATUS_OK:
+        with _BREAKER_LOCK:
+            _EMPTY_STREAK.pop(name, None)
+    elif _is_empty_200_inactive(name, result):
+        trip = False
+        with _BREAKER_LOCK:
+            n = _EMPTY_STREAK.get(name, 0) + 1
+            _EMPTY_STREAK[name] = n
+            if n >= _EMPTY_QUARANTINE_N and name not in _SESSION_DISABLED:
+                _SESSION_DISABLED.add(name)
+                trip = True
+        if trip:
+            logger.warning(
+                "Circuit breaker: disabling signal '%s' for this session after "
+                "%d empty/inactive responses (status=%s, detail=%s)",
+                name,
+                _EMPTY_QUARANTINE_N,
+                status,
+                result.get("status_detail") or "",
+            )
+        return
+    elif status == STATUS_INACTIVE:
         return
     if status not in _trip_statuses():
         return
@@ -217,6 +279,7 @@ def reset_session_breaker() -> None:
     with _BREAKER_LOCK:
         _SESSION_DISABLED.clear()
         _COOLDOWN_UNTIL.clear()
+        _EMPTY_STREAK.clear()
         _PERSISTED_DISABLED = set()
         _PERSISTED_SYNCED = False
     try:
@@ -459,6 +522,69 @@ def _cache_ttl_for(name):
     return None
 
 
+_LIVE_FAILURE_STATUSES = frozenset(
+    {
+        STATUS_UNAVAILABLE,
+        STATUS_ERROR,
+        STATUS_AUTH,
+        STATUS_RATE_LIMIT,
+        STATUS_HTTP,
+        STATUS_UPSTREAM,
+        STATUS_QUOTA,
+    }
+)
+
+
+def stale_cache_max_age_seconds() -> float | None:
+    """48h default. 0/off restores pre-#389 (never serve expired)."""
+    raw = (os.getenv("STALE_CACHE_MAX_AGE_HOURS", "48") or "48").strip().lower()
+    if raw in ("", "0", "off", "false", "no"):
+        return None
+    try:
+        hours = float(raw)
+    except ValueError:
+        return None
+    if hours <= 0:
+        return None
+    return hours * 3600
+
+
+def _is_live_failure(signal: dict[str, Any]) -> bool:
+    return str(signal.get("status") or "") in _LIVE_FAILURE_STATUSES
+
+
+def _stamp_stale(payload: dict[str, Any], age_seconds: float) -> dict[str, Any]:
+    """Keep the facts; mark worse than fresh so the UI cannot treat it as a hit."""
+    out = normalize_signal(payload)
+    hours = age_seconds / 3600.0
+    flag = f"STALE cache, age {hours:.1f}h"
+    detail = str(out.get("status_detail") or "").strip()
+    if detail.lower() in ("", "ok"):
+        out["status_detail"] = flag
+    else:
+        out["status_detail"] = f"{detail}; {flag}"
+    out["stale"] = True
+    out["stale_age_hours"] = round(hours, 2)
+    try:
+        out["score"] = min(float(out.get("score") or 0), 0.0)
+    except (TypeError, ValueError):
+        out["score"] = 0.0
+    return out
+
+
+def _maybe_serve_stale(key: str) -> dict[str, Any] | None:
+    ceiling = stale_cache_max_age_seconds()
+    if ceiling is None:
+        return None
+    got = get_expired(key)
+    if not got:
+        return None
+    data, age = got
+    if age > ceiling:
+        return None
+    return _stamp_stale(data, age)
+
+
 def _fetch_one(name, func, topic, pinned: dict[str, Any] | None = None):
     if pinned and name in pinned and pinned[name]:
         return name, normalize_signal(pinned[name])
@@ -470,6 +596,20 @@ def _fetch_one(name, func, topic, pinned: dict[str, Any] | None = None):
 
     result = normalize_signal(func(topic))
     _record_signal_health(name, result)
+    if _is_live_failure(result):
+        stale = _maybe_serve_stale(key)
+        if stale is not None:
+            record_stale_served(key)
+            logger.warning(
+                "%s live fetch failed (%s); serving %s",
+                name,
+                result.get("status_detail") or result.get("status"),
+                stale.get("status_detail"),
+            )
+            return name, stale
+        set_cache(key, result, ttl_seconds=_cache_ttl_for(name))
+        return name, result
+
     set_cache(key, result, ttl_seconds=_cache_ttl_for(name))
     return name, result
 

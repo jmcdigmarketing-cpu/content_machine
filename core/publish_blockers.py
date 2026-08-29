@@ -139,4 +139,17 @@ def blocking_publish_reasons(
     except Exception as exc:
         logger.debug("publish-window blocker skipped: %s", exc)
 
+    try:
+        from core.cross_channel_dup import cross_channel_dup_block_reason
+
+        topic = ""
+        if isinstance(features, dict):
+            topic = str(features.get("selected_topic") or features.get("topic") or "")
+        if channel_id and topic:
+            why = cross_channel_dup_block_reason(topic, channel_id)
+            if why:
+                out.append(why)
+    except Exception as exc:
+        logger.debug("cross-channel dup blocker skipped: %s", exc)
+
     return out

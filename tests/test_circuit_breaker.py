@@ -193,5 +193,74 @@ class TestBreakerPersistence(_IsolatedStateCase):
         self.assertNotIn("rawg", names)
 
 
+class TestEmpty200Quarantine(_IsolatedStateCase):
+    """#394: three Tapology-class empty-200s session-disable; quota_state untouched.
+
+    ``STATUS_INACTIVE`` is healthy no-match (Wikipedia has no page; Tapology is
+    not an MMA topic). Only connected+empty with no skip-detail counts.
+    """
+
+    def _empty_200(self, name, *, detail="No Tapology event match"):
+        rs._record_signal_health(
+            name,
+            make_signal(
+                connected=True,
+                active=False,
+                status=STATUS_INACTIVE,
+                status_detail=detail,
+            ),
+        )
+
+    def test_one_inactive_does_not_trip(self):
+        self._empty_200("tapology")
+        self.assertNotIn("tapology", rs._disabled_signals())
+
+    def test_three_inactives_disable_the_fourth_without_persisting(self):
+        for _ in range(3):
+            self._empty_200("tapology")
+        self.assertIn("tapology", rs._disabled_signals())
+        self.assertEqual(quota_governor.persisted_disabled_signals(), {})
+        state_path = quota_state.QUOTA_STATE_FILE
+        if os.path.isfile(state_path):
+            with open(state_path, encoding="utf-8") as fh:
+                body = fh.read()
+            self.assertNotIn("tapology", body)
+
+    def test_ok_resets_the_empty_streak(self):
+        self._empty_200("tapology")
+        self._empty_200("tapology")
+        self._record("tapology", STATUS_OK)
+        self._empty_200("tapology")
+        self.assertNotIn("tapology", rs._disabled_signals())
+
+    def test_wikipedia_empty_is_not_tapology_down(self):
+        """A topic with no Wikipedia page is an answer, not a dead scraper."""
+        for _ in range(3):
+            self._empty_200("wikipedia", detail="no page for this topic")
+        self.assertNotIn("wikipedia", rs._disabled_signals())
+        self.assertNotIn("tapology", rs._disabled_signals())
+
+    def test_domain_skip_does_not_quarantine_tapology(self):
+        for _ in range(3):
+            self._empty_200("tapology", detail="Not an MMA/UFC topic")
+        self.assertNotIn("tapology", rs._disabled_signals())
+
+    def test_a_lookup_signal_with_no_detail_is_not_quarantined(self):
+        """rawg/odds/sports return connected+INACTIVE and NO status_detail when the
+        topic is outside their domain (apis/rawg_api.py:166, odds_api.py:61,
+        sports_data_api.py:76). A batch over three non-game topics must not cost
+        the next GTA topic its RAWG data."""
+        for name in ("rawg", "odds", "sports"):
+            with self.subTest(signal=name):
+                for _ in range(3):
+                    self._empty_200(name, detail="")
+                self.assertNotIn(name, rs._disabled_signals())
+
+    def test_the_scraper_class_signal_still_quarantines_with_no_detail(self):
+        for _ in range(3):
+            self._empty_200("tapology", detail="")
+        self.assertIn("tapology", rs._disabled_signals())
+
+
 if __name__ == "__main__":
     unittest.main()

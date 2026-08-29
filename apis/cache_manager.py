@@ -103,6 +103,33 @@ def get_cached(key):
     return data
 
 
+def get_expired(key) -> tuple[Any, float] | None:
+    """Expired-but-present payload and its age in seconds, or None.
+
+    Does not record a cache access — the caller already went through get_cached.
+    Fresh entries return None here (get_cached should have served them).
+    """
+    with _cache_lock:
+        cache = load_cache()
+        entry = cache.get(key)
+        if not entry:
+            return None
+        try:
+            timestamp = float(entry.get("timestamp") or 0)
+        except (TypeError, ValueError):
+            return None
+        if timestamp <= 0:
+            return None
+        ttl = entry.get("ttl") or TTL_SECONDS
+        age = time.time() - timestamp
+        if age <= float(ttl or 0):
+            return None
+        data = entry.get("data")
+        if data is None:
+            return None
+        return data, age
+
+
 def set_cache(key, data, ttl_seconds=None):
     with _cache_lock:
         try:
@@ -141,8 +168,16 @@ def _prefix_of(key: str) -> str:
 def _record_cache_access(key: str, hit: bool) -> None:
     prefix = _prefix_of(key)
     with _stats_lock:
-        bucket = _stats.setdefault(prefix, {"hits": 0, "misses": 0})
+        bucket = _stats.setdefault(prefix, {"hits": 0, "misses": 0, "stale": 0})
         bucket["hits" if hit else "misses"] += 1
+
+
+def record_stale_served(key: str) -> None:
+    """A live miss that reused an expired payload. Not a hit — worse than fresh."""
+    prefix = _prefix_of(key)
+    with _stats_lock:
+        bucket = _stats.setdefault(prefix, {"hits": 0, "misses": 0, "stale": 0})
+        bucket["stale"] = int(bucket.get("stale") or 0) + 1
 
 
 def _stats_path() -> str:
@@ -168,9 +203,10 @@ def _merge_stats(
 ) -> dict[str, dict[str, int]]:
     out = {k: dict(v) for k, v in base.items()}
     for prefix, counts in extra.items():
-        b = out.setdefault(prefix, {"hits": 0, "misses": 0})
+        b = out.setdefault(prefix, {"hits": 0, "misses": 0, "stale": 0})
         b["hits"] = b.get("hits", 0) + int(counts.get("hits", 0))
         b["misses"] = b.get("misses", 0) + int(counts.get("misses", 0))
+        b["stale"] = b.get("stale", 0) + int(counts.get("stale", 0))
     return out
 
 
@@ -181,11 +217,13 @@ def get_cache_stats() -> dict[str, Any]:
     merged = _merge_stats(_load_stats_file(), live)
     hits = sum(v.get("hits", 0) for v in merged.values())
     misses = sum(v.get("misses", 0) for v in merged.values())
+    stale = sum(v.get("stale", 0) for v in merged.values())
     total = hits + misses
     return {
         "by_prefix": merged,
         "hits": hits,
         "misses": misses,
+        "stale_served": stale,
         "total": total,
         "hit_rate": (hits / total) if total else 0.0,
     }

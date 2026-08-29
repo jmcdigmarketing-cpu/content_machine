@@ -6,6 +6,10 @@ just to decide this — extra cache probes would pollute hit-rate stats.
 
 Default on with a high bar (6 distinctive vault facts). ``0`` / ``off``
 disables. Empty vault (tests, unset OBSIDIAN_VAULT_PATH) never skips.
+
+Two recency gates sit in front of the density bar, because density alone was the
+wrong measure: an event-shaped topic never skips, and the backing facts must
+carry a `verified_at` inside ``WEB_SEARCH_SKIP_MAX_AGE_DAYS``.
 """
 
 from __future__ import annotations
@@ -17,6 +21,75 @@ from core.logging import get_logger
 logger = get_logger("core.web_search_skip")
 
 _DEFAULT_MIN = 6
+_DEFAULT_MAX_AGE_DAYS = 21
+
+# A topic about a thing that JUST HAPPENED must never be answered from the vault,
+# however dense the vault is. Run 73: run 1 fetched the web and saved what it
+# found, which cleared the density bar, so runs 2 and 3 stopped fetching - and a
+# reveal that was hours old was grounded on the system's own earlier notes.
+_EVENT_CUES = (
+    "reveal",
+    "revealed",
+    "extended look",
+    "first look",
+    "trailer",
+    "announce",
+    "announced",
+    "announcement",
+    "leak",
+    "leaked",
+    "drops",
+    "dropped",
+    "release date",
+    "launch",
+    "launches",
+    "confirmed",
+    "breaking",
+    "patch notes",
+    "results",
+    "recap",
+    "weigh-in",
+    "just happened",
+    "today",
+    "tonight",
+    "this week",
+)
+
+
+def is_event_shaped_topic(topic: str | None) -> bool:
+    """True when the topic is about a dated event rather than an evergreen take."""
+    low = (topic or "").lower()
+    return any(cue in low for cue in _EVENT_CUES)
+
+
+def max_fact_age_days() -> int:
+    """0/off disables the age gate; the density bar alone then decides."""
+    raw = os.getenv("WEB_SEARCH_SKIP_MAX_AGE_DAYS", str(_DEFAULT_MAX_AGE_DAYS)).strip()
+    if raw.lower() in ("off", "false", "no"):
+        return 0
+    try:
+        return max(0, int(raw))
+    except (TypeError, ValueError):
+        return _DEFAULT_MAX_AGE_DAYS
+
+
+def _recent_enough(records) -> bool:
+    """True when at least one backing fact proves it is current.
+
+    A note with no `verified_at` cannot prove anything, so it does not count -
+    the same reasoning as candidate 331 refusing to date an undated paste.
+    """
+    max_age = max_fact_age_days()
+    if max_age <= 0:
+        return True
+    import datetime
+
+    cutoff = datetime.date.today() - datetime.timedelta(days=max_age)
+    for rec in records:
+        when = getattr(rec, "verified_at", None)
+        if when is not None and when >= cutoff:
+            return True
+    return False
 
 
 def skip_enabled() -> bool:
@@ -54,6 +127,9 @@ def should_skip_web_search(
     """
     if not skip_enabled() or not (topic or "").strip():
         return False
+    if is_event_shaped_topic(topic):
+        logger.debug("web-search skip declined: event-shaped topic %r", topic)
+        return False
     try:
         from core.vault_relevance import relevance_mode
 
@@ -85,7 +161,12 @@ def should_skip_web_search(
                 if getattr(rec, "relevance_band", "") == "confident"
                 or not getattr(rec, "uncertain", False)
             ]
-            return len(confident) >= min_facts()
+            if len(confident) < min_facts():
+                return False
+            if not _recent_enough(confident):
+                logger.debug("web-search skip declined: backing vault facts are stale")
+                return False
+            return True
 
         from core.obsidian_facts import load_facts
 
@@ -101,4 +182,4 @@ def should_skip_web_search(
         else:
             logger.debug("web-search skip vault read skipped: %s", exc)
         return False
-    return len(facts) >= min_facts()
+    return len(facts) >= min_facts()  # legacy path: no records, so no age to read

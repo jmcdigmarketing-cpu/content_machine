@@ -1,6 +1,182 @@
-# Handoff synopsis — 2026-08-27: vault relevance scored
+# Handoff synopsis — 2026-08-28 night: Piper mix + secrets-doctor
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
+
+## Last implementation wave — Piper 1/8 mix, drop Brave/BFL (2026-08-28 night)
+
+Pickup from planning_log **2026-08-28 (Piper mix / secrets)** on the current branch.
+Tests were written first and failed on unmodified code. **Do not commit unless asked.**
+Do not unpark ElevenLabs ids. Do not `ollama pull` unless you do it yourself.
+
+- **ElevenLabs add path:** elevenlabs.io (same account as `ELEVEN_API_KEY`) →
+  Voices → Explore → Add to my voices → `ops voices` shows `* <id>` → move out of
+  `_parked_voice_not_found`. Ids are 20 chars; a 19-char id never matches. TapIn
+  is pinned to Brian (`config/channels.json`).
+- **Ollama FAIL:** the app is the daemon; doctor wants `OLLAMA_MODEL` in
+  `/api/tags`. `ollama pull llama3.1:8b` if you want that FAIL gone. Standard
+  already uses DeepSeek/OpenRouter.
+- **secrets-doctor:** dropped `BRAVE_SEARCH_API_KEY` and `BFL_API_KEY` from the
+  optional list. Keys still work in web search / Flux; doctor stops listing them.
+  Remaining optionals: OpenAI, Anthropic, News.
+- **Piper mix:** `TTS_PIPER_MIX_EVERY=8` on Standard ElevenLabs renders when
+  Piper is ready. Fail-open to ElevenLabs. Does not flip `TTS_PROVIDER`. Mix
+  meters TTS $0 via `last_tts_was_piper_mix()`. Suite isolation: `TTS_PIPER_MIX_EVERY=0`.
+
+**Still parked:** Phase M; #141–#146; #333/#349 (narrowed); #451 LAN booth;
+#416 scene-beat; $0 TTS *voice judgment* (ears); Ollama FAIL; Seven ElevenLabs ids.
+
+**Proof:** ruff clean; **2365** tests green (was 2357). `ops secrets-doctor`
+lists OpenAI/Anthropic/News as optionals — no Brave/BFL lines. `git status
+--short data/` empty.
+
+## Previous wave — doctor greens (2026-08-28 night)
+
+Pickup from planning_log **2026-08-28 (doctor greens)** on the current branch.
+Tests were written first and failed on unmodified code. **Do not commit unless asked.**
+Do not git-add `video/voices/*.onnx` (gitignored weights).
+
+- **Secrets:** `ops doctor` FAILs only on required env names (DeepSeek, OpenRouter,
+  Eleven, Apify, YouTube). Optional blanks (OpenAI, Anthropic, Brave, BFL, News)
+  are a detail line. `ops secrets-doctor` still never prints values.
+- **Sherdog:** RSS 403 — removed from `config/data_sources.json` and
+  `config/seo/tapin.json`. Not an API key.
+- **Piper:** four `.onnx`+`.json` in `video/voices/` (bobby/carl/eminem/patrick),
+  catalog equal-weight. Doctor ready on `.onnx` only; a README path is not ready.
+  `resolve_local_voice` rotates. Fallback `PIPER_VOICE=video/voices/en_US-bobby-medium.onnx`.
+  Default `TTS_PROVIDER` stays ElevenLabs.
+- **ElevenLabs ids:** seven operator ids parked in `_parked_voice_not_found` —
+  `ops voices` did not list any of them. Add from the Voice Library, re-run
+  `ops voices`, then move into a live category. 19-char id was truncated.
+- **Fact intake:** paste ends on `.` / `END` / two blank lines. Long paragraphs
+  already kept (~600 chars, cap 800). URLs still fetch.
+
+**Ollama doctor FAIL stays.** Optional `ollama pull` is on the roadmap as an open
+checkbox. Ollama is local/free, not a billed API. Do not un-tick the shipped router.
+
+**CUDA (previous session, this machine):** `2.8.0+cu128`, `torch.cuda.is_available() True`,
+RTX 4070 Ti. Do not `pip install` more torch this wave.
+
+**Still parked:** Phase M; #141–#146; #333/#349 (narrowed); #451 LAN booth;
+#416 scene-beat; $0 TTS *voice judgment* (ears).
+
+Pickup: add the parked ElevenLabs voices to the account library if wanted;
+`ollama pull` if you want that FAIL gone; live Piper ears vs ElevenLabs.
+
+**Proof:** ruff clean; **2357** tests green. `ops secrets-doctor` / `ops doctor` /
+`ops voices` pasted in the implementing session. `git status --short data/` empty.
+
+## Previous wave — parked four (2026-08-28 evening)
+
+Pickup from planning_log **2026-08-28 (evening)** on the current branch. Tests
+were written first and failed on unmodified code. **Do not commit unless asked.**
+
+- **Edge TTS** (`TTS_PROVIDER=edge`): `_ALT_TTS` + unmodified `edge-tts` in
+  `[free]`. `(cloud, $0)` not `(local, $0)`. SSML lexicon. WordBoundary sidecar.
+  Never default; Piper is the Free floor. decisions §28.
+- **`ops ingest-clips`**: dry-run default; `--apply` muted H.264 remux into
+  `video/backgrounds`. Unmatched listed, not dumped into `gaming/`. HUD=`null`.
+- **#389**: live failure serves cache ≤48h flagged STALE, not a hit; >48h
+  refuses; honest `inactive` does not resurrect; do not clobber.
+- **#433**: same franchise/topic **and** same `infer_domain` lens. GTA review
+  blocks across channels; Take-Two stock allows. Pipeline / publish / `ops next`.
+
+**CUDA (as of that evening):** still `2.8.0+cpu`. **Later the same night:** operator
+installed `2.8.0+cu128` (`cuda.is_available() True`). NVENC already shipped via ffmpeg (#38).
+
+**Still parked:** Phase M; #141–#146; #333/#349 (narrowed); #451 LAN booth;
+#416 scene-beat; the CUDA wheel; Piper *voice judgment* ($0 TTS switch).
+
+Pickup: CUDA wheel if wanted; #333 backstop; #451 LAN bind; live Edge ears
+vs Piper; `--apply` ingest-clips if the dry-run listing looks right.
+
+**Proof (this session):** ruff clean; **2339/2339** green (was 2315). `ops
+ingest-clips` dry-run listed 16 Xbox captures (15 matched, GTA Online unmatched).
+`ops free-doctor` still wants Piper for Voice. Torch remains `2.8.0+cpu`.
+
+## Previous wave — 23 items (2026-08-28)
+
+Picked up mid-flight on `consolidate/2026-08-27`: modules and production wiring
+existed, the suite did not pass (6 failures/errors in 2,296; `ruff` red; nothing
+ticked; #373 not started). Now **2,315/2,315 green**, ruff clean, `data/` clean.
+**Do not commit from this step unless asked.**
+
+Shipped: **#38** NVENC encode (one `video/encoder.py` helper for render /
+composite / intro / outro; `NVENC=off` byte-identical; failed encode retries
+libx264). **#147** localhost GET-only FastAPI shell (`ops shell`, 127.0.0.1,
+default off, `POST /` 405) — no longer "skipped", and not #141. **CUDA** doctor
+is fail-visible (`ok=False` only when nvidia-smi is present AND torch has no
+CUDA; no wheel installed). Plus 20 from 331–480: #340 #348 #353 #355 #360 #366
+#370 #373 #379 #382 #395 #403 #406 #419 #426 #432 #439 #443 #444 #458.
+
+**Four things the green tests did not catch** (detail: planning_log 2026-08-28):
+
+- **#419 was inert on the shipped caption path.** The rebalance only touched the
+  estimated-timing fallback; ASR-timed cues come from `group_into_lines`
+  (decisions §23), which had none. Fixed on both paths.
+- **#419's first cut merged two sentences into one cue**, violating
+  `test_sentence_boundaries_not_crossed`. Rebalance is now per sentence and the
+  pre-existing `test_proportional_timing` passes **unmodified**.
+- **NVENC broke #309's argv promise** — a fallback persisted the failed
+  `h264_nvenc` command as the "success" argv. `executed_cmd` reports what ran.
+- **#369 (previous wave) could never fire** — it estimated from `script=""`, so
+  TTS priced at $0 and a realistic $0.50 cap was unreachable. Now estimates the
+  longest length preset; $0.50 refuses a ~$2.28 worst case, unset still off.
+
+**A review pass on the diff found six issues; four are fixed.** The one that
+would have bitten a GTA 6 batch: #394's empty-200 quarantine used a denylist, and
+`rawg`/`odds`/`sports` all return `connected+INACTIVE` with no detail when a topic
+is off their domain — three off-domain topics in one batch session-disabled RAWG,
+so a later GTA topic silently got no game data. Now an allowlist (`tapology`).
+Also fixed: #432's dry run omitted `selfDeclaredMadeForKids` and `publishAt`;
+#382's growth line printed inside the file list. **Left open on purpose:** #355's
+residual is recomputed on every sync (needs a publish-time prediction, a schema
+change) and #340's sidecar has a null `ungrounded_count` (written before
+`build_quality`).
+
+**NVENC is verified by a real encode, not the probe:** full render argv against
+real inputs → 1080x1920 h264 + aac, exact 3.000s, ~1.5x faster than libx264.
+`cq 23` yields a larger file than `crf 23` (different scales, not a regression).
+Default stays on; `NVENC=off` restores the historical CPU argv exactly.
+
+**Skipped at the time — needs the operator:** #333 negative-fact store, #349 OCR
+intake, #412 pronunciation append, #450 voice-note intake, #451 phone booth, #389
+stale-cache serve, #433 cross-channel dup guard, #416/#417 owned footage, and
+the **CUDA torch wheel** (multi-GB). #141–#146 and Phase M untouched.
+(Parked-four wave later the same evening shipped Edge/#412, ingest-clips/#417,
+#389, and #433. CUDA, #333/#349, #451, #416 remain.)
+
+Pickup at the time: CUDA wheel, then `ops doctor`; #333 if sized. #433 shipped
+in the parked-four wave.
+
+## Previous wave — next 10 from 331–480 (2026-08-27)
+
+Ten green-and-inert holes plus thin `#442 ops next`, on `consolidate/2026-08-27`.
+Tests were written first and failed on unmodified code. **Do not commit from this
+step unless asked.**
+
+- **#332** `features["disputed"]` + losing claims; report card / `ops grade`.
+- **#347** `ops vault-decay` → `expired_notes` (no second scanner).
+- **#331** packed vault facts older than 7 days get `as of …`; operator paste
+  without `verified_at` is not dated; script is not regex-rewritten.
+- **#346** leak-topic rumor soften after odds; Tapology results and `reports to EA`
+  left alone. Known gap: outlet must appear in the script.
+- **#372** `ops reliability` prints Apify cache `$` saved only when hits > 0.
+- **#371** TTS forecast before synth; actual + delta on run features.
+- **#381** `PAID_CALLS=off` is Free; doctor asserts `FREE_MODE_STRICT` is armed.
+- **#369** `PROJECTED_COST_MAX_USD` unset=off; when set, blocks before discovery
+  using `estimate_run_cost`, never post-run actuals.
+- **#405** `script_pre_rewrite` / `script_post_rewrite` on rewritten runs only.
+- **#394** three Tapology empty-200s session-disable; Wikipedia no-page does not;
+  `quota_state.json` untouched.
+- **#442** `ops next` ranks cost, vault decay, then `blocking_publish_sentence`.
+
+**Still parked / skipped (as of that wave; #147, NVENC and CUDA shipped
+2026-08-28):** Phase M; the CUDA torch wheel; #389
+stale-cache; #433 cross-channel dup; #416/#417 owned footage; flipping TapIn to
+`background_mode: local`.
+
+Pickup: #333 negative-fact store; #389 stale-cache (behavior change, parked);
+#433 if sized as [M]; Coverr (`COVERR_API_KEY` empty = chain continues).
 
 ## Last implementation wave — vault relevance P2–P4 (2026-08-27)
 

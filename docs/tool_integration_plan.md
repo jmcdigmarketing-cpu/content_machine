@@ -19,14 +19,14 @@ built already.
 | 1 | MoneyPrinterTurbo → **Coverr provider** | **Ship** — Wave A | `[S]` |
 | 2 | awesome-gpt-image-2 → **thumbnail arms** | **Ship** — Wave A, own words only | `[S]` |
 | 3 | mattpocock/skills → **`/tdd` skill** | **Ship** — Wave A, own words only | `[S]` |
-| 4 | MoneyPrinterTurbo → **Edge TTS** | **Blocked** — legal read pending | `[M]` |
+| 4 | MoneyPrinterTurbo → **Edge TTS** | **Shipped 2026-08-28** — unmodified `[free]` extra, never default (decisions §28) | `[M]` |
 | 5 | public-apis | **Research** — Wave C, shortlist only | `[S]` |
 | 6 | senior-prompt-engineer | **Already built** — no work | — |
 | 7 | hister | **Already solved** — no work | — |
 | — | OmniRoute | **Already built** — no work | — |
 
-Of the seven, **three need no integration at all**, one is blocked on a licence
-question, and three are small, well-seamed additions.
+Of the seven, **three need no integration at all**, Edge TTS shipped under the
+LGPL linking constraints below, and three are small, well-seamed additions.
 
 ---
 
@@ -198,49 +198,40 @@ documented.
 
 ---
 
-## Wave B — Edge TTS, designed and parked
+## Wave B — Edge TTS (shipped 2026-08-28)
 
-Designed now because the design is what a legal read needs in order to assess anything,
-and because this is the highest-value item on the list.
+Shipped under the constraints below (decisions §28). The 2026-08-25 LGPL-3.0 hold
+is lifted only because the install is unmodified PyPI `edge-tts` in `[free]`,
+never vendored, never patched.
 
 ### The seam
 
-[`core/tts.py:844`](../core/tts.py) holds `_ALT_TTS = {"kokoro": …, "xtts": …,
-"piper": …, "qwen": …}`. Each synth has the signature `(script, output_path,
-channel_id) -> str | None`, and `_try_alt_tts_provider` catches any failure and returns
-`None`, which falls back to ElevenLabs. Adding `"edge"` is **one registry entry and one
-function**.
+[`core/tts.py`](../core/tts.py) `_ALT_TTS` now includes `"edge"`. Each synth has
+the signature `(script, output_path, channel_id) -> str | None`, and
+`_try_alt_tts_provider` catches any failure and returns `None`, which falls back
+to ElevenLabs. Edge is one registry entry and one function.
 
 ### The prize is the timings, not the voice
 
-This is the part that makes it worth the licence question.
+- edge-tts emits **`WordBoundary` events** carrying offset, duration and text.
+- The Edge provider writes the same `{word, start, end}` sidecar as ElevenLabs
+  (`word_timing_path()`), so caption timing / hook motion / lower thirds work on
+  the $0 path without whisper.
+- The pronunciation lexicon is SSML `<sub>` / `<phoneme>` — #412's JSON-append
+  workaround is superseded.
 
-- edge-tts emits **`WordBoundary` events** carrying offset, duration and text —
-  the mechanism exists specifically for subtitle generation.
-- **No local provider writes a `.words.json` sidecar today.** `word_timing_path()`
-  ([`core/tts.py:877`](../core/tts.py)) defines the path; only the ElevenLabs path
-  populates it. That absence is precisely why the $0 route depends on whisper
-  alignment.
-- An Edge provider that writes the sidecar would give Free mode **exact caption timings
-  with no whisper at all** — and, through the `resolve_word_timings` seam
-  (`video/subtitles.py`), hook motion and lower thirds would fire on the $0 path too.
-
-It may also retire the pronunciation-lexicon item outright: that item exists because
-Piper mispronounces the fighter and game names that are the channel's entire subject.
-
-### Conditions the parked decision implies
-
-If cleared, it enters under these constraints — recorded now so they are not
-re-argued later:
+### Constraints that still bind
 
 - **Unmodified installed dependency** in the `[free]` extra. Never vendored, never
   patched — that is the boundary LGPL linking relies on.
-- **Never the default provider.** `TTS_PROVIDER=edge` is opt-in, exactly like
-  `piper` / `kokoro` / `xtts` / `qwen`.
+- **Never the default provider.** `TTS_PROVIDER=edge` is opt-in. Piper stays the
+  true-offline Free-mode floor (`_LOCAL_TTS_ORDER` unchanged).
 - **Fail-open** through `_try_alt_tts_provider` to the existing chain, so an
   undocumented upstream endpoint disappearing can never break a render.
-- **One real render compared against Piper** before anything depends on it — both for
-  voice quality and to confirm the sidecar timings match the audio.
+- **Honesty:** the print is `(cloud, $0)`, not `(local, $0)`.
+  `is_local_tts_provider()` is False; cost_meter still prices tts at $0.
+- **One real render compared against Piper** before anything *depends* on it —
+  CI mocks `Communicate.stream` and does not hit Microsoft.
 - The endpoint is undocumented and can change without notice. It is a **cost lever, not
   a foundation**.
 
@@ -268,7 +259,7 @@ This matters because the remaining paid Apify actors (`tiktok_trends`,
 
 1. **Wave A** — three small, independent, licence-clear additions. Any order.
 2. **Wave C** — research, can run alongside Wave A.
-3. **Wave B** — only after the licence read returns.
+3. **Wave B** — shipped 2026-08-28 under the LGPL linking constraints above.
 
 Wave A items are deliberately small enough to land individually. None of them blocks
 another, and none touches the render path that the 21–28 wave just changed.

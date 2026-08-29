@@ -408,7 +408,7 @@ and are treated as "alive and adopted", not as fact.
 
 | 0-10 | Tool | Verdict | How it can be used here |
 |---|------|---------|-------------------------|
-| **7** | [MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | **Borrow (narrowed 2026-08-26)** | MIT faceless assembler. Clip path is LLM → ~5 keyword searches → 5s stock clips, random concat, optional fades — **worse** for TapIn's "gameplay then random reality" problem ([moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md), decisions §26). Still the source of Coverr's API shape and of parked Edge TTS. Do not adopt its stock concatenator. |
+| **7** | [MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | **Borrow (narrowed 2026-08-26)** | MIT faceless assembler. Clip path is LLM → ~5 keyword searches → 5s stock clips, random concat, optional fades — **worse** for TapIn's "gameplay then random reality" problem ([moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md), decisions §26). Source of Coverr's API shape and of Edge TTS (`TTS_PROVIDER=edge`, 2026-08-28). Do not adopt its stock concatenator. |
 | **6** | [public-apis](https://github.com/public-apis/public-apis) | **Intel** | The standard directory of free APIs (~470k★). Aims straight at the recurring Apify cost problem and [agent_reach_evaluation.md](agent_reach_evaluation.md)'s free-backend hunt — a shortlist source for keyless signal backends. Research input, never a dependency. |
 | **6** | [awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2) | **Borrow (patterns)** | 530+ structured image prompts ("prompt as code"). Thumbnail CTR is an untested lever and [core/experiment_levers.py](../core/experiment_levers.py) already has a `thumbnail` kind feeding [assets/flux_thumbnail.py](../assets/flux_thumbnail.py) — ready home, measurable. Targets GPT-Image-2; the *structures* port to Flux, the exact prompts may not. |
 | **6** | [mattpocock/skills](https://github.com/mattpocock/skills) | **Reference** | Composable agent skills. `/tdd` enforces watch-it-fail-first — the discipline that would have caught all four defects in the 21–28 audit (see [.cursor/rules/content-machine.mdc](../.cursor/rules/content-machine.mdc)). JS/TS-flavoured; the philosophy ports, `/handoff` duplicates HANDOFF_SYNOPSIS. |
@@ -424,22 +424,21 @@ and are treated as "alive and adopted", not as fact.
 | **0** | [reverse-skill](https://github.com/zhaoxuya520/reverse-skill) | **Irrelevant** | Security/reverse-engineering task routing — APKs, Ghidra, Frida, CTF sandboxes. No intersection with a video pipeline. The honest zero. |
 
 > **Integration plan:** [tool_integration_plan.md](tool_integration_plan.md) works the
-> top 7 through to what actually ships. Read it alongside this table — a licence pass
-> parked Edge TTS pending a legal read (LGPL-3.0), and three of the seven turned out to
-> be **already built here** (`core/prompt_evals.py`, `LINK_READER_PROXY`,
-> `core/llm_router.py`), including a correction to the senior-prompt-engineer row below.
+> top 7 through to what actually ships. Read it alongside this table — Edge TTS shipped
+> 2026-08-28 as an unmodified `[free]` extra (LGPL-3.0 linking, decisions §28), and
+> three of the seven turned out to be **already built here** (`core/prompt_evals.py`,
+> `LINK_READER_PROXY`, `core/llm_router.py`), including a correction to the
+> senior-prompt-engineer row below.
 
-### The one action to take — Edge TTS behind a flag (next wave)
+### Edge TTS — shipped behind a flag (2026-08-28)
 
-The roadmap's pronunciation-lexicon item says the $0 flip is *"unblocked on captions
-and blocked on ears"*: Piper mispronounces the fighter/game names that are the
-channel's whole subject, and ElevenLabs is **$0.25–0.31/video (~91% of a rendered
-run)**. MoneyPrinterTurbo's lead voice is **Edge TTS** — free, keyless, zero-install,
-neural voices well above Piper's — which could retire the lexicon item outright
-instead of working around it.
+The roadmap's pronunciation-lexicon item (#412) is superseded: a dictionary is a
+workaround for a voice that cannot be told how to say a word. MoneyPrinterTurbo's
+lead voice is **Edge TTS** — free, keyless, neural — wired as `TTS_PROVIDER=edge`
+(never the default; Piper stays the true-offline floor).
 
-**The risk, stated plainly:** Edge TTS drives an undocumented Microsoft endpoint. That
-is a terms grey area and can break without notice. So it enters as one more
+**The risk, stated plainly:** Edge TTS drives an undocumented Microsoft endpoint.
+That is a terms grey area and can break without notice. It enters as one more
 `TTS_PROVIDER` slot that **fails open to the existing chain**, never as the only $0
-path, and earns trust by one real render compared against Piper. Decision taken
-2026-08-25 (operator): worth trying behind a flag.
+path. CI does not hit Microsoft. Decision taken 2026-08-25 (operator): worth trying
+behind a flag; 2026-08-28: shipped under decisions §28.

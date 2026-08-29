@@ -11,6 +11,166 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-08-28 (Piper mix / secrets) — 1/8 Piper, drop Brave/BFL, ElevenLabs + Ollama
+
+**Prompt:** how to add parked ElevenLabs voices; rotate Piper in ~1/8 of the time;
+why Ollama doctor FAILs after installing the app; stop secrets-doctor nagging Brave/BFL.
+
+**Answers (no code):**
+- ElevenLabs Voice Library is [elevenlabs.io](https://elevenlabs.io) on the same
+  account as `ELEVEN_API_KEY`. Explore → Add to my voices → `ops voices` shows
+  `* <id>`. Then move the id out of `_parked_voice_not_found`. Ids are 20
+  characters; `3TPKV1kjDlVtZbl4Ksh` (19) cannot be added. TapIn is pinned to
+  Brian, so catalog mix is separate from Piper mix.
+- Ollama app ≠ pulled model. Doctor FAILs until `OLLAMA_MODEL` is in `GET /api/tags`.
+  Optional: `ollama pull llama3.1:8b`. Leave the FAIL if you do not want a local LLM.
+
+**Tests failed first** (unmodified code): remaining optionals present + Brave/BFL
+blank still listed those two names; `_should_piper_mix` / `last_tts_was_piper_mix`
+AttributeError; `generate_audio` still constructed ElevenLabs on mix.
+
+**Shipped (measured):**
+- **secrets-doctor** optional list is OpenAI / Anthropic / News only. Brave and
+  BFL APIs unchanged (`BRAVE_API_KEY` / `BFL_API_KEY`); doctor does not list them.
+- **Piper mix:** `TTS_PIPER_MIX_EVERY=8` (0 = off). One `randrange` per
+  `generate_audio` when provider resolves to elevenlabs, Piper `.onnx` ready, not
+  Free-strict. Does **not** write `TTS_PROVIDER=piper`. Synth fail → ElevenLabs.
+  Lexicon on the Piper path. `[TTS] … Provider: piper (mix 1/8)`.
+  `last_tts_was_piper_mix()` zeros the TTS cost line the same way a cache hit
+  does. Suite pins `TTS_PIPER_MIX_EVERY=0` so ElevenLabs tests do not flake.
+
+**Do not commit** unless asked. Do not unpark ElevenLabs ids. Do not `ollama pull`.
+
+## 2026-08-28 (doctor greens) — secrets, Sherdog, Piper pool, ElevenLabs intake, fact paste
+
+**Prompt:** doctor FAILs that are ours (not Ollama), random Piper not Patrick,
+intake seven ElevenLabs ids, keep fact intake accepting long paragraphs and URLs.
+
+**Tests failed first** (unmodified code): doctor secrets `ok=False` with only
+optional keys blank (`5 present / 5 missing`); `required_missing` KeyError;
+`sherdog.com/rss/news.xml` still in shipped JSON; `PIPER_VOICE=README.md` counted
+ready; dir `.onnx` did not; empty `local.piper[]`; seven ids absent;
+`read_multiline_paste` ImportError. Long paragraph (~600 chars) and fetched-article
+lint already passed — locked, not claimed as a fix.
+
+**Shipped (measured):**
+- **Secrets required vs optional.** Missing Anthropic/OpenAI/Brave/BFL/News is a
+  detail line, not `ok=False`. Missing DeepSeek/OpenRouter/Eleven/Apify/YouTube
+  still FAILs. Never mocked `secrets_doctor.gather` when asserting doctor.
+- **Sherdog RSS removed** from `config/data_sources.json` + `config/seo/tapin.json`.
+  MMA Fighting / Bloody Elbow / MMA Weekly / UFC.com stay. Ratchet: no
+  `sherdog.com` URL in those files. `cached_warnings` drops URLs that are no
+  longer configured so a 7-day-old cache cannot FAIL doctor after the removal.
+- **Piper pool:** four release pairs (bobby/carl/eminem/patrick) downloaded into
+  `video/voices/` (gitignored). `voices.json` `local.piper[]` equal weight 1.
+  Doctor ready iff a path **ends with `.onnx`** and exists — README is not a voice.
+  Rotation is existing `resolve_local_voice`. `PIPER_VOICES_DIR=video/voices` in
+  `.env.example`; operator `.env` fallback is bobby `.onnx`.
+- **ElevenLabs intake:** all seven ids listed; `ops voices` showed **none** on the
+  account (19-char `3TPKV1kjDlVtZbl4Ksh` likely truncated). Moved to
+  `_parked_voice_not_found`. No invented names.
+- **Fact paste:** `read_multiline_paste` stops on `.` / `END` / two consecutive
+  blanks; a single blank is a paragraph break. URL fetch + lint unchanged (URL-only
+  only when the line *is* a URL).
+
+**Left FAIL on purpose:** Ollama — still free/local; nothing pulled. Open roadmap
+checkbox; shipped router item stays ticked.
+
+**Do not commit** unless asked. Do not commit `.onnx` weights.
+
+## 2026-08-28 (parked-four wave) — Edge TTS, ingest-clips, #389, #433
+
+
+**Prompt:** implement the evening order (Edge TTS → `ops ingest-clips` → #389 →
+#433), then explain the CUDA torch wheel — do not install it. Stay on the current
+branch. Do not commit unless asked.
+
+**Parked unchanged:** Phase M, #141–#146, CUDA torch wheel, #333/#349 (narrowed,
+not this wave), #451 LAN booth, #416 scene-beat cuts.
+
+**Tests failed first** (unmodified code): `TTS_PROVIDER=edge` not in `_ALT_TTS`
+(warning + None); live `STATUS_UNAVAILABLE` + 10h cache was not served; 50h was
+not the issue yet because *no* stale path existed; `from core.cross_channel_dup`
+was `ModuleNotFoundError`; `ops next` blockers had only the render-gate until
+the collision line was appended.
+
+**Shipped (measured):**
+- **Edge TTS** (`TTS_PROVIDER=edge`): `_ALT_TTS` entry, `[free]` extra
+  `edge-tts` unmodified (LGPL-3.0 linking; decisions §28). Prints `(cloud, $0)`
+  not `(local, $0)`. `is_local_tts_provider()` False; `estimate_run_cost` tts==0.
+  Lexicon as SSML `<sub>`/`<phoneme>` only when a substitution matches. WordBoundary
+  sidecar `{word, start, end}`. Stream failure → None (ElevenLabs). Never default;
+  Piper stays `_LOCAL_TTS_ORDER` floor. `_tts_provider_ready("edge")` is importable.
+- **`ops ingest-clips`**: dry-run default; `--apply` muted H.264 remux. Filename →
+  library folder (GTA V alias). Unmatched listed, not dumped into `gaming/`.
+  `clip_index.json` ffprobe fields; HUD `null` (documented gap). `command-ref`
+  regenerated (#458).
+- **#389**: live failure ≤48h serves expired cache, flagged STALE, not a hit,
+  score 0; >48h refuses; honest `inactive` does not resurrect; eligible stale not
+  clobbered. `STALE_CACHE_MAX_AGE_HOURS=0` restores today.
+- **#433**: same `extract_anchors` franchise (else `normalize_title` on the topic)
+  **and** same real `infer_domain` lens. TapIn + MoneyWise GTA *review* blocks;
+  Take-Two *stock* allows. Pipeline before `generate_content_package`; publish
+  next to `title_collision`; `ops next` via `publish_blockers`. Suite
+  `CROSS_CHANNEL_DUP=off`.
+
+**CUDA (explained, not installed):** `nvidia-smi` reports **CUDA 13.1** on the
+4070 Ti; runtime torch is `2.8.0+cpu` / `cuda.is_available() False`. Uninstall
+the CPU wheel first, install the CUDA wheel pytorch.org lists for that driver,
+prove `+cu…` and `True`, then `ops doctor`. NVENC already ships via ffmpeg (#38).
+
+**Not done:** live Edge synth (needs Microsoft; CI mocks `Communicate.stream`);
+`--apply` ingest against the Xbox folder (dry-run only unless the listing looks
+right); HUD detector; #416; CUDA wheel.
+
+**Audit:** ruff clean; suite **2339** (`python -m unittest discover -s tests -t .`);
+previous wave was 2315. `git status --short data/` empty. `ops ingest-clips`
+dry-run: 16 Xbox captures, 15 matched, 1 unmatched (GTA Online — no dump into
+`gaming/`). `ops free-doctor` Voice line is still Piper, not Edge.
+
+---
+
+## 2026-08-27 - Next 10 from 331–480 (green-and-inert holes)
+
+**Prompt:** view roadmap 331–480, complete the next 10 mixed items (mostly [S], couple
+[M], green-and-inert first), then a fail-visible audit. Stay on
+`consolidate/2026-08-27`. Do not commit unless asked.
+
+**Parked:** Phase M, #141–#147, NVENC, CUDA torch, Edge TTS, `SCENE_MATCHED_BROLL` on
+TapIn, Coverr as a quality lever, #389 stale-cache, #433 cross-channel dup,
+#416/#417 owned footage.
+
+**Shipped (measured):**
+- **#332** disputed flag: operator vs Warriors source → `disputed=True`, losing line
+  dropped from the corpus, report card prints DISPUTED.
+- **#347** `ops vault-decay` wraps `expired_notes`. Empty vault: honest line, no WARNING.
+- **#331** `stamp_as_of` on packed vault facts (`load_facts` + interactive
+  `vault_accepted`). 20-day UFC fact labeled; just-pasted operator facts are not.
+  Script is not regex-rewritten.
+- **#346** rumor pass after odds. Bare GTA delay on a leak topic is softened;
+  Tapology result left; "reports to EA" skipped. Known gap: outlet not inferred
+  from the corpus.
+- **#372** Apify cache hits × `COST_APIFY_PER_RUN` on `ops reliability`. `$` only
+  when hits > 0.
+- **#371** TTS forecast before synth; actual + delta on features. Fail-open.
+- **#381** `PAID_CALLS=off` → Free via `resolve_cost_mode`. Doctor fails if
+  `FREE_MODE_STRICT` is not armed.
+- **#369** `PROJECTED_COST_MAX_USD` unset=off. When set, blocks `run_pipeline`
+  before `run_discovery` using `estimate_run_cost`, not post-run actuals.
+- **#405** both script texts on rewritten runs; omitted on clean (same shape as #322).
+- **#394** three Tapology-class empty-200s session-disable; Wikipedia no-page and
+  "Not an MMA topic" do not. Not persisted to `quota_state.json`.
+- **#442** thin `ops next` over cost / decay / `blocking_publish_sentence`.
+
+**Audit:** ruff clean; suite **2254** (`python -m unittest discover -s tests -t .`);
+last-wave vault `n` / `relevance_corpus` / `channel_id` / Fortnite folder / xfade
+duration still green; `git status --short data/` empty. Bugbot: INACTIVE-as-healthy
+and as-of missing from interactive packing — both fixed in this wave.
+
+**Not done:** #389, #433, #416/#417, FastAPI #147, Phase M.
+
+---
+
 ## 2026-08-27 - Vault relevance engine finished (P2–P4)
 
 **Prompt:** finish the vault relevance engine (public-corpus crash, two-stage web skip,
@@ -1380,3 +1540,206 @@ Proof: roadmap regressions 25/25; focused render/thumbnail/pipeline suite 112/11
 isolated suite 2,010/2,010. Shipped config: 3 profiles valid with the same three
 operational warnings. Safe operator checks: command registry listed `pick-thumbnail`;
 missing `--run-id` returned 2 without mutation. No `data/` changes.
+
+## 2026-08-28 — the 23-item wave (three parked enablements + 20 from 331–480)
+
+Picked up mid-flight: the modules and their production wiring already existed,
+the suite did not pass. Six failures/errors in 2,296 tests, `ruff` red on 3
+errors and 6 files, nothing ticked, and #373 never started. Finished green at
+**2,308 tests**, `data/` untouched.
+
+**Shipped.** #38 NVENC encode behind one `video/encoder.py` helper used by all
+four ffmpeg call sites; #147 as a localhost GET-only FastAPI shell (not #141);
+CUDA as a fail-visible doctor line with no wheel install; and 20 candidates
+(#340 #348 #353 #355 #360 #366 #370 #373 #379 #382 #395 #403 #406 #419 #426
+#432 #439 #443 #444 #458).
+
+**What the audit found that green tests did not.**
+
+- **#419 was inert on the path that actually ships.** The rebalance lived only
+  in `split_script_into_lines`, which feeds the *estimated-timing* fallback.
+  decisions §23 means a normal run is timed by the ASR and cues come from
+  `caption_timing.group_into_lines`, which had no rebalance — so on every real
+  render the item did nothing while its tests were green. Fixed on both paths;
+  the word moves with its own start/end.
+- **#419's first cut also broke an older contract.** Rebalancing the running
+  list let a one-word sentence steal the previous sentence's last word, merging
+  two sentences into one cue —`test_sentence_boundaries_not_crossed` has
+  forbidden that since long before 419. The rebalance is now per sentence, and
+  the pre-existing `test_proportional_timing` passes **unmodified**; it was not
+  a stale test, it was the contract.
+- **NVENC broke #309.** The persisted "success" argv was the command *passed
+  in*, so a run that fell back to libx264 would hand the operator an
+  `h264_nvenc` command that had failed. `executed_cmd` now reports what ran.
+- **#369 (previous wave) could never fire.** `projected_cost_block_reason`
+  estimated from `script=""`, putting TTS — ~91% of a rendered run — at $0 and
+  the total at $0.0075. A realistic `PROJECTED_COST_MAX_USD=0.50` was therefore
+  unreachable; only a sub-cent cap tripped it, which is what its own test used.
+  Its assertion `script == ""` had pinned the bug. Now estimates against the
+  longest length preset: a $0.50 cap correctly refuses a ~$2.28 worst case, and
+  unset is still off.
+
+**Review pass on the uncommitted diff — six findings, four fixed.**
+
+- **Fixed, and it would have hit a GTA 6 batch.** #394's empty-200 quarantine used
+  a *denylist* (wikipedia only), but `rawg` (`apis/rawg_api.py:166`), `odds`
+  (`odds_api.py:61`) and `sports` (`sports_data_api.py:76`) all return
+  `connected=True, STATUS_INACTIVE` and **no** `status_detail` when a topic is
+  outside their domain — the exact shape it counted as a dead scraper. Three
+  off-domain topics in one `batch-drafts` session session-disabled RAWG, so a GTA
+  topic later in the same batch silently got no game data. Now an **allowlist**
+  (`tapology`): the safe default is never to quarantine.
+- **Fixed.** #432's dry run hand-built `status` as `{privacyStatus}` while the real
+  insert sends `build_video_status()` — so the "exact payload" omitted
+  `selfDeclaredMadeForKids` (#107) and the #115/#116 `publishAt` bump, the two
+  fields you open a dry run to check. It now calls the real builder.
+- **Fixed.** #382's growth line was appended before the `... +N more` continuation,
+  interleaving a summary into the file list at >20 candidates.
+- **Fixed (during the wave).** #369's estimate; see above.
+- **Not fixed — reported instead.** #355 computes `predicted_engaged_rate` at
+  *sync* time, so the residual is recomputed and overwritten on every
+  `sync-metrics` and is contaminated by videos published after it. The honest fix
+  is to record the prediction at publish time; that is a schema change, not a
+  patch.
+- **Not fixed — deliberate.** #340's sidecar is written at `pipeline.py:308` with
+  `quality={}` because `build_quality` runs at 348, so `ungrounded_count` is always
+  null. claims/sources/disputed do populate. Reordering the finalize sequence is
+  riskier than the gap.
+- **Investigated and rejected.** #353's `n > 0` exemption looked like an inverted
+  guard (n=0 skips the refusal). It is deliberate: experiments *generate* the
+  samples, so a new channel must be able to bootstrap one, and forcing the refusal
+  broke 14 existing tests that encode exactly that. Reverted; the caveat that
+  `_measured_n`'s except branch also returns 0 is now documented in the code.
+
+**NVENC proof, not probe.** `ffmpeg -encoders` listing `h264_nvenc` is a
+capability claim. The real render argv was run against real inputs on this
+machine: 1080x1920 h264 + aac, exact 3.000s, rc=0, ~1.5x faster than libx264.
+NVENC's `cq 23` produces a larger file than x264's `crf 23` — different scales,
+not a quality regression, and YouTube re-encodes anyway. Default stays on.
+
+**Skipped, needs the operator:** #333 negative-fact store, #349 OCR intake,
+#412 pronunciation append, #450 voice-note intake, #451 phone booth, #389
+stale-cache serve, #433 cross-channel dup guard, #416/#417 owned footage, and
+the CUDA torch wheel. #141–#146 and Phase M untouched.
+
+Proof: full isolated suite 2,315/2,315; `ruff check` + `ruff format --check`
+clean; `git status --short data/` empty; `ops doctor` / `next` / `command-ref` /
+`vault-decay` / `artifact-retention` / `publish-dry-run` / `diff-runs` run for
+real, and the shell's five routes answered 200 with `POST /` at 405.
+
+## 2026-08-28 (evening) — operator decisions on the nine parked items
+
+Answers from the operator, plus two items that **shrank** because the premise was
+challenged. Decisions only; nothing implemented yet.
+
+**Settled.**
+
+- **#389 stale-cache serve — yes, 48h ceiling.** Past 48h the run refuses rather
+  than serving. Stale must always present as worse than fresh, never silently
+  equal (decisions §24).
+- **#433 cross-channel dup — guard on the LENS, not the topic.** MoneyWise
+  covering GTA 6's market impact is a finance angle and is allowed; MoneyWise
+  reviewing GTA 6 is TapIn's job and is not. Block when two channels would treat
+  a topic through the same domain lens; allow when the lenses genuinely differ.
+  Apply generally, not as a GTA special case. Operator: "script writing and clips
+  leaking over is not what I want."
+- **#451 phone booth — bind to the LAN.** `review_booth.py:1112` and
+  `operator_shell.BIND_HOST` are `127.0.0.1` today. Operator chose LAN over a
+  Tailscale tunnel. Must be an explicit opt-in flag, not a silent default.
+- **#412 pronunciation — REPLACED by wiring Edge TTS.** The append mechanism was
+  rejected on the right grounds: a pronunciation dictionary is a workaround for a
+  voice that cannot be told how to say a word. `core/tts.py:862` `_ALT_TTS` is a
+  provider registry, so `"edge"` is one entry plus a synth function and inherits
+  the cache, the fall-back-to-ElevenLabs path at `tts.py:888`, free-mode strict,
+  and the voice catalog. Buys neural quality near ElevenLabs and **SSML
+  `<phoneme>`**, which Piper cannot do. Caveats to carry: it is free but NOT
+  local (Microsoft endpoint, needs network), the `(local, $0)` print is wrong for
+  it, and the endpoint is unofficial — Piper stays the true-offline floor. Likely
+  closes the $0 TTS item that has been blocked "on ears".
+- **#416/#417 — skip hand-tagging.** All clips are the operator's own capture, so
+  the license ledger is one line. Folder routing already works
+  (`_keyword_choose_folder("GTA 6 leak...")` -> `gaming/open world/GTA V`).
+  Auto-derived metadata (duration, resolution, HUD, motion) plus usage history
+  only. **16 unfiled clips** sit in `C:\Users\jonma\OneDrive\Videos\Xbox Game DVR`
+  (plus an NVIDIA capture path) whose filenames already match the library's
+  naming, so `ops ingest-clips` is mechanical.
+- **#450 voice-note intake — dropped.** Solves a problem the operator does not
+  have; they start runs at the keyboard.
+
+**Shrank under challenge — the operator was right both times.**
+
+- **#349 OCR — fold into the research phase, drop the screenshot path.** Operator:
+  "can't this be done by the AI during research? I'm not manually doing all that."
+  Correct: if a number is on a page, research should fetch and extract it; OCR is
+  only needed when the number exists ONLY as an image (an X screenshot, a
+  broadcast graphic). That residue is rare and not worth building. The item
+  becomes "strengthen numeric extraction in research", not an OCR intake.
+- **#333 negative facts — narrowed to a backstop, not a parallel truth source.**
+  Operator: "if we pull fresh articles every run, shouldn't that supersede
+  previous facts, or work in tandem?" Mostly yes, and fresh research stays
+  primary. Three gaps keep a small store worth having: (1) the corpus is not
+  ranked by recency, so a stale claim and its denial can sit in the same block
+  with equal weight — which is why #331 as-of stamps and #332 disputed exist;
+  (2) retractions are quieter than the claims they retract, so search/RSS may
+  surface five copies of the false claim and none of the denial; (3) absence is
+  not refutation — research can only supersede what it actually retrieves. So the
+  store is a memory of corrections already paid for, once per claim, able to VETO
+  (operator wants a hard block, not a warning). Marking a claim retracted rides on
+  #341's retraction watch asking once; everything after is automatic.
+
+**Next session order:** edge-tts provider, then `ops ingest-clips`, then #389 and
+#433 now that the rules are fixed.
+
+**Outcome (same evening, parked-four wave):** all four implemented. Edge is opt-in
+cloud $0 with SSML lexicon + WordBoundary sidecar (never default). `ops ingest-clips`
+is dry-run/apply with hud=null. #389 serves ≤48h stale on live failure only. #433
+blocks same-lens, allows different lens. CUDA wheel still not installed.
+
+## 2026-08-28 (later) — edge-tts audit: three defects the tests could not see
+
+Reviewing the Edge TTS provider after it was wired. All three were invisible to a
+green suite because the test double recorded the call instead of performing it.
+
+1. **Declared but not installed** (#326 all over again). `edge-tts>=7.0.0` was in
+   the `[free]` extra; the environment had nothing. `TTS_PROVIDER=edge` would have
+   logged a warning and silently billed ElevenLabs. Installed **7.2.8** and
+   verified by importing it, not by reading `pyproject.toml`.
+
+2. **The voice read the XML out loud.** `edge_tts.Communicate` **escapes** its
+   input — it is not an SSML endpoint — so the `edge_ssml()` wrapper meant the
+   synth spoke `"speak version equals one point zero xmlns equals http colon..."`.
+   Measured against the live endpoint: **23.76s of audio for a 3.94s sentence.**
+   Pronunciation now rides `apply_pronunciation_lexicon`, the same plain respelling
+   the local providers already use; `edge_ssml` and its two helpers are deleted so
+   nothing can reach for them again. After the fix the same line is **6.744s**.
+   The old test asserted `<sub` and `<speak` were in the payload — it pinned the
+   defect. Rewritten to assert no markup ever reaches the endpoint.
+
+3. **No word timings at all.** edge-tts 7.x defaults `boundary="SentenceBoundary"`,
+   so the `WordBoundary` branch never fired and `.words.json` was never written —
+   captions on the $0 path would silently fall back to estimated timing, which is
+   what decisions §23 exists to prevent. `Communicate(..., boundary="WordBoundary")`
+   now yields **11 real word timings** on the probe sentence. The test fake only
+   accepted `(text, voice)`, so it mirrored the caller's omission rather than the
+   library's real signature; it now mirrors 7.x.
+
+**End-to-end proof of the whole design:** voice says `toh-POO-ree-ah`, timings
+carry that token, and `retext_words_from_script` restores **Topuria** for the
+burned captions. Timed by the synth, spelled by the script — decisions §23 holds
+on the $0 path.
+
+**#433 lens fix.** The shipped guard keyed on `infer_domain`, which reads by
+SUBJECT and checks gaming words before finance ones — so "GTA 6 economic impact on
+the games market" classified as `gaming`. With `CROSS_CHANNEL_DUP` defaulting to
+**block** and the guard wired at `pipeline.py:506` (before script) and in the
+publisher, that refused the one MoneyWise angle the operator explicitly permitted.
+Added `_lens_for`: finance TREATMENT cues override the subject. `infer_domain`
+itself is untouched — it also drives the YouTube category (#102), per-domain signal
+weights, and scoring. The operator's four canonical sentences now classify
+correctly, and "GTA 6 review" is still blocked.
+
+**Note on concurrency:** another agent was editing this tree during the audit
+(`config/data_sources.json`, `core/secrets_doctor.py`, `core/ui.py`,
+`core/voice_catalog.py`, `docs/roadmap.md`). Three suite failures and one F401 at
+the time of writing belong to that in-flight work, not to anything above; the 164
+tests covering the modules changed here pass in isolation.

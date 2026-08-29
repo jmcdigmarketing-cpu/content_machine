@@ -13,11 +13,19 @@
 
 Product phase names are the source of truth. **Phases H–K** (intelligence) are specified in **[intelligence_phase.md](intelligence_phase.md)**.
 
-Last updated: 2026-08-27 — vault relevance default **scored** (holdout 1.0/1.0);
-HTML/booth **#245 #236 #238 #267 #268**. **178 open** checkboxes remain (`- [ ]`;
-386 shipped). FastAPI shell **#147 still skipped**. No Content OS Desktop (#141),
-Visual Studio (#142), Web OS (#143), Phase M, volume-gated backtest, or $0 TTS
-voice judgment.
+Last updated: 2026-08-28 night — **doctor greens**: secrets required vs optional,
+Sherdog RSS dropped, Piper `.onnx` pool (bobby/carl/eminem/patrick) in
+`video/voices/`, ElevenLabs intake parked (`ops voices` not on account), fact-paste
+ends on `.` / `END` / two blanks. **Ollama doctor FAIL left on purpose**; open
+checkbox for optional `ollama pull`. CUDA torch **is** installed (`2.8.0+cu128`).
+The **parked-four wave** earlier the same day still stands (Edge TTS, ingest-clips,
+#389, #433) plus the **23-item wave**. Counted from this file: **291 open**
+checkboxes (`- [ ]`; 424 shipped) — **115 of them are Candidates 331–480**.
+Vault relevance default **scored** (holdout 1.0/1.0).
+**#147 is no longer skipped**: it shipped as a localhost GET-only shell, not an
+app. Still nothing on Content OS Desktop (#141), Visual Studio (#142), Web OS
+(#143), Phase M, volume-gated backtest, or $0 TTS *voice judgment* (Piper ears
+call; Edge is a networked $0 option, never the default).
 
 **New verticals:** [domain-expansion.md](domain-expansion.md) — finance, anime, pop culture, music, gaming/sports depth. One domain at a time; official APIs first.
 
@@ -435,6 +443,9 @@ FastAPI still skipped.**
 - [ ] **$0 TTS switch** — **technically unblocked 2026-08-16** (captions fixed above; a
   full Piper render was verified end to end), now waiting on two operator calls rather
   than engineering. Local Piper meters $0 vs **$0.25–0.31/video (~91% of run cost)**.
+  **Edge TTS** (`TTS_PROVIDER=edge`, 2026-08-28) is a separate opt-in **cloud** $0 path
+  with SSML lexicon + WordBoundary timings; it is not this judgment and is never the
+  default. Piper remains the true-offline Free floor.
   1. **Judge the voice** — `output/samples/piper_lessac_run65.mp3` vs the ElevenLabs
      render of the same script. Deliberately not decided for you.
   2. **Re-run `py -m scripts.bench_script_duration` after any flip** — Piper reads the
@@ -627,8 +638,14 @@ plus the coverage-wave and router-vision Next-up lines shipped the same day.*
 - [ ] Hook-score vs retention calibration — 0–100 heuristic never checked against
   `audienceWatchRatio` `[M]`
 - [ ] Semantic vault fact retrieval — token overlap misses related notes `[M]`
-- [ ] CUDA torch as an ops enablement — RTX 4070 Ti is in the box; `2.8.0+cpu` is
+- [x] CUDA torch as an ops enablement — RTX 4070 Ti is in the box; `2.8.0+cpu` is
   the actual gate `[M]`
+  *(2026-08-28: code + fail-visible doctor, no wheel install. `ops doctor` had always
+  PASSed `cuda`; it now reports `ok=False` only when `nvidia-smi` is present AND torch
+  has no CUDA — a box with no dGPU is not a FAIL, and a usable CUDA torch passes.
+  Confirmed non-blocking: nothing in pipeline/render/publish reads `ops_doctor`.
+  **2026-08-28 night:** operator installed `2.8.0+cu128`; `ops doctor` cuda PASS.
+  The wheel is not a repo pin — the environment is.)*
 - [x] Audio LUFS normalize — ffmpeg `loudnorm` for Shorts level consistency `[S]`
   *(2026-08-20: `LUFS_NORMALIZE` opt-in; default command byte-identical; I=-14)*
 - [x] Background clip anti-repeat — variation guard checks scripts, not pictures `[S]`
@@ -671,7 +688,7 @@ Organization / operator surface
 
 Efficiency
 
-- [ ] 38. NVENC hardware encode on the 4070 Ti (`h264_nvenc`) for render; CPU libx264 stays fallback. Render is the longest paid-adjacent wait `[M]`
+- [x] 38. **NVENC hardware encode** *(2026-08-28)* — one `video/encoder.py` helper (`video_encoder_args` + `run_ffmpeg_with_nvenc_fallback`) used by render, composite, intro, and outro; probe true selects `h264_nvenc -preset p4 -cq`, and a failed encode retries once with libx264. `NVENC=off` (suite default) emits the historical `-c:v libx264 -preset fast -crf 23` block byte-identical, asserted from the real command builder. **Verified with a real encode, not the probe:** ffmpeg listing `h264_nvenc` is a capability claim, so the full render argv was run against real inputs — 1080x1920 h264 + aac, exact 3.000s, ~1.5x faster than libx264 (larger file: NVENC `cq` is not x264 `crf`). Follow-on fix: the fallback broke #309's promise that the persisted argv is the one that SUCCEEDED — `executed_cmd` now reports the libx264 retry, so the booth cannot hand the operator an `h264_nvenc` command that failed `[M]`
 - [x] 39. Draft-vs-publish render preset: `ops render-preview --run-id` writes suffixed preview audio plus a 480x854 `ultrafast` MP4; the default 1080x1920 `fast` publish path, run media row, thumbnail, and upload target remain unchanged, and the publisher rejects `_preview.mp4` `[S]`
 - [ ] 40. Overlap thumbnail + TTS while the operator is still on the report-card prompt (interactive path only) `[M]`
 - [x] 41. Cap discovery workers so one slow Apify actor cannot set wall-clock for every run (twitter’s lesson, still true for tiktok ~14s) `[S]`
@@ -905,7 +922,7 @@ Massive — new product surfaces / years of work / could be different software
 Larger — multi-week systems
 
 - [ ] 146. Windows **system-tray daemon** wrapping worker + overnight `[L]` — *new-app.* Overnight is a forgotten PowerShell window today.
-- [ ] 147. Localhost **FastAPI operator shell** (static UI, not SaaS) `[L]` — *new-app.* **Skipped 2026-08-21** (would swallow the leave-the-terminal wave). Booth uses stdlib `--serve`; swapped this slot for #240 + #254. Not #141.
+- [x] 147. **Localhost FastAPI operator shell** *(2026-08-28)* — `core/operator_shell.py` + `ops shell`, bound to `127.0.0.1` and default off. GET-only over the gatherers that already exist (`/booth`, `/reliability`, `/doctor`, `/next`, `/status`) — no second cache, no spend, and `POST /` returns 405. Driven for real through `TestClient`; the `shell` extra is also in `[dev]` so CI can import it. Thin slice: not #141 Desktop, not a tray daemon, and the stdlib `ops booth --serve` still exists `[L]`
 - [ ] 148. **Job-queue visualizer** with drag-reorder (render vs upload vs quota-defer) `[L]` — *UI.* Worker stalls are invisible; 1,600-unit ceiling needs a picture.
 - [ ] 149. **Analytics Studio** (retention / CTR / RPM local web) `[L]` — *viability.* Weekly-report ASCII cannot show curves; still honest that n≈10 is thin.
 - [ ] 150. **TapIn vs MoneyWise visual language packs** (GUI + video chrome) `[L]` — *aesthetics.* `ui_theme` is ANSI; the two channels still share one ungraded look.
@@ -1106,6 +1123,196 @@ Audit of the 2026-08-26 wave (all three were GREEN in CI)
 - [x] 328. **One bad match silently disables all number expansion** *(2026-08-27)* - out-of-range event numbers return their digits instead of raising; a test asserts a purse and a record in the same script still expand alongside one. Original finding: `[S]` - *visibility.* `_UFC_RE` accepts 2-4 digits but `_event_number` indexes a 20-entry tuple with `n // 100`, so `UFC 2000` raises `IndexError`. The call site wraps the whole pass in `try/except ... logger.debug`, so at the default WARNING level the operator sees nothing and *every* expansion stops for that script, not just the bad match. decisions §24 shape: fail-open but not fail-visible, at the wrong granularity
 - [x] 329. **Subject relevance without hand-tagged franchises - P0–P4** *(2026-08-27)* - the competing-franchise fix over-corrected: requiring a shared *franchise anchor* also dropped notes about the people and companies in the story (measured - "Rockstar Games confirms the leak investigation" vanished from a GTA topic naming Rockstar, silently, on `core/ui.py`'s vault prompt). Both the good and bad cases produce an EMPTY anchor set, so anchors cannot separate them. **P0:** such bullets are surfaced marked `uncertain` ("N confident, M uncertain") instead of dropped. **P1:** `core/vault_evals.py` + `ops vault-eval`; baseline precision/recall **0.667**. **P2:** additive scorer `vault_relevance_v1` (entity-in-corpus + corpus cosine + tier + anchors as a feature). **P3:** holdout from live runs 66+70 scored precision **and** recall **1.0**; shipped `default_mode` flipped to `scored`. **P4:** extract-tier tiebreak exists, **default off** (`VAULT_RELEVANCE_TIEBREAK`); residual uncertain band was 4/14. Two-stage discovery skips `web_search` with `STATUS_SKIPPED` only *after* a non-web corpus. `_GAME_ANCHORS` remain for topic-graph. Design: planning_log 2026-08-27; decisions §27
 - [x] 330. **Crossfade at the hybrid join** *(2026-08-27)* - decisions §26's one surviving MoneyPrinterTurbo borrow. The xfade was already in and ffmpeg accepted it, but it **shortened every background by exactly the fade**: an xfade output runs `offset + len(second input)` and the stock segment was never extended, so a 6.000s request produced 5.500s against real ffmpeg. The render loops the background, so it never raised - it wrapped early and showed a jump. Now exact at 6.000s and 30.000s; the test asserts the *sum* across six durations and five ratios so the arithmetic cannot drift again
+
+**Candidates 331–480 (2026-08-27 — docs only; no pickup order)**
+
+*None of these restates an open checkbox or the shipped list. Weighted toward
+grounding, reliability, and analytics rigor — the two 2.5/5 dimensions in
+[assessment.md](assessment.md) plus the n≈10 learning-loop problem — because the
+open backlog is already dense in operator UI. Inventory, not a wave: Phase M,
+the XL apps (#141–#143), and the volume-gated backtest stay parked. Where an
+idea sits beside an existing one, the line says how it differs.*
+
+Grounding & fact quality
+
+- [x] 331. **Per-fact "as of" clock** *(2026-08-27)* — `stamp_as_of` prefixes packed vault notes older than 7 days (`as of last week/month`); `load_facts` and interactive `vault_accepted` both stamp. A 20-day UFC fact is labeled; operator paste without `verified_at` is not. The finished script is not regex-rewritten `[S]`
+- [x] 332. **Disputed-fact surface** *(2026-08-27)* — `features_from_conflicts` stamps `disputed` + losing claims; `display_fact_engine_report` prints **DISPUTED**; pipeline copies into features; `ops grade` note. Operator vs stale source: dropped line gone from the corpus, flag remains `[S]`
+- [ ] 333. **Negative-fact store (what is *not* true)** — persist debunked/retracted claims per franchise so a later run cannot re-assert a leak that was already walked back `[M]`
+- [ ] 334. **Entity disambiguation ledger** — `entity_extractor.py` re-resolves "Jones" / "Rockstar" every run. Resolve once to a canonical id, reuse across runs and channels `[M]`
+- [ ] 335. **Source-diversity floor on dated topics** — refuse to ground a news-shaped claim on a single domain; one outlet is a rumor, not a fact `[S]`
+- [ ] 336. **Wikipedia last-revision recency tripwire** — a cheap "the world moved after my cutoff" signal from a source already called; the June UFC-250 failure had no such guard `[S]`
+- [ ] 337. **Numeric plausibility bands per domain** — a grounded number can still be a typo. 10x outliers on purses, gates, and market caps flag even when `find_ungrounded_numeric` passes `[S]`
+- [ ] 338. **Quote-attribution gate** — any quoted sentence must map to a source naming the speaker. Invented quotes are the highest-cost hallucination class `[M]`
+- [ ] 339. **"Unconfirmed" as a first-class script mode** — today the choice is assert or drop; saying "this is not confirmed yet" is more honest *and* more authentic under the 2026 policy `[M]`
+- [x] 340. **`.facts.json` sidecar beside the mp4** *(2026-08-28)* — `write_render_sidecars` at the pipeline finalize site writes claims/sources/disputed from already-persisted quality; fail-open, and a missing mp4 writes nothing `[S]`
+- [ ] 341. **Retraction watch 24h post-publish** — re-query the top sources; toast when a key fact changed. The *detector* that makes #112's correction dossier fire on its own `[M]`
+- [ ] 342. **Learned per-source trust weights** — `grounding_tiers.py` tiers are hand-assigned. Demote a source that keeps being corrected; promote one that never is `[M]`
+- [ ] 343. **Cross-run fact cache keyed by entity+date** — franchise batches share discovery (#42) but still re-verify identical facts per topic `[M]`
+- [ ] 344. **Channel-clock resolution of relative time** — "tonight" / "this weekend" must resolve against the channel's ET calendar at *script* time; an overnight run crossing midnight currently lies `[S]`
+- [ ] 345. **Claim-type taxonomy with per-type thresholds** — result / schedule / rumor / opinion should not clear the same grounding bar. One rule for all four is why hedged rumors read as fact `[M]`
+- [x] 346. **Rumor-labeling rule** *(2026-08-27)* — `apply_rumor_language` after odds in `generate_content_package`. Bare "GTA 6 is delayed to 2027" on a leak topic is softened; a Tapology result line is left; "reports to EA" is employment not a hedge. Known gap: outlet is required *in the script*, not inferred from the corpus `[S]`
+- [x] 347. **`ops vault-decay`** *(2026-08-27)* — wraps `fact_expiry.expired_notes` (no second scanner). Temp vault with a past `expires:` lists it; empty vault prints an honest empty line and emits no WARNING `[S]`
+- [x] 348. **Operator fact-intake linter** *(2026-08-28)* — `lint_fact_intake` on `core/ui.py`'s paste path, before `capture_facts_to_vault`. URL-only lines, duplicates, and vault contradictions warn; an empty paste is silent `[S]`
+- [ ] 349. **Screenshot → facts via OCR** — the operator's fastest fact source is a stat card on screen; clipboard image → parsed lines into the facts block `[M]`
+- [ ] 350. **Grounding regression corpus in CI** — extend `run_eval_corpus.py` with ~20 frozen runs whose correct verdicts are known, so a gate change that loosens grounding fails CI instead of a live run `[M]`
+
+Learning loop & analytics rigor
+
+- [ ] 351. **Confidence intervals, not just sample counts** — `recommender_confidence.py` reports n; an interval is what tells the operator that 30.6% +/- 22 is noise `[M]`
+- [ ] 352. **Bayesian shrinkage toward the channel mean** — "ufc averages 30.6% across 2 videos" should shrink to the baseline until it earns its own estimate. Fixes volume-starved learning without waiting for volume `[M]`
+- [x] 353. **Minimum-detectable-effect check before an arm is proposed** *(2026-08-28)* — `start_experiment` refuses a lever with more arms than measured videos. The test reads the arm count from `experiment_levers.arms()`, so a lever gaining an arm cannot pass a hardcoded number `[S]`
+- [ ] 354. **Sequential-testing stop rule for title/thumb arms** — peeking and stopping on a good look is exactly how the loop learns superstitions `[M]`
+- [x] 355. **Per-video surprise score (actual minus predicted)** *(2026-08-28)* — residual persisted when metrics sync lands; surfaced beside the grade `[S]`
+- [ ] 356. **Store the retention *curve*, not just `drop_off_ratio`** — #28's learned intro reads one number; the shape is where the cliff actually is `[M]`
+- [ ] 357. **Feature-importance report over `run_features.py`** — dozens of features are recorded and none is ever tested for correlation with outcome `[M]`
+- [ ] 358. **Counterfactual log of operator overrides** — when a recommendation is ignored, record what it was. Overrides are the highest-information events and are discarded today `[S]`
+- [ ] 359. **Cold-start priors from the nearest existing domain** — a third channel should inherit TapIn's shape, not library defaults; unblocks the AI-Tools groundwork `[M]`
+- [x] 360. **Separate day-of-week from hour in post-time learning** *(2026-08-28)* — Saturday 9pm and Tuesday 9pm are separate buckets; two fixtures prove they no longer average together `[S]`
+- [ ] 361. **Comment sentiment as a secondary target** — `youtube_comments_signal.py` already pulls the text; engaged-rate cannot tell a good reaction from a pile-on `[M]`
+- [ ] 362. **Subscribers-gained as its own objective** — a video that converts subs and one that farms views are different products; the sync can already fetch it `[S]`
+- [ ] 363. **Title-embedding clustering across the catalog** — detect that the channel has quietly made the same video five times `[M]`
+- [ ] 364. **Topic saturation index** — how many tracked competitors covered this in 48h, from the snapshot already stored. Being seventh is a scoring input `[S]`
+- [ ] 365. **Recency-decay weighting in every recommender** — a six-month-old video currently votes as loudly as last week's `[S]`
+- [x] 366. **Anomaly detector on the metrics sync itself** *(2026-08-28)* — `metrics_sync_incident` reaches `ops reliability`; a stalled sync is an incident, a fresh one prints no warning `[S]`
+- [ ] 367. **Calibration drift over time in `analyst_accuracy.py`** — accuracy is scored at a point; the useful question is whether it is getting worse `[S]`
+- [ ] 368. **"Would this have been picked?" replay** — run the current scorer against past winners; a scorer change that would have skipped every hit is a regression `[M]`
+
+Cost & quota
+
+- [x] 369. **Per-run projected-cost gate** *(2026-08-27)* — `PROJECTED_COST_MAX_USD` unset = off (zero new warnings). When set, `guard_before_discovery` raises `CostModeBlocked` from `run_pipeline` *before* `run_discovery`; uses `estimate_run_cost(script="", rendered=True)`, never post-run actuals. Rates/breaker trip points untouched `[M]`
+- [x] 370. **Cost per 1k views, not per video** *(2026-08-28)* — `ops economics` prints `$ / 1k views` only when views > 0, so zero-view runs produce no scare number `[M]`
+- [x] 371. **Pre-spend TTS char forecast vs actual** *(2026-08-27)* — `forecast_tts` runs in `generate_audio` before synth; `record_tts_actual` stamps chars + delta; `run_media` merges both onto features. Fail-open; healthy run: no new WARNING `[S]`
+- [x] 372. **Cache-hit dollars saved** *(2026-08-27)* — `ops reliability` multiplies Apify-prefix hits × `COST_APIFY_PER_RUN`. `$` line only when hits > 0; zero hits is not a scare WARNING. Display only `[S]`
+- [x] 373. **Audit that no path bills TTS before script approval** *(2026-08-28)* — audit-and-lock, no product change: the pipeline seam plus every draft call site (`main.py`, `auto_generate`, `batch_generation`) is pinned to `proceed_video=False` in `tests/test_no_tts_before_approval.py`. Proved failable by flipping the flag in `main.py` `[S]`
+- [ ] 374. **Premium tier for the hook only** — the first two sentences carry the retention cliff; the rest can run cheap-tier through the existing router `[S]`
+- [ ] **Ollama model pull (optional)** — `ops doctor` ollama FAIL stays until `ollama pull …`. Ollama is still free/local (not a billed API); Standard already uses DeepSeek/OpenRouter. Do not un-tick the shipped router item. `[S]`
+- [ ] 375. **Ollama warm-pool across a batch** — the free path loses on cold-start latency, not quality `[M]`
+- [ ] 376. **YouTube unit budget planner** — split the ~1,600 units across upload / analytics / captions for the day instead of first-come-first-served `[M]`
+- [ ] 377. **`ops economics --month` close-out** — reconcile metered estimates against real vendor invoices; decisions §22 meters from the plan but never checks itself `[M]`
+- [ ] 378. **Free-tier expiry calendar** — track when each provider's free window resets or ends, so a $0 run does not silently become a paid one `[S]`
+- [x] 379. **Spend-anomaly toast** *(2026-08-28)* — `maybe_toast_spend_anomaly` at 3x the trailing median from the last 20 runs; a cheap run is silent, and one unreadable history row no longer costs the median `[S]`
+- [ ] 380. **Apify cost per *usable fact*** — cost-per-call is not the decision metric; a cheap actor returning nothing is worse than a dear one that grounds the script `[S]`
+- [x] 381. **`PAID_CALLS=off` master kill-switch** *(2026-08-27)* — aliases `resolve_cost_mode` onto Free (same `apply_and_guard` path). `ops doctor` `paid_calls` check fails when the env is set but `FREE_MODE_STRICT` is not armed; unset leaves Standard unchanged `[S]`
+- [x] 382. **Disk growth projection for `output/` + `data/traces`** *(2026-08-28)* — `project_days_until_full` on `ops artifact-retention`; an empty dir reports honest empty, not a warning `[S]`
+
+Reliability & signals
+
+- [ ] 383. **Nightly synthetic canary run** — exercise every signal with zero LLM/TTS spend so a dead source is found before a real run needs it (Tapology-class silent death) `[M]`
+- [ ] 384. **Per-signal SLO + error budget** — `reliability.py` shows incidents; a budget turns "flaky" into a decision to retire (decisions §19) `[M]`
+- [ ] 385. **Response-schema pinning per API** — a vendor field rename degrades into empty facts, not an error; `sortVideosBy` and `scrape_enabled` were both this shape `[M]`
+- [ ] 386. **Offline replay harness from recorded traces** — traces are on disk; a signal bug should be reproducible without touching the network `[M]`
+- [ ] 387. **Deterministic run mode** — fixed seeds + recorded fixtures end-to-end, so "it did something different this time" is answerable `[M]`
+- [ ] 388. **Backoff jitter + per-host concurrency caps** — the discovery pool can stampede one host; #41 caps total workers, not per-domain `[S]`
+- [x] 389. **Serve stale cache on failure, visibly flagged** *(2026-08-28)* — live `unavailable`/`error`/`auth`/`rate_limited` (not honest `inactive`) serves an expired entry ≤48h with `STALE cache, age Nh`, score 0, `stale_served` not a hit. >48h keeps the live failure. Eligible stale is not overwritten. `STALE_CACHE_MAX_AGE_HOURS=0` restores drop-expired. Default on. `[S]`
+- [ ] 390. **Signal dependency graph** — short-circuit a chain whose upstream already failed instead of paying for every leg `[M]`
+- [ ] 391. **One HTTP client across `apis/`** — timeouts, retries, and UA are re-implemented per module; the single seam where 385/388/396 all land `[M]`
+- [ ] 392. **Vendor status-feed check in `ops doctor`** — distinguish "we broke it" from "they are down" before debugging `[S]`
+- [ ] 393. **Network-vs-API preflight** — one probe that says the internet is down, so seven signal failures read as one incident `[S]`
+- [x] 394. **Auto-quarantine on empty-but-200** *(2026-08-27)* — three connected `STATUS_INACTIVE` with no skip-detail session-disable the signal (Tapology "no event match"). Wikipedia no-page and "Not an MMA topic" do not count. **Not** persisted to `quota_state.json` (decisions §6). One inactive does not trip `[M]`
+- [x] 395. **Free-backend parity tests** *(2026-08-28)* — `SIGNAL_BACKEND=free` youtube_competitors + reddit assert `make_signal()` keys and status; no second cache added `[S]`
+- [ ] 396. **Record real rate-limit headers into the governor** — `quota_governor.py` guesses resets that vendors publish; decisions §13b wants the *real* reset `[M]`
+- [ ] 397. **Local mirror of slow-moving reference data** — rosters, rankings, and tickers change monthly and are fetched hourly `[M]`
+- [ ] 398. **Chaos test in CI** — randomly fail k signals; the run must still produce a grounded script or refuse honestly `[M]`
+
+Script, voice & TTS
+
+- [ ] 399. **Hook bank with performance history** — `hook_score.py` scores against a heuristic; nothing remembers which hook *shapes* actually retained `[M]`
+- [ ] 400. **Measured words-per-second per voice** — `script_length.py` assumes one rate; each voice reads differently, which is why lengths drift `[S]`
+- [ ] 401. **Prosody / pause markup for local TTS** — the flat Piper read is a real part of why the $0 flip is blocked on ears `[M]`
+- [ ] 402. **Sentence-level TTS cache** — a one-word fix currently re-bills the whole script at 91% of run cost `[M]`
+- [x] 403. **Voice-consistency check across segments** *(2026-08-28)* — `voice_mix_warning` warns once when the body TTS provider and the intro/outro path disagree; a single provider is silent `[S]`
+- [ ] 404. **Breath and dead-air trim on generated audio** — a cheap duration win before any length gate fires `[S]`
+- [x] 405. **Script diff: LLM draft vs post-gate rewrite** *(2026-08-27)* — adopted rewrite stamps `script_pre_rewrite` / `script_post_rewrite` on the verification dict, quality, dossier, and booth. A clean run omits the keys (same shape rule as #322) `[S]`
+- [x] 406. **Per-persona style linter** *(2026-08-28)* — post-script, fail-open warn against the shipped persona. Pattern-catch held: MoneyWise ranges and percentages are not flagged (#327 class) `[S]`
+- [ ] 407. **Opener-pattern check** — enforce the measured-good hook patterns instead of trusting the model's first instinct `[S]`
+- [ ] 408. **Domain-aware number reading beyond `spoken_numbers`** — tickers, currency, and percentages are MoneyWise's entire vocabulary (#327's neighborhood, not its fix) `[M]`
+- [ ] 409. **Per-channel brand-safety lexicon** — advertiser-safe mode (#127) is odds-specific; a general list is one file `[S]`
+- [ ] 410. **Two-take TTS, pick by pace** — generate twice, keep the read closest to target duration; only worth it on the free path `[M]`
+- [ ] 411. **Per-channel music bed + ducking** — `core/music.py` exists and no channel uses it; silence under VO is part of why the result looks thin `[M]`
+- [x] 412. **Auto-append operator pronunciation corrections** — **superseded 2026-08-28 by Edge TTS.** The append-to-JSON workaround was rejected: a dictionary is a patch for a voice that cannot be told how to say a word. `TTS_PROVIDER=edge` is opt-in cloud $0 in `_ALT_TTS`, wraps the lexicon as SSML `<sub>`/`<phoneme>`, writes WordBoundary sidecars, meters $0, is **not** local, and is never the default. Piper stays the true-offline Free floor. `[S]`
+
+Render & visual craft
+
+- [ ] 413. **Deterministic render fingerprint** — same inputs, same bytes, so a render regression is a diff instead of an argument `[M]`
+- [ ] 414. **Post-render frame QA** — black frames, frozen frames, and A/V desync are caught by the operator watching, or not at all `[M]`
+- [ ] 415. **Render smoke test in CI on a 2s synthetic input** — #24 and #26 both shipped dead on Windows and were caught by audit, not by CI `[M]`
+- [ ] 416. **Scene-beat cuts from owned gameplay** — decisions §26 prefers owned footage over more stock APIs; the scene plan exists and has nothing to cut to `[L]`
+- [x] 417. **Owned-footage ingest + index** *(2026-08-28, mechanical slice)* — `ops ingest-clips` (dry-run default; `--apply` remuxes muted H.264) matches capture filenames into `video/backgrounds` via existing folder routing + a short alias table. Unmatched files are listed, never dumped into `gaming/`. `data/clip_index.json` records ffprobe duration/size/codec; **HUD is persisted `null`** (no detector). Hand-tagging skipped. Scene-beat cuts remain #416 `[L]`
+- [ ] 418. **Zoom resampling validation** — verify #26's Ken Burns does not soften 1080x1920 detail; a bounded zoom can still cost sharpness `[S]`
+- [x] 419. **Caption line-break optimizer** *(2026-08-28)* — a lone final word is rebalanced on BOTH caption paths. The first cut only touched `split_script_into_lines` (the estimated-timing fallback), so on a normal ASR-timed run it did nothing — `group_into_lines` now rebalances too, moving the word with its own start/end. Rebalancing is per sentence: the running-list version merged two sentences into one cue, which `test_sentence_boundaries_not_crossed` has forbidden since long before 419 `[S]`
+- [ ] 420. **Verify loudness + true peak *after* encode** — `LUFS_NORMALIZE` sets a target; nothing confirms the output hit it `[S]`
+- [ ] 421. **Render time budget with progressive fallback** — degrade the preset rather than run long when the queue is deep `[M]`
+- [ ] 422. **Thumbnail text auto-fit with hierarchy rules** — Pillow thumbs currently pick a size and hope `[M]`
+- [ ] 423. **Generate contrast-safe palettes from channel tokens** — makes #185's auditor largely unnecessary by construction `[M]`
+- [ ] 424. **B-roll license ledger with expiry** — which clip, which license, which videos it appears in. A licensing question has no answer today `[M]`
+- [ ] 425. **Vertical-crop scoring for 16:9 sources** — the scoring half of Phase R, shippable long before clip-from-source `[M]`
+- [x] 426. **Render artifact manifest (input hashes) on the run row** *(2026-08-28)* — mp4 + script hashed at the same finalize site as #340 `[S]`
+
+Publish, SEO & policy
+
+- [ ] 427. **Per-domain description template engine with slot validation** — description assembly is concatenation across #118/#125/#128 and grows a branch per policy line `[M]`
+- [ ] 428. **Hashtag performance tracking** — tags are generated and never evaluated `[S]`
+- [ ] 429. **Scheduled pinned comment + its performance** — `youtube/pin_comment.py` posts; nothing times it to the traffic peak or measures it `[S]`
+- [ ] 430. **Community-post drafts from the weekly report** — the analyst already writes the paragraph; posting it is a copy-paste `[S]`
+- [ ] 431. **Verify chapter timings against real word timings** — `core/chapters.py` computes marks from an estimate the ASR could confirm `[S]`
+- [x] 432. **Publish dry-run that prints the exact API payload** *(2026-08-28)* — `ops publish-dry-run` / `PUBLISH_DRY_RUN=1` prints the real `videos().insert` body with tokens redacted, and never calls insert `[S]`
+- [x] 433. **Cross-channel duplicate-upload guard** *(2026-08-28)* — same franchise/topic **and** same `infer_domain` lens (real scorer: GTA review = gaming, Take-Two stock = finance). Pipeline aborts before `generate_content_package`; publish + `ops next` backstop. `CROSS_CHANNEL_DUP=block|warn|off`; suite forces `off` like `TITLE_UNIQUENESS`. Same-channel titles stay #117. `[S]`
+- [ ] 434. **Content-ID pre-check heuristics** — a claimed video is a monetisation event; stock and music are the exposure `[M]`
+- [ ] 435. **Policy-page diff watcher** — the 2026 authenticity rules are existential and the project tracks them by hand `[M]`
+- [ ] 436. **Strike / appeal evidence bundle from the run ledger** — `policy_runbook.py` documents the process; the ledger already holds the evidence it asks for `[M]`
+- [ ] 437. **One-command publish rollback** — unlist + correction description + dossier entry, for when #341 fires `[S]`
+- [ ] 438. **Per-channel audience-language / region targeting** — #108 sets language; targeting is a separate lever that is never set `[S]`
+- [x] 439. **Shorts-eligibility validator before upload** *(2026-08-28)* — `shorts_refuse_reason` on the publish path refuses landscape and over-60s with a sentence; a missing file is fail-open `[S]`
+- [ ] 440. **Immutable 24h / 7d performance snapshots** — the metrics sync overwrites; the early curve is gone and #49 needs it `[S]`
+
+Operator surface
+
+- [ ] 441. **`ops explain --run-id`** — one narrative of every decision the run made and why. The postmortem covers failures; this covers choices `[M]`
+- [x] 442. **`ops next`** *(2026-08-27)* — thin `@_register`: projected-cost line, then vault-decay warnings, then `blocking_publish_sentence`. One printed action. No second scanner `[S]`
+- [x] 443. **`ops diff-runs A B`** *(2026-08-28)* — joins grade, cost, ungrounded, and disputed for two run ids; missing ids exit without mutating `[S]`
+- [x] 444. **Minutes-per-published-video trend** *(2026-08-28)* — persisted to its own sidecar on publish (never `quota_state`), surfaced as a one-liner; tests isolate the file `[S]`
+- [ ] 445. **Resume an interrupted run from the ledger** — an abort after TTS currently means re-spending it `[M]`
+- [ ] 446. **Undo for destructive `ops` commands** — retention, requeue, and clone paths have no back-out `[M]`
+- [ ] 447. **Config diff vs the last good run** — `channels.json` / `.env` drift is the first suspect in most incidents and there is no answer for it `[S]`
+- [ ] 448. **`ops why-slow`** — the ranked text answer that #213's waterfall would draw `[S]`
+- [ ] 449. **Batch approve queue** — review five drafts in one pass instead of five interactive runs `[M]`
+- [ ] 450. **Voice-note fact intake** — record a memo on a phone, transcribe to key facts; whisper is already installed `[M]`
+- [ ] 451. **Phone-sized booth layout** — review a 9:16 Short on the device it will be watched on `[S]`
+- [ ] 452. **Weekly operator digest** — the three decisions to make this week, written to a file `[S]`
+
+Engineering hygiene
+
+- [ ] 453. **Property-based tests for the signal contract** — `make_signal()`'s shape is load-bearing for every signal and is tested by example `[M]`
+- [ ] 454. **Golden-file tests for ffmpeg argv on every path** — #24 and #330 were both argv-arithmetic bugs that a golden file catches instantly `[M]`
+- [ ] 455. **Shared test fixture isolating `data/quota_state.json`** — a test that forgets to isolate it poisons the operator's real breaker state `[S]`
+- [ ] 456. **Import-time side-effect audit + import-cost budget** — CLI startup is slow and nobody knows which module does work at import `[S]`
+- [ ] 457. **Lockfile + reproducible install** — #326 was the environment silently disagreeing with `pyproject.toml`; a lockfile makes that class impossible, not just detectable `[M]`
+- [x] 458. **Generate the ops command reference from `ops list`** *(2026-08-28)* — `ops command-ref` writes `docs/ops_commands.md` from the live registry, and a test fails when the doc drifts from `COMMANDS` `[S]`
+- [ ] 459. **Dead-code sweep after signal retirements** — `reddit` and `twitter` are `enabled: false`; their code is still in the tree `[S]`
+- [ ] 460. **Typed settings object over scattered `os.getenv`** — dozens of env reads with inline defaults, none of them visible to the type checker `[M]`
+- [ ] 461. **Env-var registry validated at startup** — every flag with its default and meaning, checked before a run rather than at first use (the run-70 shape) `[M]`
+- [ ] 462. **run_id correlation in every log line** — traces carry run ids, logs do not, so the two cannot be joined `[S]`
+- [ ] 463. **Wire `scripts/bench_*.py` into CI with thresholds** — the benchmarks exist and nothing fails when they regress `[S]`
+- [ ] 464. **VCR-style recorded API fixture library** — the enabling asset for 386, 387, and 398 `[M]`
+- [ ] 465. **Alembic up/down test against a real snapshot** — two migration stories (#35) is a problem; neither is verified `[M]`
+- [ ] 466. **Generate the open-items index from the checkboxes** — this list is maintained by hand and the header count is already load-bearing in the docs lint `[S]`
+
+Strategy & bigger bets
+
+- [ ] 467. **Second operator seat** — the run ledger assumes one human; the first collaborator is a schema question, not a UI one `[L]`
+- [ ] 468. **Fact engine as a standalone surface** — the grounding stack is the most differentiated code in the repo and is welded to video `[XL]`
+- [ ] 469. **Sponsored-brief run type** — a run driven by a brief, with disclosure and claim limits enforced by the gates that already exist. First non-ad revenue path that is not #79 `[M]`
+- [ ] 470. **Newsletter from the same fact corpus** — the research brief is already written; a second distribution costs no new research `[M]`
+- [ ] 471. **Audio-only distribution from existing TTS** — the mp3 exists and is discarded after render `[M]`
+- [ ] 472. **Evergreen re-cut program** — republish measured winners after N months with refreshed facts; `topic_clone.py` is the write path that already exists `[M]`
+- [ ] 473. **Forward franchise calendar** — `seasonal_calendar.py` reacts; UFC cards and game launches are known months ahead and should be planned against `[M]`
+- [ ] 474. **Audience-question intake into topic scoring** — comments and community polls as a discovery signal, not only a mailbag (#114) `[M]`
+- [ ] 475. **Competitor gap map** — topics the tracked channels cover that we systematically never do `[M]`
+- [ ] 476. **Portfolio allocator across channels** — where the next 10 videos should go for expected RPM, given cadence caps `[L]`
+- [ ] 477. **Per-channel break-even model** — at what RPM and volume does a channel cover its ~$1/video allocated cost `[M]`
+- [ ] 478. **White-label channel kit** — spin up channel #3 from a template in a day; #51's Channel DNA export is the input, this is the consumer `[L]`
+- [ ] 479. **Restore drill for `moat_backup.py`** — a backup that has never been restored is a hypothesis `[S]`
+- [ ] 480. **Open-source the signal contract as positioning** — the narrowest genuinely reusable piece; costs nothing strategic and is the cheapest credibility asset the repo has `[M]`
 
 ---
 

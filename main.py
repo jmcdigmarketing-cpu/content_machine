@@ -189,28 +189,6 @@ def _apply_cost_mode_interactive() -> bool:
     return True
 
 
-def _drain_stdin() -> None:
-    """
-    Discard any input still buffered from a multi-line paste so leftover lines
-    (e.g. idea-generator scaffolding after a blank line) don't hijack the next
-    prompts. Best-effort and platform-aware; a no-op if it can't run.
-    """
-    try:
-        import msvcrt  # Windows console
-
-        while msvcrt.kbhit():
-            msvcrt.getwch()
-        return
-    except Exception as exc:
-        logger.debug("stdin drain (Windows) skipped: %s", exc)
-    try:
-        import termios
-
-        termios.tcflush(sys.stdin, termios.TCIFLUSH)
-    except Exception as exc:
-        logger.debug("stdin drain (POSIX) skipped: %s", exc)
-
-
 def _read_multiline(prompt: str) -> str:
     """Read possibly-multiline pasted input; finish on a blank line or EOF."""
     print(prompt)
@@ -245,7 +223,9 @@ def _run_idea_intake_flow(channel_id: str) -> None:
     )
     # Drop any scaffolding still buffered from the paste (e.g. "Develop idea",
     # "Why this could fit…") so it can't auto-answer the upcoming prompts.
-    _drain_stdin()
+    from core.console_input import drain_stdin
+
+    drain_stdin()
     if not raw.strip():
         print("  Nothing entered — returning.")
         return

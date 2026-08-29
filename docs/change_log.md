@@ -6,6 +6,61 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Run 74 — the abort chain, and facts that stop being truncated - 2026-08-29
+
+*2515 tests green, ruff clean, mypy unchanged in the touched files. TapIn Standard run
+id 74 (GTA 6 extended look, Long). Drafted, not rendered — the run was discarded by a
+stray word before render.*
+
+- **A two-letter word threw away the run.** The operator pasted a 403-blocked article at
+  the **Fact** prompt (where it belongs). The prompt reads one line per `input()`, the
+  article's first blank line ended intake after two lines, and the rest sat in the
+  Windows console buffer answering later prompts. `Proceed?` got **`by`** — Engadget's
+  byline label — and `_looks_pasted("by")` is `False`, so candidate 325's re-prompt
+  never fired. Fixed at all three points: `core/console_input.py` (new) exposes
+  `input_pending` / `read_pending_lines` / `drain_stdin`; a blank line ends fact intake
+  only when nothing is buffered, and leftovers are **offered back as facts**; `Proceed?`
+  now stops only on `n` / `N` / `no` / Enter and drains stdin before asking.
+  **Contract change:** a stray keystroke re-prompts instead of stopping — the deliberate
+  run-71 rule, overturned by evidence.
+- **Facts are no longer cut mid-sentence.** `_MAX_KEY_FACT_CHARS` was a runaway-blob
+  guard implemented as `line[:400]`, producing lines like *"…will progress through a
+  chapter-based"* — which reads to a model as a finished, vague statement rather than a
+  truncation. It is now a splitter (`split_at_sentences`); a single over-long sentence
+  survives whole, and only punctuation-free blobs are cut, at word boundaries, marked
+  elided. The display lied the same way (`{ex[:90]}` with no ellipsis at all); `_elide`
+  now names the hidden character count.
+- **The prompt budget ranks instead of truncating.** Of run 74's 54 packed facts ~15
+  were article furniture (*"Below, you'll find everything shown off…"*, *"Check out the
+  five biggest takeaways below."*) while the six wanted stars, the Slim Jim minigame and
+  the 80-hour playthrough sat in the dropped tail. `core/fact_selection.py` pins
+  operator-typed facts, penalises scaffolding (never blacklists — a furniture line with
+  a hard number still competes), and ranks the rest on recency (heaviest), novelty,
+  specificity and relevance, reporting every exclusion. Link facts now carry the page's
+  own publication date, without which "weight recency heavily" had no input.
+  **Measured:** `score_vault_fact` scored the Slim Jim mechanic at **0.03** — it rewards
+  echoing the signal corpus, which is backwards for a pasted article whose whole purpose
+  is to add what the signals lack. Hence `novelty`, and hence relevance being the
+  smallest weight.
+- **Two gates disagreed about the same phrase.** `persona lint: but here's the thing` and
+  `original_insight: has an authorial take ('here's the thing')`, four lines apart — the
+  second is why the script scored authenticity 100/100, for a phrase banned by the linter
+  *and* by the script prompt. Removed from `_INSIGHT_MARKERS`; `test_gate_agreement.py`
+  keeps the three lists honest. The lint hit also now reaches the screen before
+  `Proceed?` instead of only the log.
+- **277 words against a 300-word floor, graded A.** The expansion loop runs before every
+  pass that can shorten a script, so its exit condition was checked against text the
+  operator never saw. `_relength_after_postprocessing` re-checks afterwards and reverts a
+  late expansion that reintroduces unsupported specifics. *Not* fixed: the report card
+  still does not weight length — adding a component would change every historical grade.
+- **Two dead signals cost 30 of a 37.8s discovery.** `trendingnow.games` retired per
+  decisions §19 (reason recorded in `apis/signals_bootstrap.RETIRED_SIGNALS`, module
+  kept). `youtube` and `youtube_comments` each waited out the full 15s socket timeout
+  against the same unreachable endpoint — cut to 8s, plus a process-level latch so the
+  second call fails fast. A read timeout is transient, so the session breaker never fired.
+- `link_facts` now sends browser-shaped headers (clears naive 403s, not a real WAF) and
+  reports how many lines of a page it kept.
+
 ### Audit of the 2026-08-26 wave + a working agreement - 2026-08-26
 
 *2118 tests green, ruff clean, zero `data/` mutation. All three findings were **green in

@@ -1907,3 +1907,69 @@ fails DNS on every run and a YouTube RSS id 404s — both decisions §19 candida
 for retirement rather than repair.
 
 Backlog 291 → 455 open; highest #644; untagged unchanged at 49; suite 2,415 green.
+
+
+## 2026-08-29 — Run 74: why fact intake had character limits at all
+
+Started as "fix the crash", became a design decision about what the fact budget
+is *for*.
+
+**The abort chain was structural, not carelessness.** Run 74 produced no video
+because `Proceed?` received the word `by` — Engadget's byline label, left in the
+Windows console buffer by a paste at the **Fact** prompt. Three separate design
+choices had to line up: the fact loop treats a blank line as "done" (a paragraph
+break is indistinguishable from Enter), nothing drains buffered stdin between
+prompts, and `Proceed?` treated anything unrecognised as "stop". Candidate 325
+had already fixed the third for *prose*; `by` is two characters and one word, so
+it sailed through. The lesson worth keeping: a gate that guesses intent from the
+shape of the input will keep finding inputs it guesses wrong about. Only an
+explicit decline stops now.
+
+**The question that changed the scope.** Asked whether to keep the per-line
+400-char cap and split at sentences, the operator asked back: *"why do we even
+have char limits on facts?"* — then, when the total budget was defended on
+per-call cost: *"we don't have to call every fact available every call… score
+them against each other for what would be the best, with recency having a heavy
+bias."*
+
+That is the right answer, and the evidence was in the run itself. Of 54 packed
+facts, roughly fifteen were article furniture — *"Below, you'll find everything
+shown off…"*, *"Check out the five biggest takeaways below."*, *"Note: All of
+these details are compiled from various previews…"* — while six wanted stars, the
+Slim Jim carjacking minigame, the 80-hour playthrough and the November 19 release
+date sat in the tail that never fit. **Raising the ceiling would have packed more
+furniture.** Intake needs no limit; the prompt needs a ranking.
+
+**Two limits, two different justifications.** Worth separating explicitly, because
+they were treated as one thing:
+
+- The **per-line cap** had no quality rationale at all. It was a runaway-blob
+  guard against a scraped `<p>` holding a transcript, implemented as `line[:400]`.
+  As a *splitter* it does its actual job better than as a truncator.
+- The **total budget** is real: operator facts ride in every script and expansion
+  call at ~1 token per 4 chars. That is worth spending well, not worth removing.
+
+**The measurement that redirected the scorer.** The obvious move was to reuse
+`score_vault_fact` for relevance. Measured on run 74's own facts, it scored the
+Slim Jim mechanic — the single most useful detail in the article — at **0.03**,
+because it measures how much a line *echoes the existing signal corpus*. That is
+the right question for a vault note ("is this even about the topic?") and exactly
+the wrong one for a pasted article, whose entire purpose is to add what the
+signals lack. Hence `novelty` (share of a fact's named entities the corpus does
+not already have) as a first-class term, and relevance demoted to the smallest
+weight — a floor against off-subject lines rather than a ranking.
+
+**Three rules that keep ground truth safe**, and should survive any future tuning:
+operator-typed facts are pinned and never ranked out (decisions §4); scaffolding
+is penalised rather than blacklisted, so a furniture-shaped line carrying a hard
+number still competes; and every exclusion carries a printed reason, because a
+silent drop of ground truth is the worst failure this module can have.
+
+**Deliberately not done:** the report card still does not weight length, even
+though run 74 shipped 277 words against a 300-word floor and graded A. Adding a
+component changes the meaning of every historical grade — filed as #645 rather
+than slipped in. The weights themselves were calibrated on one run's 54 facts and
+need trace-level validation (#647).
+
+Backlog 455 → 460 open; highest #650; suite 2,415 → 2,515 green.
+

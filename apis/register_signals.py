@@ -283,6 +283,12 @@ def reset_session_breaker() -> None:
         _PERSISTED_DISABLED = set()
         _PERSISTED_SYNCED = False
     try:
+        from apis.youtube_api import reset_api_unreachable
+
+        reset_api_unreachable()
+    except Exception as exc:
+        logger.debug("YouTube unreachable latch not cleared: %s", exc)
+    try:
         from core.quota_governor import clear_all_signals
 
         clear_all_signals()

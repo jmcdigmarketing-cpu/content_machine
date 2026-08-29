@@ -44,7 +44,7 @@ py main.py
 
 In the CLI: channel **TapIn (2)** → **Create new video (1)** → topic → variants → length → **y** to render → queue upload when prompted.
 
-**Paste vs prompt (live-run 71):** article text belongs in key-facts **`paste`** mode, not at **Proceed?** (`y` / `N` only) and not at `PS C:\dev\content_machine>`. After the CLI prints *Stopped before render*, the window is PowerShell — it will try to *run* the first word of whatever you paste (`Fast`, `Amazon:`, `user(s)` → command `s`). See [debugging.md — Live-run 71](debugging.md#live-run-71-2026-08-21--pasted-article-hit-powershell-not-the-cli).
+**Paste vs prompt (live-run 74):** paste an article straight at the **Fact N** prompt — blank lines are paragraph breaks while the paste is still arriving, and anything left buffered is offered back as facts. At **Proceed?** only `n` / `N` / `no` / Enter stop; any other stray token re-prompts, and buffered input is drained before the gate is asked. What still cannot be undone: text pasted at `PS C:\dev\content_machine>` after the CLI exits is run as shell commands. See [debugging.md — Live-run 74](debugging.md#live-run-74-2026-08-29--one-buffered-word-discarded-the-run).
 
 **Terminal 2 — process upload/render jobs (leave running)**
 

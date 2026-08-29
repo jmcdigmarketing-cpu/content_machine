@@ -88,9 +88,30 @@ class TestSanitizeKeyFacts(unittest.TestCase):
             result = self._sanitize([f"fact {i}" for i in range(10)])
         self.assertEqual(len(result), 5)
 
-    def test_truncates_long_fact_to_400_chars(self):
-        result = self._sanitize(["x" * 500])
-        self.assertEqual(len(result[0]), 400)
+    def test_a_long_fact_is_split_at_sentences_not_severed(self):
+        """Run 74 overturned the old `line[:400]` rule.
+
+        A severed clause reads to the model as a finished, vague statement, so it
+        resolves the vagueness by inventing. An over-long line now becomes several
+        whole-sentence lines; nothing is lost and nothing ends mid-sentence.
+        """
+        paragraph = (
+            "Rockstar Games revealed over 150 new GTA 6 details. "
+            "Rob Nelson said his latest playthrough took around 80 hours. "
+        ) * 6
+        result = self._sanitize([paragraph])
+        self.assertGreater(len(result), 1)
+        for line in result:
+            self.assertTrue(line.endswith("."), line[-40:])
+        self.assertEqual(" ".join(result), paragraph.strip())
+
+    def test_a_punctuation_free_blob_is_still_bounded(self):
+        """The cap survives as a runaway guard — it just marks the elision."""
+        result = self._sanitize(["detail " * 400])
+        self.assertGreater(len(result), 1)
+        for line in result[:-1]:
+            self.assertLessEqual(len(line), 400)
+            self.assertTrue(line.endswith("…"), line[-30:])
 
     def test_collapses_newlines_and_whitespace(self):
         result = self._sanitize(["Champion is\n\nTopuria\t  by  KO"])

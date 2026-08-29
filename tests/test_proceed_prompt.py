@@ -80,11 +80,17 @@ class TestDecliningIsStillInstant(unittest.TestCase):
         self.assertEqual(prompt_proceed_or_length("2", input_fn=ask), ("stop", "2"))
         self.assertEqual(ask.calls, 1)
 
-    def test_a_stray_keystroke_is_still_a_stop(self):
-        # Someone reaching for N and missing meant to decline — do not nag.
-        ask = _Answers("m")
-        self.assertEqual(prompt_proceed_or_length("2", input_fn=ask), ("stop", "2"))
-        self.assertEqual(ask.calls, 1)
+    def test_a_stray_keystroke_re_prompts_instead_of_stopping(self):
+        # Run 74 overturned the old "a stray key means they meant to decline" rule:
+        # `by` (Engadget's byline label, left in the paste buffer) discarded the run.
+        # Only an explicit decline stops now.
+        ask = _Answers("m", "y")
+        lines: list[str] = []
+        self.assertEqual(
+            prompt_proceed_or_length("2", input_fn=ask, print_fn=lines.append),
+            ("render", "2"),
+        )
+        self.assertEqual(ask.calls, 2)
 
 
 class TestTheRun71Paste(unittest.TestCase):
@@ -104,12 +110,12 @@ class TestTheRun71Paste(unittest.TestCase):
         self.assertIn("still here", text)
         self.assertIn("paste", text)  # points at where the article actually belongs
 
-    def test_a_second_unrecognised_answer_stops(self):
-        ask = _Answers(RUN71_PASTE, RUN71_PASTE)
+    def test_a_third_unrecognised_answer_stops(self):
+        ask = _Answers(RUN71_PASTE, RUN71_PASTE, RUN71_PASTE)
         self.assertEqual(
             prompt_proceed_or_length("3", input_fn=ask, print_fn=lambda *_: None), ("stop", "3")
         )
-        self.assertEqual(ask.calls, 2)
+        self.assertEqual(ask.calls, 3)
 
     def test_declining_after_the_reprompt_stops(self):
         ask = _Answers(RUN71_PASTE, "n")
@@ -123,11 +129,49 @@ class TestTheRun71Paste(unittest.TestCase):
             prompt_proceed_or_length("3", input_fn=ask, print_fn=lambda *_: None), ("relength", "4")
         )
 
-    def test_it_never_asks_a_third_time(self):
-        ask = _Answers(RUN71_PASTE, RUN71_PASTE, "y")
+    def test_it_never_asks_a_fourth_time(self):
+        ask = _Answers(RUN71_PASTE, RUN71_PASTE, RUN71_PASTE, "y")
         result = prompt_proceed_or_length("3", input_fn=ask, print_fn=lambda *_: None)
         self.assertEqual(result, ("stop", "3"))
+        self.assertEqual(ask.calls, 3)
+
+
+class TestTheRun74Byline(unittest.TestCase):
+    """`by` is two characters and one word, so the run-71 paste detector missed it."""
+
+    def test_by_re_prompts_and_the_run_survives(self):
+        ask = _Answers("by", "y")
+        self.assertEqual(
+            prompt_proceed_or_length("3", input_fn=ask, print_fn=lambda *_: None),
+            ("render", "3"),
+        )
         self.assertEqual(ask.calls, 2)
+
+    def test_three_unrecognised_answers_finally_stop(self):
+        ask = _Answers("by", "Dave Meikleham", "Rockstar Games/Take Two")
+        self.assertEqual(
+            prompt_proceed_or_length("3", input_fn=ask, print_fn=lambda *_: None),
+            ("stop", "3"),
+        )
+        self.assertEqual(ask.calls, 3)
+
+    def test_a_decline_after_a_stray_token_still_stops(self):
+        ask = _Answers("by", "n")
+        self.assertEqual(
+            prompt_proceed_or_length("3", input_fn=ask, print_fn=lambda *_: None),
+            ("stop", "3"),
+        )
+
+    def test_buffered_input_is_drained_before_the_first_ask(self):
+        """Nothing left over from a paste may answer this gate."""
+        from unittest.mock import patch
+
+        ask = _Answers("y")
+        lines: list[str] = []
+        with patch("core.console_input.read_pending_lines", return_value=["by", "Dave"]):
+            result = prompt_proceed_or_length("3", input_fn=ask, print_fn=lines.append)
+        self.assertEqual(result, ("render", "3"))
+        self.assertIn("buffered", " ".join(lines).lower())
 
 
 class TestPasteDetection(unittest.TestCase):

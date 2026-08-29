@@ -574,7 +574,7 @@ Run-71 correctness (2026-08-22)
 - [x] 322. **Pre-rewrite claim verdict survives the rewrite pass** `[S]` *(2026-08-22)* - `ClaimVerification.to_dict()` carries `rewritten` / `pre_rewrite_unsupported` / `pre_rewrite_total` / `pre_rewrite_support_rate`, stamped where the adopted-rewrite branch already logged both counts; keys appear only on a rewritten run. #52's graveyard codes judge a hedged run on what it asserted first
 - [x] 323. **Variant ranking survives the 0-100 clamp** `[M]` *(2026-08-22)* - `composite_score_raw` + `best_variant_index` (one rule, shared by the menu and `run_pipeline`); `DiscoveryResult.raw_scores` sits beside `evaluated` so the 3-tuple stays as it was. The operator is told whether an all-equal list was ordered by headroom or is a genuine tie
 - [x] 324. **RAWG results must be current-era, not just name-matched** `[S]` *(2026-08-22)* - `_is_current_era` drops matches older than `RAWG_MAX_AGE_YEARS` (default 15) unless the topic is itself retro; fail-open on missing/unparseable dates. Vault-side equivalent deliberately deferred
-- [x] 325. **`Proceed?` distinguishes decline from unrecognised** `[S]` *(2026-08-22)* - obvious prose (>24 chars, multi-word, or multi-line) gets one re-prompt pointing at the Fact prompt's `paste` mode; `n`/`N`/`no`/Enter and every menu key resolve on the first ask exactly as before
+- [x] 325. **`Proceed?` distinguishes decline from unrecognised** `[S]` *(2026-08-22)* - obvious prose (>24 chars, multi-word, or multi-line) gets one re-prompt pointing at the Fact prompt's `paste` mode; `n`/`N`/`no`/Enter and every menu key resolve on the first ask exactly as before. **Superseded 2026-08-29 (run 74):** too narrow — the line that ended run 74 was the single word `by`, which no prose detector catches. `Proceed?` now stops only on `n`/`N`/`no`/Enter; everything else re-prompts, and buffered stdin is drained before the gate is asked
 
 Audit of the 2026-08-26 wave (all three were GREEN in CI)
 
@@ -912,7 +912,7 @@ Cost & efficiency
 
 Signals & reliability
 
-- [ ] 583. **`trendingnow.games` fails DNS on every run** — retire it or replace it; decisions §19 says do not keep repairing `[S]`
+- [x] 583. **`trendingnow.games` fails DNS on every run** `[S]` *(2026-08-29)* - retired per decisions §19 in `apis/signals_bootstrap.RETIRED_SIGNALS`, with the reason and date recorded at the point of disablement and the module kept for revival. `SignalRegistry.unregister` makes the retirement an explicit call rather than a mutation of registry internals. §19's kill switch (`config/apify_sources.json`) only covers paid actors; this is the free-signal equivalent
 - [ ] 584. **YouTube RSS 404 on `UCq-Fj5jknLsUf-MWSik4vhQ`** — same treatment as the dead McAfee channel id `[S]`
 - [ ] 585. **Per-signal contribution score** in the health block — "active" is not the same as "useful" `[M]`
 - [ ] 586. **Signal result diffing between runs** on the same topic `[M]`
@@ -991,4 +991,13 @@ Loopholes found 2026-08-28 — shipped, green, and inert
 - [ ] 641. **Six ANSI themes are unreachable** — `core/themes.py` ships `onepiece`, `zelda`, `pokemon`, `dbz`, `jjba`, `plain`; `ui_theme` is `None` on all three channels, so `set_channel_theme()` resolves to `""` and everything renders `default`. "Themeable skins **shipped 2026-07-02**" has never rendered in production. One config line per channel `[S]`
 - [ ] 642. **`tts_voice_pool` is unset on both channels** — the voice-variety feature has no pool to vary across `[S]`
 - [ ] 643. **`local_tts_voice` / `local_tts_voices` unset on both channels** — the per-channel local-TTS seam is inert, which matters more now Edge TTS is wired `[S]`
+Run-74 follow-ups (2026-08-29) — filed while fixing the abort chain
+
+- [ ] 645. **The report card does not weight length** — run 74 shipped 277 words against a 300-word floor and graded **A (87)**. `_relength_after_postprocessing` now re-checks after the passes that shorten a script, but nothing scores the outcome. Deferred deliberately: adding a component changes the meaning of every historical grade, so it needs a migration story `[M]`
+- [ ] 646. **`scripts/auto_generate.py` does not get scored fact selection** — selection happens at intake (`prompt_key_facts_result`), where the provenance exists. The headless path still packs in insertion order via `facts_for_prompt`. Give `load_key_facts` the same provenance so overnight runs rank too `[M]`
+- [ ] 647. **Tune the fact-selection weights against real traces** — the current split (recency .35 / novelty .25 / relevance .20 / specificity .20, scaffolding −.45) was calibrated on run 74's own 54 facts. Measure it against `data/traces/*.json` before trusting it on other topics `[M]`
+- [ ] 648. **`_SCAFFOLDING_MARKERS` is a hand-built list** — it caught run 74's furniture, and will miss the next site's. A structural signal (line is about the article, not the story) would generalise; a learned one would need labels `[M]`
+- [ ] 649. **The claim verifier passed 12/12 on facts that were themselves truncated** — with the fact window built from 400-char slices, "backed by the facts" was measured against fragments. Re-measure now that facts arrive whole, and check whether the run-74 script's drones / K9 units / hurricane-weather claims still pass `[M]`
+- [ ] 650. **`read_pending_lines` is untested against a real Windows console** — the unit tests patch the backend, because CI has no tty. One manual smoke test per platform, recorded, would close the gap `[S]`
+
 - [ ] 644. **Config-coverage test** — any channel-profile field unset on *every* channel is either wired or removed. This found 641–643; without it the next one hides just as long `[M]`

@@ -137,9 +137,14 @@ _INSIGHT_MARKERS = (
     "expect",
     "will likely",
     "my bet",
-    "here's the thing",
-    "heres the thing",
 )
+# Deliberately absent: "here's the thing". Run 74 reported
+#   [WARNING] persona lint: but here's the thing
+#   ✓ original_insight: has an authorial take ('here's the thing')
+# four lines apart, and the second is why that script scored 100/100. The phrase
+# is banned by `core.persona_lint` and by the script prompt's own banned list
+# (`content_engine`), so rewarding it here laundered a style defect into an A.
+# `tests/test_gate_agreement.py` keeps the three lists from disagreeing again.
 
 
 @dataclass

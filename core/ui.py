@@ -4,7 +4,7 @@ import os
 import sys
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, ClassVar
 
@@ -710,9 +710,26 @@ def display_fact_preview(
         if ev:
             print_fn("  Brief evidence:")
             for e in ev:
-                print_fn(f"    · {e[:100]}")
+                print_fn(f"    · {_elide(e, 100)}")
 
     return is_thin
+
+
+def _elide(text: str, width: int) -> str:
+    """Shorten for display, saying so. Never severs a word, never silent.
+
+    Run 74 printed link facts as `{ex[:90]}` with no ellipsis, so the operator had
+    no way to tell a shortened *line on screen* from a shortened *fact in the
+    prompt* — and at the time both were happening. Facts are no longer cut
+    (`split_at_sentences`); this makes the display honest about the difference.
+    """
+    body = (text or "").strip()
+    if len(body) <= width:
+        return body
+    head = body[: max(1, width - 1)]
+    if " " in head and not body[width - 1 : width].isspace():
+        head = head.rsplit(" ", 1)[0]
+    return f"{head.rstrip()}… (+{len(body) - len(head.rstrip())} chars)"
 
 
 def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
@@ -739,14 +756,79 @@ def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
             print_fn(f"  {name.capitalize()}: {score}")
 
 
+def _provenance_records(
+    collected: list[str],
+    *,
+    manual_facts: list[str],
+    link_provenance: list[tuple[str, str, Any]],
+    vault_records: list[tuple[str, Any]],
+) -> list[Any]:
+    """Attach tier / source / date to the deduped fact pool, for ranking.
+
+    Intake flattens three very different things into one list of strings: lines the
+    operator typed (the highest ground truth there is), lines a scraped page gave
+    up, and lines borrowed from the vault. Ranking them without that distinction
+    would let a scorer demote what the operator typed by hand, so the distinction
+    is rebuilt here — keyed on `dedupe_key`, the same identity `dedupe_facts` used
+    to collapse them.
+    """
+    from datetime import date
+
+    from core.fact_store import TIER_LINK, TIER_OPERATOR, TIER_VAULT, FactRecord
+    from core.operator_facts import dedupe_key
+
+    today = date.today()
+    tiers: dict[str, str] = {}
+    dates: dict[str, Any] = {}
+    urls: dict[str, str] = {}
+    for claim in manual_facts:
+        tiers.setdefault(dedupe_key(claim), TIER_OPERATOR)
+        dates.setdefault(dedupe_key(claim), today)
+    for claim, url, published in link_provenance:
+        key = dedupe_key(claim)
+        tiers.setdefault(key, TIER_LINK)
+        urls.setdefault(key, url)
+        if published is not None:
+            dates.setdefault(key, published)
+    for stamped, record in vault_records:
+        key = dedupe_key(stamped)
+        tiers.setdefault(key, getattr(record, "tier", TIER_VAULT) or TIER_VAULT)
+        verified = getattr(record, "verified_at", None)
+        if verified is not None:
+            dates.setdefault(key, verified)
+        source = getattr(record, "source_url", "") or ""
+        if source:
+            urls.setdefault(key, source)
+
+    out: list[Any] = []
+    for claim in collected:
+        key = dedupe_key(claim)
+        out.append(
+            FactRecord(
+                claim=claim,
+                tier=tiers.get(key, TIER_LINK),
+                source_url=urls.get(key, ""),
+                verified_at=dates.get(key),
+            )
+        )
+    return out
+
+
 @dataclass
 class KeyFactSelection:
-    """Facts plus the evidence needed to audit and publish their provenance."""
+    """Facts plus the evidence needed to audit and publish their provenance.
+
+    `facts` is what rides in the prompt — already ranked and budget-fitted (run 74).
+    `records` is everything collected, with provenance, and `held_back` says which
+    of them lost and why. The vault gets `records`, never just `facts`.
+    """
 
     facts: list[str]
     source_urls: list[str]
     relevance_corpus: str
     vault_audit: list[dict[str, Any]]
+    records: list[Any] = field(default_factory=list)
+    held_back: list[Any] = field(default_factory=list)
 
 
 def prompt_key_facts_result(
@@ -780,28 +862,41 @@ def prompt_key_facts_result(
     print_fn("")
     print_fn("  Add facts — paste a URL, one line, or type `paste` + Enter for a multi-line block.")
     print_fn("  (Trade trackers paste well as a block. Empty line when done.)")
+    from core.console_input import input_pending, read_pending_lines
     from core.content_engine import key_facts_for_prompt
+    from core.fact_selection import select_facts_for_prompt
     from core.link_facts import (
         extract_facts_from_url,
         is_title_only,
         link_fetch_issue,
         looks_like_url,
     )
+    from core.link_facts import last_extract_report as link_extract_report
     from core.operator_facts import (
         capture_facts_to_vault,
         dedupe_facts,
+        max_operator_key_facts,
         operator_key_fact_char_budget,
         parse_pasted_block,
         read_multiline_paste,
     )
 
     pasted_sources: list[dict[str, str]] = []
+    # (claim, source url, page publication date) for every line a link produced —
+    # the recency signal the selector weights most heavily.
+    link_provenance: list[tuple[str, str, Any]] = []
     while True:
         fact = input_fn(
             f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1} "
             f"(or `paste`, empty when done): "
         ).strip()
         if not fact:
+            # Run 74: a blank line in the middle of a paste is a paragraph break, not
+            # the operator pressing Enter. Ending here dropped ~40 paragraphs of the
+            # article and left them buffered to answer the prompts that followed.
+            # `read_multiline_paste` has always known this; this prompt did not.
+            if input_pending():
+                continue
             break
         if fact.lower() == "paste":
             print_fn("  >> Paste your block below ('.' / END / two blank lines when finished):")
@@ -817,13 +912,23 @@ def prompt_key_facts_result(
             extracted = extract_facts_from_url(fact)
             if extracted:
                 for ex in extracted:
-                    print_fn(f"    + {ex[:90]}")
+                    print_fn(f"    + {_elide(ex, 90)}")
+                report = link_extract_report()
+                found = int(report.get("found") or 0)
+                kept = int(report.get("kept") or 0)
+                if found > kept:
+                    print_fn(
+                        f"    ({kept} of {found} line(s) kept — "
+                        "raise the page cap if you need the rest)"
+                    )
                 if is_title_only(extracted):
                     print_fn(
                         "    ⚠ Only got the headline — no article body scraped (JS-heavy page?). "
                         "Paste the article text as facts, or set LINK_READER_PROXY=1 to try a proxy."
                     )
                 link_facts.extend(extracted)
+                published = report.get("published")
+                link_provenance.extend((line, fact, published) for line in extracted)
                 pasted_sources.append({"url": fact, "title": extracted[0]})
             else:
                 issue = link_fetch_issue(fact)
@@ -835,6 +940,25 @@ def prompt_key_facts_result(
             manual_facts.extend(parse_pasted_block(fact))
         else:
             manual_facts.append(fact)
+
+    # Anything still buffered was pasted, not chosen — offer it back rather than let
+    # it drift downstream and auto-answer `Proceed?` (which is how run 74 ended).
+    leftover = read_pending_lines()
+    if leftover:
+        recovered = parse_pasted_block("\n".join(leftover))
+        if recovered:
+            print_fn(
+                f"  {len(leftover)} more pasted line(s) arrived after the blank line "
+                f"— {len(recovered)} of them look like facts."
+            )
+            answer = input_fn("  Add them as facts? [Y/n]: ").strip().lower()
+            if answer in ("", "y", "yes"):
+                manual_facts.extend(recovered)
+                print_fn(f"    + added {len(recovered)} fact(s) from the paste.")
+            else:
+                print_fn("    Dropped — they will not answer any later prompt.")
+        else:
+            print_fn(f"  Discarded {len(leftover)} buffered line(s) of pasted text.")
 
     # Authoritative vault scan. The scorer sees signal evidence plus facts the
     # operator/link fetch supplied, never the candidate fact itself.
@@ -909,7 +1033,7 @@ def prompt_key_facts_result(
             if reasons:
                 suffix += "; " + ", ".join(reasons)
             suffix += "]"
-        return f"    {index}. {record.claim[:120]}{suffix}"
+        return f"    {index}. {_elide(record.claim, 120)}{suffix}"
 
     if vault_error is not None:
         print_fn("")
@@ -1004,7 +1128,26 @@ def prompt_key_facts_result(
         except Exception as exc:
             logger.debug("capture_sources skipped: %s", exc)
 
-    key_facts = dedupe_facts(manual_facts + link_facts + vault_accepted)
+    collected = dedupe_facts(manual_facts + link_facts + vault_accepted)
+
+    # Run 74: choose which facts ride in the prompt, rather than taking the first N
+    # in insertion order. This happens here because this is the only place that
+    # knows the provenance — who typed what, which page a line came from and when
+    # that page was published. Downstream sees the chosen set, so the script
+    # prompt, the regeneration loop and the grounding display never disagree.
+    fact_records = _provenance_records(
+        collected,
+        manual_facts=manual_facts,
+        link_provenance=link_provenance,
+        vault_records=list(zip(vault_accepted, selected_records, strict=False)),
+    )
+    key_facts, held_back = select_facts_for_prompt(
+        fact_records,
+        topic=topic,
+        corpus=relevance_corpus,
+        budget=operator_key_fact_char_budget(),
+        line_cap=max_operator_key_facts(),
+    )
 
     # Persist only facts that are NEW to the vault. Re-saving `vault_accepted` would
     # copy borrowed facts into a note titled with THIS topic, permanently stamping
@@ -1027,7 +1170,7 @@ def prompt_key_facts_result(
             print_fn(f"  Saved all {len(new_facts)} fact(s) to vault (full set, no cap).")
 
     if key_facts:
-        from core.operator_facts import last_fact_budget_report, max_operator_key_facts
+        from core.operator_facts import last_fact_budget_report
 
         sent = key_facts_for_prompt(key_facts)
         budget = operator_key_fact_char_budget()
@@ -1035,10 +1178,22 @@ def prompt_key_facts_result(
         # Both limits, always — the operator read "18 packed" as a hard 18-fact cap
         # because only the char side of the budget was ever shown.
         print_fn(
-            f"  {len(key_facts)} fact(s) collected; {len(sent)} packed for the LLM "
+            f"  {len(collected)} fact(s) collected; {len(sent)} packed for the LLM "
             f"({len(sent)}/{max_operator_key_facts()} lines · "
             f"{sum(len(s) for s in sent)}/{budget} chars)."
         )
+        if held_back:
+            scaffolding = sum(1 for drop in held_back if "scaffolding" in drop.reason)
+            parts = []
+            if scaffolding:
+                parts.append(f"{scaffolding} article scaffolding")
+            if len(held_back) - scaffolding:
+                parts.append(f"{len(held_back) - scaffolding} lower-ranked than the budget held")
+            print_fn(f"  {len(held_back)} held back — {' · '.join(parts)}. All saved to the vault.")
+            for drop in held_back[:3]:
+                print_fn(f"    · {_elide(drop.claim, 72)}")
+            if len(held_back) > 3:
+                print_fn(f"    · …and {len(held_back) - 3} more")
         if report.get("dropped"):
             print_fn(
                 f"  Note: {report['dropped']} fact(s) stored in vault but omitted "
@@ -1098,6 +1253,8 @@ def prompt_key_facts_result(
         source_urls=source_urls,
         relevance_corpus=relevance_corpus,
         vault_audit=vault_audit,
+        records=fact_records,
+        held_back=held_back,
     )
 
 
@@ -1135,8 +1292,7 @@ def display_grounding_report(
         if sent:
             print_fn(f"  Operator key facts sent to LLM ({len(sent)}):")
             for i, fact in enumerate(sent, 1):
-                short = fact[:90] + ("…" if len(fact) > 90 else "")
-                print_fn(f"    {i}. {short}")
+                print_fn(f"    {i}. {_elide(fact, 90)}")
         return False
 
     print_fn(
@@ -1214,6 +1370,16 @@ def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
             print_fn(f"    · {warning}")
         print_fn("    The title is the first thing viewers read — fix it before publishing.")
         needs_review = True
+
+    # Run 74: these fired and only ever reached the log, so a phrase banned by the
+    # script prompt *and* by the linter still graded A. Style, not fact — shown
+    # before `Proceed?`, but it does not raise the fact-review flag.
+    persona_hits = features.get("persona_lint") or []
+    if persona_hits:
+        print_fn(f"\n  ⚠ Style ({len(persona_hits)}): banned filler in the script")
+        for hit in persona_hits[:4]:
+            print_fn(f"    · {hit}")
+        print_fn("    Regenerate (+/- at Proceed) or edit before publishing.")
 
     if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
         needs_review = True
@@ -1363,6 +1529,12 @@ def _looks_pasted(raw: str) -> bool:
     return len(text.split()) > 1
 
 
+# Run 74: three asks, not two. `by` — Engadget's byline label, left in the console
+# buffer by a paste at the Fact prompt — is two characters and one word, so the
+# run-71 prose detector never saw it, and the run was discarded without a word.
+_PROCEED_MAX_ASKS = 3
+
+
 def prompt_proceed_or_length(
     current_choice: str,
     *,
@@ -1374,24 +1546,34 @@ def prompt_proceed_or_length(
     Returns one of:
       ("render", current_choice)  -- y: proceed to render
       ("relength", new_choice)    -- +/-/1-4: regenerate at a new length target
-      ("stop", current_choice)    -- n / empty / an unrecognised answer twice
+      ("stop", current_choice)    -- n / empty / three unrecognised answers
 
     "+"/"-" nudge the current preset one step (core.script_length.nudge_length); a 1-4
     entry jumps to that preset. Regeneration is a fresh generate at the new target, so
     grounding + authenticity are re-checked — it is not an in-place trim.
 
-    Candidate 325: this used to stop on *anything* that was not a menu key, so the
-    pasted article paragraph that ended live-run 71 discarded 30.6 minutes of work
-    (25.6 of them at prompts) without a word. The trap is structural — the key-facts
-    loop immediately above accepts pasted blocks, so the habit carries straight into a
-    prompt where a paste means "throw it away". Declining is still instant: `n` / `N` /
-    Enter stop on the first answer. Only input that is obviously not a menu key gets a
-    second chance.
+    **Only an explicit decline stops.** `n` / `N` / `no` / Enter still resolve on the
+    first answer, exactly as they always have. Everything else re-prompts. Candidate
+    325 gave that second chance to *obvious prose* only, which run 74 proved too
+    narrow: the leftover line that landed here was the single word `by`, and losing a
+    run to a two-character token is never what the operator meant. A misplaced
+    keystroke costs one Enter; the old rule cost the whole script.
+
+    Buffered input is drained first (core.console_input) so a paste physically cannot
+    answer this gate — the re-prompt is the second line of defence, not the first.
     """
+    from core.console_input import read_pending_lines
     from core.script_length import nudge_length
 
+    stale = read_pending_lines()
+    if stale:
+        print_fn(
+            f"  Ignored {len(stale)} buffered line(s) left over from a paste — "
+            "they cannot answer this."
+        )
+
     prompt = "  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: "
-    for attempt in range(2):
+    for attempt in range(_PROCEED_MAX_ASKS):
         raw = input_fn(prompt).strip().lower()
         if raw == "y":
             return ("render", current_choice)
@@ -1404,17 +1586,19 @@ def prompt_proceed_or_length(
         # An explicit decline, or an empty line, stops immediately as it always has.
         if raw in ("", "n", "no"):
             return ("stop", current_choice)
-        if attempt == 0 and _looks_pasted(raw):
+        if attempt == _PROCEED_MAX_ASKS - 1:
+            break
+        if _looks_pasted(raw):
             print_fn(
                 f"  That looks like pasted text ({len(raw)} chars), not a menu choice — "
                 "the script is still here."
             )
-            print_fn(
-                "  y = render · N = stop · +/- or 1-4 = different length. "
-                "(Article text belongs at the Fact prompt, via `paste`.)"
-            )
-            continue
-        return ("stop", current_choice)
+        else:
+            print_fn(f"  '{raw}' isn't one of the options — the script is still here.")
+        print_fn(
+            "  y = render · N = stop · +/- or 1-4 = different length. "
+            "(Article text belongs at the Fact prompt, via `paste`.)"
+        )
     return ("stop", current_choice)
 
 

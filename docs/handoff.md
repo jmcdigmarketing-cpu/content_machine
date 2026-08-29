@@ -48,34 +48,59 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-08-28 · **HEAD at write:** `43a34bf` · **Tree:** clean
+**Written:** 2026-08-29 · **HEAD at write:** `675edc5` · **Tree:** clean —
+the run-74 fix is committed on `consolidate/2026-08-27` and pushed, as one commit
+(the change spans `ui.py` / `operator_facts.py` / `link_facts.py` across all four
+phases, so splitting it would have needed partial staging and risked a red SHA).
 
-- **Backlog is now 455 open, highest #644.** Added #481–#644 (164 items) weighted
-  to what the desktop programme does not cover. `ops roadmap-index` for counts —
-  never hand-count.
-- **The Craft wave is in `roadmap.md`, and its ordering rule matters:** video craft
-  is permanent (burned into every video, no toolkit change touches it), terminal is
-  the daily driver for the 16–19 waves the app takes, and **booth chrome dies with
-  Stage 3** — so only the cheapest booth items are worth doing at all. Do not
-  reorder this without reading why.
-- **Stage 0 still goes first** because the Craft wave reads its design tokens
-  (#170). Polishing before tokens exist invents the palette twice.
-- **Five inert features found by reading, filed as #641–#644:** six ANSI themes
-  that no channel can reach (`ui_theme` is `None` everywhere, so "themeable skins
-  shipped 2026-07-02" has never rendered), an empty `tts_voice_pool`, unset
-  `local_tts_voice`, and two `.env.example` keys read nowhere. **#644 is the
-  config-coverage test that catches this class** — build it before hunting more by
-  hand.
-- **Measured, if you touch performance:** CLI start 1.89s, of which
-  `elevenlabs.client` 0.51s + `googleapiclient` and `sports.espn` 0.68s are eager
-  imports a session may never use (#607–#609). Env surface 392 read vs 273
-  documented (#639).
-- **Two signals are failing on every run** and should be retired rather than
-  repaired per decisions §19: `trendingnow.games` DNS, and YouTube RSS id
-  `UCq-Fj5jknLsUf-MWSik4vhQ` 404 (#583, #584).
-- **Still open from before:** 49 items carry no size tag (#632). Three test doubles
-  drifted from their real signatures this week (#625) — when you add a parameter,
-  check the fakes.
+- **Cursor is out until 2026-09-06** (monthly limit reached, operator's word). Until
+  then this mailbox has one reader: assume nobody else is mid-edit, but keep writing
+  the slot anyway — the gap is exactly when a missed note goes stale unnoticed.
+
+- **Defect first: `Proceed?` no longer stops on an unrecognised answer, and that is
+  a deliberate contract change.** Only `n` / `N` / `no` / Enter stop; everything
+  else re-prompts (3 asks). This overturns candidate 325's
+  `test_a_stray_keystroke_is_still_a_stop`, which I renamed and inverted. Run 74
+  was discarded by the word **`by`** — Engadget's byline label, left in the console
+  buffer by a paste at the **Fact** prompt. Two characters, one word, so 325's
+  prose detector never fired. If you think re-prompting is wrong, read
+  `docs/debugging.md` → Live-run 74 before changing it back.
+- **Facts are no longer sliced at 400 chars.** `_MAX_KEY_FACT_CHARS` is now a split
+  width, not a truncation point (`split_at_sentences`). `link_facts` and
+  `parse_pasted_block` route through it too. **If you add a new fact source, split —
+  do not slice.** A severed clause reads to a model as a finished, vague statement.
+- **The prompt budget now ranks (`core/fact_selection.py`) and it is calibrated on
+  one run.** Weights: recency .35 / novelty .25 / relevance .20 / specificity .20,
+  scaffolding −.45. They separate run 74's 15 furniture lines from its 15 real
+  details with a 0.27 margin — on run 74's data. **#647 is validating them against
+  `data/traces/*.json`; treat them as provisional until that lands.**
+- **Do not reach for `score_vault_fact` as a general fact ranker.** Measured, it
+  scored run 74's Slim Jim carjacking mechanic at **0.03** — it rewards echoing the
+  signal corpus, which is backwards for a pasted article whose purpose is to add
+  what the signals lack. That is why `novelty` exists and relevance is the smallest
+  weight.
+- **Selection happens at intake, not in `facts_for_prompt`.** `prompt_key_facts_result`
+  is the only place that knows provenance (typed vs scraped vs vault, and the page's
+  publication date), so it ranks once and hands the chosen set downstream.
+  Consequence: **`scripts/auto_generate.py` still packs in insertion order** (#646).
+- **Two dead signals were costing 30 of a 37.8s discovery.** `trendingnow` retired
+  (#583 closed) via a new `RETIRED_SIGNALS` map in `apis/signals_bootstrap.py` —
+  the free-signal equivalent of §19's Apify kill switch. **#584 (YouTube RSS 404) is
+  still open.** YouTube timeout 15s → 8s plus a process-level unreachable latch;
+  `reset_session_breaker` clears it.
+- **A gate was rewarding what two others banned:** `authenticity._INSIGHT_MARKERS`
+  counted `"here's the thing"` as an authorial take while `persona_lint` and the
+  script prompt both banned it — that is why run 74 scored authenticity 100/100.
+  Removed; `tests/test_gate_agreement.py` keeps the three lists from drifting apart.
+- **Did not do, on purpose:** the report card still does not weight length, though
+  run 74 shipped 277 words against a 300-word floor and graded A. A length component
+  changes the meaning of every historical grade — filed as **#645**.
+- **Warning from my own session:** `git stash push -u` fails partway in this repo
+  (`video/backgrounds/*` are permission-locked), leaving tracked edits on disk *and*
+  in the stash while deleting untracked files. Recovered via
+  `git checkout 'stash@{0}^3' -- <files>`. **Don't stash here.**
+- Suite 2,415 → **2,515 green**; `ops all-checks` clean; ruff clean; mypy 148 (two
+  of mine fixed, none introduced). Backlog 455 → 460 open, highest **#650**.
 
 ## Slot — Cursor
 

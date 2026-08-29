@@ -752,6 +752,61 @@ ORIGINAL:
     return script
 
 
+def _relength_after_postprocessing(
+    script: str,
+    *,
+    topic: str,
+    min_words: int,
+    max_words: int,
+    length_choice: str,
+    attempts_left: int,
+    grounding_text: str,
+    ungrounded: list[str],
+) -> tuple[str, list[str]]:
+    """Re-expand a script that the post-generation passes shortened below target.
+
+    The main expansion loop runs before `_maybe_improve_hook`,
+    `_maybe_recenter_on_key_facts`, `_maybe_inject_insight` and
+    `_maybe_reground_script` — all of which can remove text. Run 74 exited that
+    loop satisfied and shipped 277 words against a 300-word floor, because nothing
+    measured the script again afterwards.
+
+    Grounding has already run by the time this is called, so an expansion that
+    introduces *new* unsupported specifics is reverted: hitting a word count is
+    never worth walking back the grounding pass.
+    """
+    ungrounded = list(ungrounded or [])
+    while count_spoken_words(script) < min_words and attempts_left > 0:
+        attempts_left -= 1
+        logger.info(
+            "Script back under target after post-processing (%s words, need %s+); expanding",
+            count_spoken_words(script),
+            min_words,
+        )
+        try:
+            candidate = _expand_script(
+                script=script,
+                topic=topic,
+                min_words=min_words,
+                max_words=max_words,
+                length_choice=length_choice,
+            )
+        except Exception as exc:  # expansion is best-effort, never fatal
+            logger.warning("Late script expand failed: %s", exc)
+            break
+        if candidate == script:
+            break
+        fresh = find_ungrounded_entities(candidate, grounding_text)
+        if len(fresh) > len(ungrounded):
+            logger.info(
+                "Late expansion introduced %d unsupported specific(s) — reverted",
+                len(fresh) - len(ungrounded),
+            )
+            break
+        script, ungrounded = candidate, fresh
+    return script, ungrounded
+
+
 def generate_content_package(
     topic,
     signals,
@@ -960,6 +1015,19 @@ def generate_content_package(
             len(ungrounded),
             ", ".join(ungrounded),
         )
+
+    # Run 74: the expansion loop above ran before every pass that can shorten a
+    # script, so its exit condition was checked against text the operator never saw.
+    script, ungrounded = _relength_after_postprocessing(
+        script,
+        topic=topic,
+        min_words=min_words,
+        max_words=max_words,
+        length_choice=length_choice,
+        attempts_left=max(0, max_attempts - attempts),
+        grounding_text=grounding_text,
+        ungrounded=ungrounded,
+    )
 
     # Semantic trade validation (opt-in): player→team pairings must co-occur on a
     # fact line, catching fused trades that token grounding passes.

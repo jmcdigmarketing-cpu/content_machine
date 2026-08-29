@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -18,12 +19,22 @@ from apis import register_signals as rs
 from apis.api_registry import SignalRegistry
 from apis.signal_contract import STATUS_OK, STATUS_SKIPPED, make_signal
 
-TOPIC = "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash"
+# Evergreen on purpose. The skip path only applies to topics that are NOT about a
+# dated event: `web_search_skip.is_event_shaped_topic` refuses to skip anything
+# containing "leak", "reveal", "trailer" and friends, because run 73 proved a dense
+# vault will otherwise silence the web on a story that is hours old.
+TOPIC = "GTA 6 and Wolverine fandom culture compared"
+EVENT_TOPIC = "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash"
 HEADLINE = "Rockstar Games filed subpoenas against Microsoft and Discord"
-ROCKSTAR_NOTE = """---
+# Dated, because every note the machine writes is: `capture_facts_to_vault` stamps
+# `date:` and `verified_at:`. An undated note cannot clear the age gate.
+_TODAY = date.today().isoformat()
+
+ROCKSTAR_NOTE = f"""---
 tier: link
 channel: tapin
 tags: [facts]
+verified_at: {_TODAY}
 source: https://example.com/rockstar
 ---
 
@@ -99,6 +110,13 @@ class TestTwoStageWebSearch(unittest.TestCase):
         skipped = results["web_search"]
         self.assertEqual(skipped["status"], STATUS_SKIPPED)
         self.assertIn("vault", (skipped.get("status_detail") or "").lower())
+
+    def test_an_event_topic_fetches_web_even_with_the_same_dense_vault(self):
+        """Run 73: the identical vault that legitimately silences an evergreen
+        topic must not silence one about a thing that just happened."""
+        results, topic = self._run(vault_note=ROCKSTAR_NOTE, topic=f"{EVENT_TOPIC} {self.id()}")
+        self.assertEqual(self.web_calls, [topic])
+        self.assertEqual(results["web_search"]["status"], STATUS_OK)
 
     def test_thin_vault_fetches_web_once(self):
         results, topic = self._run(vault_note=None)

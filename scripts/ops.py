@@ -1092,6 +1092,14 @@ def cmd_blocking(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("roadmap-index", "Counts per roadmap file and by size, read from the docs")
+def cmd_roadmap_index(args: argparse.Namespace) -> int:
+    from core.roadmap_index import render
+
+    _emit_text("Roadmap index", render(), args)
+    return 0
+
+
 @_register("agents", "Agent hand-off: who signed what, and whether the mailbox is stale")
 def cmd_agents(args: argparse.Namespace) -> int:
     from core.agent_comms import render

@@ -70,6 +70,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `requeue-upload` | Queue upload for a rendered run (--run-id required) |
 | `retention` | Audience-retention curve + drop-off point (pacing intelligence) |
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
+| `roadmap-index` | Counts per roadmap file and by size, read from the docs |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |
 | `seed` | Seed TapIn performance + publish history |
 | `sendto-facts` | Install Explorer Send-to shortcut targeting facts.txt |

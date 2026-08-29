@@ -20,8 +20,11 @@ check, AI disclosure, cadence guardrail).
 
 Channels (`config/channels.json`): `tapin` (gaming/UFC shorts), `moneywise`
 (finance). Full picture: [README.md](README.md) and
-[docs/architecture.md](docs/architecture.md). Current priorities:
-[docs/roadmap.md](docs/roadmap.md). Honest state of the project:
+[docs/architecture.md](docs/architecture.md). Current priorities: [docs/roadmap.md](docs/roadmap.md) — short by design; the
+full inventory is [docs/backlog.md](docs/backlog.md), the Windows application programme is
+[docs/desktop_app.md](docs/desktop_app.md), and history is
+[docs/roadmap_archive.md](docs/roadmap_archive.md). Counts come from
+`py -m scripts.ops roadmap-index`, never by hand. Honest state of the project:
 [docs/assessment.md](docs/assessment.md). State as of the last working session
 (branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
 Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/planning_log.md)

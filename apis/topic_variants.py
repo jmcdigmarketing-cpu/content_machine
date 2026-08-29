@@ -3,6 +3,7 @@ import re
 from apis.draft_policy import determine_draft_status
 from apis.entity_extractor import extract_entities
 from config.channels import get_channel_profile
+from core.angle_intent import ANGLE_REACTION, detect_angle_intent
 from core.channel_context import channel_history_block, extract_anchors
 from core.llm_router import complete
 from core.logging import get_logger
@@ -36,6 +37,16 @@ def _heuristic_angles(topic: str, angle_types) -> list[str]:
 
 
 _ESTABLISHED_THRESHOLD = 3  # times same anchor covered before switching angles
+
+# Frames for a reaction video. Every one is a genuine lens on "I just watched this
+# and here is what I saw" — none asks what is broken or missing.
+_REACTION_ANGLES = [
+    "first_impressions",
+    "the_detail_everyone_missed",
+    "what_stood_out_most",
+    "does_it_live_up",
+    "what_this_means_next",
+]
 
 
 def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count: int = 0):
@@ -92,6 +103,19 @@ def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count
 
     profile = get_channel_profile(channel_id) if channel_id else None
     is_established = repeat_count >= _ESTABLISHED_THRESHOLD
+
+    # What the operator asked for beats what the repeat counter assumes. Run 73:
+    # three reaction-shaped topics in a row were steered into critique because the
+    # topic string never reached this decision.
+    intent = detect_angle_intent(topic)
+    if intent == ANGLE_REACTION:
+        return generate_ai_titles(
+            topic,
+            _REACTION_ANGLES,
+            channel_id=channel_id,
+            is_established=is_established,
+            intent=intent,
+        )
 
     if profile and profile.domain == "gaming":
         if is_established:
@@ -206,7 +230,9 @@ def _anchor_rules(topic: str, channel_id: str | None) -> str:
     return "\n".join(lines)
 
 
-def generate_ai_angles(topic, angle_types, *, channel_id=None, is_established: bool = False):
+def generate_ai_angles(
+    topic, angle_types, *, channel_id=None, is_established: bool = False, intent=None
+):
     angle_block = "\n".join(angle_types)
 
     competitor_block = ""
@@ -218,13 +244,27 @@ def generate_ai_angles(topic, angle_types, *, channel_id=None, is_established: b
     anchor_block = _anchor_rules(topic, channel_id)
 
     freshness_block = ""
-    if is_established:
+    if intent is None:
+        intent = detect_angle_intent(topic)
+    # A reaction topic and "focus on CRITIQUE" are contradictory instructions; the
+    # operator's framing wins.
+    if is_established and intent != ANGLE_REACTION:
         freshness_block = (
             "\nFRESHNESS CONTEXT: This game/franchise has been covered multiple times "
             "on this channel already. DO NOT use 'just released', 'biggest update yet', "
             "or 'what you need to know' framing — that angle is stale.\n"
             "Instead: focus on ANALYSIS, PREDICTION, COMMUNITY debate, or CRITIQUE.\n"
         )
+
+    # A reaction video still needs five distinct frames, but "contrarian
+    # counter-take" is not one of them when the operator is reacting positively.
+    lens_examples = (
+        "what struck you first, a detail most viewers missed, how it compares to "
+        "expectations, what it signals for what comes next, the standout moment"
+        if intent == ANGLE_REACTION
+        else "a factual read, a contrarian counter-take, a forward prediction, a "
+        "human/stakes angle, an analytical breakdown"
+    )
 
     prompt = f"""
 You are generating editorial ANGLES for a short-form video — NOT YouTube titles.
@@ -242,8 +282,7 @@ Angle types (direction only — do NOT paste these labels verbatim):
 Rules:
 - One short angle line per item (max 12 words).
 - DISTINCT LENSES: the {len(angle_types)} angles must each take a genuinely different frame
-  — e.g. a factual read, a contrarian counter-take, a forward prediction, a human/stakes
-  angle, an analytical breakdown. Do NOT return variations of one take; if two angles could
+  — {lens_examples}. Do NOT return variations of one take; if two angles could
   share the same thumbnail, rewrite one.
 - Describe the TAKE or focus — NOT a clickbait headline.
 - Do not fabricate specifics you cannot verify.
@@ -269,8 +308,10 @@ Return exactly {len(angle_types)} angle lines.
     return [t for t in clean if t][:5] or _heuristic_angles(topic, angle_types)
 
 
-def generate_ai_titles(topic, angle_types, *, channel_id=None, is_established: bool = False):
+def generate_ai_titles(
+    topic, angle_types, *, channel_id=None, is_established: bool = False, intent=None
+):
     """Back-compat alias — returns editorial angles, not publishable titles."""
     return generate_ai_angles(
-        topic, angle_types, channel_id=channel_id, is_established=is_established
+        topic, angle_types, channel_id=channel_id, is_established=is_established, intent=intent
     )

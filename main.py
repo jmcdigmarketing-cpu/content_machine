@@ -68,6 +68,12 @@ def _run_intelligence_report_flow(channel_id: str) -> None:
     section("Intelligence")
     discovery = run_discovery(topic, channel_id=channel_id)
     display_signal_health(discovery.base_signals)
+    from core.angle_intent import ANGLE_REACTION, angle_intent_note, detect_angle_intent
+
+    angle_intent = detect_angle_intent(topic)
+    if angle_intent == ANGLE_REACTION:
+        print(f"  {angle_intent_note(angle_intent)}")
+
     best_default = display_variants(
         discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
     )

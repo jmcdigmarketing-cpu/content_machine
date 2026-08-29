@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -79,6 +80,23 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         print(f"  saved -> {path}")
     else:
         print("  not saved (set OBSIDIAN_VAULT_PATH, or nothing was extracted)")
+    return 0
+
+
+@_register(
+    "ingest-clips",
+    "Copy capture clips into video/backgrounds (dry-run default; --apply remuxes)",
+)
+def cmd_ingest_clips(args: argparse.Namespace) -> int:
+    from assets.clip_ingest import ingest_clips, render_ingest
+
+    result = ingest_clips(
+        apply=bool(getattr(args, "apply", False)),
+        move=bool(getattr(args, "move", False)),
+    )
+    print(render_ingest(result))
+    if any(row.status == "failed" for row in result.rows):
+        return 1
     return 0
 
 
@@ -343,6 +361,20 @@ def cmd_vault_sync(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("vault-decay", "List vault notes whose expires date is in the past")
+def cmd_vault_decay(args: argparse.Namespace) -> int:
+    from core.fact_expiry import expired_notes
+
+    notes = expired_notes(getattr(args, "channel", None))
+    if not notes:
+        print("Vault decay: no expired notes on disk.")
+        return 0
+    print(f"Vault decay: {len(notes)} expired note(s) still on disk (already dropped from prompts)")
+    for note in notes:
+        print(f"  {note.get('path')} expired {note.get('expires')} ({note.get('days_past')}d past)")
+    return 0
+
+
 @_register("queue-manage", "Re-queue after deleting scheduled YouTube video")
 def cmd_queue_manage(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]
@@ -557,6 +589,14 @@ def cmd_economics(args: argparse.Namespace) -> int:
 
     limit = args.limit or 25
     _emit_text("Unit economics", render_economics(args.channel, limit=limit), args)
+    try:
+        from core.operator_minutes import trend_line
+
+        print(trend_line(args.channel))
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("minutes trend skipped: %s", exc)
     if getattr(args, "csv", False):
         try:
             from core.html_report import html_dir
@@ -913,6 +953,14 @@ def cmd_booth(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("shell", "Localhost FastAPI operator shell (GET only; no TTS/Apify/publish)")
+def cmd_shell(args: argparse.Namespace) -> int:
+    from core.operator_shell import DEFAULT_PORT, serve
+
+    port = int(getattr(args, "port", 0) or DEFAULT_PORT)
+    return serve(port=port, channel_id=getattr(args, "channel", None) or "tapin")
+
+
 @_register(
     "render-preview",
     "Render a 480p ultrafast review copy without changing publish media (--run-id)",
@@ -1041,6 +1089,76 @@ def cmd_blocking(args: argparse.Namespace) -> int:
 
     line = blocking_publish_sentence(channel_id=args.channel)
     _emit_text("What's blocking publish", line, args)
+    return 0
+
+
+@_register("agents", "Agent hand-off: who signed what, and whether the mailbox is stale")
+def cmd_agents(args: argparse.Namespace) -> int:
+    from core.agent_comms import render
+
+    _emit_text("Agent hand-off", render(), args)
+    return 0
+
+
+@_register("command-ref", "Write docs/ops_commands.md from the live ops list")
+def cmd_command_ref(_args: argparse.Namespace) -> int:
+    from core.ops_command_ref import write_command_ref
+
+    path = write_command_ref()
+    print(path)
+    return 0
+
+
+@_register("diff-runs", "Compare grade/cost/ungrounded/disputed for two run ids")
+def cmd_diff_runs(args: argparse.Namespace) -> int:
+    if not args.run_id or not args.target:
+        print("diff-runs needs --run-id A and a second id (positional target)")
+        return 1
+    from core.diff_runs import diff_run_ids
+
+    print(diff_run_ids(int(args.run_id), int(args.target)))
+    return 0
+
+
+@_register("publish-dry-run", "Print the YouTube videos.insert body (no upload; tokens redacted)")
+def cmd_publish_dry_run(args: argparse.Namespace) -> int:
+    from publishing.base import PublishRequest
+    from publishing.youtube_publisher import dry_run_insert_body, redact_publish_payload
+
+    title = "Dry-run title"
+    description = ""
+    tags: list[str] = []
+    file_path = "out.mp4"
+    try:
+        from core.review_booth import last_trace
+
+        trace = last_trace(args.channel)
+        if trace:
+            title = str(trace.get("title") or title)
+            description = str(trace.get("description") or "")
+            file_path = str(trace.get("mp4_path") or file_path)
+            tags = list(trace.get("tags") or [])
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("publish-dry-run last-run skipped: %s", exc)
+    req = PublishRequest(
+        file_path=file_path,
+        title=title,
+        description=description,
+        tags=tags,
+        privacy_status="private",
+    )
+    body = redact_publish_payload(dry_run_insert_body(req, channel_id=args.channel))
+    print(json.dumps(body, indent=2))
+    return 0
+
+
+@_register("next", "One action to take now across gates, quota, and vault decay")
+def cmd_next(args: argparse.Namespace) -> int:
+    from core.operator_shell import next_sentence
+
+    print(next_sentence(getattr(args, "channel", None)))
     return 0
 
 
@@ -1239,7 +1357,12 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="artifacts / moat-backup: actually delete or copy (default is dry-run)",
+        help="artifacts / moat-backup / ingest-clips: actually delete, copy, or remux (default is dry-run)",
+    )
+    parser.add_argument(
+        "--move",
+        action="store_true",
+        help="ingest-clips: delete the capture file after a successful remux",
     )
     parser.add_argument(
         "--html",
@@ -1290,6 +1413,12 @@ def main(argv=None) -> int:
         "--sku",
         action="store_true",
         help="intelligence-report: write the no-video SKU markdown",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=0,
+        help="shell: localhost port (default 8765)",
     )
     parser.add_argument(
         "--serve",

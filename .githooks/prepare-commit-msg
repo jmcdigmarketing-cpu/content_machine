@@ -1,9 +1,9 @@
 #!/bin/sh
-# Strip AI-attribution trailers agents inject into `git commit`.
-# commit-msg still rejects them if anything slips through; this just deletes
-# the injected line so a legitimate message can land (AGENTS.md).
-msg_file="$1"
-tmp="${msg_file}.strip"
-grep -viE '^[[:space:]]*(co-authored-by:.*(claude|cursor|copilot|codex|chatgpt|openai|anthropic|\[bot\]|agent@))' "$msg_file" \
-  | grep -viE 'generated with \[?claude|generated with \[?cursor|🤖 generated' > "$tmp" || true
-mv "$tmp" "$msg_file"
+# Agent provenance is REQUIRED here (AGENTS.md > Commit messages). This hook used to
+# strip agent trailers; the operator lifted that ban on 2026-08-28 because with two
+# agents in one tree and a shared git author, the trailer is the only per-commit
+# signal of who did the work.
+#
+# Nothing is injected automatically: a hook cannot know which agent is committing, and
+# a guessed trailer is worse than none. Agents add their own; see commit-msg.
+exit 0

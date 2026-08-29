@@ -1,21 +1,25 @@
 #!/bin/sh
-# Reject AI-attribution trailers. The operator rejected these explicitly; a written
-# rule in AGENTS.md was not enough (e4d2242 landed one the commit after the rule).
+# Agent provenance (AGENTS.md > Commit messages).
 #
-# Enable once per clone:  git config core.hooksPath .githooks
+# History: this hook rejected `Co-authored-by:` trailers naming an agent. The operator
+# lifted that ban on 2026-08-28 — two agents share one git author here, so the trailer
+# is the only per-commit record of who wrote a change. It is now encouraged, not banned.
+#
+# We still refuse marketing attribution ("Generated with ..."), which is noise rather
+# than provenance, and we warn — never block — when an agent-shaped commit carries no
+# trailer, because a hook cannot tell an agent from the operator and blocking the
+# operator's own commits would be worse than a missing signature.
 msg_file="$1"
 
-if grep -qiE '^[[:space:]]*(co-authored-by:.*(claude|cursor|copilot|codex|chatgpt|openai|anthropic|\[bot\]|agent@))' "$msg_file"; then
-    echo "commit-msg: AI co-author trailer is not allowed in this repo." >&2
-    echo "  Remove the Co-authored-by line naming an AI agent, then commit again." >&2
-    echo "  See AGENTS.md > Commit messages." >&2
+if grep -qiE '(generated with \[?claude|generated with \[?cursor|🤖 generated)' "$msg_file"; then
+    echo "commit-msg: 'Generated with ...' is marketing, not provenance." >&2
+    echo "  Use a Co-authored-by: trailer instead. See AGENTS.md > Commit messages." >&2
     exit 1
 fi
 
-if grep -qiE '(generated with \[?claude|generated with \[?cursor|🤖 generated)' "$msg_file"; then
-    echo "commit-msg: 'Generated with ...' attribution is not allowed in this repo." >&2
-    echo "  See AGENTS.md > Commit messages." >&2
-    exit 1
+if ! grep -qiE '^[[:space:]]*co-authored-by:' "$msg_file"; then
+    echo "commit-msg: no Co-authored-by trailer — fine if a human wrote this." >&2
+    echo "  If an agent did, sign it so \`git log --grep\` can tell the two apart." >&2
 fi
 
 exit 0

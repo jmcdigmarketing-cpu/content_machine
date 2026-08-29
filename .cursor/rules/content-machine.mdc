@@ -5,6 +5,14 @@ alwaysApply: true
 
 # Content Machine — agent working rules
 
+## Before anything else: read the mailbox
+
+**[docs/handoff.md](../../docs/handoff.md)** — what the other agent just did, what it
+left uncommitted, and what it found broken. More than one agent works in this repo and
+nothing signals a switch, so this is the only way to know the tree is not yours.
+Verify it against `git log <sha>..HEAD --oneline` and `git status --short` before you
+trust it, then **write your own slot as your last edit** (rule 15).
+
 Read [CLAUDE.md](../../CLAUDE.md) for what this project is, its entry points, the
 signal contract and the LLM router. This file is about **how to work here**, not what
 the code does. It exists because a specific class of defect keeps reaching `main`.
@@ -105,8 +113,22 @@ This is the project's own principle, written down in `docs/decisions.md` §18, �
   breaker trips — a wrong change silently disables a paid signal across runs.
 - **`ops secrets-doctor` must never print a secret value.**
 - **No network in tests.**
-- **No AI attribution** in commit messages or PR bodies — no `Co-Authored-By`, no
-  "Generated with". The operator has rejected this explicitly.
+- **Sign your commits** — `Co-authored-by: Cursor <cursoragent@cursor.com>`. Both
+  agents commit as the same git author, so this trailer is the only per-commit record
+  of who wrote a change. (This reverses an earlier ban, lifted 2026-08-28.) Still no
+  "Generated with ..." lines — that is marketing, not provenance.
+
+## Rules for working alongside the other agent
+
+14. **Commit your own work.** Four times now, changes have been left uncommitted for
+    someone else to discover, verify and commit — so CI and a fresh clone saw nothing,
+    and twice a tree was measured that disagreed with `git log`. If you changed it, you
+    commit it. Do not leave a wave in the working tree.
+15. **Write your slot in [docs/handoff.md](../../docs/handoff.md) as your last edit.**
+    Defects before wins. Overwrite your own slot; never edit the other agent's. A slot
+    reconstructed from memory next session is the thing the file exists to replace.
+16. **Re-read immediately before editing.** The other agent may be working right now.
+    Never `git checkout` a file to discard changes you did not make.
 
 ## Definition of done
 
@@ -119,6 +141,8 @@ Not "the tests pass" — they passed for every defect in the table above.
 - [ ] Every new function is reachable from a production caller
 - [ ] Operator-facing changes were actually run, and the output pasted
 - [ ] A healthy run emits no new WARNING
+- [ ] Your work is **committed**, not left in the working tree (rule 14)
+- [ ] Your slot in [docs/handoff.md](../../docs/handoff.md) is rewritten (rule 15)
 
 ## Commit messages
 

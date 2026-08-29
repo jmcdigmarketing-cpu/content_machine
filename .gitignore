@@ -94,3 +94,5 @@ Thumbs.db
 /models/
 *.onnx
 *.onnx.json
+# Piper voice repo cloned into the tree (129 MB of .onnx weights)
+/piper-voice-models-main/

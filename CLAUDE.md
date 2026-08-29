@@ -4,6 +4,12 @@ Guide for AI coding agents (Claude Code and others) working in this repo. This i
 a **pointer + agent-specific guide**, not a duplicate of the docs below — read the
 linked doc before touching the area it covers.
 
+> **Read [docs/handoff.md](docs/handoff.md) first, every session.** It is the mailbox:
+> what the other agent just did, what it left uncommitted, what it found broken. More
+> than one agent works here and nothing signals a switch. Verify it against
+> `git log <sha>..HEAD --oneline` and `git status --short` before trusting it, and
+> **write your own slot as your last edit** — not from memory next session.
+
 ## What this is
 
 Content Machine (Content OS): a Python CLI for short-form video —
@@ -57,7 +63,7 @@ new provider or changing tier routing.
 ruff check .                                   # lint — CI-blocking
 ruff format --check .                          # format — CI-blocking
 mypy analytics apis core config storage        # type check — non-blocking baseline
-python -m unittest discover -s tests -t . -v        # tests — CI-blocking (or: pytest -q)
+python -m unittest discover -s tests -t . -v        # tests — CI-blocking; the `-t .` is load-bearing
 ```
 
 ## Hard rules

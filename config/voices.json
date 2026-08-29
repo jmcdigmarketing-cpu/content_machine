@@ -39,11 +39,23 @@
       { "id": "YOq2y2Up4RgXP2HyXjE5", "name": "", "weight": 1, "notes": "lower odds" },
       { "id": "RILOU7YmBhvwJGDGjNmP", "name": "", "weight": 3, "notes": "" },
       { "id": "exsUS4vynmxd379XN4yO", "name": "", "weight": 3, "notes": "" },
-      { "id": "c6SfcYrb2t09NHXiT80T", "name": "", "weight": 3, "notes": "" }
+      { "id": "c6SfcYrb2t09NHXiT80T", "name": "", "weight": 3, "notes": "" },
+      { "id": "3TPKV1kjDlVtZbl4Ksh", "name": "", "weight": 1, "notes": "ops voices 2026-08-28: not on account (19-char id likely truncated)" },
+      { "id": "ksryVoNAGZT8GxWCTiVm", "name": "", "weight": 1, "notes": "ops voices 2026-08-28: not on account" },
+      { "id": "VhxAIIZM8IRmnl5fyeyk", "name": "", "weight": 1, "notes": "ops voices 2026-08-28: not on account" },
+      { "id": "si0svtk05vPEuvwAW93c", "name": "", "weight": 1, "notes": "ops voices 2026-08-28: not on account" },
+      { "id": "fBD19tfE58bkETeiwUoC", "name": "", "weight": 1, "notes": "ops voices 2026-08-28: not on account" },
+      { "id": "GorLj2SsI4u2JqL58gAA", "name": "", "weight": 1, "notes": "ops voices 2026-08-28: not on account" },
+      { "id": "PoqlHoqJoAfdQ0g8bLK3", "name": "", "weight": 1, "notes": "ops voices 2026-08-28: not on account" }
     ]
   },
   "local": {
-    "piper": [],
+    "piper": [
+      { "id": "video/voices/en_US-bobby-medium.onnx", "name": "bobby", "weight": 1, "notes": "" },
+      { "id": "video/voices/en_US-carl-medium.onnx", "name": "carl", "weight": 1, "notes": "" },
+      { "id": "video/voices/en_US-eminem-medium.onnx", "name": "eminem", "weight": 1, "notes": "" },
+      { "id": "video/voices/en_US-patrick-medium.onnx", "name": "patrick", "weight": 1, "notes": "" }
+    ],
     "kokoro": [],
     "xtts": [],
     "qwen": []

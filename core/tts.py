@@ -19,12 +19,17 @@ from video.caption_timing import words_from_alignment
 logger = get_logger("core.tts")
 
 # Set by generate_audio so merge_render_cost can zero the TTS line on a cache hit
-# (re-synth skipped — do not double-bill the ledger).
+# (re-synth skipped — do not double-bill the ledger) or an occasional Piper mix.
 _last_cache_hit = False
+_last_piper_mix = False
 
 
 def last_tts_was_cache_hit() -> bool:
     return _last_cache_hit
+
+
+def last_tts_was_piper_mix() -> bool:
+    return _last_piper_mix
 
 
 # Fallback catalog, used only when config/voices.json is missing or unusable. The
@@ -135,6 +140,10 @@ def apply_pronunciation_lexicon(text: str, channel_id: str | None = None) -> str
         return lower_map.get(match.group(0).lower(), match.group(0))
 
     return pattern.sub(_repl, text)
+
+
+def _edge_voice() -> str:
+    return (os.getenv("EDGE_VOICE") or "en-US-JennyNeural").strip() or "en-US-JennyNeural"
 
 
 def _entries_to_pool(entries: Any) -> dict[str, int]:
@@ -323,6 +332,8 @@ def tts_cache_store(key: str, src_path: str) -> None:
 
 def _tts_cache_voice(channel_id: str | None) -> str:
     provider = _resolve_tts_provider()
+    if provider == "edge":
+        return _edge_voice()
     if is_local_tts_provider():
         return resolve_local_voice(provider, channel_id) or os.getenv(
             _LOCAL_VOICE_ENV.get(provider, ""), ""
@@ -336,10 +347,17 @@ def _tts_cache_voice(channel_id: str | None) -> str:
 
 
 def generate_audio(script, output_path, channel_id: str | None = None):
-    global _last_cache_hit
+    global _last_cache_hit, _last_piper_mix
     _last_cache_hit = False
+    _last_piper_mix = False
     channel_id = resolve_channel_id(channel_id)
     spoken = clean_script_for_tts(script)
+    try:
+        from core.tts_char_cap import forecast_tts, record_tts_actual
+
+        forecast_tts(script)
+    except Exception as exc:
+        logger.debug("tts forecast skipped: %s", exc)
     try:
         from core.spoken_numbers import expand_spoken_numbers
 
@@ -355,6 +373,12 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         local_spoken = apply_pronunciation_lexicon(spoken, channel_id)
 
     spoken_for_alt = local_spoken if is_local_tts_provider() else spoken
+    try:
+        from core.tts_char_cap import record_tts_actual
+
+        record_tts_actual(len(spoken_for_alt))
+    except Exception as exc:
+        logger.debug("tts actual skipped: %s", exc)
     cache_key = tts_cache_key(spoken_for_alt, _resolve_tts_provider(), _tts_cache_voice(channel_id))
     if tts_cache_lookup(cache_key, output_path):
         _last_cache_hit = True
@@ -380,6 +404,19 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     if alt:
         tts_cache_store(cache_key, alt)
         return alt
+
+    if _should_piper_mix():
+        mixed_spoken = apply_pronunciation_lexicon(spoken, channel_id)
+        try:
+            mixed = _piper_synth(mixed_spoken, output_path, channel_id)
+        except Exception as exc:
+            logger.warning("Piper mix failed — using ElevenLabs: %s", exc)
+            mixed = None
+        if mixed:
+            _last_piper_mix = True
+            every = _piper_mix_every()
+            print(f"[TTS] Channel: {channel_id} | Provider: piper (mix 1/{every})")
+            return mixed
 
     # Free mode (strict): local $0 voice failed/absent and paid ElevenLabs is
     # disallowed — block with install guidance instead of silently paying.
@@ -458,6 +495,37 @@ def generate_audio(script, output_path, channel_id: str | None = None):
 
 def _resolve_tts_provider() -> str:
     return (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+
+
+def _piper_mix_every() -> int:
+    """1-in-N Standard ElevenLabs renders use Piper. Unset = 8; 0/off = never."""
+    raw = (os.getenv("TTS_PIPER_MIX_EVERY", "8") or "8").strip().lower()
+    if raw in ("0", "off", "false", "no"):
+        return 0
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 8
+
+
+def _should_piper_mix() -> bool:
+    """True for this generate_audio call when Piper should stand in for ElevenLabs."""
+    if _free_mode_strict():
+        return False
+    if _resolve_tts_provider() != "elevenlabs":
+        return False
+    every = _piper_mix_every()
+    if every <= 0:
+        return False
+    try:
+        from core.run_mode import _tts_provider_ready
+
+        if not _tts_provider_ready("piper"):
+            return False
+    except Exception as exc:
+        logger.debug("piper mix readiness skipped: %s", exc)
+        return False
+    return random.randrange(every) == 0
 
 
 def _free_mode_strict() -> bool:
@@ -547,15 +615,16 @@ def _elevenlabs_record_chars(chars: int) -> None:
 
 
 def _piper_voice_ready() -> bool:
-    voice = os.getenv("PIPER_VOICE", "").strip()
-    if not voice or not os.path.isfile(voice):
-        return False
+    from core.voice_catalog import any_piper_onnx_ready
+
     try:
         import importlib.util
 
-        return importlib.util.find_spec("piper") is not None
+        if importlib.util.find_spec("piper") is None:
+            return False
     except (ImportError, ValueError, ModuleNotFoundError):
         return False
+    return any_piper_onnx_ready()
 
 
 def _synth_piper_for_quota(script: str, output_path: str, channel_id: str | None) -> str | None:
@@ -847,11 +916,78 @@ def _qwen_synth(script: str, output_path: str, channel_id: str | None) -> str | 
     return _transcode_to_mp3(wav_path, output_path)
 
 
+_EDGE_TICKS_PER_SECOND = 10_000_000
+
+
+def _edge_word_events(chunk: dict[str, Any]) -> dict[str, Any] | None:
+    """Normalize a WordBoundary chunk to {word, start, end} seconds, or None."""
+    word = str(chunk.get("text") or chunk.get("Text") or "").strip()
+    if not word:
+        return None
+    try:
+        offset = float(chunk.get("offset") if "offset" in chunk else chunk.get("Offset") or 0)
+        duration = float(
+            chunk.get("duration") if "duration" in chunk else chunk.get("Duration") or 0
+        )
+    except (TypeError, ValueError):
+        return None
+    start = offset / _EDGE_TICKS_PER_SECOND
+    return {"word": word, "start": start, "end": start + (duration / _EDGE_TICKS_PER_SECOND)}
+
+
+def _edge_synth(script: str, output_path: str, channel_id: str | None) -> str | None:
+    """Microsoft Edge neural TTS (unofficial endpoint). Cloud, $0, needs network.
+
+    Writes mp3 + optional .words.json from WordBoundary events. Any failure returns
+    None so the alt-provider chain can fall back. Never the default provider.
+    """
+    try:
+        import asyncio
+
+        import edge_tts
+    except ImportError:
+        logger.warning('TTS_PROVIDER=edge needs edge-tts (pip install -e ".[free]")')
+        return None
+
+    # NOT SSML: edge_tts.Communicate escapes its input, so markup is spoken aloud
+    # (measured: 23.76s of "speak version equals one point zero" for a 3.94s line).
+    # Pronunciation rides the same plain respelling the local providers use.
+    spoken = apply_pronunciation_lexicon(script, channel_id)
+    voice = _edge_voice()
+
+    async def _run() -> str | None:
+        # edge_tts 7.x defaults boundary to "SentenceBoundary"; ask for words or
+        # the .words.json branch below never fires and captions lose their timing.
+        communicate = edge_tts.Communicate(spoken, voice, boundary="WordBoundary")
+        audio = bytearray()
+        words: list[dict[str, Any]] = []
+        async for chunk in communicate.stream():
+            kind = str((chunk or {}).get("type") or "")
+            if kind == "audio":
+                audio.extend(chunk.get("data") or b"")
+            elif kind == "WordBoundary":
+                event = _edge_word_events(chunk)
+                if event:
+                    words.append(event)
+        if not audio:
+            return None
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        with open(output_path, "wb") as fh:
+            fh.write(audio)
+        if words and _word_timestamps_enabled():
+            with open(word_timing_path(output_path), "w", encoding="utf-8") as fh:
+                json.dump(words, fh)
+        return output_path
+
+    return asyncio.run(_run())
+
+
 _ALT_TTS = {
     "kokoro": _kokoro_synth,
     "xtts": _xtts_synth,
     "piper": _piper_synth,
     "qwen": _qwen_synth,
+    "edge": _edge_synth,
 }
 
 
@@ -876,7 +1012,8 @@ def _try_alt_tts_provider(script: str, output_path: str, channel_id: str | None)
         logger.warning("TTS provider %s failed (%s) — falling back to ElevenLabs", provider, exc)
         return None
     if path:
-        print(f"[TTS] Channel: {channel_id} | Provider: {provider} (local, $0)")
+        kind = "cloud, $0" if provider == "edge" else "local, $0"
+        print(f"[TTS] Channel: {channel_id} | Provider: {provider} ({kind})")
     return path
 
 

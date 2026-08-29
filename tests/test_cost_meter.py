@@ -38,7 +38,7 @@ class TestCostMeter(unittest.TestCase):
     def test_local_tts_provider_is_zero_cost(self):
         # Pillar 6: a local voice (Kokoro/XTTS/Piper) has no marginal TTS cost.
         script = "word " * 200
-        for provider in ("kokoro", "xtts", "piper", "qwen"):
+        for provider in ("kokoro", "xtts", "piper", "qwen", "edge"):
             with patch.dict("os.environ", {"TTS_PROVIDER": provider}, clear=False):
                 cost = estimate_run_cost(script=script, rendered=True)
             self.assertEqual(cost["tts"], 0.0, provider)

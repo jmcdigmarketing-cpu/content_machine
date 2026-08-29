@@ -46,6 +46,8 @@ dev = [
     "types-beautifulsoup4",
     "coverage>=7.6.0",
     "pip-audit>=2.7.3",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
 ]
 # Optional sports stats providers (NFL/MLB stat lines)
 sports = [
@@ -59,6 +61,12 @@ free = [
     "piper-tts>=1.2.0",     # local TTS, CPU/ONNX — no torch (TTS_PROVIDER=piper)
     "soundfile>=0.12.1",    # write local-TTS wav
     "ddgs>=6.0.0",          # keyless DuckDuckGo web search (apis/web_search_api; Free mode)
+    "edge-tts>=7.0.0",      # cloud $0 TTS (TTS_PROVIDER=edge); LGPL-3.0, unmodified install
+]
+# Localhost operator shell (#147). GET-only; no spend. pip install -e ".[shell]"
+shell = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
 ]
 
 # Pillar 6 video-creation provider backends (heavy / GPU). Install on demand:

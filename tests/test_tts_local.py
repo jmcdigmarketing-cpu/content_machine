@@ -22,6 +22,7 @@ class TestIsLocalProvider(unittest.TestCase):
             ("qwen", True),
             ("PIPER", True),  # case-insensitive
             ("elevenlabs", False),
+            ("edge", False),  # cloud $0, not local
             ("", False),
         ):
             with patch.dict(os.environ, {"TTS_PROVIDER": provider}, clear=False):
@@ -92,8 +93,20 @@ class TestAltProviderChain(unittest.TestCase):
             self.assertIsNone(tts._try_alt_tts_provider("hi", "out.mp3", "tapin"))
 
     def test_piper_without_voice_model_returns_none(self):
-        # PIPER_VOICE unset ⇒ None (ElevenLabs fallback), even if piper is importable.
-        with patch.dict(os.environ, {"TTS_PROVIDER": "piper", "PIPER_VOICE": ""}, clear=False):
+        # No .onnx anywhere (catalog, dir, env) ⇒ None (ElevenLabs fallback).
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "TTS_PROVIDER": "piper",
+                    "PIPER_VOICE": "",
+                    "PIPER_VOICES": "",
+                    "PIPER_VOICES_DIR": os.path.join("Z:", "no-voices"),
+                },
+                clear=False,
+            ),
+            patch("core.tts.load_local_voice_pool", return_value={}),
+        ):
             self.assertIsNone(tts._try_alt_tts_provider("hi", "out.mp3", "tapin"))
 
     def test_unset_provider_is_noop(self):

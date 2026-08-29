@@ -128,15 +128,17 @@ def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
 
 
 def local_tts_selected() -> bool:
-    """True when TTS_PROVIDER names a local engine (zero marginal cost).
+    """True when TTS_PROVIDER names a zero-marginal-cost engine.
 
-    Env is read directly rather than importing core.tts — that would be an import cycle.
+    Includes Edge (cloud, $0). Env is read directly rather than importing core.tts
+    — that would be an import cycle.
     """
     return os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() in (
         "kokoro",
         "xtts",
         "piper",
         "qwen",
+        "edge",
     )
 
 

@@ -48,7 +48,9 @@ _LOCAL_TTS_ORDER = ("piper", "kokoro", "xtts", "qwen")
 
 
 def resolve_cost_mode() -> str:
-    """Non-interactive default from RUN_COST_MODE (standard unless =free)."""
+    """Non-interactive default from RUN_COST_MODE / PAID_CALLS=off."""
+    if os.getenv("PAID_CALLS", "").strip().lower() in ("0", "off", "false", "no"):
+        return COST_MODE_FREE
     return (
         COST_MODE_FREE
         if os.getenv("RUN_COST_MODE", "").strip().lower() == "free"
@@ -79,8 +81,9 @@ def _tts_provider_ready(provider: str) -> bool:
     if provider == "piper":
         if not _module_available("piper"):
             return False
-        voice = os.getenv("PIPER_VOICE", "").strip()
-        return bool(voice and os.path.isfile(voice))
+        from core.voice_catalog import any_piper_onnx_ready
+
+        return any_piper_onnx_ready()
     if provider == "kokoro":
         return _module_available("kokoro")
     if provider == "xtts":
@@ -97,6 +100,10 @@ def _tts_provider_ready(provider: str) -> bool:
         if voice.lower().endswith((".wav", ".mp3", ".flac")):
             return os.path.isfile(voice)
         return True  # built-in speaker name — don't load the 1.7B model to check
+    if provider == "edge":
+        # Cloud $0 — module present is the bar. Not in _LOCAL_TTS_ORDER (Piper stays
+        # the Free-mode floor). The Microsoft endpoint is fail-open at synth time.
+        return _module_available("edge_tts")
     return False
 
 
@@ -421,6 +428,43 @@ def abort_if_first_call_unusable(result: ApplyResult | None = None) -> None:
     )
 
 
+def projected_cost_block_reason() -> str | None:
+    """Refuse start when projected rendered cost exceeds PROJECTED_COST_MAX_USD.
+
+    Unset env = off (no new warnings). Uses estimate_run_cost, never post-run
+    actuals — there is no script yet, so this is a worst-case rendered estimate.
+    """
+    raw = os.getenv("PROJECTED_COST_MAX_USD", "").strip()
+    if not raw or raw.lower() in ("0", "off", "false", "no"):
+        return None
+    try:
+        cap = float(raw)
+    except ValueError:
+        return None
+    if cap <= 0:
+        return None
+    try:
+        from core.cost_meter import estimate_run_cost
+        from core.script_length import PRESETS
+
+        # There is no script yet, so stand in the LONGEST preset's word count.
+        # Estimating from an empty string put TTS -- ~91% of a rendered run -- at
+        # $0, which made every realistic cap unreachable: the guard measured the
+        # wrong thing and then reported clean (decisions SS18/SS24).
+        worst_words = max((p.max_words for p in PRESETS.values()), default=0)
+        est = estimate_run_cost(script="word " * worst_words, signals={}, rendered=True)
+        total = float(est.get("total") or 0.0)
+    except Exception as exc:
+        logger.debug("projected cost estimate skipped: %s", exc)
+        return None
+    if total <= cap:
+        return None
+    return (
+        f"Projected cost ${total:.2f} exceeds PROJECTED_COST_MAX_USD=${cap:.2f}. "
+        "Stopping before discovery."
+    )
+
+
 def guard_before_discovery() -> list[str]:
     """Choke point before discovery: Free fail-closed, Standard may warn.
 
@@ -428,6 +472,9 @@ def guard_before_discovery() -> list[str]:
     leftover RUN_COST_MODE in the operator .env cannot abort unit tests.
     Returns Standard-mode warnings for the CLI to print.
     """
+    projected = projected_cost_block_reason()
+    if projected:
+        raise CostModeBlocked(projected)
     check = inspect_first_calls()
     if free_mode_strict() and check.blockers:
         detail = "; ".join(check.blockers)

@@ -91,6 +91,31 @@ def list_local_piper_voices(directory: str | None = None) -> list[str]:
     return [os.path.join(root, n) for n in names]
 
 
+def is_onnx_voice_file(path: str) -> bool:
+    """True only for an existing file whose name ends with .onnx — README/LICENSE are not voices."""
+    p = (path or "").strip()
+    return bool(p) and p.lower().endswith(".onnx") and os.path.isfile(p)
+
+
+def any_piper_onnx_ready() -> bool:
+    """True when any catalog / PIPER_VOICES / PIPER_VOICES_DIR / PIPER_VOICE path is a real .onnx."""
+    if is_onnx_voice_file(os.getenv("PIPER_VOICE", "")):
+        return True
+    for item in (os.getenv("PIPER_VOICES", "") or "").split(","):
+        if is_onnx_voice_file(item):
+            return True
+    if any(is_onnx_voice_file(p) for p in list_local_piper_voices()):
+        return True
+    try:
+        from core.tts import load_local_voice_pool
+
+        if any(is_onnx_voice_file(p) for p in load_local_voice_pool("piper")):
+            return True
+    except Exception as exc:
+        logger.debug("piper catalog scan skipped: %s", exc)
+    return False
+
+
 def _channel_rows() -> list[str]:
     """What each channel resolves to right now (a *sample* when a pool is configured)."""
     from config.channels import get_channel_profile, list_channel_ids

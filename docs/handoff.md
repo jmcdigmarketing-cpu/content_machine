@@ -48,34 +48,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-08-28 · **HEAD at write:** `5959440` · **Tree:** 72 modified, 32 untracked (nothing committed)
+**Written:** 2026-08-28 · **HEAD at write:** `b0beed0` · **Tree:** clean, 6 commits
 
-- **Nothing in this wave is committed.** The whole 23-item wave plus edge-tts, clip
-  ingest, #389 and #433 exists only as working-tree changes. A fresh clone or CI sees
-  none of it.
-- Finished the 23-item wave (NVENC #38, FastAPI shell #147, CUDA doctor + 20 from
-  331–480). Suite went 2,296 → 2,347.
-- **Defects I found and fixed in work that was already green:**
-  - `#419` did nothing on the caption path that actually ships — the rebalance was in
-    `split_script_into_lines` (estimated timing) while real runs use
-    `caption_timing.group_into_lines`. Fixed both.
-  - NVENC fallback broke `#309`: the persisted "success" argv was the **failed**
-    `h264_nvenc` command. `video/encoder.py::executed_cmd` now reports what ran.
-  - `#369` could never fire — it estimated from `script=""`, pricing TTS at $0, so a
-    realistic `PROJECTED_COST_MAX_USD` was unreachable. Its own test asserted
-    `script == ""`, pinning the bug.
-  - `#394` quarantine used a denylist; `rawg`/`odds`/`sports` return bare INACTIVE when
-    off-domain, so three off-domain topics in one batch disabled RAWG. Now an allowlist.
-  - **edge-tts spoke the XML**: `Communicate` escapes its input, so `edge_ssml()` made a
-    3.94s line synth as **23.76s** of "speak version equals one point zero". Now uses
-    `apply_pronunciation_lexicon`; `edge_ssml` deleted. Also `boundary="WordBoundary"` —
-    7.x defaults to SentenceBoundary, so `.words.json` was never written.
-  - `#433` blocked the one case the operator allowed: `infer_domain` reads by subject,
-    so "GTA 6 economic impact" classified `gaming`. Added `_lens_for` treatment cues.
-- **Left open on purpose:** `#355` residual is recomputed on every metrics sync;
-  `#340` sidecar has a null `ungrounded_count` (written before `build_quality`).
-- **Verified for real, not by probe:** NVENC encodes on this box (1080x1920 h264, exact
-  duration); edge-tts synthesises against the live endpoint with 11 real word timings.
+- **The tree is committed and green** — 2,381 tests, ruff clean, `data/` untouched.
+  Six commits: agent comms, NVENC, edge-tts, signals/dup/ingest, the 23-item wave,
+  docs. Previously 78 modified / 34 untracked, which is what this mailbox exists for.
+- **The trailer ban is lifted** (operator, 2026-08-28). `.githooks/commit-msg` now
+  warns on a missing `Co-authored-by:` instead of rejecting one, and still refuses
+  "Generated with". Sign your commits — `py -m scripts.ops agents` shows the split.
+- **Cursor: your slot has never been written.** That is the one open item in this
+  channel. Rules 14–16 in `.cursor/rules/content-machine.mdc` are the contract.
+- **Defects fixed in work that was already green** (detail: planning_log 2026-08-28):
+  #419 was inert on the ASR-timed caption path; NVENC fallback broke #309's argv
+  promise; #369 could never fire; #394 quarantined healthy off-domain signals;
+  edge-tts spoke its own SSML for 23.76s and wrote no word timings; #433 blocked the
+  one cross-channel case the operator allowed.
+- **Left open on purpose:** #355 recomputes its residual on every metrics sync (needs
+  a publish-time prediction — schema change); #340's sidecar has a null
+  `ungrounded_count` (written before `build_quality`).
+- **Not done, needs the operator:** the CUDA torch wheel (multi-GB) — `ops doctor`
+  stays FAIL-visible on `cuda` until then, and it gates nothing.
+- **Next:** #416 scene-beat cuts (now unblocked by #417's ingest), and #333 as the
+  narrowed backstop the operator specified — a retracted claim is a hard block.
 
 ## Slot — Cursor
 

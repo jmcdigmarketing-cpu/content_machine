@@ -29,12 +29,39 @@ yt-dlp quiet, fact budgets) and this reorganisation.
 
 **Next: Stage 0 — Seams.** One wave, no window. The `ask()` seam over `main.py`'s
 15 blocking prompts, the `emit()` output sink, and design tokens (#170). It is the
-keystone: every later stage is cheap because of it, and the terminal keeps working
-byte-identically forever. Detail: [desktop_app.md](desktop_app.md).
+keystone: every later stage is cheap because of it, the terminal keeps working
+byte-identically forever, **and the Craft wave below reads those tokens** — so it
+genuinely goes first. Detail: [desktop_app.md](desktop_app.md).
 
 **Then, in order:** Stage 1 the run window (2 waves, ends the PowerShell
 dependency) → Stage 2 look → Stage 3 panels → Stage 4 studio → Stage 5 packaging
 → Stage 6 portfolio → Stage 7 efficiency.
+
+### The Craft wave — after Stage 0, before Stage 1
+
+Pulled forward so it is finished rather than stranded. The sorting rule is **what
+survives the desktop app**:
+
+- **Video craft is permanent.** It is burned into every video and no toolkit
+  change touches it, so it outranks everything else here:
+  **#185** contrast auditor · **#297** the hours-version contrast number ·
+  **#505** two-line caption balancing · **#184** motion presets · **#182** caption
+  overlay on a still · **#183** font pairing · **#187** end-card compositor ·
+  **#188** intro-sting waveform · **#190** MoneyWise disclaimer bug · **#191**
+  AI-disclosure lower-third · **#513** reject a black first frame.
+- **Terminal is the daily driver for the 16–19 waves the app will take**, so
+  polish pays off across all of them: **#484** `Ctrl+C` returns to the menu
+  (run 73 lost two whole runs) · **#485** keep discovery on re-entry · **#488**
+  width-aware wrapping · **#481** pinned status line · **#490** measured ETA ·
+  **#491** themed spinner glyphs · **#243** PNG wordmark · **#244** Windows
+  Terminal profile.
+- **Three loopholes, config-only**, that make already-shipped features real:
+  **#641** six ANSI themes no channel can reach · **#642** empty voice pool ·
+  **#643** unset local-TTS voices. Plus **#644**, the test that would have caught
+  all three.
+- **Booth: only the cheap ones**, since Stage 3 replaces it — **#303** theme
+  toggle, **#304** reduced-chroma for night review, **#296**/**#239** print CSS.
+  Everything else booth-shaped stays in the backlog and dies there, deliberately.
 
 Alongside the app, roughly one item per wave from the tracks below, so the
 pipeline keeps improving while the surface is built.

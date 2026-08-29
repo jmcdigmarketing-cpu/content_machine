@@ -47,11 +47,34 @@ def split_script_into_lines(script: str, max_words: int | None = None) -> list[s
     lines: list[str] = []
     for sentence in sentences:
         words = sentence.split()
+        chunks: list[str] = []
         for i in range(0, len(words), max_words):
             chunk = " ".join(words[i : i + max_words]).strip()
             if chunk:
-                lines.append(chunk)
+                chunks.append(chunk)
+        # Rebalance THIS sentence's own chunks. Rebalancing the running list
+        # instead would let a one-word sentence steal the previous sentence's
+        # last word into its cue, merging two sentences into one caption line --
+        # which test_sentence_boundaries_not_crossed has forbidden since before
+        # candidate 419 existed.
+        lines.extend(_rebalance_orphan(chunks))
     return lines
+
+
+def _rebalance_orphan(chunks: list[str]) -> list[str]:
+    """Never leave a 1-word last cue; steal one word from the previous line."""
+    if len(chunks) < 2:
+        return chunks
+    last = chunks[-1].split()
+    if len(last) != 1:
+        return chunks
+    prev = chunks[-2].split()
+    if len(prev) < 2:
+        return chunks
+    stolen = prev.pop()
+    chunks[-2] = " ".join(prev)
+    chunks[-1] = stolen + " " + chunks[-1]
+    return chunks
 
 
 def build_srt(script: str, duration: float, *, max_words: int | None = None) -> str:

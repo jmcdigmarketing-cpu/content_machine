@@ -10,6 +10,7 @@ from core.render_progress import (
     is_render_progress_enabled,
     run_ffmpeg_with_progress,
 )
+from video.encoder import executed_cmd, fallback_libx264_cmd, mark_executed, video_encoder_args
 from video.subtitles import caption_force_style, caption_style, generate_subtitle_file
 
 logger = get_logger("video.render")
@@ -36,12 +37,22 @@ def _ffmpeg_run(cmd, *, duration_sec=None, progress=None, use_progress=False):
                 errors="replace",
             )
         if process.returncode == 0:
-            return process
+            return mark_executed(process, cmd)
         err = process.stderr or ""
         if is_lock_error(None, err) and i < attempts - 1:
             logger.warning("FFmpeg file-lock retry %s/%s", i + 1, attempts)
             _time.sleep(delay * (i + 1))
             continue
+        if "h264_nvenc" in cmd:
+            fallback = fallback_libx264_cmd(cmd)
+            if fallback != cmd and "h264_nvenc" not in fallback:
+                logger.warning("NVENC encode failed — retrying libx264")
+                return _ffmpeg_run(
+                    fallback,
+                    duration_sec=duration_sec,
+                    progress=progress,
+                    use_progress=use_progress,
+                )
         return process
     return process
 
@@ -221,12 +232,7 @@ def build_render_ffmpeg_command(
         "[vout]",
         "-map",
         audio_map,
-        "-c:v",
-        "libx264",
-        "-preset",
-        encoder_preset,
-        "-crf",
-        crf,
+        *video_encoder_args(preset=encoder_preset, crf=crf),
         "-c:a",
         "aac",
         "-b:a",
@@ -500,7 +506,7 @@ def render_vertical_video(
         raise Exception("FFmpeg render failed.")
     if command_callback is not None:
         try:
-            command_callback("primary_success", list(cmd))
+            command_callback("primary_success", executed_cmd(process, cmd))
         except Exception as exc:
             logger.debug("render success capture skipped: %s", exc)
 

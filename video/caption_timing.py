@@ -101,6 +101,25 @@ def group_into_lines(words: list[dict], max_words: int) -> list[list[dict]]:
             cur = []
     if cur:
         lines.append(cur)
+    return _rebalance_orphan_line(lines)
+
+
+def _ends_sentence(word: dict) -> bool:
+    return (word.get("word") or "")[-1:] in ".!?"
+
+
+def _rebalance_orphan_line(lines: list[list[dict]]) -> list[list[dict]]:
+    """Candidate 419 on the word-timed path: never leave a lone word as the last
+    cue. The word carries its own start/end, so moving it moves its timing and
+    `_line_span` follows. A line that ends a sentence keeps its last word --
+    `split_script_into_lines` holds the same boundary rule."""
+    if len(lines) < 2:
+        return lines
+    if len(lines[-1]) != 1 or len(lines[-2]) < 2:
+        return lines
+    if _ends_sentence(lines[-2][-1]):
+        return lines
+    lines[-1].insert(0, lines[-2].pop())
     return lines
 
 

@@ -52,6 +52,7 @@ os.environ["YOUTUBE_UNLISTED_REVIEW"] = "false"
 os.environ["RAM_MIN_GB"] = "0"
 os.environ["VRAM_MIN_GB"] = "0"
 os.environ["TITLE_UNIQUENESS"] = "off"
+os.environ["CROSS_CHANNEL_DUP"] = "off"
 os.environ["UFC_PPV_BLACKOUT"] = "false"
 os.environ["QUIET_HOURS"] = "false"
 os.environ["ODDS_MARKET_VOICE"] = "false"
@@ -60,6 +61,17 @@ os.environ["DESCRIPTION_SEO_FIRST_LINE"] = "false"
 os.environ["CONTENT_TRAY_GRADE"] = "false"
 os.environ["CONTENT_TRAY_DOMAIN"] = "false"
 os.environ["CONTENT_TRAY_PRESENCE"] = "false"
+# Unset = off. An operator .env cap must not abort the suite's discovery tests.
+os.environ["PROJECTED_COST_MAX_USD"] = ""
+# NVENC encode is opt-in at the ffmpeg argv layer; CI/suite stay on libx264.
+os.environ["NVENC"] = "off"
+# Operator .env / voices.json piper pool must not make local TTS "ready" in CI.
+os.environ["PIPER_VOICE"] = ""
+os.environ["PIPER_VOICES"] = ""
+os.environ["PIPER_VOICES_DIR"] = ""
+# Occasional Piper mix is a production default (1/8); the suite pins ElevenLabs
+# unless a test sets TTS_PIPER_MIX_EVERY itself.
+os.environ["TTS_PIPER_MIX_EVERY"] = "0"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move
@@ -92,6 +104,7 @@ _SUITE_STORE_PATCHES = (
     patch.object(_paths, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_paths, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),
     patch.object(_paths, "TOPIC_GRAPH_FILE", _suite_store("topic_graph.json")),
+    patch.object(_paths, "CLIP_INDEX_FILE", _suite_store("clip_index.json")),
     patch.object(_quota_state, "QUOTA_STATE_FILE", _suite_store("quota_state.json")),
     patch.object(_cache_manager, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_youtube_quota, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),

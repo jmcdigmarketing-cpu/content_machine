@@ -5,13 +5,13 @@ Compose hybrid backgrounds: local gameplay footage + stock B-roll in one vertica
 from __future__ import annotations
 
 import os
-import subprocess
 import uuid
 from typing import List, Optional
 
 from assets.types import AssetResult
 from config.paths import DATA_DIR, ensure_data_dir
 from core.logging import get_logger
+from video.encoder import run_ffmpeg_with_nvenc_fallback, video_encoder_args
 
 logger = get_logger("assets.composite")
 
@@ -75,12 +75,7 @@ def build_hybrid_concat_command(
         f"{duration:.3f}",
         "-r",
         "30",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "fast",
-        "-crf",
-        "23",
+        *video_encoder_args(),
         "-pix_fmt",
         "yuv420p",
         "-an",
@@ -131,12 +126,7 @@ def build_multi_concat_command(
         f"{duration:.3f}",
         "-r",
         "30",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "fast",
-        "-crf",
-        "23",
+        *video_encoder_args(),
         "-pix_fmt",
         "yuv420p",
         "-an",
@@ -151,7 +141,7 @@ def compose_scene_matched_background(
     output_path = _temp_output_path()
     cmd = build_multi_concat_command(segments, output_path, duration=duration)
     logger.info("Composing scene-matched background from %d clips", len(segments))
-    process = subprocess.run(cmd, capture_output=True, text=True)
+    process = run_ffmpeg_with_nvenc_fallback(cmd)
     if process.returncode != 0:
         if os.path.isfile(output_path):
             try:
@@ -191,7 +181,7 @@ def compose_hybrid_background(
         local_ratio * 100,
         (1 - local_ratio) * 100,
     )
-    process = subprocess.run(cmd, capture_output=True, text=True)
+    process = run_ffmpeg_with_nvenc_fallback(cmd)
     if process.returncode != 0:
         if os.path.isfile(output_path):
             try:

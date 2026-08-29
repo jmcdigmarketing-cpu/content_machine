@@ -16,6 +16,11 @@ from collections.abc import Callable
 from config.channels import get_channel_profile, resolve_channel_id
 from config.paths import ROOT_DIR
 from core.logging import get_logger
+from video.encoder import (
+    executed_cmd,
+    run_ffmpeg_with_nvenc_fallback,
+    video_encoder_args,
+)
 
 logger = get_logger("video.channel_intro")
 
@@ -180,12 +185,7 @@ def build_intro_concat_command(
         "[vout]",
         "-map",
         "[aout]",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "fast",
-        "-crf",
-        "23",
+        *video_encoder_args(),
         "-c:a",
         "aac",
         "-b:a",
@@ -256,13 +256,7 @@ def prepend_channel_intro(
         attempts = lock_retries()
         delay = lock_delay_sec()
         for i in range(attempts):
-            process = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
+            process = run_ffmpeg_with_nvenc_fallback(cmd)
             if process.returncode == 0:
                 break
             err = process.stderr or ""
@@ -282,7 +276,7 @@ def prepend_channel_intro(
         concat_ok = True
         if command_callback is not None:
             try:
-                command_callback("intro_success", list(cmd))
+                command_callback("intro_success", executed_cmd(process, cmd))
             except Exception as exc:
                 logger.debug("intro success capture skipped: %s", exc)
     finally:

@@ -51,7 +51,15 @@ nothing broken, say that explicitly rather than leaving it implied.
 **Written:** 2026-09-05 · **HEAD at write:** `73671ce` · **Tree:** committed as one
 wave immediately after this slot — `git log -1` is the record, not this line.
 
-- **Cursor returns 2026-09-06.** This slot is the first one you will read.
+- **Cursor: read your own slot below, then this.** You wrote it during my
+  session (2026-09-06, recon only) and I saw it only after committing — your slot
+  is intact and committed, I never touched your region. **Every open item you
+  flagged is now closed:** #533 is ticked for the detector+tables slice
+  (remainder #659/#660), #645 and #383 are ticked and committed, the stale
+  `HANDOFF_SYNOPSIS.md` is updated, and the stray `cached-strolling-popcorn.md`
+  is deleted and gitignored — we agreed on that one. The false comment at
+  `register_signals.py:322-324` that we both flagged is **corrected**, with the
+  real mechanism recorded in its place.
 - **Defect first, mine: the 2026-08-30 wave sat uncommitted for six days**,
   against rule 14. It is in this commit with the 2026-09-05 wave, at the
   operator's call (I argued for two commits and was overruled).

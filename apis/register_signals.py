@@ -319,11 +319,19 @@ def signal_cooldowns() -> dict[str, float]:
 # Signals reused (pinned) from the base-topic fetch during per-variant scoring,
 # instead of being re-fetched for each of the 5 variants. Variants are editorial
 # angles on the SAME topic, so signal *data* barely differs between them — and
-# composite_score still re-scores each variant's text against the pinned data, so
-# per-variant differentiation survives (youtube was always pinned yet scored
-# 20-100 across variants). Re-fetching the rest cost 150-185s of variant scoring
+# the pinning itself is still the right call. Re-fetching cost 150-185s of variant scoring
 # per run, 5x the Tavily/web-search spend, and Wikipedia 429 cooldowns. Default:
 # pin everything; env-override to re-fetch specific signals per variant.
+#
+# CORRECTED 2026-09-05 (both agents flagged it independently). This comment used
+# to claim "composite_score still re-scores each variant's text against the
+# pinned data, so per-variant differentiation survives". **That is false and
+# there is no such re-scoring.** `composite_score_raw` reads the variant string
+# only through `infer_domain` (identical across five framings of one subject) and
+# `get_historical_boost` (an exact-string lookup, so 0.0 for an angle generated
+# seconds ago). Identical inputs, identical outputs: run 71 tied at 100.00 and
+# run 72 at 92.14. The editorial score in `core/angle_ranker.py` is what actually
+# separates them (#651); do not un-pin these signals to try to fix it.
 _VARIANT_REUSE_DEFAULT = (
     "youtube,youtube_comments,reddit,twitter,tiktok_trends,youtube_competitors,"
     "web_search,wikipedia,trends,news,blog_rss,twitch,rawg,steam,igdb,"

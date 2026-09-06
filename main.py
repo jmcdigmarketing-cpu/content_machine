@@ -54,6 +54,13 @@ logger = get_logger("main")
 
 
 def _run_intelligence_report_flow(channel_id: str) -> None:
+    try:
+        _run_intelligence_report_flow_body(channel_id)
+    except KeyboardInterrupt:
+        print("\n  Cancelled — back to the menu.")
+
+
+def _run_intelligence_report_flow_body(channel_id: str) -> None:
     from core.intelligence_report import (
         build_intelligence_report,
         print_report_summary,
@@ -217,8 +224,19 @@ def _run_idea_intake_flow(channel_id: str) -> None:
     (title + thesis + generator scaffolding). Rich ideas keep their thesis as
     the creative angle that shapes the script.
     """
+    try:
+        _run_idea_intake_flow_body(channel_id)
+    except KeyboardInterrupt:
+        print("\n  Cancelled — back to the menu.")
+
+
+def _run_idea_intake_flow_body(channel_id: str) -> None:
     from apis.youtube_api import extract_youtube_video_id, fetch_video_metadata
-    from core.idea_intake import parse_pasted_idea
+    from core.idea_intake import (
+        creative_brief_for_run,
+        parse_pasted_idea,
+        seed_and_brief_from_youtube,
+    )
 
     subsection("Your video idea")
     raw = _read_multiline(
@@ -247,7 +265,7 @@ def _run_idea_intake_flow(channel_id: str) -> None:
             angle = input(
                 "  Your angle/idea for OUR take (Enter = use the video's topic): "
             ).strip()
-            seed_topic = f"{angle} — {meta['title']}" if angle else meta["title"]
+            seed_topic, creative_brief = seed_and_brief_from_youtube(meta["title"], angle)
         else:
             print("  Could not fetch that video (bad link, quota, or no API key).")
             typed = input("  Type your idea instead: ").strip()
@@ -255,12 +273,13 @@ def _run_idea_intake_flow(channel_id: str) -> None:
                 print("  Nothing entered — returning.")
                 return
             seed_topic = typed
+            creative_brief = typed
     else:
         # Plain topic or a pasted rich idea block.
         parsed = parse_pasted_idea(raw)
         seed_topic = parsed.seed_topic
+        creative_brief = creative_brief_for_run(parsed)
         if parsed.is_rich and parsed.thesis:
-            creative_brief = parsed.angle
             print(f"\n  Title : {parsed.title}")
             print(f"  Angle : {parsed.thesis[:160]}{'…' if len(parsed.thesis) > 160 else ''}")
             print(f"  Search seed: {seed_topic}")
@@ -285,6 +304,9 @@ def _run_new_video_flow(
             "    Free ($0) mode uses rate-limited free models. Wait ~30s and retry, add\n"
             "    OPENROUTER_API_KEY for higher limits (or run Ollama), or pick Standard mode."
         )
+    except KeyboardInterrupt:
+        print("\n  Cancelled — back to the menu.")
+        return
     finally:
         from core.pipeline import finalize_run_observability
 
@@ -373,13 +395,21 @@ def _run_new_video_flow_body(
         channel_id=channel_id,
         raw_scores=discovery.raw_scores,
         angle_scores=discovery.angle_scores,
+        own_idea=seed_topic,
     )
 
-    choice = input("\n  Choose 1-5 (Enter = best): ").strip()
+    prompt = "\n  Choose 1-5 (Enter = best"
+    if seed_topic:
+        prompt += ", 0 = your idea"
+    prompt += "): "
+    choice = input(prompt).strip()
 
-    variant_index = int(choice) - 1 if choice.isdigit() else best_default
-
-    best_topic, best_score, best_signals = discovery.evaluated[variant_index]
+    if seed_topic and choice == "0":
+        best_topic, best_score, best_signals = seed_topic, 0.0, discovery.base_signals
+        variant_index = -1
+    else:
+        variant_index = int(choice) - 1 if choice.isdigit() else best_default
+        best_topic, best_score, best_signals = discovery.evaluated[variant_index]
 
     subsection("Selected angle")
     print(f"  {best_topic}")
@@ -433,6 +463,7 @@ def _run_new_video_flow_body(
             vault_relevance_audit=fact_selection.vault_audit,
             source_urls=fact_selection.source_urls,
             relevance_corpus=fact_selection.relevance_corpus,
+            menu_path="5" if seed_topic else "1",
         )
 
         print()

@@ -1,8 +1,24 @@
-# Handoff synopsis — 2026-09-05: the next-five wave
+# Handoff synopsis — 2026-09-06: next 15
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — next five + idea quality (2026-09-05)
+## Last implementation wave — next 15 (2026-09-06)
+
+Cursor wave, **not committed** until the operator asks. Plan: honesty (#655
+#663 #662) then finish #533 (#661 #659 #660 #656) then option 5 + traces
+(#664 #665) then TTS (#658 #402) then facts (#646 #647 held) then #484 and
+#641-#644. Stage 0 / #333 / #416 stayed out.
+
+- **`GRADE_VERSION` v3** (#660 + #656). **`FEATURE_VERSION` v2** (#661).
+- **#402 shipped** on the #658 seam; fractional TTS billing.
+- **#647 held** the fact-selection weights on two fixtures.
+- **Proof (pre-slot):** ruff clean. Full suite re-run after the mailbox edit.
+  Do not commit `cached-strolling-popcorn.md`.
+
+**Still parked:** Stage 0; Phase M; #333/#416; Ollama FAIL.
+
+## Previous wave — next five + idea quality (2026-09-05)
+
 
 Two waves landed as one commit at the operator's call: the 2026-08-30
 idea-quality wave (#651 angle ranker, #652 playbook ranking, #653 gate

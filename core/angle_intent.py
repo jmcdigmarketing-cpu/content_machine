@@ -38,6 +38,12 @@ ALL_INTENTS = (
     ANGLE_DEFAULT,
 )
 
+# Formats that must not be ordered to take a side. Used by the research brief
+# and the script prompt (#659 / #660).
+CALM_INTENTS = frozenset(
+    {ANGLE_EXPLAINER, ANGLE_LIST, ANGLE_TUTORIAL, ANGLE_COMPARISON, ANGLE_RETROSPECTIVE}
+)
+
 # Phrases, not bare adjectives. "looks" alone appears in "looks broken"; "amazing"
 # alone appears in "is it really that amazing?". Both are critique framings.
 _REACTION_CUES = (
@@ -162,6 +168,17 @@ _INTENT_NOTES = {
     ANGLE_COMPARISON: "comparison (read from your topic)",
     ANGLE_RETROSPECTIVE: "retrospective (read from your topic)",
 }
+
+
+def format_for_intent(intent: str) -> str:
+    """Research-brief `recommended_format` for a detected intent.
+
+    `default` stays `short_debate` — that is the take machinery, and it is
+    correct when the operator did not ask for another frame.
+    """
+    if intent == ANGLE_DEFAULT or intent not in ALL_INTENTS:
+        return "short_debate"
+    return intent
 
 
 def angle_intent_note(intent: str) -> str:

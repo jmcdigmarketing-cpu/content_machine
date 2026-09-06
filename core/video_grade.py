@@ -35,7 +35,9 @@ logger = get_logger("core.video_grade")
 # - 2026-09-05 added the `length` component (#645).
 # `core/grade_calibration.py` re-grades every stored run with *today's* code, so
 # without this stamp a v1 letter and a v2 letter were indistinguishable.
-GRADE_VERSION = "v2"
+# v3 (2026-09-06): #660 stopped ordering a take on calm intents; #656 penalises
+# banned-template hooks. Historical letters from v2 are a different rubric.
+GRADE_VERSION = "v3"
 
 # Component weights (renormalized over the components actually present).
 _WEIGHTS = {

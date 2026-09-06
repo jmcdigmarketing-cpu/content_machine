@@ -577,6 +577,7 @@ def display_variants(
     channel_id: str | None = None,
     raw_scores: dict[str, float] | None = None,
     angle_scores: dict[str, float] | None = None,
+    own_idea: str | None = None,
     print_fn=print,
 ) -> int:
     """Print variant list; return index of highest score.
@@ -605,6 +606,9 @@ def display_variants(
 
     subsection("Scored angles (Enter = best)", print_fn)
     print_fn("  (YouTube title is generated after key facts + script — not here.)")
+    own = (own_idea or "").strip()
+    if own:
+        print_fn(f"    0. {own}  (your idea — type 0 to keep it)")
     if display_tied:
         if raw_known and len({round(float(r), 2) for r in raw_values}) > 1:  # type: ignore[arg-type]
             print_fn(

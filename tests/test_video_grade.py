@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 from core import engagement_predictor, grade_calibration
 from core.providers import ProviderResult
 from core.video_grade import (
+    GRADE_VERSION,
     display_grade_for_run,
     expert_panel_for_run,
     grade_from_parts,
@@ -312,7 +313,11 @@ def _measured_runs(n, *, hook_spread=True):
         run = MagicMock()
         run.id = i + 1
         hook = 40 + (i * 40 // max(1, n - 1)) if hook_spread else 60
-        run.quality_json = json.dumps({"hook_score": hook, "authenticity_score": 80})
+        # Stamped, because a real run is: `run_quality.build_quality` writes
+        # `grade_version` on every quality payload it produces.
+        run.quality_json = json.dumps(
+            {"hook_score": hook, "authenticity_score": 80, "grade_version": GRADE_VERSION}
+        )
         run.composite_score = 70.0
         run.title = f"Video {i + 1}"
         run.selected_topic = f"Topic {i + 1}"
@@ -418,6 +423,68 @@ class TestCalibration(unittest.TestCase):
             report = grade_calibration.build_calibration("tapin")
         self.assertEqual(report.thumbnail_n, 6)
         self.assertGreater(report.thumbnail_correlation, 0.9)
+
+    def test_mixed_rubric_versions_do_not_share_one_correlation(self):
+        """#662. Four components moved across two waves; re-grading every run
+        with today's code then correlating against engagement mixes letters
+        from different rubrics. Two payloads that differ only by version
+        must not land in one bucket."""
+        runs, engagement = _measured_runs(8)
+        for i, run in enumerate(runs):
+            quality = json.loads(run.quality_json)
+            quality["grade_version"] = "v1" if i < 4 else "v2"
+            run.quality_json = json.dumps(quality)
+        repo = MagicMock()
+        repo.list_for_channel.return_value = runs
+        with (
+            patch.object(grade_calibration, "_thumbnail_scores", return_value={}),
+            patch("core.engagement_predictor.run_engagement_map", return_value=engagement),
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository",
+                return_value=repo,
+            ),
+        ):
+            report = grade_calibration.build_calibration("tapin")
+            rendered = grade_calibration.render("tapin")
+        self.assertEqual(report.measured, 8)
+        self.assertIsNone(report.grade_correlation)
+        self.assertTrue(report.mixed_versions)
+        line = grade_calibration.summary_line(report)
+        self.assertIn("mix", line.lower())
+        self.assertIn("mix", rendered.lower())
+
+    def test_unversioned_history_is_not_treated_as_one_rubric(self):
+        """The gap the version guard leaves open. Every run graded before the
+        stamp existed carries no `grade_version`, so they all read
+        "unversioned" — one value, `mixed_versions` False, correlation computed.
+
+        But those rows are exactly the ones #662 was filed about: four
+        components moved across v1/v2/v3 while nothing was stamped, so an
+        unlabelled population is known to span rubrics rather than share one.
+        `MIN_MEASURED` is 5 and the channel has ~10 measured runs, so this is
+        reachable now, not hypothetically."""
+        runs, engagement = _measured_runs(8)
+        for run in runs:  # no grade_version key at all, as history has none
+            quality = json.loads(run.quality_json)
+            quality.pop("grade_version", None)
+            run.quality_json = json.dumps(quality)
+        repo = MagicMock()
+        repo.list_for_channel.return_value = runs
+        with (
+            patch.object(grade_calibration, "_thumbnail_scores", return_value={}),
+            patch("core.engagement_predictor.run_engagement_map", return_value=engagement),
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository",
+                return_value=repo,
+            ),
+        ):
+            report = grade_calibration.build_calibration("tapin")
+        self.assertEqual(report.measured, 8)
+        self.assertIsNone(
+            report.grade_correlation,
+            "correlated unlabelled rows that are known to span three rubrics",
+        )
+        self.assertIn("version", (grade_calibration.summary_line(report) or "").lower())
 
 
 class TestPromptEvalRubric(unittest.TestCase):

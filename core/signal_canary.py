@@ -8,8 +8,9 @@ the sources between real runs, so a dead one is still discovered by a run that
 needed it.
 
 Modelled on `core/feed_health.py`, deliberately: same row dict, same fail-open
-concurrent check, same save/load split, same ASCII render, same non-zero exit so
-`ops all-checks` fails loudly.
+concurrent check, same save/load split, same ASCII render. Non-zero exit on
+`ops signal-canary`. **Not** in `ops all-checks` — CI has no network (#663).
+The overnight operator is what actually runs it.
 
 Two properties make this safe to run unattended, and both are asserted in
 `tests/test_signal_canary.py`:

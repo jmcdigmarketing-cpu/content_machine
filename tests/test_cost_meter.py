@@ -263,6 +263,15 @@ class TestThumbnailCost(unittest.TestCase):
         self.assertGreater(billed["tts"], 0.0)
         self.assertEqual(cached["tts"], 0.0)
 
+    def test_fractional_cache_hit_scales_the_tts_line(self):
+        """#402. A 90% sentence-cache hit must not report $0 or full price."""
+        with patch.dict("os.environ", {"TTS_PROVIDER": "elevenlabs"}, clear=False):
+            billed = merge_render_cost({}, "x" * 1000, tts_cached=False)
+            mixed = merge_render_cost({}, "x" * 1000, tts_cached=0.9)
+        self.assertAlmostEqual(mixed["tts"], billed["tts"] * 0.1, places=4)
+        self.assertGreater(mixed["tts"], 0.0)
+        self.assertLess(mixed["tts"], billed["tts"])
+
     def test_remerge_preserves_existing_thumbnail_line(self):
         with patch.dict("os.environ", {"TTS_PROVIDER": "piper"}, clear=False):
             once = merge_render_cost({"llm": 0.01}, "hi", thumbnail_provider="flux")

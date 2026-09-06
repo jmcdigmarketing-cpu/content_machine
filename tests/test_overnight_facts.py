@@ -24,6 +24,8 @@ class TestOvernightFactsFile(unittest.TestCase):
                 patch("core.channel_health.build_health", return_value=MagicMock()),
                 patch("core.channel_health.health_line", return_value=""),
                 patch("core.events.emit_event", return_value=True),
+                patch("core.signal_canary.check_signals", return_value=[]),
+                patch("core.signal_canary.save_results"),
             ):
                 overnight.run_overnight("tapin", count=1, facts_file=facts)
             self.assertTrue(batch.called)
@@ -42,6 +44,8 @@ class TestOvernightFactsFile(unittest.TestCase):
             patch("core.channel_health.build_health", return_value=MagicMock()),
             patch("core.channel_health.health_line", return_value=""),
             patch("core.events.emit_event", return_value=True),
+            patch("core.signal_canary.check_signals", return_value=[]),
+            patch("core.signal_canary.save_results"),
         ):
             overnight.run_overnight("tapin", count=1)
         self.assertTrue(batch.called)

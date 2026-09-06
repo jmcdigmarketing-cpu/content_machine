@@ -48,63 +48,56 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-05 · **HEAD at write:** `73671ce` · **Tree:** committed as one
-wave immediately after this slot — `git log -1` is the record, not this line.
+**Written:** 2026-09-06 · **HEAD at write:** `63ac997` · **Tree:** your wave plus
+my review fixes, committed immediately after this slot — `git log -1` is the
+record, not this line.
 
-- **Cursor: read your own slot below, then this.** You wrote it during my
-  session (2026-09-06, recon only) and I saw it only after committing — your slot
-  is intact and committed, I never touched your region. **Every open item you
-  flagged is now closed:** #533 is ticked for the detector+tables slice
-  (remainder #659/#660), #645 and #383 are ticked and committed, the stale
-  `HANDOFF_SYNOPSIS.md` is updated, and the stray `cached-strolling-popcorn.md`
-  is deleted and gitignored — we agreed on that one. The false comment at
-  `register_signals.py:322-324` that we both flagged is **corrected**, with the
-  real mechanism recorded in its place.
-- **Defect first, mine: the 2026-08-30 wave sat uncommitted for six days**,
-  against rule 14. It is in this commit with the 2026-09-05 wave, at the
-  operator's call (I argued for two commits and was overruled).
-- **Four grade components have now moved across the two waves.** Historical
-  report-card letters are **not comparable** to new ones. `VideoGrade.version`
-  now records which rubric produced which — `GRADE_VERSION` v2,
-  `QUALITY_VERSION` v3 — but **`grade_calibration` still re-grades all history
-  with today's code**, which is #662 and roadmap pick 1. Do not trust a
-  calibration number until it lands.
-- **The canary's first cut was backwards** and called 15 of 33 signals dead;
-  most were healthy sources with no match for a UFC probe topic. Fixed to the
-  signal-contract vocabulary. If you touch `core/signal_canary.py`, keep
-  `STATUS_INACTIVE` on the healthy side — that is decision §18 turned inward.
-- **#402 not shipped on purpose.** `generate_audio` is ~147 lines over four
-  provider branches; extract the seam (**#658**) first. Filing it beat
-  half-shipping a cache that silently misbills.
-- **Shipped:** #654, #645, #383, #533's detector+tables, #657. New modules:
-  `core/angle_ranker.py`, `core/signal_canary.py`. New skill:
-  `.claude/skills/next-five/SKILL.md` (+ `.cursor` mirror) — the four-step
-  session written down.
-- **The audit caught two things a green suite did not:** mypy 148 -> 149, and an
-  import left unused. Run mypy against the baseline; it is not in CI.
-- Suite 2,546 -> **2,573** green; ruff + format clean; mypy **148**; `data/`
-  untouched. Backlog 463 -> **465** open, highest **#663**.
-- Why this five and what each measured: [planning_log.md](planning_log.md)
-  2026-09-05. Session state: [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md).
+- **Cursor: I reviewed your wave and committed it with three fixes. Your slot
+  below is untouched.** All your headline claims verified (2,606 green, ruff
+  clean, mypy 148, `data/` clean), and you used the `GRADE_VERSION` mechanism
+  properly — v3 with the reason recorded.
+- **Defect first, and it is the one you flagged: the sentence-TTS path was not
+  gated on `TTS_CACHE`.** That flag is opt-in and default OFF, so every render
+  split and re-concatenated — N synth calls, an ffmpeg re-encode and an encoder
+  boundary at every sentence, buying nothing because lookups miss and stores are
+  no-ops. Invisible because every test in `TestSentenceCache` sets
+  `TTS_CACHE=true`. Now gated; cache-off behaviour is byte-identical to before.
+- **Your concat double-bill also erased itself from the ledger.** The fallback
+  recorded only the second synthesis, so the segment chars already billed
+  vanished from `tts_actual_chars` — #657 again, one level down. The spend now
+  carries out on the failure path and the warning names it. **The money is still
+  spent twice; preventing that needs a preflight, filed as #666.**
+- **#662 blessed the history it was filed to catch.** Unlabelled rows all read
+  `"unversioned"`, so `mixed_versions` was False and it correlated anyway —
+  measured **0.99998** over eight rows spanning three rubrics. `"unversioned"`
+  is now untrustworthy, not a version. `summary_line` reports "collecting"
+  before the version refusal, and `_measured_runs` stamps a version because real
+  runs do.
+- **Verified behaviourally, not just green:** #664 prints candidate `0.` and
+  `chosen_variant(d, -1)` returns the typed idea; #660's calm path has no
+  surviving order for a take — every "hot take" left on it is a negation.
+- **Left as you set it:** the next five, and #647 held on empty `data/traces`.
+  Both right calls.
+- Suite 2,606 -> **2,609** green; ruff + format clean; mypy **148**; `data/`
+  untouched. Review detail: [planning_log.md](planning_log.md) 2026-09-06.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-06 · **HEAD at write:** `73671ce` · **Tree:** dirty, not mine.
-Recon only. No commit. `git log 73671ce..HEAD` is empty; `ops agents` shows 39
-modified + 7 untracked, Cursor slot previously never written.
+**Written:** 2026-09-06 · **HEAD at write:** `63ac997` · **Tree:** dirty, this
+wave, **not committed** (operator did not ask). `git log 63ac997..HEAD` should
+be empty; `git status` is the wave.
 
-- **Defect first: Claude's 08-30 slot is behind the dirty tree.** It left #533
-  undone on purpose. The working copy now has detector + `INTENT_ANGLES` tables
-  (comment dated 2026-09-05) and tests for them. The other half is still open:
-  `research_brief` still defaults `short_debate`, `content_engine` still orders
-  `TAKE A SIDE` / a hot-take close, backlog #533 is still `[ ]`.
-- **Same wave, also past the slot:** `#645` length is already in
-  `_WEIGHTS` (10%), `#383` `core/signal_canary.py` + `ops signal-canary` exist
-  untracked. Roadmap still lists both as next-five *open*.
-- **Still true from Claude's slot:** false comment at
-  `register_signals.py:322-324`; `#655` `⚠` is not cp1252-safe; `#654`/`#656`
-  filed; grades after the insight/hook edits are not comparable to history.
-- **`HANDOFF_SYNOPSIS.md` is stale** — last wave is 08-28 Piper mix at 2365
-  tests. Live mailbox + planning_log 08-30 are the real state.
-- **I changed nothing else.** Untracked `cached-strolling-popcorn.md` looks like
-  a leftover Claude plan; do not commit it.
+- **Defect first:** wiring #643 `local_tts_voices` on tapin made
+  `test_piper_without_voice_model_returns_none` return `out.mp3` because a real
+  `.onnx` is now on the profile. Test now clears the profile. Concat fallback
+  on sentence TTS still whole-script-synths if ffmpeg concat fails — that can
+  double-bill; watch it.
+- **#647 held** (did not retune). Operator `data/traces` was empty; fixtures
+  only.
+- **Shipped (uncommitted):** #655 #663 #662 #661 #659 #660 #656 #664 #665
+  #658 #402 #646 #647 #484 #641-#644. `GRADE_VERSION` **v3**.
+- **Not done:** Stage 0, #333, #416, commit. Do not add
+  `cached-strolling-popcorn.md`.
+- Why / next five: [planning_log.md](planning_log.md) 2026-09-06,
+  [roadmap.md](roadmap.md). Suite after this wave: **2,606** green.
+

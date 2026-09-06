@@ -195,18 +195,29 @@ def main(argv=None) -> int:
     # Operator key facts (headless): file and/or repeated --fact lines — same
     # ground-truth priority as the interactive prompt, saved in full to the vault.
     key_facts = _collect_key_facts(args.facts_file, args.fact)
-    if key_facts:
-        from core.content_engine import key_facts_for_prompt
-        from core.operator_facts import capture_facts_to_vault
+    from core.content_engine import key_facts_for_prompt
+    from core.fact_selection import select_headless_facts
+    from core.operator_facts import capture_facts_to_vault
+    from core.vault_relevance import build_relevance_corpus
 
+    corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
+    packed = (
+        select_headless_facts(
+            key_facts,
+            topic=topic,
+            corpus=corpus,
+            typed=list(args.fact or []),
+        )
+        if key_facts
+        else None
+    )
+    if key_facts:
         capture_facts_to_vault(channel_id, topic, key_facts)
-        sent = key_facts_for_prompt(key_facts)
+        sent = key_facts_for_prompt(packed or [])
         print(f"\n  Key facts: {len(key_facts)} collected, {len(sent)} packed for the LLM")
 
     # Script
     print("\n  Generating script...")
-    from core.vault_relevance import build_relevance_corpus
-
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -214,8 +225,8 @@ def main(argv=None) -> int:
         length_choice=length_choice,
         proceed_video=False,
         channel_id=channel_id,
-        key_facts=key_facts or None,
-        relevance_corpus=build_relevance_corpus(best_signals, operator_facts=key_facts or []),
+        key_facts=packed,
+        relevance_corpus=corpus,
     )
 
     preset = get_length_preset(length_choice)

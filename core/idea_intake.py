@@ -115,3 +115,17 @@ def parse_pasted_idea(text: str) -> ParsedIdea:
         angle=angle,
         is_rich=is_rich,
     )
+
+
+def creative_brief_for_run(parsed: ParsedIdea) -> str:
+    """What the writer should see. A one-line idea is still the assignment."""
+    return (parsed.angle or parsed.seed_topic or parsed.title or "").strip()
+
+
+def seed_and_brief_from_youtube(video_title: str, our_angle: str) -> tuple[str, str]:
+    """Search the video's topic; keep OUR take as the brief, not a concatenated seed."""
+    title = (video_title or "").strip()
+    angle = (our_angle or "").strip()
+    if angle:
+        return title, angle
+    return title, title

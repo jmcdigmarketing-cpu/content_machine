@@ -24,14 +24,9 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — the run-73 defect wave (reaction angles, web-search recency,
-yt-dlp quiet, fact budgets) and this reorganisation.
+**Just landed** — 2026-09-06 next-15 wave: idea-quality leftovers (#661/#659/#660/#656/#664/#665), honesty (#655/#663/#662), TTS seam + sentence cache (#658/#402), headless facts (#646/#647 held), Ctrl+C (#484), and the config loopholes (#641–#644). `GRADE_VERSION` is **v3**. Uncommitted until the operator asks.
 
-**Next: Stage 0 — Seams.** One wave, no window. The `ask()` seam over `main.py`'s
-15 blocking prompts, the `emit()` output sink, and design tokens (#170). It is the
-keystone: every later stage is cheap because of it, the terminal keeps working
-byte-identically forever, **and the Craft wave below reads those tokens** — so it
-genuinely goes first. Detail: [desktop_app.md](desktop_app.md).
+**Next: Stage 0 — Seams.** Still the keystone; this wave did not start it. One wave, no window. The `ask()` seam over `main.py`'s blocking prompts, the `emit()` output sink, and design tokens (#170). Detail: [desktop_app.md](desktop_app.md).
 
 **Then, in order:** Stage 1 the run window (2 waves, ends the PowerShell
 dependency) → Stage 2 look → Stage 3 panels → Stage 4 studio → Stage 5 packaging
@@ -50,15 +45,13 @@ survives the desktop app**:
   **#188** intro-sting waveform · **#190** MoneyWise disclaimer bug · **#191**
   AI-disclosure lower-third · **#513** reject a black first frame.
 - **Terminal is the daily driver for the 16–19 waves the app will take**, so
-  polish pays off across all of them: **#484** `Ctrl+C` returns to the menu
-  (run 73 lost two whole runs) · **#485** keep discovery on re-entry · **#488**
-  width-aware wrapping · **#481** pinned status line · **#490** measured ETA ·
-  **#491** themed spinner glyphs · **#243** PNG wordmark · **#244** Windows
-  Terminal profile.
-- **Three loopholes, config-only**, that make already-shipped features real:
-  **#641** six ANSI themes no channel can reach · **#642** empty voice pool ·
-  **#643** unset local-TTS voices. Plus **#644**, the test that would have caught
-  all three.
+  polish pays off across all of them: **#485** keep discovery on re-entry ·
+  **#488** width-aware wrapping · **#481** pinned status line · **#490**
+  measured ETA · **#491** themed spinner glyphs · **#243** PNG wordmark ·
+  **#244** Windows Terminal profile. *(#484 Ctrl+C shipped 2026-09-06.)*
+- **Three loopholes, config-only — shipped 2026-09-06:** **#641** tapin=`dbz`,
+  moneywise/default=`plain` · **#642** voice pools · **#643** local Piper
+  voices · **#644** coverage ratchet on real `channels.json`.
 - **Booth: only the cheap ones**, since Stage 3 replaces it — **#303** theme
   toggle, **#304** reduced-chroma for night review, **#296**/**#239** print CSS.
   Everything else booth-shaped stays in the backlog and dies there, deliberately.
@@ -68,40 +61,26 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-**The 2026-09-05 wave shipped four and a half of the previous five** — #654, #645,
-#383 and **#533's detector + angle tables**. #402 was not shipped: scoping it
-confirmed the `[L]` and produced #658 (the seam it needs) plus #657, a real
-billing defect found on the way. Why, and what each one measured:
-[planning_log.md](planning_log.md) 2026-09-05.
+**The 2026-09-06 wave shipped the previous recommended five plus the overnight
+holes around them.** Why, and what each one measured:
+[planning_log.md](planning_log.md) 2026-09-06.
 
-1. **#662 grade_calibration mixes rubric versions** `[M]` — caused by the last two
-   waves and now visible: four grade components have moved, and calibration still
-   re-grades all history with today's code before correlating against engagement.
-   `VideoGrade.version` now exists, so this is finally fixable rather than just
-   nameable. Do it before trusting any calibration number again.
-2. **#658 a per-segment synthesis seam in `generate_audio`** `[M]` — the blocker
-   under #402, which is 91% of run cost. Extract one "synthesize this text to this
-   path" core from four provider branches, pin their behaviour, and #402 becomes a
-   loop over it instead of a rewrite of the most cost-critical function in the repo.
-3. **#659 carry the detected intent into the research brief** `[M]` — #533's next
-   half and the cheapest remaining one. Mind the cache key: it omits intent, so an
-   intent-aware brief would serve a stale pre-intent one for three hours.
-4. **#647 tune the fact-selection weights against real traces** `[M]` — still
-   calibrated on run 74's own 54 facts, and the idea-quality diagnosis leans on
-   that ranking. Measure it against `data/traces/*.json` before trusting it further.
-5. **#661 two independent intent classifiers disagree** `[M]` — `angle_intent`
-   (generation) and `run_features.classify_angle` (analytics, persisted) can label
-   the same topic differently; #533 widened one of them and not the other.
+1. **#485 persist discovery so a re-entered topic skips the refetch** `[M]` —
+   pairs with shipped #484. Run 73 paid 38s twice; Ctrl+C no longer kills the
+   process, but the signals are still thrown away.
+2. **#185 caption-vs-background contrast auditor** `[M]` — video craft is
+   permanent; burned captions fail on busy clips and no desktop stage changes
+   that.
+3. **#505 two-line caption balancing** `[S]` — sibling of #419's orphan fix;
+   cheap, visible, survives the app.
+4. **#350 grounding regression corpus in CI** `[M]` — a gate change that
+   loosens grounding should fail CI, not a live run. Frozen verdicts, not
+   another scorer.
+5. **#648 scaffolding markers are a hand-built list** `[M]` — #646/#647 held
+   the weights; the next furniture site will miss `_SCAFFOLDING_MARKERS`.
 
-**Also small and worth grabbing:** **#663** — nothing actually *runs* the signal
-canary yet; it belongs in the overnight chain, not in `all-checks` (CI has no
-network and would fail every build).
-
-**Dropped from this list** (both stay open): **#333 negative-fact store** — parked
-across four `HANDOFF_SYNOPSIS.md` waves, needs an operator decision on precedence
-against decisions §4, and its trigger #341 does not exist. **#416 scene-beat cuts**
-— `[L]`, parked, and blocked on data: `ops ingest-clips --apply` has never run, so
-`data/clip_index.json` does not exist and there is nothing to cut to.
+**Also small:** **#488** width-aware wrapping. **Dropped from this list** (stay
+open): Stage 0 `ask()`/`emit()` · **#333** · **#416** (still no clip index).
 
 ---
 

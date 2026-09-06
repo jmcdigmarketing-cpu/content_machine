@@ -43,7 +43,7 @@ def confidence_note(n: int) -> str:
     if confidence_level(n) == "high":
         return ""
     plural = "s" if n != 1 else ""
-    return f" ⚠ {confidence_level(n)} confidence ({n} sample{plural})"
+    return f" ! {confidence_level(n)} confidence ({n} sample{plural})"
 
 
 # 95% normal approximation. Deliberately not the Beta machinery in

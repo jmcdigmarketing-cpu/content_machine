@@ -59,6 +59,15 @@ class TestScoreHook(unittest.TestCase):
         )
         self.assertEqual(hs.hook, "Nobody saw this coming.")
 
+    def test_banned_template_scores_below_a_neutral_hook(self):
+        """#656. #653 stopped paying for slop; it still took no penalty, so the
+        operator never saw that `_clean_title` would bin the line."""
+        slop = score_hook("Nobody's talking about the GTA 6 map size.")
+        clean = score_hook("Gaethje stopped Topuria in round two.")
+        self.assertLess(slop.score, clean.score)
+        self.assertTrue(any(label == "banned template" for label, _ in slop.reasons))
+        self.assertFalse(any(label == "banned template" for label, _ in clean.reasons))
+
 
 if __name__ == "__main__":
     unittest.main()

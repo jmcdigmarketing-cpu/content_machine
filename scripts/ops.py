@@ -445,7 +445,8 @@ def cmd_signal_canary(_args: argparse.Namespace) -> int:
     results = check_signals()
     save_results(results)
     print(render(results))
-    # Non-zero on a dead signal so `all-checks` fails loudly rather than quietly.
+    # Non-zero on a dead signal so a scheduled overnight / a manual probe fails
+    # loudly rather than quietly. Not part of `all-checks` (CI has no network).
     return 1 if warnings(results) else 0
 
 

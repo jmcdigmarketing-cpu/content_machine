@@ -48,7 +48,9 @@ class TestBuildQuality(unittest.TestCase):
         meant to move when the schema does (v3 added the #645 length keys), and
         a hardcoded copy just reports the bump as a failure."""
         q = run_quality.build_quality(script="  ", channel_id="tapin")
-        self.assertEqual(q, {"quality_version": run_quality.QUALITY_VERSION})
+        self.assertEqual(q["quality_version"], run_quality.QUALITY_VERSION)
+        self.assertEqual(q["grade_version"], "v3")
+        self.assertEqual(set(q), {"quality_version", "grade_version"})
 
     def test_pillar3_features_persist_into_quality(self):
         with patch(
@@ -190,6 +192,84 @@ class TestRunTrace(TraceCase):
         self._write(21, composite_score=77.5)
         trace = run_trace.read_trace(21)
         self.assertEqual(trace["composite_score"], 77.5)
+
+    def test_menu_path_and_intent_are_persisted_when_given(self):
+        """#665. Traces could not say which menu option or intent produced a run."""
+        self._write(31, menu_path="5", angle_intent="explainer")
+        trace = run_trace.read_trace(31)
+        self.assertEqual(trace["menu_path"], "5")
+        self.assertEqual(trace["angle_intent"], "explainer")
+
+    def test_omitted_menu_path_is_absent_not_invented(self):
+        self._write(32)
+        trace = run_trace.read_trace(32)
+        self.assertNotIn("menu_path", trace)
+        self.assertNotIn("angle_intent", trace)
+
+
+class TestFinalizePersistsMenuPath(unittest.TestCase):
+    def test_finalize_forwards_menu_path_and_intent(self):
+        from core import pipeline
+
+        captured: dict = {}
+
+        def _capture(**kwargs):
+            captured.update(kwargs)
+            return "/tmp/trace.json"
+
+        with (
+            patch.object(pipeline, "record_content_run", return_value=88),
+            patch.object(pipeline, "write_run_trace", side_effect=_capture),
+            patch.object(pipeline, "build_quality", return_value={}),
+            patch.object(pipeline, "persist_quality"),
+            patch.object(pipeline, "write_run_dossier"),
+            patch.object(pipeline, "record_learning_outcome"),
+        ):
+            pipeline._finalize_run(
+                channel_id="tapin",
+                input_topic="t",
+                discovery=pipeline.DiscoveryResult(
+                    input_topic="t", base_signals={}, evaluated=[], timings={}
+                ),
+                result=pipeline.PipelineResult(
+                    topic="t",
+                    score=0.0,
+                    signals={},
+                    script="s",
+                    menu_path="5",
+                    angle_intent="explainer",
+                ),
+            )
+        self.assertEqual(captured["menu_path"], "5")
+        self.assertEqual(captured["angle_intent"], "explainer")
+
+    def test_finalize_omits_path_when_unset(self):
+        from core import pipeline
+
+        captured: dict = {}
+
+        def _capture(**kwargs):
+            captured.update(kwargs)
+            return None
+
+        with (
+            patch.object(pipeline, "record_content_run", return_value=89),
+            patch.object(pipeline, "write_run_trace", side_effect=_capture),
+            patch.object(pipeline, "build_quality", return_value={}),
+            patch.object(pipeline, "persist_quality"),
+            patch.object(pipeline, "write_run_dossier"),
+            patch.object(pipeline, "record_learning_outcome"),
+        ):
+            pipeline._finalize_run(
+                channel_id="tapin",
+                input_topic="t",
+                discovery=pipeline.DiscoveryResult(
+                    input_topic="t", base_signals={}, evaluated=[], timings={}
+                ),
+                result=pipeline.PipelineResult(topic="t", score=0.0, signals={}, script="s"),
+            )
+        self.assertIsNone(captured.get("menu_path"))
+        self.assertIsNone(captured.get("angle_intent"))
 
 
 class TestViewers(TraceCase):

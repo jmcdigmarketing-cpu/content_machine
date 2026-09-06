@@ -162,8 +162,20 @@ def escaped_free_first(calls: list[dict[str, Any]] | None = None) -> bool:
     return any(bool(c.get("escaped_free_first")) for c in (calls or []))
 
 
+def _tts_cache_fraction(tts_cached: bool | float) -> float:
+    """True -> 1.0 (free), False -> 0.0 (full price), float -> clamp 0..1 (#402)."""
+    if tts_cached is True:
+        return 1.0
+    if tts_cached is False:
+        return 0.0
+    try:
+        return min(1.0, max(0.0, float(tts_cached)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def render_cost_lines(
-    script: str = "", *, thumbnail_provider: str = "", tts_cached: bool = False
+    script: str = "", *, thumbnail_provider: str = "", tts_cached: bool | float = False
 ) -> dict[str, float]:
     """The cost lines that only exist once a render actually happened.
 
@@ -177,11 +189,12 @@ def render_cost_lines(
     ledger has moved on) would overwrite good values with wrong ones.
     """
     chars = len(script or "")
-    tts = (
-        0.0
-        if local_tts_selected() or tts_cached
-        else (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
-    )
+    full = (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
+    if local_tts_selected():
+        tts = 0.0
+    else:
+        frac = _tts_cache_fraction(tts_cached)
+        tts = full * (1.0 - frac)
     return {
         "tts": round(tts, 4),
         "render": round(_rate("COST_RENDER_PER_VIDEO", 0.0), 4),
@@ -193,7 +206,7 @@ def merge_render_cost(
     script: str = "",
     *,
     thumbnail_provider: str | None = None,
-    tts_cached: bool = False,
+    tts_cached: bool | float = False,
 ) -> dict[str, float]:
     """Fold the render lines into an already-persisted cost dict and re-total it.
 

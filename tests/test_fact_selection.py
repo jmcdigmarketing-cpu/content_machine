@@ -187,5 +187,62 @@ class TestEmptyInput(unittest.TestCase):
         self.assertEqual(_select([]), ([], []))
 
 
+class TestWeightMeasurement(unittest.TestCase):
+    def test_current_split_beats_insertion_order_on_two_topics(self):
+        """#647. Weights were fit on run 74 alone. A second topic must still win.
+
+        Fixtures only — never the operator's data/traces store.
+        """
+        from core.fact_selection import WEIGHT_MEASUREMENT, measure_weight_split
+
+        ufc_detail = [
+            "Ilia Topuria defends the lightweight title against Justin Gaethje at UFC 317.",
+            "The main card is scheduled for five rounds at the T-Mobile Arena in Las Vegas.",
+        ]
+        ufc_scaffold = [
+            "Check out the five biggest takeaways from the UFC 317 preview below.",
+            "Note: All of these details are compiled from various fight previews.",
+        ]
+        cases = [
+            {
+                "topic": TOPIC,
+                "corpus": CORPUS,
+                "claims": SCAFFOLDING + DETAIL,
+                "detail": DETAIL,
+                "scaffolding": SCAFFOLDING,
+                "budget": 420,
+            },
+            {
+                "topic": "UFC 317 Topuria Gaethje",
+                "corpus": "UFC 317 Ilia Topuria Justin Gaethje lightweight title Las Vegas",
+                "claims": ufc_scaffold + ufc_detail,
+                "detail": ufc_detail,
+                "scaffolding": ufc_scaffold,
+                "budget": 220,
+            },
+        ]
+        report = measure_weight_split(cases, today=TODAY)
+        self.assertGreater(report["current_quality"], report["insertion_quality"])
+        self.assertGreaterEqual(report["current_quality"], report["equal_quality"])
+        self.assertEqual(report["verdict"], "held")
+        self.assertEqual(WEIGHT_MEASUREMENT["verdict"], "held")
+
+    def test_overnight_facts_file_does_not_pack_in_insertion_order(self):
+        """#646. auto_generate / overnight used load_key_facts insertion order."""
+        from core.fact_selection import select_headless_facts
+
+        lines = [*SCAFFOLDING, DETAIL[0]]
+        kept = select_headless_facts(
+            lines,
+            topic=TOPIC,
+            corpus=CORPUS,
+            budget=len(DETAIL[0]) + 40,
+            today=TODAY,
+        )
+        packed = " ".join(kept)
+        self.assertIn("Six Wanted Stars", packed)
+        self.assertNotIn("you will find", packed.lower())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -172,6 +172,76 @@ class TestTheOpsVerbIsRegistered(unittest.TestCase):
 
         self.assertIn("signal-canary", COMMANDS)
 
+    def test_all_checks_does_not_run_the_canary(self):
+        """#663. CI has no network; putting the canary in all-checks would fail
+        every build. Inspect the live batch, not a comment."""
+        import inspect
+
+        from scripts import ops
+
+        source = inspect.getsource(ops.cmd_all_checks)
+        self.assertNotIn("signal-canary", source)
+        self.assertIn("feeds", source)
+
+
+class TestOvernightRunsTheCanary(_IsolatedStateCase):
+    """#663. The module existed; nothing nightly called it."""
+
+    def test_overnight_probes_and_persists(self):
+        from core import overnight
+
+        rows = [
+            {
+                "name": "wikipedia",
+                "status": STATUS_OK,
+                "connected": True,
+                "active": True,
+                "detail": "",
+            }
+        ]
+        with (
+            patch("core.batch_generation.collect_topics", return_value=["a"]),
+            patch("core.batch_generation.run_batch", return_value=[]),
+            patch("core.vault_dossiers.write_run_dossier", return_value=None),
+            patch("core.channel_health.build_health"),
+            patch("core.channel_health.health_line", return_value=""),
+            patch("core.events.emit_event", return_value=True),
+            patch("core.signal_canary.check_signals", return_value=rows) as probe,
+            patch("core.signal_canary.save_results") as save,
+        ):
+            result = overnight.run_overnight("tapin", count=1)
+        probe.assert_called_once()
+        save.assert_called_once_with(rows)
+        self.assertIn("wikipedia", result.canary_line)
+        self.assertIn("wikipedia", overnight.render_overnight(result))
+
+    def test_a_dead_signal_surfaces_in_the_overnight_report(self):
+        from apis.signal_contract import STATUS_AUTH
+        from core import overnight
+
+        rows = [
+            {
+                "name": "tapology",
+                "status": STATUS_AUTH,
+                "connected": False,
+                "active": False,
+                "detail": "403",
+            }
+        ]
+        with (
+            patch("core.batch_generation.collect_topics", return_value=["a"]),
+            patch("core.batch_generation.run_batch", return_value=[]),
+            patch("core.vault_dossiers.write_run_dossier", return_value=None),
+            patch("core.channel_health.build_health"),
+            patch("core.channel_health.health_line", return_value=""),
+            patch("core.events.emit_event", return_value=True),
+            patch("core.signal_canary.check_signals", return_value=rows),
+            patch("core.signal_canary.save_results"),
+        ):
+            result = overnight.run_overnight("tapin", count=1)
+        self.assertIn("tapology", result.canary_line)
+        self.assertIn("DEAD", result.canary_line)
+
 
 if __name__ == "__main__":
     unittest.main()

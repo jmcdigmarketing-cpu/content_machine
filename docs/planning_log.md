@@ -2231,3 +2231,109 @@ without stamping the version.
 
 Suite 2,546 -> **2,573** green; ruff clean; mypy **148** (unchanged from
 baseline). Backlog 463 -> **465** open (done 429 -> 434), highest **#663**.
+
+---
+
+## 2026-09-06 — next 15 (no Stage 0)
+
+**Prompt:** implement the attached next-15 plan; do not edit the plan file;
+don't stop until all todos are done; commit only if asked.
+
+**Picked vs the then-roadmap five.** The recommended five (#662, #658, #659,
+#647, #661) plus overnight holes (#655, #663) plus finishing #533 (#660, #656)
+plus idea-authority (#664, #665) plus cost (#402 after the seam) plus headless
+facts (#646) plus #484 and #641-#644. Stage 0 / #333 / #416 stayed out.
+
+**Shipped 1..15 (fail-then-fix; each new test observed red first):**
+
+1. **#655** `confidence_note` `⚠` -> ASCII `!`. `encode("cp1252")` was
+   `UnicodeEncodeError`.
+2. **#663** overnight `_probe_signals`; not `all-checks`.
+3. **#662** mixed rubric versions refuse one correlation bucket.
+4. **#661** `"GTA 6 looks amazing!!!"` `classify_angle` was `general`, now
+   `reaction`. `FEATURE_VERSION` v2.
+5. **#659** explainer brief format + cache key `::{intent}`.
+6. **#660** explainer prompt has no `TAKE A SIDE`; insight inject no-op on
+   calm intents. `GRADE_VERSION` v3.
+7. **#656** banned-template hook **-20**. Slop 93 -> below a 78 neutral.
+8. **#664** option 5 always `creative_brief`; candidate 0; `variant_index=-1`
+   must not fall through to `best_variant_index`.
+9. **#665** `menu_path` / `angle_intent` on traces only when given.
+10. **#658** `synthesize_to_path` seam; cache hit does not call it.
+11. **#402** sentence loop + fractional `tts_cached`. 90% hit bills 10%.
+12. **#646** `select_headless_facts` on auto_generate / overnight.
+13. **#647** weights **held** on two fixtures (GTA + UFC), not retuned.
+14. **#484** Ctrl+C at topic prompt returns without `SystemExit`.
+15. **#644** + **#641-#643** real `channels.json`; ratchet failed on three
+    blank fields first.
+
+**Found on the way:** wiring `local_tts_voices` made
+`test_piper_without_voice_model_returns_none` see a real tapin `.onnx` and
+return a path. The test now clears the profile. That is #643 working.
+
+**Not done:** Stage 0; #333; #416; commit (operator did not ask). Do not add
+`cached-strolling-popcorn.md`.
+
+**Audit:** ruff + format clean; suite **2,573 -> 2,606** green; `git status --short data/` empty.
+Operator: `ops calibration` collecting (3/5); `ops recommend-time` no `⚠`.
+Backlog **449** open / **452** done (`roadmap-index`), highest open **#650**.
+
+
+## 2026-09-06 (review) — Claude reviewing Cursor's wave
+
+**Prompt:** *"review the changes cursor made and do your end."*
+
+**Cursor's headline claims all verified before anything else:** suite **2,606**
+green, ruff and format clean, mypy **148** (baseline), `data/` untouched, 45
+files uncommitted. `GRADE_VERSION` correctly bumped to **v3** with the reason
+recorded — it used the versioning mechanism rather than working around it, which
+is the thing #662 existed to make possible.
+
+**Three defects found, all fixed here, all fail-first.**
+
+**1. The sentence-TTS path was not gated on the cache it exists to serve.**
+`TTS_CACHE` is opt-in and default OFF, but `generate_audio` split every
+multi-sentence script regardless. With the cache off every lookup misses and
+every store is a no-op, so splitting bought nothing and still cost N synth calls,
+an ffmpeg re-encode, and an encoder boundary at every sentence break — in every
+video, for renders that never asked for the cache. This was invisible because
+every test in `TestSentenceCache` sets `TTS_CACHE=true`. Now gated; with the
+cache off, behaviour is byte-identical to before. Measured: a three-sentence
+script called the synth seam three times, now once.
+
+**2. A concat failure erased the spend it had already incurred.** Cursor flagged
+the double-bill in its own slot ("watch it"), and the money half is genuinely
+hard to avoid once the segments are synthesized. The *ledger* half was not: the
+fallback recorded `len(spoken_for_alt)` only, so the segment characters already
+billed vanished from `tts_actual_chars`. That is the #657 defect exactly, one
+level down. The failure path now carries `spent_chars` out and the fallback adds
+it, and the warning names the double-spend instead of saying "cache failed".
+Measured: the ledger recorded **23 chars where 45 were billed**; it now records
+both. Preventing the spend needs a preflight — filed as **#666**.
+
+**3. #662 blessed the history it was filed to catch.** The guard refuses to
+correlate when it sees more than one `grade_version`. But every run graded before
+the stamp existed carries no version at all, so they all read `"unversioned"` —
+one value, `mixed_versions` False, correlation computed. Those are precisely the
+rows the item is about: four components moved across v1/v2/v3 while nothing was
+stamped. With `MIN_MEASURED = 5` and ~10 measured runs this was reachable today,
+not hypothetically — measured, it produced a **0.99998** correlation over eight
+unlabelled rows, a spuriously perfect number that reads as strong evidence.
+`"unversioned"` is now treated as untrustworthy rather than as a version. Two
+existing tests moved with it: `summary_line` now reports "still collecting"
+*before* the version refusal (below the threshold the version question has not
+bitten yet), and `_measured_runs` now stamps a version, because a real run does —
+`run_quality.build_quality` writes `grade_version` on every payload.
+
+**Verified working, not just green:** #664 prints the operator's typed idea as
+candidate `0.` and `chosen_variant(d, -1)` returns it with the base signals;
+#660 suppresses `TAKE A SIDE` and `NO both-sidesing` on a calm intent, and every
+remaining occurrence of "hot take" on that path is a negation, not an order.
+
+**Left as Cursor set it:** the next five (#485, #185, #505, #350, #648) is a
+reasonable list and its call to make. **#647 held** — the operator's
+`data/traces` is empty, so retuning the weights on fixtures would have been
+calibration theatre.
+
+Suite 2,606 -> **2,609** green; ruff and format clean; mypy **148** unchanged;
+`data/` untouched.

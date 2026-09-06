@@ -26,7 +26,7 @@ from core.run_recorder import (
 )
 from core.run_trace import write_run_trace
 from core.script_length import count_spoken_words, get_length_preset, word_range
-from core.tts import generate_audio, last_tts_was_cache_hit, last_tts_was_piper_mix
+from core.tts import generate_audio, last_tts_cache_fraction, last_tts_was_piper_mix
 from core.utils import clean_script_for_tts
 from core.vault_dossiers import write_run_dossier
 from video.render_video import render_vertical_video
@@ -95,6 +95,8 @@ class PipelineResult:
     channel_id: str = "default"
     run_id: int | None = None
     features: dict[str, Any] = field(default_factory=dict)
+    menu_path: str | None = None
+    angle_intent: str | None = None
 
 
 def best_variant_index(
@@ -127,6 +129,20 @@ def best_variant_index(
             angle.get(evaluated[i][0], 0.0),
         ),
     )
+
+
+def chosen_variant(
+    discovery: DiscoveryResult,
+    variant_index: int | None,
+) -> tuple[str, float, Any]:
+    """#664. `variant_index == -1` means keep the operator's typed idea."""
+    evaluated = discovery.evaluated
+    if variant_index == -1:
+        return discovery.input_topic, 0.0, discovery.base_signals
+    if variant_index is not None and 0 <= variant_index < len(evaluated):
+        return evaluated[variant_index]
+    index = best_variant_index(evaluated, discovery.raw_scores, discovery.angle_scores)
+    return evaluated[index]
 
 
 def _score_variant(
@@ -407,6 +423,8 @@ def _finalize_run(
             features=result.features,
             quality=quality,
             composite_score=result.score,
+            menu_path=result.menu_path,
+            angle_intent=result.angle_intent,
         )
     except Exception as exc:
         # Warning, not debug: the trace is what `ops traces`, `ops dossier` and
@@ -489,6 +507,7 @@ def run_pipeline(
     vault_relevance_audit: list[dict[str, Any]] | None = None,
     source_urls: list[str] | None = None,
     relevance_corpus: str = "",
+    menu_path: str | None = None,
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -496,6 +515,10 @@ def run_pipeline(
     """
     channel_id = resolve_channel_id(channel_id or (discovery.channel_id if discovery else None))
     result = PipelineResult(topic=topic, score=0.0, signals={}, channel_id=channel_id)
+    result.menu_path = menu_path
+    from core.angle_intent import detect_angle_intent
+
+    result.angle_intent = detect_angle_intent(topic)
 
     if discovery is None:
         from core.run_mode import guard_before_discovery
@@ -521,12 +544,7 @@ def run_pipeline(
 
     result.variants = [(v, s) for v, s, _ in evaluated]
 
-    if variant_index is not None and 0 <= variant_index < len(evaluated):
-        index = variant_index
-    else:
-        index = best_variant_index(evaluated, discovery.raw_scores)
-
-    best_topic, best_score, best_signals = evaluated[index]
+    best_topic, best_score, best_signals = chosen_variant(discovery, variant_index)
     result.topic = best_topic
     result.score = best_score
     result.signals = best_signals
@@ -599,6 +617,10 @@ def run_pipeline(
         fact_source="manual" if key_facts else "signals",
         vault_relevance_audit=vault_relevance_audit,
     )
+    if result.menu_path:
+        result.features["menu_path"] = str(result.menu_path)
+    if result.angle_intent:
+        result.features["angle_intent"] = result.angle_intent
 
     result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []
     result.features["trade_warnings"] = content.get("trade_warnings") or []
@@ -858,7 +880,7 @@ def run_media_only(
                 (load_features(content_run_id) or {}).get("cost"),
                 script,
                 thumbnail_provider=thumb_provider,
-                tts_cached=last_tts_was_cache_hit() or last_tts_was_piper_mix(),
+                tts_cached=(1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
             )
             if thumbnail_candidates:
                 cost["thumbnail"] = round(
@@ -876,7 +898,7 @@ def run_media_only(
                 content_run_id,
                 {
                     "cost": cost,
-                    "tts_cached": last_tts_was_cache_hit(),
+                    "tts_cached": (1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
                     **_tts_forecast_features(),
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,
@@ -888,7 +910,7 @@ def run_media_only(
                 {
                     "status": "rendered",
                     "cost": cost,
-                    "tts_cached": last_tts_was_cache_hit(),
+                    "tts_cached": (1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,
                     "thumbnail_candidates": thumbnail_candidates,

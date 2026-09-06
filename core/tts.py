@@ -22,6 +22,7 @@ logger = get_logger("core.tts")
 # (re-synth skipped — do not double-bill the ledger) or an occasional Piper mix.
 _last_cache_hit = False
 _last_piper_mix = False
+_last_cache_fraction = 0.0
 
 
 def last_tts_was_cache_hit() -> bool:
@@ -30,6 +31,11 @@ def last_tts_was_cache_hit() -> bool:
 
 def last_tts_was_piper_mix() -> bool:
     return _last_piper_mix
+
+
+def last_tts_cache_fraction() -> float:
+    """0..1 share of synthesized characters served from the TTS cache (#402)."""
+    return _last_cache_fraction
 
 
 # Fallback catalog, used only when config/voices.json is missing or unusable. The
@@ -347,9 +353,10 @@ def _tts_cache_voice(channel_id: str | None) -> str:
 
 
 def generate_audio(script, output_path, channel_id: str | None = None):
-    global _last_cache_hit, _last_piper_mix
+    global _last_cache_hit, _last_piper_mix, _last_cache_fraction
     _last_cache_hit = False
     _last_piper_mix = False
+    _last_cache_fraction = 0.0
     channel_id = resolve_channel_id(channel_id)
     spoken = clean_script_for_tts(script)
     try:
@@ -392,11 +399,239 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     cache_key = tts_cache_key(spoken_for_alt, _resolve_tts_provider(), _tts_cache_voice(channel_id))
     if tts_cache_lookup(cache_key, output_path):
         _last_cache_hit = True
+        _last_cache_fraction = 1.0
         _record_actual(0)
         print(f"[TTS] Channel: {channel_id} | cache hit")
         return output_path
 
+    from core.script_length import split_spoken_sentences
+
+    # Gated on the cache it exists to serve. With TTS_CACHE off (the default)
+    # every lookup misses and every store is a no-op, so splitting buys nothing
+    # and still costs N synth calls, an ffmpeg re-encode, and an encoder boundary
+    # at every sentence break in every video.
+    sents = split_spoken_sentences(spoken) if tts_cache_enabled() else []
+    alts = split_spoken_sentences(spoken_for_alt) if tts_cache_enabled() else []
+    if len(sents) == len(alts) and len(sents) > 1:
+        try:
+            return _generate_by_sentences(
+                sents,
+                alts,
+                output_path,
+                channel_id,
+                cache_key,
+                _record_actual,
+            )
+        except Exception as exc:
+            # The segments were already synthesized and billed. Falling back
+            # re-synthesizes the whole script, so the provider is charged roughly
+            # twice -- and recording only the second pass would erase the first
+            # from `tts_actual_chars`, which is the #657 defect again.
+            spent = int(getattr(exc, "spent_chars", 0) or 0)
+            if spent:
+                logger.warning(
+                    "sentence TTS concat failed after billing %d char(s); "
+                    "the whole script is being re-synthesized, so this render is "
+                    "billed twice: %s",
+                    spent,
+                    exc,
+                )
+            else:
+                logger.warning("sentence TTS cache failed - synthesizing whole script: %s", exc)
+            _record_actual(spent + len(spoken_for_alt))
+            return synthesize_to_path(spoken, spoken_for_alt, output_path, channel_id, cache_key)
+
     _record_actual(len(spoken_for_alt))
+    return synthesize_to_path(spoken, spoken_for_alt, output_path, channel_id, cache_key)
+
+
+def offset_word_timings(words: list[dict[str, Any]], offset: float) -> list[dict[str, Any]]:
+    """Shift word sidecar timestamps by `offset` seconds (#402 concat)."""
+    shifted: list[dict[str, Any]] = []
+    for item in words or []:
+        row = dict(item)
+        start = row.get("start")
+        end = row.get("end")
+        try:
+            if start is not None:
+                row["start"] = float(start) + offset
+            if end is not None:
+                row["end"] = float(end) + offset
+        except (TypeError, ValueError):
+            pass
+        shifted.append(row)
+    return shifted
+
+
+def segment_audio_duration(path: str) -> float:
+    """Prefer the sidecar's last end time; ffprobe if the sidecar is missing."""
+    sidecar = path + ".words.json"
+    if os.path.isfile(sidecar):
+        try:
+            with open(sidecar, encoding="utf-8") as f:
+                words = json.load(f)
+            ends: list[float] = []
+            if isinstance(words, list):
+                for word in words:
+                    if not isinstance(word, dict) or word.get("end") is None:
+                        continue
+                    ends.append(float(word["end"]))
+            if ends:
+                return max(ends)
+        except (OSError, TypeError, ValueError):
+            pass
+    import subprocess
+
+    cmd = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "csv=p=0",
+        path,
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        return float((proc.stdout or "0").strip() or 0)
+    except (OSError, TypeError, ValueError) as exc:
+        logger.debug("segment duration skipped: %s", exc)
+        return 0.0
+
+
+def concat_audio_segments(paths: list[str], dest: str) -> str:
+    """Re-encode concatenated MP3s. Copy-concat across providers is unsafe."""
+    import subprocess
+
+    if not paths:
+        raise RuntimeError("no TTS segments to concat")
+    list_file = dest + ".concat.txt"
+    try:
+        with open(list_file, "w", encoding="utf-8") as f:
+            for path in paths:
+                safe = path.replace("\\", "/").replace("'", r"'\''")
+                f.write(f"file '{safe}'\n")
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            list_file,
+            "-c:a",
+            "libmp3lame",
+            "-qscale:a",
+            "4",
+            dest,
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if proc.returncode != 0 or not os.path.isfile(dest) or os.path.getsize(dest) <= 0:
+            err = (proc.stderr or "")[-300:]
+            raise RuntimeError(f"ffmpeg concat failed (rc={proc.returncode}): {err}")
+        return dest
+    finally:
+        try:
+            os.remove(list_file)
+        except OSError:
+            pass
+
+
+def _write_concat_word_sidecar(paths: list[str], dest: str) -> None:
+    merged: list[dict[str, Any]] = []
+    offset = 0.0
+    for path in paths:
+        sidecar = path + ".words.json"
+        chunk: list[dict[str, Any]] = []
+        if os.path.isfile(sidecar):
+            try:
+                with open(sidecar, encoding="utf-8") as f:
+                    loaded = json.load(f)
+                if isinstance(loaded, list):
+                    chunk = [w for w in loaded if isinstance(w, dict)]
+            except (OSError, ValueError):
+                chunk = []
+        merged.extend(offset_word_timings(chunk, offset))
+        offset += segment_audio_duration(path)
+    try:
+        with open(dest + ".words.json", "w", encoding="utf-8") as f:
+            json.dump(merged, f)
+    except OSError as exc:
+        logger.debug("concat word sidecar skipped: %s", exc)
+
+
+def _generate_by_sentences(
+    sents: list[str],
+    alts: list[str],
+    output_path: str,
+    channel_id: str | None,
+    whole_cache_key: str,
+    record_actual,
+) -> str:
+    global _last_cache_hit, _last_cache_fraction
+    provider = _resolve_tts_provider()
+    voice = _tts_cache_voice(channel_id)
+    paths: list[str] = []
+    cached_chars = 0
+    synth_chars = 0
+    tmp_paths: list[str] = []
+    try:
+        for i, (sent, alt) in enumerate(zip(sents, alts, strict=True)):
+            seg = f"{output_path}.seg{i}.mp3"
+            tmp_paths.append(seg)
+            key = tts_cache_key(alt, provider, voice)
+            if tts_cache_lookup(key, seg):
+                cached_chars += len(alt)
+            else:
+                synthesize_to_path(sent, alt, seg, channel_id, key, allow_piper_mix=False)
+                synth_chars += len(alt)
+            paths.append(seg)
+        try:
+            concat_audio_segments(paths, output_path)
+            _write_concat_word_sidecar(paths, output_path)
+        except Exception as exc:
+            # Tell the caller what was already paid for, so the fallback can add
+            # it rather than report only its own synthesis.
+            exc.spent_chars = synth_chars  # type: ignore[attr-defined]
+            raise
+        tts_cache_store(whole_cache_key, output_path)
+        total = cached_chars + synth_chars
+        _last_cache_fraction = (cached_chars / total) if total else 0.0
+        _last_cache_hit = _last_cache_fraction >= 1.0
+        record_actual(synth_chars)
+        if _last_cache_hit:
+            print(f"[TTS] Channel: {channel_id} | cache hit (sentences)")
+        else:
+            pct = f"{_last_cache_fraction:.0%}"
+            print(f"[TTS] Channel: {channel_id} | sentence cache {pct}")
+        return output_path
+    finally:
+        for path in tmp_paths:
+            for extra in (path, path + ".words.json"):
+                try:
+                    os.remove(extra)
+                except OSError:
+                    pass
+
+
+def synthesize_to_path(
+    spoken: str,
+    spoken_for_alt: str,
+    output_path: str,
+    channel_id: str | None,
+    cache_key: str,
+    *,
+    allow_piper_mix: bool = True,
+) -> str:
+    """Write synthesized audio for one text blob. Callers own cache lookup + actuals.
+
+    #658: generate_audio (and later per-sentence cache) go through this seam so
+    provider branches are not duplicated. Piper mix still skips cache store —
+    that path is an occasional stand-in, not a billed identity for the script.
+    """
+    global _last_piper_mix
 
     if is_local_tts_provider():
         try:
@@ -418,7 +653,7 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         tts_cache_store(cache_key, alt)
         return alt
 
-    if _should_piper_mix():
+    if allow_piper_mix and _should_piper_mix():
         mixed_spoken = apply_pronunciation_lexicon(spoken, channel_id)
         try:
             mixed = _piper_synth(mixed_spoken, output_path, channel_id)
@@ -468,6 +703,7 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     # runs after the whole script + grounding pipeline. Mark it dead for the session and
     # retry once with a freshly resolved voice.
     last_voice = ""
+    model_id = ""
     for attempt in (0, 1):
         voice_id, model_id = resolve_tts_config(channel_id)
         last_voice = voice_id

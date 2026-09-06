@@ -8,6 +8,7 @@ contract without any heavy backend installed: the synth + ffmpeg are mocked.
 import os
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from core import tts
@@ -106,6 +107,10 @@ class TestAltProviderChain(unittest.TestCase):
                 clear=False,
             ),
             patch("core.tts.load_local_voice_pool", return_value={}),
+            patch(
+                "core.tts.get_channel_profile",
+                return_value=SimpleNamespace(local_tts_voices=None, local_tts_voice=None),
+            ),
         ):
             self.assertIsNone(tts._try_alt_tts_provider("hi", "out.mp3", "tapin"))
 

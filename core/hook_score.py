@@ -159,6 +159,11 @@ def score_hook(hook: str) -> HookScore:
     if _STAKES.search(hook) and not banned_template:
         add("high stakes", 10)
 
+    if banned_template:
+        # #656. No bonus was not enough: a slop hook still outscored a clean
+        # specific one (93 vs 78 on the filed pair) and `_clean_title` bins it.
+        add("banned template", -20)
+
     score = max(0, min(100, score))
     return HookScore(score=score, hook=hook, reasons=reasons)
 

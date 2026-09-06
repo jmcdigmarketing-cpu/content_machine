@@ -60,6 +60,17 @@ class TestInjectInsight(unittest.TestCase):
                 mock_llm.assert_not_called()
         self.assertEqual(out, _RECAP)
 
+    def test_explainer_intent_does_not_inject_a_take(self):
+        """#660. A calm explainer is not a defect to repair."""
+        from core.angle_intent import ANGLE_EXPLAINER
+
+        with patch.object(ce, "_call_content_llm") as mock_llm:
+            out = ce._maybe_inject_insight(
+                _RECAP, _FACTS, "how does the offside rule actually work", intent=ANGLE_EXPLAINER
+            )
+            mock_llm.assert_not_called()
+        self.assertEqual(out, _RECAP)
+
 
 if __name__ == "__main__":
     unittest.main()

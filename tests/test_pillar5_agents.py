@@ -179,6 +179,8 @@ class TestOvernight(unittest.TestCase):
             patch("core.channel_health.build_health", return_value=MagicMock()),
             patch("core.channel_health.health_line", return_value="Health: GREEN"),
             patch("core.events.emit_event", return_value=True) as mock_evt,
+            patch("core.signal_canary.check_signals", return_value=[]),
+            patch("core.signal_canary.save_results"),
         ):
             result = overnight.run_overnight("tapin", count=3)
         mock_batch.assert_called_once_with("tapin", ["a", "b", "c"])
@@ -192,6 +194,8 @@ class TestOvernight(unittest.TestCase):
         with (
             patch("core.overnight_quota.adjust_count", return_value=(0, "YouTube remaining 100")),
             patch("core.batch_generation.collect_topics") as mock_topics,
+            patch("core.signal_canary.check_signals", return_value=[]),
+            patch("core.signal_canary.save_results"),
         ):
             result = overnight.run_overnight("tapin", count=3)
         mock_topics.assert_not_called()
@@ -202,6 +206,8 @@ class TestOvernight(unittest.TestCase):
         with (
             patch("core.batch_generation.collect_topics", return_value=[]),
             patch("core.batch_generation.run_batch") as mock_batch,
+            patch("core.signal_canary.check_signals", return_value=[]),
+            patch("core.signal_canary.save_results"),
         ):
             result = overnight.run_overnight("tapin")
         mock_batch.assert_not_called()

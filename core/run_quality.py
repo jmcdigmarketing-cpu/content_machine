@@ -53,7 +53,9 @@ def build_quality(
 ) -> dict[str, Any]:
     """Score a finished script on the existing quality axes (pure reads, fail-open)."""
     features = features or {}
-    quality: dict[str, Any] = {"quality_version": QUALITY_VERSION}
+    from core.video_grade import GRADE_VERSION
+
+    quality: dict[str, Any] = {"quality_version": QUALITY_VERSION, "grade_version": GRADE_VERSION}
     if not (script or "").strip():
         return quality
 

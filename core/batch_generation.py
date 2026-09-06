@@ -135,8 +135,11 @@ def generate_draft(
     except Exception as exc:
         logger.debug("next_arm skipped: %s", exc)
 
+    from core.fact_selection import select_headless_facts
     from core.vault_relevance import build_relevance_corpus
 
+    corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
+    packed = select_headless_facts(key_facts, topic=topic, corpus=corpus) if key_facts else None
     result = run_pipeline(
         topic,
         discovery=discovery,
@@ -145,8 +148,8 @@ def generate_draft(
         proceed_video=False,
         channel_id=channel_id,
         creative_brief=experiment[2] if experiment else "",
-        key_facts=key_facts,
-        relevance_corpus=build_relevance_corpus(best_signals, operator_facts=key_facts or []),
+        key_facts=packed,
+        relevance_corpus=corpus,
     )
     if result.aborted or not (result.script or "").strip():
         out.error = result.abort_reason or "pipeline produced no script"

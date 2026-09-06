@@ -108,6 +108,8 @@ def write_run_trace(
     features: dict[str, Any] | None = None,
     quality: dict[str, Any] | None = None,
     composite_score: float | None = None,
+    menu_path: str | None = None,
+    angle_intent: str | None = None,
 ) -> str | None:
     """Write the trace file; returns its path or None (fail-open)."""
     if not run_id:
@@ -146,6 +148,10 @@ def write_run_trace(
             "quality": redact_trace_value(dict(quality or {})),
             "composite_score": composite_score,
         }
+        if menu_path:
+            trace["menu_path"] = str(menu_path)
+        if angle_intent:
+            trace["angle_intent"] = str(angle_intent)
         os.makedirs(TRACES_DIR, exist_ok=True)
         path = _trace_path(run_id)
         with open(path, "w", encoding="utf-8") as f:

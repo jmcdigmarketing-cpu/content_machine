@@ -187,9 +187,65 @@ def _build_prompts(
     creative_brief: str = "",
     key_facts: list[str] | None = None,
     extra_directive: str = "",
+    intent: str = "",
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
+
+    from core.angle_intent import CALM_INTENTS, detect_angle_intent
+
+    resolved_intent = intent or detect_angle_intent(seed_topic or topic)
+    calm = resolved_intent in CALM_INTENTS
+    if calm:
+        voice_take = (
+            "- Be clear, not a debate. Explain the mechanism. Do not invent a controversy "
+            "or force a hot take onto a question that asked how something works."
+        )
+        framing_take = (
+            "- The EDITORIAL ANGLE is the thing being explained; facts are what make it click. "
+            "Shape the script as hook → how it works → the detail people get wrong → payoff. "
+            "A viewer should walk away understanding the mechanism, not remembering a stance."
+        )
+        must_close = (
+            "- Close with the mechanism, the misconception, or the practical implication — "
+            "not a hot take and not a comment-bait question."
+        )
+        user_take = (
+            f"- FORMAT is {resolved_intent}. Explain clearly. Do NOT take a side, "
+            "do NOT write a hot take, and do NOT turn this into a debate.\n"
+            "- Cut hedging and filler. Every sentence teaches or specifies.\n"
+            "- Close on a SPECIFIC line — the mechanism, the exception, or the practical "
+            'implication. NEVER "what do you think? drop your thoughts in the comments".'
+        )
+    else:
+        voice_take = (
+            '- NO both-sidesing. Do NOT write "some argue X, while others believe Y". '
+            "State what YOU think and why."
+        )
+        framing_take = (
+            "- The EDITORIAL ANGLE is the spine; facts are ammunition for it. Shape the "
+            "script as hook/thesis → argue the take, pulling in facts as evidence → payoff. "
+            "A viewer should walk away remembering the ARGUMENT, not a list of stats."
+        )
+        must_close = (
+            '- Include at least one explicit STANCE beat — a prediction or "why this matters" '
+            'call the audience can agree or argue with (e.g. "expect…", "here\'s why…", '
+            '"the real reason…", "my prediction…", "the bigger picture…") — grounded ONLY '
+            "in the verified facts, never an invented specific.\n"
+            "- Build to a strong closing line — a hot take, implication, or open question "
+            "that drives comments."
+        )
+        user_take = (
+            '- If RESEARCH BRIEF says format is "analysis" or "prediction": DO NOT frame as a '
+            "news announcement. Write as an informed breakdown, hot take, or prediction — "
+            'not "just released" or "biggest update yet" language.\n'
+            "- TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it "
+            '("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.\n'
+            '- Cut hedging and filler ("only time will tell", "the narrative is far from over", '
+            '"could be a turning point"). Every sentence advances the take.\n'
+            "- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a "
+            'sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".'
+        )
 
     retention_rule = ""
     if preset.choice in ("2", "3"):
@@ -224,13 +280,13 @@ VOICE — write like a sharp, opinionated human creator talking to camera, NOT a
 - SAY WHAT HAPPENED FIRST. Lead with the concrete facts in plain words — who did what to whom, how, and when (e.g. "Gaethje TKO'd Topuria in round 2") — BEFORE any commentary. No throat-clearing intro.
 - Concrete beats abstract every time. Use names, methods, rounds, numbers from VERIFIED FACTS — not vague abstractions like "systemic issues", "the broader narrative", "the delicate balance".
 - BANNED — never write these or anything like them: "grappling with the fallout", "at a crossroads", "as the dust settles", "the delicate balance between", "double-edged sword", "systemic issues", "the future of X depends on it", "it's essential to understand", "underscores a critical need", "a testament to", "the lifeblood of", "ripe with opportunities", "In conclusion", "the very foundations of", "now more than ever".
-- NO both-sidesing. Do NOT write "some argue X, while others believe Y". State what YOU think and why.
+{voice_take}
 - The topic is the assignment: if it says "recap / results", RECAP WHAT HAPPENED — do not drift into think-piece territory about officiating reform, "the meta", or the sport's future unless the facts are about that.
 - Delete any sentence that could appear in a generic essay on this subject. Every sentence must carry a specific fact or a real opinion.
 
 FRAMING — facts are EVIDENCE, not the point:
 - Do NOT recite facts. Never write 3+ bare-fact sentences in a row (e.g. "It drops Nov 19. Pre-orders opened June 25. Standard is $79.99. Ultimate is $99.99."). Each fact must earn its place by advancing YOUR take — introduce it to make a point, land a consequence, or set up the argument, then move forward.
-- The EDITORIAL ANGLE is the spine; facts are ammunition for it. Shape the script as hook/thesis → argue the take, pulling in facts as evidence → payoff. A viewer should walk away remembering the ARGUMENT, not a list of stats.
+{framing_take}
 - Anything NOT in VERIFIED FACTS or OPERATOR KEY FACTS — rumors, leaks, projections, anything from the research brief or the wider internet — must be EXPLICITLY attributed ("reports claim…", "the rumor is…", "unconfirmed, but…") and NEVER stated as fact. Speculation dressed as fact is what gets flagged and kills trust.
 
 OPERATOR KEY FACTS RULE: If OPERATOR KEY FACTS are present in the user message, treat them as
@@ -255,8 +311,7 @@ You must:
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
 - Never use stock filler transitions. Banned verbatim: "But here's the thing", "This isn't just X — it's Y", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
-- Include at least one explicit STANCE beat — a prediction or "why this matters" call the audience can agree or argue with (e.g. "expect…", "here's why…", "the real reason…", "my prediction…", "the bigger picture…") — grounded ONLY in the verified facts, never an invented specific.
-- Build to a strong closing line — a hot take, implication, or open question that drives comments.
+{must_close}
 - Title and description must be SEO-friendly without misleading clickbait.
 - Target {min_words}-{max_words} words (~{preset.target_words}) — but hit it with SUBSTANCE, never filler. If you run out of real facts and real takes before the minimum, STOP. A tight shorter script beats a padded one.
 """
@@ -357,10 +412,7 @@ INSTRUCTIONS:
 - Script length: REQUIRED {min_words}-{max_words} words (~{preset.duration_hint()} when spoken).
 - Open with a punchy hook sentence under 12 words (no "Today/Let's/In this video").
 - If Long format: structure as hook → context → analysis → implications → closing take.
-- If RESEARCH BRIEF says format is "analysis" or "prediction": DO NOT frame as a news announcement. Write as an informed breakdown, hot take, or prediction — not "just released" or "biggest update yet" language.
-- TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it ("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.
-- Cut hedging and filler ("only time will tell", "the narrative is far from over", "could be a turning point"). Every sentence advances the take.
-- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".
+{user_take}
 - Do NOT write the YouTube title — title is generated in a separate pass after facts + script.
 - Generate a concise SEO description (hook first line, call-to-action last line).
 - Generate 8-15 YouTube tags (no fabricated names).
@@ -561,16 +613,18 @@ def _insight_injection_enabled() -> bool:
     return os.getenv("INSIGHT_INJECTION_ENABLED", "true").lower() not in ("0", "false", "no")
 
 
-def _maybe_inject_insight(script: str, grounding_text: str, topic: str) -> str:
+def _maybe_inject_insight(script: str, grounding_text: str, topic: str, *, intent: str = "") -> str:
     """Add one opinion/prediction/'why it matters' beat when a script reads as a recap.
 
     Default-on (``INSIGHT_INJECTION_ENABLED``). No-op when the script already
     carries a take (same detector the authenticity gate scores on), so most runs
-    pay nothing. The beat must be grounded ONLY in the verified facts — no invented
-    specifics — and runs BEFORE the grounding regen so anything it slips in still
-    gets cleaned. Accepted only if it now reads as having a take and didn't shrink
-    the script (an injection should add words, not drop them).
+    pay nothing. Also no-op for calm intents (#660) — an explainer without a
+    take is the assignment, not a defect.
     """
+    from core.angle_intent import CALM_INTENTS, detect_angle_intent
+
+    if (intent or detect_angle_intent(topic)) in CALM_INTENTS:
+        return script
     if not _insight_injection_enabled():
         return script
     from core.authenticity import has_insight
@@ -825,6 +879,9 @@ def generate_content_package(
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
+    from core.angle_intent import detect_angle_intent
+
+    resolved_intent = detect_angle_intent(seed_topic or topic)
     clean_key_facts_early = _sanitize_key_facts(key_facts)
     script_brief = build_script_brief(
         topic,
@@ -918,6 +975,7 @@ def generate_content_package(
         creative_brief=creative_brief,
         key_facts=key_facts,
         extra_directive=extra_directive,
+        intent=resolved_intent,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude
@@ -992,7 +1050,7 @@ def generate_content_package(
     # Original-insight injection: if the script reads as a neutral recap, add one
     # opinion/prediction beat (Phase O authenticity). Runs BEFORE grounding so any
     # specifics it introduces still get caught/cleaned below.
-    script = _maybe_inject_insight(script, grounding_text, topic)
+    script = _maybe_inject_insight(script, grounding_text, topic, intent=resolved_intent)
 
     llm_tags = payload.get("tags") or []
     if isinstance(llm_tags, str):

@@ -40,6 +40,12 @@ class TestConfidenceNote(unittest.TestCase):
         self.assertIn("1 sample)", confidence_note(1))
         self.assertIn("2 samples)", confidence_note(2))
 
+    def test_note_is_cp1252_safe(self):
+        """#655. Candidate 250: a bare cp1252 console raises UnicodeEncodeError
+        on ⚠. The app configures UTF-8; scripts and one-liners do not."""
+        confidence_note(1).encode("cp1252")
+        confidence_note(MODERATE_SAMPLES).encode("cp1252")
+
 
 class TestConfidenceInterval(unittest.TestCase):
     """#351: a sample count says how much evidence there is; an interval says

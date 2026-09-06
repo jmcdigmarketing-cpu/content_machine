@@ -9,8 +9,14 @@
           "XjLkpWUlnhS8i7gGz3lZ": 2,
           "r1KmysJdVYZjJCm4mL3b": 1
         },
-        "model_id": "eleven_multilingual_v2"
-      }
+        "model_id": "eleven_multilingual_v2",
+        "local_voice": "video/voices/en_US-bobby-medium.onnx",
+        "local_voices": [
+          "video/voices/en_US-bobby-medium.onnx",
+          "video/voices/en_US-carl-medium.onnx"
+        ]
+      },
+      "ui_theme": "plain"
     },
     "tapin": {
       "name": "TapIn Media",
@@ -52,9 +58,20 @@
       "publishers_enabled": ["youtube"],
       "youtube_oauth_token_file": "config/secrets/youtube_token_tapin.json",
       "privacy_status_default": "private",
+      "ui_theme": "dbz",
       "tts": {
         "voice_id": "nPczCjzI2devNBz1zQrb",
-        "model_id": "eleven_multilingual_v2"
+        "model_id": "eleven_multilingual_v2",
+        "voice_pool": {
+          "nPczCjzI2devNBz1zQrb": 4,
+          "XjLkpWUlnhS8i7gGz3lZ": 2,
+          "JBFqnCBsd6RMkjVDRZzb": 1
+        },
+        "local_voice": "video/voices/en_US-bobby-medium.onnx",
+        "local_voices": [
+          "video/voices/en_US-bobby-medium.onnx",
+          "video/voices/en_US-eminem-medium.onnx"
+        ]
       },
       "weight_overrides": {
         "youtube": 0.28,
@@ -146,9 +163,20 @@
       "publishers_enabled": ["youtube"],
       "youtube_oauth_token_file": "config/secrets/youtube_token_moneywise.json",
       "privacy_status_default": "private",
+      "ui_theme": "plain",
       "tts": {
         "voice_id": "XjLkpWUlnhS8i7gGz3lZ",
-        "model_id": "eleven_multilingual_v2"
+        "model_id": "eleven_multilingual_v2",
+        "voice_pool": {
+          "XjLkpWUlnhS8i7gGz3lZ": 4,
+          "nPczCjzI2devNBz1zQrb": 2,
+          "r1KmysJdVYZjJCm4mL3b": 1
+        },
+        "local_voice": "video/voices/en_US-carl-medium.onnx",
+        "local_voices": [
+          "video/voices/en_US-carl-medium.onnx",
+          "video/voices/en_US-patrick-medium.onnx"
+        ]
       },
       "post_schedule": {
         "timezone": "America/New_York",

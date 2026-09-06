@@ -42,6 +42,7 @@ class OvernightResult:
     skillopt_line: str = ""
     quota_line: str = ""
     pause_line: str = ""
+    canary_line: str = ""
 
 
 def run_overnight(
@@ -67,6 +68,40 @@ def run_overnight(
     except Exception as exc:
         logger.debug("overnight pause check skipped: %s", exc)
 
+    try:
+        return _run_overnight_body(
+            channel,
+            result,
+            count=count,
+            topics=topics,
+            file=file,
+            facts_file=facts_file,
+        )
+    finally:
+        _probe_signals(result)
+
+
+def _probe_signals(result: OvernightResult) -> None:
+    """#663. Nightly liveness, fail-open, never via all-checks (CI has no network)."""
+    try:
+        from core.signal_canary import check_signals, render, save_results
+
+        rows = check_signals()
+        save_results(rows)
+        result.canary_line = render(rows)
+    except Exception as exc:
+        logger.debug("overnight signal canary skipped: %s", exc)
+
+
+def _run_overnight_body(
+    channel: str,
+    result: OvernightResult,
+    *,
+    count: int,
+    topics: list[str] | None,
+    file: str | None,
+    facts_file: str | None,
+) -> OvernightResult:
     from core.batch_generation import collect_topics, run_batch
     from core.operator_facts import load_key_facts
 
@@ -174,6 +209,9 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append("Overnight skipped (quota gate). Nothing drafted.")
         else:
             lines.append("No topics to draft (best bets unavailable). Nothing done.")
+        if result.canary_line:
+            lines.append("")
+            lines.append(result.canary_line)
         return "\n".join(lines)
     try:
         lines.append(render_summary(result.outcomes).strip())
@@ -185,6 +223,9 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(result.health_line)
     if result.skillopt_line:
         lines.append(result.skillopt_line)
+    if result.canary_line:
+        lines.append("")
+        lines.append(result.canary_line)
     lines.append("Review drafts in output/<channel>/drafts/, then approve to render.")
     return "\n".join(lines)
 

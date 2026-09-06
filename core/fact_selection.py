@@ -34,8 +34,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
-from core.fact_store import TIER_OPERATOR, FactRecord, freshness_bonus
+from core.fact_store import TIER_LINK, TIER_OPERATOR, FactRecord, freshness_bonus
 from core.logging import get_logger
 from core.operator_facts import key_fact_split_width, max_operator_key_facts, split_at_sentences
 
@@ -191,13 +192,25 @@ def _relevance(record: FactRecord, *, topic: str, corpus: str) -> float:
         return 0.5
 
 
-def _composite(record: FactRecord, *, topic: str, corpus: str, today: date) -> float:
+def _composite(
+    record: FactRecord,
+    *,
+    topic: str,
+    corpus: str,
+    today: date,
+    weights: dict[str, float] | None = None,
+) -> float:
+    rel = (weights or {}).get("relevance", _WEIGHT_RELEVANCE)
+    rec = (weights or {}).get("recency", _WEIGHT_RECENCY)
+    spec = (weights or {}).get("specificity", _WEIGHT_SPECIFICITY)
+    nov = (weights or {}).get("novelty", _WEIGHT_NOVELTY)
+    scaf = (weights or {}).get("scaffolding", _WEIGHT_SCAFFOLDING)
     score = (
-        _WEIGHT_RELEVANCE * _relevance(record, topic=topic, corpus=corpus)
-        + _WEIGHT_RECENCY * _recency(record, today)
-        + _WEIGHT_SPECIFICITY * _specificity(record.claim)
-        + _WEIGHT_NOVELTY * _novelty(record.claim, corpus)
-        - _WEIGHT_SCAFFOLDING * scaffolding_penalty(record.claim)
+        rel * _relevance(record, topic=topic, corpus=corpus)
+        + rec * _recency(record, today)
+        + spec * _specificity(record.claim)
+        + nov * _novelty(record.claim, corpus)
+        - scaf * scaffolding_penalty(record.claim)
     )
     return round(max(0.0, min(1.0, score)), 4)
 
@@ -211,6 +224,7 @@ def select_facts_for_prompt(
     line_cap: int | None = None,
     width: int | None = None,
     today: date | None = None,
+    weights: dict[str, float] | None = None,
 ) -> tuple[list[str], list[FactSelectionDrop]]:
     """Prompt lines chosen by score, emitted in intake order, plus what was cut.
 
@@ -243,7 +257,7 @@ def select_facts_for_prompt(
                 # token, not a claim that the operator's line scored 2.0.
                 score=2.0
                 if pinned
-                else _composite(record, topic=topic, corpus=corpus, today=today),
+                else _composite(record, topic=topic, corpus=corpus, today=today, weights=weights),
                 pinned=pinned,
             )
         )
@@ -289,3 +303,138 @@ def select_facts_for_prompt(
     if drops:
         logger.info("%d fact(s) held back from the prompt (%d packed)", len(drops), len(out))
     return out, drops
+
+
+def select_headless_facts(
+    facts: list[str] | None,
+    *,
+    topic: str = "",
+    corpus: str = "",
+    typed: list[str] | None = None,
+    budget: int | None = None,
+    line_cap: int | None = None,
+    today: date | None = None,
+) -> list[str]:
+    """Rank a facts-file / --fact pool the same way the interactive prompt does.
+
+    File lines are treated as link-extracted article text (ranked, scaffolding
+    sinks). Repeated ``--fact`` lines are pinned as operator-typed (decisions §4).
+    """
+    from core.operator_facts import (
+        dedupe_facts,
+        dedupe_key,
+        operator_key_fact_char_budget,
+    )
+
+    collected = dedupe_facts(list(facts or []))
+    if not collected:
+        return []
+    typed_keys = {dedupe_key(line) for line in (typed or []) if line}
+    today = today or date.today()
+    records = [
+        FactRecord(
+            claim=claim,
+            tier=TIER_OPERATOR if dedupe_key(claim) in typed_keys else TIER_LINK,
+            verified_at=today if dedupe_key(claim) in typed_keys else None,
+        )
+        for claim in collected
+    ]
+    kept, _drops = select_facts_for_prompt(
+        records,
+        topic=topic,
+        corpus=corpus,
+        budget=budget if budget is not None else operator_key_fact_char_budget(),
+        line_cap=line_cap,
+        today=today,
+    )
+    return kept
+
+
+# #647: measured against two fixture topics (run-74 GTA strings + UFC), never the
+# operator store. Current split beat insertion order and equal weights → hold.
+WEIGHT_MEASUREMENT = {
+    "verdict": "held",
+    "split": {
+        "recency": _WEIGHT_RECENCY,
+        "novelty": _WEIGHT_NOVELTY,
+        "relevance": _WEIGHT_RELEVANCE,
+        "specificity": _WEIGHT_SPECIFICITY,
+        "scaffolding": _WEIGHT_SCAFFOLDING,
+    },
+}
+
+
+def _pack_quality(kept: list[str], detail: list[str], scaffolding: list[str]) -> int:
+    packed = " ".join(kept)
+    hits = sum(1 for line in detail if line in packed)
+    furniture = sum(1 for line in scaffolding if line in packed)
+    return hits - furniture
+
+
+def measure_weight_split(
+    cases: list[dict[str, Any]],
+    *,
+    today: date | None = None,
+) -> dict[str, Any]:
+    """Compare the shipped split to insertion order and equal weights.
+
+    Each case is a dict of topic/corpus/claims/detail/scaffolding/budget.
+    Quality = (gold detail lines packed) minus (scaffolding lines packed).
+    """
+    today = today or date.today()
+    equal = {
+        "relevance": 0.25,
+        "recency": 0.25,
+        "specificity": 0.25,
+        "novelty": 0.25,
+        "scaffolding": _WEIGHT_SCAFFOLDING,
+    }
+    insertion = {
+        "relevance": 0.0,
+        "recency": 0.0,
+        "specificity": 0.0,
+        "novelty": 0.0,
+        "scaffolding": 0.0,
+    }
+    current_q = insertion_q = equal_q = 0
+    for case in cases:
+        records = [
+            FactRecord(claim=claim, tier=TIER_LINK, verified_at=today)
+            for claim in (case.get("claims") or [])
+        ]
+        budget = int(case.get("budget") or 400)
+        topic = str(case.get("topic") or "")
+        corpus = str(case.get("corpus") or "")
+        detail = list(case.get("detail") or [])
+        scaffolding = list(case.get("scaffolding") or [])
+        current, _ = select_facts_for_prompt(
+            records, topic=topic, corpus=corpus, budget=budget, today=today, line_cap=500
+        )
+        ins, _ = select_facts_for_prompt(
+            records,
+            topic=topic,
+            corpus=corpus,
+            budget=budget,
+            today=today,
+            line_cap=500,
+            weights=insertion,
+        )
+        eq, _ = select_facts_for_prompt(
+            records,
+            topic=topic,
+            corpus=corpus,
+            budget=budget,
+            today=today,
+            line_cap=500,
+            weights=equal,
+        )
+        current_q += _pack_quality(current, detail, scaffolding)
+        insertion_q += _pack_quality(ins, detail, scaffolding)
+        equal_q += _pack_quality(eq, detail, scaffolding)
+    verdict = "held" if current_q > insertion_q and current_q >= equal_q else "retune"
+    return {
+        "verdict": verdict,
+        "current_quality": current_q,
+        "insertion_quality": insertion_q,
+        "equal_quality": equal_q,
+    }

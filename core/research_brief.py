@@ -46,13 +46,17 @@ class ResearchBrief:
     raw_fallback: str = ""
 
     def to_prompt_block(self) -> str:
+        from core.angle_intent import CALM_INTENTS
+
+        calm = self.recommended_format in CALM_INTENTS
         lines = [
             "RESEARCH BRIEF (primary context — prefer over raw signal dumps):",
             f"Narrative: {self.narrative}",
             f"Audience sentiment: {self.audience_sentiment}",
-            f"Controversy (0-1): {self.controversy_score:.2f}",
         ]
-        if self.debate_angles:
+        if not calm:
+            lines.append(f"Controversy (0-1): {self.controversy_score:.2f}")
+        if self.debate_angles and not calm:
             lines.append("Debate angles: " + "; ".join(self.debate_angles[:5]))
         if self.supporting_evidence:
             lines.append("Evidence:")
@@ -88,17 +92,22 @@ def _fallback_brief(
     channel_id: str,
     *,
     seed_topic: str = "",
+    intent: str = "",
 ) -> ResearchBrief:
+    from core.angle_intent import CALM_INTENTS, detect_angle_intent, format_for_intent
+
+    resolved = intent or detect_angle_intent(seed_topic or topic)
     facts = enrich_facts(topic, signals, channel_id=channel_id, seed_topic=seed_topic)
     script_rules = build_script_brief(topic, channel_id)
+    calm = resolved in CALM_INTENTS
     return ResearchBrief(
         topic=topic,
         narrative=f"Focus on the specific angle in the topic: {topic}",
         audience_sentiment="Neutral — limited research data",
-        controversy_score=0.4,
-        debate_angles=["Preview the stakes of the matchup or announcement"],
+        controversy_score=0.0 if calm else 0.4,
+        debate_angles=[] if calm else ["Preview the stakes of the matchup or announcement"],
         supporting_evidence=[line for line in facts.split("\n") if line.strip()][:8],
-        recommended_format="short_debate",
+        recommended_format=format_for_intent(resolved),
         raw_fallback=f"{script_rules}\n\n{facts}",
     )
 
@@ -112,6 +121,7 @@ def _build_with_llm(
     competitor_block: str = "",
     stats_lines: list[str] | None = None,
     seed_topic: str = "",
+    intent: str = "",
 ) -> ResearchBrief | None:
     facts = enrich_facts(topic, signals, channel_id=channel_id, seed_topic=seed_topic)
     rss_lines = "\n".join(
@@ -178,7 +188,7 @@ Return JSON only:
   "controversy_score": 0.0 to 1.0,
   "debate_angles": ["angle1", "angle2"],
   "supporting_evidence": ["fact1", "fact2"],
-  "recommended_format": "short_debate|preview|reaction|explainer|analysis|prediction",
+  "recommended_format": "short_debate|preview|reaction|explainer|list|tutorial|comparison|retrospective|analysis|prediction",
   "title_direction": "an SEO-aware angle for the title (a direction, NOT the final title)",
   "suggested_hook": "a punchy opening line under 12 words — a specific fact, number, or contradiction; no 'Today/Let's/In this video'"
 }}"""
@@ -190,6 +200,12 @@ Return JSON only:
         )
         if not isinstance(data, dict):
             return None
+        from core.angle_intent import ANGLE_DEFAULT, format_for_intent
+
+        resolved = intent or ""
+        fmt = str(data.get("recommended_format", "short_debate"))
+        if resolved and resolved != ANGLE_DEFAULT:
+            fmt = format_for_intent(resolved)
         return ResearchBrief(
             version=BRIEF_VERSION,
             topic=topic,
@@ -198,7 +214,7 @@ Return JSON only:
             controversy_score=float(data.get("controversy_score", 0.5) or 0.5),
             debate_angles=list(data.get("debate_angles") or [])[:6],
             supporting_evidence=list(data.get("supporting_evidence") or [])[:10],
-            recommended_format=str(data.get("recommended_format", "short_debate")),
+            recommended_format=fmt,
             title_direction=str(data.get("title_direction", "")),
             suggested_hook=str(data.get("suggested_hook", "")),
             rss_headlines=list(rss.get("headlines") or [])[:8],
@@ -217,12 +233,16 @@ def build_research_brief(
     *,
     channel_id: str | None = None,
     seed_topic: str = "",
+    intent: str = "",
 ) -> ResearchBrief:
     """
     Build or load cached research brief. Never raises — returns fallback on failure.
     """
+    from core.angle_intent import detect_angle_intent
+
     channel_id = resolve_channel_id(channel_id)
-    cache_key = build_key("research_brief", f"{channel_id}::{topic}")
+    resolved_intent = intent or detect_angle_intent(seed_topic or topic)
+    cache_key = build_key("research_brief", f"{channel_id}::{topic}::{resolved_intent}")
     cached = get_cached(cache_key)
     if cached and isinstance(cached, dict) and cached.get("narrative"):
         try:
@@ -263,10 +283,13 @@ def build_research_brief(
             competitor_block=competitor_block,
             stats_lines=stats_lines,
             seed_topic=seed_topic,
+            intent=resolved_intent,
         )
 
     if brief is None:
-        brief = _fallback_brief(topic, signals, channel_id, seed_topic=seed_topic)
+        brief = _fallback_brief(
+            topic, signals, channel_id, seed_topic=seed_topic, intent=resolved_intent
+        )
         brief.rss_headlines = list(rss.get("headlines") or [])[:8]
         brief.community_summary = community_summary
         brief.competitor_pulse = competitor_block

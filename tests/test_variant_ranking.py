@@ -121,6 +121,30 @@ class TestMenuUsesTheSameRule(unittest.TestCase):
         )
         self.assertEqual(best, 1)
 
+    def test_own_idea_prints_as_candidate_zero(self):
+        """#664. Enter still picks the ranked angle; 0 keeps what the operator typed."""
+        lines = _Lines()
+        display_variants(
+            _ev([("generated take", 92.0)]),
+            own_idea="how does the offside rule actually work",
+            print_fn=lines,
+        )
+        self.assertIn("0.", lines.text)
+        self.assertIn("how does the offside rule actually work", lines.text)
+
+    def test_minus_one_keeps_the_typed_idea(self):
+        from core.pipeline import DiscoveryResult, chosen_variant
+
+        d = DiscoveryResult(
+            input_topic="how does the offside rule actually work",
+            base_signals={"ok": True},
+            evaluated=[("generated take", 92.0, {"other": 1})],
+        )
+        topic, score, signals = chosen_variant(d, -1)
+        self.assertEqual(topic, "how does the offside rule actually work")
+        self.assertEqual(signals, {"ok": True})
+        self.assertEqual(score, 0.0)
+
 
 class TestOperatorIsToldAboutTheTie(unittest.TestCase):
     def test_ceiling_tie_with_distinct_raw_says_ordered_by_headroom(self):

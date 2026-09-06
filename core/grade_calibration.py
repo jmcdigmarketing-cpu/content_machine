@@ -26,6 +26,7 @@ from core.logging import get_logger
 logger = get_logger("core.grade_calibration")
 
 MIN_MEASURED = 5
+UNVERSIONED = "unversioned"
 
 
 @dataclass
@@ -36,6 +37,7 @@ class CalibrationRow:
     actual_percentile: float  # realized engaged-rate percentile 0-100
     engaged_rate: float
     predicted_rate: float | None = None
+    grade_version: str = UNVERSIONED
 
 
 @dataclass
@@ -45,6 +47,7 @@ class CalibrationReport:
     grade_correlation: float | None = None
     thumbnail_correlation: float | None = None
     thumbnail_n: int = 0
+    mixed_versions: bool = False
 
     @property
     def measured(self) -> int:
@@ -132,6 +135,7 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
         # recurse into prediction, and the grade should reflect content only.
         grade = grade_from_parts(quality=quality, composite_score=float(run.composite_score or 0))
         predicted = quality.get("predicted_engaged_rate")
+        version = str(quality.get("grade_version") or UNVERSIONED)
         report.rows.append(
             CalibrationRow(
                 run_id=run.id,
@@ -140,10 +144,19 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
                 actual_percentile=_percentile(rate, population),
                 engaged_rate=rate,
                 predicted_rate=float(predicted) if predicted is not None else None,
+                grade_version=version,
             )
         )
 
-    if report.measured >= MIN_MEASURED:
+    versions = {r.grade_version for r in report.rows}
+    # "unversioned" is not a version. Every run graded before the stamp existed
+    # carries no `grade_version`, and those are precisely the rows this guard was
+    # filed about: four components moved across v1/v2/v3 while nothing recorded
+    # which rubric produced which letter. Treating that population as one shared
+    # rubric is the mistake, not the fix -- measured, it produced a 0.99998
+    # correlation over eight unlabelled rows.
+    report.mixed_versions = len(versions) > 1 or UNVERSIONED in versions
+    if report.measured >= MIN_MEASURED and not report.mixed_versions:
         report.grade_correlation = _pearson(
             [r.grade for r in report.rows], [r.engaged_rate for r in report.rows]
         )
@@ -159,6 +172,26 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
 def summary_line(report: CalibrationReport) -> str | None:
     """One weekly-report line, or None when still collecting."""
     if report.grade_correlation is None:
+        # "still collecting" wins below the threshold: with too few runs the
+        # version question has not bitten yet, and reporting a refusal implies
+        # the data would otherwise be usable.
+        if report.measured and report.measured < MIN_MEASURED:
+            return (
+                f"Grade calibration: collecting ({report.measured}/{MIN_MEASURED} "
+                "measured runs with quality)"
+            )
+        if report.mixed_versions:
+            versions = sorted({r.grade_version for r in report.rows})
+            if versions == [UNVERSIONED]:
+                return (
+                    "Grade calibration: refusing to correlate unversioned grades "
+                    f"({report.measured} runs predate the rubric stamp and span "
+                    "more than one rubric)"
+                )
+            return (
+                f"Grade calibration: refusing to mix rubric versions "
+                f"({', '.join(versions)}; {report.measured} runs)"
+            )
         if report.measured:
             return (
                 f"Grade calibration: collecting ({report.measured}/{MIN_MEASURED} "

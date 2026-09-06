@@ -11,6 +11,15 @@ from core import tts
 
 
 class TestTtsCache(unittest.TestCase):
+    def setUp(self):
+        """`_last_cache_hit` / `_last_piper_mix` are module globals that
+        `generate_audio` only resets when it is *called*, so a test asserting
+        "no hit yet" was really asserting "no earlier test in this class called
+        generate_audio" — it passed on alphabetical ordering, not on behaviour.
+        Reset explicitly so the order of these tests cannot decide the result."""
+        tts._last_cache_hit = False
+        tts._last_piper_mix = False
+
     def test_key_stable_and_voice_sensitive(self):
         a = tts.tts_cache_key("hello", "piper", "lessac")
         b = tts.tts_cache_key("hello", "piper", "lessac")
@@ -61,6 +70,43 @@ class TestTtsCache(unittest.TestCase):
                     tts.generate_audio("hello world", dest)
             eleven.assert_not_called()
             self.assertTrue(tts.last_tts_was_cache_hit())
+
+    def test_a_cache_hit_records_zero_synthesized_characters(self):
+        """Found while scoping #402. `record_tts_actual` is called *before*
+        `tts_cache_lookup`, so a cached render stamps a full script's worth of
+        "actual synth chars" for characters nothing synthesized — and
+        `core/pipeline.py:48` persists that as `tts_actual_chars` into the run
+        ledger, which is the number the operator and the analytics layer read.
+
+        Same class as the run-71 claim-verifier defect: a measurement that
+        reports clean while measuring the wrong thing.
+        """
+        from core import tts_char_cap
+
+        script = "hello world"
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {"TTS_CACHE": "true", "TTS_CACHE_DIR": tmp, "TTS_PROVIDER": "elevenlabs"}
+            src = os.path.join(tmp, "src.mp3")
+            with open(src, "wb") as f:
+                f.write(b"mp3")
+            key = tts.tts_cache_key(script, "elevenlabs", "")
+            with patch.dict(os.environ, env, clear=False):
+                tts.tts_cache_store(key, src)
+                tts_char_cap.reset_tts_forecast()
+                with (
+                    patch.object(tts, "_tts_cache_voice", return_value=""),
+                    patch.object(tts, "_try_alt_tts_provider", return_value=None),
+                    patch.object(tts, "ElevenLabs"),
+                ):
+                    tts.generate_audio(script, os.path.join(tmp, "out.mp3"))
+                snap = tts_char_cap.last_tts_forecast() or {}
+
+        self.assertTrue(tts.last_tts_was_cache_hit())
+        self.assertEqual(
+            snap.get("actual_chars"),
+            0,
+            f"a cache hit billed {snap.get('actual_chars')} chars it never synthesized",
+        )
 
     def test_env_toggle(self):
         with patch.dict(os.environ, {"TTS_CACHE": "false"}, clear=False):

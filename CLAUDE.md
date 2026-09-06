@@ -25,7 +25,10 @@ full inventory is [docs/backlog.md](docs/backlog.md), the Windows application pr
 [docs/desktop_app.md](docs/desktop_app.md), and history is
 [docs/roadmap_archive.md](docs/roadmap_archive.md). Counts come from
 `py -m scripts.ops roadmap-index`, never by hand. Honest state of the project:
-[docs/assessment.md](docs/assessment.md). State as of the last working session
+[docs/assessment.md](docs/assessment.md). Why the generated ideas/scripts come out the
+way they do — the six framing layers and the selection tie:
+[docs/idea_quality_diagnosis.md](docs/idea_quality_diagnosis.md); where the project can
+realistically go next: [docs/strategy_next_level.md](docs/strategy_next_level.md). State as of the last working session
 (branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
 Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/planning_log.md)
 — **append a dated entry after any substantial planning session** so ideas aren't lost.

@@ -38,6 +38,75 @@ class TestGradeFromParts(unittest.TestCase):
         # Weights renormalize to 1.
         self.assertAlmostEqual(sum(c.weight for c in grade.components), 1.0, places=2)
 
+    def test_a_short_script_is_graded_down(self):
+        """#645, filed from run 74: it shipped **277 words against a 300-word
+        floor and graded A (87)**, because nothing scored length at all. The
+        expansion loop runs before four passes that can remove text, so the
+        floor was checked against a script the operator never saw."""
+        ok_length = {**FULL_QUALITY, "word_count": 320, "min_words": 300, "max_words": 380}
+        run_74 = {**FULL_QUALITY, "word_count": 277, "min_words": 300, "max_words": 380}
+        self.assertLess(
+            grade_from_parts(quality=run_74, composite_score=75.0).score,
+            grade_from_parts(quality=ok_length, composite_score=75.0).score,
+        )
+
+    def test_run_74s_actual_scores_no_longer_grade_an_A(self):
+        """The acceptance criterion the item was filed with, not a proxy for it:
+        run 74's real component scores (hook 61, authenticity 100, grounding
+        clean, composite 92) graded **A 87** at 277 words against a 300 floor."""
+        run_74 = {
+            "hook_score": 61,
+            "hook_verdict": "weak",
+            "authenticity_score": 100,
+            "authenticity_verdict": "ok",
+            "ungrounded_count": 0,
+            "trade_warning_count": 0,
+        }
+        self.assertEqual(grade_from_parts(quality=run_74, composite_score=92.0).letter, "A")
+        graded = grade_from_parts(
+            quality={**run_74, "word_count": 277, "min_words": 300, "max_words": 380},
+            composite_score=92.0,
+        )
+        self.assertNotEqual(graded.letter, "A", f"{graded.letter} {graded.score}")
+
+    def test_length_is_a_named_component_when_the_data_is_there(self):
+        graded = grade_from_parts(
+            quality={**FULL_QUALITY, "word_count": 277, "min_words": 300, "max_words": 380},
+            composite_score=75.0,
+        )
+        self.assertIn("length", [c.name for c in graded.components])
+
+    def test_a_historical_run_without_length_keys_grades_exactly_as_before(self):
+        """The migration promise: rows predating the length key renormalize over
+        the components they do have, so their scores do not move."""
+        self.assertNotIn(
+            "length", [c.name for c in grade_from_parts(quality=FULL_QUALITY).components]
+        )
+
+    def test_the_grade_records_which_rubric_produced_it(self):
+        """`GRADE_VERSION` existed as a string nothing read, while
+        `grade_calibration` re-grades every stored run with today's code. Four
+        components have now moved; without a stamp, no one can tell which rubric
+        produced a given letter."""
+        from core.video_grade import GRADE_VERSION
+
+        self.assertEqual(grade_from_parts(quality=FULL_QUALITY).version, GRADE_VERSION)
+
+    def test_build_quality_supplies_the_keys_the_length_component_needs(self):
+        """The component is inert unless the real quality builder emits the keys.
+        Driven through the real `build_quality` over a real features dict, not a
+        hand-built quality block."""
+        from core.run_quality import build_quality
+
+        quality = build_quality(
+            script="A grounded sentence about the topic. " * 10,
+            channel_id="tapin",
+            features={"length_preset": "2", "word_count": 277},
+        )
+        self.assertEqual(quality.get("word_count"), 277)
+        self.assertTrue(quality.get("min_words"), quality)
+        self.assertIn("length", [c.name for c in grade_from_parts(quality=quality).components])
+
     def test_ungrounded_specifics_penalize(self):
         clean = grade_from_parts(quality=FULL_QUALITY, composite_score=75.0)
         dirty = grade_from_parts(

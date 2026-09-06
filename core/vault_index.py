@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from core.logging import get_logger
@@ -36,6 +36,12 @@ class NoteEntry:
     stem: str
     headings: str  # space-joined heading text
     bullets: list[str]
+    # The heading each bullet sits under, same length and order as `bullets`
+    # ("" for a bullet before any heading). Additive: `bullets` is unchanged, so
+    # the "byte-identical parse" promise above still holds for every existing
+    # reader. `obsidian_facts.load_playbook` uses it to keep one section from
+    # spending the whole prompt budget.
+    bullet_sections: list[str] = field(default_factory=list)
 
 
 _lock = threading.RLock()
@@ -59,9 +65,16 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     return meta, body
 
 
-def _extract_bullets(body: str) -> list[str]:
-    bullets = []
+def _extract_bullets_with_sections(body: str) -> tuple[list[str], list[str]]:
+    """Bullets, plus the heading each one sits under (parallel lists)."""
+    bullets: list[str] = []
+    sections: list[str] = []
+    current = ""
     for line in body.splitlines():
+        heading = _HEADING_RE.match(line)
+        if heading:
+            current = heading.group(1).strip()
+            continue
         m = _BULLET_RE.match(line)
         if m:
             text = m.group(1).strip()
@@ -69,18 +82,21 @@ def _extract_bullets(body: str) -> list[str]:
             text = text.replace("**", "").replace("*", "").replace("`", "")
             if len(text) > 3:
                 bullets.append(text)
-    return bullets
+                sections.append(current)
+    return bullets, sections
 
 
 def _parse_note(rel_path: str, text: str) -> NoteEntry:
     meta, body = _parse_frontmatter(text)
     headings = " ".join(_HEADING_RE.findall(body))
+    bullets, sections = _extract_bullets_with_sections(body)
     return NoteEntry(
         rel_path=rel_path,
         meta=meta,
         stem=Path(rel_path).stem,
         headings=headings,
-        bullets=_extract_bullets(body),
+        bullets=bullets,
+        bullet_sections=sections,
     )
 
 

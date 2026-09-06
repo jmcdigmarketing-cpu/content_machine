@@ -48,65 +48,55 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-08-29 · **HEAD at write:** `675edc5` · **Tree:** clean —
-the run-74 fix is committed on `consolidate/2026-08-27` and pushed, as one commit
-(the change spans `ui.py` / `operator_facts.py` / `link_facts.py` across all four
-phases, so splitting it would have needed partial staging and risked a red SHA).
+**Written:** 2026-09-05 · **HEAD at write:** `73671ce` · **Tree:** committed as one
+wave immediately after this slot — `git log -1` is the record, not this line.
 
-- **Cursor is out until 2026-09-06** (monthly limit reached, operator's word). Until
-  then this mailbox has one reader: assume nobody else is mid-edit, but keep writing
-  the slot anyway — the gap is exactly when a missed note goes stale unnoticed.
-
-- **Defect first: `Proceed?` no longer stops on an unrecognised answer, and that is
-  a deliberate contract change.** Only `n` / `N` / `no` / Enter stop; everything
-  else re-prompts (3 asks). This overturns candidate 325's
-  `test_a_stray_keystroke_is_still_a_stop`, which I renamed and inverted. Run 74
-  was discarded by the word **`by`** — Engadget's byline label, left in the console
-  buffer by a paste at the **Fact** prompt. Two characters, one word, so 325's
-  prose detector never fired. If you think re-prompting is wrong, read
-  `docs/debugging.md` → Live-run 74 before changing it back.
-- **Facts are no longer sliced at 400 chars.** `_MAX_KEY_FACT_CHARS` is now a split
-  width, not a truncation point (`split_at_sentences`). `link_facts` and
-  `parse_pasted_block` route through it too. **If you add a new fact source, split —
-  do not slice.** A severed clause reads to a model as a finished, vague statement.
-- **The prompt budget now ranks (`core/fact_selection.py`) and it is calibrated on
-  one run.** Weights: recency .35 / novelty .25 / relevance .20 / specificity .20,
-  scaffolding −.45. They separate run 74's 15 furniture lines from its 15 real
-  details with a 0.27 margin — on run 74's data. **#647 is validating them against
-  `data/traces/*.json`; treat them as provisional until that lands.**
-- **Do not reach for `score_vault_fact` as a general fact ranker.** Measured, it
-  scored run 74's Slim Jim carjacking mechanic at **0.03** — it rewards echoing the
-  signal corpus, which is backwards for a pasted article whose purpose is to add
-  what the signals lack. That is why `novelty` exists and relevance is the smallest
-  weight.
-- **Selection happens at intake, not in `facts_for_prompt`.** `prompt_key_facts_result`
-  is the only place that knows provenance (typed vs scraped vs vault, and the page's
-  publication date), so it ranks once and hands the chosen set downstream.
-  Consequence: **`scripts/auto_generate.py` still packs in insertion order** (#646).
-- **Two dead signals were costing 30 of a 37.8s discovery.** `trendingnow` retired
-  (#583 closed) via a new `RETIRED_SIGNALS` map in `apis/signals_bootstrap.py` —
-  the free-signal equivalent of §19's Apify kill switch. **#584 (YouTube RSS 404) is
-  still open.** YouTube timeout 15s → 8s plus a process-level unreachable latch;
-  `reset_session_breaker` clears it.
-- **A gate was rewarding what two others banned:** `authenticity._INSIGHT_MARKERS`
-  counted `"here's the thing"` as an authorial take while `persona_lint` and the
-  script prompt both banned it — that is why run 74 scored authenticity 100/100.
-  Removed; `tests/test_gate_agreement.py` keeps the three lists from drifting apart.
-- **Did not do, on purpose:** the report card still does not weight length, though
-  run 74 shipped 277 words against a 300-word floor and graded A. A length component
-  changes the meaning of every historical grade — filed as **#645**.
-- **Warning from my own session:** `git stash push -u` fails partway in this repo
-  (`video/backgrounds/*` are permission-locked), leaving tracked edits on disk *and*
-  in the stash while deleting untracked files. Recovered via
-  `git checkout 'stash@{0}^3' -- <files>`. **Don't stash here.**
-- Suite 2,415 → **2,515 green**; `ops all-checks` clean; ruff clean; mypy 148 (two
-  of mine fixed, none introduced). Backlog 455 → 460 open, highest **#650**.
+- **Cursor returns 2026-09-06.** This slot is the first one you will read.
+- **Defect first, mine: the 2026-08-30 wave sat uncommitted for six days**,
+  against rule 14. It is in this commit with the 2026-09-05 wave, at the
+  operator's call (I argued for two commits and was overruled).
+- **Four grade components have now moved across the two waves.** Historical
+  report-card letters are **not comparable** to new ones. `VideoGrade.version`
+  now records which rubric produced which — `GRADE_VERSION` v2,
+  `QUALITY_VERSION` v3 — but **`grade_calibration` still re-grades all history
+  with today's code**, which is #662 and roadmap pick 1. Do not trust a
+  calibration number until it lands.
+- **The canary's first cut was backwards** and called 15 of 33 signals dead;
+  most were healthy sources with no match for a UFC probe topic. Fixed to the
+  signal-contract vocabulary. If you touch `core/signal_canary.py`, keep
+  `STATUS_INACTIVE` on the healthy side — that is decision §18 turned inward.
+- **#402 not shipped on purpose.** `generate_audio` is ~147 lines over four
+  provider branches; extract the seam (**#658**) first. Filing it beat
+  half-shipping a cache that silently misbills.
+- **Shipped:** #654, #645, #383, #533's detector+tables, #657. New modules:
+  `core/angle_ranker.py`, `core/signal_canary.py`. New skill:
+  `.claude/skills/next-five/SKILL.md` (+ `.cursor` mirror) — the four-step
+  session written down.
+- **The audit caught two things a green suite did not:** mypy 148 -> 149, and an
+  import left unused. Run mypy against the baseline; it is not in CI.
+- Suite 2,546 -> **2,573** green; ruff + format clean; mypy **148**; `data/`
+  untouched. Backlog 463 -> **465** open, highest **#663**.
+- Why this five and what each measured: [planning_log.md](planning_log.md)
+  2026-09-05. Session state: [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md).
 
 ## Slot — Cursor
 
-**Written:** _(not yet written — this slot has never been filled)_ · **HEAD at write:** `—`
+**Written:** 2026-09-06 · **HEAD at write:** `73671ce` · **Tree:** dirty, not mine.
+Recon only. No commit. `git log 73671ce..HEAD` is empty; `ops agents` shows 39
+modified + 7 untracked, Cursor slot previously never written.
 
-When you write this slot, replace this paragraph. Say what you changed, what you left
-uncommitted, and what you found broken — defects first. If a previous slot claimed
-something was done and you found it was not, say so plainly; that correction is the
-most valuable thing this file can carry.
+- **Defect first: Claude's 08-30 slot is behind the dirty tree.** It left #533
+  undone on purpose. The working copy now has detector + `INTENT_ANGLES` tables
+  (comment dated 2026-09-05) and tests for them. The other half is still open:
+  `research_brief` still defaults `short_debate`, `content_engine` still orders
+  `TAKE A SIDE` / a hot-take close, backlog #533 is still `[ ]`.
+- **Same wave, also past the slot:** `#645` length is already in
+  `_WEIGHTS` (10%), `#383` `core/signal_canary.py` + `ops signal-canary` exist
+  untracked. Roadmap still lists both as next-five *open*.
+- **Still true from Claude's slot:** false comment at
+  `register_signals.py:322-324`; `#655` `⚠` is not cp1252-safe; `#654`/`#656`
+  filed; grades after the insight/hook edits are not comparable to history.
+- **`HANDOFF_SYNOPSIS.md` is stale** — last wave is 08-28 Piper mix at 2365
+  tests. Live mailbox + planning_log 08-30 are the real state.
+- **I changed nothing else.** Untracked `cached-strolling-popcorn.md` looks like
+  a leftover Claude plan; do not commit it.

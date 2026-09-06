@@ -8,7 +8,7 @@ session.
 |---|---|
 | **roadmap.md** (this) | the current stage, the next five, track counts |
 | [desktop_app.md](desktop_app.md) | the Windows application programme — stages 0–7 |
-| [backlog.md](backlog.md) | every open item, numbered 21–480 plus unnumbered |
+| [backlog.md](backlog.md) | every open item, numbered 21–656 plus unnumbered |
 | [roadmap_archive.md](roadmap_archive.md) | completed waves and historical phases |
 
 Direction: [vision.md](vision.md) · pace and cost: [operating_plan.md](operating_plan.md)
@@ -68,16 +68,40 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-1. **#333 negative-fact store** `[M]` — a retracted claim becomes a hard block, not
-   a warning. The operator's call; #341 supplies the trigger.
-2. **#351 confidence intervals** `[M]` — recommenders report n; an interval is what
-   says 30.6% ± 22 is noise. Stage 3's dashboards are decorative without it.
-3. **#383 nightly signal canary** `[M]` — exercise every signal at zero LLM/TTS
-   spend so a dead source is found before a real run needs it.
-4. **#402 sentence-level TTS cache** `[M]` — a one-word fix re-bills the whole
-   script at 91% of run cost.
-5. **#416 scene-beat cuts from owned gameplay** `[L]` — unblocked now that #417's
-   ingest exists; decisions §26's preferred direction over more stock APIs.
+**The 2026-09-05 wave shipped four and a half of the previous five** — #654, #645,
+#383 and **#533's detector + angle tables**. #402 was not shipped: scoping it
+confirmed the `[L]` and produced #658 (the seam it needs) plus #657, a real
+billing defect found on the way. Why, and what each one measured:
+[planning_log.md](planning_log.md) 2026-09-05.
+
+1. **#662 grade_calibration mixes rubric versions** `[M]` — caused by the last two
+   waves and now visible: four grade components have moved, and calibration still
+   re-grades all history with today's code before correlating against engagement.
+   `VideoGrade.version` now exists, so this is finally fixable rather than just
+   nameable. Do it before trusting any calibration number again.
+2. **#658 a per-segment synthesis seam in `generate_audio`** `[M]` — the blocker
+   under #402, which is 91% of run cost. Extract one "synthesize this text to this
+   path" core from four provider branches, pin their behaviour, and #402 becomes a
+   loop over it instead of a rewrite of the most cost-critical function in the repo.
+3. **#659 carry the detected intent into the research brief** `[M]` — #533's next
+   half and the cheapest remaining one. Mind the cache key: it omits intent, so an
+   intent-aware brief would serve a stale pre-intent one for three hours.
+4. **#647 tune the fact-selection weights against real traces** `[M]` — still
+   calibrated on run 74's own 54 facts, and the idea-quality diagnosis leans on
+   that ranking. Measure it against `data/traces/*.json` before trusting it further.
+5. **#661 two independent intent classifiers disagree** `[M]` — `angle_intent`
+   (generation) and `run_features.classify_angle` (analytics, persisted) can label
+   the same topic differently; #533 widened one of them and not the other.
+
+**Also small and worth grabbing:** **#663** — nothing actually *runs* the signal
+canary yet; it belongs in the overnight chain, not in `all-checks` (CI has no
+network and would fail every build).
+
+**Dropped from this list** (both stay open): **#333 negative-fact store** — parked
+across four `HANDOFF_SYNOPSIS.md` waves, needs an operator decision on precedence
+against decisions §4, and its trigger #341 does not exist. **#416 scene-beat cuts**
+— `[L]`, parked, and blocked on data: `ops ingest-clips --apply` has never run, so
+`data/clip_index.json` does not exist and there is nothing to cut to.
 
 ---
 

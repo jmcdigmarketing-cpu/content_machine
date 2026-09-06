@@ -121,5 +121,90 @@ class TestPromptDropsTheCritiqueInstruction(unittest.TestCase):
         self.assertIn("CRITIQUE", prompt)
 
 
+class TestIntentsBeyondReaction(unittest.TestCase):
+    """#533. The detector recognised exactly one alternative frame, so every calm
+    idea fell to `default` and got the take machinery — `controversy` is in every
+    non-reaction angle table. These are the operator's own recorded seeds."""
+
+    def test_real_recorded_seeds_read_as_the_frame_they_asked_for(self):
+        from core.angle_intent import (
+            ANGLE_COMPARISON,
+            ANGLE_EXPLAINER,
+            ANGLE_LIST,
+            ANGLE_RETROSPECTIVE,
+            ANGLE_TUTORIAL,
+        )
+
+        cases = {
+            # run 48's seed, which became a Marvel Rivals esports script
+            "WAYYYYYY too early final standing projections for 2027": None,
+            "how does the offside rule actually work": ANGLE_EXPLAINER,
+            "the hidden cost of index fund concentration explained": ANGLE_EXPLAINER,
+            "top 5 heavyweights of the decade": ANGLE_LIST,
+            "ranking every GTA protagonist": ANGLE_LIST,
+            "how to counter a dive comp in Marvel Rivals": ANGLE_TUTORIAL,
+            # run 62's seed, verbatim
+            "COD Bo2 Playstation return. Is it better or worse than back in the day?": (
+                ANGLE_COMPARISON
+            ),
+            "revisiting Black Ops 2 ten years later": ANGLE_RETROSPECTIVE,
+        }
+        for topic, expected in cases.items():
+            if expected is None:
+                continue
+            with self.subTest(topic=topic):
+                self.assertEqual(detect_angle_intent(topic), expected)
+
+    def test_an_explainer_is_not_steered_into_controversy(self):
+        """The complaint in one assertion."""
+        seen: dict[str, list[str]] = {}
+
+        def _capture(t, angle_types, **kwargs):
+            seen["types"] = list(angle_types)
+            return ["angle"]
+
+        with patch.object(topic_variants, "generate_ai_titles", side_effect=_capture):
+            topic_variants.generate_variants(
+                "how does the offside rule actually work", channel_id="tapin", repeat_count=0
+            )
+        self.assertTrue(seen["types"])
+        self.assertEqual(CRITIQUE_LABELS.intersection(seen["types"]), set(), seen["types"])
+
+    def test_the_established_critique_pivot_still_survives(self):
+        """Guard against exactly the collateral damage this change invites: a
+        loose explainer cue capturing 'breakdown' would silently kill the
+        staleness guard, which is correct for genuinely repeated coverage."""
+        seen: dict[str, list[str]] = {}
+
+        def _capture(t, angle_types, **kwargs):
+            seen["types"] = list(angle_types)
+            return ["angle"]
+
+        with patch.object(topic_variants, "generate_ai_titles", side_effect=_capture):
+            topic_variants.generate_variants(
+                "GTA 6 meta breakdown", channel_id="tapin", repeat_count=5
+            )
+        self.assertTrue(CRITIQUE_LABELS.intersection(seen["types"]), seen["types"])
+
+    def test_every_intent_has_a_table_and_an_operator_note(self):
+        """A detectable intent with no table would silently fall back to the take
+        set — the failure mode this item exists to remove."""
+        from apis.topic_variants import INTENT_ANGLES
+        from core.angle_intent import ALL_INTENTS, angle_intent_note
+
+        for intent in ALL_INTENTS:
+            with self.subTest(intent=intent):
+                self.assertTrue(angle_intent_note(intent))
+                angle_intent_note(intent).encode("cp1252")  # candidate 250
+                if intent != "default":
+                    self.assertEqual(len(INTENT_ANGLES[intent]), 5, intent)
+
+    def test_reaction_still_works(self):
+        """The 2026-08-28 behaviour must survive being generalised."""
+        for topic in RUN73_TOPICS:
+            with self.subTest(topic=topic):
+                self.assertEqual(detect_angle_intent(topic), ANGLE_REACTION)
+
+
 if __name__ == "__main__":
     unittest.main()

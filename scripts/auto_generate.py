@@ -180,7 +180,12 @@ def main(argv=None) -> int:
         print("  No variants scored — exiting.")
         return 1
 
-    best_topic, best_score, best_signals = discovery.evaluated[0]
+    # Was `evaluated[0]` — first in the list, never a ranking. Overnight runs
+    # deserve the same rule the menu uses.
+    from core.pipeline import best_variant_index
+
+    _idx = best_variant_index(discovery.evaluated, discovery.raw_scores, discovery.angle_scores)
+    best_topic, best_score, best_signals = discovery.evaluated[_idx]
     print(f"  Selected variant: {best_topic} [score={best_score:.1f}]")
 
     from core.outlier import display_outlier, get_competitor_outlier

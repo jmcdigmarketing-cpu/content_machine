@@ -38,7 +38,10 @@ from core.logging import get_logger
 
 logger = get_logger("core.run_quality")
 
-QUALITY_VERSION = "v2"  # v2: Pillar 3 keys (tier/conflict counts, claim support)
+QUALITY_VERSION = "v3"  # v2: Pillar 3 keys (tier/conflict counts, claim support)
+# v3 (2026-09-05): word_count / min_words / max_words, for the report card's
+# `length` component (#645). A v2 row has no length keys and grades on the
+# renormalised remainder, so its score is unchanged - see core/video_grade.py.
 
 
 def build_quality(
@@ -53,6 +56,20 @@ def build_quality(
     quality: dict[str, Any] = {"quality_version": QUALITY_VERSION}
     if not (script or "").strip():
         return quality
+
+    # Length, for the report card's `length` component (#645). Sourced here rather
+    # than read out of features_json by the grader, so it arrives the same way
+    # every other component does. Absent on historical rows, which is what keeps
+    # their grades numerically unchanged.
+    try:
+        from core.script_length import count_spoken_words, get_length_preset
+
+        preset = get_length_preset(str(features.get("length_preset") or "2"))
+        quality["word_count"] = int(features.get("word_count") or count_spoken_words(script))
+        quality["min_words"] = preset.min_words
+        quality["max_words"] = preset.max_words
+    except Exception as exc:
+        logger.debug("length scoring skipped: %s", exc)
 
     try:
         from core.hook_score import score_script_hook

@@ -24,6 +24,7 @@ TOPIC_GRAPH_FILE = os.path.join(DATA_DIR, "topic_graph.json")
 CLIP_INDEX_FILE = os.path.join(DATA_DIR, "clip_index.json")
 SEASONAL_CALENDAR_FILE = os.path.join(ROOT_DIR, "config", "seasonal_calendar.json")
 FEED_HEALTH_FILE = os.path.join(DATA_DIR, "feed_health.json")
+SIGNAL_CANARY_FILE = os.path.join(DATA_DIR, "signal_canary.json")
 RELIABILITY_HISTORY_FILE = os.path.join(DATA_DIR, "reliability_history.json")
 TRACES_DIR = os.path.join(DATA_DIR, "traces")
 

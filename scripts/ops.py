@@ -435,6 +435,20 @@ def cmd_reliability(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "signal-canary",
+    "Probe every signal at $0 — a dead source found before a real run needs it",
+)
+def cmd_signal_canary(_args: argparse.Namespace) -> int:
+    from core.signal_canary import check_signals, render, save_results, warnings
+
+    results = check_signals()
+    save_results(results)
+    print(render(results))
+    # Non-zero on a dead signal so `all-checks` fails loudly rather than quietly.
+    return 1 if warnings(results) else 0
+
+
 @_register("feeds", "Check every configured RSS feed — dead/stale sources starve grounding")
 def cmd_feeds(_args: argparse.Namespace) -> int:
     from core.feed_health import check_feeds, render, save_results, summarize

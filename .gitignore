@@ -51,6 +51,12 @@ assets/catalog.json
 # Local debugging scratch output (e.g. captured CI/test runs)
 .tmp_*
 
+# Agent plan files. The harness keeps the real copy in ~/.claude/plans/; a stray
+# copy landed in the repo root on 2026-08-30 and survived a week because nobody
+# read `git status --porcelain` before `git add -A`.
+/*.plan.md
+/cached-*-*.md
+
 # Tooling caches and packaging artifacts
 .ruff_cache/
 .mypy_cache/

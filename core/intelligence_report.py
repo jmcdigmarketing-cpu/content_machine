@@ -54,7 +54,12 @@ def _slug(text: str, max_len: int = 48) -> str:
 
 
 def _best_variant_index(discovery: DiscoveryResult) -> int:
-    return max(range(len(discovery.evaluated)), key=lambda i: discovery.evaluated[i][1])
+    """Defer to the one ranking rule. This used to `max` on the displayed score
+    alone, so it kept picking arbitrarily among the identical scores that
+    `pipeline.best_variant_index`'s raw and editorial keys exist to separate."""
+    from core.pipeline import best_variant_index
+
+    return best_variant_index(discovery.evaluated, discovery.raw_scores, discovery.angle_scores)
 
 
 @dataclass

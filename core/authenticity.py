@@ -132,12 +132,16 @@ _INSIGHT_MARKERS = (
     "mark my words",
     "calling it now",
     "bold prediction",
-    "hot take",
     "the problem is",
     "expect",
     "will likely",
     "my bet",
 )
+# Deliberately absent: "hot take". `title_generator` bans "my hot take" as slop
+# and instructs the model `No "My Hot Take" framing`; the angle prompt bans it
+# too. Rewarding it here paid 35 of 100 for the exact phrasing two other
+# components reject. Same defect as "here's the thing" below, found 2026-08-30.
+#
 # Deliberately absent: "here's the thing". Run 74 reported
 #   [WARNING] persona lint: but here's the thing
 #   ✓ original_insight: has an authorial take ('here's the thing')

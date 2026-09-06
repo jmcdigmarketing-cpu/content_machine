@@ -3,7 +3,16 @@ import re
 from apis.draft_policy import determine_draft_status
 from apis.entity_extractor import extract_entities
 from config.channels import get_channel_profile
-from core.angle_intent import ANGLE_REACTION, detect_angle_intent
+from core.angle_intent import (
+    ANGLE_COMPARISON,
+    ANGLE_DEFAULT,
+    ANGLE_EXPLAINER,
+    ANGLE_LIST,
+    ANGLE_REACTION,
+    ANGLE_RETROSPECTIVE,
+    ANGLE_TUTORIAL,
+    detect_angle_intent,
+)
 from core.channel_context import channel_history_block, extract_anchors
 from core.llm_router import complete
 from core.logging import get_logger
@@ -47,6 +56,81 @@ _REACTION_ANGLES = [
     "does_it_live_up",
     "what_this_means_next",
 ]
+
+# #533. One table per detected intent. Every pre-existing non-reaction table
+# contained `controversy` or `community_controversy`, so a calm idea could only
+# come back as a take — see docs/idea_quality_diagnosis.md. None of these frames
+# asks what is broken; that is the point.
+INTENT_ANGLES = {
+    ANGLE_REACTION: _REACTION_ANGLES,
+    ANGLE_EXPLAINER: [
+        "how_it_actually_works",
+        "the_part_people_get_wrong",
+        "why_it_is_built_this_way",
+        "what_it_means_in_practice",
+        "the_detail_that_makes_it_click",
+    ],
+    ANGLE_LIST: [
+        "the_top_of_the_list",
+        "the_one_everyone_forgets",
+        "the_criteria_that_decide_it",
+        "the_close_calls",
+        "the_honourable_mention",
+    ],
+    ANGLE_TUTORIAL: [
+        "the_core_method",
+        "the_common_mistake",
+        "the_setup_that_makes_it_easy",
+        "when_it_does_not_work",
+        "the_next_step_after_this",
+    ],
+    ANGLE_COMPARISON: [
+        "what_each_does_best",
+        "where_they_actually_differ",
+        "which_one_for_which_person",
+        "the_difference_that_decides_it",
+        "what_changed_between_them",
+    ],
+    ANGLE_RETROSPECTIVE: [
+        "what_it_got_right",
+        "how_it_holds_up_now",
+        "what_it_changed",
+        "the_moment_it_peaked",
+        "what_came_after",
+    ],
+}
+
+
+_LENS_EXAMPLES = {
+    ANGLE_DEFAULT: (
+        "a factual read, a contrarian counter-take, a forward prediction, a "
+        "human/stakes angle, an analytical breakdown"
+    ),
+    ANGLE_REACTION: (
+        "what struck you first, a detail most viewers missed, how it compares to "
+        "expectations, what it signals for what comes next, the standout moment"
+    ),
+    ANGLE_EXPLAINER: (
+        "the mechanism itself, the common misconception, the reason it was built "
+        "this way, a concrete worked example, what it changes in practice"
+    ),
+    ANGLE_LIST: (
+        "the pick at the top, the omission people will argue with, the criterion "
+        "that decided it, the closest call, the one that just missed"
+    ),
+    ANGLE_TUTORIAL: (
+        "the core method, the mistake most people make, the setup that makes it "
+        "easy, the case where it fails, what to learn next"
+    ),
+    ANGLE_COMPARISON: (
+        "what each does best, where they genuinely differ, who each one suits, "
+        "the single difference that decides it, what changed between them"
+    ),
+    ANGLE_RETROSPECTIVE: (
+        "what it got right, how it holds up now, what it changed, the moment it "
+        "peaked, what came after"
+    ),
+}
 
 
 def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count: int = 0):
@@ -108,10 +192,10 @@ def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count
     # three reaction-shaped topics in a row were steered into critique because the
     # topic string never reached this decision.
     intent = detect_angle_intent(topic)
-    if intent == ANGLE_REACTION:
+    if intent in INTENT_ANGLES:
         return generate_ai_titles(
             topic,
-            _REACTION_ANGLES,
+            INTENT_ANGLES[intent],
             channel_id=channel_id,
             is_established=is_established,
             intent=intent,
@@ -246,9 +330,11 @@ def generate_ai_angles(
     freshness_block = ""
     if intent is None:
         intent = detect_angle_intent(topic)
-    # A reaction topic and "focus on CRITIQUE" are contradictory instructions; the
-    # operator's framing wins.
-    if is_established and intent != ANGLE_REACTION:
+    # "Focus on CRITIQUE" contradicts every frame the operator can actually ask
+    # for - a reaction, an explainer, a tutorial and a ranking are all steered
+    # wrong by it. Only an unlabelled topic keeps the staleness pivot, which is
+    # correct for genuinely repeated coverage ("GTA 6 meta breakdown").
+    if is_established and intent == ANGLE_DEFAULT:
         freshness_block = (
             "\nFRESHNESS CONTEXT: This game/franchise has been covered multiple times "
             "on this channel already. DO NOT use 'just released', 'biggest update yet', "
@@ -256,15 +342,9 @@ def generate_ai_angles(
             "Instead: focus on ANALYSIS, PREDICTION, COMMUNITY debate, or CRITIQUE.\n"
         )
 
-    # A reaction video still needs five distinct frames, but "contrarian
-    # counter-take" is not one of them when the operator is reacting positively.
-    lens_examples = (
-        "what struck you first, a detail most viewers missed, how it compares to "
-        "expectations, what it signals for what comes next, the standout moment"
-        if intent == ANGLE_REACTION
-        else "a factual read, a contrarian counter-take, a forward prediction, a "
-        "human/stakes angle, an analytical breakdown"
-    )
+    # Every frame still needs five distinct lenses, but "contrarian counter-take"
+    # is not one of them unless the operator actually asked for a take.
+    lens_examples = _LENS_EXAMPLES.get(intent, _LENS_EXAMPLES[ANGLE_DEFAULT])
 
     prompt = f"""
 You are generating editorial ANGLES for a short-form video — NOT YouTube titles.

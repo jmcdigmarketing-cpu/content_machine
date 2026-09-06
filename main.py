@@ -68,14 +68,17 @@ def _run_intelligence_report_flow(channel_id: str) -> None:
     section("Intelligence")
     discovery = run_discovery(topic, channel_id=channel_id)
     display_signal_health(discovery.base_signals)
-    from core.angle_intent import ANGLE_REACTION, angle_intent_note, detect_angle_intent
+    from core.angle_intent import ANGLE_DEFAULT, angle_intent_note, detect_angle_intent
 
     angle_intent = detect_angle_intent(topic)
-    if angle_intent == ANGLE_REACTION:
+    if angle_intent != ANGLE_DEFAULT:
         print(f"  {angle_intent_note(angle_intent)}")
 
     best_default = display_variants(
-        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+        discovery.evaluated,
+        channel_id=channel_id,
+        raw_scores=discovery.raw_scores,
+        angle_scores=discovery.angle_scores,
     )
 
     choice = input("\n  Choose 1-5 for report (Enter = best): ").strip()
@@ -357,8 +360,19 @@ def _run_new_video_flow_body(
 
     display_outlier(get_competitor_outlier(discovery.base_signals))
 
+    from core.angle_intent import ANGLE_DEFAULT as _ANGLE_DEFAULT
+    from core.angle_intent import angle_intent_note as _intent_note
+    from core.angle_intent import detect_angle_intent as _detect_intent
+
+    _intent = _detect_intent(topic)
+    if _intent != _ANGLE_DEFAULT:
+        print(f"  {_intent_note(_intent)}")
+
     best_default = display_variants(
-        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+        discovery.evaluated,
+        channel_id=channel_id,
+        raw_scores=discovery.raw_scores,
+        angle_scores=discovery.angle_scores,
     )
 
     choice = input("\n  Choose 1-5 (Enter = best): ").strip()

@@ -533,7 +533,13 @@ def load_playbook(channel_id: str = "default", *, limit: int = 10) -> list[str]:
     vault = _vault_path()
     if not vault:
         return []
-    out: list[str] = []
+    # Grouped by the operator's own `##` heading, then taken round-robin. Plain
+    # file order truncated the real tapin playbook at 8/8 "Narratives that work"
+    # bullets and cut every "Hard rules (anti-hallucination)" line — the sections
+    # the operator wrote last were the ones the prompt never saw. Their headings
+    # are a better grouping than any keyword guess we could make here.
+    groups: list[tuple[str, list[str]]] = []
+    index: dict[str, int] = {}
     seen: set[str] = set()
     for note in iter_notes(vault):
         rel = Path(note.rel_path)
@@ -541,7 +547,13 @@ def load_playbook(channel_id: str = "default", *, limit: int = 10) -> list[str]:
             continue
         strategy_note = _is_strategy_note(note.meta, rel)
         is_belief = note.stem == "_machine-beliefs" or "machine" in _tag_set(note.meta)
-        for bullet in note.bullets:
+        # Made provably equal in length before zipping: `strict=False` would
+        # silently drop the tail, and `strict=True` on a mismatch would raise
+        # inside content_engine's bare except and remove the playbook with no log.
+        sections = list(note.bullet_sections or [])
+        if len(sections) != len(note.bullets):
+            sections = [""] * len(note.bullets)
+        for bullet, section in zip(note.bullets, sections, strict=True):
             # A playbook line is exactly what load_facts drops as non-factual guidance:
             # a whole strategy/belief note, or a strategy-flavored bullet in any note.
             if not (strategy_note or is_belief or _is_strategy_bullet(bullet)):
@@ -550,9 +562,21 @@ def load_playbook(channel_id: str = "default", *, limit: int = 10) -> list[str]:
             if key in seen:
                 continue
             seen.add(key)
-            out.append(bullet)
-            if len(out) >= limit:
-                return out
+            group_key = f"{note.rel_path}#{section}"
+            if group_key not in index:
+                index[group_key] = len(groups)
+                groups.append((group_key, []))
+            groups[index[group_key]][1].append(bullet)
+
+    out: list[str] = []
+    depth = 0
+    while len(out) < limit and any(len(items) > depth for _, items in groups):
+        for _, items in groups:
+            if depth < len(items):
+                out.append(items[depth])
+                if len(out) >= limit:
+                    break
+        depth += 1
     return out
 
 
@@ -568,8 +592,11 @@ def playbook_block(channel_id: str = "default", *, limit: int = 8, char_budget: 
     lines: list[str] = []
     used = 0
     for b in bullets:
+        # Skip an oversized bullet, don't stop on it: `break` here meant one long
+        # line silently discarded every bullet after it, which is the same
+        # silent-drop defect run 74 found in the fact path.
         if used + len(b) > char_budget:
-            break
+            continue
         lines.append(f"- {b}")
         used += len(b)
     if not lines:

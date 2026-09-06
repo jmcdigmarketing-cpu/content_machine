@@ -20,7 +20,7 @@ from config.channels import resolve_channel_id
 from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
-from core.recommender_confidence import confidence_note
+from core.recommender_confidence import confidence_note, interval_note
 from core.script_length import PRESETS, get_length_preset
 
 logger = get_logger("core.length_recommender")
@@ -124,6 +124,7 @@ def get_recommended_length(
             rationale=(
                 f"{preset.label} ({preset.duration_hint()}) averages {avg:.1%} "
                 f"engagement across {len(best_rates)} video(s)"
+                f"{interval_note(best_rates)}"
                 f"{confidence_note(len(best_rates))}"
             ),
         )

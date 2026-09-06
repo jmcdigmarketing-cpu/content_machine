@@ -77,6 +77,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `seo-refresh` | Refresh trending tag hints (YouTube + RSS) |
 | `shell` | Localhost FastAPI operator shell (GET only; no TTS/Apify/publish) |
 | `shortcut` | Install Start Menu shortcut via pythonw / content_os.pyw |
+| `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |

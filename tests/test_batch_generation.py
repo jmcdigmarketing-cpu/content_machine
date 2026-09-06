@@ -20,8 +20,19 @@ _EVALUATED = [
 ]
 
 
-def _discovery():
-    return SimpleNamespace(evaluated=list(_EVALUATED), channel_id="tapin", timings={})
+def _discovery(evaluated=None, topic="UFC 320"):
+    """The real dataclass, not a namespace: these doubles silently lacked
+    `raw_scores` / `angle_scores` and so could not have caught a caller reading
+    them (backlog #625 — audit every double against its target's signature)."""
+    from core.pipeline import DiscoveryResult
+
+    return DiscoveryResult(
+        input_topic=topic,
+        base_signals={},
+        evaluated=list(_EVALUATED if evaluated is None else evaluated),
+        timings={},
+        channel_id="tapin",
+    )
 
 
 def _pipeline_result(script="Hook line!\nBody line."):
@@ -127,11 +138,7 @@ class TestGenerateDraft(BatchCase):
                 },
             }
         }
-        discovery = SimpleNamespace(
-            evaluated=[("GTA 6 leak", 80.0, signals)],
-            channel_id="tapin",
-            timings={},
-        )
+        discovery = _discovery([("GTA 6 leak", 80.0, signals)], topic="GTA 6 leak")
         with (
             patch("core.pipeline.run_discovery", return_value=discovery),
             patch("core.pipeline.run_pipeline", return_value=_pipeline_result()) as rp,
@@ -146,7 +153,7 @@ class TestGenerateDraft(BatchCase):
         self.assertIn("Microsoft received the subpoena.", corpus)
 
     def test_empty_discovery_fails_cleanly(self):
-        empty = SimpleNamespace(evaluated=[], channel_id="tapin", timings={})
+        empty = _discovery([])
         with patch("core.pipeline.run_discovery", return_value=empty):
             out = bg.generate_draft("UFC 320", "tapin")
         self.assertFalse(out.ok)

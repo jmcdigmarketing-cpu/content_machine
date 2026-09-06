@@ -1973,3 +1973,261 @@ need trace-level validation (#647).
 
 Backlog 455 → 460 open; highest #650; suite 2,415 → 2,515 green.
 
+
+## 2026-08-30 — why the ideas are bad: the framing is an accretion, not the charter
+
+**Prompt:** *"is there any particular reason as to why the video ideas have been so
+terrible recently? it seems like its struggling trying to fit the 'enter your own' ideas
+into the initial markup of the project being about and for hot takes … and what are the
+ways that this project can take the next level, within realism."*
+
+Full trace: [idea_quality_diagnosis.md](idea_quality_diagnosis.md). Direction:
+[strategy_next_level.md](strategy_next_level.md). Docs only this session — no code.
+
+**The premise needed one correction, and it changes the fix.** There is no hot-take
+charter to fight. `vision.md`, `positioning.md`, `project_brief.md`, `strategy_2026H2.md`
+and `decisions.md` never frame the project that way, and `channels.json` actively
+contradicts it — MoneyWise's persona is *"calm, plain-spoken, mildly sceptical of hype —
+explains, never sells."* The framing is an **accretion of six layers**, each added for a
+defensible local reason: the angle tables (`controversy` is in every one of them), the
+22-phrase reaction lexicon that leaves every other intent as "default", the script
+prompt's five unconditional take orders, `research_brief`'s `short_debate` default, the
+vault playbook, and a report card that pays for the result.
+
+**Option 5 was never a separate path.** `main.py:266` calls the same
+`_run_new_video_flow` option 1 uses; the entire divergence is `main.py:317-319` (skip
+best-bet). The operator's idea is a **search seed**, and `core/pipeline.py:493-501`
+replaces it with the winning variant. A one-line typed idea carries *zero* creative
+direction — `is_rich=False` leaves `creative_brief` empty — and on the YouTube-link
+branch the operator is asked for "your angle for OUR take" and that answer is
+concatenated into the search string, never reaching the writer.
+
+**The bigger finding, which the question did not ask about: the selection step is not
+selecting.** Live-run 71 recorded all five angles at exactly 100.0; run 72's report shows
+all five at exactly 92.14. `_score_variant` scores the *topic's* signals, not the
+*angle's*, so five framings of one subject return one number and `Enter = best` is
+arbitrary. Candidate 323 made the tie honest (`ui.py:587-611` prints "this is a tie, not
+a ranking") without resolving it. This explains "the idea it gave me was terrible" more
+directly than any prompt wording, and it is unfixed.
+
+**The evidence contradicted the own-vs-discovered half of the question, and that is
+worth recording rather than smoothing.** Across 25 graded runs the report-card means are
+≈78.6 (operator-typed) vs ≈78.2 (discovered) — no gap; the best grade on record (run 75,
+A 94) is operator-typed and the worst (run 69, D 52) is discovered. The operator is not
+wrong; **the report card is blind.** It graded A 91 on run 71's factually wrong title
+(nothing reads the title `generate_title` returns), A 87 on run 74's 277 words with a
+hook of 61, and authenticity 100/100 on a phrase `persona_lint` flagged four log lines
+earlier. `data/traces/*.json` does not record which menu option produced a run, so that
+comparison had to be inferred from typos and exclamation marks — worth instrumenting.
+
+**The single most surgical finding.** `core/obsidian_facts.py:559` caps the vault
+playbook at `limit=8` in **file order, not relevance**. `tapin/playbook.md` opens with
+two "Narratives that work" sections, so the eight that reach every tapin script prompt
+are 8/8 hot-take rules — and 100% of that same file's "Hook rules" and "Hard rules
+(anti-hallucination)" are truncated away. The file is dated 2026-06-17 and says of
+itself: *"These are human-authored beliefs; the Analytics Intelligence Agent will
+eventually confirm/refine them with real performance data — update when it does."* It
+never did. The strongest framing input in the system is eight unvalidated guesses, and
+the outcome data available (hit rate 40%, composite uncorrelated with engagement, priors
+at n=1) does not confirm them.
+
+**A third instance of the run-74 gate-disagreement bug.** `test_gate_agreement.py` was
+written to stop one gate rewarding what another bans. It checks `_INSIGHT_MARKERS`
+against `_FILLER_PHRASES` and one prompt line only. Meanwhile `hook_score._CURIOSITY`
+pays +15 for `"nobody's talking"` — a banned headline template in `topic_variants.py:291`
+and a `_SLOP_PATTERN` in `title_generator.py:20` — and `authenticity` pays 35 for the
+literal string `"hot take"`, which `title_generator.py:83` bans by name. 56% of the
+report card is decided by two substring lists rewarding vocabulary the rest of the system
+forbids.
+
+**Operator's calls this session:** fix scope = **intent as a first-class dimension**
+(#533, expanded from "more angle tables" to one intent steering angles, brief, prompt and
+gates); deliverables = the two docs, code deferred; measurement = **build the eval
+extension as part of the work**; horizon = **open to revisiting** the
+private/local/single-operator constraint.
+
+**Three doc contradictions found while mapping, all cheap to settle:** decisions §17
+("generation quality *is* the lever") vs `strategy_2026H2.md` §9 ("don't add more
+generation features") — §17 is newer and wins; `positioning.md` and `vision.md` were
+retired in substance by the 2026-08-29 private/local constraint but carry no supersession
+header; and §25's hedging loophole is documented and still open — runs 58, 73 and 75 all
+show the claim rewriter buying support with weasel words. Also stale: `vision.md:156`
+lists the prompt eval set as missing; it shipped as `core/prompt_evals.py`.
+
+**The one constraint break worth re-pricing:** Phase M multi-platform. It is the only
+lever that multiplies outcome samples without multiplying scripts, cost, or compliance
+exposure — the asset is already rendered vertical. It does not make the tool public; it
+un-parks a publishing target. Sequence it *after* the quality work, because it also
+triples the blast radius of a bad script.
+
+## 2026-08-30 (wave) — the idea-quality wave, and why it replaced the recommended five
+
+Pickup from the diagnosis entry above. Operator asked to re-familiarize and take the
+next five. Refamiliarization changed which five.
+
+**Two of the recommended five were parked elsewhere.** `HANDOFF_SYNOPSIS.md` lists
+#333 and #416 as "Still parked" in four consecutive wave entries, and `:141` records
+#333 as *"Skipped at the time — needs the operator"* — while `roadmap.md` had them at
+picks 1 and 5. #333's own roadmap line concedes *"The operator's call"*, and its stated
+trigger #341 **does not exist in code**. #416 is `[L]` and blocked on data, not code:
+`ops ingest-clips --apply` has never run, so `data/clip_index.json` is absent and the
+scene planner has nothing to cut to. Both stay open; both left the next-five.
+
+**#323's diagnosis was wrong, and that is the wave's most useful finding.** It
+attributed the five-way tie to the 0-100 clamp. The real cause is that
+`_VARIANT_REUSE_DEFAULT` pins **every** signal during variant scoring, so all five
+variants are scored against the base topic's signals, and the variant string reaches
+`composite_score_raw` only through `infer_domain` (identical across five framings) and
+`get_historical_boost` (an exact-string lookup — 0.0 for an angle generated seconds
+ago). The inputs are equal, so the outputs are equal, clamp or no clamp. Run 72 tied at
+**92.14**, below the ceiling, *after* #323 shipped. The comment at
+`apis/register_signals.py:322-324` claiming "composite_score still re-scores each
+variant's text against the pinned data, so per-variant differentiation survives" is
+**false** — no such re-scoring exists.
+
+**The fix had to be a new component, and the honest constraint shaped it.** Re-fetching
+signals per variant is what `reuse_signals` exists to prevent (150-185s and 5x web
+spend per run) and would not work anyway — five angles on one subject return
+near-identical trend data by construction. So `core/angle_ranker.py` scores the angle
+*text*: distinctness (the angle prompt already asks for this in words — *"if two angles
+could share the same thumbnail, rewrite one"* — and nothing measured it), seed fidelity
+(run 48 turned an NBA seed into a Marvel Rivals script and no number noticed), and
+specificity (reusing `fact_selection._specificity`).
+
+**Deliberately not folded into the composite.** The measured record is that the
+composite does not predict engagement (hit rate 40%; the lowest-scored topic beat two
+100.0s). Averaging one unvalidated number into another would launder both. It rides as
+a third dict on `DiscoveryResult` and a third key in `best_variant_index`, and the menu
+prints it in brackets and says which number did the ranking.
+
+**Three consumers were bypassing the ranking rule entirely** — `intelligence_report`
+and `batch_generation` `max`-ed on the displayed score alone, and `auto_generate` used
+`evaluated[0]`. A tie-break only the interactive menu benefits from is not a fix.
+
+**The playbook fix used the operator's own structure rather than a keyword guess.**
+`load_playbook` took the first 8 bullets in file order; `playbook.md` opens with two
+"Narratives that work" sections, so the prompt got 8/8 hot-take heuristics and none of
+that same file's anti-hallucination rules. Per-bullet `##` section context is now
+carried on `NoteEntry` (additive) and selection goes round-robin across sections. The
+alternative — classifying bullets by keyword — would have been another hand-built list,
+which is exactly the criticism standing against `_SCAFFOLDING_MARKERS` (#648).
+
+**A test double had drifted, and that was worth fixing rather than working around.**
+`test_batch_generation` and `test_experiments` faked `DiscoveryResult` with a
+`SimpleNamespace` lacking `raw_scores`, so they could not have caught a caller reading
+it. Replaced with the real dataclass (#625's rule) instead of defensively `getattr`-ing
+in production.
+
+**Three grade components moved in one wave, and that has a cost.** Removing
+`"hot take"` from `_INSIGHT_MARKERS` (35 of 100 authenticity), removing two `_CURIOSITY`
+terms and adding a banned-template guard to `score_hook` (28% of the card) mean
+**historical grades are no longer comparable to new ones.** That is the same migration
+problem #645 was deferred for — so #645 is now pulled into the next five, because the
+debt is owed either way.
+
+**Left undone on purpose: #533.** It is `[L]` — six modules and ~15 prompt lines, each
+written to command a take, and the honest work is authoring angle tables and prompt
+blocks per intent, not plumbing. Its gate half moves the report card a *fourth* time;
+stacking that on the same uncommitted wave would make any regression impossible to
+attribute. It is now pick 1, to be shipped detector-and-tables first.
+
+Suite 2,515 → **2,546** green; ruff clean; mypy 148 (unchanged). Backlog 460 → 463 open,
+highest **#656**. Tree left uncommitted — the operator has not asked for a commit.
+
+## 2026-09-05 — the next-five wave, and the four-step session written down
+
+**Prompt:** *"next 5 tasks completed please, audit then commit afterwards.
+brainstorm a new 5. is there any way to save this as a task, this process of
+next 5, audit, commit, brainstorm?"*
+
+**Pickup:** the five from `roadmap.md` as rewritten on 2026-08-30 — #533, #402,
+#383, #645, #654 — plus the 2026-08-30 idea-quality wave, which had been sitting
+uncommitted in the working tree for six days against rule 14. Operator's calls
+this session: **one commit at the end** covering both waves (I argued for two and
+was overruled — noted, not re-litigated), and **#533 as its minimum slice**.
+
+**Shipped (order: cheapest and safest first, so the risky one could not strand
+the rest):**
+
+1. **#654** — `_ranked_on_note` names the shrunk figure `_domain_priority`
+   actually sorted on. The raw mean stays the headline deliberately: #351's
+   interval is computed over that raw vector, so swapping the point estimate
+   without the interval would trade one quiet disagreement for another. Three
+   sites existed, not one; the third (`_emit_hist`) was left alone because it
+   prints a single run's own rate and a domain-shrunk figure is a different
+   quantity. Measured: `nba averages 11.0% ... (ranked on 12.6% shrunk)`.
+2. **#645** — the deferral was "it needs a migration story", and the mechanism
+   for one **did not exist**: `GRADE_VERSION` was a string nothing read, wrote or
+   compared. Stamped it onto `VideoGrade`, bumped to **v2** covering the length
+   component *and* the three components that moved on 2026-08-30, and
+   `QUALITY_VERSION` to **v3**. `_length_score` derives from the same floor
+   comparison `format_length_report` already shows the operator, so it cannot
+   disagree with what the operator reads (#653's lesson). Measured on run 74's
+   real components: **A 86.8 -> B 82.8**; a row with no length keys is unchanged.
+3. **#383** — `core/signal_canary.py` + `ops signal-canary`. It calls signal
+   functions directly rather than through `_fetch_one`, which cannot answer from
+   cache and cannot trip the persisted breaker.
+4. **#533, detector + tables** — five new intents, each with a table where no
+   frame asks what is broken. The mode now prints on the **main generation
+   flow**; it only ever printed on the intelligence report, so the module's
+   promise that the operator can see and override it was half true.
+5. **#657**, found while scoping #402 — see below.
+
+**#402 was not shipped, and confirming that was the useful part.** The split is
+easy (`split_spoken_sentences` already exists). The blocker is that
+`generate_audio` is ~147 lines with four provider branches, each with its own
+`tts_cache_store`, plus quota checks, the Piper mix and a voice-fallback retry
+loop. Rewriting the most cost-critical function in the repo late in a long
+session, where a subtle error silently changes what the operator is billed or
+breaks caption timing, is the shape of failure this repo has hit three times.
+Filed the seam it needs as **#658** and left #402 open rather than half-shipping
+a cache.
+
+**Scoping it did surface a real defect.** `record_tts_actual` ran *before*
+`tts_cache_lookup`, so a cached render stamped a full script's worth of "actual
+synth chars" for characters nothing synthesized — and `core/pipeline.py`
+persists that as `tts_actual_chars` into the run ledger. Shipped as **#657**.
+Writing its test also exposed that `_last_cache_hit` is a module global no test
+reset, so an existing "no cache hit yet" assertion was really asserting
+alphabetical test order; added a `setUp`.
+
+**The canary's first cut was backwards, and the correction is the point.** It
+reported **15 of 33 signals dead**. Most were healthy: the probe topic is a UFC
+string, so `coingecko`, `igdb` and `tmdb` *should* answer empty. That is decision
+§18 turned inward — a canary that cries wolf nightly gets ignored, which is worse
+than not having one. Reclassified onto the signal-contract vocabulary
+(`STATUS_INACTIVE` is a source answering; `_FAILED` is the set worth waking for).
+Measured after: **27 answered, none broken**. Also corrected the module's own
+claim: zero *dollars* is true, zero *quota* is not — a probe run spends ~101
+YouTube units of the 10k/day allowance.
+
+**Audit (same pass).** Definition of done, checked not asserted: ruff and format
+clean; suite **2,546 -> 2,573** green; every new test observed failing first with
+the named reason (run 74's `87.3 not less than 87.3` and the canary's
+`'12.6%' not found` are the two worth quoting); `git status --short data/` empty;
+every new symbol traced to a production caller. **Two findings the checklist
+caught that a green suite did not:** mypy had gone **148 -> 149** (a new
+`str`/`Path` error in `signal_canary.save_results`, fixed by declaring
+`SIGNAL_CANARY_FILE` in `config/paths.py` the way `FEED_HEALTH_FILE` already is),
+and ruff flagged an import left unused by moving `record_tts_actual`. Both new
+`logger.warning` calls fire only on the fail-open path, so a healthy run emits
+none.
+
+**The new five** (`roadmap.md`): **#662** calibration mixes rubric versions —
+caused by these two waves and only now visible, because four grade components
+have moved while `grade_calibration` re-grades all history with today's code;
+**#658** the synthesis seam under #402; **#659** intent into the research brief;
+**#647** fact-selection weights against real traces; **#661** the two intent
+classifiers that disagree. Plus **#663**: nothing actually runs the canary yet,
+and it must not go in `all-checks` (CI has no network and would fail every build).
+
+**The ritual is now a skill.** `.claude/skills/next-five/SKILL.md`, mirrored
+byte-identically to `.cursor/skills/` exactly as `tdd` is carried. It encodes the
+recorded failures rather than generic advice: verify the next-five against the
+synopsis before trusting it, a `[x]` is not proof (#323), counts come from
+`roadmap-index`, write the slot last *then* re-run the suite, read `git status
+--porcelain | grep '^??'` before `git add -A`, and do not move a grade component
+without stamping the version.
+
+Suite 2,546 -> **2,573** green; ruff clean; mypy **148** (unchanged from
+baseline). Backlog 463 -> **465** open (done 429 -> 434), highest **#663**.

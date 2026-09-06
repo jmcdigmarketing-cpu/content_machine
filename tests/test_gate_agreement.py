@@ -79,5 +79,139 @@ class TestTheInsightScorerStillWorks(unittest.TestCase):
         self.assertTrue(_insight_check("Mark my words, Rockstar delays this to spring.").passed)
 
 
+_VARIANTS = Path(__file__).resolve().parents[1] / "apis" / "topic_variants.py"
+
+
+def _angle_prompt_banned_phrases() -> set[str]:
+    """Headline templates the ANGLE prompt tells the model never to write.
+
+    Deliberately not the single-line trick `_prompt_banned_phrases` uses: this
+    list wraps across two source lines, and a single-line reader silently drops
+    the second half — which is where "my hot take" lives, the phrase this whole
+    module exists to police. `TestExtractorsSeeWhatTheyClaimTo` guards that.
+    """
+    text = _VARIANTS.read_text(encoding="utf-8")
+    start = text.index("BANNED headline templates:")
+    # The bullet ends at the first period-quote that closes the list.
+    body = text[start : text.index('".', start) + 2]
+    return {phrase.lower() for phrase in re.findall(r'"([^"]+)"', body)}
+
+
+def _engine_banned_jargon() -> set[str]:
+    """The script prompt's *other* ban list (`BANNED - never write these`).
+
+    The original test read only the "Banned verbatim:" line; this one has never
+    been checked against any reward list.
+    """
+    text = _ENGINE.read_text(encoding="utf-8")
+    line = next(ln for ln in text.splitlines() if "BANNED — never write these" in ln)
+    return {phrase.lower() for phrase in re.findall(r'"([^"]+)"', line)}
+
+
+def _ban_vocabulary() -> set[str]:
+    """Every phrase some component forbids, from all four ban lists."""
+    from core.title_generator import _SLOP_PATTERNS
+
+    return (
+        {p.lower() for p in _SLOP_PATTERNS}
+        | _angle_prompt_banned_phrases()
+        | _engine_banned_jargon()
+        | _prompt_banned_phrases()
+    )
+
+
+def _collides(reward: str, banned: str) -> bool:
+    """Whether rewarding `reward` contradicts forbidding `banned`.
+
+    Phrase-level, not naive substring. `_CURIOSITY` contains bare English words
+    ("nobody", "actually", "biggest") that appear inside banned templates by
+    coincidence; banning those outright from every hook would be wrong, and
+    flagging them here would bury the four real collisions in noise. A reward
+    only collides when it is itself a multi-word phrase.
+    """
+    if len(reward.split()) < 2:
+        return False
+    return reward in banned or banned in reward
+
+
+class TestExtractorsSeeWhatTheyClaimTo(unittest.TestCase):
+    """A source-scraping guard that silently finds nothing passes every test
+    below it. These assertions are what make the rest of this module honest."""
+
+    def test_the_angle_prompt_list_includes_its_second_line(self):
+        phrases = _angle_prompt_banned_phrases()
+        self.assertIn("my hot take", phrases)
+        self.assertIn("just broke the league", phrases)
+        self.assertGreaterEqual(len(phrases), 6, phrases)
+
+    def test_the_engine_jargon_list_is_found(self):
+        phrases = _engine_banned_jargon()
+        self.assertIn("at a crossroads", phrases)
+        self.assertGreaterEqual(len(phrases), 10, phrases)
+
+    def test_the_ban_vocabulary_spans_all_four_lists(self):
+        vocab = _ban_vocabulary()
+        self.assertIn("this changes everything", vocab)  # title_generator
+        self.assertIn("my hot take", vocab)  # angle prompt
+        self.assertIn("at a crossroads", vocab)  # engine jargon
+        self.assertIn("but here's the thing", vocab)  # engine verbatim
+
+
+class TestTheHookScorerDoesNotPayForBannedClickbait(unittest.TestCase):
+    """`hook_score` is the single heaviest report-card component (0.28,
+    `core/video_grade.py`). It awards +15 for `_CURIOSITY` and +10 for
+    `_STAKES` — and four of those terms are templates two other components
+    reject outright. The grade pays for what the pipeline forbids.
+    """
+
+    def test_no_multiword_curiosity_term_is_banned_elsewhere(self):
+        from core.hook_score import _CURIOSITY
+
+        vocab = _ban_vocabulary()
+        overlap = sorted({r for r in _CURIOSITY for b in vocab if _collides(r.strip().lower(), b)})
+        self.assertEqual(overlap, [], f"hook_score rewards banned phrases: {overlap}")
+
+    def test_scoring_a_banned_template_awards_no_clickbait_bonus(self):
+        """Behavioural: the real scorer, on the real banned strings."""
+        from core.hook_score import score_hook
+
+        paid = {"curiosity / contradiction", "high stakes"}
+        for banned in ("nobody's talking about", "you won't believe", "this changes everything"):
+            with self.subTest(banned=banned):
+                hs = score_hook(f"{banned} what Rockstar just did.")
+                bonuses = [f"{label} +{d}" for label, d in hs.reasons if d > 0 and label in paid]
+                self.assertEqual(bonuses, [], f"'{banned}' earned {bonuses}")
+
+
+class TestTheInsightScorerDoesNotPayForBannedClickbait(unittest.TestCase):
+    def test_no_multiword_insight_marker_is_banned_elsewhere(self):
+        vocab = _ban_vocabulary()
+        overlap = sorted(
+            {m for m in _INSIGHT_MARKERS for b in vocab if _collides(m.strip().lower(), b)}
+        )
+        self.assertEqual(overlap, [], f"authenticity rewards banned phrases: {overlap}")
+
+
+class TestThePromptDoesNotTeachAPhraseTheTitleCleanerRejects(unittest.TestCase):
+    """Self-contained, needs no list comparison. `core/content_engine.py` offers
+    "This changes everything for the division." as a model strong hook, and
+    `title_generator._clean_title` discards any title matching
+    "this changes everything". The prompt demonstrates what the next stage bins.
+    """
+
+    def test_the_example_strong_hooks_survive_the_title_cleaner(self):
+        from core.title_generator import _clean_title
+
+        text = _ENGINE.read_text(encoding="utf-8")
+        line = next(ln for ln in text.splitlines() if "Strong hooks:" in ln)
+        examples = re.findall(r'"([^"]+)"', line.split("Strong hooks:")[1])
+        self.assertGreaterEqual(len(examples), 2, f"extractor found {examples}")
+
+        rejected = [
+            ex for ex in examples if _clean_title(ex, fallback="__FALLBACK__") == "__FALLBACK__"
+        ]
+        self.assertEqual(rejected, [], f"prompt teaches hooks the title cleaner bins: {rejected}")
+
+
 if __name__ == "__main__":
     unittest.main()

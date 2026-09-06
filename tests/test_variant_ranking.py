@@ -83,6 +83,36 @@ class TestTieBreak(unittest.TestCase):
             best_variant_index([])
 
 
+class TestTheRealTieRunsOutOfTiebreakers(unittest.TestCase):
+    """#323's raw-score tiebreak only works when the pre-clamp numbers differ.
+    They do not: every signal is pinned during variant scoring, so all five
+    variants are scored against identical inputs. Run 72 tied at 92.14 — under
+    the clamp — *after* #323 shipped. The editorial score is the third key."""
+
+    def test_equal_display_and_equal_raw_still_picks_first_without_angle_scores(self):
+        evaluated = _ev([(f"angle {i}", 92.14) for i in range(1, 6)])
+        raw = dict.fromkeys((v for v, *_ in evaluated), 92.14)
+        self.assertEqual(best_variant_index(evaluated, raw), 0)
+
+    def test_the_editorial_score_breaks_a_total_tie(self):
+        evaluated = _ev([("angle a", 92.14), ("angle b", 92.14), ("angle c", 92.14)])
+        raw = dict.fromkeys((v for v, *_ in evaluated), 92.14)
+        angle_scores = {"angle a": 0.41, "angle b": 0.88, "angle c": 0.55}
+        self.assertEqual(best_variant_index(evaluated, raw, angle_scores), 1)
+
+    def test_a_visible_score_difference_still_outranks_the_editorial_score(self):
+        """Order of authority is unchanged: displayed, then raw, then editorial."""
+        evaluated = _ev([("a", 90.0), ("b", 100.0)])
+        self.assertEqual(best_variant_index(evaluated, {}, {"a": 0.99, "b": 0.01}), 1)
+
+    def test_raw_still_outranks_the_editorial_score(self):
+        evaluated = _ev([("a", 100.0), ("b", 100.0)])
+        self.assertEqual(
+            best_variant_index(evaluated, {"a": 140.0, "b": 100.0}, {"a": 0.01, "b": 0.99}),
+            0,
+        )
+
+
 class TestMenuUsesTheSameRule(unittest.TestCase):
     def test_display_returns_the_headroom_winner(self):
         evaluated = _ev([("a", 100.0), ("b", 100.0), ("c", 100.0)])

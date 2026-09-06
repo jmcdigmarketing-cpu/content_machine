@@ -41,11 +41,14 @@ class TestBuildQuality(unittest.TestCase):
         self.assertEqual(q["tier_warning_count"], 0)
         self.assertEqual(q["fact_conflict_count"], 0)
         self.assertNotIn("claim_support_rate", q)  # verifier did not run
-        self.assertEqual(q["quality_version"], "v2")
+        self.assertEqual(q["quality_version"], run_quality.QUALITY_VERSION)
 
     def test_empty_script_returns_version_only(self):
+        """Read the constant rather than pinning the literal: the version is
+        meant to move when the schema does (v3 added the #645 length keys), and
+        a hardcoded copy just reports the bump as a failure."""
         q = run_quality.build_quality(script="  ", channel_id="tapin")
-        self.assertEqual(q, {"quality_version": "v2"})
+        self.assertEqual(q, {"quality_version": run_quality.QUALITY_VERSION})
 
     def test_pillar3_features_persist_into_quality(self):
         with patch(

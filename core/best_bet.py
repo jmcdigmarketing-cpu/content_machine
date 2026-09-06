@@ -23,7 +23,7 @@ from core.channel_context import (
 from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
-from core.recommender_confidence import MODERATE_SAMPLES, confidence_note
+from core.recommender_confidence import MODERATE_SAMPLES, confidence_note, interval_note
 
 logger = get_logger("core.best_bet")
 
@@ -374,6 +374,8 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             rationale=(
                 f"{best_domain} averages {avg_rate:.1%} engagement "
                 f"across {len(rates)} video(s)"
+                f"{interval_note(rates)}"
+                f"{_ranked_on_note(avg_rate, adjusted.get(best_domain))}"
                 f"{confidence_note(len(rates))}"
             ),
         )
@@ -432,6 +434,29 @@ def _adjusted_domain_rates(entries: list[dict]) -> dict[str, float]:
     prior = sum(all_rates) / len(all_rates)
     k = MODERATE_SAMPLES
     return {d: (sum(v) + k * prior) / (len(v) + k) for d, v in by_domain.items()}
+
+
+def _ranked_on_note(raw_rate: float, adjusted_rate: float | None, *, places: int = 1) -> str:
+    """Name the figure that actually ranked, when it is not the one printed.
+
+    `_domain_priority` sorts on the empirical-Bayes-shrunk rate; the rationale
+    prints the raw mean. #351 then put an interval beside that raw mean, which
+    made the disagreement public — three numbers about one domain, only one of
+    which decided anything.
+
+    The raw mean stays the headline because it is what was actually observed and
+    the interval is computed over that same raw vector. This appends the ranking
+    basis rather than swapping it, so the interval keeps describing the number it
+    was derived from. Silent when shrinking changed nothing at the printed
+    precision — the note exists to flag a disagreement, not to decorate.
+    """
+    if adjusted_rate is None:
+        return ""
+    # Compare at the precision the caller prints: a note claiming a disagreement
+    # the operator cannot see on the same line is noise.
+    if f"{raw_rate:.{places}%}" == f"{adjusted_rate:.{places}%}":
+        return ""
+    return f" (ranked on {adjusted_rate:.{places}%} shrunk toward the channel mean)"
 
 
 def _domain_priority(domain: str, adjusted: dict[str, float], counts: dict[str, int]) -> tuple:
@@ -869,6 +894,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         rationale = f"trending on {c['source']} now"
         if rate is not None:
             rationale += f" · {c['domain']} averages {rate:.0%} engagement"
+            rationale += _ranked_on_note(rate, adjusted.get(c["domain"]), places=0)
             rationale += confidence_note(domain_counts.get(c["domain"], 0))
         options.append(
             BestBetResult(
@@ -903,6 +929,9 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
             used_anchors.add(anchor)
         if e["engaged_rate"] is not None:
             source = "analytics"
+            # No `_ranked_on_note` here, deliberately: this is one run's own rate,
+            # labelled as such, not a domain aggregate. Appending a shrunk *domain*
+            # figure would compare two different quantities (#654).
             rationale = f"{e['engaged_rate']:.0%} engagement on a past {e['domain']} video"
             rationale += confidence_note(domain_counts.get(e["domain"], 0))
         else:

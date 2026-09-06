@@ -134,3 +134,21 @@ operator judges Piper. 2026 inauthentic-content policy is still existential —
 substance over volume. Pickup: [roadmap.md](roadmap.md) recommended next 5.
 Honest session state: [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md). Audit:
 [audit.md](audit.md).
+
+## Addendum — 2026-08-30 (idea quality)
+
+The June scorecard rated **Content quality 3.5/5** on *"good hooks/prose; visuals and
+stance still thin."* A code-level trace of the "why are the ideas bad" question found the
+opposite failure: **stance is not thin, it is compulsory**, and three of the numbers this
+scorecard trusts are measuring the wrong thing and reporting clean.
+
+- The **composite score does not rank** — all five angles scored 100.0 on run 71 and
+  92.14 on run 72, so `Enter = best` is arbitrary — and does not predict engagement
+  (hit rate 40%; the lowest-scored topic beat two 100.0s).
+- The **report card is blind** to what the operator reacts to: A 91 on a factually wrong
+  title, A 87 on a 277-word script with a hook of 61, authenticity 100/100 on a phrase
+  its own linter flagged.
+- **Claim support is bought with hedging**, not evidence (decisions §25, still open).
+
+Full trace and the fix order: [idea_quality_diagnosis.md](idea_quality_diagnosis.md).
+Direction: [strategy_next_level.md](strategy_next_level.md).

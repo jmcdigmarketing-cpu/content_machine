@@ -353,7 +353,7 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     channel_id = resolve_channel_id(channel_id)
     spoken = clean_script_for_tts(script)
     try:
-        from core.tts_char_cap import forecast_tts, record_tts_actual
+        from core.tts_char_cap import forecast_tts
 
         forecast_tts(script)
     except Exception as exc:
@@ -373,17 +373,30 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         local_spoken = apply_pronunciation_lexicon(spoken, channel_id)
 
     spoken_for_alt = local_spoken if is_local_tts_provider() else spoken
-    try:
-        from core.tts_char_cap import record_tts_actual
 
-        record_tts_actual(len(spoken_for_alt))
-    except Exception as exc:
-        logger.debug("tts actual skipped: %s", exc)
+    def _record_actual(chars: int) -> None:
+        """Stamp what was *actually* synthesized.
+
+        This used to run before the cache lookup, so a cache hit recorded a full
+        script's worth of synth chars for characters nothing synthesized -- and
+        `core/pipeline.py` persists that as `tts_actual_chars` into the run
+        ledger, which is the number the operator and the analytics layer read.
+        """
+        try:
+            from core.tts_char_cap import record_tts_actual
+
+            record_tts_actual(chars)
+        except Exception as exc:
+            logger.debug("tts actual skipped: %s", exc)
+
     cache_key = tts_cache_key(spoken_for_alt, _resolve_tts_provider(), _tts_cache_voice(channel_id))
     if tts_cache_lookup(cache_key, output_path):
         _last_cache_hit = True
+        _record_actual(0)
         print(f"[TTS] Channel: {channel_id} | cache hit")
         return output_path
+
+    _record_actual(len(spoken_for_alt))
 
     if is_local_tts_provider():
         try:

@@ -576,6 +576,7 @@ def display_variants(
     *,
     channel_id: str | None = None,
     raw_scores: dict[str, float] | None = None,
+    angle_scores: dict[str, float] | None = None,
     print_fn=print,
 ) -> int:
     """Print variant list; return index of highest score.
@@ -590,11 +591,17 @@ def display_variants(
     from core.pipeline import best_variant_index
 
     raw = raw_scores or {}
-    best_i = best_variant_index(evaluated, raw)
+    angle = angle_scores or {}
+    best_i = best_variant_index(evaluated, raw, angle)
     shown = [round(float(s), 2) for _, s, *_ in evaluated]
     display_tied = len(evaluated) > 1 and len(set(shown)) == 1
     raw_values = [raw.get(v) for v, *_ in evaluated]
     raw_known = all(r is not None for r in raw_values)
+    angle_values = [angle.get(v) for v, *_ in evaluated]
+    angle_breaks_it = (
+        all(a is not None for a in angle_values)
+        and len({round(float(a), 4) for a in angle_values}) > 1  # type: ignore[arg-type]
+    )
 
     subsection("Scored angles (Enter = best)", print_fn)
     print_fn("  (YouTube title is generated after key facts + script — not here.)")
@@ -603,6 +610,14 @@ def display_variants(
             print_fn(
                 f"  All {len(evaluated)} angles hit the {shown[0]:.0f} ceiling — "
                 "ordered by headroom above it, not by the printed number."
+            )
+        elif angle_breaks_it:
+            # The signals are pinned across variants, so an identical composite is
+            # the norm, not a hot-topic edge case. Say which number actually ranked.
+            print_fn(
+                f"  All {len(evaluated)} angles scored {shown[0]:.1f} — the trend "
+                "signals are identical across angles. Ordered by editorial score "
+                "(distinctness, seed fidelity, specificity), shown in brackets."
             )
         else:
             print_fn(
@@ -630,7 +645,10 @@ def display_variants(
             hits = [t for t in feature_tags(variant) if t in winning]
             if hits:
                 hint = paint(f"  ▲ {hits[0]}", "\033[32m")
-        print_fn(f"{marker} {i}. {score_badge(score)} {variant}{hint}")
+        editorial = ""
+        if angle_breaks_it and variant in angle:
+            editorial = paint(f"  [ed {angle[variant]:.2f}]", "\033[90m")
+        print_fn(f"{marker} {i}. {score_badge(score)} {variant}{editorial}{hint}")
     return best_i
 
 

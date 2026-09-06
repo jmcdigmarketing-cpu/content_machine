@@ -66,6 +66,11 @@ class DiscoveryResult:
     # information. Kept beside `evaluated` (not inside it) so the 3-tuple shape that
     # batch_generation / intelligence_report unpack stays exactly as it was.
     raw_scores: dict[str, float] = field(default_factory=dict)
+    # variant -> editorial score (`core/angle_ranker`). Deliberately a third dict
+    # rather than folded into the composite: the composite is a trend number and
+    # this is an editorial one, and averaging an unvalidated score into another
+    # unvalidated score would hide both. Same reason `raw_scores` sits out here.
+    angle_scores: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -95,19 +100,32 @@ class PipelineResult:
 def best_variant_index(
     evaluated: list[tuple[str, float, Any]],
     raw_scores: dict[str, float] | None = None,
+    angle_scores: dict[str, float] | None = None,
 ) -> int:
-    """Index of the best variant, breaking display ties on the pre-clamp score (323).
+    """Index of the best variant. Three keys, in descending order of authority.
 
-    `composite_score` clamps to 100, so on a hot topic every variant shows the same
-    number and "best" degenerates to "first in the list" — run 71 offered five angles
-    at exactly 100.00. The displayed score still leads: raw only decides among equals.
+    1. the displayed composite;
+    2. the pre-clamp composite (323) — `composite_score` caps at 100, so on a hot
+       topic every variant reads 100.0 and the ranking carries no information;
+    3. the editorial score (`core/angle_ranker`).
+
+    323 assumed the pre-clamp numbers differ. They do not: `_score_variant` scores
+    every variant against the *same* pinned signals, and the variant string reaches
+    `composite_score_raw` only through `infer_domain` and an exact-string history
+    lookup. Run 72 tied at 92.14 — below the ceiling, after 323 shipped — so key 2
+    had nothing to break either. Key 3 reads the angle text itself.
     """
     if not evaluated:
         raise ValueError("evaluated must be non-empty")
     raw = raw_scores or {}
+    angle = angle_scores or {}
     return max(
         range(len(evaluated)),
-        key=lambda i: (evaluated[i][1], raw.get(evaluated[i][0], evaluated[i][1])),
+        key=lambda i: (
+            evaluated[i][1],
+            raw.get(evaluated[i][0], evaluated[i][1]),
+            angle.get(evaluated[i][0], 0.0),
+        ),
     )
 
 
@@ -253,6 +271,18 @@ def run_discovery(
     evaluated.sort(key=lambda e: _order.get(e[0], len(candidates)))
     timings["variant_scoring"] = time.perf_counter() - t1
 
+    # Editorial ranking of the angle text. Deterministic, network-free, and scored
+    # over the whole candidate set at once (distinctness is relative), so it runs
+    # after the loop rather than inside `_score_variant`. Fail-open: a missing
+    # editorial score costs a tiebreaker, never the run.
+    angle_scores: dict[str, float] = {}
+    try:
+        from core.angle_ranker import rank_angles
+
+        angle_scores = rank_angles([v for v, *_ in evaluated], seed_topic=topic)
+    except Exception as exc:
+        logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
+
     # Persist this run's cache hit/miss counters for the reliability dashboard (O8).
     try:
         from apis.cache_manager import flush_cache_stats
@@ -266,6 +296,7 @@ def run_discovery(
         base_signals=base_signals,
         evaluated=evaluated,
         raw_scores=raw_scores,
+        angle_scores=angle_scores,
         timings=timings,
         channel_id=channel_id,
     )

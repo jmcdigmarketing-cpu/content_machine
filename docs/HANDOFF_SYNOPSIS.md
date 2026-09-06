@@ -1,8 +1,37 @@
-# Handoff synopsis — 2026-08-28 night: Piper mix + secrets-doctor
+# Handoff synopsis — 2026-09-05: the next-five wave
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — Piper 1/8 mix, drop Brave/BFL (2026-08-28 night)
+## Last implementation wave — next five + idea quality (2026-09-05)
+
+Two waves landed as one commit at the operator's call: the 2026-08-30
+idea-quality wave (#651 angle ranker, #652 playbook ranking, #653 gate
+agreement, #351 intervals) had been uncommitted for six days, and the
+2026-09-05 next-five wave sits on top of it.
+
+- **Shipped 2026-09-05:** #654 (best-bet names the shrunk figure it ranked on),
+  #645 (report card weights length; `GRADE_VERSION` is real and now **v2**,
+  `QUALITY_VERSION` **v3**), #383 (`core/signal_canary.py` + `ops signal-canary`),
+  #533's **detector + angle tables only**, and #657 (a cache hit billed chars it
+  never synthesized).
+- **#402 not shipped, deliberately.** `generate_audio` is ~147 lines over four
+  provider branches; it needs the seam filed as **#658** first. Left open rather
+  than half-shipping a cache.
+- **Four grade components have now moved across the two waves.** Historical
+  report-card letters are not comparable to new ones. `VideoGrade.version`
+  records which rubric produced which — but `grade_calibration` still re-grades
+  all history with today's code, which is **#662** and is roadmap pick 1.
+- **New ritual skill:** `.claude/skills/next-five/SKILL.md` (+ `.cursor` mirror),
+  the four-step session written down.
+- **Proof:** suite 2,546 -> **2,573** green; ruff + format clean; mypy **148**
+  (unchanged); `git status --short data/` empty; `ops all-checks` clean.
+  Backlog 463 -> **465** open, highest **#663**.
+
+**Still parked:** Phase M; #141-#146; #333/#349 (narrowed, #333 needs the
+operator and its trigger #341 does not exist); #451 LAN booth; #416 scene-beat
+(blocked on data - `ops ingest-clips --apply` has never run); Ollama FAIL.
+
+## Previous wave — Piper 1/8 mix, drop Brave/BFL (2026-08-28 night)
 
 Pickup from planning_log **2026-08-28 (Piper mix / secrets)** on the current branch.
 Tests were written first and failed on unmodified code. **Do not commit unless asked.**

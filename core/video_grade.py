@@ -29,7 +29,13 @@ from core.logging import get_logger
 
 logger = get_logger("core.video_grade")
 
-GRADE_VERSION = "v1"
+# v2 (2026-09-05): the rubric changed twice and nothing recorded it.
+# - 2026-08-30 moved three components: "hot take" left `authenticity._INSIGHT_MARKERS`,
+#   two terms left `hook_score._CURIOSITY`, and a banned-template guard was added.
+# - 2026-09-05 added the `length` component (#645).
+# `core/grade_calibration.py` re-grades every stored run with *today's* code, so
+# without this stamp a v1 letter and a v2 letter were indistinguishable.
+GRADE_VERSION = "v2"
 
 # Component weights (renormalized over the components actually present).
 _WEIGHTS = {
@@ -38,6 +44,12 @@ _WEIGHTS = {
     "grounding": 0.22,
     "topic": 0.12,
     "thumbnail": 0.10,
+    # #645. Deliberately not carved out of the five above: taking weight from
+    # hook or authenticity would change what those scores mean on top of adding
+    # a component. The sum is now 1.10 and the existing renormaliser divides it
+    # back to 1.0, so every other component is diluted proportionally - visible,
+    # arithmetic, and stamped by GRADE_VERSION rather than silent.
+    "length": 0.10,
 }
 
 _UNGROUNDED_PENALTY = 25  # per unsupported specific
@@ -65,6 +77,7 @@ class VideoGrade:
     predicted_engaged_rate: float | None = None
     prediction_note: str = ""
     engagement_surprise: float | None = None
+    version: str = GRADE_VERSION
 
 
 def _letter(score: float) -> str:
@@ -110,6 +123,39 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
     return score, "; ".join(notes) or "fully grounded"
 
 
+def _length_score(quality: dict[str, Any]) -> tuple[float, str] | None:
+    """0-100 for how well the script hit its length preset, or None when unknown.
+
+    Agrees with `core/script_length.format_length_report`, which is the same
+    comparison the operator already reads at review time — two components
+    disagreeing about one script is the #653 defect, and this must not add another.
+
+    A short script is the graded failure: run 74 shipped 277 against a 300 floor
+    and the expansion loop had already exited, because four later passes remove
+    text and nothing re-measured. Overrunning is milder - padding, not a missing
+    beat - so it is penalised at half the rate.
+    """
+    words = quality.get("word_count")
+    floor = quality.get("min_words")
+    ceiling = quality.get("max_words")
+    if words is None or not floor:
+        return None
+    words = int(words)
+    floor = int(floor)
+    if words < floor:
+        # The floor is a stated contract, so missing it starts below full marks
+        # rather than decaying from 100 - otherwise the arithmetic cannot reach
+        # the outcome this item was filed for. Calibrated on run 74: 277 against
+        # a 300 floor is 7.7% short, scores 47, and costs the run its A.
+        deficit = (floor - words) / floor
+        return max(0.0, round(85.0 - deficit * 500, 1)), f"{words} words, {floor} floor"
+    if ceiling and words > int(ceiling):
+        # Padding is the milder sin: the beats are there, there are just too many.
+        excess = (words - int(ceiling)) / int(ceiling)
+        return max(0.0, round(95.0 - excess * 250, 1)), f"{words} words, {ceiling} ceiling"
+    return 100.0, f"{words} words, in range"
+
+
 def grade_from_parts(
     *,
     quality: dict[str, Any],
@@ -146,6 +192,10 @@ def grade_from_parts(
                 "topic", min(100.0, float(composite_score)), _WEIGHTS["topic"], "composite score"
             )
         )
+    length = _length_score(quality)
+    if length is not None:
+        l_score, l_note = length
+        raw.append(GradeComponent("length", l_score, _WEIGHTS["length"], l_note))
     thumb = quality.get("thumbnail_overall")
     if thumb is not None:
         raw.append(

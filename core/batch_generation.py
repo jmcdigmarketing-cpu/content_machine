@@ -115,8 +115,12 @@ def generate_draft(
     if not discovery.evaluated:
         out.error = "discovery returned no scored variants"
         return out
-    variant_index = max(
-        range(len(discovery.evaluated)), key=lambda i: discovery.evaluated[i][1] or 0
+    # The one ranking rule — this used to `max` on the displayed score alone and
+    # so picked arbitrarily whenever the composites tied, which is every run.
+    from core.pipeline import best_variant_index
+
+    variant_index = best_variant_index(
+        discovery.evaluated, discovery.raw_scores, discovery.angle_scores
     )
     best_topic, best_score, best_signals = discovery.evaluated[variant_index]
     out.variant, out.score = best_topic, float(best_score or 0)

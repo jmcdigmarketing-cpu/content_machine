@@ -24,6 +24,7 @@ if "--art" in sys.argv:
 import config.settings  # noqa: F401
 from apis.youtube_api import start_youtube_warmup_background
 from config.channels import get_channel_profile
+from core.ask import ask_choice, ask_confirm, ask_text
 from core.logging import get_logger, setup_logging
 from core.pipeline import run_discovery, run_media_only, run_pipeline
 from core.script_length import PRESETS, format_length_report, get_length_preset
@@ -72,7 +73,7 @@ def _run_intelligence_report_flow_body(channel_id: str) -> None:
         save_report,
     )
 
-    topic = input("  Topic: ").strip()
+    topic = ask_text("  Topic: ").strip()
     if not topic:
         print("  Topic required.")
         return
@@ -93,7 +94,7 @@ def _run_intelligence_report_flow_body(channel_id: str) -> None:
         angle_scores=discovery.angle_scores,
     )
 
-    choice = input("\n  Choose 1-5 for report (Enter = best): ").strip()
+    choice = ask_choice("\n  Choose 1-5 for report (Enter = best): ")
     variant_index = int(choice) - 1 if choice.isdigit() else best_default
 
     report = build_intelligence_report(discovery, variant_index=variant_index)
@@ -116,6 +117,9 @@ def main():
     from core.themes import set_channel_theme
 
     set_channel_theme(channel_id)
+    from core.pinned_status import set_pin_context
+
+    set_pin_context(channel_id)
     from core.ascii_art import print_startup_panel
 
     print_startup_panel(channel_id)
@@ -211,7 +215,7 @@ def _read_multiline(prompt: str) -> str:
     lines: list[str] = []
     while True:
         try:
-            line = input()
+            line = ask_text()
         except EOFError:
             break
         if line.strip() == "":
@@ -267,13 +271,13 @@ def _run_idea_intake_flow_body(channel_id: str) -> None:
             print(f'\n  Found video: "{meta["title"]}"')
             if meta.get("channel"):
                 print(f"  Channel: {meta['channel']}")
-            angle = input(
+            angle = ask_text(
                 "  Your angle/idea for OUR take (Enter = use the video's topic): "
             ).strip()
             seed_topic, creative_brief = seed_and_brief_from_youtube(meta["title"], angle)
         else:
             print("  Could not fetch that video (bad link, quota, or no API key).")
-            typed = input("  Type your idea instead: ").strip()
+            typed = ask_text("  Type your idea instead: ").strip()
             if not typed:
                 print("  Nothing entered — returning.")
                 return
@@ -339,8 +343,7 @@ def _run_new_video_flow_body(
     metrics_reason = metrics_gate_reason(channel_id)
     if metrics_reason:
         print(f"\n  ! {metrics_reason}")
-        go = input("  Start the next video anyway? [y/N]: ").strip().lower()
-        if go != "y":
+        if not ask_confirm("  Start the next video anyway? [y/N]: ", default=False):
             print("  Stopped — sync analytics first: py -m scripts.ops sync-metrics")
             return
 
@@ -353,14 +356,14 @@ def _run_new_video_flow_body(
         options = get_best_bets(channel_id, best_bet_option_count())
         if options:
             display_best_bets(options)
-            sel = input(f"  Use a best bet? [1-{len(options)} / Enter = type your own]: ").strip()
+            sel = ask_choice(f"  Use a best bet? [1-{len(options)} / Enter = type your own]: ")
             if sel.isdigit() and 1 <= int(sel) <= len(options):
                 topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")
             else:
-                topic = input("  Topic: ").strip()
+                topic = ask_text("  Topic: ").strip()
         else:
-            topic = input("  Topic: ").strip()
+            topic = ask_text("  Topic: ").strip()
 
     from analytics.post_timing import display_recommended_time, get_recommended_time
 
@@ -407,7 +410,7 @@ def _run_new_video_flow_body(
     if seed_topic:
         prompt += ", 0 = your idea"
     prompt += "): "
-    choice = input(prompt).strip()
+    choice = ask_choice(prompt)
 
     if seed_topic and choice == "0":
         best_topic, best_score, best_signals = seed_topic, 0.0, discovery.base_signals
@@ -439,7 +442,7 @@ def _run_new_video_flow_body(
     except Exception as exc:
         logger.debug("get_recommended_length skipped: %s", exc)
 
-    _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
+    _len_in = ask_choice(f"  Select 1-4 [{length_default}]: ")
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
     fact_selection = prompt_key_facts_result(
@@ -525,12 +528,10 @@ def _run_new_video_flow_body(
         )
         display_authenticity_report(auth)
         if gate_mode() == "block" and auth.verdict == "block":
-            override = (
-                input("  Authenticity gate flagged this video. Render anyway? [y/N]: ")
-                .strip()
-                .lower()
-            )
-            if override != "y":
+            if not ask_confirm(
+                "  Authenticity gate flagged this video. Render anyway? [y/N]: ",
+                default=False,
+            ):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,
@@ -544,12 +545,10 @@ def _run_new_video_flow_body(
         from core.claim_verifier import gate_blocks
 
         if gate_blocks(result.features.get("claim_verification")):
-            override = (
-                input("  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ")
-                .strip()
-                .lower()
-            )
-            if override != "y":
+            if not ask_confirm(
+                "  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ",
+                default=False,
+            ):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,
@@ -574,8 +573,7 @@ def _run_new_video_flow_body(
                 from core.logging import get_logger
 
                 get_logger("main").debug("thin-facts HTML skipped: %s", exc)
-            override = input("  Thin facts — render anyway and pay TTS? [y/N]: ").strip().lower()
-            if override != "y":
+            if not ask_confirm("  Thin facts — render anyway and pay TTS? [y/N]: ", default=False):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,
@@ -589,8 +587,7 @@ def _run_new_video_flow_body(
         cap_reason = tts_char_cap_reason(result.script)
         if cap_reason:
             print(f"\n  ! {cap_reason}")
-            override = input("  Over length for TTS — render anyway? [y/N]: ").strip().lower()
-            if override != "y":
+            if not ask_confirm("  Over length for TTS — render anyway? [y/N]: ", default=False):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,

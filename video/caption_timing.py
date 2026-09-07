@@ -202,6 +202,22 @@ Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
+_ASS_HEADER_PAIRED = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
+Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
 
 def build_ass_karaoke(
     words: list[dict],
@@ -211,11 +227,16 @@ def build_ass_karaoke(
     size: int = 90,
     primary: str = "&H0000FFFF",  # spoken word — yellow (BGR)
     secondary: str = "&H00FFFFFF",  # not-yet-spoken — white
+    title_font: str | None = None,
+    body_font: str | None = None,
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing)."""
     lines = group_into_lines(words, max_words)
+    paired = title_font is not None or body_font is not None
+    title = (title_font or font).replace(",", " ").strip() or font
+    body = (body_font or font).replace(",", " ").strip() or font
     events: list[str] = []
-    for line in lines:
+    for index, line in enumerate(lines):
         start, end = _line_span(line)
         parts: list[str] = []
         for w in line:
@@ -224,8 +245,14 @@ def build_ass_karaoke(
             dur_cs = max(1, int(round((we - ws) * 100)))
             text = (w["word"] or "").replace("{", "(").replace("}", ")")
             parts.append(f"{{\\k{dur_cs}}}{text}")
+        style = "Title" if paired and index == 0 else ("Body" if paired else "Default")
         events.append(
-            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},Default,,0,0,0,,{' '.join(parts)}"
+            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,0,,{' '.join(parts)}"
         )
-    header = _ASS_HEADER.format(font=font, size=size, primary=primary, secondary=secondary)
+    if paired:
+        header = _ASS_HEADER_PAIRED.format(
+            title_font=title, body_font=body, size=size, primary=primary, secondary=secondary
+        )
+    else:
+        header = _ASS_HEADER.format(font=font, size=size, primary=primary, secondary=secondary)
     return header + "\n".join(events) + "\n"

@@ -30,6 +30,8 @@
       "caption_skin": {
         "mode": "karaoke",
         "font": "Arial",
+        "title_font": "Impact",
+        "body_font": "Arial",
         "fill_color": "#FFFFFF",
         "outline_color": "#111111",
         "boxed": false
@@ -136,6 +138,8 @@
       "caption_skin": {
         "mode": "word",
         "font": "Arial",
+        "title_font": "Georgia",
+        "body_font": "Arial",
         "fill_color": "#F7E7A9",
         "outline_color": "#1B2430",
         "boxed": true

@@ -34,6 +34,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `doctor` | One shot: free stack + feeds + oauth + quota + CUDA + RAM + secrets |
 | `dossier` | One run end-to-end: quality, cost, metrics, trace (--run-id required) |
 | `economics` | Per-video cost vs revenue -> contribution margin (Pillar 1) |
+| `end-card-preview` | Render the channel end card as a PNG still before a full encode (--path dest.png) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
@@ -46,6 +47,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `ingest-clips` | Copy capture clips into video/backgrounds (dry-run default; --apply remuxes) |
 | `init-db` | Create SQL tables (Postgres) |
 | `intelligence-report` | Content Intelligence Report (signals + brief + competitors, no render) |
+| `intro-waveform` | Draw a waveform of the intro sting and print duration vs the 2.15s offset (--path audio) |
 | `learn-schedule` | Show static vs learned post slots |
 | `lightbox` | Thumbnail lightbox for the last Pillow thumb |
 | `list` | List all operator commands |

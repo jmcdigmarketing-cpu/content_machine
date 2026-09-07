@@ -39,11 +39,18 @@ def overlay_captions_on_still(
     width, height = image.size
     font_size = max(18, height // 22)
     try:
-        font = ImageFont.truetype("arial.ttf", font_size)
+        font: ImageFont.FreeTypeFont | ImageFont.ImageFont = ImageFont.truetype(
+            "arial.ttf", font_size
+        )
     except OSError:
         font = ImageFont.load_default()
     fill = _fill_rgb(channel_id)
-    stroke = (17, 17, 17)
+    try:
+        from core.design_tokens import caption_outline_hex
+
+        stroke = parse_hex(caption_outline_hex(channel_id))
+    except Exception:
+        stroke = (17, 17, 17)
     shown = lines[:2]
     y = int(height * 0.82)
     for line in shown:

@@ -19,7 +19,7 @@ class TestCtrlCReturnsToMenu(unittest.TestCase):
             patch("core.cadence.display_cadence"),
             patch("core.metrics_gate.metrics_gate_reason", return_value=None),
             patch("core.best_bet.get_best_bets", return_value=[]),
-            patch.object(app, "input", side_effect=KeyboardInterrupt),
+            patch.object(app, "ask_text", side_effect=KeyboardInterrupt),
             patch.object(app, "run_discovery") as discovery,
         ):
             try:

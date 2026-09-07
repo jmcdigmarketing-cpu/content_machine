@@ -1043,6 +1043,43 @@ def cmd_caption_still(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "end-card-preview",
+    "Render the channel end card as a PNG still before a full encode (--path dest.png)",
+)
+def cmd_end_card_preview(args: argparse.Namespace) -> int:
+    dest = (getattr(args, "path", None) or "").strip()
+    if not dest:
+        print("end-card-preview requires --path <dest.png>")
+        return 2
+    from video.end_card_preview import render_end_card_preview
+
+    try:
+        result = render_end_card_preview(dest, channel_id=getattr(args, "channel", None) or "tapin")
+    except ValueError as exc:
+        print(str(exc))
+        return 1
+    print(result.path)
+    print(f"  {result.text}")
+    return 0
+
+
+@_register(
+    "intro-waveform",
+    "Draw a waveform of the intro sting and print duration vs the 2.15s offset (--path audio)",
+)
+def cmd_intro_waveform(args: argparse.Namespace) -> int:
+    audio = (getattr(args, "path", None) or "").strip()
+    if not audio:
+        print("intro-waveform requires --path <audio.wav|mp3>")
+        return 2
+    from video.intro_waveform import describe_intro_waveform
+
+    result = describe_intro_waveform(audio, channel_id=getattr(args, "channel", None) or "tapin")
+    print(result.line)
+    return 0 if result.ok else 1
+
+
 @_register("lightbox", "Thumbnail lightbox for the last Pillow thumb")
 def cmd_lightbox(args: argparse.Namespace) -> int:
     from core.review_booth import write_lightbox

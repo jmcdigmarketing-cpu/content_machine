@@ -134,10 +134,20 @@ def _ass_color(value: object, default: str) -> str:
     return f"&H00{bb}{gg}{rr}&"
 
 
+def caption_fonts(channel_id: str | None = None) -> tuple[str, str]:
+    """Title vs body caption fonts. Both fall back to the single `font` token."""
+    skin = _caption_skin(channel_id)
+    base = str(skin.get("font") or "Arial").replace(",", " ").strip() or "Arial"
+    title = str(skin.get("title_font") or base).replace(",", " ").strip() or base
+    body = str(skin.get("body_font") or base).replace(",", " ").strip() or base
+    return title, body
+
+
 def caption_force_style(channel_id: str | None = None) -> str:
     """FFmpeg/libass style derived from the shipped channel caption skin."""
     skin = _caption_skin(channel_id)
-    font = str(skin.get("font") or "Arial").replace(",", " ").strip() or "Arial"
+    _title, body = caption_fonts(channel_id)
+    font = body
     fill = _ass_color(skin.get("fill_color"), "#FFFFFF")
     outline = _ass_color(skin.get("outline_color"), "#111111")
     boxed = bool(skin.get("boxed", False))
@@ -236,7 +246,13 @@ def generate_subtitle_file(
 
         max_words = caption_words_per_line()
         if style == "karaoke":
-            text = build_ass_karaoke(words, max_words=max(2, min(4, max_words)))
+            title_font, body_font = caption_fonts(channel_id)
+            text = build_ass_karaoke(
+                words,
+                max_words=max(2, min(4, max_words)),
+                title_font=title_font,
+                body_font=body_font,
+            )
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)
         else:

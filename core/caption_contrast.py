@@ -66,6 +66,12 @@ def fill_hex_for_channel(channel_id: str | None) -> str:
             return fill
     except Exception as exc:
         logger.debug("caption fill lookup skipped: %s", exc)
+    try:
+        from core.design_tokens import caption_fill_hex
+
+        return caption_fill_hex(channel_id)
+    except Exception as exc:
+        logger.debug("caption fill tokens skipped: %s", exc)
     return "#FFFFFF"
 
 

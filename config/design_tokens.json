@@ -1,0 +1,43 @@
+{
+  "roles": {
+    "primary": { "hex": "#00D4FF", "ansi16": 36, "ansi256": 45 },
+    "accent": { "hex": "#FFD700", "ansi16": 33, "ansi256": 220 },
+    "success": { "hex": "#81C995", "ansi16": 32, "ansi256": 40 },
+    "warn": { "hex": "#FDD663", "ansi16": 33, "ansi256": 214 },
+    "error": { "hex": "#F28B82", "ansi16": 31, "ansi256": 196 }
+  },
+  "type": {
+    "body": 16,
+    "h1": 20,
+    "caption": 18
+  },
+  "spacing": {
+    "page": 20,
+    "header": 16
+  },
+  "colorblind_roles": {
+    "primary": { "hex": "#56B4E9", "ansi16": 36, "ansi256": 74 },
+    "accent": { "hex": "#F0E442", "ansi16": 33, "ansi256": 226 },
+    "success": { "hex": "#0072B2", "ansi16": 34, "ansi256": 33 },
+    "warn": { "hex": "#F0E442", "ansi16": 33, "ansi256": 226 },
+    "error": { "hex": "#E69F00", "ansi16": 33, "ansi256": 208 }
+  },
+  "channels": {
+    "tapin": {
+      "accent": "#FFFFFF",
+      "caption_fill": "#FFFFFF",
+      "caption_outline": "#111111",
+      "end_card_bg": "#0B0F14",
+      "end_card_fg": "#FFFFFF",
+      "header_border": "#E53935"
+    },
+    "moneywise": {
+      "accent": "#F7E7A9",
+      "caption_fill": "#F7E7A9",
+      "caption_outline": "#1B2430",
+      "end_card_bg": "#1B2430",
+      "end_card_fg": "#F7E7A9",
+      "header_border": "#81C995"
+    }
+  }
+}

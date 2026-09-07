@@ -759,6 +759,8 @@ def run_pipeline(
     result.features["persona_lint"] = list(content.get("persona_lint") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]
+    if content.get("quote_attribution"):
+        result.features["quote_attribution"] = content["quote_attribution"]
 
     # Quick win (Pillar 3): web-search result URLs become reusable research in
     # the vault (_sources.md) instead of evaporating with the run. Fail-open.

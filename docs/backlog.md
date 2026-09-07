@@ -405,7 +405,7 @@ Larger — multi-week systems
 - [ ] 167. **PARKED — Recommender Backtest Studio** `[L]` — *viability / parked.* Next-up backtest stays volume-gated; the studio must refuse to fit before n is honest.
 - [ ] 168. **Unlisted review room** (player + Approve, around unlisted upload) `[L]` — *UI.* Distinct from #109 unlisted *flag*: this is the room; #171 is last-run HTML only.
 - [ ] 169. **Channel Command Center v1** as a local single-operator app `[L]` — *new-app.* Reframe of deferred "full operator dashboard": local, no SaaS billing — first slice of #141.
-- [ ] 170. **Design-token pipeline** (one JSON for GUI + video) `[L]` — *aesthetics.* Stops ANSI themes, Pillow thumbs, and captions drifting into three palettes.
+- [x] 170. **Design-token pipeline** *(2026-09-07)* — `config/design_tokens.json` is what `themes.role_color` and `caption_fill_hex` both read. Shipped tapin `#FFFFFF` / moneywise `#F7E7A9`. Stage 0 `ask()`/`emit()` shipped the same wave `[L]`
 
 Moderate — days
 
@@ -421,15 +421,15 @@ Moderate — days
 - [ ] 180. **Report-card poster** layout (letter + cost subtitle) `[M]` — *aesthetics.* A–F as a designed artifact for review, not ASCII.
 - [ ] 181. Thumbnail **A/B click-picker** that logs the experiment arm `[M]` — *UI.* Distinct from #27 dual *generation*: pick between already-rendered thumbs.
 - [x] 182. **Caption overlay on a still** *(2026-09-06)* — `ops caption-still --path --file` writes `{stem}_captions.png` via Pillow + `split_script_into_lines` + shipped `caption_skin.fill_color`. Test: compositor output contains `Salkilld`, not a helper-exists assertion `[M]`
-- [ ] 183. **Font-pairing picker** (title vs body captions) `[M]` — *aesthetics.* Writes a note / token; not the full #21 skin schema.
-- [ ] 184. Named **motion-style presets** (punch-in, snap zoom) `[M]` — *aesthetics.* Distinct from #26 first-caption-beat Ken Burns: a library of named styles.
+- [x] 183. **Font-pairing picker** *(2026-09-07)* — shipped `caption_skin.title_font`/`body_font`; ASS Style Title then Body. tapin Impact/Arial, moneywise Georgia/Arial `[M]`
+- [x] 184. Named **motion-style presets** *(2026-09-07)* — `punch-in` vs `snap-zoom` distinct zoompan strings; `enabled: false` still `""` (same #26 contract) `[M]`
 - [x] 185. Caption-vs-background **contrast auditor** *(2026-09-06)* — `inspect_caption_band` WCAG ratio vs shipped `caption_skin.fill_color`; AA 4.5:1. Wired like thumbnail safe-area (operator string + pipeline note). **Advisory only; `GRADE_VERSION` stayed v3** `[M]`
 - [ ] 186. Player **safe-title grid overlay** `[M]` — *UI / aesthetics.* Distinct from #22 PIL checker: live overlay in the review player.
-- [ ] 187. **End-card preview compositor** `[M]` — *aesthetics.* Distinct from #23 fail-open sting *asset*: see the last 1s before render.
-- [ ] 188. **Intro-sting waveform** (see the 2.15s TapIn hit) `[M]` — *aesthetics / cost.* Stops relearning intro-offset sync against the SRT.
+- [x] 187. **End-card preview compositor** *(2026-09-07)* — `ops end-card-preview --path` Pillow still from shipped `resolve_end_card`. Disabled card raises. Usage without `--path` prints the require line `[M]`
+- [x] 188. **Intro-sting waveform** *(2026-09-07)* — `ops intro-waveform --path`; missing file refuses with `not found`, no WARNING. Offset is `DEFAULT_INTRO_DURATION` (2.15s), not a live probe `[M]`
 - [ ] 189. Brand-kit **screenshot linter** (banner vs in-video palette) `[M]` — *aesthetics.* MoneyWise handle/trailer already FAIL; this diffs colors, not file presence.
-- [ ] 190. MoneyWise **on-screen disclaimer bug** layout `[M]` — *viability / aesthetics.* Distinct from #125 description copy: a burned or overlay bug.
-- [ ] 191. **AI-disclosure lower-third template** `[M]` — *viability / aesthetics.* Policy UX, not the authenticity gate itself.
+- [x] 190. MoneyWise **on-screen disclaimer** *(2026-09-07)* — ASS burn via `build_policy_overlays_ass` with shipped channel config. MoneyWise contains “Not financial advice”; TapIn argv/ASS does not `[M]`
+- [x] 191. **AI-disclosure lower-third** *(2026-09-07)* — same ASS path; `AI_DISCLOSURE_ENABLED=false` omits “Made with AI”. Description extras stay a separate path `[M]`
 - [ ] 192. **YPP progress UI** (`ops ypp` as a designed page) `[M]` — *viability / UI.* Checklist exists as ASCII; hours-or-Shorts-views needs a bar.
 - [ ] 193. **Utilization rings** (ElevenLabs / YouTube / Apify leftover) `[M]` — *cost / UI.* Utilization section shipped; rings are the graphic.
 - [ ] 194. Allocated-vs-marginal **waterfall chart** `[M]` — *cost.* ~$0.31 metered vs ~$1 allocated at 21/90 Creator-plan videos — picture, not two lines.
@@ -482,12 +482,12 @@ Small — hours / a PR
 - [x] 237. Favicon for localhost booth (channel mark) `[S]` — *aesthetics.* Browser tab literacy.
   *(2026-08-26: `rel="icon"` + `/favicon.svg` on `ops booth --serve`)*
 - [x] 238. Local **poster image** for the review page `[S]` *(2026-08-27)* — `<video poster>` plus `.poster-chrome` from the last thumb; 9:16 stage, no network OG
-- [ ] 239. **Print stylesheet** for weekly-report HTML `[S]` — *aesthetics.* Magazine #215 is days; print CSS is hours.
+- [x] 239. **Print stylesheet** for weekly-report HTML *(2026-09-07)* — `@media print` hides header/skip/swatch/wordmark; `main`/`pre` stay. Screen CSS unchanged `[S]`
 - [x] 240. `ops status --html` *(2026-08-21)* `[S]` — *UI.* Swap for skipped #147 FastAPI.
 - [x] 241. `ops economics --html` *(2026-08-21)* `[S]` — *cost / UI.* Allocated vs marginal already in the command.
 - [x] **242. `ops grade --html --run-id`** *(2026-08-21)* `[S]` — *UI.*
-- [ ] 243. Startup **PNG wordmark** option beside ASCII `[S]` — *aesthetics.* `ascii_art` stays; a mark is for windows and HTML.
-- [ ] 244. Windows Terminal **profile snippet** (channel colors) `[S]` — *aesthetics.* Docs + JSON fragment; not a theme rewrite.
+- [x] 243. Startup **PNG wordmark** *(2026-09-07)* — `CONTENT_UI_WORDMARK=1` injects `<img class='wordmark'>` into `themed_page`. Flag off: ASCII path byte-identical. Not painted in conhost `[S]`
+- [x] 244. Windows Terminal **profile snippet** *(2026-09-07)* — `config/windows-terminal/profiles.json` schemes “Content OS TapIn” (`#0B0F14`) and “Content OS MoneyWise” (`#1B2430`). Pointer in `docs/startup-powershell.md`. Not auto-imported into WT `[S]`
 - [x] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` *(2026-08-27)* — body stays Segoe UI; `pre` / `textarea.md` use JetBrains Mono
 - [ ] 246. Blurred **9:16 poster** as booth background `[S]` — *aesthetics.* Last frame, CSS blur only — no new ffmpeg.
 - [ ] 247. CSS **grain/vignette preview** toggle `[S]` — *aesthetics.* Preview-only; does not change the render command.
@@ -548,8 +548,8 @@ Small — hours / a PR
 - [ ] 300. Local **tag chips** (edit in booth, apply writes the package) `[S]` — *UI.*
 - [ ] 301. **Phone-bezel CSS** around the 9:16 player `[S]` — *aesthetics.* Review how a Short actually sits in a hand.
 - [ ] 302. **YouTube chrome mock** (like/comment/subscribe) as an overlay `[S]` — *aesthetics.* Safe-area rehearsal distinct from #268's boxes.
-- [ ] 303. Booth **theme toggle** (TapIn red vs MoneyWise green) `[S]` — *aesthetics.* Hours; packs #150 are weeks.
-- [ ] 304. **Reduced-chroma** mode for OLED `[S]` — *aesthetics.* Accessibility + night reviewing.
+- [x] 303. Booth **theme toggle** *(2026-09-07)* — `themed_page(..., channel_id="moneywise")` header border is the MoneyWise token, not hardcoded TapIn `#c62828` `[S]`
+- [x] 304. **Reduced-chroma** mode *(2026-09-07)* — `CONTENT_UI_REDUCED_CHROMA=1` adds `body.reduced-chroma` (`filter: saturate(0.45)`). Default path unchanged. Does not retune render `color_grade` `[S]`
 - [x] **305. 16px minimum type** *(2026-08-22)* — buttons/inputs/textareas join the 16px body `[S]`
 - [x] **306. Sticky cost bar** *(2026-08-22)* — booth `#costbar` (TTS 91% line) `[S]`
 - [x] **307. Sticky quota bar** *(2026-08-22)* — booth `#quotabar` `[S]`
@@ -602,7 +602,7 @@ Grounding & fact quality
 - [ ] 335. **Source-diversity floor on dated topics** — refuse to ground a news-shaped claim on a single domain; one outlet is a rumor, not a fact `[S]`
 - [ ] 336. **Wikipedia last-revision recency tripwire** — a cheap "the world moved after my cutoff" signal from a source already called; the June UFC-250 failure had no such guard `[S]`
 - [ ] 337. **Numeric plausibility bands per domain** — a grounded number can still be a typo. 10x outliers on purses, gates, and market caps flag even when `find_ungrounded_numeric` passes `[S]`
-- [ ] 338. **Quote-attribution gate** — any quoted sentence must map to a source naming the speaker. Invented quotes are the highest-cost hallucination class `[M]`
+- [x] 338. **Quote-attribution gate** *(2026-09-07)* — deterministic, no extra LLM. Invented quote flags; `Dana White told ESPN "…"` in facts passes; `"GTA 6"` does not fire. Nested quotes `known_gap=True`. Pre-rewrite flag persisted if the script changes (§25). `GRADE_VERSION` stayed **v3** `[M]`
 - [ ] 339. **"Unconfirmed" as a first-class script mode** — today the choice is assert or drop; saying "this is not confirmed yet" is more honest *and* more authentic under the 2026 policy `[M]`
 - [x] 340. **`.facts.json` sidecar beside the mp4** *(2026-08-28)* — `write_render_sidecars` at the pipeline finalize site writes claims/sources/disputed from already-persisted quality; fail-open, and a missing mp4 writes nothing `[S]`
 - [ ] 341. **Retraction watch 24h post-publish** — re-query the top sources; toast when a key fact changed. The *detector* that makes #112's correction dossier fire on its own `[M]`
@@ -789,12 +789,12 @@ taken from this machine.*
 
 Terminal & TUI craft
 
-- [ ] 481. **Pinned status line** — channel, uploads-left, run cost, held at the bottom of the terminal instead of scrolled away `[M]`
+- [x] 481. **Pinned status line** *(2026-09-07)* — formatter calls real `format_uploads_left`; `emit()` refreshes it. CSI pin is TTY-only and off under `NO_COLOR` (no new WARNING). CI does not have a real Windows Terminal `[M]`
 - [x] 482. **Collapse the mascot after the first run of the day** *(2026-09-06)* — day-key stamp (`CONTENT_UI_MASCOT_STAMP` / suite temp path, never operator `data/`). Second startup same day skips the panel; `--art` / `CONTENT_UI_ART=1` forces it; next calendar day shows it again `[S]`
 - [ ] 483. **Redraw signal health in place** — discovery reprints the whole 15-line block each pass instead of updating it `[M]`
 - [x] 484. **`Ctrl+C` at a prompt returns to the menu** *(2026-09-06)* — `KeyboardInterrupt` in `_run_new_video_flow` / idea intake / intelligence prints "Cancelled — back to the menu" and does not `SystemExit`. Test: `input()` raising at the topic prompt never reaches discovery `[M]`
 - [x] 485. **Persist discovery so a re-entered topic skips the refetch** *(2026-09-06)* — `cache_manager` prefix `discovery::{channel}`, TTL 90m. Hit skips `generate_variants`, prints `Reused discovery from cache`. Empty `evaluated` is not stored. tapin vs moneywise isolated; TTL expiry refetches `[M]`
-- [ ] 486. **Colour-blind-safe palette variant** for the ANSI themes `[S]`
+- [x] 486. **Colour-blind-safe palette variant** *(2026-09-07)* — `CONTENT_UI_COLORBLIND=1` uses token `colorblind_roles` (success ansi256 33, error 208). `plain` stays empty of color `[S]`
 - [x] 487. **`NO_COLOR` and non-TTY detection** *(2026-09-06)* — non-TTY and `CONTENT_UI_COLOR=false` already disabled color; `NO_COLOR` (any non-empty value) now does too. TTY + `NO_COLOR=1` → `paint()` returns plaintext `[S]`
 - [x] 488. **Terminal-width awareness** *(2026-09-06)* — fact preview / grounding / links go through `fact_display_width()` (`terminal_width(maximum=160) - 4`). Banner max stays 100. Patch width to 140: a 120-char fact prints fuller than 90; `_elide` still adds `… (+N chars)` `[S]`
 - [ ] 489. **Single-key menu mode** — press `1`, no Enter, for the high-frequency prompts `[S]`
@@ -1027,4 +1027,10 @@ Next-five wave (2026-09-05) — filed while shipping #654 / #645 / #383 / #533
 Review of the 2026-09-06 wave (Claude, 2026-09-06)
 
 - [x] 666. **A sentence-TTS concat failure still double-bills** *(2026-09-06)* — `ffmpeg_concat_ready()` (PATH + memoized `libmp3lame`) gates `_generate_by_sentences`. Preflight fail → one `synthesize_to_path` of the whole script, never N segments. `TTS_CACHE=true` + `which`→None: seam called once, billed chars = one script `[S]`
+
+Stage 0 + leftover craft (2026-09-07) — filed on the way
+
+- [ ] 667. **Pinned-status CSI is untested against a real Windows Terminal** — the tests call the real formatter and assert the escape string; `pin_enabled()` is false when stdout is not a tty or `NO_COLOR` is set. Same class as #650 `[S]`
+- [ ] 668. **The Windows Terminal profile snippet is not installed** — `config/windows-terminal/profiles.json` is checked in; nothing merges it into the operator's WT `settings.json` `[S]`
+- [ ] 669. **`ops intro-waveform` offset is the TapIn constant, not a probe** — duration comes from the wav; offset is always `DEFAULT_INTRO_DURATION` (2.15s). Closing this would mean reading a per-channel intro offset from config `[S]`
 

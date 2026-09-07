@@ -80,23 +80,19 @@ plus two review fixes, committed immediately after this slot.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-06 · **HEAD at write:** `ddce1bd` · **Tree:** dirty, this
-craft wave, **not committed** (operator did not ask). `git log ddce1bd..HEAD`
-should be empty; `git status` is the wave. Claude's review of the prior wave
-is already on `ddce1bd`.
+**Written:** 2026-09-07 · **HEAD at write:** `f6869ea` · **Tree:** this 15-item
+wave, committing right after the post-slot suite.
 
-- **Defect first:** #649 is a prompt lock, not a run-74 replay. Named
-  drones/K9/hurricane strings are **not in the repo**; the known-gap test
-  asserts that. Frozen #350 `expect_ungrounded` matches *current* finder
-  (`Lakers` still flags on the grounded LeBron case; run71 `Take-Two` hyphen).
-- **#647 held** again. Structural deixis is a 0.5 penalty, not a weight retune.
-- **Shipped (uncommitted):** #666 #488 #487 #482 #505 #490 #513 #502 #185 #297
-  #485 #350 #648 #649 #182; #491 ticked (already used `spinner_frames`).
-  `GRADE_VERSION` stayed **v3** (contrast advisory, not a report-card
-  component). Empty discovery is not cached.
-- **Not done:** Stage 0, #333, #416, commit. Do not add
+- **Defect first:** #667 pin CSI is string-tested only (no real WT in CI).
+  #668 WT `profiles.json` is not merged into settings. #669 waveform offset is
+  `DEFAULT_INTRO_DURATION`, not a probe. #296 still blocked on #295.
+- **Shipped:** Stage 0 `ask()`/`emit()`/`#170`; #481 #184 #190 #338 #191 #183
+  #187 #188 #243 #244 #239 #303 #304 #486. `GRADE_VERSION` stayed **v3**.
+  Fifth gate is metrics (`main.py:346`), not cadence.
+- **Not done:** Stage 1 window, #333, #416, PySide6. Do not add
   `cached-strolling-popcorn.md`.
-- Next five: Stage 0 · #481 · #184 · #190 · #338.
-  Suite **2,637** green; mypy **145**; `data/` empty.
+- Next five: Stage 1 · #295 · #607 · #625 · #602.
+  Suite **2,639 -> 2,673**; mypy **145 -> 144**; `data/` empty.
+
 
 

@@ -157,6 +157,14 @@ Expected time for a ~2 minute video: about **2–6 minutes** encode, not 40+.
 
 ---
 
+## Windows Terminal color schemes
+
+Import [config/windows-terminal/profiles.json](../config/windows-terminal/profiles.json)
+(Settings → Open JSON file, merge the `schemes` array). TapIn uses `#0B0F14`;
+MoneyWise uses `#1B2430`. This is a snippet, not a theme rewrite.
+
+---
+
 ## Prerequisites on PATH
 
 - **FFmpeg** and **ffprobe** (render + channel intro concat)

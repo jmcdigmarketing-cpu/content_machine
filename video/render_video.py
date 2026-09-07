@@ -135,6 +135,7 @@ def build_render_ffmpeg_command(
     caption_force_style: str = "",
     render_preset: str = "publish",
     lower_thirds_path: str | None = None,
+    policy_overlays_path: str | None = None,
     color_grade: dict[str, float] | None = None,
     hook_motion_filter: str = "",
 ) -> list[str]:
@@ -157,6 +158,7 @@ def build_render_ffmpeg_command(
     subtitle_escaped = _escape_subtitle_path(subtitle_path)
     style_escaped = caption_force_style.replace("'", r"\'")
     lower_thirds_escaped = _escape_subtitle_path(lower_thirds_path) if lower_thirds_path else ""
+    policy_escaped = _escape_subtitle_path(policy_overlays_path) if policy_overlays_path else ""
     duration_str = f"{duration:.3f}"
     grade_filter = ""
     if color_grade and any(
@@ -182,6 +184,7 @@ def build_render_ffmpeg_command(
     # as the value contains an apostrophe, so it is not even a stable quote character.
     # The main-caption line below has always used this manual form; these now match it.
     lower_thirds_filter = f"subtitles='{lower_thirds_escaped}'," if lower_thirds_escaped else ""
+    policy_filter = f"subtitles='{policy_escaped}'," if policy_escaped else ""
     force_style_arg = f":force_style='{style_escaped}'" if style_escaped else ""
     # #502: YouTube chrome zones, draft/preview only. Never on a publish encode.
     draft_guides = ""
@@ -199,6 +202,7 @@ def build_render_ffmpeg_command(
         f"{motion_filter}"
         f"setpts=PTS-STARTPTS,"
         f"{lower_thirds_filter}"
+        f"{policy_filter}"
         f"subtitles='{subtitle_escaped}'"
         f"{force_style_arg}"
         f"{draft_guides}[vout]"
@@ -403,11 +407,25 @@ def render_vertical_video(
         except Exception as exc:
             logger.warning("Lower thirds skipped: %s", exc)
 
+    policy_overlays_path: str | None = None
+    try:
+        from video.policy_overlays import build_policy_overlays_ass
+
+        policy_text = build_policy_overlays_ass(channel_id, word_timings, duration=float(duration))
+        if policy_text:
+            policy_overlays_path = os.path.splitext(output_path)[0] + ".policy.ass"
+            with open(policy_overlays_path, "w", encoding="utf-8") as handle:
+                handle.write(policy_text)
+    except Exception as exc:
+        logger.warning("Policy overlays skipped: %s", exc)
+
     background_path = os.path.abspath(background_path).replace("\\", "/")
     mp3_path = os.path.abspath(mp3_path).replace("\\", "/")
     subtitle_path = os.path.abspath(subtitle_path).replace("\\", "/")
     if lower_thirds_path:
         lower_thirds_path = os.path.abspath(lower_thirds_path).replace("\\", "/")
+    if policy_overlays_path:
+        policy_overlays_path = os.path.abspath(policy_overlays_path).replace("\\", "/")
     output_path = os.path.abspath(output_path).replace("\\", "/")
 
     try:
@@ -428,9 +446,9 @@ def render_vertical_video(
     hook_motion_filter = ""
     try:
         from config.channels import get_channel_profile
-        from video.hook_motion import first_caption_motion_filter
+        from video.hook_motion import named_motion_filter
 
-        hook_motion_filter = first_caption_motion_filter(
+        hook_motion_filter = named_motion_filter(
             word_timings, get_channel_profile(channel_id).hook_motion
         )
         if get_channel_profile(channel_id).hook_motion and not hook_motion_filter and progress:
@@ -455,6 +473,7 @@ def render_vertical_video(
         caption_force_style=caption_force_style(channel_id),
         render_preset=render_preset,
         lower_thirds_path=lower_thirds_path,
+        policy_overlays_path=policy_overlays_path,
         color_grade=color_grade,
         hook_motion_filter=hook_motion_filter,
     )
@@ -499,6 +518,7 @@ def render_vertical_video(
             caption_force_style=caption_force_style(channel_id),
             render_preset=render_preset,
             lower_thirds_path=lower_thirds_path,
+            policy_overlays_path=policy_overlays_path,
             color_grade=color_grade,
             hook_motion_filter=hook_motion_filter,
         )
@@ -568,6 +588,7 @@ def render_vertical_video(
             lower_thirds_path=lower_thirds_path,
             color_grade=color_grade,
             hook_motion_filter=hook_motion_filter,
+            policy_overlays_path=policy_overlays_path,
         )
 
     if progress:
@@ -588,6 +609,7 @@ def _render_extra_formats(
     lower_thirds_path: str | None = None,
     color_grade: dict[str, float] | None = None,
     hook_motion_filter: str = "",
+    policy_overlays_path: str | None = None,
 ) -> list[str]:
     """Render each non-vertical RENDER_FORMATS profile as a suffixed sibling file.
 
@@ -620,6 +642,7 @@ def _render_extra_formats(
                 lower_thirds_path=lower_thirds_path,
                 color_grade=color_grade,
                 hook_motion_filter=hook_motion_filter,
+                policy_overlays_path=policy_overlays_path,
             )
             stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")
             proc = _ffmpeg_run(cmd)

@@ -16,6 +16,8 @@ from config.channels import (
     resolve_channel_id,
 )
 from config.settings import get_settings
+from core.ask import ask_text
+from core.emit import emit
 from core.logging import get_logger
 
 logger = get_logger("core.ui")
@@ -254,7 +256,7 @@ def _franchise_art_for(topic: str) -> tuple[str, str] | None:
     return None
 
 
-def print_domain_art(domain: str, *, topic: str = "", print_fn=print) -> None:
+def print_domain_art(domain: str, *, topic: str = "", print_fn=emit) -> None:
     """Print a small decorative ASCII panel for the topic's franchise or domain."""
     from core.ascii_art import ascii_enabled
     from core.ui_theme import paint, ui_color_enabled
@@ -377,7 +379,7 @@ _BONUS_ART: dict[str, tuple[str, str]] = {
 }
 
 
-def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
+def print_bonus_art(*, key: str | None = None, print_fn=emit) -> None:
     """Print a decorative colored art panel. Random piece unless `key` is given.
 
     Mario is guaranteed to be available; pass key='mario' to force it.
@@ -398,7 +400,7 @@ def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
     print_fn()
 
 
-def print_celebration(*, print_fn=print) -> None:
+def print_celebration(*, print_fn=emit) -> None:
     """Publish-success flourish: the active theme's celebration piece, else random."""
     try:
         from core.themes import active_theme
@@ -413,7 +415,7 @@ def print_celebration(*, print_fn=print) -> None:
 _MILESTONES = (1, 5, 10, 25, 50, 100, 250, 500, 1000)
 
 
-def maybe_print_milestone(channel_id: str, *, print_fn=print) -> None:
+def maybe_print_milestone(channel_id: str, *, print_fn=emit) -> None:
     """One-line badge when the channel's upload count hits a milestone. Fail-open."""
     try:
         from storage.repositories.publish_log import get_publish_log_repository
@@ -467,7 +469,7 @@ SIGNAL_ORDER = (
 )
 
 
-def section(title: str, print_fn=print):
+def section(title: str, print_fn=emit):
     from core.ascii_art import section_glyph
     from core.ui_theme import banner_line, terminal_width
     from core.ui_theme import title as theme_title
@@ -480,7 +482,7 @@ def section(title: str, print_fn=print):
     print_fn(banner_line("=", width))
 
 
-def subsection(title: str, print_fn=print):
+def subsection(title: str, print_fn=emit):
     from core.ui_theme import subsection_label
 
     print_fn()
@@ -491,7 +493,7 @@ def format_timing(seconds: float) -> str:
     return f"{seconds:.1f}s"
 
 
-def display_database_status(print_fn=print):
+def display_database_status(print_fn=emit):
     from config.settings import get_settings
 
     get_settings()
@@ -518,7 +520,7 @@ def display_database_status(print_fn=print):
                 logger.debug("assets-table hint skipped: %s", exc)
 
 
-def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=print) -> None:
+def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=emit) -> None:
     from analytics.competitor_context import (
         list_recent_competitor_titles,
         snapshot_age_hours,
@@ -536,7 +538,7 @@ def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=print
         print_fn(f"  - {row.get('channel', '?')}: {row.get('title', '')[:55]}")
 
 
-def display_signal_health(signals: dict[str, Any], *, print_fn=print):
+def display_signal_health(signals: dict[str, Any], *, print_fn=emit):
     from core.ui_theme import health_status, warn
 
     subsection("Signal health", print_fn)
@@ -583,7 +585,9 @@ def display_signal_health(signals: dict[str, Any], *, print_fn=print):
     print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
     print_fn()
 
-    expand = input("  [Enter to continue / v to view all signals]: ").strip().lower()
+    from core.ask import ask_text
+
+    expand = ask_text("  [Enter to continue / v to view all signals]: ").strip().lower()
     if expand == "v":
         print_fn()
         print_fn(f"  {warn(HEALTH_LEGEND)}")
@@ -601,7 +605,7 @@ def display_variants(
     raw_scores: dict[str, float] | None = None,
     angle_scores: dict[str, float] | None = None,
     own_idea: str | None = None,
-    print_fn=print,
+    print_fn=emit,
 ) -> int:
     """Print variant list; return index of highest score.
 
@@ -683,7 +687,7 @@ def display_fact_preview(
     signal_facts: str,
     research_brief=None,
     *,
-    print_fn=print,
+    print_fn=emit,
 ) -> bool:
     """
     Show a compact summary of the facts that went into the script.
@@ -777,7 +781,7 @@ def _elide(text: str, width: int) -> str:
     return f"{head.rstrip()}… (+{len(body) - len(head.rstrip())} chars)"
 
 
-def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
+def display_signal_breakdown(signals: dict[str, Any], *, print_fn=emit):
     subsection("Signal breakdown (selected variant)", print_fn)
     print_fn("  (Used in composite = connected + active + score > 0)")
     for name in SIGNAL_ORDER:
@@ -881,8 +885,8 @@ def prompt_key_facts_result(
     channel_id: str = "default",
     *,
     signals: dict[str, Any] | None = None,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> KeyFactSelection:
     """Collect operator facts and return their vault-relevance audit.
 
@@ -1308,8 +1312,8 @@ def prompt_key_facts(
     channel_id: str = "default",
     *,
     signals: dict[str, Any] | None = None,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> list[str]:
     """Backward-compatible list-only wrapper around the audited operator flow."""
     return prompt_key_facts_result(
@@ -1325,7 +1329,7 @@ def display_grounding_report(
     ungrounded: list[str],
     *,
     key_facts: list[str] | None = None,
-    print_fn=print,
+    print_fn=emit,
 ) -> bool:
     """Show post-generation grounding warnings. Returns True when review is needed."""
     from core.content_engine import key_facts_for_prompt
@@ -1377,7 +1381,7 @@ def format_vault_scan_line(*, confident: int, uncertain: int) -> str:
     )
 
 
-def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
+def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
     """Pillar 3 surface — pre-script conflicts, grounding-tier lint, claim verifier.
 
     Reads the features the pipeline persisted for this run. Returns True when
@@ -1430,7 +1434,7 @@ def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
     return needs_review
 
 
-def prompt_channel_selection(*, print_fn=print, input_fn=input) -> str:
+def prompt_channel_selection(*, print_fn=emit, input_fn=ask_text) -> str:
     """Interactive channel picker; returns resolved channel_id."""
     profiles = get_channel_profiles()
     ids = list_channel_ids()
@@ -1466,7 +1470,7 @@ class UploadPlan:
     youtube_publish_at: datetime | None = None
 
 
-def display_upload_queue(channel_id: str | None = None, *, print_fn=print) -> None:
+def display_upload_queue(channel_id: str | None = None, *, print_fn=emit) -> None:
     """Show upcoming YouTube publish slots already reserved for this channel."""
     from analytics.post_timing import format_scheduled_local
     from analytics.upload_queue import list_queue_entries
@@ -1493,7 +1497,7 @@ def display_upload_queue(channel_id: str | None = None, *, print_fn=print) -> No
     )
 
 
-def prompt_startup_mode(*, print_fn=print, input_fn=input) -> str:
+def prompt_startup_mode(*, print_fn=emit, input_fn=ask_text) -> str:
     """new_video | queue_manager | intelligence_report | sync_analytics | idea_intake"""
     from core.intelligence_report import intelligence_mode_enabled
 
@@ -1518,7 +1522,7 @@ def prompt_startup_mode(*, print_fn=print, input_fn=input) -> str:
     return "new_video"
 
 
-def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
+def prompt_cost_mode(*, print_fn=emit, input_fn=ask_text) -> str:
     """standard | free — pick the run's cost mode. Honors RUN_COST_MODE headless.
 
     Free ($0) pins TTS/LLM/signals to their zero-cost backends and, in strict mode,
@@ -1582,8 +1586,8 @@ _PROCEED_MAX_ASKS = 3
 def prompt_proceed_or_length(
     current_choice: str,
     *,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> tuple[str, str]:
     """Post-generation gate: render, regenerate at a different length, or stop.
 
@@ -1650,8 +1654,8 @@ def _prompt_timing_and_privacy(
     channel_id: str,
     title: str,
     *,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ):
     """Shared 'when + privacy' sub-prompt for the queue manager.
 
@@ -1686,7 +1690,7 @@ def _prompt_timing_and_privacy(
     return datetime.now(timezone.utc), publish_at, privacy
 
 
-def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn=input) -> None:
+def _recover_rendered_upload(channel_id, recyclable, *, print_fn=emit, input_fn=ask_text) -> None:
     """Queue an upload for a rendered-but-never-uploaded run (folds in requeue_upload)."""
     import json
 
@@ -1743,7 +1747,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
     print_fn(f"  File: {mp4}")
 
 
-def _requeue_deleted(channel_id, candidates, *, print_fn=print, input_fn=input) -> None:
+def _requeue_deleted(channel_id, candidates, *, print_fn=emit, input_fn=ask_text) -> None:
     """Re-queue a run whose prior upload/schedule was deleted on YouTube."""
     from datetime import datetime, timezone
 
@@ -1814,8 +1818,8 @@ def _requeue_deleted(channel_id, candidates, *, print_fn=print, input_fn=input) 
 def run_queue_manager_interactive(
     channel_id: str,
     *,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> None:
     """Recover a rendered-but-unuploaded video, or re-queue one deleted on YouTube."""
     from analytics.queue_manager import list_requeue_candidates
@@ -1857,8 +1861,8 @@ def prompt_upload_plan(
     *,
     channel_id: str | None = None,
     topic: str = "",
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> UploadPlan:
     """Interactive upload timing and privacy (no CLI flags)."""
     from analytics.post_timing import (
@@ -1958,7 +1962,7 @@ def display_summary(
     thumbnail_path: str = "",
     cost: dict[str, float] | None = None,
     script: str = "",
-    print_fn=print,
+    print_fn=emit,
 ):
     subsection("Summary", print_fn)
     if timings.get("signals_and_variants"):
@@ -1993,6 +1997,13 @@ def display_summary(
     )
     if cost_line:
         print_fn(f"  {cost_line}")
+    if cost is not None:
+        try:
+            from core.pinned_status import set_pin_cost
+
+            set_pin_cost(float(cost.get("total") or 0.0))
+        except Exception as exc:
+            logger.debug("pin cost skipped: %s", exc)
     try:
         from core.operator_timer import format_line as operator_time_line
 

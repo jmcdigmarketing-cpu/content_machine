@@ -2464,3 +2464,64 @@ because the named strings are not in the repo — its known-gap test says so.
 
 Suite 2,637 -> **2,639** green; ruff and format clean; mypy **145** (Cursor's
 improved baseline, held); `data/` untouched.
+
+
+## 2026-09-07 (Cursor) — Next 15: Stage 0 plus leftover craft
+
+**Prompt:** implement the attached plan "Next 15: Stage 0 plus leftover craft".
+
+**Pick vs the then-recommendation:** the recommended five were Stage 0 · #481 ·
+#184 · #190 · #338. This wave took those plus the leftover craft that survives
+the app (#191 #183 #187 #188 #243 #244 #239 #303 #304 #486). Held: #296
+(blocked on #295), #512/#527 (need Qt or #247), #333/#416, Phase M, Ollama.
+`GRADE_VERSION` stayed **v3**. Sitting 2026-09-06 craft wave was already
+`f6869ea`, not dirty.
+
+**Fail-then-fix:** every new test was run against unmodified code first
+(import miss or assertion), then the helper landed.
+
+**Shipped 1..15:**
+1. **Stage 0 tokens #170** — `config/design_tokens.json`; `themes.role_color`
+   and `caption_fill_hex` agree on shipped tapin `#FFFFFF` / moneywise `#F7E7A9`.
+2. **`ask()` / `emit()`** — 15 `main.py` sites plus `core/ui.py` expand prompt.
+   Fifth blocking gate is metrics at `main.py:346`, not cadence. `display_*`
+   defaults `print_fn=emit` (`core/ui.py:496`).
+3. **#481** — `format_pinned_status` calls real `format_uploads_left`;
+   `emit()` (`core/emit.py:18`) invokes `refresh_pin`. CSI off when not TTY /
+   `NO_COLOR`.
+4. **#184** — `named_motion_filter` punch-in vs snap-zoom; disabled still `""`.
+   `video/render_video.py:451`.
+5. **#190 / #191** — `build_policy_overlays_ass` with shipped channel config;
+   MoneyWise "Not financial advice" on-screen; TapIn not; `AI_DISCLOSURE_ENABLED=false`
+   omits "Made with AI".
+6. **#338** — `check_quote_attribution` from `core/content_engine.py:1130`.
+   Invented quote flags; speaker in facts passes; `"GTA 6"` skipped. Nested
+   quotes `known_gap`. Pre-rewrite count persisted if the script changes (§25).
+7. **#183** — ASS `Style: Title` then Body (`video/caption_timing.py:214`).
+8. **#187 / #188** — `ops end-card-preview` / `ops intro-waveform`.
+9. **#243 / #244 / #239** — wordmark HTML flag; WT JSON fragment; `@media print`
+   at `core/html_report.py:95`.
+10. **#303 / #304 / #486** — MoneyWise header token not `#c62828`;
+    `CONTENT_UI_REDUCED_CHROMA`; colorblind roles 33 vs 208; `plain` stays empty.
+
+**Found on the way:** `print_fn=print` replace_all also matches `print_fn=print_fn`
+(caught before commit). A broken indent in `ask_confirm` made `y` return `None`
+(the scripted-gate test failed; restored `return raw in ("y", "yes")`). Filed
+#667 (pin CSI untested on a real WT), #668 (WT snippet not auto-imported),
+#669 (waveform offset is `DEFAULT_INTRO_DURATION`, not a probe).
+
+**Not done:** #296; #333; #416; Stage 1 window; no PySide6. Do not add
+`cached-strolling-popcorn.md`.
+
+**Proof:** `ops end-card-preview` (no args) -> `end-card-preview requires --path <dest.png>`.
+`ops intro-waveform` (no args) -> `intro-waveform requires --path <audio.wav|mp3>`.
+Scripted `ask_confirm` of the metrics prompt with `""` -> `False`.
+
+**Audit:** ruff + format clean; suite **2,639 -> 2,673** green; mypy **145 -> 144**;
+`git status --short data/` empty. Backlog **422** open / **483** done
+(`roadmap-index`), highest open **#669**.
+
+**The new five** (`roadmap.md`): Stage 1 run window · **#295** contact sheet ·
+**#607** defer elevenlabs import · **#625** test-double signatures · **#602**
+end-screen vs caption safe area.
+

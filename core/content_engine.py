@@ -1125,7 +1125,10 @@ def generate_content_package(
     # script into factual claims and checks each against the NON-context corpus
     # (YouTube titles must not "support" a claim). Fail-open → None.
     from core.claim_verifier import verify_claims
+    from core.quote_attribution import check_quote_attribution
 
+    quote_pre = check_quote_attribution(script, corpus.factual_text)
+    script_before_rewrite = script
     verification = verify_claims(
         script, corpus.factual_text, topic=topic, priority_facts=clean_key_facts
     )
@@ -1141,6 +1144,17 @@ def generate_content_package(
         # the script must be correct, not detail-stuffed with invented specifics.
         script, verification = _maybe_rewrite_unsupported_claims(
             script, verification, corpus.factual_text, topic, clean_key_facts
+        )
+
+    quote_check = check_quote_attribution(script, corpus.factual_text)
+    quote_payload = quote_check.to_dict()
+    if script != script_before_rewrite:
+        quote_payload["pre_rewrite_flagged"] = quote_pre.flagged_count
+    if quote_check.flagged:
+        logger.warning(
+            "Quote attribution: %d quoted sentence(s) lack a named source: %s",
+            quote_check.flagged_count,
+            "; ".join(item.quote[:80] for item in quote_check.flagged[:3]),
         )
 
     try:
@@ -1250,6 +1264,7 @@ def generate_content_package(
         "disputed": conflict_features["disputed"],
         "disputed_claims": conflict_features["disputed_claims"],
         "claim_verification": verification.to_dict() if verification else None,
+        "quote_attribution": quote_payload,
         "lower_thirds": lower_thirds,
         "persona_lint": persona_hits,
     }

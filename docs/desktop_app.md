@@ -65,32 +65,30 @@ markup. The real loss is about a week.
 
 ---
 
-## Stage 0 — Seams · 1 wave · closes #170
+## Stage 0 — Seams · shipped 2026-09-07 · closes #170
 
 No window. Three seams that make every later stage cheap and leave the terminal
-byte-identical forever.
+byte-identical at the default backends.
 
-**`ask()`** — the 15 `input()` calls become `ask_text()` / `ask_choice()` /
+**`ask()`** — the 15 `input()` calls became `ask_text()` / `ask_choice()` /
 `ask_confirm()` over a pluggable backend. Terminal backend *is* `input()`; the Qt
-backend posts to the window and blocks the worker thread on a `queue.Queue`; the
-test backend replays scripted answers. Same call, same place in the flow.
+backend is Stage 1. `ScriptedBackend` replays queued answers. Same call, same
+place in the flow.
 
-Note which prompts these are: **five are safety gates** (authenticity, grounding,
-thin facts, over-length, cadence) and ten are setup. Making the gates portable
-matters more than the setup ones.
+The five blocking gates are authenticity, grounding, thin facts, over-length,
+and **metrics** (`main.py` "Start the next video anyway?") — cadence is
+print-only.
 
-**`emit()`** — the pipeline prints in ~100 places. `core/ui.py` already threads a
-`print_fn` through its display functions; extend that to a module-level sink rather
-than rewriting call sites. Terminal writes stdout, Qt appends to a pane with level
-preserved.
+**`emit()`** — `core/ui.py` display helpers default `print_fn` to a module-level
+sink. Terminal writes stdout; a later Qt pane can capture without rewriting
+~100 `print` sites in `main.py` / `pipeline.py`.
 
-**Design tokens (#170)** — one JSON of palette, type scale, spacing, per-channel
-accent, consumed by `core/themes.py` (ANSI), Pillow thumbnails, caption styles and
-later QSS. Built **before** the GUI so it reads the existing design language
-instead of inventing a second one, which is the drift #170 exists to stop.
+**Design tokens (#170)** — `config/design_tokens.json` (palette, type scale,
+spacing, per-channel accent) is what `core/themes.py` and the caption/Pillow
+fill both read. Shipped tapin `#FFFFFF` / moneywise `#F7E7A9`.
 
-**Exit:** terminal run byte-identical; `ask()` has a scripted test backend; tokens
-drive ANSI plus one other consumer.
+**Exit (met):** terminal default backends still call `input()`/`print`; `ask()`
+has a scripted test backend; tokens drive ANSI plus the caption overlay.
 
 ## Stage 1 — The run window · 2 waves
 

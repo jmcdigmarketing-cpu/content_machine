@@ -25,7 +25,7 @@ html, body { margin: 0; padding: 0; background: #111318; color: #e8eaed;
 .skip:focus { left: 1rem; top: 1rem; width: auto; height: auto; z-index: 20;
   background: #000; color: #fff; padding: 0.5rem 0.75rem; }
 header { position: sticky; top: 0; z-index: 10; padding: 1rem 1.25rem;
-  background: #1a1d24; border-bottom: 3px solid #c62828; }
+  background: #1a1d24; border-bottom: 3px solid var(--header-border, #c62828); }
 header h1 { margin: 0; font-size: 1.25rem; letter-spacing: 0.02em; }
 header .sub { color: #9aa0a6; font-size: 1rem; margin-top: 0.25rem; }
 header .quota, #quotabar { font-size: 16px; color: #e8eaed; margin-top: 0.35rem; }
@@ -89,6 +89,13 @@ button.rate { margin: 0.35rem 0.35rem 0 0; }
 }
 @media (forced-colors: active) {
   header { border-bottom: 3px solid CanvasText; }
+}
+img.wordmark { height: 28px; width: auto; display: block; margin: 0.35rem 0 0; }
+body.reduced-chroma { filter: saturate(0.45); }
+@media print {
+  header, .skip, .swatch, img.wordmark { display: none !important; }
+  main { padding: 0; max-width: none; }
+  pre { border: none; background: #fff; color: #000; }
 }
 """
 
@@ -156,13 +163,20 @@ def themed_page(
     safe_title = ascii_safe(title)
     skip = f"<a class='skip' href='{escape(skip_href)}'>Skip to content</a>" if skip_href else ""
     extra = header_html or ""
+    mark = ""
+    try:
+        from core.wordmark import wordmark_html
+
+        mark = wordmark_html()
+    except Exception as exc:
+        logger.debug("wordmark skipped: %s", exc)
     swatch = ""
     cid = (channel_id or "").strip().lower()
-    if cid == "tapin":
+    if cid:
         try:
             from config.channels import get_channel_profile
 
-            card = get_channel_profile("tapin").end_card or {}
+            card = get_channel_profile(cid).end_card or {}
             bg = str(card.get("bg") or "").strip()
             fg = str(card.get("fg") or "").strip()
             if bg:
@@ -173,17 +187,30 @@ def themed_page(
                     "</div>"
                 )
         except Exception as exc:
-            logger.debug("tapin swatch skipped: %s", exc)
+            logger.debug("channel swatch skipped: %s", exc)
     icon = '<link rel="icon" href="favicon.svg" type="image/svg+xml">'
-    body_class = f" class='channel-{escape(cid)}'" if cid else ""
+    classes: list[str] = []
+    if cid:
+        classes.append(f"channel-{escape(cid)}")
+    if os.getenv("CONTENT_UI_REDUCED_CHROMA", "").strip().lower() in ("1", "true", "yes", "on"):
+        classes.append("reduced-chroma")
+    body_class = f" class='{' '.join(classes)}'" if classes else ""
+    body_style = ""
+    if cid:
+        try:
+            from core.design_tokens import header_border_hex
+
+            body_style = f" style='--header-border:{escape(header_border_hex(cid))}'"
+        except Exception as exc:
+            logger.debug("header border token skipped: %s", exc)
     return (
         "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
         f"{icon}"
         f"<title>{escape(safe_title)}</title><style>{_CSS}</style></head>"
-        f"<body{body_class}>"
+        f"<body{body_class}{body_style}>"
         f"{skip}<header><h1>{escape(safe_title)}</h1>"
-        f"<div class='sub'>{escape(sub)}</div>{swatch}{extra}</header>"
+        f"<div class='sub'>{escape(sub)}</div>{mark}{swatch}{extra}</header>"
         f"<main id='main'>{body_html}</main></body></html>"
     )
 

@@ -20,6 +20,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `booth` | Last-run review booth (play + grade + authenticity + cost) |
 | `booth-shortcut` | Install Desktop shortcut for the persistent review booth |
 | `calibration` | Pre-publish grade vs realized engaged-rate (Pillar 2) |
+| `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
 | `check-youtube` | Verify YouTube OAuth + upload env |
 | `coach` | Daily creator coach — ranked ideas + why, post time, length, patterns |
@@ -38,6 +39,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |
+| `grounding-corpus` | Replay frozen grounding verdicts (no LLM) |
 | `health` | Channel health — Green/Yellow/Red across engagement/cadence/cost (Pillar 5) |
 | `incidents` | Rank recent signal/provider failures by count x recency |
 | `ingest` | Ingest a URL / PDF path / YouTube link into the vault as a provenance note |

@@ -15,6 +15,7 @@ import os
 import re
 
 from core.logging import get_logger
+from video.caption_timing import two_line_split_index
 
 logger = get_logger("video.subtitles")
 
@@ -47,11 +48,17 @@ def split_script_into_lines(script: str, max_words: int | None = None) -> list[s
     lines: list[str] = []
     for sentence in sentences:
         words = sentence.split()
-        chunks: list[str] = []
-        for i in range(0, len(words), max_words):
-            chunk = " ".join(words[i : i + max_words]).strip()
-            if chunk:
-                chunks.append(chunk)
+        if not words:
+            continue
+        idx = two_line_split_index(len(words), max_words)
+        if idx is not None:
+            chunks = [" ".join(words[:idx]), " ".join(words[idx:])]
+        else:
+            chunks = []
+            for i in range(0, len(words), max_words):
+                chunk = " ".join(words[i : i + max_words]).strip()
+                if chunk:
+                    chunks.append(chunk)
         # Rebalance THIS sentence's own chunks. Rebalancing the running list
         # instead would let a one-word sentence steal the previous sentence's
         # last word into its cue, merging two sentences into one caption line --

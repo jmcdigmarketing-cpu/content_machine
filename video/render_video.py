@@ -183,6 +183,13 @@ def build_render_ffmpeg_command(
     # The main-caption line below has always used this manual form; these now match it.
     lower_thirds_filter = f"subtitles='{lower_thirds_escaped}'," if lower_thirds_escaped else ""
     force_style_arg = f":force_style='{style_escaped}'" if style_escaped else ""
+    # #502: YouTube chrome zones, draft/preview only. Never on a publish encode.
+    draft_guides = ""
+    if is_draft:
+        draft_guides = (
+            ",drawbox=x=0:y=0:w=iw:h=ih*0.12:color=yellow@0.25:t=fill"
+            ",drawbox=x=0:y=ih*0.8:w=iw:h=ih*0.2:color=yellow@0.25:t=fill"
+        )
 
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
     filter_complex = (
@@ -193,7 +200,8 @@ def build_render_ffmpeg_command(
         f"setpts=PTS-STARTPTS,"
         f"{lower_thirds_filter}"
         f"subtitles='{subtitle_escaped}'"
-        f"{force_style_arg}[vout]"
+        f"{force_style_arg}"
+        f"{draft_guides}[vout]"
     )
 
     cmd = [

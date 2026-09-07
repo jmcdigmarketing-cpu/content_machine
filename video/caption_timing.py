@@ -89,18 +89,36 @@ def words_from_alignment(
     return words
 
 
+def two_line_split_index(n: int, max_words: int) -> int | None:
+    """#505. Midpoint for a two-line wrap; None when greedy fill still applies."""
+    if n <= max_words or n > max_words * 2:
+        return None
+    mid = (n + 1) // 2
+    return min(max(n - max_words, mid), max_words)
+
+
 def group_into_lines(words: list[dict], max_words: int) -> list[list[dict]]:
     """Sentence/length-aware grouping: break on sentence-end punctuation or length."""
-    lines: list[list[dict]] = []
+    sentences: list[list[dict]] = []
     cur: list[dict] = []
     for w in words:
         cur.append(w)
-        ends_sentence = (w.get("word") or "")[-1:] in ".!?"
-        if len(cur) >= max_words or ends_sentence:
-            lines.append(cur)
+        if (w.get("word") or "")[-1:] in ".!?":
+            sentences.append(cur)
             cur = []
     if cur:
-        lines.append(cur)
+        sentences.append(cur)
+    lines: list[list[dict]] = []
+    for sent in sentences:
+        idx = two_line_split_index(len(sent), max_words)
+        if idx is not None:
+            lines.append(sent[:idx])
+            lines.append(sent[idx:])
+            continue
+        for i in range(0, len(sent), max_words):
+            chunk = sent[i : i + max_words]
+            if chunk:
+                lines.append(chunk)
     return _rebalance_orphan_line(lines)
 
 

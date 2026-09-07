@@ -24,9 +24,9 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — 2026-09-06 next-15 wave: idea-quality leftovers (#661/#659/#660/#656/#664/#665), honesty (#655/#663/#662), TTS seam + sentence cache (#658/#402), headless facts (#646/#647 held), Ctrl+C (#484), and the config loopholes (#641–#644). `GRADE_VERSION` is **v3**. Uncommitted until the operator asks.
+**Just landed** — 2026-09-06 craft/terminal/cost wave: TTS concat preflight (#666), terminal (#488/#487/#482/#490/#491 already shipped), captions (#505/#185/#297/#502/#513/#182), discovery persist (#485), grounding corpus (#350), scaffolding deixis (#648), whole-facts verifier lock (#649). `GRADE_VERSION` stayed **v3** (contrast is advisory). Uncommitted until the operator asks.
 
-**Next: Stage 0 — Seams.** Still the keystone; this wave did not start it. One wave, no window. The `ask()` seam over `main.py`'s blocking prompts, the `emit()` output sink, and design tokens (#170). Detail: [desktop_app.md](desktop_app.md).
+**Next: Stage 0 — Seams.** The keystone; this wave still did not start it. One wave, no window. The `ask()` seam over `main.py`'s blocking prompts, the `emit()` output sink, and design tokens (#170). Detail: [desktop_app.md](desktop_app.md).
 
 **Then, in order:** Stage 1 the run window (2 waves, ends the PowerShell
 dependency) → Stage 2 look → Stage 3 panels → Stage 4 studio → Stage 5 packaging
@@ -37,18 +37,18 @@ dependency) → Stage 2 look → Stage 3 panels → Stage 4 studio → Stage 5 p
 Pulled forward so it is finished rather than stranded. The sorting rule is **what
 survives the desktop app**:
 
-- **Video craft is permanent.** It is burned into every video and no toolkit
-  change touches it, so it outranks everything else here:
-  **#185** contrast auditor · **#297** the hours-version contrast number ·
-  **#505** two-line caption balancing · **#184** motion presets · **#182** caption
-  overlay on a still · **#183** font pairing · **#187** end-card compositor ·
-  **#188** intro-sting waveform · **#190** MoneyWise disclaimer bug · **#191**
-  AI-disclosure lower-third · **#513** reject a black first frame.
-- **Terminal is the daily driver for the 16–19 waves the app will take**, so
-  polish pays off across all of them: **#485** keep discovery on re-entry ·
-  **#488** width-aware wrapping · **#481** pinned status line · **#490**
-  measured ETA · **#491** themed spinner glyphs · **#243** PNG wordmark ·
-  **#244** Windows Terminal profile. *(#484 Ctrl+C shipped 2026-09-06.)*
+- **Video craft is permanent.** Shipped this wave: **#185** contrast auditor ·
+  **#297** ratio number · **#505** two-line balancing · **#182** caption overlay
+  on a still · **#513** black/frozen first frame · **#502** draft-only safe-area
+  guides. Still open: **#184** motion presets · **#183** font pairing · **#187**
+  end-card compositor · **#188** intro-sting waveform · **#190** MoneyWise
+  disclaimer bug · **#191** AI-disclosure lower-third.
+- **Terminal is the daily driver for the 16–19 waves the app will take.**
+  Shipped this wave: **#485** discovery persist · **#488** width-aware wrapping ·
+  **#490** measured ETA · **#487** `NO_COLOR` · **#482** collapse mascot ·
+  **#491** themed spinner glyphs (already live; ticked). Still open: **#481**
+  pinned status line · **#243** PNG wordmark · **#244** Windows Terminal
+  profile. *(#484 Ctrl+C shipped 2026-09-06.)*
 - **Three loopholes, config-only — shipped 2026-09-06:** **#641** tapin=`dbz`,
   moneywise/default=`plain` · **#642** voice pools · **#643** local Piper
   voices · **#644** coverage ratchet on real `channels.json`.
@@ -61,26 +61,23 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-**The 2026-09-06 wave shipped the previous recommended five plus the overnight
-holes around them.** Why, and what each one measured:
-[planning_log.md](planning_log.md) 2026-09-06.
+**The 2026-09-06 craft wave shipped the previous recommended five** (#485 #185
+#505 #350 #648) **plus the S-cluster around them.** Why, and what each one
+measured: [planning_log.md](planning_log.md) 2026-09-06 (craft).
 
-1. **#485 persist discovery so a re-entered topic skips the refetch** `[M]` —
-   pairs with shipped #484. Run 73 paid 38s twice; Ctrl+C no longer kills the
-   process, but the signals are still thrown away.
-2. **#185 caption-vs-background contrast auditor** `[M]` — video craft is
-   permanent; burned captions fail on busy clips and no desktop stage changes
-   that.
-3. **#505 two-line caption balancing** `[S]` — sibling of #419's orphan fix;
-   cheap, visible, survives the app.
-4. **#350 grounding regression corpus in CI** `[M]` — a gate change that
-   loosens grounding should fail CI, not a live run. Frozen verdicts, not
-   another scorer.
-5. **#648 scaffolding markers are a hand-built list** `[M]` — #646/#647 held
-   the weights; the next furniture site will miss `_SCAFFOLDING_MARKERS`.
+1. **Stage 0 seams** (`ask()` / `emit()` / tokens **#170**) `[L]` — still the
+   keystone; one full wave. Detail: [desktop_app.md](desktop_app.md).
+2. **#481 pinned status line** `[M]` — channel, uploads-left, run cost, held at
+   the bottom instead of scrolled away. Terminal is still the daily driver.
+3. **#184 named motion-style presets** `[M]` — punch-in / snap zoom as a library;
+   video craft leftover that survives the app.
+4. **#190 MoneyWise on-screen disclaimer bug** `[M]` — leftover craft; pair with
+   **#191** AI-disclosure lower-third if the wave has room.
+5. **#338 quote-attribution gate** `[M]` — any quoted sentence must map to a
+   source naming the speaker.
 
-**Also small:** **#488** width-aware wrapping. **Dropped from this list** (stay
-open): Stage 0 `ask()`/`emit()` · **#333** · **#416** (still no clip index).
+**Dropped from this list** (stay open): **#333** · **#416** (still no clip
+index) · Phase M · Ollama.
 
 ---
 

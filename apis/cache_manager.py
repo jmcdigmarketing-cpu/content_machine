@@ -130,6 +130,30 @@ def get_expired(key) -> tuple[Any, float] | None:
         return data, age
 
 
+def cache_age_seconds(key) -> float | None:
+    """Age of a live cache entry in seconds, or None when absent/expired.
+
+    Mirrors `get_expired`'s contract in reverse: it reports on a *fresh* entry
+    and, like that function, does not record a cache access - the caller has
+    already been through `get_cached`. Exists so a consumer can tell the operator
+    how old a reused payload is instead of only that it was reused.
+    """
+    with _cache_lock:
+        cache = load_cache()
+        entry = cache.get(key)
+        if not entry:
+            return None
+        try:
+            timestamp = float(entry.get("timestamp") or 0)
+        except (TypeError, ValueError):
+            return None
+        if timestamp <= 0:
+            return None
+        ttl = entry.get("ttl") or TTL_SECONDS
+        age = time.time() - timestamp
+        return age if age <= float(ttl or 0) else None
+
+
 def set_cache(key, data, ttl_seconds=None):
     with _cache_lock:
         try:

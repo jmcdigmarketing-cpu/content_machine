@@ -175,7 +175,10 @@ class TestCaptionOrphan(unittest.TestCase):
         self.assertGreaterEqual(len(lines[-1].split()), 2)
 
     def test_three_word_leftover_stays_three(self):
-        lines = split_script_into_lines("a b c d e f g h", max_words=5)
+        # 13 words at max 5 is a three-line wrap, so #505's two-line balancer
+        # does not apply and #419's leftover-of-three still holds.
+        words = " ".join(f"w{i}" for i in range(13))
+        lines = split_script_into_lines(words, max_words=5)
         self.assertEqual(len(lines[-1].split()), 3)
 
 

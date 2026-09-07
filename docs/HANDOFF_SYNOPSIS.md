@@ -1,8 +1,26 @@
-# Handoff synopsis — 2026-09-06: next 15
+# Handoff synopsis — 2026-09-06: craft / terminal / cost
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — next 15 (2026-09-06)
+## Last implementation wave — craft 15 (2026-09-06)
+
+Cursor wave on HEAD `ddce1bd`, **not committed** until the operator asks.
+Cheapest-first S-cluster then the then-roadmap five (#485 #185 #505 #350 #648)
+plus #297/#649/#182. Stage 0 / #333 / #416 stayed out. `GRADE_VERSION` **v3**
+(unchanged; contrast is advisory).
+
+- **#666** preflight: missing ffmpeg → one whole-script synth, not N+1.
+- **#485** `discovery::{channel}` cache; empty results not stored.
+- **#350** 20 frozen grounding cases; `ops grounding-corpus` (not `run_eval_corpus`).
+- **#649** whole-facts prompt lock; run-74 script strings absent (known gap).
+- **#491** already shipped (`spinner_frames`); ticked only.
+- **Proof:** `ops grounding-corpus` → 20/0; `ops caption-still` usage line.
+  Suite **2,609 -> 2,637**; mypy **148 -> 145**; `data/` empty.
+
+**Still parked:** Stage 0; Phase M; #333/#416; Ollama FAIL. Next five: Stage 0,
+#481, #184, #190, #338.
+
+## Previous wave — next 15 (2026-09-06)
 
 Cursor wave, **not committed** until the operator asks. Plan: honesty (#655
 #663 #662) then finish #533 (#661 #659 #660 #656) then option 5 + traces

@@ -43,12 +43,15 @@ def _tts_forecast_features() -> dict[str, int]:
         logger.debug("tts forecast features skipped: %s", exc)
         return {}
     out: dict[str, int] = {}
-    if snap.get("forecast_chars") is not None:
-        out["tts_forecast_chars"] = int(snap["forecast_chars"])
-    if snap.get("actual_chars") is not None:
-        out["tts_actual_chars"] = int(snap["actual_chars"])
-    if snap.get("delta_chars") is not None:
-        out["tts_char_delta"] = int(snap["delta_chars"])
+    forecast = snap.get("forecast_chars")
+    if forecast is not None:
+        out["tts_forecast_chars"] = int(forecast)
+    actual = snap.get("actual_chars")
+    if actual is not None:
+        out["tts_actual_chars"] = int(actual)
+    delta = snap.get("delta_chars")
+    if delta is not None:
+        out["tts_char_delta"] = int(delta)
     return out
 
 
@@ -71,6 +74,113 @@ class DiscoveryResult:
     # this is an editorial one, and averaging an unvalidated score into another
     # unvalidated score would hide both. Same reason `raw_scores` sits out here.
     angle_scores: dict[str, float] = field(default_factory=dict)
+
+
+DISCOVERY_CACHE_PREFIX = "discovery"
+DISCOVERY_CACHE_TTL = 90 * 60
+
+
+def _discovery_ttl_seconds() -> int:
+    raw = (os.getenv("DISCOVERY_CACHE_TTL_SECONDS") or "").strip()
+    if raw.isdigit():
+        return max(1, int(raw))
+    return DISCOVERY_CACHE_TTL
+
+
+def _discovery_cache_enabled() -> bool:
+    return (os.getenv("DISCOVERY_CACHE", "true") or "").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def _discovery_cache_key(channel_id: str, topic: str) -> str:
+    from apis.cache_manager import build_key
+
+    return build_key(f"{DISCOVERY_CACHE_PREFIX}::{channel_id}", topic)
+
+
+def _discovery_from_payload(data: object) -> DiscoveryResult | None:
+    if not isinstance(data, dict):
+        return None
+    evaluated_raw = data.get("evaluated") or []
+    evaluated: list[tuple[str, float, dict[str, Any]]] = []
+    for row in evaluated_raw:
+        if not isinstance(row, list | tuple) or len(row) < 3:
+            continue
+        signals = row[2] if isinstance(row[2], dict) else {}
+        evaluated.append((str(row[0]), float(row[1]), signals))
+    if not evaluated:
+        return None
+    raw_obj = data.get("raw_scores")
+    raw: dict[str, Any] = raw_obj if isinstance(raw_obj, dict) else {}
+    angle_obj = data.get("angle_scores")
+    angle: dict[str, Any] = angle_obj if isinstance(angle_obj, dict) else {}
+    timings_obj = data.get("timings")
+    timings: dict[str, Any] = timings_obj if isinstance(timings_obj, dict) else {}
+    base_obj = data.get("base_signals")
+    base_signals: dict[str, Any] = base_obj if isinstance(base_obj, dict) else {}
+    return DiscoveryResult(
+        input_topic=str(data.get("input_topic") or ""),
+        base_signals=base_signals,
+        evaluated=evaluated,
+        timings={str(k): float(v) for k, v in timings.items() if isinstance(v, int | float)},
+        channel_id=str(data.get("channel_id") or "default"),
+        raw_scores={str(k): float(v) for k, v in raw.items() if isinstance(v, int | float)},
+        angle_scores={str(k): float(v) for k, v in angle.items() if isinstance(v, int | float)},
+    )
+
+
+def _discovery_age_note(channel_id: str, topic: str) -> str:
+    """`" - 12m old"`, or `""` when the age cannot be read. Never raises."""
+    try:
+        from apis.cache_manager import cache_age_seconds
+
+        age = cache_age_seconds(_discovery_cache_key(channel_id, topic))
+    except Exception as exc:
+        logger.debug("discovery cache age unavailable: %s", exc)
+        return ""
+    if age is None:
+        return ""
+    return f" - {int(age)}s old" if age < 90 else f" - {int(age // 60)}m old"
+
+
+def _load_discovery_cache(channel_id: str, topic: str) -> DiscoveryResult | None:
+    if not _discovery_cache_enabled():
+        return None
+    try:
+        from apis.cache_manager import get_cached
+
+        return _discovery_from_payload(get_cached(_discovery_cache_key(channel_id, topic)))
+    except Exception as exc:
+        logger.debug("discovery cache load skipped: %s", exc)
+        return None
+
+
+def _store_discovery_cache(result: DiscoveryResult) -> None:
+    if not _discovery_cache_enabled() or not result.evaluated:
+        return
+    try:
+        from apis.cache_manager import set_cache
+
+        payload = {
+            "input_topic": result.input_topic,
+            "channel_id": result.channel_id,
+            "base_signals": result.base_signals,
+            "evaluated": result.evaluated,
+            "raw_scores": result.raw_scores,
+            "angle_scores": result.angle_scores,
+            "timings": result.timings,
+        }
+        set_cache(
+            _discovery_cache_key(result.channel_id, result.input_topic),
+            payload,
+            ttl_seconds=_discovery_ttl_seconds(),
+        )
+    except Exception as exc:
+        logger.debug("discovery cache store skipped: %s", exc)
 
 
 @dataclass
@@ -218,6 +328,17 @@ def run_discovery(
 
     reset_usage()
 
+    cached = _load_discovery_cache(channel_id, topic)
+    if cached is not None:
+        # Name the age, not just the fact. The TTL is 90 minutes, and on a moving
+        # topic an 89-minute-old discovery is a different thing from a 2-minute-old
+        # one -- run 73's recorded failure was exactly freshness decaying quietly.
+        # Same convention as feed_health ("check is Nd old") and the competitor
+        # snapshot age.
+        print(f"  Reused discovery from cache ({topic}){_discovery_age_note(channel_id, topic)}")
+        _report("Reused discovery")
+        return cached
+
     _report("Loading history")
 
     # Quick Apify on/off check before topic research — if the key is dead or the
@@ -307,7 +428,7 @@ def run_discovery(
     except Exception as exc:
         logger.debug("Cache-stat flush skipped after discovery: %s", exc)
 
-    return DiscoveryResult(
+    result = DiscoveryResult(
         input_topic=topic,
         base_signals=base_signals,
         evaluated=evaluated,
@@ -316,6 +437,8 @@ def run_discovery(
         timings=timings,
         channel_id=channel_id,
     )
+    _store_discovery_cache(result)
+    return result
 
 
 def finalize_run_observability() -> None:
@@ -765,6 +888,37 @@ def run_media_only(
         render_preset=render_preset,
         lower_thirds=lower_thirds,
     )
+    try:
+        from core.first_frame import inspect_video
+        from core.first_frame import render_check as first_frame_render_check
+        from scripts.probe_sync import intro_offset_seconds
+
+        offset = 0.0 if render_preset == "draft" else intro_offset_seconds(channel_id)
+        frame_check = inspect_video(mp4_path, intro_offset=offset)
+        if frame_check is not None:
+            progress.note(first_frame_render_check(frame_check))
+            if frame_check.black or frame_check.frozen:
+                logger.warning("%s", first_frame_render_check(frame_check))
+    except Exception as exc:
+        logger.warning("first-frame check skipped: %s", exc)
+
+    try:
+        import tempfile as _tmp
+
+        from core.caption_contrast import fill_hex_for_channel, inspect_caption_band
+        from core.caption_contrast import render_check as contrast_render_check
+        from scripts.probe_sync import grab_frame, intro_offset_seconds
+
+        offset = 0.0 if render_preset == "draft" else intro_offset_seconds(channel_id)
+        with _tmp.TemporaryDirectory() as tmp:
+            still = os.path.join(tmp, "contrast.png")
+            if grab_frame(mp4_path, max(0.0, offset) + 1.0, still):
+                contrast = inspect_caption_band(still, fill_hex=fill_hex_for_channel(channel_id))
+                progress.note(contrast_render_check(contrast))
+                if not contrast.passed:
+                    logger.warning("%s", contrast_render_check(contrast))
+    except Exception as exc:
+        logger.warning("caption contrast check skipped: %s", exc)
 
     thumb_path = ""
     thumb_provider: str | None = None
@@ -826,16 +980,17 @@ def run_media_only(
             progress.note(f"{thumb.detail or 'thumbnail'} — {thumb_path}")
             progress.note(f"Thumbnails in folder: {total} ({thumb_dir})")
             try:
-                from core.thumbnail_safe_area import inspect_thumbnail, render_check
+                from core.thumbnail_safe_area import inspect_thumbnail
+                from core.thumbnail_safe_area import render_check as thumb_render_check
 
-                checked = inspect_thumbnail(thumb_path)
+                thumb_check = inspect_thumbnail(thumb_path)
                 thumb_safe_area = {
-                    "bottom_quiet": checked.bottom_quiet,
-                    "bottom_detail": checked.bottom_detail,
-                    "detail": checked.detail,
+                    "bottom_quiet": thumb_check.bottom_quiet,
+                    "bottom_detail": thumb_check.bottom_detail,
+                    "detail": thumb_check.detail,
                     "method": "bottom_20_percent_edge_density",
                 }
-                progress.note(render_check(checked))
+                progress.note(thumb_render_check(thumb_check))
             except Exception as exc:
                 logger.warning("Thumbnail safe-area check failed for %s: %s", thumb_path, exc)
         elif thumb is not None:

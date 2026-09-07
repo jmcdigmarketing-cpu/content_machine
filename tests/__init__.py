@@ -96,6 +96,7 @@ def _suite_store(name: str) -> str:
 
 
 os.environ["OVERNIGHT_PAUSE_FILE"] = _suite_store("overnight.paused")
+os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
 
 
 _SUITE_STORE_PATCHES = (

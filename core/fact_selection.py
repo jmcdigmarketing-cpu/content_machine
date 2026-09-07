@@ -100,6 +100,13 @@ _SCAFFOLDING_MARKERS = (
 # titles, not evidence, and counting them made every furniture line look specific.
 _HARD_NUMBER = re.compile(r"\b\d{2,}\b")
 _ANY_NUMBER = re.compile(r"\b\d[\d,.]*\b")
+# #648: the article as subject, not a hand-built phrase list. "this wrap-up
+# covers…" has no "you'll find" and still is furniture.
+_ARTICLE_DEIXIS = re.compile(
+    r"\b(?:this|the)\s+(?:article|page|wrap-?up|round[- ]?up|post|write-?up|"
+    r"listicle|piece|roundup)\b",
+    re.I,
+)
 
 
 @dataclass(frozen=True)
@@ -132,9 +139,10 @@ def scaffolding_penalty(text: str) -> float:
     if not body:
         return 0.0
     hits = sum(1 for marker in _SCAFFOLDING_MARKERS if marker in body)
-    if not hits:
+    deixis = bool(_ARTICLE_DEIXIS.search(body))
+    if not hits and not deixis:
         return 0.0
-    base = min(1.0, 0.5 + 0.2 * (hits - 1))
+    base = min(1.0, 0.5 + 0.2 * (max(hits, 1) - 1)) if hits else 0.5
     evidence = 0.5 if _HARD_NUMBER.search(body) else 0.0
     return round(base * (1.0 - evidence), 4)
 

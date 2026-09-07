@@ -1018,6 +1018,31 @@ def cmd_render_preview(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "caption-still",
+    "Overlay captions on a still so names can be proofread before burn (--path image, --file script)",
+)
+def cmd_caption_still(args: argparse.Namespace) -> int:
+    frame = (getattr(args, "path", None) or "").strip()
+    script_file = (getattr(args, "file", None) or "").strip()
+    if not frame or not script_file:
+        print("caption-still requires --path <image> and --file <script.txt>")
+        return 2
+    from pathlib import Path
+
+    script = Path(script_file).read_text(encoding="utf-8")
+    dest = str(Path(frame).with_name(Path(frame).stem + "_captions.png"))
+    from video.caption_overlay import overlay_captions_on_still
+
+    result = overlay_captions_on_still(
+        frame, script, dest, channel_id=getattr(args, "channel", None) or "tapin"
+    )
+    print(result.path)
+    for line in result.lines[:8]:
+        print(f"  {line}")
+    return 0
+
+
 @_register("lightbox", "Thumbnail lightbox for the last Pillow thumb")
 def cmd_lightbox(args: argparse.Namespace) -> int:
     from core.review_booth import write_lightbox
@@ -1105,6 +1130,13 @@ def cmd_blocking(args: argparse.Namespace) -> int:
     line = blocking_publish_sentence(channel_id=args.channel)
     _emit_text("What's blocking publish", line, args)
     return 0
+
+
+@_register("grounding-corpus", "Replay frozen grounding verdicts (no LLM)")
+def cmd_grounding_corpus(_args: argparse.Namespace) -> int:
+    from core.grounding_corpus import main as grounding_main
+
+    return grounding_main()
 
 
 @_register("roadmap-index", "Counts per roadmap file and by size, read from the docs")

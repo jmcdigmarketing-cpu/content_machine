@@ -420,10 +420,10 @@ Moderate — days
 - [ ] 179. **Authenticity visual checklist** (variation / insight / substance) `[M]` — *viability / UI.* Policy gate as boxes, not a log line.
 - [ ] 180. **Report-card poster** layout (letter + cost subtitle) `[M]` — *aesthetics.* A–F as a designed artifact for review, not ASCII.
 - [ ] 181. Thumbnail **A/B click-picker** that logs the experiment arm `[M]` — *UI.* Distinct from #27 dual *generation*: pick between already-rendered thumbs.
-- [ ] 182. **Caption overlay on a still** (proofread names before burn) `[M]` — *aesthetics.* Fighter/game names are the subject; catch "Salkilld" on a frame.
+- [x] 182. **Caption overlay on a still** *(2026-09-06)* — `ops caption-still --path --file` writes `{stem}_captions.png` via Pillow + `split_script_into_lines` + shipped `caption_skin.fill_color`. Test: compositor output contains `Salkilld`, not a helper-exists assertion `[M]`
 - [ ] 183. **Font-pairing picker** (title vs body captions) `[M]` — *aesthetics.* Writes a note / token; not the full #21 skin schema.
 - [ ] 184. Named **motion-style presets** (punch-in, snap zoom) `[M]` — *aesthetics.* Distinct from #26 first-caption-beat Ken Burns: a library of named styles.
-- [ ] 185. Caption-vs-background **contrast auditor** `[M]` — *aesthetics.* WCAG-ish ratio on sampled frames; burned captions fail on busy clips.
+- [x] 185. Caption-vs-background **contrast auditor** *(2026-09-06)* — `inspect_caption_band` WCAG ratio vs shipped `caption_skin.fill_color`; AA 4.5:1. Wired like thumbnail safe-area (operator string + pipeline note). **Advisory only; `GRADE_VERSION` stayed v3** `[M]`
 - [ ] 186. Player **safe-title grid overlay** `[M]` — *UI / aesthetics.* Distinct from #22 PIL checker: live overlay in the review player.
 - [ ] 187. **End-card preview compositor** `[M]` — *aesthetics.* Distinct from #23 fail-open sting *asset*: see the last 1s before render.
 - [ ] 188. **Intro-sting waveform** (see the 2.15s TapIn hit) `[M]` — *aesthetics / cost.* Stops relearning intro-offset sync against the SRT.
@@ -542,7 +542,7 @@ Small — hours / a PR
   *(2026-08-26: `ops sendto-facts`; tests use a temp SendTo dir)*
 - [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.
 - [ ] 296. **Print stylesheet** for the contact sheet `[S]` — *aesthetics.*
-- [ ] 297. Caption fill **contrast ratio number** vs sampled frame `[S]` — *aesthetics.* Hours version of auditor #185.
+- [x] 297. Caption fill **contrast ratio number** vs sampled frame *(2026-09-06)* — same helper as #185 returns `ratio` + pass/fail. Not persisted on quality_json (no `QUALITY_VERSION` bump) `[S]`
 - [x] 298. YouTube-title **100-char meter** *(2026-08-25)* — the real booth reads the stored public title and flags overflow `[S]`
 - [x] 299. Description **first-line preview card** *(2026-08-25)* — the real booth reads the stored public description and shows only its first non-empty line `[S]`
 - [ ] 300. Local **tag chips** (edit in booth, apply writes the package) `[S]` — *UI.*
@@ -614,7 +614,7 @@ Grounding & fact quality
 - [x] 347. **`ops vault-decay`** *(2026-08-27)* — wraps `fact_expiry.expired_notes` (no second scanner). Temp vault with a past `expires:` lists it; empty vault prints an honest empty line and emits no WARNING `[S]`
 - [x] 348. **Operator fact-intake linter** *(2026-08-28)* — `lint_fact_intake` on `core/ui.py`'s paste path, before `capture_facts_to_vault`. URL-only lines, duplicates, and vault contradictions warn; an empty paste is silent `[S]`
 - [ ] 349. **Screenshot → facts via OCR** — the operator's fastest fact source is a stat card on screen; clipboard image → parsed lines into the facts block `[M]`
-- [ ] 350. **Grounding regression corpus in CI** — extend `run_eval_corpus.py` with ~20 frozen runs whose correct verdicts are known, so a gate change that loosens grounding fails CI instead of a live run `[M]`
+- [x] 350. **Grounding regression corpus in CI** *(2026-09-06)* — `config/grounding_corpus.json` 20 frozen `{script, facts, expect_ungrounded}` replayed by `ops grounding-corpus` via `find_ungrounded_entities` (no LLM). Not folded into `run_eval_corpus` because that listing test requires every row `scored=False`. Loosening a token rule fails a frozen case `[M]`
 
 Learning loop & analytics rigor
 
@@ -790,16 +790,16 @@ taken from this machine.*
 Terminal & TUI craft
 
 - [ ] 481. **Pinned status line** — channel, uploads-left, run cost, held at the bottom of the terminal instead of scrolled away `[M]`
-- [ ] 482. **Collapse the mascot after the first run of the day** — the ASCII art is ~60 lines before every menu; `--art` to force it back `[S]`
+- [x] 482. **Collapse the mascot after the first run of the day** *(2026-09-06)* — day-key stamp (`CONTENT_UI_MASCOT_STAMP` / suite temp path, never operator `data/`). Second startup same day skips the panel; `--art` / `CONTENT_UI_ART=1` forces it; next calendar day shows it again `[S]`
 - [ ] 483. **Redraw signal health in place** — discovery reprints the whole 15-line block each pass instead of updating it `[M]`
 - [x] 484. **`Ctrl+C` at a prompt returns to the menu** *(2026-09-06)* — `KeyboardInterrupt` in `_run_new_video_flow` / idea intake / intelligence prints "Cancelled — back to the menu" and does not `SystemExit`. Test: `input()` raising at the topic prompt never reaches discovery `[M]`
-- [ ] 485. **Persist discovery so a re-entered topic skips the refetch** — pairs with 484; the data was already paid for `[M]`
+- [x] 485. **Persist discovery so a re-entered topic skips the refetch** *(2026-09-06)* — `cache_manager` prefix `discovery::{channel}`, TTL 90m. Hit skips `generate_variants`, prints `Reused discovery from cache`. Empty `evaluated` is not stored. tapin vs moneywise isolated; TTL expiry refetches `[M]`
 - [ ] 486. **Colour-blind-safe palette variant** for the ANSI themes `[S]`
-- [ ] 487. **`NO_COLOR` and non-TTY detection** so piped or redirected output carries no escape codes `[S]`
-- [ ] 488. **Terminal-width awareness** — fact lines truncate at ~90 chars today, which is what made the operator think facts were being cut `[S]`
+- [x] 487. **`NO_COLOR` and non-TTY detection** *(2026-09-06)* — non-TTY and `CONTENT_UI_COLOR=false` already disabled color; `NO_COLOR` (any non-empty value) now does too. TTY + `NO_COLOR=1` → `paint()` returns plaintext `[S]`
+- [x] 488. **Terminal-width awareness** *(2026-09-06)* — fact preview / grounding / links go through `fact_display_width()` (`terminal_width(maximum=160) - 4`). Banner max stays 100. Patch width to 140: a 120-char fact prints fuller than 90; `_elide` still adds `… (+N chars)` `[S]`
 - [ ] 489. **Single-key menu mode** — press `1`, no Enter, for the high-frequency prompts `[S]`
-- [ ] 490. **Progress ETA from measured history** rather than the hardcoded "typ ~33s"; real runs were 38s, 56s, 39s `[S]`
-- [ ] 491. **Spinner frames respect the active theme's glyph set** — `themes.py` already defines per-theme glyphs and the spinner ignores them `[S]`
+- [x] 490. **Progress ETA from measured history** *(2026-09-06)* — `DiscoverySpinner._load_typical_timings` median over last 20 traces with `signals_and_variants` / `variant_scoring` (≥5s). Fixtures 20/40/60 → hint ≈ 40, not 20. Empty store stays silent `[S]`
+- [x] 491. **Spinner frames respect the active theme's glyph set** *(already shipped; ticked 2026-09-06)* — `DiscoverySpinner` uses `active_theme().spinner_frames`; `tests/test_themes.py` asserts pokemon frames on the live spinner `[S]`
 - [ ] 492. **Up-arrow recall for topics** — retyping a long topic after an abort is the common case `[S]`
 - [ ] 493. **`--quiet` run mode** — gates and the report card only, no narration `[S]`
 - [ ] 494. **`--replay <run-id>`** — reprint a past run's console output from its stored trace `[M]`
@@ -813,10 +813,10 @@ Video & render craft — permanent, survives every toolkit change
 - [ ] 499. **Silence-trim the VO head and tail** before the render rather than after `[S]`
 - [ ] 500. **Beat-matched cut points** when a music bed is present `[L]`
 - [ ] 501. **Automatic hook re-cut** — when the first 3s scores low, re-render that segment only `[L]`
-- [ ] 502. **Safe-area guides burned into the draft preset only** — visible while reviewing, never in the publish render `[S]`
+- [x] 502. **Safe-area guides burned into the draft preset only** *(2026-09-06)* — draft filter graph appends two `drawbox` overlays after subtitles; the publish argv from the same helper has none `[S]`
 - [ ] 503. **Per-channel caption entrance animation** (pop, slide, none) `[M]`
 - [ ] 504. **Emoji in captions** — libass drops them silently today `[M]`
-- [ ] 505. **Two-line caption balancing** — near-equal lines instead of greedy fill; the sibling of #419's orphan fix `[S]`
+- [x] 505. **Two-line caption balancing** *(2026-09-06)* — `two_line_split_index` in both `split_script_into_lines` and `group_into_lines`. Eight words at max 5: 4+4, not greedy 5+3. `#419` orphan + `test_sentence_boundaries_not_crossed` stay on three-line / two-sentence cases `[S]`
 - [ ] 506. **Speaker-adaptive caption colour** when a line is an attributed quote `[M]`
 - [ ] 507. **Do not burn captions over on-screen text** in the background clip `[L]`
 - [ ] 508. **Thumbnail face-crop bias** using the existing Pillow stack — no new image API (§26) `[M]`
@@ -824,7 +824,7 @@ Video & render craft — permanent, survives every toolkit change
 - [ ] 510. **Chapter thumbnails** for the 16:9 sibling `[M]`
 - [ ] 511. **Five-second vertical teaser** cut from the finished video, for community posts `[M]`
 - [ ] 512. **Grain and vignette as real ffmpeg filters**, per channel, driven by #170 tokens — #247 is only a CSS preview `[M]`
-- [ ] 513. **Reject a black or frozen first frame** before upload — it is the worst possible auto-thumbnail `[S]`
+- [x] 513. **Reject a black or frozen first frame** *(2026-09-06)* — Pillow luma/frozen check on the finished mp4 after intro offset (output-seek). Pre-upload / pipeline advisory (`ADVISORY` / `not a publish block`); does not skip upload. Synthetic images in tests `[S]`
 - [ ] 514. **Duck the intro sting** where it overlaps the first caption `[S]`
 
 Desktop application — Qt specifics
@@ -996,8 +996,8 @@ Run-74 follow-ups (2026-08-29) — filed while fixing the abort chain
 - [x] 645. **The report card does not weight length** — run 74 shipped 277 words against a 300-word floor and graded **A (87)**. `_relength_after_postprocessing` now re-checks after the passes that shorten a script, but nothing scores the outcome. Deferred deliberately: adding a component changes the meaning of every historical grade, so it needs a migration story `[M]` — **shipped 2026-09-05**. The deferral was a migration story, and the mechanism for one did not exist: `GRADE_VERSION` was a string **nothing read, wrote or compared**, while `core/grade_calibration.py` re-grades every stored run with today's code — so the three components that moved on 2026-08-30 were already silently re-scoring history. Now: `VideoGrade.version` is stamped and `GRADE_VERSION` is **v2** covering both changes; `QUALITY_VERSION` is **v3** for the new `word_count`/`min_words`/`max_words` keys; and `_length_score` derives from the same floor comparison `format_length_report` already shows the operator, so two components cannot disagree (#653's lesson). A row without length keys renormalises over what it has and its score is **unchanged**. Measured on run 74's real components: **A 86.8 -> B 82.8** at 277 words against a 300 floor, in-range still A 88.1
 - [x] 646. **`scripts/auto_generate.py` does not get scored fact selection** *(2026-09-06)* — `select_headless_facts` ranks file lines as `TIER_LINK` and `--fact` as pinned operator. Overnight `generate_draft` packs through it. Run-74 scaffolding lost to "Six Wanted Stars" on a 420-char budget `[M]`
 - [x] 647. **Tune the fact-selection weights against real traces** *(2026-09-06)* — `measure_weight_split` on two fixtures (run-74 GTA strings + UFC). Current split beat insertion and equal weights -> `WEIGHT_MEASUREMENT["verdict"] = "held"`. Operator `data/traces` was empty; tests never read that store `[M]`
-- [ ] 648. **`_SCAFFOLDING_MARKERS` is a hand-built list** — it caught run 74's furniture, and will miss the next site's. A structural signal (line is about the article, not the story) would generalise; a learned one would need labels `[M]`
-- [ ] 649. **The claim verifier passed 12/12 on facts that were themselves truncated** — with the fact window built from 400-char slices, "backed by the facts" was measured against fragments. Re-measure now that facts arrive whole, and check whether the run-74 script's drones / K9 units / hurricane-weather claims still pass `[M]`
+- [x] 648. **`_SCAFFOLDING_MARKERS` is a hand-built list** *(2026-09-06)* — structural deixis (`this/the article|page|wrap-up|roundup|…`) adds a 0.5 penalty when the phrase list misses. Furniture with no list marker loses to a detail line on a tight budget. Hard-number discount unchanged; **#647 weights not retuned** `[M]`
+- [x] 649. **The claim verifier passed 12/12 on facts that were themselves truncated** *(2026-09-06)* — `verify_claims` (real, LLM mocked) prompt includes a negation tail past the old 400-char slice. `_MAX_FACT_CHARS` stays 6000. Run-74 drones/K9/hurricane script strings are **not in the repo**; known-gap test asserts that so this is not a whole-script lock `[M]`
 - [ ] 650. **`read_pending_lines` is untested against a real Windows console** — the unit tests patch the backend, because CI has no tty. One manual smoke test per platform, recorded, would close the gap `[S]`
 
 - [x] 644. **Config-coverage test** *(2026-09-06)* — `TestShippedConfigRatchet.test_no_profile_field_is_unset_on_every_shipped_channel` reads real `get_channel_profiles()`. Failed first on `local_tts_voice`, `local_tts_voices`, `ui_theme` `[M]`
@@ -1026,5 +1026,5 @@ Next-five wave (2026-09-05) — filed while shipping #654 / #645 / #383 / #533
 
 Review of the 2026-09-06 wave (Claude, 2026-09-06)
 
-- [ ] 666. **A sentence-TTS concat failure still double-bills** `[S]` — the segments are synthesized and billed, concat fails, and the fallback synthesizes the whole script again. The *ledger* is now honest about it (the spend is recorded and the warning names it), but the money is still spent twice. Preflight the concat before entering the segment loop — the common cause is a missing/undersized ffmpeg, which is knowable for free — so the run takes the whole-script path from the start instead of paying for both
+- [x] 666. **A sentence-TTS concat failure still double-bills** *(2026-09-06)* — `ffmpeg_concat_ready()` (PATH + memoized `libmp3lame`) gates `_generate_by_sentences`. Preflight fail → one `synthesize_to_path` of the whole script, never N segments. `TTS_CACHE=true` + `which`→None: seam called once, billed chars = one script `[S]`
 

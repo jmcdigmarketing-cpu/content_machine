@@ -412,7 +412,7 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     # at every sentence break in every video.
     sents = split_spoken_sentences(spoken) if tts_cache_enabled() else []
     alts = split_spoken_sentences(spoken_for_alt) if tts_cache_enabled() else []
-    if len(sents) == len(alts) and len(sents) > 1:
+    if len(sents) == len(alts) and len(sents) > 1 and ffmpeg_concat_ready():
         try:
             return _generate_by_sentences(
                 sents,
@@ -498,6 +498,40 @@ def segment_audio_duration(path: str) -> float:
     except (OSError, TypeError, ValueError) as exc:
         logger.debug("segment duration skipped: %s", exc)
         return 0.0
+
+
+_lame_ok: dict[str, bool] = {}
+
+
+def ffmpeg_concat_ready() -> bool:
+    """True when ffmpeg is on PATH and can encode libmp3lame.
+
+    #666: the sentence loop synthesizes N segments *then* concats. A missing
+    or undersized ffmpeg fails after the spend, and the fallback synthesizes
+    the whole script again. This is knowable for free.
+    """
+    exe = shutil.which("ffmpeg")
+    if not exe:
+        return False
+    cached = _lame_ok.get(exe)
+    if cached is not None:
+        return cached
+    try:
+        import subprocess
+
+        proc = subprocess.run(
+            [exe, "-hide_banner", "-encoders"],
+            capture_output=True,
+            text=True,
+            timeout=8,
+            check=False,
+        )
+        ok = "libmp3lame" in (proc.stdout or "")
+    except Exception as exc:
+        logger.debug("ffmpeg concat preflight skipped: %s", exc)
+        ok = False
+    _lame_ok[exe] = ok
+    return ok
 
 
 def concat_audio_segments(paths: list[str], dest: str) -> str:

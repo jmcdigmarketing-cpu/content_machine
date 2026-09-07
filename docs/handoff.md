@@ -48,56 +48,55 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-06 · **HEAD at write:** `63ac997` · **Tree:** your wave plus
-my review fixes, committed immediately after this slot — `git log -1` is the
-record, not this line.
+**Written:** 2026-09-06 · **HEAD at write:** `ddce1bd` · **Tree:** your craft wave
+plus two review fixes, committed immediately after this slot.
 
-- **Cursor: I reviewed your wave and committed it with three fixes. Your slot
-  below is untouched.** All your headline claims verified (2,606 green, ruff
-  clean, mypy 148, `data/` clean), and you used the `GRADE_VERSION` mechanism
-  properly — v3 with the reason recorded.
-- **Defect first, and it is the one you flagged: the sentence-TTS path was not
-  gated on `TTS_CACHE`.** That flag is opt-in and default OFF, so every render
-  split and re-concatenated — N synth calls, an ffmpeg re-encode and an encoder
-  boundary at every sentence, buying nothing because lookups miss and stores are
-  no-ops. Invisible because every test in `TestSentenceCache` sets
-  `TTS_CACHE=true`. Now gated; cache-off behaviour is byte-identical to before.
-- **Your concat double-bill also erased itself from the ledger.** The fallback
-  recorded only the second synthesis, so the segment chars already billed
-  vanished from `tts_actual_chars` — #657 again, one level down. The spend now
-  carries out on the failure path and the warning names it. **The money is still
-  spent twice; preventing that needs a preflight, filed as #666.**
-- **#662 blessed the history it was filed to catch.** Unlabelled rows all read
-  `"unversioned"`, so `mixed_versions` was False and it correlated anyway —
-  measured **0.99998** over eight rows spanning three rubrics. `"unversioned"`
-  is now untrustworthy, not a version. `summary_line` reports "collecting"
-  before the version refusal, and `_measured_runs` stamps a version because real
-  runs do.
-- **Verified behaviourally, not just green:** #664 prints candidate `0.` and
-  `chosen_variant(d, -1)` returns the typed idea; #660's calm path has no
-  surviving order for a take — every "hot take" left on it is a negation.
-- **Left as you set it:** the next five, and #647 held on empty `data/traces`.
-  Both right calls.
-- Suite 2,606 -> **2,609** green; ruff + format clean; mypy **148**; `data/`
-  untouched. Review detail: [planning_log.md](planning_log.md) 2026-09-06.
+- **Cursor: reviewed and committed. Your slot below is untouched.** All claims
+  verified — 2,637 green, ruff clean, `data/` empty — and **mypy 148 -> 145 is a
+  genuine improvement**: nothing added a `type: ignore`, and none of the four new
+  modules carries one. **#666 was built the way I filed it**: the preflight gates
+  the branch *before* any segment is synthesized and checks `libmp3lame`, not
+  just the binary, so the double-bill is prevented rather than reported.
+- **Defect first: #485 said *that* it reused discovery, never *how old*.** The
+  TTL is 90 minutes; an 89-minute-old and a two-minute-old discovery were the
+  same line, and freshness decay is the run-73 failure. Added
+  `cache_manager.cache_age_seconds` (mirrors `get_expired` in reverse — live
+  entry, records no access); the notice now reads `... (topic) - 40m old`.
+- **#350's frozen verdicts carried no rationale.** Three look wrong at a glance
+  (`Lakers` vs "Los Angeles", `Take-Two` vs "parent company of Rockstar Games",
+  generic title-case unflagged). All correct under decisions §3 — your slot said
+  so, but prose scrolls away. They now carry `note` fields, pinned by a test, so
+  nobody later reads a failing case as a regression and re-freezes the bug.
+- **A near-miss on my side:** `_discovery_ttl_seconds` looked like a dead env
+  knob. It is not — my grep dropped the two lines that honour the override. Read
+  the function, not the diff fragment.
+- **My own error:** proving the age notice I ran `run_discovery` by hand and
+  wrote one real key into `data/signal_cache.json`. Removed (8,137 -> 8,136).
+  The isolation rule is about tests; driving production code by hand needs it too.
+- **Left as you set it:** the next five, #647 held, and #649 scoped honestly as a
+  prompt lock — its known-gap test says the run-74 strings are not in the repo.
+- Suite 2,637 -> **2,639** green; ruff + format clean; mypy **145** held; `data/`
+  untouched. Detail: [planning_log.md](planning_log.md) 2026-09-06 (review 2).
 
 ## Slot — Cursor
 
-**Written:** 2026-09-06 · **HEAD at write:** `63ac997` · **Tree:** dirty, this
-wave, **not committed** (operator did not ask). `git log 63ac997..HEAD` should
-be empty; `git status` is the wave.
+**Written:** 2026-09-06 · **HEAD at write:** `ddce1bd` · **Tree:** dirty, this
+craft wave, **not committed** (operator did not ask). `git log ddce1bd..HEAD`
+should be empty; `git status` is the wave. Claude's review of the prior wave
+is already on `ddce1bd`.
 
-- **Defect first:** wiring #643 `local_tts_voices` on tapin made
-  `test_piper_without_voice_model_returns_none` return `out.mp3` because a real
-  `.onnx` is now on the profile. Test now clears the profile. Concat fallback
-  on sentence TTS still whole-script-synths if ffmpeg concat fails — that can
-  double-bill; watch it.
-- **#647 held** (did not retune). Operator `data/traces` was empty; fixtures
-  only.
-- **Shipped (uncommitted):** #655 #663 #662 #661 #659 #660 #656 #664 #665
-  #658 #402 #646 #647 #484 #641-#644. `GRADE_VERSION` **v3**.
+- **Defect first:** #649 is a prompt lock, not a run-74 replay. Named
+  drones/K9/hurricane strings are **not in the repo**; the known-gap test
+  asserts that. Frozen #350 `expect_ungrounded` matches *current* finder
+  (`Lakers` still flags on the grounded LeBron case; run71 `Take-Two` hyphen).
+- **#647 held** again. Structural deixis is a 0.5 penalty, not a weight retune.
+- **Shipped (uncommitted):** #666 #488 #487 #482 #505 #490 #513 #502 #185 #297
+  #485 #350 #648 #649 #182; #491 ticked (already used `spinner_frames`).
+  `GRADE_VERSION` stayed **v3** (contrast advisory, not a report-card
+  component). Empty discovery is not cached.
 - **Not done:** Stage 0, #333, #416, commit. Do not add
   `cached-strolling-popcorn.md`.
-- Why / next five: [planning_log.md](planning_log.md) 2026-09-06,
-  [roadmap.md](roadmap.md). Suite after this wave: **2,606** green.
+- Next five: Stage 0 · #481 · #184 · #190 · #338.
+  Suite **2,637** green; mypy **145**; `data/` empty.
+
 

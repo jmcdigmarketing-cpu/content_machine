@@ -59,5 +59,27 @@ class TestTheLinkFactPreviewSaysWhenItIsShowingLess(unittest.TestCase):
         self.assertIn("…", _elide(LONG, 90))
 
 
+class TestWidthAwareFactElision(unittest.TestCase):
+    def test_a_wide_terminal_shows_more_than_ninety_chars(self):
+        """#488. Hard 90/100 cuts made a 120-char fact look truncated on a
+        140-col terminal. Display width must follow terminal_width.
+        """
+        from unittest.mock import patch
+
+        from core.ui import display_grounding_report
+
+        fact = "A" * 120
+        lines: list[str] = []
+
+        def _capture(text: str = "") -> None:
+            lines.append(text)
+
+        with patch("core.ui_theme.terminal_width", return_value=140):
+            display_grounding_report([], key_facts=[fact], print_fn=_capture)
+        shown = "\n".join(lines)
+        self.assertIn("A" * 100, shown)
+        self.assertNotIn("…", shown)
+
+
 if __name__ == "__main__":
     unittest.main()

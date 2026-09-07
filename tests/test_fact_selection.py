@@ -132,6 +132,18 @@ class TestScaffoldingRanksBelowSubstance(unittest.TestCase):
     def test_a_plain_fact_carries_no_penalty(self):
         self.assertEqual(scaffolding_penalty(DETAIL[0]), 0.0)
 
+    def test_furniture_without_a_list_marker_is_still_penalised(self):
+        """#648. The next site will not say 'you'll find'. A wrap-up whose
+        subject is the article still has to lose to a detail line.
+        """
+        furniture = "This wrap-up covers everything Rockstar showed."
+        self.assertGreater(scaffolding_penalty(furniture), 0.0)
+        records = [_link(furniture), _link(DETAIL[0])]
+        budget = len(DETAIL[0]) + 20
+        kept, _ = _select(records, budget=budget)
+        self.assertIn(DETAIL[0], kept)
+        self.assertNotIn(furniture, kept)
+
 
 class TestTheBudgetIsRespected(unittest.TestCase):
     def test_output_never_exceeds_the_char_budget(self):

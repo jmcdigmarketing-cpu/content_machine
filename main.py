@@ -2,6 +2,7 @@
 Interactive CLI — thin wrapper around core.pipeline.
 """
 
+import os
 import sys
 
 
@@ -14,6 +15,10 @@ def _configure_stdout_utf8() -> None:
 
 
 _configure_stdout_utf8()
+
+if "--art" in sys.argv:
+    os.environ["CONTENT_UI_ART"] = "1"
+    sys.argv = [a for a in sys.argv if a != "--art"]
 
 # Must be first non-stdlib import — loads .env before any signal module reads os.getenv at module level
 import config.settings  # noqa: F401

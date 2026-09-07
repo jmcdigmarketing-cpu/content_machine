@@ -493,6 +493,18 @@ class YouTubePublisher(Publisher):
             )
 
         try:
+            from core.first_frame import inspect_video, render_check
+            from scripts.probe_sync import intro_offset_seconds
+
+            offset = intro_offset_seconds(channel_id)
+            checked = inspect_video(request.file_path, intro_offset=offset)
+            if checked is not None and (checked.black or checked.frozen):
+                logger.warning("%s", render_check(checked))
+                print(f"  ! {render_check(checked)}")
+        except Exception as exc:
+            logger.warning("first-frame check skipped: %s", exc)
+
+        try:
             from core.shorts_eligibility import shorts_refuse_reason
 
             refuse = shorts_refuse_reason(file_path=request.file_path, title=request.title)

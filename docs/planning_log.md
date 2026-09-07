@@ -2337,3 +2337,130 @@ calibration theatre.
 
 Suite 2,606 -> **2,609** green; ruff and format clean; mypy **148** unchanged;
 `data/` untouched.
+
+## 2026-09-06 — next 15 craft / terminal / cost (no Stage 0)
+
+**Prompt:** implement the attached next-15 plan (craft, terminal, cost); do not
+edit the plan file; don't stop until all todos are done; commit only if asked.
+
+**Picked vs the then-roadmap five.** The recommended five (#485 #185 #505 #350
+#648) plus cheapest-first S-cluster (#666 #488 #487 #482 #490 #513 #502) plus
+#297 with #185, #649, #182 last. Stage 0 / #333 / #416 / Ollama stayed out.
+#491 already used `active_theme().spinner_frames`; ticked, not re-implemented.
+
+**Shipped 1..15 (fail-then-fix; each new test observed red first):**
+
+1. **#666** concat preflight. Unmodified: 3 sentence synths when ffmpeg missing.
+   Now one whole-script seam call; billed chars = one script.
+2. **#488** `fact_display_width()`. Patch width 140: 120-char fact prints fuller
+   than 90.
+3. **#487** TTY + `NO_COLOR=1`: `paint()` still emitted `\x1b[31m`; now plaintext.
+4. **#482** second `print_startup_panel` same day returns no mascot lines; next
+   calendar day shows it. `--art` forces. Stamp isolated off operator `data/`.
+5. **#505** eight words / max 5 greedy `5+3`; now `4+4`. Both splitters. `#419`
+   orphan retargeted to a 3-line sentence; `test_sentence_boundaries_not_crossed`
+   unmodified.
+6. **#490** fixtures 20/40/60 hinted 20 (most-recent); now median ≈ 40.
+7. **#513** black/frozen Pillow check on the finished mp4 (intro-aware). Advisory;
+   does not skip upload.
+8. **#502** draft argv contains `drawbox`; publish argv from the same helper does
+   not.
+9–10. **#185+#297** WCAG ratio + pass/fail vs shipped tapin `#FFFFFF`. Busy vs
+   quiet synthetic bands. **No `GRADE_VERSION` bump.** Not persisted on
+   quality_json.
+11. **#485** second `run_discovery` called `generate_variants` twice; now once.
+    tapin/moneywise isolated; TTL expiry refetches. Empty `evaluated` not stored.
+12. **#350** 20 frozen cases via `ops grounding-corpus` / `find_ungrounded_entities`.
+    Not folded into `run_eval_corpus` (`test_eval_corpus_lists_without_llm` requires
+    every row `scored=False`). Frozen `expect_ungrounded` matches current finder
+    (lebron-grounded still flags `Lakers`; run71 hyphen `Take-Two`).
+13. **#648** wrap-up furniture with no list marker scored penalty 0.0; now 0.5 and
+    loses to a detail line. **#647 weights not retuned.**
+14. **#649** lock: verifier prompt includes a negation tail past the old 400-char
+    slice. Run-74 drones/K9/hurricane strings are **not in the repo**; known-gap
+    test asserts that.
+15. **#182** `ops caption-still`: PNG contains `Salkilld` after overlay.
+
+**Found on the way:** #505 broke `test_three_word_leftover_stays_three` (8 words
+is now a two-line wrap). Retargeted to 13 words / max 5 so #419 still holds.
+`ops command-ref` drifted when `caption-still` / `grounding-corpus` landed.
+mypy 148→149 from `render_check` name collisions in `run_media_only`; aliased.
+
+**Not done:** Stage 0; #333; #416; commit (operator did not ask). Do not add
+`cached-strolling-popcorn.md`.
+
+**Proof:** `ops grounding-corpus` → `20 cases, 0 fail(s)`. `ops caption-still`
+(no args) → `caption-still requires --path <image> and --file <script.txt>`.
+
+**Audit:** ruff + format clean; suite **2,609 -> 2,637** green; mypy **148 -> 145**
+(narrowed `_tts_forecast_features` + spinner lambda in files this wave already
+edited); `git status --short data/` empty. Backlog **434** open / **468** done
+(`roadmap-index`), highest open **#650**.
+
+**The new five** (`roadmap.md`): Stage 0 seams · **#481** pinned status · **#184**
+motion presets · **#190** MoneyWise disclaimer (pair **#191** if room) · **#338**
+quote-attribution.
+
+
+
+## 2026-09-06 (review 2) — Claude reviewing Cursor's craft wave
+
+**Prompt:** *"review the changes cursor made and do your end."*
+
+**Every claim verified before touching anything:** suite **2,637** green, ruff and
+format clean, `data/` empty, and mypy **148 -> 145**. The mypy drop is genuine —
+`git diff | grep 'type: ignore'` returns nothing added, and none of the four new
+modules carries a suppression. That is a real improvement, not a silenced one.
+
+**#666 was implemented the way it was filed.** `ffmpeg_concat_ready()` gates the
+`if` *before* `_generate_by_sentences`, so no segment is synthesized when concat
+cannot work, and it checks the `libmp3lame` encoder rather than just the binary
+being on PATH. The double-bill I filed it for is now prevented rather than
+merely reported.
+
+**A near-miss on my side, worth recording.** `_discovery_ttl_seconds` looked like
+a dead env knob — read `DISCOVERY_CACHE_TTL_SECONDS` into `raw`, then
+`return DISCOVERY_CACHE_TTL`. That was my grep filter dropping the two lines in
+between; the function honours the override. Read the function, not the diff
+fragment.
+
+**One defect fixed: the discovery cache said *that* it reused, never *how old*.**
+#485 caches discovery for **90 minutes** and prints
+`Reused discovery from cache (topic)`. An 89-minute-old discovery and a
+two-minute-old one were the same line to the operator, and freshness decay is the
+documented run-73 failure — *"each run made the next less fresh"*. Added
+`apis.cache_manager.cache_age_seconds`, mirroring `get_expired`'s contract in
+reverse (reports on a live entry, records no cache access), and the notice now
+reads `Reused discovery from cache (topic) - 40m old`. Same convention
+`feed_health` ("check is Nd old") and the competitor snapshot age already use.
+
+**One robustness gap closed: the frozen corpus recorded no rationale.** #350's 20
+cases are a genuine regression guard — they call the real
+`find_ungrounded_entities` and a loosened gate fails CI. But behaviour and
+*desired* behaviour are not the same thing, and three verdicts look wrong at a
+glance: `Lakers` flagged when the facts say "Los Angeles", `Take-Two` flagged
+when the facts say "the parent company of Rockstar Games", and generic title-case
+deliberately unflagged. All three are correct under decisions §3, and Cursor's
+slot said so — in prose that scrolls away. They now carry `note` fields stating
+why, pinned by a test, so nobody reading a failing case later mistakes a genuine
+fix for a regression and re-freezes the bug.
+
+**Checked and found safe, not just green:** the new first-frame and caption
+contrast checks are advisory on both the render and publish paths (warn, never
+block) and fail open; `tests/__init__.py` gained a suite-store redirect for the
+new mascot stamp, which strengthens isolation rather than weakening it; the
+caption changes are additive (`two_line_split_index`) and do not move the
+word-timing contract decisions §23 rests on.
+
+**My own error, recorded:** proving the age notice, I ran `run_discovery` ad hoc
+outside the suite and wrote one real key into `data/signal_cache.json`. Removed
+it (8,137 -> 8,136 keys). tests/CLAUDE.md's isolation rule is about tests; the
+lesson is that driving production code by hand needs the same care.
+
+**Left as Cursor set it:** the next five (Stage 0 · #481 · #184 · #190 · #338),
+**#647 held again** on structural deixis being a penalty rather than a weight
+retune, and **#649** honestly scoped as a prompt lock rather than a run-74 replay
+because the named strings are not in the repo — its known-gap test says so.
+
+Suite 2,637 -> **2,639** green; ruff and format clean; mypy **145** (Cursor's
+improved baseline, held); `data/` untouched.

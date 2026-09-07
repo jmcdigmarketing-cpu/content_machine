@@ -299,6 +299,38 @@ class TestSentenceCache(unittest.TestCase):
             f"ledger recorded {billed} chars but the segments were billed too",
         )
 
+    def test_a_failed_concat_preflight_synths_the_script_once(self):
+        """#666. Concat failure after the segments are billed double-charges.
+        ffmpeg being missing is knowable for free, so the run must take the
+        whole-script path *before* any segment synth — one seam call, one bill.
+        """
+        script = "First sentence. Second sentence. Third sentence."
+        calls: list[str] = []
+
+        def fake_seam(spoken, spoken_for_alt, output_path, channel_id, cache_key, **kwargs):
+            calls.append(spoken)
+            with open(output_path, "wb") as f:
+                f.write(b"whole")
+            return output_path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = os.path.join(tmp, "out.mp3")
+            with (
+                patch.dict(
+                    os.environ,
+                    {"TTS_CACHE": "true", "TTS_CACHE_DIR": os.path.join(tmp, "cache")},
+                    clear=False,
+                ),
+                patch.object(tts, "synthesize_to_path", side_effect=fake_seam),
+                patch.object(tts, "concat_audio_segments") as concat,
+                patch.object(tts, "_tts_cache_voice", return_value=""),
+                patch.object(tts.shutil, "which", return_value=None),
+            ):
+                tts.generate_audio(script, dest, channel_id="tapin")
+
+        self.assertEqual(calls, [script], "preflight fail still entered the segment loop")
+        concat.assert_not_called()
+
     def test_offset_word_timings_shifts_start_and_end(self):
         shifted = tts.offset_word_timings(
             [{"word": "Hi", "start": 0.1, "end": 0.2}],

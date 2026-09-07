@@ -258,6 +258,22 @@ class TestDraftRenderPreset(unittest.TestCase):
         self.assertIn("scale=1080:1920", publish)
         self.assertIn("-preset fast", publish)
 
+    def test_draft_burns_safe_area_guides_publish_does_not(self):
+        """#502. Guides are for review. A publish argv that carries them ships
+        yellow boxes into YouTube.
+        """
+        base = {
+            "background_path": "bg.mp4",
+            "mp3_path": "voice.mp3",
+            "output_path": "out.mp4",
+            "subtitle_path": "subs.srt",
+            "duration": 10,
+        }
+        draft = " ".join(build_render_ffmpeg_command(**base, render_preset="draft"))
+        publish = " ".join(build_render_ffmpeg_command(**base))
+        self.assertIn("drawbox", draft)
+        self.assertNotIn("drawbox", publish)
+
     def test_real_preview_operator_command_is_registered(self):
         self.assertIn("render-preview", ops.COMMANDS)
 

@@ -35,8 +35,16 @@ class TestSplit(unittest.TestCase):
 
     def test_orphan_inside_a_sentence_is_still_rebalanced(self):
         # The common case -- one long sentence wrapping with a single word left.
-        lines = split_script_into_lines("alpha bravo charlie delta echo foxtrot", max_words=5)
+        # Three-line wrap so #505's two-line balancer is not the path under test.
+        lines = split_script_into_lines(
+            "alpha bravo charlie delta echo foxtrot golf hotel india", max_words=4
+        )
         self.assertEqual(len(lines[-1].split()), 2)
+
+    def test_two_line_sentence_splits_near_equal(self):
+        """#505. Eight words at max 5 greedy-fill to 5+3; near-equal is 4+4."""
+        lines = split_script_into_lines("one two three four five six seven eight", max_words=5)
+        self.assertEqual(lines, ["one two three four", "five six seven eight"])
 
     def test_empty(self):
         self.assertEqual(split_script_into_lines(""), [])
@@ -329,3 +337,12 @@ class TestWordTimedOrphan(unittest.TestCase):
 
         words = self._words("a b c d e f")
         self.assertEqual([len(line) for line in group_into_lines(words, 3)], [3, 3])
+
+    def test_two_line_sentence_splits_near_equal(self):
+        from video.caption_timing import group_into_lines
+
+        lines = group_into_lines(self._words("one two three four five six seven eight"), 5)
+        self.assertEqual(
+            [" ".join(w["word"] for w in line) for line in lines],
+            ["one two three four", "five six seven eight"],
+        )

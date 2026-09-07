@@ -20,6 +20,23 @@ from core.logging import get_logger
 
 logger = get_logger("core.ui")
 
+
+def _median(values: list[float]) -> float:
+    ordered = sorted(values)
+    n = len(ordered)
+    mid = n // 2
+    if n % 2:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def fact_display_width() -> int:
+    """#488. Fact preview width follows the terminal, not a hardcoded 90."""
+    from core.ui_theme import terminal_width
+
+    return max(56, terminal_width(maximum=160) - 4)
+
+
 # ---------------------------------------------------------------------------
 # Live spinner for long-running operations
 # ---------------------------------------------------------------------------
@@ -67,19 +84,25 @@ class DiscoverySpinner:
             self._themed_phase = themed_phase
         except Exception:
             self._frames = self._FRAMES
-            self._themed_phase = lambda p: p
+            self._themed_phase = lambda phase: phase
         self._typical = self._load_typical_timings()
 
     @staticmethod
     def _load_typical_timings() -> dict[str, float]:
-        """Phase timings from the most recent run trace ("typ ~Ns" hints). Fail-open."""
+        """Median phase timings from recent traces ("typ ~Ns" hints). Fail-open."""
         try:
             from core.run_trace import list_traces
 
-            for trace in list_traces(limit=3):
+            buckets: dict[str, list[float]] = {}
+            for trace in list_traces(limit=20):
                 timings = trace.get("timings") or {}
-                if timings:
-                    return {k: float(v) for k, v in timings.items() if isinstance(v, int | float)}
+                if not isinstance(timings, dict):
+                    continue
+                for key in ("signals_and_variants", "variant_scoring"):
+                    val = timings.get(key)
+                    if isinstance(val, int | float) and float(val) >= 5:
+                        buckets.setdefault(key, []).append(float(val))
+            return {key: _median(vals) for key, vals in buckets.items() if vals}
         except Exception as exc:
             logger.debug("list_traces skipped: %s", exc)
         return {}
@@ -716,7 +739,7 @@ def display_fact_preview(
     # Show verified facts first (what the LLM actually used as source-of-truth)
     if verified_lines:
         for line in verified_lines[:8]:
-            short = line[:100] + ("…" if len(line) > 100 else "")
+            short = _elide(line, fact_display_width())
             print_fn(f"  {short}")
     else:
         print_fn("  (no verified game/news data — script based on topic angle only)")
@@ -732,7 +755,7 @@ def display_fact_preview(
         if ev:
             print_fn("  Brief evidence:")
             for e in ev:
-                print_fn(f"    · {_elide(e, 100)}")
+                print_fn(f"    · {_elide(e, fact_display_width())}")
 
     return is_thin
 
@@ -934,7 +957,7 @@ def prompt_key_facts_result(
             extracted = extract_facts_from_url(fact)
             if extracted:
                 for ex in extracted:
-                    print_fn(f"    + {_elide(ex, 90)}")
+                    print_fn(f"    + {_elide(ex, fact_display_width())}")
                 report = link_extract_report()
                 found = int(report.get("found") or 0)
                 kept = int(report.get("kept") or 0)
@@ -1314,7 +1337,7 @@ def display_grounding_report(
         if sent:
             print_fn(f"  Operator key facts sent to LLM ({len(sent)}):")
             for i, fact in enumerate(sent, 1):
-                print_fn(f"    {i}. {_elide(fact, 90)}")
+                print_fn(f"    {i}. {_elide(fact, fact_display_width())}")
         return False
 
     print_fn(
@@ -1333,8 +1356,7 @@ def display_grounding_report(
     if sent:
         print_fn(f"  Key facts that reached the LLM ({len(sent)}):")
         for i, fact in enumerate(sent, 1):
-            short = fact[:90] + ("…" if len(fact) > 90 else "")
-            print_fn(f"    {i}. {short}")
+            print_fn(f"    {i}. {_elide(fact, fact_display_width())}")
     return True
 
 

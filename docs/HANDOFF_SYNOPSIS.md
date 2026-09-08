@@ -1,8 +1,28 @@
-# Handoff synopsis — 2026-09-07: Stage 0 + leftover craft
+# Handoff synopsis — 2026-09-07: Stage 1 run window
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — Stage 0 plus leftover craft (2026-09-07)
+## Last implementation wave — Stage 1 run window (2026-09-07)
+
+Cursor wave. HEAD before this wave: `3a338e8` (Stage 0). `GRADE_VERSION` stayed
+**v3**. PySide6 is the `[app]` extra; CI does not install it.
+
+- **Bridge:** `core/ask_bridge.py`. Five gates classify as confirm. Facts paste
+  answers the fact loop then `""`. `cancel()` → `KeyboardInterrupt`.
+- **Window:** `desktop/window.py` `RunWindow`. Worker:
+  `main._run_new_video_flow`. Output from `emit()` + stdout tee. Angle mode
+  from `core.angle_intent`. Gates: Override/Stop. Proceed: Approve / + / Reject.
+- **Launch:** `py -m desktop` · `py main.py --gui` · `ops run-window`. Missing
+  extra: honest refuse, exit 2, no WARNING.
+- **Proof:** fail-first `ModuleNotFoundError: core.ask_bridge`. Suite
+  **2,673 -> 2,685**. Widget test offscreen when PySide6 is present.
+  mypy **144** held. Backlog **424** open / **483** done, highest **#671**.
+- Filed **#670** (no CI Qt) and **#671** (1-5 line, not a visual variant list).
+
+**Still parked:** Stage 2 look; #296 (blocked on #295); #333/#416; Phase M;
+Ollama FAIL. Next five: Stage 2 · #295 · #625 · #333 · #602.
+
+## Previous wave — Stage 0 plus leftover craft (2026-09-07)
 
 Cursor wave on HEAD `f6869ea`. Stage 0 seams (`ask` / `emit` / tokens **#170**)
 plus leftover craft. `GRADE_VERSION` stayed **v3**. No PySide6, no Stage 1

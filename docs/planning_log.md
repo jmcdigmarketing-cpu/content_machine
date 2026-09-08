@@ -11,6 +11,54 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-07 (Cursor) — Stage 1 run window
+
+**Prompt:** complete Stage 1 (the Qt run window from [desktop_app.md](desktop_app.md)).
+
+**Fail-then-fix:** `tests/test_stage1_run_window.py` on unmodified HEAD `3a338e8`
+raised `ModuleNotFoundError: core.ask_bridge`. Widget test later failed with
+`_set_ask_enabled() got an unexpected keyword argument` until the kwargs-only
+signature matched the call.
+
+**Shipped:**
+- `core/ask_bridge.py` — queue + `classify_prompt` for the five live gate
+  strings, Proceed, fact loop, Choose 1-5 / Select 1-4. Paste box drains
+  fact lines then auto-returns `""` so PowerShell one-line intake is skipped.
+  `cancel()` raises `KeyboardInterrupt`.
+- `desktop/` — `RunWindow` (channel combo from shipped `list_channel_ids`,
+  topic, facts box min height 160, output pane, gate buttons). Worker runs
+  `main._run_new_video_flow`. Stdout tee so `print(script)` still shows.
+- Launch: `py -m desktop` · `py main.py --gui` · `ops run-window`. Missing
+  PySide6 prints `run-window requires PySide6 - pip install -e ".[app]"` and
+  exits 2 — zero WARNING.
+- Extra `[app]` is optional. CI still installs `.[shell]` only (#670).
+  `GRADE_VERSION` stayed **v3**. CLI without `--gui` is unchanged.
+
+**Found on the way:** an emdash in the refuse line garbled in conhost (ASCII
+hyphen now). Duplicate `AskBridge` methods from a bad merge (rewrote the
+file). Accidental delete of `ops intro-waveform` register (restored).
+
+**Filed:** #670 no CI Qt; #671 angle variants are still a 1-5 line, not a
+visual list.
+
+**Not done:** Stage 2 QSS; #295/#296; #333; #416. A live topic-to-mp4 still
+needs keys/network — not a CI proof.
+
+**Proof:** widget test offscreen (PySide6 6.11.2 present locally). Bridge
+round-trip: worker `ask_confirm(AUTH_PROMPT)` blocks until `submit("y")`.
+Fact feeder: two lines then `""`. Run 73 topic `"GTA 6 looks amazing!!!"` is
+reaction.
+
+**Audit:** ruff + format clean; suite **2,673 -> 2,685** (CI skips the widget
+test without `[app]`); mypy **144** held (`BridgeBackend` subclasses `Backend`;
+`main.py` stdout `reconfigure` via getattr so following `import main` does not
+add an error); `git status --short data/` empty. Backlog **424** open /
+**483** done (`roadmap-index`), highest open **#671**.
+
+**The new five** (`roadmap.md`): Stage 2 look · **#295** contact sheet ·
+**#625** test-double signatures · **#333** negative-fact store · **#602**
+end-screen vs caption safe area.
+
 ## 2026-08-28 (Piper mix / secrets) — 1/8 Piper, drop Brave/BFL, ElevenLabs + Ollama
 
 **Prompt:** how to add parked ElevenLabs voices; rotate Piper in ~1/8 of the time;

@@ -8,7 +8,7 @@ session.
 |---|---|
 | **roadmap.md** (this) | the current stage, the next five, track counts |
 | [desktop_app.md](desktop_app.md) | the Windows application programme — stages 0–7 |
-| [backlog.md](backlog.md) | every open item, numbered 21–669 plus unnumbered |
+| [backlog.md](backlog.md) | every open item, numbered 21–670 plus unnumbered |
 | [roadmap_archive.md](roadmap_archive.md) | completed waves and historical phases |
 
 Direction: [vision.md](vision.md) · pace and cost: [operating_plan.md](operating_plan.md)
@@ -24,16 +24,14 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — 2026-09-07 Stage 0 + leftover craft: `ask()`/`emit()`/`#170` tokens,
-pinned status **#481**, motion **#184**, MoneyWise/AI burn-ins **#190/#191**, quote
-gate **#338**, title/body fonts **#183**, end-card/waveform **#187/#188**, wordmark
-and WT **#243/#244**, print CSS **#239**, booth chrome **#303/#304/#486**.
-`GRADE_VERSION` stayed **v3**.
+**Just landed** — 2026-09-07 Stage 1 run window: `py -m desktop` / `py main.py --gui`
+/ `ops run-window`. Worker thread + `AskBridge`; facts paste feeds the fact loop;
+gates are buttons. `GRADE_VERSION` stayed **v3**. CLI without `--gui` is unchanged.
 
-**Next: Stage 1 — The run window.** The seams exist; this is the first window.
+**Next: Stage 2 — Look.** QSS from Stage 0 tokens, per-channel chrome, dark mode.
 Detail: [desktop_app.md](desktop_app.md).
 
-**Then, in order:** Stage 2 look → Stage 3 panels → Stage 4 studio → Stage 5 packaging
+**Then, in order:** Stage 3 panels → Stage 4 studio → Stage 5 packaging
 → Stage 6 portfolio → Stage 7 efficiency.
 
 ### The Craft wave — leftover after Stage 0
@@ -67,24 +65,24 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-**The 2026-09-07 wave shipped the previous recommended five** (Stage 0 · #481 ·
-#184 · #190 · #338) **plus the leftover craft around them.** Why, and what each
-one measured: [planning_log.md](planning_log.md) 2026-09-07 (Stage 0).
+**Stage 1 shipped 2026-09-07** (the previous pick 1). Remaining craft and honesty
+items, plus Stage 2 in the app programme. Detail:
+[planning_log.md](planning_log.md) 2026-09-07 (Stage 1).
 
-1. **Stage 1 run window** `[L]` — Stage 0 seams exist; this is the first Qt
-   window. Detail: [desktop_app.md](desktop_app.md).
+1. **Stage 2 look** `[L]` — QSS from #170 tokens; TapIn vs MoneyWise chrome;
+   dark/reduced-chroma already has a CSS class. Detail: [desktop_app.md](desktop_app.md).
 2. **#295 2x2 contact sheet PNG** `[S]` — Pillow collage of last thumbs; unblocks
-   **#296** print CSS (held this wave because there is no sheet).
-3. **#607 defer `elevenlabs.client`** `[S]` — 0.51s of a measured 1.89s CLI start,
-   paid even when no audio is made.
-4. **#625 audit every test double against its target's real signature** `[M]` —
-   three drifted in one week, each passing while the real path was broken.
+   **#296**.
+3. **#625 audit every test double against its target's real signature** `[M]` —
+   CI-green features that do nothing.
+4. **#333 negative-fact store** `[M]` — a later run cannot re-assert a walked-back
+   leak.
 5. **#602 end-screen placement that avoids the caption safe area** `[M]` —
-   leftover video craft that survives the app.
+   leftover video craft.
 
-**Dropped from this list** (stay open): **#296** (blocked on #295) · **#333** ·
-**#416** (still no clip index) · **#512/#527** (need a Qt app or #247 preview) ·
-Phase M · Ollama.
+**Dropped from this list** (stay open): **#607** (CLI import tax; the window now
+avoids cold-start for the daily path) · **#296** (blocked on #295) · **#416** ·
+**#512/#527** (Stage 2) · Phase M · Ollama.
 
 ---
 

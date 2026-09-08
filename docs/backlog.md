@@ -1034,3 +1034,9 @@ Stage 0 + leftover craft (2026-09-07) — filed on the way
 - [ ] 668. **The Windows Terminal profile snippet is not installed** — `config/windows-terminal/profiles.json` is checked in; nothing merges it into the operator's WT `settings.json` `[S]`
 - [ ] 669. **`ops intro-waveform` offset is the TapIn constant, not a probe** — duration comes from the wav; offset is always `DEFAULT_INTRO_DURATION` (2.15s). Closing this would mean reading a per-channel intro offset from config `[S]`
 
+Stage 1 run window (2026-09-07)
+
+- [ ] 670. **Stage 1 has no CI Qt** — `pip install -e ".[app]"` is optional; CI does not install PySide6. Bridge tests always run. The offscreen widget test skips without the extra. A live topic-to-mp4 in the window is still an operator smoke `[S]`
+- [ ] 671. **Angle variants are not a visual list** — `display_variants` still prints into the output pane; the ask widget is 1-5 in a line edit. Closing this would mean the window reading `DiscoveryResult.evaluated` `[S]`
+
+

@@ -1,7 +1,7 @@
 """Stage 0 ask() seam: pluggable text / choice / confirm backends.
 
 TerminalBackend is input(). ScriptedBackend replays queued answers for tests.
-The Qt backend is Stage 1 — not this wave.
+Stage 1 installs BridgeBackend (core.ask_bridge) so the worker blocks on a queue.
 """
 
 from __future__ import annotations

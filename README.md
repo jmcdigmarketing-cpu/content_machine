@@ -22,6 +22,7 @@ copy .env.example .env
 
 py -m scripts.ops all-setup --channel tapin
 py main.py
+# Stage 1 window (optional extra): pip install -e ".[app]" then py -m desktop
 ```
 
 **Windows command cheat sheet:** [docs/startup-powershell.md](docs/startup-powershell.md) — or run `.\scripts\startup.ps1` to print the list.

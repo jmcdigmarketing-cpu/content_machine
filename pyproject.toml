@@ -68,6 +68,11 @@ shell = [
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
 ]
+# Stage 1 run window. Terminal stays the headless path.
+#   pip install -e ".[app]"
+app = [
+    "PySide6>=6.7.0",
+]
 
 # Pillar 6 video-creation provider backends (heavy / GPU). Install on demand:
 #   pip install -e ".[providers]"
@@ -102,6 +107,7 @@ packages = [
     "apis",
     "config",
     "core",
+    "desktop",
     "jobs",
     "publishing",
     "sports",
@@ -165,7 +171,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = [
-    "analytics", "apis", "config", "core", "jobs",
+    "analytics", "apis", "config", "core", "desktop", "jobs",
     "publishing", "sports", "storage", "video", "youtube",
 ]
 

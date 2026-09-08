@@ -123,6 +123,14 @@ class DiscoverySpinner:
             self._done = done
             self._total = total
             self._detail = detail
+        try:
+            from core.ask_bridge import current_bridge
+
+            bridge = current_bridge()
+            if bridge is not None:
+                bridge.set_progress(phase, done, total, detail)
+        except Exception as exc:
+            logger.debug("gui progress skipped: %s", exc)
 
     def _typical_hint(self, phase: str) -> str:
         for prefix, key in self._PHASE_TIMING_KEYS.items():

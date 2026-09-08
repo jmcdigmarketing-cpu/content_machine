@@ -8,9 +8,12 @@ import sys
 
 def _configure_stdout_utf8() -> None:
     """Braille mascot art needs UTF-8 on Windows consoles (Python 3.7+)."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is None:
+        return
     try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except (AttributeError, OSError, ValueError):
+        reconfigure(encoding="utf-8")
+    except (OSError, ValueError):
         pass
 
 
@@ -19,6 +22,13 @@ _configure_stdout_utf8()
 if "--art" in sys.argv:
     os.environ["CONTENT_UI_ART"] = "1"
     sys.argv = [a for a in sys.argv if a != "--art"]
+
+if "--gui" in sys.argv:
+    sys.argv = [a for a in sys.argv if a != "--gui"]
+    import config.settings
+    from desktop.launch import launch
+
+    raise SystemExit(launch())
 
 # Must be first non-stdlib import — loads .env before any signal module reads os.getenv at module level
 import config.settings  # noqa: F401

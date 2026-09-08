@@ -90,19 +90,24 @@ fill both read. Shipped tapin `#FFFFFF` / moneywise `#F7E7A9`.
 **Exit (met):** terminal default backends still call `input()`/`print`; `ask()`
 has a scripted test backend; tokens drive ANSI plus the caption overlay.
 
-## Stage 1 — The run window · 2 waves
+## Stage 1 — The run window · shipped 2026-09-07
 
 The daily driver: one window that makes a video without PowerShell.
 
 - Channel picker, topic box, **large facts paste area** — run 73's actual injury,
   where an article got pasted into PowerShell because there was nowhere else
-- Worker thread runs `run_pipeline`; `ask()` round-trips to the window
-- Output pane from `emit()`; discovery and render progress
-- Angle picker showing reaction/standard mode from `core/angle_intent.py`
-- The five safety gates as buttons, each showing why it tripped
-- Report card, cost line, Approve / Reject / Regenerate
+- Worker thread runs `main._run_new_video_flow`; `ask()` round-trips on
+  `AskBridge` (no `input()`)
+- Output pane from `emit()` plus a stdout tee so `print(script)` still shows
+- Discovery progress via `DiscoverySpinner.report` -> the bridge
+- Angle mode from `core.angle_intent` on the topic box
+- The five safety gates as Override / Stop; Proceed as Approve / Regenerate / Reject
 
-**Exit:** a complete video, topic to upload, without a terminal.
+**Exit:** `py -m desktop` after `pip install -e ".[app]"`. Without PySide6 the
+command refuses honestly. CI does not install the extra; the bridge tests do
+not need a display. The CLI is unchanged (`py main.py` without `--gui`).
+
+Launch: `py -m desktop` · `py main.py --gui` · `py -m scripts.ops run-window`.
 
 ## Stage 2 — Look · 2 waves · closes #150, #172, #173
 

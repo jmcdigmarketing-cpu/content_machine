@@ -80,19 +80,22 @@ plus two review fixes, committed immediately after this slot.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-07 · **HEAD at write:** `f6869ea` · **Tree:** this 15-item
-wave, committing right after the post-slot suite.
+**Written:** 2026-09-07 · **HEAD at write:** `3a338e8` · **Tree:** Stage 1
+run window, committing right after the post-slot suite.
 
-- **Defect first:** #667 pin CSI is string-tested only (no real WT in CI).
-  #668 WT `profiles.json` is not merged into settings. #669 waveform offset is
-  `DEFAULT_INTRO_DURATION`, not a probe. #296 still blocked on #295.
-- **Shipped:** Stage 0 `ask()`/`emit()`/`#170`; #481 #184 #190 #338 #191 #183
-  #187 #188 #243 #244 #239 #303 #304 #486. `GRADE_VERSION` stayed **v3**.
-  Fifth gate is metrics (`main.py:346`), not cadence.
-- **Not done:** Stage 1 window, #333, #416, PySide6. Do not add
-  `cached-strolling-popcorn.md`.
-- Next five: Stage 1 · #295 · #607 · #625 · #602.
-  Suite **2,639 -> 2,673**; mypy **145 -> 144**; `data/` empty.
+- **Defect first:** #670 CI does not install `[app]`; the widget test skips
+  there. #671 angle variants are still a 1-5 line, not a visual list. #296
+  still blocked on #295. A live topic-to-mp4 is operator smoke, not CI.
+- **Shipped:** Stage 1 `AskBridge` + `desktop.RunWindow`. Worker runs
+  `main._run_new_video_flow`. Facts paste feeds the fact loop. Five gates as
+  Override/Stop; Proceed as Approve / + / Reject. Launch: `py -m desktop` /
+  `py main.py --gui` / `ops run-window`. Missing PySide6: refuse, exit 2, no
+  WARNING. `GRADE_VERSION` stayed **v3**. CLI without `--gui` unchanged.
+- **Not done:** Stage 2 QSS; #333; #416; #295/#296.
+- Next five: Stage 2 · #295 · #625 · #333 · #602.
+  Fail-first: `ModuleNotFoundError: core.ask_bridge`. Suite **2,673 -> 2,685**;
+  mypy **144** held; `data/` empty.
+
 
 
 

@@ -42,6 +42,17 @@ cd C:\Users\jonma\OneDrive\Desktop\content_machine
 py main.py
 ```
 
+**Stage 1 run window** (no PowerShell prompts; paste facts in the box):
+
+```powershell
+pip install -e ".[app]"
+py -m desktop
+# or: py main.py --gui
+# or: py -m scripts.ops run-window
+```
+
+Missing PySide6 prints `run-window requires PySide6 - pip install -e ".[app]"` and exits 2. The CLI is still the headless path.
+
 In the CLI: channel **TapIn (2)** → **Create new video (1)** → topic → variants → length → **y** to render → queue upload when prompted.
 
 **Paste vs prompt (live-run 74):** paste an article straight at the **Fact N** prompt — blank lines are paragraph breaks while the paste is still arriving, and anything left buffered is offered back as facts. At **Proceed?** only `n` / `N` / `no` / Enter stop; any other stray token re-prompts, and buffered input is drained before the gate is asked. What still cannot be undone: text pasted at `PS C:\dev\content_machine>` after the CLI exits is run as shell commands. See [debugging.md — Live-run 74](debugging.md#live-run-74-2026-08-29--one-buffered-word-discarded-the-run).

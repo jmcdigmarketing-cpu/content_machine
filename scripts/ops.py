@@ -1064,6 +1064,13 @@ def cmd_end_card_preview(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("run-window", 'Stage 1 Qt run window (requires pip install -e ".[app]")')
+def cmd_run_window(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch()
+
+
 @_register(
     "intro-waveform",
     "Draw a waveform of the intro sting and print duration vs the 2.15s offset (--path audio)",

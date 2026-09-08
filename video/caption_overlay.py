@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 from core.caption_contrast import parse_hex
 from video.subtitles import split_script_into_lines
@@ -38,12 +38,9 @@ def overlay_captions_on_still(
     draw = ImageDraw.Draw(image)
     width, height = image.size
     font_size = max(18, height // 22)
-    try:
-        font: ImageFont.FreeTypeFont | ImageFont.ImageFont = ImageFont.truetype(
-            "arial.ttf", font_size
-        )
-    except OSError:
-        font = ImageFont.load_default()
+    from core.font_cache import load_font
+
+    font = load_font("arial.ttf", font_size)
     fill = _fill_rgb(channel_id)
     try:
         from core.design_tokens import caption_outline_hex

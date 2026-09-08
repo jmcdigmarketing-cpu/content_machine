@@ -24,15 +24,16 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — 2026-09-07 Stage 1 run window: `py -m desktop` / `py main.py --gui`
-/ `ops run-window`. Worker thread + `AskBridge`; facts paste feeds the fact loop;
-gates are buttons. `GRADE_VERSION` stayed **v3**. CLI without `--gui` is unchanged.
+**Just landed** — 2026-09-07 Stage 2 look on the Stage 1 run window: token QSS,
+TapIn vs MoneyWise chrome, dark/reduced-chroma/high-contrast/reduced-motion.
+Plus 20 numbered craft/honesty items (#295 unblocked #296). `GRADE_VERSION`
+stayed **v3**. CLI without `--gui` is unchanged.
 
-**Next: Stage 2 — Look.** QSS from Stage 0 tokens, per-channel chrome, dark mode.
-Detail: [desktop_app.md](desktop_app.md).
+**Next: Stage 3 — Panels**, starting with the review room. Detail:
+[desktop_app.md](desktop_app.md).
 
-**Then, in order:** Stage 3 panels → Stage 4 studio → Stage 5 packaging
-→ Stage 6 portfolio → Stage 7 efficiency.
+**Then, in order:** Stage 4 studio → Stage 5 packaging → Stage 6 portfolio
+→ Stage 7 efficiency.
 
 ### The Craft wave — leftover after Stage 0
 
@@ -44,8 +45,9 @@ survives the desktop app**:
   on a still · **#513** black/frozen first frame · **#502** draft-only safe-area
   guides. Shipped 2026-09-07: **#184** motion presets · **#183** font pairing ·
   **#187** end-card compositor · **#188** intro-sting waveform · **#190**
-  MoneyWise disclaimer · **#191** AI-disclosure lower-third. Still open:
-  **#295** contact-sheet PNG (blocks **#296**).
+  MoneyWise disclaimer · **#191** AI-disclosure lower-third. Shipped 2026-09-07
+  (Stage 2 wave): **#295** contact-sheet PNG · **#296** print CSS · **#602**
+  end-card vs caption safe area · **#512** grain/vignette ffmpeg.
 - **Terminal is the daily driver for the remaining app waves.** Shipped
   2026-09-06: **#485** discovery persist · **#488** width-aware wrapping ·
   **#490** measured ETA · **#487** `NO_COLOR` · **#482** collapse mascot ·
@@ -57,7 +59,7 @@ survives the desktop app**:
   voices · **#644** coverage ratchet on real `channels.json`.
 - **Booth: only the cheap ones**, since Stage 3 replaces it — **#303** theme
   toggle and **#304** reduced-chroma shipped 2026-09-07; **#239** print CSS
-  shipped. **#296** still waits on **#295**. Everything else booth-shaped stays
+  shipped. **#296** shipped with #295. Everything else booth-shaped stays
   in the backlog and dies there, deliberately.
 
 Alongside the app, roughly one item per wave from the tracks below, so the
@@ -65,24 +67,21 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-**Stage 1 shipped 2026-09-07** (the previous pick 1). Remaining craft and honesty
-items, plus Stage 2 in the app programme. Detail:
-[planning_log.md](planning_log.md) 2026-09-07 (Stage 1).
+**Stage 2 shipped 2026-09-07** (the previous pick 1, plus 20 numbered items).
+Remaining: Stage 3 panels, leftover honesty, and items this wave filed rather
+than closed. Detail: [planning_log.md](planning_log.md) 2026-09-07 (Stage 2).
 
-1. **Stage 2 look** `[L]` — QSS from #170 tokens; TapIn vs MoneyWise chrome;
-   dark/reduced-chroma already has a CSS class. Detail: [desktop_app.md](desktop_app.md).
-2. **#295 2x2 contact sheet PNG** `[S]` — Pillow collage of last thumbs; unblocks
-   **#296**.
-3. **#625 audit every test double against its target's real signature** `[M]` —
-   CI-green features that do nothing.
-4. **#333 negative-fact store** `[M]` — a later run cannot re-assert a walked-back
-   leak.
-5. **#602 end-screen placement that avoids the caption safe area** `[M]` —
-   leftover video craft.
+1. **Stage 3 review room** `[L]` — #168 + #209. Player, Approve, J/K/L. The
+   booth HTML is the design; Qt is the work. Detail: [desktop_app.md](desktop_app.md).
+2. **#671 visual angle list** `[S]` — 1-5 line is still the ask widget.
+3. **#607 defer `elevenlabs.client` past import** `[S]` — 0.51s of CLI start.
+4. **#335 source-diversity floor on dated topics** `[S]` — one outlet is a rumor.
+5. **#416 scene-beat cuts from owned gameplay** `[L]` — still waiting on enough
+   clips; do not pretend it is unblocked.
 
-**Dropped from this list** (stay open): **#607** (CLI import tax; the window now
-avoids cold-start for the daily path) · **#296** (blocked on #295) · **#416** ·
-**#512/#527** (Stage 2) · Phase M · Ollama.
+**Dropped from this list** (stay open): **#670** (no CI Qt) · **#672** live
+encode of grain · **#673** second physical monitor · **#674** traces not
+redacted · Phase M · Ollama.
 
 ---
 

@@ -123,6 +123,24 @@ def _resolve_color_grade(channel_id: str | None) -> dict[str, float] | None:
         return None
 
 
+def look_filter_fragment(channel_id: str | None) -> str:
+    """#512 grain + vignette from #170 tokens. Empty when the channel has none."""
+    if not (channel_id or "").strip():
+        return ""
+    from core.design_tokens import look_grain, look_vignette
+
+    grain = look_grain(channel_id)
+    vig = look_vignette(channel_id)
+    parts: list[str] = []
+    if grain > 0:
+        parts.append(f"noise=alls={grain}:allf=t")
+    if vig > 0:
+        parts.append(f"vignette=PI/4:{vig:.3f}")
+    if not parts:
+        return ""
+    return ",".join(parts) + ","
+
+
 def build_render_ffmpeg_command(
     *,
     background_path: str,
@@ -138,6 +156,7 @@ def build_render_ffmpeg_command(
     policy_overlays_path: str | None = None,
     color_grade: dict[str, float] | None = None,
     hook_motion_filter: str = "",
+    channel_id: str | None = None,
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
@@ -176,6 +195,7 @@ def build_render_ffmpeg_command(
     motion_filter = (
         hook_motion_filter.format(width=width, height=height) + "," if hook_motion_filter else ""
     )
+    look_filter = look_filter_fragment(channel_id)
 
     # Quote these by hand rather than with {...!r}. `_escape_subtitle_path` already puts
     # a backslash before the drive-letter colon, and repr escapes THAT backslash — so
@@ -199,6 +219,7 @@ def build_render_ffmpeg_command(
         f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
         f"crop={width}:{height},"
         f"{grade_filter}"
+        f"{look_filter}"
         f"{motion_filter}"
         f"setpts=PTS-STARTPTS,"
         f"{lower_thirds_filter}"
@@ -476,6 +497,7 @@ def render_vertical_video(
         policy_overlays_path=policy_overlays_path,
         color_grade=color_grade,
         hook_motion_filter=hook_motion_filter,
+        channel_id=channel_id,
     )
     if command_callback is not None:
         try:
@@ -521,6 +543,7 @@ def render_vertical_video(
             policy_overlays_path=policy_overlays_path,
             color_grade=color_grade,
             hook_motion_filter=hook_motion_filter,
+            channel_id=channel_id,
         )
         if command_callback is not None:
             try:
@@ -588,6 +611,7 @@ def render_vertical_video(
             lower_thirds_path=lower_thirds_path,
             color_grade=color_grade,
             hook_motion_filter=hook_motion_filter,
+            channel_id=channel_id,
             policy_overlays_path=policy_overlays_path,
         )
 
@@ -610,6 +634,7 @@ def _render_extra_formats(
     color_grade: dict[str, float] | None = None,
     hook_motion_filter: str = "",
     policy_overlays_path: str | None = None,
+    channel_id: str | None = None,
 ) -> list[str]:
     """Render each non-vertical RENDER_FORMATS profile as a suffixed sibling file.
 
@@ -642,6 +667,7 @@ def _render_extra_formats(
                 lower_thirds_path=lower_thirds_path,
                 color_grade=color_grade,
                 hook_motion_filter=hook_motion_filter,
+                channel_id=channel_id,
                 policy_overlays_path=policy_overlays_path,
             )
             stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")

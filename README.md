@@ -23,6 +23,7 @@ copy .env.example .env
 py -m scripts.ops all-setup --channel tapin
 py main.py
 # Stage 1 window (optional extra): pip install -e ".[app]" then py -m desktop
+# Stage 2 look is on that window (token QSS, per-channel chrome). CLI is unchanged.
 ```
 
 **Windows command cheat sheet:** [docs/startup-powershell.md](docs/startup-powershell.md) — or run `.\scripts\startup.ps1` to print the list.

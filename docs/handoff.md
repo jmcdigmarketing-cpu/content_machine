@@ -80,21 +80,24 @@ plus two review fixes, committed immediately after this slot.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-07 · **HEAD at write:** `3a338e8` · **Tree:** Stage 1
-run window, committing right after the post-slot suite.
+**Written:** 2026-09-07 · **HEAD at write:** `7e4284c` · **Tree:** Stage 2
+look + 20, committing right after the post-slot suite.
 
-- **Defect first:** #670 CI does not install `[app]`; the widget test skips
-  there. #671 angle variants are still a 1-5 line, not a visual list. #296
-  still blocked on #295. A live topic-to-mp4 is operator smoke, not CI.
-- **Shipped:** Stage 1 `AskBridge` + `desktop.RunWindow`. Worker runs
-  `main._run_new_video_flow`. Facts paste feeds the fact loop. Five gates as
-  Override/Stop; Proceed as Approve / + / Reject. Launch: `py -m desktop` /
-  `py main.py --gui` / `ops run-window`. Missing PySide6: refuse, exit 2, no
-  WARNING. `GRADE_VERSION` stayed **v3**. CLI without `--gui` unchanged.
-- **Not done:** Stage 2 QSS; #333; #416; #295/#296.
-- Next five: Stage 2 · #295 · #625 · #333 · #602.
-  Fail-first: `ModuleNotFoundError: core.ask_bridge`. Suite **2,673 -> 2,685**;
-  mypy **144** held; `data/` empty.
+- **Defect first:** #670 still no CI Qt (widget tests skip). #671 still a
+  1-5 line, not a visual list. #672 grain/vignette is argv-only. #673
+  second physical monitor not proven offscreen. #674 traces not redacted.
+  Live topic-to-mp4 in the window is still operator smoke.
+- **Shipped Stage 2:** `core/chrome.py` QSS + HTML CSS from
+  `design_tokens.json` only. TapIn vs MoneyWise chrome (#150/#173). Dark
+  from `end_card_bg`. Empty/error copy. DPR 1.0 without a screen. Missing
+  extra: refuse, exit 2, no WARNING. CLI unchanged. `GRADE_VERSION` **v3**.
+- **Shipped 20:** #295 #296 #625 #333 #602 #527 #258 #525 #523 #515 #247
+  #541 #550 #635 #612 #540 #542 #318 #512 #455.
+- **Not done:** Stage 3 panels; #416; Phase M; Ollama.
+- Next five: Stage 3 review room · #671 · #607 · #335 · #416.
+  Fail-first: `ModuleNotFoundError: core.chrome`. Suite **2,685 -> 2,718**;
+  mypy **144** held; backlog **404** open / **506** done, highest **#674**.
+  `data/` empty. Look: `pip install -e ".[app]"` then `py -m desktop`.
 
 
 

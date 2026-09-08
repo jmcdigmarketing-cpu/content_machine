@@ -1,8 +1,27 @@
-# Handoff synopsis — 2026-09-07: Stage 1 run window
+# Handoff synopsis — 2026-09-07: Stage 2 look + 20
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — Stage 1 run window (2026-09-07)
+## Last implementation wave — Stage 2 look + 20 (2026-09-07)
+
+Cursor wave. HEAD before this wave: `7e4284c` (Stage 1). `GRADE_VERSION` stayed
+**v3**. PySide6 is still the `[app]` extra; CI does not install it.
+
+- **Look:** `core/chrome.py` QSS + HTML CSS from `config/design_tokens.json`.
+  TapIn vs MoneyWise chrome. Dark from `end_card_bg`. Icon SVG. Empty/error copy.
+  DPR 1.0 offscreen.
+- **Window:** stylesheet, facts meter, drag-drop, per-channel geometry.
+- **20 items:** #295 #296 #625 #333 #602 #527 #258 #525 #523 #515 #247 #541
+  #550 #635 #612 #540 #542 #318 #512 #455.
+- **Launch:** `py -m desktop`. Missing extra: refuse, exit 2, no WARNING.
+- **Proof:** fail-first `ModuleNotFoundError: core.chrome`. Suite
+  **2,685 -> 2,718**. mypy **144** held. Backlog **404** open / **506** done,
+  highest **#674**. Filed #672 #673 #674.
+
+**Still parked:** Stage 3 panels; #416; #670 no CI Qt; #671 visual list;
+Phase M; Ollama FAIL. Next five: Stage 3 review room · #671 · #607 · #335 · #416.
+
+## Previous wave — Stage 1 run window (2026-09-07)
 
 Cursor wave. HEAD before this wave: `3a338e8` (Stage 0). `GRADE_VERSION` stayed
 **v3**. PySide6 is the `[app]` extra; CI does not install it.

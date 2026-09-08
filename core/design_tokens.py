@@ -44,6 +44,29 @@ def header_border_hex(channel_id: str | None) -> str:
     return border or "#c62828"
 
 
+def role_hex(role: str, *, colorblind: bool = False) -> str:
+    tokens = load_tokens()
+    table = tokens.get("colorblind_roles") if colorblind else tokens.get("roles")
+    spec = (table or {}).get(role) or {}
+    if isinstance(spec, dict) and spec.get("hex"):
+        return str(spec["hex"])
+    return "#FFFFFF"
+
+
+def look_grain(channel_id: str | None) -> int:
+    try:
+        return max(0, int(channel_tokens(channel_id).get("grain") or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def look_vignette(channel_id: str | None) -> float:
+    try:
+        return max(0.0, float(channel_tokens(channel_id).get("vignette") or 0.0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def role_ansi_pair(role: str, *, colorblind: bool = False) -> tuple[str, str] | None:
     tokens = load_tokens()
     table = tokens.get("colorblind_roles") if colorblind else tokens.get("roles")

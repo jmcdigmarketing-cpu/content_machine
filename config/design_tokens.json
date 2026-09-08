@@ -29,7 +29,9 @@
       "caption_outline": "#111111",
       "end_card_bg": "#0B0F14",
       "end_card_fg": "#FFFFFF",
-      "header_border": "#E53935"
+      "header_border": "#E53935",
+      "grain": 8,
+      "vignette": 0.28
     },
     "moneywise": {
       "accent": "#F7E7A9",
@@ -37,7 +39,9 @@
       "caption_outline": "#1B2430",
       "end_card_bg": "#1B2430",
       "end_card_fg": "#F7E7A9",
-      "header_border": "#81C995"
+      "header_border": "#81C995",
+      "grain": 4,
+      "vignette": 0.16
     }
   }
 }

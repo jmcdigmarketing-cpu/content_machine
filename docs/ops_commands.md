@@ -27,6 +27,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `command-ref` | Write docs/ops_commands.md from the live ops list |
 | `competitor-health` | Flag dead/unverified competitor YouTube UC ids (RSS probe, no Data API) |
 | `competitor-sync` | Fetch recent videos from competitor channels |
+| `contact-sheet` | 2x2 PNG collage of the last thumbnails (--path dest.png) |
 | `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `demonetization` | estimatedRevenue cliff vs channel baseline (missing is unmeasured) |
@@ -55,6 +56,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `migrate-layout` | Move root runtime files into data/ and config/secrets/ |
 | `migrate-schema` | Apply incremental DDL on existing Postgres |
 | `moat-backup` | Plan pg_dump + vault + traces backup (secrets excluded; dry-run) |
+| `negative-fact` | Record a walked-back claim so a later run cannot re-assert it (--topic franchise) |
 | `next` | One action to take now across gates, quota, and vault decay |
 | `overnight` | Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5) |
 | `paid-signals` | Attribute tiktok_trends / youtube_competitors lift; recommend keep/disable (no catalog write) |
@@ -75,7 +77,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `retention` | Audience-retention curve + drop-off point (pacing intelligence) |
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
 | `roadmap-index` | Counts per roadmap file and by size, read from the docs |
-| `run-window` | Stage 1 Qt run window (requires pip install -e ".[app]") |
+| `run-window` | Stage 2 Qt run window (requires pip install -e ".[app]") |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |
 | `seed` | Seed TapIn performance + publish history |
 | `sendto-facts` | Install Explorer Send-to shortcut targeting facts.txt |

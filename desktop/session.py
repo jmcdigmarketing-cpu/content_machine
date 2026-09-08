@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import os
 import sys
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from pathlib import Path
 from typing import TextIO
 
 from core.angle_intent import angle_intent_note, detect_angle_intent
@@ -22,6 +25,70 @@ def angle_mode_line(topic: str) -> str:
 
 def facts_from_paste(text: str) -> list[str]:
     return parse_pasted_block(text or "")
+
+
+def facts_meter_line(text: str) -> str:
+    from core.operator_facts import operator_key_fact_char_budget
+
+    n = len(text or "")
+    budget = operator_key_fact_char_budget()
+    return f"{n} / {budget} chars"
+
+
+def facts_from_drop(paths: list[str]) -> str:
+    chunks: list[str] = []
+    for raw in paths:
+        item = str(raw or "").strip()
+        if not item:
+            continue
+        if item.lower().startswith(("http://", "https://")):
+            chunks.append(item)
+            continue
+        path = Path(item)
+        if path.suffix.lower() == ".txt" and path.is_file():
+            chunks.append(path.read_text(encoding="utf-8"))
+            continue
+        if path.is_file():
+            chunks.append(path.read_text(encoding="utf-8", errors="replace"))
+    return "\n".join(chunks).strip()
+
+
+def window_state_path() -> Path:
+    override = (os.getenv("CONTENT_WINDOW_STATE") or "").strip()
+    if override:
+        return Path(override)
+    from config.paths import DATA_DIR
+
+    return Path(DATA_DIR) / "window_state.json"
+
+
+def load_window_state(channel_id: str) -> dict[str, object]:
+    path = window_state_path()
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    row = data.get((channel_id or "").strip().lower()) or {}
+    return dict(row) if isinstance(row, dict) else {}
+
+
+def save_window_state(channel_id: str, state: dict[str, object]) -> None:
+    path = window_state_path()
+    data: dict[str, object] = {}
+    if path.is_file():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                data = loaded
+        except (OSError, json.JSONDecodeError):
+            data = {}
+    data[(channel_id or "").strip().lower()] = dict(state)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def _gui_emit(lines: list[str], lock: threading.Lock) -> Callable[..., None]:

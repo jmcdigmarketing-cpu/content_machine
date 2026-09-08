@@ -194,6 +194,23 @@ def themed_page(
         classes.append(f"channel-{escape(cid)}")
     if os.getenv("CONTENT_UI_REDUCED_CHROMA", "").strip().lower() in ("1", "true", "yes", "on"):
         classes.append("reduced-chroma")
+    from core.chrome import look_flags, redact_operator_paths, themed_css
+
+    flags = look_flags()
+    if flags["grain"]:
+        classes.append("grain")
+    if flags["vignette"]:
+        classes.append("vignette")
+    css = themed_css(
+        cid,
+        grain=flags["grain"],
+        vignette=flags["vignette"],
+        colorblind=flags["colorblind"],
+    )
+    body_html = redact_operator_paths(body_html)
+    safe_title = redact_operator_paths(safe_title)
+    sub = redact_operator_paths(sub)
+    extra = redact_operator_paths(extra)
     body_class = f" class='{' '.join(classes)}'" if classes else ""
     body_style = ""
     if cid:
@@ -207,7 +224,7 @@ def themed_page(
         "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
         f"{icon}"
-        f"<title>{escape(safe_title)}</title><style>{_CSS}</style></head>"
+        f"<title>{escape(safe_title)}</title><style>{css}{_CSS}</style></head>"
         f"<body{body_class}{body_style}>"
         f"{skip}<header><h1>{escape(safe_title)}</h1>"
         f"<div class='sub'>{escape(sub)}</div>{mark}{swatch}{extra}</header>"

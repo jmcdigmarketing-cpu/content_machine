@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 from core.caption_contrast import parse_hex
-from video.channel_outro import TARGET_H, TARGET_W, resolve_end_card
+from core.font_cache import load_font
+from video.channel_outro import TARGET_H, TARGET_W, end_card_text_y, resolve_end_card
+
+
+def preview_text_xy(text_w: int, text_h: int, bbox: tuple[int, int, int, int]) -> tuple[int, int]:
+    x = (TARGET_W - text_w) // 2 - bbox[0]
+    y = end_card_text_y(text_h) - bbox[1]
+    return x, y
 
 
 @dataclass(frozen=True)
@@ -19,18 +25,7 @@ class EndCardPreview:
 
 
 def _card_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    candidates = [
-        os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", "arialbd.ttf"),
-        os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", "arial.ttf"),
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    ]
-    for path in candidates:
-        if os.path.isfile(path):
-            try:
-                return ImageFont.truetype(path, 64)
-            except OSError:
-                continue
-    return ImageFont.load_default()
+    return load_font("arialbd.ttf", 64)
 
 
 def render_end_card_preview(dest_path: str, *, channel_id: str | None = None) -> EndCardPreview:
@@ -44,10 +39,13 @@ def render_end_card_preview(dest_path: str, *, channel_id: str | None = None) ->
     draw = ImageDraw.Draw(image)
     font = _card_font()
     bbox = draw.textbbox((0, 0), text, font=font)
-    text_w = bbox[2] - bbox[0]
-    text_h = bbox[3] - bbox[1]
-    x = (TARGET_W - text_w) // 2 - bbox[0]
-    y = (TARGET_H - text_h) // 2 - bbox[1]
+    text_w = int(bbox[2] - bbox[0])
+    text_h = int(bbox[3] - bbox[1])
+    x, y = preview_text_xy(
+        text_w,
+        text_h,
+        (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])),
+    )
     draw.text((x, y), text, font=font, fill=fg)
     dest = Path(dest_path)
     dest.parent.mkdir(parents=True, exist_ok=True)

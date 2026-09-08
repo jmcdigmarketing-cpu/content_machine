@@ -109,14 +109,20 @@ not need a display. The CLI is unchanged (`py main.py` without `--gui`).
 
 Launch: `py -m desktop` · `py main.py --gui` · `py -m scripts.ops run-window`.
 
-## Stage 2 — Look · 2 waves · closes #150, #172, #173
+## Stage 2 — Look · shipped 2026-09-07 · closes #150, #172, #173
 
-The stage that decides whether this feels like software. QSS generated from Stage 0
-tokens; type scale and spacing; dark mode (#304 — reviewing happens at night);
-per-channel chrome so TapIn and MoneyWise are visually distinct (#150, #173); an
-icon set; designed empty and error states; DPI verified on the real monitor.
+QSS generated from Stage 0 tokens (`core.chrome.build_qss`); type scale and spacing;
+dark chrome from each channel's `end_card_bg`/`end_card_fg` (#304 — reviewing happens
+at night); per-channel chrome so TapIn and MoneyWise disagree on header, type, and
+accent (#150, #173); SVG icon from those tokens; designed empty and error copy; DPI
+is 1.0 without a screen and uses `QScreen.devicePixelRatio` when one exists.
+HTML dumps share the same generated CSS (#172). High-contrast / reduced-motion /
+reduced-chroma are token flags (#527). CLI is unchanged.
 
-**Exit:** nobody would guess the toolkit from a screenshot.
+**Exit (met):** widget stylesheet is non-empty token QSS, not default Qt; missing
+PySide6 still refuses with exit 2 and no WARNING.
+
+Launch: `py -m desktop` · `py main.py --gui` · `py -m scripts.ops run-window`.
 
 ## Stage 3 — Panels · 5–6 waves · closes 13 items
 

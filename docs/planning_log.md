@@ -11,6 +11,63 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-07 (Cursor) — Stage 2 look + 20
+
+**Prompt:** complete Stage 2 of the desktop programme AND the next 20
+backlog/roadmap tasks, then update docs and the mailbox, then commit.
+
+**Fail-then-fix:** unmodified HEAD `7e4284c` raised `ModuleNotFoundError:
+core.chrome` / `core.contact_sheet` / `core.negative_facts` / `core.script_craft`
+/ `core.font_cache` / `tests.isolation` / `tests.signature_audit`. Widget test
+failed `assertTrue(qss.strip())` (empty stylesheet). Persona lint returned `''`
+for "delve". 32 errors + 2 fails observed before the fix.
+
+**Shipped — Stage 2 (#150 #172 #173):**
+- `core/chrome.py` — `build_qss` / `themed_css` from shipped `design_tokens.json`
+  only. TapIn `#E53935` vs MoneyWise `#81C995`. Type body 16px, spacing page 20px.
+  Dark from `end_card_bg`. Empty/error copy. DPR 1.0 without a screen.
+- `desktop/window.py` applies QSS, SVG icon, facts meter, drag-drop, geometry.
+- Missing PySide6: refuse, exit 2, no WARNING. CLI without `--gui` unchanged.
+  `GRADE_VERSION` stayed **v3**.
+
+**Shipped — 20 additional:**
+1. **#295** `ops contact-sheet --path` — live: 4 thumbs; empty: "no thumbnail files"
+2. **#296** print CSS on the contact-sheet HTML
+3. **#625** `audit_known_doubles()`; dated two undated `tags: [facts]` notes
+4. **#333** negative-fact store + `ops negative-fact`
+5. **#602** end-card Y in `[0.12h, 0.80h]`, not `y=(h-text_h)/2`
+6. **#527** high-contrast / reduced-motion QSS flags
+7. **#258** facts meter vs live `operator_key_fact_char_budget()`
+8. **#525** `facts_from_drop` txt + URL
+9. **#523** per-channel window state JSON
+10. **#515** ScriptedBackend and AskBridge agree on `y`/`3`
+11. **#247** CSS grain/vignette preview (env, default off)
+12. **#541** delve / in today's video via `llm_tells.json`
+13. **#550** `first ever` ungrounded; `not only` skipped
+14. **#635** HTML redacts vault path and username
+15. **#612** `load_font` identity cache
+16. **#540** uniform sentence length flag
+17. **#542** strip pre-CTA recap; both paragraph counts persisted
+18. **#318** persist `screen` name (physical second monitor = #673)
+19. **#512** `noise=` / `vignette=` from tokens when `channel_id` set
+20. **#455** `IsolatedQuotaStore`; GovernorCase uses it
+
+**Proof:** `ops contact-sheet` without `--path` -> `contact-sheet requires --path <dest.png>`.
+With path: 4 thumbs. `ops negative-fact` without claim -> require line.
+`ops command-ref` regenerated `docs/ops_commands.md`.
+
+**Filed:** #672 grain argv-only · #673 second physical monitor · #674 traces not
+redacted. Held: #670 no CI Qt · #671 1-5 line · #416.
+
+**Not done:** Stage 3 panels. No `cached-strolling-popcorn.md`.
+
+**Audit:** ruff + format clean; suite **2,685 -> 2,718**; mypy **144** held;
+`git status --short data/` empty. `ops roadmap-index`: **404** open / **506**
+done, highest **#674**.
+
+**The new five** (`roadmap.md`): Stage 3 review room · **#671** · **#607** ·
+**#335** · **#416** (still blocked).
+
 ## 2026-09-07 (Cursor) — Stage 1 run window
 
 **Prompt:** complete Stage 1 (the Qt run window from [desktop_app.md](desktop_app.md)).

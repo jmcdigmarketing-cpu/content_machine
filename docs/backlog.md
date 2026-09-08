@@ -385,7 +385,7 @@ Larger — multi-week systems
 - [x] 147. **Localhost FastAPI operator shell** *(2026-08-28)* — `core/operator_shell.py` + `ops shell`, bound to `127.0.0.1` and default off. GET-only over the gatherers that already exist (`/booth`, `/reliability`, `/doctor`, `/next`, `/status`) — no second cache, no spend, and `POST /` returns 405. Driven for real through `TestClient`; the `shell` extra is also in `[dev]` so CI can import it. Thin slice: not #141 Desktop, not a tray daemon, and the stdlib `ops booth --serve` still exists `[L]`
 - [ ] 148. **Job-queue visualizer** with drag-reorder (render vs upload vs quota-defer) `[L]` — *UI.* Worker stalls are invisible; 1,600-unit ceiling needs a picture.
 - [ ] 149. **Analytics Studio** (retention / CTR / RPM local web) `[L]` — *viability.* Weekly-report ASCII cannot show curves; still honest that n≈10 is thin.
-- [ ] 150. **TapIn vs MoneyWise visual language packs** (GUI + video chrome) `[L]` — *aesthetics.* `ui_theme` is ANSI; the two channels still share one ungraded look.
+- [x] 150. **TapIn vs MoneyWise visual language packs** *(2026-09-07)* — Stage 2 QSS from #170 tokens. TapIn header `#E53935` vs MoneyWise `#81C995`; serif on MoneyWise. Fail-first: empty `styleSheet()` `[L]`
 - [ ] 151. **Brand-kit compiler** (fonts/palette/sting/handle/banner → render + GUI) `[L]` — *aesthetics.* `channel-go-live` checks files exist; it does not apply a kit.
 - [ ] 152. **Thumbnail composition canvas** (operator drag layers) `[L]` — *aesthetics / UI.* Distinct from #22 PIL safe-area *checker*: this is an editor.
 - [ ] 153. **Caption choreography timeline** (karaoke beats vs SRT) `[L]` — *aesthetics.* Distinct from #21 JSON font skin: timing and placement, not fill color.
@@ -410,8 +410,8 @@ Larger — multi-week systems
 Moderate — days
 
 - [x] 171. **Last-run review booth** *(2026-08-21)* — `ops booth` (play / grade / authenticity / Approve; stdlib HTML, not FastAPI) `[M]` — *UI / new-app.* **Brainstorm next-5.** Last render only; not #168.
-- [ ] 172. Operator **HTML design system** (type, density, buttons) `[M]` — *aesthetics / UI.* Shared chrome for every `--html` dump so they do not look like five blogs.
-- [ ] 173. Per-channel **GUI chrome** (TapIn neon vs MoneyWise editorial) `[M]` — *aesthetics.* Smaller than language packs #150; header/type/accent only.
+- [x] 172. Operator **HTML design system** *(2026-09-07)* — `themed_css()` generated from `design_tokens.json` (comment stamped in the page). Booth widget CSS stays as layout, not a second palette `[M]`
+- [x] 173. Per-channel **GUI chrome** *(2026-09-07)* — `RunWindow._apply_look` swaps QSS on the shipped channel combo. Token borders disagree `[M]`
 - [ ] 174. Windows **jump list** for last five drafts `[M]` — *new-app.* Taskbar right-click → open mp4 / booth, no console.
 - [ ] 175. **Command palette** over `ops` subcommands `[M]` — *UI.* ~38 commands are unlistable from memory; palette is not a rewrite of `ops.py`.
 - [ ] 176. Dark-mode **dossier HTML viewer** `[M]` — *UI.* Vault `_runs/` in the browser; does not change dossier schema.
@@ -490,7 +490,7 @@ Small — hours / a PR
 - [x] 244. Windows Terminal **profile snippet** *(2026-09-07)* — `config/windows-terminal/profiles.json` schemes “Content OS TapIn” (`#0B0F14`) and “Content OS MoneyWise” (`#1B2430`). Pointer in `docs/startup-powershell.md`. Not auto-imported into WT `[S]`
 - [x] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` *(2026-08-27)* — body stays Segoe UI; `pre` / `textarea.md` use JetBrains Mono
 - [ ] 246. Blurred **9:16 poster** as booth background `[S]` — *aesthetics.* Last frame, CSS blur only — no new ffmpeg.
-- [ ] 247. CSS **grain/vignette preview** toggle `[S]` — *aesthetics.* Preview-only; does not change the render command.
+- [x] 247. CSS **grain/vignette preview** toggle *(2026-09-07)* — `themed_css(grain=True, vignette=True)` emits `body.grain` / `body.vignette`. `CONTENT_UI_GRAIN` / `CONTENT_UI_VIGNETTE`. Default off. Does not change the render command (#512 does) `[S]`
 - [ ] 248. Caption **font specimen strip** (three faces) `[S]` — *aesthetics.* Pick writes a note, not `channels.json` yet (#21).
 - [ ] 249. Title-card mock: **2-line vs 3-line wrap** `[S]` — *aesthetics.* YouTube chrome rehearsal without uploading.
 - [x] **250. ASCII-safe HTML** *(2026-08-21)* — emoji/smart-punct stripped (cp1252) `[S]` — *UI.*
@@ -501,7 +501,7 @@ Small — hours / a PR
 - [x] **255. Open dossier via Obsidian URI** *(2026-08-22)* — `obsidian://open`; fail-open when vault unset `[S]`
 - [x] **256. Reveal trace JSON** *(2026-08-21)* — `ops reveal --kind trace` `[S]` — *UI.*
 - [ ] 257. **Drag-drop facts `.txt`** onto the booth `[S]` — *UI / short-term.* Overnight still cannot take `key_facts=`; this is intake chrome only.
-- [ ] 258. Paste-facts textarea + **4500-char meter** `[S]` — *UI.* Operator fact budget is already a number; show it.
+- [x] 258. Paste-facts textarea + **char meter** *(2026-09-07)* — meter uses live `operator_key_fact_char_budget()` (12000 default, not the retired 4500). `"3 / 12000 chars"` `[S]`
 - [ ] 259. HTML **channel switcher** (tapin / moneywise) `[S]` — *UI.* Same constraint as #211: never an `.env` editor.
 - [ ] 260. Keyboard **`?` cheat-sheet** overlay `[S]` — *UI.* Booth/palette discoverability.
 - [x] **261. Skip-link a11y on the booth** *(2026-08-21)* — skip to `#player`; dumps skip to `#main` `[S]`
@@ -540,8 +540,8 @@ Small — hours / a PR
 - [ ] 293. Prototype **`content-os://open-last`** protocol `[S]` — *new-app.* One verb; hours, not a plugin platform (#155).
 - [x] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight `--facts-file` is now wired, this is the Explorer helper.
   *(2026-08-26: `ops sendto-facts`; tests use a temp SendTo dir)*
-- [ ] 295. **2×2 contact sheet PNG** of last thumbs `[S]` — *aesthetics.* Pillow collage; no image API.
-- [ ] 296. **Print stylesheet** for the contact sheet `[S]` — *aesthetics.*
+- [x] 295. **2×2 contact sheet PNG** of last thumbs *(2026-09-07)* — `ops contact-sheet --path` Pillow collage. Empty folder: `"no thumbnail files"` exit 1, no PNG. Live: 4 thumbs `[S]`
+- [x] 296. **Print stylesheet** for the contact sheet *(2026-09-07)* — `contact_sheet_html` `@media print` hides header; type size from tokens `[S]`
 - [x] 297. Caption fill **contrast ratio number** vs sampled frame *(2026-09-06)* — same helper as #185 returns `ratio` + pass/fail. Not persisted on quality_json (no `QUALITY_VERSION` bump) `[S]`
 - [x] 298. YouTube-title **100-char meter** *(2026-08-25)* — the real booth reads the stored public title and flags overflow `[S]`
 - [x] 299. Description **first-line preview card** *(2026-08-25)* — the real booth reads the stored public description and shows only its first non-empty line `[S]`
@@ -563,7 +563,7 @@ Small — hours / a PR
 - [x] **315. Tray: last grade letter** *(2026-08-21)* — chip line `Grade: B` `[S]`
 - [x] **316. Tray last domain** *(2026-08-22)* — chip line `Domain: UFC`; suite sets `CONTENT_TRAY_DOMAIN=false` `[S]`
 - [x] **317. Tray: Free vs Standard mode** *(2026-08-21)* — chip line `Mode:` `[S]` — *cost / UI.*
-- [ ] 318. Remember **second-monitor bounds** `[S]` — *UI.* Booth on the 9:16 monitor.
+- [x] 318. Remember **second-monitor bounds** *(2026-09-07)* — window state JSON stores `screen` name plus geometry per channel. Offscreen DPR is 1.0. A physical second monitor is not in CI (#673) `[S]`
 - [x] 319. **"What's blocking publish"** *(2026-08-21)* — `ops blocking` one-sentence from existing gates `[S]` — *short-term / UI.*
 - [x] 320. Tray: **local git describe** when `ops` gains commands `[S]` — *UI.* Changelog awareness without opening GitHub.
   *(2026-08-26: `git describe --dirty` timeout, fail-open; tests mock the helper)*
@@ -597,7 +597,7 @@ Grounding & fact quality
 
 - [x] 331. **Per-fact "as of" clock** *(2026-08-27)* — `stamp_as_of` prefixes packed vault notes older than 7 days (`as of last week/month`); `load_facts` and interactive `vault_accepted` both stamp. A 20-day UFC fact is labeled; operator paste without `verified_at` is not. The finished script is not regex-rewritten `[S]`
 - [x] 332. **Disputed-fact surface** *(2026-08-27)* — `features_from_conflicts` stamps `disputed` + losing claims; `display_fact_engine_report` prints **DISPUTED**; pipeline copies into features; `ops grade` note. Operator vs stale source: dropped line gone from the corpus, flag remains `[S]`
-- [ ] 333. **Negative-fact store (what is *not* true)** — persist debunked/retracted claims per franchise so a later run cannot re-assert a leak that was already walked back `[M]`
+- [x] 333. **Negative-fact store (what is *not* true)** *(2026-09-07)* — `record_negative("gta", "GTA 6 leaked for a June 2025 release")` then `matching_negatives` hits that script and misses a UFC champion line. `ops negative-fact`. Store isolated in the suite `[M]`
 - [ ] 334. **Entity disambiguation ledger** — `entity_extractor.py` re-resolves "Jones" / "Rockstar" every run. Resolve once to a canonical id, reuse across runs and channels `[M]`
 - [ ] 335. **Source-diversity floor on dated topics** — refuse to ground a news-shaped claim on a single domain; one outlet is a rumor, not a fact `[S]`
 - [ ] 336. **Wikipedia last-revision recency tripwire** — a cheap "the world moved after my cutoff" signal from a source already called; the June UFC-250 failure had no such guard `[S]`
@@ -744,7 +744,7 @@ Engineering hygiene
 
 - [ ] 453. **Property-based tests for the signal contract** — `make_signal()`'s shape is load-bearing for every signal and is tested by example `[M]`
 - [ ] 454. **Golden-file tests for ffmpeg argv on every path** — #24 and #330 were both argv-arithmetic bugs that a golden file catches instantly `[M]`
-- [ ] 455. **Shared test fixture isolating `data/quota_state.json`** — a test that forgets to isolate it poisons the operator's real breaker state `[S]`
+- [x] 455. **Shared test fixture isolating `data/quota_state.json`** *(2026-09-07)* — `tests.isolation.IsolatedQuotaStore`. `GovernorCase` subclasses it. Writes land in the temp file; path is not repo `data/quota_state.json` `[S]`
 - [ ] 456. **Import-time side-effect audit + import-cost budget** — CLI startup is slow and nobody knows which module does work at import `[S]`
 - [ ] 457. **Lockfile + reproducible install** — #326 was the environment silently disagreeing with `pyproject.toml`; a lockfile makes that class impossible, not just detectable `[M]`
 - [x] 458. **Generate the ops command reference from `ops list`** *(2026-08-28)* — `ops command-ref` writes `docs/ops_commands.md` from the live registry, and a test fails when the doc drifts from `COMMANDS` `[S]`
@@ -823,13 +823,13 @@ Video & render craft — permanent, survives every toolkit change
 - [ ] 509. **Thumbnail A/B on text variants**, not only #27's image variants `[M]`
 - [ ] 510. **Chapter thumbnails** for the 16:9 sibling `[M]`
 - [ ] 511. **Five-second vertical teaser** cut from the finished video, for community posts `[M]`
-- [ ] 512. **Grain and vignette as real ffmpeg filters**, per channel, driven by #170 tokens — #247 is only a CSS preview `[M]`
+- [x] 512. **Grain and vignette as real ffmpeg filters** *(2026-09-07)* — `look_filter_fragment("tapin")` emits `noise=alls=8` + `vignette=` from tokens; moneywise grain 4. Absent `channel_id` keeps the old graph. Not visually graded on a live encode (#672) `[M]`
 - [x] 513. **Reject a black or frozen first frame** *(2026-09-06)* — Pillow luma/frozen check on the finished mp4 after intro offset (output-seek). Pre-upload / pipeline advisory (`ADVISORY` / `not a publish block`); does not skip upload. Synthetic images in tests `[S]`
 - [ ] 514. **Duck the intro sting** where it overlaps the first caption `[S]`
 
 Desktop application — Qt specifics
 
-- [ ] 515. **`ask()` backend contract test** — the same scripted answers must drive terminal and Qt identically `[M]`
+- [x] 515. **`ask()` backend contract test** *(2026-09-07)* — ScriptedBackend `["y","3"]` and AskBridge submit the same pair; both return `[True, "3"]` on the live AUTH_PROMPT + Choose 1-5 strings `[M]`
 - [ ] 516. **Crash-safe run journal** — `input()` held the run in memory by accident; a Qt crash must not lose it `[M]`
 - [ ] 517. **Panel registry** — a panel is one class, discovered rather than wired into the window `[M]`
 - [ ] 518. **One Qt model over the run ledger**, shared by the queue, analytics and review panels `[M]`
@@ -837,11 +837,11 @@ Desktop application — Qt specifics
 - [ ] 520. **Cancel mid-discovery and keep what was already fetched** `[M]`
 - [ ] 521. **Command palette over all 92 `ops` verbs** (#175) as the Qt entry point `[M]`
 - [ ] 522. **Per-panel keyboard maps** with a discoverable `?` sheet `[M]`
-- [ ] 523. **Persist window state per channel** — size, position, monitor, open panel `[S]`
+- [x] 523. **Persist window state per channel** *(2026-09-07)* — `save_window_state` / `load_window_state`. TapIn DISPLAY2 vs MoneyWise DISPLAY1 do not clobber. Suite uses `CONTENT_WINDOW_STATE` `[S]`
 - [ ] 524. **Toast → in-app notification bridge** so #165 is one history rather than two `[M]`
-- [ ] 525. **Drag a `.txt` or a URL onto the window** to become key facts `[S]`
+- [x] 525. **Drag a `.txt` or a URL onto the window** *(2026-09-07)* — `facts_from_drop` reads the txt and keeps `https://example.com/card`. Window accepts drops `[S]`
 - [ ] 526. **"What changed since I last looked"** panel driven by the run ledger `[M]`
-- [ ] 527. **High-contrast and reduced-motion Qt themes** from the same #170 tokens `[M]`
+- [x] 527. **High-contrast and reduced-motion Qt themes** *(2026-09-07)* — `build_qss(..., high_contrast=True)` stamps `/* high-contrast */`; reduced_motion sets `animation-duration: 0ms`. `CONTENT_UI_HIGH_CONTRAST` / `CONTENT_UI_REDUCED_MOTION` `[M]`
 - [ ] 528. **Live log tail with level filtering**, replacing terminal scrollback `[M]`
 - [ ] 529. **Screenshot any panel to the clipboard** for the planning log `[S]`
 - [ ] 530. **Panel-level error boundary** — one broken panel must not take the window down `[M]`
@@ -857,9 +857,9 @@ Content engine & angles
 - [ ] 537. **Per-section regeneration** — rewrite the hook without re-running the body or re-billing it `[M]`
 - [ ] 538. **Generate two hooks in one run** and keep both for the thumbnail experiment `[M]`
 - [ ] 539. **Reading-level target per channel**, measured and enforced `[S]`
-- [ ] 540. **Sentence-length rhythm check** — uniform sentence length is the clearest LLM tell `[S]`
-- [ ] 541. **Per-channel ban-list of LLM tells** — "delve", "in today's video", "let's dive in" `[S]`
-- [ ] 542. **Cut the summary paragraph** models insert before a CTA `[S]`
+- [x] 540. **Sentence-length rhythm check** *(2026-09-07)* — five 3-word sentences flag; a long/short mix does not. Warn-only, features `sentence_rhythm` `[S]`
+- [x] 541. **Per-channel ban-list of LLM tells** *(2026-09-07)* — `lint_persona_script("In today's video we delve...")` hits both phrases. MoneyWise `5-10 years` still clean. `config/llm_tells.json` `[S]`
+- [x] 542. **Cut the summary paragraph** models insert before a CTA *(2026-09-07)* — drops `In summary...` immediately before `Like and subscribe`. Persists `pre_paragraphs` 3 / `post_paragraphs` 2 (§25). A CTA without a recap is untouched `[S]`
 - [ ] 543. **Quote the operator verbatim** when they paste an opinion rather than paraphrasing it `[M]`
 - [ ] 544. **Script memory** — never reuse the same opening construction twice in a week `[M]`
 - [ ] 545. **A "what I got wrong last time" beat** when a correction exists for the franchise `[M]`
@@ -870,7 +870,7 @@ Grounding & truth
 - [ ] 547. **Inline provenance** — which source each script line came from, shown at review `[M]`
 - [ ] 548. **Confidence per fact**, not only per source tier `[M]`
 - [ ] 549. **Script-vs-title contradiction check** — #321 compares the title to the facts, not to the script `[M]`
-- [ ] 550. **Refuse superlatives without a source** — "first ever", "biggest", "only" `[S]`
+- [x] 550. **Refuse superlatives without a source** *(2026-09-07)* — `first ever` flags when facts omit it; passes when facts name it. `not only` does not fire `[S]`
 - [ ] 551. **Date arithmetic check** — "18 months since" must match the actual dates in the facts `[M]`
 - [ ] 552. **Number-unit sanity** — "80 hours" against a source that said minutes `[M]`
 - [ ] 553. **Entity-role check** — developer vs parent company in the sentence that names them; run 71 shipped exactly this error `[L]`
@@ -934,7 +934,7 @@ Publish, policy & channel ops
 - [ ] 599. **Verify the thumbnail actually applied** after upload — it fails silently today `[S]`
 - [ ] 600. **Re-check monetisation status 48h after publish** `[M]`
 - [ ] 601. **Playlist auto-assignment by franchise** (#104) driven from the fact corpus `[M]`
-- [ ] 602. **End-screen placement that avoids the caption safe area** `[M]`
+- [x] 602. **End-screen placement that avoids the caption safe area** *(2026-09-07)* — `end_card_text_y(80)` stays in `[0.12h, 0.80h]`. ffmpeg graph is not `y=(h-text_h)/2`. Preview PNG uses the same helper `[M]`
 - [ ] 603. **Surface a Content-ID claim** from the API rather than finding it in Studio `[M]`
 - [ ] 604. **Localise the description's first line** per audience region `[M]`
 - [ ] 605. **Publish dead-man's switch** — nothing uploads if the operator has not reviewed in N days `[S]`
@@ -947,7 +947,7 @@ Performance & startup
 - [ ] 609. **Startup budget test** that fails CI when import time regresses past a threshold `[S]`
 - [ ] 610. **Lazy-import the 92 `ops` verbs** so running one does not load all of them `[M]`
 - [ ] 611. **Parallelise the render's independent ffmpeg passes** `[M]`
-- [ ] 612. **Cache Pillow font objects** across thumbnail variants `[S]`
+- [x] 612. **Cache Pillow font objects** *(2026-09-07)* — `load_font("arial.ttf", 24) is load_font("arial.ttf", 24)`; size 32 is a different object. End-card preview and caption overlay call it `[S]`
 - [ ] 613. **Profile `core/ui.py`** — 1,783 lines of display code runs around every prompt `[M]`
 - [ ] 614. **Stream the LLM script** so the operator reads while it generates `[M]`
 - [ ] 615. **One HTTP session across signals**, pairing with #391's single client `[M]`
@@ -966,7 +966,7 @@ Data model & storage
 
 Testing & ops hygiene
 
-- [ ] 625. **Audit every test double against its target's real signature** — three drifted this week alone (`_full_one`, the edge-tts fake, an undated vault fixture), each passing while the real path was broken `[M]`
+- [x] 625. **Audit every test double against its target's real signature** *(2026-09-07)* — `audit_known_doubles()` checks `_full_one(url, log)`, edge `Communicate(..., boundary=)`, and dated `tags: [facts]` fixtures. Dated the two undated notes in `test_description_sources.py` `[M]`
 - [ ] 626. **Contract tests generated from each signal's recorded payload** `[M]`
 - [ ] 627. **Mutation testing on the gate modules** — do the tests actually detect a broken gate `[L]`
 - [ ] 628. **Flaky-test detector** across repeated CI runs `[M]`
@@ -979,7 +979,7 @@ Testing & ops hygiene
 
 Security & privacy — local
 
-- [ ] 635. **Redact the vault path and username** from every HTML dump and trace `[S]`
+- [x] 635. **Redact the vault path and username** from every HTML dump *(2026-09-07)* — `redact_operator_paths` replaces vault with `[vault]` and `USERNAME` with `[user]`. `themed_page` runs it. Traces are a leftover (#674) `[S]`
 - [ ] 636. **Prove no secret reaches `data/traces`** — #97 redacts API bodies, not env echoes `[M]`
 - [ ] 637. **Encrypt `config/secrets/` at rest** with a machine-bound key `[M]`
 - [ ] 638. **`SPORTSDATA_API_KEY` and `STEAM_API_KEY` are declared in `.env.example` and read nowhere** — wire them or delete them; an operator can set them and nothing happens `[S]`
@@ -1038,5 +1038,11 @@ Stage 1 run window (2026-09-07)
 
 - [ ] 670. **Stage 1 has no CI Qt** — `pip install -e ".[app]"` is optional; CI does not install PySide6. Bridge tests always run. The offscreen widget test skips without the extra. A live topic-to-mp4 in the window is still an operator smoke `[S]`
 - [ ] 671. **Angle variants are not a visual list** — `display_variants` still prints into the output pane; the ask widget is 1-5 in a line edit. Closing this would mean the window reading `DiscoveryResult.evaluated` `[S]`
+
+Stage 2 look + 20 (2026-09-07) — filed on the way
+
+- [ ] 672. **Grain/vignette ffmpeg is argv-only** — `look_filter_fragment` is in `build_render_ffmpeg_command` when `channel_id` is set. Nothing in CI encodes a frame and measures noise. A still from a real render would close this `[S]`
+- [ ] 673. **Second-monitor restore is untested on a second physical display** — state stores `screen` name; offscreen DPR is 1.0. Same class as #650 / #667 `[S]`
+- [ ] 674. **Trace JSON is not passed through `redact_operator_paths`** — #635 covers HTML dumps. `data/traces/*.json` can still echo a vault path if a run wrote one `[S]`
 
 

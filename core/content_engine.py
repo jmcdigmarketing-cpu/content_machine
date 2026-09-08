@@ -1063,6 +1063,22 @@ def generate_content_package(
     # Post-generation grounding check: flag specifics in the script not backed by
     # the facts the model was given (catches invented heroes/products/patches).
     ungrounded = find_ungrounded_entities(script, grounding_text)
+    try:
+        from core.script_craft import find_ungrounded_superlatives
+
+        for hit in find_ungrounded_superlatives(script, grounding_text):
+            if hit not in ungrounded:
+                ungrounded.append(hit)
+    except Exception as exc:
+        logger.debug("superlative check skipped: %s", exc)
+    try:
+        from core.negative_facts import apply_negative_facts, franchise_for
+
+        for hit in apply_negative_facts(script, franchise=franchise_for(topic, channel_id)):
+            if hit not in ungrounded:
+                ungrounded.append(f"negative-fact: {hit}")
+    except Exception as exc:
+        logger.debug("negative-fact check skipped: %s", exc)
     if ungrounded:
         # Regenerate-then-warn: try once to strip the unsupported specifics, then
         # surface whatever still remains (never silently rewrite away the warning).
@@ -1191,6 +1207,16 @@ def generate_content_package(
     if trimmed_n:
         logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
 
+    cta_report: dict = {"stripped": False, "pre_paragraphs": 0, "post_paragraphs": 0}
+    try:
+        from core.script_craft import sentence_rhythm_flags, strip_pre_cta_summary
+
+        script, cta_report = strip_pre_cta_summary(script)
+        rhythm_hits = sentence_rhythm_flags(script)
+    except Exception as exc:
+        logger.debug("script craft skipped: %s", exc)
+        rhythm_hits = []
+
     from core.title_generator import generate_title
 
     title = generate_title(
@@ -1267,4 +1293,6 @@ def generate_content_package(
         "quote_attribution": quote_payload,
         "lower_thirds": lower_thirds,
         "persona_lint": persona_hits,
+        "cta_summary": cta_report,
+        "sentence_rhythm": rhythm_hits,
     }

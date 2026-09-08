@@ -3,25 +3,16 @@ key-hash invalidation, plus the Apify/LLM facades and unified snapshot (O11).
 State file always isolated."""
 
 import os
-import tempfile
 import unittest
 from unittest.mock import patch
 
 from core import quota_governor as qg
 from core import quota_state
+from tests.isolation import IsolatedQuotaStore
 
 
-class GovernorCase(unittest.TestCase):
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        self._state_patch = patch.object(
-            quota_state, "QUOTA_STATE_FILE", os.path.join(self._tmp.name, "q.json")
-        )
-        self._state_patch.start()
-
-    def tearDown(self):
-        self._state_patch.stop()
-        self._tmp.cleanup()
+class GovernorCase(IsolatedQuotaStore, unittest.TestCase):
+    pass
 
 
 class TestPersistRoundtrip(GovernorCase):

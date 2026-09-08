@@ -42,7 +42,7 @@ cd C:\Users\jonma\OneDrive\Desktop\content_machine
 py main.py
 ```
 
-**Stage 1 run window** (no PowerShell prompts; paste facts in the box):
+**Stage 2 run window** (token look; no PowerShell prompts; paste facts in the box):
 
 ```powershell
 pip install -e ".[app]"
@@ -51,7 +51,11 @@ py -m desktop
 # or: py -m scripts.ops run-window
 ```
 
-Missing PySide6 prints `run-window requires PySide6 - pip install -e ".[app]"` and exits 2. The CLI is still the headless path.
+Look flags (optional): `CONTENT_UI_REDUCED_CHROMA=1`, `CONTENT_UI_HIGH_CONTRAST=1`,
+`CONTENT_UI_REDUCED_MOTION=1`, `CONTENT_UI_COLORBLIND=1`. Missing PySide6 prints
+`run-window requires PySide6 - pip install -e ".[app]"` and exits 2. The CLI is
+still the headless path. `ops contact-sheet --path dest.png` builds a 2x2 of last
+thumbs.
 
 In the CLI: channel **TapIn (2)** → **Create new video (1)** → topic → variants → length → **y** to render → queue upload when prompted.
 

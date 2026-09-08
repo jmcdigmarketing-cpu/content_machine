@@ -1064,11 +1064,53 @@ def cmd_end_card_preview(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("run-window", 'Stage 1 Qt run window (requires pip install -e ".[app]")')
+@_register("run-window", 'Stage 2 Qt run window (requires pip install -e ".[app]")')
 def cmd_run_window(_args: argparse.Namespace) -> int:
     from desktop.launch import launch
 
     return launch()
+
+
+@_register(
+    "contact-sheet",
+    "2x2 PNG collage of the last thumbnails (--path dest.png)",
+)
+def cmd_contact_sheet(args: argparse.Namespace) -> int:
+    dest = (getattr(args, "path", None) or "").strip()
+    if not dest:
+        print("contact-sheet requires --path <dest.png>")
+        return 2
+    from core.contact_sheet import render_contact_sheet
+    from core.output_paths import ensure_channel_output_dirs
+
+    cid = getattr(args, "channel", None) or "tapin"
+    thumbs = ensure_channel_output_dirs(cid)["thumbnails"]
+    result = render_contact_sheet(dest, thumbs_dir=thumbs, channel_id=cid)
+    if not result.ok:
+        print(result.detail)
+        return 1
+    print(result.path)
+    print(f"  {len(result.paths)} thumbs")
+    return 0
+
+
+@_register(
+    "negative-fact",
+    "Record a walked-back claim so a later run cannot re-assert it (--topic franchise)",
+)
+def cmd_negative_fact(args: argparse.Namespace) -> int:
+    claim = (getattr(args, "source", None) or getattr(args, "target", None) or "").strip()
+    if not claim:
+        print("negative-fact requires a claim (positional or --source)")
+        return 2
+    from core.negative_facts import franchise_for, record_negative
+
+    topic = (getattr(args, "topic", None) or "").strip()
+    cid = getattr(args, "channel", None) or "tapin"
+    key = franchise_for(topic or cid, cid)
+    record_negative(key, claim, reason="ops negative-fact")
+    print(f"recorded negative fact for {key}")
+    return 0
 
 
 @_register(

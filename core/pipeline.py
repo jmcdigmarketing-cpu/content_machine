@@ -757,6 +757,10 @@ def run_pipeline(
     result.features["disputed_claims"] = list(content.get("disputed_claims") or [])
     result.features["lower_thirds"] = list(content.get("lower_thirds") or [])
     result.features["persona_lint"] = list(content.get("persona_lint") or [])
+    result.features["cta_summary"] = dict(content.get("cta_summary") or {})
+    result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
+    result.features["cta_summary"] = dict(content.get("cta_summary") or {})
+    result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]
     if content.get("quote_attribution"):

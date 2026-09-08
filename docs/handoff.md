@@ -87,25 +87,25 @@ green suite).
 
 ## Slot — Cursor
 
-**Written:** 2026-09-07 · **HEAD at write:** `0e1c73e` · **Tree:** next 15 after
-Stage 3, committing right after the post-slot suite.
+**Written:** 2026-09-08 · **HEAD at write:** `4a82992` · **Tree:** next 15 including
+Stage 4, committing right after this slot.
 
-- **Defect first:** `pip install -e ".[app]" then py -m desktop --review` is two
-  commands; PowerShell has no `then`, so pip ate `-m` (`no such option: -m`).
-  No trailing period on `--review`. #148 queue skipped so it could not strand
-  the wave. #685 `hud: None` still picked. #684 live decode still CI-untested.
-  #686 retraction-watch is last-run, not a 24h toast. #687 no `.env` fingerprint.
-  #688 sqlite bytes, not VACUUM.
-- **Shipped:** #608 google/espn lazy · #669 intro offset from config · #633
-  docs-named ops verbs · #632 49 unnumbered size tags (index untagged 0) ·
-  #638 Steam key / SportsData deleted · #554 singleton-source · #557 fact age ·
-  #593 domain gating in health · #581 Edge fallback printed · #448 why-slow ·
-  #623 sqlite bytes · #447 config-diff · #672 grain stddev · #683 HUD detector ·
-  #341 retraction-watch. `GRADE_VERSION` **v3**. `SCENE_MATCHED_BROLL` off.
-- Fail-first: missing `ops_doc_verbs` / `why_slow` / `hud_detect` / verbs.
-  Grain: plain 0.000 vs with_look 29.271. Look: two lines, `py -m desktop --review`.
-  `ops why-slow` currently ranks `word_count: 410.0s` because that key sits in
-  timings. Suite **2,751 -> 2,770**; mypy **144** held; backlog **387** open /
-  **537** done, highest **#688**. `data/` empty.
+- **Defect first:** live review room loaded leftover GTA mp4 while Approve queued
+  drafted run 75. #148 queue skipped so it could not strand the wave. #692 no
+  drag/snapping on the studio canvas. #684 live decode still CI-untested (ffmpeg
+  may still print probe lines when a real file is on disk). #686 last-run
+  retraction, not a 24h toast. #688 sqlite bytes, not VACUUM. #693 `hud: None`
+  on a missing path is still picked.
+- **Shipped:** #689 same-run bind + refuse drafted Approve · #690 QSS drops
+  `filter:` · #691 autoplay · #152 mechanical canvas (`ops studio`) · #186 grid
+  · #248 specimen · #266 still · #265 frame-step · #270 waveform · #685 HUD
+  probe on real files · #609 import budget · why-slow skips `word_count` · #687
+  `.env` shape · #634 pre-commit command-ref · #619 schema `0004`.
+  `GRADE_VERSION` **v3**. `SCENE_MATCHED_BROLL` off.
+- Fail-first: `tests.test_stage4` 7 fails / 19 errors on unmodified HEAD (missing
+  helpers, QSS still had `filter:`, `word_count: 410.0s` ranked). Guard: QSS
+  with `filter:` fails. Offscreen: no `filter:`; drafted Approve stays off;
+  published run 72 Approve on. Suite **2,770 -> 2,798**; mypy **144** held;
+  backlog **378** open / **551** done, highest **#693**. `data/` empty.
 
 

@@ -39,7 +39,15 @@ def assign_owned_clips(
     ranked.sort(key=lambda row: (row[0], row[1]), reverse=True)
     paths = []
     for _score, _dur, path in ranked:
-        hud = (clips.get(path) or {}).get("hud")
+        meta = clips.get(path) or {}
+        hud = meta.get("hud")
+        if hud is None and os.path.isfile(path):
+            try:
+                from core.hud_detect import detect_hud
+
+                hud = detect_hud(path)
+            except Exception as exc:
+                logger.debug("hud probe skipped for %s: %s", path, exc)
         if hud is True:
             continue
         paths.append(str(path))

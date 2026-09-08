@@ -43,14 +43,16 @@ class TestQssFromShippedTokens(unittest.TestCase):
         self.assertNotIn("QPushButton { }", tapin)
 
     def test_reduced_chroma_and_high_contrast_and_reduced_motion_are_token_classes(self):
-        from core.chrome import build_qss
+        from core.chrome import build_qss, themed_css
 
         plain = build_qss("tapin")
         chroma = build_qss("tapin", reduced_chroma=True)
         contrast = build_qss("tapin", high_contrast=True)
         motion = build_qss("tapin", reduced_motion=True)
-        self.assertIn("saturate", chroma)
-        self.assertNotIn("saturate(0.45)", plain)
+        self.assertNotIn("filter:", chroma)
+        self.assertIn("reduced-chroma", chroma)
+        self.assertNotIn("reduced-chroma", plain)
+        self.assertIn("filter: saturate(0.45)", themed_css("tapin"))
         self.assertIn("high-contrast", contrast.lower().replace("_", "-"))
         self.assertGreater(contrast.count("#"), 3)
         self.assertIn("animation-duration", motion)

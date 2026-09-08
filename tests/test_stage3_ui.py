@@ -110,7 +110,7 @@ class TestOwnedBeatCuts(unittest.TestCase):
         self.assertEqual(assign_owned_clips(scenes, {"clips": {}}, topic="GTA 6 leak"), [])
 
     def test_known_gap_hud_null_still_gets_picked(self):
-        """Ingest persists hud=null (#417). Closing HUD-aware picks needs a detector."""
+        """detect_hud cannot probe a path that is not on disk. Leftover #693."""
         from core.owned_beats import assign_owned_clips
         from video.scene_plan import plan_scenes
 

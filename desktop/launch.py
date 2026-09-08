@@ -1,4 +1,4 @@
-"""Stage 1/3 launcher. PySide6 is an optional extra — missing it is an honest refuse."""
+"""Stage 1/3/4 launcher. PySide6 is an optional extra — missing it is an honest refuse."""
 
 from __future__ import annotations
 
@@ -7,7 +7,16 @@ import sys
 from core.ask_bridge import missing_pyside_message
 
 
-def launch(*, review: bool | None = None) -> int:
+def desktop_mode(argv: list[str] | None = None) -> str:
+    args = argv if argv is not None else sys.argv[1:]
+    if "--studio" in args:
+        return "studio"
+    if "--review" in args:
+        return "review"
+    return "run"
+
+
+def launch(*, review: bool | None = None, studio: bool | None = None) -> int:
     try:
         from PySide6.QtCore import Qt
         from PySide6.QtGui import QGuiApplication
@@ -18,10 +27,20 @@ def launch(*, review: bool | None = None) -> int:
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
-    want_review = bool(review) or "--review" in sys.argv
+    if studio:
+        mode = "studio"
+    elif review:
+        mode = "review"
+    else:
+        mode = desktop_mode()
     app = QApplication.instance() or QApplication([])
     window: QMainWindow
-    if want_review:
+    if mode == "studio":
+        from core.review_booth import gather_booth_context
+        from desktop.studio import StudioWindow
+
+        window = StudioWindow(context=gather_booth_context())
+    elif mode == "review":
         from core.review_booth import gather_booth_context
         from desktop.review import ReviewWindow
 

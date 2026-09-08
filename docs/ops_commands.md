@@ -91,6 +91,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |
+| `studio` | Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]") |
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |
 | `sync-metrics` | Pull YouTube Analytics into performance memory |
 | `tapology-test` | Scrape Tapology fight card for a topic string |

@@ -4,10 +4,23 @@ from __future__ import annotations
 
 from typing import Any
 
+_NOT_PHASES = frozenset(
+    {
+        "word_count",
+        "min_words",
+        "max_words",
+        "length_preset",
+        "hook_score",
+        "authenticity_score",
+    }
+)
+
 
 def why_slow_lines(timings: dict[str, Any] | None) -> list[str]:
     rows: list[tuple[str, float]] = []
     for name, raw in (timings or {}).items():
+        if str(name) in _NOT_PHASES:
+            continue
         try:
             value = float(raw)
         except (TypeError, ValueError):

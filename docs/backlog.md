@@ -387,7 +387,7 @@ Larger — multi-week systems
 - [ ] 149. **Analytics Studio** (retention / CTR / RPM local web) `[L]` — *viability.* Weekly-report ASCII cannot show curves; still honest that n≈10 is thin.
 - [x] 150. **TapIn vs MoneyWise visual language packs** *(2026-09-07)* — Stage 2 QSS from #170 tokens. TapIn header `#E53935` vs MoneyWise `#81C995`; serif on MoneyWise. Fail-first: empty `styleSheet()` `[L]`
 - [ ] 151. **Brand-kit compiler** (fonts/palette/sting/handle/banner → render + GUI) `[L]` — *aesthetics.* `channel-go-live` checks files exist; it does not apply a kit.
-- [ ] 152. **Thumbnail composition canvas** (operator drag layers) `[L]` — *aesthetics / UI.* Distinct from #22 PIL safe-area *checker*: this is an editor.
+- [x] 152. **Thumbnail composition canvas** mechanical slice *(2026-09-08)* — `QGraphicsView` + last thumb + `inspect_thumbnail` overlay. `ops studio` / `py -m desktop --studio`. Missing PySide6: refuse, exit 2, no WARNING. No drag/snapping — leftover #692 `[L]`
 - [ ] 153. **Caption choreography timeline** (karaoke beats vs SRT) `[L]` — *aesthetics.* Distinct from #21 JSON font skin: timing and placement, not fill color.
 - [ ] 154. **MSIX / Inno installer** bundling Python + ffmpeg + tray `[L]` — *new-app.* Packaging is what makes #141 software instead of a repo.
 - [ ] 155. **MCP + local plugin API** over `core/` `[L]` — *new-app.* Agents scrape CLI today; contract must not add a signal cache or skip `quota_governor`.
@@ -424,7 +424,7 @@ Moderate — days
 - [x] 183. **Font-pairing picker** *(2026-09-07)* — shipped `caption_skin.title_font`/`body_font`; ASS Style Title then Body. tapin Impact/Arial, moneywise Georgia/Arial `[M]`
 - [x] 184. Named **motion-style presets** *(2026-09-07)* — `punch-in` vs `snap-zoom` distinct zoompan strings; `enabled: false` still `""` (same #26 contract) `[M]`
 - [x] 185. Caption-vs-background **contrast auditor** *(2026-09-06)* — `inspect_caption_band` WCAG ratio vs shipped `caption_skin.fill_color`; AA 4.5:1. Wired like thumbnail safe-area (operator string + pipeline note). **Advisory only; `GRADE_VERSION` stayed v3** `[M]`
-- [ ] 186. Player **safe-title grid overlay** `[M]` — *UI / aesthetics.* Distinct from #22 PIL checker: live overlay in the review player.
+- [x] 186. Player **safe-title grid overlay** *(2026-09-08)* — `safe_title_rects` bottom 20% chrome on the review player and studio still. Distinct from #22 PIL checker `[M]`
 - [x] 187. **End-card preview compositor** *(2026-09-07)* — `ops end-card-preview --path` Pillow still from shipped `resolve_end_card`. Disabled card raises. Usage without `--path` prints the require line `[M]`
 - [x] 188. **Intro-sting waveform** *(2026-09-07)* — `ops intro-waveform --path`; missing file refuses with `not found`, no WARNING. Offset is `DEFAULT_INTRO_DURATION` (2.15s), not a live probe `[M]`
 - [ ] 189. Brand-kit **screenshot linter** (banner vs in-video palette) `[M]` — *aesthetics.* MoneyWise handle/trailer already FAIL; this diffs colors, not file presence.
@@ -491,7 +491,7 @@ Small — hours / a PR
 - [x] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` *(2026-08-27)* — body stays Segoe UI; `pre` / `textarea.md` use JetBrains Mono
 - [ ] 246. Blurred **9:16 poster** as booth background `[S]` — *aesthetics.* Last frame, CSS blur only — no new ffmpeg.
 - [x] 247. CSS **grain/vignette preview** toggle *(2026-09-07)* — `themed_css(grain=True, vignette=True)` emits `body.grain` / `body.vignette`. `CONTENT_UI_GRAIN` / `CONTENT_UI_VIGNETTE`. Default off. Does not change the render command (#512 does) `[S]`
-- [ ] 248. Caption **font specimen strip** (three faces) `[S]` — *aesthetics.* Pick writes a note, not `channels.json` yet (#21).
+- [x] 248. Caption **font specimen strip** *(2026-09-08)* — three faces from shipped `caption_skin` (tapin Impact/Arial + Segoe UI). Pick writes `font_pick.txt`, not `channels.json` `[S]`
 - [ ] 249. Title-card mock: **2-line vs 3-line wrap** `[S]` — *aesthetics.* YouTube chrome rehearsal without uploading.
 - [x] **250. ASCII-safe HTML** *(2026-08-21)* — emoji/smart-punct stripped (cp1252) `[S]` — *UI.*
 - [x] **251. Copy-as-markdown on the report card** *(2026-08-21)* — booth textarea + `ops grade --md` `[S]`
@@ -509,12 +509,12 @@ Small — hours / a PR
 - [x] 263. Playback-rate **1.25×** toggle `[S]` — *UI.* Operator minutes.
   *(2026-08-26: booth buttons; default `playbackRate = 1`)*
 - [ ] 264. **Loop last 3s of hook** `[S]` — *aesthetics.* Retention cliff rehearsal; no new render.
-- [ ] 265. **Frame-step** with `,` / `.` `[S]` — *UI.* Proofread burned captions on a frame.
-- [ ] 266. **Save current frame** as a still `[S]` — *aesthetics.* Operator stills folder; not a thumbnail API.
+- [x] 265. **Frame-step** with `,` / `.` *(2026-09-08)* — one frame at 30fps (33ms), not the 5s J/L step `[S]`
+- [x] 266. **Save current frame** as a still *(2026-09-08)* — `S` writes `html_dir()/stills`. PNG copy or ffmpeg frame. Not a thumbnail API `[S]`
 - [x] 267. **9:16 letterbox** in a landscape window `[S]` *(2026-08-27)* — `.stage` with `aspect-ratio: 9 / 16` and `object-fit: contain`
 - [x] 268. **Safe-area overlay toggle** (YouTube UI chrome) `[S]` *(2026-08-27)* — default off; `toggleSafeArea` adds `.safe-on`; not the #22 PIL test
 - [ ] 269. **Burned vs sidecar** caption toggle `[S]` — *UI.* Compare retext vs proportional without re-encoding.
-- [ ] 270. **Waveform under the player** (from existing mp3) `[S]` — *aesthetics.* No new TTS spend.
+- [x] 270. **Waveform under the player** *(2026-09-08)* — `under_player_waveform` from existing wav/mp3 (ffmpeg to wav when needed). No new TTS spend `[S]`
 - [x] 271. Spoken vs **estimated duration** readout *(2026-08-25)* — booth compares ffprobe duration of the persisted spoken-audio MP3 (not the intro-bearing MP4) with the persisted word count / measured 3.3 wps estimate `[S]`
 - [x] **272. Cost subtitle under the player** *(2026-08-21)* — `tts $0.31 · 91%` on the booth `[S]` — *cost.*
 - [x] **273. Escaped free-first LLM red pill** *(2026-08-21)* — booth reads `llm_calls[].escaped_free_first` `[S]`
@@ -733,8 +733,8 @@ Operator surface
 - [x] 444. **Minutes-per-published-video trend** *(2026-08-28)* — persisted to its own sidecar on publish (never `quota_state`), surfaced as a one-liner; tests isolate the file `[S]`
 - [ ] 445. **Resume an interrupted run from the ledger** — an abort after TTS currently means re-spending it `[M]`
 - [ ] 446. **Undo for destructive `ops` commands** — retention, requeue, and clone paths have no back-out `[M]`
-- [x] 447. **Config diff vs the last good run** *(2026-09-07)* — `ops config-diff` compares `channels.json` sha256 to `channels_sha256` on the last trace (`write_run_trace` now stamps it). `.env` drift is leftover #687 `[S]`
-- [x] 448. **`ops why-slow`** *(2026-09-07)* — ranks last-trace `timings`; a 32s `signals_and_variants` phase is named first `[S]`
+- [x] 447. **Config diff vs the last good run** *(2026-09-07)* — `ops config-diff` compares `channels.json` sha256 to `channels_sha256` on the last trace (`write_run_trace` now stamps it). *(2026-09-08)* `.env` shape is leftover-closed as #687 `[S]`
+- [x] 448. **`ops why-slow`** *(2026-09-07)* — ranks last-trace `timings`; a 32s `signals_and_variants` phase is named first. *(2026-09-08)* `word_count` / length keys are not ranked as phases `[S]`
 - [ ] 449. **Batch approve queue** — review five drafts in one pass instead of five interactive runs `[M]`
 - [ ] 450. **Voice-note fact intake** — record a memo on a phone, transcribe to key facts; whisper is already installed `[M]`
 - [ ] 451. **Phone-sized booth layout** — review a 9:16 Short on the device it will be watched on `[S]`
@@ -944,7 +944,7 @@ Performance & startup
 
 - [x] 607. **Defer `elevenlabs.client` past import** *(2026-09-07)* — `core.tts` no longer imports the SDK at module load. `_elevenlabs_client` constructs it on the first paid synth. Piper/edge do not pay the import. Tests still patch `core.tts.ElevenLabs` `[S]`
 - [x] 608. **Defer `googleapiclient.discovery` and `sports.espn`** *(2026-09-07)* — `apis.youtube_api` and `apis.live_scores_api` import with those modules absent; `build` / `get_scoreboard` load on first live call `[S]`
-- [ ] 609. **Startup budget test** that fails CI when import time regresses past a threshold `[S]`
+- [x] 609. **Startup budget test** *(2026-09-08)* — `measure_import` / `measure_import_fresh`; `core.chrome` ratchet 5.0s. Clock is injectable; no network. `ops doctor` prints the budget `[S]`
 - [ ] 610. **Lazy-import the 92 `ops` verbs** so running one does not load all of them `[M]`
 - [ ] 611. **Parallelise the render's independent ffmpeg passes** `[M]`
 - [x] 612. **Cache Pillow font objects** *(2026-09-07)* — `load_font("arial.ttf", 24) is load_font("arial.ttf", 24)`; size 32 is a different object. End-card preview and caption overlay call it `[S]`
@@ -957,7 +957,7 @@ Data model & storage
 
 - [ ] 617. **Run every Alembic revision against a real snapshot** in CI `[M]`
 - [ ] 618. **Retire `migrate_schema`** once Alembic is the only story (#35) `[M]`
-- [ ] 619. **Stamp a schema version on every run-ledger row** `[S]`
+- [x] 619. **Stamp a schema version on every run-ledger row** *(2026-09-08)* — `persist_quality` and `write_run_trace` stamp Alembic head (`0004`). No history backfill `[S]`
 - [ ] 620. **Soft-delete runs** so a mistaken purge is recoverable `[M]`
 - [ ] 621. **Export a run as one portable folder** — mp4, script, facts, trace `[M]`
 - [ ] 622. **Import that folder back**, for moving between machines `[M]`
@@ -975,7 +975,7 @@ Testing & ops hygiene
 - [ ] 631. **Coverage reporting for `core/` only**, non-blocking, to find untested gates `[S]`
 - [x] 632. **Size-tag the 49 open items that carry none** *(2026-09-07)* — `untagged_open_items()` uses the same backtick `SIZE_RE` as `ops roadmap-index`. 49 unnumbered early-backlog rows had `[S]`-style tags on a continuation line or none; they now carry `` `[S]` `` / M / L / XL on the `- [ ]` line. Index untagged **0** `[S]`
 - [x] 633. **A docs test that every `ops` verb named in a doc exists** *(2026-09-07)* — `verbs_named_in_docs()` vs `COMMANDS`; `` `ops review-room` `` is in the set. Flags (`--html`) and unbuilt names written as prose are not verbs `[S]`
-- [ ] 634. **Run the docs lint in pre-commit**, not only ruff `[S]`
+- [x] 634. **Run the docs lint in pre-commit**, not only ruff *(2026-09-08)* — local hook `ops-command-ref` calls `check_command_ref()` (the existing registry vs `docs/ops_commands.md` check) `[S]`
 
 Security & privacy — local
 
@@ -1058,9 +1058,17 @@ Claude review of the Stage 0-2 waves (2026-09-07)
 
 Stage 3 leftovers (2026-09-07)
 
-- [x] 683. **HUD-aware owned beat picks** *(2026-09-07)* — `detect_hud` on a rainbow top-bar PNG is True; uniform green is False. Ingest persists that bool. `assign_owned_clips` skips `hud: True` when a clean clip exists. `hud: None` (old index) is still picked — leftover #685 `[S]`
+- [x] 683. **HUD-aware owned beat picks** *(2026-09-07)* — `detect_hud` on a rainbow top-bar PNG is True; uniform green is False. Ingest persists that bool. `assign_owned_clips` skips `hud: True` when a clean clip exists. *(2026-09-08)* `hud: None` on a **real file** is probed. Missing paths still win — leftover #693 `[S]`
 - [ ] 684. **Review room does not decode a live mp4 in CI** — J/K/L helper is unit-tested; widget construction is offscreen without a file. A real last-run play is still operator smoke `[S]`
-- [ ] 685. **`hud: None` clips are still chosen** — ingest now writes True/False, but an old index row (or a detector miss) with `null` still wins `assign_owned_clips`. The known-gap test asserts that `[S]`
+- [x] 685. **`hud: None` clips are still chosen** *(2026-09-08)* — `assign_owned_clips` calls `detect_hud` when `hud is None` and the file exists. Missing paths still win — leftover #693 `[S]`
 - [ ] 686. **Retraction watch is last-run fetch, not a 24h toast** — `ops retraction-watch` hits URLs on the last trace. #112's correction dossier still does not fire on its own `[M]`
-- [ ] 687. **Config diff does not fingerprint `.env`** — `channels.json` sha256 is stamped on the trace; env drift is still the first suspect with no answer `[S]`
+- [x] 687. **Config diff does not fingerprint `.env`** *(2026-09-08)* — `env_fingerprint` hashes presence/shape of `.env.example` keys (`set`/`empty`/`missing`), never values. Stamped on the trace as `env_sha256` next to `channels_sha256`. `ops secrets-doctor` still never prints a secret `[S]`
 - [ ] 688. **`ops reliability` reports sqlite bytes, not VACUUM** — size is visible; reclaiming pages is not `[S]`
+
+Stage 4 leftovers (2026-09-08)
+
+- [x] 689. **Same-run bind + refuse drafted Approve** *(2026-09-08)* — `bind_review_media` never pairs a leftover `output/` mp4 with drafted run 75. Approve disabled + on-screen reason when status is `drafted` or path empty. Fixture: live run 75 strings `[S]`
+- [x] 690. **QSS must not emit `filter:`** *(2026-09-08)* — `build_qss` drops the CSS filter line (Qt does not implement it; live log was `Unknown property filter`). `themed_css` keeps `body.reduced-chroma`. Guard: QSS with `filter:` fails `[S]`
+- [x] 691. **Autoplay after `setSource`** *(2026-09-08)* — `start_review_player` calls `play()` when the file exists. Fake player records the call; no live decode in CI `[S]`
+- [ ] 692. **Studio canvas drag / snapping** — mechanical #152 shipped (`QGraphicsView` + overlay). Layers do not move this wave `[L]`
+- [ ] 693. **`hud: None` on a missing path is still picked** — `detect_hud` cannot probe `C:/clips/gta/hud.mp4`. Known-gap test asserts that hole `[S]`

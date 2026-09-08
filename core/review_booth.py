@@ -39,6 +39,25 @@ def last_trace(channel_id: str | None = None) -> dict[str, Any] | None:
     return traces[0] if traces else None
 
 
+def last_reviewable_trace(channel_id: str | None = None) -> dict[str, Any] | None:
+    """Prefer a rendered run. A newer drafted row is not a reviewable file."""
+    try:
+        from core.run_trace import list_traces
+
+        traces = list_traces(limit=20, channel_id=channel_id)
+    except Exception as exc:
+        logger.debug("list_traces skipped: %s", exc)
+        return None
+    drafted: dict[str, Any] | None = None
+    for t in traces:
+        status = t.get("status") or ""
+        if status == "rendered":
+            return t
+        if status == "drafted" and drafted is None:
+            drafted = t
+    return drafted or (traces[0] if traces else None)
+
+
 def _run_label(run_id: Any) -> str:
     if run_id is None or run_id == "":
         return "(last render)"
@@ -492,6 +511,9 @@ def booth_html(
     thumbnail_picker: str = "",
     expert_panel_html: str = "",
     channel_id: str = "",
+    can_approve: bool = True,
+    refuse_reason: str = "",
+    run_status: str = "",
 ) -> str:
     share = f"<p class='cost-sub'>{escape(cost_share)}</p>" if cost_share else ""
     poster_attr = ""
@@ -537,9 +559,10 @@ def booth_html(
             f"{rate_controls}{share}<p>{escape(mp4_path)}</p>"
         )
     else:
+        empty = refuse_reason or "No last mp4 on disk. Render first, then reopen the booth."
         vid = (
             f"<div class='stage' id='stage'>{poster_chrome}"
-            "<p id='player'>No last mp4 on disk. Render first, then reopen the booth.</p>"
+            f"<p id='player'>{escape(empty)}</p>"
             f"{safe_boxes}</div>"
             f"{rate_controls}{share}"
         )
@@ -563,6 +586,8 @@ def booth_html(
         if run_id_int is not None
         else "py -m scripts.ops list-uploads"
     )
+    if not can_approve:
+        cmd = refuse_reason or "Approve disabled: no MP4 on disk for this run."
     md = markdown or booth_markdown(
         grade=grade,
         authenticity=authenticity,
@@ -637,7 +662,8 @@ def booth_html(
         f"{apify_pills}{extras}"
         "</div>"
         "<div class='card'>"
-        "<p><strong>Approve</strong> (unlisted review, cadence-safe):</p>"
+        "<p><strong>Approve</strong> (unlisted review, cadence-safe)"
+        f"{' · ' + escape(run_status) if run_status else ''}:</p>"
         f"<pre>{escape(cmd)}</pre>"
         "<p><strong>Reject</strong>: leave the mp4 in output/; do not queue an upload.</p>"
         "<p><label for='md'>Copy as markdown</label></p>"
@@ -684,9 +710,9 @@ def write_thin_facts_screen(
 def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     from core.win_shell import last_media_file
 
-    mp4 = last_media_file("mp4", channel_id=channel_id)
+    leftover_mp4 = last_media_file("mp4", channel_id=channel_id)
     thumb = last_media_file("thumb", channel_id=channel_id)
-    trace = last_trace(channel_id)
+    trace = last_reviewable_trace(channel_id)
     quality = (trace or {}).get("quality") or {}
     cost_d = (trace or {}).get("cost") or {}
     run_id = (trace or {}).get("run_id")
@@ -700,6 +726,17 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
             logger.debug("booth content metadata skipped: %s", exc)
     title = str(getattr(record, "title", "") or "")
     description = str(getattr(record, "description", "") or "")
+    run_status = str(getattr(record, "status", "") or (trace or {}).get("status") or "")
+    run_mp4 = str(getattr(record, "mp4_path", "") or "")
+    from core.review_bind import bind_review_media
+
+    bound = bind_review_media(
+        run_id=run_id,
+        run_status=run_status,
+        run_mp4=run_mp4,
+        leftover_mp4=leftover_mp4,
+    )
+    mp4 = bound["mp4_path"] or None
     timings = (trace or {}).get("timings") or {}
     if record is not None:
         try:
@@ -951,12 +988,19 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
 
     from core.review_keys import approve_command
 
+    approve_cmd = ""
+    if bound["can_approve"]:
+        approve_cmd = approve_command({"run_id": run_id})
+
     return {
-        "mp4_path": mp4,
+        "mp4_path": mp4 or "",
         "thumb_path": thumb,
         "channel_id": channel_id or "",
         "grade": grade,
-        "approve_cmd": approve_command({"run_id": run_id}),
+        "approve_cmd": approve_cmd,
+        "can_approve": bound["can_approve"],
+        "refuse_reason": bound["refuse_reason"],
+        "run_status": bound["run_status"],
         "authenticity": str(quality.get("authenticity_verdict") or ""),
         "cost": cost_s,
         "cost_share": tts_share_line(tts, total),
@@ -1002,12 +1046,14 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         "thumbnail_picker": thumbnail_picker,
         "thumbnail_candidates": thumbnail_candidates,
         "expert_panel_html": expert_panel_html,
+        "mp3_path": spoken_audio,
     }
 
 
 def write_booth(channel_id: str | None = None, *, open_browser: bool = True) -> str:
     ctx = gather_booth_context(channel_id)
     ctx.pop("thumbnail_candidates", None)
+    ctx.pop("mp3_path", None)
     captions_path = str(ctx.pop("captions_path", "") or "")
     if captions_path:
         try:
@@ -1026,6 +1072,7 @@ def serve_booth(channel_id: str | None = None, *, port: int = 0) -> str:
     """Tiny stdlib HTTP host for the booth (not FastAPI, not #141). Returns the URL."""
     ctx = gather_booth_context(channel_id)
     candidates = ctx.pop("thumbnail_candidates", [])
+    ctx.pop("mp3_path", None)
     candidate_routes, candidate_hrefs = thumbnail_candidate_routes(candidates)
     if ctx.get("run_id"):
         ctx["thumbnail_picker"] = thumbnail_picker_html(

@@ -19,3 +19,12 @@ repos:
         args: [--maxkb=2048]
       - id: check-merge-conflict
       - id: debug-statements
+
+  - repo: local
+    hooks:
+      - id: ops-command-ref
+        name: ops command-ref
+        language: system
+        entry: python -c "from core.ops_command_ref import check_command_ref; raise SystemExit(check_command_ref())"
+        pass_filenames: false
+        files: ^(scripts/ops\.py|docs/ops_commands\.md)$

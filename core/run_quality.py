@@ -165,7 +165,14 @@ def persist_quality(run_id: int | None, quality: dict[str, Any]) -> None:
     try:
         from storage.repositories.content_runs import get_content_run_repository
 
-        get_content_run_repository().update(run_id, {"quality_json": json.dumps(quality)})
+        payload = dict(quality)
+        try:
+            from storage.alembic_runner import current_revision
+
+            payload.setdefault("schema_revision", current_revision())
+        except Exception as exc:
+            logger.debug("schema revision stamp skipped: %s", exc)
+        get_content_run_repository().update(run_id, {"quality_json": json.dumps(payload)})
     except Exception as exc:
         logger.debug("quality persistence skipped for run %s: %s", run_id, exc)
 
@@ -189,6 +196,12 @@ def merge_quality(run_id: int | None, updates: dict[str, Any]) -> None:
                 current = {}
         current.update(updates)
         current.setdefault("quality_version", QUALITY_VERSION)
+        try:
+            from storage.alembic_runner import current_revision
+
+            current.setdefault("schema_revision", current_revision())
+        except Exception as exc:
+            logger.debug("schema revision stamp skipped: %s", exc)
         repo.update(run_id, {"quality_json": json.dumps(current)})
     except Exception as exc:
         logger.debug("quality merge skipped for run %s: %s", run_id, exc)

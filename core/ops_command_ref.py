@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from config.paths import ROOT_DIR
 
@@ -39,3 +40,17 @@ def write_command_ref(path: str | None = None) -> str:
     with open(target, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(command_ref_markdown())
     return target
+
+
+def check_command_ref(path: str | None = None) -> int:
+    """0 when docs/ops_commands.md matches the live registry. Used by pre-commit."""
+    target = path or DOCS_PATH
+    try:
+        on_disk = Path(target).read_text(encoding="utf-8")
+    except OSError:
+        print(f"{target} is missing; run: py -m scripts.ops command-ref")
+        return 1
+    if on_disk != command_ref_markdown():
+        print("docs/ops_commands.md is stale; run: py -m scripts.ops command-ref")
+        return 1
+    return 0

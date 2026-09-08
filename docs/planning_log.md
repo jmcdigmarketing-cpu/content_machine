@@ -11,6 +11,52 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-08 (Cursor) — next 15 including Stage 4
+
+**Prompt:** next 15 including Stage 4 after a live `py -m desktop --review` session.
+
+**What the review-room log showed (two facts, not one):** player loaded leftover
+`output/default/video/gta_vi_trailer_..._20260815_204915.mp4` via `last_media_file`;
+Approve queued drafted run **75** with empty stored path. Qt printed `Unknown
+property filter` from QSS `filter:`. `ReviewWindow` never called `play()`.
+
+**Fail-then-fix:** unmodified HEAD `4a82992` — `tests.test_stage4` 27 tests, 7
+fails / 19 errors (missing helpers, QSS still emitted `filter:`, why-slow ranked
+`word_count: 410.0s`, Approve still enabled). After the fix: 28 ok. Guard: QSS
+with `filter:` fails; HTML `themed_css` still has `body.reduced-chroma`.
+Published-run Approve was watched red (`queued_approve_command` required
+`rendered`) then fixed.
+
+**Picked:** honesty first, then a mechanical Stage 4 slice, then cheap leftovers.
+#148 stayed open so a job-queue `[L]` could not strand the wave. Full #151/#153,
+#684 live CI decode, #686 24h toast, and #688 VACUUM stayed open.
+
+**Shipped:**
+1. **#689** same-run bind + refuse drafted Approve (run 75 fixture)
+2. **#690** `build_qss` drops `filter:`; HTML keeps reduced-chroma
+3. **#691** `start_review_player` calls `play()` (fake player, no decode)
+4. **#266** save current frame (`S`)
+5. **#152** mechanical thumbnail canvas — `ops studio` / `--studio`. No drag
+6. **#186** player/studio safe-title grid
+7. **#248** caption font specimen (pick writes a note, not `channels.json`)
+8. **#685** `hud: None` probed when the file exists; missing path still picked (#693)
+9. **#609** startup budget ratchet (`core.chrome` 5.0s, patched clock)
+10. why-slow ignores `word_count`
+11. **#687** `.env` fingerprint (presence/shape, never values)
+12. **#634** pre-commit calls `check_command_ref`
+13. **#619** schema revision `0004` on quality + trace
+14. **#265** `,` / `.` one frame
+15. **#270** waveform under the player from existing audio
+
+**Operator smoke (offscreen):** `qss has filter: False`; drafted fixture refuses
+Approve; live published run 72 Approve enabled. `GRADE_VERSION` **v3**.
+`SCENE_MATCHED_BROLL` off.
+
+**Leftover:** #692 drag layers · #148 queue · #151 kit · #153 timeline · #684
+live decode · #686 24h toast · #688 VACUUM · #693 missing-path HUD.
+
+---
+
 ## 2026-09-07 (Cursor) — next 15 after Stage 3
 
 **Prompt:** next 15 items completed too, plus help on `pip install -e ".[app]" then

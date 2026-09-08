@@ -171,6 +171,18 @@ def write_run_trace(
             trace["channels_sha256"] = channels_fingerprint()
         except Exception as exc:
             logger.debug("channels fingerprint skipped: %s", exc)
+        try:
+            from core.config_diff import env_fingerprint
+
+            trace["env_sha256"] = env_fingerprint()
+        except Exception as exc:
+            logger.debug("env fingerprint skipped: %s", exc)
+        try:
+            from storage.alembic_runner import current_revision
+
+            trace["schema_revision"] = current_revision()
+        except Exception as exc:
+            logger.debug("schema revision skipped: %s", exc)
         if menu_path:
             trace["menu_path"] = str(menu_path)
         if angle_intent:

@@ -14,18 +14,25 @@ def apply_review_key(
     duration_ms: int,
     paused: bool,
     step_ms: int = _STEP_MS,
+    fps: float = 30.0,
 ) -> tuple[int, bool]:
-    """J = back, K = pause/play, L = forward. Position is clamped to the clip."""
-    token = (key or "").strip().lower()
+    """J/K/L = 5s jump; comma/period = one frame. Position is clamped to the clip."""
+    raw = (key or "").strip()
+    token = raw.lower()
     pos = max(0, min(int(position_ms), int(duration_ms)))
     dur = max(0, int(duration_ms))
     holding = bool(paused)
+    frame_ms = max(1, int(round(1000.0 / float(fps or 30.0))))
     if token == "j":
         pos = max(0, pos - int(step_ms))
     elif token == "l":
         pos = min(dur, pos + int(step_ms))
     elif token == "k":
         holding = not holding
+    elif raw in {",", "<"}:
+        pos = max(0, pos - frame_ms)
+    elif raw in {".", ">"}:
+        pos = min(dur, pos + frame_ms)
     return pos, holding
 
 

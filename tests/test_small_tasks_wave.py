@@ -120,7 +120,11 @@ class TestReviewBoothPublicSurface(unittest.TestCase):
                 mp3_path=str(audio),
             )
             with (
-                patch.object(review_booth, "last_trace", return_value={"run_id": 9, "quality": {}}),
+                patch.object(
+                    review_booth,
+                    "last_reviewable_trace",
+                    return_value={"run_id": 9, "quality": {}},
+                ),
                 patch(
                     "core.win_shell.last_media_file",
                     side_effect=lambda kind, **_kwargs: str(video) if kind == "mp4" else None,

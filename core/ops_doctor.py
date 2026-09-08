@@ -167,6 +167,14 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         logger.debug("doctor paid_calls skipped: %s", exc)
         add("paid_calls", True, f"n/a ({type(exc).__name__})")
 
+    try:
+        from core.startup_budget import budget_for
+
+        add("startup_budget", True, f"core.chrome <= {budget_for('core.chrome'):.1f}s")
+    except Exception as exc:
+        logger.debug("doctor startup budget skipped: %s", exc)
+        add("startup_budget", True, f"n/a ({type(exc).__name__})")
+
     return out
 
 

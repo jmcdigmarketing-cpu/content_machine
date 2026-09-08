@@ -160,8 +160,8 @@ CLI is never removed — it is the headless path and the test surface.
 
 The aesthetics work, and the reason Qt was chosen.
 
-- **#152** thumbnail composition canvas — `QGraphicsView`, drag layers, snapping,
-  safe-area overlay reusing `core/thumbnail_safe_area.py`
+- **#152** thumbnail composition canvas — mechanical slice shipped 2026-09-08
+  (`QGraphicsView` + last thumb + overlay). Drag/snapping is leftover **#692**.
 - **#153** caption choreography timeline — keyframes over real word timings, which
   now exist on both the ElevenLabs and Edge TTS paths
 - **#151** brand-kit compiler — fonts, palette, sting, handle, banner compiled to

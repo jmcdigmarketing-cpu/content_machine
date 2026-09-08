@@ -1,8 +1,30 @@
-# Handoff synopsis — 2026-09-07: next 15 after Stage 3
+# Handoff synopsis — 2026-09-08: next 15 including Stage 4
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — next 15 after Stage 3 (2026-09-07)
+## Last implementation wave — next 15 including Stage 4 (2026-09-08)
+
+Cursor wave. HEAD before this wave: `4a82992`. `GRADE_VERSION` stayed **v3**.
+CLI and `ops booth` stay. `SCENE_MATCHED_BROLL` stays off. #333 stays a veto.
+#148 job queue was skipped so it could not strand the wave.
+
+- **Honesty:** #689 same-run bind (run 75 drafted ≠ leftover GTA mp4) · #690 QSS
+  drops `filter:` · #691 autoplay after `setSource`.
+- **Stage 4 slice:** #152 mechanical canvas (`ops studio`) · #186 safe-title
+  grid · #248 font specimen. Drag is leftover #692.
+- **Review:** #266 stills · #265 frame-step · #270 waveform.
+- **Cheap leftovers:** #685 HUD probe on real files · #609 import budget ·
+  why-slow skips `word_count` · #687 `.env` shape · #634 pre-commit command-ref ·
+  #619 schema `0004`.
+- **Proof:** fail-first 7 fails / 19 errors on unmodified HEAD. Guard: QSS
+  `filter:` fails. Offscreen: no `filter:` in QSS; drafted Approve stays off;
+  published run 72 Approve on. Suite **2,770 -> 2,798**; mypy **144** held.
+
+**Still parked:** #148 queue; #692 drag; #151 kit; #153 timeline; #684 live
+decode; #686 24h toast; #688 VACUUM; #693 missing-path HUD. Next five: #148 ·
+#692 · #151 · #153 · #684.
+
+## Previous wave — next 15 after Stage 3 (2026-09-07)
 
 Cursor wave. HEAD before this wave: `0e1c73e`. `GRADE_VERSION` stayed **v3**.
 CLI and `ops booth` stay. `SCENE_MATCHED_BROLL` stays off. #333 stays a veto.

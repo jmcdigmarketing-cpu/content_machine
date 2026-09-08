@@ -978,6 +978,16 @@ def cmd_review_room(_args: argparse.Namespace) -> int:
     return launch(review=True)
 
 
+@_register(
+    "studio",
+    'Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]")',
+)
+def cmd_studio(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(studio=True)
+
+
 @_register("why-slow", "Rank last-run phase timings (slowest first)")
 def cmd_why_slow(args: argparse.Namespace) -> int:
     from core.review_booth import last_trace

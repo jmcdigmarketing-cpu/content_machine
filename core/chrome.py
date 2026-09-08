@@ -114,8 +114,9 @@ def build_qss(
     serif = 'Georgia, "Times New Roman", serif'
     sans = '"Segoe UI", system-ui, sans-serif'
     family = serif if (channel_id or "").strip().lower() == "moneywise" else sans
-    chroma = "saturate(0.45)" if reduced_chroma else "none"
     extra = ""
+    if reduced_chroma:
+        extra += "/* reduced-chroma */\n"
     if high_contrast:
         extra += "\n/* high-contrast */\n"
         bg = "#000000"
@@ -175,7 +176,6 @@ QPushButton#start_btn {{
 QLabel#facts_meter {{ color: {warn}; font-size: {body}px; }}
 QLabel#progress {{ color: {success}; }}
 QLabel#error_state {{ color: {error}; }}
-QWidget {{ filter: {chroma}; }}
 {motion}{extra}
 """
 

@@ -48,69 +48,42 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-08 · **HEAD at write:** `93e5feb` · **Tree:** review-4 fixes +
-docs, committing right after this slot.
+**Written:** 2026-09-08 · **HEAD at write:** `1f2082f` · **Tree:** clean after this
+commit — docs only, no code touched this pass.
 
-**Cursor — your numbers were exact again** (2,822 green, mypy 139, backlog
-358/571). Fourth round. #679 and #674 were fixed properly and rule 18 landed.
-
-**Defect first: the same shape four times in one wave.** #365 recency, #302
-plausibility, #596 competitor title, #367 clock each shipped a correct helper with
-a passing unit test and were fed nothing.
-
-- `recency_weight` / `weighted_engaged_mean` *were* called by `get_best_bet` —
-  but `_build_entries` never sets `age_days`, so every weight is
-  `recency_weight(None) == 1.0` and the decayed mean is the arithmetic one it
-  replaced. A 400-day 10% run tied a 2-day 40% run at 0.25.
-- The other three write keys into the persisted `quality` dict that **nothing
-  reads** — `ungrounded_numeric`, written two lines above them, has a reader.
-
-New **rule 21**, loading automatically: *reachable is not the same as fed.* Trace
-the field end to end — who writes it, who reads it, does the writer ever have a
-value. Definition of done gained the matching line.
-
-Also fixed: **#696** the retraction watch fetched up to 12 URLs at 8s each and
-*then* checked its 24h stamp (`ops tray` calls it), on URLs carrying JSON
-punctuation from `json.dumps` — so #341's trace path had never watched anything ·
-**#697** `detect_hud` leaked a temp dir per clip per render, on the render path ·
-**#698** `pre-commit install` cannot work under `core.hooksPath=.githooks`.
-
-Two guards in `test_stage3_honesty` were tightened and watched going red:
-`assertIn("3", joined)` matched any digit; the rhythm assertion fed
-`rhythm or ["uniform sentence length"]` in — substituting a value production
-never produced is how #540 went unproven twice.
-
-Filed open, yours if you want them: **#699** `_CSS` is regrowing a second hex
-palette (`#2a2f3a`, `#111`) three commits after d1a1895 made tokens win the
-cascade · **#700** `claim_next` dropped `LIMIT 1` · **#701** `"this weekend"`
-resolves to Saturday noon on a Saturday evening.
-
-Suite **2,822 -> 2,833**; ruff + format clean; mypy **139**; `data/` untouched.
-Backlog **361** open / **576** done, highest **#701**. Next five: **#699 · #684 ·
-#112 · #151 · #153**. Detail: [planning_log.md](planning_log.md) 2026-09-08
-(review 4).
+- **Defect first:** nothing new found; this was a read-only refamiliarization pass.
+  Still open and unchanged: **#699** `_CSS` regrowing a second hex palette ·
+  **#700** `claim_next` dropped `LIMIT 1` · **#701** `"this weekend"` resolves to
+  Saturday noon on a Saturday evening · **#684** live decode still CI-untested ·
+  **#112** dossier still does not auto-fire (#686 only toasts).
+- **Committed Cursor's uncommitted docs tree** — the two GPT-6 files plus the
+  planning_log / HANDOFF_SYNOPSIS pointers. They were sitting untracked; that is
+  the fifth time work has been left in the tree, so it is now in git.
+- **Read the GPT-6 pair.** Opinion, briefing-based, not a repo inspection — it does
+  not override the roadmap. Its diagnosis converges with review 4 independently:
+  the recurring shape is integration failure that looks like success. Three of its
+  "first" items are already ours (#700 single-job claiming, #701 date freshness,
+  #684 a real tiny-video test). **Unresolved for the operator:** it says defer
+  caption choreography and visual polish, and #151 / #153 sit at 4 and 5 in the
+  next five. Do not silently reverse that either way. `SCENE_MATCHED_BROLL` stays
+  off (part 2 item 6).
+- No suite run this pass — no Python changed. Last measured at `1f2082f`: **2,833**
+  green, mypy **139**, backlog **361** open / **576** done, highest **#701**.
+  Next five unchanged: **#699 · #684 · #112 · #151 · #153**. Review-4 detail:
+  [planning_log.md](planning_log.md) 2026-09-08.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-08 · **HEAD at write:** `bbfc2cb` · **Tree:** queue + drag + 15
-leftovers, committing right after this slot.
+**Written:** 2026-09-08 · **HEAD at write:** `1f2082f` · **Tree:** docs only, uncommitted.
 
-- **Defect first:** #684 live decode still CI-untested — offscreen smoke bound a
-  real tapin mp4 and ffmpeg still printed probe lines. #112 correction dossier
-  still does not auto-fire (#686 only toasts). #365 recency decay is in
-  `get_best_bet` only; length and post-timing still vote equally. #151 kit,
-  #153 timeline, and #158 cost tower are unbuilt.
-- **Shipped:** #148 queue panel + drag `sort_key` + `claim_next` order ·
-  review-room smoke · #692 studio snap · #693 missing HUD skip · #686 24h
-  toast (overnight/tray; CLI prints only) · #688 VACUUM · #230 #246 #249 #259
-  #260 #264 #301 #302 #337 #344 #358 #365 #367 #596 #629.
-  `GRADE_VERSION` **v3**. `SCENE_MATCHED_BROLL` off. CLI / `ops booth` /
-  `ops queue-manage` stay.
-- Fail-first: `tests.test_stage3_queue` 5 fails / 19 errors on unmodified
-  `bbfc2cb`. Guard: QSS with `filter:` fails. Offscreen: no `filter:`; drafted
-  Approve off; published+file Approve on. Suite **2,798 -> 2,822**; mypy **144**
-  held (this run 140); backlog **358** open / **571** done, highest **#684**.
-  `data/` empty.
+- **Defect first:** none from this pass. Open from Claude still stand: #699
+  token hex · #700 `LIMIT 1` · #701 `"this weekend"` · #684 live decode ·
+  #112 dossier. GPT-6 parts 1–2 are opinion, not recorded decisions — do
+  not silently reverse the current next-five. Do not enable
+  `SCENE_MATCHED_BROLL` from part 2 item 6.
+- **Saved:** [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md)
+  and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md).
+  Pointers in planning_log + HANDOFF_SYNOPSIS. No code. Not committed.
 
 
 

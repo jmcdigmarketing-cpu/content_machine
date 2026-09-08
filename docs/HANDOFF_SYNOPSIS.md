@@ -2,6 +2,8 @@
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
+GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
+
 ## Last wave — review 4 (2026-09-08, Claude Code)
 
 Reviewed `0e1c73e` `4a82992` `bbfc2cb` `93e5feb` (88 files, 4,796 insertions).

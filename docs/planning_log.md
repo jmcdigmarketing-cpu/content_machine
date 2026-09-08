@@ -11,6 +11,23 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-08 — GPT-6 second review archived
+
+Full text: [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md).
+Part 2 (next 10 upgrades + API audit):
+[gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md).
+Playground had no copy-paste; operator recovered the review and asked it
+saved. Briefing-based, not a repo inspection. Not a recorded operator
+decision — does not override the roadmap by existing.
+
+Headline: bottleneck is operator attention (~25 min), not generation.
+Priority: connected journeys and brief/angle selection over more panels.
+Defer #151/#153-class polish unless a measured problem justifies them.
+Part 2 start: YouTube API for equivalent public metadata, pronunciation
+dictionary, FFmpeg/ffprobe QC — not more models or more panels.
+
+---
+
 ## 2026-09-08 (Cursor) — queue panel, studio drag, and 15 leftovers
 
 **Prompt:** complete the importance five plus 15 other roadmap tasks.

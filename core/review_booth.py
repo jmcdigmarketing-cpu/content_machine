@@ -21,6 +21,7 @@ from core.html_report import (
     write_html,
 )
 from core.logging import get_logger
+from core.review_keys import cheat_sheet_copy
 
 logger = get_logger("core.review_booth")
 
@@ -553,17 +554,23 @@ def booth_html(
             else ""
         )
         vid = (
-            f"<div class='stage' id='stage'>{poster_chrome}"
+            f"<div class='phone-bezel'><div class='stage' id='stage'>{poster_chrome}"
             f"<video id='player' class='player' controls src='{escape(src)}'"
-            f"{poster_attr}>{track}</video>{safe_boxes}</div>"
+            f"{poster_attr}>{track}</video>{safe_boxes}"
+            "<div class='yt-mock' aria-hidden='true'>"
+            "<span class='yt-like'>Like</span><span class='yt-comment'>Comment</span>"
+            "</div></div></div>"
             f"{rate_controls}{share}<p>{escape(mp4_path)}</p>"
         )
     else:
         empty = refuse_reason or "No last mp4 on disk. Render first, then reopen the booth."
         vid = (
-            f"<div class='stage' id='stage'>{poster_chrome}"
+            f"<div class='phone-bezel'><div class='stage' id='stage'>{poster_chrome}"
             f"<p id='player'>{escape(empty)}</p>"
-            f"{safe_boxes}</div>"
+            f"{safe_boxes}"
+            "<div class='yt-mock' aria-hidden='true'>"
+            "<span class='yt-like'>Like</span><span class='yt-comment'>Comment</span>"
+            "</div></div></div>"
             f"{rate_controls}{share}"
         )
     thumb = ""
@@ -673,6 +680,7 @@ def booth_html(
         "Copy as markdown</button></p>"
         f"{copy_bits}"
         "</div>"
+        f"<aside class='cheat-sheet'>{escape(cheat_sheet_copy())}</aside>"
         f"{trace_details}{command_details}"
     )
     quota_bits = [b for b in (uploads_left, elevenlabs_chars) if b]
@@ -681,6 +689,13 @@ def booth_html(
         header_html += f"<div class='quota' id='quotabar'>{escape(' · '.join(quota_bits))}</div>"
     if cost_share:
         header_html += f"<div class='sticky-cost' id='costbar'>{escape(cost_share)}</div>"
+    header_html += (
+        "<nav class='channel-switcher'>"
+        "<a href='?channel=tapin'>tapin</a>"
+        " · "
+        "<a href='?channel=moneywise'>moneywise</a>"
+        "</nav>"
+    )
     return themed_page(
         "Last-run review booth",
         body,

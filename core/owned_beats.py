@@ -50,6 +50,8 @@ def assign_owned_clips(
                 logger.debug("hud probe skipped for %s: %s", path, exc)
         if hud is True:
             continue
+        if hud is None and not os.path.isfile(path):
+            continue
         paths.append(str(path))
     if not paths:
         return []

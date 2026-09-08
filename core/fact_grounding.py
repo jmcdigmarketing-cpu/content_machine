@@ -527,6 +527,46 @@ def find_ungrounded_numeric(script: str, grounding_text: str) -> list[str]:
     return found
 
 
+def find_plausibility_outliers(script: str, grounding_text: str) -> list[str]:
+    """Flag a 10x purse/gate vs a smaller number in the facts, even if the span grounded."""
+    script_amts = _money_amounts(script)
+    fact_amts = _money_amounts(grounding_text)
+    found: list[str] = []
+    seen: set[str] = set()
+    for sval, span in script_amts:
+        if sval <= 0:
+            continue
+        for fval, _fspan in fact_amts:
+            if fval <= 0:
+                continue
+            if sval / fval >= 9.5:
+                key = span.lower()
+                if key not in seen:
+                    seen.add(key)
+                    found.append(span)
+                break
+    return found
+
+
+def _money_amounts(text: str) -> list[tuple[float, str]]:
+    out: list[tuple[float, str]] = []
+    for match in _PURSE.finditer(text or ""):
+        span = match.group(0)
+        num = re.search(r"([\d,]+(?:\.\d+)?)", span)
+        if not num:
+            continue
+        value = float(num.group(1).replace(",", ""))
+        unit = re.search(r"(million|billion|thousand)\b", span, re.I)
+        short = re.search(r"\b([km])\b", span, re.I)
+        if unit:
+            word = unit.group(1).lower()
+            value *= {"thousand": 1_000, "million": 1_000_000, "billion": 1_000_000_000}[word]
+        elif short:
+            value *= {"k": 1_000, "m": 1_000_000}[short.group(1).lower()]
+        out.append((value, span))
+    return out
+
+
 def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
     """
     Entities named in `script` whose distinctive tokens don't all appear in

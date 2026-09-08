@@ -135,12 +135,12 @@ paints `gather_booth_context` (mp4, grade, authenticity, cost). J/K/L live in
 `core/review_keys.py` so CI can call them without decoding. Approve runs the same
 `requeue-upload` command the HTML booth already prints. **`ops booth` remains.**
 Missing PySide6: same honest refuse as the run window, exit 2, no WARNING. Other
-Stage 3 panels (queue, cost, analytics, …) are later waves.
+Stage 3 panels (cost, analytics, …) are later waves.
 
 | # | panel | note |
 |---|---|---|
 | #168 + #209 | Review room — player, Approve, J/K/L | **shipped 2026-09-07**; `ops booth` stays |
-| #148 | Job queue — drag-reorder render/upload/quota-defer | worker stalls are invisible today |
+| #148 | Job queue — drag-reorder render/upload/quota-defer | **shipped 2026-09-08**; `ops queue-manage` stays |
 | #158 | Cost tower — TTS 91%, Apify actors, YouTube units | the number that decides if this is worth doing |
 | #149 | Analytics studio — retention, CTR, RPM | must keep saying n≈10 is thin |
 | #163 | Script desk — grounding heat-map | verifier computes it; painting it is the work |
@@ -161,7 +161,7 @@ CLI is never removed — it is the headless path and the test surface.
 The aesthetics work, and the reason Qt was chosen.
 
 - **#152** thumbnail composition canvas — mechanical slice shipped 2026-09-08
-  (`QGraphicsView` + last thumb + overlay). Drag/snapping is leftover **#692**.
+  (`QGraphicsView` + last thumb + overlay). Drag/snapping shipped as **#692**.
 - **#153** caption choreography timeline — keyframes over real word timings, which
   now exist on both the ElevenLabs and Edge TTS paths
 - **#151** brand-kit compiler — fonts, palette, sting, handle, banner compiled to

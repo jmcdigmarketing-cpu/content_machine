@@ -406,6 +406,19 @@ def cmd_status(args: argparse.Namespace) -> int:
 def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render
 
+    if getattr(args, "vacuum", False):
+        from config.paths import DATA_DIR
+        from core.sqlite_vacuum import vacuum_sqlite
+
+        path = (getattr(args, "path", None) or "").strip() or os.path.join(
+            DATA_DIR, "content_os.db"
+        )
+        try:
+            result = vacuum_sqlite(path)
+        except FileNotFoundError:
+            print(f"VACUUM skipped: {path} not found")
+            return 1
+        print(f"VACUUM {result['path']}: {result['before']} -> {result['after']} bytes")
     data = gather()
     chunks = [render(data)]
     # Recording on view means the trend builds itself — no separate job to forget.
@@ -988,6 +1001,16 @@ def cmd_studio(_args: argparse.Namespace) -> int:
     return launch(studio=True)
 
 
+@_register(
+    "queue-panel",
+    'Stage 3 job queue (drag-reorder; requires pip install -e ".[app]")',
+)
+def cmd_queue_panel(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(queue=True)
+
+
 @_register("why-slow", "Rank last-run phase timings (slowest first)")
 def cmd_why_slow(args: argparse.Namespace) -> int:
     from core.review_booth import last_trace
@@ -1311,6 +1334,36 @@ def cmd_agents(args: argparse.Namespace) -> int:
     from core.agent_comms import render
 
     _emit_text("Agent hand-off", render(), args)
+    return 0
+
+
+@_register("title-card", "Write a 2-line title-card still (--path dest.png, --topic text)")
+def cmd_title_card(args: argparse.Namespace) -> int:
+    dest = (getattr(args, "path", None) or "").strip()
+    text = (getattr(args, "topic", None) or "").strip() or "Title card"
+    if not dest:
+        print("title-card requires --path <dest.png>")
+        return 2
+    from core.title_card_wrap import write_title_card_still
+
+    print(write_title_card_still(text, dest, max_lines=2))
+    return 0
+
+
+@_register(
+    "log-override",
+    "Record that a recommendation was ignored (--topic offered, --source chosen)",
+)
+def cmd_log_override(args: argparse.Namespace) -> int:
+    offered = (getattr(args, "topic", None) or "").strip()
+    chosen = (getattr(args, "source", None) or getattr(args, "target", None) or "").strip()
+    if not offered or not chosen:
+        print("log-override needs --topic <offered> and a chosen topic (--source or positional)")
+        return 2
+    from core.counterfactual import record_override
+
+    row = record_override(offered, chosen)
+    print(f"recorded override: {row['offered']} -> {row['chosen']}")
     return 0
 
 
@@ -1638,6 +1691,11 @@ def main(argv=None) -> int:
         "--serve",
         action="store_true",
         help="booth: tiny stdlib localhost host (not FastAPI)",
+    )
+    parser.add_argument(
+        "--vacuum",
+        action="store_true",
+        help="reliability: VACUUM the sqlite at --path (default data/content_os.db)",
     )
     parser.add_argument(
         "--sendto-dir",

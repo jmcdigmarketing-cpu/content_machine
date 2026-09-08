@@ -1,8 +1,31 @@
-# Handoff synopsis — 2026-09-08: next 15 including Stage 4
+# Handoff synopsis — 2026-09-08: queue panel, studio drag, and 15 leftovers
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — next 15 including Stage 4 (2026-09-08)
+## Last implementation wave — queue + drag + 15 leftovers (2026-09-08)
+
+Cursor wave. HEAD before this wave: `bbfc2cb`. `GRADE_VERSION` stayed **v3**.
+CLI / `ops booth` / `ops queue-manage` stay. `SCENE_MATCHED_BROLL` stays off.
+#333 stays a veto. #112 correction dossier stays open.
+
+- **Locked five:** #148 queue panel + drag `sort_key` · live review-room smoke
+  · #692 studio snap into `title_safe` · #693 missing HUD skip · #686 24h
+  retraction toast + #688 VACUUM.
+- **15 leftovers:** #230 badge · #246 blur · #249 title-card · #259 switcher ·
+  #260 cheat-sheet · #264 hook clamp · #301 bezel · #302 yt-mock · #337 10x
+  purse · #344 ET clock · #358 override log · #365 recency · #367 drift ·
+  #596 competitor title · #629 test-time budget.
+- **Proof:** fail-first 5 fails / 19 errors on unmodified `bbfc2cb`. Guard:
+  QSS `filter:` fails. Offscreen: no `filter:`; drafted Approve off; published
+  run with a file can Approve. Suite **2,798 -> 2,822**; mypy **144** held
+  (this run 140). Backlog **358** open / **571** done, highest **#684**.
+  `data/` empty.
+
+**Still parked:** #151 kit; #153 timeline; #684 live decode; #112 dossier.
+Next five: #151 · #153 · #684 · #112 · #158.
+
+## Previous wave — next 15 including Stage 4 (2026-09-08)
+
 
 Cursor wave. HEAD before this wave: `4a82992`. `GRADE_VERSION` stayed **v3**.
 CLI and `ops booth` stay. `SCENE_MATCHED_BROLL` stays off. #333 stays a veto.

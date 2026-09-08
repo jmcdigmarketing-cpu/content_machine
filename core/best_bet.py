@@ -30,6 +30,22 @@ logger = get_logger("core.best_bet")
 _TOP_N = 30  # recent runs to analyse
 
 
+def recency_weight(age_days: float | None) -> float:
+    if age_days is None:
+        return 1.0
+    return 0.5 ** (max(0.0, float(age_days)) / 90.0)
+
+
+def weighted_engaged_mean(pairs: list[tuple[float, float | None]]) -> float:
+    num = 0.0
+    den = 0.0
+    for rate, age in pairs:
+        weight = recency_weight(age)
+        num += float(rate) * weight
+        den += weight
+    return num / den if den else 0.0
+
+
 @dataclass
 class BestBetResult:
     topic: str
@@ -362,7 +378,8 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             key=lambda d: _domain_priority(d, adjusted, counts),
         )
         rates = domain_rates[best_domain]
-        avg_rate = sum(rates) / len(rates)
+        ages = [e.get("age_days") for e in with_analytics if e["domain"] == best_domain]
+        avg_rate = weighted_engaged_mean(list(zip(rates, ages, strict=True)))
         best_topic = domain_topics[best_domain][0]
 
         return BestBetResult(

@@ -191,6 +191,23 @@ def _run_overnight_body(
         notify_overnight_done(result.drafted, result.requested)
     except Exception as exc:
         logger.debug("overnight toast skipped: %s", exc)
+    try:
+        from core.retraction_watch import notify_retractions_if_due
+
+        notify_retractions_if_due(channel)
+    except Exception as exc:
+        logger.debug("overnight retraction toast skipped: %s", exc)
+    if topics:
+        try:
+            from core.best_bet import get_best_bet
+            from core.counterfactual import record_override
+
+            bet = get_best_bet(channel)
+            picked = {str(t) for t in topics}
+            if bet and bet.topic not in picked:
+                record_override(bet.topic, ";".join(topics))
+        except Exception as exc:
+            logger.debug("overnight counterfactual skipped: %s", exc)
     return result
 
 

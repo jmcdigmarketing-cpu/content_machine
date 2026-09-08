@@ -7,6 +7,7 @@ from typing import Any
 
 from PySide6.QtGui import QColor, QPen, QPixmap
 from PySide6.QtWidgets import (
+    QGraphicsItem,
     QGraphicsRectItem,
     QGraphicsScene,
     QGraphicsView,
@@ -21,7 +22,29 @@ from PySide6.QtWidgets import (
 from core.chrome import build_qss, look_flags
 from core.font_specimen import specimen_faces, write_font_pick
 from core.html_report import html_dir
-from core.studio_canvas import studio_overlay_for
+from core.studio_canvas import clamp_layer_into_title_safe, studio_overlay_for
+
+
+class MovableTitleLayer(QGraphicsRectItem):
+    def __init__(self, x: int, y: int, w: int, h: int, title_safe: tuple[int, int, int, int]):
+        super().__init__(0, 0, max(1, w), max(1, h))
+        self.setPos(x, y)
+        self._safe = title_safe
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+        self.setPen(QPen(QColor(80, 180, 255), 2))
+        self.setBrush(QColor(80, 180, 255, 40))
+
+    def mouseReleaseEvent(self, event) -> None:
+        super().mouseReleaseEvent(event)
+        pos = self.pos()
+        nx, ny = clamp_layer_into_title_safe(
+            int(pos.x()),
+            int(pos.y()),
+            int(self.rect().width()),
+            int(self.rect().height()),
+            self._safe,
+        )
+        self.setPos(nx, ny)
 
 
 class StudioWindow(QMainWindow):
@@ -103,6 +126,9 @@ class StudioWindow(QMainWindow):
             item = QGraphicsRectItem(x0, y0, max(1, x1 - x0), max(1, y1 - y0))
             item.setPen(QPen(QColor(80, 220, 120), 2))
             self.scene.addItem(item)
+            layer_w = max(40, int((x1 - x0) * 0.4))
+            layer_h = max(24, int((y1 - y0) * 0.15))
+            self.scene.addItem(MovableTitleLayer(x0, y0, layer_w, layer_h, (x0, y0, x1, y1)))
 
     def _pick_font(self, face: str) -> None:
         dest = os.path.join(html_dir(), "font_pick.txt")

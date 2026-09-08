@@ -55,6 +55,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `lightbox` | Thumbnail lightbox for the last Pillow thumb |
 | `list` | List all operator commands |
 | `list-uploads` | Rendered MP4s not yet on YouTube |
+| `log-override` | Record that a recommendation was ignored (--topic offered, --source chosen) |
 | `migrate-layout` | Move root runtime files into data/ and config/secrets/ |
 | `migrate-schema` | Apply incremental DDL on existing Postgres |
 | `moat-backup` | Plan pg_dump + vault + traces backup (secrets excluded; dry-run) |
@@ -71,6 +72,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `publish-dry-run` | Print the YouTube videos.insert body (no upload; tokens redacted) |
 | `publish-ics` | Write an .ics of scheduled publishes beside HTML dumps |
 | `queue-manage` | Re-queue after deleting scheduled YouTube video |
+| `queue-panel` | Stage 3 job queue (drag-reorder; requires pip install -e ".[app]") |
 | `recommend-length` | Recommend video length from engagement history |
 | `recommend-time` | Recommend next post time from engagement history |
 | `reliability` | Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate) |
@@ -96,6 +98,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `sync-metrics` | Pull YouTube Analytics into performance memory |
 | `tapology-test` | Scrape Tapology fight card for a topic string |
 | `test` | Run unit tests |
+| `title-card` | Write a 2-line title-card still (--path dest.png, --topic text) |
 | `title-patterns` | Title patterns that engage (A/B variant loop leaderboard) |
 | `topic-clone` | Seed a new draft from a winner run (--run-id; angles/facts refresh) |
 | `topic-db` | Topic Winners (clone these) + Graveyard (avoided flops) |

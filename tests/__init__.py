@@ -86,8 +86,10 @@ from unittest.mock import patch
 import config.paths as _paths
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
+from core import counterfactual as _counterfactual
 from core import negative_facts as _negative_facts
 from core import quota_state as _quota_state
+from core import retraction_watch as _retraction_watch
 
 _SUITE_DATA_TMP = tempfile.mkdtemp(prefix="cm_suite_data_")
 atexit.register(shutil.rmtree, _SUITE_DATA_TMP, True)
@@ -113,6 +115,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_cache_manager, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_youtube_quota, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),
     patch.object(_negative_facts, "STORE_PATH", Path(_suite_store("negative_facts.json"))),
+    patch.object(_counterfactual, "STORE_PATH", Path(_suite_store("counterfactual.json"))),
+    patch.object(_retraction_watch, "STAMP_PATH", _suite_store("retraction_toast.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

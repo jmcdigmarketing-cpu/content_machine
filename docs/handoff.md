@@ -87,25 +87,25 @@ green suite).
 
 ## Slot — Cursor
 
-**Written:** 2026-09-08 · **HEAD at write:** `4a82992` · **Tree:** next 15 including
-Stage 4, committing right after this slot.
+**Written:** 2026-09-08 · **HEAD at write:** `bbfc2cb` · **Tree:** queue + drag + 15
+leftovers, committing right after this slot.
 
-- **Defect first:** live review room loaded leftover GTA mp4 while Approve queued
-  drafted run 75. #148 queue skipped so it could not strand the wave. #692 no
-  drag/snapping on the studio canvas. #684 live decode still CI-untested (ffmpeg
-  may still print probe lines when a real file is on disk). #686 last-run
-  retraction, not a 24h toast. #688 sqlite bytes, not VACUUM. #693 `hud: None`
-  on a missing path is still picked.
-- **Shipped:** #689 same-run bind + refuse drafted Approve · #690 QSS drops
-  `filter:` · #691 autoplay · #152 mechanical canvas (`ops studio`) · #186 grid
-  · #248 specimen · #266 still · #265 frame-step · #270 waveform · #685 HUD
-  probe on real files · #609 import budget · why-slow skips `word_count` · #687
-  `.env` shape · #634 pre-commit command-ref · #619 schema `0004`.
-  `GRADE_VERSION` **v3**. `SCENE_MATCHED_BROLL` off.
-- Fail-first: `tests.test_stage4` 7 fails / 19 errors on unmodified HEAD (missing
-  helpers, QSS still had `filter:`, `word_count: 410.0s` ranked). Guard: QSS
-  with `filter:` fails. Offscreen: no `filter:`; drafted Approve stays off;
-  published run 72 Approve on. Suite **2,770 -> 2,798**; mypy **144** held;
-  backlog **378** open / **551** done, highest **#693**. `data/` empty.
+- **Defect first:** #684 live decode still CI-untested — offscreen smoke bound a
+  real tapin mp4 and ffmpeg still printed probe lines. #112 correction dossier
+  still does not auto-fire (#686 only toasts). #365 recency decay is in
+  `get_best_bet` only; length and post-timing still vote equally. #151 kit,
+  #153 timeline, and #158 cost tower are unbuilt.
+- **Shipped:** #148 queue panel + drag `sort_key` + `claim_next` order ·
+  review-room smoke · #692 studio snap · #693 missing HUD skip · #686 24h
+  toast (overnight/tray; CLI prints only) · #688 VACUUM · #230 #246 #249 #259
+  #260 #264 #301 #302 #337 #344 #358 #365 #367 #596 #629.
+  `GRADE_VERSION` **v3**. `SCENE_MATCHED_BROLL` off. CLI / `ops booth` /
+  `ops queue-manage` stay.
+- Fail-first: `tests.test_stage3_queue` 5 fails / 19 errors on unmodified
+  `bbfc2cb`. Guard: QSS with `filter:` fails. Offscreen: no `filter:`; drafted
+  Approve off; published+file Approve on. Suite **2,798 -> 2,822**; mypy **144**
+  held (this run 140); backlog **358** open / **571** done, highest **#684**.
+  `data/` empty.
+
 
 

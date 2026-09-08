@@ -498,6 +498,18 @@ def run_tray(
             return 1
     text = show_quota_chip(toast_it=True, channel_id=cid)
     print(text)
+    try:
+        from core.job_queue import list_active_jobs, queue_depth_badge
+
+        print(f"queue {queue_depth_badge(list_active_jobs())}")
+    except Exception as exc:
+        logger.debug("tray queue badge skipped: %s", exc)
+    try:
+        from core.retraction_watch import notify_retractions_if_due
+
+        notify_retractions_if_due(cid)
+    except Exception as exc:
+        logger.debug("tray retraction toast skipped: %s", exc)
     if open_output:
         try:
             from core.win_shell import open_last_output_folder

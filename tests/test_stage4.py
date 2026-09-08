@@ -263,8 +263,7 @@ class TestHudNoneIsProbedWhenTheFileExists(unittest.TestCase):
             paths = assign_owned_clips(scenes, index, topic="GTA 6 leak")
         self.assertEqual(paths, [str(clean)])
 
-    def test_known_gap_missing_hud_null_still_gets_picked(self):
-        """detect_hud cannot probe a path that is not on disk."""
+    def test_missing_hud_null_path_is_skipped(self):
         from core.owned_beats import assign_owned_clips
         from video.scene_plan import plan_scenes
 
@@ -275,7 +274,7 @@ class TestHudNoneIsProbedWhenTheFileExists(unittest.TestCase):
             }
         }
         paths = assign_owned_clips(scenes, index, topic="GTA 6 leak")
-        self.assertEqual(paths, ["C:/clips/gta/hud.mp4"])
+        self.assertEqual(paths, [])
 
 
 class TestStartupBudget(unittest.TestCase):

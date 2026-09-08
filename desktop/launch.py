@@ -11,12 +11,19 @@ def desktop_mode(argv: list[str] | None = None) -> str:
     args = argv if argv is not None else sys.argv[1:]
     if "--studio" in args:
         return "studio"
+    if "--queue" in args:
+        return "queue"
     if "--review" in args:
         return "review"
     return "run"
 
 
-def launch(*, review: bool | None = None, studio: bool | None = None) -> int:
+def launch(
+    *,
+    review: bool | None = None,
+    studio: bool | None = None,
+    queue: bool | None = None,
+) -> int:
     try:
         from PySide6.QtCore import Qt
         from PySide6.QtGui import QGuiApplication
@@ -29,6 +36,8 @@ def launch(*, review: bool | None = None, studio: bool | None = None) -> int:
     )
     if studio:
         mode = "studio"
+    elif queue:
+        mode = "queue"
     elif review:
         mode = "review"
     else:
@@ -40,6 +49,10 @@ def launch(*, review: bool | None = None, studio: bool | None = None) -> int:
         from desktop.studio import StudioWindow
 
         window = StudioWindow(context=gather_booth_context())
+    elif mode == "queue":
+        from desktop.queue import QueueWindow
+
+        window = QueueWindow()
     elif mode == "review":
         from core.review_booth import gather_booth_context
         from desktop.review import ReviewWindow

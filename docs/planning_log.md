@@ -11,7 +11,41 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-08 (Cursor) — queue panel, studio drag, and 15 leftovers
+
+**Prompt:** complete the importance five plus 15 other roadmap tasks.
+
+**Picked (locked five, then cheap leftovers):** #148 queue · live review-room
+smoke · #692 studio snap · #693 missing HUD skip · #686 toast + #688 VACUUM,
+then #230 #246 #249 #259 #260 #264 #301 #302 #337 #344 #358 #365 #367 #596
+#629. Skipped #151/#153/#684 so those cannot strand the wave.
+`GRADE_VERSION` stayed **v3**. `SCENE_MATCHED_BROLL` off. CLI / `ops booth` /
+`ops queue-manage` stay.
+
+**Fail-then-fix:** unmodified `bbfc2cb` — `tests.test_stage3_queue` 5 fails /
+19 errors (missing helpers, HUD still picked the missing path, `claim_next`
+ignored `sort_key`, VACUUM did not shrink, studio layer not movable). After
+the fix: 24 ok (+ HUD twins). Guard: QSS with `filter:` still fails; drafted
+Approve stays off. Suite **2,798 -> 2,822**; mypy **144** held (this run 140).
+Backlog **358** open / **571** done, highest **#684**. `data/` empty.
+
+**Shipped:**
+1. **#148** `list_active_jobs` + `QueueWindow` drag `sort_key` + `claim_next` order
+2. Offscreen review/studio/queue smoke
+3. **#692** movable layer clamps into `title_safe`
+4. **#693** missing HUD path skipped
+5. **#686** 24h retraction toast (overnight/tray; CLI prints only) + **#688** VACUUM
+6. Fifteen leftovers on existing seams
+
+**Leftover:** #151 kit · #153 timeline · #684 live decode · #112 dossier ·
+#158 cost tower.
+
+**Next five:** #151 · #153 · #684 · #112 · #158.
+
+---
+
 ## 2026-09-08 (Cursor) — next 15 including Stage 4
+
 
 **Prompt:** next 15 including Stage 4 after a live `py -m desktop --review` session.
 

@@ -290,3 +290,24 @@ def adjust_publish_at(
     if not reasons or current == target:
         return publish_at, None
     return current, "; ".join(reasons)
+
+
+def resolve_relative_clock(
+    phrase: str,
+    *,
+    now: datetime | None = None,
+    tz_name: str = "America/New_York",
+) -> datetime | None:
+    """Resolve 'tonight' / 'this weekend' against TapIn ET at script time."""
+    tz = _tz(tz_name)
+    local = _as_utc(now).astimezone(tz)
+    text = (phrase or "").strip().lower()
+    if text == "tonight":
+        target = local.replace(hour=21, minute=0, second=0, microsecond=0)
+        if target <= local:
+            target += timedelta(days=1)
+        return target
+    if text == "this weekend":
+        days = (5 - local.weekday()) % 7
+        return (local + timedelta(days=days)).replace(hour=12, minute=0, second=0, microsecond=0)
+    return None

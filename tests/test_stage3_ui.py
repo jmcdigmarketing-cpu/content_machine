@@ -88,12 +88,12 @@ class TestOwnedBeatCuts(unittest.TestCase):
             "clips": {
                 "C:/clips/gta/a.mp4": {
                     "duration_s": 8.0,
-                    "hud": None,
+                    "hud": False,
                     "source": "gta",
                 },
                 "C:/clips/gta/b.mp4": {
                     "duration_s": 8.0,
-                    "hud": None,
+                    "hud": False,
                     "source": "gta",
                 },
             }
@@ -109,8 +109,7 @@ class TestOwnedBeatCuts(unittest.TestCase):
         scenes = plan_scenes("A short script about the leak.", "GTA 6 leak", 6.0)
         self.assertEqual(assign_owned_clips(scenes, {"clips": {}}, topic="GTA 6 leak"), [])
 
-    def test_known_gap_hud_null_still_gets_picked(self):
-        """detect_hud cannot probe a path that is not on disk. Leftover #693."""
+    def test_missing_hud_null_path_is_skipped(self):
         from core.owned_beats import assign_owned_clips
         from video.scene_plan import plan_scenes
 
@@ -121,7 +120,7 @@ class TestOwnedBeatCuts(unittest.TestCase):
             }
         }
         paths = assign_owned_clips(scenes, index, topic="GTA 6 leak")
-        self.assertEqual(paths, ["C:/clips/gta/hud.mp4"])
+        self.assertEqual(paths, [])
 
     def test_missing_files_keep_the_single_loop(self):
         from core.owned_beats import try_owned_beat_background

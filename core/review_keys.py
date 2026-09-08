@@ -33,7 +33,15 @@ def apply_review_key(
         pos = max(0, pos - frame_ms)
     elif raw in {".", ">"}:
         pos = min(dur, pos + frame_ms)
+    elif token == "h":
+        cap = min(3_000, dur)
+        if pos > cap:
+            pos = cap
     return pos, holding
+
+
+def cheat_sheet_copy() -> str:
+    return "J back 5s · K pause · L forward 5s · , frame back · . frame forward · S still · H hook 0-3s"
 
 
 def approve_command(ctx: dict[str, Any] | None) -> str:

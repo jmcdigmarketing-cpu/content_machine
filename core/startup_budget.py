@@ -26,6 +26,16 @@ def elapsed_over_budget(elapsed: float, budget_s: float) -> bool:
     return float(elapsed) > float(budget_s)
 
 
+def measure_callable(
+    fn: Callable[[], Any],
+    *,
+    clock: Callable[[], float] = time.perf_counter,
+) -> float:
+    start = clock()
+    fn()
+    return clock() - start
+
+
 def measure_import(
     module: str,
     *,

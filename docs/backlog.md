@@ -383,11 +383,11 @@ Larger — multi-week systems
 
 - [ ] 146. Windows **system-tray daemon** wrapping worker + overnight `[L]` — *new-app.* Overnight is a forgotten PowerShell window today.
 - [x] 147. **Localhost FastAPI operator shell** *(2026-08-28)* — `core/operator_shell.py` + `ops shell`, bound to `127.0.0.1` and default off. GET-only over the gatherers that already exist (`/booth`, `/reliability`, `/doctor`, `/next`, `/status`) — no second cache, no spend, and `POST /` returns 405. Driven for real through `TestClient`; the `shell` extra is also in `[dev]` so CI can import it. Thin slice: not #141 Desktop, not a tray daemon, and the stdlib `ops booth --serve` still exists `[L]`
-- [ ] 148. **Job-queue visualizer** with drag-reorder (render vs upload vs quota-defer) `[L]` — *UI.* Worker stalls are invisible; 1,600-unit ceiling needs a picture.
+- [x] 148. **Job-queue visualizer** with drag-reorder *(2026-09-08)* — `list_active_jobs` over the existing job repo (pending/running/failed). Labels `render` / `upload` / `awaiting_quota` when pending and `"quota" in last_error`. `QueueWindow` + `ops queue-panel` / `py -m desktop --queue`. Drag writes `payload_json.sort_key`; `claim_next` orders by that key then `id`. No Alembic column. Missing PySide6: refuse, exit 2 `[L]`
 - [ ] 149. **Analytics Studio** (retention / CTR / RPM local web) `[L]` — *viability.* Weekly-report ASCII cannot show curves; still honest that n≈10 is thin.
 - [x] 150. **TapIn vs MoneyWise visual language packs** *(2026-09-07)* — Stage 2 QSS from #170 tokens. TapIn header `#E53935` vs MoneyWise `#81C995`; serif on MoneyWise. Fail-first: empty `styleSheet()` `[L]`
 - [ ] 151. **Brand-kit compiler** (fonts/palette/sting/handle/banner → render + GUI) `[L]` — *aesthetics.* `channel-go-live` checks files exist; it does not apply a kit.
-- [x] 152. **Thumbnail composition canvas** mechanical slice *(2026-09-08)* — `QGraphicsView` + last thumb + `inspect_thumbnail` overlay. `ops studio` / `py -m desktop --studio`. Missing PySide6: refuse, exit 2, no WARNING. No drag/snapping — leftover #692 `[L]`
+- [x] 152. **Thumbnail composition canvas** mechanical slice *(2026-09-08)* — `QGraphicsView` + last thumb + `inspect_thumbnail` overlay. `ops studio` / `py -m desktop --studio`. Missing PySide6: refuse, exit 2, no WARNING. Drag/snapping shipped as #692 `[L]`
 - [ ] 153. **Caption choreography timeline** (karaoke beats vs SRT) `[L]` — *aesthetics.* Distinct from #21 JSON font skin: timing and placement, not fill color.
 - [ ] 154. **MSIX / Inno installer** bundling Python + ffmpeg + tray `[L]` — *new-app.* Packaging is what makes #141 software instead of a repo.
 - [ ] 155. **MCP + local plugin API** over `core/` `[L]` — *new-app.* Agents scrape CLI today; contract must not add a signal cache or skip `quota_governor`.
@@ -471,7 +471,7 @@ Small — hours / a PR
 - [x] **227. Toast when overnight finishes drafts** *(2026-08-21)* `[S]` — *UI.*
 - [x] **228. Balloon: N uploads left this reset** *(2026-08-21)* — tray + `main.py` startup `[S]` — *cost / UI.*
 - [x] **229. Click-toast opens last mp4** *(2026-08-21)* — protocol launch `file:` URI `[S]`
-- [ ] 230. Taskbar **overlay badge** (queue depth) `[S]` — *UI.* Worker progress without a window.
+- [x] 230. Taskbar **overlay badge** (queue depth) *(2026-09-08)* — integer from `list_active_jobs`; tray prints `queue N`. Not a second store `[S]`
 - [x] 231. Start-menu shortcut via **pyw** *(2026-08-21)* — `ops shortcut` + `content_os.pyw` `[S]` — *new-app.*
 - [x] **232. Desktop `.lnk` to the review booth** *(2026-08-25)* — `ops booth-shortcut` targets a persistent `pythonw` launcher because the localhost port is ephemeral and a literal URL would be dead `[S]` — *new-app.*
 - [ ] 233. Per-channel **notification sound** `[S]` — *aesthetics.* TapIn vs MoneyWise should not share one ding.
@@ -489,10 +489,10 @@ Small — hours / a PR
 - [x] 243. Startup **PNG wordmark** *(2026-09-07)* — `CONTENT_UI_WORDMARK=1` injects `<img class='wordmark'>` into `themed_page`. Flag off: ASCII path byte-identical. Not painted in conhost `[S]`
 - [x] 244. Windows Terminal **profile snippet** *(2026-09-07)* — `config/windows-terminal/profiles.json` schemes “Content OS TapIn” (`#0B0F14`) and “Content OS MoneyWise” (`#1B2430`). Pointer in `docs/startup-powershell.md`. Not auto-imported into WT `[S]`
 - [x] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` *(2026-08-27)* — body stays Segoe UI; `pre` / `textarea.md` use JetBrains Mono
-- [ ] 246. Blurred **9:16 poster** as booth background `[S]` — *aesthetics.* Last frame, CSS blur only — no new ffmpeg.
+- [x] 246. Blurred **9:16 poster** as booth background *(2026-09-08)* — last thumb as `.poster-chrome` `backdrop-filter: blur`. No new ffmpeg `[S]`
 - [x] 247. CSS **grain/vignette preview** toggle *(2026-09-07)* — `themed_css(grain=True, vignette=True)` emits `body.grain` / `body.vignette`. `CONTENT_UI_GRAIN` / `CONTENT_UI_VIGNETTE`. Default off. Does not change the render command (#512 does) `[S]`
 - [x] 248. Caption **font specimen strip** *(2026-09-08)* — three faces from shipped `caption_skin` (tapin Impact/Arial + Segoe UI). Pick writes `font_pick.txt`, not `channels.json` `[S]`
-- [ ] 249. Title-card mock: **2-line vs 3-line wrap** `[S]` — *aesthetics.* YouTube chrome rehearsal without uploading.
+- [x] 249. Title-card mock: **2-line vs 3-line wrap** *(2026-09-08)* — `wrap_title_card` + Pillow still via `ops title-card`. Does not write `channels.json` `[S]`
 - [x] **250. ASCII-safe HTML** *(2026-08-21)* — emoji/smart-punct stripped (cp1252) `[S]` — *UI.*
 - [x] **251. Copy-as-markdown on the report card** *(2026-08-21)* — booth textarea + `ops grade --md` `[S]`
 - [x] **252. Copy last unlisted URL** *(2026-08-22)* — booth textarea + clipboard; prefers unlisted `[S]`
@@ -502,13 +502,13 @@ Small — hours / a PR
 - [x] **256. Reveal trace JSON** *(2026-08-21)* — `ops reveal --kind trace` `[S]` — *UI.*
 - [ ] 257. **Drag-drop facts `.txt`** onto the booth `[S]` — *UI / short-term.* Overnight still cannot take `key_facts=`; this is intake chrome only.
 - [x] 258. Paste-facts textarea + **char meter** *(2026-09-07)* — meter uses live `operator_key_fact_char_budget()` (12000 default, not the retired 4500). `"3 / 12000 chars"` `[S]`
-- [ ] 259. HTML **channel switcher** (tapin / moneywise) `[S]` — *UI.* Same constraint as #211: never an `.env` editor.
-- [ ] 260. Keyboard **`?` cheat-sheet** overlay `[S]` — *UI.* Booth/palette discoverability.
+- [x] 259. HTML **channel switcher** (tapin / moneywise) *(2026-09-08)* — booth header links. Never an `.env` editor `[S]`
+- [x] 260. Keyboard **`?` cheat-sheet** overlay *(2026-09-08)* — booth aside + review-room `?` copy for J/K/L `,` `.` S H `[S]`
 - [x] **261. Skip-link a11y on the booth** *(2026-08-21)* — skip to `#player`; dumps skip to `#main` `[S]`
 - [x] 262. HTML5 **captions from SRT** *(2026-08-25)* — stable render-side SRT is converted to WebVTT and attached as the booth player's default English `<track>` `[S]`
 - [x] 263. Playback-rate **1.25×** toggle `[S]` — *UI.* Operator minutes.
   *(2026-08-26: booth buttons; default `playbackRate = 1`)*
-- [ ] 264. **Loop last 3s of hook** `[S]` — *aesthetics.* Retention cliff rehearsal; no new render.
+- [x] 264. **Loop last 3s of hook** *(2026-09-08)* — `apply_review_key("h")` clamps position into `[0, 3000]` of the loaded clip. Not a re-render `[S]`
 - [x] 265. **Frame-step** with `,` / `.` *(2026-09-08)* — one frame at 30fps (33ms), not the 5s J/L step `[S]`
 - [x] 266. **Save current frame** as a still *(2026-09-08)* — `S` writes `html_dir()/stills`. PNG copy or ffmpeg frame. Not a thumbnail API `[S]`
 - [x] 267. **9:16 letterbox** in a landscape window `[S]` *(2026-08-27)* — `.stage` with `aspect-ratio: 9 / 16` and `object-fit: contain`
@@ -546,8 +546,8 @@ Small — hours / a PR
 - [x] 298. YouTube-title **100-char meter** *(2026-08-25)* — the real booth reads the stored public title and flags overflow `[S]`
 - [x] 299. Description **first-line preview card** *(2026-08-25)* — the real booth reads the stored public description and shows only its first non-empty line `[S]`
 - [ ] 300. Local **tag chips** (edit in booth, apply writes the package) `[S]` — *UI.*
-- [ ] 301. **Phone-bezel CSS** around the 9:16 player `[S]` — *aesthetics.* Review how a Short actually sits in a hand.
-- [ ] 302. **YouTube chrome mock** (like/comment/subscribe) as an overlay `[S]` — *aesthetics.* Safe-area rehearsal distinct from #268's boxes.
+- [x] 301. **Phone-bezel CSS** around the 9:16 player *(2026-09-08)* — `.phone-bezel` wraps the 9:16 stage `[S]`
+- [x] 302. **YouTube chrome mock** (like/comment/subscribe) as an overlay *(2026-09-08)* — `.yt-mock` Like/Comment, distinct from #186/#268 boxes `[S]`
 - [x] 303. Booth **theme toggle** *(2026-09-07)* — `themed_page(..., channel_id="moneywise")` header border is the MoneyWise token, not hardcoded TapIn `#c62828` `[S]`
 - [x] 304. **Reduced-chroma** mode *(2026-09-07)* — `CONTENT_UI_REDUCED_CHROMA=1` adds `body.reduced-chroma` (`filter: saturate(0.45)`). Default path unchanged. Does not retune render `color_grade` `[S]`
 - [x] **305. 16px minimum type** *(2026-08-22)* — buttons/inputs/textareas join the 16px body `[S]`
@@ -601,14 +601,14 @@ Grounding & fact quality
 - [ ] 334. **Entity disambiguation ledger** — `entity_extractor.py` re-resolves "Jones" / "Rockstar" every run. Resolve once to a canonical id, reuse across runs and channels `[M]`
 - [x] 335. **Source-diversity floor on dated topics** *(2026-09-07)* — news-shaped claims whose URLs collapse to one registrable domain (espn.com + espn.com/story2) are moved out of verified into context. ESPN + MMAFighting passes. Evergreen "how does the offside rule actually work" does not fire. Wired in `_build_prompts` via `collect_source_urls` (operator paste + vault `source_url`). No sixth `input()` gate `[S]`
 - [ ] 336. **Wikipedia last-revision recency tripwire** — a cheap "the world moved after my cutoff" signal from a source already called; the June UFC-250 failure had no such guard `[S]`
-- [ ] 337. **Numeric plausibility bands per domain** — a grounded number can still be a typo. 10x outliers on purses, gates, and market caps flag even when `find_ungrounded_numeric` passes `[S]`
+- [x] 337. **Numeric plausibility bands per domain** *(2026-09-08)* — `find_plausibility_outliers` flags a 10x purse even when the span is in the facts. Advisory on quality; `GRADE_VERSION` stayed **v3** `[S]`
 - [x] 338. **Quote-attribution gate** *(2026-09-07)* — deterministic, no extra LLM. Invented quote flags; `Dana White told ESPN "…"` in facts passes; `"GTA 6"` does not fire. Nested quotes `known_gap=True`. Pre-rewrite flag persisted if the script changes (§25). `GRADE_VERSION` stayed **v3** `[M]`
 - [ ] 339. **"Unconfirmed" as a first-class script mode** — today the choice is assert or drop; saying "this is not confirmed yet" is more honest *and* more authentic under the 2026 policy `[M]`
 - [x] 340. **`.facts.json` sidecar beside the mp4** *(2026-08-28)* — `write_render_sidecars` at the pipeline finalize site writes claims/sources/disputed from already-persisted quality; fail-open, and a missing mp4 writes nothing `[S]`
-- [x] 341. **Retraction watch 24h post-publish** *(2026-09-07)* — `ops retraction-watch` re-fetches last-trace source URLs; a body containing `RETRACTION` or missing the stored claim is a hit. 24h toast / #112 auto-fire is leftover #686 `[M]`
+- [x] 341. **Retraction watch 24h post-publish** *(2026-09-07)* — `ops retraction-watch` re-fetches last-trace source URLs; a body containing `RETRACTION` or missing the stored claim is a hit. *(2026-09-08)* 24h toast is #686. #112 correction dossier still does not auto-fire `[M]`
 - [ ] 342. **Learned per-source trust weights** — `grounding_tiers.py` tiers are hand-assigned. Demote a source that keeps being corrected; promote one that never is `[M]`
 - [ ] 343. **Cross-run fact cache keyed by entity+date** — franchise batches share discovery (#42) but still re-verify identical facts per topic `[M]`
-- [ ] 344. **Channel-clock resolution of relative time** — "tonight" / "this weekend" must resolve against the channel's ET calendar at *script* time; an overnight run crossing midnight currently lies `[S]`
+- [x] 344. **Channel-clock resolution of relative time** *(2026-09-08)* — `resolve_relative_clock` maps tonight/this weekend onto TapIn ET (`publish_windows` tz). Stamped on quality when the script uses those phrases `[S]`
 - [ ] 345. **Claim-type taxonomy with per-type thresholds** — result / schedule / rumor / opinion should not clear the same grounding bar. One rule for all four is why hedged rumors read as fact `[M]`
 - [x] 346. **Rumor-labeling rule** *(2026-08-27)* — `apply_rumor_language` after odds in `generate_content_package`. Bare "GTA 6 is delayed to 2027" on a leak topic is softened; a Tapology result line is left; "reports to EA" is employment not a hedge. Known gap: outlet is required *in the script*, not inferred from the corpus `[S]`
 - [x] 347. **`ops vault-decay`** *(2026-08-27)* — wraps `fact_expiry.expired_notes` (no second scanner). Temp vault with a past `expires:` lists it; empty vault prints an honest empty line and emits no WARNING `[S]`
@@ -625,16 +625,16 @@ Learning loop & analytics rigor
 - [x] 355. **Per-video surprise score (actual minus predicted)** *(2026-08-28)* — residual persisted when metrics sync lands; surfaced beside the grade `[S]`
 - [ ] 356. **Store the retention *curve*, not just `drop_off_ratio`** — #28's learned intro reads one number; the shape is where the cliff actually is `[M]`
 - [ ] 357. **Feature-importance report over `run_features.py`** — dozens of features are recorded and none is ever tested for correlation with outcome `[M]`
-- [ ] 358. **Counterfactual log of operator overrides** — when a recommendation is ignored, record what it was. Overrides are the highest-information events and are discarded today `[S]`
+- [x] 358. **Counterfactual log of operator overrides** *(2026-09-08)* — `record_override` fail-open JSON. `ops log-override`; overnight records when explicit topics skip the best-bet. Suite isolates the store `[S]`
 - [ ] 359. **Cold-start priors from the nearest existing domain** — a third channel should inherit TapIn's shape, not library defaults; unblocks the AI-Tools groundwork `[M]`
 - [x] 360. **Separate day-of-week from hour in post-time learning** *(2026-08-28)* — Saturday 9pm and Tuesday 9pm are separate buckets; two fixtures prove they no longer average together `[S]`
 - [ ] 361. **Comment sentiment as a secondary target** — `youtube_comments_signal.py` already pulls the text; engaged-rate cannot tell a good reaction from a pile-on `[M]`
 - [ ] 362. **Subscribers-gained as its own objective** — a video that converts subs and one that farms views are different products; the sync can already fetch it `[S]`
 - [ ] 363. **Title-embedding clustering across the catalog** — detect that the channel has quietly made the same video five times `[M]`
 - [ ] 364. **Topic saturation index** — how many tracked competitors covered this in 48h, from the snapshot already stored. Being seventh is a scoring input `[S]`
-- [ ] 365. **Recency-decay weighting in every recommender** — a six-month-old video currently votes as loudly as last week's `[S]`
+- [x] 365. **Recency-decay weighting in every recommender** *(2026-09-08)* — `recency_weight` half-life 90 days; `get_best_bet` averages with it. Six-month-old 90% loses to last week's 20% `[S]`
 - [x] 366. **Anomaly detector on the metrics sync itself** *(2026-08-28)* — `metrics_sync_incident` reaches `ops reliability`; a stalled sync is an incident, a fresh one prints no warning `[S]`
-- [ ] 367. **Calibration drift over time in `analyst_accuracy.py`** — accuracy is scored at a point; the useful question is whether it is getting worse `[S]`
+- [x] 367. **Calibration drift over time in `analyst_accuracy.py`** *(2026-09-08)* — `drift_line` compares two windows; getting worse is a summary line, not a silent skip `[S]`
 - [ ] 368. **"Would this have been picked?" replay** — run the current scorer against past winners; a scorer change that would have skipped every hit is a regression `[M]`
 
 Cost & quota
@@ -928,7 +928,7 @@ Signals & reliability
 Publish, policy & channel ops
 
 - [ ] 595. **Dry-render the description exactly as YouTube will show it**, including the fold `[S]`
-- [ ] 596. **Detect a title that duplicates a competitor's word for word** `[S]`
+- [x] 596. **Detect a title that duplicates a competitor's word for word** *(2026-09-08)* — `verbatim_competitor_advisory` over `list_recent_competitor_titles`. Advisory string on quality `[S]`
 - [ ] 597. **Generate the community post from the finished video** `[M]`
 - [ ] 598. **Track scheduled vs immediate uploads** and how each performed `[S]`
 - [ ] 599. **Verify the thumbnail actually applied** after upload — it fails silently today `[S]`
@@ -970,7 +970,7 @@ Testing & ops hygiene
 - [ ] 626. **Contract tests generated from each signal's recorded payload** `[M]`
 - [ ] 627. **Mutation testing on the gate modules** — do the tests actually detect a broken gate `[L]`
 - [ ] 628. **Flaky-test detector** across repeated CI runs `[M]`
-- [ ] 629. **Test-time budget** — the suite is 45s and growing `[S]`
+- [x] 629. **Test-time budget** *(2026-09-08)* — `measure_callable` with injectable clock; cousin of #609. CI-failing threshold helper, no network `[S]`
 - [ ] 630. **ops selftest** — run the five safety gates against fixtures and report `[M]`
 - [ ] 631. **Coverage reporting for `core/` only**, non-blocking, to find untested gates `[S]`
 - [x] 632. **Size-tag the 49 open items that carry none** *(2026-09-07)* — `untagged_open_items()` uses the same backtick `SIZE_RE` as `ops roadmap-index`. 49 unnumbered early-backlog rows had `[S]`-style tags on a continuation line or none; they now carry `` `[S]` `` / M / L / XL on the `- [ ]` line. Index untagged **0** `[S]`
@@ -1058,17 +1058,17 @@ Claude review of the Stage 0-2 waves (2026-09-07)
 
 Stage 3 leftovers (2026-09-07)
 
-- [x] 683. **HUD-aware owned beat picks** *(2026-09-07)* — `detect_hud` on a rainbow top-bar PNG is True; uniform green is False. Ingest persists that bool. `assign_owned_clips` skips `hud: True` when a clean clip exists. *(2026-09-08)* `hud: None` on a **real file** is probed. Missing paths still win — leftover #693 `[S]`
+- [x] 683. **HUD-aware owned beat picks** *(2026-09-07)* — `detect_hud` on a rainbow top-bar PNG is True; uniform green is False. Ingest persists that bool. `assign_owned_clips` skips `hud: True` when a clean clip exists. *(2026-09-08)* `hud: None` on a **real file** is probed; missing paths skip as #693 `[S]`
 - [ ] 684. **Review room does not decode a live mp4 in CI** — J/K/L helper is unit-tested; widget construction is offscreen without a file. A real last-run play is still operator smoke `[S]`
-- [x] 685. **`hud: None` clips are still chosen** *(2026-09-08)* — `assign_owned_clips` calls `detect_hud` when `hud is None` and the file exists. Missing paths still win — leftover #693 `[S]`
-- [ ] 686. **Retraction watch is last-run fetch, not a 24h toast** — `ops retraction-watch` hits URLs on the last trace. #112's correction dossier still does not fire on its own `[M]`
+- [x] 685. **`hud: None` clips are still chosen** *(2026-09-08)* — `assign_owned_clips` calls `detect_hud` when `hud is None` and the file exists. Missing paths skip as #693 `[S]`
+- [x] 686. **Retraction watch 24h toast** *(2026-09-08)* — overnight/tray call `maybe_toast_retractions` with a 24h debounce stamp. CLI `ops retraction-watch` still prints and does not toast. #112 correction dossier stays open `[M]`
 - [x] 687. **Config diff does not fingerprint `.env`** *(2026-09-08)* — `env_fingerprint` hashes presence/shape of `.env.example` keys (`set`/`empty`/`missing`), never values. Stamped on the trace as `env_sha256` next to `channels_sha256`. `ops secrets-doctor` still never prints a secret `[S]`
-- [ ] 688. **`ops reliability` reports sqlite bytes, not VACUUM** — size is visible; reclaiming pages is not `[S]`
+- [x] 688. **`ops reliability --vacuum`** *(2026-09-08)* — `vacuum_sqlite(path)` on the caller-named file. Tests use a temp sqlite; never vacuum the operator DB from the suite `[S]`
 
 Stage 4 leftovers (2026-09-08)
 
 - [x] 689. **Same-run bind + refuse drafted Approve** *(2026-09-08)* — `bind_review_media` never pairs a leftover `output/` mp4 with drafted run 75. Approve disabled + on-screen reason when status is `drafted` or path empty. Fixture: live run 75 strings `[S]`
 - [x] 690. **QSS must not emit `filter:`** *(2026-09-08)* — `build_qss` drops the CSS filter line (Qt does not implement it; live log was `Unknown property filter`). `themed_css` keeps `body.reduced-chroma`. Guard: QSS with `filter:` fails `[S]`
 - [x] 691. **Autoplay after `setSource`** *(2026-09-08)* — `start_review_player` calls `play()` when the file exists. Fake player records the call; no live decode in CI `[S]`
-- [ ] 692. **Studio canvas drag / snapping** — mechanical #152 shipped (`QGraphicsView` + overlay). Layers do not move this wave `[L]`
-- [ ] 693. **`hud: None` on a missing path is still picked** — `detect_hud` cannot probe `C:/clips/gta/hud.mp4`. Known-gap test asserts that hole `[S]`
+- [x] 692. **Studio canvas drag / snapping** *(2026-09-08)* — one `ItemIsMovable` layer; chrome/title-safe guides stay locked. On release, clamp into `title_safe` (not chrome). Geometry tests without Qt `[L]`
+- [x] 693. **`hud: None` on a missing path is skipped** *(2026-09-08)* — same skip as `hud: True` when `not os.path.isfile(path)`. Known-gap tests now expect `[]` `[S]`

@@ -109,6 +109,41 @@ def build_quality(
             quality["ungrounded_numeric"] = numeric[:12]
     except Exception as exc:
         logger.debug("ungrounded numeric split skipped: %s", exc)
+    try:
+        from core.fact_grounding import find_plausibility_outliers
+
+        facts = str(features.get("grounding_text") or features.get("facts") or "")
+        outliers = find_plausibility_outliers(script, facts)
+        if outliers:
+            quality["numeric_outliers"] = outliers[:8]
+    except Exception as exc:
+        logger.debug("numeric plausibility skipped: %s", exc)
+    try:
+        from analytics.competitor_context import list_recent_competitor_titles
+        from core.title_overlap import verbatim_competitor_advisory
+
+        title = str(features.get("title") or "")
+        note = verbatim_competitor_advisory(
+            title, list_recent_competitor_titles(channel_id, topic=title)
+        )
+        if note:
+            quality["competitor_title_duplicate"] = note
+    except Exception as exc:
+        logger.debug("competitor title overlap skipped: %s", exc)
+    try:
+        from core.publish_windows import resolve_relative_clock
+
+        lowered = script.lower()
+        if "tonight" in lowered:
+            resolved = resolve_relative_clock("tonight")
+            if resolved is not None:
+                quality["clock_tonight"] = resolved.isoformat()
+        if "this weekend" in lowered:
+            resolved = resolve_relative_clock("this weekend")
+            if resolved is not None:
+                quality["clock_weekend"] = resolved.isoformat()
+    except Exception as exc:
+        logger.debug("channel clock skipped: %s", exc)
     quality["trade_warning_count"] = len(features.get("trade_warnings") or [])
 
     # Pillar 3 (Fact Engine): tier lint + conflicts always count; the claim

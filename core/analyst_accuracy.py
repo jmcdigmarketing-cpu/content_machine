@@ -14,6 +14,12 @@ from config.channels import resolve_channel_id
 _FLAG_THRESHOLD = float(__import__("os").getenv("ANALYST_FLAG_THRESHOLD", "60"))
 
 
+def drift_line(*, recent_hit_rate: float, older_hit_rate: float) -> str:
+    if recent_hit_rate < older_hit_rate - 0.05:
+        return f"calibration drift: hit-rate fell {older_hit_rate:.0%} -> {recent_hit_rate:.0%}"
+    return ""
+
+
 def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
     """
     Compare high-score content_runs to publish_log metrics when available.
@@ -93,7 +99,7 @@ def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
         avg_rate = sum(r["engaged_rate"] for r in engaged_outcomes) / len(engaged_outcomes)
         hits = [r for r in engaged_outcomes if r["engaged_rate"] >= avg_rate]
         hit_rate = len(hits) / len(engaged_outcomes)
-        return {
+        result = {
             "status": "ok",
             "metric": "engaged_rate",
             "flagged_opportunities": n_flagged,
@@ -107,12 +113,13 @@ def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
             ),
             "sample_outcomes": engaged_outcomes[:10],
         }
+        return _with_drift(result, engaged_outcomes)
 
     avg_views = sum(r["views"] for r in with_outcomes) / n_outcomes
     hits = [r for r in with_outcomes if r["views"] >= avg_views]
     hit_rate = len(hits) / n_outcomes
 
-    return {
+    result = {
         "status": "ok",
         "metric": "views",
         "flagged_opportunities": n_flagged,
@@ -127,6 +134,36 @@ def build_accuracy_report(channel_id: str | None = None) -> dict[str, Any]:
         ),
         "sample_outcomes": with_outcomes[:10],
     }
+    return _with_drift(result, with_outcomes)
+
+
+def _window_hit_rate(rows: list[dict], metric: str) -> float:
+    if not rows:
+        return 0.0
+    if metric == "engaged_rate":
+        vals = [float(r["engaged_rate"]) for r in rows if r.get("engaged_rate") is not None]
+        if not vals:
+            return 0.0
+        avg = sum(vals) / len(vals)
+        return sum(1 for v in vals if v >= avg) / len(vals)
+    vals = [float(r.get("views") or 0) for r in rows]
+    avg = sum(vals) / len(vals)
+    return sum(1 for v in vals if v >= avg) / len(vals)
+
+
+def _with_drift(result: dict[str, Any], rows: list[dict]) -> dict[str, Any]:
+    if len(rows) < 6:
+        return result
+    mid = len(rows) // 2
+    metric = str(result.get("metric") or "views")
+    line = drift_line(
+        recent_hit_rate=_window_hit_rate(rows[:mid], metric),
+        older_hit_rate=_window_hit_rate(rows[mid:], metric),
+    )
+    if line:
+        result["drift"] = line
+        result["summary"] = str(result.get("summary") or "") + " " + line
+    return result
 
 
 def _parse_metrics(log: Any) -> dict[str, Any]:

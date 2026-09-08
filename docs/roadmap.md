@@ -24,16 +24,18 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — 2026-09-08 next 15 including Stage 4. Review-room honesty
-(same-run bind, QSS drops `filter:`, autoplay, refuse drafted Approve), mechanical
-#152 canvas (`ops studio`), player grid / font specimen / frame-step / still /
-waveform, then cheap leftovers (#685 probe, #609 budget, why-slow skips
-`word_count`, #687 `.env` shape, #634 pre-commit command-ref, #619 schema stamp).
-`GRADE_VERSION` stayed **v3**. CLI and `ops booth` stay. `SCENE_MATCHED_BROLL`
-stays off. #148 job queue was skipped so it could not strand the wave.
+**Just landed** — 2026-09-08 queue panel, studio drag, and 15 leftovers. Locked
+five: **#148** queue with drag-reorder · live review-room smoke · **#692**
+studio snap · **#693** missing HUD skip · **#686** 24h retraction toast +
+**#688** VACUUM. Then 15 cheap leftovers (#230 badge · booth CSS · title-card
+wrap · switcher · cheat-sheet · hook clamp · plausibility · clock ·
+counterfactual · recency · drift · competitor title · test-time budget).
+`GRADE_VERSION` stayed **v3**. CLI / `ops booth` / `ops queue-manage` stay.
+`SCENE_MATCHED_BROLL` stays off. Skipped **#151 #153 #684** so they cannot
+strand the wave.
 
-**Next: remaining Stage 3 panels**, starting with the job queue, then Stage 4
-drag. Detail: [desktop_app.md](desktop_app.md).
+**Next: remaining Stage 4/3 craft** — brand kit, caption timeline, live decode,
+then the cost tower. Detail: [desktop_app.md](desktop_app.md).
 
 **Then, in order:** Stage 4 studio → Stage 5 packaging → Stage 6 portfolio
 → Stage 7 efficiency.
@@ -70,17 +72,20 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-1. **#148 job queue panel** `[L]` — the next Stage 3 panel. Worker stalls are
-   invisible today; drag-reorder is the work. `ops` queue verbs stay. Skipped
-   this wave on purpose.
-2. **#692 studio canvas drag / snapping** `[L]` — mechanical #152 shipped;
-   layers still do not move.
-3. **#151 brand-kit compiler** `[L]` — fonts/palette/sting into render + GUI.
-4. **#153 caption choreography timeline** `[L]` — keyframes over real word timings.
-5. **#684 live review-room decode** `[S]` — J/K/L is a helper; CI still constructs
+1. **#151 brand-kit compiler** `[L]` — fonts/palette/sting into render + GUI.
+2. **#153 caption choreography timeline** `[L]` — keyframes over real word timings.
+3. **#684 live review-room decode** `[S]` — J/K/L is a helper; CI still constructs
    the window offscreen without a file.
+4. **#112 correction dossier** `[M]` — post-publish fact reversal still does not
+   auto-write a dossier; #686 only toasts.
+5. **#158 cost tower** `[L]` — next Stage 3 panel after the queue.
 
-**Closed 2026-09-08 (this wave):** honesty **#689 #690 #691**; Stage 4 slice
+**Closed 2026-09-08 (this wave):** **#148** queue + drag · **#692** studio snap ·
+**#693** missing HUD skip · **#686** 24h toast · **#688** VACUUM · **#230 #246
+#249 #259 #260 #264 #301 #302 #337 #344 #358 #365 #367 #596 #629**. Live
+review-room smoke (not numbered).
+
+**Closed 2026-09-08 (previous):** honesty **#689 #690 #691**; Stage 4 slice
 **#152** (mechanical) **#186 #248**; review **#266 #265 #270**; **#685** HUD
 probe on real files · **#609** startup budget · why-slow skips `word_count` ·
 **#687** `.env` shape · **#634** pre-commit command-ref · **#619** schema stamp.

@@ -178,7 +178,12 @@ class ReviewWindow(QMainWindow):
         if lower == "s":
             self._save_frame()
             return
-        if lower not in {"j", "k", "l"} and token not in {",", "."}:
+        if token == "?":
+            from core.review_keys import cheat_sheet_copy
+
+            self.empty_label.setText(cheat_sheet_copy())
+            return
+        if lower not in {"j", "k", "l", "h"} and token not in {",", "."}:
             super().keyPressEvent(event)
             return
         pos, paused = apply_review_key(

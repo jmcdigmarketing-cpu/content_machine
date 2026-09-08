@@ -53,6 +53,7 @@ class JobRecord:
     attempts: int = 0
     max_attempts: int = 3
     last_error: str = ""
+    scheduled_at: datetime | str | None = None
 
 
 class JobRepository(ABC):
@@ -75,6 +76,25 @@ class JobRepository(ABC):
     @abstractmethod
     def list_upload_jobs(self, channel_id: str) -> list[JobRecord]:
         pass
+
+    @abstractmethod
+    def list_active_jobs(self) -> list[JobRecord]:
+        pass
+
+
+def _claim_sort_tuple(row: dict) -> tuple[int, int]:
+    job_id = int(row.get("id") or 0)
+    try:
+        payload = json.loads(row.get("payload_json") or "{}")
+        if isinstance(payload, dict) and payload.get("sort_key") is not None:
+            return (int(payload["sort_key"]), job_id)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        pass
+    return (job_id, job_id)
+
+
+def _record_from_row(row: dict) -> JobRecord:
+    return JobRecord(**{k: row.get(k) for k in JobRecord.__dataclass_fields__})
 
 
 def _parse_publish_from_payload(payload_json: str):
@@ -120,11 +140,12 @@ class JsonJobRepository(JobRepository):
                 row["scheduled_at"] = row["scheduled_at"].isoformat()
             rows.append(row)
             self._write(rows)
-        return JobRecord(**{k: row.get(k) for k in JobRecord.__dataclass_fields__})
+        return _record_from_row(row)
 
     def claim_next(self, job_type: str | None = None) -> JobRecord | None:
         with _lock:
             rows = self._read()
+            ready: list[tuple[tuple[int, int], int]] = []
             for i, row in enumerate(rows):
                 if row.get("status") != JOB_PENDING:
                     continue
@@ -132,13 +153,18 @@ class JsonJobRepository(JobRepository):
                     continue
                 if not _job_is_ready(row):
                     continue
-                row["status"] = JOB_RUNNING
-                row["attempts"] = int(row.get("attempts", 0)) + 1
-                row["updated_at"] = datetime.now(timezone.utc).isoformat()
-                rows[i] = row
-                self._write(rows)
-                return JobRecord(**{k: row.get(k) for k in JobRecord.__dataclass_fields__})
-        return None
+                ready.append((_claim_sort_tuple(row), i))
+            if not ready:
+                return None
+            ready.sort(key=lambda item: item[0])
+            i = ready[0][1]
+            row = rows[i]
+            row["status"] = JOB_RUNNING
+            row["attempts"] = int(row.get("attempts", 0)) + 1
+            row["updated_at"] = datetime.now(timezone.utc).isoformat()
+            rows[i] = row
+            self._write(rows)
+            return _record_from_row(row)
 
     def reclaim_stuck_running(self, max_age_minutes: int = 45) -> int:
         cutoff = datetime.now(timezone.utc) - timedelta(minutes=max_age_minutes)
@@ -173,7 +199,7 @@ class JsonJobRepository(JobRepository):
                     row["updated_at"] = datetime.now(timezone.utc).isoformat()
                     rows[i] = row
                     self._write(rows)
-                    return JobRecord(**{k: row.get(k) for k in JobRecord.__dataclass_fields__})
+                    return _record_from_row(row)
         return None
 
     def list_upload_jobs(self, channel_id: str) -> list[JobRecord]:
@@ -188,8 +214,12 @@ class JsonJobRepository(JobRepository):
                 continue
             if not _parse_publish_from_payload(row.get("payload_json", "{}")):
                 continue
-            out.append(JobRecord(**{k: row.get(k) for k in JobRecord.__dataclass_fields__}))
+            out.append(_record_from_row(row))
         return out
+
+    def list_active_jobs(self) -> list[JobRecord]:
+        active = {JOB_PENDING, JOB_RUNNING, JOB_FAILED}
+        return [_record_from_row(row) for row in self._read() if row.get("status") in active]
 
 
 class PostgresJobRepository(JobRepository):
@@ -204,6 +234,7 @@ class PostgresJobRepository(JobRepository):
             attempts=row.attempts,
             max_attempts=row.max_attempts,
             last_error=row.last_error or "",
+            scheduled_at=row.scheduled_at,
         )
 
     def enqueue(self, data: dict[str, Any]) -> JobRecord:
@@ -225,13 +256,18 @@ class PostgresJobRepository(JobRepository):
                 select(Job)
                 .where(Job.status == JOB_PENDING)
                 .where((Job.scheduled_at.is_(None)) | (Job.scheduled_at <= now))
-                .order_by(Job.id)
             )
             if job_type:
                 q = q.where(Job.job_type == job_type)
-            row = session.scalars(q.limit(1)).first()
-            if not row:
+            rows = list(session.scalars(q).all())
+            if not rows:
                 return None
+            rows.sort(
+                key=lambda item: _claim_sort_tuple(
+                    {"id": item.id, "payload_json": item.payload_json or "{}"}
+                )
+            )
+            row = rows[0]
             row.status = JOB_RUNNING
             row.attempts = (row.attempts or 0) + 1
             session.commit()
@@ -291,6 +327,18 @@ class PostgresJobRepository(JobRepository):
         finally:
             session.close()
 
+    def list_active_jobs(self) -> list[JobRecord]:
+        session = get_session()
+        try:
+            rows = session.scalars(
+                select(Job).where(
+                    Job.status.in_([JOB_PENDING, JOB_RUNNING, JOB_FAILED]),
+                )
+            ).all()
+            return [self._to_record(row) for row in rows]
+        finally:
+            session.close()
+
 
 class DualJobRepository(JobRepository):
     def __init__(self):
@@ -314,6 +362,9 @@ class DualJobRepository(JobRepository):
 
     def list_upload_jobs(self, channel_id: str) -> list[JobRecord]:
         return self._primary().list_upload_jobs(channel_id)
+
+    def list_active_jobs(self) -> list[JobRecord]:
+        return self._primary().list_active_jobs()
 
 
 _repo = None

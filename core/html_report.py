@@ -48,7 +48,17 @@ video { width: 100%; max-height: 70vh; background: #000; object-fit: contain; }
   justify-content: center; overflow: hidden; }
 .stage video { width: 100%; height: 100%; max-height: none; object-fit: contain; }
 .stage .poster-chrome { position: absolute; inset: 0; background-size: cover;
-  background-position: center; opacity: 0.22; pointer-events: none; }
+  background-position: center; opacity: 0.22; pointer-events: none;
+  filter: blur(0px); backdrop-filter: blur(16px); }
+.phone-bezel { max-width: 440px; margin: 0 auto; padding: 12px; border: 8px solid #2a2f3a;
+  border-radius: 28px; background: #111; }
+.yt-mock { position: absolute; right: 8px; bottom: 22%; z-index: 3; display: flex;
+  flex-direction: column; gap: 0.35rem; pointer-events: none; }
+.yt-mock .yt-like, .yt-mock .yt-comment { background: #000; color: #fff; opacity: 0.75;
+  padding: 0.2rem 0.45rem; font-size: 14px; border-radius: 999px; }
+.channel-switcher { margin-top: 0.35rem; font-size: 16px; }
+.cheat-sheet { margin: 0.75rem 0; padding: 0.6rem 0.8rem; border: 1px dashed #2a2f3a;
+  font-size: 16px; }
 .safe-area { display: none; position: absolute; inset: 0; pointer-events: none; }
 .stage.safe-on .safe-area { display: block; }
 .safe-area .yt-top { position: absolute; top: 0; left: 0; right: 0; height: 12%;

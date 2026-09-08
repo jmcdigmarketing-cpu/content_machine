@@ -85,6 +85,16 @@ class AskBridge:
         self._progress: ProgressTick | None = None
         self._progress_lock = threading.Lock()
         self._closed = False
+        self._choices: list[str] = []
+        self._choices_lock = threading.Lock()
+
+    def set_choices(self, titles: list[str]) -> None:
+        with self._choices_lock:
+            self._choices = [str(t) for t in titles if str(t).strip()]
+
+    def choices(self) -> list[str]:
+        with self._choices_lock:
+            return list(self._choices)
 
     def set_fact_lines(self, lines: list[str]) -> None:
         self._fact_lines = [str(ln).strip() for ln in lines if str(ln).strip()]

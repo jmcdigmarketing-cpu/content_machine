@@ -11,6 +11,45 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-07 (Cursor) — Stage 3 review room + Claude’s open defects
+
+**Prompt:** implement the attached plan — honesty cluster first, then Stage 3
+review room (#168+#209), #671 #607 #335, honest slice of #416.
+
+**Fail-then-fix:** unmodified HEAD `dbbd582` raised missing `choices` /
+`set_choices`, `core.review_keys`, `core.owned_beats`, `desktop.review`,
+`review-room` ops verb, and `RunWindow.angle_list`. Duplicate
+`features["cta_summary"]` count was 2. Guard: deleting `AskBridge.set_choices`
+left the list empty (went red). Path tests patch `Path.home()` to `/home/ciuser`.
+
+**Shipped — honesty cluster:**
+- **#681** duplicate feature assignments deleted in `pipeline.py`
+- **#682** decisions §4 now **12000**
+- **#674** `write_run_trace` values run through `redact_operator_paths`
+- **#680** `CTA_SUMMARY_STRIP` + printed pre/post counts
+- **#679** contact-sheet HTML caller; rhythm in the fact-engine report; JSON-only
+  phrase `here's the kicker` (file-empty guard)
+
+**Shipped — engine / UI:**
+- **#607** `elevenlabs.client` imported only on first paid synth
+- **#335** single-outlet news demoted in `_build_prompts` (shipped tapin path)
+- **#671** `QListWidget` of evaluated titles; CLI `ask_choice` unchanged
+- **#168+#209** `ReviewWindow`; J/K/L helper; Approve = booth `requeue-upload`;
+  `ops booth` remains; missing PySide6 exit 2
+- **#416** owned `clip_index` beats before stock; `SCENE_MATCHED_BROLL` stays
+  off. HUD `null` still picked — known gap **#683**
+
+**Not done:** remaining Stage 3 panels (#148 queue first); live mp4 decode in CI
+(#684); #672 grain still; Phase M; Ollama.
+
+**Next five:** #148 queue · #683 HUD detector · #672 TapIn grain grade · #341
+retraction watch · #608 google/espn import defer.
+
+**Audit:** ruff + format clean; suite **2,725 -> 2,751**; mypy **144** held;
+`data/` empty. Backlog **398** open / **522** done, highest **#684**.
+
+---
+
 ## 2026-09-07 (Cursor) — Stage 2 look + 20
 
 **Prompt:** complete Stage 2 of the desktop programme AND the next 20

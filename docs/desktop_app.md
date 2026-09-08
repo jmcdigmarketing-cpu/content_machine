@@ -129,9 +129,17 @@ Launch: `py -m desktop` · `py main.py --gui` · `py -m scripts.ops run-window`.
 Each panel is an existing item whose data the system already computes. Ordered by
 daily value.
 
+**Shipped 2026-09-07 — review room (#168 + #209) and the visual angle list (#671).**
+`ops review-room` / `py -m desktop --review` / `py main.py --gui --review`. Qt
+paints `gather_booth_context` (mp4, grade, authenticity, cost). J/K/L live in
+`core/review_keys.py` so CI can call them without decoding. Approve runs the same
+`requeue-upload` command the HTML booth already prints. **`ops booth` remains.**
+Missing PySide6: same honest refuse as the run window, exit 2, no WARNING. Other
+Stage 3 panels (queue, cost, analytics, …) are later waves.
+
 | # | panel | note |
 |---|---|---|
-| #168 + #209 | Review room — player, Approve, J/K/L | replaces the booth; most-used |
+| #168 + #209 | Review room — player, Approve, J/K/L | **shipped 2026-09-07**; `ops booth` stays |
 | #148 | Job queue — drag-reorder render/upload/quota-defer | worker stalls are invisible today |
 | #158 | Cost tower — TTS 91%, Apify actors, YouTube units | the number that decides if this is worth doing |
 | #149 | Analytics studio — retention, CTR, RPM | must keep saying n≈10 is thin |

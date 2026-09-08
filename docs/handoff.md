@@ -87,25 +87,27 @@ green suite).
 
 ## Slot — Cursor
 
-**Written:** 2026-09-07 · **HEAD at write:** `7e4284c` · **Tree:** Stage 2
-look + 20, committing right after the post-slot suite.
+**Written:** 2026-09-07 · **HEAD at write:** `dbbd582` · **Tree:** Stage 3
+review room + honesty cluster, committing right after the post-slot suite.
 
-- **Defect first:** #670 still no CI Qt (widget tests skip). #671 still a
-  1-5 line, not a visual list. #672 grain/vignette is argv-only. #673
-  second physical monitor not proven offscreen. #674 traces not redacted.
-  Live topic-to-mp4 in the window is still operator smoke.
-- **Shipped Stage 2:** `core/chrome.py` QSS + HTML CSS from
-  `design_tokens.json` only. TapIn vs MoneyWise chrome (#150/#173). Dark
-  from `end_card_bg`. Empty/error copy. DPR 1.0 without a screen. Missing
-  extra: refuse, exit 2, no WARNING. CLI unchanged. `GRADE_VERSION` **v3**.
-- **Shipped 20:** #295 #296 #625 #333 #602 #527 #258 #525 #523 #515 #247
-  #541 #550 #635 #612 #540 #542 #318 #512 #455.
-- **Not done:** Stage 3 panels; #416; Phase M; Ollama.
-- Next five: Stage 3 review room · #671 · #607 · #335 · #416.
-  Fail-first: `ModuleNotFoundError: core.chrome`. Suite **2,685 -> 2,718**;
-  mypy **144** held; backlog **404** open / **506** done, highest **#674**.
-  `data/` empty. Look: `pip install -e ".[app]"` then `py -m desktop`.
-
-
+- **Defect first:** #683 HUD-aware owned-beat picks are impossible while ingest
+  stores `hud: null` (the known-gap test asserts a HUD clip is still chosen).
+  #684 review room does not decode a live mp4 in CI — J/K/L is a helper;
+  widget construction is offscreen without a file. #672 grain is still
+  argv-only. Remaining Stage 3 panels (#148 queue first) are not this wave.
+  #608 (`googleapiclient` / `sports.espn`) is the next cold-start hog.
+- **Honesty shipped:** #681 duplicate features gone · #682 §4 is 12000 ·
+  #674 traces redacted (`Path.home()` patched to `/home/ciuser`) · #680 CTA
+  strip gated + printed · #679 HTML/rhythm/JSON-only phrase each have a caller.
+- **Also shipped:** #607 ElevenLabs import deferred · #335 single-outlet news
+  demoted on tapin `_build_prompts` · #671 angle `QListWidget` · #168+#209
+  `ops review-room` / `py -m desktop --review` (Approve = booth command;
+  `ops booth` stays) · #416 owned `clip_index` beats, **not** CLIP matching,
+  `SCENE_MATCHED_BROLL` off. `GRADE_VERSION` **v3**.
+- Fail-first: missing `set_choices` / `review_keys` / `owned_beats` /
+  `desktop.review`. Guard deleting `set_choices` left the list empty.
+  Suite **2,725 -> 2,751**; mypy **144** held; backlog **398** open /
+  **522** done, highest **#684**. `data/` empty.
+  Look: `pip install -e ".[app]"` then `py -m desktop --review`.
 
 

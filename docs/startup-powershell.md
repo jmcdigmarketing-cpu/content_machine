@@ -49,6 +49,8 @@ pip install -e ".[app]"
 py -m desktop
 # or: py main.py --gui
 # or: py -m scripts.ops run-window
+# review room: py -m desktop --review   /   py -m scripts.ops review-room
+# ops booth (HTML) still works
 ```
 
 Look flags (optional): `CONTENT_UI_REDUCED_CHROMA=1`, `CONTENT_UI_HIGH_CONTRAST=1`,

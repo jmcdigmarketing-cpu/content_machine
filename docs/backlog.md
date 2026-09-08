@@ -403,7 +403,7 @@ Larger — multi-week systems
 - [ ] 165. **Notification center + DND** (history, quiet hours, click-through) `[L]` — *UI.* Broader than a single toast (#221): Action Center as a product slice.
 - [ ] 166. **PARKED — Voice Judgment Booth** (Piper vs ElevenLabs A/B ears) `[L]` — *cost / parked.* Captions unblocked the $0 path; this booth never auto-flips `TTS_PROVIDER`.
 - [ ] 167. **PARKED — Recommender Backtest Studio** `[L]` — *viability / parked.* Next-up backtest stays volume-gated; the studio must refuse to fit before n is honest.
-- [ ] 168. **Unlisted review room** (player + Approve, around unlisted upload) `[L]` — *UI.* Distinct from #109 unlisted *flag*: this is the room; #171 is last-run HTML only.
+- [x] 168. **Unlisted review room** *(2026-09-07, first Stage 3 panel)* — `ops review-room` / `py -m desktop --review` paints `gather_booth_context` (grade, authenticity, cost, last mp4). Approve runs the same `requeue-upload` string the HTML booth already prints. `ops booth` remains. CI constructs the window offscreen without decoding video. Live last-run play is still operator smoke (#684) `[L]`
 - [ ] 169. **Channel Command Center v1** as a local single-operator app `[L]` — *new-app.* Reframe of deferred "full operator dashboard": local, no SaaS billing — first slice of #141.
 - [x] 170. **Design-token pipeline** *(2026-09-07)* — `config/design_tokens.json` is what `themes.role_color` and `caption_fill_hex` both read. Shipped tapin `#FFFFFF` / moneywise `#F7E7A9`. Stage 0 `ask()`/`emit()` shipped the same wave `[L]`
 
@@ -447,7 +447,7 @@ Moderate — days
 - [ ] 206. Render-queue **skip explanation card** `[M]` — *UI.* Grade/authenticity gate shipped; overnight skipped-why is currently tribal knowledge.
 - [ ] 207. **Metrics-before-next lock screen** `[M]` — *viability / UI.* Opt-in gate shipped; a lock screen is why the learning loop actually waits.
 - [ ] 208. Unlisted vs public **toggle in the booth** `[M]` — *UI.* Distinct from #109 implementing unlisted upload: this is the control chrome.
-- [ ] 209. **Keyboard-first review** (J/K/L like an NLE) `[M]` — *UI.* Short-term success is also operator minutes; keyboard is faster than prompts.
+- [x] 209. **Keyboard-first review** *(2026-09-07)* — J back 5s / K pause-play / L forward in `core/review_keys.py`. `ReviewWindow.keyPressEvent` calls it. Helper is tested without Qt or a decode `[M]`
 - [ ] 210. **Windows Hello** before marking public `[M]` — *viability / UI.* Accidental public is a 2026-policy event; biometric confirm, fail-open if Hello absent.
 - [ ] 211. **Channel-picker overlay** (no `.env` editor) `[M]` — *UI.* Switch tapin/moneywise without teaching dotenv; never show secrets.
 - [ ] 212. **Secrets-present dots** (never values) on a status strip `[M]` — *viability / UI.* Distinct from #96 secrets-doctor: display-only dots.
@@ -541,7 +541,7 @@ Small — hours / a PR
 - [x] 294. Explorer **"Send to" facts.txt** `[S]` — *UI.* Windows send-to shortcut; overnight `--facts-file` is now wired, this is the Explorer helper.
   *(2026-08-26: `ops sendto-facts`; tests use a temp SendTo dir)*
 - [x] 295. **2×2 contact sheet PNG** of last thumbs *(2026-09-07)* — `ops contact-sheet --path` Pillow collage. Empty folder: `"no thumbnail files"` exit 1, no PNG. Live: 4 thumbs `[S]`
-- [x] 296. **Print stylesheet** for the contact sheet *(2026-09-07)* — `contact_sheet_html` `@media print` hides header; type size from tokens `[S]`
+- [x] 296. **Print stylesheet** for the contact sheet *(2026-09-07)* — `contact_sheet_html` `@media print` hides header; type size from tokens. `ops contact-sheet` writes the sibling `.html` next to the PNG (#679) `[S]`
 - [x] 297. Caption fill **contrast ratio number** vs sampled frame *(2026-09-06)* — same helper as #185 returns `ratio` + pass/fail. Not persisted on quality_json (no `QUALITY_VERSION` bump) `[S]`
 - [x] 298. YouTube-title **100-char meter** *(2026-08-25)* — the real booth reads the stored public title and flags overflow `[S]`
 - [x] 299. Description **first-line preview card** *(2026-08-25)* — the real booth reads the stored public description and shows only its first non-empty line `[S]`
@@ -599,7 +599,7 @@ Grounding & fact quality
 - [x] 332. **Disputed-fact surface** *(2026-08-27)* — `features_from_conflicts` stamps `disputed` + losing claims; `display_fact_engine_report` prints **DISPUTED**; pipeline copies into features; `ops grade` note. Operator vs stale source: dropped line gone from the corpus, flag remains `[S]`
 - [x] 333. **Negative-fact store (what is *not* true)** *(2026-09-07)* — `record_negative("gta", "GTA 6 leaked for a June 2025 release")` then `matching_negatives` hits that script and misses a UFC champion line. `ops negative-fact`. Store isolated in the suite `[M]`
 - [ ] 334. **Entity disambiguation ledger** — `entity_extractor.py` re-resolves "Jones" / "Rockstar" every run. Resolve once to a canonical id, reuse across runs and channels `[M]`
-- [ ] 335. **Source-diversity floor on dated topics** — refuse to ground a news-shaped claim on a single domain; one outlet is a rumor, not a fact `[S]`
+- [x] 335. **Source-diversity floor on dated topics** *(2026-09-07)* — news-shaped claims whose URLs collapse to one registrable domain (espn.com + espn.com/story2) are moved out of verified into context. ESPN + MMAFighting passes. Evergreen "how does the offside rule actually work" does not fire. Wired in `_build_prompts` via `collect_source_urls` (operator paste + vault `source_url`). No sixth `input()` gate `[S]`
 - [ ] 336. **Wikipedia last-revision recency tripwire** — a cheap "the world moved after my cutoff" signal from a source already called; the June UFC-250 failure had no such guard `[S]`
 - [ ] 337. **Numeric plausibility bands per domain** — a grounded number can still be a typo. 10x outliers on purses, gates, and market caps flag even when `find_ungrounded_numeric` passes `[S]`
 - [x] 338. **Quote-attribution gate** *(2026-09-07)* — deterministic, no extra LLM. Invented quote flags; `Dana White told ESPN "…"` in facts passes; `"GTA 6"` does not fire. Nested quotes `known_gap=True`. Pre-rewrite flag persisted if the script changes (§25). `GRADE_VERSION` stayed **v3** `[M]`
@@ -696,7 +696,7 @@ Render & visual craft
 - [ ] 413. **Deterministic render fingerprint** — same inputs, same bytes, so a render regression is a diff instead of an argument `[M]`
 - [ ] 414. **Post-render frame QA** — black frames, frozen frames, and A/V desync are caught by the operator watching, or not at all `[M]`
 - [ ] 415. **Render smoke test in CI on a 2s synthetic input** — #24 and #26 both shipped dead on Windows and were caught by audit, not by CI `[M]`
-- [ ] 416. **Scene-beat cuts from owned gameplay** — decisions §26 prefers owned footage over more stock APIs; the scene plan exists and has nothing to cut to `[L]`
+- [x] 416. **Scene-beat cuts from owned gameplay** *(2026-09-07, mechanical slice)* — `try_owned_beat_background` maps `clip_index` paths onto `plan_scenes` beats and concats when the files exist; empty or missing index keeps the current single loop. **Not** CLIP matching; `SCENE_MATCHED_BROLL` stays off (decisions §26). HUD-aware pick is still impossible while ingest stores `hud: null` (#683) `[L]`
 - [x] 417. **Owned-footage ingest + index** *(2026-08-28, mechanical slice)* — `ops ingest-clips` (dry-run default; `--apply` remuxes muted H.264) matches capture filenames into `video/backgrounds` via existing folder routing + a short alias table. Unmatched files are listed, never dumped into `gaming/`. `data/clip_index.json` records ffprobe duration/size/codec; **HUD is persisted `null`** (no detector). Hand-tagging skipped. Scene-beat cuts remain #416 `[L]`
 - [ ] 418. **Zoom resampling validation** — verify #26's Ken Burns does not soften 1080x1920 detail; a bounded zoom can still cost sharpness `[S]`
 - [x] 419. **Caption line-break optimizer** *(2026-08-28)* — a lone final word is rebalanced on BOTH caption paths. The first cut only touched `split_script_into_lines` (the estimated-timing fallback), so on a normal ASR-timed run it did nothing — `group_into_lines` now rebalances too, moving the word with its own start/end. Rebalancing is per sentence: the running-list version merged two sentences into one cue, which `test_sentence_boundaries_not_crossed` has forbidden since long before 419 `[S]`
@@ -857,9 +857,9 @@ Content engine & angles
 - [ ] 537. **Per-section regeneration** — rewrite the hook without re-running the body or re-billing it `[M]`
 - [ ] 538. **Generate two hooks in one run** and keep both for the thumbnail experiment `[M]`
 - [ ] 539. **Reading-level target per channel**, measured and enforced `[S]`
-- [x] 540. **Sentence-length rhythm check** *(2026-09-07)* — five 3-word sentences flag; a long/short mix does not. Warn-only, features `sentence_rhythm` `[S]`
-- [x] 541. **Per-channel ban-list of LLM tells** *(2026-09-07)* — `lint_persona_script("In today's video we delve...")` hits both phrases. MoneyWise `5-10 years` still clean. `config/llm_tells.json` `[S]`
-- [x] 542. **Cut the summary paragraph** models insert before a CTA *(2026-09-07)* — drops `In summary...` immediately before `Like and subscribe`. Persists `pre_paragraphs` 3 / `post_paragraphs` 2 (§25). A CTA without a recap is untouched `[S]`
+- [x] 540. **Sentence-length rhythm check** *(2026-09-07)* — five 3-word sentences flag; a long/short mix does not. Warn-only, features `sentence_rhythm`. `display_fact_engine_report` prints the hits (#679 / #540) `[S]`
+- [x] 541. **Per-channel ban-list of LLM tells** *(2026-09-07)* — `lint_persona_script("In today's video we delve...")` hits both phrases. MoneyWise `5-10 years` still clean. `config/llm_tells.json` shared phrase `here's the kicker` is not in `_FILLER_PHRASES`; emptying `ROOT_DIR` drops the hit (#679 / #541) `[S]`
+- [x] 542. **Cut the summary paragraph** models insert before a CTA *(2026-09-07)* — drops `In summary...` immediately before `Like and subscribe`. Env `CTA_SUMMARY_STRIP` (default on). Persists `pre_paragraphs` / `post_paragraphs` (§25) and prints them in the fact-engine report before Proceed (#680) `[S]`
 - [ ] 543. **Quote the operator verbatim** when they paste an opinion rather than paraphrasing it `[M]`
 - [ ] 544. **Script memory** — never reuse the same opening construction twice in a week `[M]`
 - [ ] 545. **A "what I got wrong last time" beat** when a correction exists for the franchise `[M]`
@@ -942,7 +942,7 @@ Publish, policy & channel ops
 
 Performance & startup
 
-- [ ] 607. **Defer `elevenlabs.client` past import** — 0.51s of a measured 1.89s CLI start, paid even when no audio is made `[S]`
+- [x] 607. **Defer `elevenlabs.client` past import** *(2026-09-07)* — `core.tts` no longer imports the SDK at module load. `_elevenlabs_client` constructs it on the first paid synth. Piper/edge do not pay the import. Tests still patch `core.tts.ElevenLabs` `[S]`
 - [ ] 608. **Defer `googleapiclient.discovery` and `sports.espn`** — another ~0.68s of the same 1.89s `[S]`
 - [ ] 609. **Startup budget test** that fails CI when import time regresses past a threshold `[S]`
 - [ ] 610. **Lazy-import the 92 `ops` verbs** so running one does not load all of them `[M]`
@@ -1037,13 +1037,13 @@ Stage 0 + leftover craft (2026-09-07) — filed on the way
 Stage 1 run window (2026-09-07)
 
 - [x] 670. **Stage 1 has no CI Qt** — `pip install -e ".[app]"` is optional; CI does not install PySide6. Bridge tests always run. The offscreen widget test skips without the extra. A live topic-to-mp4 in the window is still an operator smoke `[S]` — **closed 2026-09-07 (Claude review)**: CI installs `.[shell,app]` and runs with `QT_QPA_PLATFORM=offscreen`, and the typecheck job now includes `desktop`. Measured first: masking PySide6 at `sys.meta_path` (what CI saw) gave **23 ran, 3 skipped**; headless offscreen gives **23 ran, 0 skipped**, and mypy over `desktop` adds **zero** new errors (144 held, 291 -> 296 files). Cursor had structured the tests well — only widget construction was guarded — so this was two lines, not a rewrite
-- [ ] 671. **Angle variants are not a visual list** — `display_variants` still prints into the output pane; the ask widget is 1-5 in a line edit. Closing this would mean the window reading `DiscoveryResult.evaluated` `[S]`
+- [x] 671. **Angle variants are not a visual list** *(2026-09-07)* — `display_variants` posts titles on `AskBridge.set_choices`; the run window shows a `QListWidget`. Click/Enter submits `1`–`5`. CLI `ask_choice` is still a string. Guard: deleting `set_choices` leaves the list empty `[S]`
 
 Stage 2 look + 20 (2026-09-07) — filed on the way
 
 - [ ] 672. **Grain/vignette ffmpeg is argv-only** — `look_filter_fragment` is in `build_render_ffmpeg_command` when `channel_id` is set. Nothing in CI encodes a frame and measures noise. A still from a real render would close this `[S]`
 - [ ] 673. **Second-monitor restore is untested on a second physical display** — state stores `screen` name; offscreen DPR is 1.0. Same class as #650 / #667 `[S]`
-- [ ] 674. **Trace JSON is not passed through `redact_operator_paths`** — #635 covers HTML dumps. `data/traces/*.json` can still echo a vault path if a run wrote one `[S]`
+- [x] 674. **Trace JSON is not passed through `redact_operator_paths`** *(2026-09-07)* — `write_run_trace` walks string values through `chrome.redact_operator_paths`. Test patches `Path.home()` / `USERNAME` / `USER` to `/home/ciuser` so this box's username cannot make it pass. #636 (secrets in traces) is still open behind it `[S]`
 
 Claude review of the Stage 0-2 waves (2026-09-07)
 
@@ -1051,7 +1051,12 @@ Claude review of the Stage 0-2 waves (2026-09-07)
 - [x] 676. **Stage 2's token CSS lost the cascade to the legacy palette** *(2026-09-07)* — `html_report.py` emitted the generated CSS *before* `_CSS`, which redeclares `html, body`, `header`, `pre`, `table`, `.card` and `a` at equal specificity, so the later block won. Measured on a rendered page: token background at offset **311**, legacy at **1894** — every HTML dump still rendered the old colours while `desktop_app.md` claimed dumps share the generated CSS. Order swapped; `_CSS` is now the structural base and tokens override. The guard test named `test_html_dump_uses_generated_css_not_a_second_palette` could not fail (it asserted token hexes were *present*, and one already appears in `_CSS`), so it gained a cascade-order assertion `[S]`
 - [x] 677. **Closing the run window mid-render abandoned the run** *(2026-09-07)* — the worker is `daemon=True` and was never joined, and `AskBridge.cancel()` only unblocks a worker *currently sitting in an ask*. A worker inside ffmpeg, TTS or an upload noticed nothing and the interpreter exited without waiting: orphaned encode, half-written mp4, spent quota with no publish-log write. That is the run-73 failure `desktop_app.md` cites as the reason Stage 1 exists. `desktop.session.shutdown_worker` cancels, joins with a bounded timeout, and **warns naming what is being abandoned** when a worker cannot be stopped — deliberately still closing, because trapping the operator in a window that will not close is worse. Testable without Qt, so it runs in CI `[S]`
 - [x] 678. **`emit()` read the quota JSON once per printed line** *(2026-09-07)* — `emit` -> `refresh_pin` -> `format_uploads_left` -> `get_usage_summary` -> a `json.load`, on every line, including when `pin_enabled()` is False and nothing is painted. Measured: **25 formats for 25 emitted lines**. Recompute is now throttled to 1s (the pinned numbers cannot change faster) while the cached line is still repainted, so the pin stays pinned through a burst of output. `reset_pin` / `set_pin_context` / `set_pin_cost` clear the clock so a changed context never waits it out `[S]`
-- [ ] 679. **Three Stage 2 items shipped green but inert** `[M]` — `#296`'s print stylesheet targets `contact_sheet_html`, which has no caller outside its own module (`ops contact-sheet` writes only the PNG). `#540`'s `sentence_rhythm` reaches `features` and nothing reads it. `#541`'s `config/llm_tells.json` contributes no phrase the hardcoded `_FILLER_PHRASES` tuple lacks, and its test passes with the file deleted, so the per-channel mechanism the item is named for carries no data. Each needs a production consumer or an honest re-open
-- [ ] 680. **`#542` mutates the delivered script with no operator surface** `[S]` — `strip_pre_cta_summary` runs unconditionally, `features["cta_summary"]` is never displayed, and there is no env gate. The regex is narrow so the blast radius is small, but a silent edit to the thing the operator is about to publish is the pattern §3's regenerate-then-*warn* exists to avoid
-- [ ] 681. **`pipeline.py` assigns two features twice** `[S]` — `features["cta_summary"]` and `features["sentence_rhythm"]` are each set twice, verbatim, in the same block. Harmless, and a copy-paste artifact that survived review
-- [ ] 682. **decisions §4 still cites the retired 4500-char fact budget** `[S]` — the #258 entry flags it (12000 is current, `core/operator_facts.py`), and `docs/HANDOFF_SYNOPSIS.md` repeats the stale number too
+- [x] 679. **Three Stage 2 items shipped green but inert** *(2026-09-07)* — `#296` HTML is written next to the PNG by `ops contact-sheet`. `#540` rhythm prints in `display_fact_engine_report`. `#541` JSON-only phrase `here's the kicker` flags, and emptying the file makes the same script clean `[M]`
+- [x] 680. **`#542` mutates the delivered script with no operator surface** *(2026-09-07)* — `CTA_SUMMARY_STRIP` (default on). Gate off keeps `In summary` before CTA. Gate on strips it and the printed report shows pre/post paragraph counts `[S]`
+- [x] 681. **`pipeline.py` assigns two features twice** *(2026-09-07)* — duplicate `cta_summary` / `sentence_rhythm` assignments deleted. Source now contains each key once `[S]`
+- [x] 682. **decisions §4 still cites the retired 4500-char fact budget** *(2026-09-07)* — §4 now matches live `OPERATOR_KEY_FACT_CHAR_BUDGET` default **12000** `[S]`
+
+Stage 3 leftovers (2026-09-07)
+
+- [ ] 683. **HUD-aware owned beat picks** — #416 maps `clip_index` paths onto scene-plan beats, but ingest still stores `hud: null`, so a HUD clip can still be chosen. Closing this needs a detector, not a guess `[S]`
+- [ ] 684. **Review room does not decode a live mp4 in CI** — J/K/L helper is unit-tested; widget construction is offscreen without a file. A real last-run play is still operator smoke `[S]`

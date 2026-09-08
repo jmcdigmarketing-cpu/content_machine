@@ -8,8 +8,6 @@ import re
 import shutil
 from typing import Any
 
-from elevenlabs.client import ElevenLabs
-
 from config.channels import get_channel_profile, resolve_channel_id
 from config.paths import PRONUNCIATIONS_FILE, VOICES_FILE
 from core.logging import get_logger
@@ -24,6 +22,9 @@ _last_cache_hit = False
 _last_piper_mix = False
 _last_cache_fraction = 0.0
 
+# Tests patch this name. Production fills it on first paid synth so import stays cheap (#607).
+ElevenLabs: Any = None
+
 
 def last_tts_was_cache_hit() -> bool:
     return _last_cache_hit
@@ -36,6 +37,14 @@ def last_tts_was_piper_mix() -> bool:
 def last_tts_cache_fraction() -> float:
     """0..1 share of synthesized characters served from the TTS cache (#402)."""
     return _last_cache_fraction
+
+
+def _elevenlabs_client(api_key: str):
+    """Paid SDK is imported only when a render actually bills ElevenLabs (#607)."""
+    cls = ElevenLabs
+    if cls is None:
+        from elevenlabs.client import ElevenLabs as cls
+    return cls(api_key=api_key)
 
 
 # Fallback catalog, used only when config/voices.json is missing or unusable. The
@@ -730,7 +739,7 @@ def synthesize_to_path(
     if not eleven_key:
         raise Exception("ELEVEN_API_KEY not found.")
 
-    client = ElevenLabs(api_key=eleven_key)
+    client = _elevenlabs_client(eleven_key)
 
     # A voice id this account can't use (400 voice_not_found — e.g. a Voice Library voice
     # that was never added to the library) must not kill a render at the TTS step, which

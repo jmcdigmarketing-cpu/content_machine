@@ -352,6 +352,23 @@ You must:
 
     # Split facts into verified data vs YouTube context-only titles
     verified_facts, context_signals = _split_facts_block(signal_facts)
+    from core.description_extras import collect_source_urls
+    from core.source_diversity import demote_single_outlet_news, urls_from_text
+
+    diversity_urls = collect_source_urls(
+        channel_id=channel_id or "",
+        topic=topic,
+        key_facts=key_facts,
+        extra_urls=urls_from_text(signal_facts),
+        relevance_corpus=signal_facts or "",
+    )
+    verified_facts, demoted, _verdict = demote_single_outlet_news(
+        verified_facts,
+        urls=diversity_urls,
+        topic=topic,
+    )
+    if demoted:
+        context_signals = "\n".join(p for p in (context_signals, demoted) if p)
 
     verified_block = verified_facts if verified_facts else "(no verified game data available)"
     context_block = (
@@ -1230,10 +1247,9 @@ def generate_content_package(
 
     cta_report: dict = {"stripped": False, "pre_paragraphs": 0, "post_paragraphs": 0}
     try:
-        from core.script_craft import sentence_rhythm_flags, strip_pre_cta_summary
+        from core.script_craft import apply_script_craft
 
-        script, cta_report = strip_pre_cta_summary(script)
-        rhythm_hits = sentence_rhythm_flags(script)
+        script, cta_report, rhythm_hits = apply_script_craft(script)
     except Exception as exc:
         logger.debug("script craft skipped: %s", exc)
         rhythm_hits = []

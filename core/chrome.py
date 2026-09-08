@@ -145,7 +145,7 @@ QLabel#title_brand {{
   border-bottom: 3px solid {border};
   padding-bottom: {header}px;
 }}
-QLineEdit, QPlainTextEdit, QComboBox {{
+QLineEdit, QPlainTextEdit, QComboBox, QListWidget {{
   background: {bg};
   color: {fg};
   border: 1px solid {border};

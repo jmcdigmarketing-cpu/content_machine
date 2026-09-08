@@ -343,25 +343,37 @@ def render_vertical_video(
         progress.note(f"Audio length: {duration:.1f}s")
 
     stage("Fetching background (hybrid/stock/local)...")
-    # Scene-matched B-roll (opt-in): cut a clip per script beat. Falls back to the
-    # normal single/hybrid background on any miss, so it never breaks the render.
+    # Owned gameplay cuts (#416) before any stock scene-match (decisions §26).
     asset = None
+    words = None
     try:
-        from assets.manager import get_scene_matched_background
         from core.tts import word_timing_path
 
-        words = None
         sidecar = word_timing_path(mp3_path)
         if os.path.exists(sidecar):
             import json
 
             with open(sidecar, encoding="utf-8") as f:
                 words = json.load(f)
-        asset = get_scene_matched_background(
-            topic, script, channel_id, duration=duration, words=words
-        )
-    except Exception:
+    except Exception as exc:
+        logger.debug("word timings for owned beats skipped: %s", exc)
+        words = None
+    try:
+        from core.owned_beats import try_owned_beat_background
+
+        asset = try_owned_beat_background(topic, script, channel_id, duration=duration, words=words)
+    except Exception as exc:
+        logger.debug("owned beat cuts skipped: %s", exc)
         asset = None
+    if asset is None:
+        try:
+            from assets.manager import get_scene_matched_background
+
+            asset = get_scene_matched_background(
+                topic, script, channel_id, duration=duration, words=words
+            )
+        except Exception:
+            asset = None
     if asset is None:
         asset = get_background_asset(topic, channel_id, duration=duration)
     background_path = asset.path

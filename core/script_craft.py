@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any
 
@@ -51,6 +52,28 @@ def strip_pre_cta_summary(script: str) -> tuple[str, dict[str, Any]]:
         report["stripped"] = True
         return "\n\n".join(kept), report
     return raw, report
+
+
+def apply_script_craft(script: str) -> tuple[str, dict[str, Any], list[str]]:
+    """Env-gated CTA strip plus rhythm flags. Default on; the operator still sees it."""
+    raw = script or ""
+    enabled = (os.getenv("CTA_SUMMARY_STRIP", "true") or "true").strip().lower() not in (
+        "0",
+        "false",
+        "off",
+        "no",
+    )
+    if enabled:
+        cleaned, report = strip_pre_cta_summary(raw)
+    else:
+        paras = [p.strip() for p in re.split(r"\n\s*\n", raw.strip()) if p.strip()]
+        report = {
+            "pre_paragraphs": len(paras),
+            "post_paragraphs": len(paras),
+            "stripped": False,
+        }
+        cleaned = raw
+    return cleaned, report, sentence_rhythm_flags(cleaned)
 
 
 def find_ungrounded_superlatives(script: str, grounding_text: str) -> list[str]:

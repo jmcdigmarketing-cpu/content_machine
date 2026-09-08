@@ -968,6 +968,16 @@ def cmd_booth(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "review-room",
+    'Stage 3 Qt review room (J/K/L + Approve; requires pip install -e ".[app]")',
+)
+def cmd_review_room(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(review=True)
+
+
 @_register("shell", "Localhost FastAPI operator shell (GET only; no TTS/Apify/publish)")
 def cmd_shell(args: argparse.Namespace) -> int:
     from core.operator_shell import DEFAULT_PORT, serve
@@ -1091,6 +1101,8 @@ def cmd_contact_sheet(args: argparse.Namespace) -> int:
         return 1
     print(result.path)
     print(f"  {len(result.paths)} thumbs")
+    if result.html_path:
+        print(result.html_path)
     return 0
 
 

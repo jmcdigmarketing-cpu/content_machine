@@ -60,6 +60,23 @@ def redact_trace_value(value: Any, *, key: str = "") -> Any:
     return value
 
 
+def _redact_paths_in_obj(value: Any) -> Any:
+    """Walk strings so vault/home/username cannot sit in ffmpeg_command / scripts."""
+    from core.chrome import redact_operator_paths
+
+    if isinstance(value, str):
+        return redact_operator_paths(value)
+    if isinstance(value, dict):
+        return {str(k): _redact_paths_in_obj(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact_paths_in_obj(v) for v in value]
+    return value
+
+
+def _redact_trace_blob(value: Any) -> Any:
+    return _redact_paths_in_obj(redact_trace_value(value))
+
+
 def _trace_path(run_id: int) -> str:
     return os.path.join(TRACES_DIR, f"{int(run_id)}.json")
 
@@ -155,7 +172,7 @@ def write_run_trace(
         os.makedirs(TRACES_DIR, exist_ok=True)
         path = _trace_path(run_id)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(redact_trace_value(trace), f, indent=2, default=str)
+            json.dump(_redact_trace_blob(trace), f, indent=2, default=str)
         return path
     except Exception as exc:
         logger.debug("run trace skipped for run %s: %s", run_id, exc)
@@ -187,7 +204,7 @@ def update_trace(run_id: int | None, patch: dict[str, Any]) -> bool:
             return False
         current.update(redact_trace_value(patch) if isinstance(patch, dict) else patch)
         with open(_trace_path(run_id), "w", encoding="utf-8") as f:
-            json.dump(redact_trace_value(current), f, indent=2)
+            json.dump(_redact_trace_blob(current), f, indent=2)
         return True
     except Exception as exc:
         logger.debug("trace update skipped for run %s: %s", run_id, exc)

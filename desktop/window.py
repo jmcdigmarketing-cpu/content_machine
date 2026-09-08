@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QPlainTextEdit,
     QPushButton,
@@ -120,6 +122,12 @@ class RunWindow(QMainWindow):
         self.prompt_label = QLabel("")
         self.prompt_label.setWordWrap(True)
         layout.addWidget(self.prompt_label)
+
+        self.angle_list = QListWidget()
+        self.angle_list.setObjectName("angle_list")
+        self.angle_list.itemClicked.connect(self._pick_angle)
+        self.angle_list.hide()
+        layout.addWidget(self.angle_list)
 
         btns = QHBoxLayout()
         self.ask_input = QLineEdit()
@@ -305,8 +313,16 @@ class RunWindow(QMainWindow):
             self._set_ask_enabled(proceed=True)
         elif req.kind == "choice":
             self.prompt_label.setText(req.prompt.strip())
-            self.ask_input.setPlaceholderText("1-5, or Enter for default")
-            self._set_ask_enabled(text=True)
+            titles = self._bridge.choices()
+            self.angle_list.clear()
+            if titles and (req.gate == "angles" or not req.gate):
+                for title in titles:
+                    self.angle_list.addItem(title)
+                self.angle_list.show()
+                self._set_ask_enabled(text=True, listing=True)
+            else:
+                self.ask_input.setPlaceholderText("1-5, or Enter for default")
+                self._set_ask_enabled(text=True)
         else:
             self.prompt_label.setText(req.prompt.strip() or "(input)")
             self._set_ask_enabled(text=True)
@@ -317,17 +333,28 @@ class RunWindow(QMainWindow):
         text: bool = False,
         confirm: bool = False,
         proceed: bool = False,
+        listing: bool = False,
     ) -> None:
-        enabled = text or confirm or proceed
+        enabled = text or confirm or proceed or listing
         self.ask_input.setEnabled(text)
         self.ok_btn.setEnabled(confirm)
         self.no_btn.setEnabled(confirm)
         self.render_btn.setEnabled(proceed)
         self.regen_btn.setEnabled(proceed)
         self.reject_btn.setEnabled(proceed)
+        if listing:
+            self.angle_list.show()
+        else:
+            self.angle_list.hide()
         if not enabled:
             self.prompt_label.setText("")
             self.ask_input.clear()
+            self.angle_list.clear()
+
+    def _pick_angle(self, item: QListWidgetItem) -> None:
+        row = self.angle_list.row(item)
+        if row >= 0:
+            self._submit(str(row + 1))
 
     def _submit_text(self) -> None:
         self._submit(self.ask_input.text())

@@ -1,8 +1,33 @@
-# Handoff synopsis — 2026-09-07: Stage 2 look + 20
+# Handoff synopsis — 2026-09-07: Stage 3 review room + defects
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — Stage 2 look + 20 (2026-09-07)
+## Last implementation wave — Stage 3 review room + defects (2026-09-07)
+
+Cursor wave. HEAD before this wave: `dbbd582` (Claude review 3 at `d1a1895` plus
+one). `GRADE_VERSION` stayed **v3**. CLI and `ops booth` stay.
+`SCENE_MATCHED_BROLL` stays off. #333 stays a veto.
+
+- **Honesty:** #681 duplicate features gone · #682 §4 is 12000 · #674 traces
+  redacted (home patched to `/home/ciuser`) · #680 CTA strip gated + printed ·
+  #679 HTML/rhythm/JSON-only phrase each have a production caller.
+- **Engine:** #607 ElevenLabs import deferred · #335 single-outlet news demoted
+  on the tapin `_build_prompts` path.
+- **UI:** #671 angle `QListWidget` · #168+#209 `ops review-room` /
+  `py -m desktop --review`. Approve = booth command. J/K/L in `core/review_keys.py`.
+- **#416 mechanical slice:** owned `clip_index` beats; empty index = single loop.
+  HUD gap filed as **#683**. Live decode filed as **#684**.
+- **Launch:** `pip install -e ".[app]"` then `py -m desktop --review`. Missing
+  extra: refuse, exit 2, no WARNING.
+- **Proof:** fail-first missing `set_choices` / `review_keys` / `owned_beats` /
+  `desktop.review`. Guard deleting `set_choices` left the list empty. Suite
+  **2,725 -> 2,751**. mypy **144** held. Backlog **398** open / **522** done,
+  highest **#684**. Filed #683 #684. `data/` empty.
+
+**Still parked:** remaining Stage 3 panels; #672 grain; #673 second monitor;
+Phase M; Ollama FAIL. Next five: #148 queue · #683 HUD · #672 · #341 · #608.
+
+## Previous wave — Stage 2 look + 20 (2026-09-07)
 
 Cursor wave. HEAD before this wave: `7e4284c` (Stage 1). `GRADE_VERSION` stayed
 **v3**. PySide6 is still the `[app]` extra; CI does not install it.
@@ -815,7 +840,7 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 |---------|--------|
 | Multi-line paste | Type `paste` at key-facts prompt |
 | Vault save (all facts) | `vault/<channel>/_operator_facts/<date>_<topic>.md` (stamped `tier: operator` + `verified_at`) |
-| LLM packing | Char budget default 4500 (`OPERATOR_KEY_FACT_CHAR_BUDGET`), soft 24 lines |
+| LLM packing | Char budget default 12000 (`OPERATOR_KEY_FACT_CHAR_BUDGET`), soft 24 lines |
 | Priority | manual → links → vault |
 | Conflicts | Operator facts win — contradicting signal/web lines dropped pre-prompt (`FACT_CONFLICT_FILTER`) |
 | Playbook | Strategy/belief notes → `CHANNEL PLAYBOOK` prompt block (NOT facts) |

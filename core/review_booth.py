@@ -949,11 +949,14 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     except Exception as exc:
         logger.debug("booth trace details skipped: %s", exc)
 
+    from core.review_keys import approve_command
+
     return {
         "mp4_path": mp4,
         "thumb_path": thumb,
         "channel_id": channel_id or "",
         "grade": grade,
+        "approve_cmd": approve_command({"run_id": run_id}),
         "authenticity": str(quality.get("authenticity_verdict") or ""),
         "cost": cost_s,
         "cost_share": tts_share_line(tts, total),

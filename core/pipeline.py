@@ -759,8 +759,6 @@ def run_pipeline(
     result.features["persona_lint"] = list(content.get("persona_lint") or [])
     result.features["cta_summary"] = dict(content.get("cta_summary") or {})
     result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
-    result.features["cta_summary"] = dict(content.get("cta_summary") or {})
-    result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]
     if content.get("quote_attribution"):

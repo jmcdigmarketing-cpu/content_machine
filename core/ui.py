@@ -629,6 +629,14 @@ def display_variants(
     raw = raw_scores or {}
     angle = angle_scores or {}
     best_i = best_variant_index(evaluated, raw, angle)
+    try:
+        from core.ask_bridge import current_bridge
+
+        bridge = current_bridge()
+        if bridge is not None:
+            bridge.set_choices([str(row[0]) for row in evaluated])
+    except Exception as exc:
+        logger.debug("gui angle list skipped: %s", exc)
     shown = [round(float(s), 2) for _, s, *_ in evaluated]
     display_tied = len(evaluated) > 1 and len(set(shown)) == 1
     raw_values = [raw.get(v) for v, *_ in evaluated]
@@ -1436,6 +1444,20 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
         for hit in persona_hits[:4]:
             print_fn(f"    · {hit}")
         print_fn("    Regenerate (+/- at Proceed) or edit before publishing.")
+
+    cta = features.get("cta_summary") or {}
+    if isinstance(cta, dict) and cta.get("stripped"):
+        pre = int(cta.get("pre_paragraphs") or 0)
+        post = int(cta.get("post_paragraphs") or 0)
+        print_fn(
+            f"\n  Pre-CTA recap stripped ({pre} -> {post} paragraphs). "
+            "The published script is the shorter one."
+        )
+
+    rhythm = features.get("sentence_rhythm") or []
+    if rhythm:
+        print_fn(f"\n  ⚠ Sentence rhythm: {rhythm[0]}")
+        print_fn("    Uniform sentence length is an LLM tell — regenerate before publishing.")
 
     if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
         needs_review = True

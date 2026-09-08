@@ -17,6 +17,7 @@ class ContactSheet:
     paths: list[str] = field(default_factory=list)
     ok: bool = True
     detail: str = ""
+    html_path: str = ""
 
 
 def _newest_thumbs(folder: str, *, limit: int = 4) -> list[Path]:
@@ -72,7 +73,18 @@ def render_contact_sheet(
     dest = Path(dest_path)
     dest.parent.mkdir(parents=True, exist_ok=True)
     image.save(dest)
-    return ContactSheet(path=str(dest), paths=used, ok=True, detail=f"{len(used)} thumbs")
+    html_path = dest.with_suffix(".html")
+    html_path.write_text(
+        contact_sheet_html(dest.name, channel_id=channel_id),
+        encoding="utf-8",
+    )
+    return ContactSheet(
+        path=str(dest),
+        paths=used,
+        ok=True,
+        detail=f"{len(used)} thumbs",
+        html_path=str(html_path),
+    )
 
 
 def contact_sheet_html(image_href: str, *, channel_id: str | None = "tapin") -> str:

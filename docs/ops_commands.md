@@ -76,6 +76,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `requeue-upload` | Queue upload for a rendered run (--run-id required) |
 | `retention` | Audience-retention curve + drop-off point (pacing intelligence) |
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
+| `review-room` | Stage 3 Qt review room (J/K/L + Approve; requires pip install -e ".[app]") |
 | `roadmap-index` | Counts per roadmap file and by size, read from the docs |
 | `run-window` | Stage 2 Qt run window (requires pip install -e ".[app]") |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |

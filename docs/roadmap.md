@@ -24,12 +24,12 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — 2026-09-07 Stage 2 look on the Stage 1 run window: token QSS,
-TapIn vs MoneyWise chrome, dark/reduced-chroma/high-contrast/reduced-motion.
-Plus 20 numbered craft/honesty items (#295 unblocked #296). `GRADE_VERSION`
-stayed **v3**. CLI without `--gui` is unchanged.
+**Just landed** — 2026-09-07 Stage 3 review room plus Claude’s open defects.
+Honesty cluster first (#679 #680 #674 #681 #682), then #607 #335 #671, then
+#168+#209, then an honest mechanical slice of #416. `GRADE_VERSION` stayed
+**v3**. CLI and `ops booth` stay. `SCENE_MATCHED_BROLL` stays off.
 
-**Next: Stage 3 — Panels**, starting with the review room. Detail:
+**Next: remaining Stage 3 panels**, starting with the job queue. Detail:
 [desktop_app.md](desktop_app.md).
 
 **Then, in order:** Stage 4 studio → Stage 5 packaging → Stage 6 portfolio
@@ -67,44 +67,24 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-**Correct what the last wave got wrong before adding to it.** The 2026-09-07
-review found five defects in a suite that reported 2,718 green — one of them a
-test that would have failed on CI, one an operator decision reversed without a
-record. Four items it filed are still open, and they come first: a wave that
-ships on top of unfixed honesty defects inherits them. Detail:
-[planning_log.md](planning_log.md) 2026-09-07 (review 3).
+1. **#148 job queue panel** `[L]` — the next Stage 3 panel. Worker stalls are
+   invisible today; drag-reorder is the work. `ops` queue verbs stay.
+2. **#683 HUD-aware owned beat picks** `[S]` — #416 maps `clip_index` onto
+   scene-plan beats, but ingest still stores `hud: null`. A detector, not a guess.
+3. **#672 live TapIn grain grade** `[S]` — argv is in the ffmpeg command; nothing
+   encodes a frame and measures noise. Judge a TapIn render.
+4. **#341 retraction watch** `[M]` — re-query top sources 24h post-publish so
+   #112's correction dossier can fire on its own.
+5. **#608 defer `googleapiclient.discovery` / `sports.espn`** `[S]` — #607's
+   cousin; the next cold-start hog after ElevenLabs left import.
 
-1. **#679 three Stage 2 items are green but inert** `[M]` — #296's print CSS
-   targets a function with no caller, #540's `sentence_rhythm` is read by
-   nothing, and #541's per-channel JSON carries no phrase the hardcoded tuple
-   lacks (its test passes with the file deleted). Give each a production
-   consumer or re-open it honestly. Three `[x]` boxes currently claim work that
-   does not run.
-2. **#680 #542 edits the delivered script silently** `[S]` — no env gate, and
-   `features["cta_summary"]` is never displayed. §3's rule is
-   regenerate-then-*warn*; this is regenerate-and-say-nothing about the text the
-   operator is about to publish.
-3. **#674 traces are not redacted** `[S]` — #635 shipped the HTML half and the
-   title was narrowed on the way in. `run_trace.py` redacts by *key*, never by
-   value, so `ffmpeg_command` and the script bodies carry absolute paths. Harmless
-   on this install only because the repo does not sit under the profile dir.
-   #636 ("prove no secret reaches `data/traces`") is still open behind it.
-4. **#681 / #682 the cheap two** `[S]` — a duplicated `features` assignment in
-   `pipeline.py`, and decisions §4 still citing the retired 4500-char fact budget
-   that the backlog's own #258 entry contradicts.
-5. **Stage 3 review room** `[L]` — #168 + #209. Player, Approve, J/K/L. The booth
-   HTML is the design; Qt is the work. Detail: [desktop_app.md](desktop_app.md).
+**Closed 2026-09-07:** honesty cluster **#679 #680 #674 #681 #682**; **#607**
+ElevenLabs import defer; **#335** source-diversity floor; **#671** visual angle
+list; Stage 3 review room **#168+#209**; **#416** owned beat cuts (HUD gap remains
+#683). **#684** filed: review room does not decode a live mp4 in CI.
 
-**Then**: #671 visual angle list · #607 defer `elevenlabs.client` past import ·
-#335 source-diversity floor · #416 scene-beat cuts (still waiting on clips; do
-not pretend it is unblocked).
-
-**Closed 2026-09-07:** **#670** — CI now installs `.[shell,app]`, runs
-`QT_QPA_PLATFORM=offscreen` (23 ran, 0 skipped) and type-checks `desktop`.
-
-**Dropped from this list** (stay open): **#672** live encode of grain — now
-TapIn-only, so judge a TapIn render before turning it on for MoneyWise again ·
-**#673** second physical monitor · Phase M · Ollama.
+**Dropped from this list** (stay open): **#672** live encode of grain · **#673**
+second physical monitor · Phase M · Ollama.
 
 ---
 

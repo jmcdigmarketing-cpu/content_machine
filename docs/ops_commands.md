@@ -27,6 +27,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `command-ref` | Write docs/ops_commands.md from the live ops list |
 | `competitor-health` | Flag dead/unverified competitor YouTube UC ids (RSS probe, no Data API) |
 | `competitor-sync` | Fetch recent videos from competitor channels |
+| `config-diff` | channels.json sha256 vs last-run fingerprint |
 | `contact-sheet` | 2x2 PNG collage of the last thumbnails (--path dest.png) |
 | `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
@@ -41,6 +42,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |
+| `grain-grade` | Encode a flat frame with the channel look and print stddev |
 | `grounding-corpus` | Replay frozen grounding verdicts (no LLM) |
 | `health` | Channel health — Green/Yellow/Red across engagement/cadence/cost (Pillar 5) |
 | `incidents` | Rank recent signal/provider failures by count x recency |
@@ -75,6 +77,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `render-preview` | Render a 480p ultrafast review copy without changing publish media (--run-id) |
 | `requeue-upload` | Queue upload for a rendered run (--run-id required) |
 | `retention` | Audience-retention curve + drop-off point (pacing intelligence) |
+| `retraction-watch` | Re-fetch last-run source URLs for a retraction |
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
 | `review-room` | Stage 3 Qt review room (J/K/L + Approve; requires pip install -e ".[app]") |
 | `roadmap-index` | Counts per roadmap file and by size, read from the docs |
@@ -105,5 +108,6 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `voices` | List TTS voices — ElevenLabs account + local Piper — and what each channel uses |
 | `weekly-report` | Rules-based weekly intelligence (winners/losers by feature) |
 | `weights` | Print learned signal weights for channel |
+| `why-slow` | Rank last-run phase timings (slowest first) |
 | `worker` | Process one upload/render job (or use --loop N) |
 | `ypp` | YPP / membership readiness: watch-hours proxy, disclosure, cadence |

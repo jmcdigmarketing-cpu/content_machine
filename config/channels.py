@@ -39,6 +39,7 @@ class ChannelProfile:
     background_mode: str = "hybrid"
     hybrid_local_ratio: float = 0.45
     intro_video_file: str | None = None
+    intro_offset_seconds: float | None = None
     publishers_enabled: tuple | None = None
     repurpose_publish: bool = True
     # Optional human-context persona (channels.json "persona"): free-form keys like
@@ -127,6 +128,11 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             background_mode=str(cfg.get("background_mode", "hybrid")).lower(),
             hybrid_local_ratio=float(cfg.get("hybrid_local_ratio", 0.45)),
             intro_video_file=cfg.get("intro_video_file"),
+            intro_offset_seconds=(
+                float(cfg["intro_offset_seconds"])
+                if cfg.get("intro_offset_seconds") is not None
+                else None
+            ),
             publishers_enabled=pub,
             repurpose_publish=bool(cfg.get("repurpose_publish", True)),
             persona={

@@ -11,7 +11,57 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-07 (Cursor) — next 15 after Stage 3
+
+**Prompt:** next 15 items completed too, plus help on `pip install -e ".[app]" then
+py -m desktop --review` (`no such option: -m`).
+
+**Fail-then-fix:** unmodified HEAD `0e1c73e` raised `ModuleNotFoundError` /
+`ImportError` for `core.ops_doc_verbs`, `core.backlog_index`, `core.why_slow`,
+`core.config_diff`, `core.hud_detect`, `video.grain_grade`, `core.retraction_watch`,
+and missing kwargs (`topic=`, `ask=`) / missing `COMMANDS` verbs. Watched
+`tests.test_next15` fail first (19 errors/fails), then pass (19 ok). Guard:
+docs-named `--html` was not registered as a verb; the regex now requires a
+leading letter.
+
+**PowerShell:** `then` is not a PowerShell keyword. pip treated `then` as a
+package and `-m` as its own flag. Two lines: `pip install -e ".[app]"` then
+`py -m desktop --review` (no trailing period). PySide6 was already installed.
+
+**Picked (differs from the recommended five):** cheapest first so #148 `[L]`
+could not strand the wave. #148 stays pick 1 next time.
+
+**Shipped:**
+1. **#608** `googleapiclient.discovery` / `sports.espn` lazy
+2. **#669** `intro_offset_seconds` from `channels.json`
+3. **#633** `verbs_named_in_docs` vs `COMMANDS`
+4. **#632** `untagged_open_items() == []` ratchet
+5. **#638** Steam key on the storesearch URL; SportsData deleted
+6. **#554** `singleton_source_claims` in `_build_prompts`
+7. **#557** `stamp_as_of` in `display_fact_preview`
+8. **#593** gated names in `display_signal_health`
+9. **#581** Edge fallback line on `display_summary`
+10. **#448** `ops why-slow`
+11. **#623** sqlite bytes in `ops reliability`
+12. **#447** `ops config-diff` + `channels_sha256` on traces
+13. **#672** `measure_look_noise` / `ops grain-grade`
+14. **#683** `detect_hud` at ingest; skip `hud: True`
+15. **#341** `ops retraction-watch`
+
+**Not done:** #148 queue; #684 live decode; #685 HUD-null still picked; #686
+24h toast; #687 `.env` fingerprint; #688 VACUUM. `GRADE_VERSION` **v3**.
+`SCENE_MATCHED_BROLL` off. #333 stays a veto.
+
+**Next five:** #148 queue · #684 live decode · #685 HUD-null · #686 24h
+retraction toast · #609 startup budget.
+
+**Audit:** ruff + format; suite **2,751 -> 2,770**; mypy **144** held;
+`data/` empty. Backlog **387** open / **537** done, highest **#688**.
+
+---
+
 ## 2026-09-07 (Cursor) — Stage 3 review room + Claude’s open defects
+
 
 **Prompt:** implement the attached plan — honesty cluster first, then Stage 3
 review room (#168+#209), #671 #607 #335, honest slice of #416.

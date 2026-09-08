@@ -5,7 +5,6 @@ from apis.signal_contract import (
     classify_exception,
     make_signal,
 )
-from sports.espn import get_scoreboard
 
 LIVE_SCORES_CACHE_TTL = 60 * 10  # 10 minutes — post-game results refresh quickly
 
@@ -71,6 +70,8 @@ def get_live_scores_signal(topic):
         )
 
     try:
+        from sports.espn import get_scoreboard
+
         board = get_scoreboard()
         events = board.get("events") or []
         topic_teams = teams_in_topic(topic)

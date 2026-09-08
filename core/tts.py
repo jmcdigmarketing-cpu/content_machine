@@ -21,6 +21,8 @@ logger = get_logger("core.tts")
 _last_cache_hit = False
 _last_piper_mix = False
 _last_cache_fraction = 0.0
+_last_paid_fallback = False
+_last_paid_fallback_from = ""
 
 # Tests patch this name. Production fills it on first paid synth so import stays cheap (#607).
 ElevenLabs: Any = None
@@ -37,6 +39,21 @@ def last_tts_was_piper_mix() -> bool:
 def last_tts_cache_fraction() -> float:
     """0..1 share of synthesized characters served from the TTS cache (#402)."""
     return _last_cache_fraction
+
+
+def last_tts_fell_back_to_paid() -> bool:
+    return _last_paid_fallback
+
+
+def last_tts_fallback_from() -> str:
+    return _last_paid_fallback_from
+
+
+def mark_tts_paid_fallback(provider: str, reason: str = "") -> None:
+    global _last_paid_fallback, _last_paid_fallback_from
+    del reason
+    _last_paid_fallback = True
+    _last_paid_fallback_from = str(provider or "")
 
 
 def _elevenlabs_client(api_key: str):
@@ -363,9 +380,12 @@ def _tts_cache_voice(channel_id: str | None) -> str:
 
 def generate_audio(script, output_path, channel_id: str | None = None):
     global _last_cache_hit, _last_piper_mix, _last_cache_fraction
+    global _last_paid_fallback, _last_paid_fallback_from
     _last_cache_hit = False
     _last_piper_mix = False
     _last_cache_fraction = 0.0
+    _last_paid_fallback = False
+    _last_paid_fallback_from = ""
     channel_id = resolve_channel_id(channel_id)
     spoken = clean_script_for_tts(script)
     try:
@@ -1301,6 +1321,7 @@ def _try_alt_tts_provider(script: str, output_path: str, channel_id: str | None)
     try:
         path = synth(script, output_path, channel_id)
     except Exception as exc:
+        mark_tts_paid_fallback(provider, str(exc))
         logger.warning("TTS provider %s failed (%s) — falling back to ElevenLabs", provider, exc)
         return None
     if path:

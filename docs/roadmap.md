@@ -24,10 +24,13 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — 2026-09-07 Stage 3 review room plus Claude’s open defects.
-Honesty cluster first (#679 #680 #674 #681 #682), then #607 #335 #671, then
-#168+#209, then an honest mechanical slice of #416. `GRADE_VERSION` stayed
-**v3**. CLI and `ops booth` stay. `SCENE_MATCHED_BROLL` stays off.
+**Just landed** — 2026-09-07 next 15 after Stage 3. Cold-start imports, intro
+offset from config, ops verb/docs ratchet, Steam key wired / SportsData deleted,
+single-source flag, fact age, domain gating in health, Edge TTS fallback line,
+`ops why-slow` / `config-diff` / `retraction-watch`, sqlite bytes, TapIn grain
+stddev, HUD detector. `GRADE_VERSION` stayed **v3**. CLI and `ops booth` stay.
+`SCENE_MATCHED_BROLL` stays off. #148 job queue was skipped so it could not
+strand the wave.
 
 **Next: remaining Stage 3 panels**, starting with the job queue. Detail:
 [desktop_app.md](desktop_app.md).
@@ -68,23 +71,31 @@ pipeline keeps improving while the surface is built.
 ### Recommended next five (non-app)
 
 1. **#148 job queue panel** `[L]` — the next Stage 3 panel. Worker stalls are
-   invisible today; drag-reorder is the work. `ops` queue verbs stay.
-2. **#683 HUD-aware owned beat picks** `[S]` — #416 maps `clip_index` onto
-   scene-plan beats, but ingest still stores `hud: null`. A detector, not a guess.
-3. **#672 live TapIn grain grade** `[S]` — argv is in the ffmpeg command; nothing
-   encodes a frame and measures noise. Judge a TapIn render.
-4. **#341 retraction watch** `[M]` — re-query top sources 24h post-publish so
-   #112's correction dossier can fire on its own.
-5. **#608 defer `googleapiclient.discovery` / `sports.espn`** `[S]` — #607's
-   cousin; the next cold-start hog after ElevenLabs left import.
+   invisible today; drag-reorder is the work. `ops` queue verbs stay. Skipped
+   this wave on purpose.
+2. **#684 live review-room decode** `[S]` — J/K/L is a helper; CI still constructs
+   the window offscreen without a file.
+3. **#685 HUD-null still picked** `[S]` — detector + skip-True shipped; old
+   `hud: None` rows still win.
+4. **#686 24h retraction toast** `[M]` — last-run fetch exists; #112 still does
+   not fire on its own.
+5. **#609 startup budget / import time** `[S]` — #608 deferred google/espn; the
+   rest of the 1.89s cold start is still unbudgeted.
 
-**Closed 2026-09-07:** honesty cluster **#679 #680 #674 #681 #682**; **#607**
-ElevenLabs import defer; **#335** source-diversity floor; **#671** visual angle
-list; Stage 3 review room **#168+#209**; **#416** owned beat cuts (HUD gap remains
-#683). **#684** filed: review room does not decode a live mp4 in CI.
+**Closed 2026-09-07 (this wave):** **#608** google/espn import defer · **#669**
+intro offset from config · **#633** docs-named ops verbs · **#632** size-tag
+ratchet · **#638** Steam key / SportsData deleted · **#554** singleton-source
+flag · **#557** fact age at prompt · **#593** domain gating in health · **#581**
+Edge TTS fallback line · **#448** `ops why-slow` · **#623** sqlite bytes ·
+**#447** channels.json config-diff · **#672** grain stddev · **#683** HUD
+detector · **#341** retraction-watch (last-run).
 
-**Dropped from this list** (stay open): **#672** live encode of grain · **#673**
-second physical monitor · Phase M · Ollama.
+**Closed 2026-09-07 (previous):** honesty cluster **#679 #680 #674 #681 #682**;
+**#607** ElevenLabs import defer; **#335** source-diversity floor; **#671**
+visual angle list; Stage 3 review room **#168+#209**; **#416** owned beat cuts.
+
+**Dropped from this list** (stay open): **#673** second physical monitor ·
+Phase M · Ollama.
 
 ---
 

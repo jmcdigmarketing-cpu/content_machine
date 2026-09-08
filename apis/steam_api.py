@@ -1,3 +1,5 @@
+import os
+
 import requests
 
 from apis.signal_contract import (
@@ -9,9 +11,22 @@ from apis.signal_contract import (
 )
 
 
+def steam_search_url(topic: str) -> str:
+    from urllib.parse import quote_plus
+
+    url = (
+        "https://store.steampowered.com/api/storesearch/"
+        f"?term={quote_plus(topic or '')}&l=english&cc=us"
+    )
+    key = os.getenv("STEAM_API_KEY", "").strip()
+    if key:
+        url += f"&key={quote_plus(key)}"
+    return url
+
+
 def get_steam_signal(topic):
     try:
-        url = f"https://store.steampowered.com/api/storesearch/?term={topic}&l=english&cc=us"
+        url = steam_search_url(topic)
         response = requests.get(url, timeout=10)
 
         if response.status_code != 200:

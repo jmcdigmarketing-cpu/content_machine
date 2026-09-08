@@ -1,8 +1,34 @@
-# Handoff synopsis — 2026-09-07: Stage 3 review room + defects
+# Handoff synopsis — 2026-09-07: next 15 after Stage 3
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — Stage 3 review room + defects (2026-09-07)
+## Last implementation wave — next 15 after Stage 3 (2026-09-07)
+
+Cursor wave. HEAD before this wave: `0e1c73e`. `GRADE_VERSION` stayed **v3**.
+CLI and `ops booth` stay. `SCENE_MATCHED_BROLL` stays off. #333 stays a veto.
+#148 job queue was skipped so it could not strand the wave.
+
+- **Cold start / config:** #608 google/espn lazy · #669 intro offset from
+  `channels.json` (tapin 2.15, moneywise 0.0) · #638 Steam key wired, SportsData
+  deleted.
+- **Honesty / facts:** #554 singleton-source flag · #557 fact age at prompt ·
+  #593 domain gating in health · #581 Edge TTS fallback printed.
+- **Ops:** #633 docs-named verbs exist · #632 size-tag ratchet · #448 why-slow ·
+  #623 sqlite bytes · #447 channels.json config-diff · #341 retraction-watch
+  (last-run URLs, not a 24h toast).
+- **Video:** #672 TapIn grain stddev · #683 HUD detector at ingest; skip True.
+- **PowerShell:** `pip install -e ".[app]"` and `py -m desktop --review` are two
+  commands. `then` is not PowerShell; pip then reports `no such option: -m`.
+- **Proof:** fail-first missing modules / verbs. Grain encodes a real frame
+  (ffmpeg; plain 0.000 vs with_look 29.271). HUD PNG fixture True/False. Suite
+  **2,751 -> 2,770**. mypy **144** held. Backlog **387** open / **537** done,
+  highest **#688**. Filed #685–#688. `data/` empty.
+
+**Still parked:** #148 queue; #684 live decode; #685 HUD-null; #686 24h toast;
+#687 `.env` fingerprint; #688 VACUUM; Phase M; Ollama FAIL. Next five: #148 ·
+#684 · #685 · #686 · #609.
+
+## Previous wave — Stage 3 review room + defects (2026-09-07)
 
 Cursor wave. HEAD before this wave: `dbbd582` (Claude review 3 at `d1a1895` plus
 one). `GRADE_VERSION` stayed **v3**. CLI and `ops booth` stay.
@@ -17,7 +43,7 @@ one). `GRADE_VERSION` stayed **v3**. CLI and `ops booth` stay.
   `py -m desktop --review`. Approve = booth command. J/K/L in `core/review_keys.py`.
 - **#416 mechanical slice:** owned `clip_index` beats; empty index = single loop.
   HUD gap filed as **#683**. Live decode filed as **#684**.
-- **Launch:** `pip install -e ".[app]"` then `py -m desktop --review`. Missing
+- **Launch:** two commands: `pip install -e ".[app]"` then `py -m desktop --review`. Missing
   extra: refuse, exit 2, no WARNING.
 - **Proof:** fail-first missing `set_choices` / `review_keys` / `owned_beats` /
   `desktop.review`. Guard deleting `set_choices` left the list empty. Suite

@@ -353,7 +353,11 @@ You must:
     # Split facts into verified data vs YouTube context-only titles
     verified_facts, context_signals = _split_facts_block(signal_facts)
     from core.description_extras import collect_source_urls
-    from core.source_diversity import demote_single_outlet_news, urls_from_text
+    from core.source_diversity import (
+        demote_single_outlet_news,
+        singleton_source_claims,
+        urls_from_text,
+    )
 
     diversity_urls = collect_source_urls(
         channel_id=channel_id or "",
@@ -369,6 +373,22 @@ You must:
     )
     if demoted:
         context_signals = "\n".join(p for p in (context_signals, demoted) if p)
+    singles = singleton_source_claims(
+        [
+            (line, urls_from_text(line))
+            for line in (verified_facts or "").splitlines()
+            if line.strip()
+        ]
+    )
+    if singles:
+        context_signals = "\n".join(
+            p
+            for p in (
+                context_signals,
+                "SINGLE-SOURCE (one outlet while others were fetched): " + "; ".join(singles),
+            )
+            if p
+        )
 
     verified_block = verified_facts if verified_facts else "(no verified game data available)"
     context_block = (

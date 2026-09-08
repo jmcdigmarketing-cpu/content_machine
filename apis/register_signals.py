@@ -402,6 +402,10 @@ def _domain_gating_enabled() -> bool:
     return os.getenv("DOMAIN_SIGNAL_GATING", "true").lower() in ("1", "true", "yes")
 
 
+def gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
+    return _gated_signal_names(topic, channel_id)
+
+
 def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
     """
     Names of domain-specific signals to skip for this topic.

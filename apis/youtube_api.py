@@ -6,8 +6,6 @@ import threading
 from datetime import datetime, timezone
 
 import httplib2
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 
 from apis.signal_contract import (
     STATUS_NO_KEY,
@@ -116,6 +114,8 @@ def _get_youtube_client():
         if _youtube_client is None:
             if _skip_live_youtube_client():
                 raise RuntimeError("live YouTube client forbidden in tests (C9)")
+            from googleapiclient.discovery import build
+
             # static_discovery=True uses the bundled doc — no googleapis HTTPS (C9).
             _youtube_client = build(
                 "youtube",
@@ -327,22 +327,30 @@ def search_youtube(query):
             status_detail=format_quota_detail(),
         )
 
-    except HttpError as e:
-        status_code = e.resp.status if e.resp else 0
-        body = str(e)
-        status, detail = classify_http(status_code, body)
-        if "quota" in body.lower():
-            status = STATUS_QUOTA
-            detail = f"{detail} — {format_quota_detail()}"
-        print(f"[YouTube API Error] {detail}")
-        return make_signal(
-            connected=False,
-            active=False,
-            status=status,
-            status_detail=detail,
-        )
-
     except Exception as e:
+        http_status = 0
+        is_http = False
+        try:
+            from googleapiclient.errors import HttpError
+
+            if isinstance(e, HttpError):
+                is_http = True
+                http_status = e.resp.status if e.resp else 0
+        except ImportError:
+            pass
+        body = str(e)
+        if is_http:
+            status, detail = classify_http(http_status, body)
+            if "quota" in body.lower():
+                status = STATUS_QUOTA
+                detail = f"{detail} — {format_quota_detail()}"
+            print(f"[YouTube API Error] {detail}")
+            return make_signal(
+                connected=False,
+                active=False,
+                status=status,
+                status_detail=detail,
+            )
         status, detail = classify_exception(e)
         print(f"[YouTube API Error] {detail}")
         return make_signal(

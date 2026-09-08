@@ -155,7 +155,6 @@
   },
   "optional_apis": {
     "notes": "Add keys in .env — see docs/data-sources.md and docs/domain-expansion.md",
-    "sportsdata": "SPORTSDATA_API_KEY",
     "balldontlie": "BALLDONTLIE_API_KEY",
     "api_sports": "API_SPORTS_KEY",
     "fred": "FRED_API_KEY",

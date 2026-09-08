@@ -65,3 +65,16 @@ def demote_single_outlet_news(
     domains = unique_domains(combined)
     domain = next(iter(sorted(domains))) if domains else ""
     return "", verified or "", {"status": "single_outlet", "domain": domain}
+
+
+def singleton_source_claims(rows: list[tuple[str, list[str]]]) -> list[str]:
+    """Flag claims that rest on one host when the batch has two or more hosts."""
+    all_urls = [u for _claim, urls in rows for u in urls]
+    if len(unique_domains(all_urls)) < 2:
+        return []
+    flags: list[str] = []
+    for claim, urls in rows:
+        domains = unique_domains(urls)
+        if len(domains) == 1:
+            flags.append(f"{claim.strip()} (only {next(iter(sorted(domains)))})")
+    return flags

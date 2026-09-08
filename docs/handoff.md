@@ -87,27 +87,25 @@ green suite).
 
 ## Slot — Cursor
 
-**Written:** 2026-09-07 · **HEAD at write:** `dbbd582` · **Tree:** Stage 3
-review room + honesty cluster, committing right after the post-slot suite.
+**Written:** 2026-09-07 · **HEAD at write:** `0e1c73e` · **Tree:** next 15 after
+Stage 3, committing right after the post-slot suite.
 
-- **Defect first:** #683 HUD-aware owned-beat picks are impossible while ingest
-  stores `hud: null` (the known-gap test asserts a HUD clip is still chosen).
-  #684 review room does not decode a live mp4 in CI — J/K/L is a helper;
-  widget construction is offscreen without a file. #672 grain is still
-  argv-only. Remaining Stage 3 panels (#148 queue first) are not this wave.
-  #608 (`googleapiclient` / `sports.espn`) is the next cold-start hog.
-- **Honesty shipped:** #681 duplicate features gone · #682 §4 is 12000 ·
-  #674 traces redacted (`Path.home()` patched to `/home/ciuser`) · #680 CTA
-  strip gated + printed · #679 HTML/rhythm/JSON-only phrase each have a caller.
-- **Also shipped:** #607 ElevenLabs import deferred · #335 single-outlet news
-  demoted on tapin `_build_prompts` · #671 angle `QListWidget` · #168+#209
-  `ops review-room` / `py -m desktop --review` (Approve = booth command;
-  `ops booth` stays) · #416 owned `clip_index` beats, **not** CLIP matching,
-  `SCENE_MATCHED_BROLL` off. `GRADE_VERSION` **v3**.
-- Fail-first: missing `set_choices` / `review_keys` / `owned_beats` /
-  `desktop.review`. Guard deleting `set_choices` left the list empty.
-  Suite **2,725 -> 2,751**; mypy **144** held; backlog **398** open /
-  **522** done, highest **#684**. `data/` empty.
-  Look: `pip install -e ".[app]"` then `py -m desktop --review`.
+- **Defect first:** `pip install -e ".[app]" then py -m desktop --review` is two
+  commands; PowerShell has no `then`, so pip ate `-m` (`no such option: -m`).
+  No trailing period on `--review`. #148 queue skipped so it could not strand
+  the wave. #685 `hud: None` still picked. #684 live decode still CI-untested.
+  #686 retraction-watch is last-run, not a 24h toast. #687 no `.env` fingerprint.
+  #688 sqlite bytes, not VACUUM.
+- **Shipped:** #608 google/espn lazy · #669 intro offset from config · #633
+  docs-named ops verbs · #632 49 unnumbered size tags (index untagged 0) ·
+  #638 Steam key / SportsData deleted · #554 singleton-source · #557 fact age ·
+  #593 domain gating in health · #581 Edge fallback printed · #448 why-slow ·
+  #623 sqlite bytes · #447 config-diff · #672 grain stddev · #683 HUD detector ·
+  #341 retraction-watch. `GRADE_VERSION` **v3**. `SCENE_MATCHED_BROLL` off.
+- Fail-first: missing `ops_doc_verbs` / `why_slow` / `hud_detect` / verbs.
+  Grain: plain 0.000 vs with_look 29.271. Look: two lines, `py -m desktop --review`.
+  `ops why-slow` currently ranks `word_count: 410.0s` because that key sits in
+  timings. Suite **2,751 -> 2,770**; mypy **144** held; backlog **387** open /
+  **537** done, highest **#688**. `data/` empty.
 
 

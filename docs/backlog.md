@@ -14,12 +14,12 @@ Sizes: `[S]` hours · `[M]` a session · `[L]` a wave · `[XL]` a programme.
 *Carried over from the old thematic lists and the phase/pillar sections. Several
 duplicate a numbered candidate below — noted where spotted.*
 
-- [ ] Backtest recommender accuracy vs. realized engagement (volume-gated — **10** measured
+- [ ] Backtest recommender accuracy vs. realized engagement (volume-gated — **10** measured `[M]`
   run-linked videos vs the predictor's own threshold of 15)
-- [ ] `instagram_figures` signal — still templated only; catalog entry `enabled: false`
-- [ ] Free-backend probe for Twitter/X, if the signal is ever worth restoring
-- [ ] Free-backend probes — TikTok/Twitter equivalents (only if the Apify bill justifies it)
-- [ ] **$0 TTS switch** — **technically unblocked 2026-08-16** (captions fixed above; a
+- [ ] `instagram_figures` signal — still templated only; catalog entry `enabled: false` `[S]`
+- [ ] Free-backend probe for Twitter/X, if the signal is ever worth restoring `[S]`
+- [ ] Free-backend probes — TikTok/Twitter equivalents (only if the Apify bill justifies it) `[S]`
+- [ ] **$0 TTS switch** — **technically unblocked 2026-08-16** (captions fixed above; a `[M]`
   full Piper render was verified end to end), now waiting on two operator calls rather
   than engineering. Local Piper meters $0 vs **$0.25–0.31/video (~91% of run cost)**.
   **Edge TTS** (`TTS_PROVIDER=edge`, 2026-08-28) is a separate opt-in **cloud** $0 path
@@ -32,84 +32,84 @@ duplicate a numbered candidate below — noted where spotted.*
      learned-length loop go stale otherwise.
   Flip with `TTS_PROVIDER=piper` + `PIPER_VOICE` + `CAPTION_ALIGN_BACKEND=faster_whisper`
   ([free_mode.md](free_mode.md)); ElevenLabs remains the default and nothing was switched
-- [ ] Clip-from-source (Phase R) + subject-tracked auto-reframe
-- [ ] Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists
-- [ ] Router vision path → multimodal rendered-video review (Pillar 2)
-- [ ] MoneyWise depth wave — earnings-calendar signal, ticker watchlist, finance brief sections
-- [ ] Third-vertical groundwork: AI Tools / Tech — channel profile + SEO + coverage audit
-- [ ] Tighten the mypy baseline *(the other half of the old combined line)*
-- [ ] C-follow-ups — LLM-proposed directives; optional auto-apply of a gate-winner behind a flag
-- [ ] Thumbnail scoring → CTR (needs impressions/CTR in the metrics sync)
-- [ ] Prompt-performance analysis; asset-effectiveness ranking from `assets` history
-- [ ] Full operator dashboard / Channel Command Center
-- [ ] Tavily / broad web research; Bluesky direction signal
-- [ ] Multi-language (single script → localized TTS) — low priority for the gaming/UFC niche
-- [ ] Clone-this-winner into discovery — `winners()` is display-only; `best_bet`
+- [ ] Clip-from-source (Phase R) + subject-tracked auto-reframe `[L]`
+- [ ] Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists `[XL]`
+- [ ] Router vision path → multimodal rendered-video review (Pillar 2) `[L]`
+- [ ] MoneyWise depth wave — earnings-calendar signal, ticker watchlist, finance brief sections `[L]`
+- [ ] Third-vertical groundwork: AI Tools / Tech — channel profile + SEO + coverage audit `[L]`
+- [ ] Tighten the mypy baseline *(the other half of the old combined line)* `[M]`
+- [ ] C-follow-ups — LLM-proposed directives; optional auto-apply of a gate-winner behind a flag `[M]`
+- [ ] Thumbnail scoring → CTR (needs impressions/CTR in the metrics sync) `[M]`
+- [ ] Prompt-performance analysis; asset-effectiveness ranking from `assets` history `[M]`
+- [ ] Full operator dashboard / Channel Command Center `[XL]`
+- [ ] Tavily / broad web research; Bluesky direction signal `[M]`
+- [ ] Multi-language (single script → localized TTS) — low priority for the gaming/UFC niche `[L]`
+- [ ] Clone-this-winner into discovery — `winners()` is display-only; `best_bet` `[M]`
   already consumes the graveyard `[M]`
-- [ ] Recommender simulation harness — synthetic histories so the loop is
+- [ ] Recommender simulation harness — synthetic histories so the loop is `[M]`
   validatable before n=15 `[M]`
-- [ ] Hook-score vs retention calibration — 0–100 heuristic never checked against
+- [ ] Hook-score vs retention calibration — 0–100 heuristic never checked against `[M]`
   `audienceWatchRatio` `[M]`
 - [ ] Semantic vault fact retrieval — token overlap misses related notes `[M]`
 
 ### From the intelligence phase (H-K)
 
-- [ ] Pillow remains fallback
-- [ ] Backtest recommender accuracy vs. realised engagement once volume grows
-- [ ] `instagram_figures` — still templated only; catalog `enabled: false`
-- [ ] **git remote** — repo initialised locally; create **private** GitHub remote and push
-- [ ] Tighten the mypy baseline (~94 errors → fix the real ones, e.g. `timings` value type)
-- [ ] Annotate/retire the remaining best-effort broad `except Exception` handlers
-- [ ] Raise test coverage on render + publish paths
+- [ ] Pillow remains fallback `[S]`
+- [ ] Backtest recommender accuracy vs. realised engagement once volume grows `[M]`
+- [ ] `instagram_figures` — still templated only; catalog `enabled: false` `[S]`
+- [ ] **git remote** — repo initialised locally; create **private** GitHub remote and push `[S]`
+- [ ] Tighten the mypy baseline (~94 errors → fix the real ones, e.g. `timings` value type) `[M]`
+- [ ] Annotate/retire the remaining best-effort broad `except Exception` handlers `[M]`
+- [ ] Raise test coverage on render + publish paths `[M]`
 
 ### From candidate phases O-S
 
-- [ ] **Multi-language** — single script → translated script + localized TTS → per-language uploads. Real growth lever, **low priority** for the gaming/UFC niche; pairs with Phase Q captions. *(deferred — see Later horizons.)*
-- [ ] Ingest a long video / VOD / podcast (file or URL) → transcribe → find strong moments → cut vertical shorts with captions.
-- [ ] Reuse the scoring / hook / caption stack from Phases P–Q.
-- [ ] **Observability** — structured run traces + timing dashboard (timings already captured). *(promoted into **Pillar 1 — Run Ledger** below.)*
+- [ ] **Multi-language** — single script → translated script + localized TTS → per-language uploads. Real growth lever, **low priority** for the gaming/UFC niche; pairs with Phase Q captions. *(deferred — see Later horizons.)* `[L]`
+- [ ] Ingest a long video / VOD / podcast (file or URL) → transcribe → find strong moments → cut vertical shorts with captions. `[L]`
+- [ ] Reuse the scoring / hook / caption stack from Phases P–Q. `[S]`
+- [ ] **Observability** — structured run traces + timing dashboard (timings already captured). *(promoted into **Pillar 1 — Run Ledger** below.)* `[M]`
 
 ### From the 2026-H2 pillars
 
 - [ ] **Multimodal rendered-video review** `[L]` *(later)* — sampled frames +
   transcript → LLM rubric (pacing, caption readability, visual interest); the
   router vision path shipped 2026-08-20 (supporting track).
-- [ ] **Clip-from-source (Phase R)** + subject-tracked auto-reframe — *not started;
+- [ ] **Clip-from-source (Phase R)** + subject-tracked auto-reframe — *not started; `[L]`
   auto-reframe seam is `core/reframe.py` (YOLO/AGPL, GPU). Deprioritized this pass.*
-- [ ] **Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists** — polish tiers.
+- [ ] **Avatar mode, upscaling (Real-ESRGAN/RIFE), storyboard shot-lists** — polish tiers. `[XL]`
   *Avatar/upscaling = seams parked (GPU + `[search github]` repos). Storyboard = build
   with the AI-video backend (its real consumer; prose hurts keyword stock search).*
-- [ ] **Governor follow-ups (O12 candidates)** — YouTube units under a governor
+- [ ] **Governor follow-ups (O12 candidates)** — YouTube units under a governor `[M]`
   scope; per-provider LLM spend in the run cost line; reliability time series
   ([credit_efficiency.md](credit_efficiency.md) O11 follow-ups).
-- [ ] **Free-backend probes (optional)** — TikTok/Twitter equivalents of the
+- [ ] **Free-backend probes (optional)** — TikTok/Twitter equivalents of the `[S]`
   yt-dlp / Reddit-OAuth backends, only if the Apify bill justifies it
   ([agent_reach_evaluation.md](agent_reach_evaluation.md)).
-- [ ] **MoneyWise depth wave** ([domain-expansion.md](domain-expansion.md) ROI 9.5) —
+- [ ] **MoneyWise depth wave** ([domain-expansion.md](domain-expansion.md) ROI 9.5) — `[L]`
   earnings-calendar signal (free API), ticker-watchlist tracking, finance-tuned research
   brief sections.
-- [ ] **Third-vertical groundwork: AI Tools / Tech** (ROI 9.0) — new-channel playbook dry
+- [ ] **Third-vertical groundwork: AI Tools / Tech** (ROI 9.0) — new-channel playbook dry `[L]`
   run: channel profile + SEO config + signal-coverage audit. *Groundwork only, not a
   launch commitment.*
-- [ ] **Engineering hygiene** — CI coverage reporting (non-blocking), mypy-baseline
+- [ ] **Engineering hygiene** — CI coverage reporting (non-blocking), mypy-baseline `[M]`
   tightening tracking, render/publish test depth (the acknowledged soft spot).
 
 ### Later horizons — Phase M multi-platform (parked)
 
-- [ ] **TikTok publisher** — `TIKTOK_CLIENT_KEY`/`SECRET` present; `TikTokPublisher` still unimplemented (in `DEFERRED_PLATFORMS`)
-- [ ] Instagram Reels / Meta — `META_APP_ID`/`SECRET`, `INSTAGRAM_*` (keys still empty)
-- [ ] Per-platform caption/hashtag shaping from existing SEO + TikTok-trend signal
-- [ ] Cross-platform performance back into the learning loop (unify with YouTube engaged-rate)
+- [ ] **TikTok publisher** — `TIKTOK_CLIENT_KEY`/`SECRET` present; `TikTokPublisher` still unimplemented (in `DEFERRED_PLATFORMS`) `[XL]`
+- [ ] Instagram Reels / Meta — `META_APP_ID`/`SECRET`, `INSTAGRAM_*` (keys still empty) `[XL]`
+- [ ] Per-platform caption/hashtag shaping from existing SEO + TikTok-trend signal `[M]`
+- [ ] Cross-platform performance back into the learning loop (unify with YouTube engaged-rate) `[L]`
 
 ### Deferred (volume-gated)
 
-- [ ] Thumbnail scoring → CTR
-- [ ] Prompt performance analysis (after provenance shipped)
-- [ ] Asset effectiveness ranking from `assets` history
-- [ ] Full operator dashboard + Channel Command Center
-- [ ] Tavily / broad web research
-- [ ] Bluesky direction signal
-- [ ] Reuse scoring from `assets` history for background selection
+- [ ] Thumbnail scoring → CTR `[M]`
+- [ ] Prompt performance analysis (after provenance shipped) `[M]`
+- [ ] Asset effectiveness ranking from `assets` history `[M]`
+- [ ] Full operator dashboard + Channel Command Center `[XL]`
+- [ ] Tavily / broad web research `[M]`
+- [ ] Bluesky direction signal `[S]`
+- [ ] Reuse scoring from `assets` history for background selection `[S]`
 
 ---
 
@@ -605,7 +605,7 @@ Grounding & fact quality
 - [x] 338. **Quote-attribution gate** *(2026-09-07)* — deterministic, no extra LLM. Invented quote flags; `Dana White told ESPN "…"` in facts passes; `"GTA 6"` does not fire. Nested quotes `known_gap=True`. Pre-rewrite flag persisted if the script changes (§25). `GRADE_VERSION` stayed **v3** `[M]`
 - [ ] 339. **"Unconfirmed" as a first-class script mode** — today the choice is assert or drop; saying "this is not confirmed yet" is more honest *and* more authentic under the 2026 policy `[M]`
 - [x] 340. **`.facts.json` sidecar beside the mp4** *(2026-08-28)* — `write_render_sidecars` at the pipeline finalize site writes claims/sources/disputed from already-persisted quality; fail-open, and a missing mp4 writes nothing `[S]`
-- [ ] 341. **Retraction watch 24h post-publish** — re-query the top sources; toast when a key fact changed. The *detector* that makes #112's correction dossier fire on its own `[M]`
+- [x] 341. **Retraction watch 24h post-publish** *(2026-09-07)* — `ops retraction-watch` re-fetches last-trace source URLs; a body containing `RETRACTION` or missing the stored claim is a hit. 24h toast / #112 auto-fire is leftover #686 `[M]`
 - [ ] 342. **Learned per-source trust weights** — `grounding_tiers.py` tiers are hand-assigned. Demote a source that keeps being corrected; promote one that never is `[M]`
 - [ ] 343. **Cross-run fact cache keyed by entity+date** — franchise batches share discovery (#42) but still re-verify identical facts per topic `[M]`
 - [ ] 344. **Channel-clock resolution of relative time** — "tonight" / "this weekend" must resolve against the channel's ET calendar at *script* time; an overnight run crossing midnight currently lies `[S]`
@@ -733,8 +733,8 @@ Operator surface
 - [x] 444. **Minutes-per-published-video trend** *(2026-08-28)* — persisted to its own sidecar on publish (never `quota_state`), surfaced as a one-liner; tests isolate the file `[S]`
 - [ ] 445. **Resume an interrupted run from the ledger** — an abort after TTS currently means re-spending it `[M]`
 - [ ] 446. **Undo for destructive `ops` commands** — retention, requeue, and clone paths have no back-out `[M]`
-- [ ] 447. **Config diff vs the last good run** — `channels.json` / `.env` drift is the first suspect in most incidents and there is no answer for it `[S]`
-- [ ] 448. **`ops why-slow`** — the ranked text answer that #213's waterfall would draw `[S]`
+- [x] 447. **Config diff vs the last good run** *(2026-09-07)* — `ops config-diff` compares `channels.json` sha256 to `channels_sha256` on the last trace (`write_run_trace` now stamps it). `.env` drift is leftover #687 `[S]`
+- [x] 448. **`ops why-slow`** *(2026-09-07)* — ranks last-trace `timings`; a 32s `signals_and_variants` phase is named first `[S]`
 - [ ] 449. **Batch approve queue** — review five drafts in one pass instead of five interactive runs `[M]`
 - [ ] 450. **Voice-note fact intake** — record a memo on a phone, transcribe to key facts; whisper is already installed `[M]`
 - [ ] 451. **Phone-sized booth layout** — review a 9:16 Short on the device it will be watched on `[S]`
@@ -874,10 +874,10 @@ Grounding & truth
 - [ ] 551. **Date arithmetic check** — "18 months since" must match the actual dates in the facts `[M]`
 - [ ] 552. **Number-unit sanity** — "80 hours" against a source that said minutes `[M]`
 - [ ] 553. **Entity-role check** — developer vs parent company in the sentence that names them; run 71 shipped exactly this error `[L]`
-- [ ] 554. **Flag a fact only one source carries** when several were fetched `[S]`
+- [x] 554. **Flag a fact only one source carries** *(2026-09-07)* — `singleton_source_claims` flags the ESPN-only Topuria line and leaves the two-host PPV line; `_build_prompts` appends `SINGLE-SOURCE` to context (no sixth `input()` gate) `[S]`
 - [ ] 555. **Vault deduplication** — the same fact from three ingests should be one fact `[M]`
 - [ ] 556. **Fact editor** — correct one pasted line without re-pasting the block `[M]`
-- [ ] 557. **Fact age at the prompt** so a three-week-old note is visibly stale before it is used `[S]`
+- [x] 557. **Fact age at the prompt** *(2026-09-07)* — `stamp_as_of` on a 21-day `FactRecord` prints `as of last month` through `display_fact_preview` `[S]`
 - [ ] 558. **Auto-expire notes about events that have now happened** `[M]`
 
 Analytics & learning rigor
@@ -907,7 +907,7 @@ Cost & efficiency
 - [ ] 578. **Cost per finished minute of video**, not per run `[S]`
 - [ ] 579. **Warn when a run costs more than the channel's measured RPM returns** `[M]`
 - [ ] 580. **Free-mode cost report** — prove the $0 path actually cost $0 `[S]`
-- [ ] 581. **Track Edge TTS availability** so a silent fallback to paid ElevenLabs is visible `[S]`
+- [x] 581. **Track Edge TTS availability** *(2026-09-07)* — `_try_alt_tts_provider` calls `mark_tts_paid_fallback`; `display_summary` prints `edge failed — fell back to ElevenLabs` `[S]`
 - [ ] 582. **Per-provider latency budget** — a slow provider is a cost too `[M]`
 
 Signals & reliability
@@ -922,7 +922,7 @@ Signals & reliability
 - [ ] 590. **Rate-limit headroom shown before discovery**, not after exhaustion `[S]`
 - [ ] 591. **Signal timing histogram** to replace the hardcoded estimate in the spinner `[S]`
 - [ ] 592. **Cache warming for the franchise anchors** this channel covers weekly `[M]`
-- [ ] 593. **Show domain gating in the health block** when gating is why a signal skipped `[S]`
+- [x] 593. **Show domain gating in the health block** *(2026-09-07)* — `display_signal_health(..., topic=, ask=False)` prints gated `live_scores`/`odds` for a UFC topic on tapin; `main.py` passes topic `[S]`
 - [ ] 594. **Offline mode** — run from cache only, no network, for script editing `[M]`
 
 Publish, policy & channel ops
@@ -943,7 +943,7 @@ Publish, policy & channel ops
 Performance & startup
 
 - [x] 607. **Defer `elevenlabs.client` past import** *(2026-09-07)* — `core.tts` no longer imports the SDK at module load. `_elevenlabs_client` constructs it on the first paid synth. Piper/edge do not pay the import. Tests still patch `core.tts.ElevenLabs` `[S]`
-- [ ] 608. **Defer `googleapiclient.discovery` and `sports.espn`** — another ~0.68s of the same 1.89s `[S]`
+- [x] 608. **Defer `googleapiclient.discovery` and `sports.espn`** *(2026-09-07)* — `apis.youtube_api` and `apis.live_scores_api` import with those modules absent; `build` / `get_scoreboard` load on first live call `[S]`
 - [ ] 609. **Startup budget test** that fails CI when import time regresses past a threshold `[S]`
 - [ ] 610. **Lazy-import the 92 `ops` verbs** so running one does not load all of them `[M]`
 - [ ] 611. **Parallelise the render's independent ffmpeg passes** `[M]`
@@ -961,7 +961,7 @@ Data model & storage
 - [ ] 620. **Soft-delete runs** so a mistaken purge is recoverable `[M]`
 - [ ] 621. **Export a run as one portable folder** — mp4, script, facts, trace `[M]`
 - [ ] 622. **Import that folder back**, for moving between machines `[M]`
-- [ ] 623. **Database size and vacuum report** in `ops reliability` `[S]`
+- [x] 623. **Database size and vacuum report** *(2026-09-07)* — `reliability.gather()["store"]` prints sqlite bytes (or `database n/a`). VACUUM is leftover #688 `[S]`
 - [ ] 624. **Separate the operational store from the analytics store** before the app reads both `[L]`
 
 Testing & ops hygiene
@@ -971,10 +971,10 @@ Testing & ops hygiene
 - [ ] 627. **Mutation testing on the gate modules** — do the tests actually detect a broken gate `[L]`
 - [ ] 628. **Flaky-test detector** across repeated CI runs `[M]`
 - [ ] 629. **Test-time budget** — the suite is 45s and growing `[S]`
-- [ ] 630. **`ops selftest`** — run the five safety gates against fixtures and report `[M]`
+- [ ] 630. **ops selftest** — run the five safety gates against fixtures and report `[M]`
 - [ ] 631. **Coverage reporting for `core/` only**, non-blocking, to find untested gates `[S]`
-- [ ] 632. **Size-tag the 49 open items that carry none** — `ops roadmap-index` counts them `[S]`
-- [ ] 633. **A docs test that every `ops` verb named in a doc exists** `[S]`
+- [x] 632. **Size-tag the 49 open items that carry none** *(2026-09-07)* — `untagged_open_items()` uses the same backtick `SIZE_RE` as `ops roadmap-index`. 49 unnumbered early-backlog rows had `[S]`-style tags on a continuation line or none; they now carry `` `[S]` `` / M / L / XL on the `- [ ]` line. Index untagged **0** `[S]`
+- [x] 633. **A docs test that every `ops` verb named in a doc exists** *(2026-09-07)* — `verbs_named_in_docs()` vs `COMMANDS`; `` `ops review-room` `` is in the set. Flags (`--html`) and unbuilt names written as prose are not verbs `[S]`
 - [ ] 634. **Run the docs lint in pre-commit**, not only ruff `[S]`
 
 Security & privacy — local
@@ -982,7 +982,7 @@ Security & privacy — local
 - [x] 635. **Redact the vault path and username** from every HTML dump *(2026-09-07)* — `redact_operator_paths` replaces vault with `[vault]` and `USERNAME` with `[user]`. `themed_page` runs it. Traces are a leftover (#674) `[S]`
 - [ ] 636. **Prove no secret reaches `data/traces`** — #97 redacts API bodies, not env echoes `[M]`
 - [ ] 637. **Encrypt `config/secrets/` at rest** with a machine-bound key `[M]`
-- [ ] 638. **`SPORTSDATA_API_KEY` and `STEAM_API_KEY` are declared in `.env.example` and read nowhere** — wire them or delete them; an operator can set them and nothing happens `[S]`
+- [x] 638. **`SPORTSDATA_API_KEY` and `STEAM_API_KEY` are declared in `.env.example` and read nowhere** *(2026-09-07)* — Steam storesearch appends `STEAM_API_KEY` when set. SportsData was unread: deleted from `.env.example` and `config/data_sources.json` `[S]`
 - [ ] 639. **An `.env` linter** for keys read but undocumented and documented but unread — measured 392 read vs 273 declared `[M]`
 - [ ] 640. **Audit what a packaged app would ship** — no keys, no vault, no `data/` `[M]`
 
@@ -1032,7 +1032,7 @@ Stage 0 + leftover craft (2026-09-07) — filed on the way
 
 - [ ] 667. **Pinned-status CSI is untested against a real Windows Terminal** — the tests call the real formatter and assert the escape string; `pin_enabled()` is false when stdout is not a tty or `NO_COLOR` is set. Same class as #650 `[S]`
 - [ ] 668. **The Windows Terminal profile snippet is not installed** — `config/windows-terminal/profiles.json` is checked in; nothing merges it into the operator's WT `settings.json` `[S]`
-- [ ] 669. **`ops intro-waveform` offset is the TapIn constant, not a probe** — duration comes from the wav; offset is always `DEFAULT_INTRO_DURATION` (2.15s). Closing this would mean reading a per-channel intro offset from config `[S]`
+- [x] 669. **`ops intro-waveform` offset is the TapIn constant, not a probe** *(2026-09-07)* — `intro_offset_seconds` reads `channels.json` (`tapin` 2.15, `moneywise` 0.0); waveform uses that, not `DEFAULT_INTRO_DURATION` alone `[S]`
 
 Stage 1 run window (2026-09-07)
 
@@ -1041,7 +1041,7 @@ Stage 1 run window (2026-09-07)
 
 Stage 2 look + 20 (2026-09-07) — filed on the way
 
-- [ ] 672. **Grain/vignette ffmpeg is argv-only** — `look_filter_fragment` is in `build_render_ffmpeg_command` when `channel_id` is set. Nothing in CI encodes a frame and measures noise. A still from a real render would close this `[S]`
+- [x] 672. **Grain/vignette ffmpeg is argv-only** *(2026-09-07)* — `measure_look_noise` encodes a flat frame with TapIn `noise=` and asserts `with_look` stddev > `plain`. `ops grain-grade` is the operator path. A still from a *real render* (not a 64px fixture) is still operator smoke `[S]`
 - [ ] 673. **Second-monitor restore is untested on a second physical display** — state stores `screen` name; offscreen DPR is 1.0. Same class as #650 / #667 `[S]`
 - [x] 674. **Trace JSON is not passed through `redact_operator_paths`** *(2026-09-07)* — `write_run_trace` walks string values through `chrome.redact_operator_paths`. Test patches `Path.home()` / `USERNAME` / `USER` to `/home/ciuser` so this box's username cannot make it pass. #636 (secrets in traces) is still open behind it `[S]`
 
@@ -1058,5 +1058,9 @@ Claude review of the Stage 0-2 waves (2026-09-07)
 
 Stage 3 leftovers (2026-09-07)
 
-- [ ] 683. **HUD-aware owned beat picks** — #416 maps `clip_index` paths onto scene-plan beats, but ingest still stores `hud: null`, so a HUD clip can still be chosen. Closing this needs a detector, not a guess `[S]`
+- [x] 683. **HUD-aware owned beat picks** *(2026-09-07)* — `detect_hud` on a rainbow top-bar PNG is True; uniform green is False. Ingest persists that bool. `assign_owned_clips` skips `hud: True` when a clean clip exists. `hud: None` (old index) is still picked — leftover #685 `[S]`
 - [ ] 684. **Review room does not decode a live mp4 in CI** — J/K/L helper is unit-tested; widget construction is offscreen without a file. A real last-run play is still operator smoke `[S]`
+- [ ] 685. **`hud: None` clips are still chosen** — ingest now writes True/False, but an old index row (or a detector miss) with `null` still wins `assign_owned_clips`. The known-gap test asserts that `[S]`
+- [ ] 686. **Retraction watch is last-run fetch, not a 24h toast** — `ops retraction-watch` hits URLs on the last trace. #112's correction dossier still does not fire on its own `[M]`
+- [ ] 687. **Config diff does not fingerprint `.env`** — `channels.json` sha256 is stamped on the trace; env drift is still the first suspect with no answer `[S]`
+- [ ] 688. **`ops reliability` reports sqlite bytes, not VACUUM** — size is visible; reclaiming pages is not `[S]`

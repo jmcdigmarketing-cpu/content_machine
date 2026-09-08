@@ -241,6 +241,20 @@ def _metrics_sync_section() -> dict[str, Any]:
         return {"incident": None, "detail": "metrics sync n/a"}
 
 
+def _store_section() -> dict[str, Any]:
+    try:
+        from config.paths import DATA_DIR
+
+        path = os.path.join(DATA_DIR, "content_os.db")
+        if os.path.isfile(path):
+            size = os.path.getsize(path)
+            return {"bytes": size, "detail": f"sqlite {size} bytes"}
+        return {"bytes": 0, "detail": "database n/a"}
+    except Exception as exc:
+        logger.debug("store size skipped: %s", exc)
+        return {"bytes": 0, "detail": "database n/a"}
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {
@@ -255,6 +269,7 @@ def gather() -> dict[str, Any]:
         "fact_expiry": _fact_expiry_section(),
         "policy_canary": _policy_canary_section(),
         "metrics_sync": _metrics_sync_section(),
+        "store": _store_section(),
     }
 
 
@@ -479,6 +494,10 @@ def render(data: dict[str, Any] | None = None) -> str:
     ms = data.get("metrics_sync") or {}
     if isinstance(ms, dict) and (ms.get("incident") or ms.get("detail")):
         lines.append(f"  metrics : {ms.get('incident') or ms.get('detail')}")
+
+    store = data.get("store") or {}
+    if isinstance(store, dict) and store.get("detail"):
+        lines.append(f"  database: {store.get('detail')}")
 
     inc = data.get("incidents") or []
     if inc:

@@ -47,9 +47,12 @@ py main.py
 ```powershell
 pip install -e ".[app]"
 py -m desktop
+# Two commands, not one line — PowerShell has no "then", and pip will treat
+# `py -m` as its own flags (`no such option: -m`). No trailing period on --review.
 # or: py main.py --gui
 # or: py -m scripts.ops run-window
-# review room: py -m desktop --review   /   py -m scripts.ops review-room
+py -m desktop --review
+# or: py -m scripts.ops review-room
 # ops booth (HTML) still works
 ```
 

@@ -90,7 +90,7 @@ def _run_intelligence_report_flow_body(channel_id: str) -> None:
 
     section("Intelligence")
     discovery = run_discovery(topic, channel_id=channel_id)
-    display_signal_health(discovery.base_signals)
+    display_signal_health(discovery.base_signals, topic=topic, channel_id=channel_id)
     from core.angle_intent import ANGLE_DEFAULT, angle_intent_note, detect_angle_intent
 
     angle_intent = detect_angle_intent(topic)
@@ -394,7 +394,7 @@ def _run_new_video_flow_body(
     )
     print(f"  Completed in {t_disc:.1f}s")
 
-    display_signal_health(discovery.base_signals)
+    display_signal_health(discovery.base_signals, topic=topic, channel_id=channel_id)
 
     from core.outlier import display_outlier, get_competitor_outlier
 

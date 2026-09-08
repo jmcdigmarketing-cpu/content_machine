@@ -978,6 +978,57 @@ def cmd_review_room(_args: argparse.Namespace) -> int:
     return launch(review=True)
 
 
+@_register("why-slow", "Rank last-run phase timings (slowest first)")
+def cmd_why_slow(args: argparse.Namespace) -> int:
+    from core.review_booth import last_trace
+    from core.why_slow import why_slow_lines
+
+    trace = last_trace(getattr(args, "channel", None)) or {}
+    print("\n".join(why_slow_lines(trace.get("timings"))))
+    return 0
+
+
+@_register("config-diff", "channels.json sha256 vs last-run fingerprint")
+def cmd_config_diff(args: argparse.Namespace) -> int:
+    from core.config_diff import diff_against
+    from core.review_booth import last_trace
+
+    print("\n".join(diff_against(last_trace(getattr(args, "channel", None)) or {})))
+    return 0
+
+
+@_register("retraction-watch", "Re-fetch last-run source URLs for a retraction")
+def cmd_retraction_watch(args: argparse.Namespace) -> int:
+    from core.retraction_watch import pairs_from_trace, watch_urls
+    from core.review_booth import last_trace
+
+    pairs = pairs_from_trace(last_trace(getattr(args, "channel", None)) or {})
+    if not pairs:
+        print("no source URLs on the last trace")
+        return 0
+    hits = watch_urls(pairs)
+    if not hits:
+        print(f"checked {len(pairs)} URL(s); no retraction hits")
+        return 0
+    print("\n".join(hits))
+    return 0
+
+
+@_register("grain-grade", "Encode a flat frame with the channel look and print stddev")
+def cmd_grain_grade(args: argparse.Namespace) -> int:
+    import tempfile
+
+    from video.grain_grade import measure_look_noise
+
+    with tempfile.TemporaryDirectory() as tmp:
+        result = measure_look_noise(tmp, channel_id=getattr(args, "channel", None) or "tapin")
+    if result is None:
+        print("grain-grade n/a (no noise look or ffmpeg failed)")
+        return 1
+    print(f"plain {result['plain']:.3f}  with_look {result['with_look']:.3f}")
+    return 0
+
+
 @_register("shell", "Localhost FastAPI operator shell (GET only; no TTS/Apify/publish)")
 def cmd_shell(args: argparse.Namespace) -> int:
     from core.operator_shell import DEFAULT_PORT, serve

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from core.logging import get_logger
-from video.channel_intro import DEFAULT_INTRO_DURATION
+from video.intro_offset import intro_offset_seconds
 
 logger = get_logger("video.intro_waveform")
 
@@ -29,7 +29,6 @@ def describe_intro_waveform(
     dest_path: str = "",
     channel_id: str | None = None,
 ) -> IntroWaveform:
-    del channel_id  # reserved for a per-channel offset
     path = Path(audio_path)
     if not path.is_file():
         logger.debug("intro waveform skipped; file not found: %s", audio_path)
@@ -39,7 +38,7 @@ def describe_intro_waveform(
     except (OSError, wave.Error, struct.error, ValueError) as exc:
         logger.debug("intro waveform unreadable %s: %s", audio_path, exc)
         return IntroWaveform(ok=False, line=f"intro file not found: {audio_path}")
-    offset = float(DEFAULT_INTRO_DURATION)
+    offset = intro_offset_seconds(channel_id)
     dest = Path(dest_path) if dest_path else path.with_suffix(".waveform.png")
     _draw_waveform(samples, dest)
     line = f"sting {duration:.1f}s (offset {offset:.2f}s) -> {dest}"

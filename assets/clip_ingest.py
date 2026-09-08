@@ -285,6 +285,17 @@ def _save_index(path: str, data: dict[str, Any]) -> None:
         raise
 
 
+def _hud_flag(dest: str) -> bool | None:
+    """True/False from the frame detector; None only when the detector itself fails."""
+    try:
+        from core.hud_detect import detect_hud
+
+        return bool(detect_hud(dest))
+    except Exception as exc:
+        logger.debug("hud detect skipped: %s", exc)
+        return None
+
+
 def _record_index(dest: str, source: str) -> None:
     ensure_data_dir()
     path = CLIP_INDEX_FILE
@@ -297,7 +308,7 @@ def _record_index(dest: str, source: str) -> None:
         "width": width,
         "height": height,
         "codec": codec,
-        "hud": None,
+        "hud": _hud_flag(dest),
     }
     _save_index(path, data)
 

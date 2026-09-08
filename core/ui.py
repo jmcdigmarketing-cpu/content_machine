@@ -546,7 +546,14 @@ def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=emit)
         print_fn(f"  - {row.get('channel', '?')}: {row.get('title', '')[:55]}")
 
 
-def display_signal_health(signals: dict[str, Any], *, print_fn=emit):
+def display_signal_health(
+    signals: dict[str, Any],
+    *,
+    topic: str = "",
+    channel_id: str | None = None,
+    print_fn=emit,
+    ask: bool = True,
+):
     from core.ui_theme import health_status, warn
 
     subsection("Signal health", print_fn)
@@ -590,11 +597,22 @@ def display_signal_health(signals: dict[str, Any], *, print_fn=emit):
             print_fn(f"  {warn('Cooling down')} (rate-limited): " + ", ".join(parts))
     except Exception as exc:
         logger.debug("Signal cooldown line skipped: %s", exc)
+    if topic:
+        try:
+            from apis.register_signals import gated_signal_names
+
+            gated = sorted(gated_signal_names(topic, channel_id))
+            if gated:
+                print_fn(f"  {warn('Gated')} (domain): " + ", ".join(gated))
+        except Exception as exc:
+            logger.debug("domain gating line skipped: %s", exc)
     print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
-    print_fn()
+    print_fn("")
 
     from core.ask import ask_text
 
+    if not ask:
+        return
     expand = ask_text("  [Enter to continue / v to view all signals]: ").strip().lower()
     if expand == "v":
         print_fn()
@@ -2027,6 +2045,14 @@ def display_summary(
     )
     if cost_line:
         print_fn(f"  {cost_line}")
+    try:
+        from core.tts import last_tts_fallback_from, last_tts_fell_back_to_paid
+
+        if last_tts_fell_back_to_paid():
+            src = last_tts_fallback_from() or "alt TTS"
+            print_fn(f"  TTS: {src} failed — fell back to ElevenLabs")
+    except Exception as exc:
+        logger.debug("tts fallback line skipped: %s", exc)
     if cost is not None:
         try:
             from core.pinned_status import set_pin_cost

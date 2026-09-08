@@ -165,6 +165,12 @@ def write_run_trace(
             "quality": redact_trace_value(dict(quality or {})),
             "composite_score": composite_score,
         }
+        try:
+            from core.config_diff import channels_fingerprint
+
+            trace["channels_sha256"] = channels_fingerprint()
+        except Exception as exc:
+            logger.debug("channels fingerprint skipped: %s", exc)
         if menu_path:
             trace["menu_path"] = str(menu_path)
         if angle_intent:

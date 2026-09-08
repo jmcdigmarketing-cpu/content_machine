@@ -37,7 +37,12 @@ def assign_owned_clips(
         duration = float((meta or {}).get("duration_s") or 0.0)
         ranked.append((score, duration, str(path)))
     ranked.sort(key=lambda row: (row[0], row[1]), reverse=True)
-    paths = [p for _, _, p in ranked]
+    paths = []
+    for _score, _dur, path in ranked:
+        hud = (clips.get(path) or {}).get("hud")
+        if hud is True:
+            continue
+        paths.append(str(path))
     if not paths:
         return []
     if len(scenes) > 1 and len(paths) < 2:

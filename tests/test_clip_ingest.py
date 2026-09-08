@@ -87,7 +87,7 @@ class TestClipIngestMatch(unittest.TestCase):
             self.assertFalse(index.exists())
 
     def test_apply_remuxes_to_dest_and_records_hud_null(self):
-        """HUD is unknown: we do not invent a detector. duration/size come from ffprobe."""
+        """HUD is detected at ingest (#683). Garbage remux bytes are not a HUD."""
         from assets.clip_ingest import ingest_clips
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -129,7 +129,7 @@ class TestClipIngestMatch(unittest.TestCase):
             self.assertTrue(Path(copied[0].dest).is_file())
             payload = json.loads(index.read_text(encoding="utf-8"))
             meta = payload["clips"][copied[0].dest]
-            self.assertIsNone(meta.get("hud"))
+            self.assertFalse(meta.get("hud"))
             self.assertEqual(meta.get("duration_s"), 3.0)
             self.assertEqual(meta.get("width"), 1920)
             self.assertEqual(meta.get("height"), 1080)

@@ -67,21 +67,44 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-**Stage 2 shipped 2026-09-07** (the previous pick 1, plus 20 numbered items).
-Remaining: Stage 3 panels, leftover honesty, and items this wave filed rather
-than closed. Detail: [planning_log.md](planning_log.md) 2026-09-07 (Stage 2).
+**Correct what the last wave got wrong before adding to it.** The 2026-09-07
+review found five defects in a suite that reported 2,718 green — one of them a
+test that would have failed on CI, one an operator decision reversed without a
+record. Four items it filed are still open, and they come first: a wave that
+ships on top of unfixed honesty defects inherits them. Detail:
+[planning_log.md](planning_log.md) 2026-09-07 (review 3).
 
-1. **Stage 3 review room** `[L]` — #168 + #209. Player, Approve, J/K/L. The
-   booth HTML is the design; Qt is the work. Detail: [desktop_app.md](desktop_app.md).
-2. **#671 visual angle list** `[S]` — 1-5 line is still the ask widget.
-3. **#607 defer `elevenlabs.client` past import** `[S]` — 0.51s of CLI start.
-4. **#335 source-diversity floor on dated topics** `[S]` — one outlet is a rumor.
-5. **#416 scene-beat cuts from owned gameplay** `[L]` — still waiting on enough
-   clips; do not pretend it is unblocked.
+1. **#679 three Stage 2 items are green but inert** `[M]` — #296's print CSS
+   targets a function with no caller, #540's `sentence_rhythm` is read by
+   nothing, and #541's per-channel JSON carries no phrase the hardcoded tuple
+   lacks (its test passes with the file deleted). Give each a production
+   consumer or re-open it honestly. Three `[x]` boxes currently claim work that
+   does not run.
+2. **#680 #542 edits the delivered script silently** `[S]` — no env gate, and
+   `features["cta_summary"]` is never displayed. §3's rule is
+   regenerate-then-*warn*; this is regenerate-and-say-nothing about the text the
+   operator is about to publish.
+3. **#674 traces are not redacted** `[S]` — #635 shipped the HTML half and the
+   title was narrowed on the way in. `run_trace.py` redacts by *key*, never by
+   value, so `ffmpeg_command` and the script bodies carry absolute paths. Harmless
+   on this install only because the repo does not sit under the profile dir.
+   #636 ("prove no secret reaches `data/traces`") is still open behind it.
+4. **#681 / #682 the cheap two** `[S]` — a duplicated `features` assignment in
+   `pipeline.py`, and decisions §4 still citing the retired 4500-char fact budget
+   that the backlog's own #258 entry contradicts.
+5. **Stage 3 review room** `[L]` — #168 + #209. Player, Approve, J/K/L. The booth
+   HTML is the design; Qt is the work. Detail: [desktop_app.md](desktop_app.md).
 
-**Dropped from this list** (stay open): **#670** (no CI Qt) · **#672** live
-encode of grain · **#673** second physical monitor · **#674** traces not
-redacted · Phase M · Ollama.
+**Then**: #671 visual angle list · #607 defer `elevenlabs.client` past import ·
+#335 source-diversity floor · #416 scene-beat cuts (still waiting on clips; do
+not pretend it is unblocked).
+
+**Closed 2026-09-07:** **#670** — CI now installs `.[shell,app]`, runs
+`QT_QPA_PLATFORM=offscreen` (23 ran, 0 skipped) and type-checks `desktop`.
+
+**Dropped from this list** (stay open): **#672** live encode of grain — now
+TapIn-only, so judge a TapIn render before turning it on for MoneyWise again ·
+**#673** second physical monitor · Phase M · Ollama.
 
 ---
 

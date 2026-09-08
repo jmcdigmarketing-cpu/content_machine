@@ -81,6 +81,26 @@ open with its item number.
 Before `git add -A`, run `git status --porcelain | grep '^??'` and read the list.
 Agent plan files, scratch output and stray reports do not belong in the repo.
 
+## Reviewing the other agent's wave
+
+Three rounds of this have found the same four shapes, none of which a green
+suite catches:
+
+- **A guard that cannot fail.** Break the thing it guards and watch it go red.
+  One asserted token colours were *present* when the question was which won the
+  cascade; it passed with the generator deleted.
+- **A test that passes for an environmental reason.** CI is `ubuntu-latest`. Run
+  anything touching `Path.home()`, `USERNAME`/`USER` or a vault path with those
+  patched to non-local values before believing it.
+- **A shipped item that contradicts a recorded decision.** Grep
+  `planning_log.md` for the item number before accepting the implementation.
+- **An undisclosed change to finished output.** Diff the render filter graph and
+  the prompt, not just the tests.
+
+Verify the reported numbers yourself - suite, mypy, `data/`, backlog counts. In
+three rounds they have been exact every time, which is the reason the *unreported*
+things are where the defects are.
+
 ## Do not
 
 - Do not trust a `[x]` as proof the defect is fixed. #323 shipped, was marked

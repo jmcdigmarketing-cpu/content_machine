@@ -2710,3 +2710,43 @@ budget in §4).
 Suite 2,718 -> **2,725** green; ruff and format clean; mypy **144** held with
 `desktop` newly included (291 -> 296 files); `data/` untouched. Backlog 404 ->
 **407** open, highest **#682**.
+
+## 2026-09-07 (review 3, addendum) — the failure modes, written where they load
+
+**Prompt:** *"update docs stating what is wrong, putting those first to do, then
+commit. state as such to cursor, and what it needs to do to avoid these errors in
+the future."*
+
+The five defects are fixed and committed (`d1a1895`); four more are filed and
+open. Two changes so the next wave does not inherit them:
+
+**The next five now leads with the open defects** — #679 (three inert Stage 2
+items), #680 (#542 edits the script silently), #674 (traces unredacted), and the
+cheap pair #681/#682. Stage 3 drops to pick 5. A wave built on top of unfixed
+honesty defects inherits them, and three `[x]` boxes currently claim work that
+does not run.
+
+**The recurring shapes are now rules, not review notes.** Three reviews in a row
+found the same four, and none of them is caught by a green suite — which is
+exactly why writing them into a planning entry nobody re-reads was not enough.
+They are `.cursor/rules/content-machine.mdc` **17-20** (always applied) and the
+`next-five` skill's new review section, mirrored to `.cursor/skills`:
+
+1. *A green suite is not evidence a test can fail.* Two guards this wave could
+   not go red — one asserted colours were present when the question was cascade
+   order, one asserted `assertIn("0", qss)`.
+2. *Simulate ubuntu before claiming green.* CI is `ubuntu-latest`; the #635
+   assertion passed only because this developer's home directory contains the
+   username.
+3. *Never ship against a recorded operator decision.* #333.
+4. *Say when finished output changes.* #512's grain, `ask_confirm`'s loosening,
+   and `emit()`'s ANSI, all under a "byte-identical" heading.
+
+Definition of done gained three checkboxes for the same reason: watch a guard go
+red, patch `Path.home()`/`USERNAME`/`USER` before trusting a path assertion, and
+compare mypy against the baseline — it is a separate CI job, so a new type error
+survives a green test run.
+
+Worth stating plainly: Cursor's *reported* numbers have been exact three rounds
+running. The defects are never in what it measures. They are in what nothing
+measured.

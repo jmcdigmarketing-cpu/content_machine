@@ -2919,3 +2919,64 @@ survives a green test run.
 Worth stating plainly: Cursor's *reported* numbers have been exact three rounds
 running. The defects are never in what it measures. They are in what nothing
 measured.
+
+## 2026-09-08 — review 4 (Claude Code): four waves, one repeated shape
+
+Reviewed `0e1c73e`, `4a82992`, `bbfc2cb`, `93e5feb` — 88 files, 4,796 insertions.
+Verified independently, not taken on faith: suite **2,822** green, ruff and format
+clean, mypy **139** (baseline 144), backlog **358 open / 571 done / highest #684**,
+`data/` untouched. Every number Cursor reported is exact. That is four rounds.
+
+The earlier defects were fixed properly. #679's three inert Stage 2 items now have
+real callers (`ops contact-sheet` writes the sibling HTML; `sentence_rhythm` and
+`cta_summary` flow content_engine -> pipeline.features -> `display_fact_engine_report`);
+#674 walks trace strings through `redact_operator_paths` and its test patches
+`Path.home()`, `USERNAME` and `USER` away from this box — rule 18 landed.
+
+**But the shape rule 17 was written for repeated four times in one wave.** #365
+recency decay, #302 plausibility, #596 competitor-title duplicate and #367 relative
+clock each shipped a correct helper with a passing unit test, and each was called by
+nothing that mattered:
+
+- `recency_weight` and `weighted_engaged_mean` *were* wired into `get_best_bet` — but
+  `_build_entries` never sets `age_days`, so every weight is `recency_weight(None)`,
+  which is 1.0, and the "decayed" mean is arithmetic. A 400-day 10% sample tied a
+  2-day 40% one at 0.25. The test drove the two helpers directly.
+- The other three write keys into the persisted `quality` dict that nothing reads.
+  `ungrounded_numeric`, written two lines above them in `build_quality`, has a reader
+  in the booth. These three had none, anywhere.
+
+Both are now wired and both tests fail on unmodified `93e5feb` for the named reason.
+The generalisation for the skill: **wiring a helper into a function is not the same
+as the function having the input the helper needs.** Grep the field, not the call.
+
+Three more, same review:
+
+- **#696** — `notify_retractions_if_due` fetched up to 12 URLs at 8s each and *then*
+  consulted the 24h stamp. `ops tray` calls it. Worse, `pairs_from_trace` scrapes URLs
+  from `json.dumps(trace)` using a pattern that stops at whitespace / `]` / `>` / `)`
+  but not at a quote, so every URL arrived as `https://x/a",`, every fetch 404'd into
+  the blanket `except`, and #341's trace path had never watched anything.
+- **#697** — `detect_hud` mkdtemp'd a frame directory and never removed it, on a path
+  `render_video` reaches for every clip whose index entry predates #683: one leaked
+  temp directory per clip per render, re-probed forever because the answer is never
+  written back. Removed in a `finally`, plus a process-local memo on (path, mtime,
+  size) so an overnight batch probes each clip once.
+- **#698** — `.pre-commit-config.yaml` opened with `pre-commit install`. `core.hooksPath`
+  is `.githooks`, so git never reads `.git/hooks`; the documented command cannot
+  produce a working hook here.
+
+Also tightened two guards in `test_stage3_honesty.py` and confirmed both go red when
+the guarded behaviour is broken: `assertIn("3", joined)` matched any digit anywhere,
+and the rhythm assertion fed `rhythm or ["uniform sentence length"]` into the report —
+substituting a value production had not produced, which is what let #540's live wiring
+go unproven twice.
+
+Filed open, not fixed: **#699** the legacy `_CSS` block is regrowing a second hex
+palette (`#2a2f3a`, `#111`) three commits after d1a1895 made token CSS win the cascade;
+**#700** `PostgresJobRepository.claim_next` dropped `LIMIT 1` to sort in Python;
+**#701** `resolve_relative_clock("this weekend")` resolves to Saturday noon when it is
+already Saturday evening.
+
+Suite **2,822 -> 2,833**. mypy **139**. `data/` untouched.
+

@@ -1,5 +1,11 @@
-# Run on staged files before each commit:  pre-commit install
-# Run across the whole repo on demand:      pre-commit run --all-files
+# Run across the whole repo on demand:  pre-commit run --all-files
+# Run on staged files only:             pre-commit run
+#
+# Do NOT run `pre-commit install`. This repo sets core.hooksPath to .githooks (for
+# the commit-msg trailer check), and git then ignores .git/hooks entirely - which is
+# the only place it writes to. Recent versions refuse outright rather than leave a
+# hook that would never fire. Run the commands above by hand, or add the call to
+# .githooks/pre-commit if you want it automatic.
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4

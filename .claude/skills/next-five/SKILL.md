@@ -83,7 +83,7 @@ Agent plan files, scratch output and stray reports do not belong in the repo.
 
 ## Reviewing the other agent's wave
 
-Three rounds of this have found the same four shapes, none of which a green
+Four rounds of this have found the same five shapes, none of which a green
 suite catches:
 
 - **A guard that cannot fail.** Break the thing it guards and watch it go red.
@@ -96,9 +96,15 @@ suite catches:
   `planning_log.md` for the item number before accepting the implementation.
 - **An undisclosed change to finished output.** Diff the render filter graph and
   the prompt, not just the tests.
+- **A helper that is called but never fed.** The commonest shape by far - four
+  instances in one wave. `recency_weight` was wired into `get_best_bet`, but
+  `_build_entries` never set the `age_days` it reads, so every weight was 1.0.
+  Three sibling items wrote keys into the persisted `quality` dict that nothing
+  read. Trace the **field**, not the call: who writes it, who reads it, and does
+  the writer ever have a value to write.
 
 Verify the reported numbers yourself - suite, mypy, `data/`, backlog counts. In
-three rounds they have been exact every time, which is the reason the *unreported*
+four rounds they have been exact every time, which is the reason the *unreported*
 things are where the defects are.
 
 ## Do not

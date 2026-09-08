@@ -41,6 +41,36 @@ def watch_urls(
 STAMP_PATH = os.path.join(DATA_DIR, "retraction_toast.json")
 
 
+def toast_is_due(stamp_path: str | None = None, *, now=None) -> bool:
+    """False when the last toast is under 24h old.
+
+    Split out of `maybe_toast_retractions` so the caller can consult it *before*
+    fetching: the watch pulls up to 12 URLs at an 8s timeout each, and `ops tray`
+    calls it, so checking the stamp afterwards meant an interactive command could
+    block for a minute and a half only to discover it had already toasted today.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    stamp = stamp_path or STAMP_PATH
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    try:
+        import json
+        import os as _os
+
+        if not _os.path.isfile(stamp):
+            return True
+        with open(stamp, encoding="utf-8") as fh:
+            raw = json.load(fh)
+        last = datetime.fromisoformat(str(raw.get("last") or "").replace("Z", "+00:00"))
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=timezone.utc)
+    except Exception:
+        return True
+    return moment - last >= timedelta(hours=24)
+
+
 def maybe_toast_retractions(
     hits: list[str],
     *,
@@ -49,7 +79,7 @@ def maybe_toast_retractions(
     toaster=None,
 ) -> bool:
     """Toast the first hit at most once per 24h. CLI print path does not call this."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timezone
 
     if not hits:
         return False
@@ -57,20 +87,7 @@ def maybe_toast_retractions(
     moment = now or datetime.now(timezone.utc)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
-    last = None
-    try:
-        import json
-        import os as _os
-
-        if _os.path.isfile(stamp):
-            with open(stamp, encoding="utf-8") as fh:
-                raw = json.load(fh)
-            last = datetime.fromisoformat(str(raw.get("last") or "").replace("Z", "+00:00"))
-            if last.tzinfo is None:
-                last = last.replace(tzinfo=timezone.utc)
-    except Exception:
-        last = None
-    if last is not None and moment - last < timedelta(hours=24):
+    if not toast_is_due(stamp, now=moment):
         return False
     send = toaster
     if send is None:
@@ -98,6 +115,9 @@ def notify_retractions_if_due(channel_id: str | None = None, **kwargs) -> bool:
 
         if kwargs.get("toaster") is None and not toast_enabled():
             return False
+        # Before the fetch, not after it — see toast_is_due.
+        if not toast_is_due(kwargs.get("stamp_path"), now=kwargs.get("now")):
+            return False
         from core.review_booth import last_trace
 
         pairs = pairs_from_trace(last_trace(channel_id) or {})
@@ -123,5 +143,9 @@ def pairs_from_trace(trace: dict | None) -> list[tuple[str, str]]:
     payload = trace or {}
     topic = str(payload.get("selected_topic") or payload.get("input_topic") or "")
     blob = json.dumps(payload, default=str)
-    urls = urls_from_text(blob)
-    return [(url, topic) for url in urls[:12]]
+    # The shared _URL pattern stops at whitespace / ] > ) — not at a quote or comma,
+    # and this reads a JSON dump. Untrimmed, every URL arrives as `https://x/a",`
+    # and every fetch 404s into the blanket handler, so the watch silently never
+    # watched anything. Trim what JSON put there, keep the path intact.
+    urls = [url.rstrip("\",'") for url in urls_from_text(blob)]
+    return [(url, topic) for url in urls[:12] if url]

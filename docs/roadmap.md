@@ -34,6 +34,14 @@ counterfactual · recency · drift · competitor title · test-time budget).
 `SCENE_MATCHED_BROLL` stays off. Skipped **#151 #153 #684** so they cannot
 strand the wave.
 
+**Review 4 corrected four of those leftovers.** #365 recency, #302 plausibility,
+#596 competitor title and #367 clock all shipped green and inert — a helper
+unit-tested in isolation, called by nothing with real inputs. Fixed as **#694**
+and **#695**, with **#696** (retraction watch fetched before its own throttle,
+on URLs carrying JSON punctuation), **#697** (HUD probe leaked a temp dir per
+clip per render) and **#698** (`pre-commit install` cannot work under
+`core.hooksPath`). Filed open: **#699 #700 #701**.
+
 **Next: remaining Stage 4/3 craft** — brand kit, caption timeline, live decode,
 then the cost tower. Detail: [desktop_app.md](desktop_app.md).
 
@@ -72,13 +80,18 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-1. **#151 brand-kit compiler** `[L]` — fonts/palette/sting into render + GUI.
-2. **#153 caption choreography timeline** `[L]` — keyframes over real word timings.
-3. **#684 live review-room decode** `[S]` — J/K/L is a helper; CI still constructs
+1. **#699 second hex palette in `_CSS`** `[S]` — d1a1895 made token CSS win the
+   cascade; the new booth elements put `#2a2f3a` / `#111` straight back in.
+   Reversing a shipped fix in the next wave is the cheapest thing here to stop.
+2. **#684 live review-room decode** `[S]` — J/K/L is a helper; CI still constructs
    the window offscreen without a file.
-4. **#112 correction dossier** `[M]` — post-publish fact reversal still does not
-   auto-write a dossier; #686 only toasts.
-5. **#158 cost tower** `[L]` — next Stage 3 panel after the queue.
+3. **#112 correction dossier** `[M]` — post-publish fact reversal still does not
+   auto-write a dossier; #686 only toasts, and #696 is what made that toast
+   reach a real URL at all.
+4. **#151 brand-kit compiler** `[L]` — fonts/palette/sting into render + GUI.
+5. **#153 caption choreography timeline** `[L]` — keyframes over real word timings.
+
+**Closed 2026-09-08 (review 4):** **#694** recency decay reached the recommendation · **#695** three write-only quality keys given a reader · **#696** retraction throttle before the fetch · **#697** HUD temp-dir leak + memo · **#698** pre-commit header.
 
 **Closed 2026-09-08 (this wave):** **#148** queue + drag · **#692** studio snap ·
 **#693** missing HUD skip · **#686** 24h toast · **#688** VACUUM · **#230 #246

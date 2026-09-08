@@ -163,6 +163,15 @@ def render_dossier(run_id: int) -> str:
             lines.append(f"  ungrounded specifics: {quality['ungrounded_count']}")
         if quality.get("trade_warning_count"):
             lines.append(f"  trade warnings: {quality['trade_warning_count']}")
+        # #302 / #596 / #367 all persisted into quality with no reader anywhere.
+        # A number the operator never sees cannot change a decision.
+        for span in quality.get("numeric_outliers") or []:
+            lines.append(f"  implausible amount: {span}")
+        if quality.get("competitor_title_duplicate"):
+            lines.append(f"  title: {quality['competitor_title_duplicate']}")
+        for key, label in (("clock_tonight", "tonight"), ("clock_weekend", "this weekend")):
+            if quality.get(key):
+                lines.append(f"  script says '{label}' -> {quality[key]}")
         if quality.get("claim_support_rate") is not None:
             rate = float(quality["claim_support_rate"] or 0)
             unsupported = int(quality.get("unsupported_claim_count") or 0)

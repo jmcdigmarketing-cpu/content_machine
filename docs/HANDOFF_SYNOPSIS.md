@@ -1,8 +1,34 @@
-# Handoff synopsis — 2026-09-08: queue panel, studio drag, and 15 leftovers
+# Handoff synopsis — 2026-09-08: review 4 — five inert items wired, three filed
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
-## Last implementation wave — queue + drag + 15 leftovers (2026-09-08)
+## Last wave — review 4 (2026-09-08, Claude Code)
+
+Reviewed `0e1c73e` `4a82992` `bbfc2cb` `93e5feb` (88 files, 4,796 insertions).
+Every number Cursor reported verified exact — fourth round. Earlier defects
+(#679, #674) fixed properly, rule 18 landed.
+
+- **The repeated shape:** #365 recency, #302 plausibility, #596 competitor
+  title, #367 clock all shipped green and inert. `recency_weight` was called by
+  `get_best_bet` but `_build_entries` never set `age_days`, so every weight was
+  1.0; the other three wrote `quality` keys nothing read. Fixed as **#694**,
+  **#695**. New rule **21** — "reachable is not the same as fed".
+- **Also fixed:** **#696** retraction watch fetched 12 URLs before checking its
+  own 24h stamp, on URLs carrying JSON punctuation (so #341's trace path had
+  never watched anything) · **#697** `detect_hud` leaked a temp dir per clip per
+  render, now removed plus a (path, mtime, size) memo · **#698**
+  `pre-commit install` cannot work under `core.hooksPath=.githooks`.
+- **Filed open:** **#699** `_CSS` regrowing a second hex palette three commits
+  after d1a1895 · **#700** `claim_next` dropped `LIMIT 1` · **#701**
+  `"this weekend"` resolves into the past on a Saturday.
+- **Proof:** all 10 new tests failed on unmodified `93e5feb` for their named
+  reason; both tightened guards in `test_stage3_honesty` watched going red.
+  Suite **2,822 -> 2,833**; mypy **139** (baseline 144); backlog **361** open /
+  **576** done, highest **#701**. `data/` empty.
+
+Next five: **#699 · #684 · #112 · #151 · #153**.
+
+## Previous wave — queue + drag + 15 leftovers (2026-09-08)
 
 Cursor wave. HEAD before this wave: `bbfc2cb`. `GRADE_VERSION` stayed **v3**.
 CLI / `ops booth` / `ops queue-manage` stay. `SCENE_MATCHED_BROLL` stays off.

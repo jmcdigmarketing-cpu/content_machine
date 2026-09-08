@@ -152,6 +152,15 @@ This is the project's own principle, written down in `docs/decisions.md` §18, �
     the terminal was byte-identical. Behaviour changes are not free just because a test
     covers them; name them where the operator reads.
 
+21. **Reachable is not the same as fed.** Review 4 found this shape four times in one
+    wave. `recency_weight` and `weighted_engaged_mean` *were* called by `get_best_bet`
+    — but `_build_entries` never set `age_days`, so every weight was
+    `recency_weight(None) == 1.0` and the "decayed" mean was the arithmetic one it
+    replaced. #302, #596 and #367 each wrote a key into the persisted `quality` dict
+    that nothing anywhere read. Both pass a unit test of the helper. Grep the **field**
+    end to end: who writes it, who reads it, and does the writer ever have a value.
+    A number the operator never sees cannot change a decision.
+
 ## Definition of done
 
 Not "the tests pass" — they passed for every defect in the table above.
@@ -166,7 +175,8 @@ Not "the tests pass" — they passed for every defect in the table above.
 - [ ] `mypy` matches the recorded baseline — it is a separate CI job and a new type
       error hides in a green suite
 - [ ] Nothing under `data/` changed — `git status --short data/` is empty
-- [ ] Every new function is reachable from a production caller
+- [ ] Every new function is reachable from a production caller, **and** the input it
+      reads is actually populated there, **and** anything it writes has a reader (rule 21)
 - [ ] Operator-facing changes were actually run, and the output pasted
 - [ ] A healthy run emits no new WARNING
 - [ ] Your work is **committed**, not left in the working tree (rule 14)

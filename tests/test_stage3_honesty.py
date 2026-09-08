@@ -99,16 +99,29 @@ class TestCtaStripIsVisibleAndGated(unittest.TestCase):
         self.assertTrue(on_report["stripped"])
         lines: list[str] = []
         display_fact_engine_report(
-            {
-                "cta_summary": on_report,
-                "sentence_rhythm": rhythm or ["uniform sentence length"],
-            },
+            {"cta_summary": on_report, "sentence_rhythm": rhythm},
             print_fn=lines.append,
         )
         joined = "\n".join(lines)
-        self.assertIn("3", joined)
-        self.assertIn("2", joined)
-        self.assertIn("rhythm", joined.lower())
+        # Not assertIn("3") — a bare digit matches any number anywhere in the report,
+        # so that guard passed with the counts printed wrong or not at all (rule 17).
+        self.assertIn("(3 -> 2 paragraphs)", joined, joined)
+
+    def test_the_rhythm_flag_reaches_the_report_from_a_real_script(self):
+        """The gate test above fed `rhythm or [...]` into the report, so it proved
+        nothing about #540: the fallback fired because a varied script flags nothing.
+        This drives the flag from a script that genuinely trips it."""
+        from core.script_craft import apply_script_craft
+        from core.ui import display_fact_engine_report
+
+        uniform = " ".join(["The champion looked sharp all night."] * 6)
+        _clean, _report, rhythm = apply_script_craft(uniform)
+        self.assertEqual(rhythm, ["uniform sentence length"], rhythm)
+
+        lines: list[str] = []
+        display_fact_engine_report({"sentence_rhythm": rhythm}, print_fn=lines.append)
+        joined = "\n".join(lines)
+        self.assertIn("Sentence rhythm: uniform sentence length", joined, joined)
 
 
 class TestContactSheetHtmlHasACaller(unittest.TestCase):

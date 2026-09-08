@@ -10,9 +10,32 @@ logger = get_logger("core.hud_detect")
 
 _VIDEO = {".mp4", ".mov", ".mkv", ".webm"}
 
+# Process-local memo. An overnight batch renders many drafts in one interpreter and
+# assign_owned_clips re-probes the same legacy clips for each of them; the answer
+# only changes when the file does, so key on (path, mtime, size).
+_PROBED: dict[tuple[str, float, int], bool] = {}
+
+
+def _probe_key(path: str) -> tuple[str, float, int] | None:
+    try:
+        stat = Path(path).stat()
+    except OSError:
+        return None
+    return (str(Path(path).resolve()), stat.st_mtime, stat.st_size)
+
 
 def detect_hud(path: str) -> bool:
     """True when the top band is much more colourful than the rest of the frame."""
+    key = _probe_key(path)
+    if key is not None and key in _PROBED:
+        return _PROBED[key]
+    verdict = _detect_hud_uncached(path)
+    if key is not None:
+        _PROBED[key] = verdict
+    return verdict
+
+
+def _detect_hud_uncached(path: str) -> bool:
     image = _load_frame(path)
     if image is None:
         return False
@@ -36,11 +59,16 @@ def _load_frame(path: str):
         return Image.open(target)
     if target.suffix.lower() not in _VIDEO:
         return None
-    try:
-        import subprocess
-        import tempfile
+    import shutil
+    import subprocess
+    import tempfile
 
-        dest = Path(tempfile.mkdtemp()) / "frame.png"
+    # assign_owned_clips calls this from the render path, once per clip whose index
+    # entry predates #683. Every mkdtemp that is not removed is one leaked directory
+    # per clip per render — so the frame is copied into memory and the directory goes.
+    work = tempfile.mkdtemp(prefix="hud-probe-")
+    try:
+        dest = Path(work) / "frame.png"
         subprocess.run(
             [
                 "ffmpeg",
@@ -56,9 +84,12 @@ def _load_frame(path: str):
             timeout=8,
         )
         if dest.is_file():
-            return Image.open(dest)
+            with Image.open(dest) as frame:
+                return frame.copy()
     except Exception as exc:
         logger.debug("hud frame grab skipped: %s", exc)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
     return None
 
 

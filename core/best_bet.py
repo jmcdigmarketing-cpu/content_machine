@@ -12,6 +12,7 @@ import random
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from config.channels import get_channel_profile
 from core.channel_context import (
@@ -28,6 +29,23 @@ from core.recommender_confidence import MODERATE_SAMPLES, confidence_note, inter
 logger = get_logger("core.best_bet")
 
 _TOP_N = 30  # recent runs to analyse
+
+
+def _published_age_days(log: Any) -> float | None:
+    """Days since the video went out. None when the log has no usable timestamp -
+    `recency_weight` then falls back to 1.0, which is the old unweighted mean."""
+    raw = getattr(log, "published_at", None) if log is not None else None
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        try:
+            raw = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(raw, datetime):
+        return None
+    when = raw if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
+    return max(0.0, (datetime.now(timezone.utc) - when).total_seconds() / 86400.0)
 
 
 def recency_weight(age_days: float | None) -> float:
@@ -90,6 +108,9 @@ def _build_entries(channel_id: str) -> list[dict]:
                 "engaged_rate": engaged_rate,
                 "composite_score": float(run.composite_score or 0),
                 "domain": _infer_domain(seed, channel_id),
+                # #365: the weighting in get_best_bet reads this. Without it every
+                # weight is 1.0 and the "decayed" mean is the arithmetic one.
+                "age_days": _published_age_days(log),
             }
         )
     return entries

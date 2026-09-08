@@ -168,6 +168,22 @@ def _split_facts_block(facts: str) -> tuple[str, str]:
     return "\n".join(verified_lines).strip(), "\n".join(context_lines).strip()
 
 
+def _regroundable(ungrounded: list[str]) -> list[str]:
+    """The flagged specifics `_maybe_reground_script` may be pointed at.
+
+    That pass prompts an LLM to *delete* every item it is given. A negative-fact
+    hit is a claim the operator already paid to correct, and nothing passes
+    operator key facts into the negative matcher — so a stored claim that
+    token-overlaps a pasted fact would aim the deletion at the operator's own
+    ground truth, inverting decisions §4. Retracted claims are surfaced and can
+    veto the run (`negative_facts.negative_gate_blocks`); they are never quietly
+    rewritten away.
+    """
+    from core.negative_facts import NEGATIVE_PREFIX
+
+    return [item for item in ungrounded or [] if not str(item).startswith(NEGATIVE_PREFIX)]
+
+
 def _build_prompts(
     *,
     topic: str,
@@ -1082,7 +1098,12 @@ def generate_content_package(
     if ungrounded:
         # Regenerate-then-warn: try once to strip the unsupported specifics, then
         # surface whatever still remains (never silently rewrite away the warning).
-        script, ungrounded = _maybe_reground_script(script, grounding_text, topic, ungrounded)
+        # Negative-fact hits are held back — see `_regroundable`.
+        regen_targets = _regroundable(ungrounded)
+        if regen_targets:
+            script, remaining = _maybe_reground_script(script, grounding_text, topic, regen_targets)
+            held = [item for item in ungrounded if item not in regen_targets]
+            ungrounded = held + remaining
     if ungrounded:
         logger.warning(
             "Script names %s specific(s) not in the facts: %s",

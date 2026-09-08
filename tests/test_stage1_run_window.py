@@ -212,3 +212,56 @@ class TestRunWindowWidgets(unittest.TestCase):
         self.assertIn("moneywise", ids)
         self.assertGreaterEqual(window.facts.minimumHeight(), 160)
         window.close()
+
+
+class TestClosingTheWindowDoesNotDestroyARun(unittest.TestCase):
+    """Stage 1 exists because "two `KeyboardInterrupt`s in run 73 destroyed whole
+    runs" (`docs/desktop_app.md`). As shipped, the close button reproduced that:
+    the worker is `daemon=True` and never joined, and `AskBridge.cancel()` only
+    unblocks a worker *currently sitting in an ask*. A worker inside TTS, ffmpeg
+    or an upload noticed nothing, `app.exec()` returned, and the interpreter
+    exited without waiting — orphaned ffmpeg, half-written mp4, spent quota.
+    """
+
+    def test_a_worker_between_steps_is_waited_for(self):
+        from core.ask_bridge import AskBridge
+        from desktop.session import shutdown_worker
+
+        bridge = AskBridge()
+        stopped = threading.Event()
+
+        def body():
+            try:
+                # Blocks until cancel() pushes the sentinel, which surfaces as
+                # KeyboardInterrupt — the same signal the CLI worker unwinds on.
+                bridge.ask_text("Topic?")
+            except KeyboardInterrupt:
+                pass
+            stopped.set()
+
+        worker = threading.Thread(target=body, daemon=True)
+        worker.start()
+        clean = shutdown_worker(worker, bridge, timeout=5.0)
+        self.assertTrue(clean, "close did not wait for a cancellable worker")
+        self.assertTrue(stopped.is_set())
+        self.assertFalse(worker.is_alive())
+
+    def test_a_worker_mid_render_is_reported_not_silently_orphaned(self):
+        """A worker inside ffmpeg cannot be cancelled. Closing is still allowed —
+        trapping the operator is worse — but it must say what it is abandoning
+        rather than dropping the run on the floor in silence."""
+        from core.ask_bridge import AskBridge
+        from desktop.session import shutdown_worker
+
+        bridge = AskBridge()
+        release = threading.Event()
+        worker = threading.Thread(target=release.wait, daemon=True)
+        worker.start()
+        try:
+            with self.assertLogs("content_machine.desktop.session", level="WARNING") as logs:
+                clean = shutdown_worker(worker, bridge, timeout=0.2)
+            self.assertFalse(clean)
+            self.assertTrue(any("still running" in m.lower() for m in logs.output), logs.output)
+        finally:
+            release.set()
+            worker.join(timeout=2)

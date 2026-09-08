@@ -224,7 +224,12 @@ def themed_page(
         "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
         f"<meta name='viewport' content='width=device-width, initial-scale=1'>"
         f"{icon}"
-        f"<title>{escape(safe_title)}</title><style>{css}{_CSS}</style></head>"
+        # `_CSS` first, token CSS second. Both redeclare `html, body`, `header`,
+        # `pre`, `table`, `.card` and `a` at equal specificity, so the later block
+        # wins -- and with the token CSS first, every visible colour was still the
+        # legacy palette while #172 claimed dumps shared the generated one.
+        # `_CSS` stays as the structural/layout base; tokens override the colours.
+        f"<title>{escape(safe_title)}</title><style>{_CSS}{css}</style></head>"
         f"<body{body_class}{body_style}>"
         f"{skip}<header><h1>{escape(safe_title)}</h1>"
         f"<div class='sub'>{escape(sub)}</div>{mark}{swatch}{extra}</header>"

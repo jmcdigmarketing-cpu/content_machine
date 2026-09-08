@@ -51,9 +51,11 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,app]"
       - name: Mypy
-        run: mypy analytics apis core config storage
+        # `desktop` was in none of the checked packages, so 345 lines of
+        # window.py were neither executed nor type-checked.
+        run: mypy analytics apis core config storage desktop
         continue-on-error: true   # lenient baseline; tighten over time
 
   test:
@@ -72,8 +74,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install dependencies
-        run: pip install -e ".[shell]"
+        # [app] brings PySide6 so the Stage 1/2 widget tests actually run here.
+        # Without it three of them skip and desktop/window.py is never imported,
+        # so the run window's only rendering tests sat outside CI (#670).
+        run: pip install -e ".[shell,app]"
       - name: Run unit tests
+        # Qt needs a platform plugin on a headless runner; offscreen is enough to
+        # construct and style widgets. Measured: 23 ran, 0 skipped, 0 failures.
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: python -m unittest discover -s tests -t . -v
       - name: Docs metric lint
         run: python -m unittest tests.test_docs_lint

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from typing import Any
 
 _channel_id: str | None = None
@@ -17,11 +18,15 @@ _last_pin: str = ""
 
 
 def reset_pin() -> None:
-    global _channel_id, _quota_summary, _cost, _last_pin
+    global _channel_id, _quota_summary, _cost, _last_pin, _last_pin_at
     _channel_id = None
     _quota_summary = None
     _cost = None
     _last_pin = ""
+    # Clear the throttle clock too, or a reset context would be served a stale
+    # line for up to _PIN_MIN_INTERVAL -- and tests would leak state into
+    # each other through it.
+    _last_pin_at = 0.0
 
 
 def set_pin_context(
@@ -30,17 +35,19 @@ def set_pin_context(
     quota_summary: dict[str, Any] | None = None,
     cost: float | None = None,
 ) -> None:
-    global _channel_id, _quota_summary, _cost
+    global _channel_id, _quota_summary, _cost, _last_pin_at
     _channel_id = channel_id
     if quota_summary is not None:
         _quota_summary = quota_summary
     if cost is not None:
         _cost = cost
+    _last_pin_at = 0.0  # a changed context must not wait out the throttle
 
 
 def set_pin_cost(cost: float) -> None:
-    global _cost
+    global _cost, _last_pin_at
     _cost = cost
+    _last_pin_at = 0.0  # cost moved; recompute rather than serve the cached line
 
 
 def last_pin_text() -> str:
@@ -82,11 +89,27 @@ def pin_csi(line: str, *, rows: int | None = None) -> str:
     return f"\033[s\033[{rows};1H\033[2K{line}\033[u"
 
 
-def refresh_pin() -> str:
+# Seconds between recomputes. `emit()` refreshes the pin on every printed line,
+# and formatting it reaches format_uploads_left -> get_usage_summary -> a
+# json.load of data/youtube_quota.json. With 27 `print_fn=emit` defaults, several
+# in loops, a chatty phase re-read that file once per line. None of the numbers on
+# the pin can change faster than this, so recomputing faster only costs I/O.
+_PIN_MIN_INTERVAL = 1.0
+_last_pin_at = 0.0
+
+
+def refresh_pin(*, force: bool = False) -> str:
     """Format the current context. Write CSI only when pin_enabled()."""
-    global _last_pin
+    global _last_pin, _last_pin_at
     if not _channel_id:
         return ""
+    now = time.monotonic()
+    if not force and _last_pin and (now - _last_pin_at) < _PIN_MIN_INTERVAL:
+        # Repaint the cached line -- cheap, and keeps the pin pinned while a
+        # burst of output scrolls past. Only the recompute is throttled.
+        if pin_enabled():
+            _write_pin(_last_pin)
+        return _last_pin
     try:
         line = format_pinned_status(
             _channel_id,
@@ -99,12 +122,17 @@ def refresh_pin() -> str:
         get_logger("core.pinned_status").debug("pinned status skipped: %s", exc)
         return ""
     _last_pin = line
+    _last_pin_at = now
     if pin_enabled():
-        try:
-            sys.stdout.write(pin_csi(line))
-            sys.stdout.flush()
-        except Exception as exc:
-            from core.logging import get_logger
-
-            get_logger("core.pinned_status").debug("pinned status CSI skipped: %s", exc)
+        _write_pin(line)
     return line
+
+
+def _write_pin(line: str) -> None:
+    try:
+        sys.stdout.write(pin_csi(line))
+        sys.stdout.flush()
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("core.pinned_status").debug("pinned status CSI skipped: %s", exc)

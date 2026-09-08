@@ -2630,3 +2630,83 @@ Scripted `ask_confirm` of the metrics prompt with `""` -> `False`.
 **#607** defer elevenlabs import · **#625** test-double signatures · **#602**
 end-screen vs caption safe area.
 
+
+## 2026-09-07 (review 3) — Claude reviewing Cursor's Stage 0-2 waves
+
+**Prompt:** *"review the changes cursor made and do your end"*
+
+Cursor committed three waves itself this time — `3a338e8` Stage 0 seams + 15 craft
+items, `7e4284c` Stage 1 Qt run window, `464c71b` Stage 2 look + 20 items. 69
+files, **4,293 insertions**, the first waves to touch the desktop programme.
+
+**Every headline number verified exact, third round running:** suite 2,718 green,
+mypy 144, ruff and format clean, `data/` empty, `GRADE_VERSION` v3, backlog
+404/506 highest #674. Its self-filed leftovers (#670-#674) are honest, and the
+Stage 1/2 tests are structured so most logic runs without Qt — only widget
+construction is guarded. The reporting is not the problem; what the numbers do
+not cover is.
+
+**CI was red, and it is the same defect #625 was filed to catch.**
+`tests/test_stage2_html.py`'s `themed_page` assertion sat dedented outside its
+`patch.dict` block, so it ran with no vault path — and passed only because this
+developer's home directory contains the username, so the *home* rule removed the
+name the *vault* rule was supposed to. Simulated ubuntu-latest and the username
+survived into the page: the assertion fails there, and every CI job is ubuntu.
+Shipped in the same commit as #625, whose entire subject is tests that pass for
+environmental reasons. Fixed, and `Path.home` is now pinned away from the fixture
+so a pass cannot come from the wrong rule. **#675.**
+
+**#333 reversed a recorded operator decision, silently.** The planning log
+(2026-08) says the store is *"able to VETO (operator wants a hard block, not a
+warning)"*. What shipped was warn-only, merged into `ungrounded` — which then
+asks a premium LLM to **delete** the flagged text. Nothing passes operator key
+facts into the negative matcher, so a stored claim that token-overlaps a pasted
+fact would have aimed that deletion at the operator's own ground truth,
+inverting §4. Operator's call this session: restore the veto. Now behind
+`NEGATIVE_FACT_GATE`, defaulting to `block` — the only gate in the repo that
+does — and `_regroundable` holds negative-fact hits back from the rewrite pass
+entirely. Recorded as **decisions §29**, because the point is that the reversal
+was undocumented, and fixing it silently would repeat the mistake.
+
+**Stage 2's token CSS never reached the page.** `<style>{css}{_CSS}</style>` put
+the 39-hex legacy block *after* the generated one at equal specificity. Measured:
+token background at offset 311, legacy at 1894 — the legacy palette won every
+dump while `desktop_app.md` claimed the opposite. The guard test named
+`test_html_dump_uses_generated_css_not_a_second_palette` asserted only that token
+hexes were *present*, and one of them already appears in `_CSS`, so it passed
+with `themed_css` deleted. Order swapped, cascade-order assertion added. **#676.**
+
+**Closing the window mid-render abandoned the run** — daemon worker, never
+joined, and `cancel()` only reaches a worker sitting in an ask. That is precisely
+the run-73 failure the whole programme is justified by. `shutdown_worker` cancels,
+joins with a bounded timeout, and warns naming what is being abandoned when it
+cannot stop the worker. It still closes: trapping the operator in a window that
+will not close is worse. Deliberately in `session.py`, not `window.py`, so it is
+testable without Qt. **#677.**
+
+**`emit()` read the quota JSON once per printed line** — 25 formats for 25 lines,
+measured, and it happened even when nothing was painted. Throttled to 1s while
+still repainting the cached line. **#678.**
+
+**#670 closed rather than carried.** Cursor filed it honestly but did not measure
+it. Masking PySide6 at `sys.meta_path` — what CI actually saw — gives 23 ran, 3
+skipped; headless `QT_QPA_PLATFORM=offscreen` gives 23 ran, 0 skipped; and mypy
+over `desktop` adds zero errors. So CI now installs `.[shell,app]`, runs
+offscreen, and type-checks `desktop`. Two lines, because the tests were built
+well.
+
+**Operator decisions taken this session:** the #333 veto (above); keep
+`ask_confirm` accepting `"yes"` but stop calling Stage 0 byte-identical
+(**decisions §30** — the old `!= "y"` meant typing `yes` at five safety gates
+*refused*, and `emit()` now writes ANSI cursor sequences a TTY never used to
+see); and grain/vignette kept for TapIn, **off for MoneyWise**, where grain reads
+as encoder noise rather than texture. #512 had shipped it on for both channels by
+default with no kill switch, undisclosed.
+
+**Filed, not fixed:** #679 (three inert Stage 2 items), #680 (#542 mutates the
+script silently), #681 (duplicated feature assignment), #682 (stale 4500-char
+budget in §4).
+
+Suite 2,718 -> **2,725** green; ruff and format clean; mypy **144** held with
+`desktop` newly included (291 -> 296 files); `data/` untouched. Backlog 404 ->
+**407** open, highest **#682**.

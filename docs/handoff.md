@@ -48,35 +48,46 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-06 · **HEAD at write:** `ddce1bd` · **Tree:** your craft wave
-plus two review fixes, committed immediately after this slot.
+**Written:** 2026-09-07 · **HEAD at write:** `464c71b` · **Tree:** review fixes on
+top of your three waves, committed immediately after this slot.
 
-- **Cursor: reviewed and committed. Your slot below is untouched.** All claims
-  verified — 2,637 green, ruff clean, `data/` empty — and **mypy 148 -> 145 is a
-  genuine improvement**: nothing added a `type: ignore`, and none of the four new
-  modules carries one. **#666 was built the way I filed it**: the preflight gates
-  the branch *before* any segment is synthesized and checks `libmp3lame`, not
-  just the binary, so the double-bill is prevented rather than reported.
-- **Defect first: #485 said *that* it reused discovery, never *how old*.** The
-  TTL is 90 minutes; an 89-minute-old and a two-minute-old discovery were the
-  same line, and freshness decay is the run-73 failure. Added
-  `cache_manager.cache_age_seconds` (mirrors `get_expired` in reverse — live
-  entry, records no access); the notice now reads `... (topic) - 40m old`.
-- **#350's frozen verdicts carried no rationale.** Three look wrong at a glance
-  (`Lakers` vs "Los Angeles", `Take-Two` vs "parent company of Rockstar Games",
-  generic title-case unflagged). All correct under decisions §3 — your slot said
-  so, but prose scrolls away. They now carry `note` fields, pinned by a test, so
-  nobody later reads a failing case as a regression and re-freezes the bug.
-- **A near-miss on my side:** `_discovery_ttl_seconds` looked like a dead env
-  knob. It is not — my grep dropped the two lines that honour the override. Read
-  the function, not the diff fragment.
-- **My own error:** proving the age notice I ran `run_discovery` by hand and
-  wrote one real key into `data/signal_cache.json`. Removed (8,137 -> 8,136).
-  The isolation rule is about tests; driving production code by hand needs it too.
-- **Left as you set it:** the next five, #647 held, and #649 scoped honestly as a
-  prompt lock — its known-gap test says the run-74 strings are not in the repo.
-- Suite 2,637 -> **2,639** green; ruff + format clean; mypy **145** held; `data/`
-  untouched. Detail: [planning_log.md](planning_log.md) 2026-09-06 (review 2).
+- **Cursor: reviewed, five defects fixed, committed. Your slot is untouched.**
+  Every number you reported verified exact again — 2,718 green, mypy 144, ruff
+  clean, `data/` empty, backlog 404/506 highest #674. Third round running.
+- **Defect first, and it is urgent: CI was red.**
+  `tests/test_stage2_html.py`'s `themed_page` assertion was dedented outside its
+  `patch.dict`, so it passed only because this box's home directory contains the
+  username. Simulated ubuntu: the username survives and it fails. Shipped in the
+  same commit as **#625**, whose subject is tests that pass for environmental
+  reasons. **Always simulate ubuntu before claiming green.** (#675)
+- **#333 reversed a recorded operator decision.** The planning log says the store
+  is *"able to VETO (operator wants a hard block, not a warning)"*; warn-only
+  shipped, and hits fed the LLM delete-pass with no operator key facts in scope —
+  §4 inverted. Operator restored the veto: `NEGATIVE_FACT_GATE`, **default
+  block**, and `_regroundable` holds negative hits back from the rewrite.
+  **decisions §29.** If you disagree with a recorded decision, say so in the slot
+  rather than shipping the other one.
+- **Stage 2's token CSS never reached the page** — `{css}{_CSS}` put the legacy
+  palette last, so it won every dump (measured: token at 311, legacy at 1894).
+  The guard test could not fail. Order swapped, real assertion added. (#676)
+- **Closing the window mid-render abandoned the run** — daemon worker, no join,
+  `cancel()` only reaches a blocked ask. That is the run-73 failure Stage 1
+  exists to prevent. `shutdown_worker` in `session.py` (Qt-free, so CI runs it).
+  (#677)
+- **`emit()` read the quota JSON per printed line** — 25 formats for 25 lines,
+  even when nothing was painted. Throttled to 1s. (#678)
+- **#670 closed, not carried.** Masking PySide6 as CI sees it: 23 ran, 3 skipped;
+  offscreen: 23 ran, **0 skipped**; mypy over `desktop` adds **zero** errors. CI
+  now installs `.[shell,app]`, runs `QT_QPA_PLATFORM=offscreen`, and type-checks
+  `desktop`. Two lines — your tests were structured well.
+- **Also operator calls:** `ask_confirm` keeps `"yes"` but Stage 0 is no longer
+  "byte-identical" (**§30** — `emit()` writes ANSI to a TTY, and `yes` used to
+  *refuse* at five gates); grain/vignette kept for TapIn, **off for MoneyWise**.
+- **Filed, not fixed:** #679 three inert Stage 2 items (#296/#540/#541), #680
+  (#542 edits the script silently), #681, #682.
+- Suite 2,718 -> **2,725** green; ruff + format clean; mypy **144** held with
+  `desktop` added; `data/` untouched. Detail: [planning_log.md](planning_log.md)
+  2026-09-07 (review 3).
 
 ## Slot — Cursor
 

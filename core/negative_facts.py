@@ -68,3 +68,31 @@ def matching_negatives(script: str, *, franchise: str) -> list[str]:
 
 def apply_negative_facts(script: str, *, franchise: str) -> list[str]:
     return matching_negatives(script, franchise=franchise)
+
+
+# The operator's recorded decision (planning_log, 2026-08): the store is "a memory
+# of corrections already paid for, once per claim, able to VETO (operator wants a
+# hard block, not a warning)". The first implementation shipped warn-only; this
+# restores the veto behind the same env-gate shape `GROUNDING_GATE` uses
+# (decisions §3/§9), defaulting to what was asked for rather than to the softer
+# option. `warn` stays available for a run the operator decides to push through.
+NEGATIVE_PREFIX = "negative-fact: "
+
+
+def negative_fact_gate_mode() -> str:
+    """block (default) | warn — mirrors GROUNDING_GATE's shape, not its default."""
+    import os
+
+    return os.getenv("NEGATIVE_FACT_GATE", "block").strip().lower() or "block"
+
+
+def negative_gate_blocks(ungrounded: list[str] | None) -> bool:
+    """True when the gate is `block` and a *retracted claim* was re-asserted.
+
+    Keyed on the `negative-fact: ` prefix, not on the flagged list as a whole: an
+    ordinary ungrounded entity is a warning, and only a claim the operator has
+    already paid to correct earns the veto.
+    """
+    if negative_fact_gate_mode() != "block":
+        return False
+    return any(str(item).startswith(NEGATIVE_PREFIX) for item in ungrounded or [])

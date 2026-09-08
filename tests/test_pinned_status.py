@@ -55,3 +55,35 @@ class TestPinnedStatusFormatter(unittest.TestCase):
         finally:
             emit_mod.reset_emit()
             reset_pin()
+
+
+class TestThePinDoesNotReadDiskPerLine(unittest.TestCase):
+    """`emit()` calls `refresh_pin()`, which reaches `format_uploads_left` ->
+    `get_usage_summary` -> `json.load(data/youtube_quota.json)`. There are 27
+    `print_fn=emit` defaults in `core/ui.py`, several inside loops, so a chatty
+    phase re-read the quota file once per printed line -- and did it even when
+    `pin_enabled()` is False and nothing is painted at all.
+
+    The pin still refreshes; it just stops recomputing faster than the number can
+    possibly change.
+    """
+
+    def test_a_burst_of_emits_formats_once(self):
+        calls = {"n": 0}
+        real = format_pinned_status
+
+        def counting(*a, **k):
+            calls["n"] += 1
+            return real(*a, **k)
+
+        reset_pin()
+        set_pin_context("tapin", quota_summary={"remaining": 10}, cost=0.0)
+        emit_mod.set_emit(lambda *a, **k: None)
+        try:
+            with patch("core.pinned_status.format_pinned_status", side_effect=counting):
+                for _ in range(25):
+                    emit_mod.emit("line")
+        finally:
+            emit_mod.reset_emit()
+            reset_pin()
+        self.assertEqual(calls["n"], 1, f"formatted {calls['n']} times for 25 emitted lines")

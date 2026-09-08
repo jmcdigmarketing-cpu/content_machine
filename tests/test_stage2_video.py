@@ -47,6 +47,32 @@ class TestEndCardAvoidsCaptionSafeArea(unittest.TestCase):
 
 
 class TestGrainVignetteFilters(unittest.TestCase):
+    def test_moneywise_renders_clean_while_tapin_keeps_the_look(self):
+        """#512 shipped grain + vignette baked into *every* render, on by
+        default, with no kill switch — production always passes a `channel_id`,
+        so `look_filter_fragment` was never empty in practice. It has also never
+        been graded on a live encode (#672).
+
+        Operator's call: keep the film look on the gaming/UFC channel, drop it
+        from the finance one, where grain reads as noise rather than texture.
+        Data-only — `look_filter_fragment` already returns "" at zero.
+        """
+        from video.render_video import build_render_ffmpeg_command, look_filter_fragment
+
+        self.assertEqual(look_filter_fragment("moneywise"), "")
+        self.assertIn("noise=", look_filter_fragment("tapin"))
+
+        cmd = build_render_ffmpeg_command(
+            background_path="bg.mp4",
+            mp3_path="vo.mp3",
+            output_path="out.mp4",
+            subtitle_path="captions.ass",
+            duration=12.0,
+            channel_id="moneywise",
+        )
+        self.assertNotIn("noise=", " ".join(cmd))
+        self.assertNotIn("vignette=", " ".join(cmd))
+
     def test_render_command_includes_token_driven_look_filters(self):
         from video.render_video import build_render_ffmpeg_command, look_filter_fragment
 

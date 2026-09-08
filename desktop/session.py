@@ -15,7 +15,10 @@ from core.angle_intent import angle_intent_note, detect_angle_intent
 from core.ask import reset_backend, set_backend
 from core.ask_bridge import AskBridge, BridgeBackend, set_current_bridge
 from core.emit import reset_emit, set_emit
+from core.logging import get_logger
 from core.operator_facts import parse_pasted_block
+
+logger = get_logger("desktop.session")
 
 
 def angle_mode_line(topic: str) -> str:
@@ -178,3 +181,39 @@ def start_run_worker(
     thread = threading.Thread(target=body, name="content-os-run", daemon=True)
     thread.start()
     return thread
+
+
+def shutdown_worker(worker, bridge, *, timeout: float = 5.0) -> bool:
+    """Cancel and wait for the run worker. True when it stopped cleanly.
+
+    The worker is a daemon thread, so interpreter exit does not wait for it, and
+    `AskBridge.cancel()` only reaches a worker blocked in an ask. Between the two,
+    closing the window mid-render abandoned ffmpeg / TTS / an in-flight upload
+    silently -- the run-73 failure this stage exists to prevent.
+
+    Deliberately bounded: a worker inside ffmpeg cannot be cancelled, and trapping
+    the operator in a window that will not close is worse than letting the run go.
+    So it is cancelled, waited for briefly, and if it is still alive the operator
+    is told what is being abandoned instead of it happening in silence.
+    """
+    if worker is None:
+        return True
+    try:
+        if bridge is not None:
+            bridge.cancel()
+    except Exception as exc:
+        logger.debug("bridge cancel skipped during shutdown: %s", exc)
+    try:
+        worker.join(timeout)
+    except Exception as exc:
+        logger.debug("worker join skipped during shutdown: %s", exc)
+        return False
+    if worker.is_alive():
+        logger.warning(
+            "Run worker is still running after %.1fs (render, TTS or upload in "
+            "flight). Closing anyway - that work is being abandoned and any "
+            "half-written media is not cleaned up.",
+            timeout,
+        )
+        return False
+    return True

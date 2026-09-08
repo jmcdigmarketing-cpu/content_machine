@@ -27,6 +27,7 @@ from desktop.session import (
     facts_meter_line,
     load_window_state,
     save_window_state,
+    shutdown_worker,
     start_run_worker,
 )
 
@@ -340,5 +341,10 @@ class RunWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         self._persist_geometry()
-        self._bridge.cancel()
+        # Cancel *and wait*. `cancel()` alone only reaches a worker blocked in an
+        # ask; the thread is a daemon, so without a join a close mid-render
+        # abandoned ffmpeg/TTS/an upload in silence -- the run-73 failure this
+        # stage exists to prevent. Bounded, and it says so when it gives up.
+        shutdown_worker(self._worker, self._bridge)
+        self._worker = None
         super().closeEvent(event)

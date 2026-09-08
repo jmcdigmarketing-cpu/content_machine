@@ -6,6 +6,7 @@ pre-CTA recap or flag ungrounded 'first ever'.
 
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,6 +39,42 @@ class TestNegativeFactStore(unittest.TestCase):
         self.assertTrue(hits)
         self.assertIn("June 2025", " ".join(hits))
         self.assertEqual(miss, [])
+
+    def test_a_negative_fact_can_veto_the_run(self):
+        """The operator's recorded decision (planning_log 2026-08) was explicit:
+        the store is "able to VETO (operator wants a hard block, not a warning)".
+        What shipped was warn-only — hits merged into `ungrounded`, which then
+        asks a premium LLM to delete the flagged text.
+
+        Restored behind `NEGATIVE_FACT_GATE`, mirroring `GROUNDING_GATE`
+        (decisions §9/§3), and defaulting to `block` because that is what was
+        asked for. `warn` remains available for a run the operator wants through.
+        """
+        from core.negative_facts import negative_fact_gate_mode, negative_gate_blocks
+
+        with patch.dict(os.environ, {"NEGATIVE_FACT_GATE": ""}, clear=False):
+            self.assertEqual(negative_fact_gate_mode(), "block")
+            self.assertTrue(negative_gate_blocks(["negative-fact: GTA 6 June 2025"]))
+            self.assertFalse(negative_gate_blocks([]))
+            self.assertFalse(
+                negative_gate_blocks(["Lakers"]),
+                "a plain ungrounded entity is not a retracted claim and must not veto",
+            )
+
+        with patch.dict(os.environ, {"NEGATIVE_FACT_GATE": "warn"}, clear=False):
+            self.assertFalse(negative_gate_blocks(["negative-fact: GTA 6 June 2025"]))
+
+    def test_a_negative_hit_is_never_handed_to_the_regen_pass(self):
+        """`_maybe_reground_script` prompts an LLM to *delete* every flagged
+        specific. Nothing passes operator key facts into the negative matcher, so
+        a stored claim that token-overlaps a pasted fact would point that deletion
+        at the operator's own ground truth — inverting decisions §4, where
+        operator key facts override everything.
+        """
+        from core.content_engine import _regroundable
+
+        flagged = ["Lakers", "negative-fact: GTA 6 leaked for a June 2025 release"]
+        self.assertEqual(_regroundable(flagged), ["Lakers"])
 
     def test_grounding_merges_negative_hits(self):
         from core.negative_facts import record_negative

@@ -283,6 +283,16 @@ def main(argv=None) -> int:
         )
         return 0
 
+    # Negative-fact veto (#333): defaults to block, unlike the gates above.
+    from core.negative_facts import negative_gate_blocks
+
+    if negative_gate_blocks(result.features.get("ungrounded_entities")) and not args.force:
+        print(
+            "\n  Blocked by the negative-fact gate (NEGATIVE_FACT_GATE=block): the script "
+            "re-asserts a walked-back claim. Use --force to override."
+        )
+        return 0
+
     # Grounding gate (Pillar 3, opt-in): GROUNDING_GATE=block stops the render
     # when the claim verifier found unsupported claims — mirrors authenticity.
     from core.claim_verifier import gate_blocks

@@ -550,6 +550,27 @@ def _run_new_video_flow_body(
                 print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
                 return
 
+        # Negative-fact veto (#333). A claim the operator already paid to correct
+        # is not a warning: the recorded decision was a hard block, so this gate
+        # defaults to `block` rather than `warn`. NEGATIVE_FACT_GATE=warn opts out.
+        from core.negative_facts import negative_gate_blocks
+
+        if negative_gate_blocks(result.features.get("ungrounded_entities")):
+            retracted = [
+                item
+                for item in (result.features.get("ungrounded_entities") or [])
+                if str(item).startswith("negative-fact: ")
+            ]
+            print("\n  ! Re-asserts a claim you already walked back:")
+            for item in retracted:
+                print(f"      {item}")
+            if not ask_confirm(
+                "  Negative-fact veto. Render anyway? [y/N]: ",
+                default=False,
+            ):
+                print("\n  Stopped by the negative-fact gate (NEGATIVE_FACT_GATE=block).")
+                return
+
         # Grounding gate (Pillar 3, opt-in): unsupported claims become a hard stop
         # the operator must override — mirrors the authenticity gate above.
         from core.claim_verifier import gate_blocks

@@ -23,11 +23,13 @@ the operator decides; `record_negative` gates only *future* scripts.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from config.paths import DATA_DIR
 from core.logging import get_logger
 
 logger = get_logger("core.correction_dossier")
@@ -35,6 +37,12 @@ logger = get_logger("core.correction_dossier")
 _MAX_BODY_CHARS = 8000
 _MAX_SOURCES_PER_RUN = 6
 _RETRACTION_WORDS = ("retraction", "retracted", "correction:", "we regret")
+STAMP_PATH_TEMPLATE = os.path.join(DATA_DIR, "correction_scan_{channel}.json")
+
+
+def correction_scan_stamp_path(channel_id: str) -> str:
+    safe = "".join(ch for ch in str(channel_id) if ch.isalnum() or ch in ("-", "_"))
+    return STAMP_PATH_TEMPLATE.format(channel=safe or "default")
 
 
 @dataclass
@@ -114,6 +122,9 @@ def scan_published_for_corrections(
     fetch: Callable[[str], str] | None = None,
     negative_store: Callable[[str, str, str], None] | None = None,
     window_days: int = 30,
+    stamp_path: str | None = None,
+    now: datetime | None = None,
+    force: bool = False,
 ) -> list[CorrectionDossier]:
     """Re-check the sources behind recently published videos.
 
@@ -121,6 +132,12 @@ def scan_published_for_corrections(
     skipped -- it is NOT reported as clean, which is the distinction #686's
     blanket `except Exception: return False` collapsed.
     """
+    from core.retraction_watch import toast_is_due, write_stamp
+
+    stamp = stamp_path or correction_scan_stamp_path(channel_id)
+    if not force and not toast_is_due(stamp, now=now):
+        return []
+
     rows = published if published is not None else _recent_published(channel_id, window_days)
     runs = run_lookup if run_lookup is not None else _runs_for(rows)
     getter = fetch or _default_fetch
@@ -182,6 +199,10 @@ def scan_published_for_corrections(
                     except Exception as exc:
                         logger.warning("negative fact not recorded for %s: %s", text, exc)
                 break  # one dossier per source; the operator reads the page next
+    # A completed clean scan is still work: stamp it so every overnight run
+    # does not re-fetch the same published sources (#703). Individual source
+    # failures remain WARNINGs above and are retried on the next due scan.
+    write_stamp(stamp, now=now)
     return found
 
 

@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import JSON, func, select, type_coerce
+from sqlalchemy import JSON, cast, func, select, type_coerce
+from sqlalchemy.dialects.postgresql import JSONB
 
 from storage.db import get_session
 from storage.models import Job
@@ -19,6 +20,13 @@ JOB_PENDING = "pending"
 JOB_RUNNING = "running"
 JOB_COMPLETED = "completed"
 JOB_FAILED = "failed"
+
+
+def _payload_sort_key(bind) -> Any:
+    """``payload_json`` is Text. Postgres ``->>`` is json/jsonb-only (#709)."""
+    if bind is not None and getattr(bind.dialect, "name", "") == "postgresql":
+        return cast(Job.payload_json, JSONB)["sort_key"].as_integer()
+    return type_coerce(Job.payload_json, JSON)["sort_key"].as_integer()
 
 
 def _parse_scheduled_at(value) -> datetime | None:
@@ -264,7 +272,7 @@ class PostgresJobRepository(JobRepository):
             # cannot claim the same job. `_claim_sort_tuple`'s rule -- sort_key
             # when present, else id -- has to be reproduced here exactly, or
             # drag-reorder (#148) and the SQL disagree about who is next.
-            sort_key = type_coerce(Job.payload_json, JSON)["sort_key"].as_integer()
+            sort_key = _payload_sort_key(session.get_bind())
             row = session.scalars(
                 q.order_by(func.coalesce(sort_key, Job.id), Job.id)
                 .limit(1)

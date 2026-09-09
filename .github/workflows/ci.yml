@@ -61,6 +61,20 @@ jobs:
   test:
     name: Unit tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: content_machine_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -83,6 +97,7 @@ jobs:
         # construct and style widgets. Measured: 23 ran, 0 skipped, 0 failures.
         env:
           QT_QPA_PLATFORM: offscreen
+          CONTENT_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/content_machine_test
         run: python -m unittest discover -s tests -t . -v
       - name: Docs metric lint
         run: python -m unittest tests.test_docs_lint

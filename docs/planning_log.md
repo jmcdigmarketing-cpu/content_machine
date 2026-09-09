@@ -11,6 +11,73 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-09 (Cursor) - #702 #704 #703 #706 #707 (+ #709)
+
+**Prompt, verbatim:** "Complete #702 · #704 · #703 · #706 · #707" (implement the
+attached next-five plan)
+
+**What was picked.** The five already drafted in the dirty tree. Order
+cheapest-first: #706, #702, #703, #707, #704. Extras in the same tree
+(technical QC, chapter word-timing, title/script) were split out and not
+committed. #153 stays a second commit.
+
+**Shipped 1..5**
+
+1. **#706** fake player on `ReviewWindow._player`. J/K/L/comma/period/h/?/S.
+   Fail-first: stub `keyPressEvent` left positions `[]` not `[7000]`.
+2. **#702** `build_features` copies package `source_urls`; `write_run_trace`
+   persists them; `pairs_from_trace` reads that field first. Fail-first:
+   `KeyError: 'source_urls'` on unmodified f8c39b2.
+3. **#703** scan reuses `toast_is_due` / `write_stamp`. Overnight unforced;
+   `ops corrections` `force=True`. Stamps a clean scan. Wave 5 tests got a
+   per-vault `stamp_path`.
+4. **#707** `QMediaPlayer` + `QVideoSink` on `video/intro/channel_intro.mp4`.
+   Duration 2150ms. Not via ReviewWindow.
+5. **#704** CI `postgres:16` + `CONTENT_TEST_DATABASE_URL`. Holding FOR UPDATE
+   on job A, `claim_next` returned B in 0.3s; without `skip_locked` it blocked
+   2.16s.
+
+**Found on the way.** **#709** `payload_json` is Text; `->>` is json-only on
+Postgres. Cast to JSONB on that dialect.
+
+**Deliberately not done.** #705 vanished-claim, #708 TapIn assets, #153
+(previous prompt, still uncommitted), technical QC / chapters / title-script
+extras.
+
+**Audit.** Fail-first watched on unmodified HEAD for #702/#703 and by breaking
+the guarded code for #706/#707/#704/#709. Never mocked the function under
+test. `source_urls` is fed: engine package -> features -> trace ->
+`pairs_from_trace`.
+
+---
+
+## 2026-09-09 (Cursor) - #153 caption choreography timeline
+
+**Prompt, verbatim:** "do 153 now, then the 5 next highest. 2 prompts, 153 now"
+
+**What was picked.** Operator overrode the demote. This prompt is #153 only;
+the next five (#702 #704 #703 #706 #707) wait for the second prompt.
+
+**Shipped.** Karaoke vs SRT cues from real `.words.json` (`group_into_lines`
+with the production 4 vs 5 max). ops captions --path prints both lanes.
+ops caption-timeline / py -m desktop --captions draws them as draggable
+keyframes. Drag writes `<audio>.captions.json`. `generate_subtitle_file` applies
+`dt` (shifts that cue's words) and karaoke `margin_v` on the ASS Dialogue line.
+No sidecar: ASS byte-identical. Distinct from #21 (font/fill). Known gap: SRT
+has no per-cue vertical.
+
+**Fail-first.** 11 tests ERROR/FAIL on unmodified HEAD for ModuleNotFoundError,
+sidecar ignored (`0:00:00.00` still in ASS), and missing ops verbs. Qt window
+tests skip without PySide6 (same as #151). ops captions was run for real.
+
+**Deliberately not done.** Renderer was not restyled through the brand kit.
+Proportional captions still cannot be choreographed. Wave 6 files already in
+the tree (#702/#704/etc.) were not finished or committed.
+
+**Proof.** ruff clean on the new files. `data/` untouched. Next five unchanged.
+
+---
+
 ## 2026-09-09 (Claude Code) - four defects plus the brand-kit compiler
 
 **Prompt, verbatim:** "next 5 tasks, then debug, then brainstorm 5 new, then commit"

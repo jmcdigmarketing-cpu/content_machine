@@ -160,6 +160,11 @@ def write_run_trace(
             "llm_calls": redact_trace_value(llm_calls),
             "llm_cost_usd": llm_cost,
             "cost": (features or {}).get("cost") or {},
+            # Citation provenance, not raw signal payloads.  The retraction
+            # watch reads this exact production field (#702).
+            "source_urls": [
+                str(url) for url in ((features or {}).get("source_urls") or []) if str(url).strip()
+            ][:12],
             "cache_post_discovery": cache,
             "experiment": experiment,
             "quality": redact_trace_value(dict(quality or {})),

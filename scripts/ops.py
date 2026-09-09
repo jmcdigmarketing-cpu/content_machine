@@ -1075,7 +1075,9 @@ def cmd_corrections(args: argparse.Namespace) -> int:
 
     channel = getattr(args, "channel", None) or "tapin"
     found = scan_published_for_corrections(
-        channel, window_days=int(getattr(args, "days", 30) or 30)
+        channel,
+        window_days=int(getattr(args, "days", 30) or 30),
+        force=True,
     )
     if not found:
         print(f"{channel}: no reversed claims on published videos in the window")

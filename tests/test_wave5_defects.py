@@ -95,13 +95,11 @@ class TestWeekendClockRollsForward(unittest.TestCase):
 class _SqlBackedRepo:
     """Drives the real `PostgresJobRepository` against a temp SQLite file.
 
-    CI has no Postgres service, but `storage.db.get_engine` builds the engine
-    from DATABASE_URL through plain SQLAlchemy, so the repository's real SQL
-    runs here. What this proves: ordering, LIMIT, and one row per claim.
+    What this proves: ordering, LIMIT, and one row per claim.
 
     What it does NOT prove: `skip_locked`. SQLAlchemy emits no FOR UPDATE on
-    SQLite, so the row-lock that stops two workers claiming the same job is
-    exercised only on Postgres. Filed as its own item rather than implied here.
+    SQLite. That lock is measured on real Postgres in
+    ``tests/test_postgres_job_claim.py`` (CI service + local content_machine_test).
     """
 
     def __enter__(self):
@@ -554,13 +552,17 @@ class TestCorrectionDossier(unittest.TestCase):
             ),
         )
 
-    def test_a_reversal_on_a_published_video_writes_a_dossier(self):
+    def _scan(self, vault: str, **kwargs):
         from core.correction_dossier import scan_published_for_corrections
 
+        kwargs.setdefault("stamp_path", os.path.join(vault, "correction_scan.json"))
+        return scan_published_for_corrections("tapin", **kwargs)
+
+    def test_a_reversal_on_a_published_video_writes_a_dossier(self):
         with tempfile.TemporaryDirectory() as vault:
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
-                found = scan_published_for_corrections(
-                    "tapin",
+                found = self._scan(
+                    vault,
                     published=[self._published()],
                     run_lookup={75: self._run()},
                     fetch=lambda url: "This report has been RETRACTED by the outlet.",
@@ -584,12 +586,10 @@ class TestCorrectionDossier(unittest.TestCase):
     def test_the_dossier_filename_does_not_collide_between_two_videos(self):
         """`write_report_note` writes `{date}_{kind}.md`, so two corrections on
         one day overwrite each other unless `kind` carries the video id."""
-        from core.correction_dossier import scan_published_for_corrections
-
         with tempfile.TemporaryDirectory() as vault:
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
-                scan_published_for_corrections(
-                    "tapin",
+                self._scan(
+                    vault,
                     published=[
                         self._published(run_id=75, video_id="aaa"),
                         self._published(run_id=76, video_id="bbb"),
@@ -603,12 +603,10 @@ class TestCorrectionDossier(unittest.TestCase):
         self.assertEqual(len(notes), 2, f"one dossier overwrote the other: {notes}")
 
     def test_a_healthy_source_writes_nothing(self):
-        from core.correction_dossier import scan_published_for_corrections
-
         with tempfile.TemporaryDirectory() as vault:
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
-                found = scan_published_for_corrections(
-                    "tapin",
+                found = self._scan(
+                    vault,
                     published=[self._published()],
                     run_lookup={75: self._run()},
                     fetch=lambda url: "Jones beat Pereira at UFC 320. Nothing has changed.",
@@ -623,14 +621,12 @@ class TestCorrectionDossier(unittest.TestCase):
         """Detection that changes nothing is a toast. `record_negative` is the
         existing correction memory and `negative_gate_blocks` defaults to block,
         so this is what stops the reversed claim being said again."""
-        from core.correction_dossier import scan_published_for_corrections
-
         recorded: list[tuple[str, str, str]] = []
 
         with tempfile.TemporaryDirectory() as vault:
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
-                scan_published_for_corrections(
-                    "tapin",
+                self._scan(
+                    vault,
                     published=[self._published()],
                     run_lookup={75: self._run()},
                     fetch=lambda url: "RETRACTED",
@@ -645,13 +641,11 @@ class TestCorrectionDossier(unittest.TestCase):
         """The review is explicit: a correction is written and surfaced, never
         applied to live content without authorisation. Drive a real reversal and
         assert the YouTube client is never constructed."""
-        from core.correction_dossier import scan_published_for_corrections
-
         with tempfile.TemporaryDirectory() as vault:
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
                 with patch("youtube.oauth.get_youtube_service") as svc:
-                    found = scan_published_for_corrections(
-                        "tapin",
+                    found = self._scan(
+                        vault,
                         published=[self._published()],
                         run_lookup={75: self._run()},
                         fetch=lambda url: "RETRACTED",
@@ -666,7 +660,6 @@ class TestCorrectionDossier(unittest.TestCase):
         before the verifier ran persists `claim_verification: null`, and every
         run before this wave has no `claims` key. `dict.get("claims")` returned
         None and the comprehension raised."""
-        from core.correction_dossier import scan_published_for_corrections
         from storage.repositories.content_runs import ContentRunRecord
 
         legacy = ContentRunRecord(
@@ -680,8 +673,8 @@ class TestCorrectionDossier(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as vault:
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
-                found = scan_published_for_corrections(
-                    "tapin",
+                found = self._scan(
+                    vault,
                     published=[self._published()],
                     run_lookup={75: legacy},
                     fetch=lambda url: "RETRACTED",
@@ -694,7 +687,6 @@ class TestCorrectionDossier(unittest.TestCase):
         """`notify_retractions_if_due` swallowed every exception into `False`,
         so a broken watch and a clean one looked identical. A missing finding
         must not resemble a clean finding."""
-        from core.correction_dossier import scan_published_for_corrections
 
         def boom(url):
             raise OSError("network down")
@@ -704,8 +696,8 @@ class TestCorrectionDossier(unittest.TestCase):
                 with self.assertLogs(
                     "content_machine.core.correction_dossier", level="WARNING"
                 ) as logs:
-                    found = scan_published_for_corrections(
-                        "tapin",
+                    found = self._scan(
+                        vault,
                         published=[self._published()],
                         run_lookup={75: self._run()},
                         fetch=boom,

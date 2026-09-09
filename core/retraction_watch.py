@@ -71,6 +71,26 @@ def toast_is_due(stamp_path: str | None = None, *, now=None) -> bool:
     return moment - last >= timedelta(hours=24)
 
 
+def write_stamp(stamp_path: str, *, now=None) -> bool:
+    """Persist the shared ``{"last": ISO}`` throttle shape."""
+    from datetime import datetime, timezone
+
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    try:
+        import json
+        import os as _os
+
+        _os.makedirs(_os.path.dirname(stamp_path) or ".", exist_ok=True)
+        with open(stamp_path, "w", encoding="utf-8") as fh:
+            json.dump({"last": moment.isoformat()}, fh)
+        return True
+    except Exception as exc:
+        logger.debug("retraction/correction stamp skipped: %s", exc)
+        return False
+
+
 def maybe_toast_retractions(
     hits: list[str],
     *,
@@ -96,15 +116,7 @@ def maybe_toast_retractions(
         send = toast
     body = str(hits[0])[:180]
     send("Content OS retraction", body, key="retraction")
-    try:
-        import json
-        import os as _os
-
-        _os.makedirs(_os.path.dirname(stamp) or ".", exist_ok=True)
-        with open(stamp, "w", encoding="utf-8") as fh:
-            json.dump({"last": moment.isoformat()}, fh)
-    except Exception as exc:
-        logger.debug("retraction toast stamp skipped: %s", exc)
+    write_stamp(stamp, now=moment)
     return True
 
 
@@ -142,6 +154,14 @@ def pairs_from_trace(trace: dict | None) -> list[tuple[str, str]]:
 
     payload = trace or {}
     topic = str(payload.get("selected_topic") or payload.get("input_topic") or "")
+    structured = payload.get("source_urls")
+    if isinstance(structured, list):
+        urls = [str(url).strip() for url in structured if str(url).strip()]
+        if urls:
+            return [(url, topic) for url in urls[:12]]
+
+    # Compatibility for legacy/synthetic traces. New production traces use the
+    # structured field above; scraping the whole blob is no longer the contract.
     blob = json.dumps(payload, default=str)
     # The shared _URL pattern stops at whitespace / ] > ) — not at a quote or comma,
     # and this reads a JSON dump. Untrimmed, every URL arrives as `https://x/a",`

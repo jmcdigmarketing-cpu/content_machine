@@ -94,16 +94,12 @@ done, highest **#708**. Filed open, yours if you want them: **#702 #703 #704 #70
 
 ## Slot — Cursor
 
-**Written:** 2026-09-08 · **HEAD at write:** `1f2082f` · **Tree:** docs only, uncommitted.
+**Written:** 2026-09-09 · **HEAD at write:** `f8c39b2` · **Tree:** this wave committing; #153 still uncommitted.
 
-- **Defect first:** none from this pass. Open from Claude still stand: #699
-  token hex · #700 `LIMIT 1` · #701 `"this weekend"` · #684 live decode ·
-  #112 dossier. GPT-6 parts 1–2 are opinion, not recorded decisions — do
-  not silently reverse the current next-five. Do not enable
-  `SCENE_MATCHED_BROLL` from part 2 item 6.
-- **Saved:** [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md)
-  and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md).
-  Pointers in planning_log + HANDOFF_SYNOPSIS. No code. Not committed.
+- **Defect first:** #704 could not run until #709 — `payload_json` is Text, Postgres `->>` is json-only (`operator does not exist: text ->> unknown`). Without `skip_locked`, the lock test blocked 2.16s. Wave 5 correction scans would skip after the first stamp; they now pass a per-vault `stamp_path`.
+- **Shipped:** #706 keys (J→7000) · #702 structured `source_urls` (`KeyError` on f8c39b2) · #703 `toast_is_due` stamp · #707 QVideoSink duration 2150ms · #704 SKIP LOCKED on `content_machine_test` (0.3s) · #709 jsonb cast.
+- **Fail-first:** watched each named failure before restore. Qt tests ran here (system PySide6). CI postgres service is new on this commit. Suite **2,870 -> 2,883**; mypy **139** on committed packages (local tree is 143 from uncommitted extras). `data/` untouched.
+- **Not this commit:** #153 (still open in backlog until its own commit), technical QC, chapters, title-script. Next: **#705 · #708 · #431 · #549 · #21**. Backlog **358 open / 587 done**.
 
 
 

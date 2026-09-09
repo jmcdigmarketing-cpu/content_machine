@@ -24,31 +24,18 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-09 four defects plus the brand-kit compiler. Closed
-**#701** weekend clock resolving into the past - **#700** `claim_next` unbounded
-fetch *and* the unlocked claim it was hiding - **#699** the second hex palette,
-with `surfaces` tokens and a scanner that fails on any unexempted literal -
-**#112** the correction dossier, which needed three substrate fixes first -
-**#151** the brand-kit compiler. Suite **2,833 -> 2,870**, mypy **139** held.
+**Just landed** - 2026-09-09 **#702 · #704 · #703 · #706 · #707** plus **#709**
+found on the way. Structured `source_urls` on the run trace; correction-scan
+24h stamp; `SKIP LOCKED` measured on real Postgres; ReviewWindow keys; Qt
+decode of the committed intro fixture.
 
-**#112 was much larger than its `[M]` tag.** The detection half existed; the
-recording half had no substrate, and three artifacts that looked like substrate
-were shipping empty on every run: `ClaimVerification.to_dict()` dropped the claim
-list and every `citation_line`, nothing ever set `features["source_urls"]` though
-`collect_source_urls` was already computed and discarded, and `<stem>.facts.json`
-reads exactly those two keys. Fixing the producers is what made a dossier that
-names *which claim* reversed possible at all.
+**Previously this day** - **#153** caption timeline (still uncommitted, separate
+commit). Before that: **#701** weekend clock · **#700** `claim_next` lock ·
+**#699** `surfaces` tokens · **#112** correction dossier · **#151** brand-kit.
 
-**#153 is demoted out of the next five, deliberately.** It and #151 had been
-listed and then skipped in four consecutive waves, each time so an `[L]` could
-not strand the wave. #151 was taken on purpose this time and landed; #153 stays
-open in [backlog.md](backlog.md) but stops being announced as next until a
-measured problem justifies it - which is also where the 2026-09-08 GPT-6 review
-lands, independently.
-
-**Next: the things this wave proved are inert or unproven.** #341 and #696 turn
-out never to have watched anything on a real run (#702), and one guarantee this
-wave added is asserted rather than measured (#704).
+**#704 was blocked by a #700 leftover.** `payload_json` is Text, so
+`type_coerce(..., JSON) ->>` does not run on Postgres. Filed and fixed as
+**#709** so the lock test could execute at all.
 
 ### The Craft wave — leftover after Stage 0
 
@@ -82,32 +69,32 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-The list changed because this wave measured things that were not known before.
-Three of these are findings from it.
+The list changed because the previous five are now measured closed. Two of these
+are already drafted in the dirty tree and were left out of this commit on
+purpose.
 
-1. **#702 the retraction watch's trace path is inert** `[S]` - `pairs_from_trace`
-   reads URLs from the run trace and `run_trace._slim_signals` strips them.
-   Measured: zero `http` matches across all 28 files in `data/traces/`. #341 and
-   #696 have therefore never watched anything on a real run. A shipped feature
-   that does nothing outranks a new one.
-2. **#704 `skip_locked` is unproven** `[M]` - #700 added the row lock; SQLAlchemy
-   emits no FOR UPDATE on SQLite, so the new tests prove ordering and LIMIT and
-   not the lock. The atomic-claim guarantee is currently asserted, not measured.
-3. **#703 the correction scan has no throttle** `[S]` - it re-fetches every source
-   behind every published video on every overnight run. `toast_is_due` already has
-   the stamp shape to reuse.
-4. **#706 `ReviewWindow.keyPressEvent` has zero tests** `[S]` - all four
-   construction sites pass an empty path, so the whole player branch and 30 lines
-   of key handling never execute. The cheap half of #684, no decode needed.
-5. **#707 #684's real decode** `[M]` - now known feasible: the fixture mp4 is
-   already committed and the codec ships inside the PySide6 wheel. It must bypass
-   `ReviewWindow`'s unconditional `QAudioOutput`.
+1. **#705 vanished-claim similarity** `[M]` - the correction scan still ignores
+   a source that quietly dropped the claim. Needs similarity, not a substring.
+2. **#708 TapIn branding assets** `[S]` - `ops brand-kit` already reports that
+   `assets/branding/tapin/` does not exist.
+3. **#431 verify chapter timings** `[S]` - drafted beside this wave (`core/chapters.py`
+   word-timing path) and deliberately not committed here.
+4. **#549 script-vs-title check** `[M]` - drafted (`check_title_script_consistency`)
+   and deliberately not committed here.
+5. **#21 caption font/fill** `[S]` - still distinct from #153's timing sidecar.
 
-**Dropped from this list** (stay open): **#153** caption choreography, demoted
-after four skips - **#151** shipped, so it leaves the list - **#158** cost tower -
-**#673** second monitor - Phase M - Ollama.
+**Dropped from this list** (stay open): **#158** cost tower -
+**#673** second monitor - Phase M - Ollama. **#684** last-run play remains
+operator smoke after #707's fixture decode.
 
-**Closed 2026-09-09 (this wave):** **#701** weekend clock - **#700** `claim_next`
+**Closed 2026-09-09 (#702-#707 + #709):** retraction trace `source_urls` -
+Postgres `SKIP LOCKED` - correction-scan throttle - ReviewWindow keys - Qt
+fixture decode - jsonb cast for Text `payload_json`.
+
+**Closed 2026-09-09 (#153):** caption choreography timeline. Operator overrode
+the demote. Filed gap: SRT placement. **Still uncommitted** at this write.
+
+**Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700** `claim_next`
 SQL order + LIMIT + `skip_locked` - **#699** `surfaces` tokens + palette scanner -
 **#112** correction dossier + its three substrate fixes - **#151** brand-kit
 compiler. Filed open: **#702 #703 #704 #705 #706 #707 #708**.

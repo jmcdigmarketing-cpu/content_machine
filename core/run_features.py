@@ -140,6 +140,13 @@ def build_features(
         "word_count": int(pkg.get("word_count") or _word_count(script)),
         "fact_source": fact_source or ("manual" if key_facts else "signals"),
         "key_facts_count": len(key_facts or []),
+        # Canonical citation URLs resolved by content_engine.  Keep these in the
+        # feature row rather than signal payloads: #702 measured that traces had
+        # zero URLs, leaving both the retraction watch and correction dossier
+        # unfed in production.
+        "source_urls": [str(url) for url in (pkg.get("source_urls") or []) if str(url).strip()][
+            :12
+        ],
         "feature_version": FEATURE_VERSION,
     }
     if vault_relevance_audit is not None:

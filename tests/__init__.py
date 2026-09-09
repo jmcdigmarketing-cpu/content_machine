@@ -86,6 +86,7 @@ from unittest.mock import patch
 import config.paths as _paths
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
+from core import correction_dossier as _correction_dossier
 from core import counterfactual as _counterfactual
 from core import negative_facts as _negative_facts
 from core import quota_state as _quota_state
@@ -117,6 +118,11 @@ _SUITE_STORE_PATCHES = (
     patch.object(_negative_facts, "STORE_PATH", Path(_suite_store("negative_facts.json"))),
     patch.object(_counterfactual, "STORE_PATH", Path(_suite_store("counterfactual.json"))),
     patch.object(_retraction_watch, "STAMP_PATH", _suite_store("retraction_toast.json")),
+    patch.object(
+        _correction_dossier,
+        "STAMP_PATH_TEMPLATE",
+        _suite_store("correction_scan_{channel}.json"),
+    ),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

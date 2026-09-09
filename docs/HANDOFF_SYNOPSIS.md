@@ -1,10 +1,31 @@
-# Handoff synopsis — 2026-09-09: four defects plus the brand-kit compiler
+# Handoff synopsis — 2026-09-09: #702-#707 correctness
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-09 (Claude Code)
+## Last wave — 2026-09-09 (Cursor) #702 #704 #703 #706 #707
+
+Closed the inert/unproven leftovers from the defect wave, plus **#709** found
+by running #704 on real Postgres. Structured `source_urls` on the trace;
+correction-scan 24h stamp; `SKIP LOCKED` measured; ReviewWindow keys; Qt
+decode of the committed intro fixture.
+
+**Not done:** #705 · #708 · #153 (implemented, still a second commit) ·
+technical QC / chapters / title-script extras left uncommitted.
+
+**Next five:** **#705 · #708 · #431 · #549 · #21**. Suite **2,870 -> 2,883**.
+Backlog **358 open / 587 done**, highest open **#708**.
+
+## Previous wave — 2026-09-09 (Cursor) #153
+
+Closed **#153**. Operator overrode the four-wave demote. Karaoke vs SRT cues from
+real `.words.json`; ops captions / ops caption-timeline / --captions.
+Sidecar `<audio>.captions.json`; next karaoke burn applies `dt` + `margin_v`.
+No sidecar leaves ASS byte-identical. Known gap: SRT placement. Still
+uncommitted; this wave did not fold it in.
+
+## Previous wave — 2026-09-09 (Claude Code)
 
 Closed **#701 · #700 · #699 · #112 · #151**. Suite **2,833 -> 2,870**, mypy
 **139** held, ruff clean, `data/` untouched. Backlog **363 open / 581 done**,

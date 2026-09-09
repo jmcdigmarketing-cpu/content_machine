@@ -600,7 +600,7 @@ Grounding & fact quality
 - [x] 333. **Negative-fact store (what is *not* true)** *(2026-09-07)* — `record_negative("gta", "GTA 6 leaked for a June 2025 release")` then `matching_negatives` hits that script and misses a UFC champion line. `ops negative-fact`. Store isolated in the suite `[M]`
 - [ ] 334. **Entity disambiguation ledger** — `entity_extractor.py` re-resolves "Jones" / "Rockstar" every run. Resolve once to a canonical id, reuse across runs and channels `[M]`
 - [x] 335. **Source-diversity floor on dated topics** *(2026-09-07)* — news-shaped claims whose URLs collapse to one registrable domain (espn.com + espn.com/story2) are moved out of verified into context. ESPN + MMAFighting passes. Evergreen "how does the offside rule actually work" does not fire. Wired in `_build_prompts` via `collect_source_urls` (operator paste + vault `source_url`). No sixth `input()` gate `[S]`
-- [ ] 336. **Wikipedia last-revision recency tripwire** — a cheap "the world moved after my cutoff" signal from a source already called; the June UFC-250 failure had no such guard `[S]`
+- [x] 336. **Wikipedia last-revision recency tripwire** *(2026-09-09)* — `_fetch_last_revision` on the same article; signal `data.last_revision`; health line `UFC_250 edited 2h ago`. Fail-first: `status_detail` had no `edited`. Network mocked; existing pageview tests now patch the revision fetch so they cannot hit wikipedia.org `[S]`
 - [x] 337. **Numeric plausibility bands per domain** *(2026-09-08)* — `find_plausibility_outliers` flags a 10x purse even when the span is in the facts. Advisory on quality; `GRADE_VERSION` stayed **v3** `[S]`
 - [x] 338. **Quote-attribution gate** *(2026-09-07)* — deterministic, no extra LLM. Invented quote flags; `Dana White told ESPN "…"` in facts passes; `"GTA 6"` does not fire. Nested quotes `known_gap=True`. Pre-rewrite flag persisted if the script changes (§25). `GRADE_VERSION` stayed **v3** `[M]`
 - [ ] 339. **"Unconfirmed" as a first-class script mode** — today the choice is assert or drop; saying "this is not confirmed yet" is more honest *and* more authentic under the 2026 policy `[M]`
@@ -629,9 +629,9 @@ Learning loop & analytics rigor
 - [ ] 359. **Cold-start priors from the nearest existing domain** — a third channel should inherit TapIn's shape, not library defaults; unblocks the AI-Tools groundwork `[M]`
 - [x] 360. **Separate day-of-week from hour in post-time learning** *(2026-08-28)* — Saturday 9pm and Tuesday 9pm are separate buckets; two fixtures prove they no longer average together `[S]`
 - [ ] 361. **Comment sentiment as a secondary target** — `youtube_comments_signal.py` already pulls the text; engaged-rate cannot tell a good reaction from a pile-on `[M]`
-- [ ] 362. **Subscribers-gained as its own objective** — a video that converts subs and one that farms views are different products; the sync can already fetch it `[S]`
+- [x] 362. **Subscribers-gained as its own objective** *(2026-09-09)* — `_build_entries` now sets `subscribers_gained` from `youtube_metrics`; analytics rationale is `gained 12 subscriber(s)` for six 2-sub nba rows. Zero subs does not invent a conversion line. Fail-first: rationale had no `subscriber` `[S]`
 - [ ] 363. **Title-embedding clustering across the catalog** — detect that the channel has quietly made the same video five times `[M]`
-- [ ] 364. **Topic saturation index** — how many tracked competitors covered this in 48h, from the snapshot already stored. Being seventh is a scoring input `[S]`
+- [x] 364. **Topic saturation index** *(2026-09-09)* — `topic_saturation` counts matching competitor titles inside 48h (fixture: 2). Prompt: `1 competitor covered this in 48h`. `build_quality` persists it; dossier prints `7 competitors covered this in 48h`. Fail-first: helper missing `[S]`
 - [x] 365. **Recency-decay weighting in every recommender** *(2026-09-08)* — `recency_weight` half-life 90 days; `get_best_bet` averages with it. Six-month-old 90% loses to last week's 20% `[S]`
 - [x] 366. **Anomaly detector on the metrics sync itself** *(2026-08-28)* — `metrics_sync_incident` reaches `ops reliability`; a stalled sync is an incident, a fresh one prints no warning `[S]`
 - [x] 367. **Calibration drift over time in `analyst_accuracy.py`** *(2026-09-08)* — `drift_line` compares two windows; getting worse is a summary line, not a silent skip `[S]`
@@ -695,7 +695,7 @@ Render & visual craft
 
 - [ ] 413. **Deterministic render fingerprint** — same inputs, same bytes, so a render regression is a diff instead of an argument `[M]`
 - [x] 414. **Post-render frame QA** *(2026-09-09)* - `core/technical_qc.py` `blackdetect` + `freezedetect` + A/V duration mismatch on the finished file. Real ffmpeg fixtures: black video is not reported clean; frozen non-black (`color=c=red`, 2.5s) files a frozen-interval issue; missing ffmpeg is `unavailable` with `passed=False`. Dossier prints the advisory `[M]`
-- [ ] 415. **Render smoke test in CI on a 2s synthetic input** — #24 and #26 both shipped dead on Windows and were caught by audit, not by CI `[M]`
+- [x] 415. **Render smoke test in CI on a 2s synthetic input** *(2026-09-09)* — CI `apt-get install -y ffmpeg`; `smoke_render_synthetic` runs a 2s lavfi clip through `build_render_ffmpeg_command`. Local duration 1.5–3.5s. Missing ffmpeg under `CI=true` raises. Guard strips comments so a commented install cannot pass `[M]`
 - [x] 416. **Scene-beat cuts from owned gameplay** *(2026-09-07, mechanical slice)* — `try_owned_beat_background` maps `clip_index` paths onto `plan_scenes` beats and concats when the files exist; empty or missing index keeps the current single loop. **Not** CLIP matching; `SCENE_MATCHED_BROLL` stays off (decisions §26). HUD-aware pick is still impossible while ingest stores `hud: null` (#683) `[L]`
 - [x] 417. **Owned-footage ingest + index** *(2026-08-28, mechanical slice)* — `ops ingest-clips` (dry-run default; `--apply` remuxes muted H.264) matches capture filenames into `video/backgrounds` via existing folder routing + a short alias table. Unmatched files are listed, never dumped into `gaming/`. `data/clip_index.json` records ffprobe duration/size/codec; **HUD is persisted `null`** (no detector). Hand-tagging skipped. Scene-beat cuts remain #416 `[L]`
 - [ ] 418. **Zoom resampling validation** — verify #26's Ken Burns does not soften 1080x1920 detail; a bounded zoom can still cost sharpness `[S]`
@@ -720,7 +720,7 @@ Publish, SEO & policy
 - [ ] 434. **Content-ID pre-check heuristics** — a claimed video is a monetisation event; stock and music are the exposure `[M]`
 - [ ] 435. **Policy-page diff watcher** — the 2026 authenticity rules are existential and the project tracks them by hand `[M]`
 - [ ] 436. **Strike / appeal evidence bundle from the run ledger** — `policy_runbook.py` documents the process; the ledger already holds the evidence it asks for `[M]`
-- [ ] 437. **One-command publish rollback** — unlist + correction description + dossier entry, for when #341 fires `[S]`
+- [x] 437. **One-command publish rollback** *(2026-09-09)* — `ops rollback-publish` unlist + correction description + vault dossier. Dry-run default; `get_youtube_service` is never constructed unless `--apply` and `YOUTUBE_UPLOAD_ENABLED`. Fail-first: `rollback-publish` not in `COMMANDS` `[S]`
 - [ ] 438. **Per-channel audience-language / region targeting** — #108 sets language; targeting is a separate lever that is never set `[S]`
 - [x] 439. **Shorts-eligibility validator before upload** *(2026-08-28)* — `shorts_refuse_reason` on the publish path refuses landscape and over-60s with a sentence; a missing file is fail-open `[S]`
 - [x] 440. **Immutable 24h / 7d performance snapshots** *(2026-09-09)* - `merge_metric_snapshots` nests `snapshots.24h` / `7d` inside `metrics_json` on first capture; a later sync updates live totals and cannot rewrite an existing bucket. `render_dossier` prints both. Fail-first: dossier omitted `24h snapshot` `[S]`
@@ -738,7 +738,7 @@ Operator surface
 - [ ] 449. **Batch approve queue** — review five drafts in one pass instead of five interactive runs `[M]`
 - [ ] 450. **Voice-note fact intake** — record a memo on a phone, transcribe to key facts; whisper is already installed `[M]`
 - [ ] 451. **Phone-sized booth layout** — review a 9:16 Short on the device it will be watched on `[S]`
-- [ ] 452. **Weekly operator digest** — the three decisions to make this week, written to a file `[S]`
+- [x] 452. **Weekly operator digest** *(2026-09-09)* — `operator_digest` caps `next_actions` at 3; `ops digest` + weekly_report `main()` write `{date}_digest.md`. Six actions keep 0–2, drop 5. Not-ready writes nothing `[S]`
 
 Engineering hygiene
 
@@ -898,7 +898,7 @@ Analytics & learning rigor
 Cost & efficiency
 
 - [ ] 571. **A cost ceiling that degrades instead of refusing** — draft preset and cheap tier rather than a hard stop `[M]`
-- [ ] 572. **Show cost before the expensive step**, not after it `[S]`
+- [x] 572. **Show cost before the expensive step**, not after it *(2026-09-09)* — `features["projected_cost"]` is `estimate_run_cost(..., rendered=True)` before `proceed_video=False` returns. `display_fact_engine_report` prints `Projected cost if you proceed` with `tts $0.2700`. Fail-first: Proceed? report had no `0.27` `[S]`
 - [ ] 573. **Cache the research brief across variants** of the same topic `[M]`
 - [ ] 574. **Skip a signal whose data never reaches the script** `[M]`
 - [ ] 575. **Measure which signals actually contribute facts** and retire the rest (decisions §19) `[M]`
@@ -906,14 +906,14 @@ Cost & efficiency
 - [ ] 577. **Reuse the existing render when only the description changed** `[M]`
 - [ ] 578. **Cost per finished minute of video**, not per run `[S]`
 - [ ] 579. **Warn when a run costs more than the channel's measured RPM returns** `[M]`
-- [ ] 580. **Free-mode cost report** — prove the $0 path actually cost $0 `[S]`
+- [x] 580. **Free-mode cost report** *(2026-09-09)* — `free_mode_cost_proof` prints `billed $0.0000` or `not $0`. `ops free-cost` reads last-run persisted `cost`, not a fresh estimate (fail-first: last-run $0 re-estimated `$0.1725`). `[S]`
 - [x] 581. **Track Edge TTS availability** *(2026-09-07)* — `_try_alt_tts_provider` calls `mark_tts_paid_fallback`; `display_summary` prints `edge failed — fell back to ElevenLabs` `[S]`
 - [ ] 582. **Per-provider latency budget** — a slow provider is a cost too `[M]`
 
 Signals & reliability
 
 - [x] 583. **`trendingnow.games` fails DNS on every run** `[S]` *(2026-08-29)* - retired per decisions §19 in `apis/signals_bootstrap.RETIRED_SIGNALS`, with the reason and date recorded at the point of disablement and the module kept for revival. `SignalRegistry.unregister` makes the retirement an explicit call rather than a mutation of registry internals. §19's kill switch (`config/apify_sources.json`) only covers paid actors; this is the free-signal equivalent
-- [ ] 584. **YouTube RSS 404 on `UCq-Fj5jknLsUf-MWSik4vhQ`** — same treatment as the dead McAfee channel id `[S]`
+- [x] 584. **YouTube RSS 404 on `UCq-Fj5jknLsUf-MWSik4vhQ`** *(2026-09-09)* — id removed from shipped `config/competitors/tapin.json`. `get_competitor_channels("tapin")` does not include it or a McAfee label. Health helper still accepts the id as a fixture `[S]`
 - [ ] 585. **Per-signal contribution score** in the health block — "active" is not the same as "useful" `[M]`
 - [ ] 586. **Signal result diffing between runs** on the same topic `[M]`
 - [ ] 587. **A retry budget per run**, shared across signals, rather than per call `[M]`
@@ -927,17 +927,17 @@ Signals & reliability
 
 Publish, policy & channel ops
 
-- [ ] 595. **Dry-render the description exactly as YouTube will show it**, including the fold `[S]`
+- [x] 595. **Dry-render the description exactly as YouTube will show it**, including the fold *(2026-09-09)* — `fold_preview` splits at ~100 chars; above <= 110; `ops desc-fold`. Short copy has nothing below `[S]`
 - [x] 596. **Detect a title that duplicates a competitor's word for word** *(2026-09-08)* — `verbatim_competitor_advisory` over `list_recent_competitor_titles`. Advisory string on quality `[S]`
 - [ ] 597. **Generate the community post from the finished video** `[M]`
 - [ ] 598. **Track scheduled vs immediate uploads** and how each performed `[S]`
-- [ ] 599. **Verify the thumbnail actually applied** after upload — it fails silently today `[S]`
+- [x] 599. **Verify the thumbnail actually applied** after upload *(2026-09-09)* — after `thumbnails.set`, `videos.list`; default-only is `unverified`; `maxres` is `set`. Fail-first: MagicMock list was treated as custom; non-dict payload is now unverified `[S]`
 - [ ] 600. **Re-check monetisation status 48h after publish** `[M]`
 - [ ] 601. **Playlist auto-assignment by franchise** (#104) driven from the fact corpus `[M]`
 - [x] 602. **End-screen placement that avoids the caption safe area** *(2026-09-07)* — `end_card_text_y(80)` stays in `[0.12h, 0.80h]`. ffmpeg graph is not `y=(h-text_h)/2`. Preview PNG uses the same helper `[M]`
 - [ ] 603. **Surface a Content-ID claim** from the API rather than finding it in Studio `[M]`
 - [ ] 604. **Localise the description's first line** per audience region `[M]`
-- [ ] 605. **Publish dead-man's switch** — nothing uploads if the operator has not reviewed in N days `[S]`
+- [x] 605. **Publish dead-man's switch** *(2026-09-09)* — `PUBLISH_DEADMAN_DAYS` opt-in. Stale 10d heartbeat with limit 7 blocks `YouTubePublisher.publish` before `get_youtube_service`. Unset env does not block. Import failure WARNs `[S]`
 - [ ] 606. **Per-channel upload checklist** that must be green before the button enables `[M]`
 
 Performance & startup
@@ -1104,6 +1104,8 @@ Review 4 - what the four waves shipped green but inert (2026-09-08)
 - [x] 710. **`video/subtitles.py` kept a `_load_word_timings` alias that silently broke every patch site** *(found and fixed 2026-09-09, audit of c43c427; ticked 2026-09-09)* - alias gone; `tests/test_word_timing_seam.py` patches `video.subtitles.load_word_timings`. Guard: `hasattr(subtitles, "_load_word_timings")` is false; the seam file has no `_load_word_timings` string `[S]`
 - [x] 711. **The #704 Postgres proof skips silently when CI has no database** *(guard added 2026-09-09; trigger expanded 2026-09-09)* - `TestTheProofActuallyRunsInCI` still fails the job when `CI=true` and the URL is missing. Remaining hole was `on.push` limited to `main`/`master`, so this branch never started `postgres:16`. `ci.yml` now runs on every push, every PR, and `workflow_dispatch`. Fail-first: `workflow_dispatch:` absent `[S]`
 - [x] 712. **A test file named to dodge discovery is a test that does not exist** *(fixed 2026-09-09, ticked 2026-09-09)* - `tests/test_wave6_extras.py` is collected; `loadTestsFromModule` reports >=4 cases. The extras `0:20`/`0:40` chapter assertion is still equal-span-shaped; the 5s/12s guard in `tests/test_next15_wave.py` is the one that can go red `[S]`
-- [ ] 713. **Manual caption timing is not wanted; automatic placement is the open question** - #153 was removed because it required the operator to drag keyframes. What it was reaching for (a cue landing somewhere other than the default MarginV when it would cover a face or a burned-in score bug) is still unsolved, and the answer has to be automatic: detect the obstruction, move the cue, no operator step. Do not rebuild the timeline UI `[M]`
-- [ ] 714. **#705's coverage check read an unreadable page as a vanished claim** *(found and fixed 2026-09-09, audit of 18ba62c)* - token-overlap coverage below 0.5 filed a `medium` dossier, but an empty response, a whitespace body, a client-rendered shell and a read stopped at the 8000-byte cap all score near zero for mechanical reasons. Measured on 18ba62c: all four filed. That is the module's own unreachable-is-not-clean rule run backwards - an unreadable source must not be reported as *changed* either. Fixed with a readable floor plus a truncation check, and `_content_tokens` now strips tags and script/style blocks so markup words are not evidence. Floor set from measurement, not taste: a shell yields 0 content tokens after stripping, a legitimate one-sentence update yields 7 `[S]`
-- [ ] 715. **CI now runs on every push to every branch, and same-repo PR branches run it twice** - 18ba62c changed `on.push`/`on.pull_request` from `branches: [main, master]` to unfiltered, which is what finally starts the postgres service off main (#711). The cost was not stated: four jobs plus a `postgres:16` service on every push anywhere, and a branch with an open PR fires both `push` and `pull_request`. A `concurrency` group keyed on the ref would cancel superseded runs, which is the dominant waste when an agent pushes repeatedly. Deliberately not changed in the audit - the trigger was just set on purpose and re-changing it belongs to the operator `[S]`
+- [x] 713. **Automatic caption placement** *(2026-09-09)* — busy bottom chroma band (`bottom >= 12 and bottom > top * 1.5`) moves karaoke ASS Alignment 8. Quiet bottom stays Alignment 2. `generate_subtitle_file` passes `background_path` from `render_video`. No operator timeline. Leftover #717: this is not a face detector `[M]`
+- [x] 714. **#705's coverage check read an unreadable page as a vanished claim** *(found and fixed 2026-09-09, audit of 18ba62c; ticked 2026-09-09)* - empty body does not file. Guard in `tests/test_next15_wave2.py` re-runs that measurement so the tick cannot go vacuous `[S]`
+- [x] 715. **CI concurrency group keyed on `github.ref`** *(2026-09-09)* — `cancel-in-progress: true`. Guard strips comments; commenting the block out still passed, deleting it went red. Leftover #716: push and pull_request still use different refs `[S]`
+- [ ] 716. **A same-repo PR still runs CI twice after #715** - `concurrency.group` is `${{ github.workflow }}-${{ github.ref }}`. On `push` that is `refs/heads/<branch>`; on `pull_request` it is `refs/pull/<n>/merge`. They do not collide, so a branch with an open PR still pays for both events. A group keyed on `github.head_ref || github.ref` would collapse them. Not changed here: cancelling the PR run from a push is an operator call `[S]`
+- [ ] 717. **#713 places captions by chroma uniqueness, not by a face or score bug** - a busy colourful bottom band moves ASS Alignment to 8. A dark/low-chroma score overlay or a face in a quiet band still sits under default MarginV. Face detection or a luminance HUD would close it. Do not rebuild the timeline UI `[M]`

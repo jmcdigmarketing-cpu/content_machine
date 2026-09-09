@@ -24,34 +24,40 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-09 next-15: prove-and-tick leftovers already in HEAD
-(**#710 #712 #431 #549 #414 #420 #498**), then **#711 #708**, honesty
-(**#562 #569 #568 #430 #440**), **#705** last. Title/script finally has a
-Proceed? reader. CI push is no longer `main`/`master`-only. TapIn has logo and
-banner on disk.
+**Just landed** - 2026-09-09 next-15: tick leftover **#714**, then **#715** CI
+concurrency, dead McAfee RSS **#584**, honesty (**#572 #580 #595 #452 #362
+#364 #336 #605 #599**), **#437** dry-run rollback, **#713** chroma caption
+anchor, **#415** ffmpeg smoke in CI. Projected TTS prints at Proceed?.
+`ops free-cost` reads last-run billed cost, not a fresh estimate.
 
-**Previously this day** - **#702-#707 + #709**; extras committed as `b9f1354`;
-**#153** caption timeline built then retired on the operator's call (do not
-rebuild; **#713** is the automatic-placement remainder).
+**Previously this day** - next-15 **#710 #712 #431 #549 #414 #420 #498 #711
+#708 #562 #569 #568 #430 #440 #705**; **#702-#707 + #709**; **#153** retired
+(do not rebuild; **#717** is the face/score remainder of #713).
 
 ### Recommended next five (non-app)
 
-The list changed because the previous five are now measured closed. **#21** is
-already `[x]` (2026-08-25) — it was a no-op pick.
+The list changed because #713 / #415 / #437 closed. #158 and #673 stay parked
+(L dashboard / second physical display). #716 is an operator call on whether
+a PR run should die when its branch pushes.
 
-1. **#713 automatic caption placement** `[M]` - a cue covering a face or score
-   bug should move itself. No operator timeline.
-2. **#684 last-run ReviewWindow play** `[M]` - still operator smoke after #707's
+1. **#684 last-run ReviewWindow play** `[M]` - still operator smoke after #707's
    fixture decode.
-3. **#158 Cost Tower** `[L]` - the expensive dashboard, not a cheap honesty fix.
-4. **#415 render smoke in CI** `[M]` - 2s synthetic; #24/#26 shipped dead on
-   Windows and were caught by audit.
-5. **#437 unlist / rollback** `[S]` - mutates YouTube; operator-gated on purpose.
+2. **#717 face/score-bug caption remainder** `[M]` - #713 moves a colourful
+   bottom band; a dark overlay still covers MarginV. No timeline UI.
+3. **#407 opener-pattern check** `[S]` - enforce measured-good hooks.
+4. **#590 rate-limit headroom before discovery** `[S]` - show remaining units
+   before the pool starts, not after exhaustion.
+5. **#378 free-tier expiry calendar** `[S]` - a $0 run that silently becomes
+   paid is the same class as #580.
 
-**Dropped from this list** (stay open): **#673** second monitor - Phase M -
-Ollama.
+**Dropped from this list** (stay open): **#158** Cost Tower · **#673** second
+monitor · **#716** CI push+PR group key · Phase M · Ollama.
 
-**Closed 2026-09-09 (next 15):** **#710 #712 #431 #549 #414 #420 #498 #711
+**Closed 2026-09-09 (next 15):** **#714 #715 #584 #572 #580 #595 #452 #362
+#364 #336 #605 #599 #437 #713 #415**. Found: #715 comment-out guard was
+vacuous; #580 ops verb re-estimated instead of reading last-run cost.
+
+**Closed 2026-09-09 (previous next 15):** **#710 #712 #431 #549 #414 #420 #498 #711
 #708 #562 #569 #568 #430 #440 #705**. Found: the extras chapter test used
 stamps that equal-span also produces.
 
@@ -90,9 +96,6 @@ detector · **#341** retraction-watch (last-run).
 **Closed 2026-09-07 (Stage 3 honesty):** **#679 #680 #674 #681 #682**;
 **#607** ElevenLabs import defer; **#335** source-diversity floor; **#671**
 visual angle list; Stage 3 review room **#168+#209**; **#416** owned beat cuts.
-
-**Dropped from this list** (stay open): **#673** second monitor - Phase M -
-Ollama.
 
 ---
 

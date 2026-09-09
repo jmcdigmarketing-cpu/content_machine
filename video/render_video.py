@@ -425,6 +425,7 @@ def render_vertical_video(
         channel_id=channel_id,
         output_path=stable_subtitle,
         words=word_timings,
+        background_path=background_path,
     )
     lower_thirds_path: str | None = None
     if lower_thirds:

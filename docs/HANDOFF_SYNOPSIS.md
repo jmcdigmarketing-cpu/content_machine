@@ -1,10 +1,34 @@
-# Handoff synopsis — 2026-09-09: next 15
+# Handoff synopsis — 2026-09-09: next 15 (#714-#415)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — review 6 (2026-09-09, Claude Code)
+## Last wave — next 15 (2026-09-09, Cursor)
+
+Claude's recommended five were **#715 · #713 · #684 · #158 · #415**. Parked
+#684 / #158 / #673 / live YouTube mutate. Cheapest first.
+
+- **#715 comment-out guard was vacuous.** `assertIn("concurrency:", text)`
+  matched a `# concurrency:` comment. Guard now strips comments; deleting the
+  live block went red.
+- **#580 ops verb re-estimated.** `ops free-cost` called `estimate_run_cost`
+  even when last-run `cost` was `$0`. Fail-first printed `$0.1725 -- not $0`.
+  It now reads the persisted dict.
+- **#713 is chroma, not a face.** Busy colourful bottom band -> Alignment 8.
+  Dark score overlay still covers MarginV. Filed **#717**.
+- **#715 does not collapse push+PR.** `github.ref` differs
+  (`refs/heads/X` vs `refs/pull/N/merge`). Filed **#716**.
+- **PowerShell empty env unsets.** `$env:OBSIDIAN_VAULT_PATH = ""` let dotenv
+  reload the operator vault; a digest note was written and deleted.
+
+**Next five:** **#684 · #717 · #407 · #590 · #378**. Parked: #158 · #673 ·
+#716 (operator call) · Phase M · Ollama.
+
+Suite **2,927 -> 2,962** (4 skipped); mypy **139**; `data/` untouched.
+Backlog **335 open / 618 done**, highest **#717**.
+
+## Previous — review 6 (2026-09-09, Claude Code)
 
 Audited Cursor's `18ba62c` (15 items: #710 #712 #431 #549 #414 #420 #498 #711 #708
 #562 #569 #568 #430 #440 #705). **Numbers exact for the sixth round** — 2,919 OK /

@@ -97,12 +97,12 @@ database). Backlog **348** open / **603** done, highest **#715**. Next five:
 
 ## Slot — Cursor
 
-**Written:** 2026-09-09 · **HEAD at write:** `8c8a142` · **Tree:** this wave committing.
+**Written:** 2026-09-09 · **HEAD at write:** `d1776a0` · **Tree:** this wave committing.
 
-- **Defect first:** #549 was persisted and unread (`needs_review=False`). #431 extras `0:20`/`0:40` is also equal-span. #711 CI push was main/master-only so postgres never started here. #708 `compile_kit("tapin").missing` named logo.svg.
-- **Shipped:** #710 #712 #431 #549 #414 #420 #498 #711 #708 #562 #569 #568 #430 #440 #705. Title vs script prints at Proceed?. Vanished claims file medium; rewording does not. TapIn octagon SVGs. Sticky 24h/7d snapshots.
-- **Fail-first:** 16 ERROR/FAIL on unmodified b9f1354 before the matching change. Chapter guard: ignored timings -> `0:20`/`0:40`. Suite **2,894 -> 2,919** (4 skipped); mypy **139**; `data/` untouched.
-- **Not this commit:** #21 (already shipped) · #158 · #673 · #684 · #437. Next: **#713 · #684 · #158 · #415 · #437**. Backlog **346 open / 603 done**, highest **#713**.
+- **Defect first:** #715 comment-out guard stayed green (`# concurrency:` still matched). #580 `ops free-cost` re-estimated `$0.1725` on a persisted `$0` last-run. PowerShell empty `OBSIDIAN_VAULT_PATH` unsets; dotenv reloaded the operator vault (digest note written, then deleted).
+- **Shipped:** #714 #715 #584 #572 #580 #595 #452 #362 #364 #336 #605 #599 #437 #713 #415. Projected TTS at Proceed?. Rollback dry-run never builds a YouTube client. Busy bottom -> ASS Alignment 8. CI installs ffmpeg.
+- **Fail-first:** 13 FAIL + 18 ERROR on unmodified d1776a0 (34 ran). #715 delete-block went red after the comment-strip. Suite **2,927 -> 2,962** (4 skipped); mypy **139**; `data/` untouched.
+- **Not this commit:** #684 · #158 · #673 · live unlist. Filed **#716** (push+PR still two refs) · **#717** (chroma is not a face). Next: **#684 · #717 · #407 · #590 · #378**. Backlog **335 open / 618 done**, highest **#717**.
 
 
 

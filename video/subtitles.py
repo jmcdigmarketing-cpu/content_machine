@@ -229,6 +229,7 @@ def generate_subtitle_file(
     channel_id: str | None = None,
     output_path: str | None = None,
     words: list[dict] | None = None,
+    background_path: str | None = None,
 ) -> str:
     output_dir = os.path.join("output", "video")
     os.makedirs(output_dir, exist_ok=True)
@@ -247,11 +248,19 @@ def generate_subtitle_file(
         max_words = caption_words_per_line()
         if style == "karaoke":
             title_font, body_font = caption_fonts(channel_id)
+            anchor = "bottom"
+            try:
+                from video.caption_place import choose_caption_anchor
+
+                anchor = choose_caption_anchor(background_path)
+            except Exception as exc:
+                logger.debug("caption placement skipped: %s", exc)
             text = build_ass_karaoke(
                 words,
                 max_words=max(2, min(4, max_words)),
                 title_font=title_font,
                 body_font=body_font,
+                anchor=anchor,
             )
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)

@@ -5,6 +5,14 @@ on:
   pull_request:
   workflow_dispatch:
 
+# #715: unfiltered push+PR runs four jobs plus postgres on every branch.
+# Cancel the superseded run instead of stacking them. github.ref is the
+# branch on push and the merge ref on pull_request, so a same-repo PR
+# still fires both events but the older one dies when the newer starts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint & format
@@ -86,6 +94,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+      - name: Install ffmpeg
+        # #415: the 2s synthetic smoke needs a real ffmpeg. ubuntu-latest does
+        # not ship it, so technical-QC tests were silently skipping in CI —
+        # the same class as #24/#26 shipping dead on Windows.
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Install dependencies
         # [app] brings PySide6 so the Stage 1/2 widget tests actually run here.
         # Without it three of them skip and desktop/window.py is never imported,

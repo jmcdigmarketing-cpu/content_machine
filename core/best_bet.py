@@ -23,6 +23,7 @@ from core.channel_context import (
 )
 from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
+from core.engagement import subscribers_gained as _subscribers_gained
 from core.logging import get_logger
 from core.recommender_confidence import MODERATE_SAMPLES, confidence_note, interval_note
 
@@ -99,6 +100,7 @@ def _build_entries(channel_id: str) -> list[dict]:
             continue
         log = log_by_run.get(run.id)
         engaged_rate = _engaged_rate(log.metrics_json) if log else None
+        subs = _subscribers_gained(log.metrics_json) if log else 0
         entries.append(
             {
                 "run_id": run.id,
@@ -106,6 +108,7 @@ def _build_entries(channel_id: str) -> list[dict]:
                 "input_topic": normalize_seed_topic(run.input_topic or ""),
                 "selected_topic": run.selected_topic or "",
                 "engaged_rate": engaged_rate,
+                "subscribers_gained": subs,
                 "composite_score": float(run.composite_score or 0),
                 "domain": _infer_domain(seed, channel_id),
                 # #365: the weighting in get_best_bet reads this. Without it every
@@ -402,6 +405,12 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
         ages = [e.get("age_days") for e in with_analytics if e["domain"] == best_domain]
         avg_rate = weighted_engaged_mean(list(zip(rates, ages, strict=True)))
         best_topic = domain_topics[best_domain][0]
+        subs_total = sum(
+            int(e.get("subscribers_gained") or 0)
+            for e in with_analytics
+            if e["domain"] == best_domain
+        )
+        subs_note = f" · gained {subs_total} subscriber(s)" if subs_total else ""
 
         return BestBetResult(
             topic=best_topic,
@@ -415,6 +424,7 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
                 f"{interval_note(rates)}"
                 f"{_ranked_on_note(avg_rate, adjusted.get(best_domain))}"
                 f"{confidence_note(len(rates))}"
+                f"{subs_note}"
             ),
         )
 

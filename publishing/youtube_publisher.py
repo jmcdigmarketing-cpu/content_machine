@@ -484,6 +484,21 @@ class YouTubePublisher(Publisher):
                 platform=PLATFORM_YOUTUBE,
             )
 
+        try:
+            from core.publish_deadman import deadman_block_reason
+
+            reason = deadman_block_reason()
+        except Exception as extra:
+            logger.warning("deadman check skipped: %s", extra)
+            reason = None
+        if reason:
+            return PublishResult(
+                video_id=None,
+                status="blocked",
+                detail=reason,
+                platform=PLATFORM_YOUTUBE,
+            )
+
         if not os.path.isfile(request.file_path):
             return PublishResult(
                 video_id=None,

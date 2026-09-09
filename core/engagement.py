@@ -29,6 +29,15 @@ def engaged_rate(metrics_json: str) -> float | None:
     return None
 
 
+def subscribers_gained(metrics_json: str) -> int:
+    """Subscribers gained from a publish_log metrics blob; 0 when unknown."""
+    try:
+        m = json.loads(metrics_json or "{}")
+        return int(float(m.get("subscribers_gained") or 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return 0
+
+
 def safe_infer_domain(topic: str, channel_id: str) -> str:
     """infer_domain with a 'neutral' fallback if topic scoring is unavailable."""
     try:

@@ -131,6 +131,16 @@ def build_quality(
     except Exception as exc:
         logger.debug("competitor title overlap skipped: %s", exc)
     try:
+        from analytics.competitor_context import topic_saturation
+
+        topic = str(features.get("title") or features.get("topic") or "")
+        if topic:
+            covered = topic_saturation(channel_id, topic)
+            if covered:
+                quality["topic_saturation"] = int(covered)
+    except Exception as exc:
+        logger.debug("topic saturation skipped: %s", exc)
+    try:
         from core.publish_windows import resolve_relative_clock
 
         lowered = script.lower()

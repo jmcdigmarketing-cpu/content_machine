@@ -1443,6 +1443,96 @@ def cmd_diff_runs(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("free-cost", "Prove the $0/Piper path billed $0 (or say that it did not)")
+def cmd_free_cost(args: argparse.Namespace) -> int:
+    from core.cost_meter import estimate_run_cost, free_mode_cost_proof
+
+    script = ""
+    cost = None
+    try:
+        from core.review_booth import last_trace
+
+        trace = last_trace(args.channel)
+        if trace:
+            script = str(trace.get("script") or "")
+            raw = trace.get("cost")
+            if isinstance(raw, dict):
+                cost = raw
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("free-cost last-run skipped: %s", exc)
+    if cost is None:
+        cost = estimate_run_cost(script=script or "word " * 150, signals={}, rendered=True)
+    print(free_mode_cost_proof(cost))
+    print(f"  tts ${float(cost.get('tts') or 0):.4f}  total ${float(cost.get('total') or 0):.4f}")
+    return 0
+
+
+@_register("desc-fold", "Dry-render the description above/below YouTube's Show more fold")
+def cmd_desc_fold(args: argparse.Namespace) -> int:
+    from core.description_fold import format_fold_preview
+
+    description = ""
+    try:
+        from core.review_booth import last_trace
+
+        trace = last_trace(args.channel)
+        if trace:
+            description = str(trace.get("description") or "")
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("desc-fold last-run skipped: %s", exc)
+    if not description.strip():
+        print("No description on the last run. Pass a draft through the pipeline first.")
+        return 1
+    print(format_fold_preview(description))
+    return 0
+
+
+@_register("digest", "This week's three operator decisions, written to the vault")
+def cmd_digest(args: argparse.Namespace) -> int:
+    from analytics.weekly_report import build_report, operator_digest, write_operator_digest
+
+    report = build_report(args.channel)
+    text = operator_digest(report)
+    if not text:
+        print(f"{args.channel}: not enough analytics for a digest yet")
+        return 0
+    print(text)
+    path = write_operator_digest(args.channel, report)
+    if path:
+        print(f"\n  (saved to vault: {path})")
+    return 0
+
+
+@_register(
+    "rollback-publish",
+    "Unlist a published video + correction description + dossier (dry-run default; --apply sends)",
+)
+def cmd_rollback_publish(args: argparse.Namespace) -> int:
+    from publishing.rollback import apply_rollback
+
+    video_id = (getattr(args, "target", None) or "").strip()
+    if not video_id:
+        print("Usage: py -m scripts.ops rollback-publish <youtube-video-id> [--apply]")
+        return 2
+    correction = (getattr(args, "topic", None) or "").strip() or "Source walked this back."
+    result = apply_rollback(
+        video_id,
+        correction=correction,
+        channel_id=args.channel,
+        dry_run=not bool(getattr(args, "apply", False)),
+    )
+    print(f"{result.status}: {result.detail}")
+    if result.dossier_path:
+        print(f"  dossier: {result.dossier_path}")
+    if result.status == "dry_run":
+        print("  Nothing was sent to YouTube. Re-run with --apply to unlist.")
+    return 0 if result.status in ("dry_run", "updated") else 1
+
+
 @_register("publish-dry-run", "Print the YouTube videos.insert body (no upload; tokens redacted)")
 def cmd_publish_dry_run(args: argparse.Namespace) -> int:
     from publishing.base import PublishRequest
@@ -1680,7 +1770,10 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="artifacts / moat-backup / ingest-clips: actually delete, copy, or remux (default is dry-run)",
+        help=(
+            "artifacts / moat-backup / ingest-clips / rollback-publish: "
+            "actually delete, copy, remux, or unlist (default is dry-run)"
+        ),
     )
     parser.add_argument(
         "--move",

@@ -11,6 +11,72 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-09 (Cursor) - next 15 (#714 #715 #584 #572 #580 #595 #452 #362 #364 #336 #605 #599 #437 #713 #415)
+
+**Prompt, verbatim:** "next 15 tasks on the roadmap completed please"
+
+**What was picked.** Skill next-five, N=15. Claude's recommended five were
+**#715 · #713 · #684 · #158 · #415**. Roadmap's were **#713 · #684 · #158 ·
+#415 · #437**. Parked L/UI on purpose: #158 Cost Tower, #684 last-run
+ReviewWindow (still operator smoke after #707), #673 second monitor, live
+YouTube mutate (dry-run default instead), Phase M, Ollama. Cheapest and
+safest first so #713/#415/#437 could not strand the rest.
+
+**Shipped 1..15**
+
+1. **#714** tick leftover. Empty body still does not file a vanished claim
+   (`tests/test_review6_defects.py` re-run from the wave file).
+2. **#715** `concurrency` group `${{ github.workflow }}-${{ github.ref }}`,
+   `cancel-in-progress`. Guard strips comments: commenting the block stayed
+   green; deleting it went red.
+3. **#584** McAfee UC `UCq-Fj5jknLsUf-MWSik4vhQ` removed from shipped tapin
+   competitors. `get_competitor_channels("tapin")` does not include it.
+4. **#572** `features["projected_cost"]` is `estimate_run_cost(...,
+   rendered=True)` before Proceed?. Report prints `tts $0.2700`.
+5. **#580** `free_mode_cost_proof` + `ops free-cost`. Ops reads last-run
+   persisted `cost`, not a fresh estimate. Fail-first: last-run $0 printed
+   `$0.1725 -- not $0`.
+6. **#595** `fold_preview` ~100 chars; `ops desc-fold`.
+7. **#452** digest caps at 3; `ops digest` + weekly_report `main()`.
+8. **#362** best-bet rationale `gained 12 subscriber(s)`. Zero does not invent
+   a conversion line.
+9. **#364** `topic_saturation` fixture 2 in 48h; prompt + quality + dossier
+   readers.
+10. **#336** Wikipedia `last_revision` on the existing signal; health line
+    `edited`. Existing pageview tests now mock the fetch (no network).
+11. **#605** `PUBLISH_DEADMAN_DAYS` opt-in; stale heartbeat blocks before
+    `get_youtube_service`.
+12. **#599** `videos.list` after `thumbnails.set`; default-only -> `unverified`.
+13. **#437** `ops rollback-publish` unlist + correction + dossier. Dry-run
+    default; YouTube client never constructed without `--apply`.
+14. **#713** busy bottom chroma -> ASS Alignment 8. `render_video` feeds
+    `background_path`. No operator timeline.
+15. **#415** CI installs ffmpeg; 2s synthetic through
+    `build_render_ffmpeg_command`. Local duration in (1.5, 3.5).
+
+**Found on the way.** #715's first guard matched commented-out YAML. #580's
+ops verb re-estimated with the configured TTS provider, so a Piper last-run
+would still print `not $0`. PowerShell `$env:OBSIDIAN_VAULT_PATH = ""` unsets
+the variable and dotenv reloads the operator vault -- digest wrote
+`Documents/allopus/tapin/_reports/2026-09-09_digest.md` and that file was
+deleted. `display_signal_health` calls `print_fn()` with no args, so
+`list.append` cannot be the capture. Rollback dossier asserts were outside
+the TemporaryDirectory.
+
+**Deliberately not done.** #684 · #158 · #673 · live YouTube unlist · Phase M
+· Ollama. #716 (push+PR still two groups) and #717 (chroma is not a face)
+filed, not shipped.
+
+**Audit.** Fail-first on unmodified d1776a0: 34 ran, 13 FAIL, 18 ERROR.
+Never mocked the function under test. Production callers: `projected_cost`
+(pipeline -> ui), `topic_saturation` (run_quality + prompt + dossier),
+`choose_caption_anchor` (subtitles <- render_video), `deadman_block_reason`
+(YouTubePublisher.publish), `free_mode_cost_proof` (ops free-cost).
+Suite **2,927 -> 2,962** (4 skipped); mypy **139**; `data/` empty.
+Backlog **335 open / 618 done**, highest **#717**.
+
+---
+
 ## 2026-09-09 (Cursor) - next 15 (#710 #712 #431 #549 #414 #420 #498 #711 #708 #562 #569 #568 #430 #440 #705)
 
 **Prompt, verbatim:** "Next 15 (one wave, one commit)" / implement the attached

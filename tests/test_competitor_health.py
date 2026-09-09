@@ -66,13 +66,14 @@ class TestCompetitorHealth(unittest.TestCase):
 
         self.assertIn("competitor-health", ops.COMMANDS)
 
-    def test_config_note_on_mcafee_id(self):
+    def test_dead_mcafee_id_is_not_in_shipped_config(self):
         from config.competitors import get_competitor_channels
 
         get_competitor_channels.cache_clear()
         rows = get_competitor_channels("tapin")
-        mcafee = next(r for r in rows if "McAfee" in r.get("label", ""))
-        self.assertIn("unverified", mcafee.get("note", ""))
+        ids = {r.get("id") for r in rows}
+        self.assertNotIn(_BAD_ID, ids)
+        self.assertFalse(any("McAfee" in r.get("label", "") for r in rows))
 
 
 if __name__ == "__main__":

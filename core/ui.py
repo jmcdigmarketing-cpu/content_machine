@@ -553,6 +553,7 @@ def display_signal_health(
     channel_id: str | None = None,
     print_fn=emit,
     ask: bool = True,
+    now: datetime | None = None,
 ):
     from core.ui_theme import health_status, warn
 
@@ -606,6 +607,15 @@ def display_signal_health(
                 print_fn(f"  {warn('Gated')} (domain): " + ", ".join(gated))
         except Exception as exc:
             logger.debug("domain gating line skipped: %s", exc)
+    try:
+        from apis.wikipedia_pageviews_api import wikipedia_tripwire_line
+
+        wiki = signals.get("wikipedia") or {}
+        trip = wikipedia_tripwire_line(wiki.get("data") or {}, now=now)
+        if trip:
+            print_fn(f"  {warn('Wikipedia')} {trip}")
+    except Exception as exc:
+        logger.debug("wikipedia recency line skipped: %s", exc)
     print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
     print_fn("")
 
@@ -1495,6 +1505,25 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
 
     if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
         needs_review = True
+
+    # #572: features['cost'] at this prompt is rendered=False, so TTS is $0
+    # in the persisted dict. The projected line is what generate_audio will add.
+    projected = features.get("projected_cost")
+    if isinstance(projected, dict) and projected:
+        try:
+            from core.cost_meter import format_cost_line
+
+            line = format_cost_line(projected)
+        except Exception:
+            line = ""
+        if line:
+            print_fn(f"\n  Projected cost if you proceed: {line}")
+        elif projected.get("tts") is not None:
+            print_fn(
+                f"\n  Projected cost if you proceed: "
+                f"tts ${float(projected.get('tts') or 0):.2f} "
+                f"(total ${float(projected.get('total') or 0):.2f})"
+            )
     return needs_review
 
 

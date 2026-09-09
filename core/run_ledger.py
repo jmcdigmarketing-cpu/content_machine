@@ -169,6 +169,10 @@ def render_dossier(run_id: int) -> str:
             lines.append(f"  implausible amount: {span}")
         if quality.get("competitor_title_duplicate"):
             lines.append(f"  title: {quality['competitor_title_duplicate']}")
+        if quality.get("topic_saturation"):
+            n = int(quality["topic_saturation"])
+            noun = "competitor" if n == 1 else "competitors"
+            lines.append(f"  {n} {noun} covered this in 48h")
         for key, label in (("clock_tonight", "tonight"), ("clock_weekend", "this weekend")):
             if quality.get(key):
                 lines.append(f"  script says '{label}' -> {quality[key]}")

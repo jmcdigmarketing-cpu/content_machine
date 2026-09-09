@@ -149,6 +149,29 @@ def build_next_actions(report: dict[str, Any], *, max_actions: int = 5) -> list[
     return actions[:max_actions]
 
 
+def operator_digest(report: dict[str, Any], *, limit: int = 3) -> str:
+    """#452: at most three decisions this week. Empty when the report is not ready."""
+    if not report.get("ready"):
+        return ""
+    actions = [str(a) for a in (report.get("next_actions") or []) if str(a).strip()][:limit]
+    if not actions:
+        return ""
+    channel = str(report.get("channel_id") or "this channel")
+    lines = [f"This week's three decisions ({channel}):", ""]
+    lines.extend(f"{i}. {action}" for i, action in enumerate(actions, 1))
+    return "\n".join(lines)
+
+
+def write_operator_digest(channel_id: str, report: dict[str, Any]) -> Path | None:
+    """Land the digest in the vault. Does not call YouTube."""
+    draft = operator_digest(report)
+    if not draft:
+        return None
+    from core.vault_dossiers import write_report_note
+
+    return write_report_note(channel_id, "digest", "Operator digest", draft, fenced=False)
+
+
 def community_post_draft(report: dict[str, Any]) -> str:
     """YouTube Community post text from this week's next actions. Never posted."""
     if not report.get("ready"):
@@ -257,6 +280,9 @@ def main(argv: list[str] | None = None) -> int:
         draft_path = write_community_post_draft(channel_id, report)
         if draft_path:
             print(f"  (community post draft: {draft_path})")
+        digest_path = write_operator_digest(channel_id, report)
+        if digest_path:
+            print(f"  (operator digest: {digest_path})")
     except Exception as exc:
         logger.debug("write_weekly_report_note skipped: %s", exc)
     return 0

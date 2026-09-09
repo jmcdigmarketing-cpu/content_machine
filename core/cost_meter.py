@@ -339,6 +339,16 @@ def format_standard_billed_line(
     )
 
 
+def free_mode_cost_proof(cost: dict[str, float] | None) -> str:
+    """#580: prove a Free/Piper run actually billed $0, or say that it did not."""
+    billed = dict(cost or {})
+    tts = float(billed.get("tts") or 0.0)
+    total = float(billed.get("total") or 0.0)
+    if tts <= 0.0 and total <= 0.0:
+        return "free-mode billed $0.0000 (tts $0.0000)"
+    return f"free-mode billed ${total:.4f} — not $0 (tts ${tts:.4f})"
+
+
 def format_cost_line(
     cost: dict[str, float] | None,
     *,

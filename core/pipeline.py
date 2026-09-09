@@ -778,6 +778,9 @@ def run_pipeline(
     result.features["cost"] = estimate_run_cost(
         script=result.script, signals=best_signals, rendered=False
     )
+    result.features["projected_cost"] = estimate_run_cost(
+        script=result.script, signals=best_signals, rendered=True
+    )
 
     if not proceed_video:
         result.aborted = True

@@ -35,13 +35,16 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `demonetization` | estimatedRevenue cliff vs channel baseline (missing is unmeasured) |
+| `desc-fold` | Dry-render the description above/below YouTube's Show more fold |
 | `diff-runs` | Compare grade/cost/ungrounded/disputed for two run ids |
+| `digest` | This week's three operator decisions, written to the vault |
 | `doctor` | One shot: free stack + feeds + oauth + quota + CUDA + RAM + secrets |
 | `dossier` | One run end-to-end: quality, cost, metrics, trace (--run-id required) |
 | `economics` | Per-video cost vs revenue -> contribution margin (Pillar 1) |
 | `end-card-preview` | Render the channel end card as a PNG still before a full encode (--path dest.png) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
+| `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |
@@ -86,6 +89,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
 | `review-room` | Stage 3 Qt review room (J/K/L + Approve; requires pip install -e ".[app]") |
 | `roadmap-index` | Counts per roadmap file and by size, read from the docs |
+| `rollback-publish` | Unlist a published video + correction description + dossier (dry-run default; --apply sends) |
 | `run-window` | Stage 2 Qt run window (requires pip install -e ".[app]") |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |
 | `seed` | Seed TapIn performance + publish history |

@@ -196,7 +196,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
+Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -211,8 +211,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
-Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
+Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
+Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -229,12 +229,14 @@ def build_ass_karaoke(
     secondary: str = "&H00FFFFFF",  # not-yet-spoken — white
     title_font: str | None = None,
     body_font: str | None = None,
+    anchor: str = "bottom",
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing)."""
     lines = group_into_lines(words, max_words)
     paired = title_font is not None or body_font is not None
     title = (title_font or font).replace(",", " ").strip() or font
     body = (body_font or font).replace(",", " ").strip() or font
+    alignment = 8 if str(anchor).strip().lower() == "top" else 2
     events: list[str] = []
     for index, line in enumerate(lines):
         start, end = _line_span(line)
@@ -251,8 +253,19 @@ def build_ass_karaoke(
         )
     if paired:
         header = _ASS_HEADER_PAIRED.format(
-            title_font=title, body_font=body, size=size, primary=primary, secondary=secondary
+            title_font=title,
+            body_font=body,
+            size=size,
+            primary=primary,
+            secondary=secondary,
+            alignment=alignment,
         )
     else:
-        header = _ASS_HEADER.format(font=font, size=size, primary=primary, secondary=secondary)
+        header = _ASS_HEADER.format(
+            font=font,
+            size=size,
+            primary=primary,
+            secondary=secondary,
+            alignment=alignment,
+        )
     return header + "\n".join(events) + "\n"

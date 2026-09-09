@@ -12,8 +12,9 @@ class TestWikipediaPageviews(unittest.TestCase):
 
     @patch("apis.wikipedia_pageviews_api.get_cached", return_value=None)
     @patch("apis.wikipedia_pageviews_api.set_cache")
+    @patch("apis.wikipedia_pageviews_api._fetch_last_revision", return_value=None)
     @patch("apis.wikipedia_pageviews_api._fetch_pageviews")
-    def test_spike_active(self, mock_fetch, _set_cache, _cached):
+    def test_spike_active(self, mock_fetch, _rev, _set_cache, _cached):
         mock_fetch.return_value = {
             "article": "Marvel_Rivals",
             "views": [100, 120, 130, 400, 500, 600, 620, 640],
@@ -25,8 +26,9 @@ class TestWikipediaPageviews(unittest.TestCase):
 
     @patch("apis.wikipedia_pageviews_api.get_cached", return_value=None)
     @patch("apis.wikipedia_pageviews_api.set_cache")
+    @patch("apis.wikipedia_pageviews_api._fetch_last_revision", return_value=None)
     @patch("apis.wikipedia_pageviews_api._fetch_pageviews", return_value=None)
-    def test_no_article_match(self, _fetch, _set_cache, _cached):
+    def test_no_article_match(self, _fetch, _rev, _set_cache, _cached):
         sig = get_wikipedia_pageviews_signal("xyznonexistent123")
         self.assertTrue(sig["connected"])
         self.assertFalse(sig["active"])

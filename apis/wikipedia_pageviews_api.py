@@ -78,6 +78,54 @@ def _fetch_pageviews(article: str) -> dict | None:
     return {"article": article, "views": views, "daily": items}
 
 
+def _fetch_last_revision(article: str) -> str | None:
+    """MediaWiki last-revision timestamp. Fail-open — this is a tripwire, not a fact."""
+    url = "https://en.wikipedia.org/w/api.php"
+    resp = requests.get(
+        url,
+        params={
+            "action": "query",
+            "format": "json",
+            "prop": "revisions",
+            "rvprop": "timestamp",
+            "rvlimit": 1,
+            "titles": article.replace("_", " "),
+        },
+        timeout=8,
+        headers={"User-Agent": "ContentMachine/1.0 (research signal)"},
+    )
+    if resp.status_code != 200:
+        return None
+    pages = ((resp.json() or {}).get("query") or {}).get("pages") or {}
+    for page in pages.values():
+        revs = page.get("revisions") or []
+        if revs:
+            stamp = revs[0].get("timestamp")
+            if stamp:
+                return str(stamp)
+    return None
+
+
+def wikipedia_tripwire_line(data: dict, *, now: datetime | None = None) -> str:
+    """Operator line when the article moved recently. Empty when there is no stamp."""
+    raw = str((data or {}).get("last_revision") or "").strip()
+    if not raw:
+        return ""
+    try:
+        stamp = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    age_hours = max(0.0, (current - stamp).total_seconds() / 3600.0)
+    article = str((data or {}).get("article") or "article")
+    when = f"{age_hours:.0f}h ago" if age_hours < 24 else f"{age_hours / 24.0:.0f}d ago"
+    return f"{article} edited {when}"
+
+
 def _spike_score(views: list[int]) -> tuple[float, str]:
     """Compare recent 3-day avg vs prior 7-day avg."""
     if len(views) < 5:
@@ -153,14 +201,25 @@ def get_wikipedia_pageviews_signal(topic: str) -> dict:
             return result
 
         active = best_score >= 20
+        data: dict = {"article": best_article, "views_recent": best["views"][-3:]}
+        detail = f"{best_article}: {best_detail}"
+        try:
+            revision = _fetch_last_revision(best_article)
+        except Exception:
+            revision = None
+        if revision:
+            data["last_revision"] = revision
+            trip = wikipedia_tripwire_line(data)
+            if trip:
+                detail = f"{detail}; {trip}"
         result = make_signal(
             connected=True,
             active=active,
             score=best_score,
             confidence=0.75 if active else 0.4,
             status=STATUS_OK if active else STATUS_INACTIVE,
-            status_detail=f"{best_article}: {best_detail}",
-            data={"article": best_article, "views_recent": best["views"][-3:]},
+            status_detail=detail,
+            data=data,
         )
         set_cache(cache_key, result, ttl_seconds=_TTL)
         return result

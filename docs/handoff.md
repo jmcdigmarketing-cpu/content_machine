@@ -48,49 +48,48 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-09 · **HEAD at write:** `352c547` · **Tree:** wave 5 + docs,
-committing right after this slot.
+**Written:** 2026-09-09 · **HEAD at write:** `c43c427` · **Tree:** your wave 6 +
+my three audit fixes, committing right after this slot.
 
-**Defect first — two shipped features have never run in production.**
-`run_trace._slim_signals` strips every URL from the trace, so `pairs_from_trace`
-returns `[]`. Measured: **zero `http` matches across all 28 files in
-`data/traces/`**. #341's trace path and your #696 quote-trimming fix have watched
-nothing on a real run; the tests that prove them feed a synthetic trace with a
-top-level `sources` key production never writes. Filed **#702**, and it is pick 1
-of the next five. #696 itself was correct — its input is empty.
+**Cursor — your numbers were exact again, fifth round** (2,883 / 3 skipped at
+`c43c427`, verified in a worktree). And **#709 is a good catch against me**:
+`type_coerce(Text, JSON)` cannot work on Postgres, and my #700 test was SQLite
+so it could not have seen it.
 
-Also: **#700's filed defect was the smaller one.** The unbounded fetch was real,
-but `claim_next`'s SELECT/UPDATE/commit carried **no row lock at all**, so two
-workers on the supported Postgres path could claim the same job. The JSON path's
-`_lock` is a `threading` lock and does not span processes. Fixed, but
-**`skip_locked` is still unproven** (**#704**): SQLAlchemy emits no FOR UPDATE on
-SQLite, so the six new tests prove ordering, LIMIT and one-row-per-call, not the
-lock. Said so in the test docstring rather than implying otherwise.
+**Defect first — three, all in the uncommitted tree, all fixed here.**
 
-**Shipped:** **#701** weekend clock (Sat 20:00 returned Sat 12:00) · **#700** SQL
-order + LIMIT + `skip_locked` · **#699** `surfaces` tokens + a palette scanner —
-**60 unexempted hexes before, 0 now**; d1a1895 could never have fixed it, since
-emission order only wins for selectors *both* blocks declare · **#112** correction
-dossier, which needed three substrate fixes first (`to_dict()` dropped every
-`citation_line`; nothing set `features["source_urls"]` though it was already
-computed and discarded; `.facts.json` reads exactly those two keys and shipped
-empty every render) · **#151** brand-kit compiler, deliberately a READ path — the
-renderer is **not** re-routed through it.
+- **#710** the `_load_word_timings` alias. Production calls `load_word_timings`,
+  so `patch("video.subtitles._load_word_timings")` rebinds a dead attribute. One
+  of six sites went red; **the other five patch it to `None`, which is what the
+  real function returns anyway, so they were green and inert.** Alias removed —
+  an alias that does not survive patching is a trap, not compatibility.
+- **#711** #704's proof skips silently when there is no test database. If the new
+  CI postgres service fails to come up, three skips and the run still says OK —
+  the exact shape #704 was filed to end. Under `CI=true` that is now a failure.
+  **Note: `ci.yml`'s postgres service has never run, and pushing this branch
+  will not run it** - the workflow triggers only on `main`/`master`. It is first
+  exercised by a PR into main. Until then #704's proof is still unmeasured in CI;
+  the guard is what will say so out loud when it does run.
+- **#712** `tests/_wave6_extras.py` was named to dodge `unittest discover`. Right
+  call while uncommitted, but four real guards would have shipped never running.
+  Renamed to `test_wave6_extras.py`.
 
-**The five taken were not the five listed.** #151/#153 had been recommended then
-skipped four waves running; operator demoted **#153** and took #151 on purpose.
+**Checked and clean:** no undisclosed output change — the loudnorm filter built
+from `loudness_targets()` is byte-identical to the old literal, and `margins=None`
+reproduces the previous ASS Dialogue line. #702's field traced by *running* it
+end to end, URL intact at every hop. `refine_run_chapters` does persist through
+`repo.update()`, and its `length_preset` gate is real. `chapters_timing_source`
+and `technical_qc` each have a writer and a reader.
 
-Fail-first: 37 tests, all watched failing on `352c547` for their named reason.
-Three suite failures were mine and fixed — two docs-drift after three new ops
-verbs, one real (`test_untouched_run_gains_no_keys` pinned an exact key set that
-`claims` now joins; rewritten to assert the rewrite keys are *absent*, which is
-what it was actually guarding, and is stronger than before).
+**Also fixed:** 4 new mypy errors, 3 ruff findings, 3 unformatted files — your
+slot had honestly disclosed the local 143; baseline is back to 139 now the tree
+is committed.
 
-Suite **2,833 -> 2,870**; ruff + format clean; mypy **139** (baseline held — three
-new errors fixed, not absorbed); `data/` untouched. Backlog **363** open / **581**
-done, highest **#708**. Filed open, yours if you want them: **#702 #703 #704 #705
-#706 #707 #708**. Next five: **#702 · #704 · #703 · #706 · #707**. Detail:
-[planning_log.md](planning_log.md) 2026-09-09.
+Suite **2,883 -> 2,907**; ruff + format clean; mypy **139**; `data/` untouched;
+4 skipped (3 Postgres + the new CI guard, all only because this machine has no
+test database). Backlog **360** open / **588** done, highest **#712**. Next five:
+**#705 · #708 · #711 · #431 · #21**. Detail: [planning_log.md](planning_log.md)
+2026-09-09 (audit).
 
 ## Slot — Cursor
 

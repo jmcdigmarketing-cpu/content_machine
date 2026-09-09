@@ -4,7 +4,46 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-09 (Cursor) #702 #704 #703 #706 #707
+## Last wave — review 5 (2026-09-09, Claude Code)
+
+Audited Cursor's `c43c427` (#702 #703 #704 #706 #707 #709) **and** the uncommitted
+tree it left behind (#153, technical QC, verified chapters, title/script check),
+then committed both. Suite **2,883 -> 2,907**, mypy **139** held, ruff clean.
+Backlog **360 open / 588 done**, highest **#712**.
+
+- **Cursor's numbers verified exact again — fifth round.** 2,883 OK / 3 skipped at
+  `c43c427`, measured in a throwaway worktree rather than trusted. So the defects
+  were in the unreported things, as usual.
+- **#709 is a real catch against my own wave.** `type_coerce(Text, JSON)["sort_key"]`
+  cannot work on Postgres (`->>` is json/jsonb-only). My #700 test was SQLite-backed
+  and structurally could not see it. That gap is exactly what #704 existed to close.
+- **#710 — a compatibility alias that silently broke every patch site.** Renaming
+  `_load_word_timings` -> `load_word_timings` left the old name as an alias;
+  production calls the new one, so patching the old rebinds a dead attribute. One
+  of six sites went red. **The other five patch it to `None`, which is what the
+  real function returns anyway — they passed while testing nothing.** Alias
+  removed, all sites repointed.
+- **#711 — the #704 proof skips silently.** If CI's new postgres service fails,
+  the three concurrency tests skip and the run still says OK. Under `CI=true` a
+  missing or non-`test` database URL is now a failure. Watched it go red before
+  keeping it. **The postgres service in `ci.yml` has never actually run, and
+  a push to this branch will not run it — the workflow triggers only on
+  `main`/`master`. A PR into main is what first exercises it.**
+- **#712 — `tests/_wave6_extras.py` dodged discovery by name** (its docstring said
+  so). Fine mid-wave, fatal on commit: four real guards would never have run.
+  Renamed.
+- **No undisclosed output change.** The loudnorm filter now comes from
+  `loudness_targets()` rather than a literal — compared the generated string to
+  the old one, byte-identical. `build_ass_karaoke`'s new `margins` defaults to 0
+  and reproduces the previous Dialogue line exactly.
+- **#702 traced by running it**, not reading: engine package -> `build_features`
+  -> `write_run_trace` -> the written trace file -> `pairs_from_trace`, URL intact
+  at every hop.
+
+**Next five:** **#705 · #708 · #711** (confirm the CI postgres service really
+runs) · **#431 · #21**.
+
+## Previous wave — 2026-09-09 (Cursor) #702 #704 #703 #706 #707
 
 Closed the inert/unproven leftovers from the defect wave, plus **#709** found
 by running #704 on real Postgres. Structured `source_urls` on the trace;

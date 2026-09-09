@@ -1301,6 +1301,19 @@ def generate_content_package(
             len(title_warnings),
             "; ".join(title_warnings),
         )
+    from core.youtube_meta import check_title_script_consistency
+
+    title_script_check = check_title_script_consistency(title, script, topic=topic)
+    _tsc_warnings = title_script_check.get("warnings")
+    title_script_warnings = list(_tsc_warnings) if isinstance(_tsc_warnings, list) else []
+    if title_script_warnings:
+        logger.warning(
+            "Title/script check flagged %d claim(s): %s",
+            len(title_script_warnings),
+            "; ".join(str(w) for w in title_script_warnings),
+        )
+    elif title_script_check.get("status") == "unavailable":
+        logger.warning("Title/script check unavailable; the public title was not compared")
 
     # Public overlay metadata: keep only grounded display labels. Source fact lines
     # stay inside this generation call and are never persisted as lower-third data.
@@ -1337,6 +1350,7 @@ def generate_content_package(
     return {
         "title": title,
         "title_warnings": title_warnings,
+        "title_script_check": title_script_check,
         "script": script,
         "description": apply_description_extras(
             payload.get("description") or "",

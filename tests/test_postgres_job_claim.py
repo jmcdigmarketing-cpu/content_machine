@@ -174,5 +174,25 @@ class TestPostgresAtomicClaim(unittest.TestCase):
         self.assertIsNone(claimed)
 
 
+class TestTheProofActuallyRunsInCI(unittest.TestCase):
+    """#704's whole point is measuring SKIP LOCKED on real Postgres. If the CI
+    service fails to come up, or the env var is renamed, `skipUnless` above turns
+    that proof into three silent skips and the run still reports OK -- green
+    while proving nothing, which is the shape this repo keeps rediscovering.
+
+    GitHub Actions sets CI=true. There, a missing or unsafe test URL is a failure,
+    not a skip. Locally it stays a skip, so a dev without Postgres is unaffected.
+    """
+
+    def test_ci_must_not_silently_skip_the_postgres_proof(self):
+        if os.getenv("CI", "").strip().lower() not in ("1", "true", "yes"):
+            self.skipTest("not CI; the Postgres proof is opt-in locally")
+        self.assertTrue(
+            _safe_test_url(),
+            "CONTENT_TEST_DATABASE_URL is missing or not a *test* PostgreSQL "
+            f"database (got {TEST_URL!r}); #704's SKIP LOCKED proof did not run",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

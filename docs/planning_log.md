@@ -78,6 +78,87 @@ the tree (#702/#704/etc.) were not finished or committed.
 
 ---
 
+## 2026-09-09 (Claude Code) - audit of Cursor's wave 6, and its uncommitted tree
+
+**Prompt, verbatim:** "see the work done by cursor and audit, debug, commit the
+result and push"
+
+**Scope.** Cursor's commit `c43c427` (#702 #703 #704 #706 #707 #709) plus the
+uncommitted tree it deliberately left behind: #153 caption choreography, technical
+QC, verified chapters, and the title/script check.
+
+**Reported numbers verified exact, fifth round running.** Suite **2,883 OK,
+3 skipped** at `c43c427`, measured in a throwaway worktree rather than by trusting
+the slot. `data/` untouched. So, as the skill says, the defects are in the
+unreported things.
+
+**#709 is a genuine catch against my own wave.** `type_coerce(Job.payload_json,
+JSON)["sort_key"]` cannot work on Postgres - `->>` is json/jsonb only and
+`payload_json` is Text. My #700 test was SQLite-backed and structurally could not
+see it. Cursor's `_payload_sort_key(bind)` dialect-branches to a JSONB cast. This
+is exactly the gap #704 was filed for, found by actually running Postgres.
+
+**Three defects found in the audit, all fixed here**
+
+1. **#710 - a compatibility alias that silently broke every patch site.** The
+   rename `_load_word_timings` -> `load_word_timings` left the old name as an
+   alias. Production calls the new name, so
+   `patch("video.subtitles._load_word_timings", ...)` rebinds a dead attribute.
+   One of six patch sites in `tests/test_word_timing_seam.py` went red. **The
+   other five were worse:** they patch it to `None`, and the real function also
+   returns `None` with no sidecar, so they passed while testing nothing - the
+   "passes for an environmental reason" shape. Alias removed, all sites
+   repointed. The red one now returns the SIDECAR value, which is the proof the
+   patches are live again.
+2. **#711 - the #704 proof skips silently.** Its three concurrency tests are
+   gated on `CONTENT_TEST_DATABASE_URL`. If CI's new postgres service fails to
+   come up, they skip, `unittest` reports OK, and the SKIP LOCKED guarantee is
+   unproven again with nothing to say so. Added a guard: under `CI=true`, a
+   missing or non-`test` URL is a failure, not a skip. Watched it fail with
+   `CI=true CONTENT_TEST_DATABASE_URL=` before keeping it. Locally it still skips.
+   **Caveat measured afterwards:** `ci.yml` triggers only on `main`/`master`, so
+   pushing the consolidate branch does not run the new postgres service at all.
+   #704 stays unmeasured in CI until a PR into main.
+3. **#712 - `tests/_wave6_extras.py` was named to dodge discovery.** Its own
+   docstring said so. Sensible while uncommitted; fatal on commit, since
+   `unittest discover` matches `test*.py` and would never collect the four guards
+   inside it. Renamed.
+
+**Checked and clean**
+
+- **No undisclosed change to finished output.** `build_render_ffmpeg_command`
+  now builds the loudnorm filter from `technical_qc.loudness_targets()` instead
+  of a hardcoded string. Compared the generated string against the old literal:
+  `loudnorm=I=-14:TP=-1.5:LRA=11`, byte-identical at default env. The new
+  `margins` parameter on `build_ass_karaoke` defaults to 0, which reproduces the
+  previous `,0,0,0,,` Dialogue line exactly.
+- **#702's field traced end to end by running it**, not by reading:
+  engine package -> `build_features` -> `write_run_trace` -> the written
+  `999.json` -> `pairs_from_trace`, and the URL survives every hop.
+- **`refine_run_chapters` runs after `_finalize_run`**, which looked like it
+  would leave the persisted row disagreeing with `result.description`. It does
+  not: it calls `repo.update()` with both the description and features_json. Its
+  gate reads `features["length_preset"]`, which `build_features` really does set
+  to the preset choice - verified by calling it.
+- `chapters_timing_source` and `technical_qc` both have a real writer and a real
+  reader (`run_ledger.render_dossier`).
+- `check_title_script_consistency` persists `not_evaluated` / `unavailable`
+  explicitly rather than letting an absent check look like a pass, which is the
+  four-state shape the GPT-6 review asked for.
+
+**Also fixed while here:** 4 new mypy errors in the uncommitted tree
+(`technical_qc` width/height, `chapters` float narrowing, `content_engine`
+`dict[str, object].get`), 3 ruff findings and 3 unformatted files. Cursor's slot
+had honestly disclosed the local 143; the baseline holds at 139 now that the tree
+is being committed.
+
+**Proof.** ruff + format clean (706 files). Suite **2,883 -> 2,907**, 0 failures,
+4 skipped (3 Postgres, 1 the new CI guard, all skipped only because this machine
+has no test database). mypy **139**, baseline held. `data/` untouched. Backlog
+**357 open / 588 done -> 360 open / 588 done**, highest **#712**.
+
+---
+
 ## 2026-09-09 (Claude Code) - four defects plus the brand-kit compiler
 
 **Prompt, verbatim:** "next 5 tasks, then debug, then brainstorm 5 new, then commit"

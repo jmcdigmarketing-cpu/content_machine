@@ -114,8 +114,8 @@ class TestWordTimedCaptions(unittest.TestCase):
         self.assertTrue(path.endswith(".srt"))  # plain proportional SRT
 
     def test_load_word_timings_missing(self):
-        self.assertIsNone(subtitles._load_word_timings(None))
-        self.assertIsNone(subtitles._load_word_timings(self.audio + "x"))
+        self.assertIsNone(subtitles.load_word_timings(None))
+        self.assertIsNone(subtitles.load_word_timings(self.audio + "x"))
 
 
 class TestWhisperAlignedCaptions(unittest.TestCase):

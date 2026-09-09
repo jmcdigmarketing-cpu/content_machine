@@ -162,8 +162,9 @@ The aesthetics work, and the reason Qt was chosen.
 
 - **#152** thumbnail composition canvas — mechanical slice shipped 2026-09-08
   (`QGraphicsView` + last thumb + overlay). Drag/snapping shipped as **#692**.
-- **#153** caption choreography timeline — keyframes over real word timings, which
-  now exist on both the ElevenLabs and Edge TTS paths
+- **#153** caption choreography timeline — shipped 2026-09-09: keyframes over
+  real word timings (ops captions / ops caption-timeline / --captions).
+  Sidecar `<audio>.captions.json`; next karaoke burn applies timing and MarginV.
 - **#151** brand-kit compiler — fonts, palette, sting, handle, banner compiled to
   render assets *and* GUI chrome from the Stage 0 tokens
 

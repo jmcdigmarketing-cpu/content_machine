@@ -205,3 +205,48 @@ def lint_title_grounding(
     return [
         f"title claim not backed by the facts: {c.claim[:140]}" for c in verification.unsupported
     ]
+
+
+def check_title_script_consistency(
+    title: str,
+    script: str,
+    *,
+    topic: str = "",
+) -> dict[str, object]:
+    """Advisory relational check between the public title and final script (#549).
+
+    This is separate from ``lint_title_grounding``: a title can use names found
+    in the fact corpus while assigning the action differently from the script.
+    ``unavailable`` is persisted explicitly rather than looking like a pass.
+    """
+    if title_grounding_mode() == "off" or not title.strip() or not script.strip():
+        return {
+            "status": "not_evaluated",
+            "passed": False,
+            "warnings": [],
+            "total": 0,
+        }
+    try:
+        from core.claim_verifier import verify_claims
+
+        verification = verify_claims(title, script, topic=topic)
+    except Exception as exc:
+        logger.debug("title/script check failed: %s", exc)
+        verification = None
+    if verification is None:
+        return {
+            "status": "unavailable",
+            "passed": False,
+            "warnings": [],
+            "total": 0,
+        }
+    warnings = [
+        f"title contradicts or is not supported by the final script: {claim.claim[:140]}"
+        for claim in verification.unsupported
+    ]
+    return {
+        "status": "failed" if warnings else "passed",
+        "passed": not warnings,
+        "warnings": warnings,
+        "total": verification.total,
+    }

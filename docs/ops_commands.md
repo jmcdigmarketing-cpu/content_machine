@@ -23,6 +23,8 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `brand-panel` | Compiled brand kit per channel (requires pip install -e ".[app]") |
 | `calibration` | Pre-publish grade vs realized engaged-rate (Pillar 2) |
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
+| `caption-timeline` | Stage 4 Qt caption choreography (karaoke vs SRT; requires pip install -e ".[app]") |
+| `captions` | Print karaoke vs SRT cues from a .words.json sidecar (--path mp3) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
 | `check-youtube` | Verify YouTube OAuth + upload env |
 | `coach` | Daily creator coach — ranked ideas + why, post time, length, patterns |
@@ -100,6 +102,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |
 | `sync-metrics` | Pull YouTube Analytics into performance memory |
 | `tapology-test` | Scrape Tapology fight card for a topic string |
+| `technical-qc` | Inspect a finished video for stream, frame and loudness defects |
 | `test` | Run unit tests |
 | `title-card` | Write a 2-line title-card still (--path dest.png, --topic text) |
 | `title-patterns` | Title patterns that engage (A/B variant loop leaderboard) |

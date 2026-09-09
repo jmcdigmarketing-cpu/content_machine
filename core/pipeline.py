@@ -805,6 +805,15 @@ def run_pipeline(
     _finalize_run(
         channel_id=channel_id, input_topic=input_topic, result=result, discovery=discovery
     )
+    if result.run_id and result.mp3_path and os.path.isfile(result.mp3_path + ".words.json"):
+        try:
+            from core.chapters import refine_run_chapters
+
+            refined = refine_run_chapters(result.run_id, result.script, result.mp3_path)
+            if refined is not None:
+                result.description = refined
+        except Exception as exc:
+            logger.debug("verified chapters skipped for run %s: %s", result.run_id, exc)
     return result
 
 
@@ -856,6 +865,14 @@ def run_media_only(
     t_tts = time.perf_counter()
     generate_audio(script, mp3_path, channel_id=channel_id)
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
+    if content_run_id and os.path.isfile(mp3_path + ".words.json"):
+        try:
+            from core.chapters import refine_run_chapters
+
+            if refine_run_chapters(content_run_id, script, mp3_path) is not None:
+                progress.note("Extended chapters updated from real word timings")
+        except Exception as exc:
+            logger.debug("verified chapters skipped for run %s: %s", content_run_id, exc)
     try:
         from core.voice_consistency import voice_mix_warning
 
@@ -892,6 +909,21 @@ def run_media_only(
         render_preset=render_preset,
         lower_thirds=lower_thirds,
     )
+    technical_qc_data: dict[str, Any] = {}
+    if os.path.isfile(mp4_path):
+        try:
+            from core.technical_qc import inspect_technical_qc, render_technical_qc
+
+            expected_size = (480, 854) if render_preset == "draft" else (1080, 1920)
+            technical_qc = inspect_technical_qc(mp4_path, expected_size=expected_size)
+            technical_qc_data = technical_qc.to_dict()
+            qc_line = render_technical_qc(technical_qc)
+            progress.note(qc_line)
+            if not technical_qc.passed:
+                logger.warning("%s", qc_line)
+        except Exception as exc:
+            # The render already exists, but the acceptance guarantee was lost.
+            logger.warning("technical QC skipped for %s: %s", mp4_path, exc)
     try:
         from core.first_frame import inspect_video
         from core.first_frame import render_check as first_frame_render_check
@@ -1062,6 +1094,7 @@ def run_media_only(
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,
                     "thumbnail_candidates": thumbnail_candidates,
+                    **({"technical_qc": technical_qc_data} if technical_qc_data else {}),
                 },
             )
             update_trace(
@@ -1073,6 +1106,7 @@ def run_media_only(
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,
                     "thumbnail_candidates": thumbnail_candidates,
+                    **({"technical_qc": technical_qc_data} if technical_qc_data else {}),
                     **(
                         {"ffmpeg_command": ffmpeg_commands["primary"]}
                         if ffmpeg_commands.get("primary")

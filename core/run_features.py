@@ -151,6 +151,10 @@ def build_features(
     }
     if vault_relevance_audit is not None:
         features["vault_relevance"] = list(vault_relevance_audit)
+    if str(length_choice) == "4":
+        features["chapters_timing_source"] = "estimated"
+    if isinstance(pkg.get("title_script_check"), dict):
+        features["title_script_check"] = dict(pkg["title_script_check"])
     return features
 
 

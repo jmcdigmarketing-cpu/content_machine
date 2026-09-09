@@ -207,6 +207,24 @@ def render_dossier(run_id: int) -> str:
         feats = ", ".join(f"{k}={features[k]}" for k in keep if features.get(k) not in (None, ""))
         if feats:
             lines.append(f"Features: {feats}")
+        if features.get("chapters_timing_source"):
+            lines.append(f"Chapters: {features['chapters_timing_source']} timing")
+        technical = features.get("technical_qc")
+        if isinstance(technical, dict):
+            passed = bool(technical.get("passed"))
+            status = "PASS" if passed else str(technical.get("status") or "ADVISORY").upper()
+            lines.append(f"Technical QC: {status}")
+            for issue in technical.get("issues") or []:
+                lines.append(f"  {issue}")
+            measured = []
+            if technical.get("integrated_lufs") is not None:
+                measured.append(f"{float(technical['integrated_lufs']):.1f} LUFS")
+            if technical.get("true_peak_dbfs") is not None:
+                measured.append(f"peak {float(technical['true_peak_dbfs']):.1f} dBFS")
+            if technical.get("loudness_range_lu") is not None:
+                measured.append(f"LRA {float(technical['loudness_range_lu']):.1f} LU")
+            if measured:
+                lines.append("  " + ", ".join(measured))
 
     phases = _phase_times(timings)
     if phases:

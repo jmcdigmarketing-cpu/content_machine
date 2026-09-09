@@ -229,6 +229,7 @@ def build_ass_karaoke(
     secondary: str = "&H00FFFFFF",  # not-yet-spoken — white
     title_font: str | None = None,
     body_font: str | None = None,
+    margins: list[int | None] | None = None,
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing)."""
     lines = group_into_lines(words, max_words)
@@ -246,8 +247,13 @@ def build_ass_karaoke(
             text = (w["word"] or "").replace("{", "(").replace("}", ")")
             parts.append(f"{{\\k{dur_cs}}}{text}")
         style = "Title" if paired and index == 0 else ("Body" if paired else "Default")
+        margin = 0
+        if margins and index < len(margins):
+            override = margins[index]
+            if override is not None:
+                margin = int(override)
         events.append(
-            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,0,,{' '.join(parts)}"
+            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,{margin},,{' '.join(parts)}"
         )
     if paired:
         header = _ASS_HEADER_PAIRED.format(

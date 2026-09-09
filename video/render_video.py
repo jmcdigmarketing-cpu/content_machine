@@ -70,6 +70,16 @@ def _loudnorm_enabled() -> bool:
     return os.getenv("LUFS_NORMALIZE", "").strip().lower() in ("1", "true", "yes", "on")
 
 
+def _loudnorm_filter() -> str:
+    from core.technical_qc import loudness_targets
+
+    targets = loudness_targets()
+    return (
+        f"loudnorm=I={targets['integrated']:g}:TP={targets['true_peak']:g}:"
+        f"LRA={targets['range_target']:g}"
+    )
+
+
 def _probe_video_duration(path: str) -> float | None:
     try:
         result = subprocess.run(
@@ -251,10 +261,10 @@ def build_render_ffmpeg_command(
         )
         audio_map = "[aout]"
         if _loudnorm_enabled():
-            filter_complex += ";[aout]loudnorm=I=-14:TP=-1.5:LRA=11[anorm]"
+            filter_complex += f";[aout]{_loudnorm_filter()}[anorm]"
             audio_map = "[anorm]"
     elif _loudnorm_enabled():
-        filter_complex += ";[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[aout]"
+        filter_complex += f";[1:a]{_loudnorm_filter()}[aout]"
         audio_map = "[aout]"
     cmd += [
         "-t",

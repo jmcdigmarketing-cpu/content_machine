@@ -11,6 +11,123 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-09 (Claude Code) - four defects plus the brand-kit compiler
+
+**Prompt, verbatim:** "next 5 tasks, then debug, then brainstorm 5 new, then commit"
+
+**What was picked, and why it differs from the recommendation.** The roadmap said
+**#699 - #684 - #112 - #151 - #153**. Verifying it against this file (the
+`next-five` skill's step 2) showed the list had drifted from what actually
+happens: **#151 and #153 had been listed and then skipped in four consecutive
+waves** (entries at lines 38, 82, 106, 148 of this log), each time explicitly so
+an `[L]` could not strand the wave. Meanwhile **#700** and **#701**, filed during
+review 4, never reached the list at all despite both sitting on the 2026-09-08
+GPT-6 review's "close correctness risks first" set.
+
+Operator chose: **#701 - #700 - #699 - #112 - #151**, with #684 dropped, #153
+demoted with the reason recorded, and #151 taken deliberately as the one `[L]` so
+the fifth skip did not happen by default. Ordered cheapest-first so that if
+anything stranded it would be the aesthetic item, not a correctness one.
+
+**Shipped 1..5**
+
+1. **#701** `resolve_relative_clock("this weekend")` resolved into the past.
+   `(5 - weekday()) % 7` is 0 on a Saturday. Measured on unmodified 352c547:
+   Saturday 20:00 ET returned Saturday 12:00. Now rolls forward to the Sunday -
+   still this weekend - and takes the next Saturday only after Sunday noon.
+   Operator-visible, not inert: #695 gave `clock_weekend` a reader at
+   `core/run_ledger.py:172`.
+2. **#700** `PostgresJobRepository.claim_next` loaded every pending row per claim.
+   Now orders in SQL with `type_coerce(..., JSON)` and takes `.limit(1)
+   .with_for_update(skip_locked=True)`. **The filed defect was the smaller one:**
+   reading `storage/repositories/jobs.py:251` showed the SELECT/UPDATE/commit
+   carried no row lock at all, so two workers on the supported path could claim
+   the same job. The JSON dev path has a `threading` lock, which does not span
+   processes; Postgres had nothing.
+3. **#699** `_CSS` regrowing a second hex palette. d1a1895 only swapped emission
+   order, which wins the cascade **solely for selectors both blocks declare** -
+   and `themed_css` never declares `.phone-bezel` / `.yt-mock` / `.cheat-sheet`,
+   so ordering could never have reached them. There was also **no token role for
+   the chrome greys**, so "use a token" was not previously possible.
+4. **#112** correction dossier. See below - it was far larger than `[M]`.
+5. **#151** brand-kit compiler. `compile_kit()` joins three unjoined config
+   sources with per-field provenance; `channel-go-live` reports kit status
+   instead of `os.path.isfile` over two filenames.
+
+**Findings, with file:line**
+
+- `core/run_trace.py:84-95` - `_slim_signals` strips every URL, so
+  `pairs_from_trace` returns `[]` in production. Measured: zero `http` matches
+  across all 28 files in `data/traces/`. **#341 and #696 have never watched
+  anything on a real run**, and the tests proving them feed a synthetic trace
+  with a top-level `sources` key production never writes. Filed **#702**.
+- `core/claim_verifier.py:83-101` - `to_dict()` dropped the claim list and every
+  `citation_line`, the exact field naming which source backed which claim.
+- `core/content_engine.py:362` - `collect_source_urls` was already computed as
+  `diversity_urls`, used only for single-outlet demotion, then discarded.
+- `core/render_artifacts.py:40,47-51` - `<stem>.facts.json` reads those two keys,
+  so every render shipped empty claims and sources. Its test
+  (`tests/test_wave23_wraps.py:96-121`) hand-builds both missing keys, which is
+  why this was green over an empty artifact for weeks.
+- `core/pipeline.py:481` - hardcoded `quality={}`, so `ungrounded_count` was
+  `None` in every sidecar. It cannot pass anything else: `build_quality` needs a
+  run_id that does not exist until after the sidecar runs. Derived in
+  `write_render_sidecars` instead, where the field is owned.
+- `tests/test_stage3_queue.py:319` - the clock guard pins `now` to a Wednesday and
+  asserts only `weekday() == 5`, which the buggy code satisfied every day.
+- `tests/test_stage2_html.py:82` - the cascade guard tests one hardcoded sentinel
+  (`#111318`) inside `if at_legacy != -1`, so it passes vacuously if that sentinel
+  moves. Rebound to the scanner.
+- `assets/branding/` contains only `moneywise/`. The primary channel has no logo
+  or banner on disk. Filed **#708**.
+- Found by running `ops brand-kit` for real: `caption_skin` / `color_grade` /
+  `hook_motion` are JSON objects, and `str(dict)` dumped the whole repr into the
+  operator's console; the header em-dash mojibaked on the cp1252 console.
+- Found by running `ops corrections` for real: `claim_verification` is `null` on
+  every pre-verifier run, so `dict.get("claims")` returned `None` and the
+  comprehension raised.
+
+**What was deliberately not done**
+
+- **The renderer was not re-routed through the brand kit.** #151 is a read path
+  whose values are pinned field-by-field against today's accessors. A compiler
+  that quietly restyles finished video is the "undisclosed change to finished
+  output" defect, not a fix.
+- **The vanished-claim signal was not shipped** (#705). Only explicit retraction
+  language files a dossier; "the claim text no longer appears on the page" fires
+  on ordinary rewording and every dossier would be noise.
+- **`skip_locked` is not proven** (#704). SQLAlchemy emits no FOR UPDATE on
+  SQLite, so the six new Postgres-path tests prove ordering, LIMIT and
+  one-row-per-call, and not the lock. Stated in the test docstring rather than
+  implied.
+- **Nothing published is ever auto-altered.** The dossier is written and the
+  operator decides; `record_negative` gates only future scripts. Guarded by a test
+  that drives a real reversal and asserts the YouTube client is never constructed.
+- #684 was not built, but its feasibility was overturned - see #706 / #707.
+
+**Audit.** 5 items shipped, 37 behavioural tests added, **all observed failing
+first** on unmodified 352c547 for their named reason (60 unexempted hexes; SQL
+with no LIMIT; Saturday 20:00 -> Saturday 12:00; `'claims' not found`; empty
+sidecar lists; `ungrounded_count` None; `ModuleNotFoundError` for both new
+modules). Three suite failures were caused by this wave and fixed: two docs-drift
+(`ops command-ref` regenerated after three new verbs) and one real one -
+`test_untouched_run_gains_no_keys` pinned an exact key set that `claims` now joins;
+it was updated to assert the rewrite-provenance keys are absent, which is what the
+guard was actually for, and is now stronger than the exact-set match it replaced.
+Every new symbol was grepped for a production caller: `compile_kit` and
+`kit_status_line` from `channel_go_live`, `surface_hex` from `chrome`,
+`scan_published_for_corrections` from `overnight` and `ops corrections`,
+`BrandWindow` from `desktop/launch`. Operator output run for real and read:
+`ops brand-kit`, `ops channel-go-live`, `ops corrections`. No new WARNING on a
+healthy run. `git status --short data/` empty.
+
+**Proof.** ruff check + ruff format clean (696 files). Suite **2,833 -> 2,870**,
+0 failures. mypy **139**, exactly the recorded baseline - three new errors in
+`correction_dossier.py` were fixed rather than absorbed. Backlog **361 open / 576
+done -> 363 open / 581 done**, highest **#701 -> #708**.
+
+---
+
 ## 2026-09-08 — GPT-6 second review archived
 
 Full text: [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md).

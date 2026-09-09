@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import JSON, func, select, type_coerce
 
 from storage.db import get_session
 from storage.models import Job
@@ -259,15 +259,19 @@ class PostgresJobRepository(JobRepository):
             )
             if job_type:
                 q = q.where(Job.job_type == job_type)
-            rows = list(session.scalars(q).all())
-            if not rows:
+            # #700. This used to load EVERY pending row per claim and sort in
+            # Python. Order in SQL and take one row, under a lock so two workers
+            # cannot claim the same job. `_claim_sort_tuple`'s rule -- sort_key
+            # when present, else id -- has to be reproduced here exactly, or
+            # drag-reorder (#148) and the SQL disagree about who is next.
+            sort_key = type_coerce(Job.payload_json, JSON)["sort_key"].as_integer()
+            row = session.scalars(
+                q.order_by(func.coalesce(sort_key, Job.id), Job.id)
+                .limit(1)
+                .with_for_update(skip_locked=True)
+            ).first()
+            if row is None:
                 return None
-            rows.sort(
-                key=lambda item: _claim_sort_tuple(
-                    {"id": item.id, "payload_json": item.payload_json or "{}"}
-                )
-            )
-            row = rows[0]
             row.status = JOB_RUNNING
             row.attempts = (row.attempts or 0) + 1
             session.commit()

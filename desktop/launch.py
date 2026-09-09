@@ -9,6 +9,8 @@ from core.ask_bridge import missing_pyside_message
 
 def desktop_mode(argv: list[str] | None = None) -> str:
     args = argv if argv is not None else sys.argv[1:]
+    if "--brand" in args:
+        return "brand"
     if "--studio" in args:
         return "studio"
     if "--queue" in args:
@@ -23,6 +25,8 @@ def launch(
     review: bool | None = None,
     studio: bool | None = None,
     queue: bool | None = None,
+    brand: bool | None = None,
+    channel_id: str = "tapin",
 ) -> int:
     try:
         from PySide6.QtCore import Qt
@@ -34,7 +38,9 @@ def launch(
     QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
-    if studio:
+    if brand:
+        mode = "brand"
+    elif studio:
         mode = "studio"
     elif queue:
         mode = "queue"
@@ -49,6 +55,10 @@ def launch(
         from desktop.studio import StudioWindow
 
         window = StudioWindow(context=gather_booth_context())
+    elif mode == "brand":
+        from desktop.brand import BrandWindow
+
+        window = BrandWindow(channel_id=channel_id)
     elif mode == "queue":
         from desktop.queue import QueueWindow
 

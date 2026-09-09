@@ -1319,6 +1319,21 @@ def generate_content_package(
         logger.debug("persona lint skipped: %s", exc)
         persona_hits = []
 
+    from core.description_extras import collect_source_urls as _collect_source_urls
+    from core.source_diversity import urls_from_text as _urls_from_text
+
+    try:
+        resolved_source_urls = _collect_source_urls(
+            channel_id=channel_id or "",
+            topic=topic,
+            key_facts=clean_key_facts,
+            extra_urls=_urls_from_text(signal_facts),
+            relevance_corpus=relevance_corpus or signal_facts or "",
+        )
+    except Exception as exc:  # local resolver, but never fail a run over a sidecar
+        logger.warning("source_urls unresolved, sidecar will be sourceless: %s", exc)
+        resolved_source_urls = list(source_urls or [])
+
     return {
         "title": title,
         "title_warnings": title_warnings,
@@ -1336,6 +1351,11 @@ def generate_content_package(
             duration_s=count_spoken_words(script) / max(WORDS_PER_SECOND, 0.1),
         ),
         "tags": tags,
+        # #112. `write_render_sidecars` reads this key, and nothing had ever
+        # written it -- so every `<stem>.facts.json` shipped `"sources": []`.
+        # Same resolver `apply_description_extras` uses just below, so the
+        # sidecar and the description's Sources block cannot disagree.
+        "source_urls": resolved_source_urls,
         "prompt_version": current_prompt_version(),
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),

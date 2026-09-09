@@ -13,6 +13,7 @@ from core.design_tokens import (
     look_grain,
     look_vignette,
     role_hex,
+    surface_hex,
 )
 
 
@@ -217,9 +218,30 @@ def themed_css(
         moneywise_type = (
             'body.channel-moneywise header h1 { font-family: Georgia, "Times New Roman", serif; }\n'
         )
+    # #699. The legacy `_CSS` block consumes these as var(--name). They are
+    # emitted here, unconditionally, because `themed_page` always concatenates
+    # this block -- `--header-border` by contrast is per-channel and stays an
+    # inline body style. Values come from design_tokens.json, so the legacy
+    # block can no longer carry a palette of its own.
+    surfaces = "".join(
+        f" --{name.replace('_', '-')}: {surface_hex(name)};"
+        for name in (
+            "bg",
+            "surface",
+            "sunken",
+            "bezel",
+            "border",
+            "ink",
+            "ink_dim",
+            "ink_faint",
+            "link",
+            "danger_bg",
+            "accent_line",
+        )
+    )
     return f"""
 /* design_tokens.json */
-:root {{ color-scheme: dark; }}
+:root {{ color-scheme: dark;{surfaces} --ok: {success}; --fail: {error}; --warn: {warn}; }}
 html, body {{ margin: 0; padding: 0; background: {bg}; color: {fg};
   font-family: "Segoe UI", system-ui, sans-serif; font-size: {body}px; line-height: 1.45; }}
 .skip {{ position: absolute; left: -999px; top: auto; width: 1px; height: 1px; overflow: hidden; }}

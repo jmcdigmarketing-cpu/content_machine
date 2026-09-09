@@ -107,21 +107,20 @@ def inspect_channel(channel_id: str) -> GoLiveReport:
         )
     )
 
-    kit = _brand_kit_paths(cid)
-    report.checks.append(
-        GoLiveCheck(
-            "brand_kit",
-            bool(kit),
-            ", ".join(kit) if kit else f"missing assets/branding/{cid}/logo|banner",
-        )
-    )
+    # #151. Was `os.path.isfile` over two filenames, which is why the backlog
+    # said this "checks files exist; it does not apply a kit". The compiler
+    # resolves palette + channel config + assets together and says which source
+    # each field came from, so a partial kit reads as partial.
+    from core.brand_kit import compile_kit, kit_status_line
 
-    banner_files = [n for n in kit if n.startswith("banner.")]
+    kit = compile_kit(cid)
+    report.checks.append(GoLiveCheck("brand_kit", kit.complete, kit_status_line(kit)))
+
     report.checks.append(
         GoLiveCheck(
             "banner",
-            bool(banner_files),
-            ", ".join(banner_files) if banner_files else f"missing assets/branding/{cid}/banner",
+            bool(kit.banner_path),
+            kit.banner_path or f"missing assets/branding/{cid}/banner",
         )
     )
 

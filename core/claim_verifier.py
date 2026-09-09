@@ -87,6 +87,18 @@ class ClaimVerification:
             "supported": self.supported_count,
             "support_rate": self.support_rate,
             "unsupported": [c.claim[:200] for c in self.unsupported[:_MAX_UNSUPPORTED_KEPT]],
+            # #112. The claim->source edge. Without `citation_line` persisted, a
+            # post-publish reversal can say a source moved but never which claim
+            # it backed, and `<stem>.facts.json` -- which reads exactly this key
+            # -- shipped an empty list on every render.
+            "claims": [
+                {
+                    "claim": c.claim[:200],
+                    "supported": bool(c.supported),
+                    "citation_line": (c.citation_line or "")[:200],
+                }
+                for c in self.claims[:_MAX_CLAIMS]
+            ],
         }
         # Only present on a rewritten run, so existing readers see no change.
         if self.rewritten:

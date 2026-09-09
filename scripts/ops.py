@@ -1011,6 +1011,25 @@ def cmd_queue_panel(_args: argparse.Namespace) -> int:
     return launch(queue=True)
 
 
+@_register(
+    "brand-panel",
+    'Compiled brand kit per channel (requires pip install -e ".[app]")',
+)
+def cmd_brand_panel(args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(brand=True, channel_id=getattr(args, "channel", None) or "tapin")
+
+
+@_register("brand-kit", "Print the compiled brand kit and what is missing")
+def cmd_brand_kit(args: argparse.Namespace) -> int:
+    from core.brand_kit import compile_kit
+
+    kit = compile_kit(getattr(args, "channel", None) or "tapin")
+    print(kit.render())
+    return 0 if kit.complete else 1
+
+
 @_register("why-slow", "Rank last-run phase timings (slowest first)")
 def cmd_why_slow(args: argparse.Namespace) -> int:
     from core.review_booth import last_trace
@@ -1044,6 +1063,28 @@ def cmd_retraction_watch(args: argparse.Namespace) -> int:
         print(f"checked {len(pairs)} URL(s); no retraction hits")
         return 0
     print("\n".join(hits))
+    return 0
+
+
+@_register("corrections", "Re-check published videos' sources and file a correction dossier")
+def cmd_corrections(args: argparse.Namespace) -> int:
+    """#112. Post-publish, unlike `retraction-watch`, which only reads the last
+    draft's trace. Writes a vault dossier and records a negative fact; it never
+    touches the published video."""
+    from core.correction_dossier import scan_published_for_corrections
+
+    channel = getattr(args, "channel", None) or "tapin"
+    found = scan_published_for_corrections(
+        channel, window_days=int(getattr(args, "days", 30) or 30)
+    )
+    if not found:
+        print(f"{channel}: no reversed claims on published videos in the window")
+        return 0
+    for dossier in found:
+        print(f"[{dossier.severity}] {dossier.video_id}: {dossier.claim}")
+        print(f"    source  : {dossier.source_url}")
+        print(f"    evidence: {dossier.changed_evidence[:160]}")
+    print(f"{len(found)} dossier(s) written to the vault. Nothing was changed on YouTube.")
     return 0
 
 

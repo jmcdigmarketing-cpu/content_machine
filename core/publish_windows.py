@@ -308,6 +308,18 @@ def resolve_relative_clock(
             target += timedelta(days=1)
         return target
     if text == "this weekend":
-        days = (5 - local.weekday()) % 7
-        return (local + timedelta(days=days)).replace(hour=12, minute=0, second=0, microsecond=0)
+        # #701. `(5 - weekday()) % 7` is 0 on a Saturday, so this resolved to
+        # Saturday noon and pointed into the past all Saturday afternoon. Roll
+        # forward the way `tonight` above does -- but to the Sunday, which is
+        # still this weekend, before giving up and taking the next Saturday.
+        saturday = (
+            local - timedelta(days=1)
+            if local.weekday() == 6
+            else local + timedelta(days=(5 - local.weekday()) % 7)
+        )
+        for candidate in (saturday, saturday + timedelta(days=1)):
+            target = candidate.replace(hour=12, minute=0, second=0, microsecond=0)
+            if target > local:
+                return target
+        return (saturday + timedelta(days=7)).replace(hour=12, minute=0, second=0, microsecond=0)
     return None

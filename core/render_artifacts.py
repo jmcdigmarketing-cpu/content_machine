@@ -40,7 +40,13 @@ def write_render_sidecars(
         "sources": list(features.get("source_urls") or []),
         "disputed": bool(features.get("disputed")),
         "disputed_claims": list(features.get("disputed_claims") or []),
-        "ungrounded_count": quality.get("ungrounded_count"),
+        # #112. `core/pipeline.py` can only pass `quality={}` here -- build_quality
+        # needs a run_id that does not exist until after this call -- so this was
+        # None in every sidecar ever written. It is just the length of a features
+        # list, so derive it when the caller has no quality dict to give.
+        "ungrounded_count": quality.get(
+            "ungrounded_count", len(features.get("ungrounded_entities") or [])
+        ),
         "script_sha256": _sha256_bytes((script or "").encode("utf-8")),
         "mp4_sha256": None,
     }

@@ -24,29 +24,31 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** — 2026-09-08 queue panel, studio drag, and 15 leftovers. Locked
-five: **#148** queue with drag-reorder · live review-room smoke · **#692**
-studio snap · **#693** missing HUD skip · **#686** 24h retraction toast +
-**#688** VACUUM. Then 15 cheap leftovers (#230 badge · booth CSS · title-card
-wrap · switcher · cheat-sheet · hook clamp · plausibility · clock ·
-counterfactual · recency · drift · competitor title · test-time budget).
-`GRADE_VERSION` stayed **v3**. CLI / `ops booth` / `ops queue-manage` stay.
-`SCENE_MATCHED_BROLL` stays off. Skipped **#151 #153 #684** so they cannot
-strand the wave.
+**Just landed** - 2026-09-09 four defects plus the brand-kit compiler. Closed
+**#701** weekend clock resolving into the past - **#700** `claim_next` unbounded
+fetch *and* the unlocked claim it was hiding - **#699** the second hex palette,
+with `surfaces` tokens and a scanner that fails on any unexempted literal -
+**#112** the correction dossier, which needed three substrate fixes first -
+**#151** the brand-kit compiler. Suite **2,833 -> 2,870**, mypy **139** held.
 
-**Review 4 corrected four of those leftovers.** #365 recency, #302 plausibility,
-#596 competitor title and #367 clock all shipped green and inert — a helper
-unit-tested in isolation, called by nothing with real inputs. Fixed as **#694**
-and **#695**, with **#696** (retraction watch fetched before its own throttle,
-on URLs carrying JSON punctuation), **#697** (HUD probe leaked a temp dir per
-clip per render) and **#698** (`pre-commit install` cannot work under
-`core.hooksPath`). Filed open: **#699 #700 #701**.
+**#112 was much larger than its `[M]` tag.** The detection half existed; the
+recording half had no substrate, and three artifacts that looked like substrate
+were shipping empty on every run: `ClaimVerification.to_dict()` dropped the claim
+list and every `citation_line`, nothing ever set `features["source_urls"]` though
+`collect_source_urls` was already computed and discarded, and `<stem>.facts.json`
+reads exactly those two keys. Fixing the producers is what made a dossier that
+names *which claim* reversed possible at all.
 
-**Next: remaining Stage 4/3 craft** — brand kit, caption timeline, live decode,
-then the cost tower. Detail: [desktop_app.md](desktop_app.md).
+**#153 is demoted out of the next five, deliberately.** It and #151 had been
+listed and then skipped in four consecutive waves, each time so an `[L]` could
+not strand the wave. #151 was taken on purpose this time and landed; #153 stays
+open in [backlog.md](backlog.md) but stops being announced as next until a
+measured problem justifies it - which is also where the 2026-09-08 GPT-6 review
+lands, independently.
 
-**Then, in order:** Stage 4 studio → Stage 5 packaging → Stage 6 portfolio
-→ Stage 7 efficiency.
+**Next: the things this wave proved are inert or unproven.** #341 and #696 turn
+out never to have watched anything on a real run (#702), and one guarantee this
+wave added is asserted rather than measured (#704).
 
 ### The Craft wave — leftover after Stage 0
 
@@ -80,16 +82,35 @@ pipeline keeps improving while the surface is built.
 
 ### Recommended next five (non-app)
 
-1. **#699 second hex palette in `_CSS`** `[S]` — d1a1895 made token CSS win the
-   cascade; the new booth elements put `#2a2f3a` / `#111` straight back in.
-   Reversing a shipped fix in the next wave is the cheapest thing here to stop.
-2. **#684 live review-room decode** `[S]` — J/K/L is a helper; CI still constructs
-   the window offscreen without a file.
-3. **#112 correction dossier** `[M]` — post-publish fact reversal still does not
-   auto-write a dossier; #686 only toasts, and #696 is what made that toast
-   reach a real URL at all.
-4. **#151 brand-kit compiler** `[L]` — fonts/palette/sting into render + GUI.
-5. **#153 caption choreography timeline** `[L]` — keyframes over real word timings.
+The list changed because this wave measured things that were not known before.
+Three of these are findings from it.
+
+1. **#702 the retraction watch's trace path is inert** `[S]` - `pairs_from_trace`
+   reads URLs from the run trace and `run_trace._slim_signals` strips them.
+   Measured: zero `http` matches across all 28 files in `data/traces/`. #341 and
+   #696 have therefore never watched anything on a real run. A shipped feature
+   that does nothing outranks a new one.
+2. **#704 `skip_locked` is unproven** `[M]` - #700 added the row lock; SQLAlchemy
+   emits no FOR UPDATE on SQLite, so the new tests prove ordering and LIMIT and
+   not the lock. The atomic-claim guarantee is currently asserted, not measured.
+3. **#703 the correction scan has no throttle** `[S]` - it re-fetches every source
+   behind every published video on every overnight run. `toast_is_due` already has
+   the stamp shape to reuse.
+4. **#706 `ReviewWindow.keyPressEvent` has zero tests** `[S]` - all four
+   construction sites pass an empty path, so the whole player branch and 30 lines
+   of key handling never execute. The cheap half of #684, no decode needed.
+5. **#707 #684's real decode** `[M]` - now known feasible: the fixture mp4 is
+   already committed and the codec ships inside the PySide6 wheel. It must bypass
+   `ReviewWindow`'s unconditional `QAudioOutput`.
+
+**Dropped from this list** (stay open): **#153** caption choreography, demoted
+after four skips - **#151** shipped, so it leaves the list - **#158** cost tower -
+**#673** second monitor - Phase M - Ollama.
+
+**Closed 2026-09-09 (this wave):** **#701** weekend clock - **#700** `claim_next`
+SQL order + LIMIT + `skip_locked` - **#699** `surfaces` tokens + palette scanner -
+**#112** correction dossier + its three substrate fixes - **#151** brand-kit
+compiler. Filed open: **#702 #703 #704 #705 #706 #707 #708**.
 
 **Closed 2026-09-08 (review 4):** **#694** recency decay reached the recommendation · **#695** three write-only quality keys given a reader · **#696** retraction throttle before the fetch · **#697** HUD temp-dir leak + memo · **#698** pre-commit header.
 

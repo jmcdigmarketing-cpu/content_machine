@@ -37,6 +37,7 @@ class OvernightResult:
     requested: int = 0
     drafted: int = 0
     dossiers: int = 0
+    corrections: int = 0
     outcomes: list[Any] = field(default_factory=list)
     health_line: str = ""
     skillopt_line: str = ""
@@ -197,6 +198,22 @@ def _run_overnight_body(
         notify_retractions_if_due(channel)
     except Exception as exc:
         logger.debug("overnight retraction toast skipped: %s", exc)
+    try:
+        # #112. The toast above is transient: first hit only, deduped per
+        # process, joined to no run. This writes the dossier that survives the
+        # night. It never touches the published video.
+        from core.correction_dossier import scan_published_for_corrections
+
+        filed = scan_published_for_corrections(channel)
+        if filed:
+            result.corrections = len(filed)
+            logger.warning(
+                "%s correction dossier(s) filed for published videos on %s",
+                len(filed),
+                channel,
+            )
+    except Exception as exc:
+        logger.warning("overnight correction scan did not run: %s", exc)
     if topics:
         try:
             from core.best_bet import get_best_bet
@@ -236,6 +253,12 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(f"{result.drafted}/{result.requested} drafts saved")
     lines.append("")
     lines.append(f"Dossiers written to vault: {result.dossiers}")
+    if result.corrections:
+        lines.append(
+            f"CORRECTIONS: {result.corrections} published video(s) rest on a claim whose "
+            "source has since been retracted. Dossiers are in the vault; nothing was "
+            "changed on YouTube."
+        )
     if result.health_line:
         lines.append(result.health_line)
     if result.skillopt_line:

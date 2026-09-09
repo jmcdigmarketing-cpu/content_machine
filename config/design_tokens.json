@@ -62,6 +62,52 @@
       "ansi256": 208
     }
   },
+  "surfaces": {
+    "bg": {
+      "hex": "#111318",
+      "note": "page background"
+    },
+    "surface": {
+      "hex": "#1a1d24",
+      "note": "header and card background"
+    },
+    "sunken": {
+      "hex": "#0d0f14",
+      "note": "pre / textarea background"
+    },
+    "bezel": {
+      "hex": "#111111",
+      "note": "phone-bezel body"
+    },
+    "border": {
+      "hex": "#2a2f3a",
+      "note": "hairline borders and dividers"
+    },
+    "ink": {
+      "hex": "#e8eaed",
+      "note": "body text"
+    },
+    "ink_dim": {
+      "hex": "#9aa0a6",
+      "note": "secondary text"
+    },
+    "ink_faint": {
+      "hex": "#5f6368",
+      "note": "disabled / skipped"
+    },
+    "link": {
+      "hex": "#8ab4f8",
+      "note": "anchor text"
+    },
+    "danger_bg": {
+      "hex": "#3c1f1f",
+      "note": "banner background"
+    },
+    "accent_line": {
+      "hex": "#c62828",
+      "note": "header rule when no channel is set"
+    }
+  },
   "channels": {
     "tapin": {
       "accent": "#FFFFFF",

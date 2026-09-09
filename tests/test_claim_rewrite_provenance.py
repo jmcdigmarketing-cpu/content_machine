@@ -57,10 +57,22 @@ class TestPreRewriteSurvives(unittest.TestCase):
         self.assertEqual(d["pre_rewrite_total"], 12)
         self.assertAlmostEqual(d["pre_rewrite_support_rate"], 0.417, places=3)
 
-    def test_untouched_run_gains_no_keys(self):
-        # Existing readers must see exactly the old shape when nothing was rewritten.
+    def test_untouched_run_gains_no_rewrite_keys(self):
+        # Existing readers must see the base shape when nothing was rewritten.
+        # `claims` joined the base shape in the #112 wave -- it is the claim to
+        # source edge the correction dossier reads, and it is written on every
+        # run. The keys this guard exists for are the rewrite-provenance ones.
         d = _verification(12, 0).to_dict()
-        self.assertEqual(set(d), {"total", "supported", "support_rate", "unsupported"})
+        self.assertEqual(set(d), {"total", "supported", "support_rate", "unsupported", "claims"})
+        for rewrite_key in (
+            "rewritten",
+            "pre_rewrite_unsupported",
+            "pre_rewrite_total",
+            "pre_rewrite_support_rate",
+            "script_pre_rewrite",
+            "script_post_rewrite",
+        ):
+            self.assertNotIn(rewrite_key, d)
 
     def test_pre_rate_is_none_when_not_rewritten(self):
         self.assertIsNone(_verification(12, 3).pre_rewrite_support_rate)

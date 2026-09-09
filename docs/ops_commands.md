@@ -19,6 +19,8 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `blocking` | One-sentence: what's blocking publish (existing gates only) |
 | `booth` | Last-run review booth (play + grade + authenticity + cost) |
 | `booth-shortcut` | Install Desktop shortcut for the persistent review booth |
+| `brand-kit` | Print the compiled brand kit and what is missing |
+| `brand-panel` | Compiled brand kit per channel (requires pip install -e ".[app]") |
 | `calibration` | Pre-publish grade vs realized engaged-rate (Pillar 2) |
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
@@ -29,6 +31,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `competitor-sync` | Fetch recent videos from competitor channels |
 | `config-diff` | channels.json sha256 vs last-run fingerprint |
 | `contact-sheet` | 2x2 PNG collage of the last thumbnails (--path dest.png) |
+| `corrections` | Re-check published videos' sources and file a correction dossier |
 | `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `demonetization` | estimatedRevenue cliff vs channel baseline (missing is unmeasured) |

@@ -1,10 +1,58 @@
-# Handoff synopsis — 2026-09-08: review 4 — five inert items wired, three filed
+# Handoff synopsis — 2026-09-09: four defects plus the brand-kit compiler
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — review 4 (2026-09-08, Claude Code)
+## Last wave — 2026-09-09 (Claude Code)
+
+Closed **#701 · #700 · #699 · #112 · #151**. Suite **2,833 -> 2,870**, mypy
+**139** held, ruff clean, `data/` untouched. Backlog **363 open / 581 done**,
+highest **#708**.
+
+- **The five taken were not the five listed.** #151 and #153 had been recommended
+  and then skipped in **four consecutive waves**; #700 and #701 were filed in
+  review 4 and never reached the list. Operator chose defects first plus #151 as
+  the deliberate `[L]`. **#153 is now demoted** out of the next five with the
+  reason recorded — it stays open, it just stops being announced as next.
+- **#700's filed defect was the smaller one.** The unbounded fetch was real, but
+  the SELECT/UPDATE/commit also carried **no row lock**, so two workers on the
+  supported Postgres path could claim the same job. Now `.limit(1)
+  .with_for_update(skip_locked=True)` with the sort in SQL. The Postgres path had
+  had **zero tests**; six now run it against temp SQLite. **`skip_locked` is still
+  unproven** — SQLAlchemy emits no FOR UPDATE on SQLite (**#704**).
+- **#699 could never have been fixed by d1a1895.** Emission order wins the cascade
+  only for selectors *both* blocks declare, and `themed_css` never declares
+  `.phone-bezel` / `.yt-mock` / `.cheat-sheet`. There was also no token role for
+  the chrome greys at all. Added a `surfaces` group at the legacy values verbatim
+  and a scanner test: **60 unexempted hexes before, 0 now**, with the survivors
+  carrying `/* palette-exempt: reason */`.
+- **#112 was far larger than `[M]`.** Detection existed; recording had no
+  substrate. Three artifacts were shipping empty every run —
+  `ClaimVerification.to_dict()` dropped the claim list and every `citation_line`;
+  nothing set `features["source_urls"]` though `collect_source_urls` was already
+  computed and discarded; `<stem>.facts.json` reads exactly those two keys. The
+  dossier walks `publish_log`, not `last_trace`, and auto-records a negative fact.
+  **It never touches the published video.**
+- **Two shipped features have never run in production** (**#702**):
+  `run_trace._slim_signals` strips every URL, so `pairs_from_trace` returns `[]`.
+  Measured: zero `http` matches across all 28 files in `data/traces/`. #341's
+  trace path and #696's fix have watched nothing.
+- **#151 is a READ path on purpose.** Values pinned field-by-field against today's
+  accessors; the renderer is **not** re-routed through the kit.
+- **#684 was not built, but its premise was wrong.** The fixture mp4 is already
+  committed and the codec ships inside the PySide6 wheel (**#707**); separately
+  `ReviewWindow.keyPressEvent` has zero tests (**#706**).
+
+**Filed open:** **#702** inert trace path · **#703** no throttle on the correction
+scan · **#704** `skip_locked` unproven · **#705** vanished-claim signal ·
+**#706** keyPressEvent untested · **#707** #684 decode route · **#708** no
+`assets/branding/tapin/`.
+
+**Next five:** **#702 · #704 · #703 · #706 · #707**. Detail:
+[planning_log.md](planning_log.md) 2026-09-09.
+
+## Previous wave — review 4 (2026-09-08, Claude Code)
 
 Reviewed `0e1c73e` `4a82992` `bbfc2cb` `93e5feb` (88 files, 4,796 insertions).
 Every number Cursor reported verified exact — fourth round. Earlier defects

@@ -44,6 +44,15 @@ def header_border_hex(channel_id: str | None) -> str:
     return border or "#c62828"
 
 
+def surface_hex(name: str) -> str:
+    """#699. Chrome greys -- background, border, ink. These had no token role, so
+    the legacy `_CSS` block kept re-growing its own hex table for them."""
+    spec = (load_tokens().get("surfaces") or {}).get(name) or {}
+    if isinstance(spec, dict) and spec.get("hex"):
+        return str(spec["hex"])
+    return "#FFFFFF"
+
+
 def role_hex(role: str, *, colorblind: bool = False) -> str:
     tokens = load_tokens()
     table = tokens.get("colorblind_roles") if colorblind else tokens.get("roles")

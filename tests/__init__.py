@@ -90,6 +90,7 @@ from core import correction_dossier as _correction_dossier
 from core import counterfactual as _counterfactual
 from core import negative_facts as _negative_facts
 from core import quota_state as _quota_state
+from core import recommender_history as _recommender_history
 from core import retraction_watch as _retraction_watch
 
 _SUITE_DATA_TMP = tempfile.mkdtemp(prefix="cm_suite_data_")
@@ -122,6 +123,11 @@ _SUITE_STORE_PATCHES = (
         _correction_dossier,
         "STAMP_PATH_TEMPLATE",
         _suite_store("correction_scan_{channel}.json"),
+    ),
+    patch.object(
+        _recommender_history,
+        "STAMP_PATH_TEMPLATE",
+        _suite_store("recommend_pick_{channel}.json"),
     ),
 )
 for _p in _SUITE_STORE_PATCHES:

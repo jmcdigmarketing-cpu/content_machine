@@ -25,8 +25,10 @@ class TestConfidenceLevel(unittest.TestCase):
 
 
 class TestConfidenceNote(unittest.TestCase):
-    def test_high_is_silent(self):
-        self.assertEqual(confidence_note(SOLID_SAMPLES), "")
+    def test_high_still_names_the_sample_count(self):
+        note = confidence_note(SOLID_SAMPLES)
+        self.assertIn(f"{SOLID_SAMPLES} sample", note)
+        self.assertNotIn("confidence", note)
 
     def test_moderate_names_level_and_count(self):
         note = confidence_note(MODERATE_SAMPLES)
@@ -45,6 +47,7 @@ class TestConfidenceNote(unittest.TestCase):
         on ⚠. The app configures UTF-8; scripts and one-liners do not."""
         confidence_note(1).encode("cp1252")
         confidence_note(MODERATE_SAMPLES).encode("cp1252")
+        confidence_note(SOLID_SAMPLES).encode("cp1252")
 
 
 class TestConfidenceInterval(unittest.TestCase):

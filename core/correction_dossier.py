@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -37,6 +38,30 @@ logger = get_logger("core.correction_dossier")
 _MAX_BODY_CHARS = 8000
 _MAX_SOURCES_PER_RUN = 6
 _RETRACTION_WORDS = ("retraction", "retracted", "correction:", "we regret")
+_CLAIM_STOPWORDS = frozenset(
+    {
+        "the",
+        "a",
+        "an",
+        "at",
+        "of",
+        "and",
+        "or",
+        "to",
+        "in",
+        "on",
+        "for",
+        "with",
+        "by",
+        "from",
+        "during",
+    }
+)
+# Fraction of claim content-tokens that must still appear on the page for the
+# claim to count as present (verbatim or ordinary rewording). Below this, the
+# claim has vanished. Deliberately token-overlap, not substring: "Jones beat
+# Pereira" vs "Jon Jones defeated Alex Pereira" would miss a substring test.
+_CLAIM_PRESENT_COVERAGE = 0.5
 STAMP_PATH_TEMPLATE = os.path.join(DATA_DIR, "correction_scan_{channel}.json")
 
 
@@ -111,7 +136,22 @@ def _claims_and_sources(run: Any) -> tuple[list[dict], list[str]]:
 def _severity_for(claim: dict, body_lc: str) -> str:
     if any(word in body_lc for word in _RETRACTION_WORDS):
         return "high" if claim.get("supported") else "medium"
-    return "low"
+    return "medium"
+
+
+def _content_tokens(text: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9']+", (text or "").lower())
+        if len(token) > 2 and token not in _CLAIM_STOPWORDS
+    }
+
+
+def _claim_coverage(claim: str, body: str) -> float:
+    tokens = _content_tokens(claim)
+    if not tokens:
+        return 1.0
+    return len(tokens & _content_tokens(body)) / len(tokens)
 
 
 def scan_published_for_corrections(
@@ -165,15 +205,17 @@ def scan_published_for_corrections(
                 logger.warning("correction source unreachable, not cleared: %s (%s)", url, exc)
                 continue
             body_lc = body.lower()
-            # Only explicit retraction language files a dossier. The weaker
-            # "claim text no longer appears on the page" signal fires on ordinary
-            # rewording and would make every dossier noise -- filed as its own
-            # item rather than shipped as a gate nobody would trust.
-            if not any(word in body_lc for word in _RETRACTION_WORDS):
-                continue
+            has_retraction = any(word in body_lc for word in _RETRACTION_WORDS)
             for claim in claims:
                 text = str(claim.get("claim") or "").strip()
                 if not text:
+                    continue
+                coverage = _claim_coverage(text, body)
+                if has_retraction:
+                    severity = _severity_for(claim, body_lc)
+                elif coverage < _CLAIM_PRESENT_COVERAGE:
+                    severity = "medium"
+                else:
                     continue
                 dossier = CorrectionDossier(
                     channel_id=channel_id,
@@ -182,14 +224,14 @@ def scan_published_for_corrections(
                     claim=text,
                     source_url=url,
                     changed_evidence=_evidence_snippet(body),
-                    severity=_severity_for(claim, body_lc),
+                    severity=severity,
                     suggested_correction=(
                         f"Publish a pinned comment or community post correcting: {text}"
                     ),
                 )
                 found.append(dossier)
                 _write_note(dossier)
-                if store is not None:
+                if store is not None and has_retraction:
                     try:
                         store(
                             channel_id,

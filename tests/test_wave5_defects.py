@@ -742,10 +742,10 @@ class TestBrandKitCompiler(unittest.TestCase):
                 self.assertEqual(kit.vignette, look_vignette(channel))
 
     def test_kit_reports_what_is_missing_rather_than_a_bare_boolean(self):
-        """tapin has no assets/branding/tapin/ at all -- only moneywise does."""
+        """An unknown channel has no assets; the kit must name the files."""
         from core.brand_kit import compile_kit
 
-        kit = compile_kit("tapin")
+        kit = compile_kit("no-such-channel")
         self.assertIn("logo", " ".join(kit.missing).lower())
         self.assertIn("banner", " ".join(kit.missing).lower())
         self.assertFalse(kit.complete)
@@ -831,7 +831,7 @@ class TestBrandWindow(unittest.TestCase):
         from core.brand_kit import compile_kit
         from desktop.brand import BrandWindow
 
-        window = BrandWindow(channel_id="tapin", kit=compile_kit("tapin"))
+        window = BrandWindow(channel_id="no-such-channel", kit=compile_kit("no-such-channel"))
         self.assertIn("missing", window.status.text().lower())
 
     def test_the_panel_is_registered_and_reachable(self):

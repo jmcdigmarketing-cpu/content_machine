@@ -1,10 +1,26 @@
-# Handoff synopsis — 2026-09-09: #702-#707 correctness
+# Handoff synopsis — 2026-09-09: next 15
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last change — 2026-09-09: #153 retired the day it shipped
+## Last change — 2026-09-09 (Cursor) next 15
+
+Prove-and-tick leftovers in HEAD, then #711 #708, honesty S, #705 last.
+
+- **#549 was persisted but unread.** `display_fact_engine_report` now prints a
+  failed title/script check and treats `unavailable` as needs-review, not a pass.
+- **#431 extras test could not fail.** 0:20/0:40 is also equal-span. Guard is 5s/12s.
+- **#711** CI `on.push` is no longer main/master-only; `workflow_dispatch` added.
+- **#708** TapIn logo/banner on disk from tokens, not a moneywise copy.
+- **#705** token-overlap: rewording does not file; vanished is medium; retraction high.
+- **#440** 24h/7d snapshots stick; dossier prints them.
+- **#430** weekly-report community draft in the vault; nothing posted to YouTube.
+
+**Next five:** **#713 · #684 · #158 · #415 · #437**. Suite **2,894 -> 2,919**,
+mypy **139**, backlog **346 open / 603 done**, highest **#713**.
+
+## Previous — 2026-09-09: #153 retired the day it shipped
 
 Operator: *"i dont need to see the caption timing, i dont want to do that
 manually."* #153 caption choreography is **removed, not disabled** — it was a

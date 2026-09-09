@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440" font-family="Arial, Helvetica, sans-serif">
+  <rect width="2560" height="1440" fill="#0B0F14"/>
+  <rect x="0" y="0" width="2560" height="22" fill="#E53935"/>
+  <polygon points="430,430 620,505 695,700 620,895 430,970 240,895 165,700 240,505"
+           fill="none" stroke="#E53935" stroke-width="18" stroke-linejoin="round"/>
+  <polygon points="375,610 560,700 375,790" fill="#FFFFFF"/>
+  <text x="780" y="740" font-size="168" font-weight="800" letter-spacing="-4">
+    <tspan fill="#FFFFFF">TAP</tspan><tspan fill="#E53935">IN</tspan>
+  </text>
+  <text x="784" y="820" font-size="42" font-weight="500" fill="#C8CDD3">UFC and gaming shorts.</text>
+  <text x="784" y="880" font-size="32" font-weight="400" fill="#8A9098">Tap in. Stay sharp.</text>
+</svg>

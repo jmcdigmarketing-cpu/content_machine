@@ -37,13 +37,14 @@ def confidence_note(n: int) -> str:
     """
     Short parenthetical to append to a recommendation's reason line.
 
-    Empty when the basis is solid (>= SOLID_SAMPLES) so high-confidence picks
-    stay uncluttered; otherwise names the level and the sample count.
+    Always names the sample count (#569). High-confidence picks drop the
+    caveat wording so they stay uncluttered, but n is still visible.
     """
-    if confidence_level(n) == "high":
-        return ""
     plural = "s" if n != 1 else ""
-    return f" ! {confidence_level(n)} confidence ({n} sample{plural})"
+    count = f"({n} sample{plural})"
+    if confidence_level(n) == "high":
+        return f" {count}"
+    return f" ! {confidence_level(n)} confidence {count}"
 
 
 # 95% normal approximation. Deliberately not the Beta machinery in

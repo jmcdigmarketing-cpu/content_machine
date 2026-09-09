@@ -24,80 +24,48 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-09 **#702 · #704 · #703 · #706 · #707** plus **#709**
-found on the way. Structured `source_urls` on the run trace; correction-scan
-24h stamp; `SKIP LOCKED` measured on real Postgres; ReviewWindow keys; Qt
-decode of the committed intro fixture.
+**Just landed** - 2026-09-09 next-15: prove-and-tick leftovers already in HEAD
+(**#710 #712 #431 #549 #414 #420 #498**), then **#711 #708**, honesty
+(**#562 #569 #568 #430 #440**), **#705** last. Title/script finally has a
+Proceed? reader. CI push is no longer `main`/`master`-only. TapIn has logo and
+banner on disk.
 
-**Previously this day** - **#153** caption timeline (built, then RETIRED, separate
-commit). Before that: **#701** weekend clock · **#700** `claim_next` lock ·
-**#699** `surfaces` tokens · **#112** correction dossier · **#151** brand-kit.
-
-**#704 was blocked by a #700 leftover.** `payload_json` is Text, so
-`type_coerce(..., JSON) ->>` does not run on Postgres. Filed and fixed as
-**#709** so the lock test could execute at all.
-
-### The Craft wave — leftover after Stage 0
-
-Pulled forward so it is finished rather than stranded. The sorting rule is **what
-survives the desktop app**:
-
-- **Video craft is permanent.** Shipped 2026-09-06: **#185** contrast auditor ·
-  **#297** ratio number · **#505** two-line balancing · **#182** caption overlay
-  on a still · **#513** black/frozen first frame · **#502** draft-only safe-area
-  guides. Shipped 2026-09-07: **#184** motion presets · **#183** font pairing ·
-  **#187** end-card compositor · **#188** intro-sting waveform · **#190**
-  MoneyWise disclaimer · **#191** AI-disclosure lower-third. Shipped 2026-09-07
-  (Stage 2 wave): **#295** contact-sheet PNG · **#296** print CSS · **#602**
-  end-card vs caption safe area · **#512** grain/vignette ffmpeg.
-- **Terminal is the daily driver for the remaining app waves.** Shipped
-  2026-09-06: **#485** discovery persist · **#488** width-aware wrapping ·
-  **#490** measured ETA · **#487** `NO_COLOR` · **#482** collapse mascot ·
-  **#491** themed spinner glyphs · **#484** Ctrl+C. Shipped 2026-09-07:
-  **#481** pinned status · **#243** PNG wordmark · **#244** Windows Terminal
-  profile.
-- **Three loopholes, config-only — shipped 2026-09-06:** **#641** tapin=`dbz`,
-  moneywise/default=`plain` · **#642** voice pools · **#643** local Piper
-  voices · **#644** coverage ratchet on real `channels.json`.
-- **Booth: only the cheap ones**, since Stage 3 replaces it — **#303** theme
-  toggle and **#304** reduced-chroma shipped 2026-09-07; **#239** print CSS
-  shipped. **#296** shipped with #295. Everything else booth-shaped stays
-  in the backlog and dies there, deliberately.
-
-Alongside the app, roughly one item per wave from the tracks below, so the
-pipeline keeps improving while the surface is built.
+**Previously this day** - **#702-#707 + #709**; extras committed as `b9f1354`;
+**#153** caption timeline built then retired on the operator's call (do not
+rebuild; **#713** is the automatic-placement remainder).
 
 ### Recommended next five (non-app)
 
-The list changed because the previous five are now measured closed. Two of these
-are already drafted in the dirty tree and were left out of this commit on
-purpose.
+The list changed because the previous five are now measured closed. **#21** is
+already `[x]` (2026-08-25) — it was a no-op pick.
 
-1. **#705 vanished-claim similarity** `[M]` - the correction scan still ignores
-   a source that quietly dropped the claim. Needs similarity, not a substring.
-2. **#708 TapIn branding assets** `[S]` - `ops brand-kit` already reports that
-   `assets/branding/tapin/` does not exist.
-3. **#431 verify chapter timings** `[S]` - drafted beside this wave (`core/chapters.py`
-   word-timing path) and deliberately not committed here.
-4. **#549 script-vs-title check** `[M]` - drafted (`check_title_script_consistency`)
-   and deliberately not committed here.
-5. **#21 caption font/fill** `[S]` - font and fill only; #153's timing sidecar is gone.
+1. **#713 automatic caption placement** `[M]` - a cue covering a face or score
+   bug should move itself. No operator timeline.
+2. **#684 last-run ReviewWindow play** `[M]` - still operator smoke after #707's
+   fixture decode.
+3. **#158 Cost Tower** `[L]` - the expensive dashboard, not a cheap honesty fix.
+4. **#415 render smoke in CI** `[M]` - 2s synthetic; #24/#26 shipped dead on
+   Windows and were caught by audit.
+5. **#437 unlist / rollback** `[S]` - mutates YouTube; operator-gated on purpose.
 
-**Dropped from this list** (stay open): **#158** cost tower -
-**#673** second monitor - Phase M - Ollama. **#684** last-run play remains
-operator smoke after #707's fixture decode.
+**Dropped from this list** (stay open): **#673** second monitor - Phase M -
+Ollama.
 
-**Closed 2026-09-09 (#702-#707 + #709):** retraction trace `source_urls` -
-Postgres `SKIP LOCKED` - correction-scan throttle - ReviewWindow keys - Qt
-fixture decode - jsonb cast for Text `payload_json`.
+**Closed 2026-09-09 (next 15):** **#710 #712 #431 #549 #414 #420 #498 #711
+#708 #562 #569 #568 #430 #440 #705**. Found: the extras chapter test used
+stamps that equal-span also produces.
 
-**RETIRED 2026-09-09 — #153 caption choreography.** Built, then removed the same day on the operator's call: *"i dont need to see the caption timing, i dont want to do that manually."* It was a manual step by construction — drag keyframes, write `<audio>.captions.json`, let the next burn read it. Captions still use real word timings, which predates #153: the karaoke ASS is byte-identical before and after removal, because with no sidecar the feature was a no-op on every render. **#713** keeps the part worth solving — a cue that would cover a face should move itself, with no operator step. Do not rebuild the timeline UI.
-the demote. Filed gap: SRT placement. **Still uncommitted** at this write.
+**Closed 2026-09-09 (#702-#707 + #709):** retraction `source_urls` - Postgres
+`SKIP LOCKED` - correction-scan throttle - ReviewWindow keys - Qt fixture
+decode - jsonb cast for Text `payload_json`.
 
-**Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700** `claim_next`
-SQL order + LIMIT + `skip_locked` - **#699** `surfaces` tokens + palette scanner -
-**#112** correction dossier + its three substrate fixes - **#151** brand-kit
-compiler. Filed open: **#702 #703 #704 #705 #706 #707 #708**.
+**RETIRED 2026-09-09 — #153 caption choreography.** Operator: *"i dont need to
+see the caption timing, i dont want to do that manually."* Karaoke ASS hashed
+identical with no sidecar. **Do not rebuild the timeline UI.**
+
+**Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700**
+`claim_next` - **#699** `surfaces` - **#112** correction dossier - **#151**
+brand-kit.
 
 **Closed 2026-09-08 (review 4):** **#694** recency decay reached the recommendation · **#695** three write-only quality keys given a reader · **#696** retraction throttle before the fetch · **#697** HUD temp-dir leak + memo · **#698** pre-commit header.
 
@@ -123,8 +91,8 @@ detector · **#341** retraction-watch (last-run).
 **#607** ElevenLabs import defer; **#335** source-diversity floor; **#671**
 visual angle list; Stage 3 review room **#168+#209**; **#416** owned beat cuts.
 
-**Dropped from this list** (stay open): **#673** second physical monitor ·
-Phase M · Ollama.
+**Dropped from this list** (stay open): **#673** second monitor - Phase M -
+Ollama.
 
 ---
 

@@ -19,8 +19,21 @@ FFMPEG = shutil.which("ffmpeg")
 
 @unittest.skipUnless(FFMPEG, "ffmpeg is required for technical-QC integration tests")
 class TestTechnicalQCOnRealMedia(unittest.TestCase):
-    def _make_video(self, dest: str, *, black: bool = False, size: str = "320x568") -> None:
-        source = f"color=c=black:s={size}:r=30" if black else f"testsrc2=s={size}:r=30"
+    def _make_video(
+        self,
+        dest: str,
+        *,
+        black: bool = False,
+        frozen: bool = False,
+        size: str = "320x568",
+        duration: str = "1.5",
+    ) -> None:
+        if black:
+            source = f"color=c=black:s={size}:r=30"
+        elif frozen:
+            source = f"color=c=red:s={size}:r=30"
+        else:
+            source = f"testsrc2=s={size}:r=30"
         proc = subprocess.run(
             [
                 str(FFMPEG),
@@ -36,7 +49,7 @@ class TestTechnicalQCOnRealMedia(unittest.TestCase):
                 "-i",
                 "sine=frequency=880:sample_rate=48000",
                 "-t",
-                "1.5",
+                duration,
                 "-c:v",
                 "libx264",
                 "-preset",
@@ -81,6 +94,30 @@ class TestTechnicalQCOnRealMedia(unittest.TestCase):
 
         self.assertFalse(result.passed)
         self.assertTrue(any("black" in issue.lower() for issue in result.issues))
+
+    def test_real_frozen_nonblack_video_is_not_reported_clean(self):
+        from core.technical_qc import inspect_technical_qc
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = str(Path(tmp) / "frozen.mp4")
+            self._make_video(path, frozen=True, duration="2.5")
+            result = inspect_technical_qc(path, expected_size=(320, 568))
+
+        self.assertFalse(result.passed)
+        self.assertTrue(any("frozen" in issue.lower() for issue in result.issues))
+
+    def test_loudness_range_below_floor_is_an_issue_not_a_pass(self):
+        from core.technical_qc import inspect_technical_qc
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = str(Path(tmp) / "flat.mp4")
+            self._make_video(path)
+            with patch.dict(os.environ, {"LUFS_RANGE_MIN": "20"}, clear=False):
+                result = inspect_technical_qc(path, expected_size=(320, 568))
+
+        self.assertIsNotNone(result.loudness_range_lu)
+        self.assertFalse(result.passed)
+        self.assertTrue(any("loudness range" in issue.lower() for issue in result.issues))
 
 
 class TestTechnicalQCToolFailure(unittest.TestCase):

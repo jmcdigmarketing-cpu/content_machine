@@ -259,6 +259,16 @@ def render_dossier(run_id: int) -> str:
                     f"  revenue ${revenue:.2f} - margin ${revenue - total_cost:+.2f}"
                     " (est., 28d window)"
                 )
+            snaps = metrics.get("snapshots")
+            if isinstance(snaps, dict):
+                for label in ("24h", "7d"):
+                    snap = snaps.get(label)
+                    if isinstance(snap, dict):
+                        lines.append(
+                            f"  {label} snapshot: views {snap.get('views', '?')}, "
+                            f"engaged {float(snap.get('engaged_rate', 0) or 0) * 100:.1f}%, "
+                            f"likes {snap.get('likes', '?')}"
+                        )
     else:
         lines.append("Publish : (not uploaded)")
 

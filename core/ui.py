@@ -1453,6 +1453,22 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
         print_fn("    The title is the first thing viewers read — fix it before publishing.")
         needs_review = True
 
+    # #549 — persisted on the package; without a reader here a wrong-actor title
+    # looked clean at Proceed?. unavailable is printed, never treated as a pass.
+    title_script = features.get("title_script_check")
+    if isinstance(title_script, dict):
+        tsc_status = str(title_script.get("status") or "")
+        tsc_warnings = title_script.get("warnings") or []
+        if tsc_status == "failed":
+            print_fn(f"\n  ⚠ Title vs script ({len(tsc_warnings)}):")
+            for warning in tsc_warnings[:4]:
+                print_fn(f"    · {warning}")
+            print_fn("    The title assigns the action differently from the script.")
+            needs_review = True
+        elif tsc_status == "unavailable":
+            print_fn("\n  ⚠ Title vs script: unavailable (check did not run)")
+            needs_review = True
+
     # Run 74: these fired and only ever reached the log, so a phrase banned by the
     # script prompt *and* by the linter still graded A. Style, not fact — shown
     # before `Proceed?`, but it does not raise the fact-review flag.

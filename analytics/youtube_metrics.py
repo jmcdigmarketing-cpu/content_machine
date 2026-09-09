@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from googleapiclient.errors import HttpError
@@ -181,6 +181,63 @@ def fetch_video_metrics(
     return result
 
 
+def _snapshot_bucket(published_at: datetime | None, now: datetime) -> str | None:
+    if published_at is None:
+        return None
+    published = published_at if published_at.tzinfo else published_at.replace(tzinfo=timezone.utc)
+    current = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+    age = (current - published).total_seconds()
+    if age <= 36 * 3600:
+        return "24h"
+    if age <= 8 * 24 * 3600:
+        return "7d"
+    return None
+
+
+def merge_metric_snapshots(
+    existing: dict[str, Any],
+    metrics: dict[str, Any],
+    *,
+    published_at: datetime | None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Keep the first 24h/7d snapshots; later syncs only update the live totals."""
+    current = now or datetime.now(timezone.utc)
+    merged = dict(metrics)
+    snaps: dict[str, Any] = {}
+    if isinstance(existing, dict):
+        prev = existing.get("snapshots")
+        if isinstance(prev, dict):
+            snaps = dict(prev)
+    bucket = _snapshot_bucket(published_at, current)
+    if bucket and bucket not in snaps:
+        snaps[bucket] = {
+            "views": metrics.get("views"),
+            "engaged_rate": metrics.get("engaged_rate"),
+            "likes": metrics.get("likes"),
+            "captured_at": current.isoformat(),
+        }
+    merged["snapshots"] = snaps
+    return merged
+
+
+def _existing_publish_row(
+    repo: Any, *, log_id: int | None, channel_id: str, content_run_id: int
+) -> Any:
+    if log_id:
+        try:
+            for candidate in repo.list_uploaded_for_channel(channel_id):
+                if candidate.id == log_id:
+                    return candidate
+        except Exception as exc:
+            logger.debug("existing publish row unavailable: %s", exc)
+    try:
+        return repo.find_by_idempotency(f"run:{channel_id}:{content_run_id}")
+    except Exception as exc:
+        logger.debug("publish idempotency lookup skipped: %s", exc)
+        return None
+
+
 def refresh_publish_metrics(
     *,
     content_run_id: int,
@@ -204,12 +261,24 @@ def refresh_publish_metrics(
     domain = infer_domain(topic or title, channel_id)
 
     repo = get_publish_log_repository()
-    log_id = publish_log_id
-    if not log_id:
-        key = f"run:{channel_id}:{content_run_id}"
-        row = repo.find_by_idempotency(key)
-        if row:
-            log_id = row.id
+    row = _existing_publish_row(
+        repo,
+        log_id=publish_log_id,
+        channel_id=channel_id,
+        content_run_id=content_run_id,
+    )
+    log_id = publish_log_id or (row.id if row is not None else None)
+    existing: dict[str, Any] = {}
+    published_at = None
+    if row is not None:
+        log_id = row.id
+        try:
+            loaded = json.loads(row.metrics_json or "{}")
+            existing = loaded if isinstance(loaded, dict) else {}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            existing = {}
+        published_at = row.published_at
+    metrics = merge_metric_snapshots(existing, metrics, published_at=published_at)
     if log_id:
         try:
             from core.engagement_predictor import predict_engaged_rate, surprise_residual

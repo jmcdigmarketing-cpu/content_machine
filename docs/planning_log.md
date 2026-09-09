@@ -11,6 +11,45 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-09 (Cursor) - next 15 (#710 #712 #431 #549 #414 #420 #498 #711 #708 #562 #569 #568 #430 #440 #705)
+
+**Prompt, verbatim:** "Next 15 (one wave, one commit)" / implement the attached
+plan. Do not take #21 — already `[x]`.
+
+**What was picked.** Prove-and-tick leftovers already in HEAD first, then
+remaining recommended (#711 #708), cheap honesty, #705 last so it cannot
+strand the rest. #21 skipped (shipped 2026-08-25).
+
+**Shipped 1..15**
+
+1. **#710** alias gone; seam test patches `load_word_timings`.
+2. **#712** `test_wave6_extras.py` collected (>=4 cases).
+3. **#431** word-start chapters. New 5s/12s guard; equal-span is 0:20/0:40.
+4. **#549** `display_fact_engine_report` reads `title_script_check`. Fail-first:
+   `needs_review=False`.
+5-7. **#414 #420 #498** real ffmpeg black / freeze / LRA. unavailable is not a pass.
+8. **#711** `ci.yml` `on.push` unrestricted + `workflow_dispatch`.
+9. **#708** TapIn octagon SVGs. `ops brand-kit --channel tapin` prints both paths.
+10. **#562** length 0 samples vs thin default. Fail-first: same template.
+11. **#569** `confidence_note(8)` includes `8 sample`. Fail-first: `''`.
+12. **#568** ISO-week stamp; corrupt file is visible.
+13. **#430** vault community-draft; YouTube client never constructed.
+14. **#440** sticky 24h/7d snapshots; dossier reader.
+15. **#705** token-overlap; rewording does not file; vanished is medium.
+
+**Found on the way.** The extras chapter test could not go red: 0:20/0:40 is
+also the proportional fallback. #420 peak-over-target cannot be fixture-driven
+by lowering `LUFS_TARGET_TP` (that retargets the loudnorm filter too).
+
+**Deliberately not done.** #21 (already shipped) · #158 · #673 · #684 · #437
+(YouTube mutate) · Phase M · Ollama. #153 was retired in `8c8a142` by Claude
+during this wave; not rebuilt.
+
+**Audit.** Fail-first on unmodified b9f1354 for every behaviour change. Never
+mocked the function under test. #549/#440/#568 have production readers.
+
+---
+
 ## 2026-09-09 (Cursor) - #702 #704 #703 #706 #707 (+ #709)
 
 **Prompt, verbatim:** "Complete #702 · #704 · #703 · #706 · #707" (implement the

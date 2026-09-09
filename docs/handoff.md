@@ -86,12 +86,12 @@ mypy **139**; `data/` untouched. Backlog **361** open / **588** done, highest
 
 ## Slot — Cursor
 
-**Written:** 2026-09-09 · **HEAD at write:** `f8c39b2` · **Tree:** this wave committing; #153 still uncommitted.
+**Written:** 2026-09-09 · **HEAD at write:** `8c8a142` · **Tree:** this wave committing.
 
-- **Defect first:** #704 could not run until #709 — `payload_json` is Text, Postgres `->>` is json-only (`operator does not exist: text ->> unknown`). Without `skip_locked`, the lock test blocked 2.16s. Wave 5 correction scans would skip after the first stamp; they now pass a per-vault `stamp_path`.
-- **Shipped:** #706 keys (J→7000) · #702 structured `source_urls` (`KeyError` on f8c39b2) · #703 `toast_is_due` stamp · #707 QVideoSink duration 2150ms · #704 SKIP LOCKED on `content_machine_test` (0.3s) · #709 jsonb cast.
-- **Fail-first:** watched each named failure before restore. Qt tests ran here (system PySide6). CI postgres service is new on this commit. Suite **2,870 -> 2,883**; mypy **139** on committed packages (local tree is 143 from uncommitted extras). `data/` untouched.
-- **Not this commit:** #153 (still open in backlog until its own commit), technical QC, chapters, title-script. Next: **#705 · #708 · #431 · #549 · #21**. Backlog **358 open / 587 done**.
+- **Defect first:** #549 was persisted and unread (`needs_review=False`). #431 extras `0:20`/`0:40` is also equal-span. #711 CI push was main/master-only so postgres never started here. #708 `compile_kit("tapin").missing` named logo.svg.
+- **Shipped:** #710 #712 #431 #549 #414 #420 #498 #711 #708 #562 #569 #568 #430 #440 #705. Title vs script prints at Proceed?. Vanished claims file medium; rewording does not. TapIn octagon SVGs. Sticky 24h/7d snapshots.
+- **Fail-first:** 16 ERROR/FAIL on unmodified b9f1354 before the matching change. Chapter guard: ignored timings -> `0:20`/`0:40`. Suite **2,894 -> 2,919** (4 skipped); mypy **139**; `data/` untouched.
+- **Not this commit:** #21 (already shipped) · #158 · #673 · #684 · #437. Next: **#713 · #684 · #158 · #415 · #437**. Backlog **346 open / 603 done**, highest **#713**.
 
 
 

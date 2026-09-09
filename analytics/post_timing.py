@@ -427,6 +427,7 @@ class RecommendedTime:
     avg_engaged_rate: float  # 0.0 when no history for the slot
     supporting_samples: int
     rationale: str
+    channel_id: str = ""
 
 
 def _slot_engagement(
@@ -500,8 +501,10 @@ def get_recommended_time(
                 f"{confidence_note(n)}"
             )
         else:
-            rationale = "learned from your post history (best-engagement weekday/hours)"
-        return RecommendedTime(when_utc, local_str, "analytics", rate, n, rationale)
+            rationale = (
+                "learned schedule, but this slot has 0 measured posts " "— not a sample-backed rate"
+            )
+        return RecommendedTime(when_utc, local_str, "analytics", rate, n, rationale, channel_id)
 
     if channel_id == "moneywise" and _use_learned_post_slots():
         donor = learn_slots_from_analytics("tapin")
@@ -513,6 +516,7 @@ def get_recommended_time(
                 0.0,
                 0,
                 "TapIn slot shape as MoneyWise cold-start prior — not a gaming topic copy",
+                channel_id,
             )
 
     n_samples = len(_collect_timed_samples(channel_id))
@@ -524,7 +528,7 @@ def get_recommended_time(
         )
     else:
         rationale = f"default {domain} schedule (no engagement analytics yet)"
-    return RecommendedTime(when_utc, local_str, "static", 0.0, 0, rationale)
+    return RecommendedTime(when_utc, local_str, "static", 0.0, 0, rationale, channel_id)
 
 
 def display_recommended_time(rec: RecommendedTime) -> None:
@@ -538,6 +542,12 @@ def display_recommended_time(rec: RecommendedTime) -> None:
     )
     print(f"\n  Recommended post time ({tag}): {rec.local_str}")
     print(f"  Reason : {rec.rationale}")
+    if rec.channel_id:
+        from core.recommender_history import note_week_flip
+
+        flip = note_week_flip(rec.channel_id, "post_time", rec.local_str)
+        if flip:
+            print(f"  Note   : {flip}")
 
 
 def learn_slots_from_analytics(

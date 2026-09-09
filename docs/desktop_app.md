@@ -162,9 +162,11 @@ The aesthetics work, and the reason Qt was chosen.
 
 - **#152** thumbnail composition canvas — mechanical slice shipped 2026-09-08
   (`QGraphicsView` + last thumb + overlay). Drag/snapping shipped as **#692**.
-- **#153** caption choreography timeline — shipped 2026-09-09: keyframes over
-  real word timings (ops captions / ops caption-timeline / --captions).
-  Sidecar `<audio>.captions.json`; next karaoke burn applies timing and MarginV.
+- **#153** caption choreography timeline — built and removed 2026-09-09.
+  The operator does not want a manual caption-timing step, so the panel, both ops
+  verbs and the `<audio>.captions.json` sidecar are gone. Captions still use real
+  word timings; removal left the burned ASS byte-identical. See **#713** for the
+  part still worth solving, automatically.
 - **#151** brand-kit compiler — fonts, palette, sting, handle, banner compiled to
   render assets *and* GUI chrome from the Stage 0 tokens
 

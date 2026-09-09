@@ -29,7 +29,7 @@ found on the way. Structured `source_urls` on the run trace; correction-scan
 24h stamp; `SKIP LOCKED` measured on real Postgres; ReviewWindow keys; Qt
 decode of the committed intro fixture.
 
-**Previously this day** - **#153** caption timeline (still uncommitted, separate
+**Previously this day** - **#153** caption timeline (built, then RETIRED, separate
 commit). Before that: **#701** weekend clock · **#700** `claim_next` lock ·
 **#699** `surfaces` tokens · **#112** correction dossier · **#151** brand-kit.
 
@@ -81,7 +81,7 @@ purpose.
    word-timing path) and deliberately not committed here.
 4. **#549 script-vs-title check** `[M]` - drafted (`check_title_script_consistency`)
    and deliberately not committed here.
-5. **#21 caption font/fill** `[S]` - still distinct from #153's timing sidecar.
+5. **#21 caption font/fill** `[S]` - font and fill only; #153's timing sidecar is gone.
 
 **Dropped from this list** (stay open): **#158** cost tower -
 **#673** second monitor - Phase M - Ollama. **#684** last-run play remains
@@ -91,7 +91,7 @@ operator smoke after #707's fixture decode.
 Postgres `SKIP LOCKED` - correction-scan throttle - ReviewWindow keys - Qt
 fixture decode - jsonb cast for Text `payload_json`.
 
-**Closed 2026-09-09 (#153):** caption choreography timeline. Operator overrode
+**RETIRED 2026-09-09 — #153 caption choreography.** Built, then removed the same day on the operator's call: *"i dont need to see the caption timing, i dont want to do that manually."* It was a manual step by construction — drag keyframes, write `<audio>.captions.json`, let the next burn read it. Captions still use real word timings, which predates #153: the karaoke ASS is byte-identical before and after removal, because with no sidecar the feature was a no-op on every render. **#713** keeps the part worth solving — a cue that would cover a face should move itself, with no operator step. Do not rebuild the timeline UI.
 the demote. Filed gap: SRT placement. **Still uncommitted** at this write.
 
 **Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700** `claim_next`

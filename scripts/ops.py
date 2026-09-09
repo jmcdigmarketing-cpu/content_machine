@@ -1002,33 +1002,6 @@ def cmd_studio(_args: argparse.Namespace) -> int:
 
 
 @_register(
-    "caption-timeline",
-    'Stage 4 Qt caption choreography (karaoke vs SRT; requires pip install -e ".[app]")',
-)
-def cmd_caption_timeline(_args: argparse.Namespace) -> int:
-    from desktop.launch import launch
-
-    return launch(captions=True)
-
-
-@_register("captions", "Print karaoke vs SRT cues from a .words.json sidecar (--path mp3)")
-def cmd_captions(args: argparse.Namespace) -> int:
-    from core.caption_timeline import timeline_from_audio, timeline_report
-
-    path = str(getattr(args, "path", "") or "")
-    if not path:
-        from core.review_booth import gather_booth_context
-
-        path = str(gather_booth_context(getattr(args, "channel", None)).get("mp3_path") or "")
-    if not path:
-        print("no audio path; pass --path vo.mp3")
-        return 1
-    tl = timeline_from_audio(path)
-    print("\n".join(timeline_report(tl)))
-    return 0 if tl.source == "word_timing" else 1
-
-
-@_register(
     "queue-panel",
     'Stage 3 job queue (drag-reorder; requires pip install -e ".[app]")',
 )

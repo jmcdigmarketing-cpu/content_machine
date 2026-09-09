@@ -23,8 +23,6 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `brand-panel` | Compiled brand kit per channel (requires pip install -e ".[app]") |
 | `calibration` | Pre-publish grade vs realized engaged-rate (Pillar 2) |
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
-| `caption-timeline` | Stage 4 Qt caption choreography (karaoke vs SRT; requires pip install -e ".[app]") |
-| `captions` | Print karaoke vs SRT cues from a .words.json sidecar (--path mp3) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
 | `check-youtube` | Verify YouTube OAuth + upload env |
 | `coach` | Daily creator coach — ranked ideas + why, post time, length, patterns |

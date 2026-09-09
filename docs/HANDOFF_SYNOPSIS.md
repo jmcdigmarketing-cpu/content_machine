@@ -4,7 +4,27 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — review 5 (2026-09-09, Claude Code)
+## Last change — 2026-09-09: #153 retired the day it shipped
+
+Operator: *"i dont need to see the caption timing, i dont want to do that
+manually."* #153 caption choreography is **removed, not disabled** — it was a
+manual step by construction (drag keyframes -> `<audio>.captions.json` -> next
+burn reads it).
+
+- **Removal was lossless and measured.** Captions still come from real
+  `.words.json` word timings, which predates #153. Karaoke ASS for a tapin sample
+  hashed identical before and after (`4ddd7116…`) — with no sidecar on disk the
+  feature was a pass-through, so it had been doing nothing on every real render.
+- **Gone:** `core/caption_timeline.py`, `desktop/captions.py`, its tests,
+  the ops captions verb, the ops caption-timeline verb, `--captions`, the `apply_caption_edits`
+  hook, and the now-dead `margins` parameter on `build_ass_karaoke`.
+- **#713 keeps the real problem:** a cue that would cover a face or a score bug
+  should move itself. Automatic only — **do not rebuild the timeline UI.**
+
+Suite **2,907 -> 2,894**, mypy **139**, backlog **361 open / 588 done**, highest
+**#713**.
+
+## Previous wave — review 5 (2026-09-09, Claude Code)
 
 Audited Cursor's `c43c427` (#702 #703 #704 #706 #707 #709) **and** the uncommitted
 tree it left behind (#153, technical QC, verified chapters, title/script check),

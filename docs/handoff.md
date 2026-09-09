@@ -48,48 +48,41 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-09 · **HEAD at write:** `c43c427` · **Tree:** your wave 6 +
-my three audit fixes, committing right after this slot.
+**Written:** 2026-09-09 · **HEAD at write:** `b9f1354` · **Tree:** #153 removal +
+docs, committing right after this slot.
 
-**Cursor — your numbers were exact again, fifth round** (2,883 / 3 skipped at
-`c43c427`, verified in a worktree). And **#709 is a good catch against me**:
-`type_coerce(Text, JSON)` cannot work on Postgres, and my #700 test was SQLite
-so it could not have seen it.
+**Cursor — #153 is retired, and it is not a criticism of the build.** Operator's
+call, verbatim: *"i dont need to see the caption timing, i dont want to do that
+manually."* The timeline was a manual step by construction — drag keyframes,
+write `<audio>.captions.json`, next burn reads it — and that is the step they do
+not want. **Do not rebuild it.** #713 carries the real problem: a cue that would
+cover a face or a score bug should move itself, automatically, with no operator
+in the loop.
 
-**Defect first — three, all in the uncommitted tree, all fixed here.**
+**Removal was lossless, and measured before I touched anything.** I hashed the
+karaoke ASS for a tapin sample before and after: `4ddd7116…` both times. With no
+edits sidecar on disk `apply_caption_edits` was a pass-through, so on every real
+render the feature had been doing nothing. Captions still come from real
+`.words.json` timings, which predates #153 and is untouched.
 
-- **#710** the `_load_word_timings` alias. Production calls `load_word_timings`,
-  so `patch("video.subtitles._load_word_timings")` rebinds a dead attribute. One
-  of six sites went red; **the other five patch it to `None`, which is what the
-  real function returns anyway, so they were green and inert.** Alias removed —
-  an alias that does not survive patching is a trap, not compatibility.
-- **#711** #704's proof skips silently when there is no test database. If the new
-  CI postgres service fails to come up, three skips and the run still says OK —
-  the exact shape #704 was filed to end. Under `CI=true` that is now a failure.
-  **Note: `ci.yml`'s postgres service has never run, and pushing this branch
-  will not run it** - the workflow triggers only on `main`/`master`. It is first
-  exercised by a PR into main. Until then #704's proof is still unmeasured in CI;
-  the guard is what will say so out loud when it does run.
-- **#712** `tests/_wave6_extras.py` was named to dodge `unittest discover`. Right
-  call while uncommitted, but four real guards would have shipped never running.
-  Renamed to `test_wave6_extras.py`.
+**Gone:** `core/caption_timeline.py` · `desktop/captions.py` · its tests ·
+the ops captions verb · the ops caption-timeline verb · `py -m desktop --captions` · the
+`apply_caption_edits` hook in `video/subtitles.py` · the `margins` parameter on
+`build_ass_karaoke`, which existed only to carry manual overrides.
 
-**Checked and clean:** no undisclosed output change — the loudnorm filter built
-from `loudness_targets()` is byte-identical to the old literal, and `margins=None`
-reproduces the previous ASS Dialogue line. #702's field traced by *running* it
-end to end, URL intact at every hop. `refine_run_chapters` does persist through
-`repo.update()`, and its `length_preset` gate is real. `chapters_timing_source`
-and `technical_qc` each have a writer and a reader.
+**Heads-up, and I did not act on it.** Partway through the removal the three
+deleted files reappeared in the working tree, **byte-identical to HEAD**, with the
+index deletions still staged and no new commit or reflog entry. That reads as an
+editor restoring open buffers rather than you authoring anything, and a second
+delete stuck. If it was you and you want any of it back, it is all in `b9f1354` —
+say so rather than restoring, since the operator's decision is what removed it.
 
-**Also fixed:** 4 new mypy errors, 3 ruff findings, 3 unformatted files — your
-slot had honestly disclosed the local 143; baseline is back to 139 now the tree
-is committed.
+Earlier today I also audited your `c43c427` and committed your uncommitted tree —
+see the previous entry in [planning_log.md](planning_log.md) for #710/#711/#712.
 
-Suite **2,883 -> 2,907**; ruff + format clean; mypy **139**; `data/` untouched;
-4 skipped (3 Postgres + the new CI guard, all only because this machine has no
-test database). Backlog **360** open / **588** done, highest **#712**. Next five:
-**#705 · #708 · #711 · #431 · #21**. Detail: [planning_log.md](planning_log.md)
-2026-09-09 (audit).
+Suite **2,907 -> 2,894** (13 tests removed with the feature); ruff + format clean;
+mypy **139**; `data/` untouched. Backlog **361** open / **588** done, highest
+**#713**. Next five: **#705 · #708 · #711 · #431 · #21**.
 
 ## Slot — Cursor
 

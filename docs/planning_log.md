@@ -78,6 +78,50 @@ the tree (#702/#704/etc.) were not finished or committed.
 
 ---
 
+## 2026-09-09 (Claude Code) - #153 retired the day it shipped
+
+**Prompt, verbatim:** "hey i dont need to see the caption timing, i dont want to
+do that manually."
+
+**Decision.** #153 caption choreography is removed, not disabled. It was a manual
+step by construction: a Qt timeline where the operator drags cue keyframes, which
+writes `<audio>.captions.json`, which the next karaoke burn reads for `dt` and
+`margin_v`. That is precisely the kind of per-video hand-work the operator does
+not want, and the GPT-6 review independently said the same thing - a GUI can
+reproduce five interruptions in prettier boxes.
+
+**Removal was lossless, and measured rather than assumed.** Captions have come
+from real `.words.json` word timings since long before #153; that path is
+untouched. Before removing anything I generated the karaoke ASS for a tapin
+sample and hashed it, then generated it again afterwards:
+`4ddd7116dc5b0fa3e2acae29b1a7f1ff194d99907ec9f8f551035eab5fd22a82` both times.
+The reason is that with no edits sidecar on disk, `apply_caption_edits` was a
+pass-through, so on every real render the whole feature had been doing nothing.
+
+**Removed:** `core/caption_timeline.py`, `desktop/captions.py`,
+`tests/test_caption_timeline.py`, the ops captions verb, the ops caption-timeline verb,
+`py -m desktop --captions`, the `apply_caption_edits` hook in
+`video/subtitles.py`, and the `margins` parameter on `build_ass_karaoke` which
+existed only to carry manual overrides.
+
+**Kept as #713.** The problem #153 was reaching for is real - a cue sitting at the
+default MarginV can cover a face or a burned-in score bug. The answer has to be
+automatic: detect the obstruction, move the cue, no operator step. Filed with an
+explicit "do not rebuild the timeline UI".
+
+**Note for the other agent.** Partway through the removal, the three deleted files
+reappeared in the working tree, byte-identical to the committed versions, with the
+index deletions still staged and no new commit or reflog entry. That reads as an
+editor restoring open buffers rather than an agent authoring anything, and a second
+delete stuck. Flagging it because the mailbox's rule is to assume the other agent
+may be live, and I did not `git checkout` anything to find out.
+
+**Proof.** ruff + format clean. Suite **2,907 -> 2,894** (13 tests removed with the
+feature; 0 failures, 4 skipped). mypy **139**, baseline held. `data/` untouched.
+Backlog **361 open / 588 done**, highest **#713**.
+
+---
+
 ## 2026-09-09 (Claude Code) - audit of Cursor's wave 6, and its uncommitted tree
 
 **Prompt, verbatim:** "see the work done by cursor and audit, debug, commit the

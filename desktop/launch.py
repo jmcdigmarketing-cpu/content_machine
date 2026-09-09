@@ -11,8 +11,6 @@ def desktop_mode(argv: list[str] | None = None) -> str:
     args = argv if argv is not None else sys.argv[1:]
     if "--brand" in args:
         return "brand"
-    if "--captions" in args:
-        return "captions"
     if "--studio" in args:
         return "studio"
     if "--queue" in args:
@@ -28,7 +26,6 @@ def launch(
     studio: bool | None = None,
     queue: bool | None = None,
     brand: bool | None = None,
-    captions: bool | None = None,
     channel_id: str = "tapin",
 ) -> int:
     try:
@@ -43,8 +40,6 @@ def launch(
     )
     if brand:
         mode = "brand"
-    elif captions:
-        mode = "captions"
     elif studio:
         mode = "studio"
     elif queue:
@@ -60,11 +55,6 @@ def launch(
         from desktop.studio import StudioWindow
 
         window = StudioWindow(context=gather_booth_context())
-    elif mode == "captions":
-        from core.review_booth import gather_booth_context
-        from desktop.captions import CaptionTimelineWindow
-
-        window = CaptionTimelineWindow(context=gather_booth_context())
     elif mode == "brand":
         from desktop.brand import BrandWindow
 

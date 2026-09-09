@@ -245,12 +245,6 @@ def generate_subtitle_file(
         from video.caption_timing import build_ass_karaoke, build_srt_from_words
 
         max_words = caption_words_per_line()
-        karaoke_margins = None
-        if audio_path:
-            from core.caption_timeline import apply_caption_edits
-
-            lane = "karaoke" if style == "karaoke" else "srt"
-            words, karaoke_margins = apply_caption_edits(audio_path, words, lane=lane)
         if style == "karaoke":
             title_font, body_font = caption_fonts(channel_id)
             text = build_ass_karaoke(
@@ -258,7 +252,6 @@ def generate_subtitle_file(
                 max_words=max(2, min(4, max_words)),
                 title_font=title_font,
                 body_font=body_font,
-                margins=karaoke_margins,
             )
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)

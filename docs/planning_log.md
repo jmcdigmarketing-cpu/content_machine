@@ -183,6 +183,86 @@ the tree (#702/#704/etc.) were not finished or committed.
 
 ---
 
+## 2026-09-09 (Claude Code) - audit of Cursor's 96d6d1a (review 7)
+
+**Prompt, verbatim:** "see the work done by cursor and audit, debug, commit the
+result and push"
+
+**Reported numbers exact for the seventh round.** Suite **2,962 OK / 4 skipped**,
+mypy **139**, backlog **335 open / 618 done**, `data/` untouched - all re-measured
+here. Cursor also self-caught the best defect of its own wave: #715's first guard
+stayed green against a *commented-out* concurrency block, because `# concurrency:`
+still matched the assertion. Deleting the live YAML is what made it go red.
+
+**#713 respected the constraint I filed, and still changed finished output.**
+
+I filed #713 with an explicit "the answer has to be automatic - detect the
+obstruction, move the cue, no operator step - do not rebuild the timeline UI."
+Cursor built exactly that: `choose_caption_anchor` picks ASS Alignment 8 when the
+bottom eighth of the background carries more unique chroma than the top. No UI, no
+per-video hand-work. The constraint held.
+
+What it also does is run on **every karaoke render with no flag**, and the detector
+measures colour variety, not whether anything is overlaid. Measured on unmodified
+96d6d1a:
+
+| background | top chroma | bottom | decision |
+|---|---|---|---|
+| flat sky over textured ground | 1 | 87 | **top** |
+| sky over a city street | 1 | 240 | **top** |
+| flat studio backdrop | 0 | 0 | bottom |
+| the committed `channel_intro.mp4` | 0 | 0 | bottom |
+
+The first row is the commonest b-roll composition there is, with no HUD and no
+score bug, and it relocates every caption to the top of the video. Cursor's own two
+tests feed a synthetic full-frame noise PNG - the detector's best case - so nothing
+caught it. #717 already concedes "chroma is not a face"; the item was filed as
+future work while the behaviour was already live and restyling renders.
+
+**Fixed by gating, not deleting.** `CAPTION_AUTO_PLACE`, default off, which is how
+this repo already holds uncertain visual features (`SCENE_MATCHED_BROLL`,
+`LUFS_NORMALIZE` are both opt-in). With the flag unset the burned ASS is unchanged.
+Cursor's two heuristic tests were updated to *arm* the flag rather than weakened,
+so they still test the detector. Filed **#718**, with the unblock condition written
+down: the flag flips on when #717 can distinguish a score bug from a landscape.
+
+This is not the #153 situation. A one-time flag is not per-video hand-work, and the
+operator's objection there was to manual timing, not to a setting.
+
+**#719 - the ffmpeg proof can still evaporate.** #415 installs ffmpeg in CI and
+`require_ffmpeg()` raises there when it is missing - Cursor followed the #711
+pattern, and there is a test for it. But nothing calls it un-patched, and every
+real ffmpeg test is a bare `skipUnless(shutil.which("ffmpeg"))`. A broken apt-get
+means #414/#420/#498 and the #415 smoke all skip while the run reports OK. Added
+the same guard shape: under `CI=true`, missing ffmpeg is a failure.
+
+**#720 - a silent swallow.** The new Wikipedia revision tripwire is
+`except Exception: revision = None`, and the module carried no logger at all, so it
+could not have logged. Best-effort enrichment logs at debug per the recorded rule;
+ruff's `S110`/`S112` do not catch an `except` that assigns rather than `pass`.
+
+**Checked and clean**
+
+- **The dead-man switch is safe.** `PUBLISH_DEADMAN_DAYS` is off unless set, the
+  gate returns a `blocked` PublishResult rather than raising, and a broken check
+  fails **open** with a WARNING. Distinct from the render-time human-presence gate
+  in `jobs/worker.py` - different stage, different env var, not a duplicate.
+- **The Wikipedia tripwire keeps the signal contract**: same `make_signal` kwargs,
+  the extra fetch sits inside the existing `set_cache` path, and it is fail-open.
+  Tests mock both HTTP calls, so no network in the suite.
+- **Cursor's CI work is honest about its own limits.** The `concurrency` comment
+  states that push and pull_request are different refs and still both fire, and
+  **#716** files the precise fix (`github.head_ref || github.ref`) while leaving
+  the call to the operator. Nothing to correct.
+
+**Proof.** ruff + format clean. Suite **2,962 -> 2,968**, 0 failures, 5 skipped
+(3 Postgres, the CI postgres guard, and the new CI ffmpeg guard - all only because
+this machine is not CI and has no test database). mypy **139**, baseline held.
+`data/` untouched. Backlog **335 open / 618 done -> 338 open / 618 done**, highest
+**#720**.
+
+---
+
 ## 2026-09-09 (Claude Code) - audit of Cursor's 18ba62c (review 6)
 
 **Prompt, verbatim:** "see the work done by cursor and audit, debug, commit the

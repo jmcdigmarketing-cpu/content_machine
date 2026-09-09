@@ -523,11 +523,15 @@ class TestAutomaticCaptionPlacement(unittest.TestCase):
         return dest
 
     def test_busy_bottom_band_moves_cues_to_the_top(self):
+        # CAPTION_AUTO_PLACE gates the heuristic (default off, see #717): a flat
+        # sky over textured ground scores the same way a HUD does, so the detector
+        # must be armed explicitly. This still tests the detector, not the gate.
         from video.caption_place import choose_caption_anchor
 
         with tempfile.TemporaryDirectory() as tmp:
             path = self._png(Path(tmp) / "busy.png", busy_bottom=True)
-            self.assertEqual(choose_caption_anchor(str(path)), "top")
+            with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
+                self.assertEqual(choose_caption_anchor(str(path)), "top")
 
     def test_quiet_bottom_stays_at_default_bottom(self):
         from video.caption_place import choose_caption_anchor
@@ -553,7 +557,10 @@ class TestAutomaticCaptionPlacement(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             bg = self._png(Path(tmp) / "busy.png", busy_bottom=True)
             out = Path(tmp) / "captions.ass"
-            with patch("video.subtitles.caption_style", return_value="karaoke"):
+            with (
+                patch("video.subtitles.caption_style", return_value="karaoke"),
+                patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}),
+            ):
                 path = generate_subtitle_file(
                     "Hello",
                     1.0,

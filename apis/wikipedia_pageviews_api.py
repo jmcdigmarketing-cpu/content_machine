@@ -20,6 +20,7 @@ from apis.signal_contract import (
     classify_exception,
     make_signal,
 )
+from core.logging import get_logger
 
 _WIKI_ENABLED = os.getenv("WIKIPEDIA_PAGEVIEWS_ENABLED", "true").lower() not in (
     "0",
@@ -30,6 +31,9 @@ _BASE = (
     "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user"
 )
 _TTL = 12 * 60 * 60
+
+
+logger = get_logger("apis.wikipedia_pageviews")
 
 
 def _article_candidates(topic: str) -> list[str]:
@@ -205,7 +209,8 @@ def get_wikipedia_pageviews_signal(topic: str) -> dict:
         detail = f"{best_article}: {best_detail}"
         try:
             revision = _fetch_last_revision(best_article)
-        except Exception:
+        except Exception as exc:
+            logger.debug("wikipedia revision tripwire skipped: %s", exc)
             revision = None
         if revision:
             data["last_revision"] = revision

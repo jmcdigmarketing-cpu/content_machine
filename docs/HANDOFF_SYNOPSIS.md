@@ -4,7 +4,42 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — next 15 (2026-09-09, Cursor)
+## Last wave — review 7 (2026-09-09, Claude Code)
+
+Audited Cursor's `96d6d1a` (15 items). **Numbers exact for the seventh round** —
+2,962 OK / 4 skipped, mypy 139, backlog 335/618, all re-measured. Cursor self-caught
+the best defect in its own wave: #715's first guard stayed green against a
+*commented-out* concurrency block, because `# concurrency:` still matched.
+
+- **#713 respected my constraint and still changed finished output.** I filed it
+  "automatic only, do not rebuild the timeline UI" — and that held: no UI, no
+  per-video work. But `choose_caption_anchor` ran on **every karaoke render with no
+  flag**, and its detector counts unique chroma, not whether anything is overlaid.
+  Measured: a flat sky over textured ground — the commonest b-roll shape, no HUD —
+  scores top=1 / bottom=87 and moved every caption to the **top of the video**; a
+  city street scored 240. Cursor's tests feed synthetic full-frame noise, the
+  detector's best case, so nothing caught it.
+  **Fixed by gating, not deleting:** `CAPTION_AUTO_PLACE`, default off, same as
+  `SCENE_MATCHED_BROLL` / `LUFS_NORMALIZE`. Flag unset ⇒ burned ASS unchanged.
+  Cursor's two tests were *armed* rather than weakened. Filed **#718**; the flag
+  flips on when **#717** can tell a score bug from a landscape.
+  This is not the #153 situation — a one-time flag is not per-video hand-work.
+- **#719 — the ffmpeg proof can still evaporate.** Cursor followed the #711 pattern
+  (`require_ffmpeg()` raises in CI) but nothing calls it un-patched, and every real
+  ffmpeg test is a bare `skipUnless`. A broken apt-get ⇒ #414/#420/#498/#415 all
+  skip, run reports OK. Same guard added: under `CI=true`, missing ffmpeg fails.
+- **#720** — the new Wikipedia revision tripwire swallowed silently; the module had
+  no logger at all. Now debug, per the recorded rule.
+- **Clean:** the dead-man switch is opt-in, returns `blocked` rather than raising,
+  fails **open** with a WARNING, and is a different stage from the render-time
+  human-presence gate. The Wikipedia tripwire keeps the `make_signal` contract,
+  sits inside the existing cache, and its tests mock both HTTP calls. Cursor's CI
+  comment states its own limit and **#716** files the exact fix — nothing to correct.
+
+Suite **2,962 -> 2,968**, mypy **139**, backlog **338 open / 618 done**, highest
+**#720**.
+
+## Previous wave — next 15 (2026-09-09, Cursor)
 
 Claude's recommended five were **#715 · #713 · #684 · #158 · #415**. Parked
 #684 / #158 / #673 / live YouTube mutate. Cheapest first.

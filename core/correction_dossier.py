@@ -62,6 +62,17 @@ _CLAIM_STOPWORDS = frozenset(
 # claim has vanished. Deliberately token-overlap, not substring: "Jones beat
 # Pereira" vs "Jon Jones defeated Alex Pereira" would miss a substring test.
 _CLAIM_PRESENT_COVERAGE = 0.5
+# Coverage is only meaningful against a body that plausibly contains the article.
+# An empty response, a whitespace body or a client-rendered shell all score near
+# zero and would otherwise read as "the claim vanished" -- which is this module's
+# own unreachable-is-not-clean rule run backwards.
+#
+# Token COUNT alone cannot separate a shell from a short-but-real update: the
+# shell scored 5 and a legitimate one-sentence news line scores 7. The honest
+# discriminator is article text vs markup, so `_content_tokens` strips tags and
+# script/style blocks first -- which leaves a shell at 0 and the real update at 7.
+# That also stops tag names ("div", "span") counting as claim matches in coverage.
+_MIN_READABLE_TOKENS = 5
 STAMP_PATH_TEMPLATE = os.path.join(DATA_DIR, "correction_scan_{channel}.json")
 
 
@@ -139,10 +150,20 @@ def _severity_for(claim: dict, body_lc: str) -> str:
     return "medium"
 
 
+_SCRIPT_STYLE_RE = re.compile(r"<(script|style).*?</>", re.I | re.S)
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def strip_markup(text: str) -> str:
+    """Article text only. Tag and attribute names are not evidence of a claim."""
+    without_code = _SCRIPT_STYLE_RE.sub(" ", text or "")
+    return _TAG_RE.sub(" ", without_code)
+
+
 def _content_tokens(text: str) -> set[str]:
     return {
         token
-        for token in re.findall(r"[a-z0-9']+", (text or "").lower())
+        for token in re.findall(r"[a-z0-9']+", strip_markup(text).lower())
         if len(token) > 2 and token not in _CLAIM_STOPWORDS
     }
 
@@ -206,6 +227,21 @@ def scan_published_for_corrections(
                 continue
             body_lc = body.lower()
             has_retraction = any(word in body_lc for word in _RETRACTION_WORDS)
+            # Retraction language is direct evidence and stands on its own. The
+            # weak coverage signal needs a body worth measuring against:
+            #   - too little readable text: the check did not run, say so;
+            #   - a read stopped at the byte cap: the claim may simply be past it.
+            body_tokens = _content_tokens(body)
+            readable = len(body_tokens) >= _MIN_READABLE_TOKENS
+            truncated = len(body) >= _MAX_BODY_CHARS
+            if not has_retraction and not readable:
+                logger.warning(
+                    "correction source unreadable (%d content tokens), not cleared "
+                    "and not reported as changed: %s",
+                    len(body_tokens),
+                    url,
+                )
+                continue
             for claim in claims:
                 text = str(claim.get("claim") or "").strip()
                 if not text:
@@ -213,6 +249,9 @@ def scan_published_for_corrections(
                 coverage = _claim_coverage(text, body)
                 if has_retraction:
                     severity = _severity_for(claim, body_lc)
+                elif truncated:
+                    # Low coverage against a truncated read says nothing.
+                    continue
                 elif coverage < _CLAIM_PRESENT_COVERAGE:
                     severity = "medium"
                 else:

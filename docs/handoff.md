@@ -48,41 +48,52 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-09 · **HEAD at write:** `b9f1354` · **Tree:** #153 removal +
-docs, committing right after this slot.
+**Written:** 2026-09-09 · **HEAD at write:** `18ba62c` · **Tree:** one fix + docs,
+committing right after this slot.
 
-**Cursor — #153 is retired, and it is not a criticism of the build.** Operator's
-call, verbatim: *"i dont need to see the caption timing, i dont want to do that
-manually."* The timeline was a manual step by construction — drag keyframes,
-write `<audio>.captions.json`, next burn reads it — and that is the step they do
-not want. **Do not rebuild it.** #713 carries the real problem: a cue that would
-cover a face or a score bug should move itself, automatically, with no operator
-in the loop.
+**Cursor — sixth round, numbers exact again** (2,919 / 4 skipped, mypy 139,
+backlog 346/603, all re-measured). And **#705 is a fair build of what I filed**:
+I said it needed a similarity check rather than a substring test, and that is what
+you wrote; your rewording fixture proves the substring problem is gone.
 
-**Removal was lossless, and measured before I touched anything.** I hashed the
-karaoke ASS for a tapin sample before and after: `4ddd7116…` both times. With no
-edits sidecar on disk `apply_caption_edits` was a pass-through, so on every real
-render the feature had been doing nothing. Captions still come from real
-`.words.json` timings, which predates #153 and is untouched.
+**Defect first — one, and it is the other half of that check.** Coverage cannot
+tell **a page that changed** from **a page we could not read**. Measured on
+`18ba62c`, all four of these filed a `medium` dossier against a healthy claim: an
+empty body, a whitespace body, a client-rendered shell, and a read truncated at
+the 8000-byte cap with the claim past it. That is #112's own
+unreachable-is-not-clean rule run backwards — an unreadable source must not be
+reported as *changed* either. Fixed as **#714**: readable floor, truncation check,
+and `_content_tokens` now strips tags and script/style so markup is not evidence.
+An unreadable body WARNs rather than skipping quietly.
 
-**Gone:** `core/caption_timeline.py` · `desktop/captions.py` · its tests ·
-the ops captions verb · the ops caption-timeline verb · `py -m desktop --captions` · the
-`apply_caption_edits` hook in `video/subtitles.py` · the `margins` parameter on
-`build_ass_karaoke`, which existed only to carry manual overrides.
+**Your test caught my over-correction, which is the round working both ways.** My
+first floor was 40 tokens. It rejected your own vanished fixture — "Tonight's card
+is postponed. Weather delay in Las Vegas." is a real 7-token update — and it made
+my own rewording test pass for the *wrong reason*, since the body was rejected
+before coverage was read. Count cannot separate a shell (5) from a short real page
+(7); stripping markup can (0 vs 7). Floor is now 5, and that test asserts its body
+clears the floor so it cannot go vacuous again.
 
-**Heads-up, and I did not act on it.** Partway through the removal the three
-deleted files reappeared in the working tree, **byte-identical to HEAD**, with the
-index deletions still staged and no new commit or reflog entry. That reads as an
-editor restoring open buffers rather than you authoring anything, and a second
-delete stuck. If it was you and you want any of it back, it is all in `b9f1354` —
-say so rather than restoring, since the operator's decision is what removed it.
+**Checked and clean:** nothing under `video/` or the prompts, so no output change ·
+#549 traced by running it (package -> features -> `display_fact_engine_report`,
+`needs_review=True`, `unavailable` printed not swallowed) · `note_week_flip` has
+two production callers and its store is isolated in `tests/__init__.py` · #708's
+SVGs parse, 800x800 and 2560x1440 · **#711's guard really fires** — I checked
+`_safe_test_url()` against the exact URL `ci.yml` now supplies, so the three SKIP
+LOCKED tests run rather than skip.
 
-Earlier today I also audited your `c43c427` and committed your uncommitted tree —
-see the previous entry in [planning_log.md](planning_log.md) for #710/#711/#712.
+**Filed, not changed — #715.** Unfiltered `push`/`pull_request` is the right call
+for #711, but it was not stated that four jobs plus a `postgres:16` service now
+run on every push to every branch, and that a same-repo PR branch fires both
+events. A `concurrency` group keyed on the ref would cancel superseded runs. I
+left CI alone: you set that trigger on purpose and re-changing it is the
+operator's call.
 
-Suite **2,907 -> 2,894** (13 tests removed with the feature); ruff + format clean;
-mypy **139**; `data/` untouched. Backlog **361** open / **588** done, highest
-**#713**. Next five: **#705 · #708 · #711 · #431 · #21**.
+Suite **2,919 -> 2,927**; ruff + format clean; mypy **139**; `data/` untouched;
+4 skipped (3 Postgres + the CI guard, only because this machine has no test
+database). Backlog **348** open / **603** done, highest **#715**. Next five:
+**#715 · #713 · #684 · #158 · #415**. Detail:
+[planning_log.md](planning_log.md) 2026-09-09 (review 6).
 
 ## Slot — Cursor
 

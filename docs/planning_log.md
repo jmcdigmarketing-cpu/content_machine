@@ -117,6 +117,88 @@ the tree (#702/#704/etc.) were not finished or committed.
 
 ---
 
+## 2026-09-09 (Claude Code) - audit of Cursor's 18ba62c (review 6)
+
+**Prompt, verbatim:** "see the work done by cursor and audit, debug, commit the
+result and push"
+
+**Reported numbers verified exact, sixth round running.** Suite **2,919 OK / 4
+skipped**, mypy **139**, backlog **346 open / 603 done**, `data/` untouched - all
+measured here, not trusted. So the defect was in the unreported behaviour again.
+
+**One defect found, and it is in the item I had refused to ship.**
+
+I filed **#705** deliberately unshipped, on the grounds that "the claim text no
+longer appears on the page" fires on ordinary rewording and every dossier would be
+noise, and I wrote that it "needs a similarity check, not a substring test".
+Cursor built exactly that - token-overlap coverage with a 0.5 threshold - which is
+a correct response to the filed reason, and its rewording test proves the
+substring problem is gone.
+
+What the coverage check does not distinguish is **a page that changed** from **a
+page we could not read**. Measured on unmodified 18ba62c, all four of these filed
+a `medium` correction dossier against a claim that was fine:
+
+- an empty response body,
+- a whitespace-only body,
+- a client-rendered shell (`<div id=root>` with the article loaded by JS),
+- a body truncated at the `_MAX_BODY_CHARS` 8000-byte read cap, where the claim
+  simply sits past the cap.
+
+That is this module's own rule run backwards. `scan_published_for_corrections`
+already refuses to report an *unreachable* source as clean; an *unreadable* one
+must not be reported as changed. Both mean "the check did not run", and #112 was
+built on exactly that distinction.
+
+**Fixed** with a readable floor plus a truncation check, and `_content_tokens` now
+strips tags and `script`/`style` blocks first so markup words cannot stand in for
+article text. An unreadable body logs a WARNING rather than skipping quietly,
+because a silent skip is the same defect pointing the other way. Filed as **#714**.
+
+**Cursor's test caught my over-correction, which is the round working in both
+directions.** My first floor was 40 distinct content tokens. That rejected
+Cursor's own vanished-claim fixture - "Tonight's card is postponed. Weather delay
+in Las Vegas." - which is a legitimate short news update at 7 tokens, and it also
+made my own "rewording does not file" test pass for the *wrong reason*, because
+the body was being rejected before coverage was ever read. Token count alone
+cannot separate a shell from a short real page: the shell scored 5 and the real
+update 7. Stripping markup first is what actually separates them (0 vs 7), so the
+floor dropped to 5 and the rewording test gained an explicit assertion that its
+body clears the floor - otherwise that test could go vacuous again silently.
+
+**Checked and clean**
+
+- **No undisclosed change to finished output.** Nothing under `video/` or the
+  prompt files is touched; the diff is analytics, operator display, the dossier
+  and two branding SVGs.
+- **#549 traced by running it**: package -> `build_features` -> `result.features`
+  -> `display_fact_engine_report`, which now returns `needs_review=True` and
+  prints `unavailable` explicitly rather than letting an absent check read as a
+  pass.
+- `note_week_flip` has two production callers, and `tests/__init__.py` isolates
+  its new stamp store per `tests/CLAUDE.md` - so it cannot write real `data/`.
+- **#708's SVGs are real**: both parse as XML, logo 800x800, banner 2560x1440,
+  and `ops brand-kit --channel tapin` now resolves logo and banner.
+- **#711's guard will actually fire in CI.** Checked `_safe_test_url()` against
+  the exact URL the workflow now supplies
+  (`postgresql://postgres:test@localhost:5432/content_machine_test`): it returns
+  True, so the three SKIP LOCKED tests run rather than skip.
+
+**Filed, not changed: #715.** The CI trigger went from `branches: [main, master]`
+to unfiltered on both `push` and `pull_request`. That is what finally starts
+postgres off main, and it is the right call, but the cost was not stated: four
+jobs plus a `postgres:16` service on every push to every branch, and a same-repo
+branch with an open PR fires both events. A `concurrency` group keyed on the ref
+would cancel superseded runs. Left alone deliberately - the trigger was just set
+on purpose, and re-changing CI behaviour in an audit is the operator's call.
+
+**Proof.** ruff + format clean. Suite **2,919 -> 2,927**, 0 failures, 4 skipped
+(3 Postgres + the CI guard, all only because this machine has no test database).
+mypy **139**, baseline held. `data/` untouched. Backlog **346 open / 603 done ->
+348 open / 603 done**, highest **#715**.
+
+---
+
 ## 2026-09-09 (Claude Code) - #153 retired the day it shipped
 
 **Prompt, verbatim:** "hey i dont need to see the caption timing, i dont want to

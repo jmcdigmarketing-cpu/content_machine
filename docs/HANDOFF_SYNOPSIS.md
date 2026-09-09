@@ -4,7 +4,41 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last change — 2026-09-09 (Cursor) next 15
+## Last wave — review 6 (2026-09-09, Claude Code)
+
+Audited Cursor's `18ba62c` (15 items: #710 #712 #431 #549 #414 #420 #498 #711 #708
+#562 #569 #568 #430 #440 #705). **Numbers exact for the sixth round** — 2,919 OK /
+4 skipped, mypy 139, backlog 346/603, all measured here rather than trusted.
+
+- **One defect, in the item I had refused to ship.** I filed **#705** unshipped
+  because a substring test fires on rewording, and said it "needs a similarity
+  check". Cursor built exactly that, and its rewording test proves the substring
+  problem is gone. What coverage cannot tell apart is **a page that changed** from
+  **a page we could not read**: an empty body, a whitespace body, a JS shell and a
+  read truncated at the 8000-byte cap all filed a `medium` dossier against a
+  healthy claim. That is #112's unreachable-is-not-clean rule run backwards.
+  Fixed as **#714** — readable floor, truncation check, and `_content_tokens` now
+  strips tags so markup is not mistaken for article text.
+- **Cursor's test caught my over-correction.** My first floor (40 tokens) rejected
+  its own fixture — a legitimate 7-token news update — and quietly made my
+  "rewording does not file" test pass for the wrong reason. Token count cannot
+  separate a shell (5) from a short real page (7); stripping markup can (0 vs 7).
+  Floor is 5, and that test now asserts its body clears the floor so it cannot go
+  vacuous again.
+- **#711's guard will really fire.** Checked `_safe_test_url()` against the exact
+  URL the workflow now supplies — the three SKIP LOCKED tests run, not skip.
+- **Filed, not changed — #715.** The CI trigger is now unfiltered on `push` and
+  `pull_request`. Right call for #711, but four jobs plus a `postgres:16` service
+  now run on every push to every branch, and a same-repo PR branch fires both
+  events. A `concurrency` group would cancel superseded runs. Left to the operator.
+- **Clean:** nothing under `video/` or the prompts touched; #549 traced end to end
+  to `needs_review=True`; `note_week_flip` has two production callers and its new
+  store is isolated in `tests/__init__.py`; #708's SVGs parse (800x800, 2560x1440).
+
+Suite **2,919 -> 2,927**, mypy **139**, backlog **348 open / 603 done**, highest
+**#715**.
+
+## Previous change — 2026-09-09 (Cursor) next 15
 
 Prove-and-tick leftovers in HEAD, then #711 #708, honesty S, #705 last.
 

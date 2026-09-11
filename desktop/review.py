@@ -114,9 +114,16 @@ class ReviewWindow(QMainWindow):
             self._video = video
             layout.addWidget(video, 1)
             self._overlay = SafeTitleOverlay(video)
-            self._audio = QAudioOutput()
             self._player = QMediaPlayer()
-            self._player.setAudioOutput(self._audio)
+            # #684. A machine with no audio sink -- any headless runner, and a
+            # desktop whose output device is asleep -- raised here and cost the
+            # operator the video as well as the sound. Silent review beats none.
+            try:
+                self._audio = QAudioOutput()
+                self._player.setAudioOutput(self._audio)
+            except Exception as exc:
+                self._audio = None
+                logger.warning("review audio unavailable, playing silent: %s", exc)
             self._player.setVideoOutput(video)
             start_review_player(self._player, self._mp4)
         elif self._mp4 and os.path.isfile(self._mp4):

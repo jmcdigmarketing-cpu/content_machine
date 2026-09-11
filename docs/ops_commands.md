@@ -22,6 +22,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `brand-kit` | Print the compiled brand kit and what is missing |
 | `brand-panel` | Compiled brand kit per channel (requires pip install -e ".[app]") |
 | `calibration` | Pre-publish grade vs realized engaged-rate (Pillar 2) |
+| `caption-anchor` | Measure whether a frame's bottom band carries an overlay (#717) |
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
 | `check-youtube` | Verify YouTube OAuth + upload env |
@@ -46,6 +47,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
+| `free-tiers` | When each provider's free window resets or ends (#378) |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |
 | `grain-grade` | Encode a flat frame with the channel look and print stddev |

@@ -36,22 +36,34 @@ anchor, **#415** ffmpeg smoke in CI. Projected TTS prints at Proceed?.
 
 ### Recommended next five (non-app)
 
-The list changed because #713 / #415 / #437 closed. #158 and #673 stay parked
-(L dashboard / second physical display). #716 is an operator call on whether
-a PR run should die when its branch pushes.
+All five of the previous list shipped, so this one is built from what the wave
+measured. Three of the five are its own findings.
 
-1. **#684 last-run ReviewWindow play** `[M]` - still operator smoke after #707's
-   fixture decode.
-2. **#717 face/score-bug caption remainder** `[M]` - #713 moves a colourful
-   bottom band; a dark overlay still covers MarginV. No timeline UI.
-3. **#407 opener-pattern check** `[S]` - enforce measured-good hooks.
-4. **#590 rate-limit headroom before discovery** `[S]` - show remaining units
-   before the pool starts, not after exhaustion.
-5. **#378 free-tier expiry calendar** `[S]` - a $0 run that silently becomes
-   paid is the same class as #580.
+1. **#721 a low horizon still reads as a caption overlay** `[M]` - the one gap
+   #717 did not close, and the reason `CAPTION_AUTO_PLACE` is still off. A
+   horizon at 65-90% of frame height is a full-width luminance step, same shape
+   as a lower-third. The fix is temporal: two frames a second apart, where an
+   overlay is pixel-identical and scenery is not. **Closing this is what lets the
+   flag default on**, so it outranks new surface.
+2. **#722 derive the free-tier dates instead of typing them** `[M]` - #378's
+   calendar is honest that its dates are hand-maintained, but a stale `resets` is
+   indistinguishable from a correct one. `apify_get_usage` already records the
+   Apify side.
+3. **#723 the headroom line repeats once per variant** `[S]` - #590 prints from
+   `build_registry`, which runs per variant. Emit once per process unless a number
+   moved.
+4. **#716 CI push+PR group key** `[S]` - still the operator call it was filed as,
+   but it is now the cheapest open CI item.
+5. **#158 Cost Control Tower** `[L]` - unparked deliberately: #590 and #378 just
+   built two of its readings, so the dashboard has real inputs for the first time.
 
-**Dropped from this list** (stay open): **#158** Cost Tower · **#673** second
-monitor · **#716** CI push+PR group key · Phase M · Ollama.
+**Dropped from this list** (stay open): **#673** second monitor · Phase M ·
+Ollama · the remaining `[L]` desktop panels.
+
+**Closed 2026-09-10 (this wave):** **#590** headroom before the pool · **#378**
+free-tier calendar · **#407** opener advisory · **#717** luminance-step caption
+placement · **#684** live review-room decode + the unconditional `QAudioOutput`
+behind it. Filed open: **#721 #722 #723**.
 
 **Closed 2026-09-09 (next 15):** **#714 #715 #584 #572 #580 #595 #452 #362
 #364 #336 #605 #599 #437 #713 #415**. Found: #715 comment-out guard was

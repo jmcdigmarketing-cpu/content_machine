@@ -17,7 +17,11 @@ import os
 import re
 from dataclasses import dataclass, field
 
+from core.logging import get_logger
+
 # Openers our style guide bans — strong penalty.
+logger = get_logger("core.hook_score")
+
 _WEAK_OPENERS = (
     "today",
     "let's",
@@ -184,3 +188,13 @@ def display_hook_score(hs: HookScore, *, print_fn=print) -> None:
         weak_points = [label for label, delta in hs.reasons if delta < 0]
         if weak_points:
             print_fn("    Fix: " + ", ".join(weak_points))
+    # #407. The score nets out, so a bonus elsewhere can hide a weak opener at any
+    # verdict. Name the recorded shape regardless of the number.
+    try:
+        from core.opener_patterns import opener_advisory
+
+        note = opener_advisory(hs.hook)
+        if note:
+            print_fn(f"    Opener: {note}")
+    except Exception as exc:
+        logger.debug("opener advisory skipped: %s", exc)

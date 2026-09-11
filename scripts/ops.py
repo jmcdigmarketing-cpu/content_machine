@@ -402,6 +402,49 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("caption-anchor", "Measure whether a frame's bottom band carries an overlay (#717)")
+def cmd_caption_anchor(args: argparse.Namespace) -> int:
+    """Lets the operator decide CAPTION_AUTO_PLACE from their OWN footage rather
+    than from the synthetic fixtures the thresholds were set on."""
+    from video.caption_place import band_reading, bottom_band_overlay
+
+    path = (getattr(args, "path", None) or "").strip()
+    if not path:
+        print("caption-anchor requires --path VIDEO.mp4 or IMAGE.png")
+        return 2
+    state, metrics = band_reading(path)
+    if state == "no_frame":
+        print(f"{path}: no frame could be read (missing file, or not a video/image)")
+        return 2
+    if state == "no_contrast" or metrics is None:
+        # A measured answer, not a failure: nothing to avoid, so nothing moves.
+        print(f"{path}")
+        print("  band has no measurable contrast (flat or black)")
+        print("  verdict       : clear -> captions stay at the bottom")
+        return 0
+    spread, step = metrics
+    overlay = bottom_band_overlay(path)
+    print(f"{path}")
+    print(f"  spread/median : {spread:.2f}  (needs >= 0.35)")
+    print(f"  step share    : {step:.2f}  (needs >= 0.50)")
+    print(
+        f"  verdict       : {'OVERLAY -> captions would move to the top' if overlay else 'clear -> captions stay at the bottom'}"
+    )
+    print("  CAPTION_AUTO_PLACE is off by default (#718). Measure your own clips before enabling.")
+    return 0
+
+
+@_register("free-tiers", "When each provider's free window resets or ends (#378)")
+def cmd_free_tiers(_args: argparse.Namespace) -> int:
+    from core.free_tier_calendar import expiring_windows, render_calendar
+
+    rows = expiring_windows()
+    print(render_calendar(rows))
+    # Non-zero when something has already lapsed: a closed window means the next
+    # "$0" run is not $0 any more.
+    return 1 if any(r.get("closed") for r in rows) else 0
+
+
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
 def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render

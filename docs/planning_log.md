@@ -183,6 +183,113 @@ the tree (#702/#704/etc.) were not finished or committed.
 
 ---
 
+## 2026-09-10 (Claude Code) - the roadmap's five, all of them
+
+**Prompt, verbatim:** "next 5 tasks, then debug, then brainstorm 5 new, then commit"
+
+**What was picked, and why it matches the recommendation this time.** The roadmap
+said **#684 · #717 · #407 · #590 · #378**, and unlike the 2026-09-09 wave the list
+held up under step 2: every item's backlog text matched, nothing was parked in
+`HANDOFF_SYNOPSIS.md`, and no item named a dependency that does not exist. One
+drift worth noting: #684 is `[S]` in `backlog.md` and `[M]` in `roadmap.md`. Built
+cheapest-first - #590, #378, #407, #717, #684 - so the two `[M]`s could not strand
+the three `[S]`s.
+
+**Shipped 1..5**
+
+1. **#590** headroom before the pool. `core/discovery_headroom.py`, emitted from
+   `build_registry` immediately before the `ThreadPoolExecutor`. The numbers all
+   existed already; none of them was visible until something hit a wall. An
+   unreadable store reports **unknown**, never zero.
+2. **#378** free-tier calendar. `config/free_tiers.json` + `core/free_tier_calendar.py`
+   + `ops free-tiers`, non-zero exit once a window has actually lapsed. Due /
+   closed / unknown kept distinct, because unknown is not safe.
+3. **#407** opener advisory. Printed at every verdict rather than only `weak` -
+   the score nets out, so a bonus elsewhere could hide a weak opener entirely.
+   Explicitly labelled editorial judgment; a test forbids retention / % more /
+   will perform / predicted / increase.
+4. **#717** caption placement by luminance step. Chroma is gone entirely.
+5. **#684** live review-room decode through `ReviewWindow`.
+
+**Findings, with file:line**
+
+- `desktop/review.py:117` built `QAudioOutput()` unconditionally. **Two of the
+  three new #684 tests passed on first run**, which is the useful part of the
+  result: the decode was already fine and had been for two waves, and the actual
+  defect was that any machine with no audio sink lost the *video* too. Now wrapped,
+  WARNING, plays silent.
+- `core/hook_score.py` had no logger, so the handler wrapping the new #407 call
+  would have raised `NameError` inside its own `except`. Added one.
+- `core/discovery_headroom.show_headroom` was written and then never called - I had
+  wired its two halves directly. Deleted rather than left as a helper only the
+  tests reach; that is the defect shape this repo keeps finding.
+- Running `ops caption-anchor` on the one real committed clip reported
+  `unreadable` and exited **2**, the same code a bad path gets. The clip's first
+  frame has a pure black bottom band (median luma 0.00), so "cannot measure" is the
+  honest reading - but it is a *measured* result meaning "captions stay at the
+  bottom", not a usage error. Split into `no_frame` / `no_contrast` / `ok`.
+
+**#717 in detail, because the thresholds are measured rather than chosen.** Per-row
+mean luma across the band, two gates: spread/median >= 0.35 and one row-to-row jump
+>= 50% of that spread. Readings:
+
+| frame | spread/median | step share | verdict |
+|---|---|---|---|
+| sky over grass (#718 FP) | 0.09 | 0.75 | reject |
+| sky over city (#718 FP) | 0.13 | 0.92 | reject |
+| strong in-band gradient | >0.35 | 0.06 | reject |
+| bright score bug | 1.11 | 1.00 | detect |
+| flat dark lower-third | 1.02 | 0.93 | detect |
+| band-filling overlay | 1.07 | 0.82 | detect |
+
+So the spread gate rejects scenery and the step gate rejects gradients; both carry
+weight, and each has a fixture that isolates it. The window is 3x the band because
+an overlay filling the band has no step *inside* it - measured 0.24 / 0.23 / 1.07 at
+x1 / x2 / x3, so x1 and x2 miss it.
+
+**Three of my own tests and two of Cursor's had to change, and none was weakened.**
+Cursor's #713 fixture is full-frame noise, which the new detector correctly says is
+not an overlay; its two tests keep the same assertion against a fixture that is one.
+My own `test_the_flag_is_what_turns_the_heuristic_on` from review 7 used the sky
+frame to demonstrate the flag - that frame was the false positive #717 fixed, so it
+moved to a real overlay and now asserts both flag states.
+
+**What was deliberately not done**
+
+- **`CAPTION_AUTO_PLACE` stays default-off.** #717 closes the measured #718 cases,
+  but widening the window to catch a band-filling overlay means a horizon at
+  65-90% of frame height now reads as one. Measured, and pinned by a test that
+  fails if the gap ever closes. Filed **#721** with the fix named: a temporal check,
+  because an overlay is pixel-identical across frames and scenery is not. Flipping
+  a default that changes finished video on synthetic fixtures would be the
+  over-claiming these reviews keep catching.
+- **No face detection.** A face is not an overlay and #717's title conflates them.
+- The headroom line still prints once per variant (**#723**), and the free-tier
+  dates are still typed by hand (**#722**).
+
+**A false alarm worth recording.** One suite run reported 8,521s and three
+failures. The failures were real (the five stale caption tests above). The time was
+not a code defect: I had a background suite and a foreground verbose suite running
+at once, both spawning Qt and ffmpeg subprocesses. A clean single run is **63.8s**.
+`headroom_line` measures 0.8ms steady, so #590 is not on a hot path in any
+meaningful sense.
+
+**Audit.** 5 items shipped, 28 behavioural tests added, all observed failing first
+on `b99ab81` for their named reason (four `ModuleNotFoundError`/`ImportError`, then
+the two overlay shapes, then `RuntimeError: no audio device`). Every new symbol
+grepped for a production caller - which is how `show_headroom` was caught with
+none. mypy **139**, baseline held. `data/` empty. Operator output run for real and
+read: `ops free-tiers`, `ops caption-anchor --path video/intro/channel_intro.mp4`
+(and with a bad path, exit 2), the headroom line against real stores, and the
+opener advisory against three real hooks. No new WARNING on a healthy run.
+
+**Proof.** ruff + format clean (717 files). Suite **2,968 -> 2,996**, 0 failures,
+5 skipped (3 Postgres + the CI postgres guard + the CI ffmpeg guard, all only
+because this machine is not CI). mypy **139**. Backlog **338 open / 618 done ->
+336 open / 623 done**, highest **#720 -> #723**.
+
+---
+
 ## 2026-09-09 (Claude Code) - audit of Cursor's 96d6d1a (review 7)
 
 **Prompt, verbatim:** "see the work done by cursor and audit, debug, commit the

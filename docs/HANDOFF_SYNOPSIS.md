@@ -4,7 +4,49 @@ Use in a fresh session to continue `content_machine` without re-reading the full
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — review 7 (2026-09-09, Claude Code)
+## Last wave — 2026-09-10 (Claude Code): the roadmap's five, all of them
+
+Shipped **#590 · #378 · #407 · #717 · #684**. Suite **2,968 -> 2,996**, mypy **139**
+held, ruff clean, `data/` untouched. Backlog **336 open / 623 done**, highest **#723**.
+
+Unlike the previous wave the recommended list held up under step 2 — every item's
+backlog text matched and nothing was parked. Built cheapest-first so the two `[M]`s
+could not strand the three `[S]`s.
+
+- **#717 replaced chroma with a luminance step**, which is what #713 should have
+  measured. An overlay is composited, so it puts a horizontal band of different
+  brightness into the frame; scenery varies smoothly. Two gates, both measured:
+  spread/median >= 0.35 rejects scenery (0.09 / 0.13 on the two #718 false
+  positives), and one row-to-row jump >= 50% of the spread rejects gradients (0.06).
+  Catches a bright score bug (1.11 / 1.00), a flat dark lower-third (1.02 / 0.93)
+  and a band-filling overlay (1.07 / 0.82). Window is 3x the band because a
+  band-filling overlay has no step inside it — x1/x2 measured 0.24/0.23 and miss it.
+- **`CAPTION_AUTO_PLACE` still defaults off, deliberately.** The wider window means a
+  horizon at 65–90% of frame height now reads as an overlay — measured, and pinned by
+  a test that fails if the gap closes. **#721** names the fix: a temporal check, since
+  an overlay is pixel-identical across frames and scenery is not. **Closing #721 is
+  what lets the flag default on.**
+- **#684's real defect was not the decode.** Two of three new tests passed on first
+  run, so the review room had been decoding fine for two waves. The defect was
+  `QAudioOutput()` built unconditionally — any machine with no audio sink lost the
+  *video* too. Now wrapped: WARNING, plays silent.
+- **#407 is labelled editorial judgment, not prediction** — a test forbids
+  retention / % more / will perform / predicted / increase, because n≈10 cannot
+  support a causal claim. Printed at every verdict, not just `weak`, because the
+  score nets out and a bonus elsewhere could hide the opener entirely.
+- **Found in my own work:** `show_headroom` was written and never called (deleted,
+  not left as a test-only helper); `hook_score` had no logger so the new handler
+  would have raised inside its own `except`; and `ops caption-anchor` reported the
+  one real committed clip as `unreadable` with exit 2 — its black band is a
+  *measured* "stays at the bottom", not a usage error. Split into three states.
+- **A false alarm, recorded so it is not re-found:** one run reported 8,521s. The
+  three failures in it were real (stale caption tests); the time was two concurrent
+  suites of my own. Clean single run **63.8s**; `headroom_line` is 0.8ms.
+
+**Next five:** **#721 · #722 · #723 · #716 · #158** — three of them this wave's own
+findings, and #158 unparked because #590/#378 just built two of its readings.
+
+## Previous wave — review 7 (2026-09-09, Claude Code)
 
 Audited Cursor's `96d6d1a` (15 items). **Numbers exact for the seventh round** —
 2,962 OK / 4 skipped, mypy 139, backlog 335/618, all re-measured. Cursor self-caught

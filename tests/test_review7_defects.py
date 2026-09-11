@@ -52,7 +52,31 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
     tell a HUD from a landscape must not silently restyle finished video: this repo
     keeps uncertain visual features behind a default-off flag (SCENE_MATCHED_BROLL,
     LUFS_NORMALIZE). Same treatment here until #717 lands.
+
+    **Updated when #717 landed.** The detector no longer uses chroma at all, so the
+    sky-over-ground frame below is correctly read as scenery and is kept here as a
+    regression. The flag-on case had to move to a real overlay fixture, because the
+    frame that used to demonstrate the flag was the false positive #717 fixed.
     """
+
+    @staticmethod
+    def _overlay_frame(dest: Path) -> Path:
+        """A flat dark box across the lower band -- a real lower-third."""
+        random.seed(5)
+        img = Image.new("RGB", (256, 512))
+        px = img.load()
+        for y in range(512):
+            for x in range(256):
+                px[x, y] = (
+                    random.randint(60, 200),
+                    random.randint(60, 200),
+                    random.randint(60, 200),
+                )
+        for y in range(460, 505):
+            for x in range(20, 236):
+                px[x, y] = (8, 8, 10)
+        img.save(dest)
+        return dest
 
     def test_an_ordinary_sky_over_ground_shot_keeps_captions_at_the_bottom(self):
         from video.caption_place import choose_caption_anchor
@@ -69,14 +93,21 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
         )
 
     def test_the_flag_is_what_turns_the_heuristic_on(self):
-        """The work is kept, not deleted -- it just stops being the default."""
+        """The work is kept, not deleted -- it just stops being the default.
+
+        Uses a real overlay (#717), not the sky frame: that one is scenery, and the
+        detector is now right to leave it where it is.
+        """
         from video.caption_place import choose_caption_anchor
 
         with tempfile.TemporaryDirectory() as tmp:
-            path = _frame(Path(tmp) / "broll.png", plain_top=True)
+            path = str(self._overlay_frame(Path(tmp) / "overlay.png"))
+            os.environ.pop("CAPTION_AUTO_PLACE", None)
+            self.assertEqual(
+                choose_caption_anchor(path), "bottom", "the flag did not gate the heuristic"
+            )
             with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
-                anchor = choose_caption_anchor(str(path))
-        self.assertEqual(anchor, "top")
+                self.assertEqual(choose_caption_anchor(path), "top")
 
     def test_a_quiet_frame_stays_bottom_with_the_flag_on(self):
         from video.caption_place import choose_caption_anchor

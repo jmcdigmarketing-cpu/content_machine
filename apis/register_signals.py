@@ -763,6 +763,15 @@ def build_registry(
 
     results = {}
 
+    # #590. Before anything is spent, not after a wall is hit. Fail-open: a
+    # broken reading must never stop discovery.
+    try:
+        from core.discovery_headroom import emit_headroom, headroom_line
+
+        emit_headroom(headroom_line(signal_count=len(sources) + (1 if web_source else 0)))
+    except Exception as exc:
+        logger.debug("discovery headroom skipped: %s", exc)
+
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = [executor.submit(_fetch_one, name, func, topic, pinned) for name, func in sources]
         for future in as_completed(futures):

@@ -207,11 +207,39 @@ def lint_title_grounding(
     ]
 
 
+_TITLE_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
+
+
+def _sentence_case_against(title: str, script: str) -> str:
+    """Lower-case the Title Case words the script uses as ordinary words.
+
+    Title Case capitalises every word, so proper-noun extraction read a title that says
+    exactly what the script says as one long ungrounded name. A word keeps its capital
+    when it is an acronym or the script never writes it (or its stem) in lower case —
+    so a name the script never mentions is still checked.
+    """
+    words = _TITLE_WORD_RE.findall(title or "")
+    capped = [w for w in words if w[:1].isupper()]
+    if len(words) < 3 or len(capped) < 0.6 * len(words):
+        return title
+
+    def _fold(match: re.Match[str]) -> str:
+        word = match.group(0)
+        if not word[:1].isupper() or (len(word) > 1 and word.isupper()):
+            return word
+        stem = word.lower()[:5]
+        if re.search(rf"(?<![A-Za-z]){re.escape(stem)}", script or ""):
+            return word.lower()
+        return word
+
+    return _TITLE_WORD_RE.sub(_fold, title)
+
+
 def _heuristic_title_script_check(title: str, script: str) -> dict[str, object]:
     """Deterministic fallback when verify_claims cannot run."""
     from core.fact_grounding import find_ungrounded_entities
 
-    flagged = find_ungrounded_entities(title, script)
+    flagged = find_ungrounded_entities(_sentence_case_against(title, script), script)
     warnings = [
         f"title contradicts or is not supported by the final script: {name[:140]}"
         for name in flagged

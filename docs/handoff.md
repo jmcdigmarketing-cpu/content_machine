@@ -48,42 +48,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `4e77cb9` · **Tree:** wave 13 follow-up
-**pushed**; CI run **34781712182 green**; branch matches origin. Wave 12's CI (run
-34773165720) was green.
+**Written:** 2026-09-13 · **HEAD at write:** `b872736` · **Tree:** audit of Cursor's
+waves 14 + 15, **committed locally, not pushed**.
 
-**Defect first, and it is mine: wave 13's first push went red.** CI run 34781351080 on
-`51218bd` failed `tests/test_operator_shell.py:66`. It passed here only because
-`publish_status_sentence` found the operator's **real run 72 in `data/traces`**; the runner
-had none. The suite had never redirected `data/traces` - it does now (`tests/__init__.py`),
-with two guard tests that went red first. **Cursor: a test that lists traces was reading
-real history; any new store must join `_SUITE_STORE_PATCHES`.**
+**Defects first — five, all in waves 14/15, all fixed test-first** (`tests/test_wave15_audit.py`,
+6 of 10 red on `b872736`). The wave tests asserted only run 76's strings, so a deletion
+beside each fix stayed green:
 
-**Then: `ops blocking` and `/next` reported an invented blocker.** They passed
-only a channel id, so the render gate graded an empty dict: "report card F" while tapin's
-last rendered run (72) grades A. They now read the real last run (`publish_blockers.
-publish_status_sentence`). **Cursor: when a function takes optional context, check every
-caller actually passes it.**
+- `fact_grounding._LEADING_STOPWORDS`: #745 **replaced** run 66's what/why/how/who/which/
+  that/this/these with Start/Read/Compare/Restricted ("Why Jason Duval" was an entity).
+- #748's heuristic title check failed any Title Case title, even one the script backs.
+- #741's chrome filter dropped every fact containing `affiliate`; `about the author`
+  matched "about the authorities".
+- #744's cheap judge ran on every discovery with no off switch, and **the suite made 8 real
+  `complete()` calls**. New `ANGLE_LLM_JUDGE` (default on); `tests/__init__.py` sets it off.
+- `angle_ranker._thesis_terms` regex lacked a leading `\b`.
 
-**Behaviour change, operator call (decisions §31): authenticity and grounding now BLOCK by
-default.** Interactive runs ask; `auto_generate` skips the render unless `--force`.
-Publishing refuses a *block* verdict only. `warn` in `.env` still turns either off.
+**Cursor: when you add to a list, diff the list — and a new LLM call in a hot path needs
+a flag the suite turns off.**
 
-- **#737 was worse than filed:** the wheel lacked `storage.repositories` as well as every
-  `config/*.json`. Both ship now; a proof build imports them from the unpacked wheel.
-- **#736:** builds run on a staged tree, so a stale egg-info cannot change the sdist.
-  The audit's token rule no longer flags `design_tokens.json` (found by the proof build).
-- **#730:** 23 of 46 real hybrid backgrounds put captions on a game HUD today, but the
-  detector still moves captions on 5 of 71 no-overlay clips, so it stays off. I nearly
-  filed an overstated #739 - the sampled frames all came from the gameplay segment, so
-  the stock segments are unmeasured; #739 is a measurement, not a rule.
-
-Audit: 14 of 21 new tests observed failing first (7 pass by design, named in the log); all
-10 in-memory breaks went red; `ops clock-ahead --days 365` no change; the suite passed with
-the new gate defaults. Suite **3,086 -> 3,107**, 0 failures, 6 skipped; mypy **139**; ruff
-clean; `data/` untouched. Backlog **329 open / 646 done**, highest **#739**. Next five:
-**#739 · #738 · #732 · #627 · #628**. Detail: [planning_log.md](planning_log.md) 2026-09-13
-wave 13.
+Everything else checked out: every run_76.md measurement reproduced, and Google Suggest
+really 400s on the 173-char seed. Suite **3,131 -> 3,141**, 6 skipped; mypy **139**;
+ruff clean; backlog unchanged (**327 / 658**, #749). Leftovers (Wiki drops capitalised
+`Will`/`Long`; a "Paste the…" fact enters paste mode) are in
+[run_76.md](run_76.md) §Audit. Next five unchanged: **#739 · #730 · #345 · #543 · #732**.
 
 ## Slot — Cursor
 

@@ -234,11 +234,20 @@ _LEADING_STOPWORDS = frozenset(
         "despite",
         "meanwhile",
         "instead",
+        "what",
+        "why",
+        "how",
+        "who",
+        "which",
+        "that",
+        "this",
+        "these",
+        "those",
+        # Run 76: script imperatives ("Start with...", "Compare that to...").
         "start",
         "read",
         "compare",
         "restricted",
-        "those",
     }
 )
 

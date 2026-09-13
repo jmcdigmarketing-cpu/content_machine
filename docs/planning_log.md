@@ -11,6 +11,37 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Claude Code) - audit of Cursor's run 76 waves 14 + 15
+
+**Prompt, verbatim:** "yep, look at what cursor has done and make sure it all works, pay
+extra attention to the doc detailing todays struggles"
+
+**Verified, not believed.** `378a923..b872736` (three Cursor commits, all signed). Every
+number in [run_76.md](run_76.md)'s wave 14 table reproduced by a probe script; the
+autocomplete 400 reproduced live against Google Suggest (173 chars → 400, 80 → 200).
+Baseline suite 3,131 OK / 6 skipped, mypy 139, ruff clean, roadmap-index 327 open /
+658 done / #749 — all as the Cursor slot said.
+
+**What the wave tests missed.** They asserted run 76's own strings, so each fix that
+deleted working behaviour beside it stayed green. Five found, all fixed test-first
+(`tests/test_wave15_audit.py`, 6 of 10 red on `b872736`):
+
+1. `_LEADING_STOPWORDS` lost run 66's what/why/how/who/which/that/this/these when
+   Start/Read/Compare/Restricted went in — entity labels read "Why Jason Duval".
+2. #748's heuristic title check read a Title Case title as one long name and failed a
+   title the script backed word for word. Fold words the script writes in lower case.
+3. #741's chrome filter dropped any fact containing `affiliate`, and `about the author`
+   matched "about the authorities". Word-bounded disclosure phrases only.
+4. #744's cheap judge ran on every discovery with no opt-out and made 8 real LLM calls
+   from the suite. `ANGLE_LLM_JUDGE` (default on); `tests/__init__.py` sets it off.
+5. `_thesis_terms` stem regex lacked a leading `\b` ("This" → "is …").
+
+**Deliberately not done.** No behaviour change to the TTS grace band, the title pin, or
+the judge default — those are Cursor's operator-approved calls. Small leftovers written
+into run_76.md's audit section, not filed.
+
+---
+
 ## 2026-09-13 (Cursor) - wave 15: #534 #748 #746 #747 #738
 
 **Prompt, verbatim:** "Next five: #534 · #748 · #746 · #747 · #738. Backlog 331

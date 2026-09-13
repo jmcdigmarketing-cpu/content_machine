@@ -132,7 +132,7 @@ def _thesis_terms(seed_topic: str) -> list[str]:
     for kw in sorted(_THESIS_KEYWORDS):
         if re.search(rf"\b{re.escape(kw)}\b", low):
             out.append(kw)
-    for match in re.finditer(r"((?:will|what|why|is|does|can)\b[^?]{8,80})", text, flags=re.I):
+    for match in re.finditer(r"\b((?:will|what|why|is|does|can)\b[^?]{8,80})", text, flags=re.I):
         words = _WORD_RE.findall(match.group(1).lower())
         if len(words) >= 4:
             out.append(" ".join(words[:5]))

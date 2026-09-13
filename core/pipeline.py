@@ -408,15 +408,21 @@ def run_discovery(
     evaluated.sort(key=lambda e: _order.get(e[0], len(candidates)))
     timings["variant_scoring"] = time.perf_counter() - t1
 
-    # Editorial ranking of the angle text. Deterministic, network-free, and scored
-    # over the whole candidate set at once (distinctness is relative), so it runs
-    # after the loop rather than inside `_score_variant`. Fail-open: a missing
-    # editorial score costs a tiebreaker, never the run.
+    # Editorial ranking of the angle text, scored over the whole candidate set at once
+    # (distinctness is relative), so it runs after the loop rather than inside
+    # `_score_variant`. ANGLE_LLM_JUDGE (default on) adds one cheap-tier call that
+    # blends a thesis-fit score in; off, the ranking is deterministic and network-free.
+    # Fail-open: a missing editorial score costs a tiebreaker, never the run.
     angle_scores: dict[str, float] = {}
     try:
         from core.angle_ranker import rank_angles
+        from core.providers import flag_enabled
 
-        angle_scores = rank_angles([v for v, *_ in evaluated], seed_topic=topic, llm_judge=True)
+        angle_scores = rank_angles(
+            [v for v, *_ in evaluated],
+            seed_topic=topic,
+            llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
+        )
     except Exception as exc:
         logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
 

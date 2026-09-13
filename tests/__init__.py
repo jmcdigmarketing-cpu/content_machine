@@ -72,6 +72,9 @@ os.environ["PIPER_VOICES_DIR"] = ""
 # Occasional Piper mix is a production default (1/8); the suite pins ElevenLabs
 # unless a test sets TTS_PIPER_MIX_EVERY itself.
 os.environ["TTS_PIPER_MIX_EVERY"] = "0"
+# Wave 14 wired a cheap-tier LLM judge into run_discovery; the discovery tests made
+# real `complete()` calls with the operator's .env keys. Tests that want it set it.
+os.environ["ANGLE_LLM_JUDGE"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move

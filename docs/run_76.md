@@ -80,3 +80,28 @@ Wave 15 closed **#534 #748 #746 #747 #738**. Remaining from this run:
   named in the script.
 - GameSpot/Forbes 403, MSN headline-only, IGDB/Steam no unreleased GTA 6 page
   (expected). Caption measurement (#730 / #739) unchanged.
+
+## Audit (Claude Code, 2026-09-13, on `b872736`)
+
+Every measurement in the wave 14 table above reproduced: 5,720 → no refusal +
+grace warning, 5,750 passes, 5,751 blocks, Extended cap 12,000, ranker
+0.4993 > 0.2223, verifier budget 12,000. Google Suggest really does 400 on the
+173-char seed and 200 on the 80-char trim. Suite 3,131 OK, mypy 139, ruff clean.
+
+Five defects the wave tests could not see — they asserted only run 76's strings,
+so a deletion beside each fix stayed green. All fixed, test-first
+(`tests/test_wave15_audit.py`, 6 of 10 red on `b872736`; the other 4 guard what
+the fixes must keep):
+
+| Where | Defect | Fix |
+|---|---|---|
+| `fact_grounding._LEADING_STOPWORDS` | #745 *replaced* what/why/how/who/which/that/this/these (run 66) with Start/Read/Compare/Restricted. Entities read "Why Jason Duval", "Who Jon Jones". Verdicts unchanged (common words), labels wrong. | Restored; the four verbs kept. |
+| `youtube_meta` #748 fallback | Proper-noun extraction on a Title Case title: "Rockstar Fights Drones And Hackers…" came back `failed` against a script saying exactly that. | Title words the script writes in lower case are folded first; a name the script never mentions still fails. |
+| `operator_facts.is_article_chrome` #741 | Bare substring `affiliate` dropped real facts ("Amazon's affiliate program cut commission rates"); `about the author` matched "about the authorities". | Word-bounded disclosure phrases only. |
+| `pipeline.run_discovery` #744 | Cheap LLM judge on every discovery with no off switch; the suite's discovery tests made 8 real `complete()` calls. | `ANGLE_LLM_JUDGE` (default on, documented); suite sets it off. |
+| `angle_ranker._thesis_terms` | `is\b` had no leading boundary, so "This…" opened a question stem. | `\b` added. |
+
+Seen, not fixed (small): `_WIKI_STOP` drops a capitalised `Will`/`Long`, so
+"Long Beach port strike" → `Beach_Port_Strike` (belongs with #749). A fact line
+that starts "Paste the…" enters paste mode (the text is still kept). The title
+prompt's forced pin can be a contraction ("won't") — measured titles were fine.

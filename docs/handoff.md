@@ -48,33 +48,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `db25e26` · **Tree:** wave 12 + docs,
+**Written:** 2026-09-13 · **HEAD at write:** `99708d9` · **Tree:** wave 13 + docs,
 committing right after this slot, then **pushing** (operator-approved); that CI result
-was not known when this was written.
+was not known when this was written. Wave 12's CI (run 34773165720) was green.
 
-**Wave 11's CI is proven:** run 34744476819 ran every Qt test, 0 skips; #729 holds.
+**Defect first: `ops blocking` and `/next` reported an invented blocker.** They passed
+only a channel id, so the render gate graded an empty dict: "report card F" while tapin's
+last rendered run (72) grades A. They now read the real last run (`publish_blockers.
+publish_status_sentence`). **Cursor: when a function takes optional context, check every
+caller actually passes it.**
 
-**Defect first.** `tests/test_stage2_html.py:134-146` used the operator's **real Windows
-username** as a fixture, and it shipped in the sdist. Replaced with an invented name.
-**Cursor: never put a real user name, home path or vault path in a test.**
+**Behaviour change, operator call (decisions §31): authenticity and grounding now BLOCK by
+default.** Interactive runs ask; `auto_generate` skips the render unless `--force`.
+Publishing refuses a *block* verdict only. `warn` in `.env` still turns either off.
 
-Shipped **#733 · #630 · #640**; measured **#730 · #731** to a stop.
+- **#737 was worse than filed:** the wheel lacked `storage.repositories` as well as every
+  `config/*.json`. Both ship now; a proof build imports them from the unpacked wheel.
+- **#736:** builds run on a staged tree, so a stale egg-info cannot change the sdist.
+  The audit's token rule no longer flags `design_tokens.json` (found by the proof build).
+- **#730:** 23 of 46 real hybrid backgrounds put captions on a game HUD today, but the
+  detector still moves captions on 5 of 71 no-overlay clips, so it stays off. I nearly
+  filed an overstated #739 - the sampled frames all came from the gameplay segment, so
+  the stock segments are unmeasured; #739 is a measurement, not a rule.
 
-- **`ops selftest`:** 8/8 gates work with no store read. **4 are not armed here**
-  (authenticity, grounding, metrics, publish dead-man) - #735, the operator's call.
-  `authenticity.blocks_render` is now the one stop rule `main.py` and the selftest share.
-- **`ops package-audit`:** wheel 373 / sdist 378 files, 0 hits. The wheel ships no
-  `config/*.json` (#737); a stale egg-info once made the sdist 701 files (#736).
-- **Coverage read:** `core/` 77%. The untested gate decisions are pinned; the four never-run
-  append branches in `publish_blockers.py` are #734.
-- **Captions stay off.** The operator wants default-on only if clean; nothing was. Best new
-  feature leaves 1/50 stock false moves on a 0.06 margin, tuned to one clip.
-
-Audit: 14 of 17 new tests observed failing first (3 pin working behaviour, stated); all 9
-in-memory breaks went red; `ops clock-ahead --days 365` no change. Suite **3,069 -> 3,086**,
-0 failures, 6 skipped; mypy **139**; ruff clean; `data/` untouched. Backlog **331 open / 642
-done**, highest **#737**. Next five: **#734 · #735 · #736 · #737 · #730**. Detail:
-[planning_log.md](planning_log.md) 2026-09-13 wave 12.
+Audit: 12 of 19 new tests observed failing first (7 pass by design, named in the log); all
+10 in-memory breaks went red; `ops clock-ahead --days 365` no change; the suite passed with
+the new gate defaults. Suite **3,086 -> 3,105**, 0 failures, 6 skipped; mypy **139**; ruff
+clean; `data/` untouched. Backlog **329 open / 646 done**, highest **#739**. Next five:
+**#739 · #738 · #732 · #627 · #628**. Detail: [planning_log.md](planning_log.md) 2026-09-13
+wave 13.
 
 ## Slot — Cursor
 

@@ -33,11 +33,12 @@ from core.logging import get_logger
 logger = get_logger("core.package_audit")
 
 _BUILD_TIMEOUT_S = 600
-# Directories a setuptools build writes into the source tree.
-_BUILD_LEFTOVERS = ("build", "content_machine.egg-info")
 _FORBIDDEN_ANYWHERE = re.compile(
     r"(^|/)(\.env(?!\.example$)[^/]*$|config/secrets/(?!README\.md$)|[^/]*\.(pem|key)$"
-    r"|[^/]*(token|client_secret)[^/]*\.json$)",
+    # An OAuth token file is `token.json` / `<name>_token[_<channel>].json`. The first
+    # rule matched any name containing "token", so `config/design_tokens.json` - which
+    # ships since #737 - made a clean package fail its own audit.
+    r"|([^/]*_)?token(_[^/]*)?\.json$|[^/]*client_secret[^/]*\.json$)",
     re.IGNORECASE,
 )
 _FORBIDDEN_AT_ROOT = re.compile(r"^(data|output)/", re.IGNORECASE)
@@ -100,23 +101,49 @@ def scan_archive(path: str | Path, *, secrets: list[str] | None = None) -> Archi
     return report
 
 
+def stage_tree(root: Path, dest: Path) -> int:
+    """#736: copy what a build of this repo would see into `dest` - tracked files plus
+    untracked files git does not ignore. An ignored `*.egg-info/`, `build/` or `data/`
+    never reaches the build, so a stale `SOURCES.txt` cannot change the sdist."""
+    listing = subprocess.run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if listing.returncode != 0:
+        raise RuntimeError(f"cannot list files to stage: {(listing.stderr or '').strip()[-200:]}")
+    copied = 0
+    for rel in filter(None, listing.stdout.split("\0")):
+        source = root / rel
+        if not source.is_file():  # tracked but deleted in the working tree
+            continue
+        target = dest / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        copied += 1
+    return copied
+
+
 def build_archives(out_dir: Path, *, root: Path | None = None) -> list[Path]:
-    """Wheel and sdist of the working tree into `out_dir`. Removes only the build
-    directories this call created in the source tree."""
+    """Wheel and sdist into `out_dir`, built from a staged copy of the tree so the build
+    neither reads leftovers from the repo nor writes any into it."""
     source = Path(root or ROOT_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
-    created = [name for name in _BUILD_LEFTOVERS if not (source / name).exists()]
-    commands = (
-        [sys.executable, "-m", "pip", "wheel", str(source), "--no-deps", "--no-build-isolation",
-         "-w", str(out_dir)],
-        [sys.executable, "-c",
-         f"from setuptools import build_meta as b; b.build_sdist({str(out_dir)!r})"],
-    )  # fmt: skip
-    try:
+    with tempfile.TemporaryDirectory(prefix="package-stage-") as stage:
+        staged = Path(stage)
+        stage_tree(source, staged)
+        commands = (
+            [sys.executable, "-m", "pip", "wheel", str(staged), "--no-deps",
+             "--no-build-isolation", "-w", str(out_dir)],
+            [sys.executable, "-c",
+             f"from setuptools import build_meta as b; b.build_sdist({str(out_dir)!r})"],
+        )  # fmt: skip
         for command in commands:
             proc = subprocess.run(
                 command,
-                cwd=str(source),
+                cwd=str(staged),
                 capture_output=True,
                 text=True,
                 timeout=_BUILD_TIMEOUT_S,
@@ -126,9 +153,6 @@ def build_archives(out_dir: Path, *, root: Path | None = None) -> list[Path]:
                 kind = "wheel" if "wheel" in command else "sdist"
                 tail = (proc.stderr or proc.stdout or "").strip()[-400:]
                 raise RuntimeError(f"{kind} build failed: {tail}")
-    finally:
-        for name in created:
-            shutil.rmtree(source / name, ignore_errors=True)
     return sorted(p for p in out_dir.iterdir() if p.name.endswith((".whl", ".tar.gz")))
 
 

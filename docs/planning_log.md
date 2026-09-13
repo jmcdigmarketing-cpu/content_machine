@@ -11,6 +11,92 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Claude Code) - wave 13: #734 #735 #736 #737, #730 measured
+
+**Prompt, verbatim:** "next 5, debug, document, and commit"
+
+**What was picked.** Wave 12's five, **#734 · #735 · #736 · #737 · #730**, each verified.
+Wave 12's CI (run 34773165720) was green with every new test run.
+
+**Operator decisions.**
+- **#735:** arm `AUTHENTICITY_GATE` and `GROUNDING_GATE` by **code default** (not `.env`);
+  leave `METRICS_BEFORE_NEXT` and `PUBLISH_DEADMAN_DAYS` off. Recorded as decisions.md §31.
+- Asked about a consequence the plan found - under block, `core/publish_blockers.py:75`
+  refused publishing for any authenticity verdict other than `ok` - the operator chose
+  **block verdict only**.
+- Push approved.
+
+**Shipped**
+
+1. **#736** - `package_audit.stage_tree`; both builds run in a staged temp copy.
+2. **#734** - `publish_blockers.last_run_context` / `publish_status_sentence` /
+   `fact_count_from_record`; render gate needs run data; `ops blocking`, `/next` and the
+   booth are fed.
+3. **#737** - `storage.repositories` in `packages`; `[tool.setuptools.package-data]`.
+4. **#735** - both gates default `block`; publish rule block-verdict-only;
+   `auto_generate` uses `blocks_render`.
+
+**Defects found**
+
+- `scripts/ops.py:1501`, `core/operator_shell.py:33` - `ops blocking` and `/next` passed
+  only a channel id; `render_gate.block_reason_from_quality({})` graded it F. Measured:
+  "unattended render gate: report card F (need >= B)" while run 72 grades **A**,
+  authenticity ok. The operator's "what's blocking publish" had been reporting an invented
+  blocker. Found by tracing the fields #734 named, not the calls.
+- `core/review_booth.py:817` never passed `fact_count`, so thin facts could not block from
+  the booth; `script` is passed by no caller, so the TTS-cap entry can never fire (**#738**).
+- `pyproject.toml:105-117` - explicit `packages` omitted the subpackage
+  `storage.repositories`; the wheel could not import storage (worse than #737 as filed).
+- `core/package_audit.py:32-36` - the token rule matched any JSON name containing "token";
+  once config JSON shipped, `config/design_tokens.json` would have failed a clean audit.
+  Found by the #737 proof build; tightened test-first.
+- The first draft of the #737 tests used `fnmatch`, whose `*` crosses `/`: it claimed
+  `*.json` would ship `config/secrets/client_secrets.json`. setuptools globs do not; a
+  per-segment matcher replaced it, with a test pinning the difference.
+
+**#730 on production footage.** The 46 hybrid backgrounds actually used in renders were
+labelled by eye from a contact sheet: **23 carry a bar or HUD in the caption band**, 19 do
+not, 4 unclear. With the flag off, captions sit on an overlay in about half of real renders.
+
+| rule | 2K bars | hybrid overlays | false moves (stock + hybrid) |
+|---|---|---|---|
+| current | 26/30 | 17/23 | 5/71 (px34 px39 hy25 hy27 hy34) |
+| `near_above` < 0.8 | 25/30 | 17/23 | 3/71 |
+| >= 4 adjacent static columns | 9/30 | 5/23 | 0/71 |
+| third frame >= 0.8 | 4/30 | 5/23 | 2/71 |
+
+No rule meets the operator's bar, so the flag stays off. **A limit on these labels,
+caught while writing them down:** `assets/composite.build_hybrid_concat_command` puts the
+local gameplay clip first, so every sampled frame (0s and 1s) came from the gameplay
+segment, and the stock segment was never looked at. My first draft of #739 claimed "the
+stock half never carries one", which nothing measured. Filed **#739** instead as a
+measurement: HUD persistence across whole gameplay segments (19 of 42 gameplay frames
+showed none at that instant) and the stock segments, before any by-source rule.
+
+**Deliberately not done.** Arming metrics / dead-man (operator said no) · removing or
+feeding the TTS-cap blocker (#738) · any caption rule change (#739 needs a measurement
+first) · PyInstaller (Stage 5).
+
+**Audit.** 19 behavioural tests added; **12 observed failing first** on `99708d9` (11 of
+the first 17 - 7 FAIL, 4 ERROR - and the design-tokens test). The other 7 pass by design:
+the four publish-branch coverage tests, the `warn` opt-out, the secrets-glob guard and the
+glob-matcher pin. Two existing tests changed shape: the grounding default test (warn ->
+block, the operator's decision) and the wave 12 build-cleanup test (now asserts the staged
+build writes nothing into the repo). All 10 in-memory breaks went red - three only after
+the first attempt was redone against `99708d9`'s own source, because patching `gate_mode`
+or the render gate could not undo a changed condition. Every new symbol has a production
+caller. mypy **139** held. `data/` empty. The full suite passed with the new gate defaults.
+Operator output run and read: `ops blocking --channel tapin` ("Nothing is blocking
+publish"), `ops selftest` (authenticity and grounding now armed here), a planted-egg-info
+proof build (sdist 409, no tests/; wheel 404, imports from the wheel), `ops package-audit`,
+`ops env-lint`, `ops clock-ahead --days 365`.
+
+**Proof.** ruff + format clean. Suite **3,086 -> 3,105**, 0 failures, 6 skipped. mypy
+**139**. Backlog **331 open / 642 done -> 329 open / 646 done** (roadmap-index), highest
+**#737 -> #739**.
+
+---
+
 ## 2026-09-13 (Claude Code) - wave 12: #733 #630 #640, #730 #731 measured
 
 **Prompt, verbatim:** "next 5, debug, document, and commit"

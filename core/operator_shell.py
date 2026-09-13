@@ -21,7 +21,7 @@ DEFAULT_PORT = 8765
 def next_sentence(channel_id: str | None = None) -> str:
     """Same ranking as `ops next`: projected-cost, vault decay, then publish blocker."""
     from core.fact_expiry import warning_lines
-    from core.publish_blockers import blocking_publish_sentence
+    from core.publish_blockers import publish_status_sentence
     from core.run_mode import projected_cost_block_reason
 
     cost = projected_cost_block_reason()
@@ -30,7 +30,8 @@ def next_sentence(channel_id: str | None = None) -> str:
     vault = warning_lines(channel_id)
     if vault:
         return vault[0]
-    return blocking_publish_sentence(channel_id=channel_id)
+    # #734: the real last run, not a bare channel id graded as an F.
+    return publish_status_sentence(channel_id)
 
 
 def reliability_page() -> str:

@@ -223,31 +223,31 @@ class TestPackageAudit(unittest.TestCase):
 
     def test_a_build_leaves_no_new_directories_in_the_repo(self):
         """Found building by hand: `pip wheel .` left `build/` and
-        `content_machine.egg-info/` in the repo root. The audit must clean up what it
-        created, and only what it created."""
+        `content_machine.egg-info/` in the repo root. Since #736 the build runs in a
+        staged copy, so it can write nothing into the repo and removes nothing the
+        operator had."""
         from core import package_audit
 
         with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as out:
             Path(root, "build").mkdir()  # pre-existing: must survive
 
-            def fake_run(cmd, **_kwargs):
-                Path(root, "content_machine.egg-info").mkdir(exist_ok=True)
-                Path(root, "build", "lib").mkdir(parents=True, exist_ok=True)
-                name = "x.whl" if "wheel" in cmd else "x.tar.gz"
-                Path(out, name).write_bytes(b"")
-
+            def fake_run(cmd, **kwargs):
                 class _Done:
                     returncode = 0
                     stdout = stderr = ""
 
+                if cmd[0] == "git":
+                    return _Done()
+                Path(kwargs["cwd"], "content_machine.egg-info").mkdir(exist_ok=True)
+                Path(kwargs["cwd"], "build", "lib").mkdir(parents=True, exist_ok=True)
+                name = "x.whl" if "wheel" in cmd else "x.tar.gz"
+                Path(out, name).write_bytes(b"")
                 return _Done()
 
             with patch.object(package_audit.subprocess, "run", side_effect=fake_run):
                 package_audit.build_archives(Path(out), root=Path(root))
-            self.assertFalse(Path(root, "content_machine.egg-info").exists())
-            self.assertTrue(
-                Path(root, "build").exists(), "a directory the operator had was removed"
-            )
+            self.assertEqual(sorted(p.name for p in Path(root).iterdir()), ["build"])
+            self.assertEqual(list(Path(root, "build").iterdir()), [], "the build wrote into it")
 
 
 class TestUntestedGateDecisionsFromTheCoverageTable(unittest.TestCase):

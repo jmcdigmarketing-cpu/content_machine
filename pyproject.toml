@@ -112,9 +112,19 @@ packages = [
     "publishing",
     "sports",
     "storage",
+    # #737: explicit packages do not pull in subpackages; without this line a wheel
+    # install could not import the repository layer.
+    "storage.repositories",
     "video",
     "youtube",
 ]
+
+[tool.setuptools.package-data]
+# #737: runtime files the code opens through config/paths.py. Single-level globs only:
+# nothing here can reach config/secrets/, which holds real OAuth files on disk.
+config = ["*.json", "competitors/*.json", "seo/*.json"]
+core = ["data/*"]
+analytics = ["*.json"]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter + formatter (replaces flake8 + isort + black)

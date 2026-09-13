@@ -812,13 +812,15 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
         logger.debug("booth expert panel skipped: %s", exc)
     blocking = ""
     try:
-        from core.publish_blockers import blocking_publish_sentence
+        from core.publish_blockers import blocking_publish_sentence, fact_count_from_record
 
+        # #734: the thin-facts blocker reads fact_count, which the booth never passed.
         blocking = blocking_publish_sentence(
             channel_id=channel_id,
             quality=quality,
             features=(trace or {}).get("features") or quality,
             mp4_path=mp4,
+            fact_count=fact_count_from_record(record) if record is not None else None,
         )
     except Exception as exc:
         logger.debug("booth blocking skipped: %s", exc)

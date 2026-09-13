@@ -256,9 +256,9 @@ def main(argv=None) -> int:
 
     # Authenticity / monetisation-safety gate (Phase O)
     from core.authenticity import (
+        blocks_render,
         display_authenticity_report,
         evaluate_authenticity,
-        gate_mode,
     )
     from core.fact_enrichment import _fact_line_count, enrich_facts
 
@@ -270,7 +270,7 @@ def main(argv=None) -> int:
         exclude_run_id=result.run_id,
     )
     display_authenticity_report(auth)
-    if gate_mode() == "block" and auth.verdict == "block" and not args.force:
+    if blocks_render(auth) and not args.force:
         print(
             "\n  Blocked by authenticity gate (AUTHENTICITY_GATE=block). Use --force to override."
         )

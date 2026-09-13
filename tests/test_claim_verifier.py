@@ -89,9 +89,10 @@ class TestVerifyClaims(unittest.TestCase):
 
 
 class TestGroundingGate(unittest.TestCase):
-    def test_default_mode_is_warn(self):
+    def test_default_mode_is_block(self):
+        """Was warn; armed by default since #735 (operator call 2026-09-13)."""
         with patch.dict("os.environ", {"GROUNDING_GATE": ""}, clear=False):
-            self.assertEqual(cv.grounding_gate_mode(), "warn")
+            self.assertEqual(cv.grounding_gate_mode(), "block")
 
     def test_gate_blocks_only_in_block_mode_with_unsupported(self):
         verification = {"total": 2, "supported": 1, "unsupported": ["bad claim"]}

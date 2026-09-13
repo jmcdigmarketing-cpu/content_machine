@@ -344,8 +344,9 @@ def evaluate_authenticity(
 
 
 def gate_mode() -> str:
-    """warn (default) | block — how the pipeline treats a 'block' verdict."""
-    return os.getenv("AUTHENTICITY_GATE", "warn").strip().lower() or "warn"
+    """block (default since #735, operator call 2026-09-13) | warn - how the pipeline
+    treats a 'block' verdict. `AUTHENTICITY_GATE=warn` makes it advisory."""
+    return os.getenv("AUTHENTICITY_GATE", "block").strip().lower() or "block"
 
 
 def blocks_render(report: AuthenticityReport) -> bool:

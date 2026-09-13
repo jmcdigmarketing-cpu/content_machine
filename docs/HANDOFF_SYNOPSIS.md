@@ -1,10 +1,33 @@
-# Handoff synopsis — 2026-09-13: wave 12 (#733 #630 #640, #730 #731 measured)
+# Handoff synopsis — 2026-09-13: wave 13 (#734 #735 #736 #737, #730 measured)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-13 (Claude Code): wave 12
+## Last wave — 2026-09-13 (Claude Code): wave 13
+
+Shipped **#734 · #735 · #736 · #737**; measured **#730** on production footage. Suite
+**3,086 -> 3,105**, 0 failures; mypy **139**; ruff clean; `data/` untouched. Backlog
+**329 open / 646 done**, highest **#739**. Wave 12 CI run 34773165720 was green.
+
+- **`ops blocking` and `/next` invented a blocker.** They passed only a channel id, so
+  the render gate graded an empty dict: "report card F" while tapin's last rendered run
+  grades A. They now read the real last run; the booth now passes the fact count.
+- **Authenticity and grounding block by default** (operator call, decisions §31).
+  Publishing refuses a *block* verdict only - it used to refuse every `review` verdict
+  under block. The full suite passed with the new defaults.
+- **The wheel installs.** `storage.repositories` and every `config/*.json` were missing;
+  a proof build imports both from the unpacked wheel. Builds run on a staged tree, so a
+  stale egg-info no longer changes the sdist. The audit's token rule no longer flags
+  `design_tokens.json`.
+- **Captions (#730):** 23 of 46 real hybrid backgrounds put captions on a game HUD today.
+  The detector still moves captions on 5 of 71 no-overlay clips, so it stays off. All
+  labelled frames came from the gameplay segment (composited first); #739 is to measure
+  whether a by-source rule could work before building one.
+
+**Next five:** **#739 · #738 · #732 · #627 · #628**.
+
+## Previous wave — 2026-09-13 (Claude Code): wave 12
 
 Shipped **#733 · #630 · #640**; measured **#730 · #731** to a stop. Suite **3,069 ->
 3,086**, 0 failures; mypy **139**; ruff clean; `data/` untouched. Backlog **331 open /
@@ -24,7 +47,7 @@ Shipped **#733 · #630 · #640**; measured **#730 · #731** to a stop. Suite **3
 
 **Next five:** **#734 · #735 · #736 · #737 · #730**.
 
-## Previous wave — 2026-09-13 (Claude Code): wave 11
+## Earlier wave — 2026-09-13 (Claude Code): wave 11
 
 Shipped **#729 · #631 · #636 · #639 · #727**. Suite **3,043 -> 3,069**, 0 failures;
 mypy **139** held; ruff clean; `data/` untouched. Backlog **329 open / 639 done**,

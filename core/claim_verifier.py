@@ -119,8 +119,9 @@ def verifier_enabled() -> bool:
 
 
 def grounding_gate_mode() -> str:
-    """warn (default) | block — mirrors AUTHENTICITY_GATE (decisions §9)."""
-    return os.getenv("GROUNDING_GATE", "warn").strip().lower() or "warn"
+    """block (default since #735, operator call 2026-09-13) | warn - mirrors
+    AUTHENTICITY_GATE. `GROUNDING_GATE=warn` makes unsupported claims advisory."""
+    return os.getenv("GROUNDING_GATE", "block").strip().lower() or "block"
 
 
 def gate_blocks(verification_dict: dict[str, Any] | None) -> bool:

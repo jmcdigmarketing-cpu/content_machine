@@ -24,34 +24,41 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-13 wave 12: **#733** first CI coverage table read (`core/`
-77%; the untested gate decisions are now pinned) · **#630** `ops selftest` (8/8 gates
-work; 4 are not armed on this machine) · **#640** `ops package-audit` (wheel 373 /
-sdist 378 files, 0 hits, after removing the operator's real username from a test
-fixture) · **#730 / #731** measured again on the labelled footage: nothing clean, so
-`CAPTION_AUTO_PLACE` stays off.
+**Just landed** - 2026-09-13 wave 13: **#734** `ops blocking` and `/next` stop
+reporting an invented "report card F" (the real last run grades A) · **#735**
+authenticity and grounding **block by default** (operator call, decisions §31) ·
+**#736** package builds run on a staged tree · **#737** the wheel installs and imports
+(`storage.repositories` and `config/*.json` were missing) · **#730** measured on real
+production footage: about half of renders have captions on a game HUD, and the detector
+still is not clean.
 
-**Previously** - 2026-09-13 wave 11 **#729 #631 #636 #639 #727**; 2026-09-12 wave 10
-**#719 #720 #724 #725 #726 #158**; **#153** retired (do not rebuild).
+**Previously** - 2026-09-13 wave 12 **#733 #630 #640**; wave 11 **#729 #631 #636 #639
+#727**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-The previous five shipped or were measured to a stop. Three of these are wave 12's own
-findings; the caption item stays because the operator wants it on once it is clean.
+Wave 13's production labels suggest a different caption approach worth measuring
+before any more pixel tuning: all labelled overlays were on gameplay footage.
 
-1. **#734 prove each blocker reaches the publish refusal list** `[S]` - coverage shows
-   four append branches in `publish_blockers.py` never run.
-2. **#735 decide which of the four unarmed gates to arm** `[S]` - an operator call;
-   `ops selftest` now shows the state instead of hiding it.
-3. **#736 stale egg-info skews the sdist** `[S]` - 701 vs 378 members from one leftover.
-4. **#737 the wheel ships no `config/*.json`** `[M]` - a Stage 5 prerequisite #640
-   found.
-5. **#730 caption false positives, with new evidence** `[M]` - every tuning of the
-   existing features is exhausted; the next attempt needs more real no-overlay clips
-   (real renders), not another threshold.
+1. **#739 measure placing captions by footage source** `[M]` - the labelled frames all
+   came from the gameplay segment (it is composited first); 23 showed a HUD, 19 did not.
+   Measure HUD persistence across whole gameplay segments and sample the stock segments
+   before proposing a rule.
+2. **#738 the TTS-cap publish blocker can never fire** `[S]` - remove it or persist the
+   character count.
+3. **#732 `env_fingerprint` ignores commented flags** `[S]` - the gate defaults just
+   moved, and a trace cannot show which were set.
+4. **#627 mutation-test the gate modules** `[L]` - `ops selftest` now exercises every
+   gate; mutation testing proves the tests would notice a broken one.
+5. **#628 flaky-test detector across CI runs** `[M]` - five pushed waves give a real
+   run history to read.
 
-**Dropped from this list** (stay open): **#731** (blocked on #730) · **#728** · **#732**
-· #673 / #650 / #667 (need real hardware) · Phase M · Ollama.
+**Dropped from this list** (stay open): **#730** (superseded by #739 unless the operator
+wants the pixel detector) · **#731** · **#728** · #673 / #650 / #667 (hardware) · Phase M ·
+Ollama.
+
+**Closed 2026-09-13 (wave 13):** **#734 #735 #736 #737**. Filed open: **#738 #739**;
+narrowed **#730**.
 
 **Closed 2026-09-13 (wave 12):** **#733 #630 #640**. Filed open: **#734 #735 #736
 #737**; narrowed **#730 #731**.

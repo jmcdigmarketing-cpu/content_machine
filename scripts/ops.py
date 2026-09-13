@@ -1496,9 +1496,10 @@ def cmd_sendto_facts(args: argparse.Namespace) -> int:
 
 @_register("blocking", "One-sentence: what's blocking publish (existing gates only)")
 def cmd_blocking(args: argparse.Namespace) -> int:
-    from core.publish_blockers import blocking_publish_sentence
+    from core.publish_blockers import publish_status_sentence
 
-    line = blocking_publish_sentence(channel_id=args.channel)
+    # #734: read the real last run. A bare channel id graded an empty dict as an F.
+    line = publish_status_sentence(args.channel)
     _emit_text("What's blocking publish", line, args)
     return 0
 

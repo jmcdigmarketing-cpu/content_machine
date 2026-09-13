@@ -416,7 +416,7 @@ def run_discovery(
     try:
         from core.angle_ranker import rank_angles
 
-        angle_scores = rank_angles([v for v, *_ in evaluated], seed_topic=topic)
+        angle_scores = rank_angles([v for v, *_ in evaluated], seed_topic=topic, llm_judge=True)
     except Exception as exc:
         logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
 
@@ -796,6 +796,7 @@ def run_pipeline(
         channel_id=channel_id,
         title=result.title,
         lower_thirds=result.features.get("lower_thirds"),
+        length_choice=length_choice,
     )
     result.mp3_path = mp3_path
     result.mp4_path = mp4_path
@@ -829,6 +830,8 @@ def run_media_only(
     title: str | None = None,
     render_preset: str = "publish",
     lower_thirds: list[str] | None = None,
+    force: bool = False,
+    length_choice: str = "",
 ) -> tuple[str, str, str]:
     """Generate audio + video (+ publish thumbnail). Draft preset never updates upload media."""
     channel_id = resolve_channel_id(channel_id)
@@ -860,7 +863,7 @@ def run_media_only(
 
     from core.tts_char_cap import tts_char_cap_reason
 
-    cap_reason = tts_char_cap_reason(script)
+    cap_reason = tts_char_cap_reason(script, force=force, length_choice=length_choice)
     if cap_reason:
         raise RuntimeError(cap_reason)
 

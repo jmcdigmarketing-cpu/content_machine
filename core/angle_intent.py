@@ -98,8 +98,6 @@ _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "tier list",
             "ranking every",
             "ranked:",
-            "every ",
-            "best ",
             "worst ",
         ),
     ),

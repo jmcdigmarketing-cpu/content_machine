@@ -38,7 +38,12 @@ from typing import Any
 
 from core.fact_store import TIER_LINK, TIER_OPERATOR, FactRecord, freshness_bonus
 from core.logging import get_logger
-from core.operator_facts import key_fact_split_width, max_operator_key_facts, split_at_sentences
+from core.operator_facts import (
+    is_article_chrome,
+    key_fact_split_width,
+    max_operator_key_facts,
+    split_at_sentences,
+)
 
 logger = get_logger("core.fact_selection")
 
@@ -249,10 +254,16 @@ def select_facts_for_prompt(
     width = width or key_fact_split_width()
     line_cap = line_cap if line_cap is not None else max_operator_key_facts()
 
+    drops: list[FactSelectionDrop] = []
     entries: list[_Entry] = []
     for index, record in enumerate(records):
         chunks = split_at_sentences(record.claim, width)
         if not chunks:
+            continue
+        # Chrome is dropped even when tagged operator — run 76 pinned Share /
+        # `paste` / ffaaa because TIER_OPERATOR scored 2.0.
+        if is_article_chrome(record.claim):
+            drops.append(FactSelectionDrop(record.claim, "article chrome", 0.0))
             continue
         pinned = (record.tier or "").strip().lower() == TIER_OPERATOR
         entries.append(
@@ -272,7 +283,6 @@ def select_facts_for_prompt(
 
     ranked = sorted(entries, key=lambda e: (0 if e.pinned else 1, -e.score, e.index))
     chosen: list[_Entry] = []
-    drops: list[FactSelectionDrop] = []
     used = 0
     lines = 0
     for entry in ranked:

@@ -343,9 +343,12 @@ def main(argv=None) -> int:
         print(f"\n  {human_reason}. Use --force to render anyway.")
         return 0
 
-    from core.tts_char_cap import tts_char_cap_reason
+    from core.tts_char_cap import tts_char_cap_reason, tts_char_cap_warn
 
-    cap_reason = tts_char_cap_reason(result.script)
+    cap_warn = tts_char_cap_warn(result.script, length_choice=length_choice)
+    if cap_warn:
+        print(f"\n  {cap_warn}")
+    cap_reason = tts_char_cap_reason(result.script, force=args.force, length_choice=length_choice)
     if cap_reason and not args.force:
         print(f"\n  {cap_reason}. Use --force to render anyway.")
         return 0
@@ -364,6 +367,8 @@ def main(argv=None) -> int:
         channel_id=channel_id,
         content_run_id=result.run_id,
         title=result.title,
+        force=args.force,
+        length_choice=length_choice,
     )
 
     if not result.mp4_path:

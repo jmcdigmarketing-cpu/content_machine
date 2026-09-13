@@ -2,9 +2,10 @@
 
 Extended is a cost multiplier on the ~91% TTS line. Refuse the synth rather
 than regen-then-pay or silently clip (clipping would gut the script). Default
-ceiling covers Long (~750 words / ~4.5k chars); Extended must raise
-``TTS_MAX_CHARS`` or pass ``--force``. Unset-but-present default is on;
-``0`` / ``off`` disables.
+ceiling covers Long (~750 words / ~4.5k chars). A 15% overage is a warning,
+not a hard stop (run 76: 5,720 vs 5,000). Choosing Extended raises the floor
+to the preset's max words. ``--force`` / interactive y still bypasses a hard
+stop. ``0`` / ``off`` disables.
 """
 
 from __future__ import annotations
@@ -14,6 +15,8 @@ import os
 from core.utils import clean_script_for_tts
 
 _DEFAULT_MAX = 5000
+_GRACE = 0.15
+_CHARS_PER_WORD = 6
 
 
 def max_chars() -> int | None:
@@ -30,18 +33,70 @@ def max_chars() -> int | None:
     return val
 
 
-def tts_char_cap_reason(script: str) -> str | None:
-    """Why TTS should be refused, or None when the script is under the ceiling."""
+def effective_cap(*, length_choice: str = "") -> int | None:
+    """Env ceiling, raised to the selected length preset's max when larger."""
     cap = max_chars()
     if cap is None:
         return None
-    n = len(clean_script_for_tts(script or ""))
-    if n <= cap:
+    choice = (length_choice or "").strip()
+    if not choice:
+        return cap
+    try:
+        from core.script_length import get_length_preset
+
+        floor = get_length_preset(choice).max_words * _CHARS_PER_WORD
+    except Exception:
+        return cap
+    return max(cap, floor)
+
+
+def tts_char_count(script: str) -> int:
+    return len(clean_script_for_tts(script or ""))
+
+
+def _hard_ceiling(cap: int) -> int:
+    return int(cap * (1 + _GRACE))
+
+
+def tts_char_cap_reason(
+    script: str,
+    *,
+    force: bool = False,
+    length_choice: str = "",
+) -> str | None:
+    """Why TTS should be refused, or None when the script may synth.
+
+    Force skips the hard stop. A count inside the 15% grace band is not a
+    refusal — see ``tts_char_cap_warn``.
+    """
+    if force:
+        return None
+    cap = effective_cap(length_choice=length_choice)
+    if cap is None:
+        return None
+    n = tts_char_count(script)
+    if n <= _hard_ceiling(cap):
         return None
     return (
         f"TTS character cap: {n:,} chars > {cap:,} "
         "(TTS_MAX_CHARS; Extended is a cost multiplier — raise the cap or shorten)"
     )
+
+
+def tts_char_cap_warn(script: str, *, length_choice: str = "") -> str | None:
+    """Overage inside the 15% grace band — tell the operator, then render."""
+    cap = effective_cap(length_choice=length_choice)
+    if cap is None:
+        return None
+    n = tts_char_count(script)
+    if n <= cap:
+        return None
+    if n <= _hard_ceiling(cap):
+        return (
+            f"TTS character cap: {n:,} chars > {cap:,} "
+            f"(within {int(_GRACE * 100)}% grace; rendering)"
+        )
+    return None
 
 
 _last_forecast: dict[str, float | int | None] | None = None

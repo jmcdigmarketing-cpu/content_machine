@@ -24,38 +24,40 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-13 wave 13: **#734** `ops blocking` and `/next` stop
-reporting an invented "report card F" (the real last run grades A) · **#735**
-authenticity and grounding **block by default** (operator call, decisions §31) ·
-**#736** package builds run on a staged tree · **#737** the wheel installs and imports
-(`storage.repositories` and `config/*.json` were missing) · **#730** measured on real
-production footage: about half of renders have captions on a game HUD, and the detector
-still is not clean.
+**Just landed** - 2026-09-13 wave 14: run 76 abort. **#740** 5,720 chars warns
+instead of aborting (15% grace; `y` / `--force` actually reach TTS; Extended
+floor) · **#742** `"best "` is not a listicle cue · **#741** `` `paste` `` enters
+paste mode and chrome is dropped · **#743** option 1 sets `creative_brief` ·
+**#667** pin default off on Windows · **#745** verifier window matches packed
+facts; Start/Read/Compare/Restricted are not entities · **#744** thesis-term
+fidelity + fail-open cheap judge (no paid Haiku). Detail: [run_76.md](run_76.md).
 
-**Previously** - 2026-09-13 wave 12 **#733 #630 #640**; wave 11 **#729 #631 #636 #639
-#727**; **#153** retired (do not rebuild).
+**Previously** - 2026-09-13 wave 13 **#734 #735 #736 #737**, #730 measured; wave 12
+**#733 #630 #640**; wave 11 **#729 #631 #636 #639 #727**; **#153** retired (do not
+rebuild).
 
 ### Recommended next five (non-app)
 
-Live run 76 (2026-09-13) aborted after Proceed?: typed GTA 6 thesis, five 100.0
-listicles, chrome packed as facts, Windows pin bleed, then TTS `y` still raised.
-That supersedes caption measurement as next work.
+Wave 14 closed the run 76 abort. What that run still showed, in operator-facing
+order: the published title was the GameSpot drones piece, Wikipedia invented
+`Gta`/`Goy`, autocomplete 400'd, and the title/script check did not run.
 
-1. **#740 `y` at the TTS-cap prompt still raises** `[S]` - run 76 confirmed
-   over-length and Proceed?; `run_media_only` always raises. Broken relative to
-   done #75. Distinct from #738.
-2. **#742 `"best "` forces five listicles** `[S]` - "Will it be the best game
-   ever?" selected ANGLE_LIST; only angle 3 was close to the thesis.
-3. **#741 fact `paste` / chrome pinned** `[M]` - backticks stored as a fact;
-   Share / `ffaaa` filled the 100-line budget.
-4. **#743 option 1 type-your-own never sets `creative_brief`** `[M]` - #664
-   covered option 5 only; the four-question thesis never reached the writer.
-5. **#667 pinned-status CSI on real Windows Terminal** `[S]` - run 76 bled
-   `~1,600)` onto every menu line. This item was "untested"; it now has a log.
+1. **#534 pin an angle phrase into the generated title** `[S]` - run 76 selected
+   the criterion angle and shipped "Rockstar Fights Drones And Hackers…".
+2. **#748 title/script check printed `unavailable`** `[S]` - the display is
+   honest (#549); the check itself did not run.
+3. **#746 Wikipedia `Gta` / Trends `Goy`** `[S]` - seed typo "goy candidate"
+   became two invented pages.
+4. **#747 YouTube autocomplete HTTP 400** `[S]` - failed lookup reporting as
+   noise.
+5. **#738 TTS-cap publish refusal never fires** `[S]` - related leftover of
+   #740: the publish list still has no feeder after a successful render.
 
-**Dropped from this list** (stay open): **#739** · **#738** · **#732** · **#627**
-· **#628** · **#744** (editorial ranker; after #742/#743) · **#745** · **#730**
-· **#731** · **#728** · #673 / #650 · Phase M · Ollama.
+**Dropped from this list** (stay open): **#739** · **#732** · **#627** · **#628**
+· **#730** · **#731** · **#728** · #673 / #650 · Phase M · Ollama · #345.
+
+**Closed 2026-09-13 (wave 14):** **#740 #742 #741 #743 #667 #745 #744**. Filed
+open: **#746 #747 #748**. Archive: [run_76.md](run_76.md).
 
 **Filed 2026-09-13 (run 76):** **#740 #741 #742 #743 #744 #745**; narrowed **#667**.
 

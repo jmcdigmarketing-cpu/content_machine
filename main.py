@@ -372,8 +372,16 @@ def _run_new_video_flow_body(
                 print(f"  Using: {topic}")
             else:
                 topic = ask_text("  Topic: ").strip()
+                if topic and not creative_brief:
+                    from core.idea_intake import brief_for_typed_topic
+
+                    creative_brief = brief_for_typed_topic(topic)
         else:
             topic = ask_text("  Topic: ").strip()
+            if topic and not creative_brief:
+                from core.idea_intake import brief_for_typed_topic
+
+                creative_brief = brief_for_typed_topic(topic)
 
     from analytics.post_timing import display_recommended_time, get_recommended_time
 
@@ -468,6 +476,7 @@ def _run_new_video_flow_body(
     # Generate → review → decide loop. The operator can regenerate the script at a
     # different length (+ longer / - shorter / 1-4) without re-running discovery —
     # run_pipeline reuses the discovery passed in, so only the script + checks re-run.
+    tts_force = False
     while True:
         result = run_pipeline(
             topic,
@@ -613,9 +622,13 @@ def _run_new_video_flow_body(
                 print("\n  Stopped before TTS (thin facts). Draft is saved.")
                 return
 
-        from core.tts_char_cap import tts_char_cap_reason
+        from core.tts_char_cap import tts_char_cap_reason, tts_char_cap_warn
 
-        cap_reason = tts_char_cap_reason(result.script)
+        cap_reason = tts_char_cap_reason(result.script, length_choice=length_choice)
+        cap_warn = tts_char_cap_warn(result.script, length_choice=length_choice)
+        tts_force = False
+        if cap_warn:
+            print(f"\n  ! {cap_warn}")
         if cap_reason:
             print(f"\n  ! {cap_reason}")
             if not ask_confirm("  Over length for TTS — render anyway? [y/N]: ", default=False):
@@ -627,6 +640,7 @@ def _run_new_video_flow_body(
                 )
                 print("\n  Stopped before TTS (character cap). Draft is saved.")
                 return
+            tts_force = True
 
         if needs_grounding_review:
             print(
@@ -668,6 +682,8 @@ def _run_new_video_flow_body(
         channel_id=channel_id,
         content_run_id=result.run_id,
         title=result.title,
+        force=tts_force,
+        length_choice=length_choice,
     )
 
     from assets.flux_thumbnail import list_channel_thumbnails

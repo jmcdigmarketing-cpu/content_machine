@@ -70,8 +70,16 @@ def format_pinned_status(
 def pin_enabled() -> bool:
     if os.getenv("NO_COLOR", "").strip():
         return False
-    if os.getenv("CONTENT_UI_PIN", "1").strip().lower() in ("0", "false", "no"):
+    raw = os.getenv("CONTENT_UI_PIN")
+    if raw is not None and raw.strip().lower() in ("0", "false", "no"):
         return False
+    # Run 76: CSI save/restore bled the quota line across every PowerShell row.
+    # Default off on Windows; opt in with CONTENT_UI_PIN=1.
+    if sys.platform == "win32":
+        if raw is None or raw.strip() == "":
+            return False
+        if raw.strip().lower() not in ("1", "true", "yes"):
+            return False
     try:
         return bool(sys.stdout.isatty())
     except Exception:

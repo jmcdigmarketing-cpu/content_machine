@@ -14,9 +14,10 @@ class TestTtsCharCap(unittest.TestCase):
         self.assertIsNone(tts_char_cap_reason("word " * 50))
 
     def test_over_default_ceiling_refuses(self):
-        reason = tts_char_cap_reason("x" * 5001)
+        # 15% grace: 5,001 is warn-only; hard stop is 5,751 at the default 5,000.
+        reason = tts_char_cap_reason("x" * 5751)
         self.assertIsNotNone(reason)
-        self.assertIn("5001", reason.replace(",", ""))
+        self.assertIn("5751", reason.replace(",", ""))
 
     def test_off_disables(self):
         with patch.dict(os.environ, {"TTS_MAX_CHARS": "off"}, clear=False):
@@ -30,7 +31,8 @@ class TestTtsCharCap(unittest.TestCase):
     def test_custom_ceiling(self):
         with patch.dict(os.environ, {"TTS_MAX_CHARS": "100"}, clear=False):
             self.assertIsNone(tts_char_cap_reason("a" * 100))
-            self.assertIsNotNone(tts_char_cap_reason("a" * 101))
+            self.assertIsNone(tts_char_cap_reason("a" * 101))  # inside 15% grace
+            self.assertIsNotNone(tts_char_cap_reason("a" * 116))
 
 
 if __name__ == "__main__":

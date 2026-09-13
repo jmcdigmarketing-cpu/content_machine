@@ -87,20 +87,15 @@ wave 13.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-13 · **HEAD at write:** `d0e687c` · **Tree:** run 76 diagnosis
-committing.
+**Written:** 2026-09-13 · **HEAD at write:** `378a923` · **Tree:** wave 14 committing.
 
-- **Defect first:** run 76 aborted after Proceed? y. `main.py` asked "render anyway";
-  `run_media_only` still raised TTS 5,720 > 5,000 (#740). Windows pin bled `~1,600)`
-  onto every line (#667 now has a real log).
-- **Rater:** all five angles 100.0; editorial 0.54-0.58. Composite is still per-topic.
-  Jaccard cannot rank a thesis (#744).
-- **Generation:** `"best "` selected listicle; only pick 3 was close. Option 1 never
-  sets `creative_brief` (#742 #743). Haiku/27b is not the first lever.
-- **Facts:** `` `paste` `` stored as a fact; chrome pinned into the 100-line budget
-  (#741). Gates flagged Jason/Lucia and $744M which were packed (#745).
-- **Filed #740–#745.** Next five: **#740 · #742 · #741 · #743 · #667**. Backlog
-  **335 open / 646 done**, highest **#745**. No code this session.
-
-
+- **Defect first:** a `len<=20 and isalpha()` chrome drop would have eaten "Fact one"
+  and vault picks "A"/"C". Tightened to an exact set. CSI bleed is unfixed if
+  `CONTENT_UI_PIN=1`. Cheap judge is a no-op when cheap-tier errors.
+- **Shipped #740 #742 #741 #743 #667 #745 #744.** 5,720 chars warns, does not abort.
+  Run 76 seed is not ANGLE_LIST. Option 1 feeds EDITORIAL ANGLE. Hype outranks
+  honourable-mention 0.4993 > 0.2223. No paid Haiku.
+- **Archive:** [run_76.md](run_76.md). Next five: **#534 · #748 · #746 · #747 · #738**.
+- Suite **3,107 -> 3,123**; mypy **139**; ruff clean; backlog **331 open / 653 done**,
+  highest **#748**.
 

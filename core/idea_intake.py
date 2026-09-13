@@ -122,6 +122,15 @@ def creative_brief_for_run(parsed: ParsedIdea) -> str:
     return (parsed.angle or parsed.seed_topic or parsed.title or "").strip()
 
 
+def brief_for_typed_topic(topic: str) -> str:
+    """Option 1 type-your-own: the typed thesis is the editorial angle.
+
+    Run 76 typed four questions at the best-bet prompt; `creative_brief` stayed
+    empty, so the script prompt never got an EDITORIAL ANGLE block.
+    """
+    return creative_brief_for_run(parse_pasted_idea(topic or ""))
+
+
 def seed_and_brief_from_youtube(video_title: str, our_angle: str) -> tuple[str, str]:
     """Search the video's topic; keep OUR take as the brief, not a concatenated seed."""
     title = (video_title or "").strip()

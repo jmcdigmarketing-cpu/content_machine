@@ -1,20 +1,26 @@
-# Handoff synopsis — 2026-09-13: run 76 aborted (docs only)
+# Handoff synopsis — 2026-09-13: wave 14 run 76 abort
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Live run 76 — 2026-09-13 (Cursor): intake only, no code
+## Last wave — 2026-09-13 (Cursor): wave 14 run 76 abort
+
+Shipped **#740 · #742 · #741 · #743 · #667 · #745 · #744**. 5,720 chars warns,
+does not abort; `y` / `--force` reach TTS; Windows pin default off; paste/chrome
+dropped; option 1 feeds EDITORIAL ANGLE; thesis ranker separates hype from
+honourable-mention; cheap judge fail-open (no paid Haiku). Suite **3,107 -> 3,123**.
+Archive: [run_76.md](run_76.md). Next five: **#534 · #748 · #746 · #747 · #738**.
+Backlog **331 open / 653 done**, highest **#748**.
+
+## Previous — 2026-09-13 (Cursor): live run 76 intake only, no code
 
 Option 1, TapIn, typed GTA 6 thesis, Extended, Proceed? y. **Aborted** at
 `RuntimeError: TTS character cap: 5,720 > 5,000` after the operator confirmed
 render-anyway. All 5 angles **100.0**; `"best "` -> listicle; only pick 3 close.
 `` `paste` `` stored as a fact; chrome packed. Windows pin bled `~1,600)` onto
 every line. Title was the GameSpot drones piece, not the selected angle.
-
-**Filed #740–#745.** Next five: **#740 · #742 · #741 · #743 · #667**. Haiku/27b
-is not the first lever. YouTube already ran; more scans would not have saved the
-thesis. Detail: [planning_log.md](planning_log.md) 2026-09-13 run 76.
+**Filed #740–#745.** That wave's next five is what wave 14 shipped.
 
 ## Last wave — 2026-09-13 (Claude Code): wave 13
 

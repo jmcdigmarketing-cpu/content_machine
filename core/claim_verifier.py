@@ -31,8 +31,17 @@ from core.logging import get_logger
 logger = get_logger("core.claim_verifier")
 
 _MAX_CLAIMS = 12
-_MAX_FACT_CHARS = 6000
 _MAX_UNSUPPORTED_KEPT = 10
+
+
+def _max_fact_chars() -> int:
+    """Same budget the script prompt packs — run 76's verifier dropped fact 75."""
+    try:
+        from core.operator_facts import operator_key_fact_char_budget
+
+        return operator_key_fact_char_budget()
+    except Exception:
+        return 12000
 
 
 @dataclass
@@ -143,7 +152,7 @@ def _numbered_facts(
 
     def _add(ln: str) -> None:
         nonlocal used
-        if used + len(ln) > _MAX_FACT_CHARS:
+        if used + len(ln) > _max_fact_chars():
             return
         numbered.append(ln)
         used += len(ln)

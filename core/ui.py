@@ -953,8 +953,8 @@ def prompt_key_facts_result(
     link_facts: list[str] = []
 
     print_fn("")
-    print_fn("  Add facts — paste a URL, one line, or type `paste` + Enter for a multi-line block.")
-    print_fn("  (Trade trackers paste well as a block. Empty line when done.)")
+    print_fn("  Add facts — paste a URL, one line, or type paste + Enter for a multi-line block.")
+    print_fn("  (Trade trackers paste well as a block. Two blank lines when done with a paste.)")
     from core.console_input import input_pending, read_pending_lines
     from core.content_engine import key_facts_for_prompt
     from core.fact_selection import select_facts_for_prompt
@@ -968,9 +968,12 @@ def prompt_key_facts_result(
     from core.operator_facts import (
         capture_facts_to_vault,
         dedupe_facts,
+        is_article_chrome,
+        is_paste_command,
         max_operator_key_facts,
         operator_key_fact_char_budget,
         parse_pasted_block,
+        paste_command_rest,
         read_multiline_paste,
     )
 
@@ -981,7 +984,7 @@ def prompt_key_facts_result(
     while True:
         fact = input_fn(
             f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1} "
-            f"(or `paste`, empty when done): "
+            f"(or paste, empty when done): "
         ).strip()
         if not fact:
             # Run 74: a blank line in the middle of a paste is a paragraph break, not
@@ -991,9 +994,12 @@ def prompt_key_facts_result(
             if input_pending():
                 continue
             break
-        if fact.lower() == "paste":
+        if is_paste_command(fact) or paste_command_rest(fact):
             print_fn("  >> Paste your block below ('.' / END / two blank lines when finished):")
-            parsed = parse_pasted_block(read_multiline_paste(input_fn))
+            glued = paste_command_rest(fact)
+            parsed = parse_pasted_block(
+                (glued + "\n" if glued else "") + read_multiline_paste(input_fn)
+            )
             if parsed:
                 print_fn(f"    Parsed {len(parsed)} fact line(s) from block.")
                 manual_facts.extend(parsed)
@@ -1027,10 +1033,12 @@ def prompt_key_facts_result(
                 issue = link_fetch_issue(fact)
                 msg = issue or "Could not extract facts from that link."
                 print_fn(f"    {msg}")
-                print_fn("    Tip: type `paste` and paste the article text as a block instead.")
+                print_fn("    Tip: type paste and paste the article text as a block instead.")
             continue
         if "\n" in fact:
             manual_facts.extend(parse_pasted_block(fact))
+        elif is_article_chrome(fact):
+            print_fn("    Skipped page chrome (Share / timestamps / paste verb).")
         else:
             manual_facts.append(fact)
 

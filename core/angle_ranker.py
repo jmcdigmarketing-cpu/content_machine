@@ -31,6 +31,7 @@ spend per run, which is exactly what `reuse_signals` exists to prevent:
 
 from __future__ import annotations
 
+import json
 import re
 
 from core.logging import get_logger
@@ -45,8 +46,45 @@ _WEIGHT_FIDELITY = 0.35
 _WEIGHT_SPECIFICITY = 0.25
 
 _NEUTRAL_FIDELITY = 0.5  # nothing nameable in the seed — do not punish or reward
+_LISTICLE_LEFTOVER_PENALTY = 0.25
 
 _WORD_RE = re.compile(r"[a-z0-9']+")
+
+# Listicle leftovers from ANGLE_LIST templates. Run 76's honourable-mention
+# angle still carried "Predictions" from the seed; entity overlap alone ranked
+# it with the hype/criterion take.
+_LISTICLE_LEFTOVER = (
+    "honorable mention",
+    "honourable mention",
+    "almost made the list",
+    "that almost made",
+    "closest call",
+    "forgotten feature",
+    "coming in at",
+)
+
+_THESIS_KEYWORDS = frozenset(
+    {
+        "hype",
+        "failure",
+        "fail",
+        "failed",
+        "predictions",
+        "prediction",
+        "analysis",
+        "criterion",
+        "criteria",
+        "candidate",
+        "goat",
+    }
+)
+
+_THESIS_PHRASES = (
+    "meeting the hype",
+    "best game",
+    "long form",
+    "will it be the best",
+)
 
 # Function words carry no editorial signal; leaving them in makes every pair of
 # English sentences look similar and flattens distinctness toward zero.
@@ -79,9 +117,30 @@ def _distinctness(angle: str, peers: list[str]) -> float:
     return round(1.0 - worst, 4)
 
 
+def _thesis_terms(seed_topic: str) -> list[str]:
+    """Question stems, hype/failure/prediction cues — not just named entities.
+
+    Jaccard on proper nouns could not tell run 76's criterion angle from an
+    honourable-mention listicle leftover; both said GTA 6.
+    """
+    text = seed_topic or ""
+    low = text.lower()
+    out: list[str] = []
+    for phrase in _THESIS_PHRASES:
+        if phrase in low:
+            out.append(phrase)
+    for kw in sorted(_THESIS_KEYWORDS):
+        if re.search(rf"\b{re.escape(kw)}\b", low):
+            out.append(kw)
+    for match in re.finditer(r"((?:will|what|why|is|does|can)\b[^?]{8,80})", text, flags=re.I):
+        words = _WORD_RE.findall(match.group(1).lower())
+        if len(words) >= 4:
+            out.append(" ".join(words[:5]))
+    return out
+
+
 def _seed_terms(seed_topic: str) -> list[str]:
-    """What the operator's seed is *about* — proper-noun subjects plus franchise
-    anchors. Reuses the two extractors already trusted for this elsewhere."""
+    """What the operator's seed is *about* — subjects, franchise anchors, thesis."""
     terms: list[str] = []
     try:
         from apis.topic_variants import _subject_terms
@@ -95,6 +154,7 @@ def _seed_terms(seed_topic: str) -> list[str]:
         terms.extend(extract_anchors(seed_topic or ""))
     except Exception as exc:
         logger.debug("Anchor extraction skipped: %s", exc)
+    terms.extend(_thesis_terms(seed_topic))
     seen: set[str] = set()
     out: list[str] = []
     for term in terms:
@@ -106,12 +166,19 @@ def _seed_terms(seed_topic: str) -> list[str]:
 
 
 def _fidelity(angle: str, seed_terms: list[str]) -> float:
-    """Share of the seed's nameable subjects the angle still carries."""
+    """Share of the seed's nameable subjects *and* thesis terms the angle still carries."""
     if not seed_terms:
         return _NEUTRAL_FIDELITY
     low = (angle or "").lower()
     kept = sum(1 for term in seed_terms if term.lower() in low)
     return round(kept / len(seed_terms), 4)
+
+
+def _listicle_leftover_penalty(angle: str) -> float:
+    low = (angle or "").lower()
+    if any(phrase in low for phrase in _LISTICLE_LEFTOVER):
+        return _LISTICLE_LEFTOVER_PENALTY
+    return 0.0
 
 
 def _specificity_of(angle: str) -> float:
@@ -120,10 +187,68 @@ def _specificity_of(angle: str) -> float:
     return _specificity(angle)
 
 
-def rank_angles(angles: list[str], *, seed_topic: str = "") -> dict[str, float]:
+def _cheap_judge(angles: list[str], seed_topic: str) -> dict[str, float] | None:
+    """Score each angle 0-1 against the typed thesis via the cheap LLM chain.
+
+    Fail-open: any error or unparseable reply returns None. Does not add a
+    provider — uses ``complete(tier="cheap")`` as already routed.
+    """
+    if not angles or not (seed_topic or "").strip():
+        return None
+    numbered = "\n".join(f"{i + 1}. {angle}" for i, angle in enumerate(angles))
+    prompt = (
+        "Score each angle 0-1 for how well it answers the operator's thesis "
+        'questions. Return JSON only: {"scores": [n, n, ...]} in the same '
+        "order as the angles. No commentary.\n\n"
+        f"Thesis:\n{seed_topic.strip()}\n\nAngles:\n{numbered}\n"
+    )
+    try:
+        from core.llm_router import complete
+
+        raw = complete(
+            prompt,
+            tier="cheap",
+            temperature=0.0,
+            max_tokens=256,
+            json_mode=True,
+            stage="angle_judge",
+        )
+    except Exception as exc:
+        logger.debug("cheap angle judge skipped: %s", exc)
+        return None
+    blob = (raw or "").strip()
+    if not blob:
+        return None
+    try:
+        start = blob.find("{")
+        end = blob.rfind("}")
+        payload = json.loads(blob[start : end + 1] if start >= 0 and end > start else blob)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        logger.debug("cheap angle judge returned unparseable JSON")
+        return None
+    values = payload.get("scores") if isinstance(payload, dict) else None
+    if not isinstance(values, list) or len(values) != len(angles):
+        return None
+    out: dict[str, float] = {}
+    for angle, value in zip(angles, values, strict=True):
+        try:
+            out[angle] = min(1.0, max(0.0, float(value)))
+        except (TypeError, ValueError):
+            return None
+    return out
+
+
+def rank_angles(
+    angles: list[str],
+    *,
+    seed_topic: str = "",
+    llm_judge: bool = False,
+) -> dict[str, float]:
     """`{angle: 0..1}` — an editorial score per angle. Never raises.
 
-    Deterministic and network-free, so it is safe to run inside variant scoring.
+    Deterministic by default (network-free). ``llm_judge=True`` asks the cheap
+    chain to score each angle against the typed thesis and blends the result;
+    any cheap-tier miss fails open to the deterministic ranking.
     Blank angles are dropped; duplicates collapse to one key (they are the same
     angle, and scoring one of them twice would imply a choice that does not exist).
     """
@@ -143,6 +268,16 @@ def rank_angles(angles: list[str], *, seed_topic: str = "") -> dict[str, float]:
             _WEIGHT_DISTINCTNESS * _distinctness(angle, peers)
             + _WEIGHT_FIDELITY * _fidelity(angle, terms)
             + _WEIGHT_SPECIFICITY * _specificity_of(angle)
+            - _listicle_leftover_penalty(angle)
         )
         scores[angle] = round(min(1.0, max(0.0, composite)), 4)
+
+    if llm_judge:
+        judged = _cheap_judge(cleaned, seed_topic)
+        if judged:
+            for angle in scores:
+                scores[angle] = round(
+                    min(1.0, max(0.0, 0.6 * scores[angle] + 0.4 * judged[angle])),
+                    4,
+                )
     return scores

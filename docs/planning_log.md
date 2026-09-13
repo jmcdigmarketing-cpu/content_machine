@@ -11,6 +11,62 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Cursor) - wave 14: run 76 abort + next five + #744/#745
+
+**Prompt, verbatim:** implement the attached wave 14 plan (run 76 abort + next
+five + #744/#745), one wave, one commit. Do not edit the plan file.
+
+**What was picked.** Operator call after the run 76 intake: fix all of that plus
+#744/#745. 5,720 vs 5,000 is non-consequential (warn, do not abort). Cheap
+judge uses existing `complete(tier="cheap")` — no Anthropic/Haiku paid sub.
+Ollama is local/free. Cursor chat APIs are not a production LLM. Differs from
+the pre-abort recommendation (#739 · #738 · #732 · #627 · #628).
+
+**Shipped**
+
+1. **#740** - 15% TTS grace; `force` on `run_media_only`; Extended floor
+   `max_words * 6`. Fail-first: `tts_char_cap_reason` on 5,720 chars (run 76)
+   was a hard block; `y` never reached TTS.
+2. **#742** - dropped bare `"best "` / `"every "`. Run 76 seed is not
+   `ANGLE_LIST`.
+3. **#667** - pin default off on `win32` unless `CONTENT_UI_PIN=1`.
+4. **#745** - verifier window = packed-fact budget (12,000). Start / Read /
+   Compare / Restricted skipped as verbs.
+5. **#741** - `` `paste` `` enters paste mode; chrome is dropped, not pinned.
+6. **#743** - `brief_for_typed_topic` on option 1; EDITORIAL ANGLE in the
+   script prompt.
+7. **#744** - thesis-term fidelity + listicle leftover penalty; optional cheap
+   judge fail-open. Criterion/hype 0.4993 > honourable-mention 0.2223.
+
+**Behaviour change.** 5,001 chars no longer hard-blocks (grace). Choosing
+Extended raises the TTS floor so option 4 is not a trap. Windows pin is off
+unless opted in.
+
+**Operator-facing, actually invoked**
+
+```
+intent default is_list False
+hard None
+warn TTS character cap: 5,720 chars > 5,000 (within 15% grace; rendering)
+rank 0.4993 0.2223 True
+```
+
+**Defects found / left open.** Wiki `Gta` / Trends `Goy` (#746). Autocomplete
+400 (#747). Title/script check `unavailable` (#748). Title still ≠ selected
+angle (#534). #738 unchanged. Cheap judge is a no-op when cheap-tier errors;
+deterministic ranking still separates the run 76 pair. No Haiku added.
+
+**Audit.** `tests.test_wave14` failed on unmodified code before the fixes
+(5 FAIL + 7 ERROR). Verifier window test was padded to 7,000 A's so Jason/Lucia
+sits past the old 6,000 cap. Guard: win32 pin patched off the operator's real
+platform. A first `len<=20 and isalpha()` chrome rule dropped "Fact one" and
+vault picks "A"/"C"; tightened to an exact set (`ffaaa`, Share, timestamps).
+Suite **3,107 -> 3,123**, 0 failures, 6 skipped; mypy **139**; ruff clean;
+`data/` untouched. Backlog **331 open / 653 done**, highest **#748**.
+Detail: [run_76.md](run_76.md).
+
+---
+
 ## 2026-09-13 (Cursor) - live run 76: GTA 6 thesis aborted at TTS
 
 **Prompt, verbatim:** operator pasted a full `main.py` run (option 1, typed own

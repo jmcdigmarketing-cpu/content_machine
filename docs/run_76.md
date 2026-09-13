@@ -73,10 +73,10 @@ separates the run 76 pair without it.
 
 ## What stayed open
 
-- **#534** — title did not keep the selected angle (GameSpot drones).
-- **#738** — TTS-cap entry in the publish refusal list still has no feeder.
-- **#746** — Wikipedia `Gta` / Trends `Goy` from the seed typo.
-- **#747** — YouTube autocomplete HTTP 400.
-- **#748** — title/script check printed `unavailable` (the check did not run).
+Wave 15 closed **#534 #748 #746 #747 #738**. Remaining from this run:
+
+- **#749** — Wikipedia still queries `GTA` token-joins, not `Grand_Theft_Auto_VI`.
+- **#345** — heuristic title/script overlap cannot catch a wrong actor who is
+  named in the script.
 - GameSpot/Forbes 403, MSN headline-only, IGDB/Steam no unreleased GTA 6 page
   (expected). Caption measurement (#730 / #739) unchanged.

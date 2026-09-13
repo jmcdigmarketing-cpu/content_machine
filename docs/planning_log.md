@@ -11,6 +11,48 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Cursor) - wave 15: #534 #748 #746 #747 #738
+
+**Prompt, verbatim:** "Next five: #534 · #748 · #746 · #747 · #738. Backlog 331
+open  lets complete these now"
+
+**What was picked.** The list wave 14 wrote. Matches the recommendation.
+
+**Shipped**
+
+1. **#747** - suggest query stripped of `!?` and capped at 80 chars; HTTP 400
+   is `unavailable` / "autocomplete skipped: query rejected (400)".
+2. **#746** - `_article_candidates` keeps `GTA`; run 76 seed emits
+   `GTA_6_Analysis_Predictions_Best_Game`, `GTA_6_Analysis`, `GTA` — not `Gta`
+   or `Goy`.
+3. **#738** - `run_media_only` persists `tts_char_count` / `tts_force`;
+   `blocking_publish_reasons` reads them. 8,000 chars feeds the publish list;
+   forced overage does not block.
+4. **#748** - `verify_claims` None falls back to
+   `find_ungrounded_entities(title, script)` so the check yields passed/failed.
+5. **#534** - angle pin phrases; a mocked drones title is repaired to the
+   criterion angle.
+
+**Operator-facing, actually invoked**
+
+```
+wiki ['GTA_6_Analysis_Predictions_Best_Game', 'GTA_6_Analysis', 'GTA']
+suggest 79 chars, no !!
+tts ['TTS character cap: 8,000 chars > 5,000 ...']
+title GTA 6 Will It Be the Best: The One Criterion That Decides It All
+check failed
+```
+
+**Left open.** Wiki still does not map GTA 6 to Grand_Theft_Auto_VI (#749).
+Heuristic title/script cannot catch wrong-actor with the same names (#345).
+
+**Audit.** `tests.test_wave15` 7 FAIL on unmodified 2421e15 (the forced-overage
+publish test passed because nothing fed the cap yet; it guards the feeder).
+Suite **3,123 -> 3,131**, 0 failures, 6 skipped; mypy **139**; ruff clean;
+`data/` untouched. Backlog **327 open / 658 done**, highest **#749**.
+
+---
+
 ## 2026-09-13 (Cursor) - wave 14: run 76 abort + next five + #744/#745
 
 **Prompt, verbatim:** implement the attached wave 14 plan (run 76 abort + next

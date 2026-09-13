@@ -207,6 +207,24 @@ def lint_title_grounding(
     ]
 
 
+def _heuristic_title_script_check(title: str, script: str) -> dict[str, object]:
+    """Deterministic fallback when verify_claims cannot run."""
+    from core.fact_grounding import find_ungrounded_entities
+
+    flagged = find_ungrounded_entities(title, script)
+    warnings = [
+        f"title contradicts or is not supported by the final script: {name[:140]}"
+        for name in flagged
+    ]
+    return {
+        "status": "failed" if warnings else "passed",
+        "passed": not warnings,
+        "warnings": warnings,
+        "total": len(flagged),
+        "method": "heuristic",
+    }
+
+
 def check_title_script_consistency(
     title: str,
     script: str,
@@ -234,12 +252,10 @@ def check_title_script_consistency(
         logger.debug("title/script check failed: %s", exc)
         verification = None
     if verification is None:
-        return {
-            "status": "unavailable",
-            "passed": False,
-            "warnings": [],
-            "total": 0,
-        }
+        # Run 76: extract-tier miss persisted unavailable and the check did
+        # not run. Token overlap is weaker than verify_claims but it always
+        # produces a verdict the operator can act on (#748).
+        return _heuristic_title_script_check(title, script)
     warnings = [
         f"title contradicts or is not supported by the final script: {claim.claim[:140]}"
         for claim in verification.unsupported

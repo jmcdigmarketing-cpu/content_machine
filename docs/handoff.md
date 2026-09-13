@@ -87,15 +87,17 @@ wave 13.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-13 · **HEAD at write:** `378a923` · **Tree:** wave 14 committing.
+**Written:** 2026-09-13 · **HEAD at write:** `2421e15` · **Tree:** wave 15 committing.
 
-- **Defect first:** a `len<=20 and isalpha()` chrome drop would have eaten "Fact one"
-  and vault picks "A"/"C". Tightened to an exact set. CSI bleed is unfixed if
-  `CONTENT_UI_PIN=1`. Cheap judge is a no-op when cheap-tier errors.
-- **Shipped #740 #742 #741 #743 #667 #745 #744.** 5,720 chars warns, does not abort.
-  Run 76 seed is not ANGLE_LIST. Option 1 feeds EDITORIAL ANGLE. Hype outranks
-  honourable-mention 0.4993 > 0.2223. No paid Haiku.
-- **Archive:** [run_76.md](run_76.md). Next five: **#534 · #748 · #746 · #747 · #738**.
-- Suite **3,107 -> 3,123**; mypy **139**; ruff clean; backlog **331 open / 653 done**,
-  highest **#748**.
+- **Defect first:** Wikipedia still queries `GTA` token-joins, not
+  `Grand_Theft_Auto_VI` (#749). Heuristic title/script cannot catch a wrong actor
+  who is named in the script (#345). The forced-overage publish test was green on
+  unmodified code because nothing fed the cap yet; it guards the feeder.
+- **Shipped #534 #748 #746 #747 #738.** Title keeps an angle phrase. Title/script
+  check falls back to a real verdict. Wiki no longer invents `Gta`/`Goy`.
+  Autocomplete 400 is skip-with-reason. Publish list reads persisted
+  `tts_char_count`.
+- Next five: **#739 · #730 · #345 · #543 · #732**.
+- Suite **3,123 -> 3,131**; mypy **139**; ruff clean; backlog **327 open / 658 done**,
+  highest **#749**.
 

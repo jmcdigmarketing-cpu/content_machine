@@ -1091,11 +1091,16 @@ def run_media_only(
                     sum(float(value) for key, value in cost.items() if key != "total"),
                     4,
                 )
+            from core.tts_char_cap import tts_char_count
+
             merge_features(
                 content_run_id,
                 {
                     "cost": cost,
                     "tts_cached": (1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
+                    "tts_char_count": tts_char_count(script),
+                    "tts_force": bool(force),
+                    "tts_length_choice": length_choice or "",
                     **_tts_forecast_features(),
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,

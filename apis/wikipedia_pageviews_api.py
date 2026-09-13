@@ -36,22 +36,57 @@ _TTL = 12 * 60 * 60
 logger = get_logger("apis.wikipedia_pageviews")
 
 
+_WIKI_STOP = frozenset(
+    """a an and are as at be been but by can could did do does for from had has have
+    how in into is it its may might more most must no not of on or our out over
+    should so than that the their then there these they this to up was were what when
+    where which who why will with would you your every far long form mean so""".split()
+)
+
+
+_WIKI_ACRONYMS = frozenset({"gta", "ufc", "nba", "nfl", "mlb", "nhl", "wnba", "mma", "cod"})
+
+
+def _wiki_keep(word: str) -> str | None:
+    """Keep franchise acronyms as-is; drop filler; do not fold GTA -> Gta."""
+    if word.isdigit():
+        return word
+    if len(word) <= 2:
+        return None
+    if word.lower() in _WIKI_STOP:
+        return None
+    if word.lower() in _WIKI_ACRONYMS:
+        return word.upper()
+    if word.isupper() and word.isalpha() and 2 <= len(word) <= 6:
+        return word
+    return word.capitalize()
+
+
 def _article_candidates(topic: str) -> list[str]:
-    """Guess Wikipedia article titles from a topic string."""
-    cleaned = re.sub(r"[^\w\s]", " ", topic)
-    words = [w for w in cleaned.split() if len(w) > 2]
-    if not words:
+    """Guess Wikipedia article titles from a topic string.
+
+    Run 76: ``w.capitalize()`` turned ``GTA`` into ``Gta`` and the typo
+    ``goy`` into a standalone ``Goy`` article. Acronyms stay acronyms;
+    lowercase filler is not a page of its own.
+    """
+    tokens = re.findall(r"[A-Za-z0-9]+", topic or "")
+    kept: list[str] = []
+    for raw in tokens:
+        folded = _wiki_keep(raw)
+        if folded:
+            kept.append(folded)
+    if not kept:
         return []
-    candidates = []
-    # Full title case underscore
-    title = "_".join(w.capitalize() for w in words[:6])
-    candidates.append(title)
-    if len(words) >= 2:
-        candidates.append("_".join(w.capitalize() for w in words[:3]))
-    candidates.append(words[0].capitalize())
-    # Dedupe preserving order
-    seen = set()
-    out = []
+    candidates = ["_".join(kept[:6])]
+    if len(kept) >= 2:
+        candidates.append("_".join(kept[:3]))
+    first = kept[0]
+    # Standalone only when the source already named a franchise/proper noun —
+    # never a manufactured lowercase token like Goy.
+    if first.isupper() or (len(first) >= 4 and first[:1].isupper()):
+        candidates.append(first)
+    seen: set[str] = set()
+    out: list[str] = []
     for c in candidates:
         if c not in seen:
             seen.add(c)

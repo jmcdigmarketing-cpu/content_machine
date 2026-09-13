@@ -1,10 +1,19 @@
-# Handoff synopsis — 2026-09-13: wave 14 run 76 abort
+# Handoff synopsis — 2026-09-13: wave 15 run 76 leftovers
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-13 (Cursor): wave 14 run 76 abort
+## Last wave — 2026-09-13 (Cursor): wave 15 #534 #748 #746 #747 #738
+
+Shipped the run 76 leftovers. Title keeps an angle phrase; title/script check
+falls back to a real verdict; Wikipedia no longer invents `Gta`/`Goy`;
+autocomplete 400 is a skip-with-reason; publish list reads persisted
+`tts_char_count`. Suite **3,123 -> 3,131**; mypy **139**; ruff clean; backlog
+**327 open / 658 done**, highest **#749**. Next five: **#739 · #730 · #345 ·
+#543 · #732**. Filed **#749**.
+
+## Previous — 2026-09-13 (Cursor): wave 14 run 76 abort
 
 Shipped **#740 · #742 · #741 · #743 · #667 · #745 · #744**. 5,720 chars warns,
 does not abort; `y` / `--force` reach TTS; Windows pin default off; paste/chrome

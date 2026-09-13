@@ -59,22 +59,24 @@ def _hard_ceiling(cap: int) -> int:
 
 
 def tts_char_cap_reason(
-    script: str,
+    script: str = "",
     *,
     force: bool = False,
     length_choice: str = "",
+    char_count: int | None = None,
 ) -> str | None:
     """Why TTS should be refused, or None when the script may synth.
 
     Force skips the hard stop. A count inside the 15% grace band is not a
-    refusal — see ``tts_char_cap_warn``.
+    refusal — see ``tts_char_cap_warn``. ``char_count`` is the persistable
+    feeder for publish-time checks that no longer have the full script (#738).
     """
     if force:
         return None
     cap = effective_cap(length_choice=length_choice)
     if cap is None:
         return None
-    n = tts_char_count(script)
+    n = int(char_count) if char_count is not None else tts_char_count(script)
     if n <= _hard_ceiling(cap):
         return None
     return (

@@ -80,5 +80,7 @@ class TestTitleScriptConsistency(unittest.TestCase):
                 "Jones beat Pereira at UFC 320.",
             )
 
-        self.assertEqual(check["status"], "unavailable")
-        self.assertFalse(check["passed"])
+        # #748: a verifier miss used to persist unavailable. Names in the title
+        # are in the script, so the heuristic now passes.
+        self.assertEqual(check["status"], "passed")
+        self.assertTrue(check["passed"])

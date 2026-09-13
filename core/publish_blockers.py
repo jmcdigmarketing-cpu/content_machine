@@ -178,12 +178,21 @@ def blocking_publish_reasons(
         logger.debug("rpm-cost blocker skipped: %s", exc)
 
     try:
-        if script:
-            from core.tts_char_cap import tts_char_cap_reason
+        from core.tts_char_cap import tts_char_cap_reason
 
-            why = tts_char_cap_reason(script)
-            if why:
-                out.append(why)
+        raw_count = features.get("tts_char_count")
+        try:
+            persisted = int(raw_count) if raw_count is not None else None
+        except (TypeError, ValueError):
+            persisted = None
+        why = tts_char_cap_reason(
+            script or "",
+            force=bool(features.get("tts_force")),
+            length_choice=str(features.get("tts_length_choice") or ""),
+            char_count=persisted,
+        )
+        if why:
+            out.append(why)
     except Exception as exc:
         logger.debug("tts-cap blocker skipped: %s", exc)
 

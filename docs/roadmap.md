@@ -24,37 +24,38 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-13 wave 14: run 76 abort. **#740** 5,720 chars warns
-instead of aborting (15% grace; `y` / `--force` actually reach TTS; Extended
-floor) · **#742** `"best "` is not a listicle cue · **#741** `` `paste` `` enters
-paste mode and chrome is dropped · **#743** option 1 sets `creative_brief` ·
-**#667** pin default off on Windows · **#745** verifier window matches packed
-facts; Start/Read/Compare/Restricted are not entities · **#744** thesis-term
-fidelity + fail-open cheap judge (no paid Haiku). Detail: [run_76.md](run_76.md).
+**Just landed** - 2026-09-13 wave 15: run 76 leftovers. **#534** title keeps an
+angle phrase (drones title repaired to the criterion angle) · **#748**
+title/script check falls back to a real verdict instead of `unavailable` ·
+**#746** Wikipedia no longer invents `Gta`/`Goy` · **#747** autocomplete 400 is
+a skip-with-reason · **#738** publish list reads persisted `tts_char_count`.
 
-**Previously** - 2026-09-13 wave 13 **#734 #735 #736 #737**, #730 measured; wave 12
-**#733 #630 #640**; wave 11 **#729 #631 #636 #639 #727**; **#153** retired (do not
-rebuild).
+**Previously** - 2026-09-13 wave 14 run 76 abort **#740 #742 #741 #743 #667 #745
+#744**; wave 13 **#734 #735 #736 #737**, #730 measured; wave 12 **#733 #630
+#640**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-Wave 14 closed the run 76 abort. What that run still showed, in operator-facing
-order: the published title was the GameSpot drones piece, Wikipedia invented
-`Gta`/`Goy`, autocomplete 400'd, and the title/script check did not run.
+Wave 15 closed the run 76 leftovers. Remaining operator-facing work is captions
+and the two quality gaps the heuristic title check cannot cover.
 
-1. **#534 pin an angle phrase into the generated title** `[S]` - run 76 selected
-   the criterion angle and shipped "Rockstar Fights Drones And Hackers…".
-2. **#748 title/script check printed `unavailable`** `[S]` - the display is
-   honest (#549); the check itself did not run.
-3. **#746 Wikipedia `Gta` / Trends `Goy`** `[S]` - seed typo "goy candidate"
-   became two invented pages.
-4. **#747 YouTube autocomplete HTTP 400** `[S]` - failed lookup reporting as
-   noise.
-5. **#738 TTS-cap publish refusal never fires** `[S]` - related leftover of
-   #740: the publish list still has no feeder after a successful render.
+1. **#739 try placing captions by footage source** `[M]` - every #730 production
+   label came from the gameplay segment; stock is unmeasured.
+2. **#730 `CAPTION_AUTO_PLACE` moves captions on no-overlay footage** `[M]` -
+   5 of 71 clean clips still move; flag stays off.
+3. **#345 claim-type taxonomy** `[M]` - #748's fallback is token overlap; a
+   title that names the same people as the script but assigns the action
+   wrongly still passes.
+4. **#543 quote the operator verbatim** `[M]` - related leftover of #743: a
+   pasted opinion is still paraphrased.
+5. **#732 `env_fingerprint` ignores commented optional flags** `[S]` - traces
+   never reflect `CAPTION_AUTO_PLACE`.
 
-**Dropped from this list** (stay open): **#739** · **#732** · **#627** · **#628**
-· **#730** · **#731** · **#728** · #673 / #650 · Phase M · Ollama · #345.
+**Dropped from this list** (stay open): **#728** · **#731** · **#627** · **#628**
+· #673 / #650 · Phase M · Ollama · **#749**.
+
+**Closed 2026-09-13 (wave 15):** **#534 #748 #746 #747 #738**. Filed open:
+**#749**.
 
 **Closed 2026-09-13 (wave 14):** **#740 #742 #741 #743 #667 #745 #744**. Filed
 open: **#746 #747 #748**. Archive: [run_76.md](run_76.md).

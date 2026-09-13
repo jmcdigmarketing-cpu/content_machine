@@ -7,7 +7,7 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 ## Last wave — 2026-09-13 (Claude Code): wave 13
 
 Shipped **#734 · #735 · #736 · #737**; measured **#730** on production footage. Suite
-**3,086 -> 3,105**, 0 failures; mypy **139**; ruff clean; `data/` untouched. Backlog
+**3,086 -> 3,107**, 0 failures; mypy **139**; ruff clean; `data/` untouched. Backlog
 **329 open / 646 done**, highest **#739**. Wave 12 CI run 34773165720 was green.
 
 - **`ops blocking` and `/next` invented a blocker.** They passed only a channel id, so
@@ -24,6 +24,10 @@ Shipped **#734 · #735 · #736 · #737**; measured **#730** on production footag
   The detector still moves captions on 5 of 71 no-overlay clips, so it stays off. All
   labelled frames came from the gameplay segment (composited first); #739 is to measure
   whether a by-source rule could work before building one.
+
+- **CI caught a local-only green.** The first push (`51218bd`, run 34781351080) failed one
+  test that passed here only because it read the operator's real run 72 in `data/traces`.
+  The suite never redirected the trace store; it does now, in a follow-up commit.
 
 **Next five:** **#739 · #738 · #732 · #627 · #628**.
 

@@ -88,10 +88,13 @@ from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
 from core import correction_dossier as _correction_dossier
 from core import counterfactual as _counterfactual
+from core import moat_backup as _moat_backup
 from core import negative_facts as _negative_facts
 from core import quota_state as _quota_state
 from core import recommender_history as _recommender_history
 from core import retraction_watch as _retraction_watch
+from core import run_trace as _run_trace
+from core import trace_secrets as _trace_secrets
 
 _SUITE_DATA_TMP = tempfile.mkdtemp(prefix="cm_suite_data_")
 atexit.register(shutil.rmtree, _SUITE_DATA_TMP, True)
@@ -113,6 +116,12 @@ _SUITE_STORE_PATCHES = (
     patch.object(_paths, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),
     patch.object(_paths, "TOPIC_GRAPH_FILE", _suite_store("topic_graph.json")),
     patch.object(_paths, "CLIP_INDEX_FILE", _suite_store("clip_index.json")),
+    # CI run 34781351080: a test listed the operator's real data/traces, found run 72
+    # and passed locally; the runner had no traces and failed. Reads count too.
+    patch.object(_paths, "TRACES_DIR", _suite_store("traces")),
+    patch.object(_run_trace, "TRACES_DIR", _suite_store("traces")),
+    patch.object(_trace_secrets, "TRACES_DIR", _suite_store("traces")),
+    patch.object(_moat_backup, "TRACES_DIR", _suite_store("traces")),
     patch.object(_quota_state, "QUOTA_STATE_FILE", _suite_store("quota_state.json")),
     patch.object(_cache_manager, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_youtube_quota, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),

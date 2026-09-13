@@ -95,6 +95,20 @@ proof build (sdist 409, no tests/; wheel 404, imports from the wheel), `ops pack
 **139**. Backlog **331 open / 642 done -> 329 open / 646 done** (roadmap-index), highest
 **#737 -> #739**.
 
+**CI caught what the local suite could not (follow-up commit).** CI run 34781351080 on
+`51218bd` failed 1 of 3,105: `tests/test_operator_shell.py:66`. `next_sentence` now goes
+through `publish_status_sentence`, but the test still patched `blocking_publish_sentence`.
+Locally it passed because `last_run_context` found the operator's **real run 72 in
+`data/traces`**; the runner had no traces and got "Nothing to publish yet". Two more tests
+(`test_ops_next.py`, `test_ops_html.py`) patched the old function and passed on either path.
+The root cause was wider than the test: `tests/__init__.py` redirected eight operator stores
+but never `data/traces`, so every trace-listing test depended on this machine's history.
+All three tests now patch `publish_status_sentence`, and the suite redirects `TRACES_DIR` in
+`config.paths`, `core.run_trace`, `core.trace_secrets` and `core.moat_backup`. Two guard tests
+observed failing first (the suite's `TRACES_DIR` was the real one; `publish_status_sentence`
+returned run 72's verdict). This is the "passes for an environmental reason" shape the
+next-five skill names - a local green that only held on this machine.
+
 ---
 
 ## 2026-09-13 (Claude Code) - wave 12: #733 #630 #640, #730 #731 measured

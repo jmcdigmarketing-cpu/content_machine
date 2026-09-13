@@ -26,7 +26,7 @@ class TestOpsNext(unittest.TestCase):
             ),
             patch("core.fact_expiry.warning_lines", return_value=["1 vault note(s) expired"]),
             patch(
-                "core.publish_blockers.blocking_publish_sentence",
+                "core.publish_blockers.publish_status_sentence",
                 return_value="Nothing is blocking publish: grade, authenticity, quota, and facts look clear.",
             ),
             patch("sys.stdout", new_callable=StringIO) as buf,

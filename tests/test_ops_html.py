@@ -33,10 +33,11 @@ class TestOpsHtmlAndHelpers(unittest.TestCase):
     def test_blocking_command_prints_sentence(self):
         args = argparse.Namespace(channel="tapin", html=False)
         with patch(
-            "core.publish_blockers.blocking_publish_sentence",
+            "core.publish_blockers.publish_status_sentence",
             return_value="Nothing is blocking publish: ok.",
-        ):
+        ) as status:
             self.assertEqual(ops.cmd_blocking(args), 0)
+        status.assert_called_once_with("tapin")
 
     def test_shortcut_writes_a_file(self):
         with tempfile.TemporaryDirectory() as tmp:

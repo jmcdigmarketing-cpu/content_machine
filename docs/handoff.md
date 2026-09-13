@@ -48,11 +48,17 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `99708d9` · **Tree:** wave 13 + docs,
-committing right after this slot, then **pushing** (operator-approved); that CI result
-was not known when this was written. Wave 12's CI (run 34773165720) was green.
+**Written:** 2026-09-13 · **HEAD at write:** `51218bd` · **Tree:** wave 13 follow-up,
+committing and **pushing** right after this slot. Wave 12's CI (run 34773165720) was green.
 
-**Defect first: `ops blocking` and `/next` reported an invented blocker.** They passed
+**Defect first, and it is mine: wave 13's first push went red.** CI run 34781351080 on
+`51218bd` failed `tests/test_operator_shell.py:66`. It passed here only because
+`publish_status_sentence` found the operator's **real run 72 in `data/traces`**; the runner
+had none. The suite had never redirected `data/traces` - it does now (`tests/__init__.py`),
+with two guard tests that went red first. **Cursor: a test that lists traces was reading
+real history; any new store must join `_SUITE_STORE_PATCHES`.**
+
+**Then: `ops blocking` and `/next` reported an invented blocker.** They passed
 only a channel id, so the render gate graded an empty dict: "report card F" while tapin's
 last rendered run (72) grades A. They now read the real last run (`publish_blockers.
 publish_status_sentence`). **Cursor: when a function takes optional context, check every
@@ -71,9 +77,9 @@ Publishing refuses a *block* verdict only. `warn` in `.env` still turns either o
   filed an overstated #739 - the sampled frames all came from the gameplay segment, so
   the stock segments are unmeasured; #739 is a measurement, not a rule.
 
-Audit: 12 of 19 new tests observed failing first (7 pass by design, named in the log); all
+Audit: 14 of 21 new tests observed failing first (7 pass by design, named in the log); all
 10 in-memory breaks went red; `ops clock-ahead --days 365` no change; the suite passed with
-the new gate defaults. Suite **3,086 -> 3,105**, 0 failures, 6 skipped; mypy **139**; ruff
+the new gate defaults. Suite **3,086 -> 3,107**, 0 failures, 6 skipped; mypy **139**; ruff
 clean; `data/` untouched. Backlog **329 open / 646 done**, highest **#739**. Next five:
 **#739 · #738 · #732 · #627 · #628**. Detail: [planning_log.md](planning_log.md) 2026-09-13
 wave 13.

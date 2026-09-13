@@ -345,5 +345,26 @@ class TestAuthenticityAndGroundingAreArmedByDefault(_Quiet):
         self.assertNotIn('gate_mode() == "block" and auth.verdict == "block"', text)
 
 
+class TestTheSuiteNeverReadsTheOperatorsTraces(unittest.TestCase):
+    """Found by CI run 34781351080 on this wave's first push. `next_sentence` now reads the
+    last reviewable run, and `tests/test_operator_shell.py` still patched the old function:
+    locally it found the operator's real run 72 in `data/traces` and passed; the runner had
+    no traces and failed. `data/traces` was never redirected for the suite, so any test
+    that lists traces depended on this machine's history."""
+
+    def test_the_trace_store_is_not_the_real_one_during_the_suite(self):
+        import config.paths as paths
+        from core import run_trace
+
+        real = os.path.join(paths.ROOT_DIR, "data", "traces")
+        for bound in (paths.TRACES_DIR, run_trace.TRACES_DIR):
+            self.assertNotEqual(os.path.normcase(os.path.abspath(bound)), os.path.normcase(real))
+
+    def test_publish_status_with_no_traces_says_nothing_to_publish(self):
+        from core.publish_blockers import publish_status_sentence
+
+        self.assertIn("nothing to publish yet", publish_status_sentence("tapin").lower())
+
+
 if __name__ == "__main__":
     unittest.main()

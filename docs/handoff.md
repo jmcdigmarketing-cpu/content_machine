@@ -87,17 +87,20 @@ wave 13.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-13 · **HEAD at write:** `4e77cb9` · **Tree:** docs wrap committing.
+**Written:** 2026-09-13 · **HEAD at write:** `d0e687c` · **Tree:** run 76 diagnosis
+committing.
 
-- **Defect first:** Claude's slot still said HEAD `51218bd` and "pushing right after" after
-  `4e77cb9` was already on origin and CI run **34781712182** was green. The mailbox was
-  one commit behind the push it claimed was happening.
-- **This wrap:** pin `4e77cb9` + green CI in the Claude slot, synopsis, and planning log.
-  No code. Did not start the next five.
-- **Verified:** `git status` clean at `4e77cb9`; branch matched origin; latest CI success.
-  Claude hit a session limit mid-wrap, not mid-edit.
-- **Next five (unchanged):** **#739 · #738 · #732 · #627 · #628**. Backlog **329 open /
-  646 done**, highest **#739**.
+- **Defect first:** run 76 aborted after Proceed? y. `main.py` asked "render anyway";
+  `run_media_only` still raised TTS 5,720 > 5,000 (#740). Windows pin bled `~1,600)`
+  onto every line (#667 now has a real log).
+- **Rater:** all five angles 100.0; editorial 0.54-0.58. Composite is still per-topic.
+  Jaccard cannot rank a thesis (#744).
+- **Generation:** `"best "` selected listicle; only pick 3 was close. Option 1 never
+  sets `creative_brief` (#742 #743). Haiku/27b is not the first lever.
+- **Facts:** `` `paste` `` stored as a fact; chrome pinned into the 100-line budget
+  (#741). Gates flagged Jason/Lucia and $744M which were packed (#745).
+- **Filed #740–#745.** Next five: **#740 · #742 · #741 · #743 · #667**. Backlog
+  **335 open / 646 done**, highest **#745**. No code this session.
 
 
 

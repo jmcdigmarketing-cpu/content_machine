@@ -11,6 +11,92 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Cursor) - live run 76: GTA 6 thesis aborted at TTS
+
+**Prompt, verbatim:** operator pasted a full `main.py` run (option 1, typed own
+topic, Extended, `paste` facts, Proceed? y) and asked to intake it, then focus
+on the idea rater, idea generation vs the original prompt, whether Haiku / a 27b
+would help, fact intake, a YouTube-first scan, and to document next roadmap
+tasks. No implementation this session.
+
+**The typed seed, verbatim:** "GTA 6 Analysis/Predictions!! Will it be the best
+game every? What does meeting the hype mean, is a goy candidate a failure? Long
+form predictions and content analysis so far"
+
+**What the run actually did.** Option 1, TapIn, Standard cost, topic typed at
+best-bet (not option 5). Discovery 76.6s, 8 active signals. All 5 angles printed
+**100.0**. Angle mode **list / ranking**. Operator picked 3 (closest). Packed
+124 collected / 100 to the LLM including `` `paste` ``, Share, Follow Us,
+`ffaaa`. Script opened "Six GTA 6 videos later" then dumped the Focus HUD table.
+Public title: "Rockstar Fights Drones And Hackers To Protect GTA 6 Secrets".
+Report card **C (70)** because grounding scored **0.0**. Operator said y to TTS
+over-length and y to Proceed?. `run_media_only` raised `RuntimeError: TTS
+character cap: 5,720 chars > 5,000`. No mp3/mp4.
+
+**Rater (why same topic = same score).** Composite is still per-topic: every
+variant reuses `_VARIANT_REUSE_DEFAULT` signals (`apis/register_signals.py`).
+#651's editorial score is Jaccard distinctness + named-entity fidelity +
+specificity. Run 76: all five lines are "IT'S OVER 9000!" + GTA 6 + a listicle
+slot, editorial **0.54-0.58**. That is not a ranking of "does this answer the
+operator's questions." Re-fetching signals per angle would cost 150-185s and
+would not separate them. Folding editorial into the composite is still wrong
+(angle_ranker.py docstring).
+
+**Generation (why 1, 2, 4, 5 missed and 3 was close).**
+`detect_angle_intent` matched `"best "` inside "best game every?" and selected
+`ANGLE_LIST` (`core/angle_intent.py:92-104`). The five listicle lenses are
+top-of-list / everyone-forgot / one-criterion / closest-call / honourable-mention
+(`apis/topic_variants.py:73-79`). Angle 3 is the criteria lens, so it accidentally
+fit "what does meeting the hype mean." Option 1 never sets `creative_brief`
+(#664 only covered option 5), so the four-question thesis never reached the
+script prompt. The writer followed the packed facts (GameSpot drones first,
+then Focus tables). "IT'S OVER 9000!" is the DBZ theme badge on composite >= 90
+(`core/themes.py:232`), not the generator.
+
+**Haiku / 27b.** Do not swap the generator first. A better model given
+`ANGLE_LIST` still returns five honourable-mentions. Haiku is already the
+Anthropic cheap/extract slug (`core/llm_router.py:166`) but cheap-tier order is
+openrouter -> ollama -> groq -> deepseek; Anthropic is not on that chain. A
+cheap *judge* pass (score each angle against the typed questions) could separate
+0.54-0.58 after the cue and brief are fixed. A local 27b is already representable
+as Ollama on the cheap chain; it would add latency on this machine and would not
+fix paste, TTS, or the `"best "` cue. Use extract-tier only to strip article
+chrome if the pin/drop rules are not enough.
+
+**YouTube-first?** YouTube already ran: 75 comments / 3 videos, competitor
+"Thoughts on the GTA 6 Gameplay Reveal" (penguinz0). The hook "Six GTA 6 videos
+later" is the model inventing a response-video frame from that block — the
+operator liked the hook; the five *angles* still missed the thesis. More scans
+would add more gameplay-dump facts. The coding issue is that the thesis is not
+the brief and chrome is pinned, so the writer cannot prefer "don't repeat the
+Focus video" over "here is the Focus table."
+
+**Also measured, not the two focus questions.**
+- Pin CSI bled `~1,600)` / `-- Start --pload(s) left` onto every line (#667 now
+  has a real Windows PowerShell failure, run 76).
+- `` `paste` `` is a prompt decoration; mode entry is `fact.lower() == "paste"`.
+- Operator facts are `TIER_OPERATOR` pinned at 2.0, so Share / timestamps /
+  affiliate lines fill the 100-line budget.
+- Claim verifier flagged "Jason and Lucia" and "$744 million" which were packed
+  (facts 75 and 52). Grounding flagged Start / Read / Compare / Restricted
+  (script verbs). Title/script check `unavailable`.
+- Wikipedia candidate `Gta` (678d); Trends proxied `Goy` from the typo.
+- GameSpot/Forbes 403; MSN headline-only. IGDB/Steam no unreleased GTA 6 page
+  is expected.
+- Autocomplete HTTP 400, unfiled beyond this log.
+
+**Filed.** #740 (TTS y still raises) · #741 (paste/chrome) · #742 (`"best "`
+listicle) · #743 (option 1 brief) · #744 (editorial cannot rank a thesis) ·
+#745 (gates flagged packed facts). Updated #667 with this run.
+
+**Deliberately not done.** No code. Did not start #739. Did not add Haiku to
+the cheap chain. Did not re-fetch signals per angle.
+
+**Next five, replaced by this abort:** **#740 · #742 · #741 · #743 · #667**.
+Previous recommendation (#739 · #738 · #732 · #627 · #628) stays open, not next.
+
+---
+
 ## 2026-09-13 (Claude Code) - wave 13: #734 #735 #736 #737, #730 measured
 
 **Prompt, verbatim:** "next 5, debug, document, and commit"

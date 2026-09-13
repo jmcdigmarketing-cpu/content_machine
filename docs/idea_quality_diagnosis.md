@@ -2,6 +2,16 @@
 
 **Written:** 2026-08-30 · **HEAD:** `73671ce` · **Branch:** `consolidate/2026-08-27`
 
+**2026-09-13, live run 76 (addendum, not a rewrite).** The operator typed a
+four-question GTA 6 thesis at option 1 best-bet. All five angles scored **100.0**.
+`"best "` selected `ANGLE_LIST`, so 1/2/4/5 were honourable-mention templates and
+only 3 was close. Option 1 still does not set `creative_brief` (#664 was option 5
+only). Editorial scores were 0.54-0.58 — Jaccard cannot rank a thesis. A Haiku or
+27b swap does not fix that while the listicle table is selected; see
+[planning_log.md](planning_log.md) 2026-09-13 run 76 and **#740–#745**. The Aug 30
+claim that option 5 discards the idea is **stale** (#664). The claim that
+composites do not rank is **still true**.
+
 The operator asked: *"is there any particular reason as to why the video ideas have been
 so terrible recently? it seems like its struggling trying to fit the 'enter your own'
 ideas into the initial markup of the project being about and for hot takes."*

@@ -1,8 +1,20 @@
-# Handoff synopsis — 2026-09-13: wave 13 (#734 #735 #736 #737, #730 measured)
+# Handoff synopsis — 2026-09-13: run 76 aborted (docs only)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
+
+## Live run 76 — 2026-09-13 (Cursor): intake only, no code
+
+Option 1, TapIn, typed GTA 6 thesis, Extended, Proceed? y. **Aborted** at
+`RuntimeError: TTS character cap: 5,720 > 5,000` after the operator confirmed
+render-anyway. All 5 angles **100.0**; `"best "` -> listicle; only pick 3 close.
+`` `paste` `` stored as a fact; chrome packed. Windows pin bled `~1,600)` onto
+every line. Title was the GameSpot drones piece, not the selected angle.
+
+**Filed #740–#745.** Next five: **#740 · #742 · #741 · #743 · #667**. Haiku/27b
+is not the first lever. YouTube already ran; more scans would not have saved the
+thesis. Detail: [planning_log.md](planning_log.md) 2026-09-13 run 76.
 
 ## Last wave — 2026-09-13 (Claude Code): wave 13
 
@@ -30,7 +42,7 @@ Shipped **#734 · #735 · #736 · #737**; measured **#730** on production footag
   The suite never redirected the trace store; it does now, in follow-up `4e77cb9`
   (CI run **34781712182 green**).
 
-**Next five:** **#739 · #738 · #732 · #627 · #628**.
+**Next five (superseded by run 76):** was **#739 · #738 · #732 · #627 · #628**.
 
 ## Previous wave — 2026-09-13 (Claude Code): wave 12
 

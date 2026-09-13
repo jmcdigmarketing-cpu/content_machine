@@ -37,25 +37,27 @@ still is not clean.
 
 ### Recommended next five (non-app)
 
-Wave 13's production labels suggest a different caption approach worth measuring
-before any more pixel tuning: all labelled overlays were on gameplay footage.
+Live run 76 (2026-09-13) aborted after Proceed?: typed GTA 6 thesis, five 100.0
+listicles, chrome packed as facts, Windows pin bleed, then TTS `y` still raised.
+That supersedes caption measurement as next work.
 
-1. **#739 measure placing captions by footage source** `[M]` - the labelled frames all
-   came from the gameplay segment (it is composited first); 23 showed a HUD, 19 did not.
-   Measure HUD persistence across whole gameplay segments and sample the stock segments
-   before proposing a rule.
-2. **#738 the TTS-cap publish blocker can never fire** `[S]` - remove it or persist the
-   character count.
-3. **#732 `env_fingerprint` ignores commented flags** `[S]` - the gate defaults just
-   moved, and a trace cannot show which were set.
-4. **#627 mutation-test the gate modules** `[L]` - `ops selftest` now exercises every
-   gate; mutation testing proves the tests would notice a broken one.
-5. **#628 flaky-test detector across CI runs** `[M]` - five pushed waves give a real
-   run history to read.
+1. **#740 `y` at the TTS-cap prompt still raises** `[S]` - run 76 confirmed
+   over-length and Proceed?; `run_media_only` always raises. Broken relative to
+   done #75. Distinct from #738.
+2. **#742 `"best "` forces five listicles** `[S]` - "Will it be the best game
+   ever?" selected ANGLE_LIST; only angle 3 was close to the thesis.
+3. **#741 fact `paste` / chrome pinned** `[M]` - backticks stored as a fact;
+   Share / `ffaaa` filled the 100-line budget.
+4. **#743 option 1 type-your-own never sets `creative_brief`** `[M]` - #664
+   covered option 5 only; the four-question thesis never reached the writer.
+5. **#667 pinned-status CSI on real Windows Terminal** `[S]` - run 76 bled
+   `~1,600)` onto every menu line. This item was "untested"; it now has a log.
 
-**Dropped from this list** (stay open): **#730** (superseded by #739 unless the operator
-wants the pixel detector) · **#731** · **#728** · #673 / #650 / #667 (hardware) · Phase M ·
-Ollama.
+**Dropped from this list** (stay open): **#739** · **#738** · **#732** · **#627**
+· **#628** · **#744** (editorial ranker; after #742/#743) · **#745** · **#730**
+· **#731** · **#728** · #673 / #650 · Phase M · Ollama.
+
+**Filed 2026-09-13 (run 76):** **#740 #741 #742 #743 #744 #745**; narrowed **#667**.
 
 **Closed 2026-09-13 (wave 13):** **#734 #735 #736 #737**. Filed open: **#738 #739**;
 narrowed **#730**.

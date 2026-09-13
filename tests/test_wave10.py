@@ -299,7 +299,10 @@ except ImportError:  # pragma: no cover - app extra not installed
     QApplication = None  # type: ignore[misc, assignment]
 
 
-@unittest.skipUnless(QApplication is not None, "PySide6 extra not installed")
+from tests.qt_support import requires_qt
+
+
+@requires_qt
 class TestCostPanel(unittest.TestCase):
     """#158 remainder. `gather_tower()` shipped in wave 9 with an ops verb; the
     Windows application had no panel over it."""

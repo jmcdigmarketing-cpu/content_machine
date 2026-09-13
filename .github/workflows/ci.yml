@@ -99,18 +99,24 @@ jobs:
         # #415: the 2s synthetic smoke needs a real ffmpeg. ubuntu-latest does
         # not ship it, so technical-QC tests were silently skipping in CI —
         # the same class as #24/#26 shipping dead on Windows.
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        # #729: PySide6 wheels also need the system GL/EGL/xkb libraries. Without
+        # them the import failed, and every widget test skipped as "extra not
+        # installed" while the run still reported OK.
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1
       - name: Install dependencies
-        # [app] brings PySide6 so the Stage 1/2 widget tests actually run here.
-        # Without it three of them skip and desktop/window.py is never imported,
-        # so the run window's only rendering tests sat outside CI (#670).
-        run: pip install -e ".[shell,app]"
+        # [app] brings PySide6 so the widget tests actually run here (#670).
+        # tests/qt_support.requires_qt refuses to skip them under CI (#729).
+        run: pip install -e ".[shell,app]" coverage
       - name: Run unit tests
         # Qt needs a platform plugin on a headless runner; offscreen is enough to
-        # construct and style widgets. Measured: 23 ran, 0 skipped, 0 failures.
+        # construct and style widgets. Run under coverage for #631.
         env:
           QT_QPA_PLATFORM: offscreen
           CONTENT_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/content_machine_test
-        run: python -m unittest discover -s tests -t . -v
+        run: coverage run -m unittest discover -s tests -t . -v
+      - name: Core coverage (report-only)
+        # #631: which gates in core/ no test executes. Visible, never blocking.
+        run: coverage report --include="core/*" --sort=cover
+        continue-on-error: true
       - name: Docs metric lint
         run: python -m unittest tests.test_docs_lint

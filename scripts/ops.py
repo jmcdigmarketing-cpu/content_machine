@@ -412,6 +412,10 @@ def cmd_caption_anchor(args: argparse.Namespace) -> int:
     if not path:
         print("caption-anchor requires --path VIDEO.mp4 or IMAGE.png")
         return 2
+    # The "needs" figures are read from the detector, not typed: after #727 moved the
+    # excess threshold to 0.18 this still printed 0.25.
+    from video import caption_place as cp
+
     reading = overlay_reading(path, always_motion=True)
     if reading["spatial"] == "no_frame":
         print(f"{path}: no frame could be read (missing file, or not a video/image)")
@@ -422,20 +426,22 @@ def cmd_caption_anchor(args: argparse.Namespace) -> int:
         print("  band has no measurable contrast (flat or black)")
     else:
         spread, step = reading["metrics"]
-        print(f"  spread/median : {spread:.2f}  (needs >= 0.35)")
-        print(f"  step share    : {step:.2f}  (needs >= 0.50)")
+        print(f"  spread/median : {spread:.2f}  (needs >= {cp._MIN_SPREAD:.2f})")
+        print(f"  step share    : {step:.2f}  (needs >= {cp._MIN_STEP_SHARE:.2f})")
     print(f"  spatial gate  : {'pass' if reading['step'] else 'fail'}")
     if reading["motion"] == "no_motion":
         print("  motion        : none measurable (still image, locked-off shot or clip under 1s)")
     else:
-        print(f"  static excess : {reading['excess']:.2f}  (needs >= 0.25)")
+        print(f"  static excess : {reading['excess']:.2f}  (needs >= {cp._MIN_STATIC_EXCESS:.2f})")
     verdict = (
         "OVERLAY -> captions move to the top"
         if reading["overlay"]
         else "clear -> captions stay at the bottom"
     )
     print(f"  verdict       : {verdict}")
-    print("  CAPTION_AUTO_PLACE is on by default (#721); set it to false to pin captions low.")
+    print(
+        "  CAPTION_AUTO_PLACE is off by default (#727); set it to true to let this move captions."
+    )
     return 0
 
 
@@ -485,6 +491,24 @@ def cmd_clock_ahead(args: argparse.Namespace) -> int:
     for test_id in changed:
         print(f"    {test_id}")
     return 1
+
+
+@_register("trace-secrets-scan", "Scan data/traces for env secrets or secret URL params (#636)")
+def cmd_trace_secrets_scan(_args: argparse.Namespace) -> int:
+    from core.trace_secrets import render_scan, scan_traces
+
+    checked, hits = scan_traces()
+    print(render_scan(checked, hits))
+    return 1 if hits else 0
+
+
+@_register("env-lint", "Env keys read in code vs documented in .env.example (#639)")
+def cmd_env_lint(_args: argparse.Namespace) -> int:
+    from core import env_lint
+
+    report = env_lint.lint()
+    print(env_lint.render_lint(report))
+    return 1 if report.new_undocumented else 0
 
 
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")

@@ -45,7 +45,10 @@ class _RecordingPlayer:
         self.actions.append("play")
 
 
-@unittest.skipUnless(QApplication is not None, "PySide6 extra not installed")
+from tests.qt_support import requires_qt
+
+
+@requires_qt
 class TestReviewWindowKeyDispatch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

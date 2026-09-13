@@ -1,8 +1,9 @@
 """#713 / #717 / #721: move captions off an occupied bottom band. Automatic only.
 
-**On by default since #721.** `CAPTION_AUTO_PLACE=false` keeps every caption at
-the bottom. Inconclusive never moves a caption: a still image, a locked-off shot or
-a clip under a second has no motion to compare against and stays at the bottom.
+**Opt-in (`CAPTION_AUTO_PLACE=true`).** On by default from #721 until #727
+(2026-09-13): measured on 50 real Pexels stock clips with no overlay, it moved
+captions on 2. Inconclusive never moves a caption: a still image, a locked-off shot
+or a clip under a second has no motion to compare against and stays at the bottom.
 
 #713 anchored by unique chroma in the bottom band versus the top, which is why a
 flat sky over textured ground read as a HUD: measured top=1 / bottom=87 on the
@@ -78,9 +79,10 @@ _SECOND_FRAME_S = 1.0
 # composited graphic stays well under it.
 _STATIC_PX = 8.0
 _COLUMNS = 8
-# Band column static share minus the same column above. Horizons measured <= +0.05,
-# overlays that clear the spatial gates >= +0.36.
-_MIN_STATIC_EXCESS = 0.25
+# Band column static share minus the same column above. Horizons measured <= +0.05.
+# #727: 0.25 missed 4 real NBA 2K score bars at 0.19-0.22; on 30 labelled bars, 50
+# stock clips and 12 hybrids, 0.18 finds 26/30 (was 22) and adds no new TOP.
+_MIN_STATIC_EXCESS = 0.18
 # Above this share of static pixels over the band there is no motion to compare.
 _MAX_ABOVE_STATIC = 0.85
 
@@ -308,7 +310,7 @@ def choose_caption_anchor(path: str | None) -> str:
         return "bottom"
     from core.providers import flag_enabled
 
-    if not flag_enabled("CAPTION_AUTO_PLACE", default=True):
+    if not flag_enabled("CAPTION_AUTO_PLACE", default=False):
         return "bottom"
     try:
         return "top" if bottom_band_overlay(path) else "bottom"

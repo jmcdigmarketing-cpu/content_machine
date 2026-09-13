@@ -444,7 +444,10 @@ except ImportError:
     QApplication = None  # type: ignore[misc, assignment]
 
 
-@unittest.skipUnless(QApplication is not None, "PySide6 extra not installed")
+from tests.qt_support import requires_qt
+
+
+@requires_qt
 class TestReviewWindowHonesty(unittest.TestCase):
     def setUp(self):
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")

@@ -807,7 +807,10 @@ except ImportError:  # pragma: no cover - CI installs [app]
     QApplication = None  # type: ignore[misc, assignment]
 
 
-@unittest.skipUnless(QApplication is not None, "PySide6 extra not installed")
+from tests.qt_support import requires_qt
+
+
+@requires_qt
 class TestBrandWindow(unittest.TestCase):
     """#151 GUI half. Read-only surface over the compiled kit."""
 

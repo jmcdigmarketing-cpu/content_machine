@@ -196,7 +196,10 @@ except ImportError:
     QApplication = None  # type: ignore[misc, assignment]
 
 
-@unittest.skipUnless(QApplication is not None, "PySide6 extra not installed")
+from tests.qt_support import requires_qt
+
+
+@requires_qt
 class TestRunWindowWidgets(unittest.TestCase):
     def test_shipped_channels_and_a_large_facts_box(self):
         import os

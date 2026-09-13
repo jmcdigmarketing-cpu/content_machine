@@ -129,8 +129,8 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
 
     def test_the_burned_ass_keeps_alignment_2_by_default(self):
         """The end-to-end guarantee: a sky-over-ground background produces the same
-        bottom-anchored ASS it did before #713. Since #721 the flag is on by default,
-        so this now proves the detector leaves scenery alone, not that it is off."""
+        bottom-anchored ASS it did before #713. The flag was on by default from #721
+        until #727 turned it back off (2026-09-13); either way scenery stays put."""
         import json
 
         from video.subtitles import generate_subtitle_file

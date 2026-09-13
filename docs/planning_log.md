@@ -11,6 +11,88 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Claude Code) - wave 11: #729 #631 #636 #639 #727
+
+**Prompt, verbatim:** "next 5, debug, document, and commit"
+
+**What was picked, and why it differs.** Wave 10 recommended **#727 · #631 · #639 ·
+#636 · #728**. Verifying CI for wave 10 found a defect bigger than any of them, filed
+and put first as **#729**; **#728** was dropped (no real clip exists). Three operator
+calls: push with one fix-forward allowed; **#639 as a ratchet**; and, after the #727
+measurement, **`CAPTION_AUTO_PLACE` back to default off**.
+
+**Defect first: the desktop programme had no CI proof.** CI installs `.[shell,app]`
+and downloads the PySide6 6.11.2 wheel, yet run 34741028834 skipped all 23 widget
+tests as `'PySide6 extra not installed'` (17 were already skipping on `b99ab81`), while
+`.github/workflows/ci.yml:110` said "Measured: 23 ran, 0 skipped". Ten test files turned
+any `ImportError` into that message. Wave 10's own #158 panel was proven only locally.
+
+**Second: wave 10's "no false TOP" was wrong.** It sampled 2K clips and hybrids. With
+50 labelled stock clips in the set, the default-on detector moved captions on 2 with
+no overlay: `pexels_6265064` (yellow shirt on pink) and `pexels_7005860` (suit on
+white), both confirmed by eye.
+
+**Shipped**
+
+1. **#631** - the CI test job runs under `coverage run`, then a report-only
+   `coverage report --include="core/*"`. The table exists only in the CI log.
+2. **#729** - `tests/qt_support.requires_qt` keeps the real import error and never
+   skips under `CI=true`; the 10 files use it; CI installs `libegl1 libgl1
+   libxkbcommon0 libdbus-1-3 libfontconfig1`. The stale claim is gone.
+3. **#636** - `core/run_trace._scrub_secrets` replaces current secret-named env values
+   and strips secret-named URL params on write; `ops trace-secrets-scan` checks disk.
+4. **#639** - `core/env_lint.py`, `ops env-lint`, `config/env_lint_baseline.json`.
+5. **#727** - `_MIN_STATIC_EXCESS` 0.25 -> 0.18, default off.
+
+**#727, measured on labelled real footage** (30 real bars, 2 non-bar 2K frames, 50
+stock clips, 12 hybrids; labels read by eye from contact sheets):
+
+| rule | real bars found | stock false TOP | hybrids TOP |
+|---|---|---|---|
+| current (excess >= 0.25) | 22/30 | 2/50 | 2/12 |
+| excess >= 0.20 | 25/30 | 2/50 | 2/12 |
+| **excess >= 0.18 (shipped)** | **26/30** | **2/50** | **2/12** |
+| per-block step >= 3 blocks | 24/30 | 12/50 | 3/12 |
+| per-block >= 3 and excess >= 0.18 | 29/30 | 14/50 | 6/12 |
+
+0.18 adds no false TOP anywhere; the per-block candidates buy recall with stock false
+positives and were rejected. The 2 stock false positives predate this wave and are why
+the flag is off: **#730**. The 4 remaining misses: **#731**.
+
+**Found**
+
+- `.github/workflows/ci.yml:110` and ten `tests/test_*.py` skip decorators - above.
+- `core/run_trace.py:29-60` - key-name redaction only; the fail-first test leaked an LLM
+  error, a `?api_key=` URL, a topic and `menu_path` into a written trace.
+- `scripts/ops.py:425-431` - `ops caption-anchor` printed typed thresholds, so after the
+  move it told the operator `needs >= 0.25`. Found by running it on `pexels_6265064`;
+  now read from `video/caption_place.py`.
+- `core/config_diff.py:21` - `env_example_keys` skips commented `# FLAG=` lines, so
+  `env_fingerprint` never covers an optional flag (**#732**, left unchanged on purpose).
+- #639's filed "392 read" was a looser grep; the linter measures **326 read / 273
+  documented / 73 undocumented / 20 unread / 27 dynamic**. Both Apify credentials are
+  among the undocumented.
+
+**Deliberately not done.** #730 and #731 (need a detector change, measured against the
+same set) · #728 · #732 · reading the coverage table (only CI has it).
+
+**Audit.** 26 behavioural tests added; **23 observed failing first** on `608636d`: 19
+of the first 20 (9 FAIL, 10 ERROR), 3 of 5 for #727, and the threshold-print test. The
+other 3 pass on old code by design (the fingerprint must not change; opting in still
+works; scenery-level excess still does not count). #729's real failure can only happen
+on a CI runner, so its fail-first was simulated with a forced import error under
+`CI=true`. All 9 in-memory breaks went red. Every new symbol has a production caller.
+mypy **139** held. Operator output run and read: `ops env-lint` (exit 0),
+`ops trace-secrets-scan` (28 traces, 0 hits), `ops caption-anchor` on `pexels_6265064`
+(still reads OVERLAY; off by default).
+
+**Proof.** ruff + format clean (726 files). Suite **3,043 -> 3,069**, 0 failures, 6
+skipped (the CI-only Qt guard adds one locally). mypy **139**. Backlog **330 open /
+634 done -> 329 open / 639 done**, highest **#728 -> #732**. CI proof of #729: the run
+of this commit.
+
+---
+
 ## 2026-09-12 (Claude Code) - wave 10: #719 #720 #724 #725 #726 #158 (panel)
 
 **Prompt, verbatim:** "next 5, debug, document, and commit" (and "Try again" after a

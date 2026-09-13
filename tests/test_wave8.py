@@ -436,7 +436,7 @@ class TestCaptionPlacementDistinguishesAnOverlay(unittest.TestCase):
             self.assertFalse(bottom_band_overlay(str(path)), "a still horizon moved captions")
 
     def test_the_flag_still_gates_it(self):
-        """#721 flipped the default on; `CAPTION_AUTO_PLACE=false` must still win."""
+        """The flag decides. Default off again since #727 (2026-09-13); `true` opts in."""
         from video.caption_place import choose_caption_anchor
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -445,7 +445,9 @@ class TestCaptionPlacementDistinguishesAnOverlay(unittest.TestCase):
                 with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "false"}):
                     self.assertEqual(choose_caption_anchor(bug), "bottom")
                 os.environ.pop("CAPTION_AUTO_PLACE", None)
-                self.assertEqual(choose_caption_anchor(bug), "top", "unset is on since #721")
+                self.assertEqual(choose_caption_anchor(bug), "bottom", "unset is off since #727")
+                with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
+                    self.assertEqual(choose_caption_anchor(bug), "top")
 
 
 try:
@@ -459,7 +461,10 @@ except ImportError:  # pragma: no cover - CI installs [app]
 FIXTURE = Path("video/intro/channel_intro.mp4")
 
 
-@unittest.skipUnless(QApplication is not None, "PySide6 extra not installed")
+from tests.qt_support import requires_qt
+
+
+@requires_qt
 @unittest.skipUnless(FIXTURE.is_file(), "committed intro fixture missing")
 class TestReviewWindowPlaysTheLastRun(unittest.TestCase):
     """#684. The last piece: the review room binding a REAL mp4 to a real player.

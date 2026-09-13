@@ -46,6 +46,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `dossier` | One run end-to-end: quality, cost, metrics, trace (--run-id required) |
 | `economics` | Per-video cost vs revenue -> contribution margin (Pillar 1) |
 | `end-card-preview` | Render the channel end card as a PNG still before a full encode (--path dest.png) |
+| `env-lint` | Env keys read in code vs documented in .env.example (#639) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
@@ -115,6 +116,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `title-patterns` | Title patterns that engage (A/B variant loop leaderboard) |
 | `topic-clone` | Seed a new draft from a winner run (--run-id; angles/facts refresh) |
 | `topic-db` | Topic Winners (clone these) + Graveyard (avoided flops) |
+| `trace-secrets-scan` | Scan data/traces for env secrets or secret URL params (#636) |
 | `traces` | Recent run traces — timings, LLM cost, quality, hotspots (Pillar 1) |
 | `tray` | System-tray / quota chip (uploads-left + TTS chars + Apify breaker) |
 | `tts-arms` | ElevenLabs vs Piper Bayesian report (no auto-switch) |

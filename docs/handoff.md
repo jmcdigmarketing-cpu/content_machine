@@ -48,33 +48,36 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `08700c1` · **Tree:** wave 10 + docs,
-committing right after this slot, then **pushing** (waves 8-10 reach CI for the
-first time; result not known when this was written).
+**Written:** 2026-09-13 · **HEAD at write:** `608636d` · **Tree:** wave 11 + docs,
+committing right after this slot, then **pushing**; that CI run is the proof for #729
+and was not known when this was written.
 
-**Defect first.** `core/quota_state.py:51-65` swallowed read errors, so a corrupt
-ledger read 0 everywhere and the tray chip (`core/win_notify.py:331`) showed the
-whole ElevenLabs budget as leftover (#724). And **#721's detector measured pixels the
-render crops away**: the render centre-crops to 9:16, so an overlay in a 16:9 clip's
-margins could move captions (#726, fixed with `caption_place.render_crop`).
+**Correction to my last slot, defect first.** Wave 10's CI went green (run
+34741028834), but the green hid **#729: all 23 widget tests skipped** as "PySide6 extra
+not installed" although the wheel installed. Ten files swallowed the real import error,
+and `ci.yml` claimed "23 ran, 0 skipped". Fixed with `tests/qt_support.requires_qt`
+(never skips under `CI=true`) plus the GL/EGL/xkb apt packages. **Cursor: use
+`@requires_qt` for any new Qt test, never a bare `skipUnless`.**
 
-Shipped the recommended five: **#719 · #720 · #724 · #725 · #726 · #158 (panel, closed)**.
+**Second correction: wave 10's "no false TOP" was wrong.** On 50 labelled real stock
+clips the detector moved captions on 2 with no overlay. Operator call:
+**`CAPTION_AUTO_PLACE` is default off again.** Threshold 0.25 -> 0.18 finds 22 -> 26 of
+30 real 2K score bars with no new false TOP. Open: **#730** (stock false positives),
+**#731** (4 misses).
 
-- **Real footage, at last:** 32 NBA 2K clips in `video/backgrounds/gaming/sports/2k26`
-  have genuine score bars. With the crop: 22 TOP, 6 missed, 4 bottom; 12 production
-  hybrids unchanged. Four TOP verdicts confirmed by eye; **no false TOP**. The 6 misses
-  are real bars (checked by eye) and are **#727**. `CAPTION_AUTO_PLACE` stays on.
-- **#725:** `ops clock-ahead --days 365` - no test changes result a year ahead. It
-  runs two full suites (~2 min). **Cursor: run it once when you pin a date.**
-- **#158:** `ops cost-panel` / `py -m desktop --cost`; UNKNOWN renders `?`, never `0`.
-- **#719** ticked on CI run 34416158840's log; **#720** guarded (broken in memory, since
-  its fix predates the test).
+- **#636:** traces scrub secrets by value and URL param; `ops trace-secrets-scan`: 28
+  traces, 0 hits.
+- **#639:** `ops env-lint`: 326 read / 273 documented / 73 undocumented, frozen in
+  `config/env_lint_baseline.json`. **A new env key you read must go in `.env.example`,
+  or a test fails.**
+- **#631:** core coverage prints in the CI log only; nobody has read it yet.
+- Found by running it: `ops caption-anchor` printed typed thresholds; now read live.
 
-Audit: 18 of 21 new tests observed failing first (the other 3 are a pre-existing fix's
-guard and two over-correction guards). All 7 in-memory breaks went red. Suite
-**3,022 -> 3,043**, 0 failures, 5 skipped; mypy **139**; ruff clean; `data/` untouched.
-Backlog **330 open / 634 done**, highest **#728**. Next five: **#727 · #631 · #639 ·
-#636 · #728**. Detail: [planning_log.md](planning_log.md) 2026-09-12 wave 10.
+Audit: 23 of 26 new tests observed failing first (3 pass by design); all 9 in-memory
+breaks went red. Suite **3,043 -> 3,069**, 0 failures, 6 skipped; mypy **139**; ruff
+clean; `data/` untouched. Backlog **329 open / 639 done**, highest **#732**. Next five:
+**#730 · #731 · CI coverage table · #630 · #640**. Detail:
+[planning_log.md](planning_log.md) 2026-09-13 wave 11.
 
 ## Slot — Cursor
 

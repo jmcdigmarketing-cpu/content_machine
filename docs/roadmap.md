@@ -24,34 +24,38 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-12 wave 10: **#719** verified in CI · **#720** guarded ·
-**#724** an unreadable ElevenLabs ledger reads unknown (root cause in `quota_state`) ·
-**#725** `ops clock-ahead` (0 of 3,043 tests change a year ahead) · **#726**
-caption placement measures the frame the render shows, checked on 32 real NBA 2K
-clips · **#158** cost tower panel (`ops cost-panel`), closing #158.
+**Just landed** - 2026-09-13 wave 11: **#729** desktop widget tests stop skipping
+in CI (all 23 had, with a false reason) · **#631** core coverage in the CI log ·
+**#636** no secret reaches a trace (`ops trace-secrets-scan`: 28 traces, 0 hits) ·
+**#639** `ops env-lint` ratchet (73 undocumented keys frozen) · **#727** 22 -> 26 of
+30 real score bars, and **`CAPTION_AUTO_PLACE` back to default off** after 2 of 50
+real stock clips moved with no overlay.
 
-**Previously** - 2026-09-12 wave 9 **#716 #723 #722 #721 #718**, #158 core slice;
-2026-09-10 wave 8 **#590 #378 #407 #717 #684**; **#153** retired (do not rebuild).
+**Previously** - 2026-09-12 wave 10 **#719 #720 #724 #725 #726 #158**; wave 9 **#716
+#723 #722 #721 #718**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-All of the previous five shipped. Wave 10 measured caption placement on real
-footage for the first time, which is why the top pick is its own finding.
+All of the previous five shipped; #728 was dropped for having no real clip. The
+caption detector is off until its two measured gaps close, so both lead.
 
-1. **#727 real score bars missed on the cropped frame** `[M]` - `CAPTION_AUTO_PLACE`
-   is on by default and misses 6 of 28 NBA 2K clips whose bar is confirmed by eye.
-   The fix candidate (a per-column step) needs the 32-clip set re-measured first.
-2. **#631 coverage for `core/` only** `[S]` - non-blocking; the cheapest way to find
-   the next gate that has no test, the shape these waves keep finding by hand.
-3. **#639 `.env` linter** `[M]` - measured 392 keys read vs 273 declared; wave 9 and
-   10 each added a flag that had to be documented by hand.
-4. **#636 prove no secret reaches `data/traces`** `[M]` - #97 redacts API bodies, not
-   env echoes; nothing has measured it.
-5. **#728 an overlay under a still sky** `[S]` - carried from #726, unmeasured on real
-   footage; cheap to close or retire once #727's clip set exists.
+1. **#730 stock false positives** `[M]` - the reason `CAPTION_AUTO_PLACE` is off.
+   The 50 labelled stock clips now exist to prove a fix reads 0/50.
+2. **#731 the 4 real bars still missed** `[M]` - same labelled set; any fix must
+   hold #730's 0/50.
+3. **Read the first CI coverage table** (#631 follow-up, not yet numbered) - the
+   numbers exist only in CI; file each `core/*gate*.py` no test executes.
+4. **#630 an ops selftest verb** `[M]` - run the five safety gates against fixtures;
+   pairs with the coverage table.
+5. **#640 audit what a packaged app would ship** `[M]` - #636 proved the traces; the
+   app bundle is the next place a key or the vault could leak.
 
-**Dropped from this list** (stay open): **#673** second monitor, #650 / #667 (need
-real hardware or a real console) · Phase M · Ollama · remaining `[L]` panels.
+**Dropped from this list** (stay open): **#728** still-sky overlay (no real clip) ·
+**#732** fingerprint and commented flags · #673 / #650 / #667 (need real hardware) ·
+Phase M · Ollama.
+
+**Closed 2026-09-13 (wave 11):** **#729 #631 #636 #639 #727**. Filed open:
+**#730 #731 #732**.
 
 **Closed 2026-09-12 (wave 10):** **#719 #720 #724 #725 #726 #158**. Filed open:
 **#727 #728**.

@@ -1,10 +1,34 @@
-# Handoff synopsis — 2026-09-12: wave 10 (#719 #720 #724 #725 #726 #158)
+# Handoff synopsis — 2026-09-13: wave 11 (#729 #631 #636 #639 #727)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-12 (Claude Code): wave 10, the roadmap's five
+## Last wave — 2026-09-13 (Claude Code): wave 11
+
+Shipped **#729 · #631 · #636 · #639 · #727**. Suite **3,043 -> 3,069**, 0 failures;
+mypy **139** held; ruff clean; `data/` untouched. Backlog **329 open / 639 done**,
+highest **#732**. Pushed after commit; the CI run of this commit is #729's proof.
+
+- **The desktop programme had no CI proof.** All 23 widget tests skipped in CI as
+  "PySide6 extra not installed" while the wheel installed and `ci.yml` claimed "23 ran,
+  0 skipped". `tests/qt_support.requires_qt` now never skips under CI, and CI installs
+  the GL/EGL/xkb libraries PySide6 needs.
+- **`CAPTION_AUTO_PLACE` is default off again** (operator call). On 50 labelled real
+  stock clips the detector moved captions on 2 with no overlay - wave 10's "no false
+  TOP" had only sampled 2K clips and hybrids. The excess threshold moved 0.25 -> 0.18:
+  22 -> 26 of 30 real score bars, no new false TOP. Open: **#730** (stock false
+  positives), **#731** (4 real misses).
+- **#636:** secrets are scrubbed by value and URL parameter on trace write; `ops
+  trace-secrets-scan` found 0 hits in 28 real traces.
+- **#639:** `ops env-lint` - 326 keys read, 273 documented, 73 undocumented (both Apify
+  credentials among them), frozen as a ratchet baseline.
+- **#631:** core coverage prints in the CI log only; nobody has read it yet.
+- Found while running output: `ops caption-anchor` printed typed thresholds (fixed).
+
+**Next five:** **#730 · #731 · read the CI coverage table · #630 · #640**.
+
+## Previous wave — 2026-09-12 (Claude Code): wave 10, the roadmap's five
 
 Shipped **#719 · #720 · #724 · #725 · #726 · #158** (the panel, closing #158).
 Suite **3,022 -> 3,043**, 0 failures; mypy **139** held; ruff clean; `data/`
@@ -26,7 +50,7 @@ untouched. Backlog **330 open / 634 done**, highest **#728**. Pushed after commi
 
 **Next five:** **#727 · #631 · #639 · #636 · #728**.
 
-## Previous wave — 2026-09-12 (Claude Code): wave 9
+## Earlier wave — 2026-09-12 (Claude Code): wave 9
 
 Shipped **#716 · #723 · #722 · #721** (closing **#718**) and **#158**'s core slice.
 Suite **2,996 -> 3,022**, 0 failures; mypy **139** held; ruff clean; `data/`

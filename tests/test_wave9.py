@@ -331,12 +331,16 @@ class TestCaptionOverlayNeedsTheBandToStayStill(unittest.TestCase):
             self.assertEqual(overlay_reading(str(path))["motion"], "no_motion")
             self.assertFalse(bottom_band_overlay(str(path)))
 
-    def test_the_default_is_on(self):
+    def test_the_default_follows_the_flag(self):
+        """#721 flipped the default on; #727 turned it back off on 2026-09-13 after
+        2 of 50 real stock clips moved captions with no overlay. Opt-in still works."""
         from video.caption_place import choose_caption_anchor
 
         with patch("video.caption_place.bottom_band_overlay", return_value=True):
             with patch.dict(os.environ, {}, clear=False):
                 os.environ.pop("CAPTION_AUTO_PLACE", None)
+                self.assertEqual(choose_caption_anchor("clip.mp4"), "bottom")
+            with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
                 self.assertEqual(choose_caption_anchor("clip.mp4"), "top")
 
     def test_ops_caption_anchor_prints_the_motion_reading(self):
@@ -351,7 +355,7 @@ class TestCaptionOverlayNeedsTheBandToStayStill(unittest.TestCase):
             with redirect_stdout(io.StringIO()) as out:
                 self.assertEqual(ops.cmd_caption_anchor(Namespace(path=str(path))), 0)
         self.assertIn("motion", out.getvalue())
-        self.assertIn("on by default", out.getvalue())
+        self.assertIn("off by default", out.getvalue())
 
 
 def _has_ffmpeg() -> bool:
@@ -382,15 +386,16 @@ class TestCaptionPlacementOnARealEncodedClip(unittest.TestCase):
         )  # fmt: skip
         return str(dest)
 
-    def test_a_static_overlay_on_moving_footage_moves_captions_by_default(self):
+    def test_a_static_overlay_on_moving_footage_moves_captions_when_opted_in(self):
         import tempfile
 
         from video.caption_place import choose_caption_anchor, overlay_reading
 
         with tempfile.TemporaryDirectory() as tmp:
             clip = self._clip(Path(tmp) / "overlay.mp4", box=True)
-            os.environ.pop("CAPTION_AUTO_PLACE", None)
-            self.assertEqual(choose_caption_anchor(clip), "top", overlay_reading(clip))
+            # Opt-in since #727 (2026-09-13); the detector itself is what this proves.
+            with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
+                self.assertEqual(choose_caption_anchor(clip), "top", overlay_reading(clip))
 
     def test_a_low_horizon_clip_keeps_captions_at_the_bottom(self):
         import tempfile

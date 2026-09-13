@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from typing import Any
 
@@ -73,8 +74,46 @@ def _redact_paths_in_obj(value: Any) -> Any:
     return value
 
 
+# #636: key-name redaction misses a secret inside a free-text value -- an LLM error
+# echoing the key, a source URL carrying `?api_key=`, a topic. Scrub by value too.
+_SECRET_NAME_HINTS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "AUTH")
+# Shorter values ("true", "1") would scrub ordinary words out of every trace.
+_MIN_SECRET_LEN = 8
+SECRET_PARAM_RE = re.compile(
+    r"([?&](?:api_?key|apikey|key|token|access_token|sig|signature|client_secret)=)"
+    r"(?!\[redacted)[^&#\s\"']+",
+    re.IGNORECASE,
+)
+
+
+def env_secret_values(environ: Any = None) -> list[str]:
+    """Current values of env vars whose names look secret, longest first."""
+    source = os.environ if environ is None else environ
+    values = {
+        str(value).strip()
+        for name, value in source.items()
+        if any(hint in str(name).upper() for hint in _SECRET_NAME_HINTS)
+        and len(str(value).strip()) >= _MIN_SECRET_LEN
+    }
+    return sorted(values, key=len, reverse=True)
+
+
+def _scrub_secrets(value: Any, secrets: list[str]) -> Any:
+    if isinstance(value, str):
+        text = SECRET_PARAM_RE.sub(r"\1[redacted]", value)
+        for secret in secrets:
+            if secret in text:
+                text = text.replace(secret, "[redacted-env]")
+        return text
+    if isinstance(value, dict):
+        return {str(k): _scrub_secrets(v, secrets) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_scrub_secrets(v, secrets) for v in value]
+    return value
+
+
 def _redact_trace_blob(value: Any) -> Any:
-    return _redact_paths_in_obj(redact_trace_value(value))
+    return _scrub_secrets(_redact_paths_in_obj(redact_trace_value(value)), env_secret_values())
 
 
 def _trace_path(run_id: int) -> str:

@@ -20,7 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "video" / "intro" / "channel_intro.mp4"
 
 
-@unittest.skipUnless(QApplication is not None, "PySide6 extra not installed")
+from tests.qt_support import requires_qt
+
+
+@requires_qt
 @unittest.skipUnless(FIXTURE.is_file(), "committed intro fixture missing")
 class TestReviewRoomRealDecode(unittest.TestCase):
     @classmethod

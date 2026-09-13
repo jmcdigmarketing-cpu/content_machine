@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from pathlib import Path
 from typing import Any
 
 from config.paths import CHANNELS_FILE, ROOT_DIR
 
 ENV_EXAMPLE_FILE = Path(ROOT_DIR) / ".env.example"
+# A commented example line that documents a key: `# FLAG=value`, not prose.
+_COMMENTED_KEY_RE = re.compile(r"^#\s*([A-Z][A-Z0-9_]{2,})=")
 
 
 def channels_fingerprint(path: str | None = None) -> str:
@@ -18,7 +21,12 @@ def channels_fingerprint(path: str | None = None) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def env_example_keys(path: str | Path | None = None) -> list[str]:
+def env_example_keys(
+    path: str | Path | None = None, *, include_commented: bool = False
+) -> list[str]:
+    """Keys set in `.env.example`. `include_commented` also counts documented optional
+    flags (`# FLAG=true`) for #639; the #687 fingerprint keeps the default, so every
+    trace's `env_sha256` stays comparable."""
     target = Path(path or ENV_EXAMPLE_FILE)
     names: list[str] = []
     seen: set[str] = set()
@@ -28,6 +36,12 @@ def env_example_keys(path: str | Path | None = None) -> list[str]:
         return []
     for line in lines:
         stripped = line.strip()
+        if include_commented and stripped.startswith("#"):
+            match = _COMMENTED_KEY_RE.match(stripped)
+            if match and match.group(1) not in seen:
+                seen.add(match.group(1))
+                names.append(match.group(1))
+            continue
         if not stripped or stripped.startswith("#") or "=" not in stripped:
             continue
         name = stripped.split("=", 1)[0].strip()

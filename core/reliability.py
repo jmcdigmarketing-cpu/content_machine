@@ -154,12 +154,13 @@ def _elevenlabs_section() -> dict[str, Any]:
             budget = None
     out: dict[str, Any] = {"budget": budget}
     try:
-        from core.quota_governor import elevenlabs_chars_used
+        from core.quota_governor import elevenlabs_chars_reading
 
-        out["chars_used"] = elevenlabs_chars_used()
+        # #724: None when the ledger is unreadable -- unknown, never zero.
+        out["chars_used"] = elevenlabs_chars_reading()
     except Exception as exc:
-        logger.debug("elevenlabs_chars_used skipped: %s", exc)
-        out["chars_used"] = 0
+        logger.debug("elevenlabs_chars_reading skipped: %s", exc)
+        out["chars_used"] = None
     return out
 
 
@@ -287,7 +288,10 @@ def _utilization_lines(data: dict[str, Any]) -> list[str]:
     out: list[str] = []
     el = data.get("elevenlabs") or {}
     budget = el.get("budget")
-    if budget:
+    if budget and "chars_used" in el and el["chars_used"] is None:
+        # #724: the ledger could not be read, so "all of it unused" would be invented.
+        out.append("ElevenLabs: unused chars unknown (ledger unreadable)")
+    elif budget:
         used = int(el.get("chars_used") or 0)
         left = max(0, int(budget) - used)
         try:
@@ -463,7 +467,10 @@ def render(data: dict[str, Any] | None = None) -> str:
         lines.extend(f"  {u}" for u in util)
 
     el = data.get("elevenlabs") or {}
-    if el.get("budget"):
+    if el.get("budget") and "chars_used" in el and el["chars_used"] is None:
+        # #724: an unreadable ledger is not "0 used".
+        lines.append(f"ElevenLabs chars: unknown/{int(el['budget']):,} (ledger unreadable)")
+    elif el.get("budget"):
         used = int(el.get("chars_used") or 0)
         budget = int(el["budget"])
         pct = (used / budget * 100) if budget else 0.0

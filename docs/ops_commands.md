@@ -26,6 +26,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
 | `check-youtube` | Verify YouTube OAuth + upload env |
+| `clock-ahead` | Run the suite with the clock shifted; list tests whose result changes (#725) |
 | `coach` | Daily creator coach — ranked ideas + why, post time, length, patterns |
 | `command-ref` | Write docs/ops_commands.md from the live ops list |
 | `competitor-health` | Flag dead/unverified competitor YouTube UC ids (RSS probe, no Data API) |
@@ -33,6 +34,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `config-diff` | channels.json sha256 vs last-run fingerprint |
 | `contact-sheet` | 2x2 PNG collage of the last thumbnails (--path dest.png) |
 | `corrections` | Re-check published videos' sources and file a correction dossier |
+| `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
 | `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |

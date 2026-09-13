@@ -1,10 +1,32 @@
-# Handoff synopsis — 2026-09-12: wave 9 (#716 #723 #722 #721 #158)
+# Handoff synopsis — 2026-09-12: wave 10 (#719 #720 #724 #725 #726 #158)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-12 (Claude Code): the roadmap's five
+## Last wave — 2026-09-12 (Claude Code): wave 10, the roadmap's five
+
+Shipped **#719 · #720 · #724 · #725 · #726 · #158** (the panel, closing #158).
+Suite **3,022 -> 3,043**, 0 failures; mypy **139** held; ruff clean; `data/`
+untouched. Backlog **330 open / 634 done**, highest **#728**. Pushed after commit.
+
+- **#726 measured on real footage.** `caption_place` measured the source frame, but
+  the render centre-crops to 9:16, so an overlay in the discarded margins could move
+  captions. Fixed with `render_crop`. On 32 NBA 2K clips with real score bars: 22
+  TOP (was 28, partly on off-screen pixels); 12 production hybrids unchanged. Four
+  TOP verdicts confirmed by eye, no false TOP. **The 6 misses are #727.**
+- **#724 was one layer deeper than filed:** `quota_state._load` swallowed the read
+  error, so a corrupt ledger read 0 everywhere; the tray chip showed the whole
+  budget as leftover. The TTS budget guard stays fail-open.
+- **#725:** `ops clock-ahead --days 365` - no test changes result a year ahead.
+  Positive control flips the pre-fix clock-bomb test. The first harness double-shifted
+  `date.today()`; the shipped one is pinned by a test.
+- **#719** verified from the CI log; **#720** guarded (broken in memory, since the fix
+  predates the test).
+
+**Next five:** **#727 · #631 · #639 · #636 · #728**.
+
+## Previous wave — 2026-09-12 (Claude Code): wave 9
 
 Shipped **#716 · #723 · #722 · #721** (closing **#718**) and **#158**'s core slice.
 Suite **2,996 -> 3,022**, 0 failures; mypy **139** held; ruff clean; `data/`
@@ -28,7 +50,7 @@ untouched. Backlog **334 open / 628 done**, highest **#726**.
 
 **Next five:** **#724 · #725 · #726 · #158 panel · #719/#720 verify-and-tick**.
 
-## Previous wave — 2026-09-10 (Claude Code): the roadmap's five, all of them
+## Earlier wave — 2026-09-10 (Claude Code): the roadmap's five, all of them
 
 Shipped **#590 · #378 · #407 · #717 · #684**. Suite **2,968 -> 2,996**, mypy **139**
 held, ruff clean, `data/` untouched. Backlog **336 open / 623 done**, highest **#723**.

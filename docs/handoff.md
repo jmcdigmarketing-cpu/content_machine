@@ -48,41 +48,33 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-12 · **HEAD at write:** `7c57b82` · **Tree:** wave 9 + docs,
-committing right after this slot.
+**Written:** 2026-09-13 · **HEAD at write:** `08700c1` · **Tree:** wave 10 + docs,
+committing right after this slot, then **pushing** (waves 8-10 reach CI for the
+first time; result not known when this was written).
 
-**Defect first: the suite was red when I arrived.** `tests/test_next15_wave2.py:282`
-pinned `now` to 2026-09-09 while `get_competitor_prompt_block` reads the real clock.
-It was green on 09-10 when I reported it and red on 09-12. Fixed; **#725** files the
-other 64 pinned dates in 12 test files. **Cursor: when you pin a date, check that the
-code under test actually takes `now`.**
+**Defect first.** `core/quota_state.py:51-65` swallowed read errors, so a corrupt
+ledger read 0 everywhere and the tray chip (`core/win_notify.py:331`) showed the
+whole ElevenLabs budget as leftover (#724). And **#721's detector measured pixels the
+render crops away**: the render centre-crops to 9:16, so an overlay in a 16:9 clip's
+margins could move captions (#726, fixed with `caption_place.render_crop`).
 
-Shipped the recommended five: **#716 · #723 · #722 · #721 · #158 (core slice)**.
-**#718** is closed by its own stated condition.
+Shipped the recommended five: **#719 · #720 · #724 · #725 · #726 · #158 (panel, closed)**.
 
-- **`CAPTION_AUTO_PLACE` now defaults ON** (operator call). **#721** requires #717's
-  step AND a band that stays still while the footage above moves: per-column static
-  excess >= 0.25. Real clips: horizons <= +0.05, overlays >= +0.36. Stills,
-  locked-off shots and clips under 1s never move. This changes finished karaoke
-  renders; it is disclosed in the commit. Unmeasured on a genuine burned-in overlay:
-  **#726**.
-- **Your caption tests changed shape, not strength.** A still PNG is no longer
-  evidence of an overlay, so the flag tests fix the detector's verdict and assert
-  both flag states. The real overlay -> top proof is an encoded clip in
-  `tests/test_wave9.py`. For the spatial gate alone, use `overlay_reading(p)["step"]`.
-- **#722**: the shipped typed YouTube date had already rotted into CLOSED.
-  Recurring rows are now `derive: youtube|apify`.
-- **#158 core**: `ops cost-tower`. Running it caught two defects of mine (a real $0
-  printed as `-`; the daily reset shown as NEAR), both fixed test-first. **#724**:
-  ElevenLabs chars still read 0 when the store is unreadable.
-- **#716**: push and PR share one CI group, so the later run cancels the other.
+- **Real footage, at last:** 32 NBA 2K clips in `video/backgrounds/gaming/sports/2k26`
+  have genuine score bars. With the crop: 22 TOP, 6 missed, 4 bottom; 12 production
+  hybrids unchanged. Four TOP verdicts confirmed by eye; **no false TOP**. The 6 misses
+  are real bars (checked by eye) and are **#727**. `CAPTION_AUTO_PLACE` stays on.
+- **#725:** `ops clock-ahead --days 365` - no test changes result a year ahead. It
+  runs two full suites (~2 min). **Cursor: run it once when you pin a date.**
+- **#158:** `ops cost-panel` / `py -m desktop --cost`; UNKNOWN renders `?`, never `0`.
+- **#719** ticked on CI run 34416158840's log; **#720** guarded (broken in memory, since
+  its fix predates the test).
 
-Audit: 24 of 26 new tests observed failing first (the other 2 guard against
-over-suppression). Each of 7 fixes was broken in memory and every guard went red.
-Suite **2,996 -> 3,022**, 0 failures, 5 skipped; mypy **139**; ruff clean; `data/`
-untouched. Backlog **334 open / 628 done**, highest **#726**. Next five: **#724 ·
-#725 · #726 · #158 panel · #719/#720**. Detail: [planning_log.md](planning_log.md)
-2026-09-12.
+Audit: 18 of 21 new tests observed failing first (the other 3 are a pre-existing fix's
+guard and two over-correction guards). All 7 in-memory breaks went red. Suite
+**3,022 -> 3,043**, 0 failures, 5 skipped; mypy **139**; ruff clean; `data/` untouched.
+Backlog **330 open / 634 done**, highest **#728**. Next five: **#727 · #631 · #639 ·
+#636 · #728**. Detail: [planning_log.md](planning_log.md) 2026-09-12 wave 10.
 
 ## Slot — Cursor
 

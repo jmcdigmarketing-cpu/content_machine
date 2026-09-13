@@ -141,7 +141,7 @@ Stage 3 panels (cost, analytics, …) are later waves.
 |---|---|---|
 | #168 + #209 | Review room — player, Approve, J/K/L | **shipped 2026-09-07**; `ops booth` stays |
 | #148 | Job queue — drag-reorder render/upload/quota-defer | **shipped 2026-09-08**; `ops queue-manage` stays |
-| #158 | Cost tower — TTS 91%, Apify actors, YouTube units | the number that decides if this is worth doing |
+| #158 | Cost tower — TTS 91%, Apify actors, YouTube units | **shipped 2026-09-12**; `ops cost-tower` stays |
 | #149 | Analytics studio — retention, CTR, RPM | must keep saying n≈10 is thin |
 | #163 | Script desk — grounding heat-map | verifier computes it; painting it is the work |
 | #164 | Overnight monitor — gates, progress, presence | overnight is a forgotten window |

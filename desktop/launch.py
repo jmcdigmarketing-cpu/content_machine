@@ -15,6 +15,8 @@ def desktop_mode(argv: list[str] | None = None) -> str:
         return "studio"
     if "--queue" in args:
         return "queue"
+    if "--cost" in args:
+        return "cost"
     if "--review" in args:
         return "review"
     return "run"
@@ -26,6 +28,7 @@ def launch(
     studio: bool | None = None,
     queue: bool | None = None,
     brand: bool | None = None,
+    cost: bool | None = None,
     channel_id: str = "tapin",
 ) -> int:
     try:
@@ -44,6 +47,8 @@ def launch(
         mode = "studio"
     elif queue:
         mode = "queue"
+    elif cost:
+        mode = "cost"
     elif review:
         mode = "review"
     else:
@@ -63,6 +68,10 @@ def launch(
         from desktop.queue import QueueWindow
 
         window = QueueWindow()
+    elif mode == "cost":
+        from desktop.cost import CostWindow
+
+        window = CostWindow()
     elif mode == "review":
         from core.review_booth import gather_booth_context
         from desktop.review import ReviewWindow

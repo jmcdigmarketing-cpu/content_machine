@@ -84,6 +84,11 @@ _MIN_STATIC_EXCESS = 0.25
 # Above this share of static pixels over the band there is no motion to compare.
 _MAX_ABOVE_STATIC = 0.85
 
+# #726: measure the frame the render shows. The render is 1080x1920 (9:16); measuring
+# at half that is plenty for per-row means and keeps the pixel loops cheap.
+_RENDER_ASPECT = 9 / 16
+_MEASURE_MAX_H = 960
+
 
 def _luma(pixel) -> float:
     r, g, b = pixel[:3]
@@ -136,6 +141,35 @@ def _spatial(rgb) -> tuple[str, tuple[float, float] | None]:
     return "ok", (spread / median, biggest_jump / spread)
 
 
+def render_crop(image):
+    """#726: the part of a frame the render actually shows, at measuring size.
+
+    `video/render_video.py` cover-scales every background to 1080x1920 and centre-crops
+    (`force_original_aspect_ratio=increase,crop`), so a 16:9 clip keeps only its middle
+    ~32% of width. Measuring the uncropped source let an overlay in the discarded
+    margins move captions for something no viewer sees. Both frames of a pair go
+    through this, so spatial and temporal readings see identical pixels.
+    """
+    rgb = image.convert("RGB")
+    width, height = rgb.size
+    if width <= 0 or height <= 0:
+        return rgb
+    aspect = width / height
+    if abs(aspect - _RENDER_ASPECT) > 0.01:
+        if aspect > _RENDER_ASPECT:
+            new_w = max(1, round(height * _RENDER_ASPECT))
+            left = (width - new_w) // 2
+            rgb = rgb.crop((left, 0, left + new_w, height))
+        else:
+            new_h = max(1, round(width / _RENDER_ASPECT))
+            top = (height - new_h) // 2
+            rgb = rgb.crop((0, top, width, top + new_h))
+    if rgb.size[1] > _MEASURE_MAX_H:
+        scale = _MEASURE_MAX_H / rgb.size[1]
+        rgb = rgb.resize((max(1, round(rgb.size[0] * scale)), _MEASURE_MAX_H))
+    return rgb
+
+
 def _frame_at(path: str, seconds: float):
     try:
         from core.hud_detect import _load_frame_at
@@ -143,7 +177,7 @@ def _frame_at(path: str, seconds: float):
         logger.debug("caption-place imports skipped: %s", exc)
         return None
     image = _load_frame_at(path, seconds)
-    return image.convert("RGB") if image is not None else None
+    return render_crop(image) if image is not None else None
 
 
 def band_reading(path: str | None) -> tuple[str, tuple[float, float] | None]:

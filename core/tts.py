@@ -890,11 +890,13 @@ def _elevenlabs_budget_display() -> str:
     if budget is None:
         return "no budget"
     try:
-        from core.quota_governor import elevenlabs_chars_used
+        from core.quota_governor import elevenlabs_chars_reading
 
-        used = elevenlabs_chars_used()
+        used = elevenlabs_chars_reading()
     except Exception:
-        used = 0
+        used = None
+    if used is None:  # #724: an unreadable ledger is not "0 used"
+        return f"unknown/{budget:,} chars"
     return f"{used:,}/{budget:,} chars"
 
 

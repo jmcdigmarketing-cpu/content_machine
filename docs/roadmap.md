@@ -24,37 +24,37 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-12 wave 9: **#716** one CI run per PR · **#723**
-headroom once per process · **#722** derived free-tier dates · **#721** temporal
-caption check, **`CAPTION_AUTO_PLACE` now defaults on** (closes **#718**) ·
-**#158** core slice (`ops cost-tower`; the Qt panel stays open). Also fixed a
-clock-pinned test that had been red since 2026-09-12 (**#725**).
+**Just landed** - 2026-09-12 wave 10: **#719** verified in CI · **#720** guarded ·
+**#724** an unreadable ElevenLabs ledger reads unknown (root cause in `quota_state`) ·
+**#725** `ops clock-ahead` (0 of 3,043 tests change a year ahead) · **#726**
+caption placement measures the frame the render shows, checked on 32 real NBA 2K
+clips · **#158** cost tower panel (`ops cost-panel`), closing #158.
 
-**Previously** - 2026-09-10 wave 8 **#590 #378 #407 #717 #684**; 2026-09-09
-next-15 **#714 #715 #584 #572 #580 #595 #452 #362 #364 #336 #605 #599 #437
-#713 #415**; **#153** retired (do not rebuild).
+**Previously** - 2026-09-12 wave 9 **#716 #723 #722 #721 #718**, #158 core slice;
+2026-09-10 wave 8 **#590 #378 #407 #717 #684**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-The previous five all shipped (#158 as its core slice). This list is mostly what
-wave 9 found by running its own output, plus the remainder it left.
+All of the previous five shipped. Wave 10 measured caption placement on real
+footage for the first time, which is why the top pick is its own finding.
 
-1. **#724 ElevenLabs chars read 0 when unreadable** `[S]` - the #590 rule
-   ("unknown, never zero") broken one layer down in `quota_governor`, and now
-   visible because `ops cost-tower` prints the lane.
-2. **#725 tests that pin a date while the code reads the clock** `[S]` - wave 8
-   reported green truthfully on 2026-09-10 and one test was red two days later.
-   64 pinned dates in 12 files are unaudited for the same shape.
-3. **#726 measure #721 on a real burned-in overlay** `[M]` - the flag now changes
-   finished video by default, and every overlay reading so far is a composite onto
-   real frames. Also covers the still-sky false negative.
-4. **#158 Cost Control Tower panel** `[L]` - `gather_tower()` is its whole input;
-   what remains is the Qt window.
-5. **#719 / #720 verify and tick** `[S]` - both say "fixed" and are still open;
-   confirm the guard ran in CI and close them honestly or say why not.
+1. **#727 real score bars missed on the cropped frame** `[M]` - `CAPTION_AUTO_PLACE`
+   is on by default and misses 6 of 28 NBA 2K clips whose bar is confirmed by eye.
+   The fix candidate (a per-column step) needs the 32-clip set re-measured first.
+2. **#631 coverage for `core/` only** `[S]` - non-blocking; the cheapest way to find
+   the next gate that has no test, the shape these waves keep finding by hand.
+3. **#639 `.env` linter** `[M]` - measured 392 keys read vs 273 declared; wave 9 and
+   10 each added a flag that had to be documented by hand.
+4. **#636 prove no secret reaches `data/traces`** `[M]` - #97 redacts API bodies, not
+   env echoes; nothing has measured it.
+5. **#728 an overlay under a still sky** `[S]` - carried from #726, unmeasured on real
+   footage; cheap to close or retire once #727's clip set exists.
 
-**Dropped from this list** (stay open): **#673** second monitor (needs a second
-physical display to test) · Phase M · Ollama · the remaining `[L]` desktop panels.
+**Dropped from this list** (stay open): **#673** second monitor, #650 / #667 (need
+real hardware or a real console) · Phase M · Ollama · remaining `[L]` panels.
+
+**Closed 2026-09-12 (wave 10):** **#719 #720 #724 #725 #726 #158**. Filed open:
+**#727 #728**.
 
 **Closed 2026-09-12 (wave 9):** **#716 #723 #722 #721 #718**; **#158** core slice.
 Filed open: **#724 #725 #726**.

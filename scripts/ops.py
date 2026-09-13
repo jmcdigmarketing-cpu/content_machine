@@ -459,6 +459,34 @@ def cmd_cost_tower(_args: argparse.Namespace) -> int:
     return 1 if any(row.state == "over" for row in rows) else 0
 
 
+@_register(
+    "cost-panel",
+    'Cost Control Tower panel (#158; requires pip install -e ".[app]")',
+)
+def cmd_cost_panel(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(cost=True)
+
+
+@_register(
+    "clock-ahead", "Run the suite with the clock shifted; list tests whose result changes (#725)"
+)
+def cmd_clock_ahead(args: argparse.Namespace) -> int:
+    from core.clock_ahead import compare
+
+    days = int(getattr(args, "days", 0) or 365)
+    print(f"Running the suite at +0 and +{days} days (two full runs)...")
+    changed = compare(days)
+    if not changed:
+        print(f"  no test changes result {days} days ahead")
+        return 0
+    print(f"  {len(changed)} test(s) change result {days} days ahead:")
+    for test_id in changed:
+        print(f"    {test_id}")
+    return 1
+
+
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
 def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render
@@ -1769,6 +1797,12 @@ def main(argv=None) -> int:
         type=int,
         default=0,
         help="Row limit (traces / economics; 0 = command default)",
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=0,
+        help="clock-ahead: days to shift the clock (0 = 365)",
     )
     parser.add_argument(
         "--topic",

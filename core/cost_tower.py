@@ -194,13 +194,19 @@ def _fmt(value: float | None) -> str:
     return f"{value:.2f}"
 
 
+def amount_text(row: TowerRow) -> str:
+    """`used / limit`, shared by the ASCII tower and the panel. `is not None`, not
+    truthiness: a real 0.00 spend is a reading."""
+    if row.used is None and row.limit is None:
+        return "-"
+    return f"{_fmt(row.used)} / {_fmt(row.limit)}"
+
+
 def render_tower(rows: list[TowerRow] | None = None) -> str:
     rows = rows if rows is not None else gather_tower()
     lines = ["Cost Control Tower", "=" * 72]
     for row in rows:
-        # `is not None`, not truthiness: a real 0.00 spend is a reading.
-        has_amount = row.used is not None or row.limit is not None
-        amount = f"{_fmt(row.used)} / {_fmt(row.limit)}" if has_amount else "-"
+        amount = amount_text(row)
         line = f"  {row.lane:<10} {row.item:<22} {amount:<20} {row.state.upper():<8}"
         if row.resets:
             line += f" resets {row.resets}"

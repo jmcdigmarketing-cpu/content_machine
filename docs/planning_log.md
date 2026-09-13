@@ -11,6 +11,81 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-12 (Claude Code) - wave 10: #719 #720 #724 #725 #726 #158 (panel)
+
+**Prompt, verbatim:** "next 5, debug, document, and commit" (and "Try again" after a
+background-task notification; no change of scope).
+
+**What was picked.** Wave 9's recommended five, each checked before building:
+**#719**'s guard ran (not skipped) in CI run 34416158840 on `b99ab81`; **#720**'s fix
+was in code but unguarded; **#724** turned out to live in `core/quota_state.py:51-65`,
+not the governor; **#725** was sized by measurement instead of reading 64 dates;
+**#726** found real footage (`video/backgrounds/gaming/sports/2k26`, 32 NBA 2K clips).
+Two operator calls: **push after the commit**, and **#725 ships as `ops clock-ahead`**.
+
+**Shipped**
+
+1. **#719** - ticked on the CI log line; no code.
+2. **#720** - guard asserts the tripwire's debug line with the revision fetch raising.
+3. **#724** - `quota_state.read_ok()` separates a corrupt ledger from a missing one;
+   `quota_governor.elevenlabs_chars_reading()` is None when unreadable and feeds
+   `snapshot()`, reliability, the TTS budget display and the tray chip.
+   `elevenlabs_chars_used()` stays int, so the budget guard stays fail-open.
+4. **#725** - `core/clock_ahead.py` + `ops clock-ahead --days N`: the suite at +0 and
+   +N through one harness, each run a subprocess so the swap precedes imports.
+5. **#726** - `caption_place.render_crop` applies the render's cover-scale + centre
+   crop to both frames before any measurement.
+6. **#158** - `desktop/cost.py` `CostWindow` + `ops cost-panel` / `--cost`, sharing
+   `cost_tower.amount_text` with the ASCII tower.
+
+**#726 on real footage**, old (source frame) vs new (render crop):
+
+| set | old TOP -> new TOP | old TOP -> new bottom | bottom both |
+|---|---|---|---|
+| 32 NBA 2K clips (real score bars) | 22 | 6 | 4 |
+| 12 production hybrids | 2 | 0 | 10 |
+
+Confirmed by eye: two 2K clips (bar still inside the 9:16 crop) and both TOP hybrids
+(a Madden "14 x 49 SEA" bar, a 2K "1:05 3rd" bar). **No false TOP.** The 6 lost
+detections are real misses, not corrections: on `2026_05_01-01_14` the bar is present
+and unchanged at 0s and 1s. Four fall on temporal excess 0.19-0.22 and two on step
+share 0.34 / 0.40, because players and a "PLAYOFFS" box inside the window add their
+own luma steps. Filed **#727**; no threshold moved without re-measuring. Two of the 32
+read no motion or no contrast at t=0.
+
+**Found**
+
+- `core/quota_state.py:51-65` - `_load` returned an empty store on a read error, so
+  the governor's `except` (`core/quota_governor.py:363-367`) could never fire.
+- `core/win_notify.py:331` - the tray chip turned an unreadable ledger into the whole
+  budget as "chars leftover".
+- `video/caption_place.py` measured pixels the render crops away
+  (`video/render_video.py:229-230`).
+- My own throwaway clock harness shifted `date.today()` twice, because CPython's
+  `date.today()` calls the patched `time.time`. The shipped harness is pinned by a test.
+- Ruff B010 rejected the `setattr` I had used to quiet mypy; plain assignments with
+  narrow ignores instead.
+
+**Deliberately not done.** Moving #721's thresholds to recover the 6 misses (#727) ·
+the still-sky case (#728, no real clip) · #673 / #650 / #667 (need real hardware).
+
+**Audit.** 21 behavioural tests added; **18 observed failing first** on `08700c1`
+(17 of the first 20 - 11 ERROR, 6 FAIL - including an encoded margin-only clip moving
+captions to the top and three renderers printing 0; then the tray-chip test before its
+fix). The other 3 pass on old code by design: #720's guard (fix predates it; silencing
+the logger turns it red), and two over-correction guards (the budget guard stays
+fail-open; a centred overlay still moves captions). All 7 in-memory breaks went red.
+Every new symbol has a production caller. mypy **139** held. `data/` empty. Operator
+output run and read: `ops clock-ahead --days 365` (no change, exit 0), `ops cost-tower`,
+and `ops caption-anchor` across 44 real clips. `ops reliability` prints no ElevenLabs
+line on this machine (no budget set), so #724's reliability path is proven by tests only.
+
+**Proof.** ruff + format clean (722 files). Suite **3,022 -> 3,043**, 0 failures, 5
+skipped. mypy **139**. Backlog **334 open / 628 done -> 330 open / 634 done**, highest
+**#726 -> #728**.
+
+---
+
 ## 2026-09-12 (Claude Code) - wave 9: #716 #723 #722 #721 #158 (core slice)
 
 **Prompt, verbatim:** "next 5, debug, document, and commit"

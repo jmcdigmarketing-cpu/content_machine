@@ -332,6 +332,33 @@ def _run_new_video_flow(
         finalize_run_observability()
 
 
+def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
+    """Option 1 type-your-own: a topic, or the idea in your own words (run 77).
+
+    Thoughts typed (or pasted over several lines) are not a search string. Discovery
+    searches the short subject pulled out of them; the full thoughts become the brief
+    the angles, the ranking and the script answer.
+    """
+    from core.console_input import input_pending, read_pending_lines
+    from core.idea_intake import creative_brief_for_run, parse_pasted_idea
+
+    typed = ask_text("  Topic (or your thoughts on the idea): ").strip()
+    if typed and input_pending():
+        extra = [line for line in read_pending_lines() if line.strip()]
+        if extra:
+            typed = "\n".join([typed, *extra])
+    if not typed:
+        return "", creative_brief
+
+    parsed = parse_pasted_idea(typed)
+    topic = parsed.seed_topic or typed
+    brief = creative_brief or creative_brief_for_run(parsed)
+    if topic.lower() != " ".join(typed.split()).lower():
+        print(f"  Search seed: {topic}")
+        print("  Your thoughts steer the angles, their ranking, and the script.")
+    return topic, brief
+
+
 def _run_new_video_flow_body(
     channel_id: str, *, seed_topic: str | None = None, creative_brief: str = ""
 ) -> None:
@@ -371,17 +398,9 @@ def _run_new_video_flow_body(
                 topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")
             else:
-                topic = ask_text("  Topic: ").strip()
-                if topic and not creative_brief:
-                    from core.idea_intake import brief_for_typed_topic
-
-                    creative_brief = brief_for_typed_topic(topic)
+                topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
         else:
-            topic = ask_text("  Topic: ").strip()
-            if topic and not creative_brief:
-                from core.idea_intake import brief_for_typed_topic
-
-                creative_brief = brief_for_typed_topic(topic)
+            topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
 
     from analytics.post_timing import display_recommended_time, get_recommended_time
 
@@ -396,7 +415,9 @@ def _run_new_video_flow_body(
     profile = get_channel_profile(channel_id)
     print_domain_art(profile.domain, topic=topic)
     with DiscoverySpinner("Discovery") as spinner:
-        discovery = run_discovery(topic, channel_id=channel_id, progress=spinner.report)
+        discovery = run_discovery(
+            topic, channel_id=channel_id, progress=spinner.report, brief=creative_brief
+        )
     t_disc = discovery.timings.get("signals_and_variants", 0) + discovery.timings.get(
         "variant_scoring", 0
     )
@@ -413,6 +434,8 @@ def _run_new_video_flow_body(
     from core.angle_intent import detect_angle_intent as _detect_intent
 
     _intent = _detect_intent(topic)
+    if _intent == _ANGLE_DEFAULT and creative_brief:
+        _intent = _detect_intent(creative_brief)
     if _intent != _ANGLE_DEFAULT:
         print(f"  {_intent_note(_intent)}")
 

@@ -48,8 +48,20 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `b872736` · **Tree:** audit of Cursor's
-waves 14 + 15, **committed locally, not pushed**.
+**Written:** 2026-09-13 · **HEAD at write:** `e7ef6ad` · **Tree:** run 77 typed-thoughts
+change **committed locally on top of the audit, neither pushed**.
+
+**Latest — run 77 (operator: "i should be able to enter my thoughts for an idea … in the
+topic").** Defect first: typed thoughts were the search string for every signal (Trends
+searched a comma fragment and served a stale cached "Goy"), the angle LLM never saw them,
+and 3 of 5 angle lines were a preamble plus raw lens labels. Now the Topic prompt takes
+thoughts (multi-line too): discovery searches a short seed ("GTA 6"), `run_discovery(brief=)`
+feeds the thoughts to angle generation, intent, ranking and the cache key, and angle replies
+are cleaned with one re-ask. `tests/test_typed_thoughts.py` 10/10 red first. Suite
+**3,141 -> 3,152**. **Cursor: `run_discovery` and `generate_variants` take `brief` now —
+pass the operator's words, not a longer topic.** Detail: planning_log run 77.
+
+**Earlier this session — audit of waves 14 + 15:**
 
 **Defects first — five, all in waves 14/15, all fixed test-first** (`tests/test_wave15_audit.py`,
 6 of 10 red on `b872736`). The wave tests asserted only run 76's strings, so a deletion

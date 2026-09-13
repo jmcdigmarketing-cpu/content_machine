@@ -11,6 +11,42 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Claude Code) - run 77: typed thoughts at the Topic prompt
+
+**Prompt, verbatim:** "take this, i should be able to enter my thoughts for an idea, similar
+to a prompt, in the topic. all topic related thoughts,bc i think it threw off this run"
+(followed by the run 77 console: option 1, TapIn, Standard, the GTA 6 thesis typed at the
+best-bet prompt, stopped at the angle menu).
+
+**What run 77 actually did with the thoughts.**
+- The whole thesis was the search string for every signal. `topic_fanout` split it on
+  commas, so Trends/Wikipedia searched "is a goy candidate a failure? long form
+  predictions" — and served a cached pre-#746 "Goy" result (keys still in
+  `data/signal_cache.json`, 3h/12h TTL; left to expire, not deleted).
+- The angle LLM saw only that string. Its reply kept "Here are five different angle
+  lines…:", `**whats_broken_needs_fixing**`, `**upcoming_content_predictions**` and a
+  "TAKE:" prefix — 3 of 5 menu lines were junk.
+- Seed "GTA 6" read `default` intent, gaming + established → the critique lens table.
+
+**Shipped (test-first, `tests/test_typed_thoughts.py`, 10 of 10 red on `e7ef6ad`):**
+- `idea_intake.search_seed_from_thoughts`: prose → franchise anchor + sequel token, then
+  named people, else a short first clause. Plain topics untouched. `parse_pasted_idea`
+  uses it, so option 5 benefits too; a "GTA 6 thoughts:" label line loses the label word
+  (seen wrong in a walkthrough before the fix, then tested).
+- `main._ask_topic_or_thoughts`: the Topic prompt takes thoughts, including a multi-line
+  paste; prints the search seed; the full thoughts are the brief.
+- `run_discovery(brief=)`: angles generated with an OPERATOR'S THOUGHTS block, intent from
+  the thoughts when the seed names none, ranked against seed + thoughts, cache keyed on
+  both (two different takes on "GTA 6" do not share angles).
+- `topic_variants._clean_angle_lines`: drops preamble, snake_case lens labels, markdown,
+  label prefixes; one re-ask when fewer than 3 real angles survive.
+
+**Deliberately not done.** No LLM call to extract the seed (deterministic, free, testable).
+`topic_fanout` still splits a long *plain* topic on commas — typed thoughts no longer reach
+it. The "0 = your idea" menu option stays option-5 only.
+
+---
+
 ## 2026-09-13 (Claude Code) - audit of Cursor's run 76 waves 14 + 15
 
 **Prompt, verbatim:** "yep, look at what cursor has done and make sure it all works, pay

@@ -23,6 +23,38 @@ logger = get_logger("apis.topic_variants")
 # so the UI's own numbering doesn't double up ("1. 1. Title").
 _LIST_PREFIX_RE = re.compile(r"^\s*(?:\d+[.)]\s*|[-*•]\s+)")
 
+# Run 77: the free cheap-tier model answered "Here are five different angle lines…:",
+# pasted two lens labels as "**whats_broken_needs_fixing**", and prefixed one "TAKE:".
+# All three were shown as scored angles.
+_PREAMBLE_RE = re.compile(r"^(?:here(?:'s| is| are)\b|sure\b|okay\b|certainly\b|below\b)", re.I)
+_SNAKE_LABEL_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)+$")
+_LABEL_HEAD_RE = re.compile(r"^(?:take|angle|hook|lens|focus|frame|option|idea)\s*\d*$", re.I)
+_MIN_REAL_ANGLES = 3
+
+
+def _clean_angle_lines(raw: str, angle_types) -> list[str]:
+    """Angle lines out of an LLM reply: no preamble, lens labels, markdown, or label prefix."""
+    labels = {str(t).strip().lower() for t in angle_types or ()}
+
+    def _is_label(text: str) -> bool:
+        key = text.strip().strip(" .:").lower()
+        return bool(_SNAKE_LABEL_RE.match(key)) or key.replace(" ", "_") in labels
+
+    out: list[str] = []
+    for line in (raw or "").splitlines():
+        text = _LIST_PREFIX_RE.sub("", line).strip()
+        text = text.replace("**", "").replace("__", "").strip().strip("`").strip().strip('"')
+        text = _LIST_PREFIX_RE.sub("", text).strip()
+        if not text or text.endswith(":") or _PREAMBLE_RE.match(text) or _is_label(text):
+            continue
+        head, sep, rest = text.partition(":")
+        if sep and rest.strip() and (_is_label(head) or _LABEL_HEAD_RE.match(head.strip())):
+            text = rest.strip()
+        if len(text.split()) < 2 or text in out:
+            continue
+        out.append(text)
+    return out
+
 
 def _heuristic_angles(topic: str, angle_types) -> list[str]:
     """Deterministic angles when the LLM is unavailable (e.g. the free tier is
@@ -133,7 +165,11 @@ _LENS_EXAMPLES = {
 }
 
 
-def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count: int = 0):
+def generate_variants(
+    topic, autocomplete=None, *, channel_id=None, repeat_count: int = 0, brief: str = ""
+):
+    """Five editorial angles for ``topic``. ``brief`` is the operator's own thoughts
+    (run 77) — they reach the angle prompt and choose the frame when the seed names none."""
     extract_entities(topic)
     topic_lower = topic.lower()
 
@@ -183,15 +219,18 @@ def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count
                 "lottery_projection",
             ]
 
-        return generate_ai_titles(topic, angle_types, channel_id=channel_id)
+        return generate_ai_titles(topic, angle_types, channel_id=channel_id, brief=brief)
 
     profile = get_channel_profile(channel_id) if channel_id else None
     is_established = repeat_count >= _ESTABLISHED_THRESHOLD
 
     # What the operator asked for beats what the repeat counter assumes. Run 73:
     # three reaction-shaped topics in a row were steered into critique because the
-    # topic string never reached this decision.
+    # topic string never reached this decision. Run 77: the ask lives in the typed
+    # thoughts once the search seed is just "GTA 6".
     intent = detect_angle_intent(topic)
+    if intent == ANGLE_DEFAULT and brief:
+        intent = detect_angle_intent(brief)
     if intent in INTENT_ANGLES:
         return generate_ai_titles(
             topic,
@@ -199,6 +238,7 @@ def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count
             channel_id=channel_id,
             is_established=is_established,
             intent=intent,
+            brief=brief,
         )
 
     if profile and profile.domain == "gaming":
@@ -229,7 +269,7 @@ def generate_variants(topic, autocomplete=None, *, channel_id=None, repeat_count
         ]
 
     return generate_ai_titles(
-        topic, angle_types, channel_id=channel_id, is_established=is_established
+        topic, angle_types, channel_id=channel_id, is_established=is_established, brief=brief
     )
 
 
@@ -315,9 +355,24 @@ def _anchor_rules(topic: str, channel_id: str | None) -> str:
 
 
 def generate_ai_angles(
-    topic, angle_types, *, channel_id=None, is_established: bool = False, intent=None
+    topic,
+    angle_types,
+    *,
+    channel_id=None,
+    is_established: bool = False,
+    intent=None,
+    brief: str = "",
 ):
     angle_block = "\n".join(angle_types)
+
+    thoughts_block = ""
+    thoughts = (brief or "").strip()
+    if thoughts and thoughts.lower() != str(topic or "").strip().lower():
+        thoughts_block = (
+            "\nOPERATOR'S THOUGHTS (their idea in their own words - every angle must "
+            "answer or take a position on these questions and claims, not drift into "
+            f"generic coverage of the topic):\n{thoughts[:1500]}\n"
+        )
 
     competitor_block = ""
     if channel_id:
@@ -351,7 +406,7 @@ You are generating editorial ANGLES for a short-form video — NOT YouTube title
 
 Topic:
 {topic}
-{freshness_block}
+{thoughts_block}{freshness_block}
 {competitor_block}
 
 Angle types (direction only — do NOT paste these labels verbatim):
@@ -383,15 +438,40 @@ Return exactly {len(angle_types)} angle lines.
         logger.warning("Variant LLM unavailable (%s) — using heuristic angles", exc)
         return _heuristic_angles(topic, angle_types)
 
-    lines = (raw or "").strip().split("\n")
-    clean = [_LIST_PREFIX_RE.sub("", t).strip().strip('"') for t in lines if t.strip()]
-    return [t for t in clean if t][:5] or _heuristic_angles(topic, angle_types)
+    clean = _clean_angle_lines(raw, angle_types)
+    if len(clean) < _MIN_REAL_ANGLES:
+        # One re-ask, not a loop: run 77 kept 3 of 5 lines as junk, leaving 2 real angles.
+        try:
+            retry = complete(
+                prompt + "\nReturn ONLY the angle lines: no intro sentence, no labels, "
+                "no markdown.\n",
+                tier="cheap",
+                temperature=0.7,
+                max_tokens=400,
+            )
+            for line in _clean_angle_lines(retry, angle_types):
+                if line not in clean:
+                    clean.append(line)
+        except Exception as exc:
+            logger.warning("Variant LLM re-ask failed (%s) — keeping %d angle(s)", exc, len(clean))
+    return clean[:5] or _heuristic_angles(topic, angle_types)
 
 
 def generate_ai_titles(
-    topic, angle_types, *, channel_id=None, is_established: bool = False, intent=None
+    topic,
+    angle_types,
+    *,
+    channel_id=None,
+    is_established: bool = False,
+    intent=None,
+    brief: str = "",
 ):
     """Back-compat alias — returns editorial angles, not publishable titles."""
     return generate_ai_angles(
-        topic, angle_types, channel_id=channel_id, is_established=is_established, intent=intent
+        topic,
+        angle_types,
+        channel_id=channel_id,
+        is_established=is_established,
+        intent=intent,
+        brief=brief,
     )

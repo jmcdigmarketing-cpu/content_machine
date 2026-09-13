@@ -74,6 +74,9 @@ class DiscoveryResult:
     # this is an editorial one, and averaging an unvalidated score into another
     # unvalidated score would hide both. Same reason `raw_scores` sits out here.
     angle_scores: dict[str, float] = field(default_factory=dict)
+    # Run 77: the operator's typed thoughts. Angles differ by thoughts on the same seed,
+    # so the cache key carries them too.
+    brief: str = ""
 
 
 DISCOVERY_CACHE_PREFIX = "discovery"
@@ -96,10 +99,13 @@ def _discovery_cache_enabled() -> bool:
     )
 
 
-def _discovery_cache_key(channel_id: str, topic: str) -> str:
+def _discovery_cache_key(channel_id: str, topic: str, brief: str = "") -> str:
     from apis.cache_manager import build_key
 
-    return build_key(f"{DISCOVERY_CACHE_PREFIX}::{channel_id}", topic)
+    thoughts = (brief or "").strip()
+    return build_key(
+        f"{DISCOVERY_CACHE_PREFIX}::{channel_id}", f"{topic}\n\n{thoughts}" if thoughts else topic
+    )
 
 
 def _discovery_from_payload(data: object) -> DiscoveryResult | None:
@@ -130,15 +136,16 @@ def _discovery_from_payload(data: object) -> DiscoveryResult | None:
         channel_id=str(data.get("channel_id") or "default"),
         raw_scores={str(k): float(v) for k, v in raw.items() if isinstance(v, int | float)},
         angle_scores={str(k): float(v) for k, v in angle.items() if isinstance(v, int | float)},
+        brief=str(data.get("brief") or ""),
     )
 
 
-def _discovery_age_note(channel_id: str, topic: str) -> str:
+def _discovery_age_note(channel_id: str, topic: str, brief: str = "") -> str:
     """`" - 12m old"`, or `""` when the age cannot be read. Never raises."""
     try:
         from apis.cache_manager import cache_age_seconds
 
-        age = cache_age_seconds(_discovery_cache_key(channel_id, topic))
+        age = cache_age_seconds(_discovery_cache_key(channel_id, topic, brief))
     except Exception as exc:
         logger.debug("discovery cache age unavailable: %s", exc)
         return ""
@@ -147,13 +154,13 @@ def _discovery_age_note(channel_id: str, topic: str) -> str:
     return f" - {int(age)}s old" if age < 90 else f" - {int(age // 60)}m old"
 
 
-def _load_discovery_cache(channel_id: str, topic: str) -> DiscoveryResult | None:
+def _load_discovery_cache(channel_id: str, topic: str, brief: str = "") -> DiscoveryResult | None:
     if not _discovery_cache_enabled():
         return None
     try:
         from apis.cache_manager import get_cached
 
-        return _discovery_from_payload(get_cached(_discovery_cache_key(channel_id, topic)))
+        return _discovery_from_payload(get_cached(_discovery_cache_key(channel_id, topic, brief)))
     except Exception as exc:
         logger.debug("discovery cache load skipped: %s", exc)
         return None
@@ -173,9 +180,10 @@ def _store_discovery_cache(result: DiscoveryResult) -> None:
             "raw_scores": result.raw_scores,
             "angle_scores": result.angle_scores,
             "timings": result.timings,
+            "brief": result.brief,
         }
         set_cache(
-            _discovery_cache_key(result.channel_id, result.input_topic),
+            _discovery_cache_key(result.channel_id, result.input_topic, result.brief),
             payload,
             ttl_seconds=_discovery_ttl_seconds(),
         )
@@ -287,12 +295,18 @@ def run_discovery(
     channel_id: str | None = None,
     *,
     progress: Callable[..., None] | None = None,
+    brief: str = "",
 ) -> DiscoveryResult:
     """Pull signals, generate variants, score in parallel.
 
     progress: optional callback(phase: str, done: int | None, total: int | None)
     invoked as each discovery phase advances (drives the live spinner).
+    brief: the operator's own thoughts. Signals search ``topic``; the angles are
+    generated and ranked against the thoughts.
     """
+    brief = (brief or "").strip()
+    if brief.lower() == (topic or "").strip().lower():
+        brief = ""
 
     def _report(
         phase: str,
@@ -328,14 +342,15 @@ def run_discovery(
 
     reset_usage()
 
-    cached = _load_discovery_cache(channel_id, topic)
+    cached = _load_discovery_cache(channel_id, topic, brief)
     if cached is not None:
         # Name the age, not just the fact. The TTL is 90 minutes, and on a moving
         # topic an 89-minute-old discovery is a different thing from a 2-minute-old
         # one -- run 73's recorded failure was exactly freshness decaying quietly.
         # Same convention as feed_health ("check is Nd old") and the competitor
         # snapshot age.
-        print(f"  Reused discovery from cache ({topic}){_discovery_age_note(channel_id, topic)}")
+        age = _discovery_age_note(channel_id, topic, brief)
+        print(f"  Reused discovery from cache ({topic}){age}")
         _report("Reused discovery")
         return cached
 
@@ -373,14 +388,12 @@ def run_discovery(
     )
 
     _report("Fetching signals & variants")
+    variant_kwargs: dict[str, Any] = {"channel_id": channel_id, "repeat_count": repeat_count}
+    if brief:
+        variant_kwargs["brief"] = brief
     with ThreadPoolExecutor(max_workers=2) as executor:
         signals_future = executor.submit(build_registry, topic, channel_id=channel_id)
-        variants_future = executor.submit(
-            generate_variants,
-            topic,
-            channel_id=channel_id,
-            repeat_count=repeat_count,
-        )
+        variants_future = executor.submit(generate_variants, topic, **variant_kwargs)
         base_signals = signals_future.result()
         variants = variants_future.result()
 
@@ -420,7 +433,7 @@ def run_discovery(
 
         angle_scores = rank_angles(
             [v for v, *_ in evaluated],
-            seed_topic=topic,
+            seed_topic=f"{topic}. {brief}" if brief else topic,
             llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
         )
     except Exception as exc:
@@ -442,6 +455,7 @@ def run_discovery(
         angle_scores=angle_scores,
         timings=timings,
         channel_id=channel_id,
+        brief=brief,
     )
     _store_discovery_cache(result)
     return result
@@ -653,7 +667,9 @@ def run_pipeline(
         from core.run_mode import guard_before_discovery
 
         guard_before_discovery()
-        discovery = run_discovery(topic, variant_limit=variant_limit, channel_id=channel_id)
+        discovery = run_discovery(
+            topic, variant_limit=variant_limit, channel_id=channel_id, brief=creative_brief
+        )
         result.timings.update(discovery.timings)
     else:
         result.timings.update(discovery.timings)

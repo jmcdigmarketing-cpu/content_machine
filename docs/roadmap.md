@@ -24,43 +24,42 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-09 next-15: tick leftover **#714**, then **#715** CI
-concurrency, dead McAfee RSS **#584**, honesty (**#572 #580 #595 #452 #362
-#364 #336 #605 #599**), **#437** dry-run rollback, **#713** chroma caption
-anchor, **#415** ffmpeg smoke in CI. Projected TTS prints at Proceed?.
-`ops free-cost` reads last-run billed cost, not a fresh estimate.
+**Just landed** - 2026-09-12 wave 9: **#716** one CI run per PR · **#723**
+headroom once per process · **#722** derived free-tier dates · **#721** temporal
+caption check, **`CAPTION_AUTO_PLACE` now defaults on** (closes **#718**) ·
+**#158** core slice (`ops cost-tower`; the Qt panel stays open). Also fixed a
+clock-pinned test that had been red since 2026-09-12 (**#725**).
 
-**Previously this day** - next-15 **#710 #712 #431 #549 #414 #420 #498 #711
-#708 #562 #569 #568 #430 #440 #705**; **#702-#707 + #709**; **#153** retired
-(do not rebuild; **#717** is the face/score remainder of #713).
+**Previously** - 2026-09-10 wave 8 **#590 #378 #407 #717 #684**; 2026-09-09
+next-15 **#714 #715 #584 #572 #580 #595 #452 #362 #364 #336 #605 #599 #437
+#713 #415**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-All five of the previous list shipped, so this one is built from what the wave
-measured. Three of the five are its own findings.
+The previous five all shipped (#158 as its core slice). This list is mostly what
+wave 9 found by running its own output, plus the remainder it left.
 
-1. **#721 a low horizon still reads as a caption overlay** `[M]` - the one gap
-   #717 did not close, and the reason `CAPTION_AUTO_PLACE` is still off. A
-   horizon at 65-90% of frame height is a full-width luminance step, same shape
-   as a lower-third. The fix is temporal: two frames a second apart, where an
-   overlay is pixel-identical and scenery is not. **Closing this is what lets the
-   flag default on**, so it outranks new surface.
-2. **#722 derive the free-tier dates instead of typing them** `[M]` - #378's
-   calendar is honest that its dates are hand-maintained, but a stale `resets` is
-   indistinguishable from a correct one. `apify_get_usage` already records the
-   Apify side.
-3. **#723 the headroom line repeats once per variant** `[S]` - #590 prints from
-   `build_registry`, which runs per variant. Emit once per process unless a number
-   moved.
-4. **#716 CI push+PR group key** `[S]` - still the operator call it was filed as,
-   but it is now the cheapest open CI item.
-5. **#158 Cost Control Tower** `[L]` - unparked deliberately: #590 and #378 just
-   built two of its readings, so the dashboard has real inputs for the first time.
+1. **#724 ElevenLabs chars read 0 when unreadable** `[S]` - the #590 rule
+   ("unknown, never zero") broken one layer down in `quota_governor`, and now
+   visible because `ops cost-tower` prints the lane.
+2. **#725 tests that pin a date while the code reads the clock** `[S]` - wave 8
+   reported green truthfully on 2026-09-10 and one test was red two days later.
+   64 pinned dates in 12 files are unaudited for the same shape.
+3. **#726 measure #721 on a real burned-in overlay** `[M]` - the flag now changes
+   finished video by default, and every overlay reading so far is a composite onto
+   real frames. Also covers the still-sky false negative.
+4. **#158 Cost Control Tower panel** `[L]` - `gather_tower()` is its whole input;
+   what remains is the Qt window.
+5. **#719 / #720 verify and tick** `[S]` - both say "fixed" and are still open;
+   confirm the guard ran in CI and close them honestly or say why not.
 
-**Dropped from this list** (stay open): **#673** second monitor · Phase M ·
-Ollama · the remaining `[L]` desktop panels.
+**Dropped from this list** (stay open): **#673** second monitor (needs a second
+physical display to test) · Phase M · Ollama · the remaining `[L]` desktop panels.
 
-**Closed 2026-09-10 (this wave):** **#590** headroom before the pool · **#378**
+**Closed 2026-09-12 (wave 9):** **#716 #723 #722 #721 #718**; **#158** core slice.
+Filed open: **#724 #725 #726**.
+
+**Closed 2026-09-10 (wave 8):** **#590** headroom before the pool · **#378**
 free-tier calendar · **#407** opener advisory · **#717** luminance-step caption
 placement · **#684** live review-room decode + the unconditional `QAudioOutput`
 behind it. Filed open: **#721 #722 #723**.

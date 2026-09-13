@@ -11,6 +11,101 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-12 (Claude Code) - wave 9: #716 #723 #722 #721 #158 (core slice)
+
+**Prompt, verbatim:** "next 5, debug, document, and commit"
+
+**What was picked.** The roadmap's five, verified before trusting them: backlog
+text and sizes matched, none parked in the synopsis, every named dependency
+exists (`apify_get_usage`, `reset_window.next_reset`, the `build_registry`
+headroom call, the ci.yml group). Three operator calls asked up front, because each
+changes something outside the code: **#721 flips `CAPTION_AUTO_PLACE` on** once the
+horizon gap measures closed; **#716 collapses push+PR** into one group; **#158 is
+the core model + ops verb only**, the Qt panel stays open. Built cheapest first.
+
+**Defect first: the suite was red on arrival.** Wave 8 reported 0 failures, and it
+was right on 2026-09-10. `tests/test_next15_wave2.py:282` pinned `now` to
+2026-09-09 while `get_competitor_prompt_block` reads the real clock, so by
+2026-09-12 the fixture video was 79h old and outside the 48h window. Fixture now
+uses the real clock; the class of defect is filed as **#725** (64 pinned dates in
+12 test files, unaudited).
+
+**Shipped**
+
+1. **#716** - `group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}`.
+2. **#723** - `emit_headroom` remembers the last printed line under a lock. The
+   caller is unchanged, so #590's trace test still holds.
+3. **#722** - `derive: youtube|apify` rows resolve through `core/reset_window`. The
+   proof was in the shipped config: the typed YouTube row `resets: 2026-09-11` read
+   **CLOSED** on 2026-09-12. Underivable -> unknown. ElevenLabs stays typed; nothing
+   reads its subscription reset.
+4. **#721** - temporal confirmation of #717's spatial step. Frames at 0s and 1s; per
+   column, static-pixel share (|luma diff| <= 8) in the band minus the same column
+   above. Overlay = step AND excess >= 0.25, with < 0.85 of the frame above static.
+   Closes **#718** by its own stated condition.
+5. **#158 core** - `core/cost_tower.gather_tower()` + `ops cost-tower`: TTS, Apify
+   per purpose, YouTube units, LLM spend, free-tier windows. Exit 1 when a lane is over.
+
+**#721's thresholds are measured on real footage**, five Pexels clips from
+`assets/cache`, max column excess:
+
+| reading | excess |
+|---|---|
+| flat sky pasted over 65/70/80/90% of height | -0.64 .. +0.05 |
+| overlays composited on both frames, clearing the spatial gate | +0.36 .. +0.77 |
+| raw clips, no overlay | up to +0.57 |
+| locked-off clip, frame above the band | 0.96 static -> `no_motion` |
+
+Raw clips reaching +0.57 is why the temporal check *confirms* the spatial one and
+never replaces it: that clip's step share is 0.30, so it stays clear. The old code
+was run directly on encoded clips: a horizon clip with the flag on went to the
+**top**; an overlay clip with the flag unset stayed at the **bottom**.
+
+**Finished-output change, disclosed.** Karaoke ASS now uses Alignment 8 when the
+background clip has a detected overlay (`video/subtitles.py:249-255`, karaoke only).
+Stills, locked-off shots and clips under a second never move.
+
+**Found in my own work, by running it**
+
+- `core/cost_tower.render_tower` tested `if row.limit or row.used`, so a real
+  `$0.0000` LLM spend printed `-`, identical to no reading - the exact confusion the
+  tower exists to prevent. Now `is not None`.
+- The daily YouTube reset showed as a **NEAR** free-tier row every day. A recurring
+  reset refills quota; only a window that *ends* is a warning.
+- `band_step_overlay` had no production caller. Deleted; the spatial verdict is a
+  `step` field on `overlay_reading`, which `ops caption-anchor` prints.
+- Adding a verb left `docs/ops_commands.md` stale (2 suite failures). Regenerated.
+- `core/quota_governor.py:363` returns 0 chars when the ElevenLabs store is
+  unreadable, so the new TTS lane cannot say unknown. Filed **#724**, not fixed.
+
+**Tests changed, none weakened.** Four #717 detector assertions now read
+`overlay_reading(...)["step"]`. The flag tests in wave 8 / review 7 / next15 fix the
+detector's verdict and assert both flag states, because a still frame is no longer
+evidence of an overlay; the real "overlay -> top" proof moved to an encoded clip in
+`tests/test_wave9.py`. The wave 8 horizon pin became "passes the spatial gate alone,
+not the combined one".
+
+**Deliberately not done.** The #158 Qt panel · a real burned-in overlay clip (**#726**)
+· #724 · the #725 audit · #673 (needs a second physical display).
+
+**Audit.** 26 behavioural tests added; **24 observed failing first** on `7c57b82`
+(the first 16 on the unmodified tree: 8 FAIL + 6 ERROR; the 8 for #721 in a detached
+worktree: 6 ERROR + 2 FAIL; the 2 tower defects FAIL before their fix). The other 2
+pass on old code by design: they guard against over-suppression and
+over-derivation. Each fix was then broken in memory - ci.yml back to `github.ref`,
+the memo removed, `_derived_boundary` returning None, the excess threshold at -2,
+`frames_show_static_overlay` always True, the default off, `_state` always ok - and
+all 7 went red. Every new symbol grepped for a production caller. mypy **139**,
+baseline held. `data/` empty. Operator output run and read: `ops free-tiers`,
+`ops cost-tower` (before and after the two fixes), and `ops caption-anchor` on two
+real clips (static excess 0.57 but step 0.30 -> clear; locked-off -> no motion).
+
+**Proof.** ruff + format clean (719 files). Suite **2,996 (1 failing) -> 3,022**, 0
+failures, 5 skipped (3 Postgres + the two CI-only guards). mypy **139**. Backlog
+**336 open / 623 done -> 334 open / 628 done**, highest **#723 -> #726**.
+
+---
+
 ## 2026-09-09 (Cursor) - next 15 (#714 #715 #584 #572 #580 #595 #452 #362 #364 #336 #605 #599 #437 #713 #415)
 
 **Prompt, verbatim:** "next 15 tasks on the roadmap completed please"

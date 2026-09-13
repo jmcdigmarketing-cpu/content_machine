@@ -261,17 +261,20 @@ class TestCaptionPlacementDistinguishesAnOverlay(unittest.TestCase):
             self.assertFalse(bottom_band_overlay(str(self._scenery(Path(tmp) / "s.png"))))
 
     def test_a_bright_score_bug_is_detected(self):
-        from video.caption_place import bottom_band_overlay
+        # #721: the spatial gate is necessary, not sufficient -- a still has no
+        # motion evidence, so these assert the #717 detector on its own.
+        from video.caption_place import overlay_reading
 
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertTrue(bottom_band_overlay(str(self._score_bug(Path(tmp) / "b.png"))))
+            self.assertTrue(overlay_reading(str(self._score_bug(Path(tmp) / "b.png")))["step"])
 
     def test_a_dark_lower_third_is_detected(self):
         """The case #717 names explicitly: low chroma, so #713 could never see it."""
-        from video.caption_place import bottom_band_overlay
+        from video.caption_place import overlay_reading
 
         with tempfile.TemporaryDirectory() as tmp:
-            self.assertTrue(bottom_band_overlay(str(self._dark_lower_third(Path(tmp) / "d.png"))))
+            path = str(self._dark_lower_third(Path(tmp) / "d.png"))
+            self.assertTrue(overlay_reading(path)["step"])
 
     @staticmethod
     def _strong_gradient(dest: Path) -> Path:
@@ -387,26 +390,27 @@ class TestCaptionPlacementDistinguishesAnOverlay(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             scenery = str(self._scenery(Path(tmp) / "s.png"))
-            bug = str(self._score_bug(Path(tmp) / "b.png"))
             with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
                 self.assertEqual(choose_caption_anchor(scenery), "bottom")
-                self.assertEqual(choose_caption_anchor(bug), "top")
+                # #721: a real overlay needs two frames; tests/test_wave9.py builds
+                # the video. Here only the wiring from detector to anchor.
+                with patch("video.caption_place.bottom_band_overlay", return_value=True):
+                    self.assertEqual(choose_caption_anchor(scenery), "top")
 
-    def test_a_low_horizon_is_a_known_remaining_false_positive(self):
-        """The gap #717 does NOT close, asserted so it cannot be forgotten.
+    def test_a_low_horizon_still_passes_the_spatial_gate_alone(self):
+        """The gap #717 did NOT close, kept so the reason for #721 stays visible.
 
         Widening the window to 3x the band (needed to catch an overlay that fills
         the band edge-to-edge) means a horizon inside the bottom ~37% of the frame
-        now lands in the sampled rows and reads as a composited step. Measured:
-        a horizon at 50% of frame height is rejected (spread 0.09), but at 65%,
-        70%, 80% and 90% it is detected.
+        lands in the sampled rows and reads as a composited step. Measured: a
+        horizon at 50% of frame height is rejected (spread 0.09), but at 65%, 70%,
+        80% and 90% it passes the spatial gate.
 
-        This is why `CAPTION_AUTO_PLACE` stays default-off (#718). What would close
-        it is a *temporal* check rather than a spatial one: sample two frames a
-        second apart -- a composited overlay is pixel-identical, scenery is not.
-        Filed as #721.
+        #721 closed it temporally rather than spatially: `bottom_band_overlay` now
+        also needs the band to stay still while the footage above it moves. The
+        spatial detector alone still says True here, which is the point.
         """
-        from video.caption_place import bottom_band_overlay
+        from video.caption_place import bottom_band_overlay, overlay_reading
 
         with tempfile.TemporaryDirectory() as tmp:
             random.seed(11)
@@ -427,19 +431,21 @@ class TestCaptionPlacementDistinguishesAnOverlay(unittest.TestCase):
             path = Path(tmp) / "low_horizon.png"
             img.save(path)
             self.assertTrue(
-                bottom_band_overlay(str(path)),
-                "if this starts returning False the gap closed -- update #721 and "
-                "reconsider the CAPTION_AUTO_PLACE default",
+                overlay_reading(str(path))["step"], "the spatial gate changed; re-measure"
             )
+            self.assertFalse(bottom_band_overlay(str(path)), "a still horizon moved captions")
 
     def test_the_flag_still_gates_it(self):
-        """#718 stays in force until the operator opts in."""
+        """#721 flipped the default on; `CAPTION_AUTO_PLACE=false` must still win."""
         from video.caption_place import choose_caption_anchor
 
         with tempfile.TemporaryDirectory() as tmp:
             bug = str(self._score_bug(Path(tmp) / "b.png"))
-            os.environ.pop("CAPTION_AUTO_PLACE", None)
-            self.assertEqual(choose_caption_anchor(bug), "bottom")
+            with patch("video.caption_place.bottom_band_overlay", return_value=True):
+                with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "false"}):
+                    self.assertEqual(choose_caption_anchor(bug), "bottom")
+                os.environ.pop("CAPTION_AUTO_PLACE", None)
+                self.assertEqual(choose_caption_anchor(bug), "top", "unset is on since #721")
 
 
 try:

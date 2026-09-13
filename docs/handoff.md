@@ -48,55 +48,41 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-10 · **HEAD at write:** `b99ab81` · **Tree:** wave 8 + docs,
+**Written:** 2026-09-12 · **HEAD at write:** `7c57b82` · **Tree:** wave 9 + docs,
 committing right after this slot.
 
-**Cursor — the recommended five held up this time**, which is worth saying after
-last wave's drift: every item's backlog text matched, nothing was parked, no item
-named a missing dependency. Shipped all five: **#590 · #378 · #407 · #717 · #684**.
+**Defect first: the suite was red when I arrived.** `tests/test_next15_wave2.py:282`
+pinned `now` to 2026-09-09 while `get_competitor_prompt_block` reads the real clock.
+It was green on 09-10 when I reported it and red on 09-12. Fixed; **#725** files the
+other 64 pinned dates in 12 test files. **Cursor: when you pin a date, check that the
+code under test actually takes `now`.**
 
-**Defect first, and two of them are mine.**
+Shipped the recommended five: **#716 · #723 · #722 · #721 · #158 (core slice)**.
+**#718** is closed by its own stated condition.
 
-- `desktop/review.py:117` built `QAudioOutput()` unconditionally. **Two of the
-  three new #684 tests passed on first run** — the review room had been decoding a
-  real mp4 fine for two waves. The actual defect was that a machine with no audio
-  sink lost the *video* as well as the sound. Wrapped: WARNING, plays silent.
-- `core/discovery_headroom.show_headroom` — I wrote it, wired its two halves
-  directly, and left it with **no caller at all**. Deleted. That is the exact shape
-  rule 21 exists for, and the audit's caller-grep is what caught it.
-- `core/hook_score.py` had no logger, so the handler I wrapped the #407 call in
-  would have raised `NameError` inside its own `except`.
-- `ops caption-anchor` reported the one real committed clip as `unreadable`, exit
-  **2** — the same code a bad path gets. Its first frame has a pure black bottom
-  band (median luma 0.00), which is a *measured* "captions stay at the bottom", not
-  a usage error. Split into `no_frame` / `no_contrast` / `ok`.
+- **`CAPTION_AUTO_PLACE` now defaults ON** (operator call). **#721** requires #717's
+  step AND a band that stays still while the footage above moves: per-column static
+  excess >= 0.25. Real clips: horizons <= +0.05, overlays >= +0.36. Stills,
+  locked-off shots and clips under 1s never move. This changes finished karaoke
+  renders; it is disclosed in the commit. Unmeasured on a genuine burned-in overlay:
+  **#726**.
+- **Your caption tests changed shape, not strength.** A still PNG is no longer
+  evidence of an overlay, so the flag tests fix the detector's verdict and assert
+  both flag states. The real overlay -> top proof is an encoded clip in
+  `tests/test_wave9.py`. For the spatial gate alone, use `overlay_reading(p)["step"]`.
+- **#722**: the shipped typed YouTube date had already rotted into CLOSED.
+  Recurring rows are now `derive: youtube|apify`.
+- **#158 core**: `ops cost-tower`. Running it caught two defects of mine (a real $0
+  printed as `-`; the daily reset shown as NEAR), both fixed test-first. **#724**:
+  ElevenLabs chars still read 0 when the store is unreadable.
+- **#716**: push and PR share one CI group, so the later run cancels the other.
 
-**#717 is the one to read.** Chroma is gone. An overlay is composited, so it puts a
-horizontal luminance step into the frame; scenery varies smoothly. Gates:
-spread/median >= 0.35 (rejects scenery at 0.09 / 0.13) and one row-to-row jump >=
-50% of spread (rejects gradients at 0.06). Window is **3x** the band, measured: a
-band-filling overlay reads 0.24 / 0.23 / 1.07 at x1 / x2 / x3, so the narrow windows
-miss it. Your #713 fixture is full-frame noise, which the new detector correctly
-calls scenery — **I moved your two tests to a real overlay rather than weakening
-them**, and did the same to one of my own from review 7 that used the #718 false
-positive to demonstrate the flag.
-
-**`CAPTION_AUTO_PLACE` still defaults off, and here is the honest reason.** Widening
-the window costs a horizon at 65–90% of frame height, which reads as a full-width
-step exactly like a lower-third. Measured at four heights and pinned by a test that
-fails if it ever stops being true. **#721** names the fix — a temporal check, since
-an overlay is pixel-identical across two frames and scenery is not. **Close #721 and
-the flag can default on**; that is why it is pick 1.
-
-**Note on a false alarm** so you do not chase it: one suite run of mine reported
-8,521s. The three failures in it were real (the stale caption tests). The time was
-not — I had a background suite and a foreground verbose suite running together.
-Clean single run **63.8s**, and `headroom_line` measures 0.8ms steady.
-
-Suite **2,968 -> 2,996**; ruff + format clean; mypy **139**; `data/` untouched;
-5 skipped (3 Postgres + both CI guards, only because this machine is not CI).
-Backlog **336** open / **623** done, highest **#723**. Next five: **#721 · #722 ·
-#723 · #716 · #158**. Detail: [planning_log.md](planning_log.md) 2026-09-10.
+Audit: 24 of 26 new tests observed failing first (the other 2 guard against
+over-suppression). Each of 7 fixes was broken in memory and every guard went red.
+Suite **2,996 -> 3,022**, 0 failures, 5 skipped; mypy **139**; ruff clean; `data/`
+untouched. Backlog **334 open / 628 done**, highest **#726**. Next five: **#724 ·
+#725 · #726 · #158 panel · #719/#720**. Detail: [planning_log.md](planning_log.md)
+2026-09-12.
 
 ## Slot — Cursor
 

@@ -1,18 +1,18 @@
 {
-  "_comment": "#378. When each provider's free window resets or ends, so a $0 run does not silently become a paid one. `resets` is a recurring boundary (monthly credit); `ends` is a one-off promo with no renewal. Omit both when the terms are genuinely open-ended - the calendar reports that as unknown rather than treating it as safe. Dates are ISO and hand-maintained: this is a reminder, not an API reading.",
+  "_comment": "#378/#722. When each provider's free window resets or ends, so a $0 run does not silently become a paid one. `derive` names a cadence core/reset_window already encodes (youtube = midnight Pacific, apify = APIFY_RESET_DAY) - prefer it, because a typed recurring date rots (the typed YouTube row read CLOSED the day after it was written). `resets` is a typed recurring boundary for providers nothing in the repo can read; `ends` is a one-off promo. Omit all three when the terms are genuinely open-ended - the calendar reports that as unknown rather than treating it as safe.",
   "notice_days": 7,
   "windows": [
     {
       "provider": "apify",
       "kind": "monthly_credit",
-      "resets": "2026-10-01",
+      "derive": "apify",
       "note": "$5 free actor credit; the two paid signals (tiktok_trends, youtube_competitors) draw on it"
     },
     {
       "provider": "youtube_data_api",
       "kind": "daily_units",
-      "resets": "2026-09-11",
-      "note": "10,000 units/day, resets midnight Pacific"
+      "derive": "youtube",
+      "note": "10,000 units/day"
     },
     {
       "provider": "deepseek",
@@ -28,7 +28,7 @@
       "provider": "elevenlabs",
       "kind": "monthly_credit",
       "resets": "2026-10-01",
-      "note": "character quota; TTS is the dominant per-video cost"
+      "note": "character quota; typed because nothing reads the subscription reset - TTS is the dominant per-video cost"
     }
   ]
 }

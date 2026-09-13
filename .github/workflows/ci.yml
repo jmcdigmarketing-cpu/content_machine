@@ -6,11 +6,12 @@ on:
   workflow_dispatch:
 
 # #715: unfiltered push+PR runs four jobs plus postgres on every branch.
-# Cancel the superseded run instead of stacking them. github.ref is the
-# branch on push and the merge ref on pull_request, so a same-repo PR
-# still fires both events but the older one dies when the newer starts.
+# Cancel the superseded run instead of stacking them.
+# #716: github.ref alone is refs/heads/<b> on push but refs/pull/<n>/merge on
+# pull_request, so a branch with an open PR still ran twice. head_ref is the
+# branch name on pull_request and empty on push, so both events share a group.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:

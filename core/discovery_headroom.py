@@ -14,9 +14,14 @@ the same defect as reporting an unreachable source as clean.
 
 from __future__ import annotations
 
+import threading
+
 from core.logging import get_logger
 
 logger = get_logger("core.discovery_headroom")
+
+_emit_lock = threading.Lock()
+_last_line: str | None = None
 
 # Cheapest real search call, so "can this pool finish" is a floor not a guess.
 _UNITS_PER_SIGNAL_SEARCH = 100
@@ -101,7 +106,17 @@ def headroom_line(*, signal_count: int) -> str:
 
 def emit_headroom(line: str) -> None:
     """Separate from building the line so the caller can be traced, and so a
-    console that cannot encode the text never breaks discovery."""
+    console that cannot encode the text never breaks discovery.
+
+    #723: `build_registry` runs once per variant (`core/pipeline._score_variant`),
+    so an unchanged line prints once per process. A number that moved prints again.
+    """
+    global _last_line
+    with _emit_lock:
+        if line == _last_line:
+            logger.debug("headroom unchanged since last print")
+            return
+        _last_line = line
     try:
         print(f"  {line}")
     except Exception as exc:  # pragma: no cover - cp1252 consoles

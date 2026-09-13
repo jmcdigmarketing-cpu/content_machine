@@ -7,14 +7,18 @@ re-estimated at $0.1725.
 Three states, kept distinct on purpose. A window with a date is **due** or not; a
 window whose date has passed is **closed** and stays on the calendar rather than
 dropping off it; a window with no date at all is **unknown**, which is not the
-same as safe. Hand-maintained dates in `config/free_tiers.json` -- this is a
-reminder, not a live reading, and it says so.
+same as safe.
+
+#722: a recurring window whose cadence `core/reset_window` already encodes carries
+`"derive": "<provider>"` instead of a typed `resets`. The typed YouTube row said
+`2026-09-11`; on 2026-09-12 the calendar reported a *daily* quota as a CLOSED free
+window. Typed dates stay only for providers nothing in the repo can read.
 """
 
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, datetime, time, timezone
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +29,7 @@ logger = get_logger("core.free_tier_calendar")
 
 CONFIG_PATH = Path(ROOT_DIR) / "config" / "free_tiers.json"
 _DEFAULT_NOTICE_DAYS = 7
+_APIFY_PURPOSES = ("main", "tiktok_trends", "youtube_competitors")
 
 
 def _config() -> dict[str, Any]:
@@ -59,6 +64,35 @@ def _parse(value: Any) -> date | None:
         return None
 
 
+def _derived_boundary(provider: str, today: date) -> date | None:
+    """Next reset date from the encoded cadence; None when it cannot be derived."""
+    try:
+        from core.reset_window import next_reset, reset_window_enabled
+
+        if not reset_window_enabled():
+            return None
+        # Midday UTC so the date is stable whatever the machine's local clock says.
+        nxt = next_reset(provider, now=datetime.combine(today, time(12, 0), tzinfo=timezone.utc))
+        return nxt.astimezone(timezone.utc).date() if nxt else None
+    except Exception as exc:
+        logger.debug("free-tier boundary for %s not derivable: %s", provider, exc)
+        return None
+
+
+def _apify_reading() -> str:
+    """The last recorded `/users/me` reading, if any. No HTTP."""
+    try:
+        from core.quota_governor import apify_get_usage
+
+        for purpose in _APIFY_PURPOSES:
+            usage = apify_get_usage(purpose)
+            if isinstance(usage, dict) and usage.get("limit"):
+                return f"last reading ${float(usage.get('usage') or 0):.2f}/${float(usage['limit']):.2f}"
+    except Exception as exc:
+        logger.debug("apify reading unavailable for the calendar: %s", exc)
+    return ""
+
+
 def expiring_windows(
     *,
     today: str | date | None = None,
@@ -73,17 +107,28 @@ def expiring_windows(
 
     out: list[dict[str, Any]] = []
     for row in rows:
-        boundary = _parse(row.get("resets")) or _parse(row.get("ends"))
-        recurring = bool(row.get("resets"))
+        derive = str(row.get("derive") or "").strip()
+        if derive:
+            boundary = _derived_boundary(derive, now)
+            recurring = True
+            if derive == "apify":
+                reading = _apify_reading()
+                if reading:
+                    note = str(row.get("note") or "").strip()
+                    row = {**row, "note": f"{note}; {reading}" if note else reading}
+        else:
+            boundary = _parse(row.get("resets")) or _parse(row.get("ends"))
+            recurring = bool(row.get("resets"))
+        base = {**row, "derived": bool(derive)}
         if boundary is None:
-            out.append({**row, "days": None, "closed": False, "unknown": True})
+            out.append({**base, "days": None, "closed": False, "unknown": True})
             continue
         days = (boundary - now).days
         if days < 0:
-            out.append({**row, "days": days, "closed": True, "unknown": False})
+            out.append({**base, "days": days, "closed": True, "unknown": False})
         elif days <= limit:
             out.append(
-                {**row, "days": days, "closed": False, "unknown": False, "recurring": recurring}
+                {**base, "days": days, "closed": False, "unknown": False, "recurring": recurring}
             )
     return out
 
@@ -97,17 +142,25 @@ def render_calendar(rows: list[dict[str, Any]] | None = None) -> str:
     for row in rows:
         provider = str(row.get("provider"))
         kind = str(row.get("kind") or "?")
+        source = "derived" if row.get("derived") else "typed"
         if row.get("unknown"):
-            state = "UNKNOWN  no published date - verify before a paid run"
+            state = (
+                "UNKNOWN  cadence not derivable - verify before a paid run"
+                if row.get("derived")
+                else "UNKNOWN  no published date - verify before a paid run"
+            )
         elif row.get("closed"):
-            state = f"CLOSED   {abs(int(row['days']))}d ago"
+            state = f"CLOSED   {abs(int(row['days']))}d ago ({source})"
         else:
             verb = "resets" if row.get("recurring") else "ENDS"
-            state = f"{verb:8} in {int(row['days'])}d"
+            state = f"{verb:8} in {int(row['days'])}d ({source})"
         lines.append(f"  {provider:<20} {kind:<16} {state}")
         note = str(row.get("note") or "").strip()
         if note:
             lines.append(f"  {'':<20} {note}")
     lines.append("")
-    lines.append("Hand-maintained dates. A reminder, not a live reading of any provider.")
+    lines.append(
+        "derived = core/reset_window cadence (midnight Pacific, APIFY_RESET_DAY); "
+        "typed = hand-maintained in config/free_tiers.json."
+    )
     return "\n".join(lines)

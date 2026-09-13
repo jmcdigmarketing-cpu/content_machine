@@ -33,6 +33,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `config-diff` | channels.json sha256 vs last-run fingerprint |
 | `contact-sheet` | 2x2 PNG collage of the last thumbnails (--path dest.png) |
 | `corrections` | Re-check published videos' sources and file a correction dossier |
+| `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
 | `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `demonetization` | estimatedRevenue cliff vs channel baseline (missing is unmeasured) |

@@ -279,7 +279,9 @@ class TestTopicSaturationIndex(unittest.TestCase):
     def test_prompt_block_names_the_count(self):
         from analytics.competitor_context import get_competitor_prompt_block
 
-        now = datetime(2026, 9, 9, 18, 0, tzinfo=timezone.utc)
+        # The block reads the real clock, so the fixture must too. Pinned to
+        # 2026-09-09 it went red three days later: the video aged past 48h.
+        now = datetime.now(timezone.utc)
         snap = {
             "synced_at": now.isoformat(),
             "competitors": [
@@ -522,16 +524,16 @@ class TestAutomaticCaptionPlacement(unittest.TestCase):
         img.save(dest)
         return dest
 
-    def test_busy_bottom_band_moves_cues_to_the_top(self):
-        # CAPTION_AUTO_PLACE gates the heuristic (default off, see #717): a flat
-        # sky over textured ground scores the same way a HUD does, so the detector
-        # must be armed explicitly. This still tests the detector, not the gate.
-        from video.caption_place import choose_caption_anchor
+    def test_busy_bottom_band_reads_as_a_spatial_step(self):
+        # #721: a still cannot prove an overlay (no second frame), so the anchor
+        # stays bottom for it; the spatial detector is what this fixture exercises.
+        from video.caption_place import choose_caption_anchor, overlay_reading
 
         with tempfile.TemporaryDirectory() as tmp:
             path = self._png(Path(tmp) / "busy.png", busy_bottom=True)
+            self.assertTrue(overlay_reading(str(path))["step"])
             with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
-                self.assertEqual(choose_caption_anchor(str(path)), "top")
+                self.assertEqual(choose_caption_anchor(str(path)), "bottom")
 
     def test_quiet_bottom_stays_at_default_bottom(self):
         from video.caption_place import choose_caption_anchor
@@ -560,6 +562,8 @@ class TestAutomaticCaptionPlacement(unittest.TestCase):
             with (
                 patch("video.subtitles.caption_style", return_value="karaoke"),
                 patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}),
+                # #721: detector verdict fixed; this tests subtitles -> anchor wiring.
+                patch("video.caption_place.bottom_band_overlay", return_value=True),
             ):
                 path = generate_subtitle_file(
                     "Hello",

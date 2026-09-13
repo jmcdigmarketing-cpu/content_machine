@@ -50,15 +50,23 @@ def _detect_hud_uncached(path: str) -> bool:
 
 
 def _load_frame(path: str):
+    return _load_frame_at(path, 0.0)
+
+
+def _load_frame_at(path: str, seconds: float):
+    """A frame `seconds` into a video (#721). A still has one frame, so any later
+    offset is None rather than the same picture again -- two identical stills would
+    read as a perfectly static overlay."""
     from PIL import Image
 
     target = Path(path)
     if not target.is_file():
         return None
     if target.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
-        return Image.open(target)
+        return Image.open(target) if seconds <= 0 else None
     if target.suffix.lower() not in _VIDEO:
         return None
+    seek = ["-ss", f"{seconds:.3f}"] if seconds > 0 else []
     import shutil
     import subprocess
     import tempfile
@@ -73,6 +81,7 @@ def _load_frame(path: str):
             [
                 "ffmpeg",
                 "-y",
+                *seek,
                 "-i",
                 str(target),
                 "-vframes",

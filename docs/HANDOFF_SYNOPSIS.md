@@ -1,10 +1,34 @@
-# Handoff synopsis — 2026-09-09: next 15 (#714-#415)
+# Handoff synopsis — 2026-09-12: wave 9 (#716 #723 #722 #721 #158)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-10 (Claude Code): the roadmap's five, all of them
+## Last wave — 2026-09-12 (Claude Code): the roadmap's five
+
+Shipped **#716 · #723 · #722 · #721** (closing **#718**) and **#158**'s core slice.
+Suite **2,996 -> 3,022**, 0 failures; mypy **139** held; ruff clean; `data/`
+untouched. Backlog **334 open / 628 done**, highest **#726**.
+
+- **The suite was red on arrival.** A test pinned `now` to 2026-09-09 while the code
+  reads the real clock, so it went red on 2026-09-12. Wave 8's green was true when
+  reported. Fixed; the class is **#725**.
+- **`CAPTION_AUTO_PLACE` now defaults on** (operator call). **#721** confirms #717's
+  spatial step temporally: an overlay column stays still while the footage above it
+  moves. Measured on five real clips: horizons -0.64..+0.05 excess, overlays
+  +0.36..+0.77, threshold 0.25. Stills and locked-off shots never move. Karaoke
+  captions only. Unmeasured on a genuine burned-in overlay clip: **#726**.
+- **#722** derives recurring free-tier dates from `core/reset_window`. The shipped
+  typed YouTube date had already rotted into CLOSED.
+- **#158 core**: `ops cost-tower`, every lane, unknown never zero. Running it found
+  two defects of mine (a real $0 shown as no reading; a daily reset shown as NEAR),
+  both fixed test-first. ElevenLabs chars still read 0 when unreadable: **#724**.
+  The Qt panel is the open remainder of #158.
+- **#716** one CI group for push + PR (`github.head_ref || github.ref`), operator call.
+
+**Next five:** **#724 · #725 · #726 · #158 panel · #719/#720 verify-and-tick**.
+
+## Previous wave — 2026-09-10 (Claude Code): the roadmap's five, all of them
 
 Shipped **#590 · #378 · #407 · #717 · #684**. Suite **2,968 -> 2,996**, mypy **139**
 held, ruff clean, `data/` untouched. Backlog **336 open / 623 done**, highest **#723**.
@@ -46,7 +70,7 @@ could not strand the three `[S]`s.
 **Next five:** **#721 · #722 · #723 · #716 · #158** — three of them this wave's own
 findings, and #158 unparked because #590/#378 just built two of its readings.
 
-## Previous wave — review 7 (2026-09-09, Claude Code)
+## Earlier wave — review 7 (2026-09-09, Claude Code)
 
 Audited Cursor's `96d6d1a` (15 items). **Numbers exact for the seventh round** —
 2,962 OK / 4 skipped, mypy 139, backlog 335/618, all re-measured. Cursor self-caught

@@ -93,21 +93,23 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
         )
 
     def test_the_flag_is_what_turns_the_heuristic_on(self):
-        """The work is kept, not deleted -- it just stops being the default.
+        """The work is kept, not deleted.
 
-        Uses a real overlay (#717), not the sky frame: that one is scenery, and the
-        detector is now right to leave it where it is.
+        **Updated when #721 landed:** the default is now on, and a still frame is
+        never enough evidence to move a caption (no second frame to compare). So
+        the detector's verdict is fixed here and only the gate is under test.
         """
         from video.caption_place import choose_caption_anchor
 
         with tempfile.TemporaryDirectory() as tmp:
             path = str(self._overlay_frame(Path(tmp) / "overlay.png"))
-            os.environ.pop("CAPTION_AUTO_PLACE", None)
-            self.assertEqual(
-                choose_caption_anchor(path), "bottom", "the flag did not gate the heuristic"
-            )
-            with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
-                self.assertEqual(choose_caption_anchor(path), "top")
+            with patch("video.caption_place.bottom_band_overlay", return_value=True):
+                with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "false"}):
+                    self.assertEqual(
+                        choose_caption_anchor(path), "bottom", "the flag did not gate the heuristic"
+                    )
+                with patch.dict(os.environ, {"CAPTION_AUTO_PLACE": "true"}):
+                    self.assertEqual(choose_caption_anchor(path), "top")
 
     def test_a_quiet_frame_stays_bottom_with_the_flag_on(self):
         from video.caption_place import choose_caption_anchor
@@ -126,8 +128,9 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
             self.assertEqual(choose_caption_anchor(""), "bottom")
 
     def test_the_burned_ass_keeps_alignment_2_by_default(self):
-        """The end-to-end guarantee: with the flag unset, a busy-bottom background
-        produces the same bottom-anchored ASS it did before #713."""
+        """The end-to-end guarantee: a sky-over-ground background produces the same
+        bottom-anchored ASS it did before #713. Since #721 the flag is on by default,
+        so this now proves the detector leaves scenery alone, not that it is off."""
         import json
 
         from video.subtitles import generate_subtitle_file

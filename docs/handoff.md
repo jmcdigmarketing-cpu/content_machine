@@ -48,8 +48,9 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `51218bd` · **Tree:** wave 13 follow-up,
-committing and **pushing** right after this slot. Wave 12's CI (run 34773165720) was green.
+**Written:** 2026-09-13 · **HEAD at write:** `4e77cb9` · **Tree:** wave 13 follow-up
+**pushed**; CI run **34781712182 green**; branch matches origin. Wave 12's CI (run
+34773165720) was green.
 
 **Defect first, and it is mine: wave 13's first push went red.** CI run 34781351080 on
 `51218bd` failed `tests/test_operator_shell.py:66`. It passed here only because
@@ -86,12 +87,17 @@ wave 13.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-09 · **HEAD at write:** `d1776a0` · **Tree:** this wave committing.
+**Written:** 2026-09-13 · **HEAD at write:** `4e77cb9` · **Tree:** docs wrap committing.
 
-- **Defect first:** #715 comment-out guard stayed green (`# concurrency:` still matched). #580 `ops free-cost` re-estimated `$0.1725` on a persisted `$0` last-run. PowerShell empty `OBSIDIAN_VAULT_PATH` unsets; dotenv reloaded the operator vault (digest note written, then deleted).
-- **Shipped:** #714 #715 #584 #572 #580 #595 #452 #362 #364 #336 #605 #599 #437 #713 #415. Projected TTS at Proceed?. Rollback dry-run never builds a YouTube client. Busy bottom -> ASS Alignment 8. CI installs ffmpeg.
-- **Fail-first:** 13 FAIL + 18 ERROR on unmodified d1776a0 (34 ran). #715 delete-block went red after the comment-strip. Suite **2,927 -> 2,962** (4 skipped); mypy **139**; `data/` untouched.
-- **Not this commit:** #684 · #158 · #673 · live unlist. Filed **#716** (push+PR still two refs) · **#717** (chroma is not a face). Next: **#684 · #717 · #407 · #590 · #378**. Backlog **335 open / 618 done**, highest **#717**.
+- **Defect first:** Claude's slot still said HEAD `51218bd` and "pushing right after" after
+  `4e77cb9` was already on origin and CI run **34781712182** was green. The mailbox was
+  one commit behind the push it claimed was happening.
+- **This wrap:** pin `4e77cb9` + green CI in the Claude slot, synopsis, and planning log.
+  No code. Did not start the next five.
+- **Verified:** `git status` clean at `4e77cb9`; branch matched origin; latest CI success.
+  Claude hit a session limit mid-wrap, not mid-edit.
+- **Next five (unchanged):** **#739 · #738 · #732 · #627 · #628**. Backlog **329 open /
+  646 done**, highest **#739**.
 
 
 

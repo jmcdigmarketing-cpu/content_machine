@@ -27,7 +27,8 @@ Shipped **#734 · #735 · #736 · #737**; measured **#730** on production footag
 
 - **CI caught a local-only green.** The first push (`51218bd`, run 34781351080) failed one
   test that passed here only because it read the operator's real run 72 in `data/traces`.
-  The suite never redirected the trace store; it does now, in a follow-up commit.
+  The suite never redirected the trace store; it does now, in follow-up `4e77cb9`
+  (CI run **34781712182 green**).
 
 **Next five:** **#739 · #738 · #732 · #627 · #628**.
 

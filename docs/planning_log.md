@@ -95,8 +95,9 @@ proof build (sdist 409, no tests/; wheel 404, imports from the wheel), `ops pack
 **139**. Backlog **331 open / 642 done -> 329 open / 646 done** (roadmap-index), highest
 **#737 -> #739**.
 
-**CI caught what the local suite could not (follow-up commit).** CI run 34781351080 on
-`51218bd` failed 1 of 3,105: `tests/test_operator_shell.py:66`. `next_sentence` now goes
+**CI caught what the local suite could not (follow-up `4e77cb9`).** CI run 34781351080 on
+`51218bd` failed 1 of 3,105: `tests/test_operator_shell.py:66`. Follow-up `4e77cb9` is on
+origin; CI run **34781712182** is green. `next_sentence` now goes
 through `publish_status_sentence`, but the test still patched `blocking_publish_sentence`.
 Locally it passed because `last_run_context` found the operator's **real run 72 in
 `data/traces`**; the runner had no traces and got "Nothing to publish yet". Two more tests

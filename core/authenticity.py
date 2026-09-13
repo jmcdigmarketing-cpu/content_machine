@@ -311,10 +311,16 @@ def evaluate_authenticity(
     *,
     fact_count: int = 0,
     exclude_run_id: int | None = None,
+    recent: list[str] | None = None,
 ) -> AuthenticityReport:
-    """Score a script against the three policy-aligned checks."""
+    """Score a script against the three policy-aligned checks.
+
+    `recent` supplies the comparison scripts directly (#630 selftest); None loads the
+    channel's recent uploads from the store, as a real run does.
+    """
     channel_id = resolve_channel_id(channel_id)
-    recent = _recent_scripts(channel_id, exclude_run_id=exclude_run_id)
+    if recent is None:
+        recent = _recent_scripts(channel_id, exclude_run_id=exclude_run_id)
 
     checks = [
         _variation_check(script, recent),
@@ -340,6 +346,12 @@ def evaluate_authenticity(
 def gate_mode() -> str:
     """warn (default) | block — how the pipeline treats a 'block' verdict."""
     return os.getenv("AUTHENTICITY_GATE", "warn").strip().lower() or "warn"
+
+
+def blocks_render(report: AuthenticityReport) -> bool:
+    """The pipeline's stop decision in one place, so `ops selftest` (#630) tests the
+    same rule `main.py` applies: block mode and a block verdict."""
+    return gate_mode() == "block" and report.verdict == "block"
 
 
 def display_authenticity_report(report: AuthenticityReport, *, print_fn=print) -> None:

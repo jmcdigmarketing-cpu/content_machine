@@ -48,36 +48,33 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `608636d` · **Tree:** wave 11 + docs,
-committing right after this slot, then **pushing**; that CI run is the proof for #729
-and was not known when this was written.
+**Written:** 2026-09-13 · **HEAD at write:** `db25e26` · **Tree:** wave 12 + docs,
+committing right after this slot, then **pushing** (operator-approved); that CI result
+was not known when this was written.
 
-**Correction to my last slot, defect first.** Wave 10's CI went green (run
-34741028834), but the green hid **#729: all 23 widget tests skipped** as "PySide6 extra
-not installed" although the wheel installed. Ten files swallowed the real import error,
-and `ci.yml` claimed "23 ran, 0 skipped". Fixed with `tests/qt_support.requires_qt`
-(never skips under `CI=true`) plus the GL/EGL/xkb apt packages. **Cursor: use
-`@requires_qt` for any new Qt test, never a bare `skipUnless`.**
+**Wave 11's CI is proven:** run 34744476819 ran every Qt test, 0 skips; #729 holds.
 
-**Second correction: wave 10's "no false TOP" was wrong.** On 50 labelled real stock
-clips the detector moved captions on 2 with no overlay. Operator call:
-**`CAPTION_AUTO_PLACE` is default off again.** Threshold 0.25 -> 0.18 finds 22 -> 26 of
-30 real 2K score bars with no new false TOP. Open: **#730** (stock false positives),
-**#731** (4 misses).
+**Defect first.** `tests/test_stage2_html.py:134-146` used the operator's **real Windows
+username** as a fixture, and it shipped in the sdist. Replaced with an invented name.
+**Cursor: never put a real user name, home path or vault path in a test.**
 
-- **#636:** traces scrub secrets by value and URL param; `ops trace-secrets-scan`: 28
-  traces, 0 hits.
-- **#639:** `ops env-lint`: 326 read / 273 documented / 73 undocumented, frozen in
-  `config/env_lint_baseline.json`. **A new env key you read must go in `.env.example`,
-  or a test fails.**
-- **#631:** core coverage prints in the CI log only; nobody has read it yet.
-- Found by running it: `ops caption-anchor` printed typed thresholds; now read live.
+Shipped **#733 · #630 · #640**; measured **#730 · #731** to a stop.
 
-Audit: 23 of 26 new tests observed failing first (3 pass by design); all 9 in-memory
-breaks went red. Suite **3,043 -> 3,069**, 0 failures, 6 skipped; mypy **139**; ruff
-clean; `data/` untouched. Backlog **329 open / 639 done**, highest **#732**. Next five:
-**#730 · #731 · CI coverage table · #630 · #640**. Detail:
-[planning_log.md](planning_log.md) 2026-09-13 wave 11.
+- **`ops selftest`:** 8/8 gates work with no store read. **4 are not armed here**
+  (authenticity, grounding, metrics, publish dead-man) - #735, the operator's call.
+  `authenticity.blocks_render` is now the one stop rule `main.py` and the selftest share.
+- **`ops package-audit`:** wheel 373 / sdist 378 files, 0 hits. The wheel ships no
+  `config/*.json` (#737); a stale egg-info once made the sdist 701 files (#736).
+- **Coverage read:** `core/` 77%. The untested gate decisions are pinned; the four never-run
+  append branches in `publish_blockers.py` are #734.
+- **Captions stay off.** The operator wants default-on only if clean; nothing was. Best new
+  feature leaves 1/50 stock false moves on a 0.06 margin, tuned to one clip.
+
+Audit: 14 of 17 new tests observed failing first (3 pin working behaviour, stated); all 9
+in-memory breaks went red; `ops clock-ahead --days 365` no change. Suite **3,069 -> 3,086**,
+0 failures, 6 skipped; mypy **139**; ruff clean; `data/` untouched. Backlog **331 open / 642
+done**, highest **#737**. Next five: **#734 · #735 · #736 · #737 · #730**. Detail:
+[planning_log.md](planning_log.md) 2026-09-13 wave 12.
 
 ## Slot — Cursor
 

@@ -74,6 +74,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `negative-fact` | Record a walked-back claim so a later run cannot re-assert it (--topic franchise) |
 | `next` | One action to take now across gates, quota, and vault decay |
 | `overnight` | Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5) |
+| `package-audit` | Build the wheel and sdist; flag secrets, tokens or operator paths (#640) |
 | `paid-signals` | Attribute tiktok_trends / youtube_competitors lift; recommend keep/disable (no catalog write) |
 | `pick-thumbnail` | Pick text_on or face_forward for a dual-thumbnail run |
 | `playbook-lint` | Warn when untagged strategy bullets can still feed facts |
@@ -99,6 +100,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `run-window` | Stage 2 Qt run window (requires pip install -e ".[app]") |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |
 | `seed` | Seed TapIn performance + publish history |
+| `selftest` | Run every safety gate against fixtures; show which are armed here (#630) |
 | `sendto-facts` | Install Explorer Send-to shortcut targeting facts.txt |
 | `seo-refresh` | Refresh trending tag hints (YouTube + RSS) |
 | `shell` | Localhost FastAPI operator shell (GET only; no TTS/Apify/publish) |

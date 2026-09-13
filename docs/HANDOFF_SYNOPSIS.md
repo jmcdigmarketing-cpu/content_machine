@@ -1,10 +1,30 @@
-# Handoff synopsis — 2026-09-13: wave 11 (#729 #631 #636 #639 #727)
+# Handoff synopsis — 2026-09-13: wave 12 (#733 #630 #640, #730 #731 measured)
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-13 (Claude Code): wave 11
+## Last wave — 2026-09-13 (Claude Code): wave 12
+
+Shipped **#733 · #630 · #640**; measured **#730 · #731** to a stop. Suite **3,069 ->
+3,086**, 0 failures; mypy **139**; ruff clean; `data/` untouched. Backlog **331 open /
+642 done**, highest **#737**. #729 was proven by CI run 34744476819 (every Qt test ran).
+
+- **`ops selftest`:** eight gates each block a bad fixture and pass a clean one, with no
+  store read. 8/8 work - but authenticity, grounding, metrics and the publish dead-man
+  are **not armed on this machine** (#735, an operator call).
+- **`ops package-audit`:** wheel 373 files, sdist 378, 0 hits. It found the operator's
+  real Windows username hardcoded in a test fixture that shipped in the sdist (fixed).
+  The wheel ships no `config/*.json` (#737).
+- **Coverage read:** `core/` 77%. Untested gate *decisions* (`render_gate.py:84-97`,
+  `publish_deadman.py:43,50`) are now pinned; the publish-blockers list is #734.
+- **Captions stay off.** The operator asked for default-on only if clean. No candidate
+  was: the two stock false positives read 0.60 and 0.92 on the best new feature, and
+  real bars span 0.01-0.86.
+
+**Next five:** **#734 · #735 · #736 · #737 · #730**.
+
+## Previous wave — 2026-09-13 (Claude Code): wave 11
 
 Shipped **#729 · #631 · #636 · #639 · #727**. Suite **3,043 -> 3,069**, 0 failures;
 mypy **139** held; ruff clean; `data/` untouched. Backlog **329 open / 639 done**,
@@ -28,7 +48,7 @@ highest **#732**. Pushed after commit; the CI run of this commit is #729's proof
 
 **Next five:** **#730 · #731 · read the CI coverage table · #630 · #640**.
 
-## Previous wave — 2026-09-12 (Claude Code): wave 10, the roadmap's five
+## Earlier wave — 2026-09-12 (Claude Code): wave 10, the roadmap's five
 
 Shipped **#719 · #720 · #724 · #725 · #726 · #158** (the panel, closing #158).
 Suite **3,022 -> 3,043**, 0 failures; mypy **139** held; ruff clean; `data/`

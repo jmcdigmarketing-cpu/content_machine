@@ -11,6 +11,89 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Claude Code) - wave 12: #733 #630 #640, #730 #731 measured
+
+**Prompt, verbatim:** "next 5, debug, document, and commit"
+
+**What was picked.** Wave 11's five: **#730 · #731 · read the CI coverage table · #630
+· #640**, all verified first. #729 was proven before planning: CI run 34744476819 ran
+every Qt test (0 skips, `test_qt_really_imports_in_ci ... ok`, the #158 panel tests ran).
+
+**Operator decisions.** Asked whether #730 could flip `CAPTION_AUTO_PLACE` back on, the
+operator asked: "why would it change things? this is in reference to the manual caption
+placement too right?" It is not: manual caption timing was retired (#153) and the studio
+moves only the title layer; `CAPTION_AUTO_PLACE` is the fully automatic move to the top
+when a burned-in bar is detected, which is why it changes finished renders. Decision:
+**turn it on only if it measures clean** (0/50 stock false moves, >= 26/30 real bars,
+hybrids unchanged). Push approved for this wave.
+
+**Shipped**
+
+1. **#733** - read the coverage table (below).
+2. **#630** - `core/selftest.py` + `ops selftest`; `authenticity.blocks_render` so
+   `main.py` and the selftest apply one rule; `evaluate_authenticity(recent=...)` so
+   scoring can run without the store.
+3. **#640** - `core/package_audit.py` + `ops package-audit`.
+
+**#733, the coverage read-out.** CI: `core/` 77% of 22,422 statements, no module at 0%.
+Locally, 12 gate files: 82% of 868. Most missed lines are fail-open handlers or display.
+The untested *decisions*: `core/render_gate.py:84-97` (a missing run fails closed; an
+unreadable store fails open), `core/publish_deadman.py:43,50` (no heartbeat blocks, a
+fresh one allows) - now pinned by 3 tests that passed on first run, stated as coverage -
+and `core/publish_blockers.py:94-128`, where four component reasons are never proven to
+reach the refusal list (**#734**).
+
+**#730 / #731, measured on the same labelled set** (30 real bars, 2 non-bar 2K frames,
+50 stock, 12 hybrids):
+
+| candidate | real bars | stock false moves | hybrids |
+|---|---|---|---|
+| current | 26/30 | 2/50 | 2/12 |
+| band-shaped: `near_above` < 0.9 | 26/30 | 1/50 | unchanged |
+| `near_above` < 0.5 | 13/30 | 0/50 | 1 changed |
+| contiguous static columns >= 3 | 12/30 | 0/50 | 1 changed |
+| static across a third frame (2s) >= 0.8 | 4/30 | 1/50 | 1 changed |
+| #731 per-block + `near_above` < 0.8 | 28/30 | 10/50 | 4 changed |
+
+`near_above` for real bars spans 0.01-0.86; the stock false positives read 0.60
+(`pexels_7005860`) and 0.92 (`pexels_6265064`). The < 0.9 cut removes one clip with a
+0.06 margin, tuned to that clip - not adopted. A third frame fails because score clocks
+change within 2s. **Not clean, so the default stays off**, per the operator's rule.
+
+**Found**
+
+- `tests/test_stage2_html.py:134-146` - the operator's real Windows username was the
+  fixture in a path-redaction test, and shipped in the sdist. Replaced with an invented
+  name.
+- Four gates are not armed on this machine (**#735**).
+- `pip wheel .` failed locally (`invalid command 'bdist_wheel'`: the `wheel` build
+  requirement was not installed; installed). Building in place left `build/` and
+  `content_machine.egg-info/` in the repo root; `build_archives` now removes only what it
+  created. The first sdist had 701 members because a stale egg-info listed `tests/`; clean
+  it ships 378 (**#736**). The editable install is PEP 660, so that egg-info was not
+  load-bearing (checked: metadata and `content-machine.exe` still resolve).
+- The wheel ships no `config/*.json` (**#737**).
+- `ops env-lint` dynamic reads 27 -> 28: `core/selftest.env_overlay` saves env values by
+  variable name; not a config read.
+
+**Deliberately not done.** Arming any gate (#735 is the operator's) · a caption detector
+change (#730 needs new evidence, not a threshold) · #734 · PyInstaller (Stage 5).
+
+**Audit.** 17 behavioural tests added; **14 observed failing first** on `db25e26` (3
+FAIL, 11 ERROR). The other 3 are the coverage tests above, which pin working behaviour.
+All 9 in-memory breaks went red (a gate that never blocks, one that blocks everything, an
+env overlay that never restores, `armed_here` stuck on, `main.py` back to the inline rule,
+no path rules, a renderer that prints contents, the operator-path detector off, no build
+cleanup). Every new symbol has a production caller. mypy **139** held. `data/` empty.
+Operator output run and read: `ops selftest` (8/8, 4 unarmed), `ops package-audit` (0 hits,
+no leftovers), `ops env-lint` (no new key), `ops clock-ahead --days 365`.
+
+**Proof.** ruff + format clean (729 files). Suite **3,069 -> 3,086**, 0 failures, 6
+skipped. mypy **139**. Backlog **329 open / 639 done -> 331 open / 642 done**, highest
+**#732 -> #737**.
+
+---
+
 ## 2026-09-13 (Claude Code) - wave 11: #729 #631 #636 #639 #727
 
 **Prompt, verbatim:** "next 5, debug, document, and commit"

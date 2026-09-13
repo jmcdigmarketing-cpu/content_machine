@@ -120,10 +120,11 @@ class TestHtmlDesignSystem(unittest.TestCase):
         The `themed_page` half used to sit dedented outside the `patch.dict`
         block, so it ran with no `OBSIDIAN_VAULT_PATH` — and `tests/__init__.py`
         forces that empty suite-wide anyway. It passed here only because this
-        developer's `Path.home()` is `C:\\Users\\jonma`, so the *home* rule
+        developer's `Path.home()` held the same user name, so the *home* rule
         removed the name the *vault* rule was supposed to. Simulated on
-        ubuntu-latest (`home=/home/runner`), "jonma" survived into the page and
-        the assertion failed — every CI job runs ubuntu.
+        ubuntu-latest (`home=/home/runner`), the name survived into the page and
+        the assertion failed — every CI job runs ubuntu. The fixture name is
+        invented (#640): the operator's real one was shipping in the sdist.
 
         `Path.home` is now pinned away from the fixture so a pass cannot come
         from the home rule, and `[vault]` is asserted in the page so the vault
@@ -131,17 +132,19 @@ class TestHtmlDesignSystem(unittest.TestCase):
         """
         from core.chrome import redact_operator_paths
 
-        vault = r"C:\Users\jonma\Documents\Obsidian\TapIn"
-        env = {"OBSIDIAN_VAULT_PATH": vault, "USERNAME": "jonma", "USER": "jonma"}
+        vault = r"C:\Users\zqoperator\Documents\Obsidian\TapIn"
+        env = {"OBSIDIAN_VAULT_PATH": vault, "USERNAME": "zqoperator", "USER": "zqoperator"}
         with (
             patch.dict(os.environ, env),
             patch.object(Path, "home", staticmethod(lambda: Path("/elsewhere/nobody"))),
         ):
-            cleaned = redact_operator_paths(f"Wrote {vault}\\_runs\\71.md for jonma on this PC")
+            cleaned = redact_operator_paths(
+                f"Wrote {vault}\\_runs\\71.md for zqoperator on this PC"
+            )
             page = themed_page("Dump", f"<pre>{vault}</pre>", channel_id="tapin")
 
-        self.assertNotIn("jonma", cleaned.lower())
+        self.assertNotIn("zqoperator", cleaned.lower())
         self.assertNotIn("obsidian", cleaned.lower())
         self.assertIn("[vault]", cleaned.lower())
-        self.assertNotIn("jonma", page.lower())
+        self.assertNotIn("zqoperator", page.lower())
         self.assertIn("[vault]", page.lower(), "the page did not go through the vault redactor")

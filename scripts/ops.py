@@ -511,6 +511,30 @@ def cmd_env_lint(_args: argparse.Namespace) -> int:
     return 1 if report.new_undocumented else 0
 
 
+@_register("selftest", "Run every safety gate against fixtures; show which are armed here (#630)")
+def cmd_selftest(_args: argparse.Namespace) -> int:
+    from core.selftest import render_selftest, run_selftest
+
+    results = run_selftest()
+    print(render_selftest(results))
+    return 0 if all(result.works for result in results) else 1
+
+
+@_register(
+    "package-audit", "Build the wheel and sdist; flag secrets, tokens or operator paths (#640)"
+)
+def cmd_package_audit(_args: argparse.Namespace) -> int:
+    from core import package_audit
+
+    try:
+        reports = package_audit.audit()
+    except RuntimeError as exc:
+        print(f"package-audit could not build: {exc}")
+        return 2
+    print(package_audit.render_audit(reports))
+    return 1 if any(report.hits for report in reports) else 0
+
+
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
 def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render

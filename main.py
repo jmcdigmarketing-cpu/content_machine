@@ -525,9 +525,9 @@ def _run_new_video_flow_body(
 
         # Authenticity / monetisation-safety self-check (Phase O)
         from core.authenticity import (
+            blocks_render,
             display_authenticity_report,
             evaluate_authenticity,
-            gate_mode,
         )
 
         auth = evaluate_authenticity(
@@ -537,7 +537,7 @@ def _run_new_video_flow_body(
             exclude_run_id=result.run_id,
         )
         display_authenticity_report(auth)
-        if gate_mode() == "block" and auth.verdict == "block":
+        if blocks_render(auth):
             if not ask_confirm(
                 "  Authenticity gate flagged this video. Render anyway? [y/N]: ",
                 default=False,

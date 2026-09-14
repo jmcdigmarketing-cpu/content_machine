@@ -15,7 +15,7 @@ import re
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from core.chapters import _stamp
+from core.chapters import youtube_chapter_lines
 from core.logging import get_logger
 
 logger = get_logger("core.angle_chapters")
@@ -206,7 +206,7 @@ def chapter_lines(
     from core.script_length import WORDS_PER_SECOND
 
     times = token_start_times(word_timings)
-    lines: list[str] = []
+    points: list[tuple[float, str]] = []
     for chapter in chapters:
         if chapter.word_start <= 0:
             seconds = 0.0
@@ -216,8 +216,8 @@ def chapter_lines(
             seconds = float(duration) * chapter.word_start / max(1, total_words)
         else:
             seconds = chapter.word_start / max(WORDS_PER_SECOND, 0.1)
-        lines.append(f"{_stamp(seconds)} {chapter.title}")
-    return "\n".join(lines)
+        points.append((seconds, chapter.title))
+    return youtube_chapter_lines(points)
 
 
 def features_from_chapters(chapters: list[AngleChapter]) -> list[dict[str, Any]]:

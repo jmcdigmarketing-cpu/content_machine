@@ -881,6 +881,11 @@ def _run_new_video_flow_body(
         force=tts_force,
         length_choice=length_choice,
     )
+    # The run row carries the chapters refined from real word timings; the in-memory copy
+    # does not, and it is what gets printed and queued for upload (run 77).
+    from core.chapters import current_description
+
+    result.description = current_description(result.run_id, result.description)
 
     from assets.flux_thumbnail import list_channel_thumbnails
     from core.output_paths import ensure_channel_output_dirs

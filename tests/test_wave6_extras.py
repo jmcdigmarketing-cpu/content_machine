@@ -44,8 +44,14 @@ class TestVerifiedChapterTimings(unittest.TestCase):
         from core.chapters import chapter_block
 
         block = chapter_block(self.SCRIPT, duration=60.0, length_choice="4")
-        self.assertIn("0:00", block)
-        self.assertIn("0:20", block)
+        lines = block.splitlines()
+        self.assertGreaterEqual(len(lines), 3, block)
+        self.assertTrue(lines[0].startswith("0:00"), block)
+        # Wave 16 (#750): "0:20" was the equal split by sentence count, the same
+        # time/label mismatch run 77 shipped. Chapters now sit where their sentence
+        # falls by word position; the block must still reach the back half.
+        minutes, seconds = lines[-1].split(" ", 1)[0].split(":")
+        self.assertGreaterEqual(int(minutes) * 60 + int(seconds), 30, block)
 
 
 class TestTitleScriptConsistency(unittest.TestCase):

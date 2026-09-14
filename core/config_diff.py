@@ -11,6 +11,9 @@ from typing import Any
 from config.paths import CHANNELS_FILE, ROOT_DIR
 
 ENV_EXAMPLE_FILE = Path(ROOT_DIR) / ".env.example"
+# Bumped when `env_canonical` changes what it counts (#732: v2 adds `# FLAG=` lines).
+ENV_FINGERPRINT_VERSION = 2
+
 # A commented example line that documents a key: `# FLAG=value`, not prose.
 _COMMENTED_KEY_RE = re.compile(r"^#\s*([A-Z][A-Z0-9_]{2,})=")
 
@@ -57,10 +60,15 @@ def env_canonical(
     environ: dict[str, str] | None = None,
     example_path: str | Path | None = None,
 ) -> str:
-    """Presence/shape only. Never includes secret values."""
+    """Presence/shape only. Never includes secret values.
+
+    Version 2 (#732) counts documented optional flags (`# FLAG=`) too, so toggling
+    `CAPTION_AUTO_PLACE` shows up. Traces carry `env_fingerprint_version`, and
+    `diff_against` never compares hashes from different versions.
+    """
     src = environ if environ is not None else os.environ
     lines = []
-    for name in env_example_keys(example_path):
+    for name in env_example_keys(example_path, include_commented=True):
         if name not in src:
             state = "missing"
         elif not str(src.get(name) or "").strip():
@@ -92,8 +100,17 @@ def diff_against(trace: dict[str, Any] | None) -> list[str]:
         lines = [f"channels.json drifted vs last run ({stored[:12]} -> {current[:12]})"]
     env_now = env_fingerprint()
     env_stored = str((trace or {}).get("env_sha256") or "").strip()
+    try:
+        stored_version = int((trace or {}).get("env_fingerprint_version") or 1)
+    except (TypeError, ValueError):
+        stored_version = 1
     if not env_stored:
         lines.append(f".env shape {env_now[:12]} (no prior fingerprint)")
+    elif stored_version != ENV_FINGERPRINT_VERSION:
+        lines.append(
+            f".env shape: fingerprint scheme changed since last run "
+            f"(v{stored_version} -> v{ENV_FINGERPRINT_VERSION}), not compared ({env_now[:12]})"
+        )
     elif env_stored == env_now:
         lines.append(f".env shape matches last run ({env_now[:12]})")
     else:

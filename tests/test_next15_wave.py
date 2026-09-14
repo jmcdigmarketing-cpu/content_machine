@@ -47,7 +47,11 @@ class TestWave6ExtrasIsCollected(unittest.TestCase):
 
 class TestChapterMarksFollowWordStarts(unittest.TestCase):
     """#431. Equal-span fallback for three sentences over 60s is also 0:20/0:40,
-    so a test that asserts those stamps cannot catch ignored timings."""
+    so a test that asserts those stamps cannot catch ignored timings.
+
+    Wave 16 (#750): the starts were 0/5/12 s - under YouTube's 10 s minimum, so that
+    block is one YouTube discards and chapter_block now emits none for it. Moved to
+    0/15/33 s, which still disagree with equal span."""
 
     def test_marks_use_word_starts_that_disagree_with_equal_span(self):
         from core.chapters import chapter_block
@@ -56,17 +60,17 @@ class TestChapterMarksFollowWordStarts(unittest.TestCase):
         words = [
             {"word": "Opening", "start": 0.0, "end": 0.4},
             {"word": "context.", "start": 0.4, "end": 0.8},
-            {"word": "The", "start": 5.0, "end": 5.2},
-            {"word": "second", "start": 5.2, "end": 5.5},
-            {"word": "point", "start": 5.5, "end": 5.8},
-            {"word": "matters.", "start": 5.8, "end": 6.1},
-            {"word": "Final", "start": 12.0, "end": 12.3},
-            {"word": "consequence.", "start": 12.3, "end": 12.8},
+            {"word": "The", "start": 15.0, "end": 15.2},
+            {"word": "second", "start": 15.2, "end": 15.5},
+            {"word": "point", "start": 15.5, "end": 15.8},
+            {"word": "matters.", "start": 15.8, "end": 16.1},
+            {"word": "Final", "start": 33.0, "end": 33.3},
+            {"word": "consequence.", "start": 33.3, "end": 33.8},
         ]
         block = chapter_block(script, duration=60.0, length_choice="4", word_timings=words)
         lines = block.splitlines()
-        self.assertTrue(any(line.startswith("0:05") for line in lines), block)
-        self.assertTrue(any(line.startswith("0:12") for line in lines), block)
+        self.assertTrue(any(line.startswith("0:15") for line in lines), block)
+        self.assertTrue(any(line.startswith("0:33") for line in lines), block)
         self.assertFalse(any(line.startswith("0:20") for line in lines), block)
         self.assertFalse(any(line.startswith("0:40") for line in lines), block)
 

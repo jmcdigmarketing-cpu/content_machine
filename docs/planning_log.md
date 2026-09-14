@@ -11,6 +11,55 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Claude Code) - wave 16: five defects run 77 shipped
+
+**Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push"
+
+**Picked, and why it differs from the recommendation.** The recommended five were
+#739 #730 #345 #543 #732 - mostly caption measurement. Reading run 77's stored run row
+found four defects that had already reached YouTube, none numbered. Asked the operator;
+answer: **"Live-run defects"**. Shipped in cheapest-first order: #753, #732, #752, #750,
+#751. #739 #730 #345 #543 stay open.
+
+**Shipped 1..5**
+1. **#753** `jobs/worker.py:_finalize_upload_job` - success only hit `logger.info` under
+   `CONTENT_LOG_LEVEL=WARNING`; now prints `Job N uploaded -> https://youtu.be/<id>`.
+2. **#732** `core/config_diff.py:env_canonical` counts `# FLAG=` lines as
+   `ENV_FINGERPRINT_VERSION = 2`; `core/run_trace.py` stamps the version; `diff_against`
+   will not compare hashes from different versions. `env_example_keys` default untouched.
+3. **#752** `core/content_engine.py` tag sites - `config/seo/tapin.json` injects
+   `shorts`, and `tags_from_topic(variant)` added `Forward/Billion/Opportunity` on top of
+   13 model tags. `core/seo.drop_shorts_tags` for presets past 180 s; topic tags only pad
+   a model list under 5, from `angle_headline`.
+4. **#750** `core/chapters.py:chapter_block` took sentences 1-8. Points now sit at even
+   word fractions snapped to a later sentence; `youtube_chapter_lines` (also used by the
+   all-angles `chapter_lines`) keeps >= 10 s gaps and needs three.
+5. **#751** `main.py` / `scripts/auto_generate.py` queued `result.description` from before
+   `refine_run_chapters` wrote the run row; both read `current_description` after render.
+
+**Deliberately not done.** Run 77's live YouTube description still carries the bad chapters
+(operator can re-save it). Caption items #739/#730 need footage and an operator call.
+
+**Audit.** 13 new tests in `tests/test_wave16.py`; **13 observed failing first** - 12 on the
+tree before any fix, and one (estimated chapters) passed at first because the old path
+spread its *times* evenly, so it was tightened to check labels and re-run red in a
+`9c42605` worktree ("4:16 Point 7"). Two existing pins changed, both pinning output YouTube
+rejects or mislabels: `test_next15_wave` #431 used word starts 0/5/12 s (under 10 s apart;
+now 0/15/33 s, still disagreeing with equal span), and `test_wave6_extras` pinned the
+equal-span "0:20" (now asserts the block spans the duration). mypy **139** (baseline);
+`git status --short data/` empty; every new symbol has a production caller (grep).
+
+**Proof.** `chapter_block` over run 77's real 1,005-word sidecar - before, timed: `0:00 0:03
+0:05 0:07 0:13 0:14 0:16 0:17`; before, estimated (what was queued): the same eight opening
+sentences at `0:36 … 4:16`. After, timed: `0:00 0:39 1:14 1:51 2:33 3:09 3:47 4:22`, each
+label the sentence at that time. Run 77's 15 tags lose `shorts`. `ops config-diff` here:
+".env shape: fingerprint scheme changed since last run (v1 -> v2), not compared".
+
+**Brainstorm -> next five:** **#754 · #755 · #345 · #543 · #756** (see roadmap). Suite
+**3,167 -> 3,180**; backlog **329 open / 663 done**, highest **#756**.
+
+---
+
 ## 2026-09-13 (Claude Code) - run 78: all angles in one long video, and Shorts from its chapters
 
 **Prompt, verbatim:** "the ideas in this run were great, i wanted all 5 in one video bc it

@@ -370,6 +370,11 @@ def main(argv=None) -> int:
         force=args.force,
         length_choice=length_choice,
     )
+    # Queue the description the render refined (real word-timed chapters), not the
+    # pre-render copy (run 77).
+    from core.chapters import current_description
+
+    result.description = current_description(result.run_id, result.description)
 
     if not result.mp4_path:
         print("  Render failed — no mp4 produced.")

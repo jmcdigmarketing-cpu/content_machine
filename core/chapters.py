@@ -33,51 +33,91 @@ def _stamp(seconds: float) -> str:
     return f"{minutes}:{secs:02d}"
 
 
+YOUTUBE_MIN_CHAPTER_SECONDS = 10.0
+YOUTUBE_MIN_CHAPTERS = 3
+_MAX_CHAPTERS = 8
+
+
+def youtube_chapter_lines(points: list[tuple[float, str]]) -> str:
+    """Chapter lines YouTube will accept: first at 0:00, each >= 10 s after the one kept
+    before it, at least three - otherwise "" (YouTube silently ignores the whole block)."""
+    kept: list[tuple[float, str]] = []
+    for seconds, label in points:
+        if not kept:
+            kept.append((0.0, label))
+        elif seconds - kept[-1][0] >= YOUTUBE_MIN_CHAPTER_SECONDS:
+            kept.append((seconds, label))
+    if len(kept) < YOUTUBE_MIN_CHAPTERS:
+        return ""
+    return "\n".join(f"{_stamp(seconds)} {label}" for seconds, label in kept)
+
+
 def chapter_block(
     script: str,
     duration: float | None = None,
     length_choice: str | None = None,
     word_timings: list[dict[str, Any]] | None = None,
 ) -> str:
-    """Beat labels from the script. Empty for Shorts / missing input."""
+    """Beat labels spread across the script. Empty for Shorts / missing input.
+
+    Run 77 labelled the *first eight sentences*, so with word timings every chapter sat in
+    the first 17 seconds (0:00-0:17) and YouTube dropped them. Chapter points now sit at
+    even word fractions, each snapped to the nearest later sentence start.
+    """
     if str(length_choice or "").strip() != "4":
         return ""
     text = (script or "").strip()
     if not text:
         return ""
-    parts = [p.strip() for p in _SENTENCE_RE.split(text) if p.strip()]
-    if len(parts) < 2:
-        parts = [text]
+    starts = [0] + [m.end() for m in _SENTENCE_RE.finditer(text) if m.end() < len(text)]
+    bounds = [*starts[1:], len(text)]
+    sentences = [text[s:e].strip() for s, e in zip(starts, bounds, strict=True)]
+    word_at = [len(_WORD_RE.findall(text[:s])) for s in starts]
+    total_words = max(1, len(_WORD_RE.findall(text)))
     span = float(duration or 0.0)
     if span <= 0:
         from core.script_length import WORDS_PER_SECOND
 
-        span = max(60.0, len(text.split()) / WORDS_PER_SECOND)
-    n = min(len(parts), 8)
-    parts = parts[:n]
-    timed_words = [
-        row
-        for row in (word_timings or [])
-        if isinstance(row, dict)
-        and str(row.get("word") or "").strip()
-        and isinstance(row.get("start"), int | float)
-    ]
-    lines: list[str] = []
-    word_index = 0
-    for i, sentence in enumerate(parts):
-        if i == 0:
-            t = 0.0
-        elif word_index < len(timed_words):
-            t = float(timed_words[word_index]["start"])
-        else:
-            t = span * (i / n)
-        lines.append(f"{_stamp(t)} {_label(sentence)}")
-        word_index += len(_WORD_RE.findall(sentence))
-    if len(lines) < 2:
-        lines.append(f"{_stamp(span * 0.5)} Deep dive")
-    if not lines[0].startswith("0:00"):
-        lines[0] = "0:00 " + _label(parts[0])
-    return "\n".join(lines)
+        span = max(60.0, total_words / WORDS_PER_SECOND)
+
+    from core.angle_chapters import token_start_times
+
+    times = token_start_times(word_timings)
+
+    def _seconds_at(word: int) -> float:
+        return times[word] if word < len(times) else span * word / total_words
+
+    n = max(1, min(_MAX_CHAPTERS, len(sentences), int(span // YOUTUBE_MIN_CHAPTER_SECONDS)))
+    points: list[tuple[float, str]] = [(0.0, _label(sentences[0]))]
+    last = 0
+    for i in range(1, n):
+        target = total_words * i / n
+        later = range(last + 1, len(sentences))
+        if not later:
+            break
+        j = min(later, key=lambda k: (abs(word_at[k] - target), k))
+        last = j
+        points.append((_seconds_at(word_at[j]), _label(sentences[j])))
+    return youtube_chapter_lines(points)
+
+
+def current_description(run_id: int | None, fallback: str) -> str:
+    """The run's stored description - which TTS chapter refinement updates - else `fallback`.
+
+    `main.py` and `scripts/auto_generate.py` enqueued `result.description`, the copy from
+    before `refine_run_chapters` wrote real word timings to the run row. Never raises.
+    """
+    if not run_id:
+        return fallback
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        record = get_content_run_repository().get(int(run_id))
+        stored = str(getattr(record, "description", "") or "") if record is not None else ""
+        return stored or fallback
+    except Exception as exc:
+        logger.debug("stored description unavailable for run %s: %s", run_id, exc)
+        return fallback
 
 
 def _replace_chapter_lines(description: str, old: str, new: str) -> str:

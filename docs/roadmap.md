@@ -24,35 +24,40 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-13 wave 15: run 76 leftovers. **#534** title keeps an
-angle phrase (drones title repaired to the criterion angle) · **#748**
-title/script check falls back to a real verdict instead of `unavailable` ·
-**#746** Wikipedia no longer invents `Gta`/`Goy` · **#747** autocomplete 400 is
-a skip-with-reason · **#738** publish list reads persisted `tts_char_count`.
+**Just landed** - 2026-09-13 wave 16: five defects from live run 77. **#750**
+Extended chapters span the video and pass YouTube's >= 3 / >= 10 s rule (run 77
+stored `0:00-0:17`) · **#751** upload queue gets the word-timed description ·
+**#752** long videos lose `shorts` and topic-word tags · **#753** the worker prints a
+successful upload · **#732** env fingerprint counts optional flags, versioned.
 
-**Previously** - 2026-09-13 wave 14 run 76 abort **#740 #742 #741 #743 #667 #745
-#744**; wave 13 **#734 #735 #736 #737**, #730 measured; wave 12 **#733 #630
-#640**; **#153** retired (do not rebuild).
+**Previously** - runs 77/78 (unnumbered): typed thoughts at the Topic prompt; all
+angles in one long video with chapter Shorts. Wave 15 **#534 #748 #746 #747 #738**;
+wave 14 run 76 abort **#740 #742 #741 #743 #667 #745 #744**; **#153** retired (do not
+rebuild).
 
 ### Recommended next five (non-app)
 
-Wave 15 closed the run 76 leftovers. Remaining operator-facing work is captions
-and the two quality gaps the heuristic title check cannot cover.
+Wave 16 replaced the caption measurements with what run 77 actually shipped wrong
+(operator's pick). The list now follows the run: a false claim went out after
+"Render anyway?", and the all-angles feature has never met a real script.
 
-1. **#739 try placing captions by footage source** `[M]` - every #730 production
-   label came from the gameplay segment; stock is unmeasured.
-2. **#730 `CAPTION_AUTO_PLACE` moves captions on no-overlay footage** `[M]` -
-   5 of 71 clean clips still move; flag stays off.
-3. **#345 claim-type taxonomy** `[M]` - #748's fallback is token overlap; a
-   title that names the same people as the script but assigns the action
-   wrongly still passes.
-4. **#543 quote the operator verbatim** `[M]` - related leftover of #743: a
-   pasted opinion is still paraphrased.
-5. **#732 `env_fingerprint` ignores commented optional flags** `[S]` - traces
-   never reflect `CAPTION_AUTO_PLACE`.
+1. **#754 rendering past a flagged claim still queues public** `[S]` - run 77's
+   "GTA 5 didn't win Game of the Year in 2013" reached YouTube.
+2. **#755 measure all-angles on its first live run** `[S]` - chapter locator path,
+   chapter lengths vs the Shorts cap, hooks per cut.
+3. **#345 claim-type taxonomy** `[M]` - an award/result claim should not clear the
+   same bar as an opinion.
+4. **#543 quote the operator verbatim** `[M]` - typed thoughts are now the brief
+   (run 77); their wording is still paraphrased.
+5. **#756 chapter labels cut mid-phrase** `[S]` - "The only reason we know anything
+   is".
 
-**Dropped from this list** (stay open): **#728** · **#731** · **#627** · **#628**
-· #673 / #650 · Phase M · Ollama · **#749**.
+**Dropped from this list** (stay open): **#739** · **#730** (caption measurement,
+needs footage and an operator call) · **#749** · **#728** · **#731** · **#627** ·
+**#628** · Phase M · Ollama.
+
+**Closed 2026-09-13 (wave 16):** **#750 #751 #752 #753 #732**. Filed open: **#754
+#755 #756**.
 
 **Closed 2026-09-13 (wave 15):** **#534 #748 #746 #747 #738**. Filed open:
 **#749**.

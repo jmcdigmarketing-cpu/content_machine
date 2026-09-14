@@ -51,6 +51,28 @@ def _clean_tag(tag: str) -> str:
     return tag
 
 
+_SHORTS_TAGS = frozenset({"shorts", "youtubeshorts", "ytshorts", "shortsvideo"})
+SHORTS_MAX_SECONDS = 180.0
+
+
+def drop_shorts_tags(tags: Iterable[str] | None, length_choice: str) -> list[str]:
+    """Drop Shorts tags when the length preset can run past YouTube's 3-minute Shorts cap.
+
+    Run 77 was a 293 s Extended video tagged `shorts` (from `config/seo/tapin.json`).
+    """
+    kept = list(tags or [])
+    try:
+        from core.script_length import WORDS_PER_SECOND, get_length_preset
+
+        preset = get_length_preset(str(length_choice or ""))
+        max_seconds = preset.max_words / max(WORDS_PER_SECOND, 0.1)
+    except Exception:
+        return kept
+    if max_seconds <= SHORTS_MAX_SECONDS:
+        return kept
+    return [t for t in kept if _clean_tag(str(t)).lower().replace(" ", "") not in _SHORTS_TAGS]
+
+
 def tags_from_topic(topic: str, *, limit: int = 6) -> list[str]:
     """Extract simple keyword tags from topic text."""
     words = re.findall(r"[A-Za-z0-9]+", topic)

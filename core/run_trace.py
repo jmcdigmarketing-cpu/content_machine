@@ -216,9 +216,10 @@ def write_run_trace(
         except Exception as exc:
             logger.debug("channels fingerprint skipped: %s", exc)
         try:
-            from core.config_diff import env_fingerprint
+            from core.config_diff import ENV_FINGERPRINT_VERSION, env_fingerprint
 
             trace["env_sha256"] = env_fingerprint()
+            trace["env_fingerprint_version"] = ENV_FINGERPRINT_VERSION
         except Exception as exc:
             logger.debug("env fingerprint skipped: %s", exc)
         try:

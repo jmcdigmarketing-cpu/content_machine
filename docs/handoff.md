@@ -48,51 +48,29 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `ae2eab0` · **Tree:** run 78 all-angles change
-**committed locally on top of runs 77 + the audit; nothing pushed**.
+**Written:** 2026-09-13 · **HEAD at write:** `9c42605` · **Tree:** wave 16 committing, then
+**pushing all 7 commits** (audit, runs 77/78, wave 16) - check `git log origin/...` and CI.
 
-**Latest — run 78 ("i wanted all 5 in one video … each angle would be a great short").**
-Defect first: run 77 uploaded (unlisted) with "GTA 5 didn't win Game of the Year in 2013",
-which the claim verifier flagged and the operator rendered past. New: angle menu `A` = all
-angles as chapters of one Extended video (`run_pipeline(chapter_angles=)`), chapters located
-after the final script (`core/angle_chapters.py`), then `c` cut chapters into Shorts
-(`core/chapter_shorts.py`) or `g` fresh paid Shorts. Worker Ctrl+C no longer tracebacks.
-Suite **3,152 -> 3,167**; mypy 139. **Unproven live** — first real all-angles run should be
-watched. **Cursor: a cut Short is its own content run with `features.parent_run_id`.**
+**Defect first: run 77 shipped four bugs to YouTube, and the video is live (unlisted).**
+Its chapters were `0:00-0:17` (the first eight sentences - YouTube drops them), the upload
+got the pre-refinement description, it was tagged `shorts` at 293 s, and it carries "GTA 5
+didn't win Game of the Year in 2013", which the claim verifier flagged and the operator
+rendered past (#754, open). Its live description still needs re-saving by the operator.
 
-**Run 77 (operator: "i should be able to enter my thoughts for an idea … in the
-topic").** Defect first: typed thoughts were the search string for every signal (Trends
-searched a comma fragment and served a stale cached "Goy"), the angle LLM never saw them,
-and 3 of 5 angle lines were a preamble plus raw lens labels. Now the Topic prompt takes
-thoughts (multi-line too): discovery searches a short seed ("GTA 6"), `run_discovery(brief=)`
-feeds the thoughts to angle generation, intent, ranking and the cache key, and angle replies
-are cleaned with one re-ask. `tests/test_typed_thoughts.py` 10/10 red first. Suite
-**3,141 -> 3,152**. **Cursor: `run_discovery` and `generate_variants` take `brief` now —
-pass the operator's words, not a longer topic.** Detail: planning_log run 77.
+**Wave 16 (operator picked live-run defects over the caption list):** **#750** chapters
+span the video and pass YouTube's >= 3 / >= 10 s rule · **#751** `current_description`
+before enqueue in `main.py` + `auto_generate` · **#752** `drop_shorts_tags`, topic tags
+only pad < 5 · **#753** worker prints uploads · **#732** fingerprint v2 with version
+stamp. 13/13 new tests observed red. **Two old pins changed** (`test_next15_wave` #431
+starts 0/5/12 -> 0/15/33 s; `test_wave6_extras` "0:20" -> spans) - both pinned blocks
+YouTube rejects or mislabels. Suite **3,167 -> 3,180**; mypy **139**; `data/` untouched;
+backlog **329 / 663**, highest **#756**. Next five: **#754 · #755 · #345 · #543 · #756**.
 
-**Earlier this session — audit of waves 14 + 15:**
-
-**Defects first — five, all in waves 14/15, all fixed test-first** (`tests/test_wave15_audit.py`,
-6 of 10 red on `b872736`). The wave tests asserted only run 76's strings, so a deletion
-beside each fix stayed green:
-
-- `fact_grounding._LEADING_STOPWORDS`: #745 **replaced** run 66's what/why/how/who/which/
-  that/this/these with Start/Read/Compare/Restricted ("Why Jason Duval" was an entity).
-- #748's heuristic title check failed any Title Case title, even one the script backs.
-- #741's chrome filter dropped every fact containing `affiliate`; `about the author`
-  matched "about the authorities".
-- #744's cheap judge ran on every discovery with no off switch, and **the suite made 8 real
-  `complete()` calls**. New `ANGLE_LLM_JUDGE` (default on); `tests/__init__.py` sets it off.
-- `angle_ranker._thesis_terms` regex lacked a leading `\b`.
-
-**Cursor: when you add to a list, diff the list — and a new LLM call in a hot path needs
-a flag the suite turns off.**
-
-Everything else checked out: every run_76.md measurement reproduced, and Google Suggest
-really 400s on the 173-char seed. Suite **3,131 -> 3,141**, 6 skipped; mypy **139**;
-ruff clean; backlog unchanged (**327 / 658**, #749). Leftovers (Wiki drops capitalised
-`Will`/`Long`; a "Paste the…" fact enters paste mode) are in
-[run_76.md](run_76.md) §Audit. Next five unchanged: **#739 · #730 · #345 · #543 · #732**.
+**Earlier today, this session:** run 78 all angles -> one Extended video + chapter Shorts
+(`core/angle_chapters.py`, `core/chapter_shorts.py`; unproven live = #755); run 77 typed
+thoughts -> `run_discovery(brief=)`; audit of waves 14/15 fixed five deletions beside fixes.
+**Cursor: a chapter block now comes only from `youtube_chapter_lines`; a cut Short is its
+own run with `features.parent_run_id`; a new LLM call in a hot path needs a suite-off flag.**
 
 ## Slot — Cursor
 

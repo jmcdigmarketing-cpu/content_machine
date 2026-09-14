@@ -1,10 +1,23 @@
-# Handoff synopsis — 2026-09-13: wave 15 run 76 leftovers
+# Handoff synopsis — 2026-09-13: wave 16 live-run defects
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-13 (Cursor): wave 15 #534 #748 #746 #747 #738
+## Last wave — 2026-09-13 (Claude Code): wave 16 #750 #751 #752 #753 #732
+
+Five defects run 77 shipped, picked by the operator over the caption measurements.
+Extended chapters span the video and pass YouTube's rule (run 77 stored `0:00-0:17`);
+the upload queue gets the word-timed description; long videos lose `shorts` and
+topic-word tags; the worker prints a successful upload; env fingerprint v2 counts
+optional flags. 13/13 new tests observed red; two old chapter pins updated (they
+pinned output YouTube rejects). Suite **3,167 -> 3,180**; mypy **139**; backlog
+**329 open / 663 done**, highest **#756**. Next five: **#754 · #755 · #345 · #543 ·
+#756**. Filed **#754 #755 #756**. Also this day (unnumbered): run 77 typed thoughts at
+the Topic prompt; run 78 all angles in one long video + chapter Shorts; audit of waves
+14/15.
+
+## Previous — 2026-09-13 (Cursor): wave 15 #534 #748 #746 #747 #738
 
 Shipped the run 76 leftovers. Title keeps an angle phrase; title/script check
 falls back to a real verdict; Wikipedia no longer invents `Gta`/`Goy`;

@@ -79,6 +79,9 @@ def _finalize_upload_job(job, result) -> None:
 
     if result.status in UPLOAD_STATUS_SUCCESS:
         repo.update(job.id, {"status": JOB_COMPLETED, "last_error": result.detail or ""})
+        # Run 77: the upload went through with nothing on the console (INFO log only).
+        link = f" -> https://youtu.be/{result.video_id}" if result.video_id else ""
+        print(f"Job {job.id} {result.status}{link}")
         if result.thumbnail_status == "set":
             logger.info("YouTube thumbnail set for job %s", job.id)
         elif result.thumbnail_status == "ineligible":

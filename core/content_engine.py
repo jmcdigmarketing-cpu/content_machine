@@ -914,6 +914,13 @@ def _relength_after_postprocessing(
     return script, ungrounded
 
 
+def _content_tag_helpers():
+    from core.angle_chapters import angle_headline
+    from core.seo import drop_shorts_tags
+
+    return angle_headline, drop_shorts_tags
+
+
 def generate_content_package(
     topic,
     signals,
@@ -932,6 +939,7 @@ def generate_content_package(
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
+    angle_headline, drop_shorts_tags = _content_tag_helpers()
     from core.angle_intent import detect_angle_intent
 
     resolved_intent = detect_angle_intent(seed_topic or topic)
@@ -1050,8 +1058,12 @@ def generate_content_package(
                 source_urls=source_urls,
                 relevance_corpus=relevance_corpus,
             ),
-            "tags": normalize_youtube_tags(
-                default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
+            "tags": drop_shorts_tags(
+                normalize_youtube_tags(
+                    default_tags_for_channel(channel_id, topic)
+                    + tags_from_topic(angle_headline(topic))
+                ),
+                length_choice,
             ),
             "prompt_version": current_prompt_version(),
             "brief_version": research_brief.version if research_brief else "",
@@ -1108,9 +1120,15 @@ def generate_content_package(
     llm_tags = payload.get("tags") or []
     if isinstance(llm_tags, str):
         llm_tags = [t.strip() for t in llm_tags.split(",") if t.strip()]
-    tags = normalize_youtube_tags(
-        llm_tags,
-        extra=default_tags_for_channel(channel_id, topic) + tags_from_topic(topic),
+    # Run 77: topic words ("Forward", "Billion", "Opportunity") padded a list the model had
+    # already filled with 13 tags. Topic tags only pad a thin list, from the headline.
+    topic_tags = tags_from_topic(angle_headline(topic)) if len(llm_tags) < 5 else []
+    tags = drop_shorts_tags(
+        normalize_youtube_tags(
+            llm_tags,
+            extra=default_tags_for_channel(channel_id, topic) + topic_tags,
+        ),
+        length_choice,
     )
 
     # Post-generation grounding check: flag specifics in the script not backed by

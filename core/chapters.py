@@ -116,30 +116,38 @@ def refine_run_chapters(run_id: int | None, script: str, audio_path: str) -> str
             features = json.loads(record.features_json or "{}")
         except (TypeError, ValueError, json.JSONDecodeError):
             features = {}
-        if str(features.get("length_preset") or "") != "4":
-            return None
+        angle_rows = features.get("angle_chapters")
+        if angle_rows:
+            # Run 78: an all-angles video's chapters are its angles, at real word starts.
+            from core.angle_chapters import chapter_lines, chapters_from_features
 
-        from core.script_length import WORDS_PER_SECOND, count_spoken_words
+            verified = chapter_lines(chapters_from_features(angle_rows), word_timings=words)
+            description = _replace_chapter_lines(record.description or "", "", verified)
+        else:
+            if str(features.get("length_preset") or "") != "4":
+                return None
 
-        estimated_duration = count_spoken_words(script) / max(WORDS_PER_SECOND, 0.1)
-        old = chapter_block(script, duration=estimated_duration, length_choice="4")
-        last_end = max(
-            (
-                float(end)
-                for row in words
-                if isinstance(row, dict)
-                for end in [row.get("end")]
-                if isinstance(end, int | float)
-            ),
-            default=estimated_duration,
-        )
-        verified = chapter_block(
-            script,
-            duration=last_end,
-            length_choice="4",
-            word_timings=words,
-        )
-        description = _replace_chapter_lines(record.description or "", old, verified)
+            from core.script_length import WORDS_PER_SECOND, count_spoken_words
+
+            estimated_duration = count_spoken_words(script) / max(WORDS_PER_SECOND, 0.1)
+            old = chapter_block(script, duration=estimated_duration, length_choice="4")
+            last_end = max(
+                (
+                    float(end)
+                    for row in words
+                    if isinstance(row, dict)
+                    for end in [row.get("end")]
+                    if isinstance(end, int | float)
+                ),
+                default=estimated_duration,
+            )
+            verified = chapter_block(
+                script,
+                duration=last_end,
+                length_choice="4",
+                word_timings=words,
+            )
+            description = _replace_chapter_lines(record.description or "", old, verified)
         features["chapters_timing_source"] = "word_timing"
         repo.update(
             int(run_id),

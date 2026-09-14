@@ -30,6 +30,17 @@ _PREAMBLE_RE = re.compile(r"^(?:here(?:'s| is| are)\b|sure\b|okay\b|certainly\b|
 _SNAKE_LABEL_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)+$")
 _LABEL_HEAD_RE = re.compile(r"^(?:take|angle|hook|lens|focus|frame|option|idea)\s*\d*$", re.I)
 _MIN_REAL_ANGLES = 3
+_LENS_PAREN_RE = re.compile(r"\s*\(([^()]{2,60})\)")
+
+
+def _lens_names() -> frozenset[str]:
+    """The lens examples the angle prompt lists, as bare names ("forward prediction")."""
+    return frozenset(
+        re.sub(r"^(?:a|an|the)\s+", "", part.strip().lower())
+        for examples in _LENS_EXAMPLES.values()
+        for part in examples.split(",")
+        if part.strip()
+    )
 
 
 def _clean_angle_lines(raw: str, angle_types) -> list[str]:
@@ -50,6 +61,11 @@ def _clean_angle_lines(raw: str, angle_types) -> list[str]:
         head, sep, rest = text.partition(":")
         if sep and rest.strip() and (_is_label(head) or _LABEL_HEAD_RE.match(head.strip())):
             text = rest.strip()
+        # Run 78: "GTA 6's Online Economy: A $1 Billion Opportunity? (Forward prediction) - …"
+        # — the lens example from the prompt came back as a label inside the angle.
+        text = _LENS_PAREN_RE.sub(
+            lambda m: "" if m.group(1).strip().lower() in _lens_names() else m.group(0), text
+        ).strip()
         if len(text.split()) < 2 or text in out:
             continue
         out.append(text)

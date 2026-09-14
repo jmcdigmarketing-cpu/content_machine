@@ -48,10 +48,19 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `e7ef6ad` · **Tree:** run 77 typed-thoughts
-change **committed locally on top of the audit, neither pushed**.
+**Written:** 2026-09-13 · **HEAD at write:** `ae2eab0` · **Tree:** run 78 all-angles change
+**committed locally on top of runs 77 + the audit; nothing pushed**.
 
-**Latest — run 77 (operator: "i should be able to enter my thoughts for an idea … in the
+**Latest — run 78 ("i wanted all 5 in one video … each angle would be a great short").**
+Defect first: run 77 uploaded (unlisted) with "GTA 5 didn't win Game of the Year in 2013",
+which the claim verifier flagged and the operator rendered past. New: angle menu `A` = all
+angles as chapters of one Extended video (`run_pipeline(chapter_angles=)`), chapters located
+after the final script (`core/angle_chapters.py`), then `c` cut chapters into Shorts
+(`core/chapter_shorts.py`) or `g` fresh paid Shorts. Worker Ctrl+C no longer tracebacks.
+Suite **3,152 -> 3,167**; mypy 139. **Unproven live** — first real all-angles run should be
+watched. **Cursor: a cut Short is its own content run with `features.parent_run_id`.**
+
+**Run 77 (operator: "i should be able to enter my thoughts for an idea … in the
 topic").** Defect first: typed thoughts were the search string for every signal (Trends
 searched a comma fragment and served a stale cached "Goy"), the angle LLM never saw them,
 and 3 of 5 angle lines were a preamble plus raw lens labels. Now the Topic prompt takes

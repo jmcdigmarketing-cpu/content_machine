@@ -332,6 +332,149 @@ def _run_new_video_flow(
         finalize_run_observability()
 
 
+def _parse_angle_choice(
+    choice: str, count: int, best_default: int, *, allow_own: bool
+) -> tuple[str, int]:
+    """("all" | "own" | "one", variant index) for the angle menu answer (run 78).
+
+    "A" puts every angle in one long video; the best angle's signals still drive it.
+    An out-of-range number falls back to the best angle instead of raising.
+    """
+    raw = (choice or "").strip().lower()
+    if allow_own and raw == "0":
+        return "own", -1
+    if raw == "a" and count >= 2:
+        return "all", best_default
+    if raw.isdigit() and 1 <= int(raw) <= count:
+        return "one", int(raw) - 1
+    return "one", best_default
+
+
+def _make_fresh_angle_shorts(
+    indices: list[int],
+    *,
+    topic: str,
+    discovery,
+    channel_id: str,
+    creative_brief: str,
+    key_facts: list[str] | None,
+) -> list[int]:
+    """Write a Medium script per chosen angle, show the drafts, render only on one yes."""
+    from core.angle_chapters import angle_headline
+
+    drafts = []
+    for index in indices:
+        angle = discovery.evaluated[index][0]
+        print(f"\n  Writing a Short for: {angle_headline(angle)}")
+        draft = run_pipeline(
+            topic,
+            discovery=discovery,
+            variant_index=index,
+            length_choice="2",
+            proceed_video=False,
+            channel_id=channel_id,
+            creative_brief=creative_brief,
+            key_facts=key_facts or None,
+            menu_path="1",
+        )
+        if not (draft.script or "").strip() or not draft.run_id:
+            print("    ! No script came back — skipped.")
+            continue
+        drafts.append(draft)
+    if not drafts:
+        return []
+
+    total = 0.0
+    print()
+    for draft in drafts:
+        features = draft.features or {}
+        cost = float((features.get("projected_cost") or {}).get("total") or 0.0)
+        total += cost
+        unsupported = len((features.get("claim_verification") or {}).get("unsupported") or [])
+        flag = f"  ! {unsupported} unsupported claim(s)" if unsupported else ""
+        words = (draft.timings or {}).get("word_count", "?")
+        print(f"    [{draft.run_id}] {draft.title} — {words} words, ~${cost:.2f}{flag}")
+    if not ask_confirm(
+        f"  Voice + render these {len(drafts)} Short(s) (~${total:.2f})? [y/N]: ", default=False
+    ):
+        print("  Drafts saved; nothing rendered.")
+        return []
+
+    made: list[int] = []
+    for draft in drafts:
+        try:
+            run_media_only(
+                draft.topic,
+                draft.script,
+                channel_id=channel_id,
+                content_run_id=draft.run_id,
+                title=draft.title,
+                length_choice="2",
+            )
+            if draft.run_id is not None:
+                made.append(draft.run_id)
+        except Exception as exc:
+            print(f"  ! Short {draft.run_id} not rendered: {exc}")
+    return made
+
+
+def _offer_angle_shorts(
+    *,
+    result,
+    discovery,
+    topic: str,
+    channel_id: str,
+    creative_brief: str,
+    key_facts: list[str] | None,
+) -> None:
+    """After an all-angles render: cut chapters into Shorts, or write fresh ones (run 78)."""
+    from core.angle_chapters import chapters_from_features
+    from core.chapter_shorts import cut_chapter_shorts, parse_chapter_selection
+
+    chapters = chapters_from_features((result.features or {}).get("angle_chapters"))
+    if not chapters or not result.run_id:
+        return
+    subsection("Shorts from the chapters")
+    for chapter in chapters:
+        print(f"  {chapter.index + 1}. {chapter.title}")
+    print("  c = cut these chapters out of the long video (no extra voice cost)")
+    print("  g = write + voice a fresh Short per angle (new hook, paid voice)")
+    pick = ask_choice("  Make Shorts? [c / g / Enter = skip]: ").strip().lower()
+    if pick not in ("c", "g"):
+        return
+    indices = parse_chapter_selection(
+        ask_text("  Which chapters? [Enter = all, e.g. 1,3,5]: "), len(chapters)
+    )
+    if not indices:
+        print("  No chapters selected.")
+        return
+
+    if pick == "c":
+        made = cut_chapter_shorts(result.run_id, indices=indices, script=result.script)
+        for short in made:
+            if short.run_id:
+                print(f"    [{short.run_id}] {short.title}")
+            else:
+                print(f"    ! {short.index + 1}. {short.title}: {short.skipped}")
+        run_ids = [short.run_id for short in made if short.run_id]
+    else:
+        run_ids = _make_fresh_angle_shorts(
+            indices,
+            topic=topic,
+            discovery=discovery,
+            channel_id=channel_id,
+            creative_brief=creative_brief,
+            key_facts=key_facts,
+        )
+    if not run_ids:
+        print("  No Shorts made.")
+        return
+    print(f"\n  {len(run_ids)} Short(s) rendered: run(s) {', '.join(str(r) for r in run_ids)}")
+    print("  Space them out — the cadence cap counts every upload. Queue one with:")
+    print(f"    py -m scripts.requeue_upload --channel {channel_id} --run-id {run_ids[0]} --queue")
+    print("  or pick them in: py main.py -> 2) Queue manager")
+
+
 def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
     """Option 1 type-your-own: a topic, or the idea in your own words (run 77).
 
@@ -447,21 +590,39 @@ def _run_new_video_flow_body(
         own_idea=seed_topic,
     )
 
-    prompt = "\n  Choose 1-5 (Enter = best"
+    angle_count = len(discovery.evaluated)
+    prompt = f"\n  Choose 1-{angle_count} (Enter = best"
     if seed_topic:
         prompt += ", 0 = your idea"
+    if angle_count >= 2:
+        prompt += ", A = all angles in one long video"
     prompt += "): "
     choice = ask_choice(prompt)
 
-    if seed_topic and choice == "0":
-        best_topic, best_score, best_signals = seed_topic, 0.0, discovery.base_signals
-        variant_index = -1
+    mode, variant_index = _parse_angle_choice(
+        choice, angle_count, best_default, allow_own=bool(seed_topic)
+    )
+    all_angles: list[str] = []
+    if mode == "own":
+        best_topic, best_score, best_signals = str(seed_topic), 0.0, discovery.base_signals
     else:
-        variant_index = int(choice) - 1 if choice.isdigit() else best_default
         best_topic, best_score, best_signals = discovery.evaluated[variant_index]
+        if mode == "all":
+            all_angles = [variant for variant, _score, _signals in discovery.evaluated]
+            best_topic = f"{topic} - all {len(all_angles)} angles"
 
     subsection("Selected angle")
-    print(f"  {best_topic}")
+    if all_angles:
+        from core.angle_chapters import angle_headline
+
+        print(f"  All {len(all_angles)} angles, one chapter each:")
+        for number, angle in enumerate(all_angles, start=1):
+            print(f"    {number}. {angle_headline(angle)}")
+        print(
+            "  Each chapter opens on its own hook — after the render you can turn them into Shorts."
+        )
+    else:
+        print(f"  {best_topic}")
     print(f"  Score: {best_score}")
     display_signal_breakdown(best_signals)
 
@@ -476,12 +637,17 @@ def _run_new_video_flow_body(
     )
 
     length_default = "2"
-    try:
-        length_rec = get_recommended_length(channel_id, best_topic)
-        display_recommended_length(length_rec)
-        length_default = length_rec.length_choice
-    except Exception as exc:
-        logger.debug("get_recommended_length skipped: %s", exc)
+    if all_angles:
+        length_default = "4"
+        print("\n  Recommended length (default): Extended (option 4)")
+        print("  Reason : room for every angle as its own 1-2 minute chapter")
+    else:
+        try:
+            length_rec = get_recommended_length(channel_id, best_topic)
+            display_recommended_length(length_rec)
+            length_default = length_rec.length_choice
+        except Exception as exc:
+            logger.debug("get_recommended_length skipped: %s", exc)
 
     _len_in = ask_choice(f"  Select 1-4 [{length_default}]: ")
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
@@ -514,6 +680,7 @@ def _run_new_video_flow_body(
             source_urls=fact_selection.source_urls,
             relevance_corpus=fact_selection.relevance_corpus,
             menu_path="5" if seed_topic else "1",
+            chapter_angles=all_angles or None,
         )
 
         print()
@@ -524,6 +691,12 @@ def _run_new_video_flow_body(
             print()
         preset = get_length_preset(length_choice)
         print(f"  Length: {format_length_report(result.script, preset)}")
+        if result.features.get("angle_chapters"):
+            from core.angle_chapters import chapters_from_features
+
+            print("  Chapters:")
+            for chapter in chapters_from_features(result.features["angle_chapters"]):
+                print(f"    {chapter.index + 1}. {chapter.title}")
 
         from core.hook_score import display_hook_score, score_script_hook
 
@@ -773,6 +946,15 @@ def _run_new_video_flow_body(
         job = repurpose.jobs[0] if repurpose.jobs else None
         if not job:
             print("\n  No publish jobs enqueued (check publishers_enabled).")
+            if all_angles and result.mp4_path:
+                _offer_angle_shorts(
+                    result=result,
+                    discovery=discovery,
+                    topic=topic,
+                    channel_id=channel_id,
+                    creative_brief=creative_brief,
+                    key_facts=key_facts,
+                )
             return
         if upload_plan.youtube_publish_at:
             from analytics.post_timing import format_scheduled_local
@@ -818,6 +1000,16 @@ def _run_new_video_flow_body(
                 logger.debug("sync_channel skipped: %s", exc)
 
         threading.Thread(target=_bg_analytics, daemon=True, name="analytics-sync").start()
+
+    if all_angles and result.mp4_path:
+        _offer_angle_shorts(
+            result=result,
+            discovery=discovery,
+            topic=topic,
+            channel_id=channel_id,
+            creative_brief=creative_brief,
+            key_facts=key_facts,
+        )
 
 
 if __name__ == "__main__":

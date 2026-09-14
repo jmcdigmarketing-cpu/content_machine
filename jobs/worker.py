@@ -311,16 +311,20 @@ def main():
     from apis.youtube_quota import format_quota_detail, has_quota_for_upload
 
     print(f"Worker polling every {args.loop}s (Ctrl+C to stop)")
-    while True:
-        did_work = False
-        while process_one():
-            did_work = True
-        if not did_work and not has_quota_for_upload():
-            print(
-                f"Waiting for YouTube quota reset — {format_quota_detail()}. "
-                "Upload jobs deferred until scheduled_at passes."
-            )
-        time.sleep(args.loop)
+    try:
+        while True:
+            did_work = False
+            while process_one():
+                did_work = True
+            if not did_work and not has_quota_for_upload():
+                print(
+                    f"Waiting for YouTube quota reset — {format_quota_detail()}. "
+                    "Upload jobs deferred until scheduled_at passes."
+                )
+            time.sleep(args.loop)
+    except KeyboardInterrupt:
+        # Run 78: Ctrl+C is the documented way to stop the loop, not a crash.
+        print("\nWorker stopped.")
 
 
 if __name__ == "__main__":

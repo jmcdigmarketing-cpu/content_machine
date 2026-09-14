@@ -11,6 +11,43 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-13 (Claude Code) - run 78: all angles in one long video, and Shorts from its chapters
+
+**Prompt, verbatim:** "the ideas in this run were great, i wanted all 5 in one video bc it
+wouldve been a long video but each angle would be a great short." (followed by the run 78
+console: typed thoughts searched as "GTA 6", five on-thesis angles, angle 3 picked,
+Extended, rendered, queued public). Asked one question — how an angle becomes a Short;
+operator answered **"Offer both"** (cut from the long video, or a fresh paid Short).
+
+**Also seen in run 78, not the request.** The claim verifier flagged "GTA 5 didn't win Game
+of the Year in 2013" (it won GOTY at the 2013 VGX awards, to my knowledge) and the operator
+rendered on `y`; run 77 then uploaded (held unlisted). Extended chapters were labelled from
+arbitrary sentences ("1:16 That's the whole story"). Angles carried the prompt's lens names
+("(Forward prediction)"), which also pushed the output filename past MAX_PATH. Ctrl+C on the
+worker printed a KeyboardInterrupt traceback.
+
+**Shipped (test-first: `tests/test_angle_chapters.py` 14/14 and `tests/test_worker_stop.py`
+red on `ae2eab0`):**
+- Angle menu `A = all angles in one long video`; Extended becomes the default length.
+- `run_pipeline(chapter_angles=)`: the writer gets the seed topic plus a directive — every
+  angle in order, each chapter opening on a hook that stands alone, no back-references.
+- `core/angle_chapters.py`: chapters are located **after** the script is final (every rewrite
+  pass would drop markers): extract-tier openers verified against the text, else keyword
+  alignment near the even split. Persisted as `features.angle_chapters`; the description's
+  chapter lines are the angle headlines, refined to real word starts after TTS.
+- `core/chapter_shorts.py`: spans after the channel intro, 3-minute Shorts cap, ffmpeg cut,
+  each clip recorded as its own rendered run (`parent_run_id`, `chapter_index`). Re-cuts by
+  run id read the full script from the TTS word sidecar (`script_preview` is capped at 2,000).
+- After an all-angles render: `c` cut chapters (free) / `g` fresh Medium Shorts — drafts are
+  shown with projected cost and unsupported-claim counts, rendered only on one `y`.
+- Lens-name parentheticals stripped from angles; worker exits cleanly on Ctrl+C.
+
+**Deliberately not done.** Shorts are not auto-queued (cadence cap 5/7d; the menu prints the
+requeue command). No thumbnails for cut Shorts. No live all-angles run yet — measured only in
+tests; the chapter locator's LLM path is unproven on a real Extended script.
+
+---
+
 ## 2026-09-13 (Claude Code) - run 77: typed thoughts at the Topic prompt
 
 **Prompt, verbatim:** "take this, i should be able to enter my thoughts for an idea, similar

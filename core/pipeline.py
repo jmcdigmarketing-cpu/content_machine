@@ -651,6 +651,7 @@ def run_pipeline(
     source_urls: list[str] | None = None,
     relevance_corpus: str = "",
     menu_path: str | None = None,
+    chapter_angles: list[str] | None = None,
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -694,6 +695,22 @@ def run_pipeline(
     result.score = best_score
     result.signals = best_signals
 
+    # Run 78: every angle in one long video, one chapter each. The writer gets the seed
+    # topic plus a directive listing the angles; chapters are located after the script
+    # is final (see core/angle_chapters.py).
+    angles = [str(a) for a in (chapter_angles or []) if str(a).strip()]
+    content_topic = best_topic
+    content_brief = creative_brief
+    if len(angles) >= 2:
+        from core.angle_chapters import multi_angle_directive
+
+        content_topic = input_topic or topic
+        content_brief = "\n\n".join(
+            part for part in ((creative_brief or "").strip(), multi_angle_directive(angles)) if part
+        )
+        best_topic = f"{content_topic} - all {len(angles)} angles"
+        result.topic = best_topic
+
     try:
         from core.cross_channel_dup import cross_channel_dup_block_reason
 
@@ -716,7 +733,7 @@ def run_pipeline(
     logger.info("Building research brief for: %s", best_topic)
     t_brief = time.perf_counter()
     research_brief = build_research_brief(
-        best_topic,
+        content_topic,
         best_signals,
         channel_id=channel_id,
         seed_topic=input_topic,
@@ -726,7 +743,7 @@ def run_pipeline(
     logger.info("Generating content package for: %s", best_topic)
     t_content = time.perf_counter()
     content = generate_content_package(
-        topic=best_topic,
+        topic=content_topic,
         signals=best_signals,
         word_range=wr,
         today=today,
@@ -734,7 +751,7 @@ def run_pipeline(
         research_brief=research_brief,
         length_choice=length_choice,
         seed_topic=input_topic,
-        creative_brief=creative_brief,
+        creative_brief=content_brief,
         key_facts=key_facts or [],
         source_urls=source_urls or [],
         relevance_corpus=relevance_corpus,
@@ -766,6 +783,24 @@ def run_pipeline(
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:
         result.features["angle_intent"] = result.angle_intent
+    if len(angles) >= 2:
+        from core.angle_chapters import chapter_lines, features_from_chapters, locate_chapters
+        from core.chapters import _replace_chapter_lines
+        from core.script_length import WORDS_PER_SECOND
+
+        chapters = locate_chapters(result.script, angles)
+        if chapters:
+            spoken = count_spoken_words(result.script)
+            result.features["all_angles"] = True
+            result.features["angle_chapters"] = features_from_chapters(chapters)
+            # Sentence-labelled chapters ("1:16 That's the whole story") become the angles.
+            result.description = _replace_chapter_lines(
+                result.description,
+                "",
+                chapter_lines(
+                    chapters, duration=spoken / max(WORDS_PER_SECOND, 0.1), total_words=spoken
+                ),
+            )
 
     result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []
     result.features["trade_warnings"] = content.get("trade_warnings") or []

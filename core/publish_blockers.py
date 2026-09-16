@@ -197,6 +197,19 @@ def blocking_publish_reasons(
         logger.debug("tts-cap blocker skipped: %s", exc)
 
     try:
+        if features.get("grounding_override"):
+            claims = [
+                str(claim).strip()
+                for claim in (features.get("grounding_override_claims") or [])
+                if str(claim).strip()
+            ]
+            head = claims[0][:140] if claims else "unsupported claim(s)"
+            more = f" (+{len(claims) - 1} more)" if len(claims) > 1 else ""
+            out.append(f"rendered past the grounding gate: {head}{more}")
+    except Exception as exc:
+        logger.debug("grounding-override blocker skipped: %s", exc)
+
+    try:
         if mp4_path:
             from core.disk_preflight import block_reason as disk_block
 

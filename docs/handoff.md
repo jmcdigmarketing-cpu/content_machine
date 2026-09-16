@@ -19,6 +19,9 @@ git log <sha-from-the-slot>..HEAD --oneline
 git status --short
 ```
 
+**A slot several commits behind HEAD is normal** - the second agent helps intermittently,
+so being behind is expected, not a defect. What matters is whether its claims match git.
+
 If the slot says "committed" and `git log` shows nothing, the work is sitting
 uncommitted in your tree — that has happened four times. If `git status` shows files
 the slot never mentions, the other agent is **still working right now**: re-read any
@@ -48,29 +51,34 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-13 · **HEAD at write:** `9c42605` · **Tree:** wave 16 committing, then
-**pushing all 7 commits** (audit, runs 77/78, wave 16) - check `git log origin/...` and CI.
+**Written:** 2026-09-15 · **HEAD at write:** `ec11b6f` · **Tree:** wave 17 committing, then
+pushing. CI was green on `ec11b6f` (run 34797145521).
 
-**Defect first: run 77 shipped four bugs to YouTube, and the video is live (unlisted).**
-Its chapters were `0:00-0:17` (the first eight sentences - YouTube drops them), the upload
-got the pre-refinement description, it was tagged `shorts` at 293 s, and it carries "GTA 5
-didn't win Game of the Year in 2013", which the claim verifier flagged and the operator
-rendered past (#754, open). Its live description still needs re-saving by the operator.
+**Defect first, and it is the operator's to finish:** run 77 is still live (unlisted,
+`acu0Ekz-G5k`) carrying "GTA 5 didn't win Game of the Year in 2013". The operator is
+deleting it in Studio; run `py -m scripts.ops studio-deleted --channel tapin` afterwards so
+cadence and economics stop counting it. **All-angles (run 78) has still never met a real
+script** - that is #755 and it needs a live run.
 
-**Wave 16 (operator picked live-run defects over the caption list):** **#750** chapters
-span the video and pass YouTube's >= 3 / >= 10 s rule · **#751** `current_description`
-before enqueue in `main.py` + `auto_generate` · **#752** `drop_shorts_tags`, topic tags
-only pad < 5 · **#753** worker prints uploads · **#732** fingerprint v2 with version
-stamp. 13/13 new tests observed red. **Two old pins changed** (`test_next15_wave` #431
-starts 0/5/12 -> 0/15/33 s; `test_wave6_extras` "0:20" -> spans) - both pinned blocks
-YouTube rejects or mislabels. Suite **3,167 -> 3,180**; mypy **139**; `data/` untouched;
-backlog **329 / 663**, highest **#756**. Next five: **#754 · #755 · #345 · #543 · #756**.
+**Wave 17 - the four areas the operator picked, in one wave.** **#754** a render past the
+grounding gate is persisted on the run, named in `ops blocking`, and cannot be uploaded
+public · **#757** `core/spaced_queue.py` gives each chapter Short its own open slot inside
+the cadence cap (live: 3 queued, 2 held back) · **#758** Long/Extended voice is
+`TTS_PROVIDER_LONG` (piper, $0) because TTS is **$13.50 of $14.85** all-time spend ·
+**#543** the operator's own line is quoted verbatim and re-checked after every rewrite ·
+**#759** an intermittent partner behind HEAD now reads as normal, in `ops agents` and here.
 
-**Earlier today, this session:** run 78 all angles -> one Extended video + chapter Shorts
-(`core/angle_chapters.py`, `core/chapter_shorts.py`; unproven live = #755); run 77 typed
-thoughts -> `run_discovery(brief=)`; audit of waves 14/15 fixed five deletions beside fixes.
-**Cursor: a chapter block now comes only from `youtube_chapter_lines`; a cut Short is its
-own run with `features.parent_run_id`; a new LLM call in a hot path needs a suite-off flag.**
+26/26 new tests observed red first. Suite **3,180 -> 3,206**; mypy **139**; ruff clean;
+`data/` untouched; backlog **328 open / 668 done**, highest **#760**. Next five:
+**#755 · #760 · #345 · #756 · #749**.
+
+**Cursor:** a Short cut from chapters is its own run (`features.parent_run_id`); queue
+several with `core.spaced_queue`, never one upload per session. Voice provider now depends
+on the length preset - set `TTS_PROVIDER` explicitly to pin it. Two of my own bugs this
+wave came from shell heredoc escaping (`
+` became real newlines in a prompt string, ``
+became backspace bytes in a regex); the suite did not catch either - importing the module
+and printing the compiled value did.
 
 ## Slot — Cursor
 

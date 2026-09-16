@@ -1222,3 +1222,28 @@ with a local frozen model (Bonsai/Ollama) into a self-improving $0 factory.*
 
 *Never commit `.env`, OAuth tokens, or `client_secrets.json`.*
 
+## Moved from roadmap.md on 2026-09-15 (wave 17) - older closed waves
+
+**Closed 2026-09-08 (review 4):** **#694** recency decay reached the recommendation · **#695** three write-only quality keys given a reader · **#696** retraction throttle before the fetch · **#697** HUD temp-dir leak + memo · **#698** pre-commit header.
+
+**Closed 2026-09-08 (this wave):** **#148** queue + drag · **#692** studio snap ·
+**#693** missing HUD skip · **#686** 24h toast · **#688** VACUUM · **#230 #246
+#249 #259 #260 #264 #301 #302 #337 #344 #358 #365 #367 #596 #629**. Live
+review-room smoke (not numbered).
+
+**Closed 2026-09-08 (previous):** honesty **#689 #690 #691**; Stage 4 slice
+**#152** (mechanical) **#186 #248**; review **#266 #265 #270**; **#685** HUD
+probe on real files · **#609** startup budget · why-slow skips `word_count` ·
+**#687** `.env` shape · **#634** pre-commit command-ref · **#619** schema stamp.
+
+**Closed 2026-09-07 (previous):** **#608** google/espn import defer · **#669**
+intro offset from config · **#633** docs-named ops verbs · **#632** size-tag
+ratchet · **#638** Steam key / SportsData deleted · **#554** singleton-source
+flag · **#557** fact age at prompt · **#593** domain gating in health · **#581**
+Edge TTS fallback line · **#448** `ops why-slow` · **#623** sqlite bytes ·
+**#447** channels.json config-diff · **#672** grain stddev · **#683** HUD
+detector · **#341** retraction-watch (last-run).
+
+**Closed 2026-09-07 (Stage 3 honesty):** **#679 #680 #674 #681 #682**;
+**#607** ElevenLabs import defer; **#335** source-diversity floor; **#671**
+visual angle list; Stage 3 review room **#168+#209**; **#416** owned beat cuts.

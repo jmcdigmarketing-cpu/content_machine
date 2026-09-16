@@ -24,7 +24,15 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-13 wave 16: five defects from live run 77. **#750**
+**Just landed** - 2026-09-15 wave 17: the four areas the operator picked, in one wave.
+**#754** a claim you rendered past cannot go public (the override is persisted, named in
+the publish list, and public leaves the upload menu) - **#757** chapter Shorts queue
+themselves across the next open slots inside the cadence cap - **#758** Long/Extended
+voice goes to `TTS_PROVIDER_LONG` (piper, $0), the 91% of spend - **#543** the operator's
+own line is quoted verbatim and re-checked after every rewrite - **#759** an intermittent
+partner behind HEAD reads as normal.
+
+**Previously** - 2026-09-13 wave 16: five defects from live run 77. **#750**
 Extended chapters span the video and pass YouTube's >= 3 / >= 10 s rule (run 77
 stored `0:00-0:17`) · **#751** upload queue gets the word-timed description ·
 **#752** long videos lose `shorts` and topic-word tags · **#753** the worker prints a
@@ -37,24 +45,26 @@ rebuild).
 
 ### Recommended next five (non-app)
 
-Wave 16 replaced the caption measurements with what run 77 actually shipped wrong
-(operator's pick). The list now follows the run: a false claim went out after
-"Render anyway?", and the all-angles feature has never met a real script.
+Wave 17 shipped publish safety, throughput and the voice bill. What is left is
+measurement the operator has to drive, and the volume target (3-5 uploads/week, set
+2026-09-15) that nothing yet sustains: 0 uploads in the last 7 days, 5 renders unqueued.
 
-1. **#754 rendering past a flagged claim still queues public** `[S]` - run 77's
-   "GTA 5 didn't win Game of the Year in 2013" reached YouTube.
-2. **#755 measure all-angles on its first live run** `[S]` - chapter locator path,
-   chapter lengths vs the Shorts cap, hooks per cut.
-3. **#345 claim-type taxonomy** `[M]` - an award/result claim should not clear the
-   same bar as an opinion.
-4. **#543 quote the operator verbatim** `[M]` - typed thoughts are now the brief
-   (run 77); their wording is still paraphrased.
-5. **#756 chapter labels cut mid-phrase** `[S]` - "The only reason we know anything
-   is".
+1. **#755 measure all-angles on its first live run** `[S]` - which chapter path placed
+   each chapter, chapter lengths vs the 180 s Shorts cap, and the first Piper Extended
+   render (#758) heard end to end before it becomes routine.
+2. **#760 unattended batch for 3-5 a week** `[L]` - drafts exist, spacing exists (#757);
+   the middle (review in one pass, render the accepted, hand to the spacer) does not.
+3. **#345 claim-type taxonomy** `[M]` - now has data: #754 records which claims were
+   overridden, and an award/result claim should not clear an opinion's bar.
+4. **#756 chapter labels cut mid-phrase** `[S]` - "The only reason we know anything is".
+5. **#749 Wikipedia franchise map** `[S]` - `GTA_6_Analysis...` still is not
+   `Grand_Theft_Auto_VI`.
 
 **Dropped from this list** (stay open): **#739** · **#730** (caption measurement,
-needs footage and an operator call) · **#749** · **#728** · **#731** · **#627** ·
-**#628** · Phase M · Ollama.
+needs footage and an operator call) · **#728** · **#731** · **#627** · **#628** ·
+Phase M · Ollama.
+
+**Closed 2026-09-15 (wave 17):** **#754 #757 #758 #543 #759**. Filed open: **#760**.
 
 **Closed 2026-09-13 (wave 16):** **#750 #751 #752 #753 #732**. Filed open: **#754
 #755 #756**.
@@ -106,30 +116,6 @@ identical with no sidecar. **Do not rebuild the timeline UI.**
 **Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700**
 `claim_next` - **#699** `surfaces` - **#112** correction dossier - **#151**
 brand-kit.
-
-**Closed 2026-09-08 (review 4):** **#694** recency decay reached the recommendation · **#695** three write-only quality keys given a reader · **#696** retraction throttle before the fetch · **#697** HUD temp-dir leak + memo · **#698** pre-commit header.
-
-**Closed 2026-09-08 (this wave):** **#148** queue + drag · **#692** studio snap ·
-**#693** missing HUD skip · **#686** 24h toast · **#688** VACUUM · **#230 #246
-#249 #259 #260 #264 #301 #302 #337 #344 #358 #365 #367 #596 #629**. Live
-review-room smoke (not numbered).
-
-**Closed 2026-09-08 (previous):** honesty **#689 #690 #691**; Stage 4 slice
-**#152** (mechanical) **#186 #248**; review **#266 #265 #270**; **#685** HUD
-probe on real files · **#609** startup budget · why-slow skips `word_count` ·
-**#687** `.env` shape · **#634** pre-commit command-ref · **#619** schema stamp.
-
-**Closed 2026-09-07 (previous):** **#608** google/espn import defer · **#669**
-intro offset from config · **#633** docs-named ops verbs · **#632** size-tag
-ratchet · **#638** Steam key / SportsData deleted · **#554** singleton-source
-flag · **#557** fact age at prompt · **#593** domain gating in health · **#581**
-Edge TTS fallback line · **#448** `ops why-slow` · **#623** sqlite bytes ·
-**#447** channels.json config-diff · **#672** grain stddev · **#683** HUD
-detector · **#341** retraction-watch (last-run).
-
-**Closed 2026-09-07 (Stage 3 honesty):** **#679 #680 #674 #681 #682**;
-**#607** ElevenLabs import defer; **#335** source-diversity floor; **#671**
-visual angle list; Stage 3 review room **#168+#209**; **#416** owned beat cuts.
 
 ---
 

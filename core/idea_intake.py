@@ -173,6 +173,50 @@ def search_seed_from_thoughts(text: str) -> str:
     return _cap_words(clause or body)
 
 
+_OPINION_CUE = re.compile(
+    r"\b(i think|i thought|i feel|i believe|i bet|i say|i'd argue|i reckon|imo|"
+    r"in my opinion|my take|my bet|my money)\b",
+    re.I,
+)
+
+
+def operator_quotes(brief: str, *, limit: int = 2) -> list[str]:
+    """First-person opinion sentences from the operator's own words (#543).
+
+    Typed thoughts are the brief since run 77, but the writer paraphrased them. These are
+    the lines the script must carry verbatim.
+    """
+    flat = " ".join((brief or "").split())
+    out: list[str] = []
+    for part in _SENTENCE_BREAK.split(flat):
+        text = (part or "").strip(" ,;:-")
+        if not text or len(text.split()) < 4 or not _OPINION_CUE.search(text):
+            continue
+        if text not in out:
+            out.append(text)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def quote_survived(script: str, quotes: list[str]) -> bool:
+    """True when the script still carries one of the operator's lines, not a paraphrase."""
+
+    def _flat(text: str) -> str:
+        return " ".join(re.sub(r"[^a-z0-9' ]+", " ", (text or "").lower()).split())
+
+    haystack = _flat(script)
+    for quote in quotes or []:
+        words = _flat(_OPINION_CUE.sub(" ", quote or "")).split()
+        if len(words) < 4:
+            continue
+        if " ".join(words[:8]) in haystack:
+            return True
+        if len(words) > 8 and " ".join(words[-8:]) in haystack:
+            return True
+    return False
+
+
 def parse_pasted_idea(text: str) -> ParsedIdea:
     """Extract (title, thesis, seed_topic, angle) from raw pasted idea text."""
     raw = text or ""

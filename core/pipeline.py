@@ -813,6 +813,8 @@ def run_pipeline(
     result.features["disputed"] = bool(content.get("disputed"))
     result.features["disputed_claims"] = list(content.get("disputed_claims") or [])
     result.features["lower_thirds"] = list(content.get("lower_thirds") or [])
+    result.features["operator_quotes"] = list(content.get("operator_quotes") or [])
+    result.features["operator_quote_used"] = bool(content.get("operator_quote_used"))
     result.features["persona_lint"] = list(content.get("persona_lint") or [])
     result.features["cta_summary"] = dict(content.get("cta_summary") or {})
     result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
@@ -926,7 +928,7 @@ def run_media_only(
 
     progress.stage("ElevenLabs TTS...")
     t_tts = time.perf_counter()
-    generate_audio(script, mp3_path, channel_id=channel_id)
+    generate_audio(script, mp3_path, channel_id=channel_id, length_choice=length_choice)
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
     if content_run_id and os.path.isfile(mp3_path + ".words.json"):
         try:

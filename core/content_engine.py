@@ -350,6 +350,22 @@ You must:
             f"numbers) must still come from VERIFIED FACTS:\n{creative_brief.strip()}\n\n"
         )
 
+    quote_block = ""
+    try:
+        from core.idea_intake import operator_quotes
+
+        quotes = operator_quotes(creative_brief)
+    except Exception as exc:
+        logger.debug("operator quotes skipped: %s", exc)
+        quotes = []
+    if quotes:
+        quoted = "\n".join(f'- "{quote}"' for quote in quotes)
+        quote_block = (
+            "OPERATOR'S OWN WORDS (quote at least ONE of these lines verbatim in the "
+            "script, in quotation marks, and build the take around it - do not "
+            f"paraphrase it away):\n{quoted}\n\n"
+        )
+
     # Split facts into verified data vs YouTube context-only titles
     verified_facts, context_signals = _split_facts_block(signal_facts)
     from core.description_extras import collect_source_urls
@@ -445,7 +461,7 @@ You must:
     user_prompt = f"""
 TODAY: {today}
 
-{seed_block}{angle_block}TOPIC:
+{seed_block}{angle_block}{quote_block}TOPIC:
 {topic}
 
 {human_block}{playbook}{trial}{brief_block}SCRIPT BRIEF (follow exactly):
@@ -1339,6 +1355,19 @@ def generate_content_package(
 
     lower_thirds = select_grounded_labels(script, corpus.factual_text)
 
+    # #543: did the operator's own line survive every rewrite pass?
+    operator_quote_lines: list[str] = []
+    operator_quote_used = False
+    try:
+        from core.idea_intake import operator_quotes, quote_survived
+
+        operator_quote_lines = operator_quotes(creative_brief)
+        operator_quote_used = quote_survived(script, operator_quote_lines)
+        if operator_quote_lines and not operator_quote_used:
+            logger.warning("Operator quote paraphrased away: %s", operator_quote_lines[0][:120])
+    except Exception as exc:
+        logger.debug("operator quote check skipped: %s", exc)
+
     persona_hits: list[str] = []
     try:
         from core.persona_lint import lint_persona_script
@@ -1400,6 +1429,8 @@ def generate_content_package(
         "disputed_claims": conflict_features["disputed_claims"],
         "claim_verification": verification.to_dict() if verification else None,
         "quote_attribution": quote_payload,
+        "operator_quotes": operator_quote_lines,
+        "operator_quote_used": operator_quote_used,
         "lower_thirds": lower_thirds,
         "persona_lint": persona_hits,
         "cta_summary": cta_report,

@@ -11,6 +11,53 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-15 (Claude Code) - wave 17: publish safety, spacing, the voice bill, verbatim quotes
+
+**Prompt, verbatim:** "total ai spendage? cursor will be an intermittent helper, so this
+behavior should be considered normal. fuck run77 it can be cut, live all angles run?  what
+other questions you got for me for better features?"
+
+**Spend, asked first.** All-time $14.85 over 58 costed runs (43 rendered/published): TTS
+$13.50 (91%), Apify $0.66, LLM $0.32, web search $0.28, thumbnails $0.09. Run 77 alone
+$1.37 at 293 s. Marginal only - the ~$22/mo plan sits on top. That number is why #758 exists.
+
+**Operator decisions.** Run 77 gets deleted in Studio (no takedown verb built; `ops
+studio-deleted` cancels its publish row afterwards). Cursor is an intermittent helper and
+behind-HEAD is normal (#759). Work all four areas at once, not one. All-angles publishes
+the long video plus auto-cut Shorts - the cutting already existed, the spacing did not
+(#757). Cadence target 3-5 uploads/week.
+
+**Shipped 1..5 (cheapest first).**
+1. **#754** `main.py` + `scripts/auto_generate.py` persist `grounding_override` and the
+   claims after a render past the gate; `publish_blockers` names them; `ui.prompt_upload_plan`
+   drops the public option. Run 77's line proves it: "rendered past the grounding gate: GTA 5
+   didn't win Game of the Year in 2013."
+2. **#759** `agent_comms.behind_note` + the mailbox say an intermittent partner behind HEAD
+   is the normal state.
+3. **#757** `core/spaced_queue.py` - one open slot per Short via `next_optimal_post_time(after=)`,
+   stopping at the cadence cap. Live at 1/5 with the long video reserved: 3 slots, 2 held back.
+4. **#758** `core/tts.long_form_provider` - Long/Extended use `TTS_PROVIDER_LONG` (piper, $0),
+   Shorts keep ElevenLabs, an explicit `TTS_PROVIDER` pins everything. Measured: presets 1/2
+   elevenlabs, 3/4 piper.
+5. **#543** `idea_intake.operator_quotes` + `quote_survived`; the prompt carries an
+   OPERATOR'S OWN WORDS block and the run records `operator_quote_used`.
+
+**Deliberately not done.** No YouTube delete verb (the operator deletes run 77 by hand). No
+batch middle layer - filed **#760** for the 3-5/week target. Caption items untouched.
+
+**Audit.** 26 new tests, all observed failing first (the loose "run_media_only passes the
+length" assertion was tightened after it passed, then re-run red). Suite **3,180 -> 3,206**;
+mypy **139**; ruff clean; `data/` untouched; every new symbol has a production caller. Two
+self-inflicted escaping bugs were caught here, not by the suite: a heredoc turned `
+` into
+real newlines inside a prompt string, and `` into literal backspace bytes in a regex - both
+found by importing the module and printing the compiled pattern.
+
+**Brainstorm -> next five:** **#755 · #760 · #345 · #756 · #749**. Backlog **328 open /
+668 done**, highest **#760**.
+
+---
+
 ## 2026-09-13 (Claude Code) - wave 16: five defects run 77 shipped
 
 **Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push"

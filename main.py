@@ -457,6 +457,7 @@ def _offer_angle_shorts(
             else:
                 print(f"    ! {short.index + 1}. {short.title}: {short.skipped}")
         run_ids = [short.run_id for short in made if short.run_id]
+        titles = {short.run_id: short.title for short in made if short.run_id}
     else:
         run_ids = _make_fresh_angle_shorts(
             indices,
@@ -466,13 +467,42 @@ def _offer_angle_shorts(
             creative_brief=creative_brief,
             key_facts=key_facts,
         )
+        titles = {}
     if not run_ids:
         print("  No Shorts made.")
         return
     print(f"\n  {len(run_ids)} Short(s) rendered: run(s) {', '.join(str(r) for r in run_ids)}")
-    print("  Space them out — the cadence cap counts every upload. Queue one with:")
-    print(f"    py -m scripts.requeue_upload --channel {channel_id} --run-id {run_ids[0]} --queue")
-    print("  or pick them in: py main.py -> 2) Queue manager")
+    _offer_spaced_queue(run_ids, titles, topic=topic, channel_id=channel_id)
+
+
+def _offer_spaced_queue(
+    run_ids: list[int], titles: dict[int, str], *, topic: str, channel_id: str
+) -> None:
+    """Spread the Shorts over the next open slots instead of one upload now (#757)."""
+    from analytics.post_timing import format_scheduled_local
+    from core.spaced_queue import plan_spaced_uploads, queue_spaced_uploads
+
+    if not ask_confirm("  Queue them across the next open slots? [y/N]: ", default=False):
+        print("  Left on disk. Queue one with:")
+        print(
+            f"    py -m scripts.requeue_upload --channel {channel_id} "
+            f"--run-id {run_ids[0]} --queue"
+        )
+        return
+    # The long video was queued earlier in this session, so hold a slot for it.
+    plan = plan_spaced_uploads(
+        [(run_id, titles.get(run_id, "")) for run_id in run_ids],
+        channel_id=channel_id,
+        topic=topic,
+        reserve=1,
+    )
+    for slot in plan:
+        if slot.publish_at:
+            print(f"    [{slot.run_id}] {format_scheduled_local(slot.publish_at, channel_id)}")
+        else:
+            print(f"    ! [{slot.run_id}] {slot.skipped}")
+    queued = queue_spaced_uploads(plan, channel_id=channel_id, privacy_status="unlisted")
+    print(f"  Queued {len(queued)} as unlisted. Run the worker: py -m jobs.worker --loop 30")
 
 
 def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
@@ -666,6 +696,7 @@ def _run_new_video_flow_body(
     # different length (+ longer / - shorter / 1-4) without re-running discovery —
     # run_pipeline reuses the discovery passed in, so only the script + checks re-run.
     tts_force = False
+    grounding_override = False
     while True:
         result = run_pipeline(
             topic,
@@ -780,6 +811,7 @@ def _run_new_video_flow_body(
         # the operator must override — mirrors the authenticity gate above.
         from core.claim_verifier import gate_blocks
 
+        grounding_override = False
         if gate_blocks(result.features.get("claim_verification")):
             if not ask_confirm(
                 "  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ",
@@ -792,6 +824,7 @@ def _run_new_video_flow_body(
                 )
                 print("\n  Stopped by grounding gate (GROUNDING_GATE=block).")
                 return
+            grounding_override = True
 
         from core.thin_facts import thin_facts_abort_reason
 
@@ -886,6 +919,15 @@ def _run_new_video_flow_body(
     from core.chapters import current_description
 
     result.description = current_description(result.run_id, result.description)
+    if grounding_override:
+        # #754: the run row must carry the override, or the publish list cannot tell that
+        # this video was rendered past a flagged claim.
+        from core.claim_verifier import override_features
+        from core.run_features import merge_features
+
+        override = override_features(result.features.get("claim_verification"))
+        merge_features(result.run_id, override)
+        result.features.update(override)
 
     from assets.flux_thumbnail import list_channel_thumbnails
     from core.output_paths import ensure_channel_output_dirs
@@ -933,7 +975,9 @@ def _run_new_video_flow_body(
         print("  Tags:")
         print(f"  {', '.join(result.tags)}")
 
-    upload_plan = prompt_upload_plan(channel_id=channel_id, topic=best_topic)
+    upload_plan = prompt_upload_plan(
+        channel_id=channel_id, topic=best_topic, grounding_override=grounding_override
+    )
     thumb_for_upload = thumb_path or None
     if upload_plan.mode == "queue" and result.run_id and result.mp4_path:
         repurpose = enqueue_repurpose_jobs(

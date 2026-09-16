@@ -1,10 +1,22 @@
-# Handoff synopsis — 2026-09-13: wave 16 live-run defects
+# Handoff synopsis — 2026-09-15: wave 17 publish safety + spacing + voice cost
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-13 (Claude Code): wave 16 #750 #751 #752 #753 #732
+## Last wave — 2026-09-15 (Claude Code): wave 17 #754 #757 #758 #543 #759
+
+All four areas the operator picked, in one wave. A claim rendered past the grounding gate
+is now recorded, named in the publish list, and cannot be uploaded public (#754). Chapter
+Shorts queue themselves across the next open slots inside the cadence cap (#757). Long and
+Extended voice goes to piper ($0) - TTS was $13.50 of $14.85 all-time spend (#758). The
+operator's own line is quoted verbatim and re-checked after every rewrite (#543). An
+intermittent partner behind HEAD reads as normal (#759). 26/26 new tests red first; suite
+**3,180 -> 3,206**; mypy **139**; backlog **328 open / 668 done**, highest **#760**. Next
+five: **#755 · #760 · #345 · #756 · #749**. Operator actions outstanding: delete run 77 in
+Studio then `ops studio-deleted`, and drive the first live all-angles run (#755).
+
+## Previous — 2026-09-13 (Claude Code): wave 16 #750 #751 #752 #753 #732
 
 Five defects run 77 shipped, picked by the operator over the caption measurements.
 Extended chapters span the video and pass YouTube's rule (run 77 stored `0:00-0:17`);

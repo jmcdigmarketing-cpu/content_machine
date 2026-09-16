@@ -140,6 +140,20 @@ def gate_blocks(verification_dict: dict[str, Any] | None) -> bool:
     return bool((verification_dict or {}).get("unsupported"))
 
 
+def override_features(verification_dict: dict[str, Any] | None) -> dict[str, Any]:
+    """Features recording that the operator rendered past flagged claims (#754).
+
+    Run 77 answered `y` at the grounding gate and the video queued public; nothing after
+    the render remembered. `blocking_publish_reasons` and the upload prompt read these.
+    """
+    claims = [
+        str(claim).strip()
+        for claim in ((verification_dict or {}).get("unsupported") or [])
+        if str(claim).strip()
+    ]
+    return {"grounding_override": True, "grounding_override_claims": claims[:5]}
+
+
 def _numbered_facts(
     facts_text: str,
     *,

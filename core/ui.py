@@ -1964,8 +1964,13 @@ def prompt_upload_plan(
     topic: str = "",
     print_fn=emit,
     input_fn=ask_text,
+    grounding_override: bool = False,
 ) -> UploadPlan:
-    """Interactive upload timing and privacy (no CLI flags)."""
+    """Interactive upload timing and privacy (no CLI flags).
+
+    `grounding_override` (#754): the operator rendered past the grounding gate, so public
+    is not on the menu - the upload stays unlisted until the claim is fixed.
+    """
     from analytics.post_timing import (
         format_scheduled_local,
         next_optimal_post_time,
@@ -2001,10 +2006,23 @@ def prompt_upload_plan(
         "1",
     )
     subsection("Privacy", print_fn)
-    print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
-    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
+    fallback_priv = default_priv
+    if grounding_override:
+        privacy_map = {"1": "private", "2": "unlisted", "3": "unlisted"}
+        if default_key == "3":
+            default_key = "2"
+        if fallback_priv == "public":
+            fallback_priv = "unlisted"
+        print_fn("  1) Private  2) Unlisted  (public not offered)")
+        print_fn(
+            "  You rendered past the grounding gate, so this upload stays unlisted "
+            "until the flagged claim is fixed."
+        )
+    else:
+        print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
+        print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
-    privacy_status = privacy_map.get(priv, default_priv)
+    privacy_status = privacy_map.get(priv, fallback_priv)
 
     now = datetime.now(timezone.utc)
     if timing == "2":

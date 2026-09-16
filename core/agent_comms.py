@@ -97,6 +97,16 @@ def commits_since(sha: str) -> int:
     return len([ln for ln in raw.splitlines() if ln.strip()])
 
 
+def behind_note(behind: int) -> str:
+    """How a slot's age reads in the report. The second agent helps intermittently, so
+    being behind HEAD is the normal state, not a defect - unfindable work is."""
+    if behind < 0:
+        return "unknown sha"
+    if behind == 0:
+        return "current"
+    return f"{behind} commit(s) behind HEAD - normal for an intermittent partner"
+
+
 def render() -> str:
     """Operator-facing report. ASCII only (cp1252-safe, candidate 250)."""
     out: list[str] = ["Agent hand-off"]
@@ -122,12 +132,6 @@ def render() -> str:
         if slot["written"] == "never" or not slot["sha"]:
             out.append(f"    {slot['agent']:<12} never written")
             continue
-        behind = commits_since(slot["sha"])
-        if behind < 0:
-            age = "unknown sha"
-        elif behind == 0:
-            age = "current"
-        else:
-            age = f"{behind} commit(s) behind HEAD"
+        age = behind_note(commits_since(slot["sha"]))
         out.append(f"    {slot['agent']:<12} {slot['written']} @ {slot['sha']} ({age})")
     return "\n".join(out)

@@ -297,9 +297,12 @@ def main(argv=None) -> int:
     # when the claim verifier found unsupported claims — mirrors authenticity.
     from core.claim_verifier import gate_blocks
 
-    if gate_blocks(result.features.get("claim_verification")) and not args.force:
-        print("\n  Blocked by grounding gate (GROUNDING_GATE=block). Use --force to override.")
-        return 0
+    grounding_override = False
+    if gate_blocks(result.features.get("claim_verification")):
+        if not args.force:
+            print("\n  Blocked by grounding gate (GROUNDING_GATE=block). Use --force to override.")
+            return 0
+        grounding_override = True
 
     from core.thin_facts import thin_facts_abort_reason
 
@@ -375,6 +378,14 @@ def main(argv=None) -> int:
     from core.chapters import current_description
 
     result.description = current_description(result.run_id, result.description)
+    if grounding_override:
+        # #754: the run row carries the override so the publish list can name it later.
+        from core.claim_verifier import override_features
+        from core.run_features import merge_features
+
+        override = override_features(result.features.get("claim_verification"))
+        merge_features(result.run_id, override)
+        result.features.update(override)
 
     if not result.mp4_path:
         print("  Render failed — no mp4 produced.")

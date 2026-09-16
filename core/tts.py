@@ -6,6 +6,7 @@ import os
 import random
 import re
 import shutil
+from contextlib import contextmanager
 from typing import Any
 
 from config.channels import get_channel_profile, resolve_channel_id
@@ -378,7 +379,13 @@ def _tts_cache_voice(channel_id: str | None) -> str:
         return ""
 
 
-def generate_audio(script, output_path, channel_id: str | None = None):
+def generate_audio(script, output_path, channel_id: str | None = None, length_choice: str = ""):
+    """Synthesize `script`. `length_choice` selects the long-form voice policy (#758)."""
+    with length_context(length_choice):
+        return _generate_audio(script, output_path, channel_id=channel_id)
+
+
+def _generate_audio(script, output_path, channel_id: str | None = None):
     global _last_cache_hit, _last_piper_mix, _last_cache_fraction
     global _last_paid_fallback, _last_paid_fallback_from
     _last_cache_hit = False
@@ -805,8 +812,47 @@ def synthesize_to_path(
     return output_path
 
 
+_LONG_FORM_PROVIDER_DEFAULT = "piper"
+_length_choice_context = ""
+
+
+@contextmanager
+def length_context(length_choice: str):
+    """The render's length preset, for the duration of one `generate_audio` call."""
+    global _length_choice_context
+    previous = _length_choice_context
+    _length_choice_context = str(length_choice or "")
+    try:
+        yield
+    finally:
+        _length_choice_context = previous
+
+
+def long_form_provider(provider: str, length_choice: str) -> str:
+    """Voice backend for this length (#758).
+
+    TTS is 91% of all-time spend and Extended is the worst case, so presets that can run
+    past the 3-minute Shorts cap use `TTS_PROVIDER_LONG` (default piper, $0) while Shorts
+    keep the paid voice. An explicitly set `TTS_PROVIDER` always wins, and an unusable
+    local voice still falls back to ElevenLabs downstream.
+    """
+    if os.getenv("TTS_PROVIDER", "").strip():
+        return provider
+    try:
+        from core.script_length import WORDS_PER_SECOND, get_length_preset
+
+        seconds = get_length_preset(str(length_choice or "")).max_words / max(WORDS_PER_SECOND, 0.1)
+    except Exception as exc:
+        logger.debug("long-form voice policy skipped: %s", exc)
+        return provider
+    if seconds <= 180:
+        return provider
+    return (os.getenv("TTS_PROVIDER_LONG", "").strip() or _LONG_FORM_PROVIDER_DEFAULT).lower()
+
+
 def _resolve_tts_provider() -> str:
-    return (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+    provider = (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+    return long_form_provider(provider, _length_choice_context)
 
 
 def _piper_mix_every() -> int:

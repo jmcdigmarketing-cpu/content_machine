@@ -266,7 +266,17 @@ def render_overnight(result: OvernightResult) -> str:
     if result.canary_line:
         lines.append("")
         lines.append(result.canary_line)
-    lines.append("Review drafts in output/<channel>/drafts/, then approve to render.")
+    lines.append(
+        f"Review them in one pass: py -m scripts.ops batch-review --channel {result.channel_id}"
+    )
+    try:
+        from core.cadence import cadence_status, target_line
+
+        week = target_line(cadence_status(result.channel_id))
+        if week:
+            lines.append(week)
+    except Exception as exc:
+        logger.debug("weekly target line skipped: %s", exc)
     return "\n".join(lines)
 
 
@@ -296,4 +306,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    from core.console_encoding import ensure_utf8_stdout
+
+    ensure_utf8_stdout()  # #767: redirected / scheduled runs are cp1252
     raise SystemExit(main())

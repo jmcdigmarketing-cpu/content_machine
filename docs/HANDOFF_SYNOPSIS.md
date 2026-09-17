@@ -1,10 +1,24 @@
-# Handoff synopsis — 2026-09-16: wave 18 batch review + public at slot + claim types
+# Handoff synopsis — 2026-09-17: wave 19 all-angles measured live + gate mutation
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-16 (Claude Code): wave 18 #760 #762 #761 #345 #756 #749
+## Last wave — 2026-09-17 (Claude Code): wave 19 #755 #627 #769 #763 #764 #766 (+ #765 #767 #768 #772)
+
+First live all-angles run, driven headless by Claude on operator approval, rendered only (#755).
+Run 79: piper, $0 voice, five `llm`-placed chapters of 0:39-1:07, five Shorts cut (runs 80-84).
+It carries a grounding override, so those runs never go public. Run 78: rejected locator and a
+lopsided keyword fallback. `ops mutate-gates` took the gates from 38/45 to 45/45 killed (#627).
+A wrong actor named in the script now blocks (#769). Drafts re-ask past 2d/7d (#763). The week
+line reports under-target (#764). `ops schedule-drafts` exists; the operator installs it (#766).
+Found and fixed: headless scripted variant 0 (#765), a redirected-console crash (#767), piper
+costed as ElevenLabs (#768), and the voice label (#772). Filed: #770 Shorts opening on "So/But/And",
+#771 piper has no word timings, #773 keyword fallback, #774 a draft's full script is not kept.
+Suite **3,233 -> 3,267**; mypy **139**; backlog **326 open / 684 done**, highest **#774**. Next five:
+**#771 · #770 · #773 · #774 · #739**.
+
+## Previous — 2026-09-16 (Claude Code): wave 18 #760 #762 #761 #345 #756 #749
 
 The 3-5/week target now has a path: `ops batch-drafts` overnight, `ops batch-review` in
 the morning (one pass, y/n, render the yeses, spaced across open slots, resumable) (#760),

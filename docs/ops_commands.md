@@ -73,6 +73,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `migrate-layout` | Move root runtime files into data/ and config/secrets/ |
 | `migrate-schema` | Apply incremental DDL on existing Postgres |
 | `moat-backup` | Plan pg_dump + vault + traces backup (secrets excluded; dry-run) |
+| `mutate-gates` | Mutation-test the publish/grounding gates; list untested mutants (#627) |
 | `negative-fact` | Record a walked-back claim so a later run cannot re-assert it (--topic franchise) |
 | `next` | One action to take now across gates, quota, and vault decay |
 | `overnight` | Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5) |
@@ -101,6 +102,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `roadmap-index` | Counts per roadmap file and by size, read from the docs |
 | `rollback-publish` | Unlist a published video + correction description + dossier (dry-run default; --apply sends) |
 | `run-window` | Stage 2 Qt run window (requires pip install -e ".[app]") |
+| `schedule-drafts` | Nightly overnight drafts via Task Scheduler (--install / --remove) |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |
 | `seed` | Seed TapIn performance + publish history |
 | `selftest` | Run every safety gate against fixtures; show which are armed here (#630) |

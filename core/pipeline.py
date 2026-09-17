@@ -838,7 +838,7 @@ def run_pipeline(
         script=result.script, signals=best_signals, rendered=False
     )
     result.features["projected_cost"] = estimate_run_cost(
-        script=result.script, signals=best_signals, rendered=True
+        script=result.script, signals=best_signals, rendered=True, length_choice=length_choice
     )
 
     if not proceed_video:
@@ -862,7 +862,7 @@ def run_pipeline(
 
     # Recompute cost now that TTS/render actually ran (adds the TTS line).
     result.features["cost"] = estimate_run_cost(
-        script=result.script, signals=best_signals, rendered=True
+        script=result.script, signals=best_signals, rendered=True, length_choice=length_choice
     )
 
     _finalize_run(
@@ -926,7 +926,9 @@ def run_media_only(
     if cap_reason:
         raise RuntimeError(cap_reason)
 
-    progress.stage("ElevenLabs TTS...")
+    from core.tts import voice_stage_label
+
+    progress.stage(voice_stage_label(length_choice))
     t_tts = time.perf_counter()
     generate_audio(script, mp3_path, channel_id=channel_id, length_choice=length_choice)
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
@@ -1137,6 +1139,7 @@ def run_media_only(
                 script,
                 thumbnail_provider=thumb_provider,
                 tts_cached=(1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
+                length_choice=length_choice,
             )
             if thumbnail_candidates:
                 cost["thumbnail"] = round(

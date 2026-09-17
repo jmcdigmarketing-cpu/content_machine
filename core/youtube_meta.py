@@ -238,12 +238,18 @@ def _sentence_case_against(title: str, script: str) -> str:
 def _heuristic_title_script_check(title: str, script: str) -> dict[str, object]:
     """Deterministic fallback when verify_claims cannot run."""
     from core.fact_grounding import find_ungrounded_entities
+    from core.relational_check import reversed_relations
 
-    flagged = find_ungrounded_entities(_sentence_case_against(title, script), script)
+    folded = _sentence_case_against(title, script)
+    flagged = find_ungrounded_entities(folded, script)
     warnings = [
         f"title contradicts or is not supported by the final script: {name[:140]}"
         for name in flagged
     ]
+    # #748: every name is in the script, but the title has the winner and loser swapped.
+    reversals = reversed_relations(folded, script)
+    warnings.extend(f"title reverses the script: {line}" for line in reversals)
+    flagged = [*flagged, *reversals]
     return {
         "status": "failed" if warnings else "passed",
         "passed": not warnings,

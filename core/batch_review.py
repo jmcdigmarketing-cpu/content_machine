@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -128,10 +129,8 @@ def _blocking_claims(draft: PendingDraft) -> list[str]:
 def _projected_voice(draft: PendingDraft) -> float | None:
     try:
         from core.cost_meter import render_cost_lines
-        from core.tts import length_context
 
-        with length_context(draft.length_choice):
-            return float(render_cost_lines(draft.script)["tts"])
+        return float(render_cost_lines(draft.script, length_choice=draft.length_choice)["tts"])
     except Exception as exc:
         logger.debug("voice projection skipped: %s", exc)
         return None
@@ -157,6 +156,51 @@ def _render(draft: PendingDraft, override: bool) -> bool:
     return True
 
 
+_NEWS_WINDOW_DAYS = 2.0
+_EVERGREEN_WINDOW_DAYS = 7.0
+_NEWS_DOMAINS = frozenset({"ufc", "mma", "nba", "nfl", "mlb", "nhl", "sports"})
+_NEWS_WORDS_RE = re.compile(
+    r"\b(trailer|leak(?:s|ed)?|announce[sd]?|announcement|tonight|this week|results?|"
+    r"card|fight night|breaking|reveal(?:s|ed)?|release date|patch notes|trade[sd]?|"
+    r"signs?|signed|injur(?:y|ed)|odds|preview|recap)\b",
+    re.IGNORECASE,
+)
+
+
+def draft_age_days(meta: dict[str, Any]) -> float | None:
+    """Days since the draft was made (#763), None when `created_at` is missing or bad."""
+    try:
+        made = datetime.fromisoformat(str(meta.get("created_at")))
+    except (TypeError, ValueError):
+        return None
+    now = datetime.now(made.tzinfo) if made.tzinfo else datetime.now()
+    return max(0.0, (now - made).total_seconds() / 86400.0)
+
+
+def freshness_window_days(meta: dict[str, Any]) -> float:
+    """2 days for a news-shaped draft, 7 for anything else (operator call 2026-09-16)."""
+    text = " ".join(str(meta.get(key) or "") for key in ("topic", "variant", "title"))
+    if _NEWS_WORDS_RE.search(text):
+        return _NEWS_WINDOW_DAYS
+    try:
+        from core.publish_windows import is_ufc_topic
+        from core.rumor_language import is_leak_topic
+
+        if is_leak_topic(text) or is_ufc_topic(text):
+            return _NEWS_WINDOW_DAYS
+    except Exception as exc:
+        logger.debug("news-topic check skipped: %s", exc)
+    try:
+        from core.engagement import safe_infer_domain
+
+        channel = str(meta.get("channel_id") or "tapin")
+        if safe_infer_domain(text, channel) in _NEWS_DOMAINS:
+            return _NEWS_WINDOW_DAYS
+    except Exception as exc:
+        logger.debug("domain check skipped: %s", exc)
+    return _EVERGREEN_WINDOW_DAYS
+
+
 def _local(when: Any, channel_id: str) -> str:
     try:
         from analytics.post_timing import format_scheduled_local
@@ -168,7 +212,9 @@ def _local(when: Any, channel_id: str) -> str:
 
 def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., Any]) -> list[str]:
     meta = draft.meta
-    print_fn(f"\n  [{index}/{total}] {draft.title}  (run {draft.run_id})")
+    age = draft_age_days(meta)
+    made = f"  made {age:.0f}d ago" if age is not None else ""
+    print_fn(f"\n  [{index}/{total}] {draft.title}  (run {draft.run_id}){made}")
     print_fn(f"    angle: {draft.topic}")
     hook = meta.get("hook_score")
     print_fn(
@@ -216,6 +262,13 @@ def review_drafts(
             accepted.append((draft, bool(review.get("override"))))
             continue
         blocking = _show(draft, index, len(drafts), print_fn)
+        age = draft_age_days(draft.meta)
+        if age is not None and age > freshness_window_days(draft.meta):
+            current = ask(f"  This is {age:.0f} days old - still current? [y/N]: ").strip().lower()
+            if current != "y":
+                print_fn("    Left for later.")
+                summary.later.append(draft.run_id)
+                continue
         answer = ask("  Render it? [y / n = reject / Enter = later / q = stop]: ").strip().lower()
         if answer == "q":
             break

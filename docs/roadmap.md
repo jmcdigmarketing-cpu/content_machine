@@ -24,35 +24,37 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-16 wave 18: the week's volume has a path. **#760** `ops
-batch-review` - one pass over the overnight drafts, render the yeses, space them across
-open slots, resumable · **#762** those slots go public at their time (never a grounding
-override, nor a Short cut from one) · **#761** five stale renders retired (`ops
-retire-renders`) · **#345** claim types: a hedged rumor warns, an award/result/stat
-blocks · **#756** chapter labels end on a phrase · **#749** Wikipedia asks for
-`Grand_Theft_Auto_VI` first · **#755** instrumented (`ops chapters --run-id N`).
+**Just landed** - 2026-09-17 wave 19: all-angles measured live. **#755** run 79 rendered
+headless on piper ($0): five `llm`-placed chapters of 0:39-1:07, five Shorts cut; run 78's
+keyword fallback was lopsided · **#627** `ops mutate-gates` - 7 of 45 gate mutants
+survived, now 45/45 · **#769** a wrong actor named in the script blocks (#748's gap) ·
+**#763** drafts past 2d (news) / 7d re-ask · **#764** "Week: 1 of 3-5 ... short 2" ·
+**#766** `ops schedule-drafts` · found live and fixed: **#765** headless scripted variant 0
+· **#767** redirected console crash · **#768** piper voice costed at ElevenLabs price ·
+**#772** voice label.
 
-**Previously** - 2026-09-15 wave 17: **#754** a claim rendered past cannot go public ·
-**#757** chapter Shorts spaced inside the cadence cap · **#758** long-form voice to piper
-($0) · **#543** operator quoted verbatim · **#759** a partner behind HEAD is normal.
-Wave 16 **#750 #751 #752 #753 #732** (run 77 defects); runs 77/78 typed thoughts and all
-angles in one long video; **#153** retired (do not rebuild).
+**Previously** - 2026-09-16 wave 18: **#760** `ops batch-review` · **#762** public at slot ·
+**#761** stale renders retired · **#345** claim types · **#756** labels · **#749** franchise
+pages. Wave 17 **#754 #757 #758 #543 #759**; wave 16 **#750-#753 #732**; **#153** retired
+(do not rebuild).
 
 ### Recommended next five (non-app)
 
-The batch loop exists end to end now, but it has never run for real, and the one live
-measurement still waiting is the operator's. Target 3-5 uploads/week (2026-09-15).
+The live run showed what all-angles costs in quality, not money: cut points and captions
+are estimated on every piper render, and three of five Shorts open mid-thought.
 
-1. **#755 first live all-angles run** `[S]` - operator-driven; the Shorts menu now prints
-   the placement / length / cap table, and the first Piper Extended voice (#758) needs a listen.
-2. **#763 draft age at review** `[S]` - a Monday UFC draft accepted Friday is last week's news.
-3. **#764 under-target line** `[S]` - nothing says "1 queued this week, target 3-5".
-4. **#627 mutation testing on the gate modules** `[L]` - wave 18 changed what the grounding
-   gate blocks; prove the tests catch a broken gate.
+1. **#771 word timings for piper** `[M]` - local aligner, same sidecar as ElevenLabs; fixes
+   captions, lower thirds and chapter cut points on every long video.
+2. **#770 chapter openers that stand alone** `[S]` - cuts 2/4/5 of run 79 began "So / But / And".
+3. **#773 keyword chapter fallback bounded to its share** `[S]` - run 78: one chapter of 567 words.
+4. **#774 keep a draft's full script** `[S]` - run 78 cannot be rendered without paying again.
 5. **#739 captions by footage source** `[M]` - carried; needs the stock segment sampled.
 
 **Dropped from this list** (stay open): **#730** (needs an operator call) · **#728** ·
 **#731** · **#628** · Phase M · Ollama.
+
+**Closed 2026-09-17 (wave 19):** **#755 #627 #769 #763 #764 #766 #765 #767 #768 #772**.
+Filed open: **#770 #771 #773 #774**.
 
 **Closed 2026-09-16 (wave 18):** **#760 #762 #761 #345 #756 #749**. Filed open: **#763
 #764**; narrowed **#755**.

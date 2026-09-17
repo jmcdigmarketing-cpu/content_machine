@@ -11,6 +11,42 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-17 (Claude Code) - wave 19: all-angles measured live, gates mutation-tested
+
+**Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?"
+
+**Questions asked, operator answers.** (1) #755 had waited three waves on a live run ->
+**Claude runs it** headless, render only, no upload. (2) Draft freshness -> **2 days news, 7
+other**. (3) Nightly drafts -> **yes, a scheduler verb the operator installs**. (4) #739
+caption measurement -> **swapped out** for #748's wrong-actor gap.
+
+**Debug before building.** Reading `scripts/auto_generate.py` for the all-angles flags turned
+up #765: it ranked the variants, printed the best one, then wrote the script for variant 0.
+
+**The live run found four more.**
+1. `auto_generate > log.txt` died on a check mark before discovery (#767). The nightly task
+   runs exactly that way.
+2. The projection said `tts $1.2692` for an Extended render that resolves to piper; the
+   meter never learned #758's length policy (#768).
+3. Run 78 stopped at the grade gate (C) with the LLM chapter locator rejected and a lopsided
+   keyword fallback (#773). There was no trace of why, so the rejection is now logged.
+4. Run 79 (`--force` past the grade gate only; nothing queued) rendered on piper for $0 in
+   157 s. It was placed by `llm`, 0:39-1:07 per chapter, all under the cap, and five Shorts
+   were cut. But three Shorts open "So / But / And" (#770), and piper leaves no word timings,
+   so cut points and captions are estimated (#771). The progress line also said "ElevenLabs
+   TTS..." (#772).
+
+**Mutation pass (#627).** Ten gate functions, 45 mutants, **7 survived** on first run: the
+claim-type lookup without claim rows, a junk claim row, the reversal merge wiping existing
+types, non-dict features holding a run unlisted, thin-facts support read from the verification
+block. Seven tests later, 45/45.
+
+**Spend.** Two discovery+script passes (~$0.04 each; the second reused cached discovery), voice
+$0. Inside the operator's $0.05-0.10 approval.
+
+**Next.** #771 first - every long video now renders on piper, so its missing word timings
+touch captions, lower thirds and every chapter Short.
+
 ## 2026-09-16 (Claude Code) - wave 18: batch review, public at slot, claim types
 
 **Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?"

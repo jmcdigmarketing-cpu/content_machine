@@ -1234,6 +1234,7 @@ def generate_content_package(
     # (YouTube titles must not "support" a claim). Fail-open → None.
     from core.claim_verifier import verify_claims
     from core.quote_attribution import check_quote_attribution
+    from core.relational_check import merge_reversals
 
     quote_pre = check_quote_attribution(script, corpus.factual_text)
     script_before_rewrite = script
@@ -1427,7 +1428,12 @@ def generate_content_package(
         "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
         "disputed": conflict_features["disputed"],
         "disputed_claims": conflict_features["disputed_claims"],
-        "claim_verification": verification.to_dict() if verification else None,
+        # #748: a wrong actor the verifier missed (or never judged) still reaches the gate.
+        "claim_verification": merge_reversals(
+            verification.to_dict() if verification else None,
+            script,
+            "\n".join([corpus.factual_text or "", *(clean_key_facts or [])]),
+        ),
         "quote_attribution": quote_payload,
         "operator_quotes": operator_quote_lines,
         "operator_quote_used": operator_quote_used,

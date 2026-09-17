@@ -980,6 +980,45 @@ def cmd_chapters(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("schedule-drafts", "Nightly overnight drafts via Task Scheduler (--install / --remove)")
+def cmd_schedule_drafts(args: argparse.Namespace) -> int:
+    from core import nightly_task
+
+    channel = str(getattr(args, "channel", "") or "tapin")
+    if getattr(args, "install", False):
+        code, out = nightly_task.run_schtasks(nightly_task.install_argv(channel))
+        print(out or f"schtasks exit {code}")
+        if code == 0:
+            print(
+                f"Installed: `ops overnight --channel {channel}` daily at "
+                f"{nightly_task.DEFAULT_TIME}. Review in the morning: "
+                f"py -m scripts.ops batch-review --channel {channel}"
+            )
+        return 0 if code == 0 else 1
+    if getattr(args, "remove", False):
+        code, out = nightly_task.run_schtasks(nightly_task.remove_argv())
+        print(out or f"schtasks exit {code}")
+        return 0 if code == 0 else 1
+    code, out = nightly_task.run_schtasks(nightly_task.query_argv())
+    if code == 0:
+        print(out)
+    else:
+        print(f"Nightly drafts: not installed ({nightly_task.TASK_NAME}).")
+        print(f"Install: py -m scripts.ops schedule-drafts --install --channel {channel}")
+        print(f"It would run: {nightly_task.task_command(channel)}")
+    return 0
+
+
+@_register(
+    "mutate-gates", "Mutation-test the publish/grounding gates; list untested mutants (#627)"
+)
+def cmd_mutate_gates(args: argparse.Namespace) -> int:
+    from scripts.mutate_gates import main as mutate_main
+
+    extra = ["--target", args.target] if getattr(args, "target", "") else []
+    return mutate_main(extra)
+
+
 @_register("publish-ics", "Write an .ics of scheduled publishes beside HTML dumps")
 def cmd_publish_ics(args: argparse.Namespace) -> int:
     from core.publish_ics import write_scheduled_ics
@@ -2044,6 +2083,17 @@ def main(argv=None) -> int:
         default=None,
         help="sendto-facts: write the shortcut here (tests; default is %%APPDATA%%/SendTo)",
     )
+    parser.add_argument(
+        "--install", action="store_true", help="schedule-drafts: create the nightly task"
+    )
+    parser.add_argument(
+        "--remove", action="store_true", help="schedule-drafts: delete the nightly task"
+    )
+    parser.add_argument(
+        "--target",
+        default="",
+        help="mutate-gates: only targets whose module.function contains this text",
+    )
     args = parser.parse_args(argv)
     args.queue_upload = False
     args.queue_requeue = False
@@ -2065,4 +2115,7 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    from core.console_encoding import ensure_utf8_stdout
+
+    ensure_utf8_stdout()  # #767: redirected / scheduled runs are cp1252
     raise SystemExit(main())

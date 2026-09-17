@@ -957,7 +957,10 @@ def _run_new_video_flow_body(
         from core.cost_meter import estimate_run_cost
 
         result.features["cost"] = estimate_run_cost(
-            script=result.script, signals=best_signals, rendered=True
+            script=result.script,
+            signals=best_signals,
+            rendered=True,
+            length_choice=length_choice,
         )
     display_summary(
         timings=discovery.timings,

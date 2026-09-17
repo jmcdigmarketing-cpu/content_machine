@@ -82,6 +82,15 @@ def build_status_lines(channel_id: str) -> list[str]:
     except Exception as exc:
         logger.debug("list_recyclable skipped: %s", exc)
 
+    try:
+        from core.cadence import cadence_status, target_line
+
+        week = target_line(cadence_status(channel_id))
+        if week:
+            lines.append(week)
+    except Exception as exc:
+        logger.debug("weekly target line skipped: %s", exc)
+
     entries = list_queue_entries(channel_id)
     awaiting = [e for e in entries if not e.on_youtube]
     lines.append(f"Publish queue: {len(entries)} reserved slot(s)")

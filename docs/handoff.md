@@ -51,32 +51,36 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-16 · **HEAD at write:** `d2790d2` · **Tree:** wave 18 committing, then
-pushing. CI was green on `d2790d2` (run 35040382680).
+**Written:** 2026-09-17 · **HEAD at write:** `cf7c62b` · **Tree:** wave 19 committing, then
+pushing. CI was green on `cf7c62b` (run 35166827842).
 
-**Defects first.** Nothing found broken in wave 17's code. Two things are still the
-operator's: run 77 (`acu0Ekz-G5k`) is still `published` in the store until they delete it in
-Studio and run `py -m scripts.ops studio-deleted --channel tapin`; and all-angles has
-never met a real script (#755) - the Shorts menu now prints the measurement table, it just
-needs the run. My wave 17 slot here had a heredoc-mangled line (a real newline and a
-backspace byte); this rewrite removes it.
+**Defects first - five found this wave, four by running it live.**
+- #765: headless scripted variant 0 while printing the ranked one.
+- #767: `auto_generate > log` crashed on a check mark (cp1252), which is exactly how the nightly
+  task runs.
+- #768: piper Extended voice was projected and stored at ElevenLabs price.
+- #772: the voice label was wrong.
 
-**Wave 18 - operator answered four questions first.** **#760** `ops batch-review`: one pass
-over overnight drafts, y/n/later/q, render the yeses, space them; decisions live in each
-draft's `meta.json` so it resumes · **#762** spaced slots go public at their time; a
-grounding override (or a Short cut from one) stays unlisted · **#761** `ops retire-renders`
-- applied on tapin, 5 retired · **#345** `core/claim_types.py`: hedged rumor warns,
-award/result/stat blocks, untyped strict · **#756** labels · **#749** franchise pages ·
-**#755** `ops chapters --run-id N`.
+All fixed. Open from the run: #770 (3/5 chapter Shorts open "So/But/And"), #771 (piper leaves no
+word timings, so captions and cut points are estimated on every long video), #773 (keyword
+chapter fallback is lopsided), #774 (a headless draft's full script is not stored). Still the
+operator's: run 77 is `published` until the Studio delete plus `ops studio-deleted`, and they
+need to listen to the piper render.
 
-23/27 new tests red first (4 are guards). Suite **3,206 -> 3,233**; mypy **139**; ruff clean;
-`data/` untouched; backlog **326 open / 674 done**, highest **#764**. Next five:
-**#755 · #763 · #764 · #627 · #739**.
+**Live run (operator-approved, nothing queued).** Run 78 stopped at the grade gate (C). Run 79
+was forced past that gate only: 287 s on piper for $0 voice, five `llm` chapters of 0:39-1:07,
+Shorts cut as runs 80-84. Run 79 carries `grounding_override`, so 79-84 never go public.
 
-**Cursor:** `gate_blocks` no longer means "any unsupported claim" - read
-`core.claim_types.blocking_unsupported`. `queue_spaced_uploads` now defaults to public;
-pass `privacy_status` only to force something else. Write regexes and prompt strings with
-the editor, not a shell heredoc - both of my wave 17 escaping bugs came from that.
+**Also shipped.** #627 `ops mutate-gates` (38/45 -> 45/45) · #769 a wrong actor named in the
+script blocks · #763 draft freshness 2d/7d · #764 under-target week line · #766 `ops
+schedule-drafts` (not installed - the operator does that).
+
+Suite **3,233 -> 3,267**; mypy **139**; ruff clean; `data/` untouched by tests; backlog **326
+open / 684 done**, highest **#774**. Next five: **#771 · #770 · #773 · #774 · #739**.
+
+**Cursor:** cost functions take `length_choice` now - pass it, or piper renders read as paid.
+Headless entry points call `core.console_encoding.ensure_utf8_stdout()`; a new one should too.
+After changing a gate, run `py -m scripts.ops mutate-gates --target <module>`.
 
 ## Slot — Cursor
 

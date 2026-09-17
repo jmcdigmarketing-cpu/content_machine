@@ -850,6 +850,12 @@ def long_form_provider(provider: str, length_choice: str) -> str:
     return (os.getenv("TTS_PROVIDER_LONG", "").strip() or _LONG_FORM_PROVIDER_DEFAULT).lower()
 
 
+def voice_stage_label(length_choice: str = "") -> str:
+    """The render progress line, named for the voice this length will use (#772)."""
+    provider = (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+    return f"Voice ({long_form_provider(provider, length_choice)})..."
+
+
 def _resolve_tts_provider() -> str:
     provider = (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
     return long_form_provider(provider, _length_choice_context)

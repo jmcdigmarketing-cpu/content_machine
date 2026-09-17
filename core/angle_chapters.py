@@ -122,10 +122,16 @@ def _llm_chapter_starts(script: str, angles: list[str]) -> list[int] | None:
             prompt, tier="extract", temperature=0.0, max_tokens=600, stage="angle_chapters"
         )
     except Exception as exc:
-        logger.debug("chapter locator LLM skipped: %s", exc)
+        logger.warning("chapter locator: LLM call failed (%s) - keyword fallback", exc)
         return None
     rows = payload.get("starts") if isinstance(payload, dict) else None
     if not isinstance(rows, list) or len(rows) != len(angles):
+        # #755: the first live run fell back with no trace of why.
+        logger.warning(
+            "chapter locator: wanted %d starts, got %r - keyword fallback",
+            len(angles),
+            rows if isinstance(rows, list) else type(payload).__name__,
+        )
         return None
 
     sentence_starts = _sentence_starts(script)
@@ -133,14 +139,26 @@ def _llm_chapter_starts(script: str, angles: list[str]) -> list[int] | None:
     for i, row in enumerate(rows):
         words = _WORD_RE.findall(str(row or ""))
         if not words:
+            logger.warning("chapter locator: start %d is empty - keyword fallback", i + 1)
             return None
         pattern = r"\W+".join(re.escape(word) for word in words)
         after = out[-1] + 1 if out else 0
         match = re.compile(pattern, re.I).search(script, after)
         if match is None:
+            logger.warning(
+                "chapter locator: start %d %r not found in order - keyword fallback",
+                i + 1,
+                str(row)[:80],
+            )
             return None
         start = 0 if i == 0 else max(s for s in sentence_starts if s <= match.start())
         if out and start <= out[-1]:
+            logger.warning(
+                "chapter locator: start %d %r shares a sentence with the one before - "
+                "keyword fallback",
+                i + 1,
+                str(row)[:80],
+            )
             return None
         out.append(start)
     return out

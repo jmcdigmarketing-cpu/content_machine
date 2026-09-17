@@ -61,6 +61,15 @@ def _resolve_mp4_path(run) -> str:
     return ""
 
 
+def _is_retired(run) -> bool:
+    """`ops retire-renders` marked it past its news date (2026-09-16). Its file stays."""
+    try:
+        features = json.loads(getattr(run, "features_json", "") or "{}")
+    except (TypeError, ValueError):
+        return False
+    return isinstance(features, dict) and bool(features.get("retired_at"))
+
+
 def list_recyclable(channel_id: str):
     channel_id = resolve_channel_id(channel_id)
     repo = get_content_run_repository()
@@ -68,6 +77,8 @@ def list_recyclable(channel_id: str):
     recyclable = []
     for run in runs:
         if run.status not in ("rendered", "drafted"):
+            continue
+        if _is_retired(run):
             continue
         mp4 = _resolve_mp4_path(run)
         if not mp4:

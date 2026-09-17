@@ -15,13 +15,31 @@ _WORD_RE = re.compile(r"[A-Za-z0-9']+")
 _CHAPTER_LINE_RE = re.compile(r"^\d{1,2}:\d{2}(?::\d{2})?\s+\S")
 
 
+_CLAUSE_SPLIT_RE = re.compile(r"\s*[,;:]\s+|\s+[-–—]\s+")
+# Words a chapter title cannot end on - run 77: "The only reason we know anything is".
+_LABEL_TAIL = frozenset(
+    """a an and are as at be but by for from if in into is it its not of on or our so than
+    that the their then this to was we were what when which who will with you your""".split()
+)
+
+
 def _label(sentence: str, *, limit: int = 40) -> str:
+    """A chapter title from a sentence: its first clause when that fits, else a word cut
+    that does not end mid-phrase (#756)."""
     words = re.sub(r"\s+", " ", (sentence or "").strip()).strip(" .")
     if not words:
         return "Chapter"
     if len(words) <= limit:
         return words
-    return words[: limit - 1].rsplit(" ", 1)[0] or words[:limit]
+    clause = _CLAUSE_SPLIT_RE.split(words, maxsplit=1)[0].strip()
+    if len(clause) <= limit and len(clause.split()) >= 3:
+        cut = clause
+    else:
+        cut = words[: limit - 1].rsplit(" ", 1)[0] or words[:limit]
+    parts = cut.split()
+    while len(parts) > 3 and parts[-1].lower().strip(",;:") in _LABEL_TAIL:
+        parts.pop()
+    return " ".join(parts).rstrip(",;:") or cut
 
 
 def _stamp(seconds: float) -> str:

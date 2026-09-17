@@ -16,6 +16,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `backfill-cost` | Repair missing TTS cost on runs that rendered before the fix |
 | `backfill-features` | Reconstruct features_json for historical runs |
 | `batch-drafts` | N ideas -> N draft scripts, unattended (no render/publish) |
+| `batch-review` | Review waiting drafts in one pass; render the yeses; space them (#760) |
 | `blocking` | One-sentence: what's blocking publish (existing gates only) |
 | `booth` | Last-run review booth (play + grade + authenticity + cost) |
 | `booth-shortcut` | Install Desktop shortcut for the persistent review booth |
@@ -25,6 +26,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `caption-anchor` | Measure whether a frame's bottom band carries an overlay (#717) |
 | `caption-still` | Overlay captions on a still so names can be proofread before burn (--path image, --file script) |
 | `channel-go-live` | Fail until OAuth + SEO + feeds + brand kit exist (MoneyWise / any channel) |
+| `chapters` | All-angles chapter report: placement path, length, Shorts cap (#755) |
 | `check-youtube` | Verify YouTube OAuth + upload env |
 | `clock-ahead` | Run the suite with the clock shifted; list tests whose result changes (#725) |
 | `coach` | Daily creator coach — ranked ideas + why, post time, length, patterns |
@@ -92,6 +94,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `render-preview` | Render a 480p ultrafast review copy without changing publish media (--run-id) |
 | `requeue-upload` | Queue upload for a rendered run (--run-id required) |
 | `retention` | Audience-retention curve + drop-off point (pacing intelligence) |
+| `retire-renders` | Stop counting unuploaded renders past their news date (--apply) |
 | `retraction-watch` | Re-fetch last-run source URLs for a retraction |
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
 | `review-room` | Stage 3 Qt review room (J/K/L + Approve; requires pip install -e ".[app]") |

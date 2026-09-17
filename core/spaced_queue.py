@@ -5,6 +5,10 @@ against a 5-per-7-day cadence cap. `next_optimal_post_time` already skips times 
 has reserved, so asking it repeatedly (each call `after` the previous slot) spreads them;
 the cap decides how many go at all. Anything past it stays on disk with its reason
 printed, never silently dropped.
+
+Operator call 2026-09-16: a planned slot goes public at its time (uploaded private with
+`publishAt`). A run forced past the grounding gate - or a Short cut from one - is held
+unlisted however it was asked for (#754).
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ from datetime import datetime
 from analytics.post_timing import next_optimal_post_time
 from core.cadence import cadence_status
 from core.logging import get_logger
+from core.run_features import load_features
 from publishing.repurpose import enqueue_repurpose_jobs
 
 logger = get_logger("core.spaced_queue")
@@ -27,6 +32,7 @@ class SpacedSlot:
     title: str
     publish_at: datetime | None = None
     skipped: str = ""
+    privacy: str = ""  # what it was queued as; "" until queued
 
 
 def plan_spaced_uploads(
@@ -60,13 +66,38 @@ def plan_spaced_uploads(
     return out
 
 
+def _override_held(features_json: str) -> bool:
+    """True when this run, or the long video it was cut from, rendered past the gate."""
+    try:
+        features = json.loads(features_json or "{}")
+    except (TypeError, ValueError):
+        features = {}
+    if not isinstance(features, dict):
+        return False
+    if features.get("grounding_override"):
+        return True
+    parent = features.get("parent_run_id")
+    return bool(parent and load_features(int(parent)).get("grounding_override"))
+
+
+def slot_privacy(requested: str | None, *, features_json: str = "") -> str:
+    """Public at the slot by default; never public for a grounding override."""
+    privacy = (requested or "public").strip().lower() or "public"
+    if privacy == "public" and _override_held(features_json):
+        return "unlisted"
+    return privacy
+
+
 def queue_spaced_uploads(
     slots: list[SpacedSlot],
     *,
     channel_id: str,
-    privacy_status: str = "unlisted",
+    privacy_status: str | None = None,
 ) -> list[int]:
-    """Enqueue the planned slots. Skipped ones are left alone. Never raises."""
+    """Enqueue the planned slots. Skipped ones are left alone. Never raises.
+
+    `privacy_status=None` means public at the slot, downgraded per run by `slot_privacy`.
+    """
     from storage.repositories.content_runs import get_content_run_repository
 
     repo = get_content_run_repository()
@@ -88,6 +119,13 @@ def queue_spaced_uploads(
         except (TypeError, ValueError):
             tags = []
         try:
+            privacy = slot_privacy(
+                privacy_status, features_json=str(getattr(record, "features_json", "") or "")
+            )
+        except Exception as exc:
+            logger.debug("spaced queue: privacy check for run %s failed: %s", slot.run_id, exc)
+            privacy = "unlisted"
+        try:
             result = enqueue_repurpose_jobs(
                 channel_id=channel_id,
                 content_run_id=int(slot.run_id),
@@ -95,12 +133,13 @@ def queue_spaced_uploads(
                 title=str(getattr(record, "title", "") or slot.title),
                 description=str(getattr(record, "description", "") or ""),
                 tags=tags,
-                privacy_status=privacy_status,
+                privacy_status=privacy,
                 youtube_publish_at=slot.publish_at,
             )
         except Exception as exc:
             logger.warning("spaced queue: run %s not enqueued: %s", slot.run_id, exc)
             continue
         if getattr(result, "jobs", None):
+            slot.privacy = privacy
             queued.append(int(slot.run_id))
     return queued

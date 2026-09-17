@@ -41,6 +41,7 @@ class AngleChapter:
     angle: str
     word_start: int
     char_start: int = 0
+    placed_by: str = ""  # #755 - "llm" | "keyword" | "single"; "" on rows from before it
 
 
 def angle_headline(angle: str, *, limit: int = _TITLE_LIMIT) -> str:
@@ -180,9 +181,13 @@ def locate_chapters(script: str, angles: list[str]) -> list[AngleChapter]:
     text = script or ""
     if not angles or not text.strip():
         return []
-    starts = [0]
+    starts, placed_by = [0], "single"
     if len(angles) > 1:
-        starts = _llm_chapter_starts(text, angles) or _keyword_chapter_starts(text, angles)
+        llm_starts = _llm_chapter_starts(text, angles)
+        if llm_starts:
+            starts, placed_by = llm_starts, "llm"
+        else:
+            starts, placed_by = _keyword_chapter_starts(text, angles), "keyword"
     return [
         AngleChapter(
             index=i,
@@ -190,6 +195,7 @@ def locate_chapters(script: str, angles: list[str]) -> list[AngleChapter]:
             angle=angle,
             word_start=_word_index_at(text, char),
             char_start=char,
+            placed_by=placed_by,
         )
         for i, (angle, char) in enumerate(zip(angles, starts, strict=False))
     ]
@@ -238,6 +244,7 @@ def chapters_from_features(rows: object) -> list[AngleChapter]:
                     angle=str(row.get("angle") or row.get("title") or ""),
                     word_start=int(row.get("word_start") or 0),
                     char_start=int(row.get("char_start") or 0),
+                    placed_by=str(row.get("placed_by") or ""),
                 )
             )
         except (TypeError, ValueError):

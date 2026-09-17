@@ -11,6 +11,40 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-16 (Claude Code) - wave 18: batch review, public at slot, claim types
+
+**Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?"
+
+**State found.** HEAD `d2790d2` = origin, CI green. No live run since wave 17, so #755 had
+nothing to measure and run 77 was still `published` in the store. The "5 rendered, not on
+YouTube" in `ops status` were runs 1/2/4/10/59, 60-105 days old - not a backlog, noise.
+
+**Questions asked, operator answers.**
+1. Stale renders -> **retire them** (mark, never delete).
+2. #760 shape -> **one-pass review**: drafts overnight at $0 voice, y/n in the morning,
+   render the yeses, space them. Rejected: auto-render every draft that passes the gates
+   (voice money without a human yes); a desktop review room (bigger than the need).
+3. Spaced uploads -> **public at the slot** (private + publishAt). A grounding override,
+   or a Short cut from one, still never goes public.
+4. #345 -> **a hedged rumor warns, an unhedged one blocks**; result/award/stat/date always
+   block; opinions never (unless they carry a number - a mislabelled fact).
+
+**Shipped.** #756 labels (first clause, no dangling tail) · #749 franchise pages first ·
+#345 `core/claim_types.py` + typed verifier rows (untyped stays strict) · #755 `placed_by`
++ chapter report in the Shorts menu and `ops chapters` · #761 `ops retire-renders`
+(applied: 5 retired) · #762 `slot_privacy` · #760 `core/batch_review.py` + `ops
+batch-review`, resumable through `meta.json`, and `batch_generation.unreviewed_draft`
+so a second batch does not pay twice.
+
+**Brainstorm, filed not built.** #763 a draft's age at review (news goes stale in days) ·
+#764 a line saying the week is under the 3-5 target · mutation testing the gates (#627)
+now matters more, since what the grounding gate blocks just changed.
+
+**Debug notes.** 23/27 new tests red first; the 4 green ones are guards (short label
+untouched, award blocks, bare rumor blocks, untyped strict). Suite fallout: a key-set pin
+on `to_dict()` (fixed by emitting `unsupported_types` only when typed) and the generated
+`docs/ops_commands.md`. A fixture review run showed slot times in raw UTC - now local.
+
 ## 2026-09-15 (Claude Code) - wave 17: publish safety, spacing, the voice bill, verbatim quotes
 
 **Prompt, verbatim:** "total ai spendage? cursor will be an intermittent helper, so this

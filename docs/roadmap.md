@@ -24,45 +24,38 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-15 wave 17: the four areas the operator picked, in one wave.
-**#754** a claim you rendered past cannot go public (the override is persisted, named in
-the publish list, and public leaves the upload menu) - **#757** chapter Shorts queue
-themselves across the next open slots inside the cadence cap - **#758** Long/Extended
-voice goes to `TTS_PROVIDER_LONG` (piper, $0), the 91% of spend - **#543** the operator's
-own line is quoted verbatim and re-checked after every rewrite - **#759** an intermittent
-partner behind HEAD reads as normal.
+**Just landed** - 2026-09-16 wave 18: the week's volume has a path. **#760** `ops
+batch-review` - one pass over the overnight drafts, render the yeses, space them across
+open slots, resumable · **#762** those slots go public at their time (never a grounding
+override, nor a Short cut from one) · **#761** five stale renders retired (`ops
+retire-renders`) · **#345** claim types: a hedged rumor warns, an award/result/stat
+blocks · **#756** chapter labels end on a phrase · **#749** Wikipedia asks for
+`Grand_Theft_Auto_VI` first · **#755** instrumented (`ops chapters --run-id N`).
 
-**Previously** - 2026-09-13 wave 16: five defects from live run 77. **#750**
-Extended chapters span the video and pass YouTube's >= 3 / >= 10 s rule (run 77
-stored `0:00-0:17`) · **#751** upload queue gets the word-timed description ·
-**#752** long videos lose `shorts` and topic-word tags · **#753** the worker prints a
-successful upload · **#732** env fingerprint counts optional flags, versioned.
-
-**Previously** - runs 77/78 (unnumbered): typed thoughts at the Topic prompt; all
-angles in one long video with chapter Shorts. Wave 15 **#534 #748 #746 #747 #738**;
-wave 14 run 76 abort **#740 #742 #741 #743 #667 #745 #744**; **#153** retired (do not
-rebuild).
+**Previously** - 2026-09-15 wave 17: **#754** a claim rendered past cannot go public ·
+**#757** chapter Shorts spaced inside the cadence cap · **#758** long-form voice to piper
+($0) · **#543** operator quoted verbatim · **#759** a partner behind HEAD is normal.
+Wave 16 **#750 #751 #752 #753 #732** (run 77 defects); runs 77/78 typed thoughts and all
+angles in one long video; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-Wave 17 shipped publish safety, throughput and the voice bill. What is left is
-measurement the operator has to drive, and the volume target (3-5 uploads/week, set
-2026-09-15) that nothing yet sustains: 0 uploads in the last 7 days, 5 renders unqueued.
+The batch loop exists end to end now, but it has never run for real, and the one live
+measurement still waiting is the operator's. Target 3-5 uploads/week (2026-09-15).
 
-1. **#755 measure all-angles on its first live run** `[S]` - which chapter path placed
-   each chapter, chapter lengths vs the 180 s Shorts cap, and the first Piper Extended
-   render (#758) heard end to end before it becomes routine.
-2. **#760 unattended batch for 3-5 a week** `[L]` - drafts exist, spacing exists (#757);
-   the middle (review in one pass, render the accepted, hand to the spacer) does not.
-3. **#345 claim-type taxonomy** `[M]` - now has data: #754 records which claims were
-   overridden, and an award/result claim should not clear an opinion's bar.
-4. **#756 chapter labels cut mid-phrase** `[S]` - "The only reason we know anything is".
-5. **#749 Wikipedia franchise map** `[S]` - `GTA_6_Analysis...` still is not
-   `Grand_Theft_Auto_VI`.
+1. **#755 first live all-angles run** `[S]` - operator-driven; the Shorts menu now prints
+   the placement / length / cap table, and the first Piper Extended voice (#758) needs a listen.
+2. **#763 draft age at review** `[S]` - a Monday UFC draft accepted Friday is last week's news.
+3. **#764 under-target line** `[S]` - nothing says "1 queued this week, target 3-5".
+4. **#627 mutation testing on the gate modules** `[L]` - wave 18 changed what the grounding
+   gate blocks; prove the tests catch a broken gate.
+5. **#739 captions by footage source** `[M]` - carried; needs the stock segment sampled.
 
-**Dropped from this list** (stay open): **#739** · **#730** (caption measurement,
-needs footage and an operator call) · **#728** · **#731** · **#627** · **#628** ·
-Phase M · Ollama.
+**Dropped from this list** (stay open): **#730** (needs an operator call) · **#728** ·
+**#731** · **#628** · Phase M · Ollama.
+
+**Closed 2026-09-16 (wave 18):** **#760 #762 #761 #345 #756 #749**. Filed open: **#763
+#764**; narrowed **#755**.
 
 **Closed 2026-09-15 (wave 17):** **#754 #757 #758 #543 #759**. Filed open: **#760**.
 

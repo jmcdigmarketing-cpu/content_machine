@@ -139,29 +139,45 @@ def _short_description(span: ChapterSpan, channel_id: str, parent_title: str) ->
         return body
 
 
-def cut_chapter_shorts(
-    run_id: int,
-    *,
-    indices: list[int] | None = None,
-    script: str | None = None,
-) -> list[ChapterShort]:
-    """Cut the chosen chapters of a rendered all-angles run into Shorts. Never raises."""
-    record = get_content_run_repository().get(int(run_id))
-    if record is None:
-        return []
+def _clock(seconds: float) -> str:
+    minutes, secs = divmod(int(round(max(0.0, seconds))), 60)
+    return f"{minutes}:{secs:02d}"
+
+
+def chapter_report_lines(chapters: list[AngleChapter], spans: list[ChapterSpan]) -> list[str]:
+    """One line per chapter: title, how it was placed, its length, and the Shorts cap (#755)."""
+    by_index = {span.index: span for span in spans}
+    cap = _clock(SHORTS_MAX_SECONDS)
+    lines: list[str] = []
+    for chapter in chapters:
+        span = by_index.get(chapter.index)
+        placed = f"[{chapter.placed_by or '?'}]"
+        if span is None:
+            lines.append(f"{chapter.index + 1}. {chapter.title}  {placed}  length unknown")
+            continue
+        verdict = "fits" if span.fits_shorts else f"over the {cap} Shorts cap"
+        lines.append(
+            f"{chapter.index + 1}. {chapter.title}  {placed}  {_clock(span.seconds)}  {verdict}"
+        )
+    return lines
+
+
+def _record_spans(
+    record: Any, script: str | None
+) -> tuple[list[AngleChapter], list[ChapterSpan], str]:
+    """Chapters, where they sit in the rendered video, and the script they came from."""
     try:
         features = json.loads(record.features_json or "{}")
     except (TypeError, ValueError):
         features = {}
     chapters = chapters_from_features(features.get("angle_chapters"))
-    source = str(record.mp4_path or "")
     words = load_word_timings(record.mp3_path) or []
     # script_preview is capped at 2,000 chars, so a re-cut by run id would lose every
     # later chapter's text. The TTS word sidecar is the full spoken script.
     spoken = " ".join(str(w.get("word") or "") for w in words if isinstance(w, dict)).strip()
     text = script if script is not None else (spoken or str(record.script_preview or ""))
-    if not chapters or not source or not os.path.isfile(source) or not text.strip():
-        return []
+    if not chapters or not text.strip():
+        return chapters, [], text
 
     last_word_end = max(
         (
@@ -179,6 +195,36 @@ def cut_chapter_shorts(
         intro_offset=_intro_offset(record.channel_id),
         audio_duration=float(audio_duration or 0.0),
     )
+    return chapters, spans, text
+
+
+def chapter_report(run_id: int, *, script: str | None = None) -> list[str]:
+    """`chapter_report_lines` for a stored run; [] when it has no chapters. Never raises."""
+    try:
+        record = get_content_run_repository().get(int(run_id))
+        if record is None:
+            return []
+        chapters, spans, _text = _record_spans(record, script)
+        return chapter_report_lines(chapters, spans) if chapters else []
+    except Exception as exc:
+        logger.debug("chapter report unavailable for run %s: %s", run_id, exc)
+        return []
+
+
+def cut_chapter_shorts(
+    run_id: int,
+    *,
+    indices: list[int] | None = None,
+    script: str | None = None,
+) -> list[ChapterShort]:
+    """Cut the chosen chapters of a rendered all-angles run into Shorts. Never raises."""
+    record = get_content_run_repository().get(int(run_id))
+    if record is None:
+        return []
+    source = str(record.mp4_path or "")
+    chapters, spans, text = _record_spans(record, script)
+    if not chapters or not spans or not source or not os.path.isfile(source) or not text.strip():
+        return []
     try:
         tags = json.loads(record.tags_json or "[]")
     except (TypeError, ValueError):

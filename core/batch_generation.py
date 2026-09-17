@@ -52,6 +52,7 @@ class DraftOutcome:
     path: str = ""
     error: str = ""
     seconds: float = 0.0
+    reused: bool = False  # #760 - an unreviewed draft for this topic already existed
 
 
 def _slug(topic: str, max_len: int = 40) -> str:
@@ -65,6 +66,41 @@ def _drafts_dir(channel_id: str) -> str:
     path = os.path.join(channel_output_root(channel_id), "drafts")
     os.makedirs(path, exist_ok=True)
     return path
+
+
+_REUSE_DAYS = 3
+
+
+def unreviewed_draft(channel_id: str, topic: str, *, max_age_days: float = _REUSE_DAYS):
+    """(folder, meta) of a recent draft for this topic nobody has reviewed, else None.
+
+    A second batch the same week used to pay for discovery and the script again for a
+    topic already waiting in `ops batch-review` (#760).
+    """
+    key = " ".join((topic or "").lower().split())
+    try:
+        root = _drafts_dir(channel_id)
+        names = sorted(os.listdir(root), reverse=True)
+    except OSError:
+        return None
+    for name in names:
+        folder = os.path.join(root, name)
+        try:
+            with open(os.path.join(folder, "meta.json"), encoding="utf-8") as f:
+                meta = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(meta, dict) or meta.get("review"):
+            continue
+        if " ".join(str(meta.get("topic") or "").lower().split()) != key:
+            continue
+        try:
+            age = datetime.now() - datetime.fromisoformat(str(meta.get("created_at")))
+        except (TypeError, ValueError):
+            continue
+        if age.total_seconds() <= max_age_days * 86400:
+            return folder, meta
+    return None
 
 
 def collect_topics(
@@ -140,11 +176,12 @@ def generate_draft(
 
     corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
     packed = select_headless_facts(key_facts, topic=topic, corpus=corpus) if key_facts else None
+    length_choice = _length_choice(channel_id, best_topic)
     result = run_pipeline(
         topic,
         discovery=discovery,
         variant_index=variant_index,
-        length_choice=_length_choice(channel_id, best_topic),
+        length_choice=length_choice,
         proceed_video=False,
         channel_id=channel_id,
         creative_brief=experiment[2] if experiment else "",
@@ -216,6 +253,7 @@ def generate_draft(
         "title": result.title,
         "run_id": result.run_id,
         "channel_id": channel_id,
+        "length_choice": length_choice,
         "hook_score": out.hook_score,
         "hook_verdict": out.hook_verdict,
         "authenticity_verdict": out.authenticity_verdict,
@@ -248,6 +286,21 @@ def run_batch(
     with franchise_batch_cache(topics, channel_id=channel_id):
         for i, topic in enumerate(topics, 1):
             logger.info("Batch draft %d/%d: %s", i, len(topics), topic)
+            existing = unreviewed_draft(channel_id, topic)
+            if existing is not None:
+                folder, meta = existing
+                outcomes.append(
+                    DraftOutcome(
+                        topic=topic,
+                        ok=True,
+                        reused=True,
+                        title=str(meta.get("title") or ""),
+                        variant=str(meta.get("variant") or ""),
+                        run_id=meta.get("run_id"),
+                        path=folder,
+                    )
+                )
+                continue
             try:
                 outcomes.append(generate_draft(topic, channel_id, key_facts=key_facts))
             except Exception as exc:
@@ -282,7 +335,10 @@ def run_batch(
 def render_summary(outcomes: list[DraftOutcome]) -> str:
     lines = ["", "Batch drafts", "=" * 40]
     for o in outcomes:
-        if o.ok:
+        if o.reused:
+            lines.append(f"  KEEP {o.title or o.topic} - draft already waiting for review")
+            lines.append(f"       {o.path}")
+        elif o.ok:
             hook = f"hook {o.hook_score}" if o.hook_score is not None else "hook n/a"
             auth = o.authenticity_verdict or "n/a"
             flags = f", {len(o.ungrounded)} ungrounded" if o.ungrounded else ""
@@ -298,6 +354,8 @@ def render_summary(outcomes: list[DraftOutcome]) -> str:
             lines.append(f"  FAIL {o.topic} — {o.error}")
     made = sum(1 for o in outcomes if o.ok)
     lines.append(f"  {made}/{len(outcomes)} drafts saved")
+    if made:
+        lines.append("  Review them: py -m scripts.ops batch-review")
     return "\n".join(lines)
 
 

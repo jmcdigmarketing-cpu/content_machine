@@ -928,6 +928,58 @@ def cmd_studio_deleted(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("batch-review", "Review waiting drafts in one pass; render the yeses; space them (#760)")
+def cmd_batch_review(args: argparse.Namespace) -> int:
+    from core.batch_review import review_drafts
+
+    summary = review_drafts(args.channel)
+    print(
+        f"\nReview: {len(summary.accepted)} accepted, {len(summary.rejected)} rejected, "
+        f"{len(summary.later)} later; {len(summary.rendered)} rendered, "
+        f"{len(summary.queued)} queued"
+    )
+    return 0
+
+
+@_register("retire-renders", "Stop counting unuploaded renders past their news date (--apply)")
+def cmd_retire_renders(args: argparse.Namespace) -> int:
+    from core.stale_renders import find_stale_renders, render_age_days, retire_renders
+
+    days = int(getattr(args, "days", 0) or 30)
+    stale = find_stale_renders(args.channel, days=days)
+    if not stale:
+        print(f"Retire renders: nothing unuploaded older than {days} days on {args.channel}")
+        return 0
+    print(f"Unuploaded renders older than {days} days ({args.channel}):")
+    for run in stale:
+        age = render_age_days(run) or 0.0
+        print(f"  [{run.id}] {age:.0f}d  {getattr(run, 'title', '')}")
+    if not getattr(args, "apply", False):
+        print("Dry run. Add --apply to retire them (files stay on disk).")
+        return 0
+    marked = retire_renders(stale)
+    print(f"Retired {len(marked)}. Still queueable by id: py -m scripts.requeue_upload --run-id N")
+    return 0
+
+
+@_register("chapters", "All-angles chapter report: placement path, length, Shorts cap (#755)")
+def cmd_chapters(args: argparse.Namespace) -> int:
+    from core.chapter_shorts import chapter_report
+
+    run_id = int(getattr(args, "run_id", 0) or 0)
+    if not run_id:
+        print("chapters needs --run-id N")
+        return 2
+    lines = chapter_report(run_id)
+    if not lines:
+        print(f"Run {run_id} has no angle chapters (not an all-angles render).")
+        return 1
+    print(f"Chapters for run {run_id}:")
+    for line in lines:
+        print(f"  {line}")
+    return 0
+
+
 @_register("publish-ics", "Write an .ics of scheduled publishes beside HTML dumps")
 def cmd_publish_ics(args: argparse.Namespace) -> int:
     from core.publish_ics import write_scheduled_ics

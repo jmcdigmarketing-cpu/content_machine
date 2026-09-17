@@ -51,34 +51,32 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-15 · **HEAD at write:** `ec11b6f` · **Tree:** wave 17 committing, then
-pushing. CI was green on `ec11b6f` (run 34797145521).
+**Written:** 2026-09-16 · **HEAD at write:** `d2790d2` · **Tree:** wave 18 committing, then
+pushing. CI was green on `d2790d2` (run 35040382680).
 
-**Defect first, and it is the operator's to finish:** run 77 is still live (unlisted,
-`acu0Ekz-G5k`) carrying "GTA 5 didn't win Game of the Year in 2013". The operator is
-deleting it in Studio; run `py -m scripts.ops studio-deleted --channel tapin` afterwards so
-cadence and economics stop counting it. **All-angles (run 78) has still never met a real
-script** - that is #755 and it needs a live run.
+**Defects first.** Nothing found broken in wave 17's code. Two things are still the
+operator's: run 77 (`acu0Ekz-G5k`) is still `published` in the store until they delete it in
+Studio and run `py -m scripts.ops studio-deleted --channel tapin`; and all-angles has
+never met a real script (#755) - the Shorts menu now prints the measurement table, it just
+needs the run. My wave 17 slot here had a heredoc-mangled line (a real newline and a
+backspace byte); this rewrite removes it.
 
-**Wave 17 - the four areas the operator picked, in one wave.** **#754** a render past the
-grounding gate is persisted on the run, named in `ops blocking`, and cannot be uploaded
-public · **#757** `core/spaced_queue.py` gives each chapter Short its own open slot inside
-the cadence cap (live: 3 queued, 2 held back) · **#758** Long/Extended voice is
-`TTS_PROVIDER_LONG` (piper, $0) because TTS is **$13.50 of $14.85** all-time spend ·
-**#543** the operator's own line is quoted verbatim and re-checked after every rewrite ·
-**#759** an intermittent partner behind HEAD now reads as normal, in `ops agents` and here.
+**Wave 18 - operator answered four questions first.** **#760** `ops batch-review`: one pass
+over overnight drafts, y/n/later/q, render the yeses, space them; decisions live in each
+draft's `meta.json` so it resumes · **#762** spaced slots go public at their time; a
+grounding override (or a Short cut from one) stays unlisted · **#761** `ops retire-renders`
+- applied on tapin, 5 retired · **#345** `core/claim_types.py`: hedged rumor warns,
+award/result/stat blocks, untyped strict · **#756** labels · **#749** franchise pages ·
+**#755** `ops chapters --run-id N`.
 
-26/26 new tests observed red first. Suite **3,180 -> 3,206**; mypy **139**; ruff clean;
-`data/` untouched; backlog **328 open / 668 done**, highest **#760**. Next five:
-**#755 · #760 · #345 · #756 · #749**.
+23/27 new tests red first (4 are guards). Suite **3,206 -> 3,233**; mypy **139**; ruff clean;
+`data/` untouched; backlog **326 open / 674 done**, highest **#764**. Next five:
+**#755 · #763 · #764 · #627 · #739**.
 
-**Cursor:** a Short cut from chapters is its own run (`features.parent_run_id`); queue
-several with `core.spaced_queue`, never one upload per session. Voice provider now depends
-on the length preset - set `TTS_PROVIDER` explicitly to pin it. Two of my own bugs this
-wave came from shell heredoc escaping (`
-` became real newlines in a prompt string, ``
-became backspace bytes in a regex); the suite did not catch either - importing the module
-and printing the compiled value did.
+**Cursor:** `gate_blocks` no longer means "any unsupported claim" - read
+`core.claim_types.blocking_unsupported`. `queue_spaced_uploads` now defaults to public;
+pass `privacy_status` only to force something else. Write regexes and prompt strings with
+the editor, not a shell heredoc - both of my wave 17 escaping bugs came from that.
 
 ## Slot — Cursor
 

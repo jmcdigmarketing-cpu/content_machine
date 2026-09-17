@@ -203,7 +203,10 @@ def blocking_publish_reasons(
                 for claim in (features.get("grounding_override_claims") or [])
                 if str(claim).strip()
             ]
+            types = [str(t) for t in (features.get("grounding_override_types") or [])]
             head = claims[0][:140] if claims else "unsupported claim(s)"
+            if claims and types and types[0]:
+                head = f"[{types[0]}] {head}"
             more = f" (+{len(claims) - 1} more)" if len(claims) > 1 else ""
             out.append(f"rendered past the grounding gate: {head}{more}")
     except Exception as exc:

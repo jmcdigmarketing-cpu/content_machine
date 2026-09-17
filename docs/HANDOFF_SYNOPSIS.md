@@ -1,10 +1,22 @@
-# Handoff synopsis — 2026-09-15: wave 17 publish safety + spacing + voice cost
+# Handoff synopsis — 2026-09-16: wave 18 batch review + public at slot + claim types
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-15 (Claude Code): wave 17 #754 #757 #758 #543 #759
+## Last wave — 2026-09-16 (Claude Code): wave 18 #760 #762 #761 #345 #756 #749
+
+The 3-5/week target now has a path: `ops batch-drafts` overnight, `ops batch-review` in
+the morning (one pass, y/n, render the yeses, spaced across open slots, resumable) (#760),
+and those slots go public at their time unless the run or its parent was forced past the
+grounding gate (#762). Five stale renders retired on tapin (#761). Claim types: a hedged
+rumor warns, an award/result/stat blocks, untyped stays strict (#345). Chapter labels end on
+a phrase (#756); Wikipedia asks for `Grand_Theft_Auto_VI` first (#749); #755 instrumented
+(`ops chapters --run-id N`), still needs the live run. 23/27 new tests red first (4
+guards); suite **3,206 -> 3,233**; mypy **139**; backlog **326 open / 674 done**, highest
+**#764**. Next five: **#755 · #763 · #764 · #627 · #739**.
+
+## Previous — 2026-09-15 (Claude Code): wave 17 #754 #757 #758 #543 #759
 
 All four areas the operator picked, in one wave. A claim rendered past the grounding gate
 is now recorded, named in the publish list, and cannot be uploaded public (#754). Chapter

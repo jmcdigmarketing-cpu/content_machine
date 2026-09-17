@@ -62,12 +62,38 @@ def _wiki_keep(word: str) -> str | None:
     return word.capitalize()
 
 
+# Shorthand the operator types -> the page that actually carries the pageviews (#749).
+# One page per family, most specific first: "GTA 6" is Grand_Theft_Auto_VI, not GTA.
+_FRANCHISE_PAGES: tuple[tuple[str, re.Pattern[str], str], ...] = (
+    ("gta", re.compile(r"\b(?:gta|grand theft auto)\s*(?:6|vi)\b", re.I), "Grand_Theft_Auto_VI"),
+    ("gta", re.compile(r"\b(?:gta|grand theft auto)\s*(?:5|v)\b", re.I), "Grand_Theft_Auto_V"),
+    ("gta", re.compile(r"\b(?:gta|grand theft auto)\b", re.I), "Grand_Theft_Auto"),
+    ("ufc", re.compile(r"\bufc\b", re.I), "Ultimate_Fighting_Championship"),
+    ("cod", re.compile(r"\b(?:cod|call of duty)\b", re.I), "Call_of_Duty"),
+    ("nba", re.compile(r"\bnba\b", re.I), "National_Basketball_Association"),
+    ("nfl", re.compile(r"\bnfl\b", re.I), "National_Football_League"),
+    ("mlb", re.compile(r"\bmlb\b", re.I), "Major_League_Baseball"),
+    ("nhl", re.compile(r"\bnhl\b", re.I), "National_Hockey_League"),
+)
+
+
+def _franchise_pages(topic: str) -> list[str]:
+    families: set[str] = set()
+    out: list[str] = []
+    for family, pattern, page in _FRANCHISE_PAGES:
+        if family in families or not pattern.search(topic or ""):
+            continue
+        families.add(family)
+        out.append(page)
+    return out
+
+
 def _article_candidates(topic: str) -> list[str]:
     """Guess Wikipedia article titles from a topic string.
 
     Run 76: ``w.capitalize()`` turned ``GTA`` into ``Gta`` and the typo
     ``goy`` into a standalone ``Goy`` article. Acronyms stay acronyms;
-    lowercase filler is not a page of its own.
+    lowercase filler is not a page of its own. Known franchises go first (#749).
     """
     tokens = re.findall(r"[A-Za-z0-9]+", topic or "")
     kept: list[str] = []
@@ -77,7 +103,7 @@ def _article_candidates(topic: str) -> list[str]:
             kept.append(folded)
     if not kept:
         return []
-    candidates = ["_".join(kept[:6])]
+    candidates = [*_franchise_pages(topic), "_".join(kept[:6])]
     if len(kept) >= 2:
         candidates.append("_".join(kept[:3]))
     first = kept[0]

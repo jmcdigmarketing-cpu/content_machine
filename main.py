@@ -429,14 +429,19 @@ def _offer_angle_shorts(
 ) -> None:
     """After an all-angles render: cut chapters into Shorts, or write fresh ones (run 78)."""
     from core.angle_chapters import chapters_from_features
-    from core.chapter_shorts import cut_chapter_shorts, parse_chapter_selection
+    from core.chapter_shorts import chapter_report, cut_chapter_shorts, parse_chapter_selection
 
     chapters = chapters_from_features((result.features or {}).get("angle_chapters"))
     if not chapters or not result.run_id:
         return
     subsection("Shorts from the chapters")
-    for chapter in chapters:
-        print(f"  {chapter.index + 1}. {chapter.title}")
+    # #755: how each chapter was placed and whether it fits a Short, so this paste is the
+    # measurement. Falls back to titles when the render has no timings yet.
+    report = chapter_report(result.run_id, script=result.script) or [
+        f"{chapter.index + 1}. {chapter.title}" for chapter in chapters
+    ]
+    for line in report:
+        print(f"  {line}")
     print("  c = cut these chapters out of the long video (no extra voice cost)")
     print("  g = write + voice a fresh Short per angle (new hook, paid voice)")
     pick = ask_choice("  Make Shorts? [c / g / Enter = skip]: ").strip().lower()
@@ -496,13 +501,16 @@ def _offer_spaced_queue(
         topic=topic,
         reserve=1,
     )
+    queued = queue_spaced_uploads(plan, channel_id=channel_id)
     for slot in plan:
-        if slot.publish_at:
-            print(f"    [{slot.run_id}] {format_scheduled_local(slot.publish_at, channel_id)}")
+        if slot.publish_at and slot.privacy:
+            when = format_scheduled_local(slot.publish_at, channel_id)
+            print(f"    [{slot.run_id}] {slot.privacy} at {when}")
+        elif slot.publish_at:
+            print(f"    ! [{slot.run_id}] not queued (see the log)")
         else:
             print(f"    ! [{slot.run_id}] {slot.skipped}")
-    queued = queue_spaced_uploads(plan, channel_id=channel_id, privacy_status="unlisted")
-    print(f"  Queued {len(queued)} as unlisted. Run the worker: py -m jobs.worker --loop 30")
+    print(f"  Queued {len(queued)}. Run the worker: py -m jobs.worker --loop 30")
 
 
 def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:

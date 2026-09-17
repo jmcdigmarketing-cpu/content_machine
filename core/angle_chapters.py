@@ -26,6 +26,7 @@ _DESCRIPTION_SPLIT_RE = re.compile(r"\s+[-–—]\s+")
 _TRAILING_PAREN_RE = re.compile(r"\s*\([^()]{2,60}\)\s*$")
 _TITLE_LIMIT = 100
 _DISTANCE_WEIGHT = 2.0
+_WINDOW_SHARE = 0.5  # #773: a chapter pick stays within half a share of its even-split target
 _KEY_STOP = frozenset(
     """about after also been being between both could does each even from have into just
     like made make many more most much must only other over same should since some such
@@ -166,7 +167,13 @@ def _llm_chapter_starts(script: str, angles: list[str]) -> list[int] | None:
 
 def _keyword_chapter_starts(script: str, angles: list[str]) -> list[int]:
     """Deterministic fallback: the sentence that best names each angle, near where an
-    even split would put it, always after the previous chapter."""
+    even split would put it, always after the previous chapter.
+
+    #773: keyword overlap used to outrank the distance penalty outright, so live run 78 put
+    chapters at 0/208/775/835/946 of 1,007 words - one chapter of 567, two of ~60. Each pick
+    is now confined to a window around its even-split target, widened only when the window
+    holds no sentence at all.
+    """
     starts = _sentence_starts(script)
     bounds = [*starts[1:], len(script)]
     sentences = [(s, script[s:e]) for s, e in zip(starts, bounds, strict=True)]
@@ -177,16 +184,25 @@ def _keyword_chapter_starts(script: str, angles: list[str]) -> list[int]:
     for i in range(1, n):
         keys = _keywords(angles[i])
         target = total * i / n
+        share = total / n
         best: tuple[float, int] | None = None
-        for j, (start, text) in enumerate(sentences):
-            if start <= out[-1]:
-                continue
-            if len(sentences) - j < n - i:
+        # Half a chapter's share either side of the target first; only if nothing sits in
+        # that window does it widen, so an angle named once at the end cannot drag its
+        # chapter there and starve the ones between.
+        for window in (share * _WINDOW_SHARE, share, float(total)):
+            for j, (start, text) in enumerate(sentences):
+                if start <= out[-1]:
+                    continue
+                if len(sentences) - j < n - i:
+                    break
+                if abs(word_at[j] - target) > window:
+                    continue
+                overlap = len(keys & _keywords(text))
+                score = overlap - _DISTANCE_WEIGHT * abs(word_at[j] - target) / total
+                if best is None or score > best[0]:
+                    best = (score, start)
+            if best is not None:
                 break
-            overlap = len(keys & _keywords(text))
-            score = overlap - _DISTANCE_WEIGHT * abs(word_at[j] - target) / total
-            if best is None or score > best[0]:
-                best = (score, start)
         if best is None:
             break
         out.append(best[1])
@@ -217,6 +233,89 @@ def locate_chapters(script: str, angles: list[str]) -> list[AngleChapter]:
         )
         for i, (angle, char) in enumerate(zip(angles, starts, strict=False))
     ]
+
+
+# A chapter Short is watched with no lead-in, so its first word cannot point backwards.
+# Live run 79: cuts 2, 4 and 5 opened "So the real question...", "But let's get concrete...",
+# "And it's not just about microtransactions anymore." (#770)
+_OPENER_CONNECTIVES = ("so", "but", "and", "now", "yet", "still", "because", "plus", "anyway")
+_SENTENCE_BREAK_RE = re.compile(r"[.!?]")
+
+
+def _trimmed_opener(sentence: str) -> str:
+    """The sentence without its leading connective, or "" when it cannot lose one cleanly."""
+    match = re.match(r"\s*([A-Za-z']+)([,\s]+)(.*)", sentence, re.S)
+    if not match:
+        return ""
+    first, _gap, rest = match.groups()
+    if first.lower() not in _OPENER_CONNECTIVES or not rest.strip():
+        return ""
+    rest = rest.lstrip()
+    # "And then everything changed." -> "then everything changed." is not a sentence an
+    # operator would publish, so leave it and say so instead.
+    if rest.split()[0].lower() in ("then", "so", "now", "yet", "also", "too"):
+        return ""
+    return rest[:1].upper() + rest[1:]
+
+
+def trim_chapter_openers(
+    script: str, chapters: list[AngleChapter]
+) -> tuple[str, list[AngleChapter], list[str]]:
+    """Drop a back-referencing first word from each chapter's opening sentence (#770).
+
+    Returns the edited script, chapters shifted by the words removed before them, and one note
+    per chapter touched or still opening on a connective. Chapter 1 is left alone - it opens
+    the video, where a connective reads as a voice, not a dangling reference.
+    """
+    text = script or ""
+    if not text.strip() or len(chapters) < 2:
+        return text, chapters, []
+
+    edits: list[tuple[int, int, str]] = []  # (original char_start, chars removed, sentence)
+    notes: list[str] = []
+    shift = 0  # chars already removed by earlier edits, so later offsets still land
+    for chapter in chapters[1:]:
+        start = max(0, int(chapter.char_start) - shift)
+        if start >= len(text):
+            continue
+        end = _SENTENCE_BREAK_RE.search(text, start)
+        sentence = text[start : (end.end() if end else len(text))]
+        trimmed = _trimmed_opener(sentence)
+        first_word = (sentence.strip().split() or [""])[0].strip(",").lower()
+        if not trimmed:
+            if first_word in _OPENER_CONNECTIVES:
+                notes.append(
+                    f"chapter {chapter.index + 1} still opens on '{first_word}': "
+                    f"{' '.join(sentence.split()[:8])}"
+                )
+            continue
+        removed = len(sentence) - len(trimmed)
+        notes.append(
+            f"chapter {chapter.index + 1} opener: dropped '{first_word}' -> "
+            f"{' '.join(trimmed.split()[:8])}"
+        )
+        edits.append((int(chapter.char_start), removed, sentence))
+        text = text[:start] + trimmed + text[start + len(sentence) :]
+        shift += removed
+
+    if not edits:
+        return text, chapters, notes
+
+    shifted: list[AngleChapter] = []
+    for chapter in chapters:
+        removed_chars = sum(chars for start, chars, _s in edits if start < chapter.char_start)
+        char_start = max(0, int(chapter.char_start) - removed_chars)
+        shifted.append(
+            AngleChapter(
+                index=chapter.index,
+                title=chapter.title,
+                angle=chapter.angle,
+                word_start=_word_index_at(text, char_start),
+                char_start=char_start,
+                placed_by=chapter.placed_by,
+            )
+        )
+    return text, shifted, notes
 
 
 def chapter_lines(

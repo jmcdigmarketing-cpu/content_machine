@@ -11,6 +11,39 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-17 (Claude Code) - wave 20: the piper long-form experiment is over
+
+**Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?
+listening and its clearly worse, they can still be sprinkled into shorts but guarentee not
+long form unfortunetly esp bc that would make the cost go down significantly."
+
+**The verdict.** #758 sent Long/Extended voice to piper because TTS was 91% of all-time spend.
+Wave 19 rendered run 79 so the operator could hear it. They did, and piper is out of long-form.
+The saving is gone on purpose - quality won. Piper keeps the Shorts mix, raised to 1 in 6.
+
+**The framing that changes the maths.** Asked where the volume actually sits, the operator said a
+long video is **1-2 a month** and the **3-5/week target is Shorts**. So the ElevenLabs bill is
+mostly Shorts rates, and an Extended render at ~$1.27 lands once or twice a month. That is why
+the answer was "straight back to ElevenLabs" rather than turbo/flash or an Edge A/B.
+
+**Offered and not taken:** Edge TTS (Microsoft neural, cloud, $0, already installed) as a listen
+against ElevenLabs, and ElevenLabs turbo/flash at about half price. Both stay on the table if the
+Shorts bill ever gets uncomfortable.
+
+**Shipped.** #775 the reversal (with `.env.example` carrying the verdict so it is not "improved"
+back later) · #776 a weekly spend warning read off the traces, warn-only, `SPEND_WARN_WEEKLY_USD`
+· #770 chapter openers lose a back-referencing first word before TTS, no LLM call · #773 the
+keyword fallback stays inside half a share of its target · #774 the final script is kept beside
+the trace · #777 `ops retire-renders --run-id`, used on the six piper test renders.
+
+**Debug.** Two wave 17 tests and two wave 19 tests pinned the piper default; they now pin the
+opt-in path, with the reversal named in their docstrings. One real bug surfaced from a test
+collision: batch review preferred the run-id script sidecar over the draft folder's own
+`draft.md`. The folder's copy wins now. `ops mutate-gates` still kills 45/45.
+
+**Open and waiting on the operator:** #771 - the 1-in-6 piper Shorts still get proportional
+caption timing, and turning the existing aligner on means a one-time Whisper model download.
+
 ## 2026-09-17 (Claude Code) - wave 19: all-angles measured live, gates mutation-tested
 
 **Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?"

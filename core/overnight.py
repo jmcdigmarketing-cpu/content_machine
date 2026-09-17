@@ -277,6 +277,14 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append(week)
     except Exception as exc:
         logger.debug("weekly target line skipped: %s", exc)
+    try:
+        from core.spend_week import spend_warning_line
+
+        spend = spend_warning_line()
+        if spend:
+            lines.append(spend)
+    except Exception as exc:
+        logger.debug("weekly spend line skipped: %s", exc)
     return "\n".join(lines)
 
 

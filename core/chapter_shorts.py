@@ -175,7 +175,10 @@ def _record_spans(
     # script_preview is capped at 2,000 chars, so a re-cut by run id would lose every
     # later chapter's text. The TTS word sidecar is the full spoken script.
     spoken = " ".join(str(w.get("word") or "") for w in words if isinstance(w, dict)).strip()
-    text = script if script is not None else (spoken or str(record.script_preview or ""))
+    from core.run_trace import full_script
+
+    stored = full_script(getattr(record, "id", None))
+    text = script if script is not None else (stored or spoken or str(record.script_preview or ""))
     if not chapters or not text.strip():
         return chapters, [], text
 

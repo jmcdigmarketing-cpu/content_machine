@@ -812,7 +812,8 @@ def synthesize_to_path(
     return output_path
 
 
-_LONG_FORM_PROVIDER_DEFAULT = "piper"
+# #775: no default long-form override any more - the operator opts in with TTS_PROVIDER_LONG.
+_LONG_FORM_PROVIDER_DEFAULT = ""
 _length_choice_context = ""
 
 
@@ -829,12 +830,13 @@ def length_context(length_choice: str):
 
 
 def long_form_provider(provider: str, length_choice: str) -> str:
-    """Voice backend for this length (#758).
+    """Voice backend for this length (#758, reversed by #775).
 
-    TTS is 91% of all-time spend and Extended is the worst case, so presets that can run
-    past the 3-minute Shorts cap use `TTS_PROVIDER_LONG` (default piper, $0) while Shorts
-    keep the paid voice. An explicitly set `TTS_PROVIDER` always wins, and an unusable
-    local voice still falls back to ElevenLabs downstream.
+    #758 sent Long/Extended to piper because TTS was 91% of spend. The operator listened to
+    the first piper Extended render (run 79, 2026-09-17) and called it clearly worse, so
+    long-form is paid again: this returns the configured provider unless the operator sets
+    `TTS_PROVIDER_LONG` themselves. Piper survives as the 1-in-6 Shorts mix. A long video is
+    1-2 a month, so the bill is mostly Shorts either way.
     """
     if os.getenv("TTS_PROVIDER", "").strip():
         return provider
@@ -847,7 +849,9 @@ def long_form_provider(provider: str, length_choice: str) -> str:
         return provider
     if seconds <= 180:
         return provider
-    return (os.getenv("TTS_PROVIDER_LONG", "").strip() or _LONG_FORM_PROVIDER_DEFAULT).lower()
+    return (
+        os.getenv("TTS_PROVIDER_LONG", "").strip() or _LONG_FORM_PROVIDER_DEFAULT
+    ).lower() or provider
 
 
 def voice_stage_label(length_choice: str = "") -> str:
@@ -862,14 +866,14 @@ def _resolve_tts_provider() -> str:
 
 
 def _piper_mix_every() -> int:
-    """1-in-N Standard ElevenLabs renders use Piper. Unset = 8; 0/off = never."""
-    raw = (os.getenv("TTS_PIPER_MIX_EVERY", "8") or "8").strip().lower()
+    """1-in-N Standard ElevenLabs renders use Piper. Unset = 6 (#775); 0/off = never."""
+    raw = (os.getenv("TTS_PIPER_MIX_EVERY", "6") or "6").strip().lower()
     if raw in ("0", "off", "false", "no"):
         return 0
     try:
         return max(0, int(raw))
     except ValueError:
-        return 8
+        return 6
 
 
 def _should_piper_mix() -> bool:

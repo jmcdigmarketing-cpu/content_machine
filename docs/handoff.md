@@ -51,36 +51,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-17 · **HEAD at write:** `cf7c62b` · **Tree:** wave 19 committing, then
-pushing. CI was green on `cf7c62b` (run 35166827842).
+**Written:** 2026-09-17 (2nd) · **HEAD at write:** `b4e06fe` · **Tree:** wave 20 committing,
+then pushing. CI was green on `b4e06fe` (run 35174734027).
 
-**Defects first - five found this wave, four by running it live.**
-- #765: headless scripted variant 0 while printing the ranked one.
-- #767: `auto_generate > log` crashed on a check mark (cp1252), which is exactly how the nightly
-  task runs.
-- #768: piper Extended voice was projected and stored at ElevenLabs price.
-- #772: the voice label was wrong.
+**Read this before touching the voice policy.** #758 sent Long/Extended to piper to kill 91% of
+spend. The operator listened to run 79 on 2026-09-17 and called it **clearly worse**. #775 reverses
+it: `TTS_PROVIDER_LONG` has no default, so long-form is paid again; piper stays as the Shorts mix
+(1 in 6). `.env.example` carries the verdict beside both knobs. Do not "optimise" this back.
 
-All fixed. Open from the run: #770 (3/5 chapter Shorts open "So/But/And"), #771 (piper leaves no
-word timings, so captions and cut points are estimated on every long video), #773 (keyword
-chapter fallback is lopsided), #774 (a headless draft's full script is not stored). Still the
-operator's: run 77 is `published` until the Studio delete plus `ops studio-deleted`, and they
-need to listen to the piper render.
+**Volume framing from the same call:** a long video is **1-2 a month**; the **3-5/week target is
+Shorts**. The bill is mostly Shorts rates, which is why paid long-form was affordable again.
 
-**Live run (operator-approved, nothing queued).** Run 78 stopped at the grade gate (C). Run 79
-was forced past that gate only: 287 s on piper for $0 voice, five `llm` chapters of 0:39-1:07,
-Shorts cut as runs 80-84. Run 79 carries `grounding_override`, so 79-84 never go public.
+**Defect found this wave:** batch review preferred the #774 run-id script sidecar over the draft
+folder's own `draft.md` - a test collision caught it; the folder's copy wins now. Nothing else in
+wave 19's code was broken.
 
-**Also shipped.** #627 `ops mutate-gates` (38/45 -> 45/45) · #769 a wrong actor named in the
-script blocks · #763 draft freshness 2d/7d · #764 under-target week line · #766 `ops
-schedule-drafts` (not installed - the operator does that).
+**Also shipped.** #776 weekly spend warning off the traces (`SPEND_WARN_WEEKLY_USD`, default $5,
+warn-only, in `ops status` and `ops overnight`) · #770 `trim_chapter_openers` drops a
+back-referencing first word before TTS, so cut Shorts inherit clean hooks (run 79's cuts 2/4/5) ·
+#773 the keyword fallback stays within half a share of its target (576/8/10/10/21 ->
+120/132/120/132/121) · #774 the final script sits beside the trace · #777 `ops retire-renders
+--run-id`, used on the piper test renders 79-84.
 
-Suite **3,233 -> 3,267**; mypy **139**; ruff clean; `data/` untouched by tests; backlog **326
-open / 684 done**, highest **#774**. Next five: **#771 · #770 · #773 · #774 · #739**.
+Suite **3,267 -> 3,286**; mypy **139**; ruff clean; `data/` untouched by tests; `ops mutate-gates`
+45/45. Backlog **323 open / 690 done**, highest **#777**. Next five:
+**#771 · #739 · #730 · #728 · #628**.
 
-**Cursor:** cost functions take `length_choice` now - pass it, or piper renders read as paid.
-Headless entry points call `core.console_encoding.ensure_utf8_stdout()`; a new one should too.
-After changing a gate, run `py -m scripts.ops mutate-gates --target <module>`.
+**Cursor:** four tests across waves 17 and 19 pinned the piper long-form default and now pin the
+opt-in path instead - if you see piper in a voice test, read its docstring before trusting it.
+`ops retire-renders` takes `--run-id` now. Run `py -m scripts.ops mutate-gates` after any gate change.
 
 ## Slot — Cursor
 

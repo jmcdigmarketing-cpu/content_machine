@@ -1,10 +1,24 @@
-# Handoff synopsis — 2026-09-17: wave 19 all-angles measured live + gate mutation
+# Handoff synopsis — 2026-09-17: wave 20 piper long-form reversed + chapter quality
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-17 (Claude Code): wave 19 #755 #627 #769 #763 #764 #766 (+ #765 #767 #768 #772)
+## Last wave — 2026-09-17 (Claude Code): wave 20 #775 #776 #770 #773 #774 #777
+
+The operator listened to run 79 and called piper long-form "clearly worse", so #758 is reversed:
+`TTS_PROVIDER_LONG` no longer defaults to piper and Long/Extended are paid again (#775). Piper
+stays as the Shorts mix, 1 in 6. Volume framing from the same call: **a long video is 1-2 a month,
+the 3-5/week target is Shorts**, so the bill is mostly Shorts rates. A weekly spend warning now
+reads the traces (#776, `SPEND_WARN_WEEKLY_USD`, default $5, warn-only). Chapter openers lose a
+back-referencing first word before TTS (#770); the keyword fallback stays near each chapter's share
+(#773); a run's final script is kept beside its trace (#774); `ops retire-renders --run-id` retired
+the six piper test renders 79-84 (#777). Found via a test collision: batch review preferred the
+run-id sidecar over the draft's own `draft.md` - fixed. Suite **3,267 -> 3,286**; mypy **139**;
+mutate-gates 45/45; backlog **323 open / 690 done**, highest **#777**. Next five:
+**#771 · #739 · #730 · #728 · #628**.
+
+## Previous — 2026-09-17 (Claude Code): wave 19 #755 #627 #769 #763 #764 #766 (+ #765 #767 #768 #772)
 
 First live all-angles run, driven headless by Claude on operator approval, rendered only (#755).
 Run 79: piper, $0 voice, five `llm`-placed chapters of 0:39-1:07, five Shorts cut (runs 80-84).

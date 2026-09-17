@@ -945,6 +945,22 @@ def cmd_batch_review(args: argparse.Namespace) -> int:
 def cmd_retire_renders(args: argparse.Namespace) -> int:
     from core.stale_renders import find_stale_renders, render_age_days, retire_renders
 
+    run_id = int(getattr(args, "run_id", 0) or 0)
+    if run_id:
+        # By id, age does not apply: a test render is retired the day it is made.
+        from scripts.requeue_upload import list_recyclable
+
+        stale = [run for run in list_recyclable(args.channel) if int(run.id) == run_id]
+        if not stale:
+            print(f"Retire renders: run {run_id} is not an unuploaded render on {args.channel}")
+            return 1
+        marked = retire_renders(stale) if getattr(args, "apply", False) else []
+        if marked:
+            print(f"Retired run {run_id}. The file stays on disk.")
+        else:
+            print(f"Would retire run {run_id}. Add --apply.")
+        return 0
+
     days = int(getattr(args, "days", 0) or 30)
     stale = find_stale_renders(args.channel, days=days)
     if not stale:

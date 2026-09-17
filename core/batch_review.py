@@ -102,7 +102,12 @@ def pending_drafts(channel_id: str, *, root: str | None = None) -> list[PendingD
             continue
         if not isinstance(meta, dict) or not meta.get("run_id"):
             continue
-        draft = PendingDraft(folder=folder, meta=meta, script=draft_script(folder))
+        # draft.md is this folder's own copy and wins; the #774 trace sidecar is the
+        # fallback for a draft written before draft.md carried the full script.
+        from core.run_trace import full_script
+
+        script = draft_script(folder) or full_script(meta.get("run_id")) or ""
+        draft = PendingDraft(folder=folder, meta=meta, script=script)
         if draft.decision not in ("", "accepted") or not draft.script:
             continue
         out.append(draft)

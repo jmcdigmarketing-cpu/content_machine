@@ -202,12 +202,18 @@ class TestSpacedShortQueue(unittest.TestCase):
 
 
 class TestLongFormVoicePolicy(unittest.TestCase):
-    """TTS is 91% of all-time spend ($13.50 of $14.85) and Extended is the worst case (#758)."""
+    """TTS is 91% of all-time spend ($13.50 of $14.85) and Extended is the worst case (#758).
 
-    def test_long_presets_use_the_local_voice_by_default(self):
+    #775 (2026-09-17): the operator listened to the first piper Extended render and called it
+    clearly worse, so the policy no longer diverts long-form by default - it diverts only when
+    TTS_PROVIDER_LONG is set. These now pin that opt-in path."""
+
+    def test_long_presets_use_the_local_voice_when_opted_in(self):
         from core.tts import long_form_provider
 
-        with patch.dict(os.environ, {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": ""}, clear=False):
+        with patch.dict(
+            os.environ, {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": "piper"}, clear=False
+        ):
             self.assertEqual(long_form_provider("elevenlabs", "4"), "piper")
             self.assertEqual(long_form_provider("elevenlabs", "3"), "piper")
             self.assertEqual(long_form_provider("elevenlabs", "2"), "elevenlabs")
@@ -228,7 +234,9 @@ class TestLongFormVoicePolicy(unittest.TestCase):
     def test_the_render_length_reaches_the_resolver(self):
         from core import tts
 
-        with patch.dict(os.environ, {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": ""}, clear=False):
+        with patch.dict(
+            os.environ, {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": "piper"}, clear=False
+        ):
             with tts.length_context("4"):
                 self.assertEqual(tts._resolve_tts_provider(), "piper")
             self.assertEqual(tts._resolve_tts_provider(), "elevenlabs")

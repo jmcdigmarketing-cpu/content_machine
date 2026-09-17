@@ -569,6 +569,11 @@ def _finalize_run(
             menu_path=result.menu_path,
             angle_intent=result.angle_intent,
         )
+        # #774: the row's script_preview stops at 2,000 chars, so a drafted run could not be
+        # rendered later without paying for generation again.
+        from core.run_trace import write_full_script
+
+        write_full_script(run_id, result.script)
     except Exception as exc:
         # Warning, not debug: the trace is what `ops traces`, `ops dossier` and
         # data_quality's per-signal failure rates read. A missing one blinds the
@@ -784,12 +789,24 @@ def run_pipeline(
     if result.angle_intent:
         result.features["angle_intent"] = result.angle_intent
     if len(angles) >= 2:
-        from core.angle_chapters import chapter_lines, features_from_chapters, locate_chapters
+        from core.angle_chapters import (
+            chapter_lines,
+            features_from_chapters,
+            locate_chapters,
+            trim_chapter_openers,
+        )
         from core.chapters import _replace_chapter_lines
         from core.script_length import WORDS_PER_SECOND
 
         chapters = locate_chapters(result.script, angles)
         if chapters:
+            # #770: each chapter is also cut into its own Short, so its first word cannot
+            # point back at the chapter before it. Runs before TTS, so the cut inherits it.
+            result.script, chapters, opener_notes = trim_chapter_openers(result.script, chapters)
+            for note in opener_notes:
+                logger.info("%s", note)
+            if opener_notes:
+                result.features["chapter_opener_notes"] = opener_notes
             spoken = count_spoken_words(result.script)
             result.features["all_angles"] = True
             result.features["angle_chapters"] = features_from_chapters(chapters)

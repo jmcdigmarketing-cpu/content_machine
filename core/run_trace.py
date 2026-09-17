@@ -242,6 +242,41 @@ def write_run_trace(
         return None
 
 
+def _script_path(run_id: int) -> str:
+    return os.path.join(TRACES_DIR, f"{int(run_id)}.script.txt")
+
+
+def write_full_script(run_id: int | None, script: str) -> str | None:
+    """Keep the run's final script beside its trace (#774). Fail-open.
+
+    `content_runs.script_preview` caps at 2,000 chars and `quality.script_post_rewrite` is
+    pre-trim, so run 78 (1,007 words, stopped at a gate) could not be rendered later without
+    paying for generation again.
+    """
+    if not run_id or not (script or "").strip():
+        return None
+    try:
+        os.makedirs(TRACES_DIR, exist_ok=True)
+        path = _script_path(run_id)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(script.strip())
+        return path
+    except OSError as exc:
+        logger.debug("full script not kept for run %s: %s", run_id, exc)
+        return None
+
+
+def full_script(run_id: int | None) -> str | None:
+    """The stored final script for a run, or None."""
+    if not run_id:
+        return None
+    try:
+        with open(_script_path(run_id), encoding="utf-8") as f:
+            return f.read().strip() or None
+    except OSError:
+        return None
+
+
 def read_trace(run_id: int) -> dict[str, Any] | None:
     """One trace by run id, or None."""
     try:

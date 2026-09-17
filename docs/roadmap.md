@@ -24,34 +24,35 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-17 wave 19: all-angles measured live. **#755** run 79 rendered
-headless on piper ($0): five `llm`-placed chapters of 0:39-1:07, five Shorts cut; run 78's
-keyword fallback was lopsided · **#627** `ops mutate-gates` - 7 of 45 gate mutants
-survived, now 45/45 · **#769** a wrong actor named in the script blocks (#748's gap) ·
-**#763** drafts past 2d (news) / 7d re-ask · **#764** "Week: 1 of 3-5 ... short 2" ·
-**#766** `ops schedule-drafts` · found live and fixed: **#765** headless scripted variant 0
-· **#767** redirected console crash · **#768** piper voice costed at ElevenLabs price ·
-**#772** voice label.
+**Just landed** - 2026-09-17 wave 20: the operator listened to run 79 and the piper
+long-form experiment is over. **#775** `TTS_PROVIDER_LONG` no longer defaults to piper -
+Long/Extended are paid again, piper stays as the Shorts mix at 1 in 6 · **#776** a weekly
+spend warning off the traces (`SPEND_WARN_WEEKLY_USD`, default $5) · **#770** chapter
+openers lose a back-referencing first word before TTS · **#773** the keyword fallback keeps
+each chapter near its share (576/8/10/10/21 -> 120/132/120/132/121) · **#774** a run's final
+script is kept beside its trace · **#777** `ops retire-renders --run-id` (used on 79-84).
 
-**Previously** - 2026-09-16 wave 18: **#760** `ops batch-review` · **#762** public at slot ·
-**#761** stale renders retired · **#345** claim types · **#756** labels · **#749** franchise
-pages. Wave 17 **#754 #757 #758 #543 #759**; wave 16 **#750-#753 #732**; **#153** retired
-(do not rebuild).
+**Previously** - 2026-09-17 wave 19: **#755** all-angles measured live · **#627** `ops
+mutate-gates` 45/45 · **#769** wrong actor blocks · **#763 #764 #766**; fixed live: **#765
+#767 #768 #772**. Wave 18 **#760 #762 #761 #345 #756 #749**; wave 17 **#754 #757 #758 #543
+#759**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-The live run showed what all-angles costs in quality, not money: cut points and captions
-are estimated on every piper render, and three of five Shorts open mid-thought.
+**Volume framing (2026-09-17):** a long video is 1-2 a month; the 3-5/week target is Shorts.
+So Shorts quality and Shorts throughput are what the next items are about.
 
-1. **#771 word timings for piper** `[M]` - local aligner, same sidecar as ElevenLabs; fixes
-   captions, lower thirds and chapter cut points on every long video.
-2. **#770 chapter openers that stand alone** `[S]` - cuts 2/4/5 of run 79 began "So / But / And".
-3. **#773 keyword chapter fallback bounded to its share** `[S]` - run 78: one chapter of 567 words.
-4. **#774 keep a draft's full script** `[S]` - run 78 cannot be rendered without paying again.
-5. **#739 captions by footage source** `[M]` - carried; needs the stock segment sampled.
+1. **#771 captions on piper-mix Shorts** `[S]` - the aligner exists and is switched off; 1 in 6
+   Shorts ships proportional caption timing. Needs the operator's yes to a one-time model download.
+2. **#739 captions by footage source** `[M]` - carried; needs the stock segment sampled.
+3. **#730 `CAPTION_AUTO_PLACE` on real footage** `[M]` - 23 of 46 hybrids carry a bar in the band;
+   needs the operator's call on the false-move bar.
+4. **#728 overlay under a still sky** `[S]` - unmeasured: no such clip exists in the library yet.
+5. **#628 flaky-test detector** `[M]` - the suite is 3,286 tests and CI is the only gate.
 
-**Dropped from this list** (stay open): **#730** (needs an operator call) · **#728** ·
-**#731** · **#628** · Phase M · Ollama.
+**Dropped from this list** (stay open): **#731** · Phase M · Ollama.
+
+**Closed 2026-09-17 (wave 20):** **#775 #776 #770 #773 #774 #777**. Narrowed: **#771**.
 
 **Closed 2026-09-17 (wave 19):** **#755 #627 #769 #763 #764 #766 #765 #767 #768 #772**.
 Filed open: **#770 #771 #773 #774**.

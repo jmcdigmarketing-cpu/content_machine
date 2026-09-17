@@ -314,13 +314,17 @@ class TestGateMutation(unittest.TestCase):
 
 
 class TestVoiceCostFollowsTheLengthPolicy(unittest.TestCase):
-    """#768, live run 2026-09-17: the Extended render resolves to piper ($0, #758) but the
-    projection printed `tts $1.2692` - the cost meter read TTS_PROVIDER alone."""
+    """#768, live run 2026-09-17: the Extended render resolved to piper ($0) but the
+    projection printed `tts $1.2692` - the cost meter read TTS_PROVIDER alone.
+
+    #775 reversed the piper default, so the policy now only diverts long-form when the
+    operator sets TTS_PROVIDER_LONG. The meter must follow it either way, which is what
+    these pin."""
 
     SCRIPT = "x" * 5700
 
     def _env(self, **extra):
-        env = {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": ""}
+        env = {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": "piper"}
         env.update(extra)
         return patch.dict(os.environ, env)
 
@@ -360,7 +364,7 @@ class TestVoiceStageNamesTheRealProvider(unittest.TestCase):
     def test_the_label_follows_the_length_policy(self):
         from core.tts import voice_stage_label
 
-        with patch.dict(os.environ, {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": ""}):
+        with patch.dict(os.environ, {"TTS_PROVIDER": "", "TTS_PROVIDER_LONG": "piper"}):
             self.assertIn("piper", voice_stage_label("4"))
             self.assertIn("elevenlabs", voice_stage_label("2").lower())
 

@@ -51,30 +51,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-19 · **HEAD at write:** `acf88ed` · **Tree:** wave 23 committing, then
-pushing. CI was green on `acf88ed` (run 35453421895).
+**Written:** 2026-09-19 · **HEAD at write:** `e7e9521` · **Tree:** wave 24 committing, then
+pushing. CI was green on `e7e9521` (run 35455523599).
 
-**Defects first - three more found by looking at a re-rendered preview, all fixed:**
-- **#789** a third of the GTA clips are night driving (luma 26-40 before the grade); 22% of preview
-  frames were near-black. Shots under 45 are re-drawn from another file: 5%.
-- **#790** karaoke lines wider than the frame: WrapStyle 2 never wraps, 4 words at 90 px overflow.
-  Split to `karaoke_max_chars(size)`. Hidden while #783 kept captions tiny.
-- **#791** the AI disclosure (bottom, MarginV 280) sat on the first caption (bottom, 260). Top now.
-Still visible: top-of-frame HUD bars in some GTA shots - filed **#788**.
+**Defects first - two found in this wave's own debug sweep:**
+- **#797** `data/tmp/hybrid_backgrounds` held 60 composed backgrounds / **4.2 GB**, oldest
+  2026-06-04. Nothing had ever swept them; `_compose` now prunes past 3 days (2,636 MB freed).
+- **#798** with 3-8 s shots, one mid-shot brightness sample let near-black shots back in
+  (5% -> 9% of frames). Shots over 4 s are read at a third and two thirds, scored on the darker.
+- **#788 is narrowed, not done.** The band reading first called a bright sky a plate (0.233, the
+  cap, on 8/8 GTA clips); requiring a sharp edge fixed that and also lost the 2K score bug, which
+  is partial-width. Measurements only ever *add* crop - GTA's mission text is white-on-nothing,
+  not a luminance step, so `BACKGROUND_CROP_BOTTOM` stays the floor.
 
-**Operator ask, shipped:** #785 crop, not skip - every shot drops the source frame's bottom 18%
-(`BACKGROUND_CROP_BOTTOM`). #787 a long gameplay file is 30 s windows, so one 20-minute download
-feeds a Short; `ops footage-add --path --game --licence [--source] --apply` imports it (muted H.264,
-license.yaml). #786 narrowed: `footage` field on playlist rows (NFL->Madden 26, etc.); `ops footage`
-shows the gaps. #600 `core/post_publish_check` - nightly, once per upload at 48h; `POST_PUBLISH_CHECK`
-is pinned off in tests/__init__. First live pass: 24 videos, none flagged (wrote
-data/post_publish_tapin.json - that is the real store, on purpose).
+**Operator ask, shipped:** #792 shots 3-8 s, random, never within a second of the last one
+(`BACKGROUND_CUT_MIN`/`MAX`; wave 22's `BACKGROUND_CUT_SECONDS` reads as the midpoint) - the wave
+22 guards moved with the reversal instead of being deleted. #796 parallel shot encodes
+(`BACKGROUND_SHOT_WORKERS=4`). #793 `footage-add --path <folder>`. #795 `preview-render
+--seconds N`. `ops footage --apply` measured all 141 clips and stores bands in the clip index.
 
-Suite **3,322 -> 3,351**; mypy **139**; ruff clean; mutate-gates 45/45. Backlog **322 open / 704
-done**, highest **#791**. Next: operator's footage files, playlist re-consent, 05:00 drafts; #788.
+Operator calls this session: caption height is fine (so #730/#731/#739 are not next), no stock
+footage for the empty niches, footage order does not matter.
 
-**Cursor:** `candidate_clips` tries the folder name, then the playlist `footage` alias, and only
-then the LLM pick - `resolve_background_query` no longer runs when a keyword matches.
+Suite **3,351 -> 3,381**; mypy **139**; ruff clean; mutate-gates 45/45; `data/` untouched by
+tests. Backlog **322 open / 710 done**, highest **#798**. Next: the operator's files (#786),
+#788's partial-width half, #611.
+
+**Cursor:** `cut_points` takes `span=`/`rng=` now and is random by default - pin both in a test
+rather than asserting a shot count. `build_shot_command` reads the clip index through
+`assets/clip_bands.crop_for_clip`, so a shot's crop depends on the measured clip.
 
 ## Slot — Cursor
 

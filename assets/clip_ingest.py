@@ -302,6 +302,17 @@ def _hud_flag(dest: str) -> bool | None:
         return None
 
 
+def _bands(dest: str, duration: float | None) -> dict[str, float] | None:
+    """#788: the clip's own text bands, measured once here instead of one fixed crop."""
+    try:
+        from assets.clip_bands import measure_bands
+
+        return measure_bands(dest, duration=duration)
+    except Exception as exc:
+        logger.debug("band measurement skipped: %s", exc)
+        return None
+
+
 def _record_index(dest: str, source: str) -> None:
     ensure_data_dir()
     path = CLIP_INDEX_FILE
@@ -315,6 +326,7 @@ def _record_index(dest: str, source: str) -> None:
         "height": height,
         "codec": codec,
         "hud": _hud_flag(dest),
+        "bands": _bands(dest, duration),
     }
     _save_index(path, data)
 
@@ -421,6 +433,50 @@ def add_footage(
     return IngestRow(source=src, dest=dest, status="copied")
 
 
+def add_footage_folder(
+    folder: str,
+    *,
+    game: str = "",
+    source_url: str = "",
+    licence: str = "",
+    group: str = "gaming/other",
+    library_root: str | None = None,
+    apply: bool = False,
+) -> list[IngestRow]:
+    """Import every video in a folder under one game and licence (#793). Dry-run default.
+
+    The operator downloads a batch of no-copyright gameplay into one folder; `--game` defaults
+    to that folder's name, so `footage-add --path .../Minecraft --licence "..." --apply` is the
+    whole command.
+    """
+    name = (game or os.path.basename(os.path.abspath(folder))).strip()
+    rows: list[IngestRow] = []
+    try:
+        entries = sorted(os.listdir(folder))
+    except OSError as exc:
+        return [IngestRow(source=folder, dest=None, status="failed", reason=str(exc)[:200])]
+    for entry in entries:
+        src = os.path.join(folder, entry)
+        if not os.path.isfile(src) or not entry.lower().endswith(_VIDEO_EXTS):
+            continue
+        rows.append(
+            add_footage(
+                src,
+                game=name,
+                source_url=source_url,
+                licence=licence,
+                group=group,
+                library_root=library_root,
+                apply=apply,
+            )
+        )
+    if not rows:
+        return [
+            IngestRow(source=folder, dest=None, status="failed", reason="no video files found")
+        ]
+    return rows
+
+
 def _clip_count(folder: str) -> int:
     try:
         return sum(1 for f in os.listdir(folder) if f.lower().endswith((".mp4", ".mov")))
@@ -450,14 +506,70 @@ def footage_coverage(channel_id: str, *, library_root: str | None = None) -> lis
             if hit and _clip_count(hit):
                 folder = hit
                 break
-        rows.append(
-            {
-                "niche": name,
-                "folder": os.path.basename(folder) if folder else "",
-                "clips": _clip_count(folder) if folder else 0,
-            }
-        )
+        row_out: dict[str, Any] = {
+            "niche": name,
+            "folder": os.path.basename(folder) if folder else "",
+            "clips": _clip_count(folder) if folder else 0,
+        }
+        if folder:
+            bands = _folder_bands(folder)
+            if bands:
+                row_out["bands"] = bands
+        rows.append(row_out)
     return rows
+
+
+def measure_library(*, library_root: str | None = None, force: bool = False) -> dict[str, int]:
+    """Measure text bands (#788) for library clips that have none yet. Returns a small tally."""
+    from assets.clip_bands import measure_bands
+
+    library = library_root if library_root is not None else BASE_VIDEO_DIR
+    ensure_data_dir()
+    data = _load_index(CLIP_INDEX_FILE)
+    clips = data.setdefault("clips", {})
+    tally = {"measured": 0, "skipped": 0, "with_bands": 0}
+    for folder in _library_folders(library):
+        for entry in sorted(os.listdir(folder)):
+            if not entry.lower().endswith((".mp4", ".mov")):
+                continue
+            path = os.path.join(folder, entry)
+            meta = clips.get(path) or clips.get(os.path.abspath(path)) or {}
+            if not force and isinstance(meta.get("bands"), dict):
+                tally["skipped"] += 1
+                continue
+            bands = measure_bands(path)
+            meta["bands"] = bands
+            meta.setdefault("source", "library")
+            clips[path] = meta
+            tally["measured"] += 1
+            if bands.get("top") or bands.get("bottom"):
+                tally["with_bands"] += 1
+    _save_index(CLIP_INDEX_FILE, data)
+    return tally
+
+
+def _folder_bands(folder: str) -> dict[str, float] | None:
+    """The folder's typical measured text bands (#788), or None when nothing is measured."""
+    try:
+        from assets.clip_bands import stored_bands
+    except Exception:  # pragma: no cover - import guard
+        return None
+    tops: list[float] = []
+    bottoms: list[float] = []
+    try:
+        entries = sorted(os.listdir(folder))
+    except OSError:
+        return None
+    for entry in entries:
+        if not entry.lower().endswith((".mp4", ".mov")):
+            continue
+        bands = stored_bands(os.path.join(folder, entry))
+        if bands:
+            tops.append(bands["top"])
+            bottoms.append(bands["bottom"])
+    if not tops:
+        return None
+    return {"top": round(max(tops), 3), "bottom": round(max(bottoms), 3)}
 
 
 def render_coverage(rows: list[dict[str, Any]]) -> str:
@@ -466,7 +578,14 @@ def render_coverage(rows: list[dict[str, Any]]) -> str:
         if row.get("umbrella"):
             lines.append(f"  {row['niche']:<16} any game folder (umbrella playlist)")
         elif row["folder"]:
-            lines.append(f"  {row['niche']:<16} {row['folder']} ({row['clips']} clips)")
+            bands = row.get("bands")
+            crop = ""
+            if bands:
+                crop = (
+                    f", biggest measured band {int(round(bands['top'] * 100))}% top / "
+                    f"{int(round(bands['bottom'] * 100))}% bottom"
+                )
+            lines.append(f"  {row['niche']:<16} {row['folder']} ({row['clips']} clips{crop})")
         else:
             lines.append(f"  {row['niche']:<16} NO FOOTAGE - falls back to a random game or stock")
     lines.append(

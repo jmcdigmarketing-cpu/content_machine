@@ -29,10 +29,12 @@ class TestCropGameText(unittest.TestCase):
     def test_shot_crops_the_bottom_band_before_scaling(self):
         from assets.fast_cut import build_shot_command
 
+        # #788 added a top offset to the same filter; an unmeasured clip still crops 18%
+        # off the bottom and nothing off the top.
         with patch.dict(os.environ, {"BACKGROUND_CROP_BOTTOM": ""}):
             vf = build_shot_command("a.mp4", 1.0, 2.5, "o.mp4")
         vf = vf[vf.index("-vf") + 1]
-        self.assertTrue(vf.startswith("crop=iw:trunc(ih*0.8200/2)*2:0:0,"), vf)
+        self.assertTrue(vf.startswith("crop=iw:trunc(ih*0.8200/2)*2:0:trunc(ih*0.0000/2)*2,"), vf)
         self.assertLess(vf.index("crop=iw"), vf.index("scale="))
 
     def test_crop_is_configurable_and_clamped(self):
@@ -105,8 +107,9 @@ class TestLongSourceWindows(unittest.TestCase):
 
         keys, windows = expand_pool(["long.mp4"], {"long.mp4": 1200})
         for seed in range(40):
+            # Shot count follows the operator's 3-8 s pacing (#792), not wave 23's ~2.5 s.
             shots = plan_windowed_shots(cut_points(55.0), keys, windows, rng=random.Random(seed))
-            self.assertGreaterEqual(len(shots), 18)
+            self.assertGreaterEqual(len(shots), 6)
             self.assertTrue(all(clip == "long.mp4" for clip, _s, _l in shots))
             starts = [s for _c, s, _l in shots]
             self.assertEqual(len(set(starts)), len(starts))
@@ -177,14 +180,17 @@ class TestDarkShots(unittest.TestCase):
 
         keys, windows = fast_cut.expand_pool(["a.mp4", "b.mp4", "c.mp4"], {})
         lumas = iter([5.0] + [120.0] * 200)
+        bounds = [0.0, 4.0, 8.0, 12.0]
         with (
             patch.object(paths, "DATA_DIR", tmp),
+            patch.object(fast_cut, "cut_points", return_value=bounds),
+            patch.object(fast_cut, "shot_workers", return_value=1),
             patch.object(fast_cut, "_render_shot", side_effect=fake_render),
             patch.object(fast_cut, "_concat", side_effect=fake_concat),
             patch.object(fast_cut, "shot_brightness", side_effect=lambda *_a: next(lumas)),
         ):
             result = fast_cut._compose(keys, windows, "GTA", 12.0, None)
-        shots = len(fast_cut.cut_points(12.0)) - 1
+        shots = len(bounds) - 1
         self.assertEqual(len(rendered), shots + 1, rendered)
         self.assertNotEqual(rendered[0][0], rendered[1][0], "the redraw used another clip")
         self.assertIn(f"{shots} shots", result.attribution)
@@ -204,13 +210,14 @@ class TestDarkShots(unittest.TestCase):
         keys, windows = fast_cut.expand_pool(["a.mp4", "b.mp4", "c.mp4"], {})
         with (
             patch.object(paths, "DATA_DIR", tmp),
+            patch.object(fast_cut, "cut_points", return_value=[0.0, 4.0]),
             patch.object(fast_cut, "_render_shot", side_effect=fake_render),
             patch.object(
                 fast_cut, "_concat", side_effect=lambda _l, o, _d: Path(o).write_bytes(b"")
             ),
             patch.object(fast_cut, "shot_brightness", return_value=1.0),
         ):
-            fast_cut._compose(keys, windows, "GTA", 2.0, None)
+            fast_cut._compose(keys, windows, "GTA", 4.0, None)
         self.assertEqual(count["n"], 3)
 
 

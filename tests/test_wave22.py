@@ -29,17 +29,22 @@ def _words(text: str, rate: float = 0.35) -> list[dict]:
 
 
 class TestCutPoints(unittest.TestCase):
-    def test_every_shot_is_two_to_three_seconds(self):
+    """The 2-3 s pacing this wave shipped was reversed by the operator on 2026-09-19 (#792,
+    planning_log 2026-09-19 wave 24): "between the 3-8s range ... dont cut consistiently".
+    These guards moved with the decision; the one thing wave 22 settled that still holds is
+    that the background cuts at all, on phrase ends, instead of two shots per video."""
+
+    def test_the_background_is_many_shots_not_two(self):
         from assets.fast_cut import cut_points
 
         bounds = cut_points(55.0)
         self.assertEqual(bounds[0], 0.0)
         self.assertEqual(bounds[-1], 55.0)
         shots = [b - a for a, b in pairwise(bounds)]
-        self.assertGreaterEqual(len(shots), 18, shots)
+        self.assertGreaterEqual(len(shots), 6, shots)
         for shot in shots:
-            self.assertGreaterEqual(shot, 2.0 - 1e-6, shots)
-            self.assertLessEqual(shot, 3.0 + 1e-6, shots)
+            self.assertGreaterEqual(shot, 3.0 - 1e-6, shots)
+            self.assertLessEqual(shot, 8.0 + 1e-6, shots)
 
     def test_cuts_land_on_phrase_ends_when_timings_exist(self):
         from assets.fast_cut import cut_points
@@ -56,14 +61,14 @@ class TestCutPoints(unittest.TestCase):
     def test_a_short_video_is_never_one_long_shot(self):
         from assets.fast_cut import cut_points
 
-        self.assertGreaterEqual(len(cut_points(12.0)) - 1, 4)
+        self.assertGreaterEqual(len(cut_points(12.0)) - 1, 2)
 
     def test_the_pace_is_tunable(self):
         from assets.fast_cut import cut_points
 
-        with patch.dict(os.environ, {"BACKGROUND_CUT_SECONDS": "5"}):
+        with patch.dict(os.environ, {"BACKGROUND_CUT_MIN": "6", "BACKGROUND_CUT_MAX": "10"}):
             shots = len(cut_points(60.0)) - 1
-        self.assertLessEqual(shots, 14)
+        self.assertLessEqual(shots, 10)
 
 
 class TestPlanShots(unittest.TestCase):

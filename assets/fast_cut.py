@@ -1,12 +1,14 @@
-"""Fast-cut backgrounds: a new shot every 2-3 seconds (#782).
+"""Fast-cut backgrounds: a new footage shot every few seconds (#782, #792).
 
 Operator, 2026-09-18, rejecting three drafts: "the clips need to be much shorter, idk like the
 other videos do. more clips per, less time in each." A hybrid background was one local clip then
 one stock clip for the whole video, so a 55 s Short held each shot for ~25 s.
 
-This cuts the background into shots of about `BACKGROUND_CUT_SECONDS` (default 2.5, each shot
-kept between 0.8x and 1.2x of it), landing each cut on the end of a phrase when the voice has
-word timings (the ElevenLabs sidecar, or the aligned one from #771), else on an even rhythm.
+Each shot runs 3-8 s (#792), drawn at random and never within a second of the shot before it,
+so the pacing does not settle into a beat - the operator reversed wave 22's steady ~2.5 s
+rhythm after watching it: "can it be a bit longer cuts? like between the 3-8s range? ... dont
+cut consistiently tbh reverse that decision." Each cut still lands on the end of a phrase when
+the voice has word timings (the ElevenLabs sidecar, or the aligned one from #771).
 Shots come from the game folder the topic picks (`LocalAssetProvider.candidate_clips`), never
 the same clip twice in a row, each from a random point inside the clip.
 
@@ -15,7 +17,8 @@ joined with ffmpeg's concat demuxer as a stream copy. That keeps a 120-shot long
 opening 120 decoders at once, and identical settings are what make a stream copy safe.
 
     BACKGROUND_FAST_CUT=true      # default; false = the old two-shot hybrid
-    BACKGROUND_CUT_SECONDS=2.5
+    BACKGROUND_CUT_MIN=3          # shortest shot
+    BACKGROUND_CUT_MAX=8          # longest shot
     BACKGROUND_CROP_BOTTOM=0.18   # share of the game frame's bottom cropped away (#785)
 
 The game's own text - GTA mission lines, subtitles, the HUD strip - sits in the bottom band of
@@ -35,6 +38,7 @@ import shutil
 import subprocess
 import tempfile
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from core.logging import get_logger
@@ -43,7 +47,11 @@ logger = get_logger("assets.fast_cut")
 
 TARGET_W = 1080
 TARGET_H = 1920
-_DEFAULT_CUT = 2.5
+_DEFAULT_MIN = 3.0
+_DEFAULT_MAX = 8.0
+# Two shots closer than this in length read as a rhythm, which is what the operator rejected.
+_LENGTH_GAP = 1.0
+_DEFAULT_WORKERS = 4
 _MIN_POOL = 3
 _MAX_POOL = 12
 _WINDOW_SECONDS = 30.0
@@ -52,6 +60,9 @@ _DEFAULT_CROP = 0.18
 # grade then takes it under 28 - near-black on a phone. Measured on the wave 23 preview.
 _MIN_LUMA = 45.0
 _DARK_REDRAWS = 2
+# Composed backgrounds are scratch: the render copies what it needs. Wave 22 never swept them
+# and data/tmp/hybrid_backgrounds reached 4.2 GB over three months (#797).
+_KEEP_TMP_DAYS = 3
 _PHRASE_END = tuple(",.!?;:")
 # Fixed, not the NVENC helper: the concat stream copy needs every shot encoded identically.
 _SHOT_ENCODER = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-g", "30"]
@@ -62,12 +73,36 @@ def fast_cut_enabled() -> bool:
     return raw not in ("0", "false", "no", "off")
 
 
-def cut_seconds() -> float:
+def _env_float(key: str) -> float | None:
+    raw = (os.getenv(key, "") or "").strip()
+    if not raw:
+        return None
     try:
-        value = float(os.getenv("BACKGROUND_CUT_SECONDS", "") or _DEFAULT_CUT)
+        return float(raw)
     except ValueError:
-        value = _DEFAULT_CUT
-    return min(8.0, max(1.0, value))
+        return None
+
+
+def shot_workers() -> int:
+    """How many shots encode at once (#796). ffmpeg is the CPU user, so a few is plenty."""
+    value = _env_float("BACKGROUND_SHOT_WORKERS")
+    if value is None:
+        return _DEFAULT_WORKERS
+    return max(1, min(16, int(value)))
+
+
+def cut_range() -> tuple[float, float]:
+    """(shortest, longest) shot in seconds. Wave 22's BACKGROUND_CUT_SECONDS is the midpoint."""
+    lo = _env_float("BACKGROUND_CUT_MIN")
+    hi = _env_float("BACKGROUND_CUT_MAX")
+    if lo is None and hi is None:
+        legacy = _env_float("BACKGROUND_CUT_SECONDS")
+        if legacy:
+            lo, hi = legacy - 2.5, legacy + 2.5
+    lo = _DEFAULT_MIN if lo is None else lo
+    hi = _DEFAULT_MAX if hi is None else hi
+    lo, hi = min(lo, hi), max(lo, hi)
+    return max(0.5, lo), min(30.0, max(hi, lo + 0.5))
 
 
 def crop_bottom() -> float:
@@ -94,37 +129,98 @@ def _word_ends(words: list[dict[str, Any]] | None) -> tuple[list[float], list[fl
     return phrase, every
 
 
+def _split_tail(pair: float, before: float | None, lo: float, hi: float) -> float:
+    """Where to cut a leftover `pair` of seconds into two shots.
+
+    Not in half: two equal shots are the beat the operator rejected, and the first half also
+    has to stay clear of the shot before it. Both halves stay inside [lo, hi].
+    """
+    low = max(lo, pair - hi)
+    high = min(hi, pair - lo)
+    if high <= low:
+        return max(lo, min(hi, pair / 2))
+    best, best_score = low, -1.0
+    steps = int((high - low) / 0.05) + 1
+    for i in range(steps):
+        first = low + i * 0.05
+        score = min(
+            abs(pair - 2 * first),
+            abs(first - before) if before is not None else float("inf"),
+        )
+        if score > best_score:
+            best, best_score = first, score
+    return best
+
+
 def cut_points(
     duration: float,
     words: list[dict[str, Any]] | None = None,
     *,
-    target: float | None = None,
+    span: tuple[float, float] | None = None,
+    rng: random.Random | None = None,
 ) -> list[float]:
-    """Shot boundaries from 0 to `duration`, each shot `lo`..`hi` seconds long."""
+    """Shot boundaries from 0 to `duration`, each shot 3-8 s and unlike the one before it."""
     duration = float(duration or 0.0)
     if duration <= 0:
         return [0.0]
-    target = float(target or cut_seconds())
-    lo, hi = target * 0.8, target * 1.2
+    lo, hi = span or cut_range()
     if duration <= hi:
         return [0.0, duration]
+    rng = rng or random.Random()
     phrase_ends, word_ends = _word_ends(words)
 
-    def _pick(t: float) -> float:
-        start, stop = t + lo, t + hi
+    def _boundary(start: float, length: float) -> float:
+        """The phrase (then word) end nearest `start + length`, inside the shot's own range."""
+        first, last = start + lo, start + hi
+        window_lo = max(first, start + length - _LENGTH_GAP)
+        window_hi = min(last, start + length + _LENGTH_GAP)
         for pool in (phrase_ends, word_ends):
-            inside = [e for e in pool if start <= e <= stop]
+            inside = [e for e in pool if window_lo <= e <= window_hi]
             if inside:
-                return min(inside, key=lambda e: abs(e - (t + target)))
-        return t + target
+                return round(float(min(inside, key=lambda e: abs(e - (start + length)))), 3)
+        return round(start + length, 3)
 
     bounds = [0.0]
+    previous: float | None = None
     while duration - bounds[-1] > hi:
-        bounds.append(round(_pick(bounds[-1]), 3))
-    # The tail is under `hi`. If it is also under `lo`, split the last two shots evenly
-    # instead of leaving a blink of a shot at the end.
-    if duration - bounds[-1] < lo and len(bounds) >= 2:
-        bounds[-1] = round((bounds[-2] + duration) / 2, 3)
+        start = bounds[-1]
+        length = rng.uniform(lo, hi)
+        for _ in range(8):
+            if previous is None or abs(length - previous) >= _LENGTH_GAP + 0.2:
+                break
+            length = rng.uniform(lo, hi)
+        cut = _boundary(start, length)
+        if previous is not None and abs(cut - start - previous) < _LENGTH_GAP:
+            # The snap pulled this shot back onto the last one's length: step away from it.
+            want = previous + _LENGTH_GAP if previous + _LENGTH_GAP <= hi else previous - _LENGTH_GAP
+            retry = _boundary(start, want)
+            cut = retry if abs(retry - start - previous) >= _LENGTH_GAP else round(start + want, 3)
+        previous = float(cut) - start
+        bounds.append(cut)
+    tail = duration - bounds[-1]
+    if lo <= tail <= hi and previous is not None and abs(tail - previous) < _LENGTH_GAP:
+        # The last shot landed on the length of the one before it: move the boundary. When
+        # what is left is close to 2x hi both halves are forced near hi, and no shift exists.
+        before = (bounds[-2] - bounds[-3]) if len(bounds) >= 3 else None
+        for shift in (-_LENGTH_GAP, _LENGTH_GAP):
+            moved = previous + shift
+            if not (lo <= moved <= hi and lo <= tail - shift <= hi):
+                continue
+            # Moving this boundary changes the shot before it too - do not fix one beat by
+            # creating another.
+            if before is not None and abs(moved - before) < _LENGTH_GAP:
+                continue
+            bounds[-1] = round(bounds[-1] + shift, 3)
+            tail = duration - bounds[-1]
+            break
+    if tail < lo and len(bounds) >= 2:
+        # Too short to stand alone: give it to the shot before, or split the pair evenly.
+        if (duration - bounds[-2]) <= hi:
+            bounds.pop()
+        else:
+            pair = duration - bounds[-2]
+            before = (bounds[-2] - bounds[-3]) if len(bounds) >= 3 else None
+            bounds[-1] = round(bounds[-2] + _split_tail(pair, before, lo, hi), 3)
     bounds.append(duration)
     return bounds
 
@@ -206,9 +302,17 @@ def plan_windowed_shots(
 
 
 def build_shot_command(clip: str, start: float, length: float, output: str) -> list[str]:
-    crop = crop_bottom()
-    # Even height so libx264's yuv420p never sees an odd row count.
-    band = f"crop=iw:trunc(ih*{1.0 - crop:.4f}/2)*2:0:0," if crop > 0 else ""
+    from assets.clip_bands import crop_for_clip
+
+    # This clip's own measured text bands (#788); an unmeasured clip keeps the env default.
+    top, bottom = crop_for_clip(clip)
+    kept = max(0.2, 1.0 - top - bottom)
+    # Even height and offset so libx264's yuv420p never sees an odd row count.
+    band = (
+        f"crop=iw:trunc(ih*{kept:.4f}/2)*2:0:trunc(ih*{top:.4f}/2)*2,"
+        if (top + bottom) > 0
+        else ""
+    )
     return [
         "ffmpeg",
         "-y",
@@ -332,11 +436,26 @@ def _concat(list_path: str, output: str, duration: float) -> None:
 
 
 def shot_brightness(path: str, length: float) -> float | None:
-    """Mean luma (0-255) of the shot's middle frame, or None when it cannot be read."""
+    """Mean luma (0-255) of the shot, or None when it cannot be read.
+
+    A 3-8 s shot (#792) can start in daylight and end in a tunnel, so anything past 4 s is
+    read at a third and two thirds and scored on the darker of the two.
+    """
+    if length > 4.0:
+        readings = [
+            value
+            for value in (_frame_luma(path, length / 3), _frame_luma(path, length * 2 / 3))
+            if value is not None
+        ]
+        return min(readings) if readings else None
+    return _frame_luma(path, length / 2)
+
+
+def _frame_luma(path: str, at: float) -> float | None:
     try:
         proc = subprocess.run(
             [
-                "ffmpeg", "-loglevel", "error", "-ss", f"{max(0.0, length / 2):.3f}",
+                "ffmpeg", "-loglevel", "error", "-ss", f"{max(0.0, at):.3f}",
                 "-i", path, "-frames:v", "1", "-vf", "scale=54:96,format=gray",
                 "-f", "rawvideo", "-",
             ],
@@ -366,6 +485,28 @@ def _redraw(
     return clip, round(offset + (rng.uniform(0.0, room) if room > 0.2 else 0.0), 3)
 
 
+def prune_backgrounds(out_dir: str, *, days: int = _KEEP_TMP_DAYS) -> int:
+    """Delete composed backgrounds older than `days`. Returns the megabytes reclaimed (#797)."""
+    import time
+
+    cutoff = time.time() - days * 86400
+    freed = 0
+    for name in os.listdir(out_dir) if os.path.isdir(out_dir) else []:
+        path = os.path.join(out_dir, name)
+        try:
+            if not os.path.isfile(path) or os.path.getmtime(path) > cutoff:
+                continue
+            size = os.path.getsize(path)
+            os.remove(path)
+            freed += size
+        except OSError as exc:
+            logger.debug("background sweep skipped %s: %s", name, exc)
+    megabytes = int(freed / (1024 * 1024))
+    if megabytes:
+        logger.info("fast cut: swept %d MB of old backgrounds", megabytes)
+    return megabytes
+
+
 def _compose(keys: list[str], windows, topic: str, duration: float, words):
     from assets.types import AssetResult
     from config.paths import DATA_DIR, ensure_data_dir
@@ -374,21 +515,30 @@ def _compose(keys: list[str], windows, topic: str, duration: float, words):
     ensure_data_dir()
     out_dir = os.path.join(DATA_DIR, "tmp", "hybrid_backgrounds")
     os.makedirs(out_dir, exist_ok=True)
+    prune_backgrounds(out_dir)
     output = os.path.join(out_dir, f"fastcut_{uuid.uuid4().hex[:12]}.mp4")
     work = tempfile.mkdtemp(prefix="fastcut_")
     try:
-        lines = []
         rng = random.Random()
-        for i, (clip, start, length) in enumerate(shots):
-            shot = os.path.join(work, f"shot_{i:04d}.mp4")
+
+        def _one(i_shot):
+            i, (clip, start, length) = i_shot
+            path = os.path.join(work, f"shot_{i:04d}.mp4")
             for attempt in range(1 + _DARK_REDRAWS):
-                _render_shot(clip, start, length, shot)
-                luma = shot_brightness(shot, length)
+                _render_shot(clip, start, length, path)
+                luma = shot_brightness(path, length)
                 if luma is None or luma >= _MIN_LUMA or attempt == _DARK_REDRAWS:
                     break
                 clip, start = _redraw(keys, windows, length, avoid=clip, rng=rng)
-            shots[i] = (clip, start, length)
-            lines.append(f"file '{shot.replace(os.sep, '/')}'")
+            return i, (clip, start, length), path
+
+        # Shots are independent; the concat list is rebuilt in playback order afterwards.
+        with ThreadPoolExecutor(max_workers=min(shot_workers(), len(shots))) as pool:
+            done = list(pool.map(_one, enumerate(shots)))
+        lines = []
+        for i, shot, path in sorted(done, key=lambda row: row[0]):
+            shots[i] = shot
+            lines.append(f"file '{path.replace(os.sep, '/')}'")
         list_path = os.path.join(work, "shots.txt")
         with open(list_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
@@ -412,12 +562,28 @@ def _compose(keys: list[str], windows, topic: str, duration: float, words):
     )
 
 
+def _trim_audio(path: str, seconds: float) -> None:
+    """Cut the copied voice track to `seconds` in place, so a preview costs a fraction."""
+    trimmed = path + ".trim.mp3"
+    proc = subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-t", f"{float(seconds):.3f}", "-i", path,
+         "-c", "copy", trimmed],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )  # fmt: skip
+    if proc.returncode != 0 or not os.path.isfile(trimmed):
+        raise RuntimeError(f"preview trim: {(proc.stderr or '')[-300:]}")
+    os.replace(trimmed, path)
+
+
 def render_preview(
     audio_path: str,
     topic: str,
     channel_id: str | None = None,
     *,
     out_dir: str | None = None,
+    seconds: float | None = None,
 ) -> str:
     """Render an existing voiced Short again with today's background, at no voice cost.
 
@@ -437,12 +603,18 @@ def render_preview(
     stem = f"preview_{uuid.uuid4().hex[:8]}"
     copy = os.path.join(audio_dir, f"{stem}.mp3")
     shutil.copyfile(audio_path, copy)
+    if seconds:
+        _trim_audio(copy, float(seconds))
     sidecar = audio_path + ".words.json"
     script = ""
     if os.path.isfile(sidecar):
-        shutil.copyfile(sidecar, copy + ".words.json")
         with open(sidecar, encoding="utf-8") as f:
-            script = " ".join(str(w.get("word") or "") for w in json.load(f) if isinstance(w, dict))
+            words = [w for w in json.load(f) if isinstance(w, dict)]
+        if seconds:
+            words = [w for w in words if float(w.get("end") or 0.0) <= float(seconds)]
+        with open(copy + ".words.json", "w", encoding="utf-8") as f:
+            json.dump(words, f)
+        script = " ".join(str(w.get("word") or "") for w in words)
     # A bare filename: render_vertical_video joins it under its own video folder and returns
     # the real path (a full path here nested it: video/output/tapin/preview/...).
     output, _background = render_vertical_video(

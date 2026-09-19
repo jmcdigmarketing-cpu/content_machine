@@ -51,8 +51,8 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `env-lint` | Env keys read in code vs documented in .env.example (#639) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
-| `footage` | Which gameplay folder each playlist niche cuts from, and its clip count |
-| `footage-add` | Import a gameplay file into its game folder (--path --game --licence [--source url] --apply) |
+| `footage` | Gameplay folder per playlist niche (--apply measures each clip's text bands) |
+| `footage-add` | Import a gameplay file or folder (--path --game --licence [--source url] --apply) |
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `free-tiers` | When each provider's free window resets or ends (#378) |

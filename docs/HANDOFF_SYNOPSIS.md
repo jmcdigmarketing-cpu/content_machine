@@ -1,10 +1,25 @@
-# Handoff synopsis — 2026-09-19: wave 23 crop, long gameplay files, niche footage, 48h check
+# Handoff synopsis — 2026-09-19: wave 24 the pacing reversal, per-clip crops, footage intake
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-19 (Claude Code): wave 23 #785 #787 #600 (+ #786 narrowed)
+## Last wave — 2026-09-19 (Claude Code): wave 24 #792 #796 #793 #795 #797 #798 (#788 narrowed)
+
+The operator watched the wave 23 preview and reversed wave 22's steady pacing: **#792** every shot
+is now drawn at random in 3-8 s and never within a second of the one before it (55 shots -> 24 on
+the same 140 s voice), still snapping to phrase ends. **#796** shots encode in parallel.
+**#788 narrowed**: `assets/clip_bands.py` measures each clip's own text bands (141 clips measured,
+25 carry one) and the crop follows the clip - but partial-width HUD (2K score bug, Fortnite kill
+feed) is still missed and #788 stays open for it; a measurement only adds crop, never removes the
+`BACKGROUND_CROP_BOTTOM` floor. **#793** `footage-add --path <folder>`. **#795**
+`preview-render --seconds 30` (22 s vs 108 s). Debug sweep: **#797** 4.2 GB of temp backgrounds
+swept to 3 days, **#798** long shots judged dark on two frames (near-black back to 5%).
+Operator calls: caption height is fine; no stock footage for empty niches. Suite
+**3,351 -> 3,381**; mypy **139**; mutate-gates 45/45; backlog **322 open / 710 done**, highest
+**#798**.
+
+## Previous — 2026-09-19 (Claude Code): wave 23 #785 #787 #600 (+ #786 narrowed)
 
 The operator liked the fast-cut preview. **#785** the game's own text is cropped, not skipped: every
 shot drops the source frame's bottom 18% (`BACKGROUND_CROP_BOTTOM`). **#787** one 20-minute

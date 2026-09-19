@@ -11,6 +11,49 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-19 (Claude Code) - wave 24: the pacing reversal, per-clip crops, intake
+
+Operator, after watching the wave 23 preview: *"can it be a bit longer cuts? like between the
+3-8s range? ... caption heigh is fine, i dont care about the footage order, what do you need
+from me footage wise? dont cut consistiently tbh reverse that decision."*
+
+Two more calls settled in the same exchange, both asked before building: cuts keep snapping to
+phrase ends (irregular lengths, never mid-word), and **no stock footage** for the empty niches -
+Minecraft, Roblox, Twitch, soccer and AI keep the old two-shot background until real gameplay
+arrives. Caption placement (#730 #731 #739) is therefore not next: the operator is happy with it.
+
+**Shipped 1-6 (#792 #796 #788-narrowed #793 #795, plus #797 #798 found on the way):**
+1. **#792 the reversal.** `cut_points` draws each shot from [3, 8] s, rejects a draw within
+   1.2 s of the previous shot's length, and after snapping steps away if the snap pulled it back
+   onto that length. The leftover tail is merged or split 40/60, never in half. One exception is
+   documented in code and test: when what is left is near 2x the longest shot, both halves are
+   forced near 8 s and no 1 s gap exists. Measured on the same 140 s voice: **55 shots -> 24**,
+   lengths 3.8-7.6 s. `tests/test_wave22.py` guards moved with the decision rather than being
+   deleted - wave 22's surviving claim is "the background cuts at all, on phrase ends".
+2. **#796 parallel shots.** `ThreadPoolExecutor`, 4 workers, concat list re-sorted by index.
+3. **#788 narrowed, honestly.** `assets/clip_bands.py` measures each clip once. First attempt
+   read a bright sky as a plate (0.233 = the cap, on 8 of 8 GTA clips), so the reading now
+   requires a *sharp edge* at the band boundary; that killed the false positives and also the
+   2K score bug, which is partial-width and never moves a row's mean. `ops footage --apply`
+   measured all 141 clips (12.5 s per 18): 25 carry a band. A measurement only ever *adds* crop,
+   because GTA's mission text is white-on-nothing and is not a luminance step - so
+   `BACKGROUND_CROP_BOTTOM` stays the floor. #788 stays open for the partial-width half, which
+   is #717/#727's column-wise work (#731: 4 of 30 real bars still missed).
+4. **#793 intake**: `footage-add --path <folder>`, `--game` defaults to the folder name.
+5. **#795 `preview-render --seconds 30`**: 22 s instead of 108 s.
+6. **Debug sweep found two:** **#797** `data/tmp/hybrid_backgrounds` had 60 files / 4.2 GB going
+   back to 2026-06-04, swept to 3 days (2,636 MB reclaimed); **#798** with 3-8 s shots one
+   mid-shot brightness sample let near-black shots back in (5% -> 9% of frames), so shots over
+   4 s are read twice and scored on the darker - back to **5%**.
+
+**Deliberately not done:** stock-cut backgrounds for the empty niches (operator said no), caption
+placement (#730 #731 #739), #786 itself (blocked on the operator's files).
+
+**Audit.** 30 new tests, all observed failing on e7e9521 first (25 of 27 in the first run; the
+two parallel-shot guards pass by construction and say so in their docstrings). Suite
+**3,351 -> 3,381**, mypy **139** after fixing 7 new errors introduced by this wave, ruff clean,
+mutate-gates 45/45, `data/` untouched by tests, every new symbol traced to a production caller.
+
 ## 2026-09-19 (Claude Code) - wave 23: crop, long gameplay files, footage per niche, 48h look
 
 Operator on the fast-cut preview: *"like it, i could prob pull copyright free videos to be cut,

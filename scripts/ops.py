@@ -1080,37 +1080,62 @@ def cmd_playlists(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("footage", "Which gameplay folder each playlist niche cuts from, and its clip count")
+@_register(
+    "footage", "Gameplay folder per playlist niche (--apply measures each clip's text bands)"
+)
 def cmd_footage(args: argparse.Namespace) -> int:
-    from assets.clip_ingest import footage_coverage, render_coverage
+    from assets.clip_ingest import footage_coverage, measure_library, render_coverage
 
+    if getattr(args, "apply", False):
+        tally = measure_library(force=bool(getattr(args, "force", False)))
+        print(
+            f"Measured text bands on {tally['measured']} clip(s) "
+            f"({tally['with_bands']} carry a band, {tally['skipped']} already measured)."
+        )
     print(render_coverage(footage_coverage(args.channel)))
     return 0
 
 
 @_register(
     "footage-add",
-    "Import a gameplay file into its game folder (--path --game --licence [--source url] --apply)",
+    "Import a gameplay file or folder (--path --game --licence [--source url] --apply)",
 )
 def cmd_footage_add(args: argparse.Namespace) -> int:
-    from assets.clip_ingest import add_footage
+    from assets.clip_ingest import add_footage, add_footage_folder
 
-    row = add_footage(
-        args.path,
-        game=getattr(args, "game", "") or "",
-        source_url=args.source or "",
-        licence=getattr(args, "licence", "") or "",
-        group=getattr(args, "group", "") or "gaming/other",
-        apply=bool(getattr(args, "apply", False)),
-    )
-    if row.status == "failed":
-        print(f"footage-add: {row.reason}")
-        return 1
-    if row.status == "matched":
-        print(f"DRY RUN - would import {row.source} -> {row.dest} (add --apply)")
-        return 0
-    print(f"Imported {row.source} -> {row.dest} (muted H.264, licence recorded)")
-    return 0
+    game = str(getattr(args, "game", "") or "")
+    source_url = str(args.source or "")
+    licence = str(getattr(args, "licence", "") or "")
+    group = str(getattr(args, "group", "") or "gaming/other")
+    apply_now = bool(getattr(args, "apply", False))
+    if os.path.isdir(args.path):
+        rows = add_footage_folder(
+            args.path,
+            game=game,
+            source_url=source_url,
+            licence=licence,
+            group=group,
+            apply=apply_now,
+        )
+    else:
+        rows = [
+            add_footage(
+                args.path,
+                game=game,
+                source_url=source_url,
+                licence=licence,
+                group=group,
+                apply=apply_now,
+            )
+        ]
+    for row in rows:
+        if row.status == "failed":
+            print(f"footage-add: {os.path.basename(row.source)}: {row.reason}")
+        elif row.status == "matched":
+            print(f"DRY RUN - would import {row.source} -> {row.dest} (add --apply)")
+        else:
+            print(f"Imported {row.source} -> {row.dest} (muted H.264, licence recorded)")
+    return 1 if any(r.status == "failed" for r in rows) else 0
 
 
 @_register("post-publish-check", "Look at uploads 48h+ old: removed, blocked, age-restricted, kids")
@@ -1133,7 +1158,9 @@ def cmd_preview_render(args: argparse.Namespace) -> int:
         print("preview-render needs --path <an existing voiced mp3>")
         return 2
     topic = str(getattr(args, "topic", "") or "") or os.path.basename(audio)
-    path = render_preview(audio, topic, args.channel)
+    path = render_preview(
+        audio, topic, args.channel, seconds=float(getattr(args, "seconds", 0) or 0) or None
+    )
     print(f"Preview (never queued): {path}")
     return 0
 
@@ -2124,6 +2151,12 @@ def main(argv=None) -> int:
             "artifacts / moat-backup / ingest-clips / rollback-publish: "
             "actually delete, copy, remux, or unlist (default is dry-run)"
         ),
+    )
+    parser.add_argument(
+        "--seconds",
+        type=float,
+        default=0.0,
+        help="preview-render: only the first N seconds (default: the whole voice track)",
     )
     parser.add_argument("--game", default="", help="footage-add: game folder name, e.g. Minecraft")
     parser.add_argument(

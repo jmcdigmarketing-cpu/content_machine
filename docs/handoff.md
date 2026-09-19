@@ -51,31 +51,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-18 · **HEAD at write:** `914687d` · **Tree:** wave 21 committing, then
-pushing. CI was green on `914687d` (run 35284847036).
+**Written:** 2026-09-19 · **HEAD at write:** `813a826` · **Tree:** wave 22 committing, then
+pushing. CI was green on `813a826` (run 35411994692).
 
-**Defect first, and it undercuts three waves:** the batch loop had never produced a draft.
-`run_pipeline(proceed_video=False)` always returns aborted with reason "proceed_video=False"
-(recorded as `drafted`); `batch_generation.generate_draft` treated any abort as failure. Its tests
-mocked a result that was never aborted. The first real `ops overnight` saved 0/3; after #779, 3/3
-(runs 88-90). **When you mock `run_pipeline`, return what it really returns.**
+**Defects first - two in every recent render, found by rendering a preview and looking at it:**
+- **#783** karaoke captions were burned at a tenth of their size: `caption_force_style` (FontSize=18,
+  sized for SRT's 288-px default) was applied to the ASS, which declares 1920 px. Run 77 is live on
+  YouTube like that. An .ass burn now keeps only the skin's box/outline/shadow keys.
+- **#784** `vignette=PI/4:0.280` - the second positional is x0, so the vignette centre sat at the
+  left edge and blacked out the right third of every frame since 464c71b.
+**Look at a frame before you trust a render change.** Tests passed through both.
 
-**Operator state.** Nightly drafts are installed (`ContentMachine\OvernightDrafts`, 05:00 daily,
-`ops overnight --count 3`). Three drafts wait in `ops batch-review` for a human yes. Run 77
-(`acu0Ekz-G5k`) is **still on YouTube**, unlisted - the operator thought it was deleted.
+**Operator ask, shipped:** #782 fast-cut backgrounds (`assets/fast_cut.py`, a shot every ~2.5 s
+from the topic's game folder; default on, `BACKGROUND_FAST_CUT=false` restores the two-shot
+hybrid; the suite pins it off because render tests mock one ffmpeg call). `ops preview-render
+--path <mp3>` re-renders a voiced Short at $0. #601 playlists (`config/playlists.json`,
+`core/playlists.py`) wait on the operator's one re-consent (`py -m youtube.oauth_setup`). #781 one
+retry on a fresh client before the YouTube latch arms. Drafts 88-90 rejected on the operator's call.
 
-**Shipped.** #779 above · #771 `CAPTION_ALIGN_BACKEND` defaults to `faster_whisper` (tiny, the
-bench winner - I briefly steered the operator to base on a wrong claim and corrected it), aligned
-words written to `<audio>.words.json`; the suite pins `none` in `tests/__init__.py` · #780
-`detect_studio_deleted(report=)` so "none" no longer hides an unreachable API. Filed #781 (one
-YouTube read timeout drops the signal for the run; the breaker notes in `apis/CLAUDE.md` apply).
+Suite **3,296 -> 3,322**; mypy **139**; ruff clean; `data/` untouched by tests; mutate-gates 45/45.
+Backlog **323 open / 698 done**, highest **#786**. Next: operator watches the preview, re-consents
+for playlists; then **#785 · #786 · #600**.
 
-Suite **3,286 -> 3,295**; mypy **139**; ruff clean; `data/` untouched by tests; mutate-gates
-45/45. Backlog **323 open / 693 done**, highest **#781**. Next: operator review of 88-90, then
-**#781 · #601 · #600 · #739**.
-
-**Cursor:** four caption tests pinned "unset = aligner off"; unset now means on and `none` is the
-switch. Any new test touching captions inherits `CAPTION_ALIGN_BACKEND=none` from the suite.
+**Cursor:** `_post_upload_extras` takes `channel_id=` now. `render_vertical_video` joins its
+`output_filename` under `<audio dir>/../video` - pass a bare name, use the returned path.
 
 ## Slot — Cursor
 

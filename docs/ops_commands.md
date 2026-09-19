@@ -81,9 +81,11 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `paid-signals` | Attribute tiktok_trends / youtube_competitors lift; recommend keep/disable (no catalog write) |
 | `pick-thumbnail` | Pick text_on or face_forward for a dual-thumbnail run |
 | `playbook-lint` | Warn when untagged strategy bullets can still feed facts |
+| `playlists` | Franchise playlists: show the map; --apply creates missing (#601) |
 | `policy-canary` | Hash YouTube inauthentic-content page (local fixture; no HTTP default) |
 | `policy-runbook` | Print the strike / Content ID / appeal runbook path |
 | `postmortem` | Slowest phase, failed signals, ungrounded claims, cost (--run-id) |
+| `preview-render` | Re-render a voiced Short with today's background, $0 (--path mp3 --topic) |
 | `prompt-eval` | Golden-topic prompt evals: run (LLM cost) or compare last two |
 | `publish-dry-run` | Print the YouTube videos.insert body (no upload; tokens redacted) |
 | `publish-ics` | Write an .ics of scheduled publishes beside HTML dumps |

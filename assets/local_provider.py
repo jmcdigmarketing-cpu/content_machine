@@ -131,9 +131,11 @@ No explanation.
 class LocalAssetProvider(AssetProvider):
     name = "local"
 
-    def find_video(self, topic: str, category: str, channel_id=None) -> Optional[AssetResult]:
+    def candidate_clips(self, topic: str, category: str, channel_id=None) -> list[str]:
+        """Every clip in the folder this topic picks (one game), for multi-shot backgrounds
+        (#782). `find_video` draws its single clip from the same list."""
         if not os.path.exists(BASE_VIDEO_DIR):
-            return None
+            return []
 
         category_path = os.path.join(BASE_VIDEO_DIR, category)
         if not os.path.exists(category_path):
@@ -141,7 +143,7 @@ class LocalAssetProvider(AssetProvider):
 
         candidate_folders = _get_subfolders(category_path) or _get_subfolders(BASE_VIDEO_DIR)
         if not candidate_folders:
-            return None
+            return []
 
         from assets.background_query import resolve_background_query
 
@@ -151,12 +153,14 @@ class LocalAssetProvider(AssetProvider):
             or _ai_choose_folder(pick_topic, candidate_folders)
             or random.choice(candidate_folders)
         )
-
-        video_files = [
+        return [
             os.path.join(chosen_folder, f)
-            for f in os.listdir(chosen_folder)
+            for f in sorted(os.listdir(chosen_folder))
             if f.lower().endswith((".mp4", ".mov"))
         ]
+
+    def find_video(self, topic: str, category: str, channel_id=None) -> Optional[AssetResult]:
+        video_files = self.candidate_clips(topic, category, channel_id)
         if not video_files:
             return None
 

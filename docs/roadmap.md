@@ -24,34 +24,38 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-18 wave 21: the batch loop ran for real and the first thing it
-showed was that it had never worked. **#779** every overnight draft was thrown away (0/3;
-fixed, then 3/3 saved - runs 88-90 wait in `ops batch-review`) · nightly drafts **installed**
-(05:00, `ContentMachine\OvernightDrafts`) · **#771** the whisper aligner is on (tiny, 68x
-realtime) and its timings reach the sidecar · **#780** `ops studio-deleted` says what it
-checked - run 77 is still up.
+**Just landed** - 2026-09-19 wave 22: the look of every video. **#782** a new footage shot
+every ~2.5 s instead of two shots per video (the operator's rejection of drafts 88-90) ·
+**#783** karaoke captions were burned at a tenth of their size on every word-timed render -
+run 77 went to YouTube that way · **#784** a mis-parameterised vignette blacked out the right
+third of every frame since 2026-09-07 · **#601** franchise playlists (11, incl. Minecraft and
+Roblox from Google Trends) · **#781** one YouTube timeout no longer drops the signal.
 
-**Previously** - 2026-09-17 wave 20: **#775** long-form paid again after the listen ·
-**#776** weekly spend warning · **#770 #773 #774 #777**. Wave 19 **#755 #627 #769 #763 #764
-#766 #765 #767 #768 #772**; wave 18 **#760 #762 #761 #345 #756 #749**; **#153** retired
-(do not rebuild).
+**Previously** - 2026-09-18 wave 21: **#779** the batch loop had never saved a draft · nightly
+drafts installed · **#771** aligner on · **#780**. Wave 20 **#775 #776 #770 #773 #774 #777**;
+wave 19 **#755 #627 #769 #763 #764 #766 #765 #767 #768 #772**; **#153** retired (do not
+rebuild).
 
 ### Recommended next five (non-app)
 
 **Volume framing (2026-09-17):** a long video is 1-2 a month; the 3-5/week target is Shorts.
-Three drafts now wait for a review, and a new three arrive each morning at 05:00.
+Tomorrow's 05:00 drafts are the first that will render with fast cuts, full-size captions and
+no wedge.
 
-1. **Operator: review runs 88-90** - `py -m scripts.ops batch-review --channel tapin`. Nothing
-   below matters until one Short actually uploads.
-2. **#781 one YouTube read timeout drops the signal for the whole run** `[S]` - every run this
-   week; the same call answers in 0.6 s in isolation.
-3. **#601 playlist by franchise** `[M]` - needs a wider OAuth scope (operator re-auth) and a
-   playlist per franchise.
-4. **#600 re-check monetisation 48h after publish** `[M]` - once Shorts are going out.
-5. **#739 captions by footage source** `[M]` - carried; needs the stock segment sampled.
+1. **Operator: watch `ops preview-render` output, then review the 05:00 drafts** - the first
+   upload is still the thing everything waits on.
+2. **Operator: `py -m youtube.oauth_setup --channel tapin`, then `ops playlists --apply`** -
+   one consent click; playlists fill from the next upload.
+3. **#785 game subtitles under our captions** `[S]` - some GTA clips carry mission text on the
+   caption band.
+4. **#786 footage for the new niches** `[S]` - Minecraft/Roblox/NFL/football/AI fall back to the
+   two-shot background.
+5. **#600 re-check monetisation 48h after publish** `[M]` - once Shorts are going out.
 
-**Dropped from this list** (stay open): **#730** (operator call) · **#728** (no clip) · **#628**
-· **#731** · Phase M · Ollama.
+**Dropped from this list** (stay open): **#739** · **#730** (operator call) · **#728** (no clip)
+· **#628** · **#731** · Phase M · Ollama.
+
+**Closed 2026-09-19 (wave 22):** **#782 #783 #784 #601 #781**. Filed open: **#785 #786**.
 
 **Closed 2026-09-18 (wave 21):** **#779 #771 #780**. Filed open: **#781**.
 

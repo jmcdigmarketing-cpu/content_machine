@@ -11,6 +11,40 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-19 (Claude Code) - wave 22: what the videos actually looked like
+
+**Prompt, verbatim:** "1. no, these are all bad. the clips need to be much shorter, idk like the
+other videos do. more clips per, less time in each. 2. yes. then the next 5 w questions and audit
+n brainstorm thx"
+
+**Questions asked, operator answers.** "Clips" -> the **background shots** (a Short held two
+shots of ~25 s each). Pace -> **every 2-3 s**. Drafts 88-90 -> **rejected**. Playlists -> football,
+NFL, basketball, gaming, Marvel Rivals, GTA, UFC/MMA, AI development, Twitch (maybe), plus the
+two most popular related niches, researched. The web search was stopped by the operator, so the
+research used the project's own Google Trends key: over 3 months, Anime 76, Minecraft 76, Roblox
+72, Pokemon 66, Fortnite 24, Valorant 10, WWE 9, Boxing 9, Call of Duty 6. Chose the top two
+*gaming* niches - Minecraft and Roblox - and said so, since "related to this channel" is a call.
+
+**The finds were bigger than the ask.** Rendering the first fast-cut preview against an Aug 20
+Short exposed two defects in *every* recent render, confirmed on run 77 (live on YouTube) and 79:
+- **#783** karaoke captions burned at a tenth of their size - `force_style FontSize=18` (SRT's
+  288-px scale) applied to an ASS that declares 1920 px. Every word-timed render since late August.
+- **#784** `vignette=PI/4:0.280` puts the vignette *centre* at x=0.28 px: a black wedge over the
+  right third of every frame since 2026-09-07.
+The Aug 20 original has neither - it predates both. The operator's "these are all bad" was probably
+also this, not only the pacing.
+
+**Shipped.** #782 `assets/fast_cut.py` (55 s -> 22 shots in 16 s; 287 s -> 115 shots in 77 s) +
+`ops preview-render` ($0 re-render of a voiced Short) · #783 · #784 · #601 playlists (idempotent,
+gated on the manage scope - one re-consent) · #781 retry once on a fresh client.
+
+**Filed from what the preview showed:** #785 some GTA clips carry the game's own mission text on the
+caption band; #786 no footage yet for Minecraft/Roblox/NFL/football/AI, so fast cut falls back there.
+
+**Mistakes on the way, caught before commit:** `render_preview` passed a full path where the renderer
+wants a bare filename (it nested `video/output/tapin/preview/...`) - my test's fake render hid it.
+The fake now mirrors the real function. Render tests needed `BACKGROUND_FAST_CUT=false` in the suite.
+
 ## 2026-09-18 (Claude Code) - wave 21: the batch loop had never worked
 
 **Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?"

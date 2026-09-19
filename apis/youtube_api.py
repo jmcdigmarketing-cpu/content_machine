@@ -128,6 +128,22 @@ def _get_youtube_client():
     return _youtube_client
 
 
+def _fresh_youtube_client():
+    """Drop the cached client and build a new one (new socket). #781: one stale keep-alive
+    connection timing out used to arm the latch and drop YouTube for the whole run."""
+    global _youtube_client
+    with _client_lock:
+        _youtube_client = None
+    return _get_youtube_client()
+
+
+def _is_timeout(exc: BaseException) -> bool:
+    message = (str(exc) or exc.__class__.__name__).lower()
+    return isinstance(exc, TimeoutError | socket.timeout) or any(
+        marker in message for marker in _TIMEOUT_MARKERS
+    )
+
+
 def _skip_live_youtube_client() -> bool:
     """Suite isolation (audit C9): never open googleapis HTTPS during tests."""
     return os.getenv("CONTENT_SKIP_YOUTUBE_WARMUP", "").strip().lower() in (
@@ -181,9 +197,10 @@ def _search_videos(youtube, query: str):
     reason = api_unreachable()
     if reason:
         raise TimeoutError(f"YouTube Data API already timed out this run ({reason})")
-    try:
+
+    def _call(client):
         return (
-            youtube.search()
+            client.search()
             .list(
                 q=query,
                 part="snippet",
@@ -195,6 +212,26 @@ def _search_videos(youtube, query: str):
             )
             .execute()
         )
+
+    try:
+        return _call(youtube)
+    except Exception as exc:
+        if not _is_timeout(exc):
+            note_api_failure(exc)
+            raise
+        first = exc
+    # #781: one retry on a fresh connection before the latch arms - a single blip used to
+    # drop `youtube` and `youtube_comments` for the whole run.
+    logger.info("YouTube Data API timed out (%s); retrying once on a fresh connection", first)
+    try:
+        client = _fresh_youtube_client()
+    except Exception as exc:
+        # No second connection to try (or the suite forbids one): the first timeout stands.
+        logger.debug("fresh YouTube client unavailable: %s", exc)
+        note_api_failure(first)
+        raise first from exc
+    try:
+        return _call(client)
     except Exception as exc:
         note_api_failure(exc)
         raise

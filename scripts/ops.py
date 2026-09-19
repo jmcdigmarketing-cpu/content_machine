@@ -1044,6 +1044,58 @@ def cmd_mutate_gates(args: argparse.Namespace) -> int:
     return mutate_main(extra)
 
 
+@_register("playlists", "Franchise playlists: show the map; --apply creates missing (#601)")
+def cmd_playlists(args: argparse.Namespace) -> int:
+    from core.playlists import (
+        SCOPE_YOUTUBE_MANAGE,
+        playlist_map,
+        store_path_for,
+        sync_playlists,
+    )
+
+    channel = args.channel
+    try:
+        with open(store_path_for(channel), encoding="utf-8") as f:
+            ids = json.load(f).get("ids") or {}
+    except (OSError, ValueError):
+        ids = {}
+    print(f"Franchise playlists ({channel}), most specific first:")
+    for row in playlist_map(channel):
+        name = row["name"]
+        parent = f" (+ {row['parent']})" if row.get("parent") else ""
+        print(f"  {name}{parent}: {ids.get(name) or 'not created'}")
+    if not getattr(args, "apply", False):
+        print("Add --apply to create the missing ones (50 quota units each).")
+        return 0
+    from youtube.oauth import get_youtube_service, token_has_scope
+
+    if not token_has_scope(channel, SCOPE_YOUTUBE_MANAGE):
+        print(
+            "Needs the YouTube manage permission first: "
+            f"py -m youtube.oauth_setup --channel {channel}"
+        )
+        return 1
+    created = sync_playlists(get_youtube_service(channel), channel)
+    print(f"Created {len(created)}: {', '.join(created) or 'none'}")
+    return 0
+
+
+@_register(
+    "preview-render", "Re-render a voiced Short with today's background, $0 (--path mp3 --topic)"
+)
+def cmd_preview_render(args: argparse.Namespace) -> int:
+    from assets.fast_cut import render_preview
+
+    audio = str(getattr(args, "path", "") or "")
+    if not audio or not os.path.isfile(audio):
+        print("preview-render needs --path <an existing voiced mp3>")
+        return 2
+    topic = str(getattr(args, "topic", "") or "") or os.path.basename(audio)
+    path = render_preview(audio, topic, args.channel)
+    print(f"Preview (never queued): {path}")
+    return 0
+
+
 @_register("publish-ics", "Write an .ics of scheduled publishes beside HTML dumps")
 def cmd_publish_ics(args: argparse.Namespace) -> int:
     from core.publish_ics import write_scheduled_ics

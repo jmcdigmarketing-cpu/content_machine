@@ -1,3 +1,4 @@
+import math
 import os
 import subprocess
 from collections.abc import Callable
@@ -145,10 +146,37 @@ def look_filter_fragment(channel_id: str | None) -> str:
     if grain > 0:
         parts.append(f"noise=alls={grain}:allf=t")
     if vig > 0:
-        parts.append(f"vignette=PI/4:{vig:.3f}")
+        # #784: was `vignette=PI/4:{vig}` - ffmpeg's second positional is x0, so the centre
+        # sat at the left edge and the right third of every frame went black. The token is
+        # a 0..1 strength; ffmpeg's strength is the lens angle (default PI/5).
+        angle = min(1.0, vig) * math.pi / 2
+        parts.append(f"vignette=angle={angle:.4f}")
     if not parts:
         return ""
     return ",".join(parts) + ","
+
+
+# Keys an .ass file already sets on its own 1920-px canvas. force_style's values for them
+# are SRT-sized (libass's 288-px default), so passing them shrank every karaoke caption.
+_ASS_OWNED_KEYS = (
+    "FontName",
+    "FontSize",
+    "PrimaryColour",
+    "Alignment",
+    "MarginV",
+    "MarginL",
+    "MarginR",
+)
+
+
+def _ass_safe_style(style: str) -> str:
+    """The skin's box/outline/shadow keys only - what an ASS burn can still take (#783)."""
+    kept = [
+        part
+        for part in (style or "").split(",")
+        if part.strip() and part.split("=", 1)[0].strip() not in _ASS_OWNED_KEYS
+    ]
+    return ",".join(kept)
 
 
 def build_render_ffmpeg_command(
@@ -215,6 +243,11 @@ def build_render_ffmpeg_command(
     # The main-caption line below has always used this manual form; these now match it.
     lower_thirds_filter = f"subtitles='{lower_thirds_escaped}'," if lower_thirds_escaped else ""
     policy_filter = f"subtitles='{policy_escaped}'," if policy_escaped else ""
+    # #783: an .ass file carries its own styles on a 1920-px canvas. force_style's
+    # FontSize=18 is sized for SRT (libass's 288-px default) and shrank every karaoke
+    # caption to a tenth - run 77 went to YouTube that way.
+    if str(subtitle_path).lower().endswith(".ass"):
+        style_escaped = _ass_safe_style(style_escaped)
     force_style_arg = f":force_style='{style_escaped}'" if style_escaped else ""
     # #502: YouTube chrome zones, draft/preview only. Never on a publish encode.
     draft_guides = ""
@@ -369,12 +402,24 @@ def render_vertical_video(
         logger.debug("word timings for owned beats skipped: %s", exc)
         words = None
     try:
-        from core.owned_beats import try_owned_beat_background
+        # #782: a new shot every 2-3 s from the topic's game folder, cut on phrase ends.
+        # The operator rejected three drafts for holding each shot for ~25 s.
+        from assets.fast_cut import try_fast_cut_background
 
-        asset = try_owned_beat_background(topic, script, channel_id, duration=duration, words=words)
+        asset = try_fast_cut_background(topic, channel_id, duration=duration, words=words)
     except Exception as exc:
-        logger.debug("owned beat cuts skipped: %s", exc)
+        logger.debug("fast cut skipped: %s", exc)
         asset = None
+    if asset is None:
+        try:
+            from core.owned_beats import try_owned_beat_background
+
+            asset = try_owned_beat_background(
+                topic, script, channel_id, duration=duration, words=words
+            )
+        except Exception as exc:
+            logger.debug("owned beat cuts skipped: %s", exc)
+            asset = None
     if asset is None:
         try:
             from assets.manager import get_scene_matched_background

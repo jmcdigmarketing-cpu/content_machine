@@ -1,0 +1,16 @@
+{
+  "_note": "Franchise playlists (#601). Most specific first: a video joins the first playlist whose keys match, plus that playlist's parent. Operator list 2026-09-18; Minecraft and Roblox are the two most-searched gaming niches on Google Trends (3 months) that were not already on it.",
+  "tapin": [
+    {"name": "GTA", "parent": "Gaming", "keys": ["gta", "gta 6", "gta vi", "gta 5", "gta online", "grand theft auto", "nopixel", "gta rp", "rockstar"]},
+    {"name": "Marvel Rivals", "parent": "Gaming", "keys": ["marvel rivals"]},
+    {"name": "Minecraft", "parent": "Gaming", "keys": ["minecraft"]},
+    {"name": "Roblox", "parent": "Gaming", "keys": ["roblox"]},
+    {"name": "Twitch", "keys": ["twitch", "streamer", "xqc", "kai cenat", "ishowspeed", "asmongold"]},
+    {"name": "UFC / MMA", "keys": ["ufc", "mma", "octagon", "dana white", "pfl", "bellator"]},
+    {"name": "NFL", "keys": ["nfl", "super bowl", "quarterback", "touchdown", "madden"]},
+    {"name": "Basketball", "keys": ["nba", "wnba", "basketball", "nba 2k", "2k26"]},
+    {"name": "Football", "keys": ["soccer", "premier league", "champions league", "world cup", "mls", "la liga", "ea fc", "fifa"]},
+    {"name": "AI Development", "keys": ["ai", "artificial intelligence", "openai", "chatgpt", "llm", "claude", "gemini", "machine learning"]},
+    {"name": "Gaming", "keys": ["game", "games", "gaming", "gamer", "playstation", "ps5", "xbox", "nintendo", "switch 2", "steam", "esports", "fortnite", "call of duty", "valorant", "pokemon"]}
+  ]
+}

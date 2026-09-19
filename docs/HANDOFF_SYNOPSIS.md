@@ -1,10 +1,23 @@
-# Handoff synopsis — 2026-09-18: wave 21 the batch loop runs for real
+# Handoff synopsis — 2026-09-19: wave 22 fast cuts + two render defects + playlists
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-18 (Claude Code): wave 21 #779 #771 #780 (+ nightly task installed)
+## Last wave — 2026-09-19 (Claude Code): wave 22 #782 #783 #784 #601 #781
+
+The operator rejected drafts 88-90 because shots held ~25 s. **#782** fast-cut backgrounds, a new
+shot every ~2.5 s from the topic's game folder, on phrase ends; `ops preview-render` re-renders a
+voiced Short at $0. The first preview exposed two defects in every recent render (run 77, live on
+YouTube, included): **#783** karaoke captions at a tenth of their size (SRT-sized `force_style` on
+a 1920-px ASS) and **#784** a vignette centred at x=0.28 px blacking out the right third of the
+frame since 2026-09-07. **#601** 11 franchise playlists (Minecraft and Roblox from Google Trends),
+added after each upload, waiting on one OAuth re-consent. **#781** retry once before the YouTube
+timeout latch. Filed #785 (game subtitles on the caption band) and #786 (no footage for the new
+niches). Suite **3,296 -> 3,322**; mypy **139**; mutate-gates 45/45; backlog **323 open / 698
+done**, highest **#786**.
+
+## Previous — 2026-09-18 (Claude Code): wave 21 #779 #771 #780 (+ nightly task installed)
 
 Ran the overnight batch for real: **0 of 3 drafts saved** - `batch_generation` treated the
 pipeline's normal "proceed_video=False" draft result as a failure, so the loop built across waves

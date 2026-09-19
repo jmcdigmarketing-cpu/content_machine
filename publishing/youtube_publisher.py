@@ -102,10 +102,23 @@ def redact_publish_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return redacted
 
 
-def _post_upload_extras(service, video_id: str | None, request: PublishRequest) -> None:
-    """Caption track + opt-in comment. Fail-open; never blocks the publish result."""
+def _post_upload_extras(
+    service, video_id: str | None, request: PublishRequest, *, channel_id: str = ""
+) -> None:
+    """Caption track + opt-in comment + franchise playlists. Fail-open; never blocks."""
     if not service or not video_id:
         return
+    if channel_id:
+        try:
+            from core.playlists import add_to_playlists
+
+            note = add_to_playlists(
+                service, channel_id, video_id, title=request.title, tags=request.tags
+            )
+            if note:
+                logger.info("Playlists for %s: %s", video_id, note)
+        except Exception as exc:
+            logger.debug("playlist add skipped: %s", exc)
     try:
         from youtube.captions import maybe_upload_captions, resolve_caption_path
 
@@ -302,7 +315,7 @@ def _result_from_existing_log(
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
-            _post_upload_extras(service, existing.youtube_video_id, request)
+            _post_upload_extras(service, existing.youtube_video_id, request, channel_id=channel_id)
             return PublishResult(
                 video_id=existing.youtube_video_id,
                 status=existing.status,
@@ -382,7 +395,7 @@ def _resolve_prior_upload(
         content_run_id=content_run_id,
         thumbnail_path=request.thumbnail_path,
     )
-    _post_upload_extras(service, video_id, request)
+    _post_upload_extras(service, video_id, request, channel_id=channel_id)
     return PublishResult(
         video_id=video_id,
         status=log_status,
@@ -714,7 +727,7 @@ class YouTubePublisher(Publisher):
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
-            _post_upload_extras(service, video_id, request)
+            _post_upload_extras(service, video_id, request, channel_id=channel_id)
             if thumb.status == "set":
                 detail_suffix = thumb.detail or "Thumbnail set"
                 _update_publish_log(

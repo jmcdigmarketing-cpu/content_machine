@@ -32,6 +32,9 @@ os.environ["DATABASE_KEY"] = ""
 os.environ["TTS_CACHE"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
+# #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one
+# ffmpeg call and must keep the single-background path.
+os.environ["BACKGROUND_FAST_CUT"] = "false"
 # Competitor-sync caps default on in production; disable in the suite so a test
 # that reads youtube_quota cannot skip API because the operator's real remaining
 # units are below the upload reserve.

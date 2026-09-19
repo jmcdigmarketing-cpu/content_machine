@@ -242,8 +242,10 @@ class TestPerChannelCaptionSkin(unittest.TestCase):
             )
         joined = " ".join(captured or ffmpeg_run.call_args.args[0])
         self.assertIn("force_style=", joined)
-        self.assertIn("PrimaryColour=&H00A9E7F7&", joined)
+        # #783: an .ass burn keeps the skin's box/outline but not its SRT-sized font or its
+        # fill (karaoke owns size and the spoken-word colour on its 1920-px canvas).
         self.assertIn("BorderStyle=3", joined)
+        self.assertNotIn("FontSize=18", joined)
 
 
 class TestDraftRenderPreset(unittest.TestCase):

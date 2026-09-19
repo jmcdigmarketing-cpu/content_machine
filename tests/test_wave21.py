@@ -115,6 +115,20 @@ class TestPiperShortsGetRealWordTimings(unittest.TestCase):
             with open(audio + ".words.json", encoding="utf-8") as f:
                 self.assertEqual(json.load(f), words)
 
+    def test_no_sidecar_is_written_for_audio_that_does_not_exist(self):
+        """The first #771 commit left `piper.mp3.words.json` in the repo root: a suite test
+        passes a bare "piper.mp3" with the aligner mocked, and the writer followed it."""
+        import os
+        import tempfile
+
+        from video import subtitles
+
+        words = [{"word": "Take", "start": 0.0, "end": 0.3}]
+        with tempfile.TemporaryDirectory() as tmp:
+            ghost = os.path.join(tmp, "piper.mp3")
+            subtitles._write_aligned_sidecar(ghost, words)
+            self.assertFalse(os.path.exists(ghost + ".words.json"))
+
     def test_an_existing_sidecar_is_never_overwritten(self):
         import json
         import os

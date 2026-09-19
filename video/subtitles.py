@@ -231,7 +231,9 @@ def _write_aligned_sidecar(audio_path: str | None, words: list[dict]) -> None:
     trace read `<audio>.words.json` directly, so a piper render stayed estimated for them.
     Only written when no sidecar existed - an ElevenLabs sidecar is never replaced.
     """
-    if not audio_path:
+    # Only beside real audio: a mocked or missing path must not leave a sidecar in the cwd
+    # (the first #771 commit shipped `piper.mp3.words.json` in the repo root that way).
+    if not audio_path or not os.path.isfile(audio_path):
         return
     sidecar = audio_path + ".words.json"
     if os.path.exists(sidecar):

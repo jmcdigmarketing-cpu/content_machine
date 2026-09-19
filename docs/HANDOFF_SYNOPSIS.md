@@ -1,10 +1,22 @@
-# Handoff synopsis — 2026-09-17: wave 20 piper long-form reversed + chapter quality
+# Handoff synopsis — 2026-09-18: wave 21 the batch loop runs for real
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-17 (Claude Code): wave 20 #775 #776 #770 #773 #774 #777
+## Last wave — 2026-09-18 (Claude Code): wave 21 #779 #771 #780 (+ nightly task installed)
+
+Ran the overnight batch for real: **0 of 3 drafts saved** - `batch_generation` treated the
+pipeline's normal "proceed_video=False" draft result as a failure, so the loop built across waves
+18-20 had never produced a draft (#779). Fixed; retried: 3/3 (runs 88-90, waiting in `ops
+batch-review`). Nightly drafts installed on the operator's say-so (05:00 daily). The whisper aligner
+is on by default, tiny model, 68x realtime, with aligned timings written to the sidecar (#771).
+`ops studio-deleted` now says what it checked (#780) - and run 77 is **still on YouTube**,
+unlisted, despite the operator believing it deleted. Filed #781 (one YouTube read timeout drops the
+signal for the run). Suite **3,286 -> 3,295**; mypy **139**; mutate-gates 45/45; backlog **323 open /
+693 done**, highest **#781**.
+
+## Previous — 2026-09-17 (Claude Code): wave 20 #775 #776 #770 #773 #774 #777
 
 The operator listened to run 79 and called piper long-form "clearly worse", so #758 is reversed:
 `TTS_PROVIDER_LONG` no longer defaults to piper and Long/Extended are paid again (#775). Piper

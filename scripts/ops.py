@@ -918,9 +918,18 @@ def cmd_topic_clone(args: argparse.Namespace) -> int:
 def cmd_studio_deleted(args: argparse.Namespace) -> int:
     from youtube.studio_deleted import detect_studio_deleted
 
-    cancelled = detect_studio_deleted(args.channel)
+    report: dict = {}
+    cancelled = detect_studio_deleted(args.channel, report=report)
+    if report.get("error"):
+        print(f"Studio-deleted: could not check {args.channel} - {report['error']}")
+        return 1
     if not cancelled:
-        print(f"Studio-deleted: none for {args.channel}")
+        print(
+            f"Studio-deleted: none for {args.channel} - {report.get('checked', 0)} uploaded "
+            "video(s) checked, all still on YouTube"
+        )
+        for vid in report.get("still_live") or []:
+            print(f"  live: https://youtu.be/{vid}")
         return 0
     print(f"Studio-deleted: cancelled {len(cancelled)} publish_log row(s)")
     for row in cancelled:

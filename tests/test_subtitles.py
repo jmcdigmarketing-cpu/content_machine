@@ -181,9 +181,11 @@ class TestWhisperAlignedCaptions(unittest.TestCase):
         with open(path, encoding="utf-8") as f:
             self.assertIn("Sidecar", f.read())
 
-    def test_proportional_fallback_when_backend_unset(self):
-        with patch.dict("os.environ", {"CAPTION_STYLE": "word"}, clear=False):
-            os.environ.pop("CAPTION_ALIGN_BACKEND", None)
+    def test_proportional_fallback_when_backend_off(self):
+        # #771: unset now means on (faster_whisper); `none` is the off switch.
+        with patch.dict(
+            "os.environ", {"CAPTION_STYLE": "word", "CAPTION_ALIGN_BACKEND": "none"}, clear=False
+        ):
             with patch("core.caption_align.transcribe_and_align") as mock_align:
                 path = generate_subtitle_file("no sidecar no backend", 5.0, audio_path=self.audio)
         mock_align.assert_not_called()

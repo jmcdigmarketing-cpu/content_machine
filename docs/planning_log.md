@@ -11,6 +11,33 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-18 (Claude Code) - wave 21: the batch loop had never worked
+
+**Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?"
+(then "Try again" after the first overnight run came back empty).
+
+**Questions asked, operator answers.** #771 aligner -> yes, base (then **tiny**, see below).
+Focus -> **get Shorts published** (0 uploads in 10 days). Nightly drafts -> **install it**. Run
+77 -> "yes, deleted in Studio".
+
+**What running it for real found.**
+1. **#779** The first real `ops overnight` saved **0 of 3** drafts. `run_pipeline(proceed_video=False)`
+   always comes back aborted with reason "proceed_video=False" (the pipeline records that as
+   `drafted`); `batch_generation` treated any abort as failure. Its tests mocked a result that was
+   never aborted, so CI never saw it. Waves 18-20 built batch review, freshness and the nightly task
+   on a loop that produced nothing. The last draft on disk was 2026-08-28. After the fix: 3/3.
+2. **Run 77 is not deleted.** `ops studio-deleted` said "none"; YouTube still returns
+   `acu0Ekz-G5k`, unlisted. That was a wrong report, not a wrong detector - "none" also stood for
+   "never reached YouTube". **#780** makes it say what it checked.
+3. **My own error, corrected.** I told the operator base was the more accurate aligner model. The
+   code's own benchmark says tiny won on this channel's clean TTS audio (43-56 ms vs 73-85 ms).
+   Asked again with the numbers; they chose tiny.
+4. **#781 filed**: every run this week lost the YouTube signal to one read timeout; the same call
+   answers in 0.6 s alone. The fix sits beside breaker code, so it gets its own careful change.
+
+**Not done, needs the operator:** #601 playlists need a wider OAuth scope and a re-auth; the three
+drafts need a human yes in `ops batch-review` - that is the step between the loop and an upload.
+
 ## 2026-09-17 (Claude Code) - wave 20: the piper long-form experiment is over
 
 **Prompt, verbatim:** "nxt 5 and debug, brainstorm, \commit and push. any questions for me?

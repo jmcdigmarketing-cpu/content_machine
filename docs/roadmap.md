@@ -24,33 +24,36 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-17 wave 20: the operator listened to run 79 and the piper
-long-form experiment is over. **#775** `TTS_PROVIDER_LONG` no longer defaults to piper -
-Long/Extended are paid again, piper stays as the Shorts mix at 1 in 6 · **#776** a weekly
-spend warning off the traces (`SPEND_WARN_WEEKLY_USD`, default $5) · **#770** chapter
-openers lose a back-referencing first word before TTS · **#773** the keyword fallback keeps
-each chapter near its share (576/8/10/10/21 -> 120/132/120/132/121) · **#774** a run's final
-script is kept beside its trace · **#777** `ops retire-renders --run-id` (used on 79-84).
+**Just landed** - 2026-09-18 wave 21: the batch loop ran for real and the first thing it
+showed was that it had never worked. **#779** every overnight draft was thrown away (0/3;
+fixed, then 3/3 saved - runs 88-90 wait in `ops batch-review`) · nightly drafts **installed**
+(05:00, `ContentMachine\OvernightDrafts`) · **#771** the whisper aligner is on (tiny, 68x
+realtime) and its timings reach the sidecar · **#780** `ops studio-deleted` says what it
+checked - run 77 is still up.
 
-**Previously** - 2026-09-17 wave 19: **#755** all-angles measured live · **#627** `ops
-mutate-gates` 45/45 · **#769** wrong actor blocks · **#763 #764 #766**; fixed live: **#765
-#767 #768 #772**. Wave 18 **#760 #762 #761 #345 #756 #749**; wave 17 **#754 #757 #758 #543
-#759**; **#153** retired (do not rebuild).
+**Previously** - 2026-09-17 wave 20: **#775** long-form paid again after the listen ·
+**#776** weekly spend warning · **#770 #773 #774 #777**. Wave 19 **#755 #627 #769 #763 #764
+#766 #765 #767 #768 #772**; wave 18 **#760 #762 #761 #345 #756 #749**; **#153** retired
+(do not rebuild).
 
 ### Recommended next five (non-app)
 
 **Volume framing (2026-09-17):** a long video is 1-2 a month; the 3-5/week target is Shorts.
-So Shorts quality and Shorts throughput are what the next items are about.
+Three drafts now wait for a review, and a new three arrive each morning at 05:00.
 
-1. **#771 captions on piper-mix Shorts** `[S]` - the aligner exists and is switched off; 1 in 6
-   Shorts ships proportional caption timing. Needs the operator's yes to a one-time model download.
-2. **#739 captions by footage source** `[M]` - carried; needs the stock segment sampled.
-3. **#730 `CAPTION_AUTO_PLACE` on real footage** `[M]` - 23 of 46 hybrids carry a bar in the band;
-   needs the operator's call on the false-move bar.
-4. **#728 overlay under a still sky** `[S]` - unmeasured: no such clip exists in the library yet.
-5. **#628 flaky-test detector** `[M]` - the suite is 3,286 tests and CI is the only gate.
+1. **Operator: review runs 88-90** - `py -m scripts.ops batch-review --channel tapin`. Nothing
+   below matters until one Short actually uploads.
+2. **#781 one YouTube read timeout drops the signal for the whole run** `[S]` - every run this
+   week; the same call answers in 0.6 s in isolation.
+3. **#601 playlist by franchise** `[M]` - needs a wider OAuth scope (operator re-auth) and a
+   playlist per franchise.
+4. **#600 re-check monetisation 48h after publish** `[M]` - once Shorts are going out.
+5. **#739 captions by footage source** `[M]` - carried; needs the stock segment sampled.
 
-**Dropped from this list** (stay open): **#731** · Phase M · Ollama.
+**Dropped from this list** (stay open): **#730** (operator call) · **#728** (no clip) · **#628**
+· **#731** · Phase M · Ollama.
+
+**Closed 2026-09-18 (wave 21):** **#779 #771 #780**. Filed open: **#781**.
 
 **Closed 2026-09-17 (wave 20):** **#775 #776 #770 #773 #774 #777**. Narrowed: **#771**.
 

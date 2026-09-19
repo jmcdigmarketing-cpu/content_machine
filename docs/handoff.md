@@ -51,35 +51,31 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-17 (2nd) · **HEAD at write:** `b4e06fe` · **Tree:** wave 20 committing,
-then pushing. CI was green on `b4e06fe` (run 35174734027).
+**Written:** 2026-09-18 · **HEAD at write:** `914687d` · **Tree:** wave 21 committing, then
+pushing. CI was green on `914687d` (run 35284847036).
 
-**Read this before touching the voice policy.** #758 sent Long/Extended to piper to kill 91% of
-spend. The operator listened to run 79 on 2026-09-17 and called it **clearly worse**. #775 reverses
-it: `TTS_PROVIDER_LONG` has no default, so long-form is paid again; piper stays as the Shorts mix
-(1 in 6). `.env.example` carries the verdict beside both knobs. Do not "optimise" this back.
+**Defect first, and it undercuts three waves:** the batch loop had never produced a draft.
+`run_pipeline(proceed_video=False)` always returns aborted with reason "proceed_video=False"
+(recorded as `drafted`); `batch_generation.generate_draft` treated any abort as failure. Its tests
+mocked a result that was never aborted. The first real `ops overnight` saved 0/3; after #779, 3/3
+(runs 88-90). **When you mock `run_pipeline`, return what it really returns.**
 
-**Volume framing from the same call:** a long video is **1-2 a month**; the **3-5/week target is
-Shorts**. The bill is mostly Shorts rates, which is why paid long-form was affordable again.
+**Operator state.** Nightly drafts are installed (`ContentMachine\OvernightDrafts`, 05:00 daily,
+`ops overnight --count 3`). Three drafts wait in `ops batch-review` for a human yes. Run 77
+(`acu0Ekz-G5k`) is **still on YouTube**, unlisted - the operator thought it was deleted.
 
-**Defect found this wave:** batch review preferred the #774 run-id script sidecar over the draft
-folder's own `draft.md` - a test collision caught it; the folder's copy wins now. Nothing else in
-wave 19's code was broken.
+**Shipped.** #779 above · #771 `CAPTION_ALIGN_BACKEND` defaults to `faster_whisper` (tiny, the
+bench winner - I briefly steered the operator to base on a wrong claim and corrected it), aligned
+words written to `<audio>.words.json`; the suite pins `none` in `tests/__init__.py` · #780
+`detect_studio_deleted(report=)` so "none" no longer hides an unreachable API. Filed #781 (one
+YouTube read timeout drops the signal for the run; the breaker notes in `apis/CLAUDE.md` apply).
 
-**Also shipped.** #776 weekly spend warning off the traces (`SPEND_WARN_WEEKLY_USD`, default $5,
-warn-only, in `ops status` and `ops overnight`) · #770 `trim_chapter_openers` drops a
-back-referencing first word before TTS, so cut Shorts inherit clean hooks (run 79's cuts 2/4/5) ·
-#773 the keyword fallback stays within half a share of its target (576/8/10/10/21 ->
-120/132/120/132/121) · #774 the final script sits beside the trace · #777 `ops retire-renders
---run-id`, used on the piper test renders 79-84.
+Suite **3,286 -> 3,295**; mypy **139**; ruff clean; `data/` untouched by tests; mutate-gates
+45/45. Backlog **323 open / 693 done**, highest **#781**. Next: operator review of 88-90, then
+**#781 · #601 · #600 · #739**.
 
-Suite **3,267 -> 3,286**; mypy **139**; ruff clean; `data/` untouched by tests; `ops mutate-gates`
-45/45. Backlog **323 open / 690 done**, highest **#777**. Next five:
-**#771 · #739 · #730 · #728 · #628**.
-
-**Cursor:** four tests across waves 17 and 19 pinned the piper long-form default and now pin the
-opt-in path instead - if you see piper in a voice test, read its docstring before trusting it.
-`ops retire-renders` takes `--run-id` now. Run `py -m scripts.ops mutate-gates` after any gate change.
+**Cursor:** four caption tests pinned "unset = aligner off"; unset now means on and `none` is the
+switch. Any new test touching captions inherits `CAPTION_ALIGN_BACKEND=none` from the suite.
 
 ## Slot — Cursor
 

@@ -188,7 +188,11 @@ def generate_draft(
         key_facts=packed,
         relevance_corpus=corpus,
     )
-    if result.aborted or not (result.script or "").strip():
+    # #779: a script-only run always comes back aborted with "proceed_video=False" - the
+    # pipeline records that as "drafted". Treating it as a failure kept 0 of 3 drafts on
+    # the first real overnight run.
+    drafted = result.abort_reason == "proceed_video=False"
+    if (result.aborted and not drafted) or not (result.script or "").strip():
         out.error = result.abort_reason or "pipeline produced no script"
         return out
     out.title, out.run_id = result.title, result.run_id

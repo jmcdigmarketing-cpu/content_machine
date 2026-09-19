@@ -215,10 +215,32 @@ def resolve_word_timings(
     try:
         from video.caption_retext import retext_words_from_script
 
-        return retext_words_from_script(words, script)
+        retexted = retext_words_from_script(words, script)
     except Exception as exc:
         logger.debug("caption retext skipped: %s", exc)
         return None
+    if retexted:
+        _write_aligned_sidecar(audio_path, retexted)
+    return retexted
+
+
+def _write_aligned_sidecar(audio_path: str | None, words: list[dict]) -> None:
+    """Keep aligned timings where every consumer looks (#771).
+
+    Captions got whisper timings, but chapter times, chapter-Short cut points and the
+    trace read `<audio>.words.json` directly, so a piper render stayed estimated for them.
+    Only written when no sidecar existed - an ElevenLabs sidecar is never replaced.
+    """
+    if not audio_path:
+        return
+    sidecar = audio_path + ".words.json"
+    if os.path.exists(sidecar):
+        return
+    try:
+        with open(sidecar, "w", encoding="utf-8") as f:
+            json.dump(words, f)
+    except OSError as exc:
+        logger.debug("aligned sidecar not written for %s: %s", audio_path, exc)
 
 
 def generate_subtitle_file(

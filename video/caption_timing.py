@@ -41,10 +41,9 @@ def words_from_caption_align(audio_path: str | None) -> list[dict] | None:
     if not audio_path:
         return None
     try:
-        from core.caption_align import transcribe_and_align
-        from core.providers import selected_provider
+        from core.caption_align import align_backend, transcribe_and_align
 
-        if selected_provider("CAPTION_ALIGN_BACKEND", "none") in ("", "none"):
+        if align_backend() in ("", "none"):
             return None
         result = transcribe_and_align(audio_path)
     except Exception:

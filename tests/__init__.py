@@ -30,6 +30,8 @@ os.environ["DATABASE_KEY"] = ""
 # TTS cache writes under data/tts_cache when on; isolate the suite (tests that
 # exercise the cache patch TTS_CACHE / TTS_CACHE_DIR themselves).
 os.environ["TTS_CACHE"] = "false"
+# #771 turned the whisper aligner on by default; no test may load a model.
+os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # Competitor-sync caps default on in production; disable in the suite so a test
 # that reads youtube_quota cannot skip API because the operator's real remaining
 # units are below the upload reserve.

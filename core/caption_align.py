@@ -53,6 +53,15 @@ logger = get_logger("core.caption_align")
 SLOT = "caption_align"
 
 _BACKENDS = ("faster_whisper", "whisperx")
+# #771 (operator, 2026-09-17): on by default. After #775 one Short in six is piper, and piper
+# leaves no word timings - those captions drifted on the proportional estimate. The model
+# stays `tiny` (align_model's measured default). CAPTION_ALIGN_BACKEND=none switches it off.
+DEFAULT_BACKEND = "faster_whisper"
+
+
+def align_backend() -> str:
+    """The configured alignment backend; `none` means off."""
+    return selected_provider("CAPTION_ALIGN_BACKEND", DEFAULT_BACKEND)
 
 
 def align_model() -> str:
@@ -131,7 +140,7 @@ def _words_from_whisperx(audio_path: str, device: str) -> list[dict[str, Any]]:
 
 def transcribe_and_align(audio_path: str, *, device: str | None = None) -> ProviderResult:
     """Return per-word `{start, end, word}` segments, or fail-open when unavailable."""
-    backend = selected_provider("CAPTION_ALIGN_BACKEND", "none")
+    backend = align_backend()
     if backend in ("", "none"):
         return ProviderResult.fail_open(
             SLOT, "CAPTION_ALIGN_BACKEND unset", status=STATUS_NOT_CONFIGURED

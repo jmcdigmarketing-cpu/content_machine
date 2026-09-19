@@ -44,6 +44,7 @@ class OvernightResult:
     quota_line: str = ""
     pause_line: str = ""
     canary_line: str = ""
+    post_publish_line: str = ""
 
 
 def run_overnight(
@@ -80,6 +81,17 @@ def run_overnight(
         )
     finally:
         _probe_signals(result)
+        _post_publish(result)
+
+
+def _post_publish(result: OvernightResult) -> None:
+    """#600. Uploads 48h+ old looked at once more: removed, blocked, age-restricted, kids."""
+    try:
+        from core.post_publish_check import post_publish_line
+
+        result.post_publish_line = post_publish_line(result.channel_id)
+    except Exception as exc:
+        logger.debug("overnight post-publish check skipped: %s", exc)
 
 
 def _probe_signals(result: OvernightResult) -> None:
@@ -220,8 +232,8 @@ def _run_overnight_body(
             from core.counterfactual import record_override
 
             bet = get_best_bet(channel)
-            picked = {str(t) for t in topics}
-            if bet and bet.topic not in picked:
+            chosen = {str(t) for t in topics}
+            if bet and bet.topic not in chosen:
                 record_override(bet.topic, ";".join(topics))
         except Exception as exc:
             logger.debug("overnight counterfactual skipped: %s", exc)
@@ -246,6 +258,8 @@ def render_overnight(result: OvernightResult) -> str:
         if result.canary_line:
             lines.append("")
             lines.append(result.canary_line)
+        if result.post_publish_line:
+            lines.append(result.post_publish_line)
         return "\n".join(lines)
     try:
         lines.append(render_summary(result.outcomes).strip())
@@ -266,6 +280,8 @@ def render_overnight(result: OvernightResult) -> str:
     if result.canary_line:
         lines.append("")
         lines.append(result.canary_line)
+    if result.post_publish_line:
+        lines.append(result.post_publish_line)
     lines.append(
         f"Review them in one pass: py -m scripts.ops batch-review --channel {result.channel_id}"
     )

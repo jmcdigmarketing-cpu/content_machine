@@ -1080,6 +1080,48 @@ def cmd_playlists(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("footage", "Which gameplay folder each playlist niche cuts from, and its clip count")
+def cmd_footage(args: argparse.Namespace) -> int:
+    from assets.clip_ingest import footage_coverage, render_coverage
+
+    print(render_coverage(footage_coverage(args.channel)))
+    return 0
+
+
+@_register(
+    "footage-add",
+    "Import a gameplay file into its game folder (--path --game --licence [--source url] --apply)",
+)
+def cmd_footage_add(args: argparse.Namespace) -> int:
+    from assets.clip_ingest import add_footage
+
+    row = add_footage(
+        args.path,
+        game=getattr(args, "game", "") or "",
+        source_url=args.source or "",
+        licence=getattr(args, "licence", "") or "",
+        group=getattr(args, "group", "") or "gaming/other",
+        apply=bool(getattr(args, "apply", False)),
+    )
+    if row.status == "failed":
+        print(f"footage-add: {row.reason}")
+        return 1
+    if row.status == "matched":
+        print(f"DRY RUN - would import {row.source} -> {row.dest} (add --apply)")
+        return 0
+    print(f"Imported {row.source} -> {row.dest} (muted H.264, licence recorded)")
+    return 0
+
+
+@_register("post-publish-check", "Look at uploads 48h+ old: removed, blocked, age-restricted, kids")
+def cmd_post_publish_check(args: argparse.Namespace) -> int:
+    from core.post_publish_check import render_report, run_post_publish_checks
+
+    report = run_post_publish_checks(args.channel)
+    print(render_report(report))
+    return 1 if report.get("error") else 0
+
+
 @_register(
     "preview-render", "Re-render a voiced Short with today's background, $0 (--path mp3 --topic)"
 )
@@ -2082,6 +2124,15 @@ def main(argv=None) -> int:
             "artifacts / moat-backup / ingest-clips / rollback-publish: "
             "actually delete, copy, remux, or unlist (default is dry-run)"
         ),
+    )
+    parser.add_argument("--game", default="", help="footage-add: game folder name, e.g. Minecraft")
+    parser.add_argument(
+        "--licence", default="", help="footage-add: the terms the footage is used under"
+    )
+    parser.add_argument(
+        "--group",
+        default="",
+        help="footage-add: library sub-path for a new game (default gaming/other)",
     )
     parser.add_argument(
         "--move",

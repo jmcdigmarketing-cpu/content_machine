@@ -90,6 +90,31 @@ def _keyword_choose_folder(topic: str, folders: list[str]) -> str | None:
     return scored[0][1]
 
 
+def _alias_choose_folder(topic: str, folders: list[str], channel_id=None) -> str | None:
+    """The footage folder of the first franchise playlist the topic matches (#786).
+
+    "NFL draft" names no folder, but the NFL playlist row in config/playlists.json lists
+    `footage: ["Madden 26"]`, so an NFL Short cuts Madden gameplay instead of a random game.
+    """
+    try:
+        from core.playlists import playlist_map, _matches
+
+        rows = playlist_map(channel_id or "tapin")
+    except Exception as exc:
+        logger.debug("footage alias skipped: %s", exc)
+        return None
+    hay = (topic or "").lower()
+    by_name = {os.path.basename(f).casefold(): f for f in folders}
+    for row in rows:
+        if not _matches(hay, [str(k) for k in row.get("keys") or []]):
+            continue
+        for name in row.get("footage") or []:
+            folder = by_name.get(str(name).casefold())
+            if folder:
+                return folder
+    return None
+
+
 def _ai_choose_folder(topic, folders):
     if not folders:
         return None
@@ -147,12 +172,14 @@ class LocalAssetProvider(AssetProvider):
 
         from assets.background_query import resolve_background_query
 
-        pick_topic = resolve_background_query(topic, category, channel_id)
-        chosen_folder = (
-            _keyword_choose_folder(topic, candidate_folders)
-            or _ai_choose_folder(pick_topic, candidate_folders)
-            or random.choice(candidate_folders)
+        chosen_folder = _keyword_choose_folder(topic, candidate_folders) or _alias_choose_folder(
+            topic, candidate_folders, channel_id
         )
+        if not chosen_folder:
+            pick_topic = resolve_background_query(topic, category, channel_id)
+            chosen_folder = _ai_choose_folder(pick_topic, candidate_folders) or random.choice(
+                candidate_folders
+            )
         return [
             os.path.join(chosen_folder, f)
             for f in sorted(os.listdir(chosen_folder))

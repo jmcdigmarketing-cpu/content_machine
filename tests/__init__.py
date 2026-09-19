@@ -35,6 +35,8 @@ os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one
 # ffmpeg call and must keep the single-background path.
 os.environ["BACKGROUND_FAST_CUT"] = "false"
+# #600: the nightly overnight run looks at 48h-old uploads through the YouTube API.
+os.environ["POST_PUBLISH_CHECK"] = "false"
 # Competitor-sync caps default on in production; disable in the suite so a test
 # that reads youtube_quota cannot skip API because the operator's real remaining
 # units are below the upload reserve.

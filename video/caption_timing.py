@@ -218,6 +218,39 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 
+# Usable caption width: PlayResX 1080 minus the styles' 80 px side margins.
+_ASS_TEXT_WIDTH = 1080 - 2 * 80
+# Bold Arial/Impact averages about half an em per character in mixed-case English.
+_CHAR_EM = 0.52
+
+
+def karaoke_max_chars(size: int) -> int:
+    """Characters that fit on one karaoke line at `size` px (WrapStyle 2 never wraps)."""
+    return max(8, int(_ASS_TEXT_WIDTH / (max(1, int(size)) * _CHAR_EM)))
+
+
+def _fit_chars(lines: list[list[dict]], max_chars: int) -> list[list[dict]]:
+    """Split any line wider than `max_chars` greedily; a single long word keeps its own line.
+
+    Found in the wave 23 preview: at the restored 90 px (#783) a 4-word line such as
+    "aunts Rockstar because they" ran off both edges of the frame.
+    """
+    out: list[list[dict]] = []
+    for line in lines:
+        cur: list[dict] = []
+        width = 0
+        for w in line:
+            n = len(str(w.get("word") or ""))
+            if cur and width + 1 + n > max_chars:
+                out.append(cur)
+                cur, width = [], 0
+            width = n if not cur else width + 1 + n
+            cur.append(w)
+        if cur:
+            out.append(cur)
+    return out
+
+
 def build_ass_karaoke(
     words: list[dict],
     *,
@@ -231,7 +264,7 @@ def build_ass_karaoke(
     anchor: str = "bottom",
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing)."""
-    lines = group_into_lines(words, max_words)
+    lines = _fit_chars(group_into_lines(words, max_words), karaoke_max_chars(size))
     paired = title_font is not None or body_font is not None
     title = (title_font or font).replace(",", " ").strip() or font
     body = (body_font or font).replace(",", " ").strip() or font

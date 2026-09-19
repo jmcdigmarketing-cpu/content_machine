@@ -51,6 +51,8 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `env-lint` | Env keys read in code vs documented in .env.example (#639) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
+| `footage` | Which gameplay folder each playlist niche cuts from, and its clip count |
+| `footage-add` | Import a gameplay file into its game folder (--path --game --licence [--source url] --apply) |
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `free-tiers` | When each provider's free window resets or ends (#378) |
@@ -84,6 +86,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `playlists` | Franchise playlists: show the map; --apply creates missing (#601) |
 | `policy-canary` | Hash YouTube inauthentic-content page (local fixture; no HTTP default) |
 | `policy-runbook` | Print the strike / Content ID / appeal runbook path |
+| `post-publish-check` | Look at uploads 48h+ old: removed, blocked, age-restricted, kids |
 | `postmortem` | Slowest phase, failed signals, ungrounded claims, cost (--run-id) |
 | `preview-render` | Re-render a voiced Short with today's background, $0 (--path mp3 --topic) |
 | `prompt-eval` | Golden-topic prompt evals: run (LLM cost) or compare last two |

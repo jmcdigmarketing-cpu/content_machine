@@ -16,6 +16,15 @@ opening 120 decoders at once, and identical settings are what make a stream copy
 
     BACKGROUND_FAST_CUT=true      # default; false = the old two-shot hybrid
     BACKGROUND_CUT_SECONDS=2.5
+    BACKGROUND_CROP_BOTTOM=0.18   # share of the game frame's bottom cropped away (#785)
+
+The game's own text - GTA mission lines, subtitles, the HUD strip - sits in the bottom band of
+the source frame. Operator, 2026-09-19: "dont skip those clips, crop it out". Every shot drops
+that band before it is scaled, so the clip stays in the pool and the text never reaches the
+caption area.
+
+A long gameplay file (a 20-minute download) counts as one window per 30 s of footage, so a
+single file can carry a whole Short with shots from all over it.
 """
 
 from __future__ import annotations
@@ -37,6 +46,12 @@ TARGET_H = 1920
 _DEFAULT_CUT = 2.5
 _MIN_POOL = 3
 _MAX_POOL = 12
+_WINDOW_SECONDS = 30.0
+_DEFAULT_CROP = 0.18
+# Mean luma (0-255) of the ungraded shot. GTA night driving measures 26-40 and the render's
+# grade then takes it under 28 - near-black on a phone. Measured on the wave 23 preview.
+_MIN_LUMA = 45.0
+_DARK_REDRAWS = 2
 _PHRASE_END = tuple(",.!?;:")
 # Fixed, not the NVENC helper: the concat stream copy needs every shot encoded identically.
 _SHOT_ENCODER = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-g", "30"]
@@ -53,6 +68,16 @@ def cut_seconds() -> float:
     except ValueError:
         value = _DEFAULT_CUT
     return min(8.0, max(1.0, value))
+
+
+def crop_bottom() -> float:
+    """Share of the source frame's height cut from the bottom, 0-0.4 (#785)."""
+    raw = (os.getenv("BACKGROUND_CROP_BOTTOM", "") or "").strip()
+    try:
+        value = float(raw) if raw else _DEFAULT_CROP
+    except ValueError:
+        value = _DEFAULT_CROP
+    return min(0.4, max(0.0, value))
 
 
 def _word_ends(words: list[dict[str, Any]] | None) -> tuple[list[float], list[float]]:
@@ -133,7 +158,57 @@ def plan_shots(
     return shots
 
 
+def expand_pool(
+    clips: list[str], durations: dict[str, float] | None
+) -> tuple[list[str], dict[str, tuple[str, float, float | None]]]:
+    """Split long clips into 30 s windows: (keys, key -> (clip, offset, window length)).
+
+    A clip shorter than two windows, or one that could not be probed, is a single window
+    keyed by its own path.
+    """
+    keys: list[str] = []
+    windows: dict[str, tuple[str, float, float | None]] = {}
+    for clip in dict.fromkeys(c for c in clips if c):
+        length = (durations or {}).get(clip)
+        count = int(float(length) // _WINDOW_SECONDS) if length else 0
+        if count < 2:
+            keys.append(clip)
+            windows[clip] = (clip, 0.0, float(length) if length else None)
+            continue
+        for k in range(count):
+            key = f"{clip}#{k}"
+            keys.append(key)
+            windows[key] = (clip, k * _WINDOW_SECONDS, _WINDOW_SECONDS)
+    return keys, windows
+
+
+def plan_windowed_shots(
+    bounds: list[float],
+    keys: list[str],
+    windows: dict[str, tuple[str, float, float | None]],
+    *,
+    rng: random.Random | None = None,
+) -> list[tuple[str, float, float]]:
+    """`plan_shots` over windows, mapped back to (clip, in-point in the clip, length).
+
+    In-points come from the first half of each window, so two neighbouring windows of one
+    long file never start their shots less than half a window (15 s) apart.
+    """
+    longest = max((b - a for a, b in zip(bounds, bounds[1:], strict=False)), default=0.0)
+    lengths = {
+        k: (w[2] / 2 + longest if k != w[0] else w[2]) for k, w in windows.items() if w[2]
+    }
+    planned = plan_shots(bounds, keys, durations=lengths, rng=rng)
+    return [
+        (windows[key][0], round(windows[key][1] + start, 3), length)
+        for key, start, length in planned
+    ]
+
+
 def build_shot_command(clip: str, start: float, length: float, output: str) -> list[str]:
+    crop = crop_bottom()
+    # Even height so libx264's yuv420p never sees an odd row count.
+    band = f"crop=iw:trunc(ih*{1.0 - crop:.4f}/2)*2:0:0," if crop > 0 else ""
     return [
         "ffmpeg",
         "-y",
@@ -146,7 +221,7 @@ def build_shot_command(clip: str, start: float, length: float, output: str) -> l
         "-i",
         clip,
         "-vf",
-        f"scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
+        f"{band}scale={TARGET_W}:{TARGET_H}:force_original_aspect_ratio=increase,"
         f"crop={TARGET_W}:{TARGET_H},fps=30,format=yuv420p,setpts=PTS-STARTPTS",
         *_SHOT_ENCODER,
         "-pix_fmt",
@@ -218,24 +293,84 @@ def try_fast_cut_background(
     except Exception as exc:
         logger.debug("fast cut: clip pool unavailable: %s", exc)
         return None
-    if len(pool) < _MIN_POOL:
+    durations = {clip: d for clip in pool if (d := _probe(clip))}
+    keys, windows = expand_pool(pool, durations)
+    if len(keys) < _MIN_POOL:
         logger.info(
-            "fast cut: only %d clip(s) for '%s' - keeping the old background", len(pool), topic
+            "fast cut: only %d clip window(s) for '%s' - keeping the old background",
+            len(keys),
+            topic,
         )
         return None
     try:
-        return _compose(pool, topic, float(duration), words)
+        return _compose(keys, windows, topic, float(duration), words)
     except Exception as exc:
         logger.warning("fast cut failed; keeping the old background: %s", exc)
         return None
 
 
-def _compose(pool: list[str], topic: str, duration: float, words):
+def _render_shot(clip: str, start: float, length: float, path: str) -> None:
+    proc = subprocess.run(
+        build_shot_command(os.path.abspath(clip), start, length, path),
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if proc.returncode != 0 or not os.path.isfile(path):
+        raise RuntimeError(f"shot from {clip}: {(proc.stderr or '')[-300:]}")
+
+
+def _concat(list_path: str, output: str, duration: float) -> None:
+    proc = subprocess.run(
+        build_concat_command(list_path, output, duration),
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    if proc.returncode != 0 or not os.path.isfile(output):
+        raise RuntimeError(f"concat: {(proc.stderr or '')[-300:]}")
+
+
+def shot_brightness(path: str, length: float) -> float | None:
+    """Mean luma (0-255) of the shot's middle frame, or None when it cannot be read."""
+    try:
+        proc = subprocess.run(
+            [
+                "ffmpeg", "-loglevel", "error", "-ss", f"{max(0.0, length / 2):.3f}",
+                "-i", path, "-frames:v", "1", "-vf", "scale=54:96,format=gray",
+                "-f", "rawvideo", "-",
+            ],
+            capture_output=True,
+            timeout=30,
+        )  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        return None
+    data = proc.stdout or b""
+    if proc.returncode != 0 or not data:
+        return None
+    return sum(data) / len(data)
+
+
+def _redraw(
+    keys: list[str],
+    windows: dict[str, tuple[str, float, float | None]],
+    length: float,
+    *,
+    avoid: str,
+    rng: random.Random,
+) -> tuple[str, float]:
+    """Another (clip, in-point) for a shot that came out too dark: a different file if any."""
+    others = [k for k in keys if windows[k][0] != avoid] or list(keys)
+    clip, offset, span = windows[rng.choice(others)]
+    room = float(span) / 2 if span else 0.0
+    return clip, round(offset + (rng.uniform(0.0, room) if room > 0.2 else 0.0), 3)
+
+
+def _compose(keys: list[str], windows, topic: str, duration: float, words):
     from assets.types import AssetResult
     from config.paths import DATA_DIR, ensure_data_dir
 
-    durations = {clip: d for clip in pool if (d := _probe(clip))}
-    shots = plan_shots(cut_points(duration, words), pool, durations=durations)
+    shots = plan_windowed_shots(cut_points(duration, words), keys, windows)
     ensure_data_dir()
     out_dir = os.path.join(DATA_DIR, "tmp", "hybrid_backgrounds")
     os.makedirs(out_dir, exist_ok=True)
@@ -243,28 +378,21 @@ def _compose(pool: list[str], topic: str, duration: float, words):
     work = tempfile.mkdtemp(prefix="fastcut_")
     try:
         lines = []
+        rng = random.Random()
         for i, (clip, start, length) in enumerate(shots):
             shot = os.path.join(work, f"shot_{i:04d}.mp4")
-            proc = subprocess.run(
-                build_shot_command(os.path.abspath(clip), start, length, shot),
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if proc.returncode != 0 or not os.path.isfile(shot):
-                raise RuntimeError(f"shot {i} from {clip}: {(proc.stderr or '')[-300:]}")
+            for attempt in range(1 + _DARK_REDRAWS):
+                _render_shot(clip, start, length, shot)
+                luma = shot_brightness(shot, length)
+                if luma is None or luma >= _MIN_LUMA or attempt == _DARK_REDRAWS:
+                    break
+                clip, start = _redraw(keys, windows, length, avoid=clip, rng=rng)
+            shots[i] = (clip, start, length)
             lines.append(f"file '{shot.replace(os.sep, '/')}'")
         list_path = os.path.join(work, "shots.txt")
         with open(list_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
-        proc = subprocess.run(
-            build_concat_command(list_path, output, duration),
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-        if proc.returncode != 0 or not os.path.isfile(output):
-            raise RuntimeError(f"concat: {(proc.stderr or '')[-300:]}")
+        _concat(list_path, output, duration)
     finally:
         shutil.rmtree(work, ignore_errors=True)
     try:
@@ -274,7 +402,8 @@ def _compose(pool: list[str], topic: str, duration: float, words):
             record(clip)
     except Exception as exc:
         logger.debug("clip memory record skipped: %s", exc)
-    logger.info("fast cut: %d shots from %d clips (%s)", len(shots), len(set(pool)), topic)
+    files = len({clip for clip, _s, _l in shots})
+    logger.info("fast cut: %d shots from %d file(s) (%s)", len(shots), files, topic)
     return AssetResult(
         path=output,
         provider="fast_cut",

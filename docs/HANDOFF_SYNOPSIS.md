@@ -1,10 +1,24 @@
-# Handoff synopsis — 2026-09-19: wave 22 fast cuts + two render defects + playlists
+# Handoff synopsis — 2026-09-19: wave 23 crop, long gameplay files, niche footage, 48h check
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-19 (Claude Code): wave 22 #782 #783 #784 #601 #781
+## Last wave — 2026-09-19 (Claude Code): wave 23 #785 #787 #600 (+ #786 narrowed)
+
+The operator liked the fast-cut preview. **#785** the game's own text is cropped, not skipped: every
+shot drops the source frame's bottom 18% (`BACKGROUND_CROP_BOTTOM`). **#787** one 20-minute
+gameplay file feeds a whole Short (30 s windows, in-points 15 s+ apart); `ops footage-add` imports a
+download as muted H.264 with its source + licence in license.yaml (no licence, no import). **#786**
+NFL/NBA/UFC topics now cut Madden/2K/UFC via a `footage` field in `config/playlists.json`;
+`ops footage` lists the gaps (Minecraft, Roblox, Twitch, soccer, AI). **#600** nightly 48h look at
+each upload - removed, rejected, region-blocked, age-restricted, made for kids; first live pass 24
+videos, none flagged. The preview exposed and wave 23 fixed **#789** near-black night shots (22% ->
+5% of frames), **#790** karaoke lines wider than the frame, **#791** the AI disclosure over the first
+caption. Filed **#788** per-clip text bands. Suite **3,322 -> 3,351**; mypy **139**; mutate-gates
+45/45; backlog **322 open / 704 done**, highest **#791**.
+
+## Previous — 2026-09-19 (Claude Code): wave 22 #782 #783 #784 #601 #781
 
 The operator rejected drafts 88-90 because shots held ~25 s. **#782** fast-cut backgrounds, a new
 shot every ~2.5 s from the topic's game folder, on phrase ends; `ops preview-render` re-renders a

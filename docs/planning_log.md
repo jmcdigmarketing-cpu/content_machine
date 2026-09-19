@@ -11,6 +11,51 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-19 (Claude Code) - wave 23: crop, long gameplay files, footage per niche, 48h look
+
+Operator on the fast-cut preview: *"like it, i could prob pull copyright free videos to be cut,
+woul long form gameplay work? like 20min long and you cut it? or different, plus what games
+would be best for gameplay. ill lyk if i have it. dont skip those clips, crop it out"*.
+
+**Built (#785 #787 #600, #786 narrowed; #788 filed):**
+- **Crop, not skip (#785).** Every shot drops the bottom 18% of the source frame before it is
+  scaled (`BACKGROUND_CROP_BOTTOM`). A synthetic white bar in the bottom 12% is gone from the
+  rendered shot (real-ffmpeg test). Filed #788: a fixed band misses top-of-frame HUD and costs
+  clips that had no bottom text; per-clip bands measured at ingest is the proper version.
+- **Long files (#787).** Yes, a 20-minute file works, and is better than twenty 1-minute
+  files for variety per megabyte: fast cut splits it into 30 s windows (40 for 20 min), takes
+  each in-point from a window's first half so shots from one file start 15 s+ apart. The
+  3-clip gate counts windows, so one file is enough for a Short. `ops footage-add` re-encodes
+  to muted H.264 (the source's music never reaches our video) and appends the source URL and
+  licence to the folder's license.yaml. No licence, no import.
+- **Niche aliases (#786).** `footage` on each playlist row: NFL -> Madden 26, basketball ->
+  2k26, UFC -> UFC 5. `ops footage` today: GTA 25, Marvel Rivals 16, UFC 20, Madden 11, 2K 32;
+  empty: Minecraft, Roblox, Twitch, football (the FC folder has two .png screenshots), AI.
+- **48h look (#600).** The public API has no monetisation icon; it has removed, rejected,
+  region-blocked (a claim's usual trace), age-restricted and made-for-kids. Nightly, once per
+  video, 1 unit per 50. First live pass: 24 uploads, none flagged.
+
+**Brainstorm - which gameplay works as a background:**
+- The genre standard is *continuous motion with no text*: Minecraft parkour, GTA driving and
+  ramp stunts, Subway Surfers / Temple Run style runners, Trackmania, Rocket League. Busy
+  menus, cutscenes and kill-cam replays read as noise under captions.
+- Match the franchise when there is one (a GTA story cuts GTA, NFL cuts Madden) - the alias
+  map does that. Umbrella/AI/Twitch topics want neutral motion: Minecraft parkour and GTA
+  driving are the two that fit anything.
+- Publisher terms: Mojang, Rockstar, Epic, Roblox and EA all allow gameplay footage in
+  monetised videos. The risk with "no copyright gameplay" uploads is a *re-uploader* who has
+  put the file in Content ID; the 48h check's region-block flag is the tripwire, and the
+  licence line in license.yaml is what a dispute cites.
+- Prefer 1080p60 or higher, no facecam, no watermark, no commentary; audio does not matter
+  (it is stripped).
+
+**Found in the preview, fixed:** #789 near-black night shots - a third of the GTA clips measure 26-40
+before the grade; shots under 45 are re-drawn (near-black frames 22% -> 5%). #790 karaoke lines wider
+than the frame (WrapStyle 2 never wraps; split to 19 chars at 90 px). #791 the AI disclosure drawn
+over the first caption (now top-centre). #790 and #791 were hidden while #783 kept captions tiny.
+
+Suite 3,322 -> 3,351. mypy 139. mutate-gates 45/45.
+
 ## 2026-09-19 (Claude Code) - wave 22: what the videos actually looked like
 
 **Prompt, verbatim:** "1. no, these are all bad. the clips need to be much shorter, idk like the

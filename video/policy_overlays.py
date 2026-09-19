@@ -38,6 +38,8 @@ def build_policy_overlays_ass(
         )
     if not events:
         return ""
+    # Disclosure is top-centre: bottom-centre at MarginV 280 sat on the karaoke captions
+    # (bottom, MarginV 260) for the first 3 s once #783 restored them to full size.
     return (
         "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\n"
         "ScaledBorderAndShadow: yes\n\n[V4+ Styles]\n"
@@ -48,7 +50,7 @@ def build_policy_overlays_ass(
         "Style: Disclaimer,Arial,28,&H00FFFFFF,&H00FFFFFF,&H00000000,&H99000000,"
         "0,0,0,0,100,100,0,0,3,1,0,1,40,40,80,1\n"
         "Style: Disclosure,Arial,36,&H00FFFFFF,&H00FFFFFF,&H00000000,&H99000000,"
-        "1,0,0,0,100,100,0,0,3,1,0,2,70,70,280,1\n\n[Events]\n"
+        "1,0,0,0,100,100,0,0,3,1,0,8,70,70,160,1\n\n[Events]\n"
         "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         + "\n".join(events)
         + "\n"

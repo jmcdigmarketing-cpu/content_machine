@@ -226,6 +226,12 @@ def _probe_stream(path: str) -> tuple[int | None, int | None, str | None]:
     return width, height, codec
 
 
+def _remux_timeout(src: str) -> int:
+    """A 20-minute 1080p download takes minutes to re-encode; 300 s was sized for captures."""
+    seconds = _probe_duration(src) or 0.0
+    return int(max(300.0, seconds * 1.5))
+
+
 def _remux_muted_h264(src: str, dest: str) -> None:
     os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
     cmd = [
@@ -248,7 +254,7 @@ def _remux_muted_h264(src: str, dest: str) -> None:
         cmd,
         capture_output=True,
         text=True,
-        timeout=300,
+        timeout=_remux_timeout(src),
         check=False,
     )
     if result.returncode != 0 or not os.path.isfile(dest):
@@ -345,6 +351,129 @@ def ingest_clips(
             )
     result.rows = done
     return result
+
+
+def _game_folder(library: str, game: str, group: str) -> str:
+    """The existing folder named `game` anywhere in the library, else <library>/<group>/<game>."""
+    existing = _folder_by_basename(_library_folders(library), game)
+    if existing:
+        return existing
+    clean = re.sub(r'[<>:"/\\|?*]+', " ", game).strip()
+    return os.path.join(library, *group.replace("\\", "/").split("/"), clean)
+
+
+def _write_licence(folder: str, *, source_url: str, licence: str) -> None:
+    """license.yaml (JSON, like the root one) for the folder; new sources are appended."""
+    path = os.path.join(folder, "license.yaml")
+    data: dict[str, Any] = {}
+    if os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                loaded = json.load(fh)
+            data = loaded if isinstance(loaded, dict) else {}
+        except (OSError, ValueError):
+            data = {}
+    data["license"] = licence
+    data.setdefault("owner", "third party (see sources)")
+    data.setdefault("commercial_use", True)
+    sources = [str(s) for s in data.get("sources") or []]
+    if source_url and source_url not in sources:
+        sources.append(source_url)
+    data["sources"] = sources
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2)
+
+
+def add_footage(
+    src: str,
+    *,
+    game: str,
+    source_url: str = "",
+    licence: str = "",
+    group: str = "gaming/other",
+    library_root: str | None = None,
+    apply: bool = False,
+) -> IngestRow:
+    """Import one gameplay file into its game folder (ops footage-add). Dry-run default."""
+    library = library_root if library_root is not None else BASE_VIDEO_DIR
+    if not src or not os.path.isfile(src):
+        return IngestRow(source=src, dest=None, status="failed", reason="file not found")
+    if not (game or "").strip():
+        return IngestRow(source=src, dest=None, status="failed", reason="--game is required")
+    if not (licence or "").strip():
+        return IngestRow(
+            source=src,
+            dest=None,
+            status="failed",
+            reason="a licence is required (--licence), e.g. 'CC0' or 'creator permits reuse'",
+        )
+    folder = _game_folder(library, game.strip(), group)
+    dest = _unique_dest(folder, Path(src).stem)
+    if not apply:
+        return IngestRow(source=src, dest=dest, status="matched")
+    try:
+        _remux_muted_h264(src, dest)
+        _write_licence(folder, source_url=source_url, licence=licence.strip())
+        _record_index(dest, source_url or src)
+    except Exception as exc:
+        logger.warning("footage-add failed (%s): %s", src, exc)
+        return IngestRow(source=src, dest=dest, status="failed", reason=str(exc)[:200])
+    return IngestRow(source=src, dest=dest, status="copied")
+
+
+def _clip_count(folder: str) -> int:
+    try:
+        return sum(1 for f in os.listdir(folder) if f.lower().endswith((".mp4", ".mov")))
+    except OSError:
+        return 0
+
+
+def footage_coverage(channel_id: str, *, library_root: str | None = None) -> list[dict[str, Any]]:
+    """Per franchise playlist: the folder its topics draw from and its clip count."""
+    from core.playlists import playlist_map
+
+    library = library_root if library_root is not None else BASE_VIDEO_DIR
+    folders = _library_folders(library)
+    rows: list[dict[str, Any]] = []
+    mapped = playlist_map(channel_id)
+    parents = {str(r.get("parent")) for r in mapped if r.get("parent")}
+    for row in mapped:
+        name = str(row["name"])
+        if name in parents and not row.get("footage"):
+            # An umbrella (Gaming) draws from whichever game folder the topic picks.
+            rows.append({"niche": name, "folder": "", "clips": 0, "umbrella": True})
+            continue
+        wanted = [str(n) for n in row.get("footage") or []] + [name]
+        folder = ""
+        for candidate in wanted:
+            hit = _folder_by_basename(folders, candidate)
+            if hit and _clip_count(hit):
+                folder = hit
+                break
+        rows.append(
+            {
+                "niche": name,
+                "folder": os.path.basename(folder) if folder else "",
+                "clips": _clip_count(folder) if folder else 0,
+            }
+        )
+    return rows
+
+
+def render_coverage(rows: list[dict[str, Any]]) -> str:
+    lines = ["Footage per playlist niche (fast cut needs 3+ clips, or one long file):"]
+    for row in rows:
+        if row.get("umbrella"):
+            lines.append(f"  {row['niche']:<16} any game folder (umbrella playlist)")
+        elif row["folder"]:
+            lines.append(f"  {row['niche']:<16} {row['folder']} ({row['clips']} clips)")
+        else:
+            lines.append(f"  {row['niche']:<16} NO FOOTAGE - falls back to a random game or stock")
+    lines.append(
+        "Add a file: py -m scripts.ops footage-add --path <file.mp4> --game Minecraft "
+        '--source <url> --licence "<terms>" --apply'
+    )
+    return "\n".join(lines)
 
 
 def render_ingest(result: IngestResult) -> str:

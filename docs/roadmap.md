@@ -24,36 +24,36 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-19 wave 22: the look of every video. **#782** a new footage shot
-every ~2.5 s instead of two shots per video (the operator's rejection of drafts 88-90) ·
-**#783** karaoke captions were burned at a tenth of their size on every word-timed render -
-run 77 went to YouTube that way · **#784** a mis-parameterised vignette blacked out the right
-third of every frame since 2026-09-07 · **#601** franchise playlists (11, incl. Minecraft and
-Roblox from Google Trends) · **#781** one YouTube timeout no longer drops the signal.
+**Just landed** - 2026-09-19 wave 23: the operator liked the fast-cut preview. **#785** the
+game's own mission text is cropped out of every shot, not skipped (operator's call) - **#787**
+one 20-minute gameplay download feeds a whole Short (30 s windows) and `ops footage-add`
+imports it with its licence - **#786** narrowed: NFL/NBA/UFC topics cut Madden/2K/UFC footage
+through the playlist map; `ops footage` shows the gaps - **#600** a 48h look at every upload
+(removed, blocked, age-restricted, kids) in the nightly run; first pass 24 videos, none flagged.
+The preview then showed three more, all fixed: **#789** near-black night shots (22% -> 5% of
+frames) - **#790** karaoke lines wider than the frame - **#791** the AI disclosure on the first caption.
 
-**Previously** - 2026-09-18 wave 21: **#779** the batch loop had never saved a draft · nightly
-drafts installed · **#771** aligner on · **#780**. Wave 20 **#775 #776 #770 #773 #774 #777**;
-wave 19 **#755 #627 #769 #763 #764 #766 #765 #767 #768 #772**; **#153** retired (do not
-rebuild).
+**Previously** - 2026-09-19 wave 22: **#782** fast cuts - **#783** full-size karaoke captions -
+**#784** the vignette wedge - **#601** playlists - **#781**. Wave 21 **#779 #771 #780**; wave 20
+**#775 #776 #770 #773 #774 #777**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
 **Volume framing (2026-09-17):** a long video is 1-2 a month; the 3-5/week target is Shorts.
-Tomorrow's 05:00 drafts are the first that will render with fast cuts, full-size captions and
-no wedge.
 
-1. **Operator: watch `ops preview-render` output, then review the 05:00 drafts** - the first
-   upload is still the thing everything waits on.
-2. **Operator: `py -m youtube.oauth_setup --channel tapin`, then `ops playlists --apply`** -
-   one consent click; playlists fill from the next upload.
-3. **#785 game subtitles under our captions** `[S]` - some GTA clips carry mission text on the
-   caption band.
-4. **#786 footage for the new niches** `[S]` - Minecraft/Roblox/NFL/football/AI fall back to the
-   two-shot background.
-5. **#600 re-check monetisation 48h after publish** `[M]` - once Shorts are going out.
+1. **Operator: review the 05:00 drafts** (`ops batch-review`) - the first upload is still the
+   thing everything waits on. They render with fast cuts, the crop and full-size captions.
+2. **Operator: `py -m youtube.oauth_setup --channel tapin`, then `ops playlists --apply`.**
+3. **Operator: gameplay files for the empty niches** (#786) - Minecraft, Roblox, soccer first;
+   `ops footage-add --path f.mp4 --game Minecraft --source <url> --licence "<terms>" --apply`.
+4. **#788 per-clip text bands** `[M]` - measure each clip's HUD/text rows once at ingest instead of
+   one fixed bottom crop.
+5. **#739** or the next engine item once Shorts are going out.
 
 **Dropped from this list** (stay open): **#739** · **#730** (operator call) · **#728** (no clip)
 · **#628** · **#731** · Phase M · Ollama.
+
+**Closed 2026-09-19 (wave 23):** **#785 #787 #600 #789 #790 #791**. Narrowed **#786**; filed open **#788**.
 
 **Closed 2026-09-19 (wave 22):** **#782 #783 #784 #601 #781**. Filed open: **#785 #786**.
 

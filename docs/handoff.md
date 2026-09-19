@@ -51,30 +51,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-19 · **HEAD at write:** `813a826` · **Tree:** wave 22 committing, then
-pushing. CI was green on `813a826` (run 35411994692).
+**Written:** 2026-09-19 · **HEAD at write:** `acf88ed` · **Tree:** wave 23 committing, then
+pushing. CI was green on `acf88ed` (run 35453421895).
 
-**Defects first - two in every recent render, found by rendering a preview and looking at it:**
-- **#783** karaoke captions were burned at a tenth of their size: `caption_force_style` (FontSize=18,
-  sized for SRT's 288-px default) was applied to the ASS, which declares 1920 px. Run 77 is live on
-  YouTube like that. An .ass burn now keeps only the skin's box/outline/shadow keys.
-- **#784** `vignette=PI/4:0.280` - the second positional is x0, so the vignette centre sat at the
-  left edge and blacked out the right third of every frame since 464c71b.
-**Look at a frame before you trust a render change.** Tests passed through both.
+**Defects first - three more found by looking at a re-rendered preview, all fixed:**
+- **#789** a third of the GTA clips are night driving (luma 26-40 before the grade); 22% of preview
+  frames were near-black. Shots under 45 are re-drawn from another file: 5%.
+- **#790** karaoke lines wider than the frame: WrapStyle 2 never wraps, 4 words at 90 px overflow.
+  Split to `karaoke_max_chars(size)`. Hidden while #783 kept captions tiny.
+- **#791** the AI disclosure (bottom, MarginV 280) sat on the first caption (bottom, 260). Top now.
+Still visible: top-of-frame HUD bars in some GTA shots - filed **#788**.
 
-**Operator ask, shipped:** #782 fast-cut backgrounds (`assets/fast_cut.py`, a shot every ~2.5 s
-from the topic's game folder; default on, `BACKGROUND_FAST_CUT=false` restores the two-shot
-hybrid; the suite pins it off because render tests mock one ffmpeg call). `ops preview-render
---path <mp3>` re-renders a voiced Short at $0. #601 playlists (`config/playlists.json`,
-`core/playlists.py`) wait on the operator's one re-consent (`py -m youtube.oauth_setup`). #781 one
-retry on a fresh client before the YouTube latch arms. Drafts 88-90 rejected on the operator's call.
+**Operator ask, shipped:** #785 crop, not skip - every shot drops the source frame's bottom 18%
+(`BACKGROUND_CROP_BOTTOM`). #787 a long gameplay file is 30 s windows, so one 20-minute download
+feeds a Short; `ops footage-add --path --game --licence [--source] --apply` imports it (muted H.264,
+license.yaml). #786 narrowed: `footage` field on playlist rows (NFL->Madden 26, etc.); `ops footage`
+shows the gaps. #600 `core/post_publish_check` - nightly, once per upload at 48h; `POST_PUBLISH_CHECK`
+is pinned off in tests/__init__. First live pass: 24 videos, none flagged (wrote
+data/post_publish_tapin.json - that is the real store, on purpose).
 
-Suite **3,296 -> 3,322**; mypy **139**; ruff clean; `data/` untouched by tests; mutate-gates 45/45.
-Backlog **323 open / 698 done**, highest **#786**. Next: operator watches the preview, re-consents
-for playlists; then **#785 · #786 · #600**.
+Suite **3,322 -> 3,351**; mypy **139**; ruff clean; mutate-gates 45/45. Backlog **322 open / 704
+done**, highest **#791**. Next: operator's footage files, playlist re-consent, 05:00 drafts; #788.
 
-**Cursor:** `_post_upload_extras` takes `channel_id=` now. `render_vertical_video` joins its
-`output_filename` under `<audio dir>/../video` - pass a bare name, use the returned path.
+**Cursor:** `candidate_clips` tries the folder name, then the playlist `footage` alias, and only
+then the LLM pick - `resolve_background_query` no longer runs when a keyword matches.
 
 ## Slot — Cursor
 

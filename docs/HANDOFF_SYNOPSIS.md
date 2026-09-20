@@ -1,10 +1,23 @@
-# Handoff synopsis — 2026-09-19: wave 24 the pacing reversal, per-clip crops, footage intake
+# Handoff synopsis — 2026-09-20: wave 25, the engine-upgrade ideas, measured
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-19 (Claude Code): wave 24 #792 #796 #793 #795 #797 #798 (#788 narrowed)
+## Last wave — 2026-09-20 (Claude Code): wave 25, documentation only
+
+Ideas for script generation, idea grading and resource use, each measured against the 38 run
+traces instead of argued from the docs - new file [engine_upgrades.md](engine_upgrades.md), linked
+from README, CLAUDE.md, roadmap and assessment. The three numbers that set the order: authenticity
+scores **100/100 on 22 of 38 runs** while carrying 28% of the report card (#804); TTS is **84% of
+all spend** and its cache is built but has never recorded a hit (#809); six discovery signals have
+**never** returned anything inside a 58.7 s median (#810). Filed **#799-#812**, narrowed **#575
+#561 #50 #374 #611 #83**, removed a duplicate open **#351** that had already shipped. Operator
+calls: one new doc rather than addenda, and the next build wave weights **script quality** - next
+five are #799, #800, #801, #809, #804. No production code changed; suite unchanged at **3,381**,
+mypy **139**, backlog **335 open / 710 done**, highest **#812**.
+
+## Previous — 2026-09-19 (Claude Code): wave 24 #792 #796 #793 #795 #797 #798 (#788 narrowed)
 
 The operator watched the wave 23 preview and reversed wave 22's steady pacing: **#792** every shot
 is now drawn at random in 3-8 s and never within a second of the one before it (55 shots -> 24 on

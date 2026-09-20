@@ -11,6 +11,47 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-20 (Claude Code) - wave 25: ideas measured against the run record
+
+Operator: *"generate ideas surrounding improved script generation, idea grading, and resource
+utilization and update documentation all around, then commit and push."*
+
+Documentation only - no production code changed. Two operator calls, asked before writing: the
+write-up goes in **one new doc plus backlog items** ([engine_upgrades.md](engine_upgrades.md)),
+and the next build wave weights **script quality**.
+
+**Method.** The diagnosis (2026-08-30) and the strategy doc both predate most of the 38 run
+traces now on disk, so every number below was re-measured from `data/traces/47-90.json`, the
+operator's `.env` and the repo, rather than quoted from the docs.
+
+**What the traces say that the docs did not:**
+- **Cost is one line item.** TTS $6.09 of $7.27 across 38 runs (**84%**); LLM **$0.0071** per run
+  over 9 calls. Token optimisation is not a lever and is now written down as such.
+- **The TTS cache is finished and switched off.** `TTS_CACHE` absent from `.env`,
+  `data/tts_cache/` does not exist, `tts_cached` false wherever recorded - #71 (2026-08-20) and
+  #402 (2026-09-06) have never once been used in production. Filed #809.
+- **The report card cannot rank.** Authenticity is 100/100 on **22 of 38** runs while carrying
+  28% of the grade; hook (median 78, 55-93) is the only component that moves. The diagnosis
+  found this by reading `_WEIGHTS` and the substring lists; the distribution confirms it. #804.
+- **Intent detection barely fires.** 10 traces record `angle_intent`; **9 read `default`**. The
+  one change that measurably moved quality (run 75) is idling. #801.
+- **Six signals have never returned anything** - `trendingnow` 0/22, `igdb` 1/33 (+6 http
+  errors), `steam` 1/33, `tapology`/`stats_context`/`tvmaze`/`tmdb` 0 - inside a 58.7 s median
+  discovery. That is the measurement #575 asked for; #810 is the retirement.
+- **Nothing records which rewrite pass changed a script.** Five `_maybe_*` passes, four premium.
+  #799, and it is first on the next five because the rest of the script work is judged through
+  it.
+
+**Filed:** #799-#803 (script), #804-#808 (grading), #809-#812 (resources). **Narrowed with
+evidence:** #575 #561 #50 #374 #611 #83. **Removed:** a duplicate open #351 that had already
+shipped on 2026-08-30 - it had been inflating the open count.
+
+**Deliberately not proposed,** and written into the new doc so it is not rediscovered: token-spend
+optimisation, more discovery signals (§26), a second signal cache (root CLAUDE.md hard rule),
+re-weighting the grade before #804, and chasing significance at n~10 published.
+
+Backlog **322 -> 335 open / 710 done**, highest **#812**. Suite unchanged at 3,381; mypy 139.
+
 ## 2026-09-19 (Claude Code) - wave 24: the pacing reversal, per-clip crops, intake
 
 Operator, after watching the wave 23 preview: *"can it be a bit longer cuts? like between the

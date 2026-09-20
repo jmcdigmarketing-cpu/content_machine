@@ -51,35 +51,34 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-19 · **HEAD at write:** `e7e9521` · **Tree:** wave 24 committing, then
-pushing. CI was green on `e7e9521` (run 35455523599).
+**Written:** 2026-09-20 · **HEAD at write:** `0d5d23c` · **Tree:** wave 25 committing, then
+pushing. CI was green on `0d5d23c` (run 35476144912). **Documentation only - no code changed.**
 
-**Defects first - two found in this wave's own debug sweep:**
-- **#797** `data/tmp/hybrid_backgrounds` held 60 composed backgrounds / **4.2 GB**, oldest
-  2026-06-04. Nothing had ever swept them; `_compose` now prunes past 3 days (2,636 MB freed).
-- **#798** with 3-8 s shots, one mid-shot brightness sample let near-black shots back in
-  (5% -> 9% of frames). Shots over 4 s are read at a third and two thirds, scored on the darker.
-- **#788 is narrowed, not done.** The band reading first called a bright sky a plate (0.233, the
-  cap, on 8/8 GTA clips); requiring a sharp edge fixed that and also lost the 2K score bug, which
-  is partial-width. Measurements only ever *add* crop - GTA's mission text is white-on-nothing,
-  not a luminance step, so `BACKGROUND_CROP_BOTTOM` stays the floor.
+**Defects first, all found by measuring `data/traces/*.json` (38 runs) rather than reading docs:**
+- **The TTS cache has never been used.** `TTS_CACHE` is absent from the operator's `.env`,
+  `data/tts_cache/` does not exist, `tts_cached` is false wherever recorded - while TTS is
+  **$6.09 of $7.27 (84%)** of all spend. #71 and #402 built it; nothing switched it on (#809).
+- **28% of the report card is a constant.** Authenticity scores 100/100 on **22 of 38** runs
+  (#804). Hook, median 78, is the only component that discriminates.
+- **Intent detection reads `default` on 9 of the 10** runs that record it (#801).
+- **Six signals have never returned anything** inside a 58.7 s median discovery (#810).
+- **A duplicate open #351** had been inflating the open count since 2026-08-30; removed.
 
-**Operator ask, shipped:** #792 shots 3-8 s, random, never within a second of the last one
-(`BACKGROUND_CUT_MIN`/`MAX`; wave 22's `BACKGROUND_CUT_SECONDS` reads as the midpoint) - the wave
-22 guards moved with the reversal instead of being deleted. #796 parallel shot encodes
-(`BACKGROUND_SHOT_WORKERS=4`). #793 `footage-add --path <folder>`. #795 `preview-render
---seconds N`. `ops footage --apply` measured all 141 clips and stores bands in the clip index.
+**What exists now:** [engine_upgrades.md](engine_upgrades.md) holds the measured baseline, the
+ranked ideas in three sections, and a "not worth doing" list (token-spend optimisation, more
+signals, a second signal cache, re-weighting before #804, significance at n~10). Filed
+**#799-#812**; narrowed **#575 #561 #50 #374 #611 #83** with the evidence.
 
-Operator calls this session: caption height is fine (so #730/#731/#739 are not next), no stock
-footage for the empty niches, footage order does not matter.
+**Operator calls this session:** one new doc rather than addenda to two; the next build wave
+weights **script quality**. Next five: **#799** (rewrite-pass ledger, first because everything
+else in the script section is judged through it) · **#800** (hedge density, decides
+`decisions.md` §25) · **#801** · **#809** · **#804**.
 
-Suite **3,351 -> 3,381**; mypy **139**; ruff clean; mutate-gates 45/45; `data/` untouched by
-tests. Backlog **322 open / 710 done**, highest **#798**. Next: the operator's files (#786),
-#788's partial-width half, #611.
+Suite **3,381** unchanged; mypy **139**; ruff clean; `data/` untouched. Backlog **335 open / 710
+done**, highest **#812**.
 
-**Cursor:** `cut_points` takes `span=`/`rng=` now and is random by default - pin both in a test
-rather than asserting a shot count. `build_shot_command` reads the clip index through
-`assets/clip_bands.crop_for_clip`, so a shot's crop depends on the measured clip.
+**Cursor:** the open counts moved by 14 filed plus one duplicate removed - if a count looks wrong
+against an older note, re-run `py -m scripts.ops roadmap-index` rather than trusting the prose.
 
 ## Slot — Cursor
 

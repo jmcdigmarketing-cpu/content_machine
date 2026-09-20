@@ -24,34 +24,44 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-19 wave 24: the operator reversed wave 22's steady pacing after
-watching the preview. **#792** shots are 3-8 s, drawn at random and never within a second of
-the one before (55 shots -> 24 on the same 140 s voice) - **#796** shots encode in parallel -
-**#788** narrowed: each clip's own text bands are measured and stored (141 clips, 25 carry a
-band); partial-width HUD is still missed and stays open - **#793** `footage-add --path <folder>`
-- **#795** `preview-render --seconds 30` (22 s instead of 108 s) - **#797** 2.6 GB of temp
-backgrounds swept - **#798** long shots judged dark on two frames, not one.
+**Just landed** - 2026-09-20 wave 25 (documentation): ideas for **script generation**, **idea
+grading** and **resource use**, each measured against the 38 recorded runs rather than argued
+from the docs - [engine_upgrades.md](engine_upgrades.md). Filed **#799-#812**; narrowed **#575
+#561 #50 #374 #611 #83**; removed a duplicate open **#351** that had already shipped.
 
-**Previously** - 2026-09-19 wave 23: **#785** crop the game's text - **#787** long gameplay
-files - **#600** the 48h check - **#789 #790 #791** from the preview. Wave 22 **#782 #783 #784
-#601 #781**; wave 21 **#779 #771 #780**; **#153** retired (do not rebuild).
+**The three numbers that set the order:** authenticity scores **100/100 on 22 of 38 runs** while
+carrying 28% of the report card - TTS is **84% of all spend** and its cache is built but switched
+off - six discovery signals have **never** returned anything inside a 58.7 s median.
+
+**Previously** - 2026-09-19 wave 24: **#792** irregular 3-8 s shots (the operator's reversal) -
+**#796** parallel shot encodes - **#788** narrowed - **#793 #795 #797 #798**. Wave 23 **#785 #787
+#600 #789 #790 #791**; wave 22 **#782 #783 #784 #601 #781**; **#153** retired (do not rebuild).
 
 ### Recommended next five (non-app)
 
-**Volume framing (2026-09-17):** a long video is 1-2 a month; the 3-5/week target is Shorts.
+**Operator, 2026-09-20:** the next build wave weights **script quality**. Volume framing is
+unchanged - a long video is 1-2 a month; the 3-5/week target is Shorts.
 
-1. **Operator: review the 05:00 drafts** (`ops batch-review`) - still the thing everything waits
-   on. They render with 3-8 s cuts, per-clip crops and full-size captions.
-2. **Operator: `py -m youtube.oauth_setup --channel tapin`, then `ops playlists --apply`.**
-3. **Operator: gameplay files** (#786) - Minecraft, Roblox, soccer, AI, Twitch have none;
-   `ops footage-add --path <folder> --game Minecraft --licence "<terms>" --apply`.
-4. **#788 partial-width HUD** `[M]` - the 2K score bug and Fortnite kill feed still show; needs
-   the column-wise detector (#717/#727), which misses 4 of 30 real bars today (#731).
-5. **#611 parallelise the render's other ffmpeg passes** `[M]` - #796 did the shots; intro,
-   captions and end card are still serial (108 s for a 140 s video).
+1. **#799 per-pass rewrite ledger** `[S]` - five passes can rewrite a finished script and nothing
+   records which fired or what it cost. Everything else in the script section is judged through
+   this.
+2. **#800 hedge density beside claim support** `[S]` - decides `decisions.md` §25, open since
+   run 58.
+3. **#801 intent coverage replay** `[S]` - 9 of 10 recorded runs read `default`; the one lever
+   that has moved quality is barely firing.
+4. **#809 switch the TTS cache on** `[S]` - 84% of spend, a finished cache, zero hits. Cheapest
+   item on the board.
+5. **#804 the saturated authenticity component** `[M]` - 28% of the grade is currently a
+   constant, which makes every quality change above unjudgeable.
+
+**Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
+consent then `ops playlists --apply`; gameplay files for the empty niches (#786).
 
 **Dropped from this list** (stay open): **#739** · **#730** (operator call) · **#728** (no clip)
 · **#628** · **#731** · Phase M · Ollama.
+
+**Filed 2026-09-20 (wave 25, documentation):** **#799 #800 #801 #802 #803** (script) - **#804
+#805 #806 #807 #808** (grading) - **#809 #810 #811 #812** (resources).
 
 **Closed 2026-09-19 (wave 24):** **#792 #793 #795 #796 #797 #798**. Narrowed **#788**.
 

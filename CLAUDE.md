@@ -28,7 +28,9 @@ full inventory is [docs/backlog.md](docs/backlog.md), the Windows application pr
 [docs/assessment.md](docs/assessment.md). Why the generated ideas/scripts come out the
 way they do — the six framing layers and the selection tie:
 [docs/idea_quality_diagnosis.md](docs/idea_quality_diagnosis.md); where the project can
-realistically go next: [docs/strategy_next_level.md](docs/strategy_next_level.md). State as of the last working session
+realistically go next: [docs/strategy_next_level.md](docs/strategy_next_level.md); what to build
+next in the engine itself, measured against the 38 recorded runs:
+[docs/engine_upgrades.md](docs/engine_upgrades.md). State as of the last working session
 (branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
 Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/planning_log.md)
 — **append a dated entry after any substantial planning session** so ideas aren't lost.

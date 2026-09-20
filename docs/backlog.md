@@ -170,6 +170,7 @@ Long-term / intelligence
 - [ ] 48. Multi-run series (`part 1/2/3`) with a vault-backed outline; cadence still capped `[L]`
 - [ ] 49. Post-publish first-hour anomaly (views or engaged-rate vs channel baseline) → webhook. Uses metrics sync, not a new API `[M]`
 - [ ] 50. Learned insight-marker list: replace the hardcoded `_INSIGHT_MARKERS` from scripts that actually retained `[L]`
+  *(measured 2026-09-20: authenticity scores 100/100 on 22 of 38 runs, so the hardcoded markers are not discriminating - this is now the input to #804, not a nice-to-have.)*
 - [ ] 51. Channel DNA export → new-channel playbook (the AI Tools/Tech groundwork, but as a dump of what TapIn learned) `[M]`
 - [x] 52. Graveyard reason codes *(2026-08-22)* - `reason_codes_for_quality` / `explain_reason_codes` derive `thin_facts` / `recap` / `weak_hook` / `ungrounded` **only** from the `quality_json` a run already persisted; a run predating quality persistence returns an honest `[]` rather than a guess
 - [x] 53. Prompt-version auto-bump from a SHA-256 hash of the live `content_engine` prompt-builder sources; every generated package and prompt-eval run carries the hash suffix `[S]`
@@ -252,6 +253,7 @@ Future viability — stay a media OS, not a GPT-wrapper that the platforms repla
 - [x] 81. **Cross-channel prior for MoneyWise cold-start** — a new channel has n=0; don't wait for 15 measured videos to recommend anything (vision challenge #6) `[M]` — shipped 2026-08-26; copies TapIn length/slot *shape* with `source=cross_channel_prior`, never gaming topics or `domain_slots`. MoneyWise's own n stays `analytics`
 - [ ] 82. Optional **2-second operator-on-camera sting** (real face, fail-open) — 2026 policy punishes synthetic-and-shallow; this is cheaper than the GPU avatar stack and is not avatar mode `[M]`
 - [ ] 83. **Holdout videos** (recommender off, one per N publishes) — without this the learning loop learns superstitions (vision challenge #2) `[M]`
+  *(2026-09-20: still the cheapest guard against the loop learning superstitions; see also #806, which would give the first operator-labelled rejections.)*
 - [x] 84. **RPM × cost by domain** — UFC vs GTA vs NBA contribution margin decides what TapIn should actually be; views-by-domain already exist `[S]`
   *(2026-08-20: `ops economics` adds RPM x cost by domain from `features.domain`)*
 - [x] 85. **Weekly moat backup** — `pg_dump` + vault + `data/traces` (encrypted secrets excluded); the dataset *is* the company (operating_plan §7) `[S]`
@@ -618,7 +620,6 @@ Grounding & fact quality
 
 Learning loop & analytics rigor
 
-- [ ] 351. **Confidence intervals, not just sample counts** — `recommender_confidence.py` reports n; an interval is what tells the operator that 30.6% +/- 22 is noise `[M]`
 - [ ] 352. **Bayesian shrinkage toward the channel mean** — "ufc averages 30.6% across 2 videos" should shrink to the baseline until it earns its own estimate. Fixes volume-starved learning without waiting for volume `[M]`
 - [x] 353. **Minimum-detectable-effect check before an arm is proposed** *(2026-08-28)* — `start_experiment` refuses a lever with more arms than measured videos. The test reads the arm count from `experiment_levers.arms()`, so a lever gaining an arm cannot pass a hardcoded number `[S]`
 - [ ] 354. **Sequential-testing stop rule for title/thumb arms** — peeking and stopping on a good look is exactly how the loop learns superstitions `[M]`
@@ -645,6 +646,7 @@ Cost & quota
 - [x] 372. **Cache-hit dollars saved** *(2026-08-27)* — `ops reliability` multiplies Apify-prefix hits × `COST_APIFY_PER_RUN`. `$` line only when hits > 0; zero hits is not a scare WARNING. Display only `[S]`
 - [x] 373. **Audit that no path bills TTS before script approval** *(2026-08-28)* — audit-and-lock, no product change: the pipeline seam plus every draft call site (`main.py`, `auto_generate`, `batch_generation`) is pinned to `proceed_video=False` in `tests/test_no_tts_before_approval.py`. Proved failable by flipping the flag in `main.py` `[S]`
 - [ ] 374. **Premium tier for the hook only** — the first two sentences carry the retention cliff; the rest can run cheap-tier through the existing router `[S]`
+  *(measured 2026-09-20: hook is the one report-card component with room - median 78, range 55-93 - and premium tokens cost $0.0071 for a whole run.)*
 - [ ] **Ollama model pull (optional)** — `ops doctor` ollama FAIL stays until `ollama pull …`. Ollama is still free/local (not a billed API); Standard already uses DeepSeek/OpenRouter. Do not un-tick the shipped router item. `[S]`
 - [ ] 375. **Ollama warm-pool across a batch** — the free path loses on cold-start latency, not quality `[M]`
 - [ ] 376. **YouTube unit budget planner** — split the ~1,600 units across upload / analytics / captions for the day instead of first-come-first-served `[M]`
@@ -885,6 +887,7 @@ Analytics & learning rigor
 - [ ] 559. **Record the prediction at publish time** — fixes #355, whose residual is currently recomputed on every sync `[M]`
 - [ ] 560. **A hold-out set the recommenders never see**, for honest error bars `[M]`
 - [ ] 561. **Report the loop's own accuracy** on the report card, beside its advice `[M]`
+  *(2026-09-20: distinct from #805, which reports the **report card's** accuracy. This one is the recommenders'.)*
 - [x] 562. **Distinguish "no data" from "data says no"** *(2026-09-09)* - length with 0 samples now says `no engagement analytics yet`; 4 samples still say `N more measured video(s)`. Fail-first: both used the `more measured` template (`6 more` vs `2 more`). Learned post-time with an empty slot names `0 measured posts` instead of the no-analytics line `[S]`
 - [ ] 563. **Time-to-first-100-views** as a faster signal than 7-day engaged rate `[M]`
 - [ ] 564. **Exclude the operator's own views** from every metric `[S]`
@@ -902,6 +905,7 @@ Cost & efficiency
 - [ ] 573. **Cache the research brief across variants** of the same topic `[M]`
 - [ ] 574. **Skip a signal whose data never reaches the script** `[M]`
 - [ ] 575. **Measure which signals actually contribute facts** and retire the rest (decisions §19) `[M]`
+  *(measured 2026-09-20 across 38 traces: `trendingnow` 0/22 ok, `igdb` 1/33 plus six http errors, `steam` 1/33, `tapology`/`stats_context`/`tvmaze`/`tmdb` 0 - against a 58.7 s median for discovery. The measurement this item asked for is done; what remains is the retirement. See #810 and [engine_upgrades.md](engine_upgrades.md) §1.)*
 - [ ] 576. **Batch TTS across a `batch-drafts` run** to amortise connection overhead `[M]`
 - [ ] 577. **Reuse the existing render when only the description changed** `[M]`
 - [ ] 578. **Cost per finished minute of video**, not per run `[S]`
@@ -947,6 +951,7 @@ Performance & startup
 - [x] 609. **Startup budget test** *(2026-09-08)* — `measure_import` / `measure_import_fresh`; `core.chrome` ratchet 5.0s. Clock is injectable; no network. `ops doctor` prints the budget `[S]`
 - [ ] 610. **Lazy-import the 92 `ops` verbs** so running one does not load all of them `[M]`
 - [ ] 611. **Parallelise the render's independent ffmpeg passes** `[M]`
+  *(measured 2026-09-20: wave 24 parallelised the fast-cut shot encodes (#796); a 140 s preview still takes 108 s end to end, so intro, captions and end card are what is left.)*
 - [x] 612. **Cache Pillow font objects** *(2026-09-07)* — `load_font("arial.ttf", 24) is load_font("arial.ttf", 24)`; size 32 is a different object. End-card preview and caption overlay call it `[S]`
 - [ ] 613. **Profile `core/ui.py`** — 1,783 lines of display code runs around every prompt `[M]`
 - [ ] 614. **Stream the LLM script** so the operator reads while it generates `[M]`
@@ -1188,3 +1193,17 @@ Review 4 - what the four waves shipped green but inert (2026-09-08)
 - [x] 796. **Shots encoded one at a time** *(2026-09-19, wave 24)* - `_compose` runs them in a `ThreadPoolExecutor` (`BACKGROUND_SHOT_WORKERS=4`) and rebuilds the concat list in playback order `[S]`
 - [x] 797. **data/tmp/hybrid_backgrounds had grown to 4.2 GB** *(found in the wave 24 debug sweep, fixed wave 24)* - composed backgrounds are scratch (the render copies what it needs) and nothing had ever deleted them; the oldest was from 2026-06-04. Each compose now sweeps files older than 3 days - 2,636 MB reclaimed on the first run `[S]`
 - [x] 798. **A long shot was judged dark on one frame** *(found measuring the wave 24 preview, fixed wave 24)* - with 3-8 s shots a single mid-shot sample let near-black frames back in (5% -> 9% of sampled frames). Shots over 4 s are read at a third and two thirds and scored on the darker: back to 5% `[S]`
+- [ ] 799. **No record of which rewrite pass changed the script** - five passes can rewrite a finished script (`_maybe_improve_hook`, `_maybe_reground_script`, `_maybe_rewrite_unsupported_claims`, `_maybe_inject_insight`, `_maybe_recenter_on_key_facts`), four on the premium tier, and nothing records which fired, what it changed or what it cost. Run 74 lost words to one and it took a live investigation to find. Record pass, word delta, hook delta and cost in the trace; print the line on the report card. Prerequisite for every other script change *(measured 2026-09-20: 9 LLM calls per run, 4 of them `stage: script`)* `[S]`
+- [ ] 800. **Hedge density beside claim support** - `decisions.md` §25 has been open since run 58 shipped four consecutive weasel sentences at 30% support: the claim rewriter turns a bare assertion into an attributed one and the re-check passes, so "12/12 backed" is bought with hedging. Count hedge phrases per 100 words, print it next to claim support, let the grade fall. Decides §25 rather than deferring it *(measured 2026-09-20: claim support median 0.833, unsupported claims median 1)* `[S]`
+- [ ] 801. **Intent detection reads `default` on almost everything** - `core/angle_intent.py` moved output quality more than any prompt edit in project history (run 75), but of the 10 traces that record an intent, **9 are `default`** and 1 is `list`. Replay all 38 recorded topics through the detector, count what it returns, and widen the cues where a calm or explanatory idea reads as a take `[S]`
+- [ ] 802. **No latency budget on generation** - the research brief has taken 138 s and variant scoring 185 s on single runs, against medians of 11.2 s and 0.9 s. Give each stage a deadline and a documented fallback (skip the brief, keep the facts) so a slow provider costs seconds, not minutes `[M]`
+- [ ] 803. **Style memory is one script deep** - `authenticity_semantic` compares a draft against a single previous script (median 0.291, max 0.547). Compare against the last N published scripts and flag repeated openers, closers and sentence shapes - the "recurring nightmare" opener shape recurs across GTA runs `[M]`
+- [ ] 804. **The authenticity component is saturated** - 100/100 on **22 of 38 runs** while carrying **28%** of the report card (`core/video_grade.py:_WEIGHTS`), so more than a quarter of the grade is a constant. Rescale against the observed distribution or replace the substring scorer with one that can separate two good scripts; pair with #50. The diagnosis found this by reading the code (§3.6); the distribution now confirms it `[M]`
+- [ ] 805. **The report card never reports its own accuracy** - correlate grade and composite against `engaged_rate` over every measured publish and print `r` with `n` on the card. The only dataset that exists says composite is uncorrelated with engagement (hit rate 40%; the lowest-scored topic beat two 100.0s). Distinct from #561, which is the recommenders' accuracy `[M]`
+- [ ] 806. **Rejections are not recorded anywhere** - the operator has rejected six drafts in two weeks and every reason lives as prose in `planning_log.md`. One keystroke at rejection in `ops batch-review` (pace / facts / angle / hook / topic) builds the only operator-labelled dataset this project could have, at the cost of one column in the review store `[S]`
+- [ ] 807. **Nothing proves the variant tie is gone for ordinary runs** - wave 14 fixed it for the thesis case (#744). Re-score the recorded runs' variants offline and report the spread, so a tie that comes back is a failing test instead of a live-run discovery `[S]`
+- [ ] 808. **Grade re-runs are not reproducible** - `core/grade_calibration.py` re-grades all history with today's code and `GRADE_VERSION` stamps only *that* something changed. Store the grade inputs beside the scores so a component change can be measured against the archive `[S]`
+- [ ] 809. **The TTS cache is built and switched off** - `TTS_CACHE` is absent from the operator's `.env`, `data/tts_cache/` does not exist, and `tts_cached` is false on every trace that records it, while TTS is **$6.09 of $7.27 (84%)** of all spend across 38 runs. Both caches are finished (#71 whole-script, #402 sentence-level). Default it on in production, pin it off in the suite the way `BACKGROUND_FAST_CUT` is, and print the hit rate on the nightly line `[S]`
+- [ ] 810. **Six signals have never returned anything** - `trendingnow` 0/22, `igdb` 1/33 (+6 http errors), `steam` 1/33, `tapology`/`stats_context`/`tvmaze`/`tmdb` 0, each still costing a thread and a timeout inside a 58.7 s median discovery. Retire or flag them per `decisions.md` §19, following the `reddit`/`twitter` precedent. Closes the measurement half of #575 `[S]`
+- [ ] 811. **Discovery waits for its slowest signal** - signals run concurrently but the run blocks on the last one (median 58.7 s, max 114.6 s). Take the first N good results past a deadline and record which were dropped `[M]`
+- [ ] 812. **Artifact retention only ever prints a dry run** - `core/artifact_retention.py` says "DRY RUN ONLY" and is wired to no scheduler, while `output/` holds **4.3 GB** across 300 files. Give it an `--apply` and a place in the nightly task, with published renders exempt `[S]`

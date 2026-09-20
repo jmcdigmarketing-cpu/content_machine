@@ -126,7 +126,8 @@ class TestEvaluate(unittest.TestCase):
         with patch("core.authenticity._recent_scripts", return_value=[]):
             report = evaluate_authenticity(GOOD_SCRIPT, "tapin", fact_count=3)
         self.assertEqual(report.verdict, "ok")
-        self.assertEqual(report.score, 100)
+        self.assertEqual(report.gate_score, 100)
+        self.assertLess(report.score, 100)
         self.assertTrue(report.passed)
 
     def test_recap_is_review(self):
@@ -141,6 +142,39 @@ class TestEvaluate(unittest.TestCase):
         with patch("core.authenticity._recent_scripts", return_value=[RECAP_SCRIPT]):
             report = evaluate_authenticity(RECAP_SCRIPT, "tapin", fact_count=0)
         self.assertEqual(report.verdict, "block")
+
+    def test_two_scripts_that_both_pass_the_gate_do_not_tie_at_100(self):
+        """#804. 22 of 38 runs sat at 100/100 because three binaries summed to a
+        ceiling. Both of these pass variation+insight+substance; they must not
+        score the same. Unmodified evaluate_authenticity returns 100 for both.
+        """
+        generic = (
+            "I think the division looks different after this booking. The main "
+            "card is stacked with ranked names and the prelims fill the rest of "
+            "the night so the broadcast has enough fights to fill two hours. "
+            "Tickets are moving and the arena will be loud once the show starts "
+            "in the early evening this weekend for the fans who bought seats. "
+            "The walkouts take a while and the referee briefings add more time "
+            "before the first bell of the main card actually goes."
+        )
+        specific = (
+            "I think Islam Makhachev beats the southpaw because the reach data "
+            "says so. Here's why it matters: the champion has never solved that "
+            "stance, and my prediction is a first-round finish when the cage "
+            "door closes in Abu Dhabi this weekend in front of a sold-out crowd. "
+            "The numbers on the tape have been sitting there for months and the "
+            "panel still will not name the upset even after the weigh-ins close."
+        )
+        from core.script_length import count_spoken_words
+
+        self.assertGreaterEqual(count_spoken_words(generic), 55)
+        self.assertGreaterEqual(count_spoken_words(specific), 55)
+        close = evaluate_authenticity(generic, "tapin", fact_count=1, recent=[])
+        distinct = evaluate_authenticity(specific, "tapin", fact_count=6, recent=[])
+        self.assertEqual(close.verdict, "ok")
+        self.assertEqual(distinct.verdict, "ok")
+        self.assertNotEqual(close.score, distinct.score)
+        self.assertGreater(distinct.score, close.score)
 
 
 if __name__ == "__main__":

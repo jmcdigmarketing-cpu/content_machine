@@ -157,14 +157,16 @@ class AuthenticityCheck:
     passed: bool
     weight: int
     detail: str
+    points: float = 0.0  # 0..weight, the grade; `passed` is the gate
 
 
 @dataclass
 class AuthenticityReport:
-    score: int  # 0-100
-    verdict: str  # "ok" | "review" | "block"
+    score: int  # 0-100, continuous grade component
+    verdict: str  # "ok" | "review" | "block" — still from the binary sum
     checks: list[AuthenticityCheck]
     semantic_overlap: float = 0.0  # peak content-word cosine vs recent (0-1)
+    gate_score: int = 0  # binary 40+35+25 sum the gate still uses
 
     @property
     def passed(self) -> bool:
@@ -231,7 +233,11 @@ def _recent_scripts(channel_id: str, *, exclude_run_id: int | None) -> list[str]
 def _variation_check(script: str, recent: list[str]) -> AuthenticityCheck:
     if not recent:
         return AuthenticityCheck(
-            "variation", True, 40, "no prior uploads to compare — assumed unique"
+            "variation",
+            True,
+            40,
+            "no prior uploads to compare — uniqueness unknown",
+            20.0,
         )
 
     norm = _normalise(script)
@@ -242,48 +248,62 @@ def _variation_check(script: str, recent: list[str]) -> AuthenticityCheck:
         max_full = max(max_full, SequenceMatcher(None, norm, _normalise(other)).ratio())
         max_open = max(max_open, SequenceMatcher(None, opening, _opening(other)).ratio())
 
-    if max_full >= _FULL_SIM_LIMIT:
-        return AuthenticityCheck(
-            "variation",
-            False,
-            40,
-            f"{max_full:.0%} similar to a recent upload — looks template-stamped",
-        )
-    if max_open >= _OPENING_SIM_LIMIT:
-        return AuthenticityCheck(
-            "variation",
-            False,
-            40,
-            f"opening {max_open:.0%} like a recent video — vary the hook",
-        )
+    max_sem = 0.0
     if _semantic_enabled():
-        max_sem = 0.0
         for other in recent:
             max_sem = max(max_sem, _content_cosine(script, other))
-        if max_sem >= _SEMANTIC_SIM_LIMIT:
-            return AuthenticityCheck(
-                "variation",
-                False,
-                40,
-                f"content overlap {max_sem:.0%} with a recent upload — looks like a rehash",
-            )
-    return AuthenticityCheck(
-        "variation", True, 40, f"distinct from recent uploads (peak {max_full:.0%})"
+
+    peak = max(max_full, max_open, max_sem)
+    points = round(40.0 * (1.0 - peak), 1)
+    passed = (
+        max_full < _FULL_SIM_LIMIT
+        and max_open < _OPENING_SIM_LIMIT
+        and max_sem < (_SEMANTIC_SIM_LIMIT if _semantic_enabled() else 1.1)
     )
+
+    if max_full >= _FULL_SIM_LIMIT:
+        detail = f"{max_full:.0%} similar to a recent upload — looks template-stamped"
+    elif max_open >= _OPENING_SIM_LIMIT:
+        detail = f"opening {max_open:.0%} like a recent video — vary the hook"
+    elif _semantic_enabled() and max_sem >= _SEMANTIC_SIM_LIMIT:
+        detail = f"content overlap {max_sem:.0%} with a recent upload — looks like a rehash"
+    else:
+        detail = f"distinct from recent uploads (peak {max_full:.0%})"
+    return AuthenticityCheck("variation", passed, 40, detail, points)
 
 
 def _insight_check(script: str) -> AuthenticityCheck:
     norm = _normalise(script)
     found = [m for m in _INSIGHT_MARKERS if m in norm]
+    ents: list[str] = []
+    try:
+        from core.fact_grounding import specific_entities
+
+        ents = list(specific_entities(script) or [])
+    except Exception as exc:
+        logger.debug("insight entity scan skipped: %s", exc)
+    if found and ents:
+        return AuthenticityCheck(
+            "original_insight",
+            True,
+            35,
+            f"has an authorial take ('{found[0]}') naming {ents[0]}",
+            35.0,
+        )
     if found:
         return AuthenticityCheck(
-            "original_insight", True, 35, f"has an authorial take ('{found[0]}')"
+            "original_insight",
+            True,
+            35,
+            f"has an authorial take ('{found[0]}')",
+            18.0,
         )
     return AuthenticityCheck(
         "original_insight",
         False,
         35,
         "no opinion/prediction/analysis beat — reads as a neutral recap",
+        0.0,
     )
 
 
@@ -298,11 +318,18 @@ def has_insight(script: str) -> bool:
 
 def _substance_check(script: str, fact_count: int) -> AuthenticityCheck:
     words = count_spoken_words(script)
+    word_ratio = min(1.0, words / 120.0)
+    fact_ratio = min(1.0, max(int(fact_count or 0), 0) / 4.0)
+    points = round(25.0 * (0.6 * word_ratio + 0.4 * fact_ratio), 1)
+    passed = words >= _MIN_WORDS and fact_count >= _MIN_FACTS
     if words < _MIN_WORDS:
-        return AuthenticityCheck("substance", False, 25, f"only {words} spoken words — too thin")
-    if fact_count < _MIN_FACTS:
-        return AuthenticityCheck("substance", False, 25, "no verified facts behind the script")
-    return AuthenticityCheck("substance", True, 25, f"{words} words, {fact_count} verified fact(s)")
+        detail = f"only {words} spoken words — too thin"
+    elif fact_count < _MIN_FACTS:
+        detail = "no verified facts behind the script"
+        points = min(points, 12.0)
+    else:
+        detail = f"{words} words, {fact_count} verified fact(s)"
+    return AuthenticityCheck("substance", passed, 25, detail, points)
 
 
 def evaluate_authenticity(
@@ -327,11 +354,12 @@ def evaluate_authenticity(
         _insight_check(script),
         _substance_check(script, fact_count),
     ]
-    score = sum(c.weight for c in checks if c.passed)
+    gate_score = sum(c.weight for c in checks if c.passed)
+    score = int(round(sum(c.points for c in checks)))
 
-    if score >= 75:
+    if gate_score >= 75:
         verdict = "ok"
-    elif score >= 40:
+    elif gate_score >= 40:
         verdict = "review"
     else:
         verdict = "block"
@@ -340,7 +368,13 @@ def evaluate_authenticity(
     if _semantic_enabled() and recent:
         overlap = max(_content_cosine(script, other) for other in recent)
 
-    return AuthenticityReport(score=score, verdict=verdict, checks=checks, semantic_overlap=overlap)
+    return AuthenticityReport(
+        score=score,
+        verdict=verdict,
+        checks=checks,
+        semantic_overlap=overlap,
+        gate_score=gate_score,
+    )
 
 
 def gate_mode() -> str:

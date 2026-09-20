@@ -90,6 +90,7 @@ class TestReliability(unittest.TestCase):
             "llm",
             "signals",
             "cache",
+            "tts_cache",
             "youtube",
             "elevenlabs",
             "competitor_health",
@@ -117,11 +118,20 @@ class TestReliability(unittest.TestCase):
                     "by_prefix": {"reddit": {"hits": 3, "misses": 1}},
                 },
                 "youtube": {"used": 100, "limit": 10000, "remaining": 9900, "uploads_left": 6},
+                "tts_cache": {
+                    "enabled": True,
+                    "files": 2,
+                    "hits": 1,
+                    "misses": 1,
+                    "hit_rate": 0.5,
+                },
             }
         )
         self.assertIn("Reliability", out)
         self.assertIn("Apify", out)
         self.assertIn("75% hit rate", out)
+        self.assertIn("TTS cache:", out)
+        self.assertIn("1/2 hits", out)
         self.assertIn("YouTube units", out)
         self.assertIn("6 uploads left", out)
 

@@ -222,14 +222,8 @@ class TestSentenceCache(unittest.TestCase):
             self.assertAlmostEqual(tts.last_tts_cache_fraction(), 0.5, places=2)
 
     def test_the_sentence_path_is_off_when_the_cache_is_off(self):
-        """`TTS_CACHE` is opt-in and default OFF. With it off, `tts_cache_lookup`
-        always misses and `tts_cache_store` is a no-op, so splitting buys nothing
-        — but still pays for it: N synth calls, an ffmpeg re-encode, and an
-        encoder boundary at every sentence break in every video. All of the cost,
-        none of the benefit, on renders that never asked for the cache.
-
-        Every other test in this class sets TTS_CACHE=true, which is why the
-        ungated path was invisible.
+        """With the cache off, `tts_cache_lookup` always misses and store is a
+        no-op, so splitting buys nothing. Pin false explicitly — empty now means on.
         """
         script = "First sentence. Second sentence. Third sentence."
         calls: list[str] = []
@@ -243,7 +237,7 @@ class TestSentenceCache(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             dest = os.path.join(tmp, "out.mp3")
             with (
-                patch.dict(os.environ, {"TTS_CACHE": ""}, clear=False),
+                patch.dict(os.environ, {"TTS_CACHE": "false"}, clear=False),
                 patch.object(tts, "synthesize_to_path", side_effect=fake_seam),
                 patch.object(tts, "concat_audio_segments") as concat,
                 patch.object(tts, "_tts_cache_voice", return_value=""),

@@ -37,7 +37,9 @@ logger = get_logger("core.video_grade")
 # without this stamp a v1 letter and a v2 letter were indistinguishable.
 # v3 (2026-09-06): #660 stopped ordering a take on calm intents; #656 penalises
 # banned-template hooks. Historical letters from v2 are a different rubric.
-GRADE_VERSION = "v3"
+# v4 (2026-09-20): #804 continuous authenticity points so 100/100 is no longer
+# the mode; #800 hedge-density penalty on grounding. Gate verdicts are unchanged.
+GRADE_VERSION = "v4"
 
 # Component weights (renormalized over the components actually present).
 _WEIGHTS = {
@@ -61,6 +63,9 @@ _TRADE_PENALTY = 20  # per trade-direction warning
 _UNSUPPORTED_CLAIM_PENALTY = 15  # per LLM-verifier unsupported claim
 _CONFLICT_PENALTY = 15  # per operator-vs-source fact conflict
 _TIER_PENALTY = 10  # per grounding-tier warning
+# #800 / §25: "12/12 backed" bought with hedging. Points per hedge phrase per
+# 100 spoken words. Grade-only — the render gate is unchanged (#345).
+_HEDGE_DENSITY_PENALTY = 5.0
 
 
 @dataclass
@@ -80,6 +85,7 @@ class VideoGrade:
     prediction_note: str = ""
     engagement_surprise: float | None = None
     version: str = GRADE_VERSION
+    script_passes: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _letter(score: float) -> str:
@@ -100,6 +106,7 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
     unsupported = int(quality.get("unsupported_claim_count") or 0)
     conflicts = int(quality.get("fact_conflict_count") or 0)
     tiers = int(quality.get("tier_warning_count") or 0)
+    density = float(quality.get("hedge_density") or 0)
     score = max(
         0.0,
         100.0
@@ -107,7 +114,8 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
         - _TRADE_PENALTY * trades
         - _UNSUPPORTED_CLAIM_PENALTY * unsupported
         - _CONFLICT_PENALTY * conflicts
-        - _TIER_PENALTY * tiers,
+        - _TIER_PENALTY * tiers
+        - _HEDGE_DENSITY_PENALTY * density,
     )
     notes = []
     if ungrounded:
@@ -122,6 +130,8 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
         notes.append("DISPUTED")
     if tiers:
         notes.append(f"{tiers} tier warning(s)")
+    if density > 0:
+        notes.append(f"hedge density {density:.1f}/100w")
     return score, "; ".join(notes) or "fully grounded"
 
 
@@ -177,12 +187,17 @@ def grade_from_parts(
         )
     auth = quality.get("authenticity_score")
     if auth is not None:
+        auth_note = str(quality.get("authenticity_verdict", ""))
+        gate = quality.get("authenticity_gate_score")
+        if gate is not None and int(gate) != int(round(float(auth))):
+            extra = f"gate {int(gate)}"
+            auth_note = f"{auth_note}; {extra}" if auth_note else extra
         raw.append(
             GradeComponent(
                 "authenticity",
                 float(auth),
                 _WEIGHTS["authenticity"],
-                str(quality.get("authenticity_verdict", "")),
+                auth_note,
             )
         )
     if quality.get("ungrounded_count") is not None:
@@ -210,14 +225,18 @@ def grade_from_parts(
         )
 
     if not raw:
-        return VideoGrade(score=0.0, letter="F", components=[])
+        grade = VideoGrade(score=0.0, letter="F", components=[])
+    else:
+        total_weight = sum(c.weight for c in raw)
+        components = [
+            GradeComponent(c.name, c.score, round(c.weight / total_weight, 4), c.note) for c in raw
+        ]
+        score = round(sum(c.score * c.weight for c in components), 1)
+        grade = VideoGrade(score=score, letter=_letter(score), components=components)
 
-    total_weight = sum(c.weight for c in raw)
-    components = [
-        GradeComponent(c.name, c.score, round(c.weight / total_weight, 4), c.note) for c in raw
-    ]
-    score = round(sum(c.score * c.weight for c in components), 1)
-    grade = VideoGrade(score=score, letter=_letter(score), components=components)
+    passes = quality.get("script_passes")
+    if isinstance(passes, list):
+        grade.script_passes = list(passes)
 
     if channel_id:
         try:
@@ -292,7 +311,41 @@ def render_grade(grade: VideoGrade) -> str:
         lines.append(f"    prediction: {grade.prediction_note}")
     if grade.engagement_surprise is not None:
         lines.append(f"    surprise (actual − predicted): {grade.engagement_surprise * 100:+.1f}pp")
+    passes_line = format_script_passes(grade.script_passes)
+    if passes_line:
+        lines.append(f"    {passes_line}")
     return "\n".join(lines)
+
+
+_PASS_SHORT = {
+    "inject_insight": "insight",
+    "rewrite_claims": "claims",
+    "improve_hook": "hook",
+    "recenter_key_facts": "recenter",
+    "reground": "reground",
+}
+
+
+def format_script_passes(passes: list[dict[str, Any]] | None) -> str:
+    """One report-card line naming which rewrite passes actually changed the script."""
+    if not passes:
+        return ""
+    bits: list[str] = []
+    cost = 0.0
+    for row in passes:
+        if not row.get("adopted"):
+            continue
+        short = _PASS_SHORT.get(str(row.get("name") or ""), str(row.get("name") or "pass"))
+        delta = int(row.get("word_delta") or 0)
+        sign = f"+{delta}w" if delta >= 0 else f"{delta}w"
+        bits.append(f"{short} {sign}")
+        cost += float(row.get("cost_usd") or 0)
+    if not bits:
+        return "passes: none adopted"
+    line = "passes: " + ", ".join(bits)
+    if cost:
+        line += f" ${cost:.3f}"
+    return line
 
 
 def grade_as_markdown(grade: VideoGrade) -> str:

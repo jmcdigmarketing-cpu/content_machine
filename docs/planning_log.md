@@ -11,6 +11,33 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-20 (Cursor) - wave 26: script quality
+
+Operator locked Claude's next five: **#799 #800 #801 #809 #804**. Order cheapest/safest first so
+#804 could not strand the rest. TDD: each new test failed on unmodified `29ae92d` first.
+
+**Shipped:**
+1. **#799** `run_script_pass` around the five `_maybe_*` calls. `script_passes` is copied
+   content-package → pipeline features → quality → `passes: insight +12w, claims -3w $0.004`.
+   Hook-off is `disabled`; a rejected LLM is `llm_called` without `adopted`. Reground persists
+   pre/post ungrounded counts on the same row.
+2. **#800** `hedge_density` per 100 spoken words; printed beside claim support; grounding loses
+   5 pts per hedge/100w. Render gate unchanged. Closes the open §25 call.
+3. **#801** replayed the 38 recorded topics from a fixture (suite never opens `data/traces`).
+   Added `first look`, `rankings`, `what to `, `online economy`. `breakdown` stays default.
+4. **#809** empty `TTS_CACHE` is on. Suite pin stays false. Live `ops reliability`:
+   `TTS cache: on, 0 file(s), 0/3 hits (0%)`.
+5. **#804** authenticity `points` in 0..weight; gate still uses the binary sum
+   (`authenticity_gate_score`). No-history variation is 20 not 40. `GRADE_VERSION` v3 → **v4**;
+   historical letters re-grade. #50 stays open.
+
+**Did not change:** `_WEIGHTS`, the authenticity block/review/ok gate, #345's hedged-rumor
+render path.
+
+**Suggested next five** (from engine_upgrades, confirmed against backlog): **#806 · #807 · #810
+· #812 · #802**. Suite **3,381 -> 3,406**; mypy **139**; ruff clean; `data/` untouched.
+Backlog **335 -> 330 open / 715 done**, highest **#812**.
+
 ## 2026-09-20 (Claude Code) - wave 25: ideas measured against the run record
 
 Operator: *"generate ideas surrounding improved script generation, idea grading, and resource

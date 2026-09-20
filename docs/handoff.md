@@ -82,17 +82,25 @@ against an older note, re-run `py -m scripts.ops roadmap-index` rather than trus
 
 ## Slot — Cursor
 
-**Written:** 2026-09-13 · **HEAD at write:** `2421e15` · **Tree:** wave 15 committing.
+**Written:** 2026-09-20 · **HEAD at write:** `29ae92d` · **Tree:** wave 26 committing.
 
-- **Defect first:** Wikipedia still queries `GTA` token-joins, not
-  `Grand_Theft_Auto_VI` (#749). Heuristic title/script cannot catch a wrong actor
-  who is named in the script (#345). The forced-overage publish test was green on
-  unmodified code because nothing fed the cap yet; it guards the feeder.
-- **Shipped #534 #748 #746 #747 #738.** Title keeps an angle phrase. Title/script
-  check falls back to a real verdict. Wiki no longer invents `Gta`/`Goy`.
-  Autocomplete 400 is skip-with-reason. Publish list reads persisted
-  `tts_char_count`.
-- Next five: **#739 · #730 · #345 · #543 · #732**.
-- Suite **3,123 -> 3,131**; mypy **139**; ruff clean; backlog **327 open / 658 done**,
-  highest **#749**.
+**Defects first:**
+- **TTS cache is on with nothing in it yet.** Live `ops reliability` printed
+  `TTS cache: on, 0 file(s), 0/3 hits (0%)`. The polarity flipped; the first live
+  synth has to populate `data/tts_cache` before spend moves. Suite pin stays
+  `TTS_CACHE=false`. A bare `discover -s tests` (no `-t .`) can now write that
+  directory the same way it already can write other stores.
+- **#345 still lets a hedged rumor through the render gate.** #800 is grade-only.
+- **#50 is still the next authenticity input.** Wave 26 stopped the 100/100 ceiling;
+  it did not add learned insight markers.
+
+**Shipped #799 #800 #801 #809 #804.** Rewrite ledger on the card; hedge density
+drops grounding (closes §25); intent replay on the 38 recorded topics; TTS cache
+default-on; authenticity `points` continuous, gate still binary, `GRADE_VERSION`
+**v4** (historical letters re-grade). `_WEIGHTS` untouched.
+
+**Next five:** **#806 · #807 · #810 · #812 · #802**.
+
+Suite **3,381 -> 3,406**; mypy **139**; ruff clean; `data/` untouched. Backlog
+**330 open / 715 done**, highest **#812**.
 

@@ -86,7 +86,7 @@ median of 58.7 s. `reddit` and `twitter` are already retired (`enabled: false`).
 Ordered by expected effect on what the operator is willing to publish. The next build wave
 weights this section (operator, 2026-09-20).
 
-1. **#799 — a per-pass rewrite ledger.** Five passes can rewrite a finished script
+1. **#799 — a per-pass rewrite ledger.** *(shipped wave 26)* Five passes can rewrite a finished script
    (`_maybe_improve_hook`, `_maybe_reground_script`, `_maybe_rewrite_unsupported_claims`,
    `_maybe_inject_insight`, `_maybe_recenter_on_key_facts`), four of them on the premium tier.
    Nothing records which fired, what each changed, or what it cost. Run 74 lost words to one of
@@ -94,12 +94,12 @@ weights this section (operator, 2026-09-20).
    in the trace, and print the line on the report card. **This is the prerequisite for every
    other script change: today you cannot tell which pass produced the sentence you dislike.**
    `[S]`
-2. **#800 — hedge density beside claim support.** `decisions.md` §25 has been open since run 58
+2. **#800 — hedge density beside claim support.** *(shipped wave 26)* `decisions.md` §25 has been open since run 58
    shipped four consecutive weasel sentences at 30% support: the claim rewriter converts a bare
    assertion into an attributed one and the re-check then passes, so "12/12 backed" can be
    bought with hedging. Count hedge phrases per 100 words, print it next to claim support, and
    let the grade fall. This *decides* §25 rather than deferring it again. `[S]`
-3. **#801 — intent coverage replay.** `core/angle_intent.py` is the one change in project
+3. **#801 — intent coverage replay.** *(shipped wave 26)* `core/angle_intent.py` is the one change in project
    history that moved output quality on its own (run 75, the best grade on record), but of the
    10 runs that record an intent, **9 read `default`**. Replay all 38 recorded topics through
    the detector, count what each returns, and widen the cues where a calm or explanatory idea
@@ -123,7 +123,7 @@ component with room), **#50** learned insight markers, **#339** "unconfirmed" as
 The theme: the report card is currently unable to rank its own output, so every quality change
 is judged by an instrument that does not move.
 
-1. **#804 — fix the saturated authenticity component.** 100/100 on 22 of 38 runs, 28% of the
+1. **#804 — fix the saturated authenticity component.** *(shipped wave 26; #50 still open)* 100/100 on 22 of 38 runs, 28% of the
    grade. Either rescale it against the observed distribution or replace the substring-match
    scorer with something that can distinguish two good scripts. Pair it with #50. `[M]`
 2. **#805 — print the report card's own hit rate.** Correlate grade and composite against
@@ -155,7 +155,7 @@ accuracy, **#351** confidence intervals (shipped 2026-08-30).
 
 Cheapest wins in the project, and two of them are configuration rather than code.
 
-1. **#809 — switch the TTS cache on.** 84% of spend, a finished cache, zero hits. Default it on
+1. **#809 — switch the TTS cache on.** *(shipped wave 26)* 84% of spend, a finished cache, zero hits. Default it on
    in production (pin it off in the suite, the pattern `BACKGROUND_FAST_CUT` already uses), and
    print the hit rate on the nightly line so a silent miss is visible. `[S]`
 2. **#810 — retire or flag the zero-yield signals.** `trendingnow` 0/22, `igdb` 1/33 with six
@@ -185,7 +185,7 @@ Written down so a future session does not rediscover them as good ideas:
   already says more APIs are not a quality upgrade. Fix yield before adding sources.
 - **A second cache anywhere in the signal path.** `register_signals._fetch_one` already caches
   every call; a second layer hides staleness (root `CLAUDE.md` hard rule).
-- **Re-tuning the grade weights before #804.** Re-weighting a saturated component just moves the
-  constant around.
+- **Re-tuning the grade weights.** #804 made authenticity able to move; re-weighting before a
+  live distribution exists still just moves the constant around.
 - **Chasing statistical significance at n≈10 published.** Per `strategy_next_level.md` §3, the
   way out is more measured dimensions per publish, not more confident arithmetic on ten rows.

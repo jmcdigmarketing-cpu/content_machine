@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import os
+from collections.abc import Callable
 from types import CodeType
 from typing import Any
 
@@ -512,6 +513,82 @@ def _call_content_llm(
         max_tokens=3000,
         stage="script",
     )
+
+
+def _script_pass_snapshot(script: str) -> dict[str, Any]:
+    from core.cost_meter import llm_cost_from_usage
+    from core.hook_score import score_script_hook
+    from core.llm_router import get_usage
+
+    usage = get_usage()
+    return {
+        "words": count_spoken_words(script),
+        "hook": float(score_script_hook(script).score),
+        "usage_n": len(usage),
+        "cost": float(llm_cost_from_usage(usage)),
+    }
+
+
+def run_script_pass(
+    ledger: list[dict[str, Any]],
+    name: str,
+    script: str,
+    fn: Callable[[str], Any],
+    *,
+    disabled: bool = False,
+) -> str:
+    """Run one rewrite pass and append what it did to ``ledger``.
+
+    ``fn`` is the real helper. It may return the script, or ``(script, extra)``
+    where extra is merged onto the row (reground pre/post counts). Disabled
+    passes are recorded without calling ``fn``, so a default-off hook cannot
+    look like it ran.
+    """
+    if disabled:
+        ledger.append(
+            {
+                "name": name,
+                "adopted": False,
+                "llm_called": False,
+                "skip_reason": "disabled",
+                "word_delta": 0,
+                "hook_delta": 0.0,
+                "cost_usd": 0.0,
+            }
+        )
+        return script
+
+    before = _script_pass_snapshot(script)
+    result = fn(script)
+    extra: dict[str, Any] = {}
+    if isinstance(result, tuple):
+        after_script = str(result[0])
+        if len(result) > 1 and isinstance(result[1], dict):
+            extra = dict(result[1])
+    else:
+        after_script = str(result)
+
+    after = _script_pass_snapshot(after_script)
+    llm_called = after["usage_n"] > before["usage_n"]
+    adopted = after_script != script
+    if not adopted and not llm_called:
+        skip_reason = "no-op"
+    elif not adopted and llm_called:
+        skip_reason = "rejected"
+    else:
+        skip_reason = ""
+    row: dict[str, Any] = {
+        "name": name,
+        "adopted": adopted,
+        "llm_called": llm_called,
+        "skip_reason": skip_reason,
+        "word_delta": int(after["words"] - before["words"]),
+        "hook_delta": round(after["hook"] - before["hook"], 1),
+        "cost_usd": round(max(0.0, after["cost"] - before["cost"]), 6),
+    }
+    row.update(extra)
+    ledger.append(row)
+    return after_script
 
 
 def _maybe_improve_hook(script: str) -> str:
@@ -1109,7 +1186,16 @@ def generate_content_package(
         )
         attempts += 1
 
-    script = _maybe_improve_hook(script)
+    script_passes: list[dict[str, Any]] = []
+    from core.hook_score import hook_regen_enabled
+
+    script = run_script_pass(
+        script_passes,
+        "improve_hook",
+        script,
+        _maybe_improve_hook,
+        disabled=not hook_regen_enabled(),
+    )
 
     # The fact corpus the script must stay grounded in (also used by the insight
     # beat so it can't invent specifics) — built before injection + grounding.
@@ -1126,12 +1212,24 @@ def generate_content_package(
 
     # Key-fact anchor: if the script drifted off the operator's pasted subject,
     # recenter it FIRST (subject-level) — before insight/grounding tweak the prose.
-    script = _maybe_recenter_on_key_facts(script, key_facts, topic, grounding_text)
+    script = run_script_pass(
+        script_passes,
+        "recenter_key_facts",
+        script,
+        lambda s: _maybe_recenter_on_key_facts(s, key_facts, topic, grounding_text),
+        disabled=not _key_fact_anchor_enabled(),
+    )
 
     # Original-insight injection: if the script reads as a neutral recap, add one
     # opinion/prediction beat (Phase O authenticity). Runs BEFORE grounding so any
     # specifics it introduces still get caught/cleaned below.
-    script = _maybe_inject_insight(script, grounding_text, topic, intent=resolved_intent)
+    script = run_script_pass(
+        script_passes,
+        "inject_insight",
+        script,
+        lambda s: _maybe_inject_insight(s, grounding_text, topic, intent=resolved_intent),
+        disabled=not _insight_injection_enabled(),
+    )
 
     llm_tags = payload.get("tags") or []
     if isinstance(llm_tags, str):
@@ -1166,15 +1264,30 @@ def generate_content_package(
                 ungrounded.append(f"negative-fact: {hit}")
     except Exception as exc:
         logger.debug("negative-fact check skipped: %s", exc)
-    if ungrounded:
-        # Regenerate-then-warn: try once to strip the unsupported specifics, then
-        # surface whatever still remains (never silently rewrite away the warning).
-        # Negative-fact hits are held back — see `_regroundable`.
-        regen_targets = _regroundable(ungrounded)
-        if regen_targets:
-            script, remaining = _maybe_reground_script(script, grounding_text, topic, regen_targets)
-            held = [item for item in ungrounded if item not in regen_targets]
-            ungrounded = held + remaining
+    regen_targets = _regroundable(ungrounded) if ungrounded else []
+    remaining_box: dict[str, list[str]] = {"remaining": list(ungrounded or [])}
+
+    def _run_reground(s: str):
+        if not regen_targets:
+            return s
+        new, remaining = _maybe_reground_script(s, grounding_text, topic, regen_targets)
+        remaining_box["remaining"] = remaining
+        extra = {
+            "pre_reground_ungrounded": len(regen_targets),
+            "post_reground_ungrounded": len(remaining),
+        }
+        return new, extra
+
+    script = run_script_pass(
+        script_passes,
+        "reground",
+        script,
+        _run_reground,
+        disabled=not _reground_enabled(),
+    )
+    if ungrounded and regen_targets:
+        held = [item for item in ungrounded if item not in regen_targets]
+        ungrounded = held + remaining_box["remaining"]
     if ungrounded:
         logger.warning(
             "Script names %s specific(s) not in the facts: %s",
@@ -1248,12 +1361,23 @@ def generate_content_package(
             verification.total,
             "; ".join(c.claim for c in verification.unsupported[:5]),
         )
-        # Act on the verdict: one rewrite pass removes/attributes the unsupported
-        # claims (kept only if the re-verified count improves). "Fact slop" fix —
-        # the script must be correct, not detail-stuffed with invented specifics.
-        script, verification = _maybe_rewrite_unsupported_claims(
-            script, verification, corpus.factual_text, topic, clean_key_facts
+    ver_box = {"v": verification}
+
+    def _run_claim_rewrite(s: str):
+        new, ver = _maybe_rewrite_unsupported_claims(
+            s, ver_box["v"], corpus.factual_text, topic, clean_key_facts
         )
+        ver_box["v"] = ver
+        return new
+
+    script = run_script_pass(
+        script_passes,
+        "rewrite_claims",
+        script,
+        _run_claim_rewrite,
+        disabled=not _claim_regen_enabled(),
+    )
+    verification = ver_box["v"]
 
     quote_check = check_quote_attribution(script, corpus.factual_text)
     quote_payload = quote_check.to_dict()
@@ -1395,6 +1519,17 @@ def generate_content_package(
         logger.warning("source_urls unresolved, sidecar will be sourceless: %s", exc)
         resolved_source_urls = list(source_urls or [])
 
+    from core.claim_types import hedge_density as _hedge_density
+
+    verification_payload = merge_reversals(
+        verification.to_dict() if verification else None,
+        script,
+        "\n".join([corpus.factual_text or "", *(clean_key_facts or [])]),
+    )
+    density = _hedge_density(script)
+    if isinstance(verification_payload, dict):
+        verification_payload["hedge_density"] = density
+
     return {
         "title": title,
         "title_warnings": title_warnings,
@@ -1429,11 +1564,7 @@ def generate_content_package(
         "disputed": conflict_features["disputed"],
         "disputed_claims": conflict_features["disputed_claims"],
         # #748: a wrong actor the verifier missed (or never judged) still reaches the gate.
-        "claim_verification": merge_reversals(
-            verification.to_dict() if verification else None,
-            script,
-            "\n".join([corpus.factual_text or "", *(clean_key_facts or [])]),
-        ),
+        "claim_verification": verification_payload,
         "quote_attribution": quote_payload,
         "operator_quotes": operator_quote_lines,
         "operator_quote_used": operator_quote_used,
@@ -1441,4 +1572,5 @@ def generate_content_package(
         "persona_lint": persona_hits,
         "cta_summary": cta_report,
         "sentence_rhythm": rhythm_hits,
+        "script_passes": script_passes,
     }

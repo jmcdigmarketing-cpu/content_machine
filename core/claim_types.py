@@ -23,7 +23,7 @@ CLAIM_TYPES = ("result", "award", "stat", "date", "schedule", "rumor", "opinion"
 
 _HEDGE_RE = re.compile(
     r"\b(reportedly|rumou?red|rumou?rs?|allegedly|according to|leak(?:s|ed)?|unconfirmed|"
-    r"could|might|may|expected to|reports? (?:claim|say|said|suggest)s?)\b",
+    r"could|might|may|expected to|reports? (?:claim|say|said|suggest)s?|supposedly)\b",
     re.IGNORECASE,
 )
 _DIGIT_RE = re.compile(r"\d")
@@ -37,6 +37,22 @@ def normalize_type(raw: object) -> str:
 
 def is_hedged(claim: str) -> bool:
     return bool(_HEDGE_RE.search(claim or ""))
+
+
+def hedge_density(script: str) -> float:
+    """Hedge phrases per 100 spoken words on the finished script.
+
+    #800 / decisions.md §25: "12/12 backed" can be bought by restating every
+    unsupported claim as attributed speculation. This is the number the grade
+    reads. Zero on an empty script, never a warning.
+    """
+    from core.script_length import count_spoken_words
+
+    text = script or ""
+    words = count_spoken_words(text)
+    if words <= 0:
+        return 0.0
+    return round(100.0 * len(_HEDGE_RE.findall(text)) / words, 2)
 
 
 def claim_blocks(claim: str, claim_type: str) -> bool:

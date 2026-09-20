@@ -92,10 +92,18 @@ def build_quality(
             exclude_run_id=exclude_run_id,
         )
         quality["authenticity_score"] = auth.score
+        quality["authenticity_gate_score"] = int(auth.gate_score)
         quality["authenticity_verdict"] = auth.verdict
         quality["authenticity_semantic"] = round(float(auth.semantic_overlap or 0.0), 3)
     except Exception as exc:
         logger.debug("authenticity scoring skipped: %s", exc)
+
+    try:
+        from core.claim_types import hedge_density
+
+        quality["hedge_density"] = hedge_density(script)
+    except Exception as exc:
+        logger.debug("hedge density skipped: %s", exc)
 
     ungrounded = features.get("ungrounded_entities") or []
     quality["ungrounded_count"] = len(ungrounded)
@@ -189,6 +197,9 @@ def build_quality(
                 quality["script_pre_rewrite"] = str(pre_script)
             if post_script:
                 quality["script_post_rewrite"] = str(post_script)
+
+    if "script_passes" in features:
+        quality["script_passes"] = list(features.get("script_passes") or [])
 
     # Pillar 2: freeze the data-gated engaged-rate prediction at generation time
     # so the calibration loop can score it against the realized outcome later.

@@ -93,6 +93,19 @@ class TestGradeFromParts(unittest.TestCase):
 
         self.assertEqual(grade_from_parts(quality=FULL_QUALITY).version, GRADE_VERSION)
 
+    def test_report_card_shows_the_gate_score_when_it_differs_from_the_grade(self):
+        """#804 §25: persist both numbers. The card uses the continuous score;
+        the binary sum the gate used must still be visible."""
+        quality = {
+            **FULL_QUALITY,
+            "authenticity_score": 72,
+            "authenticity_gate_score": 100,
+        }
+        card = render_grade(grade_from_parts(quality=quality))
+        self.assertIn("gate 100", card)
+        historical = render_grade(grade_from_parts(quality=FULL_QUALITY))
+        self.assertNotIn("gate ", historical)
+
     def test_build_quality_supplies_the_keys_the_length_component_needs(self):
         """The component is inert unless the real quality builder emits the keys.
         Driven through the real `build_quality` over a real features dict, not a

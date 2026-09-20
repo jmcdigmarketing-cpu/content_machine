@@ -34,6 +34,17 @@ from video.render_video import render_vertical_video
 logger = get_logger("pipeline")
 
 
+def copy_content_package_features(content: dict[str, Any], features: dict[str, Any]) -> None:
+    """Lift package keys the rest of the run reads onto ``result.features``.
+
+    Absence of ``script_passes`` means the ledger was not on this run (historical
+    traces). An empty or all-skipped list still copies, so the report card can
+    say none adopted rather than go silent.
+    """
+    if "script_passes" in content:
+        features["script_passes"] = list(content.get("script_passes") or [])
+
+
 def _tts_forecast_features() -> dict[str, int]:
     try:
         from core.tts_char_cap import last_tts_forecast
@@ -839,6 +850,7 @@ def run_pipeline(
         result.features["claim_verification"] = content["claim_verification"]
     if content.get("quote_attribution"):
         result.features["quote_attribution"] = content["quote_attribution"]
+    copy_content_package_features(content, result.features)
 
     # Quick win (Pillar 3): web-search result URLs become reusable research in
     # the vault (_sources.md) instead of evaporating with the run. Fail-open.

@@ -304,7 +304,7 @@ class TestNumericPlausibility(unittest.TestCase):
 
         facts = "VERIFIED FACTS:\n- $50 million in PPV buys last year\n- purse $5 million"
         script = "The UFC purse is $50 million."
-        self.assertEqual(GRADE_VERSION, "v3")
+        self.assertEqual(GRADE_VERSION, "v4")
         self.assertEqual(find_ungrounded_numeric(script, facts), [])
         outliers = find_plausibility_outliers(script, facts)
         self.assertTrue(any("50" in item and "million" in item.lower() for item in outliers))

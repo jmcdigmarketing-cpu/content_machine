@@ -298,18 +298,88 @@ def resolve_tts_config(channel_id: str | None = None) -> tuple[str, str]:
 
 
 def tts_cache_enabled() -> bool:
-    """Re-synth skip for identical scripts. Opt-in (empty/0/off = disabled).
+    """Re-synth skip for identical scripts. Default on (empty/unset).
 
-    Default off so a bare ``unittest discover -s tests`` (no ``-t .``, which
-    does not import ``tests/__init__.py``) cannot write ``data/tts_cache``.
-    Production: set ``TTS_CACHE=true``.
+    ``0``/``false``/``no``/``off`` disables. The suite pins ``TTS_CACHE=false``
+    in ``tests/__init__.py`` so discover with ``-t .`` cannot fill data/tts_cache.
     """
-    return os.getenv("TTS_CACHE", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
+    raw = (os.getenv("TTS_CACHE", "") or "").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
+def tts_cache_status(
+    *,
+    cache_dir: str | None = None,
+    cached_flags: list[object] | None = None,
+) -> dict[str, Any]:
+    """Enabled flag, on-disk file count, optional hit rate. Never writes."""
+    root = cache_dir if cache_dir is not None else tts_cache_dir()
+    files = 0
+    try:
+        if os.path.isdir(root):
+            files = sum(
+                1
+                for name in os.listdir(root)
+                if name.endswith(".mp3") and os.path.isfile(os.path.join(root, name))
+            )
+    except Exception as exc:
+        logger.debug("tts cache dir listing skipped: %s", exc)
+        files = 0
+    flags = list(cached_flags) if cached_flags is not None else _tts_cached_flags_from_traces()
+    hits = sum(1 for flag in flags if flag)
+    misses = sum(1 for flag in flags if not flag)
+    total = hits + misses
+    return {
+        "enabled": tts_cache_enabled(),
+        "files": files,
+        "hits": hits,
+        "misses": misses,
+        "hit_rate": (hits / total) if total else None,
+    }
+
+
+def format_tts_cache_line(status: dict[str, Any] | None = None) -> str:
+    """The nightly / reliability one-liner. Empty traces → no invented hit rate."""
+    snap = status if status is not None else tts_cache_status()
+    on = "on" if snap.get("enabled") else "off"
+    files = int(snap.get("files") or 0)
+    rate = snap.get("hit_rate")
+    if rate is None:
+        return f"TTS cache: {on}, {files} file(s)"
+    hits = int(snap.get("hits") or 0)
+    misses = int(snap.get("misses") or 0)
+    return f"TTS cache: {on}, {files} file(s), {hits}/{hits + misses} hits ({rate * 100:.0f}%)"
+
+
+def _tts_cached_flags_from_traces() -> list[object]:
+    flags: list[object] = []
+    try:
+        from config.paths import DATA_DIR
+
+        traces = os.path.join(str(DATA_DIR), "traces")
+        if not os.path.isdir(traces):
+            return []
+        for name in os.listdir(traces):
+            if not name.endswith(".json"):
+                continue
+            path = os.path.join(traces, name)
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    payload = json.load(handle)
+            except Exception as exc:
+                logger.debug("tts cache trace %s skipped: %s", name, exc)
+                continue
+            if not isinstance(payload, dict):
+                continue
+            if "tts_cached" in payload:
+                flags.append(payload.get("tts_cached"))
+                continue
+            feats = payload.get("features") or {}
+            if isinstance(feats, dict) and "tts_cached" in feats:
+                flags.append(feats.get("tts_cached"))
+    except Exception as exc:
+        logger.debug("tts cache trace scan skipped: %s", exc)
+    return flags
 
 
 def tts_cache_dir() -> str:

@@ -1,4 +1,4 @@
-"""Candidate 322: a hedged script must not report the score of an honest one.
+"""Candidate 322 / #800: a hedged script must not report the score of an honest one.
 
 Live run 71: the claim verifier found **7 of 12 claims unsupported**. The rewrite pass
 (`_maybe_rewrite_unsupported_claims`) then restated each as attributed speculation
@@ -8,12 +8,9 @@ the result. The console printed:
     [ok] Claim check: 12/12 factual claim(s) backed by the facts.
 
 Same verifier, rewritten script. Nothing was verified between the two numbers — the
-claims were hedged. But only the post-rewrite verdict was persisted, so
-`quality_json` recorded support_rate 1.0 / 0 unsupported, the report card graded the
-run A, and the #52 graveyard codes could never emit `thin_facts` for it.
-
-Behaviour is deliberately unchanged: this records and surfaces, it does not gate or
-re-grade. The operator decides.
+claims were hedged. Wave 26 (#800) decides the open §25 call: persist both numbers,
+print hedge density beside claim support, and let the grounding component fall.
+The render gate is unchanged (#345).
 """
 
 import unittest

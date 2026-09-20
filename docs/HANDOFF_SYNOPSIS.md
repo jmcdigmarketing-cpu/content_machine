@@ -1,10 +1,21 @@
-# Handoff synopsis — 2026-09-20: wave 25, the engine-upgrade ideas, measured
+# Handoff synopsis — 2026-09-20: wave 26, script quality
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-20 (Claude Code): wave 25, documentation only
+## Last wave — 2026-09-20 (Cursor): wave 26 #799 #800 #801 #809 #804
+
+Claude's operator-locked next five, script quality. **#799** rewrite-pass ledger on the report
+card; **#800** hedge density lets the grade fall (closes §25; render gate unchanged); **#801**
+intent replay of the 38 recorded topics (`first look` / `rankings` / `what to ` / `online
+economy`; `breakdown` still default); **#809** TTS cache default-on, suite pin stays false
+(`TTS cache: on, 0 file(s), 0/3 hits (0%)` from live `ops reliability`); **#804** continuous
+authenticity points, gate still binary, `GRADE_VERSION` **v4** (historical letters re-grade).
+#50 stays open. Next five: **#806 · #807 · #810 · #812 · #802**. Suite **3,381 -> 3,406**;
+mypy **139**; ruff clean; backlog **330 open / 715 done**, highest **#812**.
+
+## Previous — 2026-09-20 (Claude Code): wave 25, documentation only
 
 Ideas for script generation, idea grading and resource use, each measured against the 38 run
 traces instead of argued from the docs - new file [engine_upgrades.md](engine_upgrades.md), linked

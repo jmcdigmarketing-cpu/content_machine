@@ -49,7 +49,9 @@ class TestBuildQuality(unittest.TestCase):
         a hardcoded copy just reports the bump as a failure."""
         q = run_quality.build_quality(script="  ", channel_id="tapin")
         self.assertEqual(q["quality_version"], run_quality.QUALITY_VERSION)
-        self.assertEqual(q["grade_version"], "v3")
+        from core.video_grade import GRADE_VERSION
+
+        self.assertEqual(q["grade_version"], GRADE_VERSION)
         self.assertEqual(set(q), {"quality_version", "grade_version"})
 
     def test_pillar3_features_persist_into_quality(self):

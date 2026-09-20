@@ -302,8 +302,15 @@ def display_claim_verification(verification_dict: dict[str, Any] | None, *, prin
         return False
     rewritten = bool(verification_dict.get("rewritten"))
     pre_unsupported = int(verification_dict.get("pre_rewrite_unsupported") or 0)
+    density_raw = verification_dict.get("hedge_density")
+    density_note = ""
+    if isinstance(density_raw, int | float) and float(density_raw) > 0:
+        density_note = f" (hedge density {float(density_raw):.1f}/100w)"
     if not unsupported:
-        print_fn(f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts.")
+        print_fn(
+            f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts."
+            f"{density_note}"
+        )
         # Candidate 322 — run 71 printed exactly the line above after 7 of 12 claims had
         # been restated as "reports claim..." by the rewrite pass. Same check, rewritten
         # script: nothing was verified between the two numbers.

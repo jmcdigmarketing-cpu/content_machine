@@ -31,6 +31,15 @@ from core.logging import get_logger
 logger = get_logger("core.overnight")
 
 
+def _append_tts_cache_line(lines: list[str]) -> None:
+    try:
+        from core.tts import format_tts_cache_line
+
+        lines.append(format_tts_cache_line())
+    except Exception as exc:
+        logger.debug("overnight tts cache line skipped: %s", exc)
+
+
 @dataclass
 class OvernightResult:
     channel_id: str
@@ -260,6 +269,7 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append(result.canary_line)
         if result.post_publish_line:
             lines.append(result.post_publish_line)
+        _append_tts_cache_line(lines)
         return "\n".join(lines)
     try:
         lines.append(render_summary(result.outcomes).strip())
@@ -282,6 +292,7 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(result.canary_line)
     if result.post_publish_line:
         lines.append(result.post_publish_line)
+    _append_tts_cache_line(lines)
     lines.append(
         f"Review them in one pass: py -m scripts.ops batch-review --channel {result.channel_id}"
     )

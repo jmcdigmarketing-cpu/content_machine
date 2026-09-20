@@ -113,6 +113,16 @@ def _cache_section() -> dict[str, Any]:
         return {"total": 0, "hit_rate": 0.0, "by_prefix": {}}
 
 
+def _tts_cache_section() -> dict[str, Any]:
+    try:
+        from core.tts import tts_cache_status
+
+        return tts_cache_status()
+    except Exception as exc:
+        logger.debug("tts cache section skipped: %s", exc)
+        return {"enabled": False, "files": 0, "hits": 0, "misses": 0, "hit_rate": None}
+
+
 def _youtube_section() -> dict[str, Any]:
     try:
         from apis.youtube_quota import get_usage_summary, uploads_remaining
@@ -263,6 +273,7 @@ def gather() -> dict[str, Any]:
         "llm": _llm_section(),
         "signals": _signals_section(),
         "cache": _cache_section(),
+        "tts_cache": _tts_cache_section(),
         "youtube": _youtube_section(),
         "elevenlabs": _elevenlabs_section(),
         "data_quality": _data_quality_section(),
@@ -428,6 +439,13 @@ def render(data: dict[str, Any] | None = None) -> str:
     saved = _apify_cache_dollars_saved(by_prefix)
     if saved > 0:
         lines.append(f"  Apify cache hits saved ~${saved:.2f}")
+    tts_cache = data.get("tts_cache") or {}
+    try:
+        from core.tts import format_tts_cache_line
+
+        lines.append(format_tts_cache_line(tts_cache))
+    except Exception as exc:
+        logger.debug("tts cache line skipped: %s", exc)
 
     yt = data.get("youtube", {})
     if yt:

@@ -114,7 +114,32 @@ class TestTtsCache(unittest.TestCase):
         with patch.dict(os.environ, {"TTS_CACHE": "true"}, clear=False):
             self.assertTrue(tts.tts_cache_enabled())
         with patch.dict(os.environ, {"TTS_CACHE": ""}, clear=False):
-            self.assertFalse(tts.tts_cache_enabled())
+            self.assertTrue(tts.tts_cache_enabled())
+
+    def test_unset_env_defaults_the_cache_on(self):
+        """#809. Empty/absent is production-on, the BACKGROUND_FAST_CUT polarity.
+        The suite still pins TTS_CACHE=false in tests/__init__.py."""
+        env = {k: v for k, v in os.environ.items() if k != "TTS_CACHE"}
+        with patch.dict(os.environ, env, clear=True):
+            self.assertTrue(tts.tts_cache_enabled())
+
+    def test_cache_status_line_reports_hits_from_injected_flags(self):
+        """Never open the operator's data/traces from this test."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "abc.mp3"), "wb") as handle:
+                handle.write(b"x")
+            snap = tts.tts_cache_status(cache_dir=tmp, cached_flags=[True, True, False])
+            line = tts.format_tts_cache_line(snap)
+        self.assertEqual(snap["files"], 1)
+        self.assertAlmostEqual(snap["hit_rate"], 2 / 3)
+        self.assertIn("TTS cache:", line)
+        self.assertIn("2/3 hits", line)
+
+    def test_overnight_skip_path_prints_the_cache_line(self) -> None:
+        from core.overnight import OvernightResult, render_overnight
+
+        text = render_overnight(OvernightResult(channel_id="tapin", requested=0))
+        self.assertIn("TTS cache:", text)
 
     def test_lookup_miss_when_empty(self):
         with tempfile.TemporaryDirectory() as tmp:

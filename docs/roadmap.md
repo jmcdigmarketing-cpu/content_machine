@@ -24,41 +24,41 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-20 wave 25 (documentation): ideas for **script generation**, **idea
-grading** and **resource use**, each measured against the 38 recorded runs rather than argued
-from the docs - [engine_upgrades.md](engine_upgrades.md). Filed **#799-#812**; narrowed **#575
-#561 #50 #374 #611 #83**; removed a duplicate open **#351** that had already shipped.
+**Just landed** - 2026-09-20 wave 26 (script quality): **#799** per-pass rewrite ledger · **#800**
+hedge density (closes the open §25 call; render gate unchanged) · **#801** intent replay on the
+38 recorded topics · **#809** TTS cache default-on · **#804** continuous authenticity points
+(`GRADE_VERSION` v4; historical letters re-grade). Gate still uses the binary sum.
 
-**The three numbers that set the order:** authenticity scores **100/100 on 22 of 38 runs** while
-carrying 28% of the report card - TTS is **84% of all spend** and its cache is built but switched
-off - six discovery signals have **never** returned anything inside a 58.7 s median.
-
-**Previously** - 2026-09-19 wave 24: **#792** irregular 3-8 s shots (the operator's reversal) -
-**#796** parallel shot encodes - **#788** narrowed - **#793 #795 #797 #798**. Wave 23 **#785 #787
-#600 #789 #790 #791**; wave 22 **#782 #783 #784 #601 #781**; **#153** retired (do not rebuild).
+**Previously** - 2026-09-20 wave 25 (documentation): ideas for **script generation**, **idea
+grading** and **resource use**, each measured against the 38 recorded runs -
+[engine_upgrades.md](engine_upgrades.md). Filed **#799-#812**. Wave 24: **#792** irregular 3-8 s
+shots · **#796** parallel shot encodes · **#788** narrowed · **#793 #795 #797 #798**. Wave 23
+**#785 #787 #600 #789 #790 #791**; wave 22 **#782 #783 #784 #601 #781**; **#153** retired.
 
 ### Recommended next five (non-app)
 
-**Operator, 2026-09-20:** the next build wave weights **script quality**. Volume framing is
-unchanged - a long video is 1-2 a month; the 3-5/week target is Shorts.
+**Operator, 2026-09-20:** the next *build* wave weighted **script quality** and is now done. The
+list below is the next cheapest/safest slice from [engine_upgrades.md](engine_upgrades.md). Volume
+framing is unchanged - a long video is 1-2 a month; the 3-5/week target is Shorts.
 
-1. **#799 per-pass rewrite ledger** `[S]` - five passes can rewrite a finished script and nothing
-   records which fired or what it cost. Everything else in the script section is judged through
-   this.
-2. **#800 hedge density beside claim support** `[S]` - decides `decisions.md` §25, open since
-   run 58.
-3. **#801 intent coverage replay** `[S]` - 9 of 10 recorded runs read `default`; the one lever
-   that has moved quality is barely firing.
-4. **#809 switch the TTS cache on** `[S]` - 84% of spend, a finished cache, zero hits. Cheapest
-   item on the board.
-5. **#804 the saturated authenticity component** `[M]` - 28% of the grade is currently a
-   constant, which makes every quality change above unjudgeable.
+1. **#806 capture the rejection reason** `[S]` - six drafts rejected, every reason is prose in
+   `planning_log.md`. One keystroke in `ops batch-review` is the only operator-labelled dataset.
+2. **#807 offline variant re-score** `[S]` - wave 14 fixed the thesis-case tie; nothing proves it
+   is gone on ordinary runs.
+3. **#810 retire or flag the zero-yield signals** `[S]` - six signals have never returned
+   anything inside a 58.7 s median discovery.
+4. **#812 wire artifact retention** `[S]` - 4.3 GB in `output/`, a dry-run printer, no scheduler.
+5. **#802 a latency budget for generation** `[M]` - the research brief has taken 138 s against a
+   11 s median; a slow provider should cost seconds, not minutes.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
-consent then `ops playlists --apply`; gameplay files for the empty niches (#786).
+consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first
+live TTS run, check that `ops reliability` reports TTS-cache hits rather than `0/3`.
 
 **Dropped from this list** (stay open): **#739** · **#730** (operator call) · **#728** (no clip)
 · **#628** · **#731** · Phase M · Ollama.
+
+**Closed 2026-09-20 (wave 26):** **#799 #800 #801 #809 #804**. `GRADE_VERSION` v3 → v4.
 
 **Filed 2026-09-20 (wave 25, documentation):** **#799 #800 #801 #802 #803** (script) - **#804
 #805 #806 #807 #808** (grading) - **#809 #810 #811 #812** (resources).

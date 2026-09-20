@@ -128,5 +128,45 @@ class TestOvernightRetentionIsDryByDefault(unittest.TestCase):
         self.assertIn("retention", text.lower())
 
 
+class TestExemptionCostsOneResolvePerSkipPath(unittest.TestCase):
+    """#813: `_is_exempt` re-resolved the whole skip set for every file walked.
+
+    `Path.resolve()` is a filesystem call, so a capped output/ with n files and
+    m published runs paid n*m of them inside the walk #812 wanted kept cheap.
+    """
+
+    def test_skip_paths_are_resolved_once_not_once_per_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for i in range(12):
+                f = root / f"draft{i}.mp4"
+                f.write_bytes(b"d" * 50)
+                os.utime(f, (i + 1, i + 1))
+            skips = []
+            for i in range(4):
+                k = root / f"kept{i}.mp4"
+                k.write_bytes(b"p" * 50)
+                os.utime(k, (1, 1))
+                skips.append(str(k))
+
+            real_resolve = Path.resolve
+            calls = {"n": 0}
+
+            def counting_resolve(self, *a, **kw):
+                calls["n"] += 1
+                return real_resolve(self, *a, **kw)
+
+            with patch.object(Path, "resolve", counting_resolve):
+                planned = plan(root, max_bytes=100, skip_paths=skips)
+
+            victims = {Path(v).name for v in planned.victims}
+            self.assertNotIn("kept0.mp4", victims)
+            self.assertIn("draft0.mp4", victims)
+            # 16 files x 4 skips = 64 resolves before the fix; one pass over the
+            # skip set plus one per file is 20, so anything at or under 16+4+4
+            # is the linear shape. Generous bound - this is about the shape.
+            self.assertLessEqual(calls["n"], 30, calls["n"])
+
+
 if __name__ == "__main__":
     unittest.main()

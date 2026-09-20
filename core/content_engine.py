@@ -1265,7 +1265,10 @@ def generate_content_package(
     except Exception as exc:
         logger.debug("negative-fact check skipped: %s", exc)
     regen_targets = _regroundable(ungrounded) if ungrounded else []
-    remaining_box: dict[str, list[str]] = {"remaining": list(ungrounded or [])}
+    # #814: seeded with the *targets*, not the whole list. The merge below adds
+    # the held-back items back itself, so seeding with `ungrounded` counted every
+    # negative-fact hit twice on the path where the pass never runs (disabled).
+    remaining_box: dict[str, list[str]] = {"remaining": list(regen_targets)}
 
     def _run_reground(s: str):
         if not regen_targets:

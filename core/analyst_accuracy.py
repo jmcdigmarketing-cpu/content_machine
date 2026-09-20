@@ -14,6 +14,41 @@ from config.channels import resolve_channel_id
 _FLAG_THRESHOLD = float(__import__("os").getenv("ANALYST_FLAG_THRESHOLD", "60"))
 
 
+_HIT_RATE_CACHE: dict[str, str | None] = {}
+
+
+def hit_rate_line(channel_id: str | None = None, *, use_cache: bool = True) -> str | None:
+    """#561: the recommender's track record, for printing beside its advice.
+
+    `build_accuracy_report` has backtested the loop since it was written and
+    only the intelligence report ever read it. The card is where the advice is
+    acted on, so the track record belongs there too. Fail-open, never raises;
+    says "collecting" rather than a rate while the backtest is volume-gated.
+    """
+    key = str(channel_id or "")
+    if use_cache and key in _HIT_RATE_CACHE:
+        return _HIT_RATE_CACHE[key]
+    line: str | None = None
+    try:
+        report = build_accuracy_report(channel_id)
+        n = int(report.get("runs_with_metrics") or 0)
+        if report.get("status") == "ok" and report.get("hit_rate") is not None:
+            metric = str(report.get("metric") or "engaged_rate").replace("_", "-")
+            line = f"loop accuracy: {float(report['hit_rate']):.0%} hit rate on {n} publishes "
+            line += f"({metric})"
+            drift = str(report.get("drift") or "")
+            if drift:
+                line += f" - {drift}"
+        else:
+            need = int(report.get("min_runs_required") or 5)
+            line = f"loop accuracy: collecting ({n}/{need} published runs with analytics)"
+    except Exception:
+        line = None
+    if use_cache:
+        _HIT_RATE_CACHE[key] = line
+    return line
+
+
 def drift_line(*, recent_hit_rate: float, older_hit_rate: float) -> str:
     if recent_hit_rate < older_hit_rate - 0.05:
         return f"calibration drift: hit-rate fell {older_hit_rate:.0%} -> {recent_hit_rate:.0%}"

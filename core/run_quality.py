@@ -11,7 +11,9 @@ Shape (all keys optional — consumers must tolerate absence):
 
     {
       "hook_score": 72, "hook_verdict": "strong",
-      "authenticity_score": 85, "authenticity_verdict": "ok",
+      "authenticity_score": 85,          # #804: the continuous grade
+      "authenticity_gate_score": 100,    # #804: the binary 40/35/25 gate sum
+      "authenticity_verdict": "ok",      # ...from the gate sum, never the grade
       "ungrounded_count": 1, "ungrounded_entities": [...],
       "trade_warning_count": 0,
       "tier_warning_count": 0,          # Pillar 3: grounding-tier lint
@@ -38,10 +40,68 @@ from core.logging import get_logger
 
 logger = get_logger("core.run_quality")
 
-QUALITY_VERSION = "v3"  # v2: Pillar 3 keys (tier/conflict counts, claim support)
+QUALITY_VERSION = "v4"  # v2: Pillar 3 keys (tier/conflict counts, claim support)
 # v3 (2026-09-05): word_count / min_words / max_words, for the report card's
 # `length` component (#645). A v2 row has no length keys and grades on the
 # renormalised remainder, so its score is unchanged - see core/video_grade.py.
+# v4 (2026-09-20): #808 grade_score / grade_letter / grade_components - the
+# grade *this* row's inputs actually produced, recorded beside them. No rubric
+# moved, so GRADE_VERSION stays v4.
+
+
+def authenticity_gate_value(quality: dict[str, Any] | None) -> float | None:
+    """The binary 40/35/25 authenticity sum, across the v3/v4 boundary.
+
+    #804 made ``authenticity_score`` a continuous 0-100 grade and moved the
+    binary sum to ``authenticity_gate_score``. Pre-v4 rows have no gate key, but
+    their ``authenticity_score`` *is* that sum — so readers calibrated on the
+    binary series (channel-health thresholds, the engagement fit) keep one
+    consistent series either side of the boundary instead of averaging two
+    different rubrics together. Readers that want the grade — the report card —
+    read ``authenticity_score`` directly.
+    """
+    row = quality or {}
+    for key in ("authenticity_gate_score", "authenticity_score"):
+        val = row.get(key)
+        if isinstance(val, int | float) and not isinstance(val, bool):
+            return float(val)
+    return None
+
+
+def snapshot_grade(quality: dict[str, Any], composite_score: float | None) -> dict[str, Any]:
+    """The grade *these* inputs produced, for recording beside them (#808).
+
+    `core/grade_calibration` re-grades every archived run with today's code, so
+    without this a v2 letter and a v4 letter are indistinguishable and a
+    component change can never be measured against the archive. Graded with
+    ``channel_id=None`` — the same no-predictor convention calibration uses, so
+    the recorded number stays a property of the content, not of the channel's
+    engagement history at the moment it was taken.
+
+    Returns the keys to merge, or ``{}`` when there is nothing gradeable.
+    Never raises: this is an observability layer.
+    """
+    try:
+        from core.video_grade import grade_from_parts
+
+        grade = grade_from_parts(
+            quality=quality,
+            composite_score=composite_score,
+            channel_id=None,
+        )
+        if not grade.components:
+            return {}
+        return {
+            "grade_score": round(float(grade.score), 1),
+            "grade_letter": grade.letter,
+            "grade_components": {
+                c.name: {"score": round(float(c.score), 1), "weight": round(float(c.weight), 4)}
+                for c in grade.components
+            },
+        }
+    except Exception as exc:
+        logger.debug("grade snapshot skipped: %s", exc)
+        return {}
 
 
 def build_quality(
@@ -50,6 +110,7 @@ def build_quality(
     channel_id: str,
     features: dict[str, Any] | None = None,
     exclude_run_id: int | None = None,
+    composite_score: float | None = None,
 ) -> dict[str, Any]:
     """Score a finished script on the existing quality axes (pure reads, fail-open)."""
     features = features or {}
@@ -95,6 +156,13 @@ def build_quality(
         quality["authenticity_gate_score"] = int(auth.gate_score)
         quality["authenticity_verdict"] = auth.verdict
         quality["authenticity_semantic"] = round(float(auth.semantic_overlap or 0.0), 3)
+        # #803: report-only, but it has to be persisted or the card and the
+        # archive cannot see the repeat that the peak similarity hides.
+        recurrence = auth.recurrence or {}
+        if recurrence.get("n"):
+            quality["style_recurrence_opener"] = int(recurrence.get("opener") or 0)
+            quality["style_recurrence_closer"] = int(recurrence.get("closer") or 0)
+            quality["style_recurrence_n"] = int(recurrence["n"])
     except Exception as exc:
         logger.debug("authenticity scoring skipped: %s", exc)
 
@@ -211,6 +279,11 @@ def build_quality(
             quality["predicted_engaged_rate"] = prediction.rate
     except Exception as exc:
         logger.debug("prediction skipped: %s", exc)
+
+    # #808, last: the snapshot has to see every component above it. The
+    # thumbnail is the one it cannot see - it merges post-render, which is why
+    # `merge_quality` re-stamps.
+    quality.update(snapshot_grade(quality, composite_score))
     return quality
 
 
@@ -251,6 +324,18 @@ def merge_quality(run_id: int | None, updates: dict[str, Any]) -> None:
             except Exception:
                 current = {}
         current.update(updates)
+        # #808: the thumbnail score arrives here, after the generation-time
+        # snapshot was taken. Re-stamp, or every published run carries a grade
+        # missing its thumbnail component and disagrees with the card the
+        # operator saw. Only when there was a snapshot to begin with - this must
+        # not retro-grade a historical row under today's rubric.
+        if "grade_score" in current:
+            current.update(
+                snapshot_grade(
+                    current,
+                    float(record.composite_score or 0.0) if record is not None else None,
+                )
+            )
         current.setdefault("quality_version", QUALITY_VERSION)
         try:
             from storage.alembic_runner import current_revision

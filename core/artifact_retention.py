@@ -96,21 +96,32 @@ def published_output_paths() -> set[str]:
     return paths
 
 
-def _is_exempt(path: Path, skip: set[str]) -> bool:
-    try:
-        resolved = path.resolve()
-    except OSError:
-        resolved = path
-    if str(resolved) in skip:
-        return True
+def _exempt_keys(skip: set[str]) -> set[tuple[str, str]]:
+    """``(parent, stem)`` per published output — resolved once for the whole walk.
+
+    A published run is its mp4 *plus* the sidecars beside it (.srt, .mp3, …),
+    which is why the key is the stem rather than the whole name. #816: this used
+    to be re-derived inside the per-file check, so a capped output/ paid one
+    ``resolve()`` syscall per file per skip path.
+    """
+    keys: set[tuple[str, str]] = set()
     for raw in skip:
         try:
             other = Path(raw).resolve()
         except OSError:
             other = Path(raw)
-        if resolved.parent == other.parent and resolved.stem == other.stem:
-            return True
-    return False
+        keys.add((str(other.parent), other.stem))
+    return keys
+
+
+def _is_exempt(path: Path, keys: set[tuple[str, str]]) -> bool:
+    if not keys:
+        return False
+    try:
+        resolved = path.resolve()
+    except OSError:
+        resolved = path
+    return (str(resolved.parent), resolved.stem) in keys
 
 
 def _iter_files(root: Path) -> list[tuple[float, int, Path]]:
@@ -165,7 +176,8 @@ def plan(
             except OSError:
                 skip.add(str(raw))
 
-    keep = [(mtime, sz, path) for mtime, sz, path in files if not _is_exempt(path, skip)]
+    exempt = _exempt_keys(skip)
+    keep = [(mtime, sz, path) for mtime, sz, path in files if not _is_exempt(path, exempt)]
     if max_bytes is not None and max_bytes >= 0:
         total = out.total_bytes
         i = 0

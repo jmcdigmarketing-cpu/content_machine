@@ -443,6 +443,51 @@ def expert_panel_for_run(run_id: int) -> str:
         return ""
 
 
+def _quality_of(record) -> dict[str, Any]:
+    """The record's persisted quality dict ({} when absent or undecodable)."""
+    try:
+        loaded = json.loads(getattr(record, "quality_json", "") or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def recurrence_line(quality: dict[str, Any] | None) -> str:
+    """#803: the repeated opener/closer, read back off the persisted row.
+
+    `evaluate_authenticity` says it once at generation time inside the
+    variation detail, which is not persisted — so `ops grade` on the same run
+    an hour later could not see it. This reads the stored counts.
+    """
+    row = quality or {}
+    total = int(row.get("style_recurrence_n") or 0)
+    if not total:
+        return ""
+    opener = int(row.get("style_recurrence_opener") or 0)
+    closer = int(row.get("style_recurrence_closer") or 0)
+    which, count = ("opener", opener) if opener >= closer else ("closer", closer)
+    if count < 3:
+        return ""
+    return f"style: the same {which} shape appears in {count}/{total} recent scripts"
+
+
+def _accuracy_lines(channel_id: str | None) -> list[str]:
+    """#805 / #561 — how often the card and the loop have been right, or nothing."""
+    lines: list[str] = []
+    for module, func in (
+        ("core.grade_calibration", "accuracy_line"),
+        ("core.analyst_accuracy", "hit_rate_line"),
+    ):
+        try:
+            mod = __import__(module, fromlist=[func])
+            line = getattr(mod, func)(channel_id)
+            if line:
+                lines.append(line)
+        except Exception as exc:
+            logger.debug("%s.%s skipped: %s", module, func, exc)
+    return lines
+
+
 def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
     """Interactive-flow helper: grade the just-persisted run, fail-open."""
     if not run_id:
@@ -456,6 +501,14 @@ def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
             print_fn("")
             for line in render_grade(grade).splitlines():
                 print_fn(f"  {line}")
+            style = recurrence_line(_quality_of(record))
+            if style:
+                print_fn(f"      {style}")
+            # #805 / #561: the card's own track record, printed under it rather
+            # than inside `render_grade` — that stays pure, and `ops grade`
+            # renders it too without paying for the analytics join.
+            for line in _accuracy_lines(record.channel_id):
+                print_fn(f"      {line}")
             # Reuse the record we already fetched — no second lookup for the panel.
             panel = render_expert_panel(record.script_preview, record.channel_id)
             if panel:

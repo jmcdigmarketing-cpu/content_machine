@@ -733,6 +733,66 @@ def _discovery_worker_cap(n_sources: int) -> int:
     return max(1, min(cap, n_sources))
 
 
+def _discovery_deadline() -> float | None:
+    """Wall-clock budget for the whole concurrent fetch, or None for no budget (#811).
+
+    Off by default: a deadline that drops a paid signal is the operator's call,
+    not a default. Same `*_DEADLINE_S` shape as `RESEARCH_BRIEF_DEADLINE_S`.
+    """
+    raw = (os.getenv("DISCOVERY_DEADLINE_S") or "").strip()
+    if not raw:
+        return None
+    try:
+        budget = float(raw)
+    except ValueError:
+        return None
+    return budget if budget > 0 else None
+
+
+def _fetch_all(sources, topic, pinned, workers) -> tuple[dict, list[str], float | None]:
+    """Run every signal concurrently, stopping at the deadline. Returns
+    (results, dropped names, budget).
+
+    A dropped signal is `STATUS_UNAVAILABLE`, which `classify_exception`
+    already assigns to a timeout and which deliberately does not trip the
+    session breaker - the signal is retried on the next run rather than
+    disabled for the process.
+    """
+    results: dict[str, Any] = {}
+    budget = _discovery_deadline()
+    executor = ThreadPoolExecutor(max_workers=workers)
+    futures = {
+        executor.submit(_fetch_one, name, func, topic, pinned): name for name, func in sources
+    }
+    try:
+        for future in as_completed(futures, timeout=budget):
+            name, data = future.result()
+            results[name] = data
+    except TimeoutError:
+        pass
+    finally:
+        # NOT `with ThreadPoolExecutor(...)`: its __exit__ joins every worker,
+        # which would wait out exactly the straggler this budget exists to
+        # stop. The abandoned thread runs to completion in the background and
+        # its `set_cache` write still lands, so the next run gets the result
+        # for free.
+        executor.shutdown(wait=False)
+
+    dropped = [name for name in futures.values() if name not in results]
+    for name in dropped:
+        results[name] = make_signal(
+            connected=True,
+            active=False,
+            status=STATUS_UNAVAILABLE,
+            status_detail=f"missed the {budget:g}s discovery deadline",
+        )
+    if dropped:
+        logger.warning(
+            "Discovery deadline %gs reached - dropped %s", budget or 0.0, ", ".join(dropped)
+        )
+    return results, dropped, budget
+
+
 def build_registry(
     topic,
     max_workers=None,
@@ -761,8 +821,6 @@ def build_registry(
             if reuse_signals.get(name):
                 pinned[name] = reuse_signals[name]
 
-    results = {}
-
     # #590. Before anything is spent, not after a wall is hit. Fail-open: a
     # broken reading must never stop discovery.
     try:
@@ -772,11 +830,12 @@ def build_registry(
     except Exception as exc:
         logger.debug("discovery headroom skipped: %s", exc)
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = [executor.submit(_fetch_one, name, func, topic, pinned) for name, func in sources]
-        for future in as_completed(futures):
-            name, data = future.result()
-            results[name] = data
+    results, dropped, budget = _fetch_all(sources, topic, pinned, workers)
+    if dropped:
+        # `_synthesis` sets the precedent for a non-signal metadata key here.
+        # `core/pipeline` lifts it into `DiscoveryResult.meta` — never into
+        # `timings`, which the intelligence report sums as seconds (#813).
+        results["_deadline"] = {"dropped": dropped, "budget_s": budget}
 
     if web_source is not None:
         results["web_search"] = _maybe_fetch_web_search(

@@ -57,6 +57,11 @@ class TestHeadroomPrintsOncePerProcess(unittest.TestCase):
             def __exit__(self, *a):
                 return False
 
+            # #811: build_registry drives the pool explicitly now (its __exit__
+            # would join the straggler the deadline is meant to drop).
+            def shutdown(self, wait=True):
+                pass
+
         out = io.StringIO()
         feed = iter(lines)
         with (

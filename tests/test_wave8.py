@@ -82,6 +82,12 @@ class TestDiscoveryHeadroomBeforeThePool(unittest.TestCase):
             def submit(self, *a, **k):
                 raise AssertionError("no signal should be submitted in this test")
 
+            # #811: the pool is no longer a context manager here — its __exit__
+            # joins every worker, which is what the discovery deadline exists
+            # to avoid. The fake follows.
+            def shutdown(self, wait=True):
+                order.append("shutdown")
+
         with (
             patch.object(rs, "_active_signal_sources", return_value=()),
             patch.object(rs, "start_youtube_warmup_background", lambda: None),

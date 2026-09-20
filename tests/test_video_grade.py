@@ -226,8 +226,16 @@ class TestExpertPanelSection(unittest.TestCase):
         repo = MagicMock()
         repo.get.return_value = self._record()
         lines: list[str] = []
-        with patch(
-            "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+        with (
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+            ),
+            # #805/#561 put two accuracy lines under the card. These tests are
+            # about the expert panel, and the lines walk every run row plus the
+            # analytics join - leaving them live would make this class depend on
+            # the operator's real database. They have their own coverage in
+            # tests/test_card_accuracy.py.
+            patch("core.video_grade._accuracy_lines", return_value=[]),
         ):
             display_grade_for_run(self.RUN_ID, print_fn=lines.append)
         return lines

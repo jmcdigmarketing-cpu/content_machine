@@ -51,34 +51,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-20 · **HEAD at write:** `0d5d23c` · **Tree:** wave 25 committing, then
-pushing. CI was green on `0d5d23c` (run 35476144912). **Documentation only - no code changed.**
+**Written:** 2026-09-20 · **HEAD at write:** `4324373` (wave 29 + wave 28 committing now) ·
+**Tree:** one commit, both waves — the operator's call, not two.
 
-**Defects first, all found by measuring `data/traces/*.json` (38 runs) rather than reading docs:**
-- **The TTS cache has never been used.** `TTS_CACHE` is absent from the operator's `.env`,
-  `data/tts_cache/` does not exist, `tts_cached` is false wherever recorded - while TTS is
-  **$6.09 of $7.27 (84%)** of all spend. #71 and #402 built it; nothing switched it on (#809).
-- **28% of the report card is a constant.** Authenticity scores 100/100 on **22 of 38** runs
-  (#804). Hook, median 78, is the only component that discriminates.
-- **Intent detection reads `default` on 9 of the 10** runs that record it (#801).
-- **Six signals have never returned anything** inside a 58.7 s median discovery (#810).
-- **A duplicate open #351** had been inflating the open count since 2026-08-30; removed.
+**Defects first:**
+- **#819 composite does not predict engagement: r=-0.15 over 12 publishes.** First real
+  measurement, out of #805. The backlog asserted "uncorrelated" from a 40% hit rate; this is
+  the correlation and it is faintly *negative*. Every tie broken on composite is a coin flip.
+  `angle_scores` (#807) is the named successor and is itself unvalidated. Biggest open thing.
+- **#822 hedging passes the render gate and only costs grade points.** #345 lets an
+  unsupported rumor through *if hedged*; #800 then docks the grade per hedge. The cheapest
+  route past the hard gate is what the soft score punishes. Your standing note, now filed.
+- **#818 calibration is starved by history, not volume.** 37 rows have a grade, 12 an outcome,
+  **3** both; `ops calibration` reads "collecting" for months and that is not a bug. And
+  **#803's filed text was wrong** (rewritten): `core/authenticity.py:35` has always been
+  `_RECENT_RUNS = 12`, never "one script deep".
 
-**What exists now:** [engine_upgrades.md](engine_upgrades.md) holds the measured baseline, the
-ranked ideas in three sections, and a "not worth doing" list (token-spend optimisation, more
-signals, a second signal cache, re-weighting before #804, significance at n~10). Filed
-**#799-#812**; narrowed **#575 #561 #50 #374 #611 #83** with the evidence.
+**Yours to call, Cursor:** **#817** the recurrence pass reads all statuses; the item said
+*published*, and narrowing `_recent_scripts` also narrows the similarity **gate**. **#820**
+#811's `shutdown(wait=False)` abandons the straggler's thread — same trade you took on #802.
+**#821** recurrence is report-only, no `GRADE_VERSION` bump. Untouched: footage folders,
+igdb/steam 1/33.
 
-**Operator calls this session:** one new doc rather than addenda to two; the next build wave
-weights **script quality**. Next five: **#799** (rewrite-pass ledger, first because everything
-else in the script section is judged through it) · **#800** (hedge density, decides
-`decisions.md` §25) · **#801** · **#809** · **#804**.
+**Watch for:** `with ThreadPoolExecutor(...)` joins on `__exit__`, so #811 drives the pool
+explicitly; two fake pools (`test_wave8`, `test_wave9`) broke honestly on it.
+`DISCOVERY_DEADLINE_S` is **unset by default**.
 
-Suite **3,381** unchanged; mypy **139**; ruff clean; `data/` untouched. Backlog **335 open / 710
-done**, highest **#812**.
-
-**Cursor:** the open counts moved by 14 filed plus one duplicate removed - if a count looks wrong
-against an older note, re-run `py -m scripts.ops roadmap-index` rather than trusting the prose.
+Suite **3,437 -> 3,462**; mypy **139** (drifted to 141 behind a green suite, back now); ruff
+clean; `data/` untouched. Backlog **326 open / 729 done**, highest **#822**. Next five:
+**#818 · #817 · #822 · #819 · #739**.
 
 ## Slot — Cursor
 
@@ -116,5 +117,3 @@ Signals retired: stats_context, tapology, tmdb, trendingnow, tvmaze
 
 Suite **3,406 -> 3,425**; mypy **139**; ruff clean; `data/` untouched. Backlog
 **325 open / 720 done**, highest **#811**.
-
-

@@ -24,46 +24,60 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-20 wave 27 (operator loop + resource waste): **#806** rejection
-reason keystroke · **#807** fixture replay of recorded angle sets · **#810** retire true-zero
-signals (igdb/steam stay, known gap) · **#812** published-path exempt + overnight retention
-line · **#802** research-brief and variant-scoring wall-clock budgets.
+**Just landed** - 2026-09-20 wave 29 (measurement): **#808** the grade is recorded beside the
+inputs that produced it, so a re-grade is measurable instead of silent · **#805** the card prints
+its own accuracy - **composite vs engaged-rate r=-0.15 over 12 publishes**, the first real number
+on the score the selection path leans on · **#561** the recommender's 40% hit rate over 10
+publishes, printed beside its advice · **#803** a repeated opener is flagged even when no single
+pair trips the similarity limit (the filed premise was wrong - see the item) · **#811**
+`DISCOVERY_DEADLINE_S` stops the run blocking on its slowest signal. Wave 28's review fixes
+(**#813 #814 #815 #816**) are in the same commit.
 
-**Previously** - 2026-09-20 wave 26 (script quality): **#799** per-pass rewrite ledger · **#800**
-hedge density (closes the open §25 call; render gate unchanged) · **#801** intent replay on the
-38 recorded topics · **#809** TTS cache default-on · **#804** continuous authenticity points
-(`GRADE_VERSION` v4; historical letters re-grade). Gate still uses the binary sum.
-
-**Previously** - 2026-09-20 wave 25 (documentation): ideas for **script generation**, **idea
-grading** and **resource use**, each measured against the 38 recorded runs -
-[engine_upgrades.md](engine_upgrades.md). Filed **#799-#812**. Wave 24: **#792** irregular 3-8 s
-shots · **#796** parallel shot encodes · **#788** narrowed · **#793 #795 #797 #798**. Wave 23
-**#785 #787 #600 #789 #790 #791**; wave 22 **#782 #783 #784 #601 #781**; **#153** retired.
+**Previously** - wave 27 (operator loop + resource waste) **#806 #807 #810 #812 #802**; wave 26
+(script quality) **#799** rewrite ledger · **#800** hedge density (closes §25) · **#801** intent
+replay · **#809** TTS cache default-on · **#804** continuous authenticity points (`GRADE_VERSION`
+v4, gate still binary); wave 25 (documentation) [engine_upgrades.md](engine_upgrades.md), filed
+**#799-#812**; wave 24 **#792 #796 #788 #793 #795 #797 #798**; wave 23 **#785 #787 #600 #789 #790
+#791**; wave 22 **#782 #783 #784 #601 #781**; **#153** retired.
 
 ### Recommended next five (non-app)
 
-**Operator, 2026-09-20:** wave 27 closed the cheapest operator-loop and resource slice. The list
-below is the next from [engine_upgrades.md](engine_upgrades.md). Volume framing is unchanged - a
-long video is 1-2 a month; the 3-5/week target is Shorts.
+**Operator, 2026-09-20:** [engine_upgrades.md](engine_upgrades.md)'s list is **exhausted** -
+#799-#812 are all closed. The list below is what wave 29's measurements turned up, plus the one
+standing defect both agents have circled. Volume framing is unchanged - a long video is 1-2 a
+month; the 3-5/week target is Shorts.
 
-1. **#808 snapshot grade inputs** `[S]` - `GRADE_VERSION` stamps that something changed, not
-   what the inputs were. Store the inputs beside the scores so a re-grade is measurable.
-2. **#811 a discovery deadline** `[M]` - signals run concurrently but the run waits for the
-   slowest (median 58.7 s). Take the first N good results past a deadline.
-3. **#803 style memory across runs** `[M]` - similarity is one previous script deep; flag
-   repeated openers and sentence shapes across the last N published scripts.
-4. **#805 print the report card's own hit rate** `[M]` - correlate grade and composite against
-   `engaged_rate` and print `r` with `n` on the card.
-5. **#50 learned insight markers** `[L]` - replace hardcoded `_INSIGHT_MARKERS` from scripts
-   that actually retained. Still the next authenticity input after #804.
+**#50 was pulled from this list and is now data-gated.** "Scripts that actually retained" means
+runs carrying both a `quality_json` and a synced engaged-rate, and `tapin` has three. #561 took
+the slot.
+
+1. **#818 explain the collecting gap** `[S]` - 37 rows have a grade, 12 have an outcome, 3 have
+   both. `ops calibration` will read "collecting" for months and the reason is history, not
+   volume. One weekly-report line so it is not re-discovered.
+2. **#817 which window the recurrence pass reads** `[S]` - #803 ships against the last 12 runs of
+   any status; the item said *published*. Narrowing it also narrows the existing similarity gate,
+   so it is a decision, not a patch.
+3. **#822 hedging passes the gate and only costs grade points** `[M]` - #345 lets a hedged rumor
+   through; #800 then docks the grade for hedging. The cheapest route past the hard gate is what
+   the soft score punishes. Decide which layer owns it.
+4. **#819 what the selection tie should lean on** `[L]` - composite is r=-0.15 against engagement
+   over every measured publish. Until that is positive, a tie broken by composite is a coin flip.
+   `angle_scores` (#807) is the candidate and is itself unvalidated.
+5. **#739 place captions by footage source, not by pixels** `[M]` - unchanged from the dropped
+   list, and now the largest output-quality item with a clear measurement path.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first
 live TTS run, check that `ops reliability` reports TTS-cache hits rather than `0/3`.
 `ARTIFACT_RETENTION_APPLY` stays unset unless you want overnight to delete.
 
-**Dropped from this list** (stay open): **#739** · **#730** (operator call) · **#728** (no clip)
-· **#628** · **#731** · Phase M · Ollama.
+**Dropped from this list** (stay open): **#821** (held on #818's dataset) · **#730** (operator
+call) · **#728** (no clip) · **#628** · **#731** · Phase M · Ollama.
+
+**Closed 2026-09-20 (wave 29):** **#808 #805 #561 #803 #811**, plus wave 28's **#813 #814 #815
+#816**. Filed open: **#817 #818 #819 #820 #821 #822**. `QUALITY_VERSION` v3 -> v4;
+**`GRADE_VERSION` unchanged at v4** - no component moved. `DISCOVERY_DEADLINE_S` is unset by
+default. Style recurrence is report-only (#821).
 
 **Closed 2026-09-20 (wave 27):** **#806 #807 #810 #812 #802**. igdb/steam 1/33 is a documented
 known gap, not a §19 zero. Hedge density remains grade-only. Authenticity gate stays binary.
@@ -82,41 +96,13 @@ Overnight stays render-free. Retention apply stays off unless the env is set.
 
 **Closed 2026-09-18 (wave 21):** **#779 #771 #780**. Filed open: **#781**.
 
-**Closed 2026-09-17 (wave 20):** **#775 #776 #770 #773 #774 #777**. Narrowed: **#771**.
-
-**Closed 2026-09-17 (wave 19):** **#755 #627 #769 #763 #764 #766 #765 #767 #768 #772**.
-Filed open: **#770 #771 #773 #774**.
-
-**Closed 2026-09-16 (wave 18):** **#760 #762 #761 #345 #756 #749**. Filed open: **#763
-#764**; narrowed **#755**.
-
-**Closed 2026-09-15 (wave 17):** **#754 #757 #758 #543 #759**. Filed open: **#760**.
-
-**Closed 2026-09-13 (wave 16):** **#750 #751 #752 #753 #732**. Filed open: **#754
-#755 #756**.
-
-**Closed 2026-09-13 (wave 15):** **#534 #748 #746 #747 #738**. Filed open:
-**#749**.
-
-**Closed 2026-09-13 (wave 14):** **#740 #742 #741 #743 #667 #745 #744**. Filed
-open: **#746 #747 #748**. Archive: [run_76.md](run_76.md).
-
-**Filed 2026-09-13 (run 76):** **#740 #741 #742 #743 #744 #745**; narrowed **#667**.
-
-**Closed 2026-09-13 (wave 13):** **#734 #735 #736 #737**. Filed open: **#738 #739**;
-narrowed **#730**.
-
-**Closed 2026-09-13 (wave 12):** **#733 #630 #640**. Filed open: **#734 #735 #736
-#737**; narrowed **#730 #731**.
-
-**Closed 2026-09-13 (wave 11):** **#729 #631 #636 #639 #727**. Filed open:
-**#730 #731 #732**.
-
-**Closed 2026-09-12 (wave 10):** **#719 #720 #724 #725 #726 #158**. Filed open:
-**#727 #728**.
-
-**Closed 2026-09-12 (wave 9):** **#716 #723 #722 #721 #718**; **#158** core slice.
-Filed open: **#724 #725 #726**.
+**Closed, waves 8-20 (2026-09-10 to 09-17):** waves 20 **#775 #776 #770 #773 #774 #777** · 19
+**#755 #627 #769 #763 #764 #766 #765 #767 #768 #772** · 18 **#760 #762 #761 #345 #756 #749** · 17
+**#754 #757 #758 #543 #759** · 16 **#750 #751 #752 #753 #732** · 15 **#534 #748 #746 #747 #738** ·
+14 **#740 #742 #741 #743 #667 #745 #744** (archive: [run_76.md](run_76.md)) · 13 **#734 #735 #736
+#737** · 12 **#733 #630 #640** · 11 **#729 #631 #636 #639 #727** · 10 **#719 #720 #724 #725 #726
+#158** · 9 **#716 #723 #722 #721 #718**. Full detail in
+[roadmap_archive.md](roadmap_archive.md).
 
 **Closed 2026-09-10 (wave 8):** **#590** headroom before the pool · **#378**
 free-tier calendar · **#407** opener advisory · **#717** luminance-step caption

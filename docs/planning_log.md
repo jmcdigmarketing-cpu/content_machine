@@ -11,6 +11,47 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-20 (Claude Code) - wave 28: review of waves 26-27
+
+Operator: "review and fix". Read both diffs line by line rather than the docs. Waves 26
+and 27 shipped green - ruff clean, 3,425 tests, mypy 139 - and five defects went through
+anyway, because nothing in the suite looked at the seams *between* the two waves.
+
+**Fixed, each test failing on unmodified `4324373` first:**
+1. **#813** `variant_scoring_fallback` ("deadline", #802) and `angle_spread` (a 0-1 ratio,
+   #807) went into `DiscoveryResult.timings`, typed `dict[str, float]`, which the
+   intelligence report sums and formats as seconds. Fail-first was the live crash:
+   `TypeError: unsupported operand type(s) for +: 'float' and 'str'`, unguarded from
+   `main.py`. It fires on exactly the degraded run that most needs a report. Both move to
+   `DiscoveryResult.meta`; the persisted trace keys are unchanged (merged at the two write
+   sites); `to_markdown` renders numeric entries only.
+2. **#814** #799's reground wrapper seeded "what survived" with the whole ungrounded list,
+   so with `GROUNDING_REGEN_ENABLED=false` the merge returned `held + (held + targets)`.
+   Fail-first: `Script names 3 specific(s): negative-fact: Giannis retired, Jimmy Butler,
+   negative-fact: Giannis retired`. Latent (the flag defaults on) but one env line away.
+3. **#815** #804 split the authenticity number in two and bumped `GRADE_VERSION`, but
+   `channel_health` (55/72 thresholds) and `engagement_predictor` (a least-squares fit)
+   were left on the field whose meaning changed. Fail-first: `thin/synthetic - mean
+   54/100` RED on a window where every gate check passes. Both now read
+   `run_quality.authenticity_gate_value`. Operator's call, recorded as `decisions.md` §32.
+4. **#816** #812's `_is_exempt` re-resolved the whole skip set per file: 68 `Path.resolve()`
+   syscalls for 16 files x 4 published runs, inside the walk #812 wanted kept cheap.
+
+**The shape, all five:** a wave changes what a value *means* or what a dict may *hold*,
+and the readers outside that wave are not re-pointed. A version stamp records that the
+number changed; it does not find the two modules still reading it. Worth a grep for every
+consumer of a field whose meaning a wave alters - that is what #813 and #815 both were.
+
+**Raised, not fixed:** #809's `TTS_CACHE` default flip means a bare
+`python -m unittest discover -s tests` (no `-t .`, so `tests/__init__.py` never imports)
+writes into the operator's real `data/tts_cache` - the documented reason the default was
+off. CI uses `-t .`; Cursor took the trade knowingly, so it stays the operator's call.
+
+Suite **3,425 -> 3,437**. mypy **139** (unchanged - the bad assignment came through a
+`dict[str, Any]`, so mypy never saw it). `data/` untouched. Two doc-length lints were
+already red on `4324373` (`handoff.md` 120, `roadmap.md` 202); both trimmed back under.
+
+
 ## 2026-09-20 (Cursor) - wave 27: operator loop + resource waste
 
 Operator: "next 5". Locked **#806 #807 #810 #812 #802**. TDD: each new test failed on
@@ -4854,3 +4895,146 @@ already Saturday evening.
 
 Suite **2,822 -> 2,833**. mypy **139**. `data/` untouched.
 
+---
+
+## 2026-09-20 — wave 29, measurement
+
+**Operator prompt, verbatim:** `refamiliarize and next 5`
+
+Plan-mode session. Three calls were the operator's, not mine, and two of them changed
+the list: **wave 28 folds into this commit** rather than landing alone; **#50 out, #561
+in**; **#803 reframed to recurrence detection** (not also scoped to published-only).
+
+### Why the list differs from the recommendation
+
+The recommended five were **#808 · #811 · #803 · #805 · #50**. Before building, I asked
+`ops calibration` and the run repository what data actually exists on `tapin`:
+
+| | n |
+|---|---|
+| runs | 87 |
+| with a synced engaged-rate | 12 |
+| with persisted `quality_json` | 37 |
+| **with both** | **3** |
+| with engaged-rate **+ composite_score** | **12** |
+
+Two consequences. **#50 is data-starved** — "scripts that actually retained" is a
+population of three, so a learner built now is the "called but never fed" shape the
+skill warns about; it is refiled data-gated at 20 runs. And **#805's grade correlation
+was never going to clear `MIN_MEASURED = 5`**, but the composite correlation needs no
+quality dict at all and had n=12 sitting unused. That reframed #805 from "a number that
+prints collecting" into the first real measurement of the score the selection path
+leans on.
+
+**#803's filed premise was simply wrong.** It said `authenticity_semantic` "compares a
+draft against a single previous script". `core/authenticity.py:35` sets
+`_RECENT_RUNS = 12` and `_variation_check` has always looped all twelve. The real defect
+is one line lower: `max()` answers "is this a copy of one of them" and cannot answer "is
+this the move I make every time". Backlog text rewritten, then built against the actual
+gap.
+
+### Shipped 1..5 (cheapest and safest first; #811 last because it touches thread lifecycle)
+
+1. **#808** — `run_quality.snapshot_grade()` records `grade_score` / `grade_letter` /
+   `grade_components` beside the inputs. **Two writers, not one**: `build_quality` at
+   generation time and `merge_quality` again once `thumbnail_overall` lands post-render
+   (`core/pipeline.py:1229`), or every published run carries a grade missing its
+   thumbnail component and disagrees with the card the operator saw. `build_calibration`
+   prefers the recorded number, keeps today's re-grade as `regraded`, and
+   `worst_component_drift` names the component that moved. `QUALITY_VERSION` v3 -> v4;
+   **`GRADE_VERSION` stays v4**, no component moved.
+2. **#805** — `composite_correlation` / `composite_n`, computed **before** the
+   quality filter (that filter is why n was 3), reusing the existing `_pearson`.
+   `accuracy_line()` under the card via `display_grade_for_run`, not inside
+   `render_grade` — that stays pure and `ops grade` renders it without paying for the
+   analytics join.
+3. **#561** — `build_accuracy_report` had backtested the recommender since it was
+   written and only `core/intelligence_report.py:23` ever read it. `hit_rate_line()`
+   puts it under the card; volume-gated says "collecting", never a rate.
+4. **#803** — `style_recurrence()` counts how many of the last N clear a 0.50 shape
+   floor on opener and closer; 3+ appends to the variation detail, persists three keys,
+   and `video_grade.recurrence_line` reads them back. **Report-only** — no points, no
+   gate, no `GRADE_VERSION` bump (#821 holds the promotion).
+5. **#811** — `DISCOVERY_DEADLINE_S`, unset by default. `_fetch_all` drives an explicit
+   executor then `shutdown(wait=False)`; **`with ThreadPoolExecutor(...)` joins every
+   worker on `__exit__`**, which would have waited out exactly the straggler the budget
+   exists to stop. Dropped signals keep the `make_signal()` shape as
+   `STATUS_UNAVAILABLE` and ride a `_deadline` key into `DiscoveryResult.meta` — never
+   `timings`, per #813 four days ago.
+
+### Findings, with file:line
+
+- **`core/authenticity.py:35`** — #803's premise. Twelve deep, not one.
+- **`core/grade_calibration.py:124`** — every archived row was re-graded with today's
+  code, and `mixed_versions` then refused the correlation permanently. Measured on the
+  fixture: a row recorded at 42.0 came back as **81.7**.
+- **`core/run_quality.py` + `core/pipeline.py:1229`** — the thumbnail merges after the
+  grade is taken. Caught by tracing the *field*, not the call.
+- **`core/grade_calibration.py`** — **composite vs engaged-rate r=-0.15 over 12
+  publishes** (#819). The backlog asserted "uncorrelated" from a 40% hit rate; this is
+  the correlation, and it is faintly negative. The whole selection tie leans on it.
+- **37 / 12 / 3** (#818) — the grade correlation is starved by *history*, not volume:
+  quality persistence landed after most of the publishing did.
+- **`tests/test_video_grade.py`** — the expert-panel class was silently reaching the
+  operator's real database once the accuracy lines were added. Patched to isolate;
+  that class is about the panel.
+- **`tests/test_wave8.py` / `test_wave9.py`** — both fake pools implemented only the
+  context-manager protocol. Real breakage from a real lifecycle change, not a flake.
+
+### Deliberately not done
+
+- **Scoping `_recent_scripts` to published runs only** (#817). #803's text says
+  "published"; the code reads all statuses. Narrowing it also narrows the existing
+  similarity **gate**, which is a gate change, not a report change. Operator's call.
+- **Promoting recurrence into the grade** (#821). Report-only first, the same staging
+  #800 used for hedge density. The floor (0.50) and count (3) are uncalibrated.
+- **Cancelling a dropped signal's thread** (#820). `shutdown(wait=False)` abandons, it
+  does not kill; the straggler still spends its API call. Deliberate — the late
+  `set_cache` write is what makes the next run fast.
+- **`GRADE_VERSION` bump.** Nothing moved a component. Bumping it would have re-graded
+  all history for no rubric change, which is the thing #808 exists to stop.
+
+### Audit
+
+Five behavioural regressions added across four new test modules
+(`test_grade_snapshot`, `test_card_accuracy`, `test_style_recurrence`,
+`test_discovery_deadline`). **All observed failing first** — #808's three red including
+the 42.0 -> 81.7 re-grade, #805/#561's six red on missing attributes, #811's three red
+with a 3.0 s wait against a 0.3 s budget. #803 first failed on import, so it was
+verified a second way: with `_RECURRENCE_MIN` patched to 999 the class goes **3 red**,
+and `test_no_single_pair_trips_the_opening_limit` pins the fixture at peak opening 0.67
+against the 0.80 limit so the guard cannot pass for the wrong reason.
+
+Eight suite failures appeared on the first full run and every one was mine: two stale
+pool fakes, three expert-panel byte-identical assertions, two env-lint (undocumented
+`DISCOVERY_DEADLINE_S`), one ratchet. Fixed at the cause, not the assertion.
+
+mypy went **139 -> 141** behind a green suite — exactly the shape the skill names. Both
+were mine in `grade_calibration` (`float(Any | None)`, and a `None`-typed subtraction
+mypy could not see through a comprehension filter). Back to **139**.
+
+Every new symbol traced to a production caller, and then every new *field* traced to a
+reader. Two failed that second test: **`grade_components`** and
+**`style_recurrence_*`** were written and read by nothing. Rather than drop them, both
+got the reader they implied — `worst_component_drift` names the component that drifted,
+`recurrence_line` prints the repeat from the persisted row so `ops grade` sees it an
+hour later. That is the fix for the commonest shape in this repo's review history.
+
+### Proof
+
+Suite **3,437 -> 3,462**. mypy **139**, unchanged. ruff and `ruff format --check` clean
+(769 files). `git status --short data/` empty. Backlog **326 open / 729 done**, highest
+**#822**. Operator output run, not described:
+
+```
+  Recorded grades: 0/3 - every row above is re-graded with today's rubric. Rows generated from now on carry their own.
+  Grade calibration: collecting (3/5 measured runs with quality)
+  Composite vs engaged-rate r=-0.15 (n=12)
+
+  Report card: D (52/100)
+      card accuracy: grade collecting (3/5), composite r=-0.15 (n=12)
+      loop accuracy: 40% hit rate on 10 publishes (engaged-rate)
+```
+
+Closed **#808 #805 #561 #803 #811** (+ wave 28's **#813 #814 #815 #816**). Filed open
+**#817 #818 #819 #820 #821 #822**. Next five: **#818 · #817 · #822 · #819 · #739**.

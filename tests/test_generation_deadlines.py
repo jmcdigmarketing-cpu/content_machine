@@ -120,8 +120,27 @@ class TestVariantScoringDeadline(unittest.TestCase):
             )
             elapsed = time.perf_counter() - started
         self.assertLess(elapsed, 0.8, elapsed)
-        self.assertEqual(result.timings.get("variant_scoring_fallback"), "deadline")
+        # #813: the marker lives in `meta`, not `timings` — the report sums
+        # `timings` and formats every key as seconds.
+        self.assertEqual(result.meta.get("variant_scoring_fallback"), "deadline")
+        self.assertNotIn("variant_scoring_fallback", result.timings)
+        self.assertTrue(all(isinstance(v, int | float) for v in result.timings.values()))
         self.assertEqual(result.evaluated[0][0], "GTA 6 deadline-802")
+
+    def test_the_marker_still_reaches_the_persisted_timings(self) -> None:
+        """timings_json/trace keys are unchanged — only the in-memory home moved."""
+        from core.pipeline import DiscoveryResult
+
+        discovery = DiscoveryResult(
+            input_topic="GTA 6",
+            base_signals={},
+            evaluated=[("GTA 6", 1.0, {})],
+            timings={"variant_scoring": 15.0},
+            meta={"variant_scoring_fallback": "deadline", "angle_spread": 0.2},
+        )
+        recorded = {**discovery.timings, **discovery.meta, **{"length_preset": "2"}}
+        self.assertEqual(recorded["variant_scoring_fallback"], "deadline")
+        self.assertEqual(recorded["angle_spread"], 0.2)
 
 
 if __name__ == "__main__":

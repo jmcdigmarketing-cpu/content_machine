@@ -1,10 +1,64 @@
-# Handoff synopsis — 2026-09-20: wave 27, operator loop + resource waste
+# Handoff synopsis — 2026-09-20: wave 29, measurement
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-20 (Cursor): wave 27 #806 #807 #810 #812 #802
+## Last wave — 2026-09-20 (Claude Code): wave 29 #808 #805 #561 #803 #811
+
+Measurement wave. **Wave 28's four fixes are in the same commit** — the operator's call, not a
+second commit. Before building I asked the data what existed on `tapin`: 87 runs, 12 with a
+synced engaged-rate, 37 with `quality_json`, **3 with both**, and **12 with engaged-rate +
+composite_score**. Two of the recommended five changed on that evidence.
+
+**#50 was pulled and refiled data-gated** (a learner for "scripts that actually retained" has a
+training set of three). **#561 took the slot** — `build_accuracy_report` had backtested the
+recommender for months and only `intelligence_report` read it. **#803's filed premise was
+wrong**: `core/authenticity.py:35` is `_RECENT_RUNS = 12`, never one; the real gap is that
+`max()` hides a *recurring* shape.
+
+- **#808** grade recorded beside its inputs. Two writers — `build_quality`, then `merge_quality`
+  again when `thumbnail_overall` lands post-render, or every published run's snapshot is missing
+  its thumbnail component. `QUALITY_VERSION` v3 -> v4; **`GRADE_VERSION` stays v4**.
+- **#805** composite correlation computed before the quality filter (that filter is why n was 3).
+  **Measured: r=-0.15 over 12 publishes** — the first real number on the score the selection tie
+  leans on. Filed as **#819**.
+- **#561** 40% hit rate on 10 publishes, printed under the card.
+- **#803** `style_recurrence()`, 0.50 shape floor, 3+ flags. **Report-only** — no points, no
+  gate, no `GRADE_VERSION` bump (**#821** holds the promotion).
+- **#811** `DISCOVERY_DEADLINE_S`, **unset by default**. Explicit executor + `shutdown(wait=False)`:
+  a `with ThreadPoolExecutor` block joins on exit and would have defeated the budget entirely.
+  Dropped names ride `_deadline` into `DiscoveryResult.meta`, never `timings` (#813).
+
+Found on the way, filed open: **#817** the recurrence window reads all statuses, not published ·
+**#818** 37/12/3, so `ops calibration` reads "collecting" for months for historical reasons ·
+**#819** composite r=-0.15 · **#820** a dropped signal's thread is abandoned, not cancelled ·
+**#821** recurrence is report-only · **#822** hedging passes the render gate (#345) and only
+costs grade points (#800) — the two pull opposite ways.
+
+Two new *fields* were written and read by nothing and got the reader they implied rather than
+being dropped (`worst_component_drift`, `recurrence_line`). mypy drifted 139 -> 141 behind a
+green suite and is back to **139**. Next five: **#818 · #817 · #822 · #819 · #739**. Suite
+**3,437 -> 3,462**; ruff clean; `data/` untouched; backlog **326 open / 729 done**, highest
+**#822**.
+
+## Previous — 2026-09-20 (Claude Code): wave 28 #813 #814 #815 #816
+
+Review of waves 26-27, no new features. Both waves shipped green and five defects went through
+anyway, all the same shape: a wave changed what a value *means* or what a dict may *hold*, and
+the readers outside that wave were never re-pointed. **#813** a timed-out discovery crashed the
+intelligence report (`TypeError: float + str` out of `to_markdown`, unguarded from `main.py`) —
+#802's `variant_scoring_fallback` and #807's `angle_spread` move to `DiscoveryResult.meta`,
+persisted trace keys unchanged; **#814** a disabled reground double-counted the held-back
+negative-fact flags; **#815** `channel_health` (55/72) and `engagement_predictor` were still on
+the field #804 made continuous — both now read `run_quality.authenticity_gate_value`, recorded as
+**`decisions.md` §32**; **#816** the retention exemption re-resolved the skip set per file.
+Raised, not fixed: #809's `TTS_CACHE` default flip lets a bare `unittest discover -s tests`
+(no `-t .`) write the operator's real `data/tts_cache`. Next five unchanged: **#808 · #811 ·
+#803 · #805 · #50**. Suite **3,425 -> 3,437**; mypy **139**; ruff clean; backlog **325 open /
+724 done**, highest **#816**.
+
+## Previous — 2026-09-20 (Cursor): wave 27 #806 #807 #810 #812 #802
 
 Operator-loop and resource waste. **#806** `ops batch-review` asks Why? after reject and writes
 `review.reason`; **#807** `score_spread` + fixture replay of recorded angle sets;

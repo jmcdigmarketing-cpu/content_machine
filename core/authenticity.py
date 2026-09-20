@@ -22,8 +22,9 @@ import math
 import os
 import re
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from difflib import SequenceMatcher
+from typing import Any
 
 from config.channels import resolve_channel_id
 from core.logging import get_logger
@@ -167,6 +168,9 @@ class AuthenticityReport:
     checks: list[AuthenticityCheck]
     semantic_overlap: float = 0.0  # peak content-word cosine vs recent (0-1)
     gate_score: int = 0  # binary 40+35+25 sum the gate still uses
+    # #803: how many of the last N share this draft's opener/closer shape.
+    # Report-only — it is not in `score`, `gate_score` or `passed`.
+    recurrence: dict[str, Any] = field(default_factory=dict)
 
     @property
     def passed(self) -> bool:
@@ -179,6 +183,45 @@ def _normalise(text: str) -> str:
 
 def _opening(text: str, *, words: int = 12) -> str:
     return " ".join(_normalise(text).split()[:words])
+
+
+def _closing(text: str, *, words: int = 12) -> str:
+    return " ".join(_normalise(text).split()[-words:])
+
+
+# #803. `_variation_check` takes max() over the last 12, which answers "is this
+# a copy of one of them" and cannot answer "is this the same move I make every
+# time". A frame reused in eight of twelve at ~0.5 each never reaches
+# `_OPENING_SIM_LIMIT` and was never reported. Deliberately well below that
+# limit: a *recurring* shape is a weaker signal per pair and a stronger one in
+# aggregate.
+_RECURRENCE_SIM = 0.50
+_RECURRENCE_MIN = 3
+
+
+def style_recurrence(script: str, recent: list[str]) -> dict[str, Any]:
+    """How many of the last N share this draft's opener / closer shape (#803).
+
+    Report-only: nothing here changes points, the gate or `GRADE_VERSION`.
+    """
+    n = len(recent)
+    reading: dict[str, Any] = {"n": n, "opener": 0, "closer": 0, "flagged": False}
+    if not n or not (script or "").strip():
+        return reading
+    opening = _opening(script)
+    closing = _closing(script)
+    reading["opener"] = sum(
+        1
+        for other in recent
+        if SequenceMatcher(None, opening, _opening(other)).ratio() >= _RECURRENCE_SIM
+    )
+    reading["closer"] = sum(
+        1
+        for other in recent
+        if SequenceMatcher(None, closing, _closing(other)).ratio() >= _RECURRENCE_SIM
+    )
+    reading["flagged"] = max(reading["opener"], reading["closer"]) >= _RECURRENCE_MIN
+    return reading
 
 
 def _semantic_enabled() -> bool:
@@ -230,7 +273,9 @@ def _recent_scripts(channel_id: str, *, exclude_run_id: int | None) -> list[str]
     return scripts
 
 
-def _variation_check(script: str, recent: list[str]) -> AuthenticityCheck:
+def _variation_check(
+    script: str, recent: list[str], recurrence: dict[str, Any] | None = None
+) -> AuthenticityCheck:
     if not recent:
         return AuthenticityCheck(
             "variation",
@@ -269,6 +314,18 @@ def _variation_check(script: str, recent: list[str]) -> AuthenticityCheck:
         detail = f"content overlap {max_sem:.0%} with a recent upload — looks like a rehash"
     else:
         detail = f"distinct from recent uploads (peak {max_full:.0%})"
+
+    # #803, appended rather than substituted: recurrence answers a different
+    # question from the peak above, and losing the peak would hide the copy
+    # case to expose the repeat case. Report-only, so `passed` and `points`
+    # are already final.
+    reading = recurrence or {}
+    if reading.get("flagged"):
+        which = "opener" if reading.get("opener", 0) >= reading.get("closer", 0) else "closer"
+        detail += (
+            f" - but the same {which} shape recurs in "
+            f"{reading.get(which, 0)}/{reading.get('n', 0)} recent scripts"
+        )
     return AuthenticityCheck("variation", passed, 40, detail, points)
 
 
@@ -349,8 +406,9 @@ def evaluate_authenticity(
     if recent is None:
         recent = _recent_scripts(channel_id, exclude_run_id=exclude_run_id)
 
+    recurrence = style_recurrence(script, recent)
     checks = [
-        _variation_check(script, recent),
+        _variation_check(script, recent, recurrence),
         _insight_check(script),
         _substance_check(script, fact_count),
     ]
@@ -374,6 +432,7 @@ def evaluate_authenticity(
         checks=checks,
         semantic_overlap=overlap,
         gate_score=gate_score,
+        recurrence=recurrence,
     )
 
 

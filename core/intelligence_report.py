@@ -447,9 +447,13 @@ def to_markdown(report: IntelligenceReport) -> str:
         ]
     )
 
-    if report.timings:
-        total = sum(report.timings.values())
-        timing_parts = ", ".join(f"{k}={v:.1f}s" for k, v in report.timings.items())
+    # #813: durations only. A non-numeric value here (wave 27 wrote
+    # "variant_scoring_fallback": "deadline") used to raise TypeError out of
+    # `sum`, killing the report on exactly the degraded run that needed one.
+    phases = {k: float(v) for k, v in report.timings.items() if isinstance(v, int | float)}
+    if phases:
+        total = sum(phases.values())
+        timing_parts = ", ".join(f"{k}={v:.1f}s" for k, v in phases.items())
         lines.extend(["", f"_Pipeline timing: {timing_parts} (total ~{total:.1f}s)_"])
 
     return "\n".join(lines) + "\n"

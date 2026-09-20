@@ -88,6 +88,13 @@ class DiscoveryResult:
     # Run 77: the operator's typed thoughts. Angles differ by thoughts on the same seed,
     # so the cache key carries them too.
     brief: str = ""
+    # #813: measurements about the discovery that are NOT phase durations —
+    # `variant_scoring_fallback` ("deadline"), `angle_spread` (a 0-1 ratio).
+    # They stay out of `timings` because the intelligence report sums that dict
+    # and prints every key as seconds; a string there raised TypeError and a
+    # ratio there was reported as a phase. Merged back into the persisted
+    # timings_json/trace, so the recorded keys are unchanged.
+    meta: dict[str, Any] = field(default_factory=dict)
 
 
 DISCOVERY_CACHE_PREFIX = "discovery"
@@ -137,6 +144,8 @@ def _discovery_from_payload(data: object) -> DiscoveryResult | None:
     angle: dict[str, Any] = angle_obj if isinstance(angle_obj, dict) else {}
     timings_obj = data.get("timings")
     timings: dict[str, Any] = timings_obj if isinstance(timings_obj, dict) else {}
+    meta_obj = data.get("meta")
+    meta: dict[str, Any] = meta_obj if isinstance(meta_obj, dict) else {}
     base_obj = data.get("base_signals")
     base_signals: dict[str, Any] = base_obj if isinstance(base_obj, dict) else {}
     return DiscoveryResult(
@@ -148,6 +157,7 @@ def _discovery_from_payload(data: object) -> DiscoveryResult | None:
         raw_scores={str(k): float(v) for k, v in raw.items() if isinstance(v, int | float)},
         angle_scores={str(k): float(v) for k, v in angle.items() if isinstance(v, int | float)},
         brief=str(data.get("brief") or ""),
+        meta={str(k): v for k, v in meta.items()},
     )
 
 
@@ -191,6 +201,7 @@ def _store_discovery_cache(result: DiscoveryResult) -> None:
             "raw_scores": result.raw_scores,
             "angle_scores": result.angle_scores,
             "timings": result.timings,
+            "meta": result.meta,
             "brief": result.brief,
         }
         set_cache(
@@ -485,6 +496,11 @@ def run_discovery(
         base_signals = signals_future.result()
         variants = variants_future.result()
 
+    # #811, before anything scores this dict: lift the deadline note out so the
+    # registry stays signals only, and nothing has to learn to skip a key that
+    # is not `make_signal()`-shaped.
+    deadline = base_signals.pop("_deadline", None) if isinstance(base_signals, dict) else None
+
     timings = {"signals_and_variants": time.perf_counter() - t0}
 
     t1 = time.perf_counter()
@@ -495,8 +511,14 @@ def run_discovery(
         candidates, channel_id, base_signals, topic, report=_report
     )
     timings["variant_scoring"] = time.perf_counter() - t1
+    meta: dict[str, Any] = {}
     if scoring_meta.get("fallback"):
-        timings["variant_scoring_fallback"] = scoring_meta["fallback"]
+        meta["variant_scoring_fallback"] = scoring_meta["fallback"]
+    # #811: which signals missed the discovery deadline. `meta`, not `timings` —
+    # the intelligence report sums that dict and prints every key as seconds (#813).
+    if deadline and deadline.get("dropped"):
+        meta["discovery_dropped"] = ", ".join(deadline["dropped"])
+        meta["discovery_deadline_s"] = float(deadline.get("budget_s") or 0.0)
 
     # Editorial ranking of the angle text, scored over the whole candidate set at once
     # (distinctness is relative), so it runs after the loop rather than inside
@@ -513,7 +535,7 @@ def run_discovery(
             seed_topic=f"{topic}. {brief}" if brief else topic,
             llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
         )
-        timings["angle_spread"] = score_spread(angle_scores)
+        meta["angle_spread"] = score_spread(angle_scores)
     except Exception as exc:
         logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
 
@@ -532,6 +554,7 @@ def run_discovery(
         raw_scores=raw_scores,
         angle_scores=angle_scores,
         timings=timings,
+        meta=meta,
         channel_id=channel_id,
         brief=brief,
     )
@@ -603,7 +626,11 @@ def _finalize_run(
         script=result.script,
         mp3_path=result.mp3_path or "",
         mp4_path=result.mp4_path or "",
-        timings={**discovery.timings, **result.timings},
+        # #813: discovery.meta holds the non-duration discovery measurements
+        # (scoring fallback, angle spread). They belong in the persisted record
+        # — timings_json already carries strings by design, e.g. length_preset —
+        # just not in the float-only dict the intelligence report sums.
+        timings={**discovery.timings, **discovery.meta, **result.timings},
         abort_reason=result.abort_reason or "",
         features=result.features or {},
     )
@@ -618,6 +645,7 @@ def _finalize_run(
             channel_id=channel_id,
             features=result.features,
             exclude_run_id=run_id,
+            composite_score=result.score,
         )
         persist_quality(run_id, quality)
     except Exception:
@@ -639,7 +667,7 @@ def _finalize_run(
             input_topic=input_topic,
             selected_topic=result.topic,
             status=status,
-            timings={**discovery.timings, **result.timings},
+            timings={**discovery.timings, **discovery.meta, **result.timings},
             signals=result.signals,
             features=result.features,
             quality=quality,

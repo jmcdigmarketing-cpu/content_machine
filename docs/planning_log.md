@@ -5038,3 +5038,159 @@ Suite **3,437 -> 3,462**. mypy **139**, unchanged. ruff and `ruff format --check
 
 Closed **#808 #805 #561 #803 #811** (+ wave 28's **#813 #814 #815 #816**). Filed open
 **#817 #818 #819 #820 #821 #822**. Next five: **#818 · #817 · #822 · #819 · #739**.
+
+---
+
+## 2026-09-20 — wave 30, measurement continued
+
+**Operator prompt, verbatim:** `refamiliarize and next 5`
+
+Two operator calls changed the list, and one operator question caught me in an error:
+asked whether I had downloaded the gameplay videos, I had not — they were already in
+`video/backgrounds/gaming/*` from a parallel session. Checking that is what exposed the
+mistake below.
+
+### Why the list differs from the recommendation
+
+Recommended: **#818 · #817 · #822 · #819 · #739**. Verifying it against the data moved
+two slots.
+
+**The finding that shaped the wave.** Three waves shipped measurements that had produced
+**zero data points**, because no run had been generated since they landed:
+
+| field | shipped | rows (of 87) |
+|---|---|---|
+| `angle_spread` / `angle_scores` | #807, wave 27 | **0** |
+| `hedge_density` | #800, wave 26 | **0** |
+| `grade_score` / `grade_components` | #808, wave 29 | **0** |
+| `style_recurrence_*` | #803, wave 29 | **0** |
+
+Most of that is recomputable from the 87 stored scripts — which became **#823** and took
+a slot. `angle_scores` is the exception: the backlog records that traces never stored the
+five variants, so it cannot be backfilled, which is why **#819 came out**. Its whole
+question is what to use instead of composite, and it names `angle_scores`; deciding that
+on 0 rows is the shape that got #50 pulled last wave.
+
+**I got #739 wrong first.** I reported "0 stock clips on disk" and called the item
+blocked a fourth time. I had looked only in `video/backgrounds/`. There are **52 stock
+clips in `assets/cache/`**, including both clips #730 names (`pexels_6265064`,
+`pexels_7005860`). Corrected before building; the item was fully measurable and always
+had been.
+
+### Shipped 1..5 (cheapest and safest first; #823 last — it writes to the real archive)
+
+1. **#817** — closed with the measurement, **no code change**. 87 runs: 38 drafted, 14
+   scheduled, 11 rendered, 24 published, but the **last 12 by id are all unpublished**.
+   Scoping to "published" makes the window older, not cleaner. Operator's call: style
+   memory is what you keep writing. The filed text was the thing that was wrong.
+2. **#818** — `coverage_line()` states all three populations (37 / 12 / 3) beside the
+   existing "collecting" line, so it reads as history rather than "publish more".
+3. **#822** — **measured before changing anything, and nothing changed.** The
+   hedged-rumor escape has fired **0 times** across 37 verified runs; one unsupported
+   rumor exists in the whole archive; hedge density is median 0.66/100w, max 5.75. The
+   filed conflict is theoretical, and moving a gate or a rubric on n=10 is guesswork.
+   What *was* wrong: `warn_only_unsupported` is shown once in `batch_review.py:253` and
+   never persisted, which is why the question cost a full replay. Now recorded as
+   `gate_waived` with a card reader.
+4. **#739** — measured over 8 fractions per clip, and the source rule **rejected**:
+
+   ```
+   gameplay  147 clips | ever 92 | ALWAYS  2 | intermittent 90 | median 0.25
+   stock      52 clips | ever  6 | ALWAYS  0 | intermittent  6 | median 0.00
+   ```
+
+   Both premises fail. `ops footage --persistence` keeps it re-checkable. It also
+   explains #730's false moves: the detector fires on a frame where the bar is present,
+   and it usually is not.
+5. **#823** — `backfill-quality`, mirroring `backfill_features`. As-of window through the
+   new `build_quality(recent=)`; carries forward what it does not own (that hazard is
+   recorded first-hand in `backfill_features` — a `--force` rebuild ate the cost ledger);
+   dry run by default. Applied on the operator's explicit call: **87 rows, measured runs
+   3 -> 12**.
+
+### Findings, with file:line
+
+- **`core/grade_calibration.py`** — **#824, the wave's worst number.** #823 gave the grade
+  correlation a population and it came back **r=-0.32 over 12 videos**, worse than
+  composite's -0.15 on the same twelve. #19 graded 79.4 and landed at p4; #17 graded 69.5
+  at p71. Both scores the pipeline ranks on are anti-correlated with engagement. At n=12,
+  |r|=0.32 is not significant — filed explicitly as "do not retune the rubric on this".
+- **`scripts/ops.py:2286`** — **#825.** `--force` was read by four verbs via
+  `getattr(args, "force", False)`, declared by none, *and* `main` set
+  `args.force = False` unconditionally after `parse_args`. Two independent reasons the
+  documented flag could not reach `backfill-cost`, `competitor-sync` or `daily-sync`.
+  Found only because I tried to re-run my own backfill with it.
+- **`core/grade_calibration.py` (self-inflicted, caught in audit)** — right after applying
+  #823 the snapshot line read **"Recorded grades: 12/12 — today's rubric reproduces every
+  one"**. Tautological: the backfill computed those grades *with* today's rubric. A claim
+  that cannot fail, created by me, in the exact shape the review checklist names. Rows are
+  now stamped `grade_backfilled` and the line says so.
+- **`core/claim_types` replay** — **#826.** Per-claim types exist from run **76** onward;
+  the 27 verified runs at id <= 75 store a flat string list. 76 of 84 unsupported claims
+  cannot be told apart by bar. Unlike #818 this is **not** backfillable — the type came
+  from the verifier's output at the time and #823 does not re-run the LLM.
+- **`assets/clip_bands._FRAME_FRACTIONS`** — two frames answers "does this clip have a
+  band", which is right for cropping and wrong for a source rule.
+
+### Deliberately not done
+
+- **Moving the render gate or the hedge penalty** (#822). The measurement says neither is
+  misfiring. Re-decide at n>=10 recorded waivers.
+- **Shipping #739's source rule.** The numbers reject it. Closed, not dropped.
+- **Retuning the rubric on #824.** r=-0.32 at n=12 is not significant. Establishing
+  whether it is noise is its own item.
+- **Backfilling `angle_scores`** (#807) or the claim types (#826). Neither is
+  reconstructible; both need new runs or a re-run verifier.
+
+### Audit
+
+Six behavioural regressions across five new test modules (`test_calibration_coverage`,
+`test_gate_waivers`, `test_band_persistence`, `test_backfill_quality`,
+`test_ops_force_flag`). **All observed failing first** — #818's four on a missing
+attribute, #822's five, #823's five on a missing module, #739's five on a missing symbol,
+#825's four including the live `unrecognized arguments: --force`.
+
+Two guards were tightened after first writing them, both because the first version could
+pass for the wrong reason: #818's weekly-report assertion initially hit the "not enough
+analytics" short-circuit and asserted nothing; #825's ratchet flagged the four `queue_*`
+switches, which are a deliberate `args.x = False`, not the bug — narrowed to "read,
+neither declared nor defaulted", which is the actual failure mode.
+
+`_pinned_window` was written, tested green, and then **deleted**: it monkeypatched
+`core.authenticity.evaluate_authenticity` from production code to pin the as-of window.
+`build_quality(recent=)` does the same job in two lines, thread-safely, and
+`evaluate_authenticity` already took `recent=` for the #630 selftest.
+
+Two ops-doc tests failed on the first full run (`docs/ops_commands.md` out of sync with
+the new verb) — regenerated with `ops command-ref`, not edited by hand. A suite run
+showed 149s against a 74s baseline; timing each new module separately (1.6 / 1.5 / 0.5 /
+2.2 s) showed none of them was the cause, and a clean re-run came back at 66s. Contention,
+not a regression — checked rather than assumed.
+
+Every new symbol traced to a production caller, then every new *field* to a reader:
+`gate_waived` / `gate_waived_count` -> `video_grade.waiver_line`; `grade_backfilled` ->
+`CalibrationRow.backfilled` -> `snapshot_line`.
+
+### Proof
+
+Suite **3,462 -> 3,487**. mypy **139**, unchanged (the two `weekly_report.py:87` errors
+are pre-existing, in `_load_rows`). ruff and `ruff format --check` clean (775 files).
+`git status --short data/` empty, including after the backfill applied. Backlog **325
+open / 734 done**, highest **#826**.
+
+```
+Quality backfill - tapin
+  87 run(s); Updated 87; skipped 0; failed 0
+
+  Recorded grades: 12/12 - all backfilled (#823), so this says nothing about rubric stability; new runs from here carry their own
+  Grade calibration: report-card vs engaged-rate r=-0.32 over 12 videos
+  Composite vs engaged-rate r=-0.15 (n=12)
+
+Bottom-band persistence (#739)
+  gameplay    147 clips | ever   92 | always    2 | intermittent   90 | median 0.25
+  stock        52 clips | ever    6 | always    0 | intermittent    6 | median 0.00
+  Gameplay bands are intermittent (only 1% always, 90 of 147 come and go) - a source rule would anchor captions for frames carrying nothing. It does not ship.
+```
+
+Closed **#817 #818 #822 #739 #823**. Filed open **#824 #825 #826**. Next five:
+**#826 · #821 · #820 · #824 · #819**.

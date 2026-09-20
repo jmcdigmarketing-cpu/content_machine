@@ -51,6 +51,9 @@ class CalibrationRow:
     # is the one it could not.
     components: dict[str, float] = field(default_factory=dict)
     regraded_components: dict[str, float] = field(default_factory=dict)
+    # #823: this grade was recomputed by today's code, not recorded by the
+    # rubric that graded the run. It cannot be evidence that the rubric held.
+    backfilled: bool = False
 
 
 @dataclass
@@ -204,6 +207,7 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
                 grade=score,
                 regraded=grade.score if recorded else None,
                 recorded=recorded,
+                backfilled=bool(quality.get("grade_backfilled")),
                 components=_recorded_components(quality) if recorded else {},
                 regraded_components={c.name: float(c.score) for c in grade.components},
                 actual_percentile=_percentile(rate, population),
@@ -281,6 +285,7 @@ def accuracy_line(channel_id: str | None = None, *, use_cache: bool = True) -> s
 def snapshot_line(report: CalibrationReport) -> str:
     """How much of the archive can answer "what did this actually score?" (#808)."""
     recorded = [r for r in report.rows if r.recorded]
+    backfilled = [r for r in recorded if r.backfilled]
     if not recorded:
         return (
             f"Recorded grades: 0/{report.measured} - every row above is re-graded with "
@@ -300,9 +305,58 @@ def snapshot_line(report: CalibrationReport) -> str:
         )
         component = worst_component_drift(worst)
         line += f", {component[0]} {component[1]:+.0f})" if component else ")"
+    elif len(backfilled) == len(recorded):
+        # Tautological otherwise: the backfill computed these with today's code.
+        line += (
+            " - all backfilled (#823), so this says nothing about rubric "
+            "stability; new runs from here carry their own"
+        )
+    elif backfilled:
+        line += (
+            f" - today's rubric reproduces every one, but {len(backfilled)} were "
+            "backfilled and cannot show drift"
+        )
     else:
         line += " - today's rubric reproduces every one"
     return line
+
+
+def coverage_line(report: CalibrationReport, *, runs_total: int | None = None) -> str:
+    """#818: why the correlation is collecting, when the reason is history.
+
+    `summary_line` says "collecting (3/5)", which reads like "publish more".
+    The actual shape on `tapin` is 87 runs, 37 with a grade, 12 with an
+    outcome, 3 with both: quality persistence landed after most of the
+    publishing did, so the overlap grows one row per *new* publish and no
+    amount of past volume helps. Empty when every measured run already carries
+    a grade - there is nothing to explain then.
+    """
+    try:
+        measured = report.composite_n  # runs with an outcome
+        both = report.measured  # runs with an outcome AND a quality dict
+        if not measured or both >= measured:
+            return ""
+        graded = _graded_row_count(report.channel_id)
+        total = f"{runs_total} runs, " if runs_total else ""
+        return (
+            f"Calibration coverage: {total}{graded} with a grade, {measured} with an outcome, "
+            f"{both} with both - the overlap is historical (quality persistence postdates most "
+            f"of the publishing) and grows one per publish, not one per past run"
+        )
+    except Exception as exc:
+        logger.debug("coverage line skipped: %s", exc)
+        return ""
+
+
+def _graded_row_count(channel_id: str) -> int:
+    """Runs carrying a non-empty `quality_json`, outcome or not."""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        runs = get_content_run_repository().list_for_channel(channel_id)
+    except Exception:
+        return 0
+    return sum(1 for r in runs if (r.quality_json or "").strip() not in ("", "{}"))
 
 
 def summary_line(report: CalibrationReport) -> str | None:

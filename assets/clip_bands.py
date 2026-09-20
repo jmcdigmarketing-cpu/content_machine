@@ -193,3 +193,102 @@ def crop_for_clip(path: str) -> tuple[float, float]:
         scale = _MAX_TOTAL_CROP / total
         top, bottom = round(top * scale, 3), round(bottom * scale, 3)
     return top, bottom
+
+
+# --- #739: is the band still there? -------------------------------------------------
+# `measure_bands` above answers "does this clip have a band" from two frames, which is
+# the right question for cropping. A *source* rule - anchor captions for the whole
+# gameplay segment, trust the stock segment - turns on a different one: is the band
+# CONSTANT. Measured over the real library (2026-09-20, 8 fractions per clip):
+#
+#     gameplay  147 clips | ever 92 | always 2 | intermittent 90 | median rate 0.25
+#     stock      52 clips | ever  6 | always 0 | intermittent  6 | median rate 0.00
+#
+# Both of the rule's premises fail. Gameplay HUDs are not near-constant, so anchoring
+# the whole segment costs picture in the ~75% of frames carrying nothing; and stock is
+# not reliably clean either. #739's source rule does not ship. This stays so the answer
+# is re-checkable as the library grows, rather than re-derived a fourth time.
+_PERSISTENCE_FRACTIONS = (0.08, 0.2, 0.33, 0.45, 0.58, 0.7, 0.82, 0.93)
+
+
+def band_persistence(path: str, *, fractions: tuple[float, ...] | None = None) -> dict[str, Any]:
+    """How often a band is present across one clip, not merely whether it ever is.
+
+    `bottom_rate` is None when no frame could be decoded — unknown, never "clean".
+    """
+    from core.hud_detect import _load_frame_at
+
+    try:
+        from assets.clip_ingest import _probe_duration
+
+        span = float(_probe_duration(path) or 0.0)
+    except Exception as exc:
+        logger.debug("persistence duration probe skipped: %s", exc)
+        span = 0.0
+
+    seen = bottom = top = 0
+    for fraction in fractions or _PERSISTENCE_FRACTIONS:
+        try:
+            frame = _load_frame_at(path, span * fraction if span else 0.0)
+        except Exception as exc:
+            logger.debug("persistence frame skipped (%s): %s", path, exc)
+            frame = None
+        if frame is None:
+            continue
+        seen += 1
+        if _band_share(frame, top=False) > 0:
+            bottom += 1
+        if _band_share(frame, top=True) > 0:
+            top += 1
+    return {
+        "path": path,
+        "frames": seen,
+        "bottom_hits": bottom,
+        "top_hits": top,
+        "bottom_rate": round(bottom / seen, 3) if seen else None,
+        "top_rate": round(top / seen, 3) if seen else None,
+    }
+
+
+def summarize_persistence(name: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Fold per-clip readings into the four numbers the decision needs."""
+    usable = [r for r in rows if r.get("bottom_rate") is not None]
+    rates = [float(r["bottom_rate"]) for r in usable]
+    return {
+        "name": name,
+        "clips": len(usable),
+        "unreadable": len(rows) - len(usable),
+        "ever": sum(1 for r in usable if r["bottom_rate"] > 0),
+        "always": sum(1 for r in usable if r["bottom_rate"] >= 1.0),
+        "intermittent": sum(1 for r in usable if 0 < r["bottom_rate"] < 1.0),
+        "median_rate": round(_median(rates), 3) if rates else None,
+    }
+
+
+def render_persistence(summaries: list[dict[str, Any]]) -> str:
+    """One table, plus the verdict a source rule (#739) turns on."""
+    lines = ["Bottom-band persistence (#739)", "=" * 72]
+    for s in summaries:
+        rate = "n/a" if s["median_rate"] is None else f"{s['median_rate']:.2f}"
+        lines.append(
+            f"  {s['name']:<10} {s['clips']:>4} clips | ever {s['ever']:>4} | "
+            f"always {s['always']:>4} | intermittent {s['intermittent']:>4} | median {rate}"
+        )
+        if s["unreadable"]:
+            lines.append(f"  {'':<10} ({s['unreadable']} clip(s) would not decode)")
+    lines.append("-" * 72)
+    gameplay = next((s for s in summaries if s["name"] == "gameplay"), None)
+    if gameplay and gameplay["clips"]:
+        constant = gameplay["always"] / gameplay["clips"]
+        if constant >= 0.8:
+            lines.append(
+                f"  Gameplay bands are near-constant ({constant:.0%} always) - a source rule "
+                "needs no detector."
+            )
+        else:
+            lines.append(
+                f"  Gameplay bands are intermittent (only {constant:.0%} always, "
+                f"{gameplay['intermittent']} of {gameplay['clips']} come and go) - a source "
+                "rule would anchor captions for frames carrying nothing. It does not ship."
+            )
+    return "\n".join(lines)

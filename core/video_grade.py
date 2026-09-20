@@ -471,6 +471,30 @@ def recurrence_line(quality: dict[str, Any] | None) -> str:
     return f"style: the same {which} shape appears in {count}/{total} recent scripts"
 
 
+def waiver_line(quality: dict[str, Any] | None) -> str:
+    """#822: which unsupported claims the gate let through, and on what bar.
+
+    A hedged rumor passes #345's bar and then costs #800 grade points, so the
+    operator sees a lower grade rather than a block. Naming the waiver beside
+    the hedge density is what makes that trade visible instead of inferred.
+    """
+    row = quality or {}
+    if not int(row.get("gate_waived_count") or 0):
+        return ""
+    waived = row.get("gate_waived") or []
+    kinds = [str(w.get("type") or "untyped") for w in waived if isinstance(w, dict)]
+    hedged = sum(1 for w in waived if isinstance(w, dict) and w.get("hedged"))
+    line = f"gate waived {int(row['gate_waived_count'])} unsupported claim(s)"
+    if kinds:
+        line += f" ({', '.join(sorted(set(kinds)))})"
+    if hedged:
+        density = row.get("hedge_density")
+        line += f"; {hedged} passed on hedging"
+        if isinstance(density, int | float):
+            line += f" at {float(density):.2f} hedges/100w"
+    return line
+
+
 def _accuracy_lines(channel_id: str | None) -> list[str]:
     """#805 / #561 — how often the card and the loop have been right, or nothing."""
     lines: list[str] = []
@@ -501,9 +525,10 @@ def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
             print_fn("")
             for line in render_grade(grade).splitlines():
                 print_fn(f"  {line}")
-            style = recurrence_line(_quality_of(record))
-            if style:
-                print_fn(f"      {style}")
+            persisted = _quality_of(record)
+            for extra in (waiver_line(persisted), recurrence_line(persisted)):
+                if extra:
+                    print_fn(f"      {extra}")
             # #805 / #561: the card's own track record, printed under it rather
             # than inside `render_grade` — that stays pure, and `ops grade`
             # renders it too without paying for the analytics join.

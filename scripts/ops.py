@@ -336,6 +336,16 @@ def cmd_backfill_features(args: argparse.Namespace) -> int:
     return _run_module("analytics.backfill_features", "--channel", args.channel)
 
 
+@_register("backfill-quality", "Recompute grade/hedge/style fields on historical runs (#823)")
+def cmd_backfill_quality(args: argparse.Namespace) -> int:
+    extra = ["--channel", args.channel]
+    if getattr(args, "apply", False):
+        extra.append("--apply")
+    if getattr(args, "force", False):
+        extra.append("--force")
+    return _run_module("analytics.backfill_quality", *extra)
+
+
 @_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
 def cmd_backfill_cost(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]
@@ -1085,6 +1095,14 @@ def cmd_playlists(args: argparse.Namespace) -> int:
 )
 def cmd_footage(args: argparse.Namespace) -> int:
     from assets.clip_ingest import footage_coverage, measure_library, render_coverage
+
+    if getattr(args, "persistence", False):
+        # #739: is the band CONSTANT, not merely present. Slow (8 decodes/clip),
+        # so it is its own flag rather than part of --apply.
+        from assets.clip_ingest import library_persistence
+
+        print(library_persistence())
+        return 0
 
     if getattr(args, "apply", False):
         tally = measure_library(force=bool(getattr(args, "force", False)))
@@ -2030,7 +2048,8 @@ def cmd_experiment(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv=None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """The operator CLI's parser, separated from `main` so the flag set is testable."""
     parser = argparse.ArgumentParser(
         description="Content OS operator commands (individual or batch)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2153,6 +2172,11 @@ def main(argv=None) -> int:
         ),
     )
     parser.add_argument(
+        "--persistence",
+        action="store_true",
+        help="footage: how often a band is present per clip, gameplay vs stock (#739)",
+    )
+    parser.add_argument(
         "--seconds",
         type=float,
         default=0.0,
@@ -2255,12 +2279,28 @@ def main(argv=None) -> int:
         default="",
         help="mutate-gates: only targets whose module.function contains this text",
     )
+    # `--force` is read by backfill-quality, backfill-cost, competitor-sync and
+    # daily-sync. It was never declared, so argparse rejected it at the top
+    # level, and the line below then set it to False unconditionally - two
+    # independent reasons the documented flag could not reach any of them.
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "backfill-quality / backfill-cost / competitor-sync / daily-sync: "
+            "recompute or refetch rows that are already populated"
+        ),
+    )
+    return parser
+
+
+def main(argv=None) -> int:
+    parser = build_parser()
     args = parser.parse_args(argv)
     args.queue_upload = False
     args.queue_requeue = False
     args.queue_reset = False
     args.queue_schedule = False
-    args.force = False
 
     try:
         from core.human_presence import maybe_touch_ops

@@ -608,3 +608,39 @@ def render_ingest(result: IngestResult) -> str:
         folder = os.path.basename(os.path.dirname(dest)) if dest else ""
         lines.append(f"  {row.status:<9} {os.path.basename(row.source)} -> {folder}/")
     return "\n".join(lines)
+
+
+_STOCK_CACHE_DIR = os.path.join("assets", "cache")
+
+
+def library_persistence(*, library_root: str | None = None, stock_root: str | None = None) -> str:
+    """#739: bottom-band persistence across gameplay vs stock, as one table.
+
+    Gameplay is the local library; stock is the Pexels cache the hybrid concat
+    pulls its second segment from. Slow - eight frame decodes per clip - and
+    read-only: nothing is written to the clip index.
+    """
+    from assets.clip_bands import band_persistence, render_persistence, summarize_persistence
+
+    gameplay_root = library_root if library_root is not None else BASE_VIDEO_DIR
+    stock_dir = stock_root if stock_root is not None else _STOCK_CACHE_DIR
+
+    gameplay: list[str] = []
+    for folder in _library_folders(gameplay_root):
+        for entry in sorted(os.listdir(folder)):
+            if entry.lower().endswith(_VIDEO_EXTS):
+                gameplay.append(os.path.join(folder, entry))
+
+    stock: list[str] = []
+    if os.path.isdir(stock_dir):
+        stock = [
+            os.path.join(stock_dir, e)
+            for e in sorted(os.listdir(stock_dir))
+            if e.lower().endswith(_VIDEO_EXTS)
+        ]
+
+    summaries = [
+        summarize_persistence(name, [band_persistence(p) for p in paths])
+        for name, paths in (("gameplay", gameplay), ("stock", stock))
+    ]
+    return render_persistence(summaries)

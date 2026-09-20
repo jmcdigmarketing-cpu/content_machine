@@ -111,6 +111,7 @@ def build_quality(
     features: dict[str, Any] | None = None,
     exclude_run_id: int | None = None,
     composite_score: float | None = None,
+    recent: list[str] | None = None,
 ) -> dict[str, Any]:
     """Score a finished script on the existing quality axes (pure reads, fail-open)."""
     features = features or {}
@@ -151,6 +152,10 @@ def build_quality(
             channel_id,
             fact_count=int(features.get("key_facts_count") or 0),
             exclude_run_id=exclude_run_id,
+            # #823: the backfill pins an as-of window here so a historical run
+            # is never compared against runs that postdate it. None (every live
+            # caller) loads the channel's recent uploads exactly as before.
+            recent=recent,
         )
         quality["authenticity_score"] = auth.score
         quality["authenticity_gate_score"] = int(auth.gate_score)
@@ -251,6 +256,24 @@ def build_quality(
         # Candidate 322: a hedged run scores like a clean one, because the rate above
         # is measured after the rewrite pass restated the unsupported claims as
         # attributed speculation. Keep what the script asserted before that.
+        # #822: the gate lets a hedged rumor and a number-free opinion through
+        # (#345). `warn_only_unsupported` showed that once in batch-review and
+        # nothing kept it, so "how often does the hedge bar decide a render?"
+        # cost a full archive replay and was still unanswerable for the 27 runs
+        # that predate the taxonomy. Record the waiver at the point it happens.
+        try:
+            from core.claim_types import claim_blocks, is_hedged, typed_unsupported
+
+            waived = [
+                {"claim": claim[:200], "type": claim_type, "hedged": is_hedged(claim)}
+                for claim, claim_type in typed_unsupported(verification)
+                if not claim_blocks(claim, claim_type)
+            ]
+            if waived:
+                quality["gate_waived"] = waived[:8]
+                quality["gate_waived_count"] = len(waived)
+        except Exception as exc:
+            logger.debug("gate waiver record skipped: %s", exc)
         if verification.get("rewritten"):
             quality["claims_rewritten"] = True
             quality["pre_rewrite_unsupported_count"] = int(

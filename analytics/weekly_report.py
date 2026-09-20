@@ -244,11 +244,16 @@ def format_report(report: dict[str, Any]) -> str:
 
     # Pillar 2 calibration: is the pre-publish report card predictive yet?
     try:
-        from core.grade_calibration import build_calibration, summary_line
+        from core.grade_calibration import build_calibration, coverage_line, summary_line
 
-        calibration = summary_line(build_calibration(report["channel_id"]))
+        built = build_calibration(report["channel_id"])
+        calibration = summary_line(built)
         if calibration:
             lines.append(f"  {calibration}")
+        # #818: "collecting" reads like a volume problem; it is a history one.
+        coverage = coverage_line(built, runs_total=len(report.get("rows") or []) or None)
+        if coverage:
+            lines.append(f"  {coverage}")
     except Exception as exc:
         logger.debug("build_calibration skipped: %s", exc)
 

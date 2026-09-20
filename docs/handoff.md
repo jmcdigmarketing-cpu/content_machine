@@ -51,69 +51,63 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-20 · **HEAD at write:** `4324373` (wave 29 + wave 28 committing now) ·
-**Tree:** one commit, both waves — the operator's call, not two.
+**Written:** 2026-09-20 · **HEAD at write:** `096c13b` (wave 30 committing now) ·
+**Tree:** clean but for the three footage folders, which stay yours.
 
 **Defects first:**
-- **#819 composite does not predict engagement: r=-0.15 over 12 publishes.** First real
-  measurement, out of #805. The backlog asserted "uncorrelated" from a 40% hit rate; this is
-  the correlation and it is faintly *negative*. Every tie broken on composite is a coin flip.
-  `angle_scores` (#807) is the named successor and is itself unvalidated. Biggest open thing.
-- **#822 hedging passes the render gate and only costs grade points.** #345 lets an
-  unsupported rumor through *if hedged*; #800 then docks the grade per hedge. The cheapest
-  route past the hard gate is what the soft score punishes. Your standing note, now filed.
-- **#818 calibration is starved by history, not volume.** 37 rows have a grade, 12 an outcome,
-  **3** both; `ops calibration` reads "collecting" for months and that is not a bug. And
-  **#803's filed text was wrong** (rewritten): `core/authenticity.py:35` has always been
-  `_RECENT_RUNS = 12`, never "one script deep".
+- **#824 the report card is anti-predictive: grade vs engaged-rate r=-0.32, n=12.** Worse
+  than composite's -0.15 (#819), same twelve videos. #19 graded 79.4 -> p4; #17 graded 69.5
+  -> p71. **Both scores the pipeline ranks on are anti-correlated with engagement.** At n=12
+  this is not significant - filed explicitly as *do not retune the rubric on it*.
+- **#825 `--force` was read by four ops verbs and reachable by none.** Never declared, *and*
+  `main` set `args.force = False` after `parse_args`. `backfill-cost`, `competitor-sync` and
+  `daily-sync` have therefore never actually been force-run. Fixed, with a ratchet.
+- **#826 per-claim types exist only from run 76 on**; 27 verified runs store a flat list, so
+  76 of 84 unsupported claims cannot be told apart by bar. Unlike #818 this is **not**
+  backfillable - #823 does not re-run the verifier.
+- **Self-inflicted, caught in audit:** after applying #823 the snapshot line read "today's
+  rubric reproduces every one" - tautological, since the backfill computed those with today's
+  rubric. Rows now stamped `grade_backfilled`.
 
-**Yours to call, Cursor:** **#817** the recurrence pass reads all statuses; the item said
-*published*, and narrowing `_recent_scripts` also narrows the similarity **gate**. **#820**
-#811's `shutdown(wait=False)` abandons the straggler's thread — same trade you took on #802.
-**#821** recurrence is report-only, no `GRADE_VERSION` bump. Untouched: footage folders,
-igdb/steam 1/33.
+**Two items closed with no behaviour change, on purpose.** **#822** - the hedged-rumor escape
+has fired **0 times** in 37 verified runs, so neither the gate nor the hedge penalty moved; the
+waiver is recorded instead, re-decide at n>=10. **#739** - measured at last (gameplay 147 clips,
+ALWAYS **2**, intermittent 90, median 0.25; stock 52, ALWAYS 0, ever 6): both premises fail and
+the source rule **does not ship**. It also explains #730's false moves. **#817** closed because
+its filed text was wrong, not its code.
 
-**Watch for:** `with ThreadPoolExecutor(...)` joins on `__exit__`, so #811 drives the pool
-explicitly; two fake pools (`test_wave8`, `test_wave9`) broke honestly on it.
-`DISCOVERY_DEADLINE_S` is **unset by default**.
+**Heads-up:** I ran `ops backfill-quality --apply` on the operator's explicit call - **87 tapin
+rows rewritten**, measured runs 3 -> 12. Re-runnable with `--force`. `ops footage --persistence`
+is new and slow (8 decodes/clip).
 
-Suite **3,437 -> 3,462**; mypy **139** (drifted to 141 behind a green suite, back now); ruff
-clean; `data/` untouched. Backlog **326 open / 729 done**, highest **#822**. Next five:
-**#818 · #817 · #822 · #819 · #739**.
+Suite **3,462 -> 3,487**; mypy **139**; ruff clean; `data/` untouched. Backlog **325 open / 734
+done**, highest **#826**. Next five: **#826 · #821 · #820 · #824 · #819**.
 
 ## Slot — Cursor
 
-**Written:** 2026-09-20 · **HEAD at write:** `8f141c4` · **Tree:** wave 27 committing.
+**Written:** 2026-09-20 · **HEAD at write:** `096c13b` · **Tree:** footage intake only;
+do not commit Claude's uncommitted calibration/clip-band files.
 
 **Defects first:**
-- **igdb 1/33 and steam 1/33 stay registered.** #810 retired the true zeros only;
-  the known-gap test documents current behaviour. A second empty window, or an
-  operator call, would close it. Not silently treated as §19 zero.
-- **#345 still lets a hedged rumor through the render gate.** Wave 26 #800 is
-  grade-only; this wave did not touch it.
-- **TTS cache is on with nothing in it yet.** First live synth still has to
-  populate `data/tts_cache`. Suite pin stays `TTS_CACHE=false`.
-- **Hung brief/scoring workers are abandoned, not killed.** `shutdown(wait=False)`
-  returns; the thread may still run until the provider finishes. The operator
-  sees the fallback, not a 138 s / 185 s stall.
-- **Untracked footage folders are not this commit:**
-  `video/backgrounds/gaming/{multiplayer games,open world,other}/`. Operator
-  intake from a parallel Cursor session; `footage-add` licence-file covering a
-  mixed GTA folder is still a live footgun if those files are committed later.
+- **`footage-add` still overwrites the folder `license` string.** Fortnite (32 owned)
+  and Marvel Rivals (16 owned) would have been labelled third-party. Mixed yaml
+  rewritten after import (GTA V pattern). Same footgun on the next mixed folder.
+- **Pinned `yt-dlp==2026.6.9` 403s YouTube DASH.** Probe worked; download needed a
+  temp 2026.8.19 extractor. Pin unchanged.
+- **Twitch, Football, AI still empty.** This batch did not fill them.
 
-**Shipped #806 #807 #810 #812 #802.** Reject `n` then
-`Why? [pace / facts / angle / hook / topic / other]:` → `review.reason`.
-`score_spread` on recorded angle fixtures. tapology/stats_context/tvmaze/tmdb
-retired (modules kept). Overnight retention line, published mp4+sidecars
-exempt, apply env-gated. Brief deadline 30 s / scoring deadline 15 s.
+**Intake (7/7 gameplay, muted 1080p H.264, not committed):**
+Forza Horizon 5 `flUiLwMaiOU` CC-BY; Fortnite `Am18G4IDNnM` CC-BY mixed;
+Steep `EnGiQrWBrko` CC-BY; Mario Kart 8 `npz4T7sznog` title-claims reuse;
+CSGO `QnA_YwbRZ2k`+`OikR-0gh8QE` title-claims reuse; Marvel Rivals
+`stsnPWyDSLE` CC-BY mixed. `ops footage --channel tapin`: Marvel Rivals 17,
+Fortnite 33 on disk. New folders are umbrella-only.
 
 **Operator paste:**
 ```
-Why? [pace / facts / angle / hook / topic / other]:
-Signals retired: stats_context, tapology, tmdb, trendingnow, tvmaze
+Footage per playlist niche ...
+  Marvel Rivals    Marvel Rivals (17 clips, ...)
+  Twitch           NO FOOTAGE
+  Football         NO FOOTAGE
+  AI Development   NO FOOTAGE
 ```
-
-**Next five:** **#808 · #811 · #803 · #805 · #50**.
-
-Suite **3,406 -> 3,425**; mypy **139**; ruff clean; `data/` untouched. Backlog
-**325 open / 720 done**, highest **#811**.

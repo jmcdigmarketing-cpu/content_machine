@@ -24,14 +24,15 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-20 wave 29 (measurement): **#808** the grade is recorded beside the
-inputs that produced it, so a re-grade is measurable instead of silent · **#805** the card prints
-its own accuracy - **composite vs engaged-rate r=-0.15 over 12 publishes**, the first real number
-on the score the selection path leans on · **#561** the recommender's 40% hit rate over 10
-publishes, printed beside its advice · **#803** a repeated opener is flagged even when no single
-pair trips the similarity limit (the filed premise was wrong - see the item) · **#811**
-`DISCOVERY_DEADLINE_S` stops the run blocking on its slowest signal. Wave 28's review fixes
-(**#813 #814 #815 #816**) are in the same commit.
+**Just landed** - 2026-09-20 wave 30 (measurement, continued): **#823** the archive finally
+carries the fields three waves added - `backfill-quality` recomputed 87 rows with an as-of
+window, taking measured runs **3 -> 12** · **#824** which immediately produced the wave's worst
+number: **report card vs engaged-rate r=-0.32**, anti-predictive on every measured publish ·
+**#822** measured before changing anything and **neither layer moved** - the hedged-rumor escape
+has fired **0 times**; the waiver is now recorded instead · **#739** measured and the source rule
+**rejected** - gameplay bands are intermittent (2 of 147 constant, median 0.25) and stock is not
+clean (6 of 52) · **#818** the coverage line · **#817** settled by measurement, no code change ·
+**#825** `--force` was unreachable on four ops verbs.
 
 **Previously** - wave 27 (operator loop + resource waste) **#806 #807 #810 #812 #802**; wave 26
 (script quality) **#799** rewrite ledger · **#800** hedge density (closes §25) · **#801** intent
@@ -42,42 +43,47 @@ v4, gate still binary); wave 25 (documentation) [engine_upgrades.md](engine_upgr
 
 ### Recommended next five (non-app)
 
-**Operator, 2026-09-20:** [engine_upgrades.md](engine_upgrades.md)'s list is **exhausted** -
-#799-#812 are all closed. The list below is what wave 29's measurements turned up, plus the one
-standing defect both agents have circled. Volume framing is unchanged - a long video is 1-2 a
-month; the 3-5/week target is Shorts.
+**Operator, 2026-09-20:** two waves of measurement have now produced three numbers that all
+point the same way, and the list below follows them rather than the feature backlog. Volume
+framing is unchanged - a long video is 1-2 a month; the 3-5/week target is Shorts.
 
-**#50 was pulled from this list and is now data-gated.** "Scripts that actually retained" means
-runs carrying both a `quality_json` and a synced engaged-rate, and `tapin` has three. #561 took
-the slot.
+**Both scores the pipeline ranks on are anti-correlated with engagement** on the only data that
+exists: composite **r=-0.15**, report card **r=-0.32**, same 12 videos. That is now the subject
+of the list, not a footnote in it.
 
-1. **#818 explain the collecting gap** `[S]` - 37 rows have a grade, 12 have an outcome, 3 have
-   both. `ops calibration` will read "collecting" for months and the reason is history, not
-   volume. One weekly-report line so it is not re-discovered.
-2. **#817 which window the recurrence pass reads** `[S]` - #803 ships against the last 12 runs of
-   any status; the item said *published*. Narrowing it also narrows the existing similarity gate,
-   so it is a decision, not a patch.
-3. **#822 hedging passes the gate and only costs grade points** `[M]` - #345 lets a hedged rumor
-   through; #800 then docks the grade for hedging. The cheapest route past the hard gate is what
-   the soft score punishes. Decide which layer owns it.
-4. **#819 what the selection tie should lean on** `[L]` - composite is r=-0.15 against engagement
-   over every measured publish. Until that is positive, a tie broken by composite is a coin flip.
-   `angle_scores` (#807) is the candidate and is itself unvalidated.
-5. **#739 place captions by footage source, not by pixels** `[M]` - unchanged from the dropped
-   list, and now the largest output-quality item with a clear measurement path.
+1. **#826 say what the taxonomy actually covers** `[S]` - 10 of 37 verified runs carry per-claim
+   types; the other 27 predate #345 and are **not** backfillable. Report coverage beside the
+   verdicts so it is not mistaken for accuracy.
+2. **#821 promote style recurrence into the grade, or say why not** `[M]` - held last wave on
+   "no data to calibrate the floor". #823 supplied it: the recurrence fields now exist on 87
+   rows. Check the 0.50 floor and the count of 3 against the archive before moving the rubric.
+3. **#820 stop paying for a dropped signal** `[S]` - #811's `shutdown(wait=False)` abandons the
+   straggler's thread, which still spends its API call and its Apify credit. Cheap to bound now
+   that the deadline exists.
+4. **#824 why is the report card anti-predictive** `[L]` - r=-0.32 at n=12 is not significant,
+   so **do not retune the rubric on it**. Establish whether it is noise: re-measure per
+   component, and decide what n would settle it.
+5. **#819 what the selection tie should lean on** `[L]` - now covers the grade as well as the
+   composite. Still needs `angle_scores`, which has 0 recorded values and cannot be backfilled -
+   it unblocks after a handful of new runs, which is the strongest argument for generating some.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first
 live TTS run, check that `ops reliability` reports TTS-cache hits rather than `0/3`.
 `ARTIFACT_RETENTION_APPLY` stays unset unless you want overnight to delete.
 
-**Dropped from this list** (stay open): **#821** (held on #818's dataset) · **#730** (operator
-call) · **#728** (no clip) · **#628** · **#731** · Phase M · Ollama.
+**Dropped from this list** (stay open): **#730** (operator call) · **#728** (no clip) ·
+**#628** · **#731** · Phase M · Ollama. **#739 is closed, not dropped** - measured and rejected.
+
+**Closed 2026-09-20 (wave 30):** **#817 #818 #822 #739 #823**. Filed open: **#824 #825 #826**.
+Two items closed *without* a behaviour change because the measurement said not to (#822, #739);
+#817 closed because its filed text was wrong. `ops backfill-quality` applied on the operator's
+call - 87 rows, and backfilled grades are stamped so calibration cannot read them as evidence
+the rubric held.
 
 **Closed 2026-09-20 (wave 29):** **#808 #805 #561 #803 #811**, plus wave 28's **#813 #814 #815
-#816**. Filed open: **#817 #818 #819 #820 #821 #822**. `QUALITY_VERSION` v3 -> v4;
-**`GRADE_VERSION` unchanged at v4** - no component moved. `DISCOVERY_DEADLINE_S` is unset by
-default. Style recurrence is report-only (#821).
+#816**. `QUALITY_VERSION` v3 -> v4; **`GRADE_VERSION` unchanged at v4**. `DISCOVERY_DEADLINE_S`
+unset by default. Style recurrence report-only (#821).
 
 **Closed 2026-09-20 (wave 27):** **#806 #807 #810 #812 #802**. igdb/steam 1/33 is a documented
 known gap, not a §19 zero. Hedge density remains grade-only. Authenticity gate stays binary.

@@ -7,6 +7,7 @@ Runs after variant selection, before content generation. Cached by topic+channel
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -27,6 +28,27 @@ _CACHE_TTL = 60 * 60 * 3
 _USE_LLM = os.getenv("RESEARCH_BRIEF_LLM", "1").lower() not in ("0", "false", "no")
 
 
+def _positive_deadline_s(name: str, default: float) -> float | None:
+    raw = os.getenv(name)
+    if raw is None or str(raw).strip() == "":
+        return default
+    text = str(raw).strip().lower()
+    if text in ("off", "false", "no"):
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return default
+    if value <= 0:
+        return None
+    return value
+
+
+def research_brief_deadline_s() -> float | None:
+    """Wall-clock budget for `_build_with_llm`. None = wait forever."""
+    return _positive_deadline_s("RESEARCH_BRIEF_DEADLINE_S", 30.0)
+
+
 @dataclass
 class ResearchBrief:
     version: str = BRIEF_VERSION
@@ -44,6 +66,7 @@ class ResearchBrief:
     competitor_pulse: str = ""
     stats_lines: list[str] = field(default_factory=list)
     raw_fallback: str = ""
+    fallback_reason: str = ""
 
     def to_prompt_block(self) -> str:
         from core.angle_intent import CALM_INTENTS
@@ -227,6 +250,60 @@ Return JSON only:
         return None
 
 
+def _build_with_llm_deadline(
+    topic: str,
+    signals: dict[str, Any],
+    *,
+    rss: dict[str, Any],
+    channel_id: str,
+    competitor_block: str = "",
+    stats_lines: list[str] | None = None,
+    seed_topic: str = "",
+    intent: str = "",
+) -> tuple[ResearchBrief | None, bool]:
+    """Run `_build_with_llm` under RESEARCH_BRIEF_DEADLINE_S.
+
+    Returns (brief, timed_out). A hung provider is abandoned — the worker
+    thread is not joined — so the operator gets the heuristic fallback instead
+    of waiting out the 138 s tail.
+    """
+    deadline = research_brief_deadline_s()
+    if deadline is None:
+        return (
+            _build_with_llm(
+                topic,
+                signals,
+                rss=rss,
+                channel_id=channel_id,
+                competitor_block=competitor_block,
+                stats_lines=stats_lines,
+                seed_topic=seed_topic,
+                intent=intent,
+            ),
+            False,
+        )
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(
+            _build_with_llm,
+            topic,
+            signals,
+            rss=rss,
+            channel_id=channel_id,
+            competitor_block=competitor_block,
+            stats_lines=stats_lines,
+            seed_topic=seed_topic,
+            intent=intent,
+        )
+        try:
+            return future.result(timeout=deadline), False
+        except TimeoutError:
+            logger.info("Research brief deadline %.1fs — using fallback", deadline)
+            return None, True
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+
 def build_research_brief(
     topic: str,
     signals: dict[str, Any],
@@ -274,8 +351,9 @@ def build_research_brief(
             stats_lines = list(sc["data"].get("lines") or [])[:10]
 
     brief = None
+    timed_out = False
     if _USE_LLM:
-        brief = _build_with_llm(
+        brief, timed_out = _build_with_llm_deadline(
             topic,
             signals,
             rss=rss,
@@ -294,6 +372,10 @@ def build_research_brief(
         brief.community_summary = community_summary
         brief.competitor_pulse = competitor_block
         brief.stats_lines = stats_lines
+        if timed_out:
+            brief.fallback_reason = "deadline"
+        elif _USE_LLM:
+            brief.fallback_reason = "llm"
 
     set_cache(cache_key, brief.to_dict(), ttl_seconds=_CACHE_TTL)
     return brief

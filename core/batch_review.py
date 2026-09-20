@@ -161,6 +161,20 @@ def _render(draft: PendingDraft, override: bool) -> bool:
     return True
 
 
+_REJECTION_REASONS = ("pace", "facts", "angle", "hook", "topic", "other")
+_REJECTION_INITIALS = {name[0]: name for name in _REJECTION_REASONS}
+
+
+def normalize_rejection_reason(raw: str) -> str:
+    """Map a one-keystroke or word answer onto the closed reason set."""
+    token = (raw or "").strip().lower()
+    if token in _REJECTION_REASONS:
+        return token
+    if token in _REJECTION_INITIALS:
+        return _REJECTION_INITIALS[token]
+    return "other"
+
+
 _NEWS_WINDOW_DAYS = 2.0
 _EVERGREEN_WINDOW_DAYS = 7.0
 _NEWS_DOMAINS = frozenset({"ufc", "mma", "nba", "nfl", "mlb", "nhl", "sports"})
@@ -278,7 +292,10 @@ def review_drafts(
         if answer == "q":
             break
         if answer == "n":
-            _write_review(draft, decision="rejected")
+            typed = ask("  Why? [pace / facts / angle / hook / topic / other]: ")
+            reason = normalize_rejection_reason(typed)
+            _write_review(draft, decision="rejected", reason=reason)
+            print_fn(f"    rejected ({reason})")
             summary.rejected.append(draft.run_id)
             continue
         if answer != "y":

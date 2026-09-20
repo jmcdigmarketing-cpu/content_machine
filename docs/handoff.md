@@ -82,25 +82,39 @@ against an older note, re-run `py -m scripts.ops roadmap-index` rather than trus
 
 ## Slot — Cursor
 
-**Written:** 2026-09-20 · **HEAD at write:** `29ae92d` · **Tree:** wave 26 committing.
+**Written:** 2026-09-20 · **HEAD at write:** `8f141c4` · **Tree:** wave 27 committing.
 
 **Defects first:**
-- **TTS cache is on with nothing in it yet.** Live `ops reliability` printed
-  `TTS cache: on, 0 file(s), 0/3 hits (0%)`. The polarity flipped; the first live
-  synth has to populate `data/tts_cache` before spend moves. Suite pin stays
-  `TTS_CACHE=false`. A bare `discover -s tests` (no `-t .`) can now write that
-  directory the same way it already can write other stores.
-- **#345 still lets a hedged rumor through the render gate.** #800 is grade-only.
-- **#50 is still the next authenticity input.** Wave 26 stopped the 100/100 ceiling;
-  it did not add learned insight markers.
+- **igdb 1/33 and steam 1/33 stay registered.** #810 retired the true zeros only;
+  the known-gap test documents current behaviour. A second empty window, or an
+  operator call, would close it. Not silently treated as §19 zero.
+- **#345 still lets a hedged rumor through the render gate.** Wave 26 #800 is
+  grade-only; this wave did not touch it.
+- **TTS cache is on with nothing in it yet.** First live synth still has to
+  populate `data/tts_cache`. Suite pin stays `TTS_CACHE=false`.
+- **Hung brief/scoring workers are abandoned, not killed.** `shutdown(wait=False)`
+  returns; the thread may still run until the provider finishes. The operator
+  sees the fallback, not a 138 s / 185 s stall.
+- **Untracked footage folders are not this commit:**
+  `video/backgrounds/gaming/{multiplayer games,open world,other}/`. Operator
+  intake from a parallel Cursor session; `footage-add` licence-file covering a
+  mixed GTA folder is still a live footgun if those files are committed later.
 
-**Shipped #799 #800 #801 #809 #804.** Rewrite ledger on the card; hedge density
-drops grounding (closes §25); intent replay on the 38 recorded topics; TTS cache
-default-on; authenticity `points` continuous, gate still binary, `GRADE_VERSION`
-**v4** (historical letters re-grade). `_WEIGHTS` untouched.
+**Shipped #806 #807 #810 #812 #802.** Reject `n` then
+`Why? [pace / facts / angle / hook / topic / other]:` → `review.reason`.
+`score_spread` on recorded angle fixtures. tapology/stats_context/tvmaze/tmdb
+retired (modules kept). Overnight retention line, published mp4+sidecars
+exempt, apply env-gated. Brief deadline 30 s / scoring deadline 15 s.
 
-**Next five:** **#806 · #807 · #810 · #812 · #802**.
+**Operator paste:**
+```
+Why? [pace / facts / angle / hook / topic / other]:
+Signals retired: stats_context, tapology, tmdb, trendingnow, tvmaze
+```
 
-Suite **3,381 -> 3,406**; mypy **139**; ruff clean; `data/` untouched. Backlog
-**330 open / 715 done**, highest **#812**.
+**Next five:** **#808 · #811 · #803 · #805 · #50**.
+
+Suite **3,406 -> 3,425**; mypy **139**; ruff clean; `data/` untouched. Backlog
+**325 open / 720 done**, highest **#811**.
+
 

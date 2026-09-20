@@ -11,6 +11,40 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-20 (Cursor) - wave 27: operator loop + resource waste
+
+Operator: "next 5". Locked **#806 #807 #810 #812 #802**. TDD: each new test failed on
+unmodified `8f141c4` first. Did not ship **#811 #803 #805 #808**. Hedge density stays
+grade-only. Authenticity gate stays binary. Overnight stays render-free. Retention apply
+stays off unless `ARTIFACT_RETENTION_APPLY` is set.
+
+**Shipped:**
+1. **#806** `n` then `Why? [pace / facts / angle / hook / topic / other]:`. Writes
+   `review.reason`. Empty/xyz → `other`. Enter=later stays reason-free. Fail-first was
+   KeyError `'reason'`.
+2. **#807** `score_spread` = max−min of `rank_angles`. Pipeline `timings.angle_spread`.
+   Menu `angle_breaks_it`. RUN76 / RUN72 / NBA/Marvel fixtures. Fail-first was ImportError
+   `score_spread`.
+3. **#810** `RETIRED_SIGNALS` adds tapology / stats_context / tvmaze / tmdb (dated notes;
+   modules kept). igdb/steam 1/33 stay registered (known-gap test). Fail-first: tapology
+   found in the registry.
+4. **#812** `plan(skip_paths=)` exempts published mp4 + same-stem sidecars. Overnight
+   prints `output/ retention: dry (no cap)` when uncapped (does not walk 4.3 GB). Apply
+   env-gated. Fail-first: `plan() got unexpected keyword skip_paths`.
+5. **#802** `RESEARCH_BRIEF_DEADLINE_S` default 30; hung `_build_with_llm` → fallback,
+   `fallback_reason=deadline` on features. `VARIANT_SCORING_DEADLINE_S` default 15;
+   `collect_scored_variants` shuts the pool down with `wait=False, cancel_futures=True`.
+   If none finish, keep the typed topic. Fail-first: elapsed 1.00 not < 0.6; ImportError
+   `collect_scored_variants`.
+
+**Did not change:** `_WEIGHTS`, GRADE_VERSION, the authenticity block/ok gate, #345's
+hedged-rumor render path, cost_meter / quota_governor / Apify breakers. Signal modules
+were not deleted.
+
+**Suggested next five:** **#808 · #811 · #803 · #805 · #50**. Suite **3,406 -> 3,425**;
+mypy **139**; ruff clean; `data/` untouched. Backlog **330 -> 325 open / 720 done**,
+highest **#811**.
+
 ## 2026-09-20 (Cursor) - wave 26: script quality
 
 Operator locked Claude's next five: **#799 #800 #801 #809 #804**. Order cheapest/safest first so

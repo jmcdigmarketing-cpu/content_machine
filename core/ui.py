@@ -652,6 +652,7 @@ def display_variants(
     # Candidate 323: the displayed score is clamped to 100, so on a hot topic every
     # variant prints the same number. Rank on the pre-clamp score when we have it, and
     # say so — a tie presented as a ranking is worse than an admitted tie.
+    from core.angle_ranker import score_spread
     from core.pipeline import best_variant_index
 
     raw = raw_scores or {}
@@ -670,10 +671,8 @@ def display_variants(
     raw_values = [raw.get(v) for v, *_ in evaluated]
     raw_known = all(r is not None for r in raw_values)
     angle_values = [angle.get(v) for v, *_ in evaluated]
-    angle_breaks_it = (
-        all(a is not None for a in angle_values)
-        and len({round(float(a), 4) for a in angle_values}) > 1  # type: ignore[arg-type]
-    )
+    known_angles = {k: float(v) for k, v in angle.items() if v is not None}
+    angle_breaks_it = all(a is not None for a in angle_values) and score_spread(known_angles) > 0
 
     subsection("Scored angles (Enter = best)", print_fn)
     print_fn("  (YouTube title is generated after key facts + script — not here.)")

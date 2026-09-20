@@ -24,7 +24,12 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-20 wave 26 (script quality): **#799** per-pass rewrite ledger · **#800**
+**Just landed** - 2026-09-20 wave 27 (operator loop + resource waste): **#806** rejection
+reason keystroke · **#807** fixture replay of recorded angle sets · **#810** retire true-zero
+signals (igdb/steam stay, known gap) · **#812** published-path exempt + overnight retention
+line · **#802** research-brief and variant-scoring wall-clock budgets.
+
+**Previously** - 2026-09-20 wave 26 (script quality): **#799** per-pass rewrite ledger · **#800**
 hedge density (closes the open §25 call; render gate unchanged) · **#801** intent replay on the
 38 recorded topics · **#809** TTS cache default-on · **#804** continuous authenticity points
 (`GRADE_VERSION` v4; historical letters re-grade). Gate still uses the binary sum.
@@ -37,26 +42,32 @@ shots · **#796** parallel shot encodes · **#788** narrowed · **#793 #795 #797
 
 ### Recommended next five (non-app)
 
-**Operator, 2026-09-20:** the next *build* wave weighted **script quality** and is now done. The
-list below is the next cheapest/safest slice from [engine_upgrades.md](engine_upgrades.md). Volume
-framing is unchanged - a long video is 1-2 a month; the 3-5/week target is Shorts.
+**Operator, 2026-09-20:** wave 27 closed the cheapest operator-loop and resource slice. The list
+below is the next from [engine_upgrades.md](engine_upgrades.md). Volume framing is unchanged - a
+long video is 1-2 a month; the 3-5/week target is Shorts.
 
-1. **#806 capture the rejection reason** `[S]` - six drafts rejected, every reason is prose in
-   `planning_log.md`. One keystroke in `ops batch-review` is the only operator-labelled dataset.
-2. **#807 offline variant re-score** `[S]` - wave 14 fixed the thesis-case tie; nothing proves it
-   is gone on ordinary runs.
-3. **#810 retire or flag the zero-yield signals** `[S]` - six signals have never returned
-   anything inside a 58.7 s median discovery.
-4. **#812 wire artifact retention** `[S]` - 4.3 GB in `output/`, a dry-run printer, no scheduler.
-5. **#802 a latency budget for generation** `[M]` - the research brief has taken 138 s against a
-   11 s median; a slow provider should cost seconds, not minutes.
+1. **#808 snapshot grade inputs** `[S]` - `GRADE_VERSION` stamps that something changed, not
+   what the inputs were. Store the inputs beside the scores so a re-grade is measurable.
+2. **#811 a discovery deadline** `[M]` - signals run concurrently but the run waits for the
+   slowest (median 58.7 s). Take the first N good results past a deadline.
+3. **#803 style memory across runs** `[M]` - similarity is one previous script deep; flag
+   repeated openers and sentence shapes across the last N published scripts.
+4. **#805 print the report card's own hit rate** `[M]` - correlate grade and composite against
+   `engaged_rate` and print `r` with `n` on the card.
+5. **#50 learned insight markers** `[L]` - replace hardcoded `_INSIGHT_MARKERS` from scripts
+   that actually retained. Still the next authenticity input after #804.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first
 live TTS run, check that `ops reliability` reports TTS-cache hits rather than `0/3`.
+`ARTIFACT_RETENTION_APPLY` stays unset unless you want overnight to delete.
 
 **Dropped from this list** (stay open): **#739** · **#730** (operator call) · **#728** (no clip)
 · **#628** · **#731** · Phase M · Ollama.
+
+**Closed 2026-09-20 (wave 27):** **#806 #807 #810 #812 #802**. igdb/steam 1/33 is a documented
+known gap, not a §19 zero. Hedge density remains grade-only. Authenticity gate stays binary.
+Overnight stays render-free. Retention apply stays off unless the env is set.
 
 **Closed 2026-09-20 (wave 26):** **#799 #800 #801 #809 #804**. `GRADE_VERSION` v3 → v4.
 

@@ -300,6 +300,83 @@ def _word_range(length_choice: str) -> tuple[int, int]:
     return word_range(length_choice)
 
 
+def variant_scoring_deadline_s() -> float | None:
+    """Wall-clock budget for parallel angle scoring. None = wait forever."""
+    raw = os.getenv("VARIANT_SCORING_DEADLINE_S")
+    if raw is None or str(raw).strip() == "":
+        return 15.0
+    text = str(raw).strip().lower()
+    if text in ("off", "false", "no"):
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return 15.0
+    if value <= 0:
+        return None
+    return value
+
+
+def collect_scored_variants(
+    candidates: list[str],
+    channel_id: str,
+    base_signals: dict[str, Any],
+    topic: str,
+    *,
+    report: Callable[..., None] | None = None,
+) -> tuple[list[tuple[str, float, dict[str, Any]]], dict[str, float], dict[str, Any]]:
+    """Score angle candidates under VARIANT_SCORING_DEADLINE_S.
+
+    Does not use `with ThreadPoolExecutor` — that waits for hung workers on
+    exit. Unfinished futures are cancelled and the pool is shut down with
+    wait=False. If nobody finishes, keep the typed topic.
+    """
+    evaluated: list[tuple[str, float, dict[str, Any]]] = []
+    raw_scores: dict[str, float] = {}
+    meta: dict[str, Any] = {}
+    total = len(candidates)
+    if not candidates:
+        return evaluated, raw_scores, meta
+
+    deadline = variant_scoring_deadline_s()
+    executor = ThreadPoolExecutor(max_workers=5)
+    try:
+        futures = {
+            executor.submit(_score_variant, v, channel_id, base_signals, seed_topic=topic): v
+            for v in candidates
+        }
+        iterator = (
+            as_completed(futures, timeout=deadline)
+            if deadline is not None
+            else as_completed(futures)
+        )
+        try:
+            for done, future in enumerate(iterator, start=1):
+                variant, score, variant_signals, raw = future.result()
+                evaluated.append((variant, score, variant_signals))
+                raw_scores[variant] = raw
+                if report is not None:
+                    report("Scoring variants", done, total, futures[future])
+        except TimeoutError:
+            meta["fallback"] = "deadline"
+            logger.info(
+                "Variant scoring deadline %.1fs — %d/%d finished",
+                deadline or 0.0,
+                len(evaluated),
+                total,
+            )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+    order = {v: i for i, v in enumerate(candidates)}
+    evaluated.sort(key=lambda e: order.get(e[0], len(candidates)))
+    if not evaluated:
+        evaluated = [(topic, 0.0, dict(base_signals))]
+        raw_scores = {topic: 0.0}
+        meta["fallback"] = "deadline"
+    return evaluated, raw_scores, meta
+
+
 def run_discovery(
     topic: str,
     variant_limit: int = 5,
@@ -414,23 +491,12 @@ def run_discovery(
     candidates = variants[:variant_limit]
     total = len(candidates)
     _report("Scoring variants", 0, total)
-    evaluated: list[tuple[str, float, dict[str, Any]]] = []
-    raw_scores: dict[str, float] = {}
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {
-            executor.submit(_score_variant, v, channel_id, base_signals, seed_topic=topic): v
-            for v in candidates
-        }
-        for done, future in enumerate(as_completed(futures), start=1):
-            variant, score, variant_signals, raw = future.result()
-            evaluated.append((variant, score, variant_signals))
-            raw_scores[variant] = raw
-            # Show which angle just finished scoring — engagement during the wait.
-            _report("Scoring variants", done, total, detail=futures[future])
-    # Restore deterministic candidate order (as_completed yields by completion time).
-    _order = {v: i for i, v in enumerate(candidates)}
-    evaluated.sort(key=lambda e: _order.get(e[0], len(candidates)))
+    evaluated, raw_scores, scoring_meta = collect_scored_variants(
+        candidates, channel_id, base_signals, topic, report=_report
+    )
     timings["variant_scoring"] = time.perf_counter() - t1
+    if scoring_meta.get("fallback"):
+        timings["variant_scoring_fallback"] = scoring_meta["fallback"]
 
     # Editorial ranking of the angle text, scored over the whole candidate set at once
     # (distinctness is relative), so it runs after the loop rather than inside
@@ -439,7 +505,7 @@ def run_discovery(
     # Fail-open: a missing editorial score costs a tiebreaker, never the run.
     angle_scores: dict[str, float] = {}
     try:
-        from core.angle_ranker import rank_angles
+        from core.angle_ranker import rank_angles, score_spread
         from core.providers import flag_enabled
 
         angle_scores = rank_angles(
@@ -447,6 +513,7 @@ def run_discovery(
             seed_topic=f"{topic}. {brief}" if brief else topic,
             llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
         )
+        timings["angle_spread"] = score_spread(angle_scores)
     except Exception as exc:
         logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
 

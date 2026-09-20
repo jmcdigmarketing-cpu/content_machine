@@ -40,6 +40,17 @@ def _append_tts_cache_line(lines: list[str]) -> None:
         logger.debug("overnight tts cache line skipped: %s", exc)
 
 
+def _append_retention_line(lines: list[str]) -> None:
+    try:
+        from core.artifact_retention import format_retention_line
+
+        line = format_retention_line()
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("overnight retention line skipped: %s", exc)
+
+
 @dataclass
 class OvernightResult:
     channel_id: str
@@ -270,6 +281,7 @@ def render_overnight(result: OvernightResult) -> str:
         if result.post_publish_line:
             lines.append(result.post_publish_line)
         _append_tts_cache_line(lines)
+        _append_retention_line(lines)
         return "\n".join(lines)
     try:
         lines.append(render_summary(result.outcomes).strip())
@@ -293,6 +305,7 @@ def render_overnight(result: OvernightResult) -> str:
     if result.post_publish_line:
         lines.append(result.post_publish_line)
     _append_tts_cache_line(lines)
+    _append_retention_line(lines)
     lines.append(
         f"Review them in one pass: py -m scripts.ops batch-review --channel {result.channel_id}"
     )

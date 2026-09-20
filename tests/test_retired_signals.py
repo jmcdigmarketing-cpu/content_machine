@@ -40,7 +40,48 @@ class TestRetirementIsNarrow(unittest.TestCase):
             self.assertIn(signal, names)
 
     def test_nothing_else_was_retired_by_accident(self):
-        self.assertEqual(set(RETIRED_SIGNALS), {"trendingnow"})
+        self.assertEqual(
+            set(RETIRED_SIGNALS),
+            {"trendingnow", "tapology", "stats_context", "tvmaze", "tmdb"},
+        )
+
+
+class TestZeroYieldSignalsAreRetired(unittest.TestCase):
+    """#810. Traces: tapology/stats_context/tvmaze/tmdb = 0 across every run
+    that called them. §19's bar is zero, so they leave the registry. Modules stay."""
+
+    ZEROS = ("tapology", "stats_context", "tvmaze", "tmdb")
+
+    def test_the_zeros_are_not_registered(self) -> None:
+        registered = get_signal_registry().get_registered_signals()
+        for name in self.ZEROS:
+            with self.subTest(name=name):
+                self.assertNotIn(name, registered)
+                self.assertIn(name, RETIRED_SIGNALS)
+                self.assertIn("2026", RETIRED_SIGNALS[name])
+
+    def test_the_modules_are_kept_for_revival(self) -> None:
+        from apis.stats_context_api import get_stats_context_signal
+        from apis.tapology_api import get_tapology
+        from apis.tmdb_api import get_tmdb_signal
+        from apis.tvmaze_api import get_tvmaze_signal
+
+        self.assertTrue(callable(get_tapology))
+        self.assertTrue(callable(get_stats_context_signal))
+        self.assertTrue(callable(get_tvmaze_signal))
+        self.assertTrue(callable(get_tmdb_signal))
+
+
+class TestNearZeroSignalsStayRegistered(unittest.TestCase):
+    def test_igdb_and_steam_are_not_retired_at_one_in_thirty_three(self) -> None:
+        """Known gap: igdb 1/33 (+6 http errors) and steam 1/33 are not §19 zero.
+        A second measured empty window, or an operator call, would close this.
+        """
+        registered = get_signal_registry().get_registered_signals()
+        self.assertIn("igdb", registered)
+        self.assertIn("steam", registered)
+        self.assertNotIn("igdb", RETIRED_SIGNALS)
+        self.assertNotIn("steam", RETIRED_SIGNALS)
 
 
 if __name__ == "__main__":

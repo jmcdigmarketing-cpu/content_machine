@@ -281,3 +281,11 @@ def rank_angles(
                     4,
                 )
     return scores
+
+
+def score_spread(scores: dict[str, float]) -> float:
+    """max - min of an editorial ranking. 0.0 means a real tie (or no scores)."""
+    if not scores:
+        return 0.0
+    values = list(scores.values())
+    return round(max(values) - min(values), 4)

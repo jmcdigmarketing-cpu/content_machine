@@ -101,6 +101,12 @@ def _signals_section() -> dict[str, Any]:
         out["cooldowns"] = dict(sorted(cooldowns.items()))
     except Exception as exc:
         logger.debug("disabled_signals skipped: %s", exc)
+    try:
+        from apis.signals_bootstrap import RETIRED_SIGNALS
+
+        out["retired"] = sorted(RETIRED_SIGNALS)
+    except Exception as exc:
+        logger.debug("retired signals skipped: %s", exc)
     return out
 
 
@@ -414,6 +420,9 @@ def render(data: dict[str, Any] | None = None) -> str:
     sig = data.get("signals", {})
     dis = sig.get("disabled") or []
     lines.append(f"Signals disabled (this process): {', '.join(dis) if dis else '(none)'}")
+    retired = sig.get("retired") or []
+    if retired:
+        lines.append(f"Signals retired: {', '.join(retired)}")
     cooldowns = sig.get("cooldowns") or {}
     if cooldowns:
         # ASCII arrow: unlike main.py, scripts/ops.py doesn't force UTF-8 stdout,

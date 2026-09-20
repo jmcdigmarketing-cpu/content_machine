@@ -104,10 +104,11 @@ weights this section (operator, 2026-09-20).
    10 runs that record an intent, **9 read `default`**. Replay all 38 recorded topics through
    the detector, count what each returns, and widen the cues where a calm or explanatory idea
    reads as a take. Cheap, and it measures a fix already shipped. `[S]`
-4. **#802 — a latency budget for generation.** The research brief has taken 138 s and variant
-   scoring 185 s on single runs, against medians of 11 s and 0.9 s. Give each stage a deadline
-   with a documented fallback (skip the brief, keep the facts) so a slow provider costs seconds,
-   not minutes. `[M]`
+4. **#802 — a latency budget for generation.** *(shipped wave 27)* `RESEARCH_BRIEF_DEADLINE_S`
+   default 30 wraps `_build_with_llm`; timeout uses the heuristic fallback and records
+   `brief_fallback` / `brief_deadline_s` on features. `VARIANT_SCORING_DEADLINE_S` default 15;
+   unfinished workers are abandoned (`shutdown(wait=False, cancel_futures=True)`), not joined.
+   If none finish, keep the typed topic. `[M]`
 5. **#803 — style memory across runs.** Similarity is measured against **one** previous script.
    Compare each draft against the last N published scripts and flag repeated openers, closers
    and sentence shapes — the "recurring nightmare" opener shape appears across several GTA runs.
@@ -132,15 +133,12 @@ is judged by an instrument that does not move.
    lowest-scored topic beat two 100.0s). A card that reports its own accuracy stops being
    believed more than it deserves. Distinct from **#561**, which is the recommender's accuracy.
    `[M]`
-3. **#806 — capture the rejection reason in `ops batch-review`.** The operator has rejected six
-   drafts in two weeks (88-90 and three before), and the reason exists only as prose in this
-   repo's planning log. One keystroke at rejection — pace, facts, angle, hook, topic — builds
-   **the only operator-labelled dataset the project could have**, and it costs one column in the
-   review store. `[S]`
-4. **#807 — offline re-score replay.** The variant tie (five angles, identical score) was fixed
-   for the thesis case in wave 14 (#744). Nothing proves it is gone for the ordinary case.
-   Re-score the recorded runs' variants offline and report the spread; a tie that reappears is
-   then a test, not a discovery. `[S]`
+3. **#806 — capture the rejection reason in `ops batch-review`.** *(shipped wave 27)* After `n`,
+   asks `Why? [pace / facts / angle / hook / topic / other]:` and writes `review.reason` on the
+   draft `meta.json`. Empty/unknown → `other`. Enter=later stays reason-free. `[S]`
+4. **#807 — offline re-score replay.** *(shipped wave 27)* `score_spread` on `rank_angles`;
+   pipeline `timings.angle_spread`; menu `angle_breaks_it`. Fixture replay of run 76, run 72,
+   and ordinary NBA/Marvel sets. Traces do not store the five variants. `[S]`
 5. **#808 — snapshot grade inputs.** `core/grade_calibration.py` re-grades history with today's
    code, and `GRADE_VERSION` stamps *that* a change happened, not what the inputs were. Store
    the inputs beside the scores so a re-grade is reproducible and a component change is
@@ -158,16 +156,15 @@ Cheapest wins in the project, and two of them are configuration rather than code
 1. **#809 — switch the TTS cache on.** *(shipped wave 26)* 84% of spend, a finished cache, zero hits. Default it on
    in production (pin it off in the suite, the pattern `BACKGROUND_FAST_CUT` already uses), and
    print the hit rate on the nightly line so a silent miss is visible. `[S]`
-2. **#810 — retire or flag the zero-yield signals.** `trendingnow` 0/22, `igdb` 1/33 with six
-   http errors, `steam` 1/33, `tapology`/`stats_context`/`tvmaze`/`tmdb` 0. Each still costs a
-   thread and a timeout inside a 58.7 s median. This is the measurement **#575** asked for;
-   retiring follows `decisions.md` §19 and the `reddit`/`twitter` precedent. `[S]`
+2. **#810 — retire or flag the zero-yield signals.** *(shipped wave 27; known gap remains)*
+   `tapology` / `stats_context` / `tvmaze` / `tmdb` left the registry with dated notes; modules
+   kept. `igdb` 1/33 and `steam` 1/33 stay registered — not §19 zero. `[S]`
 3. **#811 — a discovery deadline.** Signals already run concurrently, so the run waits for the
    slowest. Take the first N good results past a deadline and record which signals were dropped,
    rather than waiting on a signal that has never returned. `[M]`
-4. **#812 — wire artifact retention.** 4.3 GB in `output/`, a retention module that only ever
-   prints a dry run, and no schedule. Give it an `--apply` and a place in the nightly task, with
-   published renders exempt. `[S]`
+4. **#812 — wire artifact retention.** *(shipped wave 27)* Overnight prints a retention line.
+   Published `mp4_path`s and same-stem sidecars are exempt. `ARTIFACT_RETENTION_APPLY=true` is
+   required to delete; empty stays dry. Uncapped line does not walk 4.3 GB. `[S]`
 
 Also relevant and already filed: **#380** Apify cost per usable fact, **#384** per-signal SLO,
 **#390** signal dependency graph, **#445** resume a run from the ledger, **#611** parallelise the

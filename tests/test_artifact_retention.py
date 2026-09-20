@@ -69,5 +69,64 @@ class TestArtifactRetention(unittest.TestCase):
         self.assertEqual(out["deleted"], 0)
 
 
+class TestPublishedPathsAreExempt(unittest.TestCase):
+    def test_an_old_published_file_is_not_a_victim(self) -> None:
+        """#812. Unmodified plan() has no skip_paths; TypeError is the fail-first."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            published = root / "kept.mp4"
+            unpublished = root / "draft.mp4"
+            published.write_bytes(b"p" * 300)
+            unpublished.write_bytes(b"d" * 300)
+            os.utime(published, (1, 1))
+            os.utime(unpublished, (2, 2))
+            sidecar = root / "kept.srt"
+            sidecar.write_text("1", encoding="utf-8")
+            os.utime(sidecar, (1, 1))
+            planned = plan(root, max_bytes=100, skip_paths=[str(published)])
+            victims = {Path(v).name for v in planned.victims}
+            self.assertIn("draft.mp4", victims)
+            self.assertNotIn("kept.mp4", victims)
+            self.assertNotIn("kept.srt", victims)
+            deleted = apply_plan(planned, apply=True)
+            self.assertGreaterEqual(deleted, 1)
+            self.assertTrue(published.exists())
+            self.assertFalse(unpublished.exists())
+            self.assertTrue(sidecar.exists())
+
+
+class TestOvernightRetentionIsDryByDefault(unittest.TestCase):
+    def test_apply_env_off_does_not_delete(self) -> None:
+        from core.artifact_retention import format_retention_line, retention_apply_enabled
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            old = root / "old.mp4"
+            old.write_bytes(b"x" * 200)
+            os.utime(old, (1, 1))
+            with patch.dict(
+                os.environ,
+                {
+                    "OUTPUT_MAX_GB": "0.0000001",
+                    "ARTIFACT_RETENTION_APPLY": "",
+                    "OUTPUT_MAX_FILES": "",
+                },
+                clear=False,
+            ):
+                self.assertFalse(retention_apply_enabled())
+                line = format_retention_line(root)
+            self.assertTrue(old.exists())
+            self.assertIn("retention", line.lower())
+
+    def test_overnight_skip_path_prints_the_retention_line(self) -> None:
+        from core.overnight import OvernightResult, render_overnight
+
+        with patch.dict(os.environ, {"OUTPUT_MAX_GB": "", "OUTPUT_MAX_FILES": ""}, clear=False):
+            text = render_overnight(
+                OvernightResult(channel_id="tapin", quota_line="gated", requested=0)
+            )
+        self.assertIn("retention", text.lower())
+
+
 if __name__ == "__main__":
     unittest.main()

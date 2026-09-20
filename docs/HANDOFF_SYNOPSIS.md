@@ -1,10 +1,21 @@
-# Handoff synopsis — 2026-09-20: wave 26, script quality
+# Handoff synopsis — 2026-09-20: wave 27, operator loop + resource waste
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) and [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md). Not a recorded operator decision.
 
-## Last wave — 2026-09-20 (Cursor): wave 26 #799 #800 #801 #809 #804
+## Last wave — 2026-09-20 (Cursor): wave 27 #806 #807 #810 #812 #802
+
+Operator-loop and resource waste. **#806** `ops batch-review` asks Why? after reject and writes
+`review.reason`; **#807** `score_spread` + fixture replay of recorded angle sets;
+**#810** retire tapology/stats_context/tvmaze/tmdb (igdb/steam 1/33 known gap, still registered);
+**#812** published-path exempt + overnight retention line, apply env-gated; **#802**
+`RESEARCH_BRIEF_DEADLINE_S=30` and `VARIANT_SCORING_DEADLINE_S=15` with documented fallbacks
+(heuristic brief; keep typed topic if no variant finishes). Overnight stays render-free.
+Next five: **#808 · #811 · #803 · #805 · #50**. Suite **3,406 -> 3,425**; mypy **139**;
+ruff clean; backlog **325 open / 720 done**, highest **#811**.
+
+## Previous — 2026-09-20 (Cursor): wave 26 #799 #800 #801 #809 #804
 
 Claude's operator-locked next five, script quality. **#799** rewrite-pass ledger on the report
 card; **#800** hedge density lets the grade fall (closes §25; render gate unchanged); **#801**

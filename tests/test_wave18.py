@@ -367,7 +367,7 @@ class TestBatchReview(unittest.TestCase):
             _draft(root, "1-a", topic="A", run_id=11)
             _draft(root, "2-b", topic="B", run_id=12)
             _draft(root, "3-c", topic="C", run_id=13, claims=blocked)
-            answers = iter(["y", "n", "y", "no thanks"])
+            answers = iter(["y", "n", "hook", "y", "no thanks"])
             rendered: list[int] = []
             slot = SimpleNamespace(run_id=11, title="Title 11", publish_at=datetime(2026, 9, 18))
             with (

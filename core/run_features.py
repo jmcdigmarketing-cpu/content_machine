@@ -149,6 +149,15 @@ def build_features(
         ],
         "feature_version": FEATURE_VERSION,
     }
+    if research_brief is not None:
+        reason = str(getattr(research_brief, "fallback_reason", "") or "")
+        if reason:
+            features["brief_fallback"] = reason
+        from core.research_brief import research_brief_deadline_s
+
+        deadline = research_brief_deadline_s()
+        if deadline is not None:
+            features["brief_deadline_s"] = deadline
     if vault_relevance_audit is not None:
         features["vault_relevance"] = list(vault_relevance_audit)
     if str(length_choice) == "4":

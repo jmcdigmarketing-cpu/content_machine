@@ -54,6 +54,24 @@ RETIRED_SIGNALS: dict[str, str] = {
         "facts and cost a connection timeout per run. Module kept at "
         "apis/trendingnow_api.py."
     ),
+    "tapology": (
+        "2026-09-20: zero facts across every recorded run that called it (wave 25 "
+        "measurement). Cloudflare 403 for 33 days in 2026-08 already documented in "
+        "decisions.md §19; the scrape stays default-off. Module kept at "
+        "apis/tapology_api.py."
+    ),
+    "stats_context": (
+        "2026-09-20: zero facts across every recorded run that called it. Module "
+        "kept at apis/stats_context_api.py."
+    ),
+    "tvmaze": (
+        "2026-09-20: zero facts across every recorded run that called it. Module "
+        "kept at apis/tvmaze_api.py."
+    ),
+    "tmdb": (
+        "2026-09-20: zero facts across every recorded run that called it. Module "
+        "kept at apis/tmdb_api.py."
+    ),
 }
 
 

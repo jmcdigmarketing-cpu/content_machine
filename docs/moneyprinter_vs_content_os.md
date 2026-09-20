@@ -1,5 +1,7 @@
 # MoneyPrinter vs Content OS — clip pipeline, compared
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 Written 2026-08-26 after the operator's step-3 note: **unnecessary stock
 footage is often unrelated, and a hard cut from gaming to live-action reality
 is disorienting.** Standing rule: [decisions.md](decisions.md) §26. Session

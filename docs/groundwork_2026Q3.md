@@ -1,5 +1,7 @@
 # Content OS — New-Tools Documentation & 2026-Q3 Groundwork (3-month north star)
 
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-09-20 · **Superseded by:** [master_plan.md](master_plan.md)
+
 > A standing map for future work: (1) documents the new tools/repositories added in the 2026-07
 > wave, (2) records the tested state of goose3 and why it matters, and (3) lays a detailed
 > 3-month development roadmap. Written 2026-07-09. Companion to [roadmap.md](roadmap.md) (tactical

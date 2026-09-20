@@ -1,5 +1,7 @@
 # Domain expansion playbook
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 How new verticals (finance, anime, pop culture, music, gaming depth, sports breadth) slot into Content Machine **without sprawl**. One domain at a time; each source follows the same recipe as gaming/UFC/NBA.
 
 **Do not add all four content niches at once.** Each domain is a maintenance surface — pick by **data quality × audience × your edge**, then keep the load-bearing squares warm.

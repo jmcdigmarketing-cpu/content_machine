@@ -1,5 +1,7 @@
 # Planning log
 
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-20
+
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
 captures the prompt, the brainstorm/decisions, and what actually shipped — the tactical
@@ -8,6 +10,76 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > Convention: when a planning session happens (plan mode, or a substantial "what should we
 > build" discussion), append a dated section here with the options considered, the
 > decision, and — once built — the outcome. See [../CLAUDE.md](../CLAUDE.md).
+
+---
+
+## 2026-09-20 - Grand audit + master plan + docs standard
+
+**Prompt:** "Brainstorm and plan plan plan big audit and master plan moving forward,
+future more docs standardize etc etc." Planning/structure session — no feature work.
+
+**Audited from scratch** (nothing carried from an earlier doc — that habit was itself a
+finding): ~89k lines of Python, 254 test files, 46 docs / ~114k words, ruff, mypy, the
+full suite, the doc link graph and the git history. Written up in
+[audit_2026-09.md](audit_2026-09.md).
+
+**The finding that mattered.** `tests/test_run69_fixes.py` passes **13/13 alone** and
+**fails 5 in the full suite**. `core/llm_router._ollama_probe_cache` is a hand-rolled
+module global (not `lru_cache`); `test_run_mode.py` and `test_free_doctor_probe.py`
+reset it by hand and `test_run69_fixes.py` does not, so once any earlier test warms it,
+patching `ollama_installed_models` stops doing anything. The five tests that stop
+guarding are the ones pinning the run-70 outage (Free mode advertising an empty Ollama).
+Green does not currently mean that guard holds, and the suite's verdict depends on
+discovery order. This is decisions §18 — *reports healthy while broken* — applied to the
+test suite itself, and it is M0 of the plan.
+
+**Other measured findings.** mypy 136 errors / 89 files (June tracked ~94 — a
+non-blocking baseline with nothing ratcheting it grows). Ruff pinned 0.8.4 consistently
+across CI, `pyproject.toml` and pre-commit but ~9 months old; current ruff reports 28
+lint + 28 format findings, i.e. a deferred bill, not a break. 627 broad `except
+Exception` against "~18 silent" tracked in June. `core/` is 149 flat modules, 55% of
+source. A partial install yields 263 errors (221 `ModuleNotFoundError`) instead of skips,
+which is how two collateral failures (`test_engagement`, `test_seo_tags`) looked like
+logic bugs and were not.
+
+**Docs findings.** No index existed. Five files were 48% of the corpus, `roadmap.md`
+1,774 lines with a single 1,084-line section. Eight roadmap-shaped docs, four
+audit-shaped. 15 docs untouched since the repo's first commit. **Twelve different live
+test counts** (363 … 2160) — `assessment.md` carries two of them in one file. Five
+filename conventions, three product names, two orphans.
+
+**Decided — the structure, not just the prose.** Class/status taxonomy
+(`index`/`charter`/`reference`/`runbook`/`plan`/`snapshot`/`log` ×
+`living`/`frozen`/`archived`), a one-line doc card on line 3 of every doc, `snake_case`
+naming with dated snapshots, and the rule that resolves the count drift: **a number that
+changes is either generated or dated** — bare counts are banned from `living` docs and
+correct in `frozen` ones. Rejected: YAML front-matter (renders oddly, and the repo's
+style is prose), and a docs/ subdirectory tree (the index solves navigation without
+breaking 28 inbound links to `roadmap.md`).
+
+**Shipped:**
+- [docs_standard.md](docs_standard.md) — the conventions; [README.md](README.md) — the
+  index that did not exist; [master_plan.md](master_plan.md) — canonical forward plan,
+  M0–M5, every wave with an exit criterion that is a command.
+- `tests/test_docs_standard.py` — 11 checks, written first and observed failing on
+  unmodified docs (46 missing cards, no index). CI-blocking, sibling of the existing
+  `test_docs_lint.py`.
+- Doc cards applied to all 46 docs. Four superseded plans marked `archived` with
+  successors (`content_intelligence_roadmap`, `groundwork_2026Q3`, `intelligence_phase`,
+  `scope_feature_store_and_research_v2`). `audit.md` → `audit_2026-08.md` with inbound
+  links rewritten. Volatile test counts removed from the four `living` docs that carried
+  them.
+- Pointers updated: `CLAUDE.md`, `AGENTS.md`, `ROADMAP.md` now route through the index.
+
+**Deliberately not done:** the ten `LEGACY_NAMES` renames, the product-name sweep, the
+`roadmap.md`/`HANDOFF_SYNOPSIS.md` splits and the `decisions.md` rewrap — all sequenced
+as M1/M2 rather than bundled into a structure commit, so each lands reviewable. No
+feature work, no behaviour change.
+
+**Honest leftover:** M0 is not fixed, only diagnosed — the suite is still order-dependent
+as of this commit. The `Reviewed: 2026-09-20` date on all 46 cards is truthful about the
+audit pass, not about a line-by-line re-read of every body; M1.3 is where the 15
+never-revised docs actually get read.
 
 ---
 
@@ -1125,7 +1197,7 @@ roadmap ideas that are not multi-platform; then a grand audit.
   "server unreachable" whenever `OLLAMA_MODEL` is set and not ready — the run-70
   case is "pull a model"; (2) the new test's `ENV = {...}` trips **RUF012**.
 
-**Audit headline (see [audit.md](audit.md) 2026-08-20 + canvas):** health held
+**Audit headline (see [audit.md](audit_2026-08.md) 2026-08-20 + canvas):** health held
 (1,433 tests committed / 1,440 with wip, 62.7k LOC, mypy 123/73 unchanged,
 silent `pass` still 0). New debt is the run-70 class again (lying readiness),
 thumbnail vision still silently dead on `llm_client`, overnight still cannot take
@@ -1194,7 +1266,7 @@ the single biggest cost lever left at **$0.25/video**.
 installed as `2.8.0+cpu`, so `torch.cuda.is_available()` is False. Every roadmap item
 marked *"parked — needs a GPU box"* (WhisperX, MusicGen, ComfyUI/Wan-LTX, YOLO reframe,
 avatar, Real-ESRGAN/RIFE, XTTS/Kokoro voice cloning) is blocked by a **CPU-only install,
-not by hardware**. See [audit.md](audit.md).
+not by hardware**. See [audit.md](audit_2026-08.md).
 
 ## 2026-07-24 — Pillar 7: Self-improving skills (Agent Skills + SkillOpt)
 

@@ -1,5 +1,7 @@
 # Handoff synopsis — 2026-08-27: vault relevance scored
 
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-20
+
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
 ## Last implementation wave — vault relevance P2–P4 (2026-08-27)

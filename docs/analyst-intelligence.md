@@ -1,5 +1,7 @@
 # Analyst intelligence layer
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 Decision-useful outputs beyond "what's hot right now."
 
 ## Levers (implemented)

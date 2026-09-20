@@ -1,5 +1,7 @@
 # Credit, Quota & Spend Efficiency
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 How the system avoids burning paid credits/quota, what's shipped, and the
 **prioritized backlog** of optimizations. Companion to the cost model in
 [operating_plan.md §4](operating_plan.md) and the moat thesis in [vision.md](vision.md)

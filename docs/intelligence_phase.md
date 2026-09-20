@@ -1,5 +1,7 @@
 # Content OS — Intelligence Phase Roadmap (Post D–G)
 
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-09-20 · **Superseded by:** [roadmap.md](roadmap.md)
+
 Principal-architect recommendation for the transition from **infrastructure** to **intelligence**. Grounded in reconciled project docs and TapIn’s early performance profile (~42 videos, median ~70 views, minimal subscriber base — **data-starved** for outcome-driven ML).
 
 **Related:** [roadmap.md](roadmap.md) (phase checklist), [architecture.md](architecture.md), [debugging.md](debugging.md).

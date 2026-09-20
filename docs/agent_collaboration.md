@@ -1,5 +1,7 @@
 # Agent collaboration — Cursor and Claude Code on this repo
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 > **Read this before starting a project here.** It is short on purpose. It says what
 > each agent is reliably good at, what each one reliably gets wrong, and who decides
 > what gets built. The rules you must *follow* live in

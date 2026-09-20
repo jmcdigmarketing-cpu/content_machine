@@ -1,5 +1,7 @@
 # Content Machine — Vision & 12-Month Architecture
 
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-20
+
 **North star: stop building features, start building an intelligence system that operates media businesses.**
 Content generation is one subsystem. The durable asset is the proprietary
 performance dataset and the decision-making built on top of it.

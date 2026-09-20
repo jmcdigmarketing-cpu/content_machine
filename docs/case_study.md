@@ -1,5 +1,7 @@
 # Case Study — Content Intelligence Pipeline
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 *Independent project · Python · Multi-source opportunity engine*
 
 ---

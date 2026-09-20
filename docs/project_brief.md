@@ -1,5 +1,7 @@
 # Content OS — Project Brief
 
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-20
+
 ## Project purpose
 
 Content OS (also referred to as **Content Machine** in code and CLI) is an automated content operating system for short-form vertical video production in sports and gaming niches. It discovers market signals, scores topic variants, generates scripts with a **free-first LLM router**, synthesizes voice audio, renders subtitled MP4s with stock or local backgrounds, publishes to YouTube, and closes a learning loop from real engagement.

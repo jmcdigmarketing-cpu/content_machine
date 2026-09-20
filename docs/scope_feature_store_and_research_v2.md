@@ -1,5 +1,7 @@
 # Scope — Feature Store (Priority #0) + Research Engine v2
 
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-09-20 · **Superseded by:** [master_plan.md](master_plan.md)
+
 Grounded in the current code, not theory. No implementation here; this is the design
 to build against. Research v2 scope is intentionally light pending the live-run feedback.
 

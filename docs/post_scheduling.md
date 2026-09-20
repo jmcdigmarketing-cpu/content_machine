@@ -1,5 +1,7 @@
 # Post scheduling & upload queue
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 ## Overview
 
 Content Machine can schedule YouTube publishes at **optimal weekly slots** (per channel and topic domain) without keeping your PC on at publish time.

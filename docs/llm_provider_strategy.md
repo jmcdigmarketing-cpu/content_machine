@@ -1,5 +1,7 @@
 # LLM provider strategy — what's reachable today, and what each model adds
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 > **Harvested 2026-08-17 from PR #26 (`claude/kimi-k3-evaluation`), which was closed
 > unmerged.** Kept for the model comparison and the sourced Kimi K3 open-weights analysis,
 > which nothing else in the repo records. **Read the routing advice as of 2026-07, not as

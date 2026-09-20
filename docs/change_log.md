@@ -1,5 +1,7 @@
 # Content OS — Changelog
 
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-20
+
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---

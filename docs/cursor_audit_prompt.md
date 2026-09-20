@@ -1,7 +1,9 @@
 # Cursor audit prompt — Content Machine
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 > **Historical, and stale.** This was a one-off audit prompt written against commit
-> `e6d5c9c` when the suite was 363 tests (it is now ~1958). The repo-state paragraph
+> `e6d5c9c` when the suite was far smaller. The repo-state paragraph
 > below is no longer accurate — do not treat it as current.
 >
 > For standing agent instructions use **[../AGENTS.md](../AGENTS.md)** and
@@ -29,7 +31,7 @@ recency/quality layer: manual key facts, domain-aware signal gating, signal
 circuit breaker, web search (Tavily/Brave), Obsidian facts, vault writeback,
 feature store, weekly report, cost meter, recommender confidence surfacing,
 fact-grounding post-check, RAWG relevance gate, domain-routed RSS. Baseline:
-`363 tests pass`, `ruff check` + `ruff format --check` clean.
+the full suite passes (`python -m unittest discover -s tests -t .`), `ruff check` + `ruff format --check` clean.
 
 ## Ground rules (non-negotiable)
 

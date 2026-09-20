@@ -1,5 +1,7 @@
 # Efficiency audit — dead code, hardcoding, waste (2026-07)
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 > **Harvested 2026-08-17 from PR #30 (`claude/efficiency-audit`), which was closed
 > unmerged.** Kept for the duplication analysis (~500 LOC genuinely removable), which has
 > **not** been actioned. **Its "not installed" record is out of date:** the 2026-08 audit

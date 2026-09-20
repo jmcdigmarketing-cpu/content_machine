@@ -1,5 +1,7 @@
 # Content OS — Roadmap
 
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-20
+
 > **North star:** [vision.md](vision.md) — the v3 intelligence-systems vision
 > ("operate media businesses," not "make videos"), a senior-level critique of it,
 > and the revised 12-month architecture plan prioritized for defensibility,
@@ -378,7 +380,7 @@ FastAPI still skipped.**
     rendered mp4 looks 2.17s "out of sync" against the SRT until you notice
     `prepend_channel_intro` adds TapIn's **2.15s intro** after the render, shifting audio
     and captions together — sync is exact once you subtract it.
-  - 1411 tests green (+29): `tests/test_caption_retext.py` + wiring cases in
+  - suite green (+29 tests): `tests/test_caption_retext.py` + wiring cases in
     `tests/test_subtitles.py`.
 
   *Design notes kept because they were the hard part:* the matcher must survive
@@ -574,7 +576,7 @@ learning) stays parked under [Later horizons](#later-horizons).*
 **Candidate ideas (2026-08-20 session — Phase M excluded)**
 
 *Brainstorm. Rationale: [planning_log.md](planning_log.md) 2026-08-20 and
-[audit.md](audit.md). None of these restates an open Next-up line
+[audit.md](audit_2026-08.md). None of these restates an open Next-up line
 (clip-from-source, avatar, MoneyWise depth, Instagram figures). Items 1 and 4
 plus the coverage-wave and router-vision Next-up lines shipped the same day.*
 
@@ -1289,7 +1291,7 @@ All on branch `youtube-readonly-scope-and-roadmap` (PR #1), CI green:
 - **MoneyWise finance channel** (2nd channel) + `infer_domain` word-boundary fix.
 - **Apify hardening**: `set_cache` credit-burn fix, 201 handling, circuit breaker + preflight on/off check, per-variant signal reuse (discovery minutes → seconds).
 - **Script prompt refinement**: recap-first VOICE block, filler ban-list, anti-padding Extended format.
-- **Engineering baseline**: pyproject/ruff/mypy/pre-commit, CI on 3.11, 220 tests.
+- **Engineering baseline**: pyproject/ruff/mypy/pre-commit, CI on 3.11, a full unittest suite.
 - **Brand kit** for MoneyWise (`assets/branding/moneywise/`).
 - **Assessment**: `docs/assessment.md` (strengths/weaknesses/fixes).
 

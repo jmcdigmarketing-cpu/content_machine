@@ -1,5 +1,7 @@
 # What's next — roadmap item + 5 new ideas (2026-07-29)
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 > **Harvested 2026-08-17 from PR #32 (`claude/next-ideas`), which was closed unmerged.**
 > Kept because its lead item — the router vision path feeding multimodal rendered-video
 > review (Pillar 2) — is **still open** on the roadmap, with useful effort notes. The rest

@@ -1,5 +1,7 @@
 # Platform publishing setup
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 ## Current scope (this phase)
 
 | Platform | Status |

@@ -1,5 +1,7 @@
 # Tool Integration Plan — the top 7 (2026-08-25)
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 How the seven highest-ranked tools from the
 [tooling landscape addendum](tooling_landscape.md#addendum--14-operator-submitted-tools-2026-08-25)
 would actually be integrated — what ships, what is blocked, and what turns out to be

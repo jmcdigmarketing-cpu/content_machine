@@ -14,12 +14,21 @@ check, AI disclosure, cadence guardrail).
 
 Channels (`config/channels.json`): `tapin` (gaming/UFC shorts), `moneywise`
 (finance). Full picture: [README.md](README.md) and
-[docs/architecture.md](docs/architecture.md). Current priorities:
-[docs/roadmap.md](docs/roadmap.md). Honest state of the project:
-[docs/assessment.md](docs/assessment.md). State as of the last working session
-(branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
-Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/planning_log.md)
-— **append a dated entry after any substantial planning session** so ideas aren't lost.
+[docs/architecture.md](docs/architecture.md).
+
+**Every doc is indexed in [docs/README.md](docs/README.md)** — start there rather than
+globbing `docs/`. Each doc carries a card on line 3 giving its class and whether it is
+still true; the conventions are [docs/docs_standard.md](docs/docs_standard.md) and they
+are enforced by `tests/test_docs_standard.py`, so a new doc needs a card and an index
+entry or CI fails.
+
+The four you will want most: what happens next —
+[docs/master_plan.md](docs/master_plan.md) (canonical) with the item-level ledger in
+[docs/roadmap.md](docs/roadmap.md); where the system honestly stands —
+[docs/audit_2026-09.md](docs/audit_2026-09.md); state as of the last working session —
+[docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md); brainstorming and decisions from
+planning sessions — [docs/planning_log.md](docs/planning_log.md), where you
+**append a dated entry after any substantial planning session** so ideas aren't lost.
 
 ## Entry points
 

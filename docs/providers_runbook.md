@@ -1,5 +1,7 @@
 # Providers runbook — Pillar 6 seams (code-tied)
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 The living, in-repo version of the operator's master tool-integration runbook: each tool
 mapped to the **module that hosts it**, its **env gate**, a **proof command**, and its
 **status**. Companion to [video_creation_stack.md](video_creation_stack.md) (slot design +

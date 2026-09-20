@@ -1,5 +1,7 @@
 # Content Machine — Positioning & Product Split
 
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-20
+
 This repo is intentionally split into two layers. The **intelligence layer** is the portfolio artifact, freelance deliverable, and future micro-SaaS surface. The **production tail** remains for TapIn-style YouTube automation.
 
 ## Architecture split

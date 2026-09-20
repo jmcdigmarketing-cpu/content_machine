@@ -1,5 +1,7 @@
 # Strategy & brainstorm — 2026 H2
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 > **Harvested 2026-08-17 from PR #29 (`claude/strategy-2026h2`), which was closed
 > unmerged.** Only the strategy doc was taken; that PR's edits to `roadmap.md` and
 > `planning_log.md` are superseded and were dropped. Its central tension — Phase O

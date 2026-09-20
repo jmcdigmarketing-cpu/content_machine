@@ -1,5 +1,7 @@
 # Content Machine — strengths, weaknesses & fixes
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 Honest assessment of the system as of 2026-06. Scored 1–5 per dimension with
 evidence from the code and from live runs observed this month. The goal is a
 prioritised fix list, not a victory lap.
@@ -133,4 +135,4 @@ vs a 15-sample predictor gate). TTS still dominates real-world cost until the
 operator judges Piper. 2026 inauthentic-content policy is still existential —
 substance over volume. Pickup: [roadmap.md](roadmap.md) recommended next 5.
 Honest session state: [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md). Audit:
-[audit.md](audit.md).
+[audit.md](audit_2026-08.md).

@@ -1,8 +1,10 @@
 # Holistic code audit — 2026-07
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 > **Harvested 2026-08-17 from PR #28 (`claude/code-audit-2026-07`), which was closed
 > unmerged.** Superseded as a health snapshot by the **2026-08 Grand Audit**
-> ([audit.md](audit.md)) — kept as the before half of a genuine before/after. Its headline
+> ([audit.md](audit_2026-08.md)) — kept as the before half of a genuine before/after. Its headline
 > trend, *"broad-except count and `core/ui.py` size are both growing"*, was acted on in
 > 2026-08: all 98 silent handlers now log and `S110`/`S112` are enforced in ruff
 > ([decisions.md](decisions.md) §24). Its other findings — the layering smell, and

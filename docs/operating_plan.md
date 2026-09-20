@@ -1,10 +1,12 @@
 # Content Machine — Operating Plan (pace, cost, channels, ops)
 
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-20
+
 Companion to [vision.md](vision.md) (the north-star architecture & 12-month plan).
 This doc is the **operational** layer: what to build next at the **real** pace and
 cost, how to stand up new channels, where the money and the risks are, and the
 boring top-down hygiene that compounds. Grounded in the actual codebase and git
-history as of **2026-06-23** (main `f500efa`, 58 commits since 2026-06-13, 374 tests).
+history as of **2026-06-23** (main `f500efa`, 58 commits since 2026-06-13).
 
 > This file is written to be loaded as context for future sessions. Where a claim
 > depends on live data (RPM, real API bills, view counts), it's marked *assumption*

@@ -1,5 +1,7 @@
 # Agent-Reach — evaluation & integration spike
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 **Status:** proposed (not started). **Effort:** `[M]`. **Owner:** TBD.
 **Source:** https://github.com/Panniantong/Agent-Reach
 

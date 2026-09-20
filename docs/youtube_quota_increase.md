@@ -1,5 +1,7 @@
 # YouTube Data API quota-increase checklist
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 Use this when remaining units cannot cover **one upload** (~1,600 units). Do not
 invent quota numbers — read the tracker (`ops reliability` / `format_uploads_left`).
 

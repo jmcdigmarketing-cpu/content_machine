@@ -1,5 +1,7 @@
 # Video Creation Stack — tools to add (2026-07)
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 **Directive (operator, 2026-07-07):** override [operating_plan.md](operating_plan.md)
 §8's "keep generation boring, don't chase quality/volume." Generation quality is
 now treated as a real competitive lever — 2026 SOTA AI video makes slideshow-style

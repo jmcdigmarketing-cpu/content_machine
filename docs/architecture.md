@@ -1,5 +1,7 @@
 # Content OS — Architecture
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 ## Folder structure
 
 ```
@@ -64,7 +66,7 @@ content_machine/
 ├── scripts/                   # ops, queue_manage, requeue_upload, status, …
 ├── sports/espn.py             # live_scores scoreboard
 ├── storage/                   # models, repositories/, alembic_runner
-├── tests/                     # 1,433+ tests (unittest discover)
+├── tests/                     # unittest discover -s tests -t .
 ├── video/                     # render, subtitles, backgrounds/, intro/
 └── youtube/                   # oauth, upload, thumbnails, check_setup
 ```

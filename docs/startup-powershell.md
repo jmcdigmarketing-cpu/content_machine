@@ -1,5 +1,7 @@
 # Content OS — Windows PowerShell startup commands
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 Run everything from the project root:
 
 ```powershell

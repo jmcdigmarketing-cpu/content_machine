@@ -1,5 +1,7 @@
 # Free ($0) mode
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 `py main.py` asks you to pick a **cost mode** before a render:
 
 ```

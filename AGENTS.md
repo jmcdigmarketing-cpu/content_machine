@@ -15,6 +15,13 @@ One source of truth, three files — read them in this order:
    together.* Read it **before starting a project**: who decides what gets built, what
    each agent is reliably good at, and the two mistakes that keep recurring. Short.
 
+5. **[docs/README.md](docs/README.md)** — *where everything is.* The index of all 46
+   docs by class, with each one marked `living`, `frozen` or `archived`. Read the index
+   before globbing `docs/`; a `frozen` doc was true on its date and is not a description
+   of HEAD. Writing a new doc means a doc card and an index entry —
+   [docs/docs_standard.md](docs/docs_standard.md), enforced by
+   `tests/test_docs_standard.py`.
+
 Directory-scoped rules exist and are more specific than the above — obey them when you
 are working in that directory:
 

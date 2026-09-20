@@ -1,5 +1,7 @@
 # Tooling Landscape — 17 tools vs Content OS (2026-07)
 
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+
 A competitive/tooling scan of 17 external projects and market guides, each mapped
 against Content OS's moat. Companion to [positioning.md](positioning.md),
 [operating_plan.md](operating_plan.md) §8, and [roadmap.md](roadmap.md) "Market

@@ -1,5 +1,7 @@
 # Signals, zeros, and how to expand sources
 
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+
 ## What "(zero)" means in the CLI
 
 The **Signal breakdown** line lists APIs whose **score is 0** for that variant. It is not the same as "API broken."

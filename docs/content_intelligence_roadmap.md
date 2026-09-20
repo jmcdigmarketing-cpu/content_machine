@@ -1,5 +1,7 @@
 # Content Machine → Content Intelligence Platform
 
+> **Class:** plan · **Status:** archived · **Reviewed:** 2026-09-20 · **Superseded by:** [master_plan.md](master_plan.md)
+
 *Strategic roadmap. Author voice: founder + principal architect + media operator.*
 *Thesis: generation is commoditizing; the moat is a proprietary, compounding performance-data flywheel.*
 

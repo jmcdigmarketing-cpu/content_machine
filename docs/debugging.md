@@ -1,5 +1,7 @@
 # Content OS — Debugging & Operations
 
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+
 Operator-focused guide for diagnosing failures, validating config, and recovering from common errors. For architecture context see [architecture.md](architecture.md); for phase status see [roadmap.md](roadmap.md).
 
 ---

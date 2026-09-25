@@ -63,13 +63,32 @@ def _p(c16: str, c256: int) -> tuple[str, str]:
     return (c16, f"\033[38;5;{c256}m")
 
 
-_DEFAULT_PALETTE = {
-    "primary": _p("\033[36m", 45),  # cyan
-    "accent": _p("\033[33m", 220),  # yellow
-    "success": _p("\033[32m", 40),
-    "warn": _p("\033[33m", 214),
-    "error": _p("\033[31m", 196),
-}
+def _fallback_palette() -> dict[str, tuple[str, str]]:
+    return {
+        "primary": _p("\033[36m", 45),  # cyan
+        "accent": _p("\033[33m", 220),  # yellow
+        "success": _p("\033[32m", 40),
+        "warn": _p("\033[33m", 214),
+        "error": _p("\033[31m", 196),
+    }
+
+
+def _palette_from_tokens() -> dict[str, tuple[str, str]]:
+    palette = _fallback_palette()
+    try:
+        from core.design_tokens import load_tokens, role_ansi_pair
+
+        roles = load_tokens().get("roles") or {}
+        for role in roles:
+            pair = role_ansi_pair(str(role))
+            if pair:
+                palette[str(role)] = pair
+    except Exception:
+        return _fallback_palette()
+    return palette
+
+
+_DEFAULT_PALETTE = _palette_from_tokens()
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +305,15 @@ def role_color(role: str) -> str:
     pair = active_theme().palette.get(role)
     if not pair:
         return ""
+    if os.getenv("CONTENT_UI_COLORBLIND", "").strip().lower() in ("1", "true", "yes", "on"):
+        try:
+            from core.design_tokens import role_ansi_pair
+
+            cb = role_ansi_pair(role, colorblind=True)
+            if cb:
+                pair = cb
+        except Exception:  # noqa: S110 — colorblind tokens are best-effort enrichment
+            pass
     return pair[1] if color_depth() == 256 else pair[0]
 
 

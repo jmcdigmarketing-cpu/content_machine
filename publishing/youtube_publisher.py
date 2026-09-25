@@ -4,6 +4,7 @@ YouTube upload — OAuth, resumable videos.insert, idempotent publish_log.
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -44,10 +45,80 @@ YOUTUBE_PUBLISH_MIN_LEAD_MINUTES = 15
 TERMINAL_LOG_STATUSES = PUBLISH_STATUS_SUCCESS
 
 
-def _post_upload_extras(service, video_id: str | None, request: PublishRequest) -> None:
-    """Caption track + opt-in comment. Fail-open; never blocks the publish result."""
+def _dry_run_enabled() -> bool:
+    return os.getenv("PUBLISH_DRY_RUN", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def dry_run_insert_body(request: PublishRequest, *, channel_id: str) -> dict[str, Any]:
+    """The videos.insert `body` that publish() would send. Never calls insert."""
+    snippet = {
+        "title": (request.title or "")[:100],
+        "description": (request.description or "")[:5000],
+        "tags": (request.tags or [])[:30],
+        "categoryId": request.category_id or "",
+    }
+    try:
+        from core.youtube_meta import apply_snippet_defaults
+
+        snippet = apply_snippet_defaults(snippet, topic=request.title, channel_id=channel_id)
+    except Exception as exc:
+        logger.debug("snippet defaults skipped: %s", exc)
+        if not snippet.get("categoryId"):
+            snippet["categoryId"] = "20"
+    if not snippet.get("categoryId"):
+        snippet["categoryId"] = "20"
+    # Reuse the real status builder rather than restating it: it carries the #107
+    # `selfDeclaredMadeForKids` declaration and the #115/#116 `publishAt` bump, and
+    # those are exactly the fields an operator opens a dry run to check. `_window_reason`
+    # is internal bookkeeping publish() pops before sending, so it is not part of the body.
+    try:
+        status = build_video_status(request, channel_id=channel_id)
+        status.pop("_window_reason", None)
+    except Exception as exc:
+        logger.debug("dry-run status defaults skipped: %s", exc)
+        status = {"privacyStatus": request.privacy_status or "private"}
+    return {"snippet": snippet, "status": status}
+
+
+def redact_publish_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Drop token/secret values from a payload copy (never print credentials)."""
+    redacted = json.loads(json.dumps(payload, default=str))
+
+    def walk(obj: Any) -> None:
+        if isinstance(obj, dict):
+            for key, val in list(obj.items()):
+                low = str(key).lower()
+                if any(
+                    tok in low for tok in ("token", "secret", "authorization", "api_key", "apikey")
+                ):
+                    obj[key] = "[redacted]"
+                else:
+                    walk(val)
+        elif isinstance(obj, list):
+            for item in obj:
+                walk(item)
+
+    walk(redacted)
+    return redacted
+
+
+def _post_upload_extras(
+    service, video_id: str | None, request: PublishRequest, *, channel_id: str = ""
+) -> None:
+    """Caption track + opt-in comment + franchise playlists. Fail-open; never blocks."""
     if not service or not video_id:
         return
+    if channel_id:
+        try:
+            from core.playlists import add_to_playlists
+
+            note = add_to_playlists(
+                service, channel_id, video_id, title=request.title, tags=request.tags
+            )
+            if note:
+                logger.info("Playlists for %s: %s", video_id, note)
+        except Exception as exc:
+            logger.debug("playlist add skipped: %s", exc)
     try:
         from youtube.captions import maybe_upload_captions, resolve_caption_path
 
@@ -244,7 +315,7 @@ def _result_from_existing_log(
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
-            _post_upload_extras(service, existing.youtube_video_id, request)
+            _post_upload_extras(service, existing.youtube_video_id, request, channel_id=channel_id)
             return PublishResult(
                 video_id=existing.youtube_video_id,
                 status=existing.status,
@@ -324,7 +395,7 @@ def _resolve_prior_upload(
         content_run_id=content_run_id,
         thumbnail_path=request.thumbnail_path,
     )
-    _post_upload_extras(service, video_id, request)
+    _post_upload_extras(service, video_id, request, channel_id=channel_id)
     return PublishResult(
         video_id=video_id,
         status=log_status,
@@ -426,11 +497,61 @@ class YouTubePublisher(Publisher):
                 platform=PLATFORM_YOUTUBE,
             )
 
+        try:
+            from core.publish_deadman import deadman_block_reason
+
+            reason = deadman_block_reason()
+        except Exception as extra:
+            logger.warning("deadman check skipped: %s", extra)
+            reason = None
+        if reason:
+            return PublishResult(
+                video_id=None,
+                status="blocked",
+                detail=reason,
+                platform=PLATFORM_YOUTUBE,
+            )
+
         if not os.path.isfile(request.file_path):
             return PublishResult(
                 video_id=None,
                 status="invalid_file",
                 detail=f"File not found: {request.file_path}",
+                platform=PLATFORM_YOUTUBE,
+            )
+
+        try:
+            from core.first_frame import inspect_video, render_check
+            from scripts.probe_sync import intro_offset_seconds
+
+            offset = intro_offset_seconds(channel_id)
+            checked = inspect_video(request.file_path, intro_offset=offset)
+            if checked is not None and (checked.black or checked.frozen):
+                logger.warning("%s", render_check(checked))
+                print(f"  ! {render_check(checked)}")
+        except Exception as exc:
+            logger.warning("first-frame check skipped: %s", exc)
+
+        try:
+            from core.shorts_eligibility import shorts_refuse_reason
+
+            refuse = shorts_refuse_reason(file_path=request.file_path, title=request.title)
+            if refuse:
+                return PublishResult(
+                    video_id=None,
+                    status="blocked",
+                    detail=refuse,
+                    platform=PLATFORM_YOUTUBE,
+                )
+        except Exception as exc:
+            logger.debug("shorts eligibility skipped: %s", exc)
+
+        if _dry_run_enabled():
+            body = redact_publish_payload(dry_run_insert_body(request, channel_id=channel_id))
+            return PublishResult(
+                video_id=None,
+                status="dry_run",
+                detail=json.dumps(body, indent=2),
                 platform=PLATFORM_YOUTUBE,
             )
 
@@ -479,6 +600,19 @@ class YouTubePublisher(Publisher):
                 logger.debug("title lint domain skipped: %s", exc)
             for warn in lint_ufc_title(request.title, domain=domain):
                 logger.warning("%s", warn)
+            from core.cross_channel_dup import cross_channel_dup_block_reason
+
+            lens_hit = cross_channel_dup_block_reason(
+                request.title, channel_id, exclude_run_id=content_run_id
+            )
+            if lens_hit:
+                logger.warning("%s", lens_hit)
+                return PublishResult(
+                    video_id=None,
+                    status="blocked",
+                    detail=lens_hit,
+                    platform=PLATFORM_YOUTUBE,
+                )
         except Exception as exc:
             logger.debug("title uniqueness/lint skipped: %s", exc)
 
@@ -502,21 +636,7 @@ class YouTubePublisher(Publisher):
         )
         target_privacy = request.privacy_status
 
-        snippet = {
-            "title": request.title[:100],
-            "description": request.description[:5000],
-            "tags": (request.tags or [])[:30],
-            "categoryId": request.category_id or "",
-        }
-        try:
-            from core.youtube_meta import apply_snippet_defaults
-
-            snippet = apply_snippet_defaults(snippet, topic=request.title, channel_id=channel_id)
-        except Exception as exc:
-            logger.debug("snippet defaults skipped: %s", exc)
-            if not snippet.get("categoryId"):
-                snippet["categoryId"] = "20"
-
+        snippet = dry_run_insert_body(request, channel_id=channel_id)["snippet"]
         body = {
             "snippet": snippet,
             "status": video_status,
@@ -546,6 +666,17 @@ class YouTubePublisher(Publisher):
                     logger.info("Upload progress: %s%%", int(status.progress() * 100))
 
             video_id = response.get("id") or ""
+
+            if video_id:
+                try:
+                    from core.operator_minutes import record_publish_minutes
+                    from core.operator_timer import snapshot
+
+                    snap = snapshot()
+                    minutes = (snap["wall_s"] / 60.0) if snap else 0.0
+                    record_publish_minutes(channel_id, minutes)
+                except Exception as exc:
+                    logger.debug("operator minutes skipped: %s", exc)
 
             if video_id and log_id:
                 _update_publish_log(log_id, {"youtube_video_id": video_id})
@@ -596,7 +727,7 @@ class YouTubePublisher(Publisher):
                 content_run_id=content_run_id,
                 thumbnail_path=request.thumbnail_path,
             )
-            _post_upload_extras(service, video_id, request)
+            _post_upload_extras(service, video_id, request, channel_id=channel_id)
             if thumb.status == "set":
                 detail_suffix = thumb.detail or "Thumbnail set"
                 _update_publish_log(

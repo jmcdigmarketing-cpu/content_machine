@@ -17,7 +17,11 @@ import os
 import re
 from dataclasses import dataclass, field
 
+from core.logging import get_logger
+
 # Openers our style guide bans — strong penalty.
+logger = get_logger("core.hook_score")
+
 _WEAK_OPENERS = (
     "today",
     "let's",
@@ -45,13 +49,14 @@ _CURIOSITY = (
     "stop ",
     "before you",
     "the truth",
-    "won't believe",
-    "wont believe",
     "here's why",
     "heres why",
     "what most",
-    "nobody's talking",
 )
+# Removed: "won't believe" / "wont believe" / "nobody's talking". Each is a
+# headline template `title_generator._SLOP_PATTERNS` bins and the angle prompt
+# bans by name, so rewarding them here paid 28% of the report card for output
+# the next stage throws away. See tests/test_gate_agreement.py.
 
 # Stakes / scale markers.
 _STAKES = re.compile(
@@ -61,6 +66,24 @@ _STAKES = re.compile(
 )
 
 _DEFAULT_THRESHOLD = 60
+
+
+def _is_banned_template(hook: str) -> bool:
+    """Whether the hook is built on a headline template the pipeline rejects.
+
+    `_CURIOSITY` still holds bare words ("nobody", "actually") that are fine on
+    their own and appear inside banned templates by coincidence — dropping them
+    outright would cost real hooks their bonus. So the templates are checked
+    directly, against the one list that already defines them.
+
+    Imported lazily: `title_generator` pulls in the LLM router, and this module
+    advertises itself as heuristic and cheap enough to run on every generation.
+    """
+    try:
+        from core.title_generator import _SLOP_RE
+    except Exception:  # pragma: no cover - import guard only
+        return False
+    return bool(_SLOP_RE.search(hook or ""))
 
 
 @dataclass
@@ -129,11 +152,21 @@ def score_hook(hook: str) -> HookScore:
     if hook.endswith("?"):
         add("opens as a question", -8)
 
-    if any(c in low for c in _CURIOSITY):
+    # A hook built on a banned template earns neither bonus: `_clean_title`
+    # discards a title matching it, so paying for it here grades the run on
+    # phrasing the pipeline refuses to publish.
+    banned_template = _is_banned_template(hook)
+
+    if any(c in low for c in _CURIOSITY) and not banned_template:
         add("curiosity / contradiction", 15)
 
-    if _STAKES.search(hook):
+    if _STAKES.search(hook) and not banned_template:
         add("high stakes", 10)
+
+    if banned_template:
+        # #656. No bonus was not enough: a slop hook still outscored a clean
+        # specific one (93 vs 78 on the filed pair) and `_clean_title` bins it.
+        add("banned template", -20)
 
     score = max(0, min(100, score))
     return HookScore(score=score, hook=hook, reasons=reasons)
@@ -155,3 +188,13 @@ def display_hook_score(hs: HookScore, *, print_fn=print) -> None:
         weak_points = [label for label, delta in hs.reasons if delta < 0]
         if weak_points:
             print_fn("    Fix: " + ", ".join(weak_points))
+    # #407. The score nets out, so a bonus elsewhere can hide a weak opener at any
+    # verdict. Name the recorded shape regardless of the number.
+    try:
+        from core.opener_patterns import opener_advisory
+
+        note = opener_advisory(hs.hook)
+        if note:
+            print_fn(f"    Opener: {note}")
+    except Exception as exc:
+        logger.debug("opener advisory skipped: %s", exc)

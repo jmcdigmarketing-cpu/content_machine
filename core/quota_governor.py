@@ -361,10 +361,22 @@ def elevenlabs_add_chars(
 
 
 def elevenlabs_chars_used(key: str | None = None) -> int:
+    """For the budget *guard*: an unreadable ledger reads 0 so a render is never
+    blocked (fail-open). Anything that *reports* the number uses the reading below."""
     try:
         return int(float(quota_state.get_value(key or elevenlabs_chars_key(), 0.0) or 0.0))
     except Exception:
         return 0
+
+
+def elevenlabs_chars_reading(key: str | None = None) -> int | None:
+    """#724: chars used, or None when the ledger exists but cannot be read."""
+    try:
+        if not quota_state.read_ok():
+            return None
+        return int(float(quota_state.get_value(key or elevenlabs_chars_key(), 0.0) or 0.0))
+    except Exception:
+        return None
 
 
 def elevenlabs_would_exceed(chars: int, budget: int, *, key: str | None = None) -> bool:
@@ -426,5 +438,6 @@ def snapshot(apify_purpose: str = "main") -> dict:
         "llm": {"spend_today": llm_spend_today(), "dead_models": persisted_dead_models()},
         "signals": {"persisted": persisted_disabled_signals()},
         "youtube": youtube_usage(),
-        "elevenlabs": {"chars_used": elevenlabs_chars_used()},
+        # #724: a report, not a guard -- None when the ledger is unreadable.
+        "elevenlabs": {"chars_used": elevenlabs_chars_reading()},
     }

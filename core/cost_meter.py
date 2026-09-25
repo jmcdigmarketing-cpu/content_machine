@@ -127,16 +127,29 @@ def llm_cost_from_usage(calls: list[dict[str, Any]] | None) -> float:
     return round(sum(llm_cost_by_provider(calls).values()), 6)
 
 
-def local_tts_selected() -> bool:
-    """True when TTS_PROVIDER names a local engine (zero marginal cost).
+def local_tts_selected(length_choice: str = "") -> bool:
+    """True when TTS_PROVIDER names a zero-marginal-cost engine.
 
-    Env is read directly rather than importing core.tts — that would be an import cycle.
+    Includes Edge (cloud, $0). Env is read directly rather than importing core.tts
+    — that would be an import cycle.
     """
-    return os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() in (
+    provider = os.getenv("TTS_PROVIDER", "elevenlabs").strip().lower() or "elevenlabs"
+    if length_choice:
+        # #768: the render follows #758's per-length voice policy, so the meter must too -
+        # an Extended render on piper was projected and stored as $1.25 of ElevenLabs.
+        try:
+            from core.tts import long_form_provider
+
+            resolved = long_form_provider(provider, length_choice)
+        except Exception:  # a meter must not raise; keep the env provider
+            resolved = provider
+        provider = resolved
+    return provider in (
         "kokoro",
         "xtts",
         "piper",
         "qwen",
+        "edge",
     )
 
 
@@ -160,8 +173,24 @@ def escaped_free_first(calls: list[dict[str, Any]] | None = None) -> bool:
     return any(bool(c.get("escaped_free_first")) for c in (calls or []))
 
 
+def _tts_cache_fraction(tts_cached: bool | float) -> float:
+    """True -> 1.0 (free), False -> 0.0 (full price), float -> clamp 0..1 (#402)."""
+    if tts_cached is True:
+        return 1.0
+    if tts_cached is False:
+        return 0.0
+    try:
+        return min(1.0, max(0.0, float(tts_cached)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def render_cost_lines(
-    script: str = "", *, thumbnail_provider: str = "", tts_cached: bool = False
+    script: str = "",
+    *,
+    thumbnail_provider: str = "",
+    tts_cached: bool | float = False,
+    length_choice: str = "",
 ) -> dict[str, float]:
     """The cost lines that only exist once a render actually happened.
 
@@ -175,11 +204,12 @@ def render_cost_lines(
     ledger has moved on) would overwrite good values with wrong ones.
     """
     chars = len(script or "")
-    tts = (
-        0.0
-        if local_tts_selected() or tts_cached
-        else (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
-    )
+    full = (chars / 1000.0) * _rate(TTS_RATE_ENV, TTS_RATE_DEFAULT)
+    if local_tts_selected(length_choice):
+        tts = 0.0
+    else:
+        frac = _tts_cache_fraction(tts_cached)
+        tts = full * (1.0 - frac)
     return {
         "tts": round(tts, 4),
         "render": round(_rate("COST_RENDER_PER_VIDEO", 0.0), 4),
@@ -191,7 +221,8 @@ def merge_render_cost(
     script: str = "",
     *,
     thumbnail_provider: str | None = None,
-    tts_cached: bool = False,
+    tts_cached: bool | float = False,
+    length_choice: str = "",
 ) -> dict[str, float]:
     """Fold the render lines into an already-persisted cost dict and re-total it.
 
@@ -208,7 +239,7 @@ def merge_render_cost(
             merged[key] = round(float(value), 4)
         except (TypeError, ValueError):
             continue
-    merged.update(render_cost_lines(script, tts_cached=tts_cached))
+    merged.update(render_cost_lines(script, tts_cached=tts_cached, length_choice=length_choice))
     if thumbnail_provider is not None:
         merged["thumbnail"] = thumbnail_cost(thumbnail_provider)
     merged["total"] = round(sum(v for k, v in merged.items() if k != "total"), 4)
@@ -220,6 +251,7 @@ def estimate_run_cost(
     script: str = "",
     signals: dict[str, Any] | None = None,
     rendered: bool = False,
+    length_choice: str = "",
 ) -> dict[str, float]:
     """Estimate the fully-loaded cost of a run. Returns a breakdown + total (USD)."""
     signals = signals or {}
@@ -240,7 +272,7 @@ def estimate_run_cost(
         llm = (llm_tokens / 1000.0) * _rate("COST_LLM_PER_1K_TOKENS", 0.005)
 
     # TTS only happens on render; local providers meter $0 (see render_cost_lines).
-    tts = render_cost_lines(script)["tts"] if rendered else 0.0
+    tts = render_cost_lines(script, length_choice=length_choice)["tts"] if rendered else 0.0
 
     # Apify: one actor run per active paid social signal — except youtube_competitors
     # when it was served by a free in-process backend (data.backend == "free"), which
@@ -322,6 +354,16 @@ def format_standard_billed_line(
         f"Standard would have billed: ${billed['total']:.4f} "
         f"(tts ${billed['tts']:.4f} · thumb ${billed['thumbnail']:.4f})"
     )
+
+
+def free_mode_cost_proof(cost: dict[str, float] | None) -> str:
+    """#580: prove a Free/Piper run actually billed $0, or say that it did not."""
+    billed = dict(cost or {})
+    tts = float(billed.get("tts") or 0.0)
+    total = float(billed.get("total") or 0.0)
+    if tts <= 0.0 and total <= 0.0:
+        return "free-mode billed $0.0000 (tts $0.0000)"
+    return f"free-mode billed ${total:.4f} — not $0 (tts ${tts:.4f})"
 
 
 def format_cost_line(

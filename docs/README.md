@@ -1,6 +1,6 @@
 # Documentation index
 
-> **Class:** index · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** index · **Status:** living · **Reviewed:** 2026-09-25
 
 Every doc in this repo, by what it is for. Conventions:
 [docs_standard.md](docs_standard.md). Current verdict on the system:
@@ -43,6 +43,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [post_scheduling.md](post_scheduling.md) | Scheduling and the upload queue |
 | [agent_collaboration.md](agent_collaboration.md) | How Cursor and Claude Code split work here |
 | [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md) | Clip pipeline, compared |
+| [data_sourcing_strategy.md](data_sourcing_strategy.md) | Sourcing policy: APIs vs scrapers, per source |
+| [ops_commands.md](ops_commands.md) | Generated `ops` command reference (`ops command-ref`) |
 | [docs_standard.md](docs_standard.md) | The rules this index obeys |
 
 ## Runbooks — how do I do X
@@ -69,6 +71,12 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [master_plan.md](master_plan.md) | **Canonical.** Horizons M0–M5 |
 | [roadmap.md](roadmap.md) | Item-level open/shipped ledger |
 | [operating_plan.md](operating_plan.md) | Pace, cost, channels, ops |
+| [backlog.md](backlog.md) | Full open-item inventory (roadmap.md stays short) |
+| [desktop_app.md](desktop_app.md) | The Windows application programme |
+| [content_quality_plan.md](content_quality_plan.md) | Five quality issues, traced and planned |
+| [spec_quality_fixes_1_to_4.md](spec_quality_fixes_1_to_4.md) | Code-ready specs for quality fixes §1–§4 |
+| [spec_background_query_entity_anchor.md](spec_background_query_entity_anchor.md) | Code-ready spec for entity-anchored background queries |
+| [engineering_standards_backlog.md](engineering_standards_backlog.md) | Hygiene/standards backlog |
 | [content_intelligence_roadmap.md](content_intelligence_roadmap.md) | *archived* → master_plan.md |
 | [groundwork_2026Q3.md](groundwork_2026Q3.md) | *archived* → master_plan.md |
 | [intelligence_phase.md](intelligence_phase.md) | *archived* → roadmap.md |
@@ -90,6 +98,15 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [tool_integration_plan.md](tool_integration_plan.md) | 2026-08-25 — top 7 |
 | [agent_reach_evaluation.md](agent_reach_evaluation.md) | 2026-08 — free/keyless backends |
 | [case_study.md](case_study.md) | Pipeline case study |
+| [audit_2026-06-25.md](audit_2026-06-25.md) | 2026-06-25 — optimization ideas |
+| [brainstorm_directions.md](brainstorm_directions.md) | 2026-06-25 — ranked directions |
+| [external_sources_review.md](external_sources_review.md) | 2026-06-25 — candidate sources |
+| [idea_quality_diagnosis.md](idea_quality_diagnosis.md) | 2026-08-30 — why the ideas are bad |
+| [strategy_next_level.md](strategy_next_level.md) | 2026-08-30 — where this can go |
+| [gpt6_second_review_2026-09-08.md](gpt6_second_review_2026-09-08.md) | 2026-09-08 — external review |
+| [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md) | 2026-09-08 — external upgrade list |
+| [run_76.md](run_76.md) | 2026-09-13 — live-run postmortem |
+| [engine_upgrades.md](engine_upgrades.md) | 2026-09-20 — measured against 38 run traces |
 
 ## Logs — append-only
 
@@ -98,6 +115,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [change_log.md](change_log.md) | What shipped, by theme |
 | [planning_log.md](planning_log.md) | Brainstorming and decisions, by session |
 | [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) | Session state, newest wave first |
+| [handoff.md](handoff.md) | The mailbox — read first when starting work |
+| [roadmap_archive.md](roadmap_archive.md) | Completed roadmap items, never edited again |
 
 ## Directory-scoped rules
 

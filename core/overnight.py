@@ -31,17 +31,40 @@ from core.logging import get_logger
 logger = get_logger("core.overnight")
 
 
+def _append_tts_cache_line(lines: list[str]) -> None:
+    try:
+        from core.tts import format_tts_cache_line
+
+        lines.append(format_tts_cache_line())
+    except Exception as exc:
+        logger.debug("overnight tts cache line skipped: %s", exc)
+
+
+def _append_retention_line(lines: list[str]) -> None:
+    try:
+        from core.artifact_retention import format_retention_line
+
+        line = format_retention_line()
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("overnight retention line skipped: %s", exc)
+
+
 @dataclass
 class OvernightResult:
     channel_id: str
     requested: int = 0
     drafted: int = 0
     dossiers: int = 0
+    corrections: int = 0
     outcomes: list[Any] = field(default_factory=list)
     health_line: str = ""
     skillopt_line: str = ""
     quota_line: str = ""
     pause_line: str = ""
+    canary_line: str = ""
+    post_publish_line: str = ""
 
 
 def run_overnight(
@@ -67,6 +90,51 @@ def run_overnight(
     except Exception as exc:
         logger.debug("overnight pause check skipped: %s", exc)
 
+    try:
+        return _run_overnight_body(
+            channel,
+            result,
+            count=count,
+            topics=topics,
+            file=file,
+            facts_file=facts_file,
+        )
+    finally:
+        _probe_signals(result)
+        _post_publish(result)
+
+
+def _post_publish(result: OvernightResult) -> None:
+    """#600. Uploads 48h+ old looked at once more: removed, blocked, age-restricted, kids."""
+    try:
+        from core.post_publish_check import post_publish_line
+
+        result.post_publish_line = post_publish_line(result.channel_id)
+    except Exception as exc:
+        logger.debug("overnight post-publish check skipped: %s", exc)
+
+
+def _probe_signals(result: OvernightResult) -> None:
+    """#663. Nightly liveness, fail-open, never via all-checks (CI has no network)."""
+    try:
+        from core.signal_canary import check_signals, render, save_results
+
+        rows = check_signals()
+        save_results(rows)
+        result.canary_line = render(rows)
+    except Exception as exc:
+        logger.debug("overnight signal canary skipped: %s", exc)
+
+
+def _run_overnight_body(
+    channel: str,
+    result: OvernightResult,
+    *,
+    count: int,
+    topics: list[str] | None,
+    file: str | None,
+    facts_file: str | None,
+) -> OvernightResult:
     from core.batch_generation import collect_topics, run_batch
     from core.operator_facts import load_key_facts
 
@@ -156,6 +224,39 @@ def run_overnight(
         notify_overnight_done(result.drafted, result.requested)
     except Exception as exc:
         logger.debug("overnight toast skipped: %s", exc)
+    try:
+        from core.retraction_watch import notify_retractions_if_due
+
+        notify_retractions_if_due(channel)
+    except Exception as exc:
+        logger.debug("overnight retraction toast skipped: %s", exc)
+    try:
+        # #112. The toast above is transient: first hit only, deduped per
+        # process, joined to no run. This writes the dossier that survives the
+        # night. It never touches the published video.
+        from core.correction_dossier import scan_published_for_corrections
+
+        filed = scan_published_for_corrections(channel)
+        if filed:
+            result.corrections = len(filed)
+            logger.warning(
+                "%s correction dossier(s) filed for published videos on %s",
+                len(filed),
+                channel,
+            )
+    except Exception as exc:
+        logger.warning("overnight correction scan did not run: %s", exc)
+    if topics:
+        try:
+            from core.best_bet import get_best_bet
+            from core.counterfactual import record_override
+
+            bet = get_best_bet(channel)
+            chosen = {str(t) for t in topics}
+            if bet and bet.topic not in chosen:
+                record_override(bet.topic, ";".join(topics))
+        except Exception as exc:
+            logger.debug("overnight counterfactual skipped: %s", exc)
     return result
 
 
@@ -174,6 +275,13 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append("Overnight skipped (quota gate). Nothing drafted.")
         else:
             lines.append("No topics to draft (best bets unavailable). Nothing done.")
+        if result.canary_line:
+            lines.append("")
+            lines.append(result.canary_line)
+        if result.post_publish_line:
+            lines.append(result.post_publish_line)
+        _append_tts_cache_line(lines)
+        _append_retention_line(lines)
         return "\n".join(lines)
     try:
         lines.append(render_summary(result.outcomes).strip())
@@ -181,11 +289,42 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(f"{result.drafted}/{result.requested} drafts saved")
     lines.append("")
     lines.append(f"Dossiers written to vault: {result.dossiers}")
+    if result.corrections:
+        lines.append(
+            f"CORRECTIONS: {result.corrections} published video(s) rest on a claim whose "
+            "source has since been retracted. Dossiers are in the vault; nothing was "
+            "changed on YouTube."
+        )
     if result.health_line:
         lines.append(result.health_line)
     if result.skillopt_line:
         lines.append(result.skillopt_line)
-    lines.append("Review drafts in output/<channel>/drafts/, then approve to render.")
+    if result.canary_line:
+        lines.append("")
+        lines.append(result.canary_line)
+    if result.post_publish_line:
+        lines.append(result.post_publish_line)
+    _append_tts_cache_line(lines)
+    _append_retention_line(lines)
+    lines.append(
+        f"Review them in one pass: py -m scripts.ops batch-review --channel {result.channel_id}"
+    )
+    try:
+        from core.cadence import cadence_status, target_line
+
+        week = target_line(cadence_status(result.channel_id))
+        if week:
+            lines.append(week)
+    except Exception as exc:
+        logger.debug("weekly target line skipped: %s", exc)
+    try:
+        from core.spend_week import spend_warning_line
+
+        spend = spend_warning_line()
+        if spend:
+            lines.append(spend)
+    except Exception as exc:
+        logger.debug("weekly spend line skipped: %s", exc)
     return "\n".join(lines)
 
 
@@ -215,4 +354,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    from core.console_encoding import ensure_utf8_stdout
+
+    ensure_utf8_stdout()  # #767: redirected / scheduled runs are cp1252
     raise SystemExit(main())

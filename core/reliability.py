@@ -101,6 +101,12 @@ def _signals_section() -> dict[str, Any]:
         out["cooldowns"] = dict(sorted(cooldowns.items()))
     except Exception as exc:
         logger.debug("disabled_signals skipped: %s", exc)
+    try:
+        from apis.signals_bootstrap import RETIRED_SIGNALS
+
+        out["retired"] = sorted(RETIRED_SIGNALS)
+    except Exception as exc:
+        logger.debug("retired signals skipped: %s", exc)
     return out
 
 
@@ -111,6 +117,16 @@ def _cache_section() -> dict[str, Any]:
         return get_cache_stats()
     except Exception:
         return {"total": 0, "hit_rate": 0.0, "by_prefix": {}}
+
+
+def _tts_cache_section() -> dict[str, Any]:
+    try:
+        from core.tts import tts_cache_status
+
+        return tts_cache_status()
+    except Exception as exc:
+        logger.debug("tts cache section skipped: %s", exc)
+        return {"enabled": False, "files": 0, "hits": 0, "misses": 0, "hit_rate": None}
 
 
 def _youtube_section() -> dict[str, Any]:
@@ -154,12 +170,13 @@ def _elevenlabs_section() -> dict[str, Any]:
             budget = None
     out: dict[str, Any] = {"budget": budget}
     try:
-        from core.quota_governor import elevenlabs_chars_used
+        from core.quota_governor import elevenlabs_chars_reading
 
-        out["chars_used"] = elevenlabs_chars_used()
+        # #724: None when the ledger is unreadable -- unknown, never zero.
+        out["chars_used"] = elevenlabs_chars_reading()
     except Exception as exc:
-        logger.debug("elevenlabs_chars_used skipped: %s", exc)
-        out["chars_used"] = 0
+        logger.debug("elevenlabs_chars_reading skipped: %s", exc)
+        out["chars_used"] = None
     return out
 
 
@@ -197,6 +214,64 @@ def _policy_canary_section() -> list[str]:
         return []
 
 
+def _metrics_sync_section() -> dict[str, Any]:
+    """Stalled metrics sync is an incident (#366). Fresh sync is not a WARNING."""
+    try:
+        import json
+        from datetime import datetime, timezone
+
+        from config.channels import resolve_channel_id
+        from core.metrics_sync_health import metrics_sync_incident
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        cid = resolve_channel_id(os.getenv("CONTENT_CHANNEL_ID") or None)
+        rows = get_publish_log_repository().list_uploaded_for_channel(cid)
+        uploads = len(rows)
+        now = datetime.now(timezone.utc)
+        ages: list[float] = []
+        for row in rows:
+            try:
+                metrics = json.loads(row.metrics_json or "{}")
+            except Exception:
+                metrics = {}
+            if not isinstance(metrics, dict) or not metrics:
+                continue
+            when = row.published_at
+            if when is None:
+                ages.append(0.0)
+                continue
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            ages.append(max(0.0, (now - when).total_seconds() / 86400.0))
+        last_age = min(ages) if ages else (None if uploads else 0.0)
+        incident = metrics_sync_incident(
+            uploads=uploads, last_metrics_age_days=last_age, stall_days=7.0
+        )
+        detail = incident or (
+            f"metrics sync fresh ({last_age:.0f}d)"
+            if last_age is not None
+            else "metrics sync fresh"
+        )
+        return {"incident": incident, "detail": detail}
+    except Exception as exc:
+        logger.debug("metrics sync section skipped: %s", exc)
+        return {"incident": None, "detail": "metrics sync n/a"}
+
+
+def _store_section() -> dict[str, Any]:
+    try:
+        from config.paths import DATA_DIR
+
+        path = os.path.join(DATA_DIR, "content_os.db")
+        if os.path.isfile(path):
+            size = os.path.getsize(path)
+            return {"bytes": size, "detail": f"sqlite {size} bytes"}
+        return {"bytes": 0, "detail": "database n/a"}
+    except Exception as exc:
+        logger.debug("store size skipped: %s", exc)
+        return {"bytes": 0, "detail": "database n/a"}
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {
@@ -204,12 +279,15 @@ def gather() -> dict[str, Any]:
         "llm": _llm_section(),
         "signals": _signals_section(),
         "cache": _cache_section(),
+        "tts_cache": _tts_cache_section(),
         "youtube": _youtube_section(),
         "elevenlabs": _elevenlabs_section(),
         "data_quality": _data_quality_section(),
         "competitor_health": _competitor_health_section(),
         "fact_expiry": _fact_expiry_section(),
         "policy_canary": _policy_canary_section(),
+        "metrics_sync": _metrics_sync_section(),
+        "store": _store_section(),
     }
 
 
@@ -227,7 +305,10 @@ def _utilization_lines(data: dict[str, Any]) -> list[str]:
     out: list[str] = []
     el = data.get("elevenlabs") or {}
     budget = el.get("budget")
-    if budget:
+    if budget and "chars_used" in el and el["chars_used"] is None:
+        # #724: the ledger could not be read, so "all of it unused" would be invented.
+        out.append("ElevenLabs: unused chars unknown (ledger unreadable)")
+    elif budget:
         used = int(el.get("chars_used") or 0)
         left = max(0, int(budget) - used)
         try:
@@ -276,6 +357,24 @@ def _budget_line(used: float | None, budget: float | None) -> str:
     return f"${used:.2f}/${budget:.2f} ({pct:.0f}%){flag}"
 
 
+def _apify_cache_dollars_saved(by_prefix: dict[str, Any]) -> float:
+    """Hits on paid Apify signal prefixes × COST_APIFY_PER_RUN (#372)."""
+    try:
+        from core.cost_meter import _APIFY_SIGNALS, _rate
+    except Exception:
+        return 0.0
+    hits = 0
+    for name in _APIFY_SIGNALS:
+        bucket = (by_prefix or {}).get(name) or {}
+        try:
+            hits += int(bucket.get("hits") or 0)
+        except (TypeError, ValueError):
+            continue
+    if hits <= 0:
+        return 0.0
+    return round(hits * _rate("COST_APIFY_PER_RUN", 0.02), 4)
+
+
 def render(data: dict[str, Any] | None = None) -> str:
     """Format the snapshot as an operator-facing multi-line report."""
     data = data or gather()
@@ -321,6 +420,9 @@ def render(data: dict[str, Any] | None = None) -> str:
     sig = data.get("signals", {})
     dis = sig.get("disabled") or []
     lines.append(f"Signals disabled (this process): {', '.join(dis) if dis else '(none)'}")
+    retired = sig.get("retired") or []
+    if retired:
+        lines.append(f"Signals retired: {', '.join(retired)}")
     cooldowns = sig.get("cooldowns") or {}
     if cooldowns:
         # ASCII arrow: unlike main.py, scripts/ops.py doesn't force UTF-8 stdout,
@@ -343,6 +445,16 @@ def render(data: dict[str, Any] | None = None) -> str:
         tot = h + m
         if tot:
             lines.append(f"  {name:<16} {h}/{tot} ({h / tot * 100:.0f}%)")
+    saved = _apify_cache_dollars_saved(by_prefix)
+    if saved > 0:
+        lines.append(f"  Apify cache hits saved ~${saved:.2f}")
+    tts_cache = data.get("tts_cache") or {}
+    try:
+        from core.tts import format_tts_cache_line
+
+        lines.append(format_tts_cache_line(tts_cache))
+    except Exception as exc:
+        logger.debug("tts cache line skipped: %s", exc)
 
     yt = data.get("youtube", {})
     if yt:
@@ -382,7 +494,10 @@ def render(data: dict[str, Any] | None = None) -> str:
         lines.extend(f"  {u}" for u in util)
 
     el = data.get("elevenlabs") or {}
-    if el.get("budget"):
+    if el.get("budget") and "chars_used" in el and el["chars_used"] is None:
+        # #724: an unreadable ledger is not "0 used".
+        lines.append(f"ElevenLabs chars: unknown/{int(el['budget']):,} (ledger unreadable)")
+    elif el.get("budget"):
         used = int(el.get("chars_used") or 0)
         budget = int(el["budget"])
         pct = (used / budget * 100) if budget else 0.0
@@ -409,6 +524,14 @@ def render(data: dict[str, Any] | None = None) -> str:
     if pc:
         lines.append("Policy canary:")
         lines.extend(f"  ! {w}" for w in pc)
+
+    ms = data.get("metrics_sync") or {}
+    if isinstance(ms, dict) and (ms.get("incident") or ms.get("detail")):
+        lines.append(f"  metrics : {ms.get('incident') or ms.get('detail')}")
+
+    store = data.get("store") or {}
+    if isinstance(store, dict) and store.get("detail"):
+        lines.append(f"  database: {store.get('detail')}")
 
     inc = data.get("incidents") or []
     if inc:

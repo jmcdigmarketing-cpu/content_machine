@@ -116,7 +116,7 @@ Concrete, mostly small, high leverage. The first three come out of
 5. **Refresh the Anthropic default model IDs** — `_DEFAULT_MODELS` still pins
    `claude-sonnet-4-…` while the Claude 5 family exists, on the live paid provider.
    Config-level; *evaluate, don't blind-bump*. `[S]`
-6. **`ops reddit-setup` guided flow** — see §6. `[S]`
+6. **Reddit setup guided flow** — see §6. `[S]`
 7. **A `[test]` extra** so the logic suite runs without the full media stack — 90 of
    148 collection errors are just `sqlalchemy`. Dev velocity + faster CI. `[S–M]`
 
@@ -145,7 +145,7 @@ are 403-blocked for bots.** So the free "script app" OAuth
 (`REDDIT_CLIENT_ID`/`REDDIT_CLIENT_SECRET`) is the *only* $0 path — there is no clever
 way around it, and the setup is a genuine one-time ~2-minute cost.
 
-**Therefore the fix is UX, not elimination:** an `ops reddit-setup` command that prints
+**Therefore the fix is UX, not elimination:** a guided Reddit setup command that prints
 the exact click-path (reddit.com/prefs/apps → script app → copy id/secret), accepts the
 values, **validates them with a live token call**, and writes them; plus a clear
 `free-doctor` line when they're missing. Turns undocumented friction into a two-minute

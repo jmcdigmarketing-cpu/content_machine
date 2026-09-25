@@ -20,8 +20,17 @@ def detect_studio_deleted(
     channel_id: str,
     *,
     service=None,
+    report: dict | None = None,
 ) -> list[PublishLogRecord]:
-    """Cancel uploaded rows whose youtube_video_id is missing from videos.list."""
+    """Cancel uploaded rows whose youtube_video_id is missing from videos.list.
+
+    `report` (#780) is filled with `checked`, `still_live` and `error`, so a caller can tell
+    "every video is still on YouTube" from "YouTube was never reached" - both used to print
+    as "none".
+    """
+    if report is None:
+        report = {}
+    report.update({"checked": 0, "still_live": [], "error": ""})
     from storage.repositories.publish_log import get_publish_log_repository
 
     repo = get_publish_log_repository()
@@ -39,10 +48,12 @@ def detect_studio_deleted(
 
             if not is_upload_configured(channel_id):
                 logger.debug("studio-deleted skipped: upload not configured")
+                report["error"] = "YouTube upload is not configured for this channel"
                 return []
             service = get_youtube_service(channel_id)
         except Exception as exc:
             logger.debug("studio-deleted service skipped: %s", exc)
+            report["error"] = f"could not open the YouTube service: {exc}"
             return []
     ids = [r.youtube_video_id for r in rows]
     found: set[str] = set()
@@ -56,7 +67,10 @@ def detect_studio_deleted(
                     found.add(vid)
     except Exception as exc:
         logger.debug("videos.list for studio-deleted skipped: %s", exc)
+        report["error"] = f"videos.list failed: {exc}"
         return []
+    report["checked"] = len(ids)
+    report["still_live"] = [vid for vid in ids if vid in found]
     cancelled: list[PublishLogRecord] = []
     for row in rows:
         if row.youtube_video_id in found:

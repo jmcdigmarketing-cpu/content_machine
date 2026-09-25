@@ -43,10 +43,6 @@
     ],
     "ufc": [
       {
-        "name": "Sherdog",
-        "url": "https://www.sherdog.com/rss/news.xml"
-      },
-      {
         "name": "MMA Fighting",
         "url": "https://www.mmafighting.com/rss/index.xml"
       },
@@ -155,11 +151,10 @@
   "reference_sites": {
     "nba": ["basketball-reference.com", "site.api.espn.com"],
     "nfl": ["pro-football-reference.com", "site.api.espn.com"],
-    "mma": ["sherdog.com", "ufc.com", "mmafighting.com"]
+    "mma": ["ufc.com", "mmafighting.com"]
   },
   "optional_apis": {
     "notes": "Add keys in .env — see docs/data-sources.md and docs/domain-expansion.md",
-    "sportsdata": "SPORTSDATA_API_KEY",
     "balldontlie": "BALLDONTLIE_API_KEY",
     "api_sports": "API_SPORTS_KEY",
     "fred": "FRED_API_KEY",

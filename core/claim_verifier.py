@@ -31,8 +31,17 @@ from core.logging import get_logger
 logger = get_logger("core.claim_verifier")
 
 _MAX_CLAIMS = 12
-_MAX_FACT_CHARS = 6000
 _MAX_UNSUPPORTED_KEPT = 10
+
+
+def _max_fact_chars() -> int:
+    """Same budget the script prompt packs — run 76's verifier dropped fact 75."""
+    try:
+        from core.operator_facts import operator_key_fact_char_budget
+
+        return operator_key_fact_char_budget()
+    except Exception:
+        return 12000
 
 
 @dataclass
@@ -40,6 +49,7 @@ class VerifiedClaim:
     claim: str
     supported: bool
     citation_line: str = ""  # the fact line that backs a supported claim
+    claim_type: str = ""  # #345 - result|award|stat|date|schedule|rumor|opinion|other
 
 
 @dataclass
@@ -51,6 +61,8 @@ class ClaimVerification:
     rewritten: bool = False
     pre_rewrite_unsupported: int = 0
     pre_rewrite_total: int = 0
+    script_pre_rewrite: str = ""
+    script_post_rewrite: str = ""
 
     @property
     def total(self) -> int:
@@ -85,13 +97,36 @@ class ClaimVerification:
             "supported": self.supported_count,
             "support_rate": self.support_rate,
             "unsupported": [c.claim[:200] for c in self.unsupported[:_MAX_UNSUPPORTED_KEPT]],
+            # #112. The claim->source edge. Without `citation_line` persisted, a
+            # post-publish reversal can say a source moved but never which claim
+            # it backed, and `<stem>.facts.json` -- which reads exactly this key
+            # -- shipped an empty list on every render.
+            "claims": [
+                {
+                    "claim": c.claim[:200],
+                    "supported": bool(c.supported),
+                    "citation_line": (c.citation_line or "")[:200],
+                    "type": c.claim_type,
+                }
+                for c in self.claims[:_MAX_CLAIMS]
+            ],
         }
+        # #345 - aligned with `unsupported`; each type has its own grounding bar. Only
+        # present when the verifier typed its claims, so an untyped run keeps its shape.
+        if any(c.claim_type for c in self.claims):
+            out["unsupported_types"] = [
+                c.claim_type for c in self.unsupported[:_MAX_UNSUPPORTED_KEPT]
+            ]
         # Only present on a rewritten run, so existing readers see no change.
         if self.rewritten:
             out["rewritten"] = True
             out["pre_rewrite_unsupported"] = self.pre_rewrite_unsupported
             out["pre_rewrite_total"] = self.pre_rewrite_total
             out["pre_rewrite_support_rate"] = self.pre_rewrite_support_rate
+            if self.script_pre_rewrite:
+                out["script_pre_rewrite"] = self.script_pre_rewrite
+            if self.script_post_rewrite:
+                out["script_post_rewrite"] = self.script_post_rewrite
         return out
 
 
@@ -101,15 +136,37 @@ def verifier_enabled() -> bool:
 
 
 def grounding_gate_mode() -> str:
-    """warn (default) | block — mirrors AUTHENTICITY_GATE (decisions §9)."""
-    return os.getenv("GROUNDING_GATE", "warn").strip().lower() or "warn"
+    """block (default since #735, operator call 2026-09-13) | warn - mirrors
+    AUTHENTICITY_GATE. `GROUNDING_GATE=warn` makes unsupported claims advisory."""
+    return os.getenv("GROUNDING_GATE", "block").strip().lower() or "block"
 
 
 def gate_blocks(verification_dict: dict[str, Any] | None) -> bool:
-    """True when GROUNDING_GATE=block and the verifier found unsupported claims."""
+    """True when GROUNDING_GATE=block and an unsupported claim fails its type's bar (#345).
+
+    A hedged rumor or a number-free opinion warns only; an untyped claim stays strict.
+    """
     if grounding_gate_mode() != "block":
         return False
-    return bool((verification_dict or {}).get("unsupported"))
+    from core.claim_types import blocking_unsupported
+
+    return bool(blocking_unsupported(verification_dict))
+
+
+def override_features(verification_dict: dict[str, Any] | None) -> dict[str, Any]:
+    """Features recording that the operator rendered past flagged claims (#754).
+
+    Run 77 answered `y` at the grounding gate and the video queued public; nothing after
+    the render remembered. `blocking_publish_reasons` and the upload prompt read these.
+    """
+    from core.claim_types import blocking_typed, typed_unsupported
+
+    typed = blocking_typed(verification_dict) or typed_unsupported(verification_dict)
+    return {
+        "grounding_override": True,
+        "grounding_override_claims": [claim for claim, _type in typed[:5]],
+        "grounding_override_types": [claim_type for _claim, claim_type in typed[:5]],
+    }
 
 
 def _numbered_facts(
@@ -124,7 +181,7 @@ def _numbered_facts(
 
     def _add(ln: str) -> None:
         nonlocal used
-        if used + len(ln) > _MAX_FACT_CHARS:
+        if used + len(ln) > _max_fact_chars():
             return
         numbered.append(ln)
         used += len(ln)
@@ -180,15 +237,18 @@ def verify_claims(
         "as true — specific events, results, trades, signings, records, stats, "
         "dates, versions. Skip opinions, predictions, hypotheticals, and "
         "rhetorical questions. For each claim decide:\n"
+        "- type: one of result, award, stat, date, schedule, rumor, opinion, other "
+        "(rumor = a leak or report that is not confirmed).\n"
         "- supported: true only if one or more FACT lines directly back the claim "
         "(paraphrase is fine, but direction, names, and numbers must match).\n"
         "- citation: the number of the single FACT line that best supports it "
         "(null when unsupported).\n"
         'Return JSON only: {"claims": [{"claim": "...", "supported": true, '
-        '"citation": 3}]}'
+        '"citation": 3, "type": "result"}]}'
     )
     user_prompt = f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{facts_block}\n\nSCRIPT:\n{script}"
 
+    from core.claim_types import normalize_type
     from core.llm_router import complete_json
 
     try:
@@ -219,7 +279,12 @@ def verify_claims(
         if supported and isinstance(raw_citation, int) and 1 <= raw_citation <= len(facts):
             citation = facts[raw_citation - 1]
         verification.claims.append(
-            VerifiedClaim(claim=claim, supported=supported, citation_line=citation)
+            VerifiedClaim(
+                claim=claim,
+                supported=supported,
+                citation_line=citation,
+                claim_type=normalize_type(item.get("type")),
+            )
         )
     if not verification.claims:
         return None
@@ -237,8 +302,15 @@ def display_claim_verification(verification_dict: dict[str, Any] | None, *, prin
         return False
     rewritten = bool(verification_dict.get("rewritten"))
     pre_unsupported = int(verification_dict.get("pre_rewrite_unsupported") or 0)
+    density_raw = verification_dict.get("hedge_density")
+    density_note = ""
+    if isinstance(density_raw, int | float) and float(density_raw) > 0:
+        density_note = f" (hedge density {float(density_raw):.1f}/100w)"
     if not unsupported:
-        print_fn(f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts.")
+        print_fn(
+            f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts."
+            f"{density_note}"
+        )
         # Candidate 322 — run 71 printed exactly the line above after 7 of 12 claims had
         # been restated as "reports claim..." by the rewrite pass. Same check, rewritten
         # script: nothing was verified between the two numbers.
@@ -250,13 +322,22 @@ def display_claim_verification(verification_dict: dict[str, Any] | None, *, prin
             print_fn("    Read this as 'no bare assertions left', not 'all claims true'.")
             return True
         return False
+    from core.claim_types import claim_blocks, typed_unsupported
+
+    typed = typed_unsupported(verification_dict)
     print_fn(
         f"  ! Claim check: {len(unsupported)} of {total} claim(s) in the SCRIPT aren't in your facts:"
     )
-    for claim in unsupported[:6]:
-        print_fn(f"    - {claim}")
+    for claim, claim_type in typed[:6]:
+        tag = f"[{claim_type}] " if claim_type else ""
+        note = "  (warn only)" if not claim_blocks(claim, claim_type) else ""
+        print_fn(f"    - {tag}{claim}{note}")
     if len(unsupported) > 6:
         print_fn(f"    - ...and {len(unsupported) - 6} more")
+    if any(not claim_blocks(claim, claim_type) for claim, claim_type in typed):
+        print_fn(
+            "    Hedged rumors and opinions are warn only - they do not stop the render (#345)."
+        )
     print_fn(
         "    These are unverified — the model likely added them. Cut them from the script, "
         "or add a source that backs them."

@@ -9,8 +9,14 @@
           "XjLkpWUlnhS8i7gGz3lZ": 2,
           "r1KmysJdVYZjJCm4mL3b": 1
         },
-        "model_id": "eleven_multilingual_v2"
-      }
+        "model_id": "eleven_multilingual_v2",
+        "local_voice": "video/voices/en_US-bobby-medium.onnx",
+        "local_voices": [
+          "video/voices/en_US-bobby-medium.onnx",
+          "video/voices/en_US-carl-medium.onnx"
+        ]
+      },
+      "ui_theme": "plain"
     },
     "tapin": {
       "name": "TapIn Media",
@@ -24,6 +30,8 @@
       "caption_skin": {
         "mode": "karaoke",
         "font": "Arial",
+        "title_font": "Impact",
+        "body_font": "Arial",
         "fill_color": "#FFFFFF",
         "outline_color": "#111111",
         "boxed": false
@@ -49,12 +57,24 @@
       "asset_provider_order": ["local", "pexels", "pixabay", "coverr"],
       "output_subdir": "tapin",
       "intro_video_file": "video/intro/channel_intro.mp4",
+      "intro_offset_seconds": 2.15,
       "publishers_enabled": ["youtube"],
       "youtube_oauth_token_file": "config/secrets/youtube_token_tapin.json",
       "privacy_status_default": "private",
+      "ui_theme": "dbz",
       "tts": {
         "voice_id": "nPczCjzI2devNBz1zQrb",
-        "model_id": "eleven_multilingual_v2"
+        "model_id": "eleven_multilingual_v2",
+        "voice_pool": {
+          "nPczCjzI2devNBz1zQrb": 4,
+          "XjLkpWUlnhS8i7gGz3lZ": 2,
+          "JBFqnCBsd6RMkjVDRZzb": 1
+        },
+        "local_voice": "video/voices/en_US-bobby-medium.onnx",
+        "local_voices": [
+          "video/voices/en_US-bobby-medium.onnx",
+          "video/voices/en_US-eminem-medium.onnx"
+        ]
       },
       "weight_overrides": {
         "youtube": 0.28,
@@ -119,6 +139,8 @@
       "caption_skin": {
         "mode": "word",
         "font": "Arial",
+        "title_font": "Georgia",
+        "body_font": "Arial",
         "fill_color": "#F7E7A9",
         "outline_color": "#1B2430",
         "boxed": true
@@ -143,12 +165,24 @@
       "hybrid_local_ratio": 0.45,
       "asset_provider_order": ["local", "pexels", "pixabay", "coverr"],
       "output_subdir": "moneywise",
+      "intro_offset_seconds": 0.0,
       "publishers_enabled": ["youtube"],
       "youtube_oauth_token_file": "config/secrets/youtube_token_moneywise.json",
       "privacy_status_default": "private",
+      "ui_theme": "plain",
       "tts": {
         "voice_id": "XjLkpWUlnhS8i7gGz3lZ",
-        "model_id": "eleven_multilingual_v2"
+        "model_id": "eleven_multilingual_v2",
+        "voice_pool": {
+          "XjLkpWUlnhS8i7gGz3lZ": 4,
+          "nPczCjzI2devNBz1zQrb": 2,
+          "r1KmysJdVYZjJCm4mL3b": 1
+        },
+        "local_voice": "video/voices/en_US-carl-medium.onnx",
+        "local_voices": [
+          "video/voices/en_US-carl-medium.onnx",
+          "video/voices/en_US-patrick-medium.onnx"
+        ]
       },
       "post_schedule": {
         "timezone": "America/New_York",

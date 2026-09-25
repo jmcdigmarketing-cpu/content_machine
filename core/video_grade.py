@@ -29,7 +29,17 @@ from core.logging import get_logger
 
 logger = get_logger("core.video_grade")
 
-GRADE_VERSION = "v1"
+# v2 (2026-09-05): the rubric changed twice and nothing recorded it.
+# - 2026-08-30 moved three components: "hot take" left `authenticity._INSIGHT_MARKERS`,
+#   two terms left `hook_score._CURIOSITY`, and a banned-template guard was added.
+# - 2026-09-05 added the `length` component (#645).
+# `core/grade_calibration.py` re-grades every stored run with *today's* code, so
+# without this stamp a v1 letter and a v2 letter were indistinguishable.
+# v3 (2026-09-06): #660 stopped ordering a take on calm intents; #656 penalises
+# banned-template hooks. Historical letters from v2 are a different rubric.
+# v4 (2026-09-20): #804 continuous authenticity points so 100/100 is no longer
+# the mode; #800 hedge-density penalty on grounding. Gate verdicts are unchanged.
+GRADE_VERSION = "v4"
 
 # Component weights (renormalized over the components actually present).
 _WEIGHTS = {
@@ -38,6 +48,12 @@ _WEIGHTS = {
     "grounding": 0.22,
     "topic": 0.12,
     "thumbnail": 0.10,
+    # #645. Deliberately not carved out of the five above: taking weight from
+    # hook or authenticity would change what those scores mean on top of adding
+    # a component. The sum is now 1.10 and the existing renormaliser divides it
+    # back to 1.0, so every other component is diluted proportionally - visible,
+    # arithmetic, and stamped by GRADE_VERSION rather than silent.
+    "length": 0.10,
 }
 
 _UNGROUNDED_PENALTY = 25  # per unsupported specific
@@ -47,6 +63,9 @@ _TRADE_PENALTY = 20  # per trade-direction warning
 _UNSUPPORTED_CLAIM_PENALTY = 15  # per LLM-verifier unsupported claim
 _CONFLICT_PENALTY = 15  # per operator-vs-source fact conflict
 _TIER_PENALTY = 10  # per grounding-tier warning
+# #800 / §25: "12/12 backed" bought with hedging. Points per hedge phrase per
+# 100 spoken words. Grade-only — the render gate is unchanged (#345).
+_HEDGE_DENSITY_PENALTY = 5.0
 
 
 @dataclass
@@ -64,6 +83,9 @@ class VideoGrade:
     components: list[GradeComponent] = field(default_factory=list)
     predicted_engaged_rate: float | None = None
     prediction_note: str = ""
+    engagement_surprise: float | None = None
+    version: str = GRADE_VERSION
+    script_passes: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _letter(score: float) -> str:
@@ -84,6 +106,7 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
     unsupported = int(quality.get("unsupported_claim_count") or 0)
     conflicts = int(quality.get("fact_conflict_count") or 0)
     tiers = int(quality.get("tier_warning_count") or 0)
+    density = float(quality.get("hedge_density") or 0)
     score = max(
         0.0,
         100.0
@@ -91,7 +114,8 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
         - _TRADE_PENALTY * trades
         - _UNSUPPORTED_CLAIM_PENALTY * unsupported
         - _CONFLICT_PENALTY * conflicts
-        - _TIER_PENALTY * tiers,
+        - _TIER_PENALTY * tiers
+        - _HEDGE_DENSITY_PENALTY * density,
     )
     notes = []
     if ungrounded:
@@ -102,9 +126,46 @@ def _grounding_score(quality: dict[str, Any]) -> tuple[float, str]:
         notes.append(f"{unsupported} unsupported claim(s)")
     if conflicts:
         notes.append(f"{conflicts} fact conflict(s)")
+    if quality.get("disputed"):
+        notes.append("DISPUTED")
     if tiers:
         notes.append(f"{tiers} tier warning(s)")
+    if density > 0:
+        notes.append(f"hedge density {density:.1f}/100w")
     return score, "; ".join(notes) or "fully grounded"
+
+
+def _length_score(quality: dict[str, Any]) -> tuple[float, str] | None:
+    """0-100 for how well the script hit its length preset, or None when unknown.
+
+    Agrees with `core/script_length.format_length_report`, which is the same
+    comparison the operator already reads at review time — two components
+    disagreeing about one script is the #653 defect, and this must not add another.
+
+    A short script is the graded failure: run 74 shipped 277 against a 300 floor
+    and the expansion loop had already exited, because four later passes remove
+    text and nothing re-measured. Overrunning is milder - padding, not a missing
+    beat - so it is penalised at half the rate.
+    """
+    words = quality.get("word_count")
+    floor = quality.get("min_words")
+    ceiling = quality.get("max_words")
+    if words is None or not floor:
+        return None
+    words = int(words)
+    floor = int(floor)
+    if words < floor:
+        # The floor is a stated contract, so missing it starts below full marks
+        # rather than decaying from 100 - otherwise the arithmetic cannot reach
+        # the outcome this item was filed for. Calibrated on run 74: 277 against
+        # a 300 floor is 7.7% short, scores 47, and costs the run its A.
+        deficit = (floor - words) / floor
+        return max(0.0, round(85.0 - deficit * 500, 1)), f"{words} words, {floor} floor"
+    if ceiling and words > int(ceiling):
+        # Padding is the milder sin: the beats are there, there are just too many.
+        excess = (words - int(ceiling)) / int(ceiling)
+        return max(0.0, round(95.0 - excess * 250, 1)), f"{words} words, {ceiling} ceiling"
+    return 100.0, f"{words} words, in range"
 
 
 def grade_from_parts(
@@ -112,6 +173,7 @@ def grade_from_parts(
     quality: dict[str, Any],
     composite_score: float | None = None,
     channel_id: str | None = None,
+    run_id: int | None = None,
 ) -> VideoGrade:
     """Pure rollup — quality dict (+ optional composite topic score) → grade."""
     raw: list[GradeComponent] = []
@@ -125,12 +187,17 @@ def grade_from_parts(
         )
     auth = quality.get("authenticity_score")
     if auth is not None:
+        auth_note = str(quality.get("authenticity_verdict", ""))
+        gate = quality.get("authenticity_gate_score")
+        if gate is not None and int(gate) != int(round(float(auth))):
+            extra = f"gate {int(gate)}"
+            auth_note = f"{auth_note}; {extra}" if auth_note else extra
         raw.append(
             GradeComponent(
                 "authenticity",
                 float(auth),
                 _WEIGHTS["authenticity"],
-                str(quality.get("authenticity_verdict", "")),
+                auth_note,
             )
         )
     if quality.get("ungrounded_count") is not None:
@@ -142,6 +209,10 @@ def grade_from_parts(
                 "topic", min(100.0, float(composite_score)), _WEIGHTS["topic"], "composite score"
             )
         )
+    length = _length_score(quality)
+    if length is not None:
+        l_score, l_note = length
+        raw.append(GradeComponent("length", l_score, _WEIGHTS["length"], l_note))
     thumb = quality.get("thumbnail_overall")
     if thumb is not None:
         raw.append(
@@ -154,14 +225,18 @@ def grade_from_parts(
         )
 
     if not raw:
-        return VideoGrade(score=0.0, letter="F", components=[])
+        grade = VideoGrade(score=0.0, letter="F", components=[])
+    else:
+        total_weight = sum(c.weight for c in raw)
+        components = [
+            GradeComponent(c.name, c.score, round(c.weight / total_weight, 4), c.note) for c in raw
+        ]
+        score = round(sum(c.score * c.weight for c in components), 1)
+        grade = VideoGrade(score=score, letter=_letter(score), components=components)
 
-    total_weight = sum(c.weight for c in raw)
-    components = [
-        GradeComponent(c.name, c.score, round(c.weight / total_weight, 4), c.note) for c in raw
-    ]
-    score = round(sum(c.score * c.weight for c in components), 1)
-    grade = VideoGrade(score=score, letter=_letter(score), components=components)
+    passes = quality.get("script_passes")
+    if isinstance(passes, list):
+        grade.script_passes = list(passes)
 
     if channel_id:
         try:
@@ -171,6 +246,21 @@ def grade_from_parts(
             if prediction is not None:
                 grade.predicted_engaged_rate = prediction.rate
                 grade.prediction_note = prediction.note
+                try:
+                    from core.engagement import engaged_rate
+                    from core.engagement_predictor import surprise_residual
+                    from storage.repositories.publish_log import get_publish_log_repository
+
+                    for log in get_publish_log_repository().list_timed_outcomes(channel_id):
+                        if run_id and log.content_run_id == int(run_id):
+                            grade.engagement_surprise = surprise_residual(
+                                engaged_rate(log.metrics_json), prediction.rate
+                            )
+                            break
+                    if grade.engagement_surprise is None and quality.get("surprise") is not None:
+                        grade.engagement_surprise = float(quality["surprise"])
+                except Exception as exc:
+                    logger.debug("engagement surprise skipped: %s", exc)
         except Exception as exc:
             logger.debug("engagement prediction skipped: %s", exc)
     return grade
@@ -192,6 +282,7 @@ def grade_from_record(record) -> VideoGrade | None:
         quality=quality,
         composite_score=float(record.composite_score or 0),
         channel_id=record.channel_id,
+        run_id=getattr(record, "id", None),
     )
 
 
@@ -218,7 +309,43 @@ def render_grade(grade: VideoGrade) -> str:
         )
     elif grade.prediction_note:
         lines.append(f"    prediction: {grade.prediction_note}")
+    if grade.engagement_surprise is not None:
+        lines.append(f"    surprise (actual − predicted): {grade.engagement_surprise * 100:+.1f}pp")
+    passes_line = format_script_passes(grade.script_passes)
+    if passes_line:
+        lines.append(f"    {passes_line}")
     return "\n".join(lines)
+
+
+_PASS_SHORT = {
+    "inject_insight": "insight",
+    "rewrite_claims": "claims",
+    "improve_hook": "hook",
+    "recenter_key_facts": "recenter",
+    "reground": "reground",
+}
+
+
+def format_script_passes(passes: list[dict[str, Any]] | None) -> str:
+    """One report-card line naming which rewrite passes actually changed the script."""
+    if not passes:
+        return ""
+    bits: list[str] = []
+    cost = 0.0
+    for row in passes:
+        if not row.get("adopted"):
+            continue
+        short = _PASS_SHORT.get(str(row.get("name") or ""), str(row.get("name") or "pass"))
+        delta = int(row.get("word_delta") or 0)
+        sign = f"+{delta}w" if delta >= 0 else f"{delta}w"
+        bits.append(f"{short} {sign}")
+        cost += float(row.get("cost_usd") or 0)
+    if not bits:
+        return "passes: none adopted"
+    line = "passes: " + ", ".join(bits)
+    if cost:
+        line += f" ${cost:.3f}"
+    return line
 
 
 def grade_as_markdown(grade: VideoGrade) -> str:
@@ -316,6 +443,75 @@ def expert_panel_for_run(run_id: int) -> str:
         return ""
 
 
+def _quality_of(record) -> dict[str, Any]:
+    """The record's persisted quality dict ({} when absent or undecodable)."""
+    try:
+        loaded = json.loads(getattr(record, "quality_json", "") or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def recurrence_line(quality: dict[str, Any] | None) -> str:
+    """#803: the repeated opener/closer, read back off the persisted row.
+
+    `evaluate_authenticity` says it once at generation time inside the
+    variation detail, which is not persisted — so `ops grade` on the same run
+    an hour later could not see it. This reads the stored counts.
+    """
+    row = quality or {}
+    total = int(row.get("style_recurrence_n") or 0)
+    if not total:
+        return ""
+    opener = int(row.get("style_recurrence_opener") or 0)
+    closer = int(row.get("style_recurrence_closer") or 0)
+    which, count = ("opener", opener) if opener >= closer else ("closer", closer)
+    if count < 3:
+        return ""
+    return f"style: the same {which} shape appears in {count}/{total} recent scripts"
+
+
+def waiver_line(quality: dict[str, Any] | None) -> str:
+    """#822: which unsupported claims the gate let through, and on what bar.
+
+    A hedged rumor passes #345's bar and then costs #800 grade points, so the
+    operator sees a lower grade rather than a block. Naming the waiver beside
+    the hedge density is what makes that trade visible instead of inferred.
+    """
+    row = quality or {}
+    if not int(row.get("gate_waived_count") or 0):
+        return ""
+    waived = row.get("gate_waived") or []
+    kinds = [str(w.get("type") or "untyped") for w in waived if isinstance(w, dict)]
+    hedged = sum(1 for w in waived if isinstance(w, dict) and w.get("hedged"))
+    line = f"gate waived {int(row['gate_waived_count'])} unsupported claim(s)"
+    if kinds:
+        line += f" ({', '.join(sorted(set(kinds)))})"
+    if hedged:
+        density = row.get("hedge_density")
+        line += f"; {hedged} passed on hedging"
+        if isinstance(density, int | float):
+            line += f" at {float(density):.2f} hedges/100w"
+    return line
+
+
+def _accuracy_lines(channel_id: str | None) -> list[str]:
+    """#805 / #561 — how often the card and the loop have been right, or nothing."""
+    lines: list[str] = []
+    for module, func in (
+        ("core.grade_calibration", "accuracy_line"),
+        ("core.analyst_accuracy", "hit_rate_line"),
+    ):
+        try:
+            mod = __import__(module, fromlist=[func])
+            line = getattr(mod, func)(channel_id)
+            if line:
+                lines.append(line)
+        except Exception as exc:
+            logger.debug("%s.%s skipped: %s", module, func, exc)
+    return lines
+
+
 def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
     """Interactive-flow helper: grade the just-persisted run, fail-open."""
     if not run_id:
@@ -329,6 +525,15 @@ def display_grade_for_run(run_id: int | None, *, print_fn=print) -> None:
             print_fn("")
             for line in render_grade(grade).splitlines():
                 print_fn(f"  {line}")
+            persisted = _quality_of(record)
+            for extra in (waiver_line(persisted), recurrence_line(persisted)):
+                if extra:
+                    print_fn(f"      {extra}")
+            # #805 / #561: the card's own track record, printed under it rather
+            # than inside `render_grade` — that stays pure, and `ops grade`
+            # renders it too without paying for the analytics join.
+            for line in _accuracy_lines(record.channel_id):
+                print_fn(f"      {line}")
             # Reuse the record we already fetched — no second lookup for the panel.
             panel = render_expert_panel(record.script_preview, record.channel_id)
             if panel:

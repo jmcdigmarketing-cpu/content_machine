@@ -30,6 +30,13 @@ os.environ["DATABASE_KEY"] = ""
 # TTS cache writes under data/tts_cache when on; isolate the suite (tests that
 # exercise the cache patch TTS_CACHE / TTS_CACHE_DIR themselves).
 os.environ["TTS_CACHE"] = "false"
+# #771 turned the whisper aligner on by default; no test may load a model.
+os.environ["CAPTION_ALIGN_BACKEND"] = "none"
+# #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one
+# ffmpeg call and must keep the single-background path.
+os.environ["BACKGROUND_FAST_CUT"] = "false"
+# #600: the nightly overnight run looks at 48h-old uploads through the YouTube API.
+os.environ["POST_PUBLISH_CHECK"] = "false"
 # Competitor-sync caps default on in production; disable in the suite so a test
 # that reads youtube_quota cannot skip API because the operator's real remaining
 # units are below the upload reserve.
@@ -52,6 +59,7 @@ os.environ["YOUTUBE_UNLISTED_REVIEW"] = "false"
 os.environ["RAM_MIN_GB"] = "0"
 os.environ["VRAM_MIN_GB"] = "0"
 os.environ["TITLE_UNIQUENESS"] = "off"
+os.environ["CROSS_CHANNEL_DUP"] = "off"
 os.environ["UFC_PPV_BLACKOUT"] = "false"
 os.environ["QUIET_HOURS"] = "false"
 os.environ["ODDS_MARKET_VOICE"] = "false"
@@ -60,6 +68,20 @@ os.environ["DESCRIPTION_SEO_FIRST_LINE"] = "false"
 os.environ["CONTENT_TRAY_GRADE"] = "false"
 os.environ["CONTENT_TRAY_DOMAIN"] = "false"
 os.environ["CONTENT_TRAY_PRESENCE"] = "false"
+# Unset = off. An operator .env cap must not abort the suite's discovery tests.
+os.environ["PROJECTED_COST_MAX_USD"] = ""
+# NVENC encode is opt-in at the ffmpeg argv layer; CI/suite stay on libx264.
+os.environ["NVENC"] = "off"
+# Operator .env / voices.json piper pool must not make local TTS "ready" in CI.
+os.environ["PIPER_VOICE"] = ""
+os.environ["PIPER_VOICES"] = ""
+os.environ["PIPER_VOICES_DIR"] = ""
+# Occasional Piper mix is a production default (1/8); the suite pins ElevenLabs
+# unless a test sets TTS_PIPER_MIX_EVERY itself.
+os.environ["TTS_PIPER_MIX_EVERY"] = "0"
+# Wave 14 wired a cheap-tier LLM judge into run_discovery; the discovery tests made
+# real `complete()` calls with the operator's .env keys. Tests that want it set it.
+os.environ["ANGLE_LLM_JUDGE"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move
@@ -68,12 +90,21 @@ os.environ["CONTENT_TRAY_PRESENCE"] = "false"
 import atexit
 import shutil
 import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import config.paths as _paths
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
+from core import correction_dossier as _correction_dossier
+from core import counterfactual as _counterfactual
+from core import moat_backup as _moat_backup
+from core import negative_facts as _negative_facts
 from core import quota_state as _quota_state
+from core import recommender_history as _recommender_history
+from core import retraction_watch as _retraction_watch
+from core import run_trace as _run_trace
+from core import trace_secrets as _trace_secrets
 
 _SUITE_DATA_TMP = tempfile.mkdtemp(prefix="cm_suite_data_")
 atexit.register(shutil.rmtree, _SUITE_DATA_TMP, True)
@@ -84,6 +115,8 @@ def _suite_store(name: str) -> str:
 
 
 os.environ["OVERNIGHT_PAUSE_FILE"] = _suite_store("overnight.paused")
+os.environ["CONTENT_WINDOW_STATE"] = _suite_store("window_state.json")
+os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
 
 
 _SUITE_STORE_PATCHES = (
@@ -92,9 +125,29 @@ _SUITE_STORE_PATCHES = (
     patch.object(_paths, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_paths, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),
     patch.object(_paths, "TOPIC_GRAPH_FILE", _suite_store("topic_graph.json")),
+    patch.object(_paths, "CLIP_INDEX_FILE", _suite_store("clip_index.json")),
+    # CI run 34781351080: a test listed the operator's real data/traces, found run 72
+    # and passed locally; the runner had no traces and failed. Reads count too.
+    patch.object(_paths, "TRACES_DIR", _suite_store("traces")),
+    patch.object(_run_trace, "TRACES_DIR", _suite_store("traces")),
+    patch.object(_trace_secrets, "TRACES_DIR", _suite_store("traces")),
+    patch.object(_moat_backup, "TRACES_DIR", _suite_store("traces")),
     patch.object(_quota_state, "QUOTA_STATE_FILE", _suite_store("quota_state.json")),
     patch.object(_cache_manager, "SIGNAL_CACHE_FILE", _suite_store("signal_cache.json")),
     patch.object(_youtube_quota, "YOUTUBE_QUOTA_FILE", _suite_store("youtube_quota.json")),
+    patch.object(_negative_facts, "STORE_PATH", Path(_suite_store("negative_facts.json"))),
+    patch.object(_counterfactual, "STORE_PATH", Path(_suite_store("counterfactual.json"))),
+    patch.object(_retraction_watch, "STAMP_PATH", _suite_store("retraction_toast.json")),
+    patch.object(
+        _correction_dossier,
+        "STAMP_PATH_TEMPLATE",
+        _suite_store("correction_scan_{channel}.json"),
+    ),
+    patch.object(
+        _recommender_history,
+        "STAMP_PATH_TEMPLATE",
+        _suite_store("recommend_pick_{channel}.json"),
+    ),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

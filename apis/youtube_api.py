@@ -1,12 +1,11 @@
 import math
 import os
 import re
+import socket
 import threading
 from datetime import datetime, timezone
 
 import httplib2
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 
 from apis.signal_contract import (
     STATUS_NO_KEY,
@@ -51,11 +50,60 @@ def api_timeout() -> float:
     unbounded — so a slow read stalls discovery and then surfaces as a hard ERROR
     ("The read operation timed out" killed the `youtube` signal on run 66). Bounded
     here so a slow call degrades into a normal transient-failure signal instead.
+
+    8s, not 15: run 74 spent 30 of its 37.8-second discovery watching `youtube` and
+    `youtube_comments` each wait out the old timeout against a dead endpoint. A
+    Data API call that has not answered in 8 seconds is not about to.
     """
     try:
-        return max(3.0, float(os.getenv("YOUTUBE_API_TIMEOUT", "15")))
+        return max(3.0, float(os.getenv("YOUTUBE_API_TIMEOUT", "8")))
     except ValueError:
-        return 15.0
+        return 8.0
+
+
+# Process-level "the Data API is not answering" latch.
+# ----------------------------------------------------
+# `youtube` and `youtube_comments` both route through this module, so on run 74 a
+# single unreachable endpoint cost two full socket timeouts. A read timeout is
+# transient, so the session breaker in `register_signals` (which trips on hard
+# statuses — quota, auth) never fires for it. This latch is the narrow version of
+# that idea: once a call has actually timed out, later calls in the same process
+# give up immediately instead of waiting out the timeout again.
+#
+# Deliberately narrow: only a timeout arms it. A quota or auth failure must not,
+# because those already have their own handling, and a latch that armed on any
+# error would disable a working signal for the rest of a session.
+_API_UNREACHABLE = ""
+_UNREACHABLE_LOCK = threading.Lock()
+_TIMEOUT_MARKERS = ("timed out", "timeout")
+
+
+def note_api_failure(exc: BaseException) -> None:
+    """Arm the unreachable latch if `exc` is a socket/read timeout. Never raises."""
+    global _API_UNREACHABLE
+    message = str(exc) or exc.__class__.__name__
+    is_timeout = isinstance(exc, TimeoutError | socket.timeout) or any(
+        marker in message.lower() for marker in _TIMEOUT_MARKERS
+    )
+    if not is_timeout:
+        return
+    with _UNREACHABLE_LOCK:
+        if not _API_UNREACHABLE:
+            _API_UNREACHABLE = message
+            logger.info("YouTube Data API marked unreachable for this run: %s", message)
+
+
+def api_unreachable() -> str:
+    """The timeout message that armed the latch, or "" while the API is answering."""
+    with _UNREACHABLE_LOCK:
+        return _API_UNREACHABLE
+
+
+def reset_api_unreachable() -> None:
+    """Clear the latch (tests, and the CLI's give-everything-another-chance path)."""
+    global _API_UNREACHABLE
+    with _UNREACHABLE_LOCK:
+        _API_UNREACHABLE = ""
 
 
 def _get_youtube_client():
@@ -66,6 +114,8 @@ def _get_youtube_client():
         if _youtube_client is None:
             if _skip_live_youtube_client():
                 raise RuntimeError("live YouTube client forbidden in tests (C9)")
+            from googleapiclient.discovery import build
+
             # static_discovery=True uses the bundled doc — no googleapis HTTPS (C9).
             _youtube_client = build(
                 "youtube",
@@ -76,6 +126,22 @@ def _get_youtube_client():
                 http=httplib2.Http(timeout=api_timeout()),
             )
     return _youtube_client
+
+
+def _fresh_youtube_client():
+    """Drop the cached client and build a new one (new socket). #781: one stale keep-alive
+    connection timing out used to arm the latch and drop YouTube for the whole run."""
+    global _youtube_client
+    with _client_lock:
+        _youtube_client = None
+    return _get_youtube_client()
+
+
+def _is_timeout(exc: BaseException) -> bool:
+    message = (str(exc) or exc.__class__.__name__).lower()
+    return isinstance(exc, TimeoutError | socket.timeout) or any(
+        marker in message for marker in _TIMEOUT_MARKERS
+    )
 
 
 def _skip_live_youtube_client() -> bool:
@@ -121,19 +187,54 @@ def _published_after_iso():
 
 
 def _search_videos(youtube, query: str):
-    return (
-        youtube.search()
-        .list(
-            q=query,
-            part="snippet",
-            type="video",
-            maxResults=_MAX_RESULTS,
-            order="relevance",
-            publishedAfter=_published_after_iso(),
-            fields="items(id/kind,id/videoId,snippet/title,snippet/publishedAt)",
+    """The one call path `youtube` and `youtube_comments` share.
+
+    Arming and checking the unreachable latch here is what stops one dead endpoint
+    from costing two full socket timeouts, as it did on run 74. Callers already
+    turn an exception into a transient-failure signal, so failing fast here reads
+    downstream exactly like a timeout — it just costs no wall-clock.
+    """
+    reason = api_unreachable()
+    if reason:
+        raise TimeoutError(f"YouTube Data API already timed out this run ({reason})")
+
+    def _call(client):
+        return (
+            client.search()
+            .list(
+                q=query,
+                part="snippet",
+                type="video",
+                maxResults=_MAX_RESULTS,
+                order="relevance",
+                publishedAfter=_published_after_iso(),
+                fields="items(id/kind,id/videoId,snippet/title,snippet/publishedAt)",
+            )
+            .execute()
         )
-        .execute()
-    )
+
+    try:
+        return _call(youtube)
+    except Exception as exc:
+        if not _is_timeout(exc):
+            note_api_failure(exc)
+            raise
+        first = exc
+    # #781: one retry on a fresh connection before the latch arms - a single blip used to
+    # drop `youtube` and `youtube_comments` for the whole run.
+    logger.info("YouTube Data API timed out (%s); retrying once on a fresh connection", first)
+    try:
+        client = _fresh_youtube_client()
+    except Exception as exc:
+        # No second connection to try (or the suite forbids one): the first timeout stands.
+        logger.debug("fresh YouTube client unavailable: %s", exc)
+        note_api_failure(first)
+        raise first from exc
+    try:
+        return _call(client)
+    except Exception as exc:
+        note_api_failure(exc)
+        raise
 
 
 def _lightweight_signal(search_response):
@@ -263,22 +364,30 @@ def search_youtube(query):
             status_detail=format_quota_detail(),
         )
 
-    except HttpError as e:
-        status_code = e.resp.status if e.resp else 0
-        body = str(e)
-        status, detail = classify_http(status_code, body)
-        if "quota" in body.lower():
-            status = STATUS_QUOTA
-            detail = f"{detail} — {format_quota_detail()}"
-        print(f"[YouTube API Error] {detail}")
-        return make_signal(
-            connected=False,
-            active=False,
-            status=status,
-            status_detail=detail,
-        )
-
     except Exception as e:
+        http_status = 0
+        is_http = False
+        try:
+            from googleapiclient.errors import HttpError
+
+            if isinstance(e, HttpError):
+                is_http = True
+                http_status = e.resp.status if e.resp else 0
+        except ImportError:
+            pass
+        body = str(e)
+        if is_http:
+            status, detail = classify_http(http_status, body)
+            if "quota" in body.lower():
+                status = STATUS_QUOTA
+                detail = f"{detail} — {format_quota_detail()}"
+            print(f"[YouTube API Error] {detail}")
+            return make_signal(
+                connected=False,
+                active=False,
+                status=status,
+                status_detail=detail,
+            )
         status, detail = classify_exception(e)
         print(f"[YouTube API Error] {detail}")
         return make_signal(

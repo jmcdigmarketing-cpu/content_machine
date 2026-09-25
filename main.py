@@ -2,23 +2,39 @@
 Interactive CLI — thin wrapper around core.pipeline.
 """
 
+import os
 import sys
 
 
 def _configure_stdout_utf8() -> None:
     """Braille mascot art needs UTF-8 on Windows consoles (Python 3.7+)."""
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is None:
+        return
     try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except (AttributeError, OSError, ValueError):
+        reconfigure(encoding="utf-8")
+    except (OSError, ValueError):
         pass
 
 
 _configure_stdout_utf8()
 
+if "--art" in sys.argv:
+    os.environ["CONTENT_UI_ART"] = "1"
+    sys.argv = [a for a in sys.argv if a != "--art"]
+
+if "--gui" in sys.argv:
+    sys.argv = [a for a in sys.argv if a != "--gui"]
+    import config.settings
+    from desktop.launch import launch
+
+    raise SystemExit(launch())
+
 # Must be first non-stdlib import — loads .env before any signal module reads os.getenv at module level
 import config.settings  # noqa: F401
 from apis.youtube_api import start_youtube_warmup_background
 from config.channels import get_channel_profile
+from core.ask import ask_choice, ask_confirm, ask_text
 from core.logging import get_logger, setup_logging
 from core.pipeline import run_discovery, run_media_only, run_pipeline
 from core.script_length import PRESETS, format_length_report, get_length_preset
@@ -54,25 +70,41 @@ logger = get_logger("main")
 
 
 def _run_intelligence_report_flow(channel_id: str) -> None:
+    try:
+        _run_intelligence_report_flow_body(channel_id)
+    except KeyboardInterrupt:
+        print("\n  Cancelled — back to the menu.")
+
+
+def _run_intelligence_report_flow_body(channel_id: str) -> None:
     from core.intelligence_report import (
         build_intelligence_report,
         print_report_summary,
         save_report,
     )
 
-    topic = input("  Topic: ").strip()
+    topic = ask_text("  Topic: ").strip()
     if not topic:
         print("  Topic required.")
         return
 
     section("Intelligence")
     discovery = run_discovery(topic, channel_id=channel_id)
-    display_signal_health(discovery.base_signals)
+    display_signal_health(discovery.base_signals, topic=topic, channel_id=channel_id)
+    from core.angle_intent import ANGLE_DEFAULT, angle_intent_note, detect_angle_intent
+
+    angle_intent = detect_angle_intent(topic)
+    if angle_intent != ANGLE_DEFAULT:
+        print(f"  {angle_intent_note(angle_intent)}")
+
     best_default = display_variants(
-        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+        discovery.evaluated,
+        channel_id=channel_id,
+        raw_scores=discovery.raw_scores,
+        angle_scores=discovery.angle_scores,
     )
 
-    choice = input("\n  Choose 1-5 for report (Enter = best): ").strip()
+    choice = ask_choice("\n  Choose 1-5 for report (Enter = best): ")
     variant_index = int(choice) - 1 if choice.isdigit() else best_default
 
     report = build_intelligence_report(discovery, variant_index=variant_index)
@@ -95,6 +127,9 @@ def main():
     from core.themes import set_channel_theme
 
     set_channel_theme(channel_id)
+    from core.pinned_status import set_pin_context
+
+    set_pin_context(channel_id)
     from core.ascii_art import print_startup_panel
 
     print_startup_panel(channel_id)
@@ -183,28 +218,6 @@ def _apply_cost_mode_interactive() -> bool:
     return True
 
 
-def _drain_stdin() -> None:
-    """
-    Discard any input still buffered from a multi-line paste so leftover lines
-    (e.g. idea-generator scaffolding after a blank line) don't hijack the next
-    prompts. Best-effort and platform-aware; a no-op if it can't run.
-    """
-    try:
-        import msvcrt  # Windows console
-
-        while msvcrt.kbhit():
-            msvcrt.getwch()
-        return
-    except Exception as exc:
-        logger.debug("stdin drain (Windows) skipped: %s", exc)
-    try:
-        import termios
-
-        termios.tcflush(sys.stdin, termios.TCIFLUSH)
-    except Exception as exc:
-        logger.debug("stdin drain (POSIX) skipped: %s", exc)
-
-
 def _read_multiline(prompt: str) -> str:
     """Read possibly-multiline pasted input; finish on a blank line or EOF."""
     print(prompt)
@@ -212,7 +225,7 @@ def _read_multiline(prompt: str) -> str:
     lines: list[str] = []
     while True:
         try:
-            line = input()
+            line = ask_text()
         except EOFError:
             break
         if line.strip() == "":
@@ -230,8 +243,19 @@ def _run_idea_intake_flow(channel_id: str) -> None:
     (title + thesis + generator scaffolding). Rich ideas keep their thesis as
     the creative angle that shapes the script.
     """
+    try:
+        _run_idea_intake_flow_body(channel_id)
+    except KeyboardInterrupt:
+        print("\n  Cancelled — back to the menu.")
+
+
+def _run_idea_intake_flow_body(channel_id: str) -> None:
     from apis.youtube_api import extract_youtube_video_id, fetch_video_metadata
-    from core.idea_intake import parse_pasted_idea
+    from core.idea_intake import (
+        creative_brief_for_run,
+        parse_pasted_idea,
+        seed_and_brief_from_youtube,
+    )
 
     subsection("Your video idea")
     raw = _read_multiline(
@@ -239,7 +263,9 @@ def _run_idea_intake_flow(channel_id: str) -> None:
     )
     # Drop any scaffolding still buffered from the paste (e.g. "Develop idea",
     # "Why this could fit…") so it can't auto-answer the upcoming prompts.
-    _drain_stdin()
+    from core.console_input import drain_stdin
+
+    drain_stdin()
     if not raw.strip():
         print("  Nothing entered — returning.")
         return
@@ -255,23 +281,24 @@ def _run_idea_intake_flow(channel_id: str) -> None:
             print(f'\n  Found video: "{meta["title"]}"')
             if meta.get("channel"):
                 print(f"  Channel: {meta['channel']}")
-            angle = input(
+            angle = ask_text(
                 "  Your angle/idea for OUR take (Enter = use the video's topic): "
             ).strip()
-            seed_topic = f"{angle} — {meta['title']}" if angle else meta["title"]
+            seed_topic, creative_brief = seed_and_brief_from_youtube(meta["title"], angle)
         else:
             print("  Could not fetch that video (bad link, quota, or no API key).")
-            typed = input("  Type your idea instead: ").strip()
+            typed = ask_text("  Type your idea instead: ").strip()
             if not typed:
                 print("  Nothing entered — returning.")
                 return
             seed_topic = typed
+            creative_brief = typed
     else:
         # Plain topic or a pasted rich idea block.
         parsed = parse_pasted_idea(raw)
         seed_topic = parsed.seed_topic
+        creative_brief = creative_brief_for_run(parsed)
         if parsed.is_rich and parsed.thesis:
-            creative_brief = parsed.angle
             print(f"\n  Title : {parsed.title}")
             print(f"  Angle : {parsed.thesis[:160]}{'…' if len(parsed.thesis) > 160 else ''}")
             print(f"  Search seed: {seed_topic}")
@@ -296,10 +323,221 @@ def _run_new_video_flow(
             "    Free ($0) mode uses rate-limited free models. Wait ~30s and retry, add\n"
             "    OPENROUTER_API_KEY for higher limits (or run Ollama), or pick Standard mode."
         )
+    except KeyboardInterrupt:
+        print("\n  Cancelled — back to the menu.")
+        return
     finally:
         from core.pipeline import finalize_run_observability
 
         finalize_run_observability()
+
+
+def _parse_angle_choice(
+    choice: str, count: int, best_default: int, *, allow_own: bool
+) -> tuple[str, int]:
+    """("all" | "own" | "one", variant index) for the angle menu answer (run 78).
+
+    "A" puts every angle in one long video; the best angle's signals still drive it.
+    An out-of-range number falls back to the best angle instead of raising.
+    """
+    raw = (choice or "").strip().lower()
+    if allow_own and raw == "0":
+        return "own", -1
+    if raw == "a" and count >= 2:
+        return "all", best_default
+    if raw.isdigit() and 1 <= int(raw) <= count:
+        return "one", int(raw) - 1
+    return "one", best_default
+
+
+def _make_fresh_angle_shorts(
+    indices: list[int],
+    *,
+    topic: str,
+    discovery,
+    channel_id: str,
+    creative_brief: str,
+    key_facts: list[str] | None,
+) -> list[int]:
+    """Write a Medium script per chosen angle, show the drafts, render only on one yes."""
+    from core.angle_chapters import angle_headline
+
+    drafts = []
+    for index in indices:
+        angle = discovery.evaluated[index][0]
+        print(f"\n  Writing a Short for: {angle_headline(angle)}")
+        draft = run_pipeline(
+            topic,
+            discovery=discovery,
+            variant_index=index,
+            length_choice="2",
+            proceed_video=False,
+            channel_id=channel_id,
+            creative_brief=creative_brief,
+            key_facts=key_facts or None,
+            menu_path="1",
+        )
+        if not (draft.script or "").strip() or not draft.run_id:
+            print("    ! No script came back — skipped.")
+            continue
+        drafts.append(draft)
+    if not drafts:
+        return []
+
+    total = 0.0
+    print()
+    for draft in drafts:
+        features = draft.features or {}
+        cost = float((features.get("projected_cost") or {}).get("total") or 0.0)
+        total += cost
+        unsupported = len((features.get("claim_verification") or {}).get("unsupported") or [])
+        flag = f"  ! {unsupported} unsupported claim(s)" if unsupported else ""
+        words = (draft.timings or {}).get("word_count", "?")
+        print(f"    [{draft.run_id}] {draft.title} — {words} words, ~${cost:.2f}{flag}")
+    if not ask_confirm(
+        f"  Voice + render these {len(drafts)} Short(s) (~${total:.2f})? [y/N]: ", default=False
+    ):
+        print("  Drafts saved; nothing rendered.")
+        return []
+
+    made: list[int] = []
+    for draft in drafts:
+        try:
+            run_media_only(
+                draft.topic,
+                draft.script,
+                channel_id=channel_id,
+                content_run_id=draft.run_id,
+                title=draft.title,
+                length_choice="2",
+            )
+            if draft.run_id is not None:
+                made.append(draft.run_id)
+        except Exception as exc:
+            print(f"  ! Short {draft.run_id} not rendered: {exc}")
+    return made
+
+
+def _offer_angle_shorts(
+    *,
+    result,
+    discovery,
+    topic: str,
+    channel_id: str,
+    creative_brief: str,
+    key_facts: list[str] | None,
+) -> None:
+    """After an all-angles render: cut chapters into Shorts, or write fresh ones (run 78)."""
+    from core.angle_chapters import chapters_from_features
+    from core.chapter_shorts import chapter_report, cut_chapter_shorts, parse_chapter_selection
+
+    chapters = chapters_from_features((result.features or {}).get("angle_chapters"))
+    if not chapters or not result.run_id:
+        return
+    subsection("Shorts from the chapters")
+    # #755: how each chapter was placed and whether it fits a Short, so this paste is the
+    # measurement. Falls back to titles when the render has no timings yet.
+    report = chapter_report(result.run_id, script=result.script) or [
+        f"{chapter.index + 1}. {chapter.title}" for chapter in chapters
+    ]
+    for line in report:
+        print(f"  {line}")
+    print("  c = cut these chapters out of the long video (no extra voice cost)")
+    print("  g = write + voice a fresh Short per angle (new hook, paid voice)")
+    pick = ask_choice("  Make Shorts? [c / g / Enter = skip]: ").strip().lower()
+    if pick not in ("c", "g"):
+        return
+    indices = parse_chapter_selection(
+        ask_text("  Which chapters? [Enter = all, e.g. 1,3,5]: "), len(chapters)
+    )
+    if not indices:
+        print("  No chapters selected.")
+        return
+
+    if pick == "c":
+        made = cut_chapter_shorts(result.run_id, indices=indices, script=result.script)
+        for short in made:
+            if short.run_id:
+                print(f"    [{short.run_id}] {short.title}")
+            else:
+                print(f"    ! {short.index + 1}. {short.title}: {short.skipped}")
+        run_ids = [short.run_id for short in made if short.run_id]
+        titles = {short.run_id: short.title for short in made if short.run_id}
+    else:
+        run_ids = _make_fresh_angle_shorts(
+            indices,
+            topic=topic,
+            discovery=discovery,
+            channel_id=channel_id,
+            creative_brief=creative_brief,
+            key_facts=key_facts,
+        )
+        titles = {}
+    if not run_ids:
+        print("  No Shorts made.")
+        return
+    print(f"\n  {len(run_ids)} Short(s) rendered: run(s) {', '.join(str(r) for r in run_ids)}")
+    _offer_spaced_queue(run_ids, titles, topic=topic, channel_id=channel_id)
+
+
+def _offer_spaced_queue(
+    run_ids: list[int], titles: dict[int, str], *, topic: str, channel_id: str
+) -> None:
+    """Spread the Shorts over the next open slots instead of one upload now (#757)."""
+    from analytics.post_timing import format_scheduled_local
+    from core.spaced_queue import plan_spaced_uploads, queue_spaced_uploads
+
+    if not ask_confirm("  Queue them across the next open slots? [y/N]: ", default=False):
+        print("  Left on disk. Queue one with:")
+        print(
+            f"    py -m scripts.requeue_upload --channel {channel_id} "
+            f"--run-id {run_ids[0]} --queue"
+        )
+        return
+    # The long video was queued earlier in this session, so hold a slot for it.
+    plan = plan_spaced_uploads(
+        [(run_id, titles.get(run_id, "")) for run_id in run_ids],
+        channel_id=channel_id,
+        topic=topic,
+        reserve=1,
+    )
+    queued = queue_spaced_uploads(plan, channel_id=channel_id)
+    for slot in plan:
+        if slot.publish_at and slot.privacy:
+            when = format_scheduled_local(slot.publish_at, channel_id)
+            print(f"    [{slot.run_id}] {slot.privacy} at {when}")
+        elif slot.publish_at:
+            print(f"    ! [{slot.run_id}] not queued (see the log)")
+        else:
+            print(f"    ! [{slot.run_id}] {slot.skipped}")
+    print(f"  Queued {len(queued)}. Run the worker: py -m jobs.worker --loop 30")
+
+
+def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
+    """Option 1 type-your-own: a topic, or the idea in your own words (run 77).
+
+    Thoughts typed (or pasted over several lines) are not a search string. Discovery
+    searches the short subject pulled out of them; the full thoughts become the brief
+    the angles, the ranking and the script answer.
+    """
+    from core.console_input import input_pending, read_pending_lines
+    from core.idea_intake import creative_brief_for_run, parse_pasted_idea
+
+    typed = ask_text("  Topic (or your thoughts on the idea): ").strip()
+    if typed and input_pending():
+        extra = [line for line in read_pending_lines() if line.strip()]
+        if extra:
+            typed = "\n".join([typed, *extra])
+    if not typed:
+        return "", creative_brief
+
+    parsed = parse_pasted_idea(typed)
+    topic = parsed.seed_topic or typed
+    brief = creative_brief or creative_brief_for_run(parsed)
+    if topic.lower() != " ".join(typed.split()).lower():
+        print(f"  Search seed: {topic}")
+        print("  Your thoughts steer the angles, their ranking, and the script.")
+    return topic, brief
 
 
 def _run_new_video_flow_body(
@@ -323,8 +561,7 @@ def _run_new_video_flow_body(
     metrics_reason = metrics_gate_reason(channel_id)
     if metrics_reason:
         print(f"\n  ! {metrics_reason}")
-        go = input("  Start the next video anyway? [y/N]: ").strip().lower()
-        if go != "y":
+        if not ask_confirm("  Start the next video anyway? [y/N]: ", default=False):
             print("  Stopped — sync analytics first: py -m scripts.ops sync-metrics")
             return
 
@@ -337,14 +574,14 @@ def _run_new_video_flow_body(
         options = get_best_bets(channel_id, best_bet_option_count())
         if options:
             display_best_bets(options)
-            sel = input(f"  Use a best bet? [1-{len(options)} / Enter = type your own]: ").strip()
+            sel = ask_choice(f"  Use a best bet? [1-{len(options)} / Enter = type your own]: ")
             if sel.isdigit() and 1 <= int(sel) <= len(options):
                 topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")
             else:
-                topic = input("  Topic: ").strip()
+                topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
         else:
-            topic = input("  Topic: ").strip()
+            topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
 
     from analytics.post_timing import display_recommended_time, get_recommended_time
 
@@ -359,30 +596,71 @@ def _run_new_video_flow_body(
     profile = get_channel_profile(channel_id)
     print_domain_art(profile.domain, topic=topic)
     with DiscoverySpinner("Discovery") as spinner:
-        discovery = run_discovery(topic, channel_id=channel_id, progress=spinner.report)
+        discovery = run_discovery(
+            topic, channel_id=channel_id, progress=spinner.report, brief=creative_brief
+        )
     t_disc = discovery.timings.get("signals_and_variants", 0) + discovery.timings.get(
         "variant_scoring", 0
     )
     print(f"  Completed in {t_disc:.1f}s")
 
-    display_signal_health(discovery.base_signals)
+    display_signal_health(discovery.base_signals, topic=topic, channel_id=channel_id)
 
     from core.outlier import display_outlier, get_competitor_outlier
 
     display_outlier(get_competitor_outlier(discovery.base_signals))
 
+    from core.angle_intent import ANGLE_DEFAULT as _ANGLE_DEFAULT
+    from core.angle_intent import angle_intent_note as _intent_note
+    from core.angle_intent import detect_angle_intent as _detect_intent
+
+    _intent = _detect_intent(topic)
+    if _intent == _ANGLE_DEFAULT and creative_brief:
+        _intent = _detect_intent(creative_brief)
+    if _intent != _ANGLE_DEFAULT:
+        print(f"  {_intent_note(_intent)}")
+
     best_default = display_variants(
-        discovery.evaluated, channel_id=channel_id, raw_scores=discovery.raw_scores
+        discovery.evaluated,
+        channel_id=channel_id,
+        raw_scores=discovery.raw_scores,
+        angle_scores=discovery.angle_scores,
+        own_idea=seed_topic,
     )
 
-    choice = input("\n  Choose 1-5 (Enter = best): ").strip()
+    angle_count = len(discovery.evaluated)
+    prompt = f"\n  Choose 1-{angle_count} (Enter = best"
+    if seed_topic:
+        prompt += ", 0 = your idea"
+    if angle_count >= 2:
+        prompt += ", A = all angles in one long video"
+    prompt += "): "
+    choice = ask_choice(prompt)
 
-    variant_index = int(choice) - 1 if choice.isdigit() else best_default
-
-    best_topic, best_score, best_signals = discovery.evaluated[variant_index]
+    mode, variant_index = _parse_angle_choice(
+        choice, angle_count, best_default, allow_own=bool(seed_topic)
+    )
+    all_angles: list[str] = []
+    if mode == "own":
+        best_topic, best_score, best_signals = str(seed_topic), 0.0, discovery.base_signals
+    else:
+        best_topic, best_score, best_signals = discovery.evaluated[variant_index]
+        if mode == "all":
+            all_angles = [variant for variant, _score, _signals in discovery.evaluated]
+            best_topic = f"{topic} - all {len(all_angles)} angles"
 
     subsection("Selected angle")
-    print(f"  {best_topic}")
+    if all_angles:
+        from core.angle_chapters import angle_headline
+
+        print(f"  All {len(all_angles)} angles, one chapter each:")
+        for number, angle in enumerate(all_angles, start=1):
+            print(f"    {number}. {angle_headline(angle)}")
+        print(
+            "  Each chapter opens on its own hook — after the render you can turn them into Shorts."
+        )
+    else:
+        print(f"  {best_topic}")
     print(f"  Score: {best_score}")
     display_signal_breakdown(best_signals)
 
@@ -397,14 +675,19 @@ def _run_new_video_flow_body(
     )
 
     length_default = "2"
-    try:
-        length_rec = get_recommended_length(channel_id, best_topic)
-        display_recommended_length(length_rec)
-        length_default = length_rec.length_choice
-    except Exception as exc:
-        logger.debug("get_recommended_length skipped: %s", exc)
+    if all_angles:
+        length_default = "4"
+        print("\n  Recommended length (default): Extended (option 4)")
+        print("  Reason : room for every angle as its own 1-2 minute chapter")
+    else:
+        try:
+            length_rec = get_recommended_length(channel_id, best_topic)
+            display_recommended_length(length_rec)
+            length_default = length_rec.length_choice
+        except Exception as exc:
+            logger.debug("get_recommended_length skipped: %s", exc)
 
-    _len_in = input(f"  Select 1-4 [{length_default}]: ").strip()
+    _len_in = ask_choice(f"  Select 1-4 [{length_default}]: ")
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
     fact_selection = prompt_key_facts_result(
@@ -420,6 +703,8 @@ def _run_new_video_flow_body(
     # Generate → review → decide loop. The operator can regenerate the script at a
     # different length (+ longer / - shorter / 1-4) without re-running discovery —
     # run_pipeline reuses the discovery passed in, so only the script + checks re-run.
+    tts_force = False
+    grounding_override = False
     while True:
         result = run_pipeline(
             topic,
@@ -433,6 +718,8 @@ def _run_new_video_flow_body(
             vault_relevance_audit=fact_selection.vault_audit,
             source_urls=fact_selection.source_urls,
             relevance_corpus=fact_selection.relevance_corpus,
+            menu_path="5" if seed_topic else "1",
+            chapter_angles=all_angles or None,
         )
 
         print()
@@ -443,6 +730,12 @@ def _run_new_video_flow_body(
             print()
         preset = get_length_preset(length_choice)
         print(f"  Length: {format_length_report(result.script, preset)}")
+        if result.features.get("angle_chapters"):
+            from core.angle_chapters import chapters_from_features
+
+            print("  Chapters:")
+            for chapter in chapters_from_features(result.features["angle_chapters"]):
+                print(f"    {chapter.index + 1}. {chapter.title}")
 
         from core.hook_score import display_hook_score, score_script_hook
 
@@ -476,9 +769,9 @@ def _run_new_video_flow_body(
 
         # Authenticity / monetisation-safety self-check (Phase O)
         from core.authenticity import (
+            blocks_render,
             display_authenticity_report,
             evaluate_authenticity,
-            gate_mode,
         )
 
         auth = evaluate_authenticity(
@@ -488,13 +781,11 @@ def _run_new_video_flow_body(
             exclude_run_id=result.run_id,
         )
         display_authenticity_report(auth)
-        if gate_mode() == "block" and auth.verdict == "block":
-            override = (
-                input("  Authenticity gate flagged this video. Render anyway? [y/N]: ")
-                .strip()
-                .lower()
-            )
-            if override != "y":
+        if blocks_render(auth):
+            if not ask_confirm(
+                "  Authenticity gate flagged this video. Render anyway? [y/N]: ",
+                default=False,
+            ):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,
@@ -503,17 +794,37 @@ def _run_new_video_flow_body(
                 print("\n  Stopped by authenticity gate (AUTHENTICITY_GATE=block).")
                 return
 
+        # Negative-fact veto (#333). A claim the operator already paid to correct
+        # is not a warning: the recorded decision was a hard block, so this gate
+        # defaults to `block` rather than `warn`. NEGATIVE_FACT_GATE=warn opts out.
+        from core.negative_facts import negative_gate_blocks
+
+        if negative_gate_blocks(result.features.get("ungrounded_entities")):
+            retracted = [
+                item
+                for item in (result.features.get("ungrounded_entities") or [])
+                if str(item).startswith("negative-fact: ")
+            ]
+            print("\n  ! Re-asserts a claim you already walked back:")
+            for item in retracted:
+                print(f"      {item}")
+            if not ask_confirm(
+                "  Negative-fact veto. Render anyway? [y/N]: ",
+                default=False,
+            ):
+                print("\n  Stopped by the negative-fact gate (NEGATIVE_FACT_GATE=block).")
+                return
+
         # Grounding gate (Pillar 3, opt-in): unsupported claims become a hard stop
         # the operator must override — mirrors the authenticity gate above.
         from core.claim_verifier import gate_blocks
 
+        grounding_override = False
         if gate_blocks(result.features.get("claim_verification")):
-            override = (
-                input("  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ")
-                .strip()
-                .lower()
-            )
-            if override != "y":
+            if not ask_confirm(
+                "  Grounding gate flagged unsupported claims. Render anyway? [y/N]: ",
+                default=False,
+            ):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,
@@ -521,6 +832,7 @@ def _run_new_video_flow_body(
                 )
                 print("\n  Stopped by grounding gate (GROUNDING_GATE=block).")
                 return
+            grounding_override = True
 
         from core.thin_facts import thin_facts_abort_reason
 
@@ -538,8 +850,7 @@ def _run_new_video_flow_body(
                 from core.logging import get_logger
 
                 get_logger("main").debug("thin-facts HTML skipped: %s", exc)
-            override = input("  Thin facts — render anyway and pay TTS? [y/N]: ").strip().lower()
-            if override != "y":
+            if not ask_confirm("  Thin facts — render anyway and pay TTS? [y/N]: ", default=False):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,
@@ -548,13 +859,16 @@ def _run_new_video_flow_body(
                 print("\n  Stopped before TTS (thin facts). Draft is saved.")
                 return
 
-        from core.tts_char_cap import tts_char_cap_reason
+        from core.tts_char_cap import tts_char_cap_reason, tts_char_cap_warn
 
-        cap_reason = tts_char_cap_reason(result.script)
+        cap_reason = tts_char_cap_reason(result.script, length_choice=length_choice)
+        cap_warn = tts_char_cap_warn(result.script, length_choice=length_choice)
+        tts_force = False
+        if cap_warn:
+            print(f"\n  ! {cap_warn}")
         if cap_reason:
             print(f"\n  ! {cap_reason}")
-            override = input("  Over length for TTS — render anyway? [y/N]: ").strip().lower()
-            if override != "y":
+            if not ask_confirm("  Over length for TTS — render anyway? [y/N]: ", default=False):
                 display_summary(
                     timings=discovery.timings,
                     title=result.title,
@@ -563,6 +877,7 @@ def _run_new_video_flow_body(
                 )
                 print("\n  Stopped before TTS (character cap). Draft is saved.")
                 return
+            tts_force = True
 
         if needs_grounding_review:
             print(
@@ -604,7 +919,23 @@ def _run_new_video_flow_body(
         channel_id=channel_id,
         content_run_id=result.run_id,
         title=result.title,
+        force=tts_force,
+        length_choice=length_choice,
     )
+    # The run row carries the chapters refined from real word timings; the in-memory copy
+    # does not, and it is what gets printed and queued for upload (run 77).
+    from core.chapters import current_description
+
+    result.description = current_description(result.run_id, result.description)
+    if grounding_override:
+        # #754: the run row must carry the override, or the publish list cannot tell that
+        # this video was rendered past a flagged claim.
+        from core.claim_verifier import override_features
+        from core.run_features import merge_features
+
+        override = override_features(result.features.get("claim_verification"))
+        merge_features(result.run_id, override)
+        result.features.update(override)
 
     from assets.flux_thumbnail import list_channel_thumbnails
     from core.output_paths import ensure_channel_output_dirs
@@ -626,7 +957,10 @@ def _run_new_video_flow_body(
         from core.cost_meter import estimate_run_cost
 
         result.features["cost"] = estimate_run_cost(
-            script=result.script, signals=best_signals, rendered=True
+            script=result.script,
+            signals=best_signals,
+            rendered=True,
+            length_choice=length_choice,
         )
     display_summary(
         timings=discovery.timings,
@@ -652,7 +986,9 @@ def _run_new_video_flow_body(
         print("  Tags:")
         print(f"  {', '.join(result.tags)}")
 
-    upload_plan = prompt_upload_plan(channel_id=channel_id, topic=best_topic)
+    upload_plan = prompt_upload_plan(
+        channel_id=channel_id, topic=best_topic, grounding_override=grounding_override
+    )
     thumb_for_upload = thumb_path or None
     if upload_plan.mode == "queue" and result.run_id and result.mp4_path:
         repurpose = enqueue_repurpose_jobs(
@@ -670,6 +1006,15 @@ def _run_new_video_flow_body(
         job = repurpose.jobs[0] if repurpose.jobs else None
         if not job:
             print("\n  No publish jobs enqueued (check publishers_enabled).")
+            if all_angles and result.mp4_path:
+                _offer_angle_shorts(
+                    result=result,
+                    discovery=discovery,
+                    topic=topic,
+                    channel_id=channel_id,
+                    creative_brief=creative_brief,
+                    key_facts=key_facts,
+                )
             return
         if upload_plan.youtube_publish_at:
             from analytics.post_timing import format_scheduled_local
@@ -715,6 +1060,16 @@ def _run_new_video_flow_body(
                 logger.debug("sync_channel skipped: %s", exc)
 
         threading.Thread(target=_bg_analytics, daemon=True, name="analytics-sync").start()
+
+    if all_angles and result.mp4_path:
+        _offer_angle_shorts(
+            result=result,
+            discovery=discovery,
+            topic=topic,
+            channel_id=channel_id,
+            creative_brief=creative_brief,
+            key_facts=key_facts,
+        )
 
 
 if __name__ == "__main__":

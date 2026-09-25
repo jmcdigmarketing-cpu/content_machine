@@ -1,3 +1,4 @@
+import math
 import os
 import subprocess
 from collections.abc import Callable
@@ -10,6 +11,7 @@ from core.render_progress import (
     is_render_progress_enabled,
     run_ffmpeg_with_progress,
 )
+from video.encoder import executed_cmd, fallback_libx264_cmd, mark_executed, video_encoder_args
 from video.subtitles import caption_force_style, caption_style, generate_subtitle_file
 
 logger = get_logger("video.render")
@@ -36,12 +38,22 @@ def _ffmpeg_run(cmd, *, duration_sec=None, progress=None, use_progress=False):
                 errors="replace",
             )
         if process.returncode == 0:
-            return process
+            return mark_executed(process, cmd)
         err = process.stderr or ""
         if is_lock_error(None, err) and i < attempts - 1:
             logger.warning("FFmpeg file-lock retry %s/%s", i + 1, attempts)
             _time.sleep(delay * (i + 1))
             continue
+        if "h264_nvenc" in cmd:
+            fallback = fallback_libx264_cmd(cmd)
+            if fallback != cmd and "h264_nvenc" not in fallback:
+                logger.warning("NVENC encode failed — retrying libx264")
+                return _ffmpeg_run(
+                    fallback,
+                    duration_sec=duration_sec,
+                    progress=progress,
+                    use_progress=use_progress,
+                )
         return process
     return process
 
@@ -57,6 +69,16 @@ MUSIC_BED_VOLUME = 0.2
 
 def _loudnorm_enabled() -> bool:
     return os.getenv("LUFS_NORMALIZE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _loudnorm_filter() -> str:
+    from core.technical_qc import loudness_targets
+
+    targets = loudness_targets()
+    return (
+        f"loudnorm=I={targets['integrated']:g}:TP={targets['true_peak']:g}:"
+        f"LRA={targets['range_target']:g}"
+    )
 
 
 def _probe_video_duration(path: str) -> float | None:
@@ -112,6 +134,51 @@ def _resolve_color_grade(channel_id: str | None) -> dict[str, float] | None:
         return None
 
 
+def look_filter_fragment(channel_id: str | None) -> str:
+    """#512 grain + vignette from #170 tokens. Empty when the channel has none."""
+    if not (channel_id or "").strip():
+        return ""
+    from core.design_tokens import look_grain, look_vignette
+
+    grain = look_grain(channel_id)
+    vig = look_vignette(channel_id)
+    parts: list[str] = []
+    if grain > 0:
+        parts.append(f"noise=alls={grain}:allf=t")
+    if vig > 0:
+        # #784: was `vignette=PI/4:{vig}` - ffmpeg's second positional is x0, so the centre
+        # sat at the left edge and the right third of every frame went black. The token is
+        # a 0..1 strength; ffmpeg's strength is the lens angle (default PI/5).
+        angle = min(1.0, vig) * math.pi / 2
+        parts.append(f"vignette=angle={angle:.4f}")
+    if not parts:
+        return ""
+    return ",".join(parts) + ","
+
+
+# Keys an .ass file already sets on its own 1920-px canvas. force_style's values for them
+# are SRT-sized (libass's 288-px default), so passing them shrank every karaoke caption.
+_ASS_OWNED_KEYS = (
+    "FontName",
+    "FontSize",
+    "PrimaryColour",
+    "Alignment",
+    "MarginV",
+    "MarginL",
+    "MarginR",
+)
+
+
+def _ass_safe_style(style: str) -> str:
+    """The skin's box/outline/shadow keys only - what an ASS burn can still take (#783)."""
+    kept = [
+        part
+        for part in (style or "").split(",")
+        if part.strip() and part.split("=", 1)[0].strip() not in _ASS_OWNED_KEYS
+    ]
+    return ",".join(kept)
+
+
 def build_render_ffmpeg_command(
     *,
     background_path: str,
@@ -124,8 +191,10 @@ def build_render_ffmpeg_command(
     caption_force_style: str = "",
     render_preset: str = "publish",
     lower_thirds_path: str | None = None,
+    policy_overlays_path: str | None = None,
     color_grade: dict[str, float] | None = None,
     hook_motion_filter: str = "",
+    channel_id: str | None = None,
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
@@ -146,6 +215,7 @@ def build_render_ffmpeg_command(
     subtitle_escaped = _escape_subtitle_path(subtitle_path)
     style_escaped = caption_force_style.replace("'", r"\'")
     lower_thirds_escaped = _escape_subtitle_path(lower_thirds_path) if lower_thirds_path else ""
+    policy_escaped = _escape_subtitle_path(policy_overlays_path) if policy_overlays_path else ""
     duration_str = f"{duration:.3f}"
     grade_filter = ""
     if color_grade and any(
@@ -163,6 +233,7 @@ def build_render_ffmpeg_command(
     motion_filter = (
         hook_motion_filter.format(width=width, height=height) + "," if hook_motion_filter else ""
     )
+    look_filter = look_filter_fragment(channel_id)
 
     # Quote these by hand rather than with {...!r}. `_escape_subtitle_path` already puts
     # a backslash before the drive-letter colon, and repr escapes THAT backslash — so
@@ -171,18 +242,34 @@ def build_render_ffmpeg_command(
     # as the value contains an apostrophe, so it is not even a stable quote character.
     # The main-caption line below has always used this manual form; these now match it.
     lower_thirds_filter = f"subtitles='{lower_thirds_escaped}'," if lower_thirds_escaped else ""
+    policy_filter = f"subtitles='{policy_escaped}'," if policy_escaped else ""
+    # #783: an .ass file carries its own styles on a 1920-px canvas. force_style's
+    # FontSize=18 is sized for SRT (libass's 288-px default) and shrank every karaoke
+    # caption to a tenth - run 77 went to YouTube that way.
+    if str(subtitle_path).lower().endswith(".ass"):
+        style_escaped = _ass_safe_style(style_escaped)
     force_style_arg = f":force_style='{style_escaped}'" if style_escaped else ""
+    # #502: YouTube chrome zones, draft/preview only. Never on a publish encode.
+    draft_guides = ""
+    if is_draft:
+        draft_guides = (
+            ",drawbox=x=0:y=0:w=iw:h=ih*0.12:color=yellow@0.25:t=fill"
+            ",drawbox=x=0:y=ih*0.8:w=iw:h=ih*0.2:color=yellow@0.25:t=fill"
+        )
 
     # Video-only filter graph from input 0; input 1 audio mapped explicitly.
     filter_complex = (
         f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
         f"crop={width}:{height},"
         f"{grade_filter}"
+        f"{look_filter}"
         f"{motion_filter}"
         f"setpts=PTS-STARTPTS,"
         f"{lower_thirds_filter}"
+        f"{policy_filter}"
         f"subtitles='{subtitle_escaped}'"
-        f"{force_style_arg}[vout]"
+        f"{force_style_arg}"
+        f"{draft_guides}[vout]"
     )
 
     cmd = [
@@ -207,10 +294,10 @@ def build_render_ffmpeg_command(
         )
         audio_map = "[aout]"
         if _loudnorm_enabled():
-            filter_complex += ";[aout]loudnorm=I=-14:TP=-1.5:LRA=11[anorm]"
+            filter_complex += f";[aout]{_loudnorm_filter()}[anorm]"
             audio_map = "[anorm]"
     elif _loudnorm_enabled():
-        filter_complex += ";[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[aout]"
+        filter_complex += f";[1:a]{_loudnorm_filter()}[aout]"
         audio_map = "[aout]"
     cmd += [
         "-t",
@@ -221,12 +308,7 @@ def build_render_ffmpeg_command(
         "[vout]",
         "-map",
         audio_map,
-        "-c:v",
-        "libx264",
-        "-preset",
-        encoder_preset,
-        "-crf",
-        crf,
+        *video_encoder_args(preset=encoder_preset, crf=crf),
         "-c:a",
         "aac",
         "-b:a",
@@ -304,25 +386,49 @@ def render_vertical_video(
         progress.note(f"Audio length: {duration:.1f}s")
 
     stage("Fetching background (hybrid/stock/local)...")
-    # Scene-matched B-roll (opt-in): cut a clip per script beat. Falls back to the
-    # normal single/hybrid background on any miss, so it never breaks the render.
+    # Owned gameplay cuts (#416) before any stock scene-match (decisions §26).
     asset = None
+    words = None
     try:
-        from assets.manager import get_scene_matched_background
         from core.tts import word_timing_path
 
-        words = None
         sidecar = word_timing_path(mp3_path)
         if os.path.exists(sidecar):
             import json
 
             with open(sidecar, encoding="utf-8") as f:
                 words = json.load(f)
-        asset = get_scene_matched_background(
-            topic, script, channel_id, duration=duration, words=words
-        )
-    except Exception:
+    except Exception as exc:
+        logger.debug("word timings for owned beats skipped: %s", exc)
+        words = None
+    try:
+        # #782: a new shot every 2-3 s from the topic's game folder, cut on phrase ends.
+        # The operator rejected three drafts for holding each shot for ~25 s.
+        from assets.fast_cut import try_fast_cut_background
+
+        asset = try_fast_cut_background(topic, channel_id, duration=duration, words=words)
+    except Exception as exc:
+        logger.debug("fast cut skipped: %s", exc)
         asset = None
+    if asset is None:
+        try:
+            from core.owned_beats import try_owned_beat_background
+
+            asset = try_owned_beat_background(
+                topic, script, channel_id, duration=duration, words=words
+            )
+        except Exception as exc:
+            logger.debug("owned beat cuts skipped: %s", exc)
+            asset = None
+    if asset is None:
+        try:
+            from assets.manager import get_scene_matched_background
+
+            asset = get_scene_matched_background(
+                topic, script, channel_id, duration=duration, words=words
+            )
+        except Exception:
+            asset = None
     if asset is None:
         asset = get_background_asset(topic, channel_id, duration=duration)
     background_path = asset.path
@@ -364,6 +470,7 @@ def render_vertical_video(
         channel_id=channel_id,
         output_path=stable_subtitle,
         words=word_timings,
+        background_path=background_path,
     )
     lower_thirds_path: str | None = None
     if lower_thirds:
@@ -389,11 +496,25 @@ def render_vertical_video(
         except Exception as exc:
             logger.warning("Lower thirds skipped: %s", exc)
 
+    policy_overlays_path: str | None = None
+    try:
+        from video.policy_overlays import build_policy_overlays_ass
+
+        policy_text = build_policy_overlays_ass(channel_id, word_timings, duration=float(duration))
+        if policy_text:
+            policy_overlays_path = os.path.splitext(output_path)[0] + ".policy.ass"
+            with open(policy_overlays_path, "w", encoding="utf-8") as handle:
+                handle.write(policy_text)
+    except Exception as exc:
+        logger.warning("Policy overlays skipped: %s", exc)
+
     background_path = os.path.abspath(background_path).replace("\\", "/")
     mp3_path = os.path.abspath(mp3_path).replace("\\", "/")
     subtitle_path = os.path.abspath(subtitle_path).replace("\\", "/")
     if lower_thirds_path:
         lower_thirds_path = os.path.abspath(lower_thirds_path).replace("\\", "/")
+    if policy_overlays_path:
+        policy_overlays_path = os.path.abspath(policy_overlays_path).replace("\\", "/")
     output_path = os.path.abspath(output_path).replace("\\", "/")
 
     try:
@@ -414,9 +535,9 @@ def render_vertical_video(
     hook_motion_filter = ""
     try:
         from config.channels import get_channel_profile
-        from video.hook_motion import first_caption_motion_filter
+        from video.hook_motion import named_motion_filter
 
-        hook_motion_filter = first_caption_motion_filter(
+        hook_motion_filter = named_motion_filter(
             word_timings, get_channel_profile(channel_id).hook_motion
         )
         if get_channel_profile(channel_id).hook_motion and not hook_motion_filter and progress:
@@ -441,8 +562,10 @@ def render_vertical_video(
         caption_force_style=caption_force_style(channel_id),
         render_preset=render_preset,
         lower_thirds_path=lower_thirds_path,
+        policy_overlays_path=policy_overlays_path,
         color_grade=color_grade,
         hook_motion_filter=hook_motion_filter,
+        channel_id=channel_id,
     )
     if command_callback is not None:
         try:
@@ -485,8 +608,10 @@ def render_vertical_video(
             caption_force_style=caption_force_style(channel_id),
             render_preset=render_preset,
             lower_thirds_path=lower_thirds_path,
+            policy_overlays_path=policy_overlays_path,
             color_grade=color_grade,
             hook_motion_filter=hook_motion_filter,
+            channel_id=channel_id,
         )
         if command_callback is not None:
             try:
@@ -500,7 +625,7 @@ def render_vertical_video(
         raise Exception("FFmpeg render failed.")
     if command_callback is not None:
         try:
-            command_callback("primary_success", list(cmd))
+            command_callback("primary_success", executed_cmd(process, cmd))
         except Exception as exc:
             logger.debug("render success capture skipped: %s", exc)
 
@@ -554,6 +679,8 @@ def render_vertical_video(
             lower_thirds_path=lower_thirds_path,
             color_grade=color_grade,
             hook_motion_filter=hook_motion_filter,
+            channel_id=channel_id,
+            policy_overlays_path=policy_overlays_path,
         )
 
     if progress:
@@ -574,6 +701,8 @@ def _render_extra_formats(
     lower_thirds_path: str | None = None,
     color_grade: dict[str, float] | None = None,
     hook_motion_filter: str = "",
+    policy_overlays_path: str | None = None,
+    channel_id: str | None = None,
 ) -> list[str]:
     """Render each non-vertical RENDER_FORMATS profile as a suffixed sibling file.
 
@@ -606,6 +735,8 @@ def _render_extra_formats(
                 lower_thirds_path=lower_thirds_path,
                 color_grade=color_grade,
                 hook_motion_filter=hook_motion_filter,
+                channel_id=channel_id,
+                policy_overlays_path=policy_overlays_path,
             )
             stage(f"Extra format: {profile.name} ({profile.width}x{profile.height})...")
             proc = _ffmpeg_run(cmd)

@@ -328,6 +328,8 @@ def quota_chip_lines(
         logger.debug("uploads_remaining skipped: %s", exc)
         lines.append("YouTube: n/a")
     el = data.get("elevenlabs") or {}
+    # #724: None means the ledger could not be read; never report the budget as leftover.
+    unreadable = "chars_used" in el and el["chars_used"] is None
     used = int(el.get("chars_used") or 0)
     raw = os.getenv("ELEVENLABS_MONTHLY_CHAR_BUDGET", "").strip()
     budget = None
@@ -336,7 +338,9 @@ def quota_chip_lines(
             budget = int(raw)
         except ValueError:
             budget = None
-    if budget and budget > 0:
+    if budget and budget > 0 and unreadable:
+        lines.append("ElevenLabs: leftover unknown (ledger unreadable)")
+    elif budget and budget > 0:
         lines.append(f"ElevenLabs: {max(0, budget - used):,} chars leftover")
     else:
         lines.append("ElevenLabs: no char budget set")
@@ -498,6 +502,18 @@ def run_tray(
             return 1
     text = show_quota_chip(toast_it=True, channel_id=cid)
     print(text)
+    try:
+        from core.job_queue import list_active_jobs, queue_depth_badge
+
+        print(f"queue {queue_depth_badge(list_active_jobs())}")
+    except Exception as exc:
+        logger.debug("tray queue badge skipped: %s", exc)
+    try:
+        from core.retraction_watch import notify_retractions_if_due
+
+        notify_retractions_if_due(cid)
+    except Exception as exc:
+        logger.debug("tray retraction toast skipped: %s", exc)
     if open_output:
         try:
             from core.win_shell import open_last_output_folder

@@ -14,18 +14,21 @@ from core.logging import get_logger
 logger = get_logger("core.secrets_doctor")
 
 # Env names only — values are never returned from gather/render.
-_ENV_KEYS = (
+# Required: Standard-mode floor (router + paid TTS + Apify + YouTube).
+# Optional: unused slots must not FAIL `ops doctor`.
+REQUIRED_ENV_KEYS = (
     "DEEPSEEK_API_KEY",
     "OPENROUTER_API_KEY",
-    "OPENAI_API_KEY",
-    "ANTHROPIC_API_KEY",
     "ELEVEN_API_KEY",
     "APIFY_CONTENT_MACHINE_KEY",
     "YOUTUBE_API_KEY",
-    "BRAVE_SEARCH_API_KEY",
-    "BFL_API_KEY",
+)
+OPTIONAL_ENV_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
     "NEWS_API_KEY",
 )
+_ENV_KEYS = REQUIRED_ENV_KEYS + OPTIONAL_ENV_KEYS
 
 _PLACEHOLDERS = frozenset(
     {
@@ -84,12 +87,22 @@ def _oauth_files(channel_id: str) -> list[dict[str, Any]]:
 
 def gather(channel_id: str = "tapin") -> dict[str, Any]:
     keys: list[dict[str, str]] = []
+    required = frozenset(REQUIRED_ENV_KEYS)
     for name in _ENV_KEYS:
-        keys.append({"name": name, "status": classify_secret(os.getenv(name))})
+        status = classify_secret(os.getenv(name))
+        keys.append(
+            {
+                "name": name,
+                "status": status,
+                "required": "yes" if name in required else "no",
+            }
+        )
     files = _oauth_files(channel_id)
     present = sum(1 for k in keys if k["status"] == "present")
     missing = sum(1 for k in keys if k["status"] == "missing")
     placeholder = sum(1 for k in keys if k["status"] == "placeholder")
+    required_missing = sum(1 for k in keys if k["required"] == "yes" and k["status"] == "missing")
+    optional_missing = sum(1 for k in keys if k["required"] == "no" and k["status"] == "missing")
     return {
         "channel_id": channel_id,
         "keys": keys,
@@ -97,6 +110,8 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         "present": present,
         "missing": missing,
         "placeholder": placeholder,
+        "required_missing": required_missing,
+        "optional_missing": optional_missing,
     }
 
 
@@ -107,13 +122,15 @@ def render(data: dict[str, Any] | None = None, *, channel_id: str = "tapin") -> 
         "=" * 48,
         (
             f"  env keys: {data.get('present', 0)} present, "
-            f"{data.get('missing', 0)} missing, "
+            f"{data.get('required_missing', 0)} required missing, "
+            f"{data.get('optional_missing', 0)} optional missing, "
             f"{data.get('placeholder', 0)} placeholder"
         ),
         "  (values never printed)",
     ]
     for row in data.get("keys") or []:
-        lines.append(f"  [{row.get('status')}] {row.get('name')}")
+        opt = "" if row.get("required") == "yes" else " (optional)"
+        lines.append(f"  [{row.get('status')}] {row.get('name')}{opt}")
     for row in data.get("files") or []:
         lines.append(f"  [{row.get('status')}] {row.get('name')}")
     blob = "\n".join(lines)

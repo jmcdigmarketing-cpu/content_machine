@@ -48,21 +48,39 @@ def _key(scope: str, name: str) -> str:
     return f"{scope}:{name}"
 
 
+# #724: fail-open reads return an empty store, which is indistinguishable from a real
+# empty one. Callers that *report* a number (not guard with it) need to know which.
+_last_read_ok = True
+
+
 def _load() -> dict[str, Any]:
+    global _last_read_ok
     path = QUOTA_STATE_FILE
     if not os.path.exists(path):
+        _last_read_ok = True
         return {"disabled": {}, "kv": {}}
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         if not isinstance(data, dict):
+            _last_read_ok = False
             return {"disabled": {}, "kv": {}}
         data.setdefault("disabled", {})
         data.setdefault("kv", {})
+        _last_read_ok = True
         return data
     except Exception as exc:
+        _last_read_ok = False
         logger.debug("quota_state read failed (%s): %s", path, exc)
         return {"disabled": {}, "kv": {}}
+
+
+def read_ok() -> bool:
+    """False when the state file exists but cannot be read. A missing file is a real
+    empty store (fresh machine), so it reads True."""
+    with _lock:
+        _load()
+        return _last_read_ok
 
 
 def _prune(data: dict[str, Any], now: float) -> dict[str, Any]:

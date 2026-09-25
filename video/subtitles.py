@@ -15,6 +15,7 @@ import os
 import re
 
 from core.logging import get_logger
+from video.caption_timing import two_line_split_index
 
 logger = get_logger("video.subtitles")
 
@@ -47,11 +48,40 @@ def split_script_into_lines(script: str, max_words: int | None = None) -> list[s
     lines: list[str] = []
     for sentence in sentences:
         words = sentence.split()
-        for i in range(0, len(words), max_words):
-            chunk = " ".join(words[i : i + max_words]).strip()
-            if chunk:
-                lines.append(chunk)
+        if not words:
+            continue
+        idx = two_line_split_index(len(words), max_words)
+        if idx is not None:
+            chunks = [" ".join(words[:idx]), " ".join(words[idx:])]
+        else:
+            chunks = []
+            for i in range(0, len(words), max_words):
+                chunk = " ".join(words[i : i + max_words]).strip()
+                if chunk:
+                    chunks.append(chunk)
+        # Rebalance THIS sentence's own chunks. Rebalancing the running list
+        # instead would let a one-word sentence steal the previous sentence's
+        # last word into its cue, merging two sentences into one caption line --
+        # which test_sentence_boundaries_not_crossed has forbidden since before
+        # candidate 419 existed.
+        lines.extend(_rebalance_orphan(chunks))
     return lines
+
+
+def _rebalance_orphan(chunks: list[str]) -> list[str]:
+    """Never leave a 1-word last cue; steal one word from the previous line."""
+    if len(chunks) < 2:
+        return chunks
+    last = chunks[-1].split()
+    if len(last) != 1:
+        return chunks
+    prev = chunks[-2].split()
+    if len(prev) < 2:
+        return chunks
+    stolen = prev.pop()
+    chunks[-2] = " ".join(prev)
+    chunks[-1] = stolen + " " + chunks[-1]
+    return chunks
 
 
 def build_srt(script: str, duration: float, *, max_words: int | None = None) -> str:
@@ -104,10 +134,20 @@ def _ass_color(value: object, default: str) -> str:
     return f"&H00{bb}{gg}{rr}&"
 
 
+def caption_fonts(channel_id: str | None = None) -> tuple[str, str]:
+    """Title vs body caption fonts. Both fall back to the single `font` token."""
+    skin = _caption_skin(channel_id)
+    base = str(skin.get("font") or "Arial").replace(",", " ").strip() or "Arial"
+    title = str(skin.get("title_font") or base).replace(",", " ").strip() or base
+    body = str(skin.get("body_font") or base).replace(",", " ").strip() or base
+    return title, body
+
+
 def caption_force_style(channel_id: str | None = None) -> str:
     """FFmpeg/libass style derived from the shipped channel caption skin."""
     skin = _caption_skin(channel_id)
-    font = str(skin.get("font") or "Arial").replace(",", " ").strip() or "Arial"
+    _title, body = caption_fonts(channel_id)
+    font = body
     fill = _ass_color(skin.get("fill_color"), "#FFFFFF")
     outline = _ass_color(skin.get("outline_color"), "#111111")
     boxed = bool(skin.get("boxed", False))
@@ -120,7 +160,7 @@ def caption_force_style(channel_id: str | None = None) -> str:
     )
 
 
-def _load_word_timings(audio_path: str | None) -> list[dict] | None:
+def load_word_timings(audio_path: str | None) -> list[dict] | None:
     """Word timings written by the TTS step, if present + non-empty."""
     if not audio_path:
         return None
@@ -155,7 +195,7 @@ def resolve_word_timings(
     style = caption_style(channel_id)
     if style not in ("word", "karaoke"):
         return None
-    words = _load_word_timings(audio_path)
+    words = load_word_timings(audio_path)
     if words is not None:
         return words
     # No sidecar (local TTS, imported audio) — try the alignment seam
@@ -175,10 +215,34 @@ def resolve_word_timings(
     try:
         from video.caption_retext import retext_words_from_script
 
-        return retext_words_from_script(words, script)
+        retexted = retext_words_from_script(words, script)
     except Exception as exc:
         logger.debug("caption retext skipped: %s", exc)
         return None
+    if retexted:
+        _write_aligned_sidecar(audio_path, retexted)
+    return retexted
+
+
+def _write_aligned_sidecar(audio_path: str | None, words: list[dict]) -> None:
+    """Keep aligned timings where every consumer looks (#771).
+
+    Captions got whisper timings, but chapter times, chapter-Short cut points and the
+    trace read `<audio>.words.json` directly, so a piper render stayed estimated for them.
+    Only written when no sidecar existed - an ElevenLabs sidecar is never replaced.
+    """
+    # Only beside real audio: a mocked or missing path must not leave a sidecar in the cwd
+    # (the first #771 commit shipped `piper.mp3.words.json` in the repo root that way).
+    if not audio_path or not os.path.isfile(audio_path):
+        return
+    sidecar = audio_path + ".words.json"
+    if os.path.exists(sidecar):
+        return
+    try:
+        with open(sidecar, "w", encoding="utf-8") as f:
+            json.dump(words, f)
+    except OSError as exc:
+        logger.debug("aligned sidecar not written for %s: %s", audio_path, exc)
 
 
 def generate_subtitle_file(
@@ -189,6 +253,7 @@ def generate_subtitle_file(
     channel_id: str | None = None,
     output_path: str | None = None,
     words: list[dict] | None = None,
+    background_path: str | None = None,
 ) -> str:
     output_dir = os.path.join("output", "video")
     os.makedirs(output_dir, exist_ok=True)
@@ -206,7 +271,21 @@ def generate_subtitle_file(
 
         max_words = caption_words_per_line()
         if style == "karaoke":
-            text = build_ass_karaoke(words, max_words=max(2, min(4, max_words)))
+            title_font, body_font = caption_fonts(channel_id)
+            anchor = "bottom"
+            try:
+                from video.caption_place import choose_caption_anchor
+
+                anchor = choose_caption_anchor(background_path)
+            except Exception as exc:
+                logger.debug("caption placement skipped: %s", exc)
+            text = build_ass_karaoke(
+                words,
+                max_words=max(2, min(4, max_words)),
+                title_font=title_font,
+                body_font=body_font,
+                anchor=anchor,
+            )
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)
         else:

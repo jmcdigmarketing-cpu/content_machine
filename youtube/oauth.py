@@ -9,7 +9,6 @@ import os
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
 
 from config.channels import get_channel_profile, resolve_channel_id
 from config.paths import (
@@ -121,6 +120,8 @@ def get_youtube_service(channel_id: str | None = None):
     creds = load_credentials(channel_id)
     if not creds:
         return None
+    from googleapiclient.discovery import build
+
     return build("youtube", "v3", credentials=creds, cache_discovery=False, static_discovery=True)
 
 
@@ -138,6 +139,8 @@ def get_youtube_analytics_service(channel_id: str | None = None):
             resolve_channel_id(channel_id),
         )
         return None
+    from googleapiclient.discovery import build
+
     return build(
         "youtubeAnalytics", "v2", credentials=creds, cache_discovery=False, static_discovery=True
     )

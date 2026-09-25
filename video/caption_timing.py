@@ -41,10 +41,9 @@ def words_from_caption_align(audio_path: str | None) -> list[dict] | None:
     if not audio_path:
         return None
     try:
-        from core.caption_align import transcribe_and_align
-        from core.providers import selected_provider
+        from core.caption_align import align_backend, transcribe_and_align
 
-        if selected_provider("CAPTION_ALIGN_BACKEND", "none") in ("", "none"):
+        if align_backend() in ("", "none"):
             return None
         result = transcribe_and_align(audio_path)
     except Exception:
@@ -89,18 +88,55 @@ def words_from_alignment(
     return words
 
 
+def two_line_split_index(n: int, max_words: int) -> int | None:
+    """#505. Midpoint for a two-line wrap; None when greedy fill still applies."""
+    if n <= max_words or n > max_words * 2:
+        return None
+    mid = (n + 1) // 2
+    return min(max(n - max_words, mid), max_words)
+
+
 def group_into_lines(words: list[dict], max_words: int) -> list[list[dict]]:
     """Sentence/length-aware grouping: break on sentence-end punctuation or length."""
-    lines: list[list[dict]] = []
+    sentences: list[list[dict]] = []
     cur: list[dict] = []
     for w in words:
         cur.append(w)
-        ends_sentence = (w.get("word") or "")[-1:] in ".!?"
-        if len(cur) >= max_words or ends_sentence:
-            lines.append(cur)
+        if (w.get("word") or "")[-1:] in ".!?":
+            sentences.append(cur)
             cur = []
     if cur:
-        lines.append(cur)
+        sentences.append(cur)
+    lines: list[list[dict]] = []
+    for sent in sentences:
+        idx = two_line_split_index(len(sent), max_words)
+        if idx is not None:
+            lines.append(sent[:idx])
+            lines.append(sent[idx:])
+            continue
+        for i in range(0, len(sent), max_words):
+            chunk = sent[i : i + max_words]
+            if chunk:
+                lines.append(chunk)
+    return _rebalance_orphan_line(lines)
+
+
+def _ends_sentence(word: dict) -> bool:
+    return (word.get("word") or "")[-1:] in ".!?"
+
+
+def _rebalance_orphan_line(lines: list[list[dict]]) -> list[list[dict]]:
+    """Candidate 419 on the word-timed path: never leave a lone word as the last
+    cue. The word carries its own start/end, so moving it moves its timing and
+    `_line_span` follows. A line that ends a sentence keeps its last word --
+    `split_script_into_lines` holds the same boundary rule."""
+    if len(lines) < 2:
+        return lines
+    if len(lines[-1]) != 1 or len(lines[-2]) < 2:
+        return lines
+    if _ends_sentence(lines[-2][-1]):
+        return lines
+    lines[-1].insert(0, lines[-2].pop())
     return lines
 
 
@@ -159,11 +195,60 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
+Style: Default,{font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
+
+_ASS_HEADER_PAIRED = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Title,{title_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
+Style: Body,{body_font},{size},{primary},{secondary},&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,{alignment},80,80,260,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+
+# Usable caption width: PlayResX 1080 minus the styles' 80 px side margins.
+_ASS_TEXT_WIDTH = 1080 - 2 * 80
+# Bold Arial/Impact averages about half an em per character in mixed-case English.
+_CHAR_EM = 0.52
+
+
+def karaoke_max_chars(size: int) -> int:
+    """Characters that fit on one karaoke line at `size` px (WrapStyle 2 never wraps)."""
+    return max(8, int(_ASS_TEXT_WIDTH / (max(1, int(size)) * _CHAR_EM)))
+
+
+def _fit_chars(lines: list[list[dict]], max_chars: int) -> list[list[dict]]:
+    """Split any line wider than `max_chars` greedily; a single long word keeps its own line.
+
+    Found in the wave 23 preview: at the restored 90 px (#783) a 4-word line such as
+    "aunts Rockstar because they" ran off both edges of the frame.
+    """
+    out: list[list[dict]] = []
+    for line in lines:
+        cur: list[dict] = []
+        width = 0
+        for w in line:
+            n = len(str(w.get("word") or ""))
+            if cur and width + 1 + n > max_chars:
+                out.append(cur)
+                cur, width = [], 0
+            width = n if not cur else width + 1 + n
+            cur.append(w)
+        if cur:
+            out.append(cur)
+    return out
 
 
 def build_ass_karaoke(
@@ -174,11 +259,18 @@ def build_ass_karaoke(
     size: int = 90,
     primary: str = "&H0000FFFF",  # spoken word — yellow (BGR)
     secondary: str = "&H00FFFFFF",  # not-yet-spoken — white
+    title_font: str | None = None,
+    body_font: str | None = None,
+    anchor: str = "bottom",
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing)."""
-    lines = group_into_lines(words, max_words)
+    lines = _fit_chars(group_into_lines(words, max_words), karaoke_max_chars(size))
+    paired = title_font is not None or body_font is not None
+    title = (title_font or font).replace(",", " ").strip() or font
+    body = (body_font or font).replace(",", " ").strip() or font
+    alignment = 8 if str(anchor).strip().lower() == "top" else 2
     events: list[str] = []
-    for line in lines:
+    for index, line in enumerate(lines):
         start, end = _line_span(line)
         parts: list[str] = []
         for w in line:
@@ -187,8 +279,25 @@ def build_ass_karaoke(
             dur_cs = max(1, int(round((we - ws) * 100)))
             text = (w["word"] or "").replace("{", "(").replace("}", ")")
             parts.append(f"{{\\k{dur_cs}}}{text}")
+        style = "Title" if paired and index == 0 else ("Body" if paired else "Default")
         events.append(
-            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},Default,,0,0,0,,{' '.join(parts)}"
+            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,0,,{' '.join(parts)}"
         )
-    header = _ASS_HEADER.format(font=font, size=size, primary=primary, secondary=secondary)
+    if paired:
+        header = _ASS_HEADER_PAIRED.format(
+            title_font=title,
+            body_font=body,
+            size=size,
+            primary=primary,
+            secondary=secondary,
+            alignment=alignment,
+        )
+    else:
+        header = _ASS_HEADER.format(
+            font=font,
+            size=size,
+            primary=primary,
+            secondary=secondary,
+            alignment=alignment,
+        )
     return header + "\n".join(events) + "\n"

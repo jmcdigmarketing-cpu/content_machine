@@ -14,24 +14,41 @@ input line uniformly.
 from __future__ import annotations
 
 import base64
+import datetime as dt
+import json
 import os
 import re
+from typing import Any
 from urllib.parse import unquote
 
 import requests
 from bs4 import BeautifulSoup
 
 from core.logging import get_logger
-from core.operator_facts import is_writing_tip, parse_pasted_block
+from core.operator_facts import (
+    is_writing_tip,
+    key_fact_split_width,
+    parse_pasted_block,
+    split_at_sentences,
+)
 
 logger = get_logger("core.link_facts")
 
 _URL_RE = re.compile(r"^https?://\S+$", re.I)
+# A bare User-Agent reads as a script to a surprising number of CDNs. Run 74 hit a
+# 403 on Engadget; a browser-shaped header set clears the naive checks. It does not
+# defeat a real WAF — the paste-recovery path in the fact prompt is that fix.
 _HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    )
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Upgrade-Insecure-Requests": "1",
 }
 
 
@@ -79,6 +96,62 @@ _BLOCKED_TITLE_MARKERS = (
     " - search",
     "captcha",
 )
+
+
+_ISO_DATE_PREFIX = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
+_META_DATE_KEYS: tuple[dict[str, Any], ...] = (
+    {"property": "article:published_time"},
+    {"property": "og:published_time"},
+    {"name": "article:published_time"},
+    {"itemprop": "datePublished"},
+    {"name": "publish-date"},
+    {"name": "pubdate"},
+    {"name": "date"},
+)
+
+
+def _published_date(soup: BeautifulSoup) -> dt.date | None:
+    """When the page says it was published, or None. Never raises.
+
+    Run 74 stamped every scraped fact with no date at all, so ranking facts with a
+    heavy recency bias had nothing to weigh. Fail-open by design: `None` means
+    "unknown", which the selector treats as neutral rather than stale.
+    """
+    for attrs in _META_DATE_KEYS:
+        tag = soup.find("meta", attrs=attrs)
+        value = tag.get("content") if tag else None
+        parsed = _parse_date(value)
+        if parsed:
+            return parsed
+
+    for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
+        try:
+            payload = json.loads(script.string or script.get_text() or "")
+        except Exception as exc:
+            logger.debug("ld+json date block unparseable for one script tag: %s", exc)
+            continue
+        for block in payload if isinstance(payload, list) else [payload]:
+            if not isinstance(block, dict):
+                continue
+            parsed = _parse_date(block.get("datePublished") or block.get("dateCreated"))
+            if parsed:
+                return parsed
+
+    for tag in soup.find_all("time"):
+        parsed = _parse_date(tag.get("datetime"))
+        if parsed:
+            return parsed
+    return None
+
+
+def _parse_date(raw: object) -> dt.date | None:
+    match = _ISO_DATE_PREFIX.match(str(raw or "").strip())
+    if not match:
+        return None
+    try:
+        return dt.date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    except ValueError:
+        return None
 
 
 def _is_junk_line(text: str) -> bool:
@@ -211,7 +284,10 @@ def link_fetch_issue(url: str) -> str | None:
         )
     if resp.status_code != 200:
         logger.debug("link fetch %s returned %s", url, resp.status_code)
-        return f"Link returned HTTP {resp.status_code} — paste the text manually."
+        return (
+            f"Link returned HTTP {resp.status_code} — paste the article text, "
+            "or set LINK_READER_PROXY=1 to try a proxy."
+        )
     return None
 
 
@@ -221,11 +297,11 @@ def _extract_trade_lines(soup: BeautifulSoup) -> list[str]:
     for li in soup.find_all("li"):
         text = " ".join(li.get_text(" ", strip=True).split())
         if len(text) > 15 and not _is_junk_line(text):
-            facts.append(text[:400])
+            facts.extend(split_at_sentences(text, key_fact_split_width()))
     for tag in soup.find_all(["h2", "h3", "h4"]):
         text = " ".join(tag.get_text(" ", strip=True).split())
         if len(text) > 20 and re.search(r"\btrade", text, re.I) and not _is_junk_line(text):
-            facts.append(text[:400])
+            facts.extend(split_at_sentences(text, key_fact_split_width()))
     return facts
 
 
@@ -260,7 +336,23 @@ def _goose3_body_lines(url: str, html: str) -> list[str]:
     return [" ".join(line.split()) for line in text.split("\n") if line.strip()]
 
 
-def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
+_last_extract_report: dict[str, Any] = {"kept": 0, "found": 0, "published": None}
+
+
+def last_extract_report() -> dict[str, Any]:
+    """What the most recent scrape found vs. returned, so the UI can say so.
+
+    Run 74 scraped five articles at `max_lines=12` each and never mentioned the
+    remainder - the Vice piece alone listed 150 details. A cap the operator cannot
+    see is indistinguishable from a page that had nothing more to give.
+
+    Also carries `published`, the page's own publication date, which is what lets
+    the fact selector weight recency at all.
+    """
+    return dict(_last_extract_report)
+
+
+def _article_facts(url: str, *, max_lines: int = 40) -> list[str]:
     url = _unwrap_redirect_url(url)
     if _is_blocked_url(url):
         logger.debug("link fetch skipped blocked url %s", url)
@@ -278,6 +370,7 @@ def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
         return []
 
     root = _main_content_root(soup)
+    published = _published_date(soup)
     facts: list[str] = []
     title = (soup.title.string if soup.title and soup.title.string else "").strip()
     if _is_blocked_title(title):
@@ -293,7 +386,7 @@ def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
     if meta_desc and meta_desc.get("content"):
         content = meta_desc["content"].strip()
         if len(content) > 25 and not _is_junk_line(content):
-            facts.append(content[:300])
+            facts.extend(split_at_sentences(content, key_fact_split_width()))
 
     # Body paragraphs: goose3-first (cleaner main text, drops nav/sidebar chrome), with
     # the BeautifulSoup <p> scan as the fallback for JS-heavy / tiny pages. Trade-tracker
@@ -305,7 +398,7 @@ def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
         body_lines = [" ".join(p.get_text(" ", strip=True).split()) for p in root.find_all("p")]
     for text in body_lines:
         if len(text) > 60 and not _is_junk_line(text):
-            facts.append(text[:400])
+            facts.extend(split_at_sentences(text, key_fact_split_width()))
 
     # List items only on trade-tracker pages — Yahoo/MSN sidebars are full of <li> noise.
     if _looks_like_trade_tracker(url, title):
@@ -323,6 +416,12 @@ def _article_facts(url: str, *, max_lines: int = 12) -> list[str]:
         if key not in seen:
             seen.add(key)
             out.append(f)
+    global _last_extract_report
+    _last_extract_report = {
+        "kept": min(len(out), max_lines),
+        "found": len(out),
+        "published": published,
+    }
     return out[:max_lines]
 
 
@@ -364,7 +463,7 @@ def _reader_proxy_facts(url: str, *, max_lines: int = 12) -> list[str]:
         key = ln.lower()[:100]
         if key not in seen:
             seen.add(key)
-            facts.append(ln[:400])
+            facts.extend(split_at_sentences(ln, key_fact_split_width()))
         if len(facts) >= max_lines:
             break
     return facts
@@ -372,6 +471,8 @@ def _reader_proxy_facts(url: str, *, max_lines: int = 12) -> list[str]:
 
 def extract_facts_from_url(url: str) -> list[str]:
     """Best-effort fact extraction from a URL. Returns [] on any failure."""
+    global _last_extract_report
+    _last_extract_report = {"kept": 0, "found": 0, "published": None}
     url = (url or "").strip()
     if not looks_like_url(url):
         return []

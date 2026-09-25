@@ -290,3 +290,36 @@ def adjust_publish_at(
     if not reasons or current == target:
         return publish_at, None
     return current, "; ".join(reasons)
+
+
+def resolve_relative_clock(
+    phrase: str,
+    *,
+    now: datetime | None = None,
+    tz_name: str = "America/New_York",
+) -> datetime | None:
+    """Resolve 'tonight' / 'this weekend' against TapIn ET at script time."""
+    tz = _tz(tz_name)
+    local = _as_utc(now).astimezone(tz)
+    text = (phrase or "").strip().lower()
+    if text == "tonight":
+        target = local.replace(hour=21, minute=0, second=0, microsecond=0)
+        if target <= local:
+            target += timedelta(days=1)
+        return target
+    if text == "this weekend":
+        # #701. `(5 - weekday()) % 7` is 0 on a Saturday, so this resolved to
+        # Saturday noon and pointed into the past all Saturday afternoon. Roll
+        # forward the way `tonight` above does -- but to the Sunday, which is
+        # still this weekend, before giving up and taking the next Saturday.
+        saturday = (
+            local - timedelta(days=1)
+            if local.weekday() == 6
+            else local + timedelta(days=(5 - local.weekday()) % 7)
+        )
+        for candidate in (saturday, saturday + timedelta(days=1)):
+            target = candidate.replace(hour=12, minute=0, second=0, microsecond=0)
+            if target > local:
+                return target
+        return (saturday + timedelta(days=7)).replace(hour=12, minute=0, second=0, microsecond=0)
+    return None

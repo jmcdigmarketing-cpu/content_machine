@@ -35,8 +35,44 @@ from apis.wikipedia_pageviews_api import get_wikipedia_pageviews_signal
 from apis.youtube_api import search_youtube
 from apis.youtube_apify_signal import get_youtube_apify_signal
 from apis.youtube_comments_signal import get_youtube_comments_signal
+from core.logging import get_logger
+
+logger = get_logger("apis.signals_bootstrap")
 
 _registry: SignalRegistry | None = None
+
+
+# Retired signals — decisions §19: a source that produces nothing is switched off
+# with the reason recorded here, and its module is kept for revival rather than
+# deleted. §19's kill switch is `config/apify_sources.json`, which only covers paid
+# actors; this is the same rule for a free signal, applied where free signals are
+# registered. Deleting the entry below is all a revival needs.
+RETIRED_SIGNALS: dict[str, str] = {
+    "trendingnow": (
+        "2026-08-29: trendingnow.games has failed to resolve on every run for weeks "
+        "(run 74: HTTPSConnectionPool 'Max retries exceeded'). It contributed zero "
+        "facts and cost a connection timeout per run. Module kept at "
+        "apis/trendingnow_api.py."
+    ),
+    "tapology": (
+        "2026-09-20: zero facts across every recorded run that called it (wave 25 "
+        "measurement). Cloudflare 403 for 33 days in 2026-08 already documented in "
+        "decisions.md §19; the scrape stays default-off. Module kept at "
+        "apis/tapology_api.py."
+    ),
+    "stats_context": (
+        "2026-09-20: zero facts across every recorded run that called it. Module "
+        "kept at apis/stats_context_api.py."
+    ),
+    "tvmaze": (
+        "2026-09-20: zero facts across every recorded run that called it. Module "
+        "kept at apis/tvmaze_api.py."
+    ),
+    "tmdb": (
+        "2026-09-20: zero facts across every recorded run that called it. Module "
+        "kept at apis/tmdb_api.py."
+    ),
+}
 
 
 def get_signal_registry() -> SignalRegistry:
@@ -87,6 +123,10 @@ def get_signal_registry() -> SignalRegistry:
     reg.register("tiktok_trends", get_tiktok_signal)
     reg.register("twitter", get_twitter_signal)
     reg.register("youtube_competitors", get_youtube_apify_signal)
+
+    for name, note in RETIRED_SIGNALS.items():
+        if reg.unregister(name):
+            logger.debug("signal %s is retired: %s", name, note)
 
     _registry = reg
     return _registry

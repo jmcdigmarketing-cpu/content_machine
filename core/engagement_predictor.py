@@ -56,7 +56,14 @@ def run_engagement_map(channel_id: str) -> dict[int, float]:
 
 
 def _training_rows(channel_id: str) -> list[tuple[float, float, float]]:
-    """(hook, authenticity, engaged_rate) for measured runs with quality."""
+    """(hook, authenticity, engaged_rate) for measured runs with quality.
+
+    #815: the authenticity column is the binary gate sum on both sides of the
+    v3/v4 boundary. #804 made ``authenticity_score`` continuous, and fitting a
+    slope across two different rubrics measures the rubric change, not the work.
+    """
+    from core.run_quality import authenticity_gate_value
+
     engagement = run_engagement_map(channel_id)
     if not engagement:
         return []
@@ -76,10 +83,10 @@ def _training_rows(channel_id: str) -> list[tuple[float, float, float]]:
                 )
                 continue
             hook = quality.get("hook_score")
-            auth = quality.get("authenticity_score")
+            auth = authenticity_gate_value(quality)
             if hook is None or auth is None:
                 continue
-            rows.append((float(hook), float(auth), rate))
+            rows.append((float(hook), auth, rate))
     except Exception as exc:
         logger.debug("training rows load failed: %s", exc)
     return rows
@@ -101,8 +108,12 @@ def _slope(xs: list[float], ys: list[float]) -> float:
 
 def predict_engaged_rate(channel_id: str, *, quality: dict) -> Prediction | None:
     """Expected engaged-rate for a draft's quality dict, or None below the gate."""
+    from core.run_quality import authenticity_gate_value
+
     hook = quality.get("hook_score")
-    auth = quality.get("authenticity_score")
+    # #815: same series as `_training_rows` — the draft must be measured on the
+    # scale the slope was fitted on.
+    auth = authenticity_gate_value(quality)
     if hook is None and auth is None:
         return None
     rows = _training_rows(channel_id)
@@ -149,3 +160,13 @@ def predict_engaged_rate(channel_id: str, *, quality: dict) -> Prediction | None
         n=n,
         note=f"{', '.join(parts)}; n={n}, ±{band * 100:.1f}pp",
     )
+
+
+def surprise_residual(actual: float | None, predicted: float | None) -> float | None:
+    """actual − predicted engaged-rate. None when either side is missing."""
+    if actual is None or predicted is None:
+        return None
+    try:
+        return round(float(actual) - float(predicted), 4)
+    except (TypeError, ValueError):
+        return None

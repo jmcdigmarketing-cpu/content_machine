@@ -32,6 +32,48 @@ _SLOP_PATTERNS = (
 
 _SLOP_RE = re.compile("|".join(re.escape(p) for p in _SLOP_PATTERNS), re.I)
 
+_PIN_STOP = frozenset(
+    """a an and are as at be been but by can could did do does for from had has have
+    how in into is it its may might more most must new no not of on or our out over
+    should so than that the their then there these they this to up was were what when
+    where which who why will with would you your one all""".split()
+)
+_PIN_GENERIC = frozenset({"gta", "nba", "nfl", "ufc", "mma", "game", "games", "video"})
+
+
+def _angle_pin_phrases(angle: str) -> list[str]:
+    """Distinctive phrases from the selected angle that the public title must keep."""
+    text = (angle or "").strip()
+    if not text:
+        return []
+    low = text.lower()
+    out: list[str] = []
+    if "will it be the best" in low:
+        out.append("will it be the best")
+    words = re.findall(r"[a-z0-9']+", low)
+    for word in words:
+        if len(word) >= 5 and word not in _PIN_STOP and word not in _PIN_GENERIC:
+            if word not in out:
+                out.append(word)
+    return out[:8]
+
+
+def _title_keeps_angle(title: str, angle: str) -> bool:
+    pins = _angle_pin_phrases(angle)
+    if not pins:
+        return True
+    low = (title or "").lower()
+    return any(pin in low for pin in pins)
+
+
+def _repair_title_to_angle(title: str, angle: str, *, fallback: str) -> str:
+    if _title_keeps_angle(title, angle):
+        return title
+    from_angle = _clean_title(re.sub(r"\s+", " ", (angle or "").strip()), fallback=fallback)
+    if _title_keeps_angle(from_angle, angle):
+        return from_angle
+    return title
+
 
 def _hook_line(script: str) -> str:
     text = (script or "").strip()
@@ -66,6 +108,7 @@ def generate_title(
         "\n".join(f"- {f}" for f in facts) if facts else "(none — use only what the script states)"
     )
 
+    pin = (_angle_pin_phrases(topic) or [topic])[0]
     prompt = f"""Write ONE YouTube Shorts title for this video.
 
 EDITORIAL ANGLE: {topic}
@@ -77,6 +120,7 @@ OPERATOR FACTS (title must not contradict these):
 
 RULES:
 - Prefer 50–70 characters; hard max 100.
+- The title MUST include this angle phrase: {pin}
 - Name a specific person, team, or move when facts/script mention one.
 - Accurate > catchy. No clickbait templates.
 - BANNED phrases: {", ".join(_SLOP_PATTERNS[:8])}, etc.
@@ -92,7 +136,7 @@ Title:"""
     # degrades to the script hook, mirroring the variant path's "using heuristic angles".
     raw = _complete_or_none(prompt, temperature=0.45, max_tokens=48)
     if raw is None:
-        return fallback
+        return _repair_title_to_angle(fallback, topic, fallback=fallback)
 
     title = _clean_title(raw, fallback=fallback)
     if title == fallback and facts:
@@ -106,6 +150,7 @@ Title:"""
         )
         if retry is not None:
             title = _clean_title(retry, fallback=fallback)
+    title = _repair_title_to_angle(title, topic, fallback=fallback)
     logger.debug("Generated title: %s", title)
     return title
 

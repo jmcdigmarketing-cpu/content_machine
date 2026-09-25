@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from config.competitors import competitors_data_path, get_competitor_channels
@@ -78,6 +78,50 @@ def _topic_tokens(topic: str) -> list[str]:
     return [w for w in words if w not in stop]
 
 
+def _parse_published_at(raw: object) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def topic_saturation(
+    channel_id: str,
+    topic: str,
+    *,
+    snapshot: dict[str, Any] | None = None,
+    now: datetime | None = None,
+    window_hours: float = 48.0,
+) -> int:
+    """How many tracked-competitor videos covered `topic` in the window."""
+    snap = snapshot if snapshot is not None else load_competitor_snapshot(channel_id)
+    tokens = _topic_tokens(topic)
+    if not tokens:
+        return 0
+    current = now or datetime.now(timezone.utc)
+    cutoff = current - timedelta(hours=float(window_hours))
+    count = 0
+    for comp in snap.get("competitors") or []:
+        if not isinstance(comp, dict):
+            continue
+        for vid in comp.get("recent_videos") or []:
+            if not isinstance(vid, dict):
+                continue
+            title = str(vid.get("title") or "")
+            if not any(token in title.lower() for token in tokens):
+                continue
+            published = _parse_published_at(vid.get("published_at"))
+            if published is None or published < cutoff:
+                continue
+            count += 1
+    return count
+
+
 def list_recent_competitor_titles(
     channel_id: str,
     *,
@@ -139,6 +183,12 @@ def get_competitor_prompt_block(channel_id: str, topic: str = "") -> str:
     titles = list_recent_competitor_titles(channel_id, topic=topic, limit=10)
     if not titles:
         titles = list_recent_competitor_titles(channel_id, topic="", limit=8)
+
+    if topic:
+        covered = topic_saturation(channel_id, topic, snapshot=snap)
+        if covered:
+            noun = "competitor" if covered == 1 else "competitors"
+            lines.append(f"{covered} {noun} covered this in 48h")
 
     for row in titles:
         lines.append(f"- [{row.get('channel', '?')}] {row.get('title', '')}")

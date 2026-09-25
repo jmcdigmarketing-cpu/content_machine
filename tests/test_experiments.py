@@ -193,7 +193,15 @@ class TestBatchIntegration(ExperimentCase):
         ex.start_experiment("tapin", "hook_style")
         first_arm = arms("hook_style")[0]
 
-        discovery = SimpleNamespace(evaluated=[("Angle", 80.0, {})], channel_id="tapin", timings={})
+        from core.pipeline import DiscoveryResult
+
+        discovery = DiscoveryResult(
+            input_topic="t",
+            base_signals={},
+            evaluated=[("Angle", 80.0, {})],
+            timings={},
+            channel_id="tapin",
+        )
         result = SimpleNamespace(
             aborted=False,
             abort_reason=None,
@@ -229,7 +237,15 @@ class TestBatchIntegration(ExperimentCase):
 
     def test_thumbnail_experiment_does_not_touch_script_prompt(self):
         ex.start_experiment("tapin", "thumbnail_style")
-        discovery = SimpleNamespace(evaluated=[("Angle", 80.0, {})], channel_id="tapin", timings={})
+        from core.pipeline import DiscoveryResult
+
+        discovery = DiscoveryResult(
+            input_topic="t",
+            base_signals={},
+            evaluated=[("Angle", 80.0, {})],
+            timings={},
+            channel_id="tapin",
+        )
         result = SimpleNamespace(
             aborted=False,
             abort_reason=None,

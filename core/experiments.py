@@ -77,11 +77,33 @@ def _save(data: dict[str, Any]) -> None:
         logger.debug("experiments write skipped: %s", exc)
 
 
+def _measured_n(channel_id: str) -> int:
+    """Published videos with an engaged-rate — the cadence n for MDE."""
+    try:
+        from core.engagement_predictor import run_engagement_map
+
+        return len(run_engagement_map(channel_id))
+    except Exception as exc:
+        logger.debug("experiment MDE n skipped: %s", exc)
+        return 0
+
+
 def start_experiment(channel_id: str, lever: str) -> dict[str, Any]:
     """Activate `lever` for the channel (replaces any running experiment)."""
     if not experiment_levers.known(lever):
         raise ValueError(
             f"Unknown lever '{lever}' — known: {', '.join(experiment_levers.levers())}"
+        )
+    n_arms = len(experiment_levers.arms(lever))
+    n = _measured_n(channel_id)
+    # n=0 stays permissive on purpose: experiments GENERATE the samples, so a new
+    # channel must be able to bootstrap one. n>0 means we have measurement history
+    # and it says the lever cannot resolve. Caveat: `_measured_n` also returns 0
+    # from its except branch, so a repository error reads as "new channel" here.
+    if n > 0 and n < n_arms:
+        raise ValueError(
+            f"Cannot start {lever} ({n_arms} arms) with n={n} measured videos; "
+            f"need at least {n_arms}"
         )
     record = {"lever": lever, "started_at": time.time()}
     with _lock:

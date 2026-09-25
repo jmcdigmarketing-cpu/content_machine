@@ -34,6 +34,18 @@ def _fmt_secs(value: Any) -> str:
         return "?"
 
 
+def _quality_script_diff_lines(quality: dict[str, Any]) -> list[str]:
+    """Both script texts when a rewrite pass ran (#405). Empty on a clean run."""
+    pre = str(quality.get("script_pre_rewrite") or "").strip()
+    post = str(quality.get("script_post_rewrite") or "").strip()
+    if not pre or not post:
+        return []
+    lines = ["  script diff (LLM draft vs post-gate rewrite):"]
+    lines.append(f"    before: {pre[:240]}")
+    lines.append(f"    after : {post[:240]}")
+    return lines
+
+
 def _phase_times(timings: dict[str, Any]) -> list[tuple[str, float]]:
     out = []
     for key in _PHASE_KEYS:
@@ -151,6 +163,19 @@ def render_dossier(run_id: int) -> str:
             lines.append(f"  ungrounded specifics: {quality['ungrounded_count']}")
         if quality.get("trade_warning_count"):
             lines.append(f"  trade warnings: {quality['trade_warning_count']}")
+        # #302 / #596 / #367 all persisted into quality with no reader anywhere.
+        # A number the operator never sees cannot change a decision.
+        for span in quality.get("numeric_outliers") or []:
+            lines.append(f"  implausible amount: {span}")
+        if quality.get("competitor_title_duplicate"):
+            lines.append(f"  title: {quality['competitor_title_duplicate']}")
+        if quality.get("topic_saturation"):
+            n = int(quality["topic_saturation"])
+            noun = "competitor" if n == 1 else "competitors"
+            lines.append(f"  {n} {noun} covered this in 48h")
+        for key, label in (("clock_tonight", "tonight"), ("clock_weekend", "this weekend")):
+            if quality.get(key):
+                lines.append(f"  script says '{label}' -> {quality[key]}")
         if quality.get("claim_support_rate") is not None:
             rate = float(quality["claim_support_rate"] or 0)
             unsupported = int(quality.get("unsupported_claim_count") or 0)
@@ -160,6 +185,9 @@ def render_dossier(run_id: int) -> str:
             )
         if quality.get("fact_conflict_count"):
             lines.append(f"  fact conflicts: {quality['fact_conflict_count']}")
+            if quality.get("disputed"):
+                lines.append("  DISPUTED")
+        lines.extend(_quality_script_diff_lines(quality))
         if quality.get("tier_warning_count"):
             lines.append(f"  tier warnings: {quality['tier_warning_count']}")
         if quality.get("thumbnail_overall") is not None:
@@ -183,6 +211,24 @@ def render_dossier(run_id: int) -> str:
         feats = ", ".join(f"{k}={features[k]}" for k in keep if features.get(k) not in (None, ""))
         if feats:
             lines.append(f"Features: {feats}")
+        if features.get("chapters_timing_source"):
+            lines.append(f"Chapters: {features['chapters_timing_source']} timing")
+        technical = features.get("technical_qc")
+        if isinstance(technical, dict):
+            passed = bool(technical.get("passed"))
+            status = "PASS" if passed else str(technical.get("status") or "ADVISORY").upper()
+            lines.append(f"Technical QC: {status}")
+            for issue in technical.get("issues") or []:
+                lines.append(f"  {issue}")
+            measured = []
+            if technical.get("integrated_lufs") is not None:
+                measured.append(f"{float(technical['integrated_lufs']):.1f} LUFS")
+            if technical.get("true_peak_dbfs") is not None:
+                measured.append(f"peak {float(technical['true_peak_dbfs']):.1f} dBFS")
+            if technical.get("loudness_range_lu") is not None:
+                measured.append(f"LRA {float(technical['loudness_range_lu']):.1f} LU")
+            if measured:
+                lines.append("  " + ", ".join(measured))
 
     phases = _phase_times(timings)
     if phases:
@@ -207,13 +253,26 @@ def render_dossier(run_id: int) -> str:
                 f"engaged {float(metrics.get('engaged_rate', 0) or 0) * 100:.1f}%, "
                 f"likes {metrics.get('likes', '?')}"
             )
-            if metrics.get("estimated_revenue_usd") is not None:
+            if metrics.get("surprise") is not None:
+                lines.append(
+                    f"  surprise (actual − predicted): {float(metrics['surprise']) * 100:+.1f}pp"
+                )
                 revenue = float(metrics["estimated_revenue_usd"] or 0)
                 total_cost = float((cost or {}).get("total") or 0)
                 lines.append(
                     f"  revenue ${revenue:.2f} - margin ${revenue - total_cost:+.2f}"
                     " (est., 28d window)"
                 )
+            snaps = metrics.get("snapshots")
+            if isinstance(snaps, dict):
+                for label in ("24h", "7d"):
+                    snap = snaps.get(label)
+                    if isinstance(snap, dict):
+                        lines.append(
+                            f"  {label} snapshot: views {snap.get('views', '?')}, "
+                            f"engaged {float(snap.get('engaged_rate', 0) or 0) * 100:.1f}%, "
+                            f"likes {snap.get('likes', '?')}"
+                        )
     else:
         lines.append("Publish : (not uploaded)")
 

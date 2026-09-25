@@ -53,6 +53,7 @@ class TestElevenLabsTtsTrip(GovernorCase):
         env = {
             "ELEVENLABS_MONTHLY_CHAR_BUDGET": "100",
             "TTS_PROVIDER": "elevenlabs",
+            "TTS_PIPER_MIX_EVERY": "0",
             "ELEVEN_API_KEY": "k",
         }
         with tempfile.TemporaryDirectory() as tmp:
@@ -73,6 +74,7 @@ class TestElevenLabsTtsTrip(GovernorCase):
         env = {
             "ELEVENLABS_MONTHLY_CHAR_BUDGET": "5",
             "TTS_PROVIDER": "elevenlabs",
+            "TTS_PIPER_MIX_EVERY": "0",
             "ELEVEN_API_KEY": "k",
         }
         with tempfile.TemporaryDirectory() as tmp:
@@ -92,6 +94,7 @@ class TestElevenLabsTtsTrip(GovernorCase):
         env = {
             "ELEVENLABS_MONTHLY_CHAR_BUDGET": "100000",
             "TTS_PROVIDER": "elevenlabs",
+            "TTS_PIPER_MIX_EVERY": "0",
             "ELEVEN_API_KEY": "k",
         }
         with tempfile.TemporaryDirectory() as tmp:
@@ -110,6 +113,7 @@ class TestElevenLabsTtsTrip(GovernorCase):
         env = {
             "ELEVENLABS_MONTHLY_CHAR_BUDGET": "",
             "TTS_PROVIDER": "elevenlabs",
+            "TTS_PIPER_MIX_EVERY": "0",
             "ELEVEN_API_KEY": "k",
         }
         with tempfile.TemporaryDirectory() as tmp:

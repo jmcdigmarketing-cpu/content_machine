@@ -83,7 +83,17 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         cuda = cuda_probe.probe()
         rendered = cuda_probe.render(cuda)
         detail = rendered.splitlines()[1].strip() if rendered else "probed"
-        add("cuda", True, detail)
+        smi = bool(cuda.get("nvidia_smi"))
+        avail = bool(cuda.get("cuda_available"))
+        if smi and not avail:
+            tv = cuda.get("torch_version") or "not installed"
+            add(
+                "cuda",
+                False,
+                f"nvidia-smi present; torch {tv} is CPU (install CUDA wheel when ready)",
+            )
+        else:
+            add("cuda", True, detail)
         out["cuda"] = cuda
         nvenc_ok = bool(cuda.get("nvenc_capable"))
         add("nvenc", True, "h264_nvenc yes" if nvenc_ok else "h264_nvenc no (CPU libx264)")
@@ -106,18 +116,22 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         from core import secrets_doctor
 
         secrets = secrets_doctor.gather(channel_id)
+        required_missing = int(secrets.get("required_missing") or 0)
         add(
             "secrets",
-            secrets.get("missing", 0) == 0,
+            required_missing == 0,
             (
                 f"{secrets.get('present', 0)} present / "
-                f"{secrets.get('missing', 0)} missing / "
+                f"{required_missing} required missing / "
+                f"{secrets.get('optional_missing', 0)} optional missing / "
                 f"{secrets.get('placeholder', 0)} placeholder (values not shown)"
             ),
         )
         out["secrets"] = {
             "present": secrets.get("present"),
             "missing": secrets.get("missing"),
+            "required_missing": required_missing,
+            "optional_missing": secrets.get("optional_missing"),
             "placeholder": secrets.get("placeholder"),
         }
     except Exception as exc:
@@ -134,6 +148,32 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
     except Exception as exc:
         logger.debug("doctor workspace skipped: %s", exc)
         add("workspace", True, f"n/a ({type(exc).__name__})")
+
+    try:
+        from core.run_mode import free_mode_strict
+
+        paid_off = os.getenv("PAID_CALLS", "").strip().lower() in ("0", "off", "false", "no")
+        if not paid_off:
+            add("paid_calls", True, "PAID_CALLS allowed (Standard)")
+        elif free_mode_strict():
+            add("paid_calls", True, "PAID_CALLS=off; free seams armed")
+        else:
+            add(
+                "paid_calls",
+                False,
+                "PAID_CALLS=off but FREE_MODE_STRICT is not set — apply_and_guard was not run",
+            )
+    except Exception as exc:
+        logger.debug("doctor paid_calls skipped: %s", exc)
+        add("paid_calls", True, f"n/a ({type(exc).__name__})")
+
+    try:
+        from core.startup_budget import budget_for
+
+        add("startup_budget", True, f"core.chrome <= {budget_for('core.chrome'):.1f}s")
+    except Exception as exc:
+        logger.debug("doctor startup budget skipped: %s", exc)
+        add("startup_budget", True, f"n/a ({type(exc).__name__})")
 
     return out
 

@@ -51,29 +51,29 @@ class TestResolveLocalVoice(unittest.TestCase):
         prof = _profile()
         with (
             patch("core.tts.get_channel_profile", return_value=prof),
+            patch("core.tts.load_local_voice_pool", return_value={}),
             patch.dict(os.environ, {"PIPER_VOICES": "x.onnx, y.onnx"}, clear=False),
         ):
             picks = {tts.resolve_local_voice("piper", "tapin") for _ in range(40)}
         self.assertTrue(picks.issubset({"x.onnx", "y.onnx"}))
 
     def test_fail_open_to_env_single(self):
-        # No per-channel config + no pool → the exact PIPER_VOICE value used today.
+        # No per-channel config + no catalog + no pool → the exact PIPER_VOICE value.
         prof = _profile()
         with (
             patch("core.tts.get_channel_profile", return_value=prof),
-            patch.dict(os.environ, {"PIPER_VOICE": "solo.onnx"}, clear=False),
+            patch("core.tts.load_local_voice_pool", return_value={}),
+            patch.dict(os.environ, {"PIPER_VOICE": "solo.onnx", "PIPER_VOICES": ""}, clear=False),
         ):
-            os.environ.pop("PIPER_VOICES", None)
             self.assertEqual(tts.resolve_local_voice("piper", "tapin"), "solo.onnx")
 
     def test_nothing_configured_returns_none(self):
         prof = _profile()
         with (
             patch("core.tts.get_channel_profile", return_value=prof),
-            patch.dict(os.environ, {}, clear=False),
+            patch("core.tts.load_local_voice_pool", return_value={}),
+            patch.dict(os.environ, {"PIPER_VOICE": "", "PIPER_VOICES": ""}, clear=False),
         ):
-            os.environ.pop("PIPER_VOICE", None)
-            os.environ.pop("PIPER_VOICES", None)
             self.assertIsNone(tts.resolve_local_voice("piper", "tapin"))
 
     def test_non_local_provider_returns_none(self):

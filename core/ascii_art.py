@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -29,6 +30,40 @@ def mascot_enabled() -> bool:
         return False
     mode = os.getenv("CONTENT_UI_MASCOT", "luffy").strip().lower()
     return mode not in ("0", "false", "no", "off", "none")
+
+
+def mascot_forced() -> bool:
+    return os.getenv("CONTENT_UI_ART", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def mascot_stamp_path() -> Path:
+    override = os.getenv("CONTENT_UI_MASCOT_STAMP", "").strip()
+    if override:
+        return Path(override)
+    from config.paths import DATA_DIR
+
+    return Path(DATA_DIR) / "mascot_shown_day.txt"
+
+
+def mascot_collapsed_today() -> bool:
+    """#482. After the first look of the day, skip the ~60-line panel."""
+    if mascot_forced():
+        return False
+    try:
+        return mascot_stamp_path().read_text(encoding="utf-8").strip() == date.today().isoformat()
+    except OSError:
+        return False
+
+
+def mark_mascot_shown() -> None:
+    if mascot_forced():
+        return
+    path = mascot_stamp_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(date.today().isoformat(), encoding="utf-8")
+    except OSError as exc:
+        logger.debug("mascot stamp skipped: %s", exc)
 
 
 def luffy_ascii_path() -> Path:
@@ -213,7 +248,7 @@ def _theme_mascot_lines() -> tuple[str, ...]:
 
 def startup_panel_lines(channel_id: str | None = None) -> list[str]:
     left = startup_banner_lines(channel_id)
-    if not mascot_enabled():
+    if not mascot_enabled() or mascot_collapsed_today():
         return left
 
     mascot = _theme_mascot_lines()
@@ -242,12 +277,15 @@ def startup_panel_lines(channel_id: str | None = None) -> list[str]:
 
 
 def print_startup_panel(channel_id: str | None = None) -> None:
+    collapsed = mascot_collapsed_today()
     lines = startup_panel_lines(channel_id)
     if not lines:
         return
     for line in lines:
         print(line)
     print()
+    if mascot_enabled() and not collapsed:
+        mark_mascot_shown()
 
 
 def section_glyph(name: str) -> str:

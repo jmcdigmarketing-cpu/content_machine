@@ -38,7 +38,7 @@ class TestCostMeter(unittest.TestCase):
     def test_local_tts_provider_is_zero_cost(self):
         # Pillar 6: a local voice (Kokoro/XTTS/Piper) has no marginal TTS cost.
         script = "word " * 200
-        for provider in ("kokoro", "xtts", "piper", "qwen"):
+        for provider in ("kokoro", "xtts", "piper", "qwen", "edge"):
             with patch.dict("os.environ", {"TTS_PROVIDER": provider}, clear=False):
                 cost = estimate_run_cost(script=script, rendered=True)
             self.assertEqual(cost["tts"], 0.0, provider)
@@ -262,6 +262,15 @@ class TestThumbnailCost(unittest.TestCase):
             cached = merge_render_cost({}, "x" * 1000, tts_cached=True)
         self.assertGreater(billed["tts"], 0.0)
         self.assertEqual(cached["tts"], 0.0)
+
+    def test_fractional_cache_hit_scales_the_tts_line(self):
+        """#402. A 90% sentence-cache hit must not report $0 or full price."""
+        with patch.dict("os.environ", {"TTS_PROVIDER": "elevenlabs"}, clear=False):
+            billed = merge_render_cost({}, "x" * 1000, tts_cached=False)
+            mixed = merge_render_cost({}, "x" * 1000, tts_cached=0.9)
+        self.assertAlmostEqual(mixed["tts"], billed["tts"] * 0.1, places=4)
+        self.assertGreater(mixed["tts"], 0.0)
+        self.assertLess(mixed["tts"], billed["tts"])
 
     def test_remerge_preserves_existing_thumbnail_line(self):
         with patch.dict("os.environ", {"TTS_PROVIDER": "piper"}, clear=False):

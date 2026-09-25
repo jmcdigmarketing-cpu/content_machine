@@ -13,6 +13,21 @@ from youtube.thumbnails import (
 from youtube.upload import UploadRequest, upload_video
 
 
+def _stub_custom_thumb(mock_service) -> None:
+    """videos.list after thumbnails.set must show a custom thumb (#599)."""
+    mock_service.videos.return_value.list.return_value.execute.return_value = {
+        "items": [
+            {
+                "snippet": {
+                    "thumbnails": {
+                        "maxres": {"url": "https://i.ytimg.com/vi/vid1/maxresdefault.jpg"}
+                    }
+                }
+            }
+        ]
+    }
+
+
 class TestYouTubeThumbnails(unittest.TestCase):
     def test_resolve_explicit_path(self):
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
@@ -26,6 +41,7 @@ class TestYouTubeThumbnails(unittest.TestCase):
 
     def test_set_video_thumbnail_calls_api(self):
         mock_service = MagicMock()
+        _stub_custom_thumb(mock_service)
         fd, path = tempfile.mkstemp(suffix=".jpg")
         os.close(fd)
         try:
@@ -57,6 +73,7 @@ class TestYouTubeThumbnails(unittest.TestCase):
         mock_insert.next_chunk.return_value = (None, {"id": "yt999"})
         mock_service = MagicMock()
         mock_service.videos.return_value.insert.return_value = mock_insert
+        _stub_custom_thumb(mock_service)
 
         fd_v, video_path = tempfile.mkstemp(suffix=".mp4")
         os.close(fd_v)

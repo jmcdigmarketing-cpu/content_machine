@@ -137,6 +137,7 @@ tier: link
 channel: tapin
 source: https://example.com/rockstar-investigation
 tags: [facts]
+verified_at: 2026-08-22
 ---
 
 # Rockstar investigation
@@ -147,6 +148,7 @@ tier: vault
 channel: tapin
 source: https://example.com/wolverine-rage
 tags: [facts]
+verified_at: 2026-08-20
 ---
 
 # Wolverine rage

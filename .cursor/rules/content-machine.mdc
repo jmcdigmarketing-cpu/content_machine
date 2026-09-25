@@ -5,6 +5,14 @@ alwaysApply: true
 
 # Content Machine — agent working rules
 
+## Before anything else: read the mailbox
+
+**[docs/handoff.md](../../docs/handoff.md)** — what the other agent just did, what it
+left uncommitted, and what it found broken. More than one agent works in this repo and
+nothing signals a switch, so this is the only way to know the tree is not yours.
+Verify it against `git log <sha>..HEAD --oneline` and `git status --short` before you
+trust it, then **write your own slot as your last edit** (rule 15).
+
 Read [CLAUDE.md](../../CLAUDE.md) for what this project is, its entry points, the
 signal contract and the LLM router. This file is about **how to work here**, not what
 the code does. It exists because a specific class of defect keeps reaching `main`.
@@ -105,8 +113,53 @@ This is the project's own principle, written down in `docs/decisions.md` §18, �
   breaker trips — a wrong change silently disables a paid signal across runs.
 - **`ops secrets-doctor` must never print a secret value.**
 - **No network in tests.**
-- **No AI attribution** in commit messages or PR bodies — no `Co-Authored-By`, no
-  "Generated with". The operator has rejected this explicitly.
+- **Sign your commits** — `Co-authored-by: Cursor <cursoragent@cursor.com>`. Both
+  agents commit as the same git author, so this trailer is the only per-commit record
+  of who wrote a change. (This reverses an earlier ban, lifted 2026-08-28.) Still no
+  "Generated with ..." lines — that is marketing, not provenance.
+
+## Rules for working alongside the other agent
+
+14. **Commit your own work.** Four times now, changes have been left uncommitted for
+    someone else to discover, verify and commit — so CI and a fresh clone saw nothing,
+    and twice a tree was measured that disagreed with `git log`. If you changed it, you
+    commit it. Do not leave a wave in the working tree.
+15. **Write your slot in [docs/handoff.md](../../docs/handoff.md) as your last edit.**
+    Defects before wins. Overwrite your own slot; never edit the other agent's. A slot
+    reconstructed from memory next session is the thing the file exists to replace.
+16. **Re-read immediately before editing.** The other agent may be working right now.
+    Never `git checkout` a file to discard changes you did not make.
+17. **A green suite is not evidence a test can fail.** Three reviews in a row found
+    guard tests that could not go red: one asserted token colours were *present* when
+    the question was which won the cascade (it passed with the generator deleted); one
+    asserted `assertIn("0", qss)`, which matches any string containing a zero. Before
+    committing a guard, break the thing it guards and watch it fail. If it stays green,
+    it is decoration.
+18. **Simulate ubuntu before claiming green.** CI runs `ubuntu-latest` on every job.
+    A test asserting a username is absent passed locally only because the developer's
+    home directory contained it, and failed on CI. Anything touching `Path.home()`,
+    `USERNAME`/`USER`, path separators, or a vault path must be run with those patched
+    to non-local values, not just run.
+19. **Never ship against a recorded operator decision.** #333's store was specified in
+    `planning_log.md` as *"able to VETO (operator wants a hard block, not a warning)"*
+    and shipped warn-only, with the reversal recorded nowhere. If a decision looks
+    wrong, say so in your slot and leave it open. Shipping the other answer silently
+    is the one thing this mailbox cannot recover from.
+20. **Say when finished output changes.** #512 baked grain and a vignette into every
+    render, on by default, with no kill switch and no mention in the wave notes. The
+    same wave changed five safety gates so `yes` overrides where it used to refuse, and
+    made `emit()` write ANSI cursor sequences to a TTY — all under a heading promising
+    the terminal was byte-identical. Behaviour changes are not free just because a test
+    covers them; name them where the operator reads.
+
+21. **Reachable is not the same as fed.** Review 4 found this shape four times in one
+    wave. `recency_weight` and `weighted_engaged_mean` *were* called by `get_best_bet`
+    — but `_build_entries` never set `age_days`, so every weight was
+    `recency_weight(None) == 1.0` and the "decayed" mean was the arithmetic one it
+    replaced. #302, #596 and #367 each wrote a key into the persisted `quality` dict
+    that nothing anywhere read. Both pass a unit test of the helper. Grep the **field**
+    end to end: who writes it, who reads it, and does the writer ever have a value.
+    A number the operator never sees cannot change a decision.
 
 ## Definition of done
 
@@ -115,10 +168,19 @@ Not "the tests pass" — they passed for every defect in the table above.
 - [ ] `ruff check .` and `ruff format --check .` clean
 - [ ] `python -m unittest discover -s tests -t .` green, count **increased**
 - [ ] The new test **failed** before the change (state it in the commit)
+- [ ] A *guard* test was watched going red with the guarded thing broken — "it passed"
+      is not evidence a guard works (rule 17)
+- [ ] Anything reading `Path.home()`, `USERNAME`/`USER` or a vault path was run with
+      those patched to non-local values (rule 18)
+- [ ] `mypy` matches the recorded baseline — it is a separate CI job and a new type
+      error hides in a green suite
 - [ ] Nothing under `data/` changed — `git status --short data/` is empty
-- [ ] Every new function is reachable from a production caller
+- [ ] Every new function is reachable from a production caller, **and** the input it
+      reads is actually populated there, **and** anything it writes has a reader (rule 21)
 - [ ] Operator-facing changes were actually run, and the output pasted
 - [ ] A healthy run emits no new WARNING
+- [ ] Your work is **committed**, not left in the working tree (rule 14)
+- [ ] Your slot in [docs/handoff.md](../../docs/handoff.md) is rewritten (rule 15)
 
 ## Commit messages
 

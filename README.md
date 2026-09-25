@@ -5,7 +5,8 @@ Python CLI for short-form video: discover signals → score topics → LLM scrip
 **Channels** (`config/channels.json`, domain-driven): `tapin` — gaming & UFC shorts · `moneywise` — finance (markets/crypto/personal finance). Add another by adding a profile + `config/seo/{id}.json`.
 
 Roadmap & current fix queue: [docs/roadmap.md](docs/roadmap.md). Honest assessment:
-[docs/assessment.md](docs/assessment.md) (June scorecard + 2026-08-20 addendum).
+[docs/assessment.md](docs/assessment.md) (June scorecard + addenda). Measured ideas for script
+generation, idea grading and resource use: [docs/engine_upgrades.md](docs/engine_upgrades.md).
 Session state: [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
 
 ## Quick start
@@ -22,6 +23,8 @@ copy .env.example .env
 
 py -m scripts.ops all-setup --channel tapin
 py main.py
+# Stage 1 window (optional extra): pip install -e ".[app]" then py -m desktop
+# Stage 2 look is on that window (token QSS, per-channel chrome). CLI is unchanged.
 ```
 
 **Windows command cheat sheet:** [docs/startup-powershell.md](docs/startup-powershell.md) — or run `.\scripts\startup.ps1` to print the list.
@@ -140,6 +143,7 @@ the test suite on Python 3.11 (the version the pinned deps are validated on) —
 ## Docs
 
 - [Roadmap](docs/roadmap.md) — phase checklist (source of truth)
+- [Engine upgrades](docs/engine_upgrades.md) — measured ideas: script, grading, resources
 - [Intelligence phase (H–K)](docs/intelligence_phase.md) — post D–G: brief, RSS, competitors, what to defer
 - [Architecture](docs/architecture.md) — modules and data flow
 - [Positioning & product split](docs/positioning.md) — intelligence layer vs production tail

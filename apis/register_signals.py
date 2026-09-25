@@ -1,18 +1,25 @@
 import os
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
 from typing import Any
 
-from apis.cache_manager import build_key, get_cached, set_cache
+from apis.cache_manager import build_key, get_cached, get_expired, record_stale_served, set_cache
 from apis.live_scores_api import live_scores_cache_ttl
 from apis.signal_contract import (
     STATUS_AUTH,
+    STATUS_ERROR,
+    STATUS_HTTP,
+    STATUS_INACTIVE,
     STATUS_NO_KEY,
+    STATUS_OK,
     STATUS_QUOTA,
     STATUS_RATE_LIMIT,
     STATUS_SKIPPED,
+    STATUS_UNAVAILABLE,
+    STATUS_UPSTREAM,
     make_signal,
     normalize_signal,
 )
@@ -103,6 +110,21 @@ def _skip_signals() -> set[str]:
 _TRIP_STATUSES = {STATUS_QUOTA, STATUS_AUTH, STATUS_NO_KEY}
 _SESSION_DISABLED: set[str] = set()
 _COOLDOWN_UNTIL: dict[str, float] = {}  # signal name -> unix ts when it may run again
+_EMPTY_STREAK: dict[str, int] = {}  # consecutive empty-200 per signal (#394)
+_EMPTY_QUARANTINE_N = 3
+# Scraper-class signals only. An empty HTTP 200 is ambiguous -- it means "dead
+# scraper" for a source that scrapes a page, and "no entity for this topic" for a
+# lookup API. This is an ALLOWLIST, not a denylist, because the safe default is to
+# never quarantine: rawg (apis/rawg_api.py:166), odds (odds_api.py:61) and sports
+# (sports_data_api.py:76) all return connected+INACTIVE with NO status_detail when
+# a topic is outside their domain, and a denylist disabled them after three
+# off-domain topics in one batch -- costing the NEXT topic data they could answer.
+_EMPTY_QUARANTINE_SIGNALS = frozenset({"tapology"})
+# Domain-skip / kill-switch details — not an empty HTTP 200.
+_EMPTY_SKIP_DETAIL = re.compile(
+    r"disabled|not an |gated|skipped|no page",
+    re.IGNORECASE,
+)
 # Hard trips also persist across runs via core/quota_governor.py (scope "signal",
 # key-hash invalidated). Loaded once per process into this memo.
 _PERSISTED_DISABLED: set[str] = set()
@@ -128,6 +150,23 @@ def _cooldown_seconds() -> int:
         return 900
 
 
+def _is_empty_200_inactive(name: str, result: dict[str, Any]) -> bool:
+    """Tapology-class 200+nothing, not a healthy topic-miss INACTIVE.
+
+    ``STATUS_INACTIVE`` is the contract for a live source with no match (Wikipedia
+    has no page; RAWG has no game for a UFC topic). Those must not session-disable.
+    Empty-200 is: a scraper-class signal, connected, inactive, and no skip-detail.
+    """
+    if result.get("status") != STATUS_INACTIVE:
+        return False
+    if name not in _EMPTY_QUARANTINE_SIGNALS:
+        return False
+    if result.get("connected") is False:
+        return False
+    detail = str(result.get("status_detail") or "")
+    return _EMPTY_SKIP_DETAIL.search(detail) is None
+
+
 def _record_signal_health(name: str, result: dict[str, Any]) -> None:
     """Trip the session breaker (hard failure) or start a cooldown (rate limit)."""
     if not _breaker_enabled() or not isinstance(result, dict):
@@ -146,6 +185,29 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
             secs,
             result.get("status_detail") or "",
         )
+        return
+    if status == STATUS_OK:
+        with _BREAKER_LOCK:
+            _EMPTY_STREAK.pop(name, None)
+    elif _is_empty_200_inactive(name, result):
+        trip = False
+        with _BREAKER_LOCK:
+            n = _EMPTY_STREAK.get(name, 0) + 1
+            _EMPTY_STREAK[name] = n
+            if n >= _EMPTY_QUARANTINE_N and name not in _SESSION_DISABLED:
+                _SESSION_DISABLED.add(name)
+                trip = True
+        if trip:
+            logger.warning(
+                "Circuit breaker: disabling signal '%s' for this session after "
+                "%d empty/inactive responses (status=%s, detail=%s)",
+                name,
+                _EMPTY_QUARANTINE_N,
+                status,
+                result.get("status_detail") or "",
+            )
+        return
+    elif status == STATUS_INACTIVE:
         return
     if status not in _trip_statuses():
         return
@@ -217,8 +279,15 @@ def reset_session_breaker() -> None:
     with _BREAKER_LOCK:
         _SESSION_DISABLED.clear()
         _COOLDOWN_UNTIL.clear()
+        _EMPTY_STREAK.clear()
         _PERSISTED_DISABLED = set()
         _PERSISTED_SYNCED = False
+    try:
+        from apis.youtube_api import reset_api_unreachable
+
+        reset_api_unreachable()
+    except Exception as exc:
+        logger.debug("YouTube unreachable latch not cleared: %s", exc)
     try:
         from core.quota_governor import clear_all_signals
 
@@ -250,11 +319,19 @@ def signal_cooldowns() -> dict[str, float]:
 # Signals reused (pinned) from the base-topic fetch during per-variant scoring,
 # instead of being re-fetched for each of the 5 variants. Variants are editorial
 # angles on the SAME topic, so signal *data* barely differs between them — and
-# composite_score still re-scores each variant's text against the pinned data, so
-# per-variant differentiation survives (youtube was always pinned yet scored
-# 20-100 across variants). Re-fetching the rest cost 150-185s of variant scoring
+# the pinning itself is still the right call. Re-fetching cost 150-185s of variant scoring
 # per run, 5x the Tavily/web-search spend, and Wikipedia 429 cooldowns. Default:
 # pin everything; env-override to re-fetch specific signals per variant.
+#
+# CORRECTED 2026-09-05 (both agents flagged it independently). This comment used
+# to claim "composite_score still re-scores each variant's text against the
+# pinned data, so per-variant differentiation survives". **That is false and
+# there is no such re-scoring.** `composite_score_raw` reads the variant string
+# only through `infer_domain` (identical across five framings of one subject) and
+# `get_historical_boost` (an exact-string lookup, so 0.0 for an angle generated
+# seconds ago). Identical inputs, identical outputs: run 71 tied at 100.00 and
+# run 72 at 92.14. The editorial score in `core/angle_ranker.py` is what actually
+# separates them (#651); do not un-pin these signals to try to fix it.
 _VARIANT_REUSE_DEFAULT = (
     "youtube,youtube_comments,reddit,twitter,tiktok_trends,youtube_competitors,"
     "web_search,wikipedia,trends,news,blog_rss,twitch,rawg,steam,igdb,"
@@ -323,6 +400,10 @@ _TEAM_SPORT_SIGNALS = {"sports", "odds", "live_scores", "api_sports"}
 
 def _domain_gating_enabled() -> bool:
     return os.getenv("DOMAIN_SIGNAL_GATING", "true").lower() in ("1", "true", "yes")
+
+
+def gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
+    return _gated_signal_names(topic, channel_id)
 
 
 def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
@@ -459,6 +540,69 @@ def _cache_ttl_for(name):
     return None
 
 
+_LIVE_FAILURE_STATUSES = frozenset(
+    {
+        STATUS_UNAVAILABLE,
+        STATUS_ERROR,
+        STATUS_AUTH,
+        STATUS_RATE_LIMIT,
+        STATUS_HTTP,
+        STATUS_UPSTREAM,
+        STATUS_QUOTA,
+    }
+)
+
+
+def stale_cache_max_age_seconds() -> float | None:
+    """48h default. 0/off restores pre-#389 (never serve expired)."""
+    raw = (os.getenv("STALE_CACHE_MAX_AGE_HOURS", "48") or "48").strip().lower()
+    if raw in ("", "0", "off", "false", "no"):
+        return None
+    try:
+        hours = float(raw)
+    except ValueError:
+        return None
+    if hours <= 0:
+        return None
+    return hours * 3600
+
+
+def _is_live_failure(signal: dict[str, Any]) -> bool:
+    return str(signal.get("status") or "") in _LIVE_FAILURE_STATUSES
+
+
+def _stamp_stale(payload: dict[str, Any], age_seconds: float) -> dict[str, Any]:
+    """Keep the facts; mark worse than fresh so the UI cannot treat it as a hit."""
+    out = normalize_signal(payload)
+    hours = age_seconds / 3600.0
+    flag = f"STALE cache, age {hours:.1f}h"
+    detail = str(out.get("status_detail") or "").strip()
+    if detail.lower() in ("", "ok"):
+        out["status_detail"] = flag
+    else:
+        out["status_detail"] = f"{detail}; {flag}"
+    out["stale"] = True
+    out["stale_age_hours"] = round(hours, 2)
+    try:
+        out["score"] = min(float(out.get("score") or 0), 0.0)
+    except (TypeError, ValueError):
+        out["score"] = 0.0
+    return out
+
+
+def _maybe_serve_stale(key: str) -> dict[str, Any] | None:
+    ceiling = stale_cache_max_age_seconds()
+    if ceiling is None:
+        return None
+    got = get_expired(key)
+    if not got:
+        return None
+    data, age = got
+    if age > ceiling:
+        return None
+    return _stamp_stale(data, age)
+
+
 def _fetch_one(name, func, topic, pinned: dict[str, Any] | None = None):
     if pinned and name in pinned and pinned[name]:
         return name, normalize_signal(pinned[name])
@@ -470,6 +614,20 @@ def _fetch_one(name, func, topic, pinned: dict[str, Any] | None = None):
 
     result = normalize_signal(func(topic))
     _record_signal_health(name, result)
+    if _is_live_failure(result):
+        stale = _maybe_serve_stale(key)
+        if stale is not None:
+            record_stale_served(key)
+            logger.warning(
+                "%s live fetch failed (%s); serving %s",
+                name,
+                result.get("status_detail") or result.get("status"),
+                stale.get("status_detail"),
+            )
+            return name, stale
+        set_cache(key, result, ttl_seconds=_cache_ttl_for(name))
+        return name, result
+
     set_cache(key, result, ttl_seconds=_cache_ttl_for(name))
     return name, result
 
@@ -575,6 +733,66 @@ def _discovery_worker_cap(n_sources: int) -> int:
     return max(1, min(cap, n_sources))
 
 
+def _discovery_deadline() -> float | None:
+    """Wall-clock budget for the whole concurrent fetch, or None for no budget (#811).
+
+    Off by default: a deadline that drops a paid signal is the operator's call,
+    not a default. Same `*_DEADLINE_S` shape as `RESEARCH_BRIEF_DEADLINE_S`.
+    """
+    raw = (os.getenv("DISCOVERY_DEADLINE_S") or "").strip()
+    if not raw:
+        return None
+    try:
+        budget = float(raw)
+    except ValueError:
+        return None
+    return budget if budget > 0 else None
+
+
+def _fetch_all(sources, topic, pinned, workers) -> tuple[dict, list[str], float | None]:
+    """Run every signal concurrently, stopping at the deadline. Returns
+    (results, dropped names, budget).
+
+    A dropped signal is `STATUS_UNAVAILABLE`, which `classify_exception`
+    already assigns to a timeout and which deliberately does not trip the
+    session breaker - the signal is retried on the next run rather than
+    disabled for the process.
+    """
+    results: dict[str, Any] = {}
+    budget = _discovery_deadline()
+    executor = ThreadPoolExecutor(max_workers=workers)
+    futures = {
+        executor.submit(_fetch_one, name, func, topic, pinned): name for name, func in sources
+    }
+    try:
+        for future in as_completed(futures, timeout=budget):
+            name, data = future.result()
+            results[name] = data
+    except TimeoutError:
+        pass
+    finally:
+        # NOT `with ThreadPoolExecutor(...)`: its __exit__ joins every worker,
+        # which would wait out exactly the straggler this budget exists to
+        # stop. The abandoned thread runs to completion in the background and
+        # its `set_cache` write still lands, so the next run gets the result
+        # for free.
+        executor.shutdown(wait=False)
+
+    dropped = [name for name in futures.values() if name not in results]
+    for name in dropped:
+        results[name] = make_signal(
+            connected=True,
+            active=False,
+            status=STATUS_UNAVAILABLE,
+            status_detail=f"missed the {budget:g}s discovery deadline",
+        )
+    if dropped:
+        logger.warning(
+            "Discovery deadline %gs reached - dropped %s", budget or 0.0, ", ".join(dropped)
+        )
+    return results, dropped, budget
+
+
 def build_registry(
     topic,
     max_workers=None,
@@ -603,13 +821,21 @@ def build_registry(
             if reuse_signals.get(name):
                 pinned[name] = reuse_signals[name]
 
-    results = {}
+    # #590. Before anything is spent, not after a wall is hit. Fail-open: a
+    # broken reading must never stop discovery.
+    try:
+        from core.discovery_headroom import emit_headroom, headroom_line
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = [executor.submit(_fetch_one, name, func, topic, pinned) for name, func in sources]
-        for future in as_completed(futures):
-            name, data = future.result()
-            results[name] = data
+        emit_headroom(headroom_line(signal_count=len(sources) + (1 if web_source else 0)))
+    except Exception as exc:
+        logger.debug("discovery headroom skipped: %s", exc)
+
+    results, dropped, budget = _fetch_all(sources, topic, pinned, workers)
+    if dropped:
+        # `_synthesis` sets the precedent for a non-signal metadata key here.
+        # `core/pipeline` lifts it into `DiscoveryResult.meta` — never into
+        # `timings`, which the intelligence report sums as seconds (#813).
+        results["_deadline"] = {"dropped": dropped, "budget_s": budget}
 
     if web_source is not None:
         results["web_search"] = _maybe_fetch_web_search(

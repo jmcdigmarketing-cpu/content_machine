@@ -208,9 +208,29 @@ def load_results() -> dict[str, Any]:
 
 
 def cached_warnings() -> list[str]:
-    """Warnings from the last persisted check — no network. [] when never run."""
+    """Warnings from the last persisted check — no network. [] when never run.
+
+    Rows whose URL is no longer in shipped config are dropped: removing a dead
+    feed (Sherdog 403) must not FAIL doctor after the feed is gone from config.
+    """
     data = load_results()
-    results = data.get("results") or []
+    results = list(data.get("results") or [])
+    if not results:
+        return []
+    try:
+        live = {
+            str(f.get("url") or "").strip().rstrip("/").lower()
+            for f in iter_configured_feeds()
+            if str(f.get("url") or "").strip()
+        }
+        results = [
+            row
+            for row in results
+            if not str(row.get("url") or "").strip()
+            or str(row.get("url") or "").strip().rstrip("/").lower() in live
+        ]
+    except Exception as exc:
+        logger.debug("configured-feed filter skipped: %s", exc)
     if not results:
         return []
     out = warnings(results)

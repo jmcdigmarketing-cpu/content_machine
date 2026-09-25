@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 from core import engagement_predictor, grade_calibration
 from core.providers import ProviderResult
 from core.video_grade import (
+    GRADE_VERSION,
     display_grade_for_run,
     expert_panel_for_run,
     grade_from_parts,
@@ -37,6 +38,88 @@ class TestGradeFromParts(unittest.TestCase):
         self.assertEqual(names, ["hook", "authenticity", "grounding", "topic"])
         # Weights renormalize to 1.
         self.assertAlmostEqual(sum(c.weight for c in grade.components), 1.0, places=2)
+
+    def test_a_short_script_is_graded_down(self):
+        """#645, filed from run 74: it shipped **277 words against a 300-word
+        floor and graded A (87)**, because nothing scored length at all. The
+        expansion loop runs before four passes that can remove text, so the
+        floor was checked against a script the operator never saw."""
+        ok_length = {**FULL_QUALITY, "word_count": 320, "min_words": 300, "max_words": 380}
+        run_74 = {**FULL_QUALITY, "word_count": 277, "min_words": 300, "max_words": 380}
+        self.assertLess(
+            grade_from_parts(quality=run_74, composite_score=75.0).score,
+            grade_from_parts(quality=ok_length, composite_score=75.0).score,
+        )
+
+    def test_run_74s_actual_scores_no_longer_grade_an_A(self):
+        """The acceptance criterion the item was filed with, not a proxy for it:
+        run 74's real component scores (hook 61, authenticity 100, grounding
+        clean, composite 92) graded **A 87** at 277 words against a 300 floor."""
+        run_74 = {
+            "hook_score": 61,
+            "hook_verdict": "weak",
+            "authenticity_score": 100,
+            "authenticity_verdict": "ok",
+            "ungrounded_count": 0,
+            "trade_warning_count": 0,
+        }
+        self.assertEqual(grade_from_parts(quality=run_74, composite_score=92.0).letter, "A")
+        graded = grade_from_parts(
+            quality={**run_74, "word_count": 277, "min_words": 300, "max_words": 380},
+            composite_score=92.0,
+        )
+        self.assertNotEqual(graded.letter, "A", f"{graded.letter} {graded.score}")
+
+    def test_length_is_a_named_component_when_the_data_is_there(self):
+        graded = grade_from_parts(
+            quality={**FULL_QUALITY, "word_count": 277, "min_words": 300, "max_words": 380},
+            composite_score=75.0,
+        )
+        self.assertIn("length", [c.name for c in graded.components])
+
+    def test_a_historical_run_without_length_keys_grades_exactly_as_before(self):
+        """The migration promise: rows predating the length key renormalize over
+        the components they do have, so their scores do not move."""
+        self.assertNotIn(
+            "length", [c.name for c in grade_from_parts(quality=FULL_QUALITY).components]
+        )
+
+    def test_the_grade_records_which_rubric_produced_it(self):
+        """`GRADE_VERSION` existed as a string nothing read, while
+        `grade_calibration` re-grades every stored run with today's code. Four
+        components have now moved; without a stamp, no one can tell which rubric
+        produced a given letter."""
+        from core.video_grade import GRADE_VERSION
+
+        self.assertEqual(grade_from_parts(quality=FULL_QUALITY).version, GRADE_VERSION)
+
+    def test_report_card_shows_the_gate_score_when_it_differs_from_the_grade(self):
+        """#804 §25: persist both numbers. The card uses the continuous score;
+        the binary sum the gate used must still be visible."""
+        quality = {
+            **FULL_QUALITY,
+            "authenticity_score": 72,
+            "authenticity_gate_score": 100,
+        }
+        card = render_grade(grade_from_parts(quality=quality))
+        self.assertIn("gate 100", card)
+        historical = render_grade(grade_from_parts(quality=FULL_QUALITY))
+        self.assertNotIn("gate ", historical)
+
+    def test_build_quality_supplies_the_keys_the_length_component_needs(self):
+        """The component is inert unless the real quality builder emits the keys.
+        Driven through the real `build_quality` over a real features dict, not a
+        hand-built quality block."""
+        from core.run_quality import build_quality
+
+        quality = build_quality(
+            script="A grounded sentence about the topic. " * 10,
+            channel_id="tapin",
+            features={"length_preset": "2", "word_count": 277},
+        )
+        self.assertEqual(quality.get("word_count"), 277)
+        self.assertTrue(quality.get("min_words"), quality)
+        self.assertIn("length", [c.name for c in grade_from_parts(quality=quality).components])
 
     def test_ungrounded_specifics_penalize(self):
         clean = grade_from_parts(quality=FULL_QUALITY, composite_score=75.0)
@@ -143,8 +226,16 @@ class TestExpertPanelSection(unittest.TestCase):
         repo = MagicMock()
         repo.get.return_value = self._record()
         lines: list[str] = []
-        with patch(
-            "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+        with (
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+            ),
+            # #805/#561 put two accuracy lines under the card. These tests are
+            # about the expert panel, and the lines walk every run row plus the
+            # analytics join - leaving them live would make this class depend on
+            # the operator's real database. They have their own coverage in
+            # tests/test_card_accuracy.py.
+            patch("core.video_grade._accuracy_lines", return_value=[]),
         ):
             display_grade_for_run(self.RUN_ID, print_fn=lines.append)
         return lines
@@ -243,7 +334,11 @@ def _measured_runs(n, *, hook_spread=True):
         run = MagicMock()
         run.id = i + 1
         hook = 40 + (i * 40 // max(1, n - 1)) if hook_spread else 60
-        run.quality_json = json.dumps({"hook_score": hook, "authenticity_score": 80})
+        # Stamped, because a real run is: `run_quality.build_quality` writes
+        # `grade_version` on every quality payload it produces.
+        run.quality_json = json.dumps(
+            {"hook_score": hook, "authenticity_score": 80, "grade_version": GRADE_VERSION}
+        )
         run.composite_score = 70.0
         run.title = f"Video {i + 1}"
         run.selected_topic = f"Topic {i + 1}"
@@ -349,6 +444,68 @@ class TestCalibration(unittest.TestCase):
             report = grade_calibration.build_calibration("tapin")
         self.assertEqual(report.thumbnail_n, 6)
         self.assertGreater(report.thumbnail_correlation, 0.9)
+
+    def test_mixed_rubric_versions_do_not_share_one_correlation(self):
+        """#662. Four components moved across two waves; re-grading every run
+        with today's code then correlating against engagement mixes letters
+        from different rubrics. Two payloads that differ only by version
+        must not land in one bucket."""
+        runs, engagement = _measured_runs(8)
+        for i, run in enumerate(runs):
+            quality = json.loads(run.quality_json)
+            quality["grade_version"] = "v1" if i < 4 else "v2"
+            run.quality_json = json.dumps(quality)
+        repo = MagicMock()
+        repo.list_for_channel.return_value = runs
+        with (
+            patch.object(grade_calibration, "_thumbnail_scores", return_value={}),
+            patch("core.engagement_predictor.run_engagement_map", return_value=engagement),
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository",
+                return_value=repo,
+            ),
+        ):
+            report = grade_calibration.build_calibration("tapin")
+            rendered = grade_calibration.render("tapin")
+        self.assertEqual(report.measured, 8)
+        self.assertIsNone(report.grade_correlation)
+        self.assertTrue(report.mixed_versions)
+        line = grade_calibration.summary_line(report)
+        self.assertIn("mix", line.lower())
+        self.assertIn("mix", rendered.lower())
+
+    def test_unversioned_history_is_not_treated_as_one_rubric(self):
+        """The gap the version guard leaves open. Every run graded before the
+        stamp existed carries no `grade_version`, so they all read
+        "unversioned" — one value, `mixed_versions` False, correlation computed.
+
+        But those rows are exactly the ones #662 was filed about: four
+        components moved across v1/v2/v3 while nothing was stamped, so an
+        unlabelled population is known to span rubrics rather than share one.
+        `MIN_MEASURED` is 5 and the channel has ~10 measured runs, so this is
+        reachable now, not hypothetically."""
+        runs, engagement = _measured_runs(8)
+        for run in runs:  # no grade_version key at all, as history has none
+            quality = json.loads(run.quality_json)
+            quality.pop("grade_version", None)
+            run.quality_json = json.dumps(quality)
+        repo = MagicMock()
+        repo.list_for_channel.return_value = runs
+        with (
+            patch.object(grade_calibration, "_thumbnail_scores", return_value={}),
+            patch("core.engagement_predictor.run_engagement_map", return_value=engagement),
+            patch(
+                "storage.repositories.content_runs.get_content_run_repository",
+                return_value=repo,
+            ),
+        ):
+            report = grade_calibration.build_calibration("tapin")
+        self.assertEqual(report.measured, 8)
+        self.assertIsNone(
+            report.grade_correlation,
+            "correlated unlabelled rows that are known to span three rubrics",
+        )
+        self.assertIn("version", (grade_calibration.summary_line(report) or "").lower())
 
 
 class TestPromptEvalRubric(unittest.TestCase):

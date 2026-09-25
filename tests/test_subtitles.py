@@ -20,12 +20,31 @@ from video.subtitles import (
 class TestSplit(unittest.TestCase):
     def test_chunks_respect_max_words(self):
         lines = split_script_into_lines("one two three four five six seven", max_words=3)
-        self.assertEqual(lines, ["one two three", "four five six", "seven"])
+        self.assertEqual(lines, ["one two three", "four five", "six seven"])
 
     def test_sentence_boundaries_not_crossed(self):
         lines = split_script_into_lines("One two three. Four five.", max_words=5)
         # The two sentences must not be merged into one caption line.
         self.assertEqual(lines, ["One two three.", "Four five."])
+
+    def test_orphan_rebalance_never_merges_two_sentences(self):
+        # #419 must not buy a two-word last cue by breaking the boundary rule
+        # above: "four." belongs to sentence one, "five" is a sentence of its own.
+        lines = split_script_into_lines("one two three four. five", max_words=5)
+        self.assertEqual(lines, ["one two three four.", "five"])
+
+    def test_orphan_inside_a_sentence_is_still_rebalanced(self):
+        # The common case -- one long sentence wrapping with a single word left.
+        # Three-line wrap so #505's two-line balancer is not the path under test.
+        lines = split_script_into_lines(
+            "alpha bravo charlie delta echo foxtrot golf hotel india", max_words=4
+        )
+        self.assertEqual(len(lines[-1].split()), 2)
+
+    def test_two_line_sentence_splits_near_equal(self):
+        """#505. Eight words at max 5 greedy-fill to 5+3; near-equal is 4+4."""
+        lines = split_script_into_lines("one two three four five six seven eight", max_words=5)
+        self.assertEqual(lines, ["one two three four", "five six seven eight"])
 
     def test_empty(self):
         self.assertEqual(split_script_into_lines(""), [])
@@ -95,8 +114,8 @@ class TestWordTimedCaptions(unittest.TestCase):
         self.assertTrue(path.endswith(".srt"))  # plain proportional SRT
 
     def test_load_word_timings_missing(self):
-        self.assertIsNone(subtitles._load_word_timings(None))
-        self.assertIsNone(subtitles._load_word_timings(self.audio + "x"))
+        self.assertIsNone(subtitles.load_word_timings(None))
+        self.assertIsNone(subtitles.load_word_timings(self.audio + "x"))
 
 
 class TestWhisperAlignedCaptions(unittest.TestCase):
@@ -162,9 +181,11 @@ class TestWhisperAlignedCaptions(unittest.TestCase):
         with open(path, encoding="utf-8") as f:
             self.assertIn("Sidecar", f.read())
 
-    def test_proportional_fallback_when_backend_unset(self):
-        with patch.dict("os.environ", {"CAPTION_STYLE": "word"}, clear=False):
-            os.environ.pop("CAPTION_ALIGN_BACKEND", None)
+    def test_proportional_fallback_when_backend_off(self):
+        # #771: unset now means on (faster_whisper); `none` is the off switch.
+        with patch.dict(
+            "os.environ", {"CAPTION_STYLE": "word", "CAPTION_ALIGN_BACKEND": "none"}, clear=False
+        ):
             with patch("core.caption_align.transcribe_and_align") as mock_align:
                 path = generate_subtitle_file("no sidecar no backend", 5.0, audio_path=self.audio)
         mock_align.assert_not_called()
@@ -282,3 +303,48 @@ class TestWhisperCaptionsCarryScriptText(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestWordTimedOrphan(unittest.TestCase):
+    """#419 on the path that actually ships. decisions SS23: captions are timed by
+    the ASR, so `group_into_lines` -- not `split_script_into_lines` -- is what
+    builds the burned karaoke cues on a normal run."""
+
+    @staticmethod
+    def _words(text: str) -> list[dict]:
+        return [
+            {"word": w, "start": float(i), "end": float(i) + 0.9}
+            for i, w in enumerate(text.split())
+        ]
+
+    def test_single_word_final_cue_is_rebalanced_with_its_timing(self):
+        from video.caption_timing import group_into_lines
+
+        lines = group_into_lines(self._words("alpha bravo charlie delta echo"), 4)
+        self.assertEqual([len(line) for line in lines], [3, 2])
+        # The moved word carries its own start/end, so the second cue now begins
+        # at the moved word's start (3.0), not at "echo" (4.0).
+        self.assertEqual(lines[1][0]["word"], "delta")
+        self.assertEqual(lines[1][0]["start"], 3.0)
+
+    def test_sentence_boundary_is_still_not_crossed(self):
+        from video.caption_timing import group_into_lines
+
+        lines = group_into_lines(self._words("one two three four. five"), 5)
+        self.assertEqual([w["word"] for w in lines[0]], ["one", "two", "three", "four."])
+        self.assertEqual([w["word"] for w in lines[1]], ["five"])
+
+    def test_balanced_lines_are_untouched(self):
+        from video.caption_timing import group_into_lines
+
+        words = self._words("a b c d e f")
+        self.assertEqual([len(line) for line in group_into_lines(words, 3)], [3, 3])
+
+    def test_two_line_sentence_splits_near_equal(self):
+        from video.caption_timing import group_into_lines
+
+        lines = group_into_lines(self._words("one two three four five six seven eight"), 5)
+        self.assertEqual(
+            [" ".join(w["word"] for w in line) for line in lines],
+            ["one two three four", "five six seven eight"],
+        )

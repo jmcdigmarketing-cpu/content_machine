@@ -20,6 +20,7 @@ from apis.signal_contract import (
     classify_exception,
     make_signal,
 )
+from core.logging import get_logger
 
 _WIKI_ENABLED = os.getenv("WIKIPEDIA_PAGEVIEWS_ENABLED", "true").lower() not in (
     "0",
@@ -32,22 +33,86 @@ _BASE = (
 _TTL = 12 * 60 * 60
 
 
+logger = get_logger("apis.wikipedia_pageviews")
+
+
+_WIKI_STOP = frozenset(
+    """a an and are as at be been but by can could did do does for from had has have
+    how in into is it its may might more most must no not of on or our out over
+    should so than that the their then there these they this to up was were what when
+    where which who why will with would you your every far long form mean so""".split()
+)
+
+
+_WIKI_ACRONYMS = frozenset({"gta", "ufc", "nba", "nfl", "mlb", "nhl", "wnba", "mma", "cod"})
+
+
+def _wiki_keep(word: str) -> str | None:
+    """Keep franchise acronyms as-is; drop filler; do not fold GTA -> Gta."""
+    if word.isdigit():
+        return word
+    if len(word) <= 2:
+        return None
+    if word.lower() in _WIKI_STOP:
+        return None
+    if word.lower() in _WIKI_ACRONYMS:
+        return word.upper()
+    if word.isupper() and word.isalpha() and 2 <= len(word) <= 6:
+        return word
+    return word.capitalize()
+
+
+# Shorthand the operator types -> the page that actually carries the pageviews (#749).
+# One page per family, most specific first: "GTA 6" is Grand_Theft_Auto_VI, not GTA.
+_FRANCHISE_PAGES: tuple[tuple[str, re.Pattern[str], str], ...] = (
+    ("gta", re.compile(r"\b(?:gta|grand theft auto)\s*(?:6|vi)\b", re.I), "Grand_Theft_Auto_VI"),
+    ("gta", re.compile(r"\b(?:gta|grand theft auto)\s*(?:5|v)\b", re.I), "Grand_Theft_Auto_V"),
+    ("gta", re.compile(r"\b(?:gta|grand theft auto)\b", re.I), "Grand_Theft_Auto"),
+    ("ufc", re.compile(r"\bufc\b", re.I), "Ultimate_Fighting_Championship"),
+    ("cod", re.compile(r"\b(?:cod|call of duty)\b", re.I), "Call_of_Duty"),
+    ("nba", re.compile(r"\bnba\b", re.I), "National_Basketball_Association"),
+    ("nfl", re.compile(r"\bnfl\b", re.I), "National_Football_League"),
+    ("mlb", re.compile(r"\bmlb\b", re.I), "Major_League_Baseball"),
+    ("nhl", re.compile(r"\bnhl\b", re.I), "National_Hockey_League"),
+)
+
+
+def _franchise_pages(topic: str) -> list[str]:
+    families: set[str] = set()
+    out: list[str] = []
+    for family, pattern, page in _FRANCHISE_PAGES:
+        if family in families or not pattern.search(topic or ""):
+            continue
+        families.add(family)
+        out.append(page)
+    return out
+
+
 def _article_candidates(topic: str) -> list[str]:
-    """Guess Wikipedia article titles from a topic string."""
-    cleaned = re.sub(r"[^\w\s]", " ", topic)
-    words = [w for w in cleaned.split() if len(w) > 2]
-    if not words:
+    """Guess Wikipedia article titles from a topic string.
+
+    Run 76: ``w.capitalize()`` turned ``GTA`` into ``Gta`` and the typo
+    ``goy`` into a standalone ``Goy`` article. Acronyms stay acronyms;
+    lowercase filler is not a page of its own. Known franchises go first (#749).
+    """
+    tokens = re.findall(r"[A-Za-z0-9]+", topic or "")
+    kept: list[str] = []
+    for raw in tokens:
+        folded = _wiki_keep(raw)
+        if folded:
+            kept.append(folded)
+    if not kept:
         return []
-    candidates = []
-    # Full title case underscore
-    title = "_".join(w.capitalize() for w in words[:6])
-    candidates.append(title)
-    if len(words) >= 2:
-        candidates.append("_".join(w.capitalize() for w in words[:3]))
-    candidates.append(words[0].capitalize())
-    # Dedupe preserving order
-    seen = set()
-    out = []
+    candidates = [*_franchise_pages(topic), "_".join(kept[:6])]
+    if len(kept) >= 2:
+        candidates.append("_".join(kept[:3]))
+    first = kept[0]
+    # Standalone only when the source already named a franchise/proper noun —
+    # never a manufactured lowercase token like Goy.
+    if first.isupper() or (len(first) >= 4 and first[:1].isupper()):
+        candidates.append(first)
+    seen: set[str] = set()
+    out: list[str] = []
     for c in candidates:
         if c not in seen:
             seen.add(c)
@@ -76,6 +141,54 @@ def _fetch_pageviews(article: str) -> dict | None:
     if not views:
         return None
     return {"article": article, "views": views, "daily": items}
+
+
+def _fetch_last_revision(article: str) -> str | None:
+    """MediaWiki last-revision timestamp. Fail-open — this is a tripwire, not a fact."""
+    url = "https://en.wikipedia.org/w/api.php"
+    resp = requests.get(
+        url,
+        params={
+            "action": "query",
+            "format": "json",
+            "prop": "revisions",
+            "rvprop": "timestamp",
+            "rvlimit": 1,
+            "titles": article.replace("_", " "),
+        },
+        timeout=8,
+        headers={"User-Agent": "ContentMachine/1.0 (research signal)"},
+    )
+    if resp.status_code != 200:
+        return None
+    pages = ((resp.json() or {}).get("query") or {}).get("pages") or {}
+    for page in pages.values():
+        revs = page.get("revisions") or []
+        if revs:
+            stamp = revs[0].get("timestamp")
+            if stamp:
+                return str(stamp)
+    return None
+
+
+def wikipedia_tripwire_line(data: dict, *, now: datetime | None = None) -> str:
+    """Operator line when the article moved recently. Empty when there is no stamp."""
+    raw = str((data or {}).get("last_revision") or "").strip()
+    if not raw:
+        return ""
+    try:
+        stamp = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    age_hours = max(0.0, (current - stamp).total_seconds() / 3600.0)
+    article = str((data or {}).get("article") or "article")
+    when = f"{age_hours:.0f}h ago" if age_hours < 24 else f"{age_hours / 24.0:.0f}d ago"
+    return f"{article} edited {when}"
 
 
 def _spike_score(views: list[int]) -> tuple[float, str]:
@@ -153,14 +266,26 @@ def get_wikipedia_pageviews_signal(topic: str) -> dict:
             return result
 
         active = best_score >= 20
+        data: dict = {"article": best_article, "views_recent": best["views"][-3:]}
+        detail = f"{best_article}: {best_detail}"
+        try:
+            revision = _fetch_last_revision(best_article)
+        except Exception as exc:
+            logger.debug("wikipedia revision tripwire skipped: %s", exc)
+            revision = None
+        if revision:
+            data["last_revision"] = revision
+            trip = wikipedia_tripwire_line(data)
+            if trip:
+                detail = f"{detail}; {trip}"
         result = make_signal(
             connected=True,
             active=active,
             score=best_score,
             confidence=0.75 if active else 0.4,
             status=STATUS_OK if active else STATUS_INACTIVE,
-            status_detail=f"{best_article}: {best_detail}",
-            data={"article": best_article, "views_recent": best["views"][-3:]},
+            status_detail=detail,
+            data=data,
         )
         set_cache(cache_key, result, ttl_seconds=_TTL)
         return result

@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -79,6 +80,23 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         print(f"  saved -> {path}")
     else:
         print("  not saved (set OBSIDIAN_VAULT_PATH, or nothing was extracted)")
+    return 0
+
+
+@_register(
+    "ingest-clips",
+    "Copy capture clips into video/backgrounds (dry-run default; --apply remuxes)",
+)
+def cmd_ingest_clips(args: argparse.Namespace) -> int:
+    from assets.clip_ingest import ingest_clips, render_ingest
+
+    result = ingest_clips(
+        apply=bool(getattr(args, "apply", False)),
+        move=bool(getattr(args, "move", False)),
+    )
+    print(render_ingest(result))
+    if any(row.status == "failed" for row in result.rows):
+        return 1
     return 0
 
 
@@ -318,6 +336,16 @@ def cmd_backfill_features(args: argparse.Namespace) -> int:
     return _run_module("analytics.backfill_features", "--channel", args.channel)
 
 
+@_register("backfill-quality", "Recompute grade/hedge/style fields on historical runs (#823)")
+def cmd_backfill_quality(args: argparse.Namespace) -> int:
+    extra = ["--channel", args.channel]
+    if getattr(args, "apply", False):
+        extra.append("--apply")
+    if getattr(args, "force", False):
+        extra.append("--force")
+    return _run_module("analytics.backfill_quality", *extra)
+
+
 @_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
 def cmd_backfill_cost(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]
@@ -340,6 +368,20 @@ def cmd_vault_sync(args: argparse.Namespace) -> int:
         print("Beliefs: nothing written (OBSIDIAN_VAULT_PATH unset or no analytics yet).")
     n_doss = refresh_dossiers(args.channel)
     print(f"Dossiers: {n_doss} run note(s) refreshed" if n_doss else "Dossiers: none written.")
+    return 0
+
+
+@_register("vault-decay", "List vault notes whose expires date is in the past")
+def cmd_vault_decay(args: argparse.Namespace) -> int:
+    from core.fact_expiry import expired_notes
+
+    notes = expired_notes(getattr(args, "channel", None))
+    if not notes:
+        print("Vault decay: no expired notes on disk.")
+        return 0
+    print(f"Vault decay: {len(notes)} expired note(s) still on disk (already dropped from prompts)")
+    for note in notes:
+        print(f"  {note.get('path')} expired {note.get('expires')} ({note.get('days_past')}d past)")
     return 0
 
 
@@ -370,10 +412,156 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("caption-anchor", "Measure whether a frame's bottom band carries an overlay (#717)")
+def cmd_caption_anchor(args: argparse.Namespace) -> int:
+    """Lets the operator decide CAPTION_AUTO_PLACE from their OWN footage rather
+    than from the synthetic fixtures the thresholds were set on."""
+    from video.caption_place import overlay_reading
+
+    path = (getattr(args, "path", None) or "").strip()
+    if not path:
+        print("caption-anchor requires --path VIDEO.mp4 or IMAGE.png")
+        return 2
+    # The "needs" figures are read from the detector, not typed: after #727 moved the
+    # excess threshold to 0.18 this still printed 0.25.
+    from video import caption_place as cp
+
+    reading = overlay_reading(path, always_motion=True)
+    if reading["spatial"] == "no_frame":
+        print(f"{path}: no frame could be read (missing file, or not a video/image)")
+        return 2
+    print(f"{path}")
+    if reading["spatial"] == "no_contrast" or reading["metrics"] is None:
+        # A measured answer, not a failure: nothing to avoid, so nothing moves.
+        print("  band has no measurable contrast (flat or black)")
+    else:
+        spread, step = reading["metrics"]
+        print(f"  spread/median : {spread:.2f}  (needs >= {cp._MIN_SPREAD:.2f})")
+        print(f"  step share    : {step:.2f}  (needs >= {cp._MIN_STEP_SHARE:.2f})")
+    print(f"  spatial gate  : {'pass' if reading['step'] else 'fail'}")
+    if reading["motion"] == "no_motion":
+        print("  motion        : none measurable (still image, locked-off shot or clip under 1s)")
+    else:
+        print(f"  static excess : {reading['excess']:.2f}  (needs >= {cp._MIN_STATIC_EXCESS:.2f})")
+    verdict = (
+        "OVERLAY -> captions move to the top"
+        if reading["overlay"]
+        else "clear -> captions stay at the bottom"
+    )
+    print(f"  verdict       : {verdict}")
+    print(
+        "  CAPTION_AUTO_PLACE is off by default (#727); set it to true to let this move captions."
+    )
+    return 0
+
+
+@_register("free-tiers", "When each provider's free window resets or ends (#378)")
+def cmd_free_tiers(_args: argparse.Namespace) -> int:
+    from core.free_tier_calendar import expiring_windows, render_calendar
+
+    rows = expiring_windows()
+    print(render_calendar(rows))
+    # Non-zero when something has already lapsed: a closed window means the next
+    # "$0" run is not $0 any more.
+    return 1 if any(r.get("closed") for r in rows) else 0
+
+
+@_register("cost-tower", "Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158)")
+def cmd_cost_tower(_args: argparse.Namespace) -> int:
+    from core.cost_tower import gather_tower, render_tower
+
+    rows = gather_tower()
+    print(render_tower(rows))
+    return 1 if any(row.state == "over" for row in rows) else 0
+
+
+@_register(
+    "cost-panel",
+    'Cost Control Tower panel (#158; requires pip install -e ".[app]")',
+)
+def cmd_cost_panel(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(cost=True)
+
+
+@_register(
+    "clock-ahead", "Run the suite with the clock shifted; list tests whose result changes (#725)"
+)
+def cmd_clock_ahead(args: argparse.Namespace) -> int:
+    from core.clock_ahead import compare
+
+    days = int(getattr(args, "days", 0) or 365)
+    print(f"Running the suite at +0 and +{days} days (two full runs)...")
+    changed = compare(days)
+    if not changed:
+        print(f"  no test changes result {days} days ahead")
+        return 0
+    print(f"  {len(changed)} test(s) change result {days} days ahead:")
+    for test_id in changed:
+        print(f"    {test_id}")
+    return 1
+
+
+@_register("trace-secrets-scan", "Scan data/traces for env secrets or secret URL params (#636)")
+def cmd_trace_secrets_scan(_args: argparse.Namespace) -> int:
+    from core.trace_secrets import render_scan, scan_traces
+
+    checked, hits = scan_traces()
+    print(render_scan(checked, hits))
+    return 1 if hits else 0
+
+
+@_register("env-lint", "Env keys read in code vs documented in .env.example (#639)")
+def cmd_env_lint(_args: argparse.Namespace) -> int:
+    from core import env_lint
+
+    report = env_lint.lint()
+    print(env_lint.render_lint(report))
+    return 1 if report.new_undocumented else 0
+
+
+@_register("selftest", "Run every safety gate against fixtures; show which are armed here (#630)")
+def cmd_selftest(_args: argparse.Namespace) -> int:
+    from core.selftest import render_selftest, run_selftest
+
+    results = run_selftest()
+    print(render_selftest(results))
+    return 0 if all(result.works for result in results) else 1
+
+
+@_register(
+    "package-audit", "Build the wheel and sdist; flag secrets, tokens or operator paths (#640)"
+)
+def cmd_package_audit(_args: argparse.Namespace) -> int:
+    from core import package_audit
+
+    try:
+        reports = package_audit.audit()
+    except RuntimeError as exc:
+        print(f"package-audit could not build: {exc}")
+        return 2
+    print(package_audit.render_audit(reports))
+    return 1 if any(report.hits for report in reports) else 0
+
+
 @_register("reliability", "Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate)")
 def cmd_reliability(args: argparse.Namespace) -> int:
     from core.reliability import gather, render
 
+    if getattr(args, "vacuum", False):
+        from config.paths import DATA_DIR
+        from core.sqlite_vacuum import vacuum_sqlite
+
+        path = (getattr(args, "path", None) or "").strip() or os.path.join(
+            DATA_DIR, "content_os.db"
+        )
+        try:
+            result = vacuum_sqlite(path)
+        except FileNotFoundError:
+            print(f"VACUUM skipped: {path} not found")
+            return 1
+        print(f"VACUUM {result['path']}: {result['before']} -> {result['after']} bytes")
     data = gather()
     chunks = [render(data)]
     # Recording on view means the trend builds itself — no separate job to forget.
@@ -401,6 +589,21 @@ def cmd_reliability(args: argparse.Namespace) -> int:
         get_logger("scripts.ops").debug("Incident ledger skipped: %s", exc)
     _emit_text("Reliability", "\n".join(chunks), args)
     return 0
+
+
+@_register(
+    "signal-canary",
+    "Probe every signal at $0 — a dead source found before a real run needs it",
+)
+def cmd_signal_canary(_args: argparse.Namespace) -> int:
+    from core.signal_canary import check_signals, render, save_results, warnings
+
+    results = check_signals()
+    save_results(results)
+    print(render(results))
+    # Non-zero on a dead signal so a scheduled overnight / a manual probe fails
+    # loudly rather than quietly. Not part of `all-checks` (CI has no network).
+    return 1 if warnings(results) else 0
 
 
 @_register("feeds", "Check every configured RSS feed — dead/stale sources starve grounding")
@@ -557,6 +760,14 @@ def cmd_economics(args: argparse.Namespace) -> int:
 
     limit = args.limit or 25
     _emit_text("Unit economics", render_economics(args.channel, limit=limit), args)
+    try:
+        from core.operator_minutes import trend_line
+
+        print(trend_line(args.channel))
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("minutes trend skipped: %s", exc)
     if getattr(args, "csv", False):
         try:
             from core.html_report import html_dir
@@ -717,13 +928,258 @@ def cmd_topic_clone(args: argparse.Namespace) -> int:
 def cmd_studio_deleted(args: argparse.Namespace) -> int:
     from youtube.studio_deleted import detect_studio_deleted
 
-    cancelled = detect_studio_deleted(args.channel)
+    report: dict = {}
+    cancelled = detect_studio_deleted(args.channel, report=report)
+    if report.get("error"):
+        print(f"Studio-deleted: could not check {args.channel} - {report['error']}")
+        return 1
     if not cancelled:
-        print(f"Studio-deleted: none for {args.channel}")
+        print(
+            f"Studio-deleted: none for {args.channel} - {report.get('checked', 0)} uploaded "
+            "video(s) checked, all still on YouTube"
+        )
+        for vid in report.get("still_live") or []:
+            print(f"  live: https://youtu.be/{vid}")
         return 0
     print(f"Studio-deleted: cancelled {len(cancelled)} publish_log row(s)")
     for row in cancelled:
         print(f"  #{row.id} {row.youtube_video_id}")
+    return 0
+
+
+@_register("batch-review", "Review waiting drafts in one pass; render the yeses; space them (#760)")
+def cmd_batch_review(args: argparse.Namespace) -> int:
+    from core.batch_review import review_drafts
+
+    summary = review_drafts(args.channel)
+    print(
+        f"\nReview: {len(summary.accepted)} accepted, {len(summary.rejected)} rejected, "
+        f"{len(summary.later)} later; {len(summary.rendered)} rendered, "
+        f"{len(summary.queued)} queued"
+    )
+    return 0
+
+
+@_register("retire-renders", "Stop counting unuploaded renders past their news date (--apply)")
+def cmd_retire_renders(args: argparse.Namespace) -> int:
+    from core.stale_renders import find_stale_renders, render_age_days, retire_renders
+
+    run_id = int(getattr(args, "run_id", 0) or 0)
+    if run_id:
+        # By id, age does not apply: a test render is retired the day it is made.
+        from scripts.requeue_upload import list_recyclable
+
+        stale = [run for run in list_recyclable(args.channel) if int(run.id) == run_id]
+        if not stale:
+            print(f"Retire renders: run {run_id} is not an unuploaded render on {args.channel}")
+            return 1
+        marked = retire_renders(stale) if getattr(args, "apply", False) else []
+        if marked:
+            print(f"Retired run {run_id}. The file stays on disk.")
+        else:
+            print(f"Would retire run {run_id}. Add --apply.")
+        return 0
+
+    days = int(getattr(args, "days", 0) or 30)
+    stale = find_stale_renders(args.channel, days=days)
+    if not stale:
+        print(f"Retire renders: nothing unuploaded older than {days} days on {args.channel}")
+        return 0
+    print(f"Unuploaded renders older than {days} days ({args.channel}):")
+    for run in stale:
+        age = render_age_days(run) or 0.0
+        print(f"  [{run.id}] {age:.0f}d  {getattr(run, 'title', '')}")
+    if not getattr(args, "apply", False):
+        print("Dry run. Add --apply to retire them (files stay on disk).")
+        return 0
+    marked = retire_renders(stale)
+    print(f"Retired {len(marked)}. Still queueable by id: py -m scripts.requeue_upload --run-id N")
+    return 0
+
+
+@_register("chapters", "All-angles chapter report: placement path, length, Shorts cap (#755)")
+def cmd_chapters(args: argparse.Namespace) -> int:
+    from core.chapter_shorts import chapter_report
+
+    run_id = int(getattr(args, "run_id", 0) or 0)
+    if not run_id:
+        print("chapters needs --run-id N")
+        return 2
+    lines = chapter_report(run_id)
+    if not lines:
+        print(f"Run {run_id} has no angle chapters (not an all-angles render).")
+        return 1
+    print(f"Chapters for run {run_id}:")
+    for line in lines:
+        print(f"  {line}")
+    return 0
+
+
+@_register("schedule-drafts", "Nightly overnight drafts via Task Scheduler (--install / --remove)")
+def cmd_schedule_drafts(args: argparse.Namespace) -> int:
+    from core import nightly_task
+
+    channel = str(getattr(args, "channel", "") or "tapin")
+    if getattr(args, "install", False):
+        code, out = nightly_task.run_schtasks(nightly_task.install_argv(channel))
+        print(out or f"schtasks exit {code}")
+        if code == 0:
+            print(
+                f"Installed: `ops overnight --channel {channel}` daily at "
+                f"{nightly_task.DEFAULT_TIME}. Review in the morning: "
+                f"py -m scripts.ops batch-review --channel {channel}"
+            )
+        return 0 if code == 0 else 1
+    if getattr(args, "remove", False):
+        code, out = nightly_task.run_schtasks(nightly_task.remove_argv())
+        print(out or f"schtasks exit {code}")
+        return 0 if code == 0 else 1
+    code, out = nightly_task.run_schtasks(nightly_task.query_argv())
+    if code == 0:
+        print(out)
+    else:
+        print(f"Nightly drafts: not installed ({nightly_task.TASK_NAME}).")
+        print(f"Install: py -m scripts.ops schedule-drafts --install --channel {channel}")
+        print(f"It would run: {nightly_task.task_command(channel)}")
+    return 0
+
+
+@_register(
+    "mutate-gates", "Mutation-test the publish/grounding gates; list untested mutants (#627)"
+)
+def cmd_mutate_gates(args: argparse.Namespace) -> int:
+    from scripts.mutate_gates import main as mutate_main
+
+    extra = ["--target", args.target] if getattr(args, "target", "") else []
+    return mutate_main(extra)
+
+
+@_register("playlists", "Franchise playlists: show the map; --apply creates missing (#601)")
+def cmd_playlists(args: argparse.Namespace) -> int:
+    from core.playlists import (
+        SCOPE_YOUTUBE_MANAGE,
+        playlist_map,
+        store_path_for,
+        sync_playlists,
+    )
+
+    channel = args.channel
+    try:
+        with open(store_path_for(channel), encoding="utf-8") as f:
+            ids = json.load(f).get("ids") or {}
+    except (OSError, ValueError):
+        ids = {}
+    print(f"Franchise playlists ({channel}), most specific first:")
+    for row in playlist_map(channel):
+        name = row["name"]
+        parent = f" (+ {row['parent']})" if row.get("parent") else ""
+        print(f"  {name}{parent}: {ids.get(name) or 'not created'}")
+    if not getattr(args, "apply", False):
+        print("Add --apply to create the missing ones (50 quota units each).")
+        return 0
+    from youtube.oauth import get_youtube_service, token_has_scope
+
+    if not token_has_scope(channel, SCOPE_YOUTUBE_MANAGE):
+        print(
+            "Needs the YouTube manage permission first: "
+            f"py -m youtube.oauth_setup --channel {channel}"
+        )
+        return 1
+    created = sync_playlists(get_youtube_service(channel), channel)
+    print(f"Created {len(created)}: {', '.join(created) or 'none'}")
+    return 0
+
+
+@_register(
+    "footage", "Gameplay folder per playlist niche (--apply measures each clip's text bands)"
+)
+def cmd_footage(args: argparse.Namespace) -> int:
+    from assets.clip_ingest import footage_coverage, measure_library, render_coverage
+
+    if getattr(args, "persistence", False):
+        # #739: is the band CONSTANT, not merely present. Slow (8 decodes/clip),
+        # so it is its own flag rather than part of --apply.
+        from assets.clip_ingest import library_persistence
+
+        print(library_persistence())
+        return 0
+
+    if getattr(args, "apply", False):
+        tally = measure_library(force=bool(getattr(args, "force", False)))
+        print(
+            f"Measured text bands on {tally['measured']} clip(s) "
+            f"({tally['with_bands']} carry a band, {tally['skipped']} already measured)."
+        )
+    print(render_coverage(footage_coverage(args.channel)))
+    return 0
+
+
+@_register(
+    "footage-add",
+    "Import a gameplay file or folder (--path --game --licence [--source url] --apply)",
+)
+def cmd_footage_add(args: argparse.Namespace) -> int:
+    from assets.clip_ingest import add_footage, add_footage_folder
+
+    game = str(getattr(args, "game", "") or "")
+    source_url = str(args.source or "")
+    licence = str(getattr(args, "licence", "") or "")
+    group = str(getattr(args, "group", "") or "gaming/other")
+    apply_now = bool(getattr(args, "apply", False))
+    if os.path.isdir(args.path):
+        rows = add_footage_folder(
+            args.path,
+            game=game,
+            source_url=source_url,
+            licence=licence,
+            group=group,
+            apply=apply_now,
+        )
+    else:
+        rows = [
+            add_footage(
+                args.path,
+                game=game,
+                source_url=source_url,
+                licence=licence,
+                group=group,
+                apply=apply_now,
+            )
+        ]
+    for row in rows:
+        if row.status == "failed":
+            print(f"footage-add: {os.path.basename(row.source)}: {row.reason}")
+        elif row.status == "matched":
+            print(f"DRY RUN - would import {row.source} -> {row.dest} (add --apply)")
+        else:
+            print(f"Imported {row.source} -> {row.dest} (muted H.264, licence recorded)")
+    return 1 if any(r.status == "failed" for r in rows) else 0
+
+
+@_register("post-publish-check", "Look at uploads 48h+ old: removed, blocked, age-restricted, kids")
+def cmd_post_publish_check(args: argparse.Namespace) -> int:
+    from core.post_publish_check import render_report, run_post_publish_checks
+
+    report = run_post_publish_checks(args.channel)
+    print(render_report(report))
+    return 1 if report.get("error") else 0
+
+
+@_register(
+    "preview-render", "Re-render a voiced Short with today's background, $0 (--path mp3 --topic)"
+)
+def cmd_preview_render(args: argparse.Namespace) -> int:
+    from assets.fast_cut import render_preview
+
+    audio = str(getattr(args, "path", "") or "")
+    if not audio or not os.path.isfile(audio):
+        print("preview-render needs --path <an existing voiced mp3>")
+        return 2
+    topic = str(getattr(args, "topic", "") or "") or os.path.basename(audio)
+    path = render_preview(
+        audio, topic, args.channel, seconds=float(getattr(args, "seconds", 0) or 0) or None
+    )
+    print(f"Preview (never queued): {path}")
     return 0
 
 
@@ -914,6 +1370,151 @@ def cmd_booth(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "review-room",
+    'Stage 3 Qt review room (J/K/L + Approve; requires pip install -e ".[app]")',
+)
+def cmd_review_room(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(review=True)
+
+
+@_register(
+    "studio",
+    'Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]")',
+)
+def cmd_studio(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(studio=True)
+
+
+@_register(
+    "queue-panel",
+    'Stage 3 job queue (drag-reorder; requires pip install -e ".[app]")',
+)
+def cmd_queue_panel(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(queue=True)
+
+
+@_register(
+    "brand-panel",
+    'Compiled brand kit per channel (requires pip install -e ".[app]")',
+)
+def cmd_brand_panel(args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch(brand=True, channel_id=getattr(args, "channel", None) or "tapin")
+
+
+@_register("brand-kit", "Print the compiled brand kit and what is missing")
+def cmd_brand_kit(args: argparse.Namespace) -> int:
+    from core.brand_kit import compile_kit
+
+    kit = compile_kit(getattr(args, "channel", None) or "tapin")
+    print(kit.render())
+    return 0 if kit.complete else 1
+
+
+@_register("why-slow", "Rank last-run phase timings (slowest first)")
+def cmd_why_slow(args: argparse.Namespace) -> int:
+    from core.review_booth import last_trace
+    from core.why_slow import why_slow_lines
+
+    trace = last_trace(getattr(args, "channel", None)) or {}
+    print("\n".join(why_slow_lines(trace.get("timings"))))
+    return 0
+
+
+@_register("config-diff", "channels.json sha256 vs last-run fingerprint")
+def cmd_config_diff(args: argparse.Namespace) -> int:
+    from core.config_diff import diff_against
+    from core.review_booth import last_trace
+
+    print("\n".join(diff_against(last_trace(getattr(args, "channel", None)) or {})))
+    return 0
+
+
+@_register("retraction-watch", "Re-fetch last-run source URLs for a retraction")
+def cmd_retraction_watch(args: argparse.Namespace) -> int:
+    from core.retraction_watch import pairs_from_trace, watch_urls
+    from core.review_booth import last_trace
+
+    pairs = pairs_from_trace(last_trace(getattr(args, "channel", None)) or {})
+    if not pairs:
+        print("no source URLs on the last trace")
+        return 0
+    hits = watch_urls(pairs)
+    if not hits:
+        print(f"checked {len(pairs)} URL(s); no retraction hits")
+        return 0
+    print("\n".join(hits))
+    return 0
+
+
+@_register("corrections", "Re-check published videos' sources and file a correction dossier")
+def cmd_corrections(args: argparse.Namespace) -> int:
+    """#112. Post-publish, unlike `retraction-watch`, which only reads the last
+    draft's trace. Writes a vault dossier and records a negative fact; it never
+    touches the published video."""
+    from core.correction_dossier import scan_published_for_corrections
+
+    channel = getattr(args, "channel", None) or "tapin"
+    found = scan_published_for_corrections(
+        channel,
+        window_days=int(getattr(args, "days", 30) or 30),
+        force=True,
+    )
+    if not found:
+        print(f"{channel}: no reversed claims on published videos in the window")
+        return 0
+    for dossier in found:
+        print(f"[{dossier.severity}] {dossier.video_id}: {dossier.claim}")
+        print(f"    source  : {dossier.source_url}")
+        print(f"    evidence: {dossier.changed_evidence[:160]}")
+    print(f"{len(found)} dossier(s) written to the vault. Nothing was changed on YouTube.")
+    return 0
+
+
+@_register("grain-grade", "Encode a flat frame with the channel look and print stddev")
+def cmd_grain_grade(args: argparse.Namespace) -> int:
+    import tempfile
+
+    from video.grain_grade import measure_look_noise
+
+    with tempfile.TemporaryDirectory() as tmp:
+        result = measure_look_noise(tmp, channel_id=getattr(args, "channel", None) or "tapin")
+    if result is None:
+        print("grain-grade n/a (no noise look or ffmpeg failed)")
+        return 1
+    print(f"plain {result['plain']:.3f}  with_look {result['with_look']:.3f}")
+    return 0
+
+
+@_register("technical-qc", "Inspect a finished video for stream, frame and loudness defects")
+def cmd_technical_qc(args: argparse.Namespace) -> int:
+    from core.technical_qc import inspect_technical_qc, render_technical_qc
+
+    path = str(getattr(args, "path", "") or "")
+    if not path:
+        print("technical-qc requires --path VIDEO.mp4")
+        return 2
+    result = inspect_technical_qc(path)
+    print(render_technical_qc(result))
+    return 0 if result.passed else 2 if result.status == "unavailable" else 1
+
+
+@_register("shell", "Localhost FastAPI operator shell (GET only; no TTS/Apify/publish)")
+def cmd_shell(args: argparse.Namespace) -> int:
+    from core.operator_shell import DEFAULT_PORT, serve
+
+    port = int(getattr(args, "port", 0) or DEFAULT_PORT)
+    return serve(port=port, channel_id=getattr(args, "channel", None) or "tapin")
+
+
+@_register(
     "render-preview",
     "Render a 480p ultrafast review copy without changing publish media (--run-id)",
 )
@@ -953,6 +1554,119 @@ def cmd_render_preview(args: argparse.Namespace) -> int:
     print(f"Draft preview: {mp4}")
     print("Publish media unchanged; previews are never queued or uploaded.")
     return 0
+
+
+@_register(
+    "caption-still",
+    "Overlay captions on a still so names can be proofread before burn (--path image, --file script)",
+)
+def cmd_caption_still(args: argparse.Namespace) -> int:
+    frame = (getattr(args, "path", None) or "").strip()
+    script_file = (getattr(args, "file", None) or "").strip()
+    if not frame or not script_file:
+        print("caption-still requires --path <image> and --file <script.txt>")
+        return 2
+    from pathlib import Path
+
+    script = Path(script_file).read_text(encoding="utf-8")
+    dest = str(Path(frame).with_name(Path(frame).stem + "_captions.png"))
+    from video.caption_overlay import overlay_captions_on_still
+
+    result = overlay_captions_on_still(
+        frame, script, dest, channel_id=getattr(args, "channel", None) or "tapin"
+    )
+    print(result.path)
+    for line in result.lines[:8]:
+        print(f"  {line}")
+    return 0
+
+
+@_register(
+    "end-card-preview",
+    "Render the channel end card as a PNG still before a full encode (--path dest.png)",
+)
+def cmd_end_card_preview(args: argparse.Namespace) -> int:
+    dest = (getattr(args, "path", None) or "").strip()
+    if not dest:
+        print("end-card-preview requires --path <dest.png>")
+        return 2
+    from video.end_card_preview import render_end_card_preview
+
+    try:
+        result = render_end_card_preview(dest, channel_id=getattr(args, "channel", None) or "tapin")
+    except ValueError as exc:
+        print(str(exc))
+        return 1
+    print(result.path)
+    print(f"  {result.text}")
+    return 0
+
+
+@_register("run-window", 'Stage 2 Qt run window (requires pip install -e ".[app]")')
+def cmd_run_window(_args: argparse.Namespace) -> int:
+    from desktop.launch import launch
+
+    return launch()
+
+
+@_register(
+    "contact-sheet",
+    "2x2 PNG collage of the last thumbnails (--path dest.png)",
+)
+def cmd_contact_sheet(args: argparse.Namespace) -> int:
+    dest = (getattr(args, "path", None) or "").strip()
+    if not dest:
+        print("contact-sheet requires --path <dest.png>")
+        return 2
+    from core.contact_sheet import render_contact_sheet
+    from core.output_paths import ensure_channel_output_dirs
+
+    cid = getattr(args, "channel", None) or "tapin"
+    thumbs = ensure_channel_output_dirs(cid)["thumbnails"]
+    result = render_contact_sheet(dest, thumbs_dir=thumbs, channel_id=cid)
+    if not result.ok:
+        print(result.detail)
+        return 1
+    print(result.path)
+    print(f"  {len(result.paths)} thumbs")
+    if result.html_path:
+        print(result.html_path)
+    return 0
+
+
+@_register(
+    "negative-fact",
+    "Record a walked-back claim so a later run cannot re-assert it (--topic franchise)",
+)
+def cmd_negative_fact(args: argparse.Namespace) -> int:
+    claim = (getattr(args, "source", None) or getattr(args, "target", None) or "").strip()
+    if not claim:
+        print("negative-fact requires a claim (positional or --source)")
+        return 2
+    from core.negative_facts import franchise_for, record_negative
+
+    topic = (getattr(args, "topic", None) or "").strip()
+    cid = getattr(args, "channel", None) or "tapin"
+    key = franchise_for(topic or cid, cid)
+    record_negative(key, claim, reason="ops negative-fact")
+    print(f"recorded negative fact for {key}")
+    return 0
+
+
+@_register(
+    "intro-waveform",
+    "Draw a waveform of the intro sting and print duration vs the 2.15s offset (--path audio)",
+)
+def cmd_intro_waveform(args: argparse.Namespace) -> int:
+    audio = (getattr(args, "path", None) or "").strip()
+    if not audio:
+        print("intro-waveform requires --path <audio.wav|mp3>")
+        return 2
+    from video.intro_waveform import describe_intro_waveform
+
+    result = describe_intro_waveform(audio, channel_id=getattr(args, "channel", None) or "tapin")
+    print(result.line)
+    return 0 if result.ok else 1
 
 
 @_register("lightbox", "Thumbnail lightbox for the last Pillow thumb")
@@ -1037,10 +1751,216 @@ def cmd_sendto_facts(args: argparse.Namespace) -> int:
 
 @_register("blocking", "One-sentence: what's blocking publish (existing gates only)")
 def cmd_blocking(args: argparse.Namespace) -> int:
-    from core.publish_blockers import blocking_publish_sentence
+    from core.publish_blockers import publish_status_sentence
 
-    line = blocking_publish_sentence(channel_id=args.channel)
+    # #734: read the real last run. A bare channel id graded an empty dict as an F.
+    line = publish_status_sentence(args.channel)
     _emit_text("What's blocking publish", line, args)
+    return 0
+
+
+@_register("grounding-corpus", "Replay frozen grounding verdicts (no LLM)")
+def cmd_grounding_corpus(_args: argparse.Namespace) -> int:
+    from core.grounding_corpus import main as grounding_main
+
+    return grounding_main()
+
+
+@_register("roadmap-index", "Counts per roadmap file and by size, read from the docs")
+def cmd_roadmap_index(args: argparse.Namespace) -> int:
+    from core.roadmap_index import render
+
+    _emit_text("Roadmap index", render(), args)
+    return 0
+
+
+@_register("agents", "Agent hand-off: who signed what, and whether the mailbox is stale")
+def cmd_agents(args: argparse.Namespace) -> int:
+    from core.agent_comms import render
+
+    _emit_text("Agent hand-off", render(), args)
+    return 0
+
+
+@_register("title-card", "Write a 2-line title-card still (--path dest.png, --topic text)")
+def cmd_title_card(args: argparse.Namespace) -> int:
+    dest = (getattr(args, "path", None) or "").strip()
+    text = (getattr(args, "topic", None) or "").strip() or "Title card"
+    if not dest:
+        print("title-card requires --path <dest.png>")
+        return 2
+    from core.title_card_wrap import write_title_card_still
+
+    print(write_title_card_still(text, dest, max_lines=2))
+    return 0
+
+
+@_register(
+    "log-override",
+    "Record that a recommendation was ignored (--topic offered, --source chosen)",
+)
+def cmd_log_override(args: argparse.Namespace) -> int:
+    offered = (getattr(args, "topic", None) or "").strip()
+    chosen = (getattr(args, "source", None) or getattr(args, "target", None) or "").strip()
+    if not offered or not chosen:
+        print("log-override needs --topic <offered> and a chosen topic (--source or positional)")
+        return 2
+    from core.counterfactual import record_override
+
+    row = record_override(offered, chosen)
+    print(f"recorded override: {row['offered']} -> {row['chosen']}")
+    return 0
+
+
+@_register("command-ref", "Write docs/ops_commands.md from the live ops list")
+def cmd_command_ref(_args: argparse.Namespace) -> int:
+    from core.ops_command_ref import write_command_ref
+
+    path = write_command_ref()
+    print(path)
+    return 0
+
+
+@_register("diff-runs", "Compare grade/cost/ungrounded/disputed for two run ids")
+def cmd_diff_runs(args: argparse.Namespace) -> int:
+    if not args.run_id or not args.target:
+        print("diff-runs needs --run-id A and a second id (positional target)")
+        return 1
+    from core.diff_runs import diff_run_ids
+
+    print(diff_run_ids(int(args.run_id), int(args.target)))
+    return 0
+
+
+@_register("free-cost", "Prove the $0/Piper path billed $0 (or say that it did not)")
+def cmd_free_cost(args: argparse.Namespace) -> int:
+    from core.cost_meter import estimate_run_cost, free_mode_cost_proof
+
+    script = ""
+    cost = None
+    try:
+        from core.review_booth import last_trace
+
+        trace = last_trace(args.channel)
+        if trace:
+            script = str(trace.get("script") or "")
+            raw = trace.get("cost")
+            if isinstance(raw, dict):
+                cost = raw
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("free-cost last-run skipped: %s", exc)
+    if cost is None:
+        cost = estimate_run_cost(script=script or "word " * 150, signals={}, rendered=True)
+    print(free_mode_cost_proof(cost))
+    print(f"  tts ${float(cost.get('tts') or 0):.4f}  total ${float(cost.get('total') or 0):.4f}")
+    return 0
+
+
+@_register("desc-fold", "Dry-render the description above/below YouTube's Show more fold")
+def cmd_desc_fold(args: argparse.Namespace) -> int:
+    from core.description_fold import format_fold_preview
+
+    description = ""
+    try:
+        from core.review_booth import last_trace
+
+        trace = last_trace(args.channel)
+        if trace:
+            description = str(trace.get("description") or "")
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("desc-fold last-run skipped: %s", exc)
+    if not description.strip():
+        print("No description on the last run. Pass a draft through the pipeline first.")
+        return 1
+    print(format_fold_preview(description))
+    return 0
+
+
+@_register("digest", "This week's three operator decisions, written to the vault")
+def cmd_digest(args: argparse.Namespace) -> int:
+    from analytics.weekly_report import build_report, operator_digest, write_operator_digest
+
+    report = build_report(args.channel)
+    text = operator_digest(report)
+    if not text:
+        print(f"{args.channel}: not enough analytics for a digest yet")
+        return 0
+    print(text)
+    path = write_operator_digest(args.channel, report)
+    if path:
+        print(f"\n  (saved to vault: {path})")
+    return 0
+
+
+@_register(
+    "rollback-publish",
+    "Unlist a published video + correction description + dossier (dry-run default; --apply sends)",
+)
+def cmd_rollback_publish(args: argparse.Namespace) -> int:
+    from publishing.rollback import apply_rollback
+
+    video_id = (getattr(args, "target", None) or "").strip()
+    if not video_id:
+        print("Usage: py -m scripts.ops rollback-publish <youtube-video-id> [--apply]")
+        return 2
+    correction = (getattr(args, "topic", None) or "").strip() or "Source walked this back."
+    result = apply_rollback(
+        video_id,
+        correction=correction,
+        channel_id=args.channel,
+        dry_run=not bool(getattr(args, "apply", False)),
+    )
+    print(f"{result.status}: {result.detail}")
+    if result.dossier_path:
+        print(f"  dossier: {result.dossier_path}")
+    if result.status == "dry_run":
+        print("  Nothing was sent to YouTube. Re-run with --apply to unlist.")
+    return 0 if result.status in ("dry_run", "updated") else 1
+
+
+@_register("publish-dry-run", "Print the YouTube videos.insert body (no upload; tokens redacted)")
+def cmd_publish_dry_run(args: argparse.Namespace) -> int:
+    from publishing.base import PublishRequest
+    from publishing.youtube_publisher import dry_run_insert_body, redact_publish_payload
+
+    title = "Dry-run title"
+    description = ""
+    tags: list[str] = []
+    file_path = "out.mp4"
+    try:
+        from core.review_booth import last_trace
+
+        trace = last_trace(args.channel)
+        if trace:
+            title = str(trace.get("title") or title)
+            description = str(trace.get("description") or "")
+            file_path = str(trace.get("mp4_path") or file_path)
+            tags = list(trace.get("tags") or [])
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("publish-dry-run last-run skipped: %s", exc)
+    req = PublishRequest(
+        file_path=file_path,
+        title=title,
+        description=description,
+        tags=tags,
+        privacy_status="private",
+    )
+    body = redact_publish_payload(dry_run_insert_body(req, channel_id=args.channel))
+    print(json.dumps(body, indent=2))
+    return 0
+
+
+@_register("next", "One action to take now across gates, quota, and vault decay")
+def cmd_next(args: argparse.Namespace) -> int:
+    from core.operator_shell import next_sentence
+
+    print(next_sentence(getattr(args, "channel", None)))
     return 0
 
 
@@ -1128,7 +2048,8 @@ def cmd_experiment(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv=None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """The operator CLI's parser, separated from `main` so the flag set is testable."""
     parser = argparse.ArgumentParser(
         description="Content OS operator commands (individual or batch)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1181,6 +2102,12 @@ def main(argv=None) -> int:
         type=int,
         default=0,
         help="Row limit (traces / economics; 0 = command default)",
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=0,
+        help="clock-ahead: days to shift the clock (0 = 365)",
     )
     parser.add_argument(
         "--topic",
@@ -1239,7 +2166,35 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="artifacts / moat-backup: actually delete or copy (default is dry-run)",
+        help=(
+            "artifacts / moat-backup / ingest-clips / rollback-publish: "
+            "actually delete, copy, remux, or unlist (default is dry-run)"
+        ),
+    )
+    parser.add_argument(
+        "--persistence",
+        action="store_true",
+        help="footage: how often a band is present per clip, gameplay vs stock (#739)",
+    )
+    parser.add_argument(
+        "--seconds",
+        type=float,
+        default=0.0,
+        help="preview-render: only the first N seconds (default: the whole voice track)",
+    )
+    parser.add_argument("--game", default="", help="footage-add: game folder name, e.g. Minecraft")
+    parser.add_argument(
+        "--licence", default="", help="footage-add: the terms the footage is used under"
+    )
+    parser.add_argument(
+        "--group",
+        default="",
+        help="footage-add: library sub-path for a new game (default gaming/other)",
+    )
+    parser.add_argument(
+        "--move",
+        action="store_true",
+        help="ingest-clips: delete the capture file after a successful remux",
     )
     parser.add_argument(
         "--html",
@@ -1292,9 +2247,20 @@ def main(argv=None) -> int:
         help="intelligence-report: write the no-video SKU markdown",
     )
     parser.add_argument(
+        "--port",
+        type=int,
+        default=0,
+        help="shell: localhost port (default 8765)",
+    )
+    parser.add_argument(
         "--serve",
         action="store_true",
         help="booth: tiny stdlib localhost host (not FastAPI)",
+    )
+    parser.add_argument(
+        "--vacuum",
+        action="store_true",
+        help="reliability: VACUUM the sqlite at --path (default data/content_os.db)",
     )
     parser.add_argument(
         "--sendto-dir",
@@ -1302,12 +2268,39 @@ def main(argv=None) -> int:
         default=None,
         help="sendto-facts: write the shortcut here (tests; default is %%APPDATA%%/SendTo)",
     )
+    parser.add_argument(
+        "--install", action="store_true", help="schedule-drafts: create the nightly task"
+    )
+    parser.add_argument(
+        "--remove", action="store_true", help="schedule-drafts: delete the nightly task"
+    )
+    parser.add_argument(
+        "--target",
+        default="",
+        help="mutate-gates: only targets whose module.function contains this text",
+    )
+    # `--force` is read by backfill-quality, backfill-cost, competitor-sync and
+    # daily-sync. It was never declared, so argparse rejected it at the top
+    # level, and the line below then set it to False unconditionally - two
+    # independent reasons the documented flag could not reach any of them.
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "backfill-quality / backfill-cost / competitor-sync / daily-sync: "
+            "recompute or refetch rows that are already populated"
+        ),
+    )
+    return parser
+
+
+def main(argv=None) -> int:
+    parser = build_parser()
     args = parser.parse_args(argv)
     args.queue_upload = False
     args.queue_requeue = False
     args.queue_reset = False
     args.queue_schedule = False
-    args.force = False
 
     try:
         from core.human_presence import maybe_touch_ops
@@ -1323,4 +2316,7 @@ def main(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    from core.console_encoding import ensure_utf8_stdout
+
+    ensure_utf8_stdout()  # #767: redirected / scheduled runs are cp1252
     raise SystemExit(main())

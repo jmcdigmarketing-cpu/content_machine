@@ -79,6 +79,9 @@ def _finalize_upload_job(job, result) -> None:
 
     if result.status in UPLOAD_STATUS_SUCCESS:
         repo.update(job.id, {"status": JOB_COMPLETED, "last_error": result.detail or ""})
+        # Run 77: the upload went through with nothing on the console (INFO log only).
+        link = f" -> https://youtu.be/{result.video_id}" if result.video_id else ""
+        print(f"Job {job.id} {result.status}{link}")
         if result.thumbnail_status == "set":
             logger.info("YouTube thumbnail set for job %s", job.id)
         elif result.thumbnail_status == "ineligible":
@@ -311,17 +314,24 @@ def main():
     from apis.youtube_quota import format_quota_detail, has_quota_for_upload
 
     print(f"Worker polling every {args.loop}s (Ctrl+C to stop)")
-    while True:
-        did_work = False
-        while process_one():
-            did_work = True
-        if not did_work and not has_quota_for_upload():
-            print(
-                f"Waiting for YouTube quota reset — {format_quota_detail()}. "
-                "Upload jobs deferred until scheduled_at passes."
-            )
-        time.sleep(args.loop)
+    try:
+        while True:
+            did_work = False
+            while process_one():
+                did_work = True
+            if not did_work and not has_quota_for_upload():
+                print(
+                    f"Waiting for YouTube quota reset — {format_quota_detail()}. "
+                    "Upload jobs deferred until scheduled_at passes."
+                )
+            time.sleep(args.loop)
+    except KeyboardInterrupt:
+        # Run 78: Ctrl+C is the documented way to stop the loop, not a crash.
+        print("\nWorker stopped.")
 
 
 if __name__ == "__main__":
+    from core.console_encoding import ensure_utf8_stdout
+
+    ensure_utf8_stdout()  # #767: redirected / scheduled runs are cp1252
     main()

@@ -4,7 +4,7 @@ import os
 import sys
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, ClassVar
 
@@ -16,9 +16,28 @@ from config.channels import (
     resolve_channel_id,
 )
 from config.settings import get_settings
+from core.ask import ask_text
+from core.emit import emit
 from core.logging import get_logger
 
 logger = get_logger("core.ui")
+
+
+def _median(values: list[float]) -> float:
+    ordered = sorted(values)
+    n = len(ordered)
+    mid = n // 2
+    if n % 2:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def fact_display_width() -> int:
+    """#488. Fact preview width follows the terminal, not a hardcoded 90."""
+    from core.ui_theme import terminal_width
+
+    return max(56, terminal_width(maximum=160) - 4)
+
 
 # ---------------------------------------------------------------------------
 # Live spinner for long-running operations
@@ -67,19 +86,25 @@ class DiscoverySpinner:
             self._themed_phase = themed_phase
         except Exception:
             self._frames = self._FRAMES
-            self._themed_phase = lambda p: p
+            self._themed_phase = lambda phase: phase
         self._typical = self._load_typical_timings()
 
     @staticmethod
     def _load_typical_timings() -> dict[str, float]:
-        """Phase timings from the most recent run trace ("typ ~Ns" hints). Fail-open."""
+        """Median phase timings from recent traces ("typ ~Ns" hints). Fail-open."""
         try:
             from core.run_trace import list_traces
 
-            for trace in list_traces(limit=3):
+            buckets: dict[str, list[float]] = {}
+            for trace in list_traces(limit=20):
                 timings = trace.get("timings") or {}
-                if timings:
-                    return {k: float(v) for k, v in timings.items() if isinstance(v, int | float)}
+                if not isinstance(timings, dict):
+                    continue
+                for key in ("signals_and_variants", "variant_scoring"):
+                    val = timings.get(key)
+                    if isinstance(val, int | float) and float(val) >= 5:
+                        buckets.setdefault(key, []).append(float(val))
+            return {key: _median(vals) for key, vals in buckets.items() if vals}
         except Exception as exc:
             logger.debug("list_traces skipped: %s", exc)
         return {}
@@ -98,6 +123,14 @@ class DiscoverySpinner:
             self._done = done
             self._total = total
             self._detail = detail
+        try:
+            from core.ask_bridge import current_bridge
+
+            bridge = current_bridge()
+            if bridge is not None:
+                bridge.set_progress(phase, done, total, detail)
+        except Exception as exc:
+            logger.debug("gui progress skipped: %s", exc)
 
     def _typical_hint(self, phase: str) -> str:
         for prefix, key in self._PHASE_TIMING_KEYS.items():
@@ -231,7 +264,7 @@ def _franchise_art_for(topic: str) -> tuple[str, str] | None:
     return None
 
 
-def print_domain_art(domain: str, *, topic: str = "", print_fn=print) -> None:
+def print_domain_art(domain: str, *, topic: str = "", print_fn=emit) -> None:
     """Print a small decorative ASCII panel for the topic's franchise or domain."""
     from core.ascii_art import ascii_enabled
     from core.ui_theme import paint, ui_color_enabled
@@ -354,7 +387,7 @@ _BONUS_ART: dict[str, tuple[str, str]] = {
 }
 
 
-def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
+def print_bonus_art(*, key: str | None = None, print_fn=emit) -> None:
     """Print a decorative colored art panel. Random piece unless `key` is given.
 
     Mario is guaranteed to be available; pass key='mario' to force it.
@@ -375,7 +408,7 @@ def print_bonus_art(*, key: str | None = None, print_fn=print) -> None:
     print_fn()
 
 
-def print_celebration(*, print_fn=print) -> None:
+def print_celebration(*, print_fn=emit) -> None:
     """Publish-success flourish: the active theme's celebration piece, else random."""
     try:
         from core.themes import active_theme
@@ -390,7 +423,7 @@ def print_celebration(*, print_fn=print) -> None:
 _MILESTONES = (1, 5, 10, 25, 50, 100, 250, 500, 1000)
 
 
-def maybe_print_milestone(channel_id: str, *, print_fn=print) -> None:
+def maybe_print_milestone(channel_id: str, *, print_fn=emit) -> None:
     """One-line badge when the channel's upload count hits a milestone. Fail-open."""
     try:
         from storage.repositories.publish_log import get_publish_log_repository
@@ -444,7 +477,7 @@ SIGNAL_ORDER = (
 )
 
 
-def section(title: str, print_fn=print):
+def section(title: str, print_fn=emit):
     from core.ascii_art import section_glyph
     from core.ui_theme import banner_line, terminal_width
     from core.ui_theme import title as theme_title
@@ -457,7 +490,7 @@ def section(title: str, print_fn=print):
     print_fn(banner_line("=", width))
 
 
-def subsection(title: str, print_fn=print):
+def subsection(title: str, print_fn=emit):
     from core.ui_theme import subsection_label
 
     print_fn()
@@ -468,7 +501,7 @@ def format_timing(seconds: float) -> str:
     return f"{seconds:.1f}s"
 
 
-def display_database_status(print_fn=print):
+def display_database_status(print_fn=emit):
     from config.settings import get_settings
 
     get_settings()
@@ -495,7 +528,7 @@ def display_database_status(print_fn=print):
                 logger.debug("assets-table hint skipped: %s", exc)
 
 
-def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=print) -> None:
+def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=emit) -> None:
     from analytics.competitor_context import (
         list_recent_competitor_titles,
         snapshot_age_hours,
@@ -513,7 +546,15 @@ def display_competitor_pulse(channel_id: str, topic: str = "", *, print_fn=print
         print_fn(f"  - {row.get('channel', '?')}: {row.get('title', '')[:55]}")
 
 
-def display_signal_health(signals: dict[str, Any], *, print_fn=print):
+def display_signal_health(
+    signals: dict[str, Any],
+    *,
+    topic: str = "",
+    channel_id: str | None = None,
+    print_fn=emit,
+    ask: bool = True,
+    now: datetime | None = None,
+):
     from core.ui_theme import health_status, warn
 
     subsection("Signal health", print_fn)
@@ -557,10 +598,32 @@ def display_signal_health(signals: dict[str, Any], *, print_fn=print):
             print_fn(f"  {warn('Cooling down')} (rate-limited): " + ", ".join(parts))
     except Exception as exc:
         logger.debug("Signal cooldown line skipped: %s", exc)
-    print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
-    print_fn()
+    if topic:
+        try:
+            from apis.register_signals import gated_signal_names
 
-    expand = input("  [Enter to continue / v to view all signals]: ").strip().lower()
+            gated = sorted(gated_signal_names(topic, channel_id))
+            if gated:
+                print_fn(f"  {warn('Gated')} (domain): " + ", ".join(gated))
+        except Exception as exc:
+            logger.debug("domain gating line skipped: %s", exc)
+    try:
+        from apis.wikipedia_pageviews_api import wikipedia_tripwire_line
+
+        wiki = signals.get("wikipedia") or {}
+        trip = wikipedia_tripwire_line(wiki.get("data") or {}, now=now)
+        if trip:
+            print_fn(f"  {warn('Wikipedia')} {trip}")
+    except Exception as exc:
+        logger.debug("wikipedia recency line skipped: %s", exc)
+    print_fn(f"  Inactive/no match: {len(inactive)} signals  (type 'v' to expand)")
+    print_fn("")
+
+    from core.ask import ask_text
+
+    if not ask:
+        return
+    expand = ask_text("  [Enter to continue / v to view all signals]: ").strip().lower()
     if expand == "v":
         print_fn()
         print_fn(f"  {warn(HEALTH_LEGEND)}")
@@ -576,7 +639,9 @@ def display_variants(
     *,
     channel_id: str | None = None,
     raw_scores: dict[str, float] | None = None,
-    print_fn=print,
+    angle_scores: dict[str, float] | None = None,
+    own_idea: str | None = None,
+    print_fn=emit,
 ) -> int:
     """Print variant list; return index of highest score.
 
@@ -587,22 +652,46 @@ def display_variants(
     # Candidate 323: the displayed score is clamped to 100, so on a hot topic every
     # variant prints the same number. Rank on the pre-clamp score when we have it, and
     # say so — a tie presented as a ranking is worse than an admitted tie.
+    from core.angle_ranker import score_spread
     from core.pipeline import best_variant_index
 
     raw = raw_scores or {}
-    best_i = best_variant_index(evaluated, raw)
+    angle = angle_scores or {}
+    best_i = best_variant_index(evaluated, raw, angle)
+    try:
+        from core.ask_bridge import current_bridge
+
+        bridge = current_bridge()
+        if bridge is not None:
+            bridge.set_choices([str(row[0]) for row in evaluated])
+    except Exception as exc:
+        logger.debug("gui angle list skipped: %s", exc)
     shown = [round(float(s), 2) for _, s, *_ in evaluated]
     display_tied = len(evaluated) > 1 and len(set(shown)) == 1
     raw_values = [raw.get(v) for v, *_ in evaluated]
     raw_known = all(r is not None for r in raw_values)
+    angle_values = [angle.get(v) for v, *_ in evaluated]
+    known_angles = {k: float(v) for k, v in angle.items() if v is not None}
+    angle_breaks_it = all(a is not None for a in angle_values) and score_spread(known_angles) > 0
 
     subsection("Scored angles (Enter = best)", print_fn)
     print_fn("  (YouTube title is generated after key facts + script — not here.)")
+    own = (own_idea or "").strip()
+    if own:
+        print_fn(f"    0. {own}  (your idea — type 0 to keep it)")
     if display_tied:
         if raw_known and len({round(float(r), 2) for r in raw_values}) > 1:  # type: ignore[arg-type]
             print_fn(
                 f"  All {len(evaluated)} angles hit the {shown[0]:.0f} ceiling — "
                 "ordered by headroom above it, not by the printed number."
+            )
+        elif angle_breaks_it:
+            # The signals are pinned across variants, so an identical composite is
+            # the norm, not a hot-topic edge case. Say which number actually ranked.
+            print_fn(
+                f"  All {len(evaluated)} angles scored {shown[0]:.1f} — the trend "
+                "signals are identical across angles. Ordered by editorial score "
+                "(distinctness, seed fidelity, specificity), shown in brackets."
             )
         else:
             print_fn(
@@ -630,7 +719,10 @@ def display_variants(
             hits = [t for t in feature_tags(variant) if t in winning]
             if hits:
                 hint = paint(f"  ▲ {hits[0]}", "\033[32m")
-        print_fn(f"{marker} {i}. {score_badge(score)} {variant}{hint}")
+        editorial = ""
+        if angle_breaks_it and variant in angle:
+            editorial = paint(f"  [ed {angle[variant]:.2f}]", "\033[90m")
+        print_fn(f"{marker} {i}. {score_badge(score)} {variant}{editorial}{hint}")
     return best_i
 
 
@@ -638,7 +730,7 @@ def display_fact_preview(
     signal_facts: str,
     research_brief=None,
     *,
-    print_fn=print,
+    print_fn=emit,
 ) -> bool:
     """
     Show a compact summary of the facts that went into the script.
@@ -694,7 +786,7 @@ def display_fact_preview(
     # Show verified facts first (what the LLM actually used as source-of-truth)
     if verified_lines:
         for line in verified_lines[:8]:
-            short = line[:100] + ("…" if len(line) > 100 else "")
+            short = _elide(line, fact_display_width())
             print_fn(f"  {short}")
     else:
         print_fn("  (no verified game/news data — script based on topic angle only)")
@@ -710,12 +802,29 @@ def display_fact_preview(
         if ev:
             print_fn("  Brief evidence:")
             for e in ev:
-                print_fn(f"    · {e[:100]}")
+                print_fn(f"    · {_elide(e, fact_display_width())}")
 
     return is_thin
 
 
-def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
+def _elide(text: str, width: int) -> str:
+    """Shorten for display, saying so. Never severs a word, never silent.
+
+    Run 74 printed link facts as `{ex[:90]}` with no ellipsis, so the operator had
+    no way to tell a shortened *line on screen* from a shortened *fact in the
+    prompt* — and at the time both were happening. Facts are no longer cut
+    (`split_at_sentences`); this makes the display honest about the difference.
+    """
+    body = (text or "").strip()
+    if len(body) <= width:
+        return body
+    head = body[: max(1, width - 1)]
+    if " " in head and not body[width - 1 : width].isspace():
+        head = head.rsplit(" ", 1)[0]
+    return f"{head.rstrip()}… (+{len(body) - len(head.rstrip())} chars)"
+
+
+def display_signal_breakdown(signals: dict[str, Any], *, print_fn=emit):
     subsection("Signal breakdown (selected variant)", print_fn)
     print_fn("  (Used in composite = connected + active + score > 0)")
     for name in SIGNAL_ORDER:
@@ -723,7 +832,10 @@ def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
             continue
         sig = signals[name]
         score = sig.get("score", 0)
-        if sig.get("connected") and sig.get("active") and score > 0:
+        if sig.get("stale"):
+            detail = sig.get("status_detail") or "STALE cache"
+            print_fn(f"  {name.capitalize()}: — ({detail})")
+        elif sig.get("connected") and sig.get("active") and score > 0:
             print_fn(f"  {name.capitalize()}: {score}")
         else:
             detail = sig.get("status_detail") or sig.get("status", "inactive")
@@ -736,14 +848,79 @@ def display_signal_breakdown(signals: dict[str, Any], *, print_fn=print):
             print_fn(f"  {name.capitalize()}: {score}")
 
 
+def _provenance_records(
+    collected: list[str],
+    *,
+    manual_facts: list[str],
+    link_provenance: list[tuple[str, str, Any]],
+    vault_records: list[tuple[str, Any]],
+) -> list[Any]:
+    """Attach tier / source / date to the deduped fact pool, for ranking.
+
+    Intake flattens three very different things into one list of strings: lines the
+    operator typed (the highest ground truth there is), lines a scraped page gave
+    up, and lines borrowed from the vault. Ranking them without that distinction
+    would let a scorer demote what the operator typed by hand, so the distinction
+    is rebuilt here — keyed on `dedupe_key`, the same identity `dedupe_facts` used
+    to collapse them.
+    """
+    from datetime import date
+
+    from core.fact_store import TIER_LINK, TIER_OPERATOR, TIER_VAULT, FactRecord
+    from core.operator_facts import dedupe_key
+
+    today = date.today()
+    tiers: dict[str, str] = {}
+    dates: dict[str, Any] = {}
+    urls: dict[str, str] = {}
+    for claim in manual_facts:
+        tiers.setdefault(dedupe_key(claim), TIER_OPERATOR)
+        dates.setdefault(dedupe_key(claim), today)
+    for claim, url, published in link_provenance:
+        key = dedupe_key(claim)
+        tiers.setdefault(key, TIER_LINK)
+        urls.setdefault(key, url)
+        if published is not None:
+            dates.setdefault(key, published)
+    for stamped, record in vault_records:
+        key = dedupe_key(stamped)
+        tiers.setdefault(key, getattr(record, "tier", TIER_VAULT) or TIER_VAULT)
+        verified = getattr(record, "verified_at", None)
+        if verified is not None:
+            dates.setdefault(key, verified)
+        source = getattr(record, "source_url", "") or ""
+        if source:
+            urls.setdefault(key, source)
+
+    out: list[Any] = []
+    for claim in collected:
+        key = dedupe_key(claim)
+        out.append(
+            FactRecord(
+                claim=claim,
+                tier=tiers.get(key, TIER_LINK),
+                source_url=urls.get(key, ""),
+                verified_at=dates.get(key),
+            )
+        )
+    return out
+
+
 @dataclass
 class KeyFactSelection:
-    """Facts plus the evidence needed to audit and publish their provenance."""
+    """Facts plus the evidence needed to audit and publish their provenance.
+
+    `facts` is what rides in the prompt — already ranked and budget-fitted (run 74).
+    `records` is everything collected, with provenance, and `held_back` says which
+    of them lost and why. The vault gets `records`, never just `facts`.
+    """
 
     facts: list[str]
     source_urls: list[str]
     relevance_corpus: str
     vault_audit: list[dict[str, Any]]
+    records: list[Any] = field(default_factory=list)
+    held_back: list[Any] = field(default_factory=list)
 
 
 def prompt_key_facts_result(
@@ -751,8 +928,8 @@ def prompt_key_facts_result(
     channel_id: str = "default",
     *,
     signals: dict[str, Any] | None = None,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> KeyFactSelection:
     """Collect operator facts and return their vault-relevance audit.
 
@@ -775,39 +952,53 @@ def prompt_key_facts_result(
     link_facts: list[str] = []
 
     print_fn("")
-    print_fn("  Add facts — paste a URL, one line, or type `paste` + Enter for a multi-line block.")
-    print_fn("  (Trade trackers paste well as a block. Empty line when done.)")
+    print_fn("  Add facts — paste a URL, one line, or type paste + Enter for a multi-line block.")
+    print_fn("  (Trade trackers paste well as a block. Two blank lines when done with a paste.)")
+    from core.console_input import input_pending, read_pending_lines
     from core.content_engine import key_facts_for_prompt
+    from core.fact_selection import select_facts_for_prompt
     from core.link_facts import (
         extract_facts_from_url,
         is_title_only,
         link_fetch_issue,
         looks_like_url,
     )
+    from core.link_facts import last_extract_report as link_extract_report
     from core.operator_facts import (
         capture_facts_to_vault,
         dedupe_facts,
+        is_article_chrome,
+        is_paste_command,
+        max_operator_key_facts,
         operator_key_fact_char_budget,
         parse_pasted_block,
+        paste_command_rest,
+        read_multiline_paste,
     )
 
     pasted_sources: list[dict[str, str]] = []
+    # (claim, source url, page publication date) for every line a link produced —
+    # the recency signal the selector weights most heavily.
+    link_provenance: list[tuple[str, str, Any]] = []
     while True:
         fact = input_fn(
             f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1} "
-            f"(or `paste`, empty when done): "
+            f"(or paste, empty when done): "
         ).strip()
         if not fact:
+            # Run 74: a blank line in the middle of a paste is a paragraph break, not
+            # the operator pressing Enter. Ending here dropped ~40 paragraphs of the
+            # article and left them buffered to answer the prompts that followed.
+            # `read_multiline_paste` has always known this; this prompt did not.
+            if input_pending():
+                continue
             break
-        if fact.lower() == "paste":
-            print_fn("  >> Paste your block below (blank line when finished):")
-            block_lines: list[str] = []
-            while True:
-                line = input_fn("    ").strip()
-                if not line:
-                    break
-                block_lines.append(line)
-            parsed = parse_pasted_block("\n".join(block_lines))
+        if is_paste_command(fact) or paste_command_rest(fact):
+            print_fn("  >> Paste your block below ('.' / END / two blank lines when finished):")
+            glued = paste_command_rest(fact)
+            parsed = parse_pasted_block(
+                (glued + "\n" if glued else "") + read_multiline_paste(input_fn)
+            )
             if parsed:
                 print_fn(f"    Parsed {len(parsed)} fact line(s) from block.")
                 manual_facts.extend(parsed)
@@ -819,24 +1010,55 @@ def prompt_key_facts_result(
             extracted = extract_facts_from_url(fact)
             if extracted:
                 for ex in extracted:
-                    print_fn(f"    + {ex[:90]}")
+                    print_fn(f"    + {_elide(ex, fact_display_width())}")
+                report = link_extract_report()
+                found = int(report.get("found") or 0)
+                kept = int(report.get("kept") or 0)
+                if found > kept:
+                    print_fn(
+                        f"    ({kept} of {found} line(s) kept — "
+                        "raise the page cap if you need the rest)"
+                    )
                 if is_title_only(extracted):
                     print_fn(
                         "    ⚠ Only got the headline — no article body scraped (JS-heavy page?). "
                         "Paste the article text as facts, or set LINK_READER_PROXY=1 to try a proxy."
                     )
                 link_facts.extend(extracted)
+                published = report.get("published")
+                link_provenance.extend((line, fact, published) for line in extracted)
                 pasted_sources.append({"url": fact, "title": extracted[0]})
             else:
                 issue = link_fetch_issue(fact)
                 msg = issue or "Could not extract facts from that link."
                 print_fn(f"    {msg}")
-                print_fn("    Tip: type `paste` and paste the article text as a block instead.")
+                print_fn("    Tip: type paste and paste the article text as a block instead.")
             continue
         if "\n" in fact:
             manual_facts.extend(parse_pasted_block(fact))
+        elif is_article_chrome(fact):
+            print_fn("    Skipped page chrome (Share / timestamps / paste verb).")
         else:
             manual_facts.append(fact)
+
+    # Anything still buffered was pasted, not chosen — offer it back rather than let
+    # it drift downstream and auto-answer `Proceed?` (which is how run 74 ended).
+    leftover = read_pending_lines()
+    if leftover:
+        recovered = parse_pasted_block("\n".join(leftover))
+        if recovered:
+            print_fn(
+                f"  {len(leftover)} more pasted line(s) arrived after the blank line "
+                f"— {len(recovered)} of them look like facts."
+            )
+            answer = input_fn("  Add them as facts? [Y/n]: ").strip().lower()
+            if answer in ("", "y", "yes"):
+                manual_facts.extend(recovered)
+                print_fn(f"    + added {len(recovered)} fact(s) from the paste.")
+            else:
+                print_fn("    Dropped — they will not answer any later prompt.")
+        else:
+            print_fn(f"  Discarded {len(leftover)} buffered line(s) of pasted text.")
 
     # Authoritative vault scan. The scorer sees signal evidence plus facts the
     # operator/link fetch supplied, never the candidate fact itself.
@@ -911,7 +1133,7 @@ def prompt_key_facts_result(
             if reasons:
                 suffix += "; " + ", ".join(reasons)
             suffix += "]"
-        return f"    {index}. {record.claim[:120]}{suffix}"
+        return f"    {index}. {_elide(record.claim, 120)}{suffix}"
 
     if vault_error is not None:
         print_fn("")
@@ -992,7 +1214,9 @@ def prompt_key_facts_result(
                 for record in records
             }
         )
-    vault_accepted.extend(record.claim for record in selected_records)
+    from core.fact_store import stamp_as_of
+
+    vault_accepted.extend(stamp_as_of(record) for record in selected_records)
 
     if pasted_sources:
         try:
@@ -1004,7 +1228,26 @@ def prompt_key_facts_result(
         except Exception as exc:
             logger.debug("capture_sources skipped: %s", exc)
 
-    key_facts = dedupe_facts(manual_facts + link_facts + vault_accepted)
+    collected = dedupe_facts(manual_facts + link_facts + vault_accepted)
+
+    # Run 74: choose which facts ride in the prompt, rather than taking the first N
+    # in insertion order. This happens here because this is the only place that
+    # knows the provenance — who typed what, which page a line came from and when
+    # that page was published. Downstream sees the chosen set, so the script
+    # prompt, the regeneration loop and the grounding display never disagree.
+    fact_records = _provenance_records(
+        collected,
+        manual_facts=manual_facts,
+        link_provenance=link_provenance,
+        vault_records=list(zip(vault_accepted, selected_records, strict=False)),
+    )
+    key_facts, held_back = select_facts_for_prompt(
+        fact_records,
+        topic=topic,
+        corpus=relevance_corpus,
+        budget=operator_key_fact_char_budget(),
+        line_cap=max_operator_key_facts(),
+    )
 
     # Persist only facts that are NEW to the vault. Re-saving `vault_accepted` would
     # copy borrowed facts into a note titled with THIS topic, permanently stamping
@@ -1014,22 +1257,47 @@ def prompt_key_facts_result(
     new_facts = dedupe_facts(manual_facts + link_facts)
 
     if new_facts:
+        try:
+            from core.fact_intake import lint_fact_intake
+
+            vault_claims = [str(getattr(r, "claim", "") or "") for r in records]
+            for warn in lint_fact_intake(new_facts, vault_claims=vault_claims):
+                print_fn(f"  intake: {warn}")
+        except Exception as exc:
+            logger.debug("fact intake lint skipped: %s", exc)
         saved_path = capture_facts_to_vault(channel_id, topic, new_facts)
         if saved_path:
             print_fn(f"  Saved all {len(new_facts)} fact(s) to vault (full set, no cap).")
 
     if key_facts:
+        from core.operator_facts import last_fact_budget_report
+
         sent = key_facts_for_prompt(key_facts)
         budget = operator_key_fact_char_budget()
+        report = last_fact_budget_report()
+        # Both limits, always — the operator read "18 packed" as a hard 18-fact cap
+        # because only the char side of the budget was ever shown.
         print_fn(
-            f"  {len(key_facts)} fact(s) collected; {len(sent)} packed for the LLM "
-            f"({sum(len(s) for s in sent)} / {budget} chars)."
+            f"  {len(collected)} fact(s) collected; {len(sent)} packed for the LLM "
+            f"({len(sent)}/{max_operator_key_facts()} lines · "
+            f"{sum(len(s) for s in sent)}/{budget} chars)."
         )
-        if len(sent) < len(key_facts):
-            skipped = len(key_facts) - len(sent)
+        if held_back:
+            scaffolding = sum(1 for drop in held_back if "scaffolding" in drop.reason)
+            parts = []
+            if scaffolding:
+                parts.append(f"{scaffolding} article scaffolding")
+            if len(held_back) - scaffolding:
+                parts.append(f"{len(held_back) - scaffolding} lower-ranked than the budget held")
+            print_fn(f"  {len(held_back)} held back — {' · '.join(parts)}. All saved to the vault.")
+            for drop in held_back[:3]:
+                print_fn(f"    · {_elide(drop.claim, 72)}")
+            if len(held_back) > 3:
+                print_fn(f"    · …and {len(held_back) - 3} more")
+        if report.get("dropped"):
             print_fn(
-                f"  Note: {skipped} fact(s) stored in vault but omitted from prompt "
-                f"(char budget — raise OPERATOR_KEY_FACT_CHAR_BUDGET if needed)."
+                f"  Note: {report['dropped']} fact(s) stored in vault but omitted "
+                f"from the prompt — {report.get('reason') or 'budget reached'}."
             )
     selected_claims = {record.claim for record in selected_records}
     vault_audit: list[dict[str, Any]] = []
@@ -1085,6 +1353,8 @@ def prompt_key_facts_result(
         source_urls=source_urls,
         relevance_corpus=relevance_corpus,
         vault_audit=vault_audit,
+        records=fact_records,
+        held_back=held_back,
     )
 
 
@@ -1093,8 +1363,8 @@ def prompt_key_facts(
     channel_id: str = "default",
     *,
     signals: dict[str, Any] | None = None,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> list[str]:
     """Backward-compatible list-only wrapper around the audited operator flow."""
     return prompt_key_facts_result(
@@ -1110,7 +1380,7 @@ def display_grounding_report(
     ungrounded: list[str],
     *,
     key_facts: list[str] | None = None,
-    print_fn=print,
+    print_fn=emit,
 ) -> bool:
     """Show post-generation grounding warnings. Returns True when review is needed."""
     from core.content_engine import key_facts_for_prompt
@@ -1122,8 +1392,7 @@ def display_grounding_report(
         if sent:
             print_fn(f"  Operator key facts sent to LLM ({len(sent)}):")
             for i, fact in enumerate(sent, 1):
-                short = fact[:90] + ("…" if len(fact) > 90 else "")
-                print_fn(f"    {i}. {short}")
+                print_fn(f"    {i}. {_elide(fact, fact_display_width())}")
         return False
 
     print_fn(
@@ -1142,8 +1411,7 @@ def display_grounding_report(
     if sent:
         print_fn(f"  Key facts that reached the LLM ({len(sent)}):")
         for i, fact in enumerate(sent, 1):
-            short = fact[:90] + ("…" if len(fact) > 90 else "")
-            print_fn(f"    {i}. {short}")
+            print_fn(f"    {i}. {_elide(fact, fact_display_width())}")
     return True
 
 
@@ -1164,7 +1432,7 @@ def format_vault_scan_line(*, confident: int, uncertain: int) -> str:
     )
 
 
-def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
+def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
     """Pillar 3 surface — pre-script conflicts, grounding-tier lint, claim verifier.
 
     Reads the features the pipeline persisted for this run. Returns True when
@@ -1180,6 +1448,11 @@ def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
         dropped=int(features.get("fact_conflicts_dropped") or 0),
         print_fn=print_fn,
     )
+    if features.get("disputed"):
+        print_fn("\n  DISPUTED — operator facts won; these source claims lost:")
+        for claim in (features.get("disputed_claims") or [])[:6]:
+            print_fn(f"    - {claim}")
+        needs_review = True
 
     tier_warnings = features.get("tier_warnings") or []
     if tier_warnings:
@@ -1197,12 +1470,71 @@ def display_fact_engine_report(features: dict, *, print_fn=print) -> bool:
         print_fn("    The title is the first thing viewers read — fix it before publishing.")
         needs_review = True
 
+    # #549 — persisted on the package; without a reader here a wrong-actor title
+    # looked clean at Proceed?. unavailable is printed, never treated as a pass.
+    title_script = features.get("title_script_check")
+    if isinstance(title_script, dict):
+        tsc_status = str(title_script.get("status") or "")
+        tsc_warnings = title_script.get("warnings") or []
+        if tsc_status == "failed":
+            print_fn(f"\n  ⚠ Title vs script ({len(tsc_warnings)}):")
+            for warning in tsc_warnings[:4]:
+                print_fn(f"    · {warning}")
+            print_fn("    The title assigns the action differently from the script.")
+            needs_review = True
+        elif tsc_status == "unavailable":
+            print_fn("\n  ⚠ Title vs script: unavailable (check did not run)")
+            needs_review = True
+
+    # Run 74: these fired and only ever reached the log, so a phrase banned by the
+    # script prompt *and* by the linter still graded A. Style, not fact — shown
+    # before `Proceed?`, but it does not raise the fact-review flag.
+    persona_hits = features.get("persona_lint") or []
+    if persona_hits:
+        print_fn(f"\n  ⚠ Style ({len(persona_hits)}): banned filler in the script")
+        for hit in persona_hits[:4]:
+            print_fn(f"    · {hit}")
+        print_fn("    Regenerate (+/- at Proceed) or edit before publishing.")
+
+    cta = features.get("cta_summary") or {}
+    if isinstance(cta, dict) and cta.get("stripped"):
+        pre = int(cta.get("pre_paragraphs") or 0)
+        post = int(cta.get("post_paragraphs") or 0)
+        print_fn(
+            f"\n  Pre-CTA recap stripped ({pre} -> {post} paragraphs). "
+            "The published script is the shorter one."
+        )
+
+    rhythm = features.get("sentence_rhythm") or []
+    if rhythm:
+        print_fn(f"\n  ⚠ Sentence rhythm: {rhythm[0]}")
+        print_fn("    Uniform sentence length is an LLM tell — regenerate before publishing.")
+
     if display_claim_verification(features.get("claim_verification"), print_fn=print_fn):
         needs_review = True
+
+    # #572: features['cost'] at this prompt is rendered=False, so TTS is $0
+    # in the persisted dict. The projected line is what generate_audio will add.
+    projected = features.get("projected_cost")
+    if isinstance(projected, dict) and projected:
+        try:
+            from core.cost_meter import format_cost_line
+
+            line = format_cost_line(projected)
+        except Exception:
+            line = ""
+        if line:
+            print_fn(f"\n  Projected cost if you proceed: {line}")
+        elif projected.get("tts") is not None:
+            print_fn(
+                f"\n  Projected cost if you proceed: "
+                f"tts ${float(projected.get('tts') or 0):.2f} "
+                f"(total ${float(projected.get('total') or 0):.2f})"
+            )
     return needs_review
 
 
-def prompt_channel_selection(*, print_fn=print, input_fn=input) -> str:
+def prompt_channel_selection(*, print_fn=emit, input_fn=ask_text) -> str:
     """Interactive channel picker; returns resolved channel_id."""
     profiles = get_channel_profiles()
     ids = list_channel_ids()
@@ -1238,7 +1570,7 @@ class UploadPlan:
     youtube_publish_at: datetime | None = None
 
 
-def display_upload_queue(channel_id: str | None = None, *, print_fn=print) -> None:
+def display_upload_queue(channel_id: str | None = None, *, print_fn=emit) -> None:
     """Show upcoming YouTube publish slots already reserved for this channel."""
     from analytics.post_timing import format_scheduled_local
     from analytics.upload_queue import list_queue_entries
@@ -1265,7 +1597,7 @@ def display_upload_queue(channel_id: str | None = None, *, print_fn=print) -> No
     )
 
 
-def prompt_startup_mode(*, print_fn=print, input_fn=input) -> str:
+def prompt_startup_mode(*, print_fn=emit, input_fn=ask_text) -> str:
     """new_video | queue_manager | intelligence_report | sync_analytics | idea_intake"""
     from core.intelligence_report import intelligence_mode_enabled
 
@@ -1290,7 +1622,7 @@ def prompt_startup_mode(*, print_fn=print, input_fn=input) -> str:
     return "new_video"
 
 
-def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
+def prompt_cost_mode(*, print_fn=emit, input_fn=ask_text) -> str:
     """standard | free — pick the run's cost mode. Honors RUN_COST_MODE headless.
 
     Free ($0) pins TTS/LLM/signals to their zero-cost backends and, in strict mode,
@@ -1307,7 +1639,18 @@ def prompt_cost_mode(*, print_fn=print, input_fn=input) -> str:
 
     # Non-interactive override: RUN_COST_MODE=free skips the prompt.
     if resolve_cost_mode() == COST_MODE_FREE:
-        print_fn("  Cost mode: Free ($0) [RUN_COST_MODE=free]")
+        why = (
+            "PAID_CALLS=off"
+            if os.getenv("PAID_CALLS", "").strip().lower()
+            in (
+                "0",
+                "off",
+                "false",
+                "no",
+            )
+            else "RUN_COST_MODE=free"
+        )
+        print_fn(f"  Cost mode: Free ($0) [{why}]")
         return COST_MODE_FREE
 
     subsection("Cost mode", print_fn)
@@ -1334,35 +1677,51 @@ def _looks_pasted(raw: str) -> bool:
     return len(text.split()) > 1
 
 
+# Run 74: three asks, not two. `by` — Engadget's byline label, left in the console
+# buffer by a paste at the Fact prompt — is two characters and one word, so the
+# run-71 prose detector never saw it, and the run was discarded without a word.
+_PROCEED_MAX_ASKS = 3
+
+
 def prompt_proceed_or_length(
     current_choice: str,
     *,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> tuple[str, str]:
     """Post-generation gate: render, regenerate at a different length, or stop.
 
     Returns one of:
       ("render", current_choice)  -- y: proceed to render
       ("relength", new_choice)    -- +/-/1-4: regenerate at a new length target
-      ("stop", current_choice)    -- n / empty / an unrecognised answer twice
+      ("stop", current_choice)    -- n / empty / three unrecognised answers
 
     "+"/"-" nudge the current preset one step (core.script_length.nudge_length); a 1-4
     entry jumps to that preset. Regeneration is a fresh generate at the new target, so
     grounding + authenticity are re-checked — it is not an in-place trim.
 
-    Candidate 325: this used to stop on *anything* that was not a menu key, so the
-    pasted article paragraph that ended live-run 71 discarded 30.6 minutes of work
-    (25.6 of them at prompts) without a word. The trap is structural — the key-facts
-    loop immediately above accepts pasted blocks, so the habit carries straight into a
-    prompt where a paste means "throw it away". Declining is still instant: `n` / `N` /
-    Enter stop on the first answer. Only input that is obviously not a menu key gets a
-    second chance.
+    **Only an explicit decline stops.** `n` / `N` / `no` / Enter still resolve on the
+    first answer, exactly as they always have. Everything else re-prompts. Candidate
+    325 gave that second chance to *obvious prose* only, which run 74 proved too
+    narrow: the leftover line that landed here was the single word `by`, and losing a
+    run to a two-character token is never what the operator meant. A misplaced
+    keystroke costs one Enter; the old rule cost the whole script.
+
+    Buffered input is drained first (core.console_input) so a paste physically cannot
+    answer this gate — the re-prompt is the second line of defence, not the first.
     """
+    from core.console_input import read_pending_lines
     from core.script_length import nudge_length
 
+    stale = read_pending_lines()
+    if stale:
+        print_fn(
+            f"  Ignored {len(stale)} buffered line(s) left over from a paste — "
+            "they cannot answer this."
+        )
+
     prompt = "  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: "
-    for attempt in range(2):
+    for attempt in range(_PROCEED_MAX_ASKS):
         raw = input_fn(prompt).strip().lower()
         if raw == "y":
             return ("render", current_choice)
@@ -1375,17 +1734,19 @@ def prompt_proceed_or_length(
         # An explicit decline, or an empty line, stops immediately as it always has.
         if raw in ("", "n", "no"):
             return ("stop", current_choice)
-        if attempt == 0 and _looks_pasted(raw):
+        if attempt == _PROCEED_MAX_ASKS - 1:
+            break
+        if _looks_pasted(raw):
             print_fn(
                 f"  That looks like pasted text ({len(raw)} chars), not a menu choice — "
                 "the script is still here."
             )
-            print_fn(
-                "  y = render · N = stop · +/- or 1-4 = different length. "
-                "(Article text belongs at the Fact prompt, via `paste`.)"
-            )
-            continue
-        return ("stop", current_choice)
+        else:
+            print_fn(f"  '{raw}' isn't one of the options — the script is still here.")
+        print_fn(
+            "  y = render · N = stop · +/- or 1-4 = different length. "
+            "(Article text belongs at the Fact prompt, via `paste`.)"
+        )
     return ("stop", current_choice)
 
 
@@ -1393,8 +1754,8 @@ def _prompt_timing_and_privacy(
     channel_id: str,
     title: str,
     *,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ):
     """Shared 'when + privacy' sub-prompt for the queue manager.
 
@@ -1429,7 +1790,7 @@ def _prompt_timing_and_privacy(
     return datetime.now(timezone.utc), publish_at, privacy
 
 
-def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn=input) -> None:
+def _recover_rendered_upload(channel_id, recyclable, *, print_fn=emit, input_fn=ask_text) -> None:
     """Queue an upload for a rendered-but-never-uploaded run (folds in requeue_upload)."""
     import json
 
@@ -1486,7 +1847,7 @@ def _recover_rendered_upload(channel_id, recyclable, *, print_fn=print, input_fn
     print_fn(f"  File: {mp4}")
 
 
-def _requeue_deleted(channel_id, candidates, *, print_fn=print, input_fn=input) -> None:
+def _requeue_deleted(channel_id, candidates, *, print_fn=emit, input_fn=ask_text) -> None:
     """Re-queue a run whose prior upload/schedule was deleted on YouTube."""
     from datetime import datetime, timezone
 
@@ -1557,8 +1918,8 @@ def _requeue_deleted(channel_id, candidates, *, print_fn=print, input_fn=input) 
 def run_queue_manager_interactive(
     channel_id: str,
     *,
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
 ) -> None:
     """Recover a rendered-but-unuploaded video, or re-queue one deleted on YouTube."""
     from analytics.queue_manager import list_requeue_candidates
@@ -1600,10 +1961,15 @@ def prompt_upload_plan(
     *,
     channel_id: str | None = None,
     topic: str = "",
-    print_fn=print,
-    input_fn=input,
+    print_fn=emit,
+    input_fn=ask_text,
+    grounding_override: bool = False,
 ) -> UploadPlan:
-    """Interactive upload timing and privacy (no CLI flags)."""
+    """Interactive upload timing and privacy (no CLI flags).
+
+    `grounding_override` (#754): the operator rendered past the grounding gate, so public
+    is not on the menu - the upload stays unlisted until the claim is fixed.
+    """
     from analytics.post_timing import (
         format_scheduled_local,
         next_optimal_post_time,
@@ -1639,10 +2005,23 @@ def prompt_upload_plan(
         "1",
     )
     subsection("Privacy", print_fn)
-    print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
-    print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
+    fallback_priv = default_priv
+    if grounding_override:
+        privacy_map = {"1": "private", "2": "unlisted", "3": "unlisted"}
+        if default_key == "3":
+            default_key = "2"
+        if fallback_priv == "public":
+            fallback_priv = "unlisted"
+        print_fn("  1) Private  2) Unlisted  (public not offered)")
+        print_fn(
+            "  You rendered past the grounding gate, so this upload stays unlisted "
+            "until the flagged claim is fixed."
+        )
+    else:
+        print_fn(f"  1) Private  2) Unlisted  3) Public  (channel default: {default_priv})")
+        print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
-    privacy_status = privacy_map.get(priv, default_priv)
+    privacy_status = privacy_map.get(priv, fallback_priv)
 
     now = datetime.now(timezone.utc)
     if timing == "2":
@@ -1701,7 +2080,7 @@ def display_summary(
     thumbnail_path: str = "",
     cost: dict[str, float] | None = None,
     script: str = "",
-    print_fn=print,
+    print_fn=emit,
 ):
     subsection("Summary", print_fn)
     if timings.get("signals_and_variants"):
@@ -1736,6 +2115,21 @@ def display_summary(
     )
     if cost_line:
         print_fn(f"  {cost_line}")
+    try:
+        from core.tts import last_tts_fallback_from, last_tts_fell_back_to_paid
+
+        if last_tts_fell_back_to_paid():
+            src = last_tts_fallback_from() or "alt TTS"
+            print_fn(f"  TTS: {src} failed — fell back to ElevenLabs")
+    except Exception as exc:
+        logger.debug("tts fallback line skipped: %s", exc)
+    if cost is not None:
+        try:
+            from core.pinned_status import set_pin_cost
+
+            set_pin_cost(float(cost.get("total") or 0.0))
+        except Exception as exc:
+            logger.debug("pin cost skipped: %s", exc)
     try:
         from core.operator_timer import format_line as operator_time_line
 

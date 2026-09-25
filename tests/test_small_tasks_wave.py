@@ -120,7 +120,11 @@ class TestReviewBoothPublicSurface(unittest.TestCase):
                 mp3_path=str(audio),
             )
             with (
-                patch.object(review_booth, "last_trace", return_value={"run_id": 9, "quality": {}}),
+                patch.object(
+                    review_booth,
+                    "last_reviewable_trace",
+                    return_value={"run_id": 9, "quality": {}},
+                ),
                 patch(
                     "core.win_shell.last_media_file",
                     side_effect=lambda kind, **_kwargs: str(video) if kind == "mp4" else None,
@@ -238,8 +242,10 @@ class TestPerChannelCaptionSkin(unittest.TestCase):
             )
         joined = " ".join(captured or ffmpeg_run.call_args.args[0])
         self.assertIn("force_style=", joined)
-        self.assertIn("PrimaryColour=&H00A9E7F7&", joined)
+        # #783: an .ass burn keeps the skin's box/outline but not its SRT-sized font or its
+        # fill (karaoke owns size and the spoken-word colour on its 1920-px canvas).
         self.assertIn("BorderStyle=3", joined)
+        self.assertNotIn("FontSize=18", joined)
 
 
 class TestDraftRenderPreset(unittest.TestCase):
@@ -257,6 +263,22 @@ class TestDraftRenderPreset(unittest.TestCase):
         self.assertIn("-preset ultrafast", draft)
         self.assertIn("scale=1080:1920", publish)
         self.assertIn("-preset fast", publish)
+
+    def test_draft_burns_safe_area_guides_publish_does_not(self):
+        """#502. Guides are for review. A publish argv that carries them ships
+        yellow boxes into YouTube.
+        """
+        base = {
+            "background_path": "bg.mp4",
+            "mp3_path": "voice.mp3",
+            "output_path": "out.mp4",
+            "subtitle_path": "subs.srt",
+            "duration": 10,
+        }
+        draft = " ".join(build_render_ffmpeg_command(**base, render_preset="draft"))
+        publish = " ".join(build_render_ffmpeg_command(**base))
+        self.assertIn("drawbox", draft)
+        self.assertNotIn("drawbox", publish)
 
     def test_real_preview_operator_command_is_registered(self):
         self.assertIn("render-preview", ops.COMMANDS)

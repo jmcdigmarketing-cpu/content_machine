@@ -130,6 +130,84 @@ class TestPlaybook(VaultCase):
             self.assertEqual(of.playbook_block("tapin"), "")
 
 
+# The operator's real `tapin/playbook.md` in section order: two "Narratives that
+# work" sections carrying 12 bullets, and only then the hook and discipline rules.
+# `limit=8` in file order therefore reached the prompt as 8/8 narrative heuristics
+# and cut 100% of the file's own anti-hallucination rules — the strongest framing
+# input in the system was one family of guidance the operator never ranked first.
+_REAL_SHAPED_PLAYBOOK = (
+    "---\nchannel: tapin\ntags: [facts, evergreen]\n---\n"
+    "# TapIn — Channel Playbook\n\n"
+    "## Narratives that work (UFC/sports)\n"
+    '- "Fraud" / overrated-callout narratives outperform straight recaps\n'
+    "- Rankings and tier-list framings outperform highlight reactions\n"
+    "- Prediction/analysis angles age better than just-happened news framing\n"
+    "- Snubbed / disrespected angles drive comments\n"
+    "- Rivalry and beef framing beats neutral previews\n"
+    "- Implication hooks invite debate\n"
+    "- Underdog/upset stories travel further than favorite-wins stories\n\n"
+    "## Narratives that work (gaming)\n"
+    '- "Is X dead?" / decline takes drive defensive engagement\n'
+    "- Reveal reactions and biggest-reveals-ranked outperform straight news\n"
+    "- Meta debates drive comments but only with verified specifics\n"
+    "- Nostalgia/legacy framing on returning franchises lands well\n"
+    "- Community-sentiment angles are safe when specifics are thin\n\n"
+    "## Hook rules (first line under 12 words)\n"
+    "- Open with a specific fact, number, or contradiction\n\n"
+    "## Hard rules (anti-hallucination)\n"
+    "- Never invent a fight result, record, event date, patch number, hero, or season\n"
+    "- Prefer reports-suggest over stating an unverified specific as fact\n"
+    "- Competitor video titles show what is trending, NOT what is true\n"
+)
+
+
+class TestPlaybookDoesNotTruncateAwayTheDisciplineRules(VaultCase):
+    """Selection was file/bullet order with an early return, so a note whose
+    narrative sections come first spent the whole budget before reaching the
+    rules that keep the script honest."""
+
+    def test_the_block_carries_more_than_one_family_of_guidance(self):
+        self._write("tapin/playbook.md", _REAL_SHAPED_PLAYBOOK)
+        block = of.playbook_block("tapin", limit=8)
+
+        self.assertIn("CHANNEL PLAYBOOK", block)
+        self.assertIn(
+            "Never invent a fight result",
+            block,
+            "the anti-hallucination rules never reach the prompt",
+        )
+
+    def test_narrative_guidance_still_survives(self):
+        """The fix must rebalance the block, not invert it."""
+        self._write("tapin/playbook.md", _REAL_SHAPED_PLAYBOOK)
+        block = of.playbook_block("tapin", limit=8)
+        self.assertIn("outperform", block)
+
+    def test_a_single_section_note_is_unaffected(self):
+        """No sections to balance across — behaviour must be the old one."""
+        self._write(
+            "tapin/playbook.md",
+            "---\nchannel: tapin\ntags: [strategy]\n---\n# P\n"
+            + "".join(f"- Strategy rule {i} outperforms the alternative\n" for i in range(12)),
+        )
+        self.assertEqual(len(of.load_playbook("tapin", limit=5)), 5)
+
+    def test_the_char_budget_skips_an_overlong_bullet_instead_of_stopping(self):
+        """`playbook_block` used `break`, so one long bullet ended the block and
+        everything after it was lost — the same silent-drop defect run 74 found in
+        the fact path."""
+        self._write(
+            "tapin/playbook.md",
+            "---\nchannel: tapin\ntags: [strategy]\n---\n# P\n"
+            "- Short rule that outperforms\n"
+            f"- {'x' * 400} narratives\n"
+            "- Never invent a fight result or record\n",
+        )
+        block = of.playbook_block("tapin", limit=8, char_budget=200)
+        self.assertIn("Short rule", block)
+        self.assertIn("Never invent", block, "a long bullet ended the block early")
+
+
 def _run_record(run_id=5, channel="tapin"):
     r = MagicMock()
     r.id = run_id

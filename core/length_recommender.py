@@ -20,7 +20,7 @@ from config.channels import resolve_channel_id
 from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
-from core.recommender_confidence import confidence_note
+from core.recommender_confidence import confidence_note, interval_note
 from core.script_length import PRESETS, get_length_preset
 
 logger = get_logger("core.length_recommender")
@@ -45,6 +45,7 @@ class LengthRecommendation:
     avg_engaged_rate: float  # 0.0 when no analytics
     supporting_runs: int
     rationale: str
+    channel_id: str = ""
 
 
 def _length_choice_from_run(timings_json: str) -> str | None:
@@ -124,8 +125,10 @@ def get_recommended_length(
             rationale=(
                 f"{preset.label} ({preset.duration_hint()}) averages {avg:.1%} "
                 f"engagement across {len(best_rates)} video(s)"
+                f"{interval_note(best_rates)}"
                 f"{confidence_note(len(best_rates))}"
             ),
+            channel_id=channel_id,
         )
 
     if channel_id == "moneywise":
@@ -141,16 +144,20 @@ def get_recommended_length(
                     f"TapIn length shape as MoneyWise cold-start prior "
                     f"(option {donor.length_choice}) — not a gaming topic copy"
                 ),
+                channel_id=channel_id,
             )
 
     choice = _DEFAULT_BY_DOMAIN.get(domain, "2")
     preset = get_length_preset(choice)
     have = len(samples)
-    need = max(0, min_total - have)
-    rationale = (
-        f"default {preset.label} for {domain} — {need} more measured video(s) "
-        f"until length learns from analytics"
-    )
+    if have == 0:
+        rationale = f"default {preset.label} for {domain} (no engagement analytics yet)"
+    else:
+        need = max(0, min_total - have)
+        rationale = (
+            f"default {preset.label} for {domain} — {need} more measured video(s) "
+            f"until length learns from analytics"
+        )
     return LengthRecommendation(
         length_choice=choice,
         label=preset.label,
@@ -158,6 +165,7 @@ def get_recommended_length(
         avg_engaged_rate=0.0,
         supporting_runs=have,
         rationale=rationale,
+        channel_id=channel_id,
     )
 
 
@@ -166,6 +174,12 @@ def display_recommended_length(rec: LengthRecommendation) -> None:
     tag = rec.source if rec.source in ("analytics", "cross_channel_prior") else "default"
     print(f"\n  Recommended length ({tag}): {rec.label} (option {rec.length_choice})")
     print(f"  Reason : {rec.rationale}")
+    if rec.channel_id:
+        from core.recommender_history import note_week_flip
+
+        flip = note_week_flip(rec.channel_id, "length", rec.length_choice)
+        if flip:
+            print(f"  Note   : {flip}")
 
 
 def main() -> int:

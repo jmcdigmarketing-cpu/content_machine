@@ -42,6 +42,21 @@ class TestSpinnerReport(unittest.TestCase):
         s.report("Scoring variants", 1, 5)
         self.assertNotIn("typ", s._current_stage(1.0))
 
+    def test_typical_hint_uses_the_median_not_the_newest_trace(self):
+        """#490. Real runs were 38s, 56s, 39s. Taking only the newest of the
+        last three made the hint thrash; the median of the measured history
+        is the number the operator can plan around.
+        """
+        traces = [
+            {"timings": {"signals_and_variants": 20.0, "variant_scoring": 20.0}},
+            {"timings": {"signals_and_variants": 40.0, "variant_scoring": 40.0}},
+            {"timings": {"signals_and_variants": 60.0, "variant_scoring": 60.0}},
+        ]
+        with patch("core.run_trace.list_traces", return_value=traces):
+            loaded = DiscoverySpinner._load_typical_timings()
+        self.assertEqual(loaded["signals_and_variants"], 40.0)
+        self.assertEqual(loaded["variant_scoring"], 40.0)
+
     def test_load_typical_timings_fail_open(self):
         with patch("core.run_trace.list_traces", side_effect=RuntimeError("no traces dir")):
             self.assertEqual(DiscoverySpinner._load_typical_timings(), {})

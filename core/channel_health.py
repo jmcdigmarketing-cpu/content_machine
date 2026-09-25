@@ -88,6 +88,7 @@ def _authenticity_sub(channel_id: str) -> HealthSub:
     import json
 
     from config.channels import resolve_channel_id
+    from core.run_quality import authenticity_gate_value
     from storage.repositories.content_runs import get_content_run_repository
 
     channel = resolve_channel_id(channel_id)
@@ -98,9 +99,11 @@ def _authenticity_sub(channel_id: str) -> HealthSub:
         except Exception as exc:
             logger.debug("Unreadable quality_json on run %s: %s", run.id, exc)
             continue
-        val = q.get("authenticity_score")
-        if isinstance(val, int | float):
-            scores.append(float(val))
+        # #815: the binary gate sum, not #804's continuous grade — the 55/72
+        # thresholds below were set when the gate sum was the only number.
+        val = authenticity_gate_value(q)
+        if val is not None:
+            scores.append(val)
     if len(scores) < 3:
         return HealthSub("authenticity", YELLOW, f"collecting ({len(scores)} scored)")
     mean = sum(scores) / len(scores)

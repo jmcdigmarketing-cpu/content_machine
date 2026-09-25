@@ -1,6 +1,6 @@
 # Master plan
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
 
 The canonical forward plan. Supersedes `content_intelligence_roadmap.md`,
 `groundwork_2026Q3.md` and `scope_feature_store_and_research_v2.md` as *the* answer to
@@ -27,6 +27,17 @@ records what happened the last time one did (`e4d2242` violated the no-AI-attrib
 rule the commit *after* the rule was written; it took `.githooks/commit-msg` to stop it).
 
 Each wave below has an **exit criterion** that is a command, not a judgement.
+
+**2026-09-25 merge note.** Main moved 73 commits past the audit base before this plan
+merged; several items landed there independently. Now done on main: the `roadmap.md`
+split (M2.1 — it is ~200 lines, history in [roadmap_archive.md](roadmap_archive.md),
+inventory in [backlog.md](backlog.md)), generated counts (`ops roadmap-index`,
+`ops command-ref`), and heavy gate/mutation work under P4's theme. Still open and
+re-verified at `730055f`: M0 (the `_ollama_probe_cache` order-dependence, untouched),
+the ruff 0.8.4 pin, the inert hook mode (fixed on this branch), and the docs sprawl
+(19 new docs arrived without cards — carded in the merge). mypy was ~139 per main's own
+planning log. [engineering_standards_backlog.md](engineering_standards_backlog.md) and
+[backlog.md](backlog.md) hold item-level detail that M3/M4 summarize.
 
 ---
 

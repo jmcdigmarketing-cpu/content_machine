@@ -143,5 +143,39 @@ class TestLocalVoicePrecedence(_CatalogCase):
                 self.assertEqual(tts.resolve_local_voice("kokoro", "tapin"), "af_bella")
 
 
+_OPERATOR_ELEVENLABS_INTAKE = (
+    "3TPKV1kjDlVtZbl4Ksh",
+    "ksryVoNAGZT8GxWCTiVm",
+    "VhxAIIZM8IRmnl5fyeyk",
+    "si0svtk05vPEuvwAW93c",
+    "fBD19tfE58bkETeiwUoC",
+    "GorLj2SsI4u2JqL58gAA",
+    "PoqlHoqJoAfdQ0g8bLK3",
+)
+
+
+class TestShippedVoicesJson(unittest.TestCase):
+    def _catalog(self) -> dict:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(root, "config", "voices.json")
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_operator_elevenlabs_ids_are_listed(self):
+        blob = json.dumps(self._catalog())
+        for vid in _OPERATOR_ELEVENLABS_INTAKE:
+            self.assertIn(vid, blob)
+
+    def test_piper_catalog_has_four_equal_weight_onnx(self):
+        piper = self._catalog().get("local", {}).get("piper") or []
+        self.assertEqual(len(piper), 4)
+        weights = {int(row.get("weight") or 1) for row in piper}
+        self.assertEqual(weights, {1})
+        for row in piper:
+            path = str(row.get("id") or "")
+            self.assertTrue(path.lower().endswith(".onnx"), path)
+            self.assertIn("video/voices/", path.replace("\\", "/"))
+
+
 if __name__ == "__main__":
     unittest.main()

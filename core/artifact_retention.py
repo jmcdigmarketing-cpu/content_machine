@@ -7,6 +7,7 @@ config/secrets/, or .env. Tests pass a temp root — not the operator's output/.
 from __future__ import annotations
 
 import os
+import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -56,6 +57,73 @@ def max_files() -> int | None:
     return val if val > 0 else None
 
 
+def retention_apply_enabled() -> bool:
+    raw = os.getenv("ARTIFACT_RETENTION_APPLY", "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def published_output_paths() -> set[str]:
+    """mp4_path of uploaded runs, resolved. Fail-open to empty (skip nothing)."""
+    paths: set[str] = set()
+    try:
+        from config.channels import list_channel_ids
+        from storage.repositories.content_runs import get_content_run_repository
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        channels = list_channel_ids()
+        runs_repo = get_content_run_repository()
+        logs_repo = get_publish_log_repository()
+        for channel_id in channels:
+            uploaded = {
+                log.content_run_id
+                for log in logs_repo.list_uploaded_for_channel(channel_id)
+                if getattr(log, "content_run_id", None)
+            }
+            if not uploaded:
+                continue
+            for run in runs_repo.list_for_channel(channel_id):
+                if run.id not in uploaded:
+                    continue
+                raw = getattr(run, "mp4_path", "") or ""
+                if not raw:
+                    continue
+                try:
+                    paths.add(str(Path(raw).resolve()))
+                except OSError:
+                    paths.add(str(raw))
+    except Exception as exc:
+        logger.debug("published output paths skipped: %s", exc)
+    return paths
+
+
+def _exempt_keys(skip: set[str]) -> set[tuple[str, str]]:
+    """``(parent, stem)`` per published output — resolved once for the whole walk.
+
+    A published run is its mp4 *plus* the sidecars beside it (.srt, .mp3, …),
+    which is why the key is the stem rather than the whole name. #816: this used
+    to be re-derived inside the per-file check, so a capped output/ paid one
+    ``resolve()`` syscall per file per skip path.
+    """
+    keys: set[tuple[str, str]] = set()
+    for raw in skip:
+        try:
+            other = Path(raw).resolve()
+        except OSError:
+            other = Path(raw)
+        keys.add((str(other.parent), other.stem))
+    return keys
+
+
+def _is_exempt(path: Path, keys: set[tuple[str, str]]) -> bool:
+    if not keys:
+        return False
+    try:
+        resolved = path.resolve()
+    except OSError:
+        resolved = path
+    return (str(resolved.parent), resolved.stem) in keys
+
+
 def _iter_files(root: Path) -> list[tuple[float, int, Path]]:
     found: list[tuple[float, int, Path]] = []
     if not root.is_dir():
@@ -78,6 +146,7 @@ def plan(
     *,
     max_bytes: int | None = None,
     file_cap: int | None = None,
+    skip_paths: list[str] | None = None,
 ) -> ArtifactPlan:
     base = Path(root) if root is not None else Path(ROOT_DIR) / "output"
     out = ArtifactPlan(root=str(base))
@@ -92,7 +161,23 @@ def plan(
     out.max_bytes = max_bytes
     out.max_files = file_cap
 
-    keep = list(files)
+    if skip_paths is None:
+        default_root = Path(ROOT_DIR) / "output"
+        try:
+            same_root = Path(out.root).resolve() == default_root.resolve()
+        except OSError:
+            same_root = False
+        skip = published_output_paths() if same_root else set()
+    else:
+        skip = set()
+        for raw in skip_paths:
+            try:
+                skip.add(str(Path(raw).resolve()))
+            except OSError:
+                skip.add(str(raw))
+
+    exempt = _exempt_keys(skip)
+    keep = [(mtime, sz, path) for mtime, sz, path in files if not _is_exempt(path, exempt)]
     if max_bytes is not None and max_bytes >= 0:
         total = out.total_bytes
         i = 0
@@ -165,6 +250,23 @@ def run(root: str | os.PathLike[str] | None = None, *, apply: bool = False) -> d
     }
 
 
+def format_retention_line(root: str | os.PathLike[str] | None = None) -> str:
+    """One overnight/reliability line. Never raises. Deletes only when apply+cap."""
+    try:
+        capped = max_gb() is not None or max_files() is not None
+        apply = retention_apply_enabled() and capped
+        if not capped:
+            return "output/ retention: dry (no cap)"
+        out = run(root, apply=apply)
+        mode = "DELETE" if apply else "dry"
+        n = len(out.get("victims") or [])
+        deleted = int(out.get("deleted") or 0)
+        return f"output/ retention: {mode}, {n} candidate(s), {deleted} deleted"
+    except Exception as exc:
+        logger.debug("retention line skipped: %s", exc)
+        return ""
+
+
 def retention_report(
     root: str | os.PathLike[str] | None = None,
     *,
@@ -207,4 +309,12 @@ def retention_report(
         lines.append(f"    {path}")
     if len(candidates) > 20:
         lines.append(f"    ... +{len(candidates) - 20} more")
+    try:
+        from core.disk_growth import project_days_until_full
+
+        output_root = base / "output" if (base / "output").is_dir() else base
+        free = shutil.disk_usage(str(output_root)).free
+        lines.append(f"  growth    : {project_days_until_full(output_root, free_bytes=free)}")
+    except Exception as exc:
+        logger.debug("disk growth skipped: %s", exc)
     return "\n".join(lines)

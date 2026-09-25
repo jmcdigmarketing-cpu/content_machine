@@ -100,5 +100,70 @@ class TestAsciiArt(unittest.TestCase):
         self.assertNotIn("\u2800", panel[tagline_idx])
 
 
+class TestDailyMascotCollapse(unittest.TestCase):
+    def test_second_startup_the_same_day_drops_the_mascot(self):
+        """#482. The ~60-line panel is for the first look of the day, not every menu."""
+        import os
+        import tempfile
+        from datetime import date
+        from pathlib import Path
+
+        mascot = ("MM", "NN")
+        left = ["LOGO"]
+        with tempfile.TemporaryDirectory() as tmp:
+            stamp = str(Path(tmp) / "shown.txt")
+            env = {
+                "CONTENT_UI_ASCII": "true",
+                "CONTENT_UI_MASCOT": "luffy",
+                "CONTENT_UI_ART": "",
+                "CONTENT_UI_MASCOT_STAMP": stamp,
+            }
+            with (
+                patch.dict(os.environ, env, clear=False),
+                patch("core.ascii_art.startup_banner_lines", return_value=left),
+                patch("core.ascii_art._theme_mascot_lines", return_value=mascot),
+                patch(
+                    "core.ascii_art.shutil.get_terminal_size",
+                    return_value=os.terminal_size((80, 24)),
+                ),
+            ):
+                first = startup_panel_lines("tapin")
+                Path(stamp).write_text(date.today().isoformat(), encoding="utf-8")
+                second = startup_panel_lines("tapin")
+            self.assertGreater(len(first), len(left))
+            self.assertEqual(second, left)
+            self.assertEqual(
+                Path(stamp).read_text(encoding="utf-8").strip(), date.today().isoformat()
+            )
+
+    def test_art_env_forces_the_mascot_back(self):
+        import os
+        import tempfile
+        from pathlib import Path
+
+        mascot = ("MM", "NN", "OO")
+        left = ["LOGO"]
+        with tempfile.TemporaryDirectory() as tmp:
+            stamp = str(Path(tmp) / "shown.txt")
+            Path(stamp).write_text("2099-01-01", encoding="utf-8")
+            env = {
+                "CONTENT_UI_ASCII": "true",
+                "CONTENT_UI_MASCOT": "luffy",
+                "CONTENT_UI_ART": "1",
+                "CONTENT_UI_MASCOT_STAMP": stamp,
+            }
+            with (
+                patch.dict(os.environ, env, clear=False),
+                patch("core.ascii_art.startup_banner_lines", return_value=left),
+                patch("core.ascii_art._theme_mascot_lines", return_value=mascot),
+                patch(
+                    "core.ascii_art.shutil.get_terminal_size",
+                    return_value=os.terminal_size((80, 24)),
+                ),
+            ):
+                panel = startup_panel_lines("tapin")
+            self.assertGreater(len(panel), len(left))
+
+
 if __name__ == "__main__":
     unittest.main()

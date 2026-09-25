@@ -233,6 +233,9 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
         lines.append(
             "  revenue: no data yet (needs monetized channel + yt-analytics-monetary scope)"
         )
+    views = sum(int(v.views or 0) for v in econ.videos)
+    if views > 0:
+        lines.append(f"  ${econ.total_cost / views * 1000.0:.2f} / 1k views")
     lines.extend(domain_margin_lines(econ))
     return lines
 

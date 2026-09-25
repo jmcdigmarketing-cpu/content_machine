@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "invented-heroes",
+      "script": "Emma Frost brings the Radiant Shore theme to the game.",
+      "facts": "VERIFIED FACTS:\n- Marvel Rivals mid-season update is coming.",
+      "expect_ungrounded": [
+        "Emma Frost",
+        "Radiant Shore"
+      ]
+    },
+    {
+      "id": "grounded-hero",
+      "script": "Emma Frost joins the roster.",
+      "facts": "VERIFIED FACTS:\n- Emma Frost is the new duelist this season.",
+      "expect_ungrounded": []
+    },
+    {
+      "id": "widow-token",
+      "script": "Black Widow is back.",
+      "facts": "Reports mention Widow returning.",
+      "expect_ungrounded": []
+    },
+    {
+      "id": "generic-title-case",
+      "script": "The Community is divided. Drop Your Thoughts in the comments.",
+      "facts": "",
+      "expect_ungrounded": [],
+      "note": "The false-positive guard: common title-case ('The Community', 'Drop Your Thoughts') must never read as an entity. A gate that starts flagging these floods every run with noise."
+    },
+    {
+      "id": "discourse-adverbs",
+      "script": "The UFC needs to overhaul its rankings. Otherwise, we keep seeing this. However, the panel disagrees.",
+      "facts": "",
+      "expect_ungrounded": []
+    },
+    {
+      "id": "salkilld-mononym",
+      "script": "Otherwise, Salkilld dominates the UFC lightweight division.",
+      "facts": "The UFC rankings updated.",
+      "expect_ungrounded": [
+        "Salkilld"
+      ]
+    },
+    {
+      "id": "invented-season",
+      "script": "Season 7 changes everything.",
+      "facts": "VERIFIED FACTS:\n- The game is popular.",
+      "expect_ungrounded": [
+        "Season 7"
+      ]
+    },
+    {
+      "id": "empty-script",
+      "script": "",
+      "facts": "facts",
+      "expect_ungrounded": []
+    },
+    {
+      "id": "lebron-ungrounded",
+      "script": "LeBron is not re-signing with the Lakers this summer.",
+      "facts": "VERIFIED FACTS:\n- Jaylen Brown was traded to the 76ers.",
+      "expect_ungrounded": [
+        "LeBron",
+        "Lakers"
+      ]
+    },
+    {
+      "id": "lebron-grounded",
+      "script": "LeBron is leaving the Lakers.",
+      "facts": "VERIFIED FACTS:\n- LeBron James will not re-sign with Los Angeles.",
+      "expect_ungrounded": [
+        "Lakers"
+      ],
+      "note": "Deliberate, not a snapshot: the facts say 'Los Angeles' and the script says 'Lakers', so the alias is NOT grounding. Decisions §3 is that the model may only state specifics present in VERIFIED FACTS, and 'Lakers' is a specific the facts never state. If an alias table is ever added, this expectation changes on purpose - it does not mean the gate broke."
+    },
+    {
+      "id": "art-walker-substring",
+      "script": "Art Walker leads the rebuild.",
+      "facts": "VERIFIED FACTS:\n- Smart roster moves matter.",
+      "expect_ungrounded": [
+        "Art Walker"
+      ]
+    },
+    {
+      "id": "transition-words",
+      "script": "Meanwhile, Rookie of the Year is wide open. Bottom line: the Thunder look fragile.",
+      "facts": "VERIFIED FACTS:\n- Oklahoma City Thunder had injury issues in the playoffs.",
+      "expect_ungrounded": []
+    },
+    {
+      "id": "hyphen-nova-strike",
+      "script": "Nova-Strike launches soon.",
+      "facts": "A new mode is coming.",
+      "expect_ungrounded": [
+        "Nova-Strike"
+      ]
+    },
+    {
+      "id": "take-two-grounded",
+      "script": "Take-Two filed subpoenas against Microsoft and Discord.",
+      "facts": "Take-Two Interactive filed subpoenas against Microsoft and Discord in the Southern District of New York.",
+      "expect_ungrounded": []
+    },
+    {
+      "id": "run71-script-names",
+      "script": "Take-Two filed subpoenas to force Microsoft and Discord to hand over records.",
+      "facts": "To find the Grand Theft Auto 6 leaker, the parent company of Rockstar Games has resorted to filing subpoenas in a US court to force Microsoft and Discord to hand over their records.",
+      "expect_ungrounded": [
+        "Take-Two"
+      ],
+      "note": "Run 71's real defect. The facts say 'the parent company of Rockstar Games' and never the words 'Take-Two', so flagging it is correct. Contrast `take-two-grounded`, where the facts name it outright and it must stay unflagged - the pair is what pins whole-token matching."
+    },
+    {
+      "id": "season-8-5",
+      "script": "The Season 8.5 update dropped.",
+      "facts": "The game shipped a patch.",
+      "expect_ungrounded": [
+        "Season 8.5"
+      ]
+    },
+    {
+      "id": "invented-record",
+      "script": "Ilia Topuria is 40-0 after the UFC featherweight title fight.",
+      "facts": "VERIFIED FACTS:\n- UFC featherweight champion Ilia Topuria is 15-0.",
+      "expect_ungrounded": [
+        "40-0"
+      ]
+    },
+    {
+      "id": "purse-grounded",
+      "script": "The purse is $2 million on fight night.",
+      "facts": "VERIFIED FACTS:\n- UFC featherweight champion Ilia Topuria is 15-0.\n- The purse is $2 million.",
+      "expect_ungrounded": []
+    },
+    {
+      "id": "invented-purse",
+      "script": "The UFC purse is $50 million.",
+      "facts": "VERIFIED FACTS:\n- The fight is Saturday.",
+      "expect_ungrounded": [
+        "$50 million"
+      ]
+    },
+    {
+      "id": "gta-netflix-generic",
+      "script": "Rockstar showed a Netflix extended look at Grand Theft Auto.",
+      "facts": "Rockstar has shown fans a 26-minute extended look at Grand Theft Auto 6 on Netflix.",
+      "expect_ungrounded": []
+    }
+  ]
+}

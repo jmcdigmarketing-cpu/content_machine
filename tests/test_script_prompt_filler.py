@@ -53,6 +53,35 @@ class TestScriptPromptFiller(unittest.TestCase):
         self.assertIn("evidence", lowered)  # facts are evidence, not the point
         self.assertIn("attributed", lowered)  # speculation must be attributed, not asserted
 
+    def test_explainer_prompt_does_not_order_a_take(self):
+        """#660. An explainer seed must not get TAKE A SIDE or a hot-take close."""
+        from core.content_engine import _build_prompts
+
+        system, user = _build_prompts(
+            topic="how does the offside rule actually work",
+            signals={},
+            min_words=150,
+            max_words=300,
+            today="2026-06-22",
+            channel_id="tapin",
+            script_brief="Be clear.",
+            seo_block="",
+            signal_facts="No structured facts available.",
+            signal_summary="",
+            brief_block="",
+            length_choice="2",
+            key_facts=None,
+        )
+        blob = f"{system}\n{user}"
+        self.assertNotIn("TAKE A SIDE", blob)
+        self.assertNotIn("Build to a strong closing line", blob)
+        self.assertIn("explainer", blob.lower())
+
+    def test_default_topic_still_orders_a_take(self):
+        system, user = _build("2")
+        blob = f"{system}\n{user}"
+        self.assertIn("TAKE A SIDE", blob)
+
 
 if __name__ == "__main__":
     unittest.main()

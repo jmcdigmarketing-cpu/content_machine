@@ -83,7 +83,10 @@ class TestFetchYoutubeFree(unittest.TestCase):
         with (
             patch.object(fb, "youtube_available", return_value=True),
             patch.object(fb, "_flat_search", return_value=list(_FLAT)),
-            patch.object(fb, "_full_one", side_effect=lambda url: dict(_FULL[url])),
+            # Mirrors the real signature: _full_one(url, log=None). A double that
+            # only accepts (url) raises TypeError inside the caller's except and
+            # silently degrades to the flat entry.
+            patch.object(fb, "_full_one", side_effect=lambda url, log=None: dict(_FULL[url])),
         ):
             items = fb.fetch_youtube_free("test query", top_n=2, search_n=5)
 

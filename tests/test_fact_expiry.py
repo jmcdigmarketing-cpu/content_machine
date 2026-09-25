@@ -55,6 +55,48 @@ class TestFactExpiry(unittest.TestCase):
             vault_index.clear_cache()
             self.assertEqual(fe.expired_notes("tapin"), [])
 
+    def test_command_is_registered(self):
+        from scripts.ops import COMMANDS
+
+        self.assertIn("vault-decay", COMMANDS)
+
+    def test_lists_expired_note_from_a_temp_vault(self):
+        import io
+        from argparse import Namespace
+        from contextlib import redirect_stdout
+
+        from scripts.ops import COMMANDS
+
+        self._write(
+            "tapin/stale.md",
+            "---\nchannel: tapin\nexpires: 2020-01-01\n---\n# Stale\n- old champ\n",
+        )
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = COMMANDS["vault-decay"][1](Namespace(channel="tapin"))
+        self.assertEqual(code, 0)
+        text = buf.getvalue()
+        self.assertIn("stale.md", text)
+        self.assertIn("2020-01-01", text)
+
+    def test_empty_vault_is_honest_not_a_warning(self):
+        import io
+        from argparse import Namespace
+        from contextlib import redirect_stdout
+
+        from scripts.ops import COMMANDS
+
+        buf = io.StringIO()
+        with (
+            patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": ""}),
+            self.assertNoLogs(level="WARNING"),
+            redirect_stdout(buf),
+        ):
+            vault_index.clear_cache()
+            code = COMMANDS["vault-decay"][1](Namespace(channel="tapin"))
+        self.assertEqual(code, 0)
+        self.assertIn("no expired", buf.getvalue().lower())
+
 
 if __name__ == "__main__":
     unittest.main()

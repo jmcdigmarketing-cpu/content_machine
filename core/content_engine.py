@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import os
+from collections.abc import Callable
 from types import CodeType
 from typing import Any
 
@@ -168,6 +169,22 @@ def _split_facts_block(facts: str) -> tuple[str, str]:
     return "\n".join(verified_lines).strip(), "\n".join(context_lines).strip()
 
 
+def _regroundable(ungrounded: list[str]) -> list[str]:
+    """The flagged specifics `_maybe_reground_script` may be pointed at.
+
+    That pass prompts an LLM to *delete* every item it is given. A negative-fact
+    hit is a claim the operator already paid to correct, and nothing passes
+    operator key facts into the negative matcher — so a stored claim that
+    token-overlaps a pasted fact would aim the deletion at the operator's own
+    ground truth, inverting decisions §4. Retracted claims are surfaced and can
+    veto the run (`negative_facts.negative_gate_blocks`); they are never quietly
+    rewritten away.
+    """
+    from core.negative_facts import NEGATIVE_PREFIX
+
+    return [item for item in ungrounded or [] if not str(item).startswith(NEGATIVE_PREFIX)]
+
+
 def _build_prompts(
     *,
     topic: str,
@@ -187,9 +204,65 @@ def _build_prompts(
     creative_brief: str = "",
     key_facts: list[str] | None = None,
     extra_directive: str = "",
+    intent: str = "",
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
+
+    from core.angle_intent import CALM_INTENTS, detect_angle_intent
+
+    resolved_intent = intent or detect_angle_intent(seed_topic or topic)
+    calm = resolved_intent in CALM_INTENTS
+    if calm:
+        voice_take = (
+            "- Be clear, not a debate. Explain the mechanism. Do not invent a controversy "
+            "or force a hot take onto a question that asked how something works."
+        )
+        framing_take = (
+            "- The EDITORIAL ANGLE is the thing being explained; facts are what make it click. "
+            "Shape the script as hook → how it works → the detail people get wrong → payoff. "
+            "A viewer should walk away understanding the mechanism, not remembering a stance."
+        )
+        must_close = (
+            "- Close with the mechanism, the misconception, or the practical implication — "
+            "not a hot take and not a comment-bait question."
+        )
+        user_take = (
+            f"- FORMAT is {resolved_intent}. Explain clearly. Do NOT take a side, "
+            "do NOT write a hot take, and do NOT turn this into a debate.\n"
+            "- Cut hedging and filler. Every sentence teaches or specifies.\n"
+            "- Close on a SPECIFIC line — the mechanism, the exception, or the practical "
+            'implication. NEVER "what do you think? drop your thoughts in the comments".'
+        )
+    else:
+        voice_take = (
+            '- NO both-sidesing. Do NOT write "some argue X, while others believe Y". '
+            "State what YOU think and why."
+        )
+        framing_take = (
+            "- The EDITORIAL ANGLE is the spine; facts are ammunition for it. Shape the "
+            "script as hook/thesis → argue the take, pulling in facts as evidence → payoff. "
+            "A viewer should walk away remembering the ARGUMENT, not a list of stats."
+        )
+        must_close = (
+            '- Include at least one explicit STANCE beat — a prediction or "why this matters" '
+            'call the audience can agree or argue with (e.g. "expect…", "here\'s why…", '
+            '"the real reason…", "my prediction…", "the bigger picture…") — grounded ONLY '
+            "in the verified facts, never an invented specific.\n"
+            "- Build to a strong closing line — a hot take, implication, or open question "
+            "that drives comments."
+        )
+        user_take = (
+            '- If RESEARCH BRIEF says format is "analysis" or "prediction": DO NOT frame as a '
+            "news announcement. Write as an informed breakdown, hot take, or prediction — "
+            'not "just released" or "biggest update yet" language.\n'
+            "- TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it "
+            '("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.\n'
+            '- Cut hedging and filler ("only time will tell", "the narrative is far from over", '
+            '"could be a turning point"). Every sentence advances the take.\n'
+            "- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a "
+            'sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".'
+        )
 
     retention_rule = ""
     if preset.choice in ("2", "3"):
@@ -217,20 +290,20 @@ You are a sports and gaming scriptwriter for vertical video (YouTube Shorts and 
 
 HOOK RULE: The script's FIRST sentence must be a specific fact, number, or contradiction — under 12 words.
 Never open with "Today", "Let's", "In this video", "Welcome", or a direct question.
-Strong hooks: "He lost $2 billion in one afternoon." / "Nobody saw this roster move coming." / "This changes everything for the division."
+Strong hooks: "He lost $2 billion in one afternoon." / "Nobody saw this roster move coming." / "The division just lost its only credible contender."
 {retention_rule}
 
 VOICE — write like a sharp, opinionated human creator talking to camera, NOT an analyst writing a report:
 - SAY WHAT HAPPENED FIRST. Lead with the concrete facts in plain words — who did what to whom, how, and when (e.g. "Gaethje TKO'd Topuria in round 2") — BEFORE any commentary. No throat-clearing intro.
 - Concrete beats abstract every time. Use names, methods, rounds, numbers from VERIFIED FACTS — not vague abstractions like "systemic issues", "the broader narrative", "the delicate balance".
 - BANNED — never write these or anything like them: "grappling with the fallout", "at a crossroads", "as the dust settles", "the delicate balance between", "double-edged sword", "systemic issues", "the future of X depends on it", "it's essential to understand", "underscores a critical need", "a testament to", "the lifeblood of", "ripe with opportunities", "In conclusion", "the very foundations of", "now more than ever".
-- NO both-sidesing. Do NOT write "some argue X, while others believe Y". State what YOU think and why.
+{voice_take}
 - The topic is the assignment: if it says "recap / results", RECAP WHAT HAPPENED — do not drift into think-piece territory about officiating reform, "the meta", or the sport's future unless the facts are about that.
 - Delete any sentence that could appear in a generic essay on this subject. Every sentence must carry a specific fact or a real opinion.
 
 FRAMING — facts are EVIDENCE, not the point:
 - Do NOT recite facts. Never write 3+ bare-fact sentences in a row (e.g. "It drops Nov 19. Pre-orders opened June 25. Standard is $79.99. Ultimate is $99.99."). Each fact must earn its place by advancing YOUR take — introduce it to make a point, land a consequence, or set up the argument, then move forward.
-- The EDITORIAL ANGLE is the spine; facts are ammunition for it. Shape the script as hook/thesis → argue the take, pulling in facts as evidence → payoff. A viewer should walk away remembering the ARGUMENT, not a list of stats.
+{framing_take}
 - Anything NOT in VERIFIED FACTS or OPERATOR KEY FACTS — rumors, leaks, projections, anything from the research brief or the wider internet — must be EXPLICITLY attributed ("reports claim…", "the rumor is…", "unconfirmed, but…") and NEVER stated as fact. Speculation dressed as fact is what gets flagged and kills trust.
 
 OPERATOR KEY FACTS RULE: If OPERATOR KEY FACTS are present in the user message, treat them as
@@ -255,8 +328,7 @@ You must:
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
 - Never use stock filler transitions. Banned verbatim: "But here's the thing", "This isn't just X — it's Y", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
-- Include at least one explicit STANCE beat — a prediction or "why this matters" call the audience can agree or argue with (e.g. "expect…", "here's why…", "the real reason…", "my prediction…", "the bigger picture…") — grounded ONLY in the verified facts, never an invented specific.
-- Build to a strong closing line — a hot take, implication, or open question that drives comments.
+{must_close}
 - Title and description must be SEO-friendly without misleading clickbait.
 - Target {min_words}-{max_words} words (~{preset.target_words}) — but hit it with SUBSTANCE, never filler. If you run out of real facts and real takes before the minimum, STOP. A tight shorter script beats a padded one.
 """
@@ -279,8 +351,61 @@ You must:
             f"numbers) must still come from VERIFIED FACTS:\n{creative_brief.strip()}\n\n"
         )
 
+    quote_block = ""
+    try:
+        from core.idea_intake import operator_quotes
+
+        quotes = operator_quotes(creative_brief)
+    except Exception as exc:
+        logger.debug("operator quotes skipped: %s", exc)
+        quotes = []
+    if quotes:
+        quoted = "\n".join(f'- "{quote}"' for quote in quotes)
+        quote_block = (
+            "OPERATOR'S OWN WORDS (quote at least ONE of these lines verbatim in the "
+            "script, in quotation marks, and build the take around it - do not "
+            f"paraphrase it away):\n{quoted}\n\n"
+        )
+
     # Split facts into verified data vs YouTube context-only titles
     verified_facts, context_signals = _split_facts_block(signal_facts)
+    from core.description_extras import collect_source_urls
+    from core.source_diversity import (
+        demote_single_outlet_news,
+        singleton_source_claims,
+        urls_from_text,
+    )
+
+    diversity_urls = collect_source_urls(
+        channel_id=channel_id or "",
+        topic=topic,
+        key_facts=key_facts,
+        extra_urls=urls_from_text(signal_facts),
+        relevance_corpus=signal_facts or "",
+    )
+    verified_facts, demoted, _verdict = demote_single_outlet_news(
+        verified_facts,
+        urls=diversity_urls,
+        topic=topic,
+    )
+    if demoted:
+        context_signals = "\n".join(p for p in (context_signals, demoted) if p)
+    singles = singleton_source_claims(
+        [
+            (line, urls_from_text(line))
+            for line in (verified_facts or "").splitlines()
+            if line.strip()
+        ]
+    )
+    if singles:
+        context_signals = "\n".join(
+            p
+            for p in (
+                context_signals,
+                "SINGLE-SOURCE (one outlet while others were fetched): " + "; ".join(singles),
+            )
+            if p
+        )
 
     verified_block = verified_facts if verified_facts else "(no verified game data available)"
     context_block = (
@@ -337,7 +462,7 @@ You must:
     user_prompt = f"""
 TODAY: {today}
 
-{seed_block}{angle_block}TOPIC:
+{seed_block}{angle_block}{quote_block}TOPIC:
 {topic}
 
 {human_block}{playbook}{trial}{brief_block}SCRIPT BRIEF (follow exactly):
@@ -357,10 +482,7 @@ INSTRUCTIONS:
 - Script length: REQUIRED {min_words}-{max_words} words (~{preset.duration_hint()} when spoken).
 - Open with a punchy hook sentence under 12 words (no "Today/Let's/In this video").
 - If Long format: structure as hook → context → analysis → implications → closing take.
-- If RESEARCH BRIEF says format is "analysis" or "prediction": DO NOT frame as a news announcement. Write as an informed breakdown, hot take, or prediction — not "just released" or "biggest update yet" language.
-- TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it ("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.
-- Cut hedging and filler ("only time will tell", "the narrative is far from over", "could be a turning point"). Every sentence advances the take.
-- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".
+{user_take}
 - Do NOT write the YouTube title — title is generated in a separate pass after facts + script.
 - Generate a concise SEO description (hook first line, call-to-action last line).
 - Generate 8-15 YouTube tags (no fabricated names).
@@ -391,6 +513,82 @@ def _call_content_llm(
         max_tokens=3000,
         stage="script",
     )
+
+
+def _script_pass_snapshot(script: str) -> dict[str, Any]:
+    from core.cost_meter import llm_cost_from_usage
+    from core.hook_score import score_script_hook
+    from core.llm_router import get_usage
+
+    usage = get_usage()
+    return {
+        "words": count_spoken_words(script),
+        "hook": float(score_script_hook(script).score),
+        "usage_n": len(usage),
+        "cost": float(llm_cost_from_usage(usage)),
+    }
+
+
+def run_script_pass(
+    ledger: list[dict[str, Any]],
+    name: str,
+    script: str,
+    fn: Callable[[str], Any],
+    *,
+    disabled: bool = False,
+) -> str:
+    """Run one rewrite pass and append what it did to ``ledger``.
+
+    ``fn`` is the real helper. It may return the script, or ``(script, extra)``
+    where extra is merged onto the row (reground pre/post counts). Disabled
+    passes are recorded without calling ``fn``, so a default-off hook cannot
+    look like it ran.
+    """
+    if disabled:
+        ledger.append(
+            {
+                "name": name,
+                "adopted": False,
+                "llm_called": False,
+                "skip_reason": "disabled",
+                "word_delta": 0,
+                "hook_delta": 0.0,
+                "cost_usd": 0.0,
+            }
+        )
+        return script
+
+    before = _script_pass_snapshot(script)
+    result = fn(script)
+    extra: dict[str, Any] = {}
+    if isinstance(result, tuple):
+        after_script = str(result[0])
+        if len(result) > 1 and isinstance(result[1], dict):
+            extra = dict(result[1])
+    else:
+        after_script = str(result)
+
+    after = _script_pass_snapshot(after_script)
+    llm_called = after["usage_n"] > before["usage_n"]
+    adopted = after_script != script
+    if not adopted and not llm_called:
+        skip_reason = "no-op"
+    elif not adopted and llm_called:
+        skip_reason = "rejected"
+    else:
+        skip_reason = ""
+    row: dict[str, Any] = {
+        "name": name,
+        "adopted": adopted,
+        "llm_called": llm_called,
+        "skip_reason": skip_reason,
+        "word_delta": int(after["words"] - before["words"]),
+        "hook_delta": round(after["hook"] - before["hook"], 1),
+        "cost_usd": round(max(0.0, after["cost"] - before["cost"]), 6),
+    }
+    row.update(extra)
+    ledger.append(row)
+    return after_script
 
 
 def _maybe_improve_hook(script: str) -> str:
@@ -551,6 +749,8 @@ def _maybe_rewrite_unsupported_claims(script, verification, corpus_text, topic, 
         re_check.rewritten = True
         re_check.pre_rewrite_unsupported = len(verification.unsupported)
         re_check.pre_rewrite_total = verification.total
+        re_check.script_pre_rewrite = script
+        re_check.script_post_rewrite = candidate
         return candidate, re_check
     return script, verification
 
@@ -559,16 +759,18 @@ def _insight_injection_enabled() -> bool:
     return os.getenv("INSIGHT_INJECTION_ENABLED", "true").lower() not in ("0", "false", "no")
 
 
-def _maybe_inject_insight(script: str, grounding_text: str, topic: str) -> str:
+def _maybe_inject_insight(script: str, grounding_text: str, topic: str, *, intent: str = "") -> str:
     """Add one opinion/prediction/'why it matters' beat when a script reads as a recap.
 
     Default-on (``INSIGHT_INJECTION_ENABLED``). No-op when the script already
     carries a take (same detector the authenticity gate scores on), so most runs
-    pay nothing. The beat must be grounded ONLY in the verified facts — no invented
-    specifics — and runs BEFORE the grounding regen so anything it slips in still
-    gets cleaned. Accepted only if it now reads as having a take and didn't shrink
-    the script (an injection should add words, not drop them).
+    pay nothing. Also no-op for calm intents (#660) — an explainer without a
+    take is the assignment, not a defect.
     """
+    from core.angle_intent import CALM_INTENTS, detect_angle_intent
+
+    if (intent or detect_angle_intent(topic)) in CALM_INTENTS:
+        return script
     if not _insight_injection_enabled():
         return script
     from core.authenticity import has_insight
@@ -750,6 +952,68 @@ ORIGINAL:
     return script
 
 
+def _relength_after_postprocessing(
+    script: str,
+    *,
+    topic: str,
+    min_words: int,
+    max_words: int,
+    length_choice: str,
+    attempts_left: int,
+    grounding_text: str,
+    ungrounded: list[str],
+) -> tuple[str, list[str]]:
+    """Re-expand a script that the post-generation passes shortened below target.
+
+    The main expansion loop runs before `_maybe_improve_hook`,
+    `_maybe_recenter_on_key_facts`, `_maybe_inject_insight` and
+    `_maybe_reground_script` — all of which can remove text. Run 74 exited that
+    loop satisfied and shipped 277 words against a 300-word floor, because nothing
+    measured the script again afterwards.
+
+    Grounding has already run by the time this is called, so an expansion that
+    introduces *new* unsupported specifics is reverted: hitting a word count is
+    never worth walking back the grounding pass.
+    """
+    ungrounded = list(ungrounded or [])
+    while count_spoken_words(script) < min_words and attempts_left > 0:
+        attempts_left -= 1
+        logger.info(
+            "Script back under target after post-processing (%s words, need %s+); expanding",
+            count_spoken_words(script),
+            min_words,
+        )
+        try:
+            candidate = _expand_script(
+                script=script,
+                topic=topic,
+                min_words=min_words,
+                max_words=max_words,
+                length_choice=length_choice,
+            )
+        except Exception as exc:  # expansion is best-effort, never fatal
+            logger.warning("Late script expand failed: %s", exc)
+            break
+        if candidate == script:
+            break
+        fresh = find_ungrounded_entities(candidate, grounding_text)
+        if len(fresh) > len(ungrounded):
+            logger.info(
+                "Late expansion introduced %d unsupported specific(s) — reverted",
+                len(fresh) - len(ungrounded),
+            )
+            break
+        script, ungrounded = candidate, fresh
+    return script, ungrounded
+
+
+def _content_tag_helpers():
+    from core.angle_chapters import angle_headline
+    from core.seo import drop_shorts_tags
+
+    return angle_headline, drop_shorts_tags
+
+
 def generate_content_package(
     topic,
     signals,
@@ -768,6 +1032,10 @@ def generate_content_package(
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
+    angle_headline, drop_shorts_tags = _content_tag_helpers()
+    from core.angle_intent import detect_angle_intent
+
+    resolved_intent = detect_angle_intent(seed_topic or topic)
     clean_key_facts_early = _sanitize_key_facts(key_facts)
     script_brief = build_script_brief(
         topic,
@@ -800,11 +1068,13 @@ def generate_content_package(
     from core.fact_conflicts import (
         conflict_filter_enabled,
         drop_conflicting_lines,
+        features_from_conflicts,
         find_fact_conflicts,
     )
 
     clean_key_facts = clean_key_facts_early
     conflicts = find_fact_conflicts(clean_key_facts, signal_facts)
+    conflict_features = features_from_conflicts(conflicts, dropped=0)
     conflicts_dropped = 0
     if conflicts:
         logger.warning(
@@ -819,6 +1089,7 @@ def generate_content_package(
                     "Dropped %d source line(s) conflicting with operator facts",
                     conflicts_dropped,
                 )
+        conflict_features = features_from_conflicts(conflicts, dropped=conflicts_dropped)
 
     # Detect thin-facts mode — warn the LLM when verified (non-YouTube) data is sparse.
     # _fact_line_count counts only lines with "-" or ":" (not YouTube bullet "•" lines),
@@ -858,6 +1129,7 @@ def generate_content_package(
         creative_brief=creative_brief,
         key_facts=key_facts,
         extra_directive=extra_directive,
+        intent=resolved_intent,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude
@@ -879,12 +1151,20 @@ def generate_content_package(
                 source_urls=source_urls,
                 relevance_corpus=relevance_corpus,
             ),
-            "tags": normalize_youtube_tags(
-                default_tags_for_channel(channel_id, topic) + tags_from_topic(topic)
+            "tags": drop_shorts_tags(
+                normalize_youtube_tags(
+                    default_tags_for_channel(channel_id, topic)
+                    + tags_from_topic(angle_headline(topic))
+                ),
+                length_choice,
             ),
             "prompt_version": current_prompt_version(),
             "brief_version": research_brief.version if research_brief else "",
             "word_count": 0,
+            "disputed": conflict_features["disputed"],
+            "disputed_claims": conflict_features["disputed_claims"],
+            "fact_conflicts": conflict_features["fact_conflicts"],
+            "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
         }
 
     script = str(payload["script"])
@@ -906,7 +1186,16 @@ def generate_content_package(
         )
         attempts += 1
 
-    script = _maybe_improve_hook(script)
+    script_passes: list[dict[str, Any]] = []
+    from core.hook_score import hook_regen_enabled
+
+    script = run_script_pass(
+        script_passes,
+        "improve_hook",
+        script,
+        _maybe_improve_hook,
+        disabled=not hook_regen_enabled(),
+    )
 
     # The fact corpus the script must stay grounded in (also used by the insight
     # beat so it can't invent specifics) — built before injection + grounding.
@@ -923,34 +1212,104 @@ def generate_content_package(
 
     # Key-fact anchor: if the script drifted off the operator's pasted subject,
     # recenter it FIRST (subject-level) — before insight/grounding tweak the prose.
-    script = _maybe_recenter_on_key_facts(script, key_facts, topic, grounding_text)
+    script = run_script_pass(
+        script_passes,
+        "recenter_key_facts",
+        script,
+        lambda s: _maybe_recenter_on_key_facts(s, key_facts, topic, grounding_text),
+        disabled=not _key_fact_anchor_enabled(),
+    )
 
     # Original-insight injection: if the script reads as a neutral recap, add one
     # opinion/prediction beat (Phase O authenticity). Runs BEFORE grounding so any
     # specifics it introduces still get caught/cleaned below.
-    script = _maybe_inject_insight(script, grounding_text, topic)
+    script = run_script_pass(
+        script_passes,
+        "inject_insight",
+        script,
+        lambda s: _maybe_inject_insight(s, grounding_text, topic, intent=resolved_intent),
+        disabled=not _insight_injection_enabled(),
+    )
 
     llm_tags = payload.get("tags") or []
     if isinstance(llm_tags, str):
         llm_tags = [t.strip() for t in llm_tags.split(",") if t.strip()]
-    tags = normalize_youtube_tags(
-        llm_tags,
-        extra=default_tags_for_channel(channel_id, topic) + tags_from_topic(topic),
+    # Run 77: topic words ("Forward", "Billion", "Opportunity") padded a list the model had
+    # already filled with 13 tags. Topic tags only pad a thin list, from the headline.
+    topic_tags = tags_from_topic(angle_headline(topic)) if len(llm_tags) < 5 else []
+    tags = drop_shorts_tags(
+        normalize_youtube_tags(
+            llm_tags,
+            extra=default_tags_for_channel(channel_id, topic) + topic_tags,
+        ),
+        length_choice,
     )
 
     # Post-generation grounding check: flag specifics in the script not backed by
     # the facts the model was given (catches invented heroes/products/patches).
     ungrounded = find_ungrounded_entities(script, grounding_text)
-    if ungrounded:
-        # Regenerate-then-warn: try once to strip the unsupported specifics, then
-        # surface whatever still remains (never silently rewrite away the warning).
-        script, ungrounded = _maybe_reground_script(script, grounding_text, topic, ungrounded)
+    try:
+        from core.script_craft import find_ungrounded_superlatives
+
+        for hit in find_ungrounded_superlatives(script, grounding_text):
+            if hit not in ungrounded:
+                ungrounded.append(hit)
+    except Exception as exc:
+        logger.debug("superlative check skipped: %s", exc)
+    try:
+        from core.negative_facts import apply_negative_facts, franchise_for
+
+        for hit in apply_negative_facts(script, franchise=franchise_for(topic, channel_id)):
+            if hit not in ungrounded:
+                ungrounded.append(f"negative-fact: {hit}")
+    except Exception as exc:
+        logger.debug("negative-fact check skipped: %s", exc)
+    regen_targets = _regroundable(ungrounded) if ungrounded else []
+    # #814: seeded with the *targets*, not the whole list. The merge below adds
+    # the held-back items back itself, so seeding with `ungrounded` counted every
+    # negative-fact hit twice on the path where the pass never runs (disabled).
+    remaining_box: dict[str, list[str]] = {"remaining": list(regen_targets)}
+
+    def _run_reground(s: str):
+        if not regen_targets:
+            return s
+        new, remaining = _maybe_reground_script(s, grounding_text, topic, regen_targets)
+        remaining_box["remaining"] = remaining
+        extra = {
+            "pre_reground_ungrounded": len(regen_targets),
+            "post_reground_ungrounded": len(remaining),
+        }
+        return new, extra
+
+    script = run_script_pass(
+        script_passes,
+        "reground",
+        script,
+        _run_reground,
+        disabled=not _reground_enabled(),
+    )
+    if ungrounded and regen_targets:
+        held = [item for item in ungrounded if item not in regen_targets]
+        ungrounded = held + remaining_box["remaining"]
     if ungrounded:
         logger.warning(
             "Script names %s specific(s) not in the facts: %s",
             len(ungrounded),
             ", ".join(ungrounded),
         )
+
+    # Run 74: the expansion loop above ran before every pass that can shorten a
+    # script, so its exit condition was checked against text the operator never saw.
+    script, ungrounded = _relength_after_postprocessing(
+        script,
+        topic=topic,
+        min_words=min_words,
+        max_words=max_words,
+        length_choice=length_choice,
+        attempts_left=max(0, max_attempts - attempts),
+        grounding_text=grounding_text,
+        ungrounded=ungrounded,
+    )
 
     # Semantic trade validation (opt-in): player→team pairings must co-occur on a
     # fact line, catching fused trades that token grounding passes.
@@ -990,7 +1349,11 @@ def generate_content_package(
     # script into factual claims and checks each against the NON-context corpus
     # (YouTube titles must not "support" a claim). Fail-open → None.
     from core.claim_verifier import verify_claims
+    from core.quote_attribution import check_quote_attribution
+    from core.relational_check import merge_reversals
 
+    quote_pre = check_quote_attribution(script, corpus.factual_text)
+    script_before_rewrite = script
     verification = verify_claims(
         script, corpus.factual_text, topic=topic, priority_facts=clean_key_facts
     )
@@ -1001,11 +1364,33 @@ def generate_content_package(
             verification.total,
             "; ".join(c.claim for c in verification.unsupported[:5]),
         )
-        # Act on the verdict: one rewrite pass removes/attributes the unsupported
-        # claims (kept only if the re-verified count improves). "Fact slop" fix —
-        # the script must be correct, not detail-stuffed with invented specifics.
-        script, verification = _maybe_rewrite_unsupported_claims(
-            script, verification, corpus.factual_text, topic, clean_key_facts
+    ver_box = {"v": verification}
+
+    def _run_claim_rewrite(s: str):
+        new, ver = _maybe_rewrite_unsupported_claims(
+            s, ver_box["v"], corpus.factual_text, topic, clean_key_facts
+        )
+        ver_box["v"] = ver
+        return new
+
+    script = run_script_pass(
+        script_passes,
+        "rewrite_claims",
+        script,
+        _run_claim_rewrite,
+        disabled=not _claim_regen_enabled(),
+    )
+    verification = ver_box["v"]
+
+    quote_check = check_quote_attribution(script, corpus.factual_text)
+    quote_payload = quote_check.to_dict()
+    if script != script_before_rewrite:
+        quote_payload["pre_rewrite_flagged"] = quote_pre.flagged_count
+    if quote_check.flagged:
+        logger.warning(
+            "Quote attribution: %d quoted sentence(s) lack a named source: %s",
+            quote_check.flagged_count,
+            "; ".join(item.quote[:80] for item in quote_check.flagged[:3]),
         )
 
     try:
@@ -1016,6 +1401,15 @@ def generate_content_package(
             logger.info("%s", note)
     except Exception as exc:
         logger.debug("odds language skipped: %s", exc)
+
+    try:
+        from core.rumor_language import apply_rumor_language
+
+        script, rumor_notes = apply_rumor_language(script, topic=topic)
+        for note in rumor_notes:
+            logger.info("%s", note)
+    except Exception as exc:
+        logger.debug("rumor language skipped: %s", exc)
 
     tts_cap = None
     try:
@@ -1032,6 +1426,15 @@ def generate_content_package(
     )
     if trimmed_n:
         logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
+
+    cta_report: dict = {"stripped": False, "pre_paragraphs": 0, "post_paragraphs": 0}
+    try:
+        from core.script_craft import apply_script_craft
+
+        script, cta_report, rhythm_hits = apply_script_craft(script)
+    except Exception as exc:
+        logger.debug("script craft skipped: %s", exc)
+        rhythm_hits = []
 
     from core.title_generator import generate_title
 
@@ -1060,6 +1463,19 @@ def generate_content_package(
             len(title_warnings),
             "; ".join(title_warnings),
         )
+    from core.youtube_meta import check_title_script_consistency
+
+    title_script_check = check_title_script_consistency(title, script, topic=topic)
+    _tsc_warnings = title_script_check.get("warnings")
+    title_script_warnings = list(_tsc_warnings) if isinstance(_tsc_warnings, list) else []
+    if title_script_warnings:
+        logger.warning(
+            "Title/script check flagged %d claim(s): %s",
+            len(title_script_warnings),
+            "; ".join(str(w) for w in title_script_warnings),
+        )
+    elif title_script_check.get("status") == "unavailable":
+        logger.warning("Title/script check unavailable; the public title was not compared")
 
     # Public overlay metadata: keep only grounded display labels. Source fact lines
     # stay inside this generation call and are never persisted as lower-third data.
@@ -1067,9 +1483,60 @@ def generate_content_package(
 
     lower_thirds = select_grounded_labels(script, corpus.factual_text)
 
+    # #543: did the operator's own line survive every rewrite pass?
+    operator_quote_lines: list[str] = []
+    operator_quote_used = False
+    try:
+        from core.idea_intake import operator_quotes, quote_survived
+
+        operator_quote_lines = operator_quotes(creative_brief)
+        operator_quote_used = quote_survived(script, operator_quote_lines)
+        if operator_quote_lines and not operator_quote_used:
+            logger.warning("Operator quote paraphrased away: %s", operator_quote_lines[0][:120])
+    except Exception as exc:
+        logger.debug("operator quote check skipped: %s", exc)
+
+    persona_hits: list[str] = []
+    try:
+        from core.persona_lint import lint_persona_script
+
+        persona_hits = lint_persona_script(script, channel_id=channel_id)
+        if persona_hits:
+            logger.warning("persona lint: %s", ", ".join(persona_hits))
+    except Exception as exc:
+        logger.debug("persona lint skipped: %s", exc)
+        persona_hits = []
+
+    from core.description_extras import collect_source_urls as _collect_source_urls
+    from core.source_diversity import urls_from_text as _urls_from_text
+
+    try:
+        resolved_source_urls = _collect_source_urls(
+            channel_id=channel_id or "",
+            topic=topic,
+            key_facts=clean_key_facts,
+            extra_urls=_urls_from_text(signal_facts),
+            relevance_corpus=relevance_corpus or signal_facts or "",
+        )
+    except Exception as exc:  # local resolver, but never fail a run over a sidecar
+        logger.warning("source_urls unresolved, sidecar will be sourceless: %s", exc)
+        resolved_source_urls = list(source_urls or [])
+
+    from core.claim_types import hedge_density as _hedge_density
+
+    verification_payload = merge_reversals(
+        verification.to_dict() if verification else None,
+        script,
+        "\n".join([corpus.factual_text or "", *(clean_key_facts or [])]),
+    )
+    density = _hedge_density(script)
+    if isinstance(verification_payload, dict):
+        verification_payload["hedge_density"] = density
+
     return {
         "title": title,
         "title_warnings": title_warnings,
+        "title_script_check": title_script_check,
         "script": script,
         "description": apply_description_extras(
             payload.get("description") or "",
@@ -1084,14 +1551,29 @@ def generate_content_package(
             duration_s=count_spoken_words(script) / max(WORDS_PER_SECOND, 0.1),
         ),
         "tags": tags,
+        # #112. `write_render_sidecars` reads this key, and nothing had ever
+        # written it -- so every `<stem>.facts.json` shipped `"sources": []`.
+        # Same resolver `apply_description_extras` uses just below, so the
+        # sidecar and the description's Sources block cannot disagree.
+        "source_urls": resolved_source_urls,
         "prompt_version": current_prompt_version(),
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
         "ungrounded_entities": ungrounded,
         "trade_warnings": trade_warnings,
         "tier_warnings": tier_warnings,
-        "fact_conflicts": [c.render() for c in conflicts],
-        "fact_conflicts_dropped": conflicts_dropped,
-        "claim_verification": verification.to_dict() if verification else None,
+        "fact_conflicts": conflict_features["fact_conflicts"],
+        "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
+        "disputed": conflict_features["disputed"],
+        "disputed_claims": conflict_features["disputed_claims"],
+        # #748: a wrong actor the verifier missed (or never judged) still reaches the gate.
+        "claim_verification": verification_payload,
+        "quote_attribution": quote_payload,
+        "operator_quotes": operator_quote_lines,
+        "operator_quote_used": operator_quote_used,
         "lower_thirds": lower_thirds,
+        "persona_lint": persona_hits,
+        "cta_summary": cta_report,
+        "sentence_rhythm": rhythm_hits,
+        "script_passes": script_passes,
     }

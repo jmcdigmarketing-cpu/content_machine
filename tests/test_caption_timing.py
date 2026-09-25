@@ -126,9 +126,9 @@ class TestWordsFromCaptionAlign(unittest.TestCase):
             ],
         )
 
-    def test_none_when_backend_unset_and_backend_not_called(self):
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("CAPTION_ALIGN_BACKEND", None)
+    def test_none_when_backend_off_and_backend_not_called(self):
+        # #771: unset now means on (faster_whisper); `none` is the off switch.
+        with patch.dict(os.environ, {"CAPTION_ALIGN_BACKEND": "none"}, clear=False):
             with patch("core.caption_align.transcribe_and_align") as mock_align:
                 self.assertIsNone(ct.words_from_caption_align("audio.mp3"))
         mock_align.assert_not_called()

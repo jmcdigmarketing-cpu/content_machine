@@ -1,0 +1,16 @@
+{
+  "_note": "Franchise playlists (#601). Most specific first: a video joins the first playlist whose keys match, plus that playlist's parent. Operator list 2026-09-18; Minecraft and Roblox are the two most-searched gaming niches on Google Trends (3 months) that were not already on it. `footage` names the local game folder(s) a matching topic draws its background from (#786); empty = no footage yet (ops footage).",
+  "tapin": [
+    {"name": "GTA", "parent": "Gaming", "keys": ["gta", "gta 6", "gta vi", "gta 5", "gta online", "grand theft auto", "nopixel", "gta rp", "rockstar"], "footage": ["GTA V"]},
+    {"name": "Marvel Rivals", "parent": "Gaming", "keys": ["marvel rivals"], "footage": ["Marvel Rivals"]},
+    {"name": "Minecraft", "parent": "Gaming", "keys": ["minecraft"], "footage": []},
+    {"name": "Roblox", "parent": "Gaming", "keys": ["roblox"], "footage": []},
+    {"name": "Twitch", "keys": ["twitch", "streamer", "xqc", "kai cenat", "ishowspeed", "asmongold"], "footage": []},
+    {"name": "UFC / MMA", "keys": ["ufc", "mma", "octagon", "dana white", "pfl", "bellator"], "footage": ["UFC 5"]},
+    {"name": "NFL", "keys": ["nfl", "super bowl", "quarterback", "touchdown", "madden"], "footage": ["Madden 26"]},
+    {"name": "Basketball", "keys": ["nba", "wnba", "basketball", "nba 2k", "2k26"], "footage": ["2k26"]},
+    {"name": "Football", "keys": ["soccer", "premier league", "champions league", "world cup", "mls", "la liga", "ea fc", "fifa"], "footage": ["EA Sports FC"]},
+    {"name": "AI Development", "keys": ["ai", "artificial intelligence", "openai", "chatgpt", "llm", "claude", "gemini", "machine learning"], "footage": []},
+    {"name": "Gaming", "keys": ["game", "games", "gaming", "gamer", "playstation", "ps5", "xbox", "nintendo", "switch 2", "steam", "esports", "fortnite", "call of duty", "valorant", "pokemon"], "footage": []}
+  ]
+}

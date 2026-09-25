@@ -114,5 +114,57 @@ class TestIntelligenceReport(unittest.TestCase):
             self.assertFalse(intelligence_mode_enabled())
 
 
+class TestTimingLine(unittest.TestCase):
+    """#813: a degraded discovery must still render a report.
+
+    Wave 27 put `variant_scoring_fallback` ("deadline") and `angle_spread`
+    (a 0-1 ratio) into `DiscoveryResult.timings`, which the report sums and
+    formats as seconds.
+    """
+
+    def test_non_numeric_timing_does_not_crash_the_report(self):
+        report = IntelligenceReport(
+            generated_at="2026-09-20T12:00:00+00:00",
+            channel_id="tapin",
+            input_topic="GTA 6",
+            selected_variant="GTA 6",
+            timings={"variant_scoring": 15.0, "variant_scoring_fallback": "deadline"},
+        )
+        md = to_markdown(report)
+        self.assertIn("Pipeline timing: variant_scoring=15.0s", md)
+        self.assertIn("total ~15.0s", md)
+        self.assertNotIn("deadline", md)
+
+    def test_discovery_meta_stays_out_of_the_timing_line(self):
+        discovery = DiscoveryResult(
+            input_topic="GTA 6",
+            base_signals={},
+            evaluated=[("GTA 6 online economy", 60.0, {})],
+            timings={"signals_and_variants": 2.0, "variant_scoring": 15.0},
+            meta={"variant_scoring_fallback": "deadline", "angle_spread": 0.2},
+            channel_id="tapin",
+        )
+        with (
+            patch(
+                "core.intelligence_report.build_research_brief",
+                return_value=ResearchBrief(topic="GTA 6", narrative="n"),
+            ),
+            patch(
+                "analytics.competitor_context.list_recent_competitor_titles",
+                return_value=[],
+            ),
+            patch("analytics.competitor_context.snapshot_age_hours", return_value=None),
+            patch("core.intelligence_report.record_topic_snapshot"),
+            patch(
+                "core.intelligence_report.build_accuracy_report",
+                return_value={"status": "volume_gated", "summary": "n=0"},
+            ),
+        ):
+            report = build_intelligence_report(discovery, variant_index=0)
+        md = to_markdown(report)
+        self.assertNotIn("angle_spread", md)
+        self.assertIn("total ~17.0s", md)
+
+
 if __name__ == "__main__":
     unittest.main()

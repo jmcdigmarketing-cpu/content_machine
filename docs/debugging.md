@@ -300,7 +300,7 @@ render gate (interactive asks to override; headless needs `--force`).
 **Common causes from live runs:**
 
 1. **Obsidian vault strategy notes** — bullets like “Fraud narratives outperform…” are engagement heuristics, not event facts. Notes tagged `strategy` / `playbook` or bullets matching strategy markers are **excluded** from vault fact suggestions (`core/obsidian_facts.py`). Since Pillar 4, those same notes **do** feed the bounded `CHANNEL PLAYBOOK` prompt block (clearly labeled NOT facts). At the prompt, type `n` to skip vault suggestions when unsure.
-2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/`; LLM gets a **char budget** (default 4500, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Pasted + link facts rank before vault. Type **`paste`** + Enter to drop a whole trade tracker block. UI shows collected vs packed-for-LLM counts.
+2. **Key facts** — all facts save to `vault/<channel>/_operator_facts/` (full set, never capped); the LLM gets a **char budget** (default 12000, `OPERATOR_KEY_FACT_CHAR_BUDGET`). Since run 74 the budget is spent by **ranking** rather than by insertion order (`core/fact_selection.py`): operator-typed facts are pinned, article scaffolding is penalised, and recency is weighted heaviest. Facts are **split at sentence boundaries**, never sliced mid-sentence. Pasting a multi-paragraph article straight at the `Fact N` prompt now works — blank lines are paragraph breaks while the paste is still arriving — and **`paste`** + Enter is still there for very large blocks. UI shows collected vs packed, plus what was held back and why.
 3. **Discovery angles ≠ YouTube title** — discovery picks editorial angles; the publishable title is generated **after** key facts + script (`core/title_generator.py`). Ignore slop-looking angle lines — the final title uses your facts.
 4. **ESPN / some news URLs** — bot protection (AWS WAF) blocks `link_facts` fetch. Use **`paste`** mode with article text; do not rely on ESPN URLs. Yahoo/MSN article links can also pull sidebar "Related:" items — `link_facts` now scopes to `<article>` and drops nav noise; if a link still looks polluted, **`paste`** the paragraph block instead. Live-run 71: an MSN GTA-6-leaker URL returned **headline only**; the operator later pasted the body at **Proceed?** / the PowerShell prompt instead of the key-facts `paste` mode — see **Live-run 71** below.
 5. **Apify 403** — session disables social signals; summary shows the real `apify_status()` reason (not always “out of credits”). Set `SIGNAL_BACKEND=auto` for yt-dlp YouTube when Apify is dead.
@@ -357,6 +357,139 @@ Composite implementation: `assets/composite.py` + `assets/manager.py`.
 - Prefer **one** Python for CLI and deps: system `Python311` or project `.venv`, not mixed.
 - `tzdata` required for `zoneinfo` post scheduling on Windows: `pip install tzdata`
 - FFmpeg must be on `PATH` for render and hybrid concat
+
+---
+
+### Live-run 74 (2026-08-29) — one buffered word discarded the run
+
+Same window, same shape as run 71, and the run-71 fix did not cover it. The CLI
+did not crash: Python exited cleanly, printed *Stopped before render*, and the
+article the operator wanted as ground truth was thrown away one paragraph in.
+
+The run-71 advice ("do not paste at `Proceed?`") does not help here, because the
+operator never pasted at `Proceed?`. They pasted at the **Fact** prompt, which is
+exactly where the article belongs. What answered `Proceed?` was a line the
+console had been holding since that paste.
+
+#### The chain, in order
+
+1. **`Fact 51` — Engadget returned HTTP 403.** The CLI correctly told the operator
+   to paste the article text instead.
+2. **They pasted at the `Fact N` prompt without typing `paste` first.** That prompt
+   reads one line per `input()`, so line 1 became fact 51 and line 2 became fact 52.
+3. **The article's first blank line ended intake.** A paragraph break is
+   indistinguishable from "operator pressed Enter" to a loop whose exit condition is
+   `if not fact: break`. Two lines of a forty-paragraph article were kept;
+   `read_multiline_paste` had known this since run 71 and required *two* blank lines,
+   but only inside `paste` mode — the default prompt never got the rule.
+4. **The remaining paragraphs stayed in the Windows console input buffer** and
+   auto-answered every prompt that followed.
+5. **`Proceed?` received `by`** — Engadget's byline label, the line that happened to
+   be next in the buffer. `_looks_pasted("by")` is `False` (two characters, one
+   word), so candidate 325's re-prompt did not fire and the gate fell through to
+   `return ("stop", …)`. **4.7 minutes of work discarded without a word.**
+6. **Everything after `by` fell through to PowerShell**, producing the
+   `CommandNotFoundException` wall (`Dave`, `Rockstar`, `Arguably`, `signaling`) and
+   two `>>` continuations from unbalanced parentheses in the article prose.
+
+`by` is the whole lesson. Run 71 was fixed by teaching the gate to recognise
+*prose*; run 74 was ended by a two-letter word that no prose detector will ever
+catch. The gate had to stop guessing.
+
+#### What changed
+
+- **`core/console_input.py`** (new) — `input_pending()`, `read_pending_lines()`,
+  `drain_stdin()`. Promoted out of `main.py`, where an equivalent existed but was
+  wired only to the option-5 idea flow, discarded what it found, and had a
+  `return` inside the `try` that let a Windows failure fall through to the POSIX
+  branch.
+- **A blank line ends fact intake only when nothing is buffered.** Otherwise it is
+  a paragraph break. Whatever is still buffered when the loop does end is offered
+  back: *"N more pasted line(s) arrived after the blank line — add them as facts?"*
+  This is what actually rescues a 403 fallback.
+- **`Proceed?` stops only on `n` / `N` / `no` / Enter.** Every other unrecognised
+  answer re-prompts, up to three asks. Declining is still instant. Buffered input
+  is drained before the first ask, so a paste cannot reach the gate at all — the
+  re-prompt is the second line of defence, not the first.
+
+#### The other half: facts arrived truncated mid-sentence
+
+Independent of the abort, every fact was hard-sliced at 400 chars
+(`_MAX_KEY_FACT_CHARS`), producing lines like *"…the campaign will progress
+through a chapter-based"*. That does not read as a truncation to a language
+model; it reads as a finished, vague statement, and the model resolves the
+vagueness by inventing. The cap had no quality rationale — it was a runaway-blob
+guard implemented as `line[:400]`.
+
+It is now a **splitter**: `split_at_sentences` emits whole sentences, and a single
+over-long sentence survives intact. Only a blob with no sentence punctuation at
+all is cut, at word boundaries, with a trailing ellipsis. The display was lying in
+the same direction — `print_fn(f"    + {ex[:90]}")` printed no ellipsis at all, so
+a shortened *line on screen* was indistinguishable from a shortened *fact in the
+prompt*. `_elide` now names the hidden character count.
+
+#### And the budget stopped truncating at all
+
+Of the 54 facts packed into that prompt, roughly fifteen were article furniture —
+*"Below, you'll find everything shown off during the GTA 6 Extended Look:"*,
+*"Check out the five biggest takeaways below."*, *"Note: All of these details are
+compiled from various previews…"* — while six wanted stars, the Slim Jim
+carjacking minigame, the 80-hour playthrough and the November 19 date sat in the
+tail that never fit. Raising the ceiling would have packed more furniture.
+
+`core/fact_selection.py` ranks the pool instead: operator-typed facts pinned,
+scaffolding penalised (not blacklisted — a furniture-shaped line carrying a hard
+number still competes), and the rest scored on recency (weighted heaviest),
+novelty, specificity, and relevance. Every exclusion carries a reason and prints.
+
+One measured finding worth keeping: `score_vault_fact` scored the Slim Jim
+mechanic at **0.03**. It measures how much a line echoes the existing signal
+corpus — the right question for a vault note, the wrong one for a pasted article,
+where the *point* is to add what the signals lack. That is why relevance is the
+smallest weight here and `novelty` exists.
+
+#### Also observed in the same run
+
+- **`trendingnow.games` failed again** (DNS/TLS, `Max retries exceeded`), as it has
+  for weeks. Retired per decisions §19 — reason recorded in
+  `apis/signals_bootstrap.RETIRED_SIGNALS`, module kept for revival.
+- **`youtube` and `youtube_comments` both timed out**, 30s of a 37.8s discovery,
+  because both route through `apis/youtube_api` and each waited out the full 15s
+  socket timeout against the same dead endpoint. Timeout cut to 8s, and a
+  process-level latch makes the second call fail fast once the first has timed out.
+  A read timeout is transient, so the session breaker never fired for it.
+- **Two gates disagreed about the same phrase.** The log said
+  `persona lint: but here's the thing` and the report said
+  `original_insight: has an authorial take ('here's the thing')`, four lines apart
+  — and the second is why the script scored authenticity **100/100**. The phrase is
+  banned by `core/persona_lint.py` *and* by the script prompt's own banned list, so
+  rewarding it laundered a style defect into an A. Removed from
+  `_INSIGHT_MARKERS`; `tests/test_gate_agreement.py` stops the three lists
+  disagreeing again.
+- **The persona-lint hit never reached a decision surface.** `core/pipeline.py`
+  already carried it into `features["persona_lint"]`; nothing displayed it. Now
+  shown before `Proceed?` as a style line (it does not raise the fact-review flag).
+- **The script shipped 277 words against a 300-word floor and still graded A.**
+  The expansion loop runs *before* `_maybe_improve_hook`,
+  `_maybe_recenter_on_key_facts`, `_maybe_inject_insight` and
+  `_maybe_reground_script` — all of which can remove text — and nothing measured
+  the script again afterwards, so the loop's exit condition was checked against
+  text the operator never saw. `_relength_after_postprocessing` re-checks, and
+  reverts a late expansion that reintroduces unsupported specifics: hitting a word
+  count is never worth walking back the grounding pass.
+- **Not fixed, deliberately:** the report card still does not weight length. Adding
+  a length component would change the meaning of every historical grade, which is a
+  bigger decision than this run justifies. The `[SHORT]` line still prints directly
+  above the card.
+
+#### What to do next time (same window)
+
+- **Paste an article at `Fact N` freely.** Blank lines no longer end intake while
+  the paste is still arriving, and anything left over is offered back. `paste` mode
+  still works and is still slightly safer for very large blocks.
+- **`Proceed?`** — only `n` / `N` / `no` / Enter stop. A stray token re-prompts.
+- If a link is blocked, the message now names the reader-proxy escape hatch
+  (`LINK_READER_PROXY=1`) alongside the paste fallback.
 
 ---
 
@@ -439,6 +572,12 @@ None of those strings were Content Machine commands. The CLI never saw them.
   then an empty line. Do **not** paste at **Proceed?**
 - **Proceed?:** `y` (render), `N` (stop), `+`/`-`/`1`–`4` (relength). A URL
   or paragraph is a stop.
+
+> **Superseded by run 74 (2026-08-29).** Both bullets above described the
+> behaviour of the time. A paste at **Fact N** no longer needs `paste` mode, and
+> at **Proceed?** only `n` / `N` / `no` / Enter stop — everything else re-prompts.
+> Run 74 showed why the run-71 fix was too narrow: the line that ended that run
+> was the single word `by`, which no prose detector catches.
 - If you already see `PS C:\dev\content_machine>`: **Ctrl+C** once to cancel
   a `>>` continuation, then `py main.py` again. Run 71 is a **draft** — Queue
   manager will not have an MP4 until you render.
@@ -584,4 +723,4 @@ Notable suites:
 
 ---
 
-*Last updated: 2026-08-22 — live-run 71 (article paste into PowerShell after Proceed? stop); layout cleanup, hybrid backgrounds, UFC research signals, ops/requeue CLIs, and cache hardening.*
+*Last updated: 2026-08-29 — live-run 74 (a buffered `by` from a Fact-prompt paste answered `Proceed?` and discarded the run); fact intake survives a raw paste, facts split at sentences instead of slicing at 400 chars, and the prompt budget now ranks facts rather than taking the first N.*

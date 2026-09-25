@@ -15,8 +15,18 @@ class TestPipelineSmoke(unittest.TestCase):
     @patch("core.pipeline.record_content_run", return_value=99)
     @patch("core.pipeline.generate_content_package")
     @patch("core.pipeline.run_discovery")
+    @patch("core.pipeline.generate_audio")
     def test_run_pipeline_drafted_without_video(
-        self, mock_discovery, mock_content, mock_record, mock_learn, _bq, _pq, mock_trace, mock_doss
+        self,
+        mock_tts,
+        mock_discovery,
+        mock_content,
+        mock_record,
+        mock_learn,
+        _bq,
+        _pq,
+        mock_trace,
+        mock_doss,
     ):
         discovery = DiscoveryResult(
             input_topic="Marvel Rivals meta",
@@ -48,6 +58,7 @@ class TestPipelineSmoke(unittest.TestCase):
         self.assertEqual(result.abort_reason, "proceed_video=False")
         self.assertEqual(result.run_id, 99)
         self.assertEqual(result.title, "Test")
+        mock_tts.assert_not_called()
         mock_learn.assert_called_once()
         mock_trace.assert_called_once()  # ledger trace written for drafted runs too
         mock_doss.assert_called_once()  # vault dossier mirrored for drafted runs too
@@ -79,6 +90,8 @@ class TestPipelineSmoke(unittest.TestCase):
             "tier_warnings": ["tier warning"],
             "fact_conflicts": ["conflict"],
             "fact_conflicts_dropped": 1,
+            "disputed": True,
+            "disputed_claims": ["Giannis to Warriors"],
             "claim_verification": verification,
         }
 
@@ -93,6 +106,8 @@ class TestPipelineSmoke(unittest.TestCase):
         self.assertEqual(result.features["tier_warnings"], ["tier warning"])
         self.assertEqual(result.features["fact_conflicts"], ["conflict"])
         self.assertEqual(result.features["fact_conflicts_dropped"], 1)
+        self.assertTrue(result.features["disputed"])
+        self.assertEqual(result.features["disputed_claims"], ["Giannis to Warriors"])
         self.assertEqual(result.features["claim_verification"], verification)
 
     @patch("core.pipeline.write_run_dossier")

@@ -68,7 +68,7 @@ class TestBomDecoding(unittest.TestCase):
 class TestCheckFeed(unittest.TestCase):
     FEED: ClassVar[dict[str, str]] = {
         "scope": "domain:ufc",
-        "name": "Sherdog",
+        "name": "Dummy MMA feed",
         "url": "https://x/rss",
     }
 
@@ -169,6 +169,22 @@ class TestPersistence(unittest.TestCase):
             [{"status": "dead", "name": "Gone", "scope": "s", "detail": "HTTP 404"}]
         )
         self.assertTrue(any("Gone" in w for w in feed_health.cached_warnings()))
+
+    def test_cached_warnings_drop_urls_no_longer_in_config(self):
+        """Sherdog was removed from shipped config; a 7-day-old cache must not FAIL doctor."""
+        feed_health.save_results(
+            [
+                {
+                    "status": "dead",
+                    "name": "Sherdog",
+                    "scope": "domain:ufc",
+                    "url": "https://www.sherdog.com/rss/news.xml",
+                    "detail": "HTTP 403",
+                }
+            ]
+        )
+        blob = " ".join(feed_health.cached_warnings()).lower()
+        self.assertNotIn("sherdog", blob)
 
     def test_cached_warnings_empty_when_never_run(self):
         self.assertEqual(feed_health.cached_warnings(), [])

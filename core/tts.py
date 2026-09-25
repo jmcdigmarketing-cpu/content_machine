@@ -6,9 +6,8 @@ import os
 import random
 import re
 import shutil
+from contextlib import contextmanager
 from typing import Any
-
-from elevenlabs.client import ElevenLabs
 
 from config.channels import get_channel_profile, resolve_channel_id
 from config.paths import PRONUNCIATIONS_FILE, VOICES_FILE
@@ -19,12 +18,51 @@ from video.caption_timing import words_from_alignment
 logger = get_logger("core.tts")
 
 # Set by generate_audio so merge_render_cost can zero the TTS line on a cache hit
-# (re-synth skipped — do not double-bill the ledger).
+# (re-synth skipped — do not double-bill the ledger) or an occasional Piper mix.
 _last_cache_hit = False
+_last_piper_mix = False
+_last_cache_fraction = 0.0
+_last_paid_fallback = False
+_last_paid_fallback_from = ""
+
+# Tests patch this name. Production fills it on first paid synth so import stays cheap (#607).
+ElevenLabs: Any = None
 
 
 def last_tts_was_cache_hit() -> bool:
     return _last_cache_hit
+
+
+def last_tts_was_piper_mix() -> bool:
+    return _last_piper_mix
+
+
+def last_tts_cache_fraction() -> float:
+    """0..1 share of synthesized characters served from the TTS cache (#402)."""
+    return _last_cache_fraction
+
+
+def last_tts_fell_back_to_paid() -> bool:
+    return _last_paid_fallback
+
+
+def last_tts_fallback_from() -> str:
+    return _last_paid_fallback_from
+
+
+def mark_tts_paid_fallback(provider: str, reason: str = "") -> None:
+    global _last_paid_fallback, _last_paid_fallback_from
+    del reason
+    _last_paid_fallback = True
+    _last_paid_fallback_from = str(provider or "")
+
+
+def _elevenlabs_client(api_key: str):
+    """Paid SDK is imported only when a render actually bills ElevenLabs (#607)."""
+    cls = ElevenLabs
+    if cls is None:
+        from elevenlabs.client import ElevenLabs as cls
+    return cls(api_key=api_key)
 
 
 # Fallback catalog, used only when config/voices.json is missing or unusable. The
@@ -135,6 +173,10 @@ def apply_pronunciation_lexicon(text: str, channel_id: str | None = None) -> str
         return lower_map.get(match.group(0).lower(), match.group(0))
 
     return pattern.sub(_repl, text)
+
+
+def _edge_voice() -> str:
+    return (os.getenv("EDGE_VOICE") or "en-US-JennyNeural").strip() or "en-US-JennyNeural"
 
 
 def _entries_to_pool(entries: Any) -> dict[str, int]:
@@ -256,18 +298,88 @@ def resolve_tts_config(channel_id: str | None = None) -> tuple[str, str]:
 
 
 def tts_cache_enabled() -> bool:
-    """Re-synth skip for identical scripts. Opt-in (empty/0/off = disabled).
+    """Re-synth skip for identical scripts. Default on (empty/unset).
 
-    Default off so a bare ``unittest discover -s tests`` (no ``-t .``, which
-    does not import ``tests/__init__.py``) cannot write ``data/tts_cache``.
-    Production: set ``TTS_CACHE=true``.
+    ``0``/``false``/``no``/``off`` disables. The suite pins ``TTS_CACHE=false``
+    in ``tests/__init__.py`` so discover with ``-t .`` cannot fill data/tts_cache.
     """
-    return os.getenv("TTS_CACHE", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
+    raw = (os.getenv("TTS_CACHE", "") or "").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
+def tts_cache_status(
+    *,
+    cache_dir: str | None = None,
+    cached_flags: list[object] | None = None,
+) -> dict[str, Any]:
+    """Enabled flag, on-disk file count, optional hit rate. Never writes."""
+    root = cache_dir if cache_dir is not None else tts_cache_dir()
+    files = 0
+    try:
+        if os.path.isdir(root):
+            files = sum(
+                1
+                for name in os.listdir(root)
+                if name.endswith(".mp3") and os.path.isfile(os.path.join(root, name))
+            )
+    except Exception as exc:
+        logger.debug("tts cache dir listing skipped: %s", exc)
+        files = 0
+    flags = list(cached_flags) if cached_flags is not None else _tts_cached_flags_from_traces()
+    hits = sum(1 for flag in flags if flag)
+    misses = sum(1 for flag in flags if not flag)
+    total = hits + misses
+    return {
+        "enabled": tts_cache_enabled(),
+        "files": files,
+        "hits": hits,
+        "misses": misses,
+        "hit_rate": (hits / total) if total else None,
+    }
+
+
+def format_tts_cache_line(status: dict[str, Any] | None = None) -> str:
+    """The nightly / reliability one-liner. Empty traces → no invented hit rate."""
+    snap = status if status is not None else tts_cache_status()
+    on = "on" if snap.get("enabled") else "off"
+    files = int(snap.get("files") or 0)
+    rate = snap.get("hit_rate")
+    if rate is None:
+        return f"TTS cache: {on}, {files} file(s)"
+    hits = int(snap.get("hits") or 0)
+    misses = int(snap.get("misses") or 0)
+    return f"TTS cache: {on}, {files} file(s), {hits}/{hits + misses} hits ({rate * 100:.0f}%)"
+
+
+def _tts_cached_flags_from_traces() -> list[object]:
+    flags: list[object] = []
+    try:
+        from config.paths import DATA_DIR
+
+        traces = os.path.join(str(DATA_DIR), "traces")
+        if not os.path.isdir(traces):
+            return []
+        for name in os.listdir(traces):
+            if not name.endswith(".json"):
+                continue
+            path = os.path.join(traces, name)
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    payload = json.load(handle)
+            except Exception as exc:
+                logger.debug("tts cache trace %s skipped: %s", name, exc)
+                continue
+            if not isinstance(payload, dict):
+                continue
+            if "tts_cached" in payload:
+                flags.append(payload.get("tts_cached"))
+                continue
+            feats = payload.get("features") or {}
+            if isinstance(feats, dict) and "tts_cached" in feats:
+                flags.append(feats.get("tts_cached"))
+    except Exception as exc:
+        logger.debug("tts cache trace scan skipped: %s", exc)
+    return flags
 
 
 def tts_cache_dir() -> str:
@@ -323,6 +435,8 @@ def tts_cache_store(key: str, src_path: str) -> None:
 
 def _tts_cache_voice(channel_id: str | None) -> str:
     provider = _resolve_tts_provider()
+    if provider == "edge":
+        return _edge_voice()
     if is_local_tts_provider():
         return resolve_local_voice(provider, channel_id) or os.getenv(
             _LOCAL_VOICE_ENV.get(provider, ""), ""
@@ -335,11 +449,28 @@ def _tts_cache_voice(channel_id: str | None) -> str:
         return ""
 
 
-def generate_audio(script, output_path, channel_id: str | None = None):
-    global _last_cache_hit
+def generate_audio(script, output_path, channel_id: str | None = None, length_choice: str = ""):
+    """Synthesize `script`. `length_choice` selects the long-form voice policy (#758)."""
+    with length_context(length_choice):
+        return _generate_audio(script, output_path, channel_id=channel_id)
+
+
+def _generate_audio(script, output_path, channel_id: str | None = None):
+    global _last_cache_hit, _last_piper_mix, _last_cache_fraction
+    global _last_paid_fallback, _last_paid_fallback_from
     _last_cache_hit = False
+    _last_piper_mix = False
+    _last_cache_fraction = 0.0
+    _last_paid_fallback = False
+    _last_paid_fallback_from = ""
     channel_id = resolve_channel_id(channel_id)
     spoken = clean_script_for_tts(script)
+    try:
+        from core.tts_char_cap import forecast_tts
+
+        forecast_tts(script)
+    except Exception as exc:
+        logger.debug("tts forecast skipped: %s", exc)
     try:
         from core.spoken_numbers import expand_spoken_numbers
 
@@ -355,11 +486,292 @@ def generate_audio(script, output_path, channel_id: str | None = None):
         local_spoken = apply_pronunciation_lexicon(spoken, channel_id)
 
     spoken_for_alt = local_spoken if is_local_tts_provider() else spoken
+
+    def _record_actual(chars: int) -> None:
+        """Stamp what was *actually* synthesized.
+
+        This used to run before the cache lookup, so a cache hit recorded a full
+        script's worth of synth chars for characters nothing synthesized -- and
+        `core/pipeline.py` persists that as `tts_actual_chars` into the run
+        ledger, which is the number the operator and the analytics layer read.
+        """
+        try:
+            from core.tts_char_cap import record_tts_actual
+
+            record_tts_actual(chars)
+        except Exception as exc:
+            logger.debug("tts actual skipped: %s", exc)
+
     cache_key = tts_cache_key(spoken_for_alt, _resolve_tts_provider(), _tts_cache_voice(channel_id))
     if tts_cache_lookup(cache_key, output_path):
         _last_cache_hit = True
+        _last_cache_fraction = 1.0
+        _record_actual(0)
         print(f"[TTS] Channel: {channel_id} | cache hit")
         return output_path
+
+    from core.script_length import split_spoken_sentences
+
+    # Gated on the cache it exists to serve. With TTS_CACHE off (the default)
+    # every lookup misses and every store is a no-op, so splitting buys nothing
+    # and still costs N synth calls, an ffmpeg re-encode, and an encoder boundary
+    # at every sentence break in every video.
+    sents = split_spoken_sentences(spoken) if tts_cache_enabled() else []
+    alts = split_spoken_sentences(spoken_for_alt) if tts_cache_enabled() else []
+    if len(sents) == len(alts) and len(sents) > 1 and ffmpeg_concat_ready():
+        try:
+            return _generate_by_sentences(
+                sents,
+                alts,
+                output_path,
+                channel_id,
+                cache_key,
+                _record_actual,
+            )
+        except Exception as exc:
+            # The segments were already synthesized and billed. Falling back
+            # re-synthesizes the whole script, so the provider is charged roughly
+            # twice -- and recording only the second pass would erase the first
+            # from `tts_actual_chars`, which is the #657 defect again.
+            spent = int(getattr(exc, "spent_chars", 0) or 0)
+            if spent:
+                logger.warning(
+                    "sentence TTS concat failed after billing %d char(s); "
+                    "the whole script is being re-synthesized, so this render is "
+                    "billed twice: %s",
+                    spent,
+                    exc,
+                )
+            else:
+                logger.warning("sentence TTS cache failed - synthesizing whole script: %s", exc)
+            _record_actual(spent + len(spoken_for_alt))
+            return synthesize_to_path(spoken, spoken_for_alt, output_path, channel_id, cache_key)
+
+    _record_actual(len(spoken_for_alt))
+    return synthesize_to_path(spoken, spoken_for_alt, output_path, channel_id, cache_key)
+
+
+def offset_word_timings(words: list[dict[str, Any]], offset: float) -> list[dict[str, Any]]:
+    """Shift word sidecar timestamps by `offset` seconds (#402 concat)."""
+    shifted: list[dict[str, Any]] = []
+    for item in words or []:
+        row = dict(item)
+        start = row.get("start")
+        end = row.get("end")
+        try:
+            if start is not None:
+                row["start"] = float(start) + offset
+            if end is not None:
+                row["end"] = float(end) + offset
+        except (TypeError, ValueError):
+            pass
+        shifted.append(row)
+    return shifted
+
+
+def segment_audio_duration(path: str) -> float:
+    """Prefer the sidecar's last end time; ffprobe if the sidecar is missing."""
+    sidecar = path + ".words.json"
+    if os.path.isfile(sidecar):
+        try:
+            with open(sidecar, encoding="utf-8") as f:
+                words = json.load(f)
+            ends: list[float] = []
+            if isinstance(words, list):
+                for word in words:
+                    if not isinstance(word, dict) or word.get("end") is None:
+                        continue
+                    ends.append(float(word["end"]))
+            if ends:
+                return max(ends)
+        except (OSError, TypeError, ValueError):
+            pass
+    import subprocess
+
+    cmd = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "csv=p=0",
+        path,
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        return float((proc.stdout or "0").strip() or 0)
+    except (OSError, TypeError, ValueError) as exc:
+        logger.debug("segment duration skipped: %s", exc)
+        return 0.0
+
+
+_lame_ok: dict[str, bool] = {}
+
+
+def ffmpeg_concat_ready() -> bool:
+    """True when ffmpeg is on PATH and can encode libmp3lame.
+
+    #666: the sentence loop synthesizes N segments *then* concats. A missing
+    or undersized ffmpeg fails after the spend, and the fallback synthesizes
+    the whole script again. This is knowable for free.
+    """
+    exe = shutil.which("ffmpeg")
+    if not exe:
+        return False
+    cached = _lame_ok.get(exe)
+    if cached is not None:
+        return cached
+    try:
+        import subprocess
+
+        proc = subprocess.run(
+            [exe, "-hide_banner", "-encoders"],
+            capture_output=True,
+            text=True,
+            timeout=8,
+            check=False,
+        )
+        ok = "libmp3lame" in (proc.stdout or "")
+    except Exception as exc:
+        logger.debug("ffmpeg concat preflight skipped: %s", exc)
+        ok = False
+    _lame_ok[exe] = ok
+    return ok
+
+
+def concat_audio_segments(paths: list[str], dest: str) -> str:
+    """Re-encode concatenated MP3s. Copy-concat across providers is unsafe."""
+    import subprocess
+
+    if not paths:
+        raise RuntimeError("no TTS segments to concat")
+    list_file = dest + ".concat.txt"
+    try:
+        with open(list_file, "w", encoding="utf-8") as f:
+            for path in paths:
+                safe = path.replace("\\", "/").replace("'", r"'\''")
+                f.write(f"file '{safe}'\n")
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            list_file,
+            "-c:a",
+            "libmp3lame",
+            "-qscale:a",
+            "4",
+            dest,
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if proc.returncode != 0 or not os.path.isfile(dest) or os.path.getsize(dest) <= 0:
+            err = (proc.stderr or "")[-300:]
+            raise RuntimeError(f"ffmpeg concat failed (rc={proc.returncode}): {err}")
+        return dest
+    finally:
+        try:
+            os.remove(list_file)
+        except OSError:
+            pass
+
+
+def _write_concat_word_sidecar(paths: list[str], dest: str) -> None:
+    merged: list[dict[str, Any]] = []
+    offset = 0.0
+    for path in paths:
+        sidecar = path + ".words.json"
+        chunk: list[dict[str, Any]] = []
+        if os.path.isfile(sidecar):
+            try:
+                with open(sidecar, encoding="utf-8") as f:
+                    loaded = json.load(f)
+                if isinstance(loaded, list):
+                    chunk = [w for w in loaded if isinstance(w, dict)]
+            except (OSError, ValueError):
+                chunk = []
+        merged.extend(offset_word_timings(chunk, offset))
+        offset += segment_audio_duration(path)
+    try:
+        with open(dest + ".words.json", "w", encoding="utf-8") as f:
+            json.dump(merged, f)
+    except OSError as exc:
+        logger.debug("concat word sidecar skipped: %s", exc)
+
+
+def _generate_by_sentences(
+    sents: list[str],
+    alts: list[str],
+    output_path: str,
+    channel_id: str | None,
+    whole_cache_key: str,
+    record_actual,
+) -> str:
+    global _last_cache_hit, _last_cache_fraction
+    provider = _resolve_tts_provider()
+    voice = _tts_cache_voice(channel_id)
+    paths: list[str] = []
+    cached_chars = 0
+    synth_chars = 0
+    tmp_paths: list[str] = []
+    try:
+        for i, (sent, alt) in enumerate(zip(sents, alts, strict=True)):
+            seg = f"{output_path}.seg{i}.mp3"
+            tmp_paths.append(seg)
+            key = tts_cache_key(alt, provider, voice)
+            if tts_cache_lookup(key, seg):
+                cached_chars += len(alt)
+            else:
+                synthesize_to_path(sent, alt, seg, channel_id, key, allow_piper_mix=False)
+                synth_chars += len(alt)
+            paths.append(seg)
+        try:
+            concat_audio_segments(paths, output_path)
+            _write_concat_word_sidecar(paths, output_path)
+        except Exception as exc:
+            # Tell the caller what was already paid for, so the fallback can add
+            # it rather than report only its own synthesis.
+            exc.spent_chars = synth_chars  # type: ignore[attr-defined]
+            raise
+        tts_cache_store(whole_cache_key, output_path)
+        total = cached_chars + synth_chars
+        _last_cache_fraction = (cached_chars / total) if total else 0.0
+        _last_cache_hit = _last_cache_fraction >= 1.0
+        record_actual(synth_chars)
+        if _last_cache_hit:
+            print(f"[TTS] Channel: {channel_id} | cache hit (sentences)")
+        else:
+            pct = f"{_last_cache_fraction:.0%}"
+            print(f"[TTS] Channel: {channel_id} | sentence cache {pct}")
+        return output_path
+    finally:
+        for path in tmp_paths:
+            for extra in (path, path + ".words.json"):
+                try:
+                    os.remove(extra)
+                except OSError:
+                    pass
+
+
+def synthesize_to_path(
+    spoken: str,
+    spoken_for_alt: str,
+    output_path: str,
+    channel_id: str | None,
+    cache_key: str,
+    *,
+    allow_piper_mix: bool = True,
+) -> str:
+    """Write synthesized audio for one text blob. Callers own cache lookup + actuals.
+
+    #658: generate_audio (and later per-sentence cache) go through this seam so
+    provider branches are not duplicated. Piper mix still skips cache store —
+    that path is an occasional stand-in, not a billed identity for the script.
+    """
+    global _last_piper_mix
 
     if is_local_tts_provider():
         try:
@@ -380,6 +792,19 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     if alt:
         tts_cache_store(cache_key, alt)
         return alt
+
+    if allow_piper_mix and _should_piper_mix():
+        mixed_spoken = apply_pronunciation_lexicon(spoken, channel_id)
+        try:
+            mixed = _piper_synth(mixed_spoken, output_path, channel_id)
+        except Exception as exc:
+            logger.warning("Piper mix failed — using ElevenLabs: %s", exc)
+            mixed = None
+        if mixed:
+            _last_piper_mix = True
+            every = _piper_mix_every()
+            print(f"[TTS] Channel: {channel_id} | Provider: piper (mix 1/{every})")
+            return mixed
 
     # Free mode (strict): local $0 voice failed/absent and paid ElevenLabs is
     # disallowed — block with install guidance instead of silently paying.
@@ -411,13 +836,14 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     if not eleven_key:
         raise Exception("ELEVEN_API_KEY not found.")
 
-    client = ElevenLabs(api_key=eleven_key)
+    client = _elevenlabs_client(eleven_key)
 
     # A voice id this account can't use (400 voice_not_found — e.g. a Voice Library voice
     # that was never added to the library) must not kill a render at the TTS step, which
     # runs after the whole script + grounding pipeline. Mark it dead for the session and
     # retry once with a freshly resolved voice.
     last_voice = ""
+    model_id = ""
     for attempt in (0, 1):
         voice_id, model_id = resolve_tts_config(channel_id)
         last_voice = voice_id
@@ -456,8 +882,88 @@ def generate_audio(script, output_path, channel_id: str | None = None):
     return output_path
 
 
+# #775: no default long-form override any more - the operator opts in with TTS_PROVIDER_LONG.
+_LONG_FORM_PROVIDER_DEFAULT = ""
+_length_choice_context = ""
+
+
+@contextmanager
+def length_context(length_choice: str):
+    """The render's length preset, for the duration of one `generate_audio` call."""
+    global _length_choice_context
+    previous = _length_choice_context
+    _length_choice_context = str(length_choice or "")
+    try:
+        yield
+    finally:
+        _length_choice_context = previous
+
+
+def long_form_provider(provider: str, length_choice: str) -> str:
+    """Voice backend for this length (#758, reversed by #775).
+
+    #758 sent Long/Extended to piper because TTS was 91% of spend. The operator listened to
+    the first piper Extended render (run 79, 2026-09-17) and called it clearly worse, so
+    long-form is paid again: this returns the configured provider unless the operator sets
+    `TTS_PROVIDER_LONG` themselves. Piper survives as the 1-in-6 Shorts mix. A long video is
+    1-2 a month, so the bill is mostly Shorts either way.
+    """
+    if os.getenv("TTS_PROVIDER", "").strip():
+        return provider
+    try:
+        from core.script_length import WORDS_PER_SECOND, get_length_preset
+
+        seconds = get_length_preset(str(length_choice or "")).max_words / max(WORDS_PER_SECOND, 0.1)
+    except Exception as exc:
+        logger.debug("long-form voice policy skipped: %s", exc)
+        return provider
+    if seconds <= 180:
+        return provider
+    return (
+        os.getenv("TTS_PROVIDER_LONG", "").strip() or _LONG_FORM_PROVIDER_DEFAULT
+    ).lower() or provider
+
+
+def voice_stage_label(length_choice: str = "") -> str:
+    """The render progress line, named for the voice this length will use (#772)."""
+    provider = (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+    return f"Voice ({long_form_provider(provider, length_choice)})..."
+
+
 def _resolve_tts_provider() -> str:
-    return (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+    provider = (os.getenv("TTS_PROVIDER", "elevenlabs") or "elevenlabs").strip().lower()
+    return long_form_provider(provider, _length_choice_context)
+
+
+def _piper_mix_every() -> int:
+    """1-in-N Standard ElevenLabs renders use Piper. Unset = 6 (#775); 0/off = never."""
+    raw = (os.getenv("TTS_PIPER_MIX_EVERY", "6") or "6").strip().lower()
+    if raw in ("0", "off", "false", "no"):
+        return 0
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 6
+
+
+def _should_piper_mix() -> bool:
+    """True for this generate_audio call when Piper should stand in for ElevenLabs."""
+    if _free_mode_strict():
+        return False
+    if _resolve_tts_provider() != "elevenlabs":
+        return False
+    every = _piper_mix_every()
+    if every <= 0:
+        return False
+    try:
+        from core.run_mode import _tts_provider_ready
+
+        if not _tts_provider_ready("piper"):
+            return False
+    except Exception as exc:
+        logger.debug("piper mix readiness skipped: %s", exc)
+        return False
+    return random.randrange(every) == 0
 
 
 def _free_mode_strict() -> bool:
@@ -510,11 +1016,13 @@ def _elevenlabs_budget_display() -> str:
     if budget is None:
         return "no budget"
     try:
-        from core.quota_governor import elevenlabs_chars_used
+        from core.quota_governor import elevenlabs_chars_reading
 
-        used = elevenlabs_chars_used()
+        used = elevenlabs_chars_reading()
     except Exception:
-        used = 0
+        used = None
+    if used is None:  # #724: an unreadable ledger is not "0 used"
+        return f"unknown/{budget:,} chars"
     return f"{used:,}/{budget:,} chars"
 
 
@@ -547,15 +1055,16 @@ def _elevenlabs_record_chars(chars: int) -> None:
 
 
 def _piper_voice_ready() -> bool:
-    voice = os.getenv("PIPER_VOICE", "").strip()
-    if not voice or not os.path.isfile(voice):
-        return False
+    from core.voice_catalog import any_piper_onnx_ready
+
     try:
         import importlib.util
 
-        return importlib.util.find_spec("piper") is not None
+        if importlib.util.find_spec("piper") is None:
+            return False
     except (ImportError, ValueError, ModuleNotFoundError):
         return False
+    return any_piper_onnx_ready()
 
 
 def _synth_piper_for_quota(script: str, output_path: str, channel_id: str | None) -> str | None:
@@ -847,11 +1356,78 @@ def _qwen_synth(script: str, output_path: str, channel_id: str | None) -> str | 
     return _transcode_to_mp3(wav_path, output_path)
 
 
+_EDGE_TICKS_PER_SECOND = 10_000_000
+
+
+def _edge_word_events(chunk: dict[str, Any]) -> dict[str, Any] | None:
+    """Normalize a WordBoundary chunk to {word, start, end} seconds, or None."""
+    word = str(chunk.get("text") or chunk.get("Text") or "").strip()
+    if not word:
+        return None
+    try:
+        offset = float(chunk.get("offset") if "offset" in chunk else chunk.get("Offset") or 0)
+        duration = float(
+            chunk.get("duration") if "duration" in chunk else chunk.get("Duration") or 0
+        )
+    except (TypeError, ValueError):
+        return None
+    start = offset / _EDGE_TICKS_PER_SECOND
+    return {"word": word, "start": start, "end": start + (duration / _EDGE_TICKS_PER_SECOND)}
+
+
+def _edge_synth(script: str, output_path: str, channel_id: str | None) -> str | None:
+    """Microsoft Edge neural TTS (unofficial endpoint). Cloud, $0, needs network.
+
+    Writes mp3 + optional .words.json from WordBoundary events. Any failure returns
+    None so the alt-provider chain can fall back. Never the default provider.
+    """
+    try:
+        import asyncio
+
+        import edge_tts
+    except ImportError:
+        logger.warning('TTS_PROVIDER=edge needs edge-tts (pip install -e ".[free]")')
+        return None
+
+    # NOT SSML: edge_tts.Communicate escapes its input, so markup is spoken aloud
+    # (measured: 23.76s of "speak version equals one point zero" for a 3.94s line).
+    # Pronunciation rides the same plain respelling the local providers use.
+    spoken = apply_pronunciation_lexicon(script, channel_id)
+    voice = _edge_voice()
+
+    async def _run() -> str | None:
+        # edge_tts 7.x defaults boundary to "SentenceBoundary"; ask for words or
+        # the .words.json branch below never fires and captions lose their timing.
+        communicate = edge_tts.Communicate(spoken, voice, boundary="WordBoundary")
+        audio = bytearray()
+        words: list[dict[str, Any]] = []
+        async for chunk in communicate.stream():
+            kind = str((chunk or {}).get("type") or "")
+            if kind == "audio":
+                audio.extend(chunk.get("data") or b"")
+            elif kind == "WordBoundary":
+                event = _edge_word_events(chunk)
+                if event:
+                    words.append(event)
+        if not audio:
+            return None
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        with open(output_path, "wb") as fh:
+            fh.write(audio)
+        if words and _word_timestamps_enabled():
+            with open(word_timing_path(output_path), "w", encoding="utf-8") as fh:
+                json.dump(words, fh)
+        return output_path
+
+    return asyncio.run(_run())
+
+
 _ALT_TTS = {
     "kokoro": _kokoro_synth,
     "xtts": _xtts_synth,
     "piper": _piper_synth,
     "qwen": _qwen_synth,
+    "edge": _edge_synth,
 }
 
 
@@ -873,10 +1449,12 @@ def _try_alt_tts_provider(script: str, output_path: str, channel_id: str | None)
     try:
         path = synth(script, output_path, channel_id)
     except Exception as exc:
+        mark_tts_paid_fallback(provider, str(exc))
         logger.warning("TTS provider %s failed (%s) — falling back to ElevenLabs", provider, exc)
         return None
     if path:
-        print(f"[TTS] Channel: {channel_id} | Provider: {provider} (local, $0)")
+        kind = "cloud, $0" if provider == "edge" else "local, $0"
+        print(f"[TTS] Channel: {channel_id} | Provider: {provider} ({kind})")
     return path
 
 

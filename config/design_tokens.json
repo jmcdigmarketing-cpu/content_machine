@@ -1,0 +1,134 @@
+{
+  "roles": {
+    "primary": {
+      "hex": "#00D4FF",
+      "ansi16": 36,
+      "ansi256": 45
+    },
+    "accent": {
+      "hex": "#FFD700",
+      "ansi16": 33,
+      "ansi256": 220
+    },
+    "success": {
+      "hex": "#81C995",
+      "ansi16": 32,
+      "ansi256": 40
+    },
+    "warn": {
+      "hex": "#FDD663",
+      "ansi16": 33,
+      "ansi256": 214
+    },
+    "error": {
+      "hex": "#F28B82",
+      "ansi16": 31,
+      "ansi256": 196
+    }
+  },
+  "type": {
+    "body": 16,
+    "h1": 20,
+    "caption": 18
+  },
+  "spacing": {
+    "page": 20,
+    "header": 16
+  },
+  "colorblind_roles": {
+    "primary": {
+      "hex": "#56B4E9",
+      "ansi16": 36,
+      "ansi256": 74
+    },
+    "accent": {
+      "hex": "#F0E442",
+      "ansi16": 33,
+      "ansi256": 226
+    },
+    "success": {
+      "hex": "#0072B2",
+      "ansi16": 34,
+      "ansi256": 33
+    },
+    "warn": {
+      "hex": "#F0E442",
+      "ansi16": 33,
+      "ansi256": 226
+    },
+    "error": {
+      "hex": "#E69F00",
+      "ansi16": 33,
+      "ansi256": 208
+    }
+  },
+  "surfaces": {
+    "bg": {
+      "hex": "#111318",
+      "note": "page background"
+    },
+    "surface": {
+      "hex": "#1a1d24",
+      "note": "header and card background"
+    },
+    "sunken": {
+      "hex": "#0d0f14",
+      "note": "pre / textarea background"
+    },
+    "bezel": {
+      "hex": "#111111",
+      "note": "phone-bezel body"
+    },
+    "border": {
+      "hex": "#2a2f3a",
+      "note": "hairline borders and dividers"
+    },
+    "ink": {
+      "hex": "#e8eaed",
+      "note": "body text"
+    },
+    "ink_dim": {
+      "hex": "#9aa0a6",
+      "note": "secondary text"
+    },
+    "ink_faint": {
+      "hex": "#5f6368",
+      "note": "disabled / skipped"
+    },
+    "link": {
+      "hex": "#8ab4f8",
+      "note": "anchor text"
+    },
+    "danger_bg": {
+      "hex": "#3c1f1f",
+      "note": "banner background"
+    },
+    "accent_line": {
+      "hex": "#c62828",
+      "note": "header rule when no channel is set"
+    }
+  },
+  "channels": {
+    "tapin": {
+      "accent": "#FFFFFF",
+      "caption_fill": "#FFFFFF",
+      "caption_outline": "#111111",
+      "end_card_bg": "#0B0F14",
+      "end_card_fg": "#FFFFFF",
+      "header_border": "#E53935",
+      "grain": 8,
+      "vignette": 0.28
+    },
+    "moneywise": {
+      "accent": "#F7E7A9",
+      "caption_fill": "#F7E7A9",
+      "caption_outline": "#1B2430",
+      "end_card_bg": "#1B2430",
+      "end_card_fg": "#F7E7A9",
+      "header_border": "#81C995",
+      "grain": 0,
+      "vignette": 0,
+      "_look_note": "grain/vignette deliberately 0: the film look is a TapIn choice. On a finance channel grain reads as encoder noise, not texture. #512 shipped it on for both; the operator kept it for tapin only (2026-09-07). Non-zero re-enables it."
+    }
+  }
+}

@@ -12,6 +12,7 @@ import random
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from config.channels import get_channel_profile
 from core.channel_context import (
@@ -22,12 +23,46 @@ from core.channel_context import (
 )
 from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
+from core.engagement import subscribers_gained as _subscribers_gained
 from core.logging import get_logger
-from core.recommender_confidence import MODERATE_SAMPLES, confidence_note
+from core.recommender_confidence import MODERATE_SAMPLES, confidence_note, interval_note
 
 logger = get_logger("core.best_bet")
 
 _TOP_N = 30  # recent runs to analyse
+
+
+def _published_age_days(log: Any) -> float | None:
+    """Days since the video went out. None when the log has no usable timestamp -
+    `recency_weight` then falls back to 1.0, which is the old unweighted mean."""
+    raw = getattr(log, "published_at", None) if log is not None else None
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        try:
+            raw = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(raw, datetime):
+        return None
+    when = raw if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
+    return max(0.0, (datetime.now(timezone.utc) - when).total_seconds() / 86400.0)
+
+
+def recency_weight(age_days: float | None) -> float:
+    if age_days is None:
+        return 1.0
+    return 0.5 ** (max(0.0, float(age_days)) / 90.0)
+
+
+def weighted_engaged_mean(pairs: list[tuple[float, float | None]]) -> float:
+    num = 0.0
+    den = 0.0
+    for rate, age in pairs:
+        weight = recency_weight(age)
+        num += float(rate) * weight
+        den += weight
+    return num / den if den else 0.0
 
 
 @dataclass
@@ -65,6 +100,7 @@ def _build_entries(channel_id: str) -> list[dict]:
             continue
         log = log_by_run.get(run.id)
         engaged_rate = _engaged_rate(log.metrics_json) if log else None
+        subs = _subscribers_gained(log.metrics_json) if log else 0
         entries.append(
             {
                 "run_id": run.id,
@@ -72,8 +108,12 @@ def _build_entries(channel_id: str) -> list[dict]:
                 "input_topic": normalize_seed_topic(run.input_topic or ""),
                 "selected_topic": run.selected_topic or "",
                 "engaged_rate": engaged_rate,
+                "subscribers_gained": subs,
                 "composite_score": float(run.composite_score or 0),
                 "domain": _infer_domain(seed, channel_id),
+                # #365: the weighting in get_best_bet reads this. Without it every
+                # weight is 1.0 and the "decayed" mean is the arithmetic one.
+                "age_days": _published_age_days(log),
             }
         )
     return entries
@@ -362,8 +402,15 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             key=lambda d: _domain_priority(d, adjusted, counts),
         )
         rates = domain_rates[best_domain]
-        avg_rate = sum(rates) / len(rates)
+        ages = [e.get("age_days") for e in with_analytics if e["domain"] == best_domain]
+        avg_rate = weighted_engaged_mean(list(zip(rates, ages, strict=True)))
         best_topic = domain_topics[best_domain][0]
+        subs_total = sum(
+            int(e.get("subscribers_gained") or 0)
+            for e in with_analytics
+            if e["domain"] == best_domain
+        )
+        subs_note = f" · gained {subs_total} subscriber(s)" if subs_total else ""
 
         return BestBetResult(
             topic=best_topic,
@@ -374,7 +421,10 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             rationale=(
                 f"{best_domain} averages {avg_rate:.1%} engagement "
                 f"across {len(rates)} video(s)"
+                f"{interval_note(rates)}"
+                f"{_ranked_on_note(avg_rate, adjusted.get(best_domain))}"
                 f"{confidence_note(len(rates))}"
+                f"{subs_note}"
             ),
         )
 
@@ -432,6 +482,29 @@ def _adjusted_domain_rates(entries: list[dict]) -> dict[str, float]:
     prior = sum(all_rates) / len(all_rates)
     k = MODERATE_SAMPLES
     return {d: (sum(v) + k * prior) / (len(v) + k) for d, v in by_domain.items()}
+
+
+def _ranked_on_note(raw_rate: float, adjusted_rate: float | None, *, places: int = 1) -> str:
+    """Name the figure that actually ranked, when it is not the one printed.
+
+    `_domain_priority` sorts on the empirical-Bayes-shrunk rate; the rationale
+    prints the raw mean. #351 then put an interval beside that raw mean, which
+    made the disagreement public — three numbers about one domain, only one of
+    which decided anything.
+
+    The raw mean stays the headline because it is what was actually observed and
+    the interval is computed over that same raw vector. This appends the ranking
+    basis rather than swapping it, so the interval keeps describing the number it
+    was derived from. Silent when shrinking changed nothing at the printed
+    precision — the note exists to flag a disagreement, not to decorate.
+    """
+    if adjusted_rate is None:
+        return ""
+    # Compare at the precision the caller prints: a note claiming a disagreement
+    # the operator cannot see on the same line is noise.
+    if f"{raw_rate:.{places}%}" == f"{adjusted_rate:.{places}%}":
+        return ""
+    return f" (ranked on {adjusted_rate:.{places}%} shrunk toward the channel mean)"
 
 
 def _domain_priority(domain: str, adjusted: dict[str, float], counts: dict[str, int]) -> tuple:
@@ -869,6 +942,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         rationale = f"trending on {c['source']} now"
         if rate is not None:
             rationale += f" · {c['domain']} averages {rate:.0%} engagement"
+            rationale += _ranked_on_note(rate, adjusted.get(c["domain"]), places=0)
             rationale += confidence_note(domain_counts.get(c["domain"], 0))
         options.append(
             BestBetResult(
@@ -903,6 +977,9 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
             used_anchors.add(anchor)
         if e["engaged_rate"] is not None:
             source = "analytics"
+            # No `_ranked_on_note` here, deliberately: this is one run's own rate,
+            # labelled as such, not a domain aggregate. Appending a shrunk *domain*
+            # figure would compare two different quantities (#654).
             rationale = f"{e['engaged_rate']:.0%} engagement on a past {e['domain']} video"
             rationale += confidence_note(domain_counts.get(e["domain"], 0))
         else:

@@ -4,6 +4,12 @@ Guide for AI coding agents (Claude Code and others) working in this repo. This i
 a **pointer + agent-specific guide**, not a duplicate of the docs below — read the
 linked doc before touching the area it covers.
 
+> **Read [docs/handoff.md](docs/handoff.md) first, every session.** It is the mailbox:
+> what the other agent just did, what it left uncommitted, what it found broken. More
+> than one agent works here and nothing signals a switch. Verify it against
+> `git log <sha>..HEAD --oneline` and `git status --short` before trusting it, and
+> **write your own slot as your last edit** — not from memory next session.
+
 ## What this is
 
 Content Machine (Content OS): a Python CLI for short-form video —
@@ -22,13 +28,22 @@ still true; the conventions are [docs/docs_standard.md](docs/docs_standard.md) a
 are enforced by `tests/test_docs_standard.py`, so a new doc needs a card and an index
 entry or CI fails.
 
-The four you will want most: what happens next —
-[docs/master_plan.md](docs/master_plan.md) (canonical) with the item-level ledger in
-[docs/roadmap.md](docs/roadmap.md); where the system honestly stands —
-[docs/audit_2026-09.md](docs/audit_2026-09.md); state as of the last working session —
-[docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md); brainstorming and decisions from
-planning sessions — [docs/planning_log.md](docs/planning_log.md), where you
-**append a dated entry after any substantial planning session** so ideas aren't lost.
+Current priorities: [docs/roadmap.md](docs/roadmap.md) — short by design; the
+full inventory is [docs/backlog.md](docs/backlog.md), the Windows application programme is
+[docs/desktop_app.md](docs/desktop_app.md), and history is
+[docs/roadmap_archive.md](docs/roadmap_archive.md). Counts come from
+`py -m scripts.ops roadmap-index`, never by hand. The forward horizons those items roll
+up into: [docs/master_plan.md](docs/master_plan.md). Where the system honestly stands:
+[docs/audit_2026-09.md](docs/audit_2026-09.md) and
+[docs/assessment.md](docs/assessment.md). Why the generated ideas/scripts come out the
+way they do — the six framing layers and the selection tie:
+[docs/idea_quality_diagnosis.md](docs/idea_quality_diagnosis.md); where the project can
+realistically go next: [docs/strategy_next_level.md](docs/strategy_next_level.md); what to build
+next in the engine itself, measured against the 38 recorded runs:
+[docs/engine_upgrades.md](docs/engine_upgrades.md). State as of the last working session
+(branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
+Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/planning_log.md)
+— **append a dated entry after any substantial planning session** so ideas aren't lost.
 
 ## Entry points
 
@@ -66,7 +81,7 @@ new provider or changing tier routing.
 ruff check .                                   # lint — CI-blocking
 ruff format --check .                          # format — CI-blocking
 mypy analytics apis core config storage        # type check — non-blocking baseline
-python -m unittest discover -s tests -t . -v        # tests — CI-blocking (or: pytest -q)
+python -m unittest discover -s tests -t . -v        # tests — CI-blocking; the `-t .` is load-bearing
 ```
 
 ## Hard rules

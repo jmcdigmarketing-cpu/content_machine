@@ -19,12 +19,21 @@ class TestClassifiers(unittest.TestCase):
         self.assertEqual(classify_title_structure("Gaethje wins it all"), "statement")
         self.assertEqual(classify_title_structure(""), "unknown")
 
-    def test_angle(self):
+    def test_run_73_reaction_is_not_general(self):
+        """#661. Generation said reaction; analytics said general."""
+        self.assertEqual(classify_angle("GTA 6 looks amazing!!!", ""), "reaction")
+
+    def test_explainer_seed_is_explainer(self):
+        self.assertEqual(
+            classify_angle("how does the offside rule actually work", ""),
+            "explainer",
+        )
+
+    def test_default_intent_still_uses_keyword_labels(self):
+        """Fraud/recap are analytics labels, not angle-intent frames. They fire
+        only when detect_angle_intent returns default."""
         self.assertEqual(classify_angle("Max Holloway is a fraud", ""), "fraud")
-        self.assertEqual(classify_angle("Best 5 fighters ranked", ""), "ranking")
-        self.assertEqual(classify_angle("Who wins McGregor vs Holloway", ""), "prediction")
         self.assertEqual(classify_angle("Full card results recap", ""), "recap")
-        self.assertEqual(classify_angle("A neutral topic", "explainer"), "explainer")
 
     def test_extract_hook(self):
         self.assertEqual(
@@ -62,7 +71,8 @@ class TestBuildFeatures(unittest.TestCase):
         self.assertEqual(f["controversy_score"], 0.7)
         self.assertEqual(f["fact_source"], "manual")
         self.assertEqual(f["key_facts_count"], 1)
-        self.assertEqual(f["feature_version"], "v1")
+        self.assertEqual(f["feature_version"], "v2")
+        self.assertEqual(f["angle_intent"], "default")
 
     def test_build_features_no_brief_no_facts(self):
         f = build_features(

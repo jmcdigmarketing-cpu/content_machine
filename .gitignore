@@ -51,10 +51,18 @@ assets/catalog.json
 # Local debugging scratch output (e.g. captured CI/test runs)
 .tmp_*
 
+# Agent plan files. The harness keeps the real copy in ~/.claude/plans/; a stray
+# copy landed in the repo root on 2026-08-30 and survived a week because nobody
+# read `git status --porcelain` before `git add -A`.
+/*.plan.md
+/cached-*-*.md
+
 # Tooling caches and packaging artifacts
 .ruff_cache/
 .mypy_cache/
 .pytest_cache/
+.coverage
+htmlcov/
 *.egg-info/
 build/
 dist/
@@ -94,3 +102,5 @@ Thumbs.db
 /models/
 *.onnx
 *.onnx.json
+# Piper voice repo cloned into the tree (129 MB of .onnx weights)
+/piper-voice-models-main/

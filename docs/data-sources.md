@@ -20,7 +20,6 @@ Last verified: 2026-06-10
 | `YOUTUBE_CLIENT_ID` | YouTube OAuth | Upload-side identity (token file separate — see OAuth section) |
 | `FLUX_API_KEY` | Black Forest Labs | AI thumbnail generation |
 | `ANTHROPIC_API_KEY` | Claude API | Alternative LLM for fact enrichment (`RESEARCH_ENRICH_PROVIDER=anthropic`) |
-| `SPORTSDATA_API_KEY` | SportsData.io | Sports scores/stats |
 | `NEWS_API_KEY` | NewsAPI.org | News headlines signal |
 | `STEAM_API_KEY` | Steam Web API | Steam game signals |
 | `RAWG_API_KEY` | RAWG.io | Game database facts, ratings, tags |

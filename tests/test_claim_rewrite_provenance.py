@@ -1,4 +1,4 @@
-"""Candidate 322: a hedged script must not report the score of an honest one.
+"""Candidate 322 / #800: a hedged script must not report the score of an honest one.
 
 Live run 71: the claim verifier found **7 of 12 claims unsupported**. The rewrite pass
 (`_maybe_rewrite_unsupported_claims`) then restated each as attributed speculation
@@ -8,12 +8,9 @@ the result. The console printed:
     [ok] Claim check: 12/12 factual claim(s) backed by the facts.
 
 Same verifier, rewritten script. Nothing was verified between the two numbers — the
-claims were hedged. But only the post-rewrite verdict was persisted, so
-`quality_json` recorded support_rate 1.0 / 0 unsupported, the report card graded the
-run A, and the #52 graveyard codes could never emit `thin_facts` for it.
-
-Behaviour is deliberately unchanged: this records and surfaces, it does not gate or
-re-grade. The operator decides.
+claims were hedged. Wave 26 (#800) decides the open §25 call: persist both numbers,
+print hedge density beside claim support, and let the grounding component fall.
+The render gate is unchanged (#345).
 """
 
 import unittest
@@ -57,10 +54,22 @@ class TestPreRewriteSurvives(unittest.TestCase):
         self.assertEqual(d["pre_rewrite_total"], 12)
         self.assertAlmostEqual(d["pre_rewrite_support_rate"], 0.417, places=3)
 
-    def test_untouched_run_gains_no_keys(self):
-        # Existing readers must see exactly the old shape when nothing was rewritten.
+    def test_untouched_run_gains_no_rewrite_keys(self):
+        # Existing readers must see the base shape when nothing was rewritten.
+        # `claims` joined the base shape in the #112 wave -- it is the claim to
+        # source edge the correction dossier reads, and it is written on every
+        # run. The keys this guard exists for are the rewrite-provenance ones.
         d = _verification(12, 0).to_dict()
-        self.assertEqual(set(d), {"total", "supported", "support_rate", "unsupported"})
+        self.assertEqual(set(d), {"total", "supported", "support_rate", "unsupported", "claims"})
+        for rewrite_key in (
+            "rewritten",
+            "pre_rewrite_unsupported",
+            "pre_rewrite_total",
+            "pre_rewrite_support_rate",
+            "script_pre_rewrite",
+            "script_post_rewrite",
+        ):
+            self.assertNotIn(rewrite_key, d)
 
     def test_pre_rate_is_none_when_not_rewritten(self):
         self.assertIsNone(_verification(12, 3).pre_rewrite_support_rate)
@@ -161,6 +170,53 @@ class TestRewriteStampedAtTheSource(unittest.TestCase):
                     "w " * 400, before, "corpus", "topic", None
                 )
         self.assertFalse(result.rewritten)
+
+    def test_adopted_rewrite_keeps_both_script_texts(self):
+        from unittest.mock import patch
+
+        import core.content_engine as ce
+
+        before = _verification(12, 7)
+        after = _verification(12, 0)
+        original = "w " * 400
+        rewritten = ("reports claim " + "w ") * 200
+        kept = rewritten.strip()
+        with patch.object(ce, "_call_content_llm", return_value={"script": rewritten}):
+            with patch("core.claim_verifier.verify_claims", return_value=after):
+                script, result = ce._maybe_rewrite_unsupported_claims(
+                    original, before, "corpus", "topic", None
+                )
+        self.assertEqual(script, kept)
+        self.assertEqual(result.script_pre_rewrite, original)
+        self.assertEqual(result.script_post_rewrite, kept)
+        d = result.to_dict()
+        self.assertEqual(d["script_pre_rewrite"], original)
+        self.assertEqual(d["script_post_rewrite"], kept)
+
+    def test_clean_run_omits_script_diff_keys(self):
+        d = _verification(12, 0).to_dict()
+        self.assertNotIn("script_pre_rewrite", d)
+        self.assertNotIn("script_post_rewrite", d)
+
+    def test_quality_and_dossier_show_both_texts(self):
+        after = _run71_rewritten()
+        after.script_pre_rewrite = "GTA 6 is delayed to 2027."
+        after.script_post_rewrite = "Reports claim GTA 6 is delayed to 2027."
+        quality = _quality(after)
+        self.assertEqual(quality["script_pre_rewrite"], after.script_pre_rewrite)
+        self.assertEqual(quality["script_post_rewrite"], after.script_post_rewrite)
+        from core.run_ledger import _quality_script_diff_lines
+
+        blob = "\n".join(_quality_script_diff_lines(quality))
+        self.assertIn("GTA 6 is delayed to 2027.", blob)
+        self.assertIn("Reports claim", blob)
+        from core.review_booth import booth_html, script_diff_html
+
+        self.assertIn("GTA 6 is delayed", script_diff_html(quality))
+        html = booth_html(grade_breakdown=script_diff_html(quality), channel_id="tapin")
+        self.assertIn("Script diff", html)
+        self.assertIn("GTA 6 is delayed", html)
+        self.assertEqual(script_diff_html({"unsupported_claim_count": 0}), "")
 
 
 if __name__ == "__main__":

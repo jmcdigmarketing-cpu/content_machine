@@ -70,6 +70,28 @@ class TestParsePastedIdea(unittest.TestCase):
         p = parse_pasted_idea("GTA 6: the everything we know breakdown")
         self.assertEqual(p.seed_topic, "GTA 6: the everything we know breakdown")
 
+    def test_one_line_idea_still_has_a_brief(self):
+        """#664. is_rich was False so the writer never saw the typed idea."""
+        from core.idea_intake import creative_brief_for_run
+
+        p = parse_pasted_idea("how does the offside rule actually work")
+        self.assertFalse(p.is_rich)
+        self.assertEqual(
+            creative_brief_for_run(p),
+            "how does the offside rule actually work",
+        )
+
+    def test_youtube_angle_is_the_brief_not_the_search_string(self):
+        from core.idea_intake import seed_and_brief_from_youtube
+
+        seed, brief = seed_and_brief_from_youtube(
+            "GTA 6 Official Trailer 2",
+            "first impressions, looks great",
+        )
+        self.assertEqual(seed, "GTA 6 Official Trailer 2")
+        self.assertEqual(brief, "first impressions, looks great")
+        self.assertNotIn("—", seed)
+
 
 if __name__ == "__main__":
     unittest.main()

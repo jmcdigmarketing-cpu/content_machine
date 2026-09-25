@@ -2,14 +2,9 @@
   "channel_id": "tapin",
   "youtube_channels": [
     {
-      "id": "UCq-Fj5jknLsUf-MWSik4vhQ",
-      "label": "The Pat McAfee Show (sports culture)",
-      "note": "unverified UC id (audit C7) — likely a T-Series typo; replace after RSS confirms"
-    },
-    {
       "id": "UCBJycsmduvYEL83R_U4JriQ",
       "label": "Marques Brownlee (tech/gaming adjacent)"
     }
   ],
-  "comment": "Add niche Shorts competitors you track; run py -m analytics.competitor_sync --channel tapin"
+  "comment": "Add niche Shorts competitors you track; run py -m analytics.competitor_sync --channel tapin. The Pat McAfee UC id UCq-Fj5jknLsUf-MWSik4vhQ 404'd (T-Series typo) and was removed 2026-09-09 (#584)."
 }

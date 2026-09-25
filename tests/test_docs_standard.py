@@ -30,8 +30,8 @@ CARD = re.compile(
 )
 SUPERSEDED = re.compile(r"· \*\*Superseded by:\*\* \[[^\]]+\]\(([^)]+)\)")
 
-# snake_case.md, or a dated snapshot snake_case_YYYY-MM.md.
-COMPLIANT_NAME = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)*(_\d{4}-\d{2})?\.md$")
+# snake_case.md, or a dated snapshot snake_case_YYYY-MM.md / snake_case_YYYY-MM-DD.md.
+COMPLIANT_NAME = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)*(_\d{4}-\d{2}(-\d{2})?)?\.md$")
 
 # Names that predate the standard. This set may only ever SHRINK — each rename
 # lands with a redirect stub (the ROADMAP.md precedent). See docs/master_plan.md M1.

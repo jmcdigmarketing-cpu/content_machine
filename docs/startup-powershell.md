@@ -44,9 +44,29 @@ cd C:\Users\jonma\OneDrive\Desktop\content_machine
 py main.py
 ```
 
+**Stage 2 run window** (token look; no PowerShell prompts; paste facts in the box):
+
+```powershell
+pip install -e ".[app]"
+py -m desktop
+# Two commands, not one line — PowerShell has no "then", and pip will treat
+# `py -m` as its own flags (`no such option: -m`). No trailing period on --review.
+# or: py main.py --gui
+# or: py -m scripts.ops run-window
+py -m desktop --review
+# or: py -m scripts.ops review-room
+# ops booth (HTML) still works
+```
+
+Look flags (optional): `CONTENT_UI_REDUCED_CHROMA=1`, `CONTENT_UI_HIGH_CONTRAST=1`,
+`CONTENT_UI_REDUCED_MOTION=1`, `CONTENT_UI_COLORBLIND=1`. Missing PySide6 prints
+`run-window requires PySide6 - pip install -e ".[app]"` and exits 2. The CLI is
+still the headless path. `ops contact-sheet --path dest.png` builds a 2x2 of last
+thumbs.
+
 In the CLI: channel **TapIn (2)** → **Create new video (1)** → topic → variants → length → **y** to render → queue upload when prompted.
 
-**Paste vs prompt (live-run 71):** article text belongs in key-facts **`paste`** mode, not at **Proceed?** (`y` / `N` only) and not at `PS C:\dev\content_machine>`. After the CLI prints *Stopped before render*, the window is PowerShell — it will try to *run* the first word of whatever you paste (`Fast`, `Amazon:`, `user(s)` → command `s`). See [debugging.md — Live-run 71](debugging.md#live-run-71-2026-08-21--pasted-article-hit-powershell-not-the-cli).
+**Paste vs prompt (live-run 74):** paste an article straight at the **Fact N** prompt — blank lines are paragraph breaks while the paste is still arriving, and anything left buffered is offered back as facts. At **Proceed?** only `n` / `N` / `no` / Enter stop; any other stray token re-prompts, and buffered input is drained before the gate is asked. What still cannot be undone: text pasted at `PS C:\dev\content_machine>` after the CLI exits is run as shell commands. See [debugging.md — Live-run 74](debugging.md#live-run-74-2026-08-29--one-buffered-word-discarded-the-run).
 
 **Terminal 2 — process upload/render jobs (leave running)**
 
@@ -156,6 +176,14 @@ py main.py
 4. Check Task Manager — end any orphan `ffmpeg.exe` before restarting.
 
 Expected time for a ~2 minute video: about **2–6 minutes** encode, not 40+.
+
+---
+
+## Windows Terminal color schemes
+
+Import [config/windows-terminal/profiles.json](../config/windows-terminal/profiles.json)
+(Settings → Open JSON file, merge the `schemes` array). TapIn uses `#0B0F14`;
+MoneyWise uses `#1B2430`. This is a snippet, not a theme rewrite.
 
 ---
 

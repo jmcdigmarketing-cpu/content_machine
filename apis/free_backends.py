@@ -71,32 +71,73 @@ def _iso_date(upload_date: str | None) -> str | None:
     return None
 
 
-def _flat_search(query: str, n: int) -> list[dict]:
-    from yt_dlp import YoutubeDL
+class _YtdlpLogger:
+    """Swallow yt-dlp's stderr writes and count what mattered.
 
+    `quiet` and `no_warnings` do NOT stop extractor errors: yt-dlp writes those
+    directly to stderr unless a logger is supplied, which is why run 73 printed
+    three "Sign in to confirm your age" paragraphs through the discovery spinner.
+    The failures are real - those competitor videos are dropped - so they stay
+    visible as a debug line and a count (decisions SS24).
+    """
+
+    _AGE_GATE = "confirm your age"
+
+    def __init__(self) -> None:
+        self.errors = 0
+        self.age_gated = 0
+
+    def debug(self, msg: str) -> None:
+        logger.debug("yt-dlp: %s", msg)
+
+    def info(self, msg: str) -> None:
+        logger.debug("yt-dlp: %s", msg)
+
+    def warning(self, msg: str) -> None:
+        logger.debug("yt-dlp: %s", msg)
+
+    def error(self, msg: str) -> None:
+        self.errors += 1
+        if self._AGE_GATE in str(msg).lower():
+            self.age_gated += 1
+        logger.debug("yt-dlp: %s", msg)
+
+
+def _ytdlp_opts(*, log: _YtdlpLogger | None = None, **extra) -> dict:
+    """Shared YoutubeDL options: never print, optionally use browser cookies.
+
+    `YTDLP_COOKIES_FROM_BROWSER` is unset by default and must stay that way -
+    reading the operator's cookie jar is a privacy step they opt into, not a
+    default. Unset produces byte-identical options to before this existed.
+    """
     opts = {
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
         "noplaylist": True,
         "socket_timeout": 15,
-        "extract_flat": "in_playlist",
+        "logger": log or _YtdlpLogger(),
     }
+    browser = (os.getenv("YTDLP_COOKIES_FROM_BROWSER") or "").strip()
+    if browser:
+        opts["cookiesfrombrowser"] = (browser,)
+    opts.update(extra)
+    return opts
+
+
+def _flat_search(query: str, n: int, log: _YtdlpLogger | None = None) -> list[dict]:
+    from yt_dlp import YoutubeDL
+
+    opts = _ytdlp_opts(log=log, extract_flat="in_playlist")
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(f"ytsearch{n}:{query}", download=False)
     return [e for e in (info.get("entries") or []) if e and e.get("url")]
 
 
-def _full_one(url: str) -> dict | None:
+def _full_one(url: str, log: _YtdlpLogger | None = None) -> dict | None:
     from yt_dlp import YoutubeDL
 
-    opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "skip_download": True,
-        "noplaylist": True,
-        "socket_timeout": 15,
-    }
+    opts = _ytdlp_opts(log=log)
     with YoutubeDL(opts) as ydl:
         return ydl.extract_info(url, download=False)
 
@@ -116,8 +157,9 @@ def fetch_youtube_free(
     top_n = top_n if top_n is not None else _yt_top_n()
     search_n = search_n if search_n is not None else _yt_search_n()
 
+    ydl_log = _YtdlpLogger()
     try:
-        flat = _flat_search(query, search_n)
+        flat = _flat_search(query, search_n, ydl_log)
     except Exception as exc:
         logger.warning("yt-dlp flat search failed for %r: %s", query, exc)
         return []
@@ -128,7 +170,7 @@ def fetch_youtube_free(
     for entry in flat[:top_n]:
         full: dict[str, Any] = {}
         try:
-            full = _full_one(entry["url"]) or {}
+            full = _full_one(entry["url"], ydl_log) or {}
         except Exception as exc:
             logger.debug("yt-dlp full extract failed for %s: %s", entry.get("url"), exc)
         items.append(
@@ -140,6 +182,16 @@ def fetch_youtube_free(
                 "duration": full.get("duration") or entry.get("duration") or 0,
                 "url": full.get("webpage_url") or entry.get("url") or "",
             }
+        )
+    if ydl_log.age_gated:
+        # Debug, not warning: age-gated results are routine, and a warning that
+        # fires on most runs trains the operator to ignore warnings. Set
+        # YTDLP_COOKIES_FROM_BROWSER to actually read them.
+        logger.debug(
+            "yt-dlp: %d age-gated video(s) skipped for %r (set "
+            "YTDLP_COOKIES_FROM_BROWSER to include them)",
+            ydl_log.age_gated,
+            query,
         )
     return items
 

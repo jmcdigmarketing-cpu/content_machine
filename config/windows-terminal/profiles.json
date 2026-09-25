@@ -1,0 +1,50 @@
+{
+  "schemes": [
+    {
+      "name": "Content OS TapIn",
+      "background": "#0B0F14",
+      "foreground": "#FFFFFF",
+      "cursorColor": "#FFFFFF",
+      "selectionBackground": "#2A2F3A",
+      "black": "#0B0F14",
+      "red": "#E53935",
+      "green": "#81C995",
+      "yellow": "#FDD663",
+      "blue": "#8AB4F8",
+      "purple": "#C792EA",
+      "cyan": "#80CBC4",
+      "white": "#E8EAED",
+      "brightBlack": "#5F6368",
+      "brightRed": "#F28B82",
+      "brightGreen": "#81C995",
+      "brightYellow": "#FDD663",
+      "brightBlue": "#8AB4F8",
+      "brightPurple": "#C792EA",
+      "brightCyan": "#80CBC4",
+      "brightWhite": "#FFFFFF"
+    },
+    {
+      "name": "Content OS MoneyWise",
+      "background": "#1B2430",
+      "foreground": "#F7E7A9",
+      "cursorColor": "#F7E7A9",
+      "selectionBackground": "#2A2F3A",
+      "black": "#1B2430",
+      "red": "#E53935",
+      "green": "#81C995",
+      "yellow": "#F7E7A9",
+      "blue": "#8AB4F8",
+      "purple": "#C792EA",
+      "cyan": "#80CBC4",
+      "white": "#F7E7A9",
+      "brightBlack": "#5F6368",
+      "brightRed": "#F28B82",
+      "brightGreen": "#81C995",
+      "brightYellow": "#FDD663",
+      "brightBlue": "#8AB4F8",
+      "brightPurple": "#C792EA",
+      "brightCyan": "#80CBC4",
+      "brightWhite": "#F7E7A9"
+    }
+  ]
+}

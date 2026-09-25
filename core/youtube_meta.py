@@ -205,3 +205,98 @@ def lint_title_grounding(
     return [
         f"title claim not backed by the facts: {c.claim[:140]}" for c in verification.unsupported
     ]
+
+
+_TITLE_WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]*")
+
+
+def _sentence_case_against(title: str, script: str) -> str:
+    """Lower-case the Title Case words the script uses as ordinary words.
+
+    Title Case capitalises every word, so proper-noun extraction read a title that says
+    exactly what the script says as one long ungrounded name. A word keeps its capital
+    when it is an acronym or the script never writes it (or its stem) in lower case —
+    so a name the script never mentions is still checked.
+    """
+    words = _TITLE_WORD_RE.findall(title or "")
+    capped = [w for w in words if w[:1].isupper()]
+    if len(words) < 3 or len(capped) < 0.6 * len(words):
+        return title
+
+    def _fold(match: re.Match[str]) -> str:
+        word = match.group(0)
+        if not word[:1].isupper() or (len(word) > 1 and word.isupper()):
+            return word
+        stem = word.lower()[:5]
+        if re.search(rf"(?<![A-Za-z]){re.escape(stem)}", script or ""):
+            return word.lower()
+        return word
+
+    return _TITLE_WORD_RE.sub(_fold, title)
+
+
+def _heuristic_title_script_check(title: str, script: str) -> dict[str, object]:
+    """Deterministic fallback when verify_claims cannot run."""
+    from core.fact_grounding import find_ungrounded_entities
+    from core.relational_check import reversed_relations
+
+    folded = _sentence_case_against(title, script)
+    flagged = find_ungrounded_entities(folded, script)
+    warnings = [
+        f"title contradicts or is not supported by the final script: {name[:140]}"
+        for name in flagged
+    ]
+    # #748: every name is in the script, but the title has the winner and loser swapped.
+    reversals = reversed_relations(folded, script)
+    warnings.extend(f"title reverses the script: {line}" for line in reversals)
+    flagged = [*flagged, *reversals]
+    return {
+        "status": "failed" if warnings else "passed",
+        "passed": not warnings,
+        "warnings": warnings,
+        "total": len(flagged),
+        "method": "heuristic",
+    }
+
+
+def check_title_script_consistency(
+    title: str,
+    script: str,
+    *,
+    topic: str = "",
+) -> dict[str, object]:
+    """Advisory relational check between the public title and final script (#549).
+
+    This is separate from ``lint_title_grounding``: a title can use names found
+    in the fact corpus while assigning the action differently from the script.
+    ``unavailable`` is persisted explicitly rather than looking like a pass.
+    """
+    if title_grounding_mode() == "off" or not title.strip() or not script.strip():
+        return {
+            "status": "not_evaluated",
+            "passed": False,
+            "warnings": [],
+            "total": 0,
+        }
+    try:
+        from core.claim_verifier import verify_claims
+
+        verification = verify_claims(title, script, topic=topic)
+    except Exception as exc:
+        logger.debug("title/script check failed: %s", exc)
+        verification = None
+    if verification is None:
+        # Run 76: extract-tier miss persisted unavailable and the check did
+        # not run. Token overlap is weaker than verify_claims but it always
+        # produces a verdict the operator can act on (#748).
+        return _heuristic_title_script_check(title, script)
+    warnings = [
+        f"title contradicts or is not supported by the final script: {claim.claim[:140]}"
+        for claim in verification.unsupported
+    ]
+    return {
+        "status": "failed" if warnings else "passed",
+        "passed": not warnings,
+        "warnings": warnings,
+        "total": verification.total,
+    }

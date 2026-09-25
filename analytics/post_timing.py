@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 from apis.topic_scorer import infer_domain
 from config.channels import get_channel_profile, resolve_channel_id
-from core.recommender_confidence import confidence_note
+from core.recommender_confidence import confidence_note, interval_note
 
 # Python weekday: Monday=0 … Sunday=6
 DEFAULT_TAPIN_SLOTS = (
@@ -427,22 +427,27 @@ class RecommendedTime:
     avg_engaged_rate: float  # 0.0 when no history for the slot
     supporting_samples: int
     rationale: str
+    channel_id: str = ""
 
 
 def _slot_engagement(
     channel_id: str,
     topic: str,
     when_utc: datetime,
-) -> tuple[float, int]:
+) -> tuple[float, int, list[float]]:
     """
-    Average engagement + sample count for the (weekday, hour) bucket that
-    `when_utc` falls in, drawn from the same timed publish history that
-    learn_slots_from_analytics() uses. Prefers same-domain samples, then
-    falls back to all domains in that slot.
+    Average engagement + sample count + the samples themselves for the
+    (weekday, hour) bucket that `when_utc` falls in, drawn from the same timed
+    publish history that learn_slots_from_analytics() uses. Prefers same-domain
+    samples, then falls back to all domains in that slot.
+
+    The rates ride along because #351's interval needs the spread, not just the
+    mean: this was the only one of the three recommenders that discarded its
+    sample vector before returning.
     """
     samples = _collect_timed_samples(channel_id)
     if not samples:
-        return 0.0, 0
+        return 0.0, 0, []
 
     static = _load_static_post_schedule(channel_id)
     try:
@@ -459,12 +464,12 @@ def _slot_engagement(
         if _bucket_key(when, tz) == target and (domain is None or d == domain)
     ]
     if same_domain:
-        return sum(same_domain) / len(same_domain), len(same_domain)
+        return sum(same_domain) / len(same_domain), len(same_domain), same_domain
 
     any_domain = [eng for _d, when, eng in samples if _bucket_key(when, tz) == target]
     if any_domain:
-        return sum(any_domain) / len(any_domain), len(any_domain)
-    return 0.0, 0
+        return sum(any_domain) / len(any_domain), len(any_domain), any_domain
+    return 0.0, 0, []
 
 
 def get_recommended_time(
@@ -487,16 +492,19 @@ def get_recommended_time(
     domain = infer_domain(topic, channel_id) if topic else "neutral"
 
     if learned:
-        rate, n = _slot_engagement(channel_id, topic, when_utc)
+        rate, n, rates = _slot_engagement(channel_id, topic, when_utc)
         if n > 0:
             rationale = (
                 f"learned from {n} past {domain} post(s) in this slot — "
                 f"{rate:.1%} avg engagement"
+                f"{interval_note(rates)}"
                 f"{confidence_note(n)}"
             )
         else:
-            rationale = "learned from your post history (best-engagement weekday/hours)"
-        return RecommendedTime(when_utc, local_str, "analytics", rate, n, rationale)
+            rationale = (
+                "learned schedule, but this slot has 0 measured posts " "— not a sample-backed rate"
+            )
+        return RecommendedTime(when_utc, local_str, "analytics", rate, n, rationale, channel_id)
 
     if channel_id == "moneywise" and _use_learned_post_slots():
         donor = learn_slots_from_analytics("tapin")
@@ -508,6 +516,7 @@ def get_recommended_time(
                 0.0,
                 0,
                 "TapIn slot shape as MoneyWise cold-start prior — not a gaming topic copy",
+                channel_id,
             )
 
     n_samples = len(_collect_timed_samples(channel_id))
@@ -519,7 +528,7 @@ def get_recommended_time(
         )
     else:
         rationale = f"default {domain} schedule (no engagement analytics yet)"
-    return RecommendedTime(when_utc, local_str, "static", 0.0, 0, rationale)
+    return RecommendedTime(when_utc, local_str, "static", 0.0, 0, rationale, channel_id)
 
 
 def display_recommended_time(rec: RecommendedTime) -> None:
@@ -533,6 +542,12 @@ def display_recommended_time(rec: RecommendedTime) -> None:
     )
     print(f"\n  Recommended post time ({tag}): {rec.local_str}")
     print(f"  Reason : {rec.rationale}")
+    if rec.channel_id:
+        from core.recommender_history import note_week_flip
+
+        flip = note_week_flip(rec.channel_id, "post_time", rec.local_str)
+        if flip:
+            print(f"  Note   : {flip}")
 
 
 def learn_slots_from_analytics(

@@ -3,17 +3,24 @@
 from __future__ import annotations
 
 import os
-import subprocess
 from collections.abc import Callable
 from typing import Any
 
 from config.channels import get_channel_profile
 from core.logging import get_logger
+from video.encoder import (
+    executed_cmd,
+    run_ffmpeg_with_nvenc_fallback,
+    video_encoder_args,
+)
 
 logger = get_logger("video.channel_outro")
 
 TARGET_W = 1080
 TARGET_H = 1920
+# YouTube Shorts chrome: top ~12%, captions + subscribe sit in the bottom 20%.
+_SAFE_TOP = 0.12
+_SAFE_BOTTOM = 0.20
 
 
 def _hex(value: Any, default: str) -> str:
@@ -50,6 +57,15 @@ def resolve_end_card(channel_id: str | None = None) -> dict[str, Any] | None:
     }
 
 
+def end_card_text_y(text_h: int) -> int:
+    """Vertical origin for end-card copy: inside the band captions do not occupy."""
+    top = int(TARGET_H * _SAFE_TOP)
+    bottom = int(TARGET_H * (1.0 - _SAFE_BOTTOM))
+    height = max(1, int(text_h))
+    y = top + max(0, (bottom - top - height) // 2)
+    return max(top, min(y, bottom - height))
+
+
 def _drawtext_escape(text: str) -> str:
     return text.replace("\\", r"\\").replace(":", r"\:").replace("'", r"\'").replace("%", r"\%")
 
@@ -82,7 +98,8 @@ def build_outro_concat_command(
         f"[0:v]{scale},setpts=PTS-STARTPTS[v0];"
         f"[0:a]aformat=sample_rates=48000:channel_layouts=stereo[a0];"
         f"[1:v]drawtext={font_opt}text='{text}':fontcolor={fg}:fontsize=64:"
-        "x=(w-text_w)/2:y=(h-text_h)/2,"
+        "x=(w-text_w)/2:"
+        f"y=h*{_SAFE_TOP:.2f}+(h*{1.0 - _SAFE_TOP - _SAFE_BOTTOM:.2f}-text_h)/2,"
         f"setpts=PTS-STARTPTS[v1];"
         f"[2:a]atrim=duration={duration:.3f},asetpts=PTS-STARTPTS[a1];"
         "[v0][a0][v1][a1]concat=n=2:v=1:a=1[vout][aout]"
@@ -106,12 +123,7 @@ def build_outro_concat_command(
         "[vout]",
         "-map",
         "[aout]",
-        "-c:v",
-        "libx264",
-        "-preset",
-        "fast",
-        "-crf",
-        "23",
+        *video_encoder_args(),
         "-c:a",
         "aac",
         "-b:a",
@@ -155,13 +167,7 @@ def append_channel_outro(
 
     concat_ok = False
     try:
-        process = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
+        process = run_ffmpeg_with_nvenc_fallback(cmd)
         if process.returncode != 0:
             raise RuntimeError(f"End-card concat failed: {(process.stderr or '')[-800:]}")
         if not os.path.isfile(final_path) or os.path.getsize(final_path) == 0:
@@ -169,7 +175,7 @@ def append_channel_outro(
         concat_ok = True
         if command_callback is not None:
             try:
-                command_callback("outro_success", list(cmd))
+                command_callback("outro_success", executed_cmd(process, cmd))
             except Exception as exc:
                 logger.debug("outro success capture skipped: %s", exc)
     finally:

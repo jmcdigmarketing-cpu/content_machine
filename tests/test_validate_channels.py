@@ -81,3 +81,30 @@ class TestShippedConfigRatchet(unittest.TestCase):
         errors, warnings = validate_channel("x", {})
         self.assertFalse(any("persona" in e for e in errors))
         self.assertTrue(any("no persona" in w for w in warnings), warnings)
+
+    def test_no_profile_field_is_unset_on_every_shipped_channel(self):
+        """#644. Fields nobody sets are dead code (this is how 641-643 hid)."""
+        from dataclasses import fields
+
+        from config.channels import ChannelProfile, get_channel_profiles
+
+        profiles = list(get_channel_profiles().values())
+        self.assertTrue(profiles)
+
+        def _blank(value) -> bool:
+            if value is None or value == "":
+                return True
+            return value in ({}, (), [])
+
+        dead = []
+        for item in fields(ChannelProfile):
+            if item.name == "id":
+                continue
+            if all(_blank(getattr(profile, item.name)) for profile in profiles):
+                dead.append(item.name)
+        self.assertEqual(
+            dead,
+            [],
+            "ChannelProfile fields unset on every shipped channel — wire them or remove them: "
+            + ", ".join(dead),
+        )

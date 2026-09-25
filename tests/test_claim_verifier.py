@@ -89,9 +89,10 @@ class TestVerifyClaims(unittest.TestCase):
 
 
 class TestGroundingGate(unittest.TestCase):
-    def test_default_mode_is_warn(self):
+    def test_default_mode_is_block(self):
+        """Was warn; armed by default since #735 (operator call 2026-09-13)."""
         with patch.dict("os.environ", {"GROUNDING_GATE": ""}, clear=False):
-            self.assertEqual(cv.grounding_gate_mode(), "warn")
+            self.assertEqual(cv.grounding_gate_mode(), "block")
 
     def test_gate_blocks_only_in_block_mode_with_unsupported(self):
         verification = {"total": 2, "supported": 1, "unsupported": ["bad claim"]}
@@ -128,6 +129,48 @@ class TestDisplay(unittest.TestCase):
         out: list[str] = []
         self.assertFalse(cv.display_claim_verification(None, print_fn=out.append))
         self.assertEqual(out, [])
+
+
+class TestVerifierSeesWholeFacts(unittest.TestCase):
+    def test_a_negation_past_the_old_400_char_slice_reaches_the_prompt(self):
+        """#649. Facts used to be sliced at 400 chars. The drones / K9 /
+        hurricane-weather claims sat in the tail. The verifier prompt must
+        carry the whole sentence, including the negation.
+        """
+        pad = "Take-Two confirmed in a statement that " + ("the studio " * 40)
+        tail = "will not use drones, K9 units, or hurricane-weather systems."
+        full = pad + tail
+        self.assertGreater(len(full), 400)
+        captured: list[str] = []
+
+        def fake_complete(user, **kwargs):
+            captured.append(user)
+            return {"claims": []}
+
+        with (
+            patch.dict("os.environ", {"CLAIM_VERIFIER_ENABLED": "true"}, clear=False),
+            patch("core.llm_router.complete_json", side_effect=fake_complete),
+        ):
+            cv.verify_claims("GTA 6 uses drones in missions.", full, topic="GTA 6")
+        self.assertTrue(captured)
+        self.assertIn("hurricane-weather systems", captured[0])
+        self.assertIn("will not use drones", captured[0])
+        self.assertIn(full, captured[0])
+
+    def test_known_gap_run_74_script_strings_are_not_in_the_repo(self):
+        """The backlog named run 74's drones / K9 / hurricane-weather *script*.
+        Operator traces are empty and those strings are not checked in. Closing
+        that half needs the real script frozen beside this test.
+        """
+        from pathlib import Path
+
+        repo = Path(__file__).resolve().parents[1]
+        hits = []
+        for path in (repo / "tests").glob("*.py"):
+            text = path.read_text(encoding="utf-8")
+            if "hurricane-weather" in text and path.name != Path(__file__).name:
+                hits.append(path.name)
+        self.assertEqual(hits, [])
 
 
 if __name__ == "__main__":

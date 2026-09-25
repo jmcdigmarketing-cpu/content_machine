@@ -79,6 +79,59 @@ class TestConfidenceAndDiversity(unittest.TestCase):
         self.assertLess(adj["ufc"], 0.39)  # 1-sample 39% pulled toward the mean
         self.assertIn("nba", adj)
 
+    def test_the_rationale_names_the_number_that_actually_ranked(self):
+        """#654: the pick is ranked on the empirical-Bayes-shrunk rate
+        (`_domain_priority`) but the rationale printed the raw mean, so the
+        operator was shown a number that did not decide anything. #351 put an
+        interval beside that same number, which made the disagreement public."""
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES_MIX),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=[]),
+        ):
+            bet = get_best_bet("tapin")
+
+        adjusted = bb._adjusted_domain_rates(_ENTRIES_MIX)[bet.domain]
+        self.assertNotAlmostEqual(
+            adjusted, bet.avg_engaged_rate, places=3, msg="fixture no longer disagrees"
+        )
+        self.assertIn(f"{adjusted:.1%}", bet.rationale, bet.rationale)
+
+    def test_the_rationale_stays_quiet_when_the_two_agree(self):
+        """No parenthetical when shrinking changes nothing — the note exists to
+        flag a disagreement, not to decorate every line."""
+        even = [
+            {
+                "topic": f"nba thing {i}",
+                "engaged_rate": 0.20,
+                "composite_score": 50,
+                "domain": "nba",
+            }
+            for i in range(8)
+        ]
+        with (
+            patch("core.best_bet._build_entries", return_value=even),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=[]),
+        ):
+            bet = get_best_bet("tapin")
+        self.assertNotIn("ranked on", bet.rationale, bet.rationale)
+
+    def test_the_multi_option_path_names_it_too(self):
+        """`_emit_fresh` has the same disagreement as `get_best_bet` and is the
+        path the operator actually sees at startup."""
+        fresh = [
+            {"topic": "NBA trade shakes the East", "domain": "nba", "source": "ESPN NBA"},
+        ]
+        with (
+            patch("core.best_bet._build_entries", return_value=_ENTRIES_MIX),
+            patch("core.best_bet.recent_input_topics", return_value=[]),
+            patch("core.best_bet._fresh_candidates", return_value=fresh),
+        ):
+            bets = get_best_bets("tapin", 3)
+        nba = next(b for b in bets if b.domain == "nba" and "trending" in b.rationale)
+        self.assertIn("ranked on", nba.rationale, nba.rationale)
+
     def test_domain_priority_prefers_well_sampled(self):
         adjusted = {"nba": 0.12, "ufc": 0.20}
         counts = {"nba": 6, "ufc": 1}

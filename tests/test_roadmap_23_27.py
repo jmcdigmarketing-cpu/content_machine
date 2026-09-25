@@ -74,7 +74,7 @@ class Test23GeneratedEndCard(unittest.TestCase):
                         "fg": "#ffffff",
                     },
                 ),
-                patch("video.channel_outro.subprocess.run", side_effect=OSError("ffmpeg missing")),
+                patch("video.encoder.subprocess.run", side_effect=OSError("ffmpeg missing")),
             ):
                 with self.assertRaises(OSError):
                     append_channel_outro(str(body), channel_id="tapin")
@@ -99,7 +99,7 @@ class Test23GeneratedEndCard(unittest.TestCase):
                     },
                 ),
                 patch(
-                    "video.channel_outro.subprocess.run",
+                    "video.encoder.subprocess.run",
                     return_value=SimpleNamespace(returncode=1, stderr="bad concat"),
                 ),
             ):
@@ -137,7 +137,7 @@ class Test23GeneratedEndCard(unittest.TestCase):
                             "fg": "#ffffff",
                         },
                     ),
-                    patch("video.channel_outro.subprocess.run", side_effect=fake_run),
+                    patch("video.encoder.subprocess.run", side_effect=fake_run),
                 ):
                     with self.assertRaises(RuntimeError):
                         append_channel_outro(str(body), channel_id="tapin")

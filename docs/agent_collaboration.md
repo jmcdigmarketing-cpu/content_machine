@@ -51,9 +51,10 @@ tends to propose whatever it finds tractable.
 
 Checked, not flattery. Each of these is a behaviour worth repeating.
 
-- **It respects a licence hold.** Edge TTS was the highest-value item on its own list
-  and is LGPL-3.0, parked pending a legal read. `grep edge_tts` across the repo and
-  `pyproject.toml` returns **nothing**. It did not quietly add the dependency because
+- **It respects a licence hold until the operator lifts it.** Edge TTS was the
+  highest-value item on its own list and stayed parked (LGPL-3.0) until the
+  operator replaced #412 with an unmodified `[free]` extra under Wave B
+  constraints (decisions §28). It did not quietly add the dependency because
   the item was attractive.
 - **It pushes back with evidence**, per §26 above.
 - **It extends safety rails to classes nobody had noticed.** `tests/__init__.py` now
@@ -160,6 +161,38 @@ uncommitted lines from one agent while the other was editing.
   misattributes it in the commit message.
 - **Commit the other agent's body as written first**, then your fixes on top, so the
   delta is reviewable rather than silently folded in.
+
+### The mailbox
+
+Nothing signals that the operator switched tools, so [handoff.md](handoff.md) is how
+the previous agent tells the next one what it did and what it broke. Two slots; you
+overwrite your own and never touch the other's; you write it **as your last edit**, not
+from memory next session.
+
+It is wired at both ends deliberately. A mailbox referenced only from `AGENTS.md` is
+two hops from the file an agent actually auto-loads, and a channel that is reachable
+but never read is indistinguishable from silence — you end up writing "the other agent
+hasn't replied" into an address that was never published. So
+`.cursor/rules/content-machine.mdc` (what Cursor loads) and `CLAUDE.md` (what Claude
+Code loads) each name `docs/handoff.md` themselves, in their first 40 lines, and
+`tests/test_agent_handoff.py` fails if either end stops naming it.
+
+**Two provenance channels, and you need both.** The `Co-authored-by:` trailer says
+*who* wrote a commit — necessary because both agents commit as the same git author. The
+SHA recorded in each slot says *what has landed since* that slot was written. `py -m
+scripts.ops agents` reads both plus the uncommitted count. The mailbox can go stale;
+`git log` cannot.
+
+Signing was banned here until 2026-08-28 (hooks stripped and rejected the trailers).
+The ban made the two agents indistinguishable in history at exactly the point the repo
+started running both at once — 103 of 236 commits carry a trailer, Claude's last on
+2026-07-09 and Cursor's on 2026-08-25, so the record silently became half-kept rather
+than clean. It is now required, and the hook warns on a missing trailer instead of
+rejecting a present one.
+
+Deliberately not built: a machine-readable duplicate of the mailbox, a freshness gate
+on it (a check that reddens because nobody worked the weekend gets ignored — same
+failure as any always-on warning, §24), or any real-time channel.
 
 ## Related
 

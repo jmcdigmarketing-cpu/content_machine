@@ -120,12 +120,15 @@ class TestTimeoutClassification(unittest.TestCase):
     def test_youtube_client_gets_a_bounded_timeout(self):
         from apis.youtube_api import api_timeout
 
+        # Run 74 cut the default from 15s to 8s: `youtube` and `youtube_comments`
+        # each waited out the old timeout against the same dead endpoint, 30s of a
+        # 37.8s discovery. The bound itself is what run 66 was about, not its value.
         with patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(api_timeout(), 15.0)
+            self.assertEqual(api_timeout(), 8.0)
         with patch.dict(os.environ, {"YOUTUBE_API_TIMEOUT": "5"}, clear=False):
             self.assertEqual(api_timeout(), 5.0)
         with patch.dict(os.environ, {"YOUTUBE_API_TIMEOUT": "junk"}, clear=False):
-            self.assertEqual(api_timeout(), 15.0)
+            self.assertEqual(api_timeout(), 8.0)
 
 
 class TestQuestionRelevance(unittest.TestCase):

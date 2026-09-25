@@ -26,12 +26,44 @@ from core.run_recorder import (
 )
 from core.run_trace import write_run_trace
 from core.script_length import count_spoken_words, get_length_preset, word_range
-from core.tts import generate_audio, last_tts_was_cache_hit
+from core.tts import generate_audio, last_tts_cache_fraction, last_tts_was_piper_mix
 from core.utils import clean_script_for_tts
 from core.vault_dossiers import write_run_dossier
 from video.render_video import render_vertical_video
 
 logger = get_logger("pipeline")
+
+
+def copy_content_package_features(content: dict[str, Any], features: dict[str, Any]) -> None:
+    """Lift package keys the rest of the run reads onto ``result.features``.
+
+    Absence of ``script_passes`` means the ledger was not on this run (historical
+    traces). An empty or all-skipped list still copies, so the report card can
+    say none adopted rather than go silent.
+    """
+    if "script_passes" in content:
+        features["script_passes"] = list(content.get("script_passes") or [])
+
+
+def _tts_forecast_features() -> dict[str, int]:
+    try:
+        from core.tts_char_cap import last_tts_forecast
+
+        snap = last_tts_forecast() or {}
+    except Exception as exc:
+        logger.debug("tts forecast features skipped: %s", exc)
+        return {}
+    out: dict[str, int] = {}
+    forecast = snap.get("forecast_chars")
+    if forecast is not None:
+        out["tts_forecast_chars"] = int(forecast)
+    actual = snap.get("actual_chars")
+    if actual is not None:
+        out["tts_actual_chars"] = int(actual)
+    delta = snap.get("delta_chars")
+    if delta is not None:
+        out["tts_char_delta"] = int(delta)
+    return out
 
 
 @dataclass
@@ -48,6 +80,137 @@ class DiscoveryResult:
     # information. Kept beside `evaluated` (not inside it) so the 3-tuple shape that
     # batch_generation / intelligence_report unpack stays exactly as it was.
     raw_scores: dict[str, float] = field(default_factory=dict)
+    # variant -> editorial score (`core/angle_ranker`). Deliberately a third dict
+    # rather than folded into the composite: the composite is a trend number and
+    # this is an editorial one, and averaging an unvalidated score into another
+    # unvalidated score would hide both. Same reason `raw_scores` sits out here.
+    angle_scores: dict[str, float] = field(default_factory=dict)
+    # Run 77: the operator's typed thoughts. Angles differ by thoughts on the same seed,
+    # so the cache key carries them too.
+    brief: str = ""
+    # #813: measurements about the discovery that are NOT phase durations —
+    # `variant_scoring_fallback` ("deadline"), `angle_spread` (a 0-1 ratio).
+    # They stay out of `timings` because the intelligence report sums that dict
+    # and prints every key as seconds; a string there raised TypeError and a
+    # ratio there was reported as a phase. Merged back into the persisted
+    # timings_json/trace, so the recorded keys are unchanged.
+    meta: dict[str, Any] = field(default_factory=dict)
+
+
+DISCOVERY_CACHE_PREFIX = "discovery"
+DISCOVERY_CACHE_TTL = 90 * 60
+
+
+def _discovery_ttl_seconds() -> int:
+    raw = (os.getenv("DISCOVERY_CACHE_TTL_SECONDS") or "").strip()
+    if raw.isdigit():
+        return max(1, int(raw))
+    return DISCOVERY_CACHE_TTL
+
+
+def _discovery_cache_enabled() -> bool:
+    return (os.getenv("DISCOVERY_CACHE", "true") or "").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def _discovery_cache_key(channel_id: str, topic: str, brief: str = "") -> str:
+    from apis.cache_manager import build_key
+
+    thoughts = (brief or "").strip()
+    return build_key(
+        f"{DISCOVERY_CACHE_PREFIX}::{channel_id}", f"{topic}\n\n{thoughts}" if thoughts else topic
+    )
+
+
+def _discovery_from_payload(data: object) -> DiscoveryResult | None:
+    if not isinstance(data, dict):
+        return None
+    evaluated_raw = data.get("evaluated") or []
+    evaluated: list[tuple[str, float, dict[str, Any]]] = []
+    for row in evaluated_raw:
+        if not isinstance(row, list | tuple) or len(row) < 3:
+            continue
+        signals = row[2] if isinstance(row[2], dict) else {}
+        evaluated.append((str(row[0]), float(row[1]), signals))
+    if not evaluated:
+        return None
+    raw_obj = data.get("raw_scores")
+    raw: dict[str, Any] = raw_obj if isinstance(raw_obj, dict) else {}
+    angle_obj = data.get("angle_scores")
+    angle: dict[str, Any] = angle_obj if isinstance(angle_obj, dict) else {}
+    timings_obj = data.get("timings")
+    timings: dict[str, Any] = timings_obj if isinstance(timings_obj, dict) else {}
+    meta_obj = data.get("meta")
+    meta: dict[str, Any] = meta_obj if isinstance(meta_obj, dict) else {}
+    base_obj = data.get("base_signals")
+    base_signals: dict[str, Any] = base_obj if isinstance(base_obj, dict) else {}
+    return DiscoveryResult(
+        input_topic=str(data.get("input_topic") or ""),
+        base_signals=base_signals,
+        evaluated=evaluated,
+        timings={str(k): float(v) for k, v in timings.items() if isinstance(v, int | float)},
+        channel_id=str(data.get("channel_id") or "default"),
+        raw_scores={str(k): float(v) for k, v in raw.items() if isinstance(v, int | float)},
+        angle_scores={str(k): float(v) for k, v in angle.items() if isinstance(v, int | float)},
+        brief=str(data.get("brief") or ""),
+        meta={str(k): v for k, v in meta.items()},
+    )
+
+
+def _discovery_age_note(channel_id: str, topic: str, brief: str = "") -> str:
+    """`" - 12m old"`, or `""` when the age cannot be read. Never raises."""
+    try:
+        from apis.cache_manager import cache_age_seconds
+
+        age = cache_age_seconds(_discovery_cache_key(channel_id, topic, brief))
+    except Exception as exc:
+        logger.debug("discovery cache age unavailable: %s", exc)
+        return ""
+    if age is None:
+        return ""
+    return f" - {int(age)}s old" if age < 90 else f" - {int(age // 60)}m old"
+
+
+def _load_discovery_cache(channel_id: str, topic: str, brief: str = "") -> DiscoveryResult | None:
+    if not _discovery_cache_enabled():
+        return None
+    try:
+        from apis.cache_manager import get_cached
+
+        return _discovery_from_payload(get_cached(_discovery_cache_key(channel_id, topic, brief)))
+    except Exception as exc:
+        logger.debug("discovery cache load skipped: %s", exc)
+        return None
+
+
+def _store_discovery_cache(result: DiscoveryResult) -> None:
+    if not _discovery_cache_enabled() or not result.evaluated:
+        return
+    try:
+        from apis.cache_manager import set_cache
+
+        payload = {
+            "input_topic": result.input_topic,
+            "channel_id": result.channel_id,
+            "base_signals": result.base_signals,
+            "evaluated": result.evaluated,
+            "raw_scores": result.raw_scores,
+            "angle_scores": result.angle_scores,
+            "timings": result.timings,
+            "meta": result.meta,
+            "brief": result.brief,
+        }
+        set_cache(
+            _discovery_cache_key(result.channel_id, result.input_topic, result.brief),
+            payload,
+            ttl_seconds=_discovery_ttl_seconds(),
+        )
+    except Exception as exc:
+        logger.debug("discovery cache store skipped: %s", exc)
 
 
 @dataclass
@@ -72,25 +235,54 @@ class PipelineResult:
     channel_id: str = "default"
     run_id: int | None = None
     features: dict[str, Any] = field(default_factory=dict)
+    menu_path: str | None = None
+    angle_intent: str | None = None
 
 
 def best_variant_index(
     evaluated: list[tuple[str, float, Any]],
     raw_scores: dict[str, float] | None = None,
+    angle_scores: dict[str, float] | None = None,
 ) -> int:
-    """Index of the best variant, breaking display ties on the pre-clamp score (323).
+    """Index of the best variant. Three keys, in descending order of authority.
 
-    `composite_score` clamps to 100, so on a hot topic every variant shows the same
-    number and "best" degenerates to "first in the list" — run 71 offered five angles
-    at exactly 100.00. The displayed score still leads: raw only decides among equals.
+    1. the displayed composite;
+    2. the pre-clamp composite (323) — `composite_score` caps at 100, so on a hot
+       topic every variant reads 100.0 and the ranking carries no information;
+    3. the editorial score (`core/angle_ranker`).
+
+    323 assumed the pre-clamp numbers differ. They do not: `_score_variant` scores
+    every variant against the *same* pinned signals, and the variant string reaches
+    `composite_score_raw` only through `infer_domain` and an exact-string history
+    lookup. Run 72 tied at 92.14 — below the ceiling, after 323 shipped — so key 2
+    had nothing to break either. Key 3 reads the angle text itself.
     """
     if not evaluated:
         raise ValueError("evaluated must be non-empty")
     raw = raw_scores or {}
+    angle = angle_scores or {}
     return max(
         range(len(evaluated)),
-        key=lambda i: (evaluated[i][1], raw.get(evaluated[i][0], evaluated[i][1])),
+        key=lambda i: (
+            evaluated[i][1],
+            raw.get(evaluated[i][0], evaluated[i][1]),
+            angle.get(evaluated[i][0], 0.0),
+        ),
     )
+
+
+def chosen_variant(
+    discovery: DiscoveryResult,
+    variant_index: int | None,
+) -> tuple[str, float, Any]:
+    """#664. `variant_index == -1` means keep the operator's typed idea."""
+    evaluated = discovery.evaluated
+    if variant_index == -1:
+        return discovery.input_topic, 0.0, discovery.base_signals
+    if variant_index is not None and 0 <= variant_index < len(evaluated):
+        return evaluated[variant_index]
+    index = best_variant_index(evaluated, discovery.raw_scores, discovery.angle_scores)
+    return evaluated[index]
 
 
 def _score_variant(
@@ -119,18 +311,101 @@ def _word_range(length_choice: str) -> tuple[int, int]:
     return word_range(length_choice)
 
 
+def variant_scoring_deadline_s() -> float | None:
+    """Wall-clock budget for parallel angle scoring. None = wait forever."""
+    raw = os.getenv("VARIANT_SCORING_DEADLINE_S")
+    if raw is None or str(raw).strip() == "":
+        return 15.0
+    text = str(raw).strip().lower()
+    if text in ("off", "false", "no"):
+        return None
+    try:
+        value = float(text)
+    except ValueError:
+        return 15.0
+    if value <= 0:
+        return None
+    return value
+
+
+def collect_scored_variants(
+    candidates: list[str],
+    channel_id: str,
+    base_signals: dict[str, Any],
+    topic: str,
+    *,
+    report: Callable[..., None] | None = None,
+) -> tuple[list[tuple[str, float, dict[str, Any]]], dict[str, float], dict[str, Any]]:
+    """Score angle candidates under VARIANT_SCORING_DEADLINE_S.
+
+    Does not use `with ThreadPoolExecutor` — that waits for hung workers on
+    exit. Unfinished futures are cancelled and the pool is shut down with
+    wait=False. If nobody finishes, keep the typed topic.
+    """
+    evaluated: list[tuple[str, float, dict[str, Any]]] = []
+    raw_scores: dict[str, float] = {}
+    meta: dict[str, Any] = {}
+    total = len(candidates)
+    if not candidates:
+        return evaluated, raw_scores, meta
+
+    deadline = variant_scoring_deadline_s()
+    executor = ThreadPoolExecutor(max_workers=5)
+    try:
+        futures = {
+            executor.submit(_score_variant, v, channel_id, base_signals, seed_topic=topic): v
+            for v in candidates
+        }
+        iterator = (
+            as_completed(futures, timeout=deadline)
+            if deadline is not None
+            else as_completed(futures)
+        )
+        try:
+            for done, future in enumerate(iterator, start=1):
+                variant, score, variant_signals, raw = future.result()
+                evaluated.append((variant, score, variant_signals))
+                raw_scores[variant] = raw
+                if report is not None:
+                    report("Scoring variants", done, total, futures[future])
+        except TimeoutError:
+            meta["fallback"] = "deadline"
+            logger.info(
+                "Variant scoring deadline %.1fs — %d/%d finished",
+                deadline or 0.0,
+                len(evaluated),
+                total,
+            )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+    order = {v: i for i, v in enumerate(candidates)}
+    evaluated.sort(key=lambda e: order.get(e[0], len(candidates)))
+    if not evaluated:
+        evaluated = [(topic, 0.0, dict(base_signals))]
+        raw_scores = {topic: 0.0}
+        meta["fallback"] = "deadline"
+    return evaluated, raw_scores, meta
+
+
 def run_discovery(
     topic: str,
     variant_limit: int = 5,
     channel_id: str | None = None,
     *,
     progress: Callable[..., None] | None = None,
+    brief: str = "",
 ) -> DiscoveryResult:
     """Pull signals, generate variants, score in parallel.
 
     progress: optional callback(phase: str, done: int | None, total: int | None)
     invoked as each discovery phase advances (drives the live spinner).
+    brief: the operator's own thoughts. Signals search ``topic``; the angles are
+    generated and ranked against the thoughts.
     """
+    brief = (brief or "").strip()
+    if brief.lower() == (topic or "").strip().lower():
+        brief = ""
 
     def _report(
         phase: str,
@@ -166,6 +441,18 @@ def run_discovery(
 
     reset_usage()
 
+    cached = _load_discovery_cache(channel_id, topic, brief)
+    if cached is not None:
+        # Name the age, not just the fact. The TTL is 90 minutes, and on a moving
+        # topic an 89-minute-old discovery is a different thing from a 2-minute-old
+        # one -- run 73's recorded failure was exactly freshness decaying quietly.
+        # Same convention as feed_health ("check is Nd old") and the competitor
+        # snapshot age.
+        age = _discovery_age_note(channel_id, topic, brief)
+        print(f"  Reused discovery from cache ({topic}){age}")
+        _report("Reused discovery")
+        return cached
+
     _report("Loading history")
 
     # Quick Apify on/off check before topic research — if the key is dead or the
@@ -200,16 +487,19 @@ def run_discovery(
     )
 
     _report("Fetching signals & variants")
+    variant_kwargs: dict[str, Any] = {"channel_id": channel_id, "repeat_count": repeat_count}
+    if brief:
+        variant_kwargs["brief"] = brief
     with ThreadPoolExecutor(max_workers=2) as executor:
         signals_future = executor.submit(build_registry, topic, channel_id=channel_id)
-        variants_future = executor.submit(
-            generate_variants,
-            topic,
-            channel_id=channel_id,
-            repeat_count=repeat_count,
-        )
+        variants_future = executor.submit(generate_variants, topic, **variant_kwargs)
         base_signals = signals_future.result()
         variants = variants_future.result()
+
+    # #811, before anything scores this dict: lift the deadline note out so the
+    # registry stays signals only, and nothing has to learn to skip a key that
+    # is not `make_signal()`-shaped.
+    deadline = base_signals.pop("_deadline", None) if isinstance(base_signals, dict) else None
 
     timings = {"signals_and_variants": time.perf_counter() - t0}
 
@@ -217,23 +507,37 @@ def run_discovery(
     candidates = variants[:variant_limit]
     total = len(candidates)
     _report("Scoring variants", 0, total)
-    evaluated: list[tuple[str, float, dict[str, Any]]] = []
-    raw_scores: dict[str, float] = {}
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {
-            executor.submit(_score_variant, v, channel_id, base_signals, seed_topic=topic): v
-            for v in candidates
-        }
-        for done, future in enumerate(as_completed(futures), start=1):
-            variant, score, variant_signals, raw = future.result()
-            evaluated.append((variant, score, variant_signals))
-            raw_scores[variant] = raw
-            # Show which angle just finished scoring — engagement during the wait.
-            _report("Scoring variants", done, total, detail=futures[future])
-    # Restore deterministic candidate order (as_completed yields by completion time).
-    _order = {v: i for i, v in enumerate(candidates)}
-    evaluated.sort(key=lambda e: _order.get(e[0], len(candidates)))
+    evaluated, raw_scores, scoring_meta = collect_scored_variants(
+        candidates, channel_id, base_signals, topic, report=_report
+    )
     timings["variant_scoring"] = time.perf_counter() - t1
+    meta: dict[str, Any] = {}
+    if scoring_meta.get("fallback"):
+        meta["variant_scoring_fallback"] = scoring_meta["fallback"]
+    # #811: which signals missed the discovery deadline. `meta`, not `timings` —
+    # the intelligence report sums that dict and prints every key as seconds (#813).
+    if deadline and deadline.get("dropped"):
+        meta["discovery_dropped"] = ", ".join(deadline["dropped"])
+        meta["discovery_deadline_s"] = float(deadline.get("budget_s") or 0.0)
+
+    # Editorial ranking of the angle text, scored over the whole candidate set at once
+    # (distinctness is relative), so it runs after the loop rather than inside
+    # `_score_variant`. ANGLE_LLM_JUDGE (default on) adds one cheap-tier call that
+    # blends a thesis-fit score in; off, the ranking is deterministic and network-free.
+    # Fail-open: a missing editorial score costs a tiebreaker, never the run.
+    angle_scores: dict[str, float] = {}
+    try:
+        from core.angle_ranker import rank_angles, score_spread
+        from core.providers import flag_enabled
+
+        angle_scores = rank_angles(
+            [v for v, *_ in evaluated],
+            seed_topic=f"{topic}. {brief}" if brief else topic,
+            llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
+        )
+        meta["angle_spread"] = score_spread(angle_scores)
+    except Exception as exc:
+        logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
 
     # Persist this run's cache hit/miss counters for the reliability dashboard (O8).
     try:
@@ -243,14 +547,19 @@ def run_discovery(
     except Exception as exc:
         logger.debug("Cache-stat flush skipped after discovery: %s", exc)
 
-    return DiscoveryResult(
+    result = DiscoveryResult(
         input_topic=topic,
         base_signals=base_signals,
         evaluated=evaluated,
         raw_scores=raw_scores,
+        angle_scores=angle_scores,
         timings=timings,
+        meta=meta,
         channel_id=channel_id,
+        brief=brief,
     )
+    _store_discovery_cache(result)
+    return result
 
 
 def finalize_run_observability() -> None:
@@ -283,6 +592,24 @@ def _finalize_run(
     else:
         status = "drafted"
 
+    if result.mp4_path:
+        try:
+            from core.render_artifacts import write_render_sidecars
+
+            side = write_render_sidecars(
+                result.mp4_path,
+                script=result.script or "",
+                features=result.features,
+                quality={},
+            )
+            if side.get("mp4_sha256") or side.get("script_sha256"):
+                result.features["artifact_manifest"] = {
+                    "mp4_sha256": side.get("mp4_sha256"),
+                    "script_sha256": side.get("script_sha256"),
+                }
+        except Exception as exc:
+            logger.warning("render sidecars skipped: %s", exc)
+
     run_id = record_content_run(
         channel_id=channel_id,
         input_topic=input_topic,
@@ -299,7 +626,11 @@ def _finalize_run(
         script=result.script,
         mp3_path=result.mp3_path or "",
         mp4_path=result.mp4_path or "",
-        timings={**discovery.timings, **result.timings},
+        # #813: discovery.meta holds the non-duration discovery measurements
+        # (scoring fallback, angle spread). They belong in the persisted record
+        # — timings_json already carries strings by design, e.g. length_preset —
+        # just not in the float-only dict the intelligence report sums.
+        timings={**discovery.timings, **discovery.meta, **result.timings},
         abort_reason=result.abort_reason or "",
         features=result.features or {},
     )
@@ -314,6 +645,7 @@ def _finalize_run(
             channel_id=channel_id,
             features=result.features,
             exclude_run_id=run_id,
+            composite_score=result.score,
         )
         persist_quality(run_id, quality)
     except Exception:
@@ -335,12 +667,19 @@ def _finalize_run(
             input_topic=input_topic,
             selected_topic=result.topic,
             status=status,
-            timings={**discovery.timings, **result.timings},
+            timings={**discovery.timings, **discovery.meta, **result.timings},
             signals=result.signals,
             features=result.features,
             quality=quality,
             composite_score=result.score,
+            menu_path=result.menu_path,
+            angle_intent=result.angle_intent,
         )
+        # #774: the row's script_preview stops at 2,000 chars, so a drafted run could not be
+        # rendered later without paying for generation again.
+        from core.run_trace import write_full_script
+
+        write_full_script(run_id, result.script)
     except Exception as exc:
         # Warning, not debug: the trace is what `ops traces`, `ops dossier` and
         # data_quality's per-signal failure rates read. A missing one blinds the
@@ -380,6 +719,33 @@ def _finalize_run(
     except Exception as exc:
         logger.debug("run_completed webhook event not emitted for run %s: %s", run_id, exc)
 
+    try:
+        from core.spend_anomaly import maybe_toast_spend_anomaly
+
+        total = 0.0
+        cost = (result.features or {}).get("cost") or {}
+        if isinstance(cost, dict):
+            total = float(cost.get("total") or 0.0)
+        trailing: list[float] = []
+        try:
+            from storage.repositories.content_runs import get_content_run_repository
+
+            for rec in get_content_run_repository().list_for_channel(channel_id)[-20:]:
+                try:
+                    feats = json.loads(getattr(rec, "features_json", None) or "{}")
+                    prev = (feats.get("cost") or {}).get("total")
+                    if prev:
+                        trailing.append(float(prev))
+                except Exception as exc:
+                    # One unreadable historical row must not cost us the median.
+                    logger.debug("trailing cost row skipped: %s", exc)
+                    continue
+        except Exception as exc:
+            logger.debug("trailing costs skipped: %s", exc)
+        maybe_toast_spend_anomaly(total, trailing)
+    except Exception as exc:
+        logger.debug("spend anomaly skipped: %s", exc)
+
 
 def run_pipeline(
     topic: str,
@@ -395,6 +761,8 @@ def run_pipeline(
     vault_relevance_audit: list[dict[str, Any]] | None = None,
     source_urls: list[str] | None = None,
     relevance_corpus: str = "",
+    menu_path: str | None = None,
+    chapter_angles: list[str] | None = None,
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -402,9 +770,18 @@ def run_pipeline(
     """
     channel_id = resolve_channel_id(channel_id or (discovery.channel_id if discovery else None))
     result = PipelineResult(topic=topic, score=0.0, signals={}, channel_id=channel_id)
+    result.menu_path = menu_path
+    from core.angle_intent import detect_angle_intent
+
+    result.angle_intent = detect_angle_intent(topic)
 
     if discovery is None:
-        discovery = run_discovery(topic, variant_limit=variant_limit, channel_id=channel_id)
+        from core.run_mode import guard_before_discovery
+
+        guard_before_discovery()
+        discovery = run_discovery(
+            topic, variant_limit=variant_limit, channel_id=channel_id, brief=creative_brief
+        )
         result.timings.update(discovery.timings)
     else:
         result.timings.update(discovery.timings)
@@ -424,15 +801,41 @@ def run_pipeline(
 
     result.variants = [(v, s) for v, s, _ in evaluated]
 
-    if variant_index is not None and 0 <= variant_index < len(evaluated):
-        index = variant_index
-    else:
-        index = best_variant_index(evaluated, discovery.raw_scores)
-
-    best_topic, best_score, best_signals = evaluated[index]
+    best_topic, best_score, best_signals = chosen_variant(discovery, variant_index)
     result.topic = best_topic
     result.score = best_score
     result.signals = best_signals
+
+    # Run 78: every angle in one long video, one chapter each. The writer gets the seed
+    # topic plus a directive listing the angles; chapters are located after the script
+    # is final (see core/angle_chapters.py).
+    angles = [str(a) for a in (chapter_angles or []) if str(a).strip()]
+    content_topic = best_topic
+    content_brief = creative_brief
+    if len(angles) >= 2:
+        from core.angle_chapters import multi_angle_directive
+
+        content_topic = input_topic or topic
+        content_brief = "\n\n".join(
+            part for part in ((creative_brief or "").strip(), multi_angle_directive(angles)) if part
+        )
+        best_topic = f"{content_topic} - all {len(angles)} angles"
+        result.topic = best_topic
+
+    try:
+        from core.cross_channel_dup import cross_channel_dup_block_reason
+
+        why = cross_channel_dup_block_reason(best_topic, channel_id, key_facts=key_facts)
+    except Exception as exc:
+        logger.debug("cross-channel dup skipped: %s", exc)
+        why = None
+    if why:
+        result.aborted = True
+        result.abort_reason = why
+        _finalize_run(
+            channel_id=channel_id, input_topic=input_topic, result=result, discovery=discovery
+        )
+        return result
 
     preset = get_length_preset(length_choice)
     wr = _word_range(length_choice)
@@ -441,7 +844,7 @@ def run_pipeline(
     logger.info("Building research brief for: %s", best_topic)
     t_brief = time.perf_counter()
     research_brief = build_research_brief(
-        best_topic,
+        content_topic,
         best_signals,
         channel_id=channel_id,
         seed_topic=input_topic,
@@ -451,7 +854,7 @@ def run_pipeline(
     logger.info("Generating content package for: %s", best_topic)
     t_content = time.perf_counter()
     content = generate_content_package(
-        topic=best_topic,
+        topic=content_topic,
         signals=best_signals,
         word_range=wr,
         today=today,
@@ -459,7 +862,7 @@ def run_pipeline(
         research_brief=research_brief,
         length_choice=length_choice,
         seed_topic=input_topic,
-        creative_brief=creative_brief,
+        creative_brief=content_brief,
         key_facts=key_facts or [],
         source_urls=source_urls or [],
         relevance_corpus=relevance_corpus,
@@ -487,6 +890,40 @@ def run_pipeline(
         fact_source="manual" if key_facts else "signals",
         vault_relevance_audit=vault_relevance_audit,
     )
+    if result.menu_path:
+        result.features["menu_path"] = str(result.menu_path)
+    if result.angle_intent:
+        result.features["angle_intent"] = result.angle_intent
+    if len(angles) >= 2:
+        from core.angle_chapters import (
+            chapter_lines,
+            features_from_chapters,
+            locate_chapters,
+            trim_chapter_openers,
+        )
+        from core.chapters import _replace_chapter_lines
+        from core.script_length import WORDS_PER_SECOND
+
+        chapters = locate_chapters(result.script, angles)
+        if chapters:
+            # #770: each chapter is also cut into its own Short, so its first word cannot
+            # point back at the chapter before it. Runs before TTS, so the cut inherits it.
+            result.script, chapters, opener_notes = trim_chapter_openers(result.script, chapters)
+            for note in opener_notes:
+                logger.info("%s", note)
+            if opener_notes:
+                result.features["chapter_opener_notes"] = opener_notes
+            spoken = count_spoken_words(result.script)
+            result.features["all_angles"] = True
+            result.features["angle_chapters"] = features_from_chapters(chapters)
+            # Sentence-labelled chapters ("1:16 That's the whole story") become the angles.
+            result.description = _replace_chapter_lines(
+                result.description,
+                "",
+                chapter_lines(
+                    chapters, duration=spoken / max(WORDS_PER_SECOND, 0.1), total_words=spoken
+                ),
+            )
 
     result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []
     result.features["trade_warnings"] = content.get("trade_warnings") or []
@@ -496,9 +933,19 @@ def run_pipeline(
     result.features["title_warnings"] = content.get("title_warnings") or []
     result.features["fact_conflicts"] = content.get("fact_conflicts") or []
     result.features["fact_conflicts_dropped"] = int(content.get("fact_conflicts_dropped") or 0)
+    result.features["disputed"] = bool(content.get("disputed"))
+    result.features["disputed_claims"] = list(content.get("disputed_claims") or [])
     result.features["lower_thirds"] = list(content.get("lower_thirds") or [])
+    result.features["operator_quotes"] = list(content.get("operator_quotes") or [])
+    result.features["operator_quote_used"] = bool(content.get("operator_quote_used"))
+    result.features["persona_lint"] = list(content.get("persona_lint") or [])
+    result.features["cta_summary"] = dict(content.get("cta_summary") or {})
+    result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]
+    if content.get("quote_attribution"):
+        result.features["quote_attribution"] = content["quote_attribution"]
+    copy_content_package_features(content, result.features)
 
     # Quick win (Pillar 3): web-search result URLs become reusable research in
     # the vault (_sources.md) instead of evaporating with the run. Fail-open.
@@ -513,6 +960,9 @@ def run_pipeline(
 
     result.features["cost"] = estimate_run_cost(
         script=result.script, signals=best_signals, rendered=False
+    )
+    result.features["projected_cost"] = estimate_run_cost(
+        script=result.script, signals=best_signals, rendered=True, length_choice=length_choice
     )
 
     if not proceed_video:
@@ -529,18 +979,28 @@ def run_pipeline(
         channel_id=channel_id,
         title=result.title,
         lower_thirds=result.features.get("lower_thirds"),
+        length_choice=length_choice,
     )
     result.mp3_path = mp3_path
     result.mp4_path = mp4_path
 
     # Recompute cost now that TTS/render actually ran (adds the TTS line).
     result.features["cost"] = estimate_run_cost(
-        script=result.script, signals=best_signals, rendered=True
+        script=result.script, signals=best_signals, rendered=True, length_choice=length_choice
     )
 
     _finalize_run(
         channel_id=channel_id, input_topic=input_topic, result=result, discovery=discovery
     )
+    if result.run_id and result.mp3_path and os.path.isfile(result.mp3_path + ".words.json"):
+        try:
+            from core.chapters import refine_run_chapters
+
+            refined = refine_run_chapters(result.run_id, result.script, result.mp3_path)
+            if refined is not None:
+                result.description = refined
+        except Exception as exc:
+            logger.debug("verified chapters skipped for run %s: %s", result.run_id, exc)
     return result
 
 
@@ -553,6 +1013,8 @@ def run_media_only(
     title: str | None = None,
     render_preset: str = "publish",
     lower_thirds: list[str] | None = None,
+    force: bool = False,
+    length_choice: str = "",
 ) -> tuple[str, str, str]:
     """Generate audio + video (+ publish thumbnail). Draft preset never updates upload media."""
     channel_id = resolve_channel_id(channel_id)
@@ -584,14 +1046,32 @@ def run_media_only(
 
     from core.tts_char_cap import tts_char_cap_reason
 
-    cap_reason = tts_char_cap_reason(script)
+    cap_reason = tts_char_cap_reason(script, force=force, length_choice=length_choice)
     if cap_reason:
         raise RuntimeError(cap_reason)
 
-    progress.stage("ElevenLabs TTS...")
+    from core.tts import voice_stage_label
+
+    progress.stage(voice_stage_label(length_choice))
     t_tts = time.perf_counter()
-    generate_audio(script, mp3_path, channel_id=channel_id)
+    generate_audio(script, mp3_path, channel_id=channel_id, length_choice=length_choice)
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
+    if content_run_id and os.path.isfile(mp3_path + ".words.json"):
+        try:
+            from core.chapters import refine_run_chapters
+
+            if refine_run_chapters(content_run_id, script, mp3_path) is not None:
+                progress.note("Extended chapters updated from real word timings")
+        except Exception as exc:
+            logger.debug("verified chapters skipped for run %s: %s", content_run_id, exc)
+    try:
+        from core.voice_consistency import voice_mix_warning
+
+        mix = voice_mix_warning()
+        if mix:
+            logger.warning("%s", mix)
+    except Exception as exc:
+        logger.debug("voice consistency skipped: %s", exc)
 
     ffmpeg_commands: dict[str, list[str]] = {}
     ffmpeg_attempts: dict[str, list[list[str]]] = {}
@@ -620,6 +1100,52 @@ def run_media_only(
         render_preset=render_preset,
         lower_thirds=lower_thirds,
     )
+    technical_qc_data: dict[str, Any] = {}
+    if os.path.isfile(mp4_path):
+        try:
+            from core.technical_qc import inspect_technical_qc, render_technical_qc
+
+            expected_size = (480, 854) if render_preset == "draft" else (1080, 1920)
+            technical_qc = inspect_technical_qc(mp4_path, expected_size=expected_size)
+            technical_qc_data = technical_qc.to_dict()
+            qc_line = render_technical_qc(technical_qc)
+            progress.note(qc_line)
+            if not technical_qc.passed:
+                logger.warning("%s", qc_line)
+        except Exception as exc:
+            # The render already exists, but the acceptance guarantee was lost.
+            logger.warning("technical QC skipped for %s: %s", mp4_path, exc)
+    try:
+        from core.first_frame import inspect_video
+        from core.first_frame import render_check as first_frame_render_check
+        from scripts.probe_sync import intro_offset_seconds
+
+        offset = 0.0 if render_preset == "draft" else intro_offset_seconds(channel_id)
+        frame_check = inspect_video(mp4_path, intro_offset=offset)
+        if frame_check is not None:
+            progress.note(first_frame_render_check(frame_check))
+            if frame_check.black or frame_check.frozen:
+                logger.warning("%s", first_frame_render_check(frame_check))
+    except Exception as exc:
+        logger.warning("first-frame check skipped: %s", exc)
+
+    try:
+        import tempfile as _tmp
+
+        from core.caption_contrast import fill_hex_for_channel, inspect_caption_band
+        from core.caption_contrast import render_check as contrast_render_check
+        from scripts.probe_sync import grab_frame, intro_offset_seconds
+
+        offset = 0.0 if render_preset == "draft" else intro_offset_seconds(channel_id)
+        with _tmp.TemporaryDirectory() as tmp:
+            still = os.path.join(tmp, "contrast.png")
+            if grab_frame(mp4_path, max(0.0, offset) + 1.0, still):
+                contrast = inspect_caption_band(still, fill_hex=fill_hex_for_channel(channel_id))
+                progress.note(contrast_render_check(contrast))
+                if not contrast.passed:
+                    logger.warning("%s", contrast_render_check(contrast))
+    except Exception as exc:
+        logger.warning("caption contrast check skipped: %s", exc)
 
     thumb_path = ""
     thumb_provider: str | None = None
@@ -681,16 +1207,17 @@ def run_media_only(
             progress.note(f"{thumb.detail or 'thumbnail'} — {thumb_path}")
             progress.note(f"Thumbnails in folder: {total} ({thumb_dir})")
             try:
-                from core.thumbnail_safe_area import inspect_thumbnail, render_check
+                from core.thumbnail_safe_area import inspect_thumbnail
+                from core.thumbnail_safe_area import render_check as thumb_render_check
 
-                checked = inspect_thumbnail(thumb_path)
+                thumb_check = inspect_thumbnail(thumb_path)
                 thumb_safe_area = {
-                    "bottom_quiet": checked.bottom_quiet,
-                    "bottom_detail": checked.bottom_detail,
-                    "detail": checked.detail,
+                    "bottom_quiet": thumb_check.bottom_quiet,
+                    "bottom_detail": thumb_check.bottom_detail,
+                    "detail": thumb_check.detail,
                     "method": "bottom_20_percent_edge_density",
                 }
-                progress.note(render_check(checked))
+                progress.note(thumb_render_check(thumb_check))
             except Exception as exc:
                 logger.warning("Thumbnail safe-area check failed for %s: %s", thumb_path, exc)
         elif thumb is not None:
@@ -735,7 +1262,8 @@ def run_media_only(
                 (load_features(content_run_id) or {}).get("cost"),
                 script,
                 thumbnail_provider=thumb_provider,
-                tts_cached=last_tts_was_cache_hit(),
+                tts_cached=(1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
+                length_choice=length_choice,
             )
             if thumbnail_candidates:
                 cost["thumbnail"] = round(
@@ -749,14 +1277,21 @@ def run_media_only(
                     sum(float(value) for key, value in cost.items() if key != "total"),
                     4,
                 )
+            from core.tts_char_cap import tts_char_count
+
             merge_features(
                 content_run_id,
                 {
                     "cost": cost,
-                    "tts_cached": last_tts_was_cache_hit(),
+                    "tts_cached": (1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
+                    "tts_char_count": tts_char_count(script),
+                    "tts_force": bool(force),
+                    "tts_length_choice": length_choice or "",
+                    **_tts_forecast_features(),
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,
                     "thumbnail_candidates": thumbnail_candidates,
+                    **({"technical_qc": technical_qc_data} if technical_qc_data else {}),
                 },
             )
             update_trace(
@@ -764,10 +1299,11 @@ def run_media_only(
                 {
                     "status": "rendered",
                     "cost": cost,
-                    "tts_cached": last_tts_was_cache_hit(),
+                    "tts_cached": (1.0 if last_tts_was_piper_mix() else last_tts_cache_fraction()),
                     "thumbnail_provider": thumb_provider or "",
                     "thumbnail_safe_area": thumb_safe_area,
                     "thumbnail_candidates": thumbnail_candidates,
+                    **({"technical_qc": technical_qc_data} if technical_qc_data else {}),
                     **(
                         {"ffmpeg_command": ffmpeg_commands["primary"]}
                         if ffmpeg_commands.get("primary")

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from typing import Any
 
@@ -58,6 +59,61 @@ def redact_trace_value(value: Any, *, key: str = "") -> Any:
     if isinstance(value, list):
         return [redact_trace_value(v, key=key) for v in value]
     return value
+
+
+def _redact_paths_in_obj(value: Any) -> Any:
+    """Walk strings so vault/home/username cannot sit in ffmpeg_command / scripts."""
+    from core.chrome import redact_operator_paths
+
+    if isinstance(value, str):
+        return redact_operator_paths(value)
+    if isinstance(value, dict):
+        return {str(k): _redact_paths_in_obj(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact_paths_in_obj(v) for v in value]
+    return value
+
+
+# #636: key-name redaction misses a secret inside a free-text value -- an LLM error
+# echoing the key, a source URL carrying `?api_key=`, a topic. Scrub by value too.
+_SECRET_NAME_HINTS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "AUTH")
+# Shorter values ("true", "1") would scrub ordinary words out of every trace.
+_MIN_SECRET_LEN = 8
+SECRET_PARAM_RE = re.compile(
+    r"([?&](?:api_?key|apikey|key|token|access_token|sig|signature|client_secret)=)"
+    r"(?!\[redacted)[^&#\s\"']+",
+    re.IGNORECASE,
+)
+
+
+def env_secret_values(environ: Any = None) -> list[str]:
+    """Current values of env vars whose names look secret, longest first."""
+    source = os.environ if environ is None else environ
+    values = {
+        str(value).strip()
+        for name, value in source.items()
+        if any(hint in str(name).upper() for hint in _SECRET_NAME_HINTS)
+        and len(str(value).strip()) >= _MIN_SECRET_LEN
+    }
+    return sorted(values, key=len, reverse=True)
+
+
+def _scrub_secrets(value: Any, secrets: list[str]) -> Any:
+    if isinstance(value, str):
+        text = SECRET_PARAM_RE.sub(r"\1[redacted]", value)
+        for secret in secrets:
+            if secret in text:
+                text = text.replace(secret, "[redacted-env]")
+        return text
+    if isinstance(value, dict):
+        return {str(k): _scrub_secrets(v, secrets) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_scrub_secrets(v, secrets) for v in value]
+    return value
+
+
+def _redact_trace_blob(value: Any) -> Any:
+    return _scrub_secrets(_redact_paths_in_obj(redact_trace_value(value)), env_secret_values())
 
 
 def _trace_path(run_id: int) -> str:
@@ -108,6 +164,8 @@ def write_run_trace(
     features: dict[str, Any] | None = None,
     quality: dict[str, Any] | None = None,
     composite_score: float | None = None,
+    menu_path: str | None = None,
+    angle_intent: str | None = None,
 ) -> str | None:
     """Write the trace file; returns its path or None (fail-open)."""
     if not run_id:
@@ -141,18 +199,81 @@ def write_run_trace(
             "llm_calls": redact_trace_value(llm_calls),
             "llm_cost_usd": llm_cost,
             "cost": (features or {}).get("cost") or {},
+            # Citation provenance, not raw signal payloads.  The retraction
+            # watch reads this exact production field (#702).
+            "source_urls": [
+                str(url) for url in ((features or {}).get("source_urls") or []) if str(url).strip()
+            ][:12],
             "cache_post_discovery": cache,
             "experiment": experiment,
             "quality": redact_trace_value(dict(quality or {})),
             "composite_score": composite_score,
         }
+        try:
+            from core.config_diff import channels_fingerprint
+
+            trace["channels_sha256"] = channels_fingerprint()
+        except Exception as exc:
+            logger.debug("channels fingerprint skipped: %s", exc)
+        try:
+            from core.config_diff import ENV_FINGERPRINT_VERSION, env_fingerprint
+
+            trace["env_sha256"] = env_fingerprint()
+            trace["env_fingerprint_version"] = ENV_FINGERPRINT_VERSION
+        except Exception as exc:
+            logger.debug("env fingerprint skipped: %s", exc)
+        try:
+            from storage.alembic_runner import current_revision
+
+            trace["schema_revision"] = current_revision()
+        except Exception as exc:
+            logger.debug("schema revision skipped: %s", exc)
+        if menu_path:
+            trace["menu_path"] = str(menu_path)
+        if angle_intent:
+            trace["angle_intent"] = str(angle_intent)
         os.makedirs(TRACES_DIR, exist_ok=True)
         path = _trace_path(run_id)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(redact_trace_value(trace), f, indent=2, default=str)
+            json.dump(_redact_trace_blob(trace), f, indent=2, default=str)
         return path
     except Exception as exc:
         logger.debug("run trace skipped for run %s: %s", run_id, exc)
+        return None
+
+
+def _script_path(run_id: int) -> str:
+    return os.path.join(TRACES_DIR, f"{int(run_id)}.script.txt")
+
+
+def write_full_script(run_id: int | None, script: str) -> str | None:
+    """Keep the run's final script beside its trace (#774). Fail-open.
+
+    `content_runs.script_preview` caps at 2,000 chars and `quality.script_post_rewrite` is
+    pre-trim, so run 78 (1,007 words, stopped at a gate) could not be rendered later without
+    paying for generation again.
+    """
+    if not run_id or not (script or "").strip():
+        return None
+    try:
+        os.makedirs(TRACES_DIR, exist_ok=True)
+        path = _script_path(run_id)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(script.strip())
+        return path
+    except OSError as exc:
+        logger.debug("full script not kept for run %s: %s", run_id, exc)
+        return None
+
+
+def full_script(run_id: int | None) -> str | None:
+    """The stored final script for a run, or None."""
+    if not run_id:
+        return None
+    try:
+        with open(_script_path(run_id), encoding="utf-8") as f:
+            return f.read().strip() or None
+    except OSError:
         return None
 
 
@@ -181,7 +302,7 @@ def update_trace(run_id: int | None, patch: dict[str, Any]) -> bool:
             return False
         current.update(redact_trace_value(patch) if isinstance(patch, dict) else patch)
         with open(_trace_path(run_id), "w", encoding="utf-8") as f:
-            json.dump(redact_trace_value(current), f, indent=2)
+            json.dump(_redact_trace_blob(current), f, indent=2)
         return True
     except Exception as exc:
         logger.debug("trace update skipped for run %s: %s", run_id, exc)

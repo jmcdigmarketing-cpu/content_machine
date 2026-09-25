@@ -54,7 +54,12 @@ def _slug(text: str, max_len: int = 48) -> str:
 
 
 def _best_variant_index(discovery: DiscoveryResult) -> int:
-    return max(range(len(discovery.evaluated)), key=lambda i: discovery.evaluated[i][1])
+    """Defer to the one ranking rule. This used to `max` on the displayed score
+    alone, so it kept picking arbitrarily among the identical scores that
+    `pipeline.best_variant_index`'s raw and editorial keys exist to separate."""
+    from core.pipeline import best_variant_index
+
+    return best_variant_index(discovery.evaluated, discovery.raw_scores, discovery.angle_scores)
 
 
 @dataclass
@@ -442,9 +447,13 @@ def to_markdown(report: IntelligenceReport) -> str:
         ]
     )
 
-    if report.timings:
-        total = sum(report.timings.values())
-        timing_parts = ", ".join(f"{k}={v:.1f}s" for k, v in report.timings.items())
+    # #813: durations only. A non-numeric value here (wave 27 wrote
+    # "variant_scoring_fallback": "deadline") used to raise TypeError out of
+    # `sum`, killing the report on exactly the degraded run that needed one.
+    phases = {k: float(v) for k, v in report.timings.items() if isinstance(v, int | float)}
+    if phases:
+        total = sum(phases.values())
+        timing_parts = ", ".join(f"{k}={v:.1f}s" for k, v in phases.items())
         lines.extend(["", f"_Pipeline timing: {timing_parts} (total ~{total:.1f}s)_"])
 
     return "\n".join(lines) + "\n"

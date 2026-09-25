@@ -98,6 +98,14 @@ class TestApplyCostMode(unittest.TestCase):
             with self.assertRaises(run_mode.CostModeBlocked):
                 run_mode.apply_and_guard("free", readiness=ready)
 
+    def test_paid_calls_off_resolves_to_free(self):
+        with mock.patch.dict(os.environ, {"PAID_CALLS": "off"}, clear=True):
+            self.assertEqual(run_mode.resolve_cost_mode(), run_mode.COST_MODE_FREE)
+
+    def test_paid_calls_unset_stays_standard(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(run_mode.resolve_cost_mode(), run_mode.COST_MODE_STANDARD)
+
     def test_guard_before_discovery_is_noop_without_strict(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             self.assertEqual(run_mode.guard_before_discovery(), [])
@@ -162,14 +170,60 @@ class TestReadiness(unittest.TestCase):
                 mock.patch.dict(os.environ, {"PIPER_VOICE": voice}, clear=True),
             ):
                 self.assertEqual(run_mode._local_tts_available(), "piper")
-            # Module present but no voice model -> not ready.
-            with (
-                mock.patch.object(run_mode, "_module_available", lambda m: m == "piper"),
-                mock.patch.dict(os.environ, {}, clear=True),
-            ):
-                self.assertIsNone(run_mode._local_tts_available())
+            # Module present but no voice model on disk -> not ready.
+            with tempfile.TemporaryDirectory() as empty:
+                with (
+                    mock.patch.object(run_mode, "_module_available", lambda m: m == "piper"),
+                    mock.patch.dict(
+                        os.environ,
+                        {"PIPER_VOICE": "", "PIPER_VOICES": "", "PIPER_VOICES_DIR": empty},
+                        clear=True,
+                    ),
+                    mock.patch("core.tts.load_local_voice_pool", return_value={}),
+                ):
+                    self.assertIsNone(run_mode._local_tts_available())
         finally:
             os.unlink(voice)
+
+    def test_piper_readme_path_is_not_ready(self):
+        """PIPER_VOICE pointed at LICENSE/README is not a voice (operator 2026-08-28)."""
+        with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as f:
+            f.write(b"# not a voice\n")
+            readme = f.name
+        empty = tempfile.mkdtemp()
+        try:
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "piper"),
+                mock.patch.dict(
+                    os.environ,
+                    {
+                        "PIPER_VOICE": readme,
+                        "PIPER_VOICES": "",
+                        "PIPER_VOICES_DIR": empty,
+                    },
+                    clear=True,
+                ),
+                mock.patch("core.tts.load_local_voice_pool", return_value={}),
+            ):
+                self.assertFalse(run_mode._tts_provider_ready("piper"))
+        finally:
+            os.unlink(readme)
+            os.rmdir(empty)
+
+    def test_piper_ready_from_voices_dir_onnx(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            onnx = os.path.join(tmp, "en_US-bobby-medium.onnx")
+            with open(onnx, "wb") as f:
+                f.write(b"onnx")
+            with (
+                mock.patch.object(run_mode, "_module_available", lambda m: m == "piper"),
+                mock.patch.dict(
+                    os.environ,
+                    {"PIPER_VOICES_DIR": tmp, "PIPER_VOICE": ""},
+                    clear=True,
+                ),
+            ):
+                self.assertTrue(run_mode._tts_provider_ready("piper"))
 
     def test_free_llm_is_local_first(self):
         # Ollama reachable -> preferred even when an OpenRouter key is also present.

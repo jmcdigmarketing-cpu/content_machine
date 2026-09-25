@@ -51,6 +51,30 @@ def max_videos_per_week() -> int:
     return _DEFAULT_CAP
 
 
+_DEFAULT_TARGET = 3
+
+
+def weekly_target() -> int:
+    """The operator's floor for the week (3-5 set 2026-09-15); never above the cap."""
+    import os
+
+    raw = os.getenv("UPLOADS_PER_WEEK_TARGET", "").strip()
+    target = int(raw) if raw.isdigit() and int(raw) > 0 else _DEFAULT_TARGET
+    return min(target, max_videos_per_week())
+
+
+def target_line(status: CadenceStatus) -> str:
+    """ "Week: 1 of 3-5 ... short 2" when under target, else "" (#764)."""
+    target = min(weekly_target(), status.cap)
+    if status.total >= target:
+        return ""
+    band = f"{target}-{status.cap}" if status.cap > target else str(target)
+    return (
+        f"Week: {status.total} of {band} ({status.recent} up, {status.upcoming} scheduled) - "
+        f"short {target - status.total}: py -m scripts.ops batch-review"
+    )
+
+
 def _within(when: datetime | None, *, now: datetime, days: int, future: bool) -> bool:
     if not when:
         return False
@@ -106,3 +130,6 @@ def display_cadence(status: CadenceStatus, *, print_fn=print) -> None:
             "    At/over the safe cadence cap — spacing uploads out protects against "
             "'mass-produced' flags. Raise with MAX_VIDEOS_PER_WEEK if intentional."
         )
+    line = target_line(status)
+    if line:
+        print_fn(f"    {line}")

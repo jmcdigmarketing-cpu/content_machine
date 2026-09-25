@@ -2,9 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
   pull_request:
-    branches: [main, master]
+  workflow_dispatch:
+
+# #715: unfiltered push+PR runs four jobs plus postgres on every branch.
+# Cancel the superseded run instead of stacking them.
+# #716: github.ref alone is refs/heads/<b> on push but refs/pull/<n>/merge on
+# pull_request, so a branch with an open PR still ran twice. head_ref is the
+# branch name on pull_request and empty on push, so both events share a group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -51,14 +59,30 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,app]"
       - name: Mypy
-        run: mypy analytics apis core config storage
+        # `desktop` was in none of the checked packages, so 345 lines of
+        # window.py were neither executed nor type-checked.
+        run: mypy analytics apis core config storage desktop
         continue-on-error: true   # lenient baseline; tighten over time
 
   test:
     name: Unit tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: content_machine_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -71,9 +95,28 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+      - name: Install ffmpeg
+        # #415: the 2s synthetic smoke needs a real ffmpeg. ubuntu-latest does
+        # not ship it, so technical-QC tests were silently skipping in CI —
+        # the same class as #24/#26 shipping dead on Windows.
+        # #729: PySide6 wheels also need the system GL/EGL/xkb libraries. Without
+        # them the import failed, and every widget test skipped as "extra not
+        # installed" while the run still reported OK.
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1
       - name: Install dependencies
-        run: pip install -e .
+        # [app] brings PySide6 so the widget tests actually run here (#670).
+        # tests/qt_support.requires_qt refuses to skip them under CI (#729).
+        run: pip install -e ".[shell,app]" coverage
       - name: Run unit tests
-        run: python -m unittest discover -s tests -t . -v
+        # Qt needs a platform plugin on a headless runner; offscreen is enough to
+        # construct and style widgets. Run under coverage for #631.
+        env:
+          QT_QPA_PLATFORM: offscreen
+          CONTENT_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/content_machine_test
+        run: coverage run -m unittest discover -s tests -t . -v
+      - name: Core coverage (report-only)
+        # #631: which gates in core/ no test executes. Visible, never blocking.
+        run: coverage report --include="core/*" --sort=cover
+        continue-on-error: true
       - name: Docs metric lint
         run: python -m unittest tests.test_docs_lint

@@ -16,6 +16,8 @@ from core.script_length import get_length_preset
 
 logger = get_logger("core.run_features")
 
+FEATURE_VERSION = "v2"  # v2: angle_intent from detect_angle_intent (#661)
+
 _QUESTION_RE = re.compile(r"\?\s*$")
 _NUMBER_RE = re.compile(r"\b\d+\b")
 _LISTICLE_RE = re.compile(r"^\s*(top|best|worst)\s+\d+\b", re.I)
@@ -46,6 +48,18 @@ def classify_title_structure(title: str) -> str:
 
 
 def classify_angle(topic: str, recommended_format: str = "") -> str:
+    """Analytics label for a topic.
+
+    Generation (`detect_angle_intent`) is the source of truth when it names a
+    real frame. The older keyword list (fraud / recap / …) only fires when
+    intent is `default`, so `"GTA 6 looks amazing!!!"` is `reaction` here too
+    (#661) rather than `general`.
+    """
+    from core.angle_intent import ANGLE_DEFAULT, detect_angle_intent
+
+    intent = detect_angle_intent(topic)
+    if intent != ANGLE_DEFAULT:
+        return intent
     text = f"{topic} {recommended_format}".lower()
     for label, words in _ANGLE_KEYWORDS:
         if any(w in text for w in words):
@@ -53,6 +67,12 @@ def classify_angle(topic: str, recommended_format: str = "") -> str:
     if recommended_format:
         return recommended_format.lower()
     return "general"
+
+
+def _angle_intent(topic: str) -> str:
+    from core.angle_intent import detect_angle_intent
+
+    return detect_angle_intent(topic)
 
 
 def extract_hook(script: str) -> str:
@@ -107,6 +127,7 @@ def build_features(
         "format": preset.label,
         "length_preset": preset.choice,
         "angle": classify_angle(topic, recommended_format),
+        "angle_intent": _angle_intent(topic),
         "title_structure": classify_title_structure(title),
         "title": title,
         "title_direction": title_direction,
@@ -119,10 +140,30 @@ def build_features(
         "word_count": int(pkg.get("word_count") or _word_count(script)),
         "fact_source": fact_source or ("manual" if key_facts else "signals"),
         "key_facts_count": len(key_facts or []),
-        "feature_version": "v1",
+        # Canonical citation URLs resolved by content_engine.  Keep these in the
+        # feature row rather than signal payloads: #702 measured that traces had
+        # zero URLs, leaving both the retraction watch and correction dossier
+        # unfed in production.
+        "source_urls": [str(url) for url in (pkg.get("source_urls") or []) if str(url).strip()][
+            :12
+        ],
+        "feature_version": FEATURE_VERSION,
     }
+    if research_brief is not None:
+        reason = str(getattr(research_brief, "fallback_reason", "") or "")
+        if reason:
+            features["brief_fallback"] = reason
+        from core.research_brief import research_brief_deadline_s
+
+        deadline = research_brief_deadline_s()
+        if deadline is not None:
+            features["brief_deadline_s"] = deadline
     if vault_relevance_audit is not None:
         features["vault_relevance"] = list(vault_relevance_audit)
+    if str(length_choice) == "4":
+        features["chapters_timing_source"] = "estimated"
+    if isinstance(pkg.get("title_script_check"), dict):
+        features["title_script_check"] = dict(pkg["title_script_check"])
     return features
 
 

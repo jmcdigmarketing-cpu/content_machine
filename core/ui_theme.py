@@ -18,6 +18,8 @@ logger = get_logger("core.ui_theme")
 
 
 def ui_color_enabled() -> bool:
+    if os.getenv("NO_COLOR", "").strip():
+        return False
     if os.getenv("CONTENT_UI_COLOR", "true").lower() in ("0", "false", "no"):
         return False
     if not sys.stdout.isatty():

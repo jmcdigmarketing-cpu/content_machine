@@ -21,6 +21,9 @@ Options:
     --facts-file  Path to a text file of operator key facts (paste-block format —
                   same parser as the interactive `paste` mode; trade blocks OK)
     --fact        A single key-fact line; repeatable (--fact "..." --fact "...")
+    --all-angles  Every angle as a chapter of one long video (Extended unless --length)
+    --no-queue    Render but do not enqueue the upload
+    --cut-shorts  With --all-angles, cut each chapter into a Short after the render
 """
 
 from __future__ import annotations
@@ -56,6 +59,25 @@ def _pick_topic(channel_id: str, topic_override: str, use_best_bet: bool) -> str
             print(f"  Best-bet failed ({exc}), falling back to input")
 
     return input("  Topic: ").strip()
+
+
+def _report_chapters(result, *, cut: bool) -> None:
+    """All-angles measurement (#755): placement, length and the Shorts cap per chapter,
+    then - with `cut` - each chapter cut into its own Short."""
+    from core.chapter_shorts import chapter_report, cut_chapter_shorts
+
+    print("\n  Chapters")
+    for line in chapter_report(result.run_id, script=result.script) or ["(no chapter report)"]:
+        print(f"    {line}")
+    if not cut:
+        return
+    print("\n  Chapter Shorts")
+    for short in cut_chapter_shorts(result.run_id, script=result.script):
+        if short.run_id:
+            print(f"    [{short.run_id}] {short.index + 1}. {short.title}")
+            print(f"        {short.mp4_path}")
+        else:
+            print(f"    ! {short.index + 1}. {short.title}: {short.skipped}")
 
 
 def _collect_key_facts(facts_file: str, fact_lines: list[str]) -> list[str]:
@@ -98,6 +120,19 @@ def main(argv=None) -> int:
         action="append",
         default=[],
         help="Single key-fact line (repeatable)",
+    )
+    parser.add_argument(
+        "--all-angles",
+        action="store_true",
+        help="Every discovery angle as one chapter of a long video (default length Extended)",
+    )
+    parser.add_argument(
+        "--no-queue", action="store_true", help="Render, but do not enqueue an upload"
+    )
+    parser.add_argument(
+        "--cut-shorts",
+        action="store_true",
+        help="With --all-angles: cut each chapter into a Short after the render (local, $0)",
     )
     args = parser.parse_args(argv)
 
@@ -148,6 +183,9 @@ def main(argv=None) -> int:
 
     # Length selection — learn from engagement history when --length auto
     length_choice = args.length
+    if length_choice == "auto" and args.all_angles:
+        # Same default as the interactive `A`: room for every angle as its own chapter.
+        length_choice = "4"
     if length_choice == "auto":
         from core.length_recommender import (
             display_recommended_length,
@@ -180,8 +218,20 @@ def main(argv=None) -> int:
         print("  No variants scored — exiting.")
         return 1
 
-    best_topic, best_score, best_signals = discovery.evaluated[0]
+    # Was `evaluated[0]` — first in the list, never a ranking. Overnight runs
+    # deserve the same rule the menu uses.
+    from core.pipeline import best_variant_index
+
+    _idx = best_variant_index(discovery.evaluated, discovery.raw_scores, discovery.angle_scores)
+    best_topic, best_score, best_signals = discovery.evaluated[_idx]
     print(f"  Selected variant: {best_topic} [score={best_score:.1f}]")
+    all_angles: list[str] = []
+    if args.all_angles:
+        all_angles = [variant for variant, _score, _signals in discovery.evaluated]
+        best_topic = f"{topic} - all {len(all_angles)} angles"
+        print(f"  All {len(all_angles)} angles, one chapter each:")
+        for number, angle in enumerate(all_angles, start=1):
+            print(f"    {number}. {angle}")
 
     from core.outlier import display_outlier, get_competitor_outlier
 
@@ -190,27 +240,41 @@ def main(argv=None) -> int:
     # Operator key facts (headless): file and/or repeated --fact lines — same
     # ground-truth priority as the interactive prompt, saved in full to the vault.
     key_facts = _collect_key_facts(args.facts_file, args.fact)
-    if key_facts:
-        from core.content_engine import key_facts_for_prompt
-        from core.operator_facts import capture_facts_to_vault
+    from core.content_engine import key_facts_for_prompt
+    from core.fact_selection import select_headless_facts
+    from core.operator_facts import capture_facts_to_vault
+    from core.vault_relevance import build_relevance_corpus
 
+    corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
+    packed = (
+        select_headless_facts(
+            key_facts,
+            topic=topic,
+            corpus=corpus,
+            typed=list(args.fact or []),
+        )
+        if key_facts
+        else None
+    )
+    if key_facts:
         capture_facts_to_vault(channel_id, topic, key_facts)
-        sent = key_facts_for_prompt(key_facts)
+        sent = key_facts_for_prompt(packed or [])
         print(f"\n  Key facts: {len(key_facts)} collected, {len(sent)} packed for the LLM")
 
     # Script
     print("\n  Generating script...")
-    from core.vault_relevance import build_relevance_corpus
-
     result = run_pipeline(
         topic,
         discovery=discovery,
-        variant_index=0,
+        # #765: was 0 - the script was written for the first variant while the line above
+        # printed, and the render titled, the ranked one.
+        variant_index=_idx,
         length_choice=length_choice,
         proceed_video=False,
         channel_id=channel_id,
-        key_facts=key_facts or None,
-        relevance_corpus=build_relevance_corpus(best_signals, operator_facts=key_facts or []),
+        key_facts=packed,
+        relevance_corpus=corpus,
+        chapter_angles=all_angles or None,
     )
 
     preset = get_length_preset(length_choice)
@@ -240,9 +304,9 @@ def main(argv=None) -> int:
 
     # Authenticity / monetisation-safety gate (Phase O)
     from core.authenticity import (
+        blocks_render,
         display_authenticity_report,
         evaluate_authenticity,
-        gate_mode,
     )
     from core.fact_enrichment import _fact_line_count, enrich_facts
 
@@ -254,7 +318,7 @@ def main(argv=None) -> int:
         exclude_run_id=result.run_id,
     )
     display_authenticity_report(auth)
-    if gate_mode() == "block" and auth.verdict == "block" and not args.force:
+    if blocks_render(auth) and not args.force:
         print(
             "\n  Blocked by authenticity gate (AUTHENTICITY_GATE=block). Use --force to override."
         )
@@ -267,13 +331,26 @@ def main(argv=None) -> int:
         )
         return 0
 
+    # Negative-fact veto (#333): defaults to block, unlike the gates above.
+    from core.negative_facts import negative_gate_blocks
+
+    if negative_gate_blocks(result.features.get("ungrounded_entities")) and not args.force:
+        print(
+            "\n  Blocked by the negative-fact gate (NEGATIVE_FACT_GATE=block): the script "
+            "re-asserts a walked-back claim. Use --force to override."
+        )
+        return 0
+
     # Grounding gate (Pillar 3, opt-in): GROUNDING_GATE=block stops the render
     # when the claim verifier found unsupported claims — mirrors authenticity.
     from core.claim_verifier import gate_blocks
 
-    if gate_blocks(result.features.get("claim_verification")) and not args.force:
-        print("\n  Blocked by grounding gate (GROUNDING_GATE=block). Use --force to override.")
-        return 0
+    grounding_override = False
+    if gate_blocks(result.features.get("claim_verification")):
+        if not args.force:
+            print("\n  Blocked by grounding gate (GROUNDING_GATE=block). Use --force to override.")
+            return 0
+        grounding_override = True
 
     from core.thin_facts import thin_facts_abort_reason
 
@@ -317,9 +394,12 @@ def main(argv=None) -> int:
         print(f"\n  {human_reason}. Use --force to render anyway.")
         return 0
 
-    from core.tts_char_cap import tts_char_cap_reason
+    from core.tts_char_cap import tts_char_cap_reason, tts_char_cap_warn
 
-    cap_reason = tts_char_cap_reason(result.script)
+    cap_warn = tts_char_cap_warn(result.script, length_choice=length_choice)
+    if cap_warn:
+        print(f"\n  {cap_warn}")
+    cap_reason = tts_char_cap_reason(result.script, force=args.force, length_choice=length_choice)
     if cap_reason and not args.force:
         print(f"\n  {cap_reason}. Use --force to render anyway.")
         return 0
@@ -338,13 +418,40 @@ def main(argv=None) -> int:
         channel_id=channel_id,
         content_run_id=result.run_id,
         title=result.title,
+        force=args.force,
+        length_choice=length_choice,
     )
+    # Queue the description the render refined (real word-timed chapters), not the
+    # pre-render copy (run 77).
+    from core.chapters import current_description
+
+    result.description = current_description(result.run_id, result.description)
+    if grounding_override:
+        # #754: the run row carries the override so the publish list can name it later.
+        from core.claim_verifier import override_features
+        from core.run_features import merge_features
+
+        override = override_features(result.features.get("claim_verification"))
+        merge_features(result.run_id, override)
+        result.features.update(override)
 
     if not result.mp4_path:
         print("  Render failed — no mp4 produced.")
         return 1
 
     print(f"  MP4: {result.mp4_path}")
+
+    if all_angles:
+        _report_chapters(result, cut=args.cut_shorts)
+
+    if args.no_queue:
+        print("\n  --no-queue: rendered, nothing enqueued.")
+        print(
+            f"  Queue later: py -m scripts.requeue_upload --channel {channel_id} "
+            f"--run-id {result.run_id} --queue"
+        )
+        print("\n  Done.\n")
+        return 0
 
     # Enqueue upload
     from analytics.post_timing import (
@@ -399,4 +506,7 @@ def _main_with_observability(argv=None) -> int:
 
 
 if __name__ == "__main__":
+    from core.console_encoding import ensure_utf8_stdout
+
+    ensure_utf8_stdout()  # #767: redirected / scheduled runs are cp1252
     raise SystemExit(_main_with_observability())

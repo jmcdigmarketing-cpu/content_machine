@@ -1,13 +1,16 @@
 """The commit-msg hook must actually be able to run.
 
-`.githooks/commit-msg` rejects AI co-author trailers. AGENTS.md is explicit that the
-hook exists because a written rule was not enough on its own — `e4d2242` landed a
-trailer the commit after the rule was added.
+`.githooks/commit-msg` enforces the AGENTS.md provenance policy: `Co-authored-by:`
+trailers are encouraged (the 2026-08-28 reversal — two agents share one git author,
+so the trailer is the per-commit record of who wrote a change), and
+"Generated with ..." is refused as marketing rather than provenance.
 
 A hook without the executable bit is skipped silently by git (it prints a hint to
 stderr and commits anyway), so the file was shipped non-executable and enforced
 nothing on a fresh clone. That is the docs/audit_2026-09.md §3 shape: a check that
 reports success while not checking. Hence a test, not a fixed permission alone.
+Verified end-to-end in-container on 2026-09-25: exit 1 on a "Generated with"
+message, warn-and-pass on a trailer-less one.
 
 No network, no subprocess.
 """
@@ -42,10 +45,13 @@ class TestGitHooks(unittest.TestCase):
         ]
         self.assertEqual(bad, [])
 
-    def test_commit_msg_hook_still_guards_ai_attribution(self):
+    def test_commit_msg_hook_still_enforces_the_provenance_policy(self):
         body = (HOOKS / "commit-msg").read_text(encoding="utf-8")
-        self.assertIn("co-authored-by:", body.lower())
+        # Still refuses marketing attribution...
         self.assertIn("generated with", body.lower())
+        # ...and still speaks to the trailer policy (encourage, since 2026-08-28).
+        self.assertIn("co-authored-by:", body.lower())
+        self.assertNotIn("trailer is not allowed", body.lower())
 
 
 if __name__ == "__main__":

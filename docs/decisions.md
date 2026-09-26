@@ -1,6 +1,6 @@
 # Decisions (ADR-lite)
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
 
 Why the load-bearing choices are the way they are. Code says *what*; this says
 *why* — so a future change (or a future Claude session) doesn't "fix" something
@@ -8,195 +8,696 @@ that was deliberate. Newest near the bottom. Keep entries short.
 
 ---
 
-### 1. Every signal returns the same contract
-**Decision:** All signal providers return `make_signal(connected, active, score, data, status, …)` (`apis/signal_contract.py`).
-**Why:** Discovery fans out across ~30 heterogeneous sources; a uniform shape lets scoring, the health UI, and circuit breaking treat them identically and degrade gracefully when one fails.
-**Consequence:** Adding a signal = implement the contract + register it; no pipeline changes.
+## 1. Every signal returns the same contract
+**Decision:** All signal providers return `make_signal(connected, active, score, data,
+status, …)` (`apis/signal_contract.py`).
+**Why:** Discovery fans out across ~30 heterogeneous sources; a uniform shape lets
+scoring, the health UI, and circuit breaking treat them identically and degrade
+gracefully when one fails.
+**Consequence:** Adding a signal = implement the contract + register it; no pipeline
+changes.
 
-### 2. Recommenders share one pattern: analytics-or-default + a rationale
-**Decision:** Best-bet (topic), length, and post-time (`core/best_bet.py`, `core/length_recommender.py`, `analytics/post_timing.py`) each return an `analytics` result when enough engagement history exists, else a sensible default — always with a human-readable reason string. Best-bet ranks **confidence-first**: per-domain rates are empirical-Bayes-shrunk (`_adjusted_domain_rates`) and adequately-sampled domains outrank thin ones (`_domain_priority`), so a 1-video 39% domain can't beat a 6-video 11% one; picks are also **diversified** across domains (≤1 per domain in the first pass), and a domain the channel has actually published with measured engagement counts as on-brand (`_effective_allowed`).
-**Why:** Explainability and graceful cold-start. The operator sees *why* a pick was made and isn't blocked before data exists. A live run exposed the failure of raw-rate ranking + a too-narrow on-brand set: an NBA session got 3 stale 1-sample UFC picks.
-**Consequence:** Early picks are tentative (small n) and labelled with `confidence_note`; the diversity pass means the top-N spans the channel's real topic mix instead of stacking one hot-but-thin domain.
+## 2. Recommenders share one pattern: analytics-or-default + a rationale
+**Decision:** Best-bet (topic), length, and post-time (`core/best_bet.py`,
+`core/length_recommender.py`, `analytics/post_timing.py`) each return an `analytics`
+result when enough engagement history exists, else a sensible default — always with a
+human-readable reason string. Best-bet ranks **confidence-first**: per-domain rates are
+empirical-Bayes-shrunk (`_adjusted_domain_rates`) and adequately-sampled domains outrank
+thin ones (`_domain_priority`), so a 1-video 39% domain can't beat a 6-video 11% one;
+picks are also **diversified** across domains (≤1 per domain in the first pass), and a
+domain the channel has actually published with measured engagement counts as on-brand
+(`_effective_allowed`).
+**Why:** Explainability and graceful cold-start. The operator sees *why* a pick was made
+and isn't blocked before data exists. A live run exposed the failure of raw-rate ranking
++ a too-narrow on-brand set: an NBA session got 3 stale 1-sample UFC picks.
+**Consequence:** Early picks are tentative (small n) and labelled with
+`confidence_note`; the diversity pass means the top-N spans the channel's real topic mix
+instead of stacking one hot-but-thin domain.
 
-### 3. The LLM may only state specifics that are in VERIFIED FACTS
-**Decision:** Facts are split into verified vs context-only; "thin facts mode" + anti-hallucination rules forbid inventing patches/heroes/seasons and (for sports) champions/records/results from training memory. The post-gen grounding check (`core/fact_grounding.py`) flags specifics not in the facts — multi-word proper nouns, **sports mononyms** (e.g. LeBron), and version tokens — using **whole-token** matching in the corpus. CLI surfaces this in a dedicated **Fact grounding** section before the Phase O authenticity gate (`display_grounding_report` in `main.py`). When it fires, `content_engine._maybe_reground_script` **regenerates once** to strip them and then **warns on whatever remains** (`GROUNDING_REGEN_ENABLED`, default on). Link-pasted facts are cleaned of promo/teaser junk first (`core/link_facts._is_junk_line`); ESPN and similar hosts may block automated fetch (WAF) — paste text manually.
-**Why:** Faceless generation on a stale LLM will confidently invent specifics (we hit "Topuria, the featherweight champion"; and a script once fused a real Giannis→Heat trade with an invented Butler→Celtics one recalled as a stale prediction). Grounding to signals is the moat *and* the 2026-policy survival requirement. The model has no outcome-awareness of its past predictions — grounding is the only defense.
-**Consequence:** When signals are thin the script must go opinion/community-level rather than assert specifics. Regen is **"regenerate then warn," not block** — the operator stays in control and still sees the residual warning; the rewrite is only accepted if it reduces unsupported specifics without gutting the script (≥60% word count).
+## 3. The LLM may only state specifics that are in VERIFIED FACTS
+**Decision:** Facts are split into verified vs context-only; "thin facts mode" +
+anti-hallucination rules forbid inventing patches/heroes/seasons and (for sports)
+champions/records/results from training memory. The post-gen grounding check
+(`core/fact_grounding.py`) flags specifics not in the facts — multi-word proper nouns,
+**sports mononyms** (e.g. LeBron), and version tokens — using **whole-token** matching
+in the corpus. CLI surfaces this in a dedicated **Fact grounding** section before the
+Phase O authenticity gate (`display_grounding_report` in `main.py`). When it fires,
+`content_engine._maybe_reground_script` **regenerates once** to strip them and then
+**warns on whatever remains** (`GROUNDING_REGEN_ENABLED`, default on). Link-pasted facts
+are cleaned of promo/teaser junk first (`core/link_facts._is_junk_line`); ESPN and
+similar hosts may block automated fetch (WAF) — paste text manually.
+**Why:** Faceless generation on a stale LLM will confidently invent specifics (we hit
+"Topuria, the featherweight champion"; and a script once fused a real Giannis→Heat trade
+with an invented Butler→Celtics one recalled as a stale prediction). Grounding to
+signals is the moat *and* the 2026-policy survival requirement. The model has no
+outcome-awareness of its past predictions — grounding is the only defense.
+**Consequence:** When signals are thin the script must go opinion/community-level rather
+than assert specifics. Regen is **"regenerate then warn," not block** — the operator
+stays in control and still sees the residual warning; the rewrite is only accepted if it
+reduces unsupported specifics without gutting the script (≥60% word count).
 
-### 4. Operator key facts are ground truth that overrides everything
-**Decision:** Pasted "key facts" inject as highest-priority VERIFIED FACTS and override training memory and signals (`prompt_key_facts` → `content_engine`). **All** collected facts persist to `vault/<channel>/_operator_facts/`; the LLM receives a **char budget** (`OPERATOR_KEY_FACT_CHAR_BUDGET`, default 12000) with soft line cap (`MAX_OPERATOR_KEY_FACTS`, default 24). Manual + link facts rank before vault suggestions. Multi-line `paste` mode parses trade trackers. Writing-tip / playbook bullets filtered via `is_writing_tip()`.
-**Why:** Recent events live past the LLM cutoff; trade-heavy runs need more than 5 lines. Vault storage ≠ prompt cap — everything is kept for reuse.
-**Consequence:** Accuracy on fresh events depends on operator supplying facts (or web-search filling them). ESPN/WAF hosts need manual paste.
+## 4. Operator key facts are ground truth that overrides everything
+**Decision:** Pasted "key facts" inject as highest-priority VERIFIED FACTS and override
+training memory and signals (`prompt_key_facts` → `content_engine`). **All** collected
+facts persist to `vault/<channel>/_operator_facts/`; the LLM receives a **char budget**
+(`OPERATOR_KEY_FACT_CHAR_BUDGET`, default 12000) with soft line cap
+(`MAX_OPERATOR_KEY_FACTS`, default 24). Manual + link facts rank before vault
+suggestions. Multi-line `paste` mode parses trade trackers. Writing-tip / playbook
+bullets filtered via `is_writing_tip()`.
+**Why:** Recent events live past the LLM cutoff; trade-heavy runs need more than 5
+lines. Vault storage ≠ prompt cap — everything is kept for reuse.
+**Consequence:** Accuracy on fresh events depends on operator supplying facts (or
+web-search filling them). ESPN/WAF hosts need manual paste.
 
-### 4b. YouTube title is generated after facts + script, not at discovery
-**Decision:** Discovery (`apis/topic_variants.py`) returns editorial **angles** (≤12 words), not publishable titles. The YouTube title is generated in `core/title_generator.py` after operator key facts, script, and grounding — using the script hook + fact corpus. Anti-slop banned phrases enforced in both stages.
-**Why:** Pre-fact title variants were engagement slop ("Just Broke the League") and misled variant selection before the operator pasted trades.
-**Consequence:** UI labels discovery picks as "angles"; final title appears after script generation in `main.py`.
+## 4b. YouTube title is generated after facts + script, not at discovery
+**Decision:** Discovery (`apis/topic_variants.py`) returns editorial **angles** (≤12
+words), not publishable titles. The YouTube title is generated in
+`core/title_generator.py` after operator key facts, script, and grounding — using the
+script hook + fact corpus. Anti-slop banned phrases enforced in both stages.
+**Why:** Pre-fact title variants were engagement slop ("Just Broke the League") and
+misled variant selection before the operator pasted trades.
+**Consequence:** UI labels discovery picks as "angles"; final title appears after script
+generation in `main.py`.
 
-### 5. Apify is trend discovery, NOT fact freshness
-**Decision:** Apify (reddit/twitter/tiktok/youtube_competitors) feeds *what's trending / community sentiment / competitor angles* — never treated as verified facts. Fact freshness comes from free APIs + Tapology + web search (Tavily/Brave) + manual key facts.
-**Why:** Apify is ~$40–200/mo and returns social chatter, not ground truth; conflating the two both costs money and pollutes facts.
-**Consequence:** Apify can be fully disabled (circuit breaker) with no loss of factual grounding.
+## 5. Apify is trend discovery, NOT fact freshness
+**Decision:** Apify (reddit/twitter/tiktok/youtube_competitors) feeds *what's trending /
+community sentiment / competitor angles* — never treated as verified facts. Fact
+freshness comes from free APIs + Tapology + web search (Tavily/Brave) + manual key
+facts.
+**Why:** Apify is ~$40–200/mo and returns social chatter, not ground truth; conflating
+the two both costs money and pollutes facts.
+**Consequence:** Apify can be fully disabled (circuit breaker) with no loss of factual
+grounding.
 
-### 6. Paid/quota APIs self-disable for the session — and Apify remembers across runs
-**Decision:** A circuit breaker + preflight (`apis/apify_client.py`; generalized signal breaker in `register_signals.py`) skips an API for the rest of the run after a 401/402/403/quota/repeated-timeout. **Apify hard failures additionally persist** to `data/quota_state.json` (`core/quota_state.py`) with a TTL (`QUOTA_STATE_TTL_SECONDS`, default 6h), so a *fresh* process skips Apify instantly instead of re-paying the failing call; the `/users/me` usage reading is likewise cached (`APIFY_USAGE_CACHE_TTL_SECONDS`). The LLM router has the same shape: failover across a provider chain + a session breaker (`core/llm_router.py`).
-**Why:** A live run once re-ran failing actors per variant and burned credits + took 300s. Failing once should stop retrying — and the *next* run shouldn't re-pay it either. See [credit_efficiency.md](credit_efficiency.md).
-**Consequence:** A transient blip can disable a signal for the session; persisted Apify exhaustion auto-expires after the TTL (or clear `data/quota_state.json`). Signal-breaker persistence is intentionally deferred — auth/no-key disables must not survive the operator fixing the key (needs key-hash invalidation first). `quota_state` is fail-open: a corrupt/unwritable file never blocks a run.
+## 6. Paid/quota APIs self-disable for the session — and Apify remembers across runs
+**Decision:** A circuit breaker + preflight (`apis/apify_client.py`; generalized signal
+breaker in `register_signals.py`) skips an API for the rest of the run after a
+401/402/403/quota/repeated-timeout. **Apify hard failures additionally persist** to
+`data/quota_state.json` (`core/quota_state.py`) with a TTL (`QUOTA_STATE_TTL_SECONDS`,
+default 6h), so a *fresh* process skips Apify instantly instead of re-paying the failing
+call; the `/users/me` usage reading is likewise cached
+(`APIFY_USAGE_CACHE_TTL_SECONDS`). The LLM router has the same shape: failover across a
+provider chain + a session breaker (`core/llm_router.py`).
+**Why:** A live run once re-ran failing actors per variant and burned credits + took
+300s. Failing once should stop retrying — and the *next* run shouldn't re-pay it either.
+See [credit_efficiency.md](credit_efficiency.md).
+**Consequence:** A transient blip can disable a signal for the session; persisted Apify
+exhaustion auto-expires after the TTL (or clear `data/quota_state.json`). Signal-breaker
+persistence is intentionally deferred — auth/no-key disables must not survive the
+operator fixing the key (needs key-hash invalidation first). `quota_state` is fail-open:
+a corrupt/unwritable file never blocks a run.
 
-### 7. Social signals are reused across variants, not re-fetched
-**Decision:** During per-variant scoring, the slow/paid Apify signals are pinned from the base-topic fetch (`VARIANT_REUSE_SIGNALS`).
-**Why:** Social signals barely differ across title variants of the same topic; re-running them 5× was the dominant cost + the discovery hang.
-**Consequence:** Variants are differentiated by the title-sensitive signals (youtube) + scoring, not by fresh social calls.
+## 7. Social signals are reused across variants, not re-fetched
+**Decision:** During per-variant scoring, the slow/paid Apify signals are pinned from
+the base-topic fetch (`VARIANT_REUSE_SIGNALS`).
+**Why:** Social signals barely differ across title variants of the same topic;
+re-running them 5× was the dominant cost + the discovery hang.
+**Consequence:** Variants are differentiated by the title-sensitive signals (youtube) +
+scoring, not by fresh social calls.
 
-### 8. Channels are config + domain, not code
-**Decision:** A channel = a profile in `config/channels.json` + `config/seo/{id}.json`; `infer_domain` (whole-word matching) routes topics to per-domain signal weights/slots. One pipeline serves all channels (tapin gaming/UFC, moneywise finance).
+## 8. Channels are config + domain, not code
+**Decision:** A channel = a profile in `config/channels.json` + `config/seo/{id}.json`;
+`infer_domain` (whole-word matching) routes topics to per-domain signal weights/slots.
+One pipeline serves all channels (tapin gaming/UFC, moneywise finance).
 **Why:** Adding a vertical should be configuration, not a fork.
-**Consequence:** Domain keyword lists need maintenance; relevance gating (don't run gaming signals on UFC topics) is a known TODO.
+**Consequence:** Domain keyword lists need maintenance; relevance gating (don't run
+gaming signals on UFC topics) is a known TODO.
 
-### 9. Authenticity/compliance is a first-class gate, not an afterthought
-**Decision:** Pre-upload authenticity check, AI disclosure, cadence guardrail (Phase O). Generation actively *earns* the score, not just measures it: if a script reads as a neutral recap, `content_engine._maybe_inject_insight` adds one opinion/prediction beat (grounded only in verified facts) using the gate's own detector (`authenticity.has_insight`), before the grounding regen.
-**Why:** YouTube's Jul-2025 "inauthentic content" policy + Jan-2026 termination wave make synthetic-and-shallow faceless content an existential risk. Compliance is the differentiator vs most rivals. A gate that only *flags* a recap still ships the recap — closing the loop (inject the missing beat) is what actually moves the score.
-**Consequence:** Some runs are flagged/blocked by design; the operator can override. Injection is grounded + bounded (no invented specifics, ≥90% word count, no-op when a take already exists) and ordered before grounding so it can't smuggle in unsupported claims.
+## 9. Authenticity/compliance is a first-class gate, not an afterthought
+**Decision:** Pre-upload authenticity check, AI disclosure, cadence guardrail (Phase O).
+Generation actively *earns* the score, not just measures it: if a script reads as a
+neutral recap, `content_engine._maybe_inject_insight` adds one opinion/prediction beat
+(grounded only in verified facts) using the gate's own detector
+(`authenticity.has_insight`), before the grounding regen.
+**Why:** YouTube's Jul-2025 "inauthentic content" policy + Jan-2026 termination wave
+make synthetic-and-shallow faceless content an existential risk. Compliance is the
+differentiator vs most rivals. A gate that only *flags* a recap still ships the recap —
+closing the loop (inject the missing beat) is what actually moves the score.
+**Consequence:** Some runs are flagged/blocked by design; the operator can override.
+Injection is grounded + bounded (no invented specifics, ≥90% word count, no-op when a
+take already exists) and ordered before grounding so it can't smuggle in unsupported
+claims.
 
-### 10. Repositories are dual JSON/Postgres; the suite runs keyless
-**Decision:** Storage uses a repository pattern with a JSON fallback when Postgres/keys are absent; tests must pass with `.env` + OAuth token moved aside.
+## 10. Repositories are dual JSON/Postgres; the suite runs keyless
+**Decision:** Storage uses a repository pattern with a JSON fallback when Postgres/keys
+are absent; tests must pass with `.env` + OAuth token moved aside.
 **Why:** The app must run on a fresh machine without a DB, and CI runs without secrets.
-**Consequence:** Before pushing, simulate keyless (move `.env` + token aside, run the suite) to catch CI failures locally.
+**Consequence:** Before pushing, simulate keyless (move `.env` + token aside, run the
+suite) to catch CI failures locally.
 
-### 11. Tests + CI are the guardrail against AI churn
-**Decision:** Ship features with tests; CI gates lint + format + the suite on 3.11. Targeted edits over rewrites.
-**Why:** The "vibe-coding three-month wall" — AI fixes one thing and breaks ten — is held back by acceptance tests on every change.
+## 11. Tests + CI are the guardrail against AI churn
+**Decision:** Ship features with tests; CI gates lint + format + the suite on 3.11.
+Targeted edits over rewrites.
+**Why:** The "vibe-coding three-month wall" — AI fixes one thing and breaks ten — is
+held back by acceptance tests on every change.
 **Consequence:** A feature without a test is incomplete.
 
-### 12. One line of history; merge before starting the next thing
-**Decision:** Avoid long-lived parallel feature branches; land a PR before opening overlapping work.
-**Why:** Parallel branches (`youtube-readonly-scope-and-roadmap` vs `recency-intelligence-cycle`) re-implemented overlapping code and diverged into a conflict + a wrongly-diagnosed "revert." That churn is the cost of not consolidating.
+## 12. One line of history; merge before starting the next thing
+**Decision:** Avoid long-lived parallel feature branches; land a PR before opening
+overlapping work.
+**Why:** Parallel branches (`youtube-readonly-scope-and-roadmap` vs
+`recency-intelligence-cycle`) re-implemented overlapping code and diverged into a
+conflict + a wrongly-diagnosed "revert." That churn is the cost of not consolidating.
 **Consequence:** Slightly less parallelism, far less merge pain and lost work.
 
-### 13. The two PRs were consolidated by keeping BOTH sides (2026-06-23)
-**Decision:** PR #2 (recency layer) was fast-forwarded into `main`, then `main` was merged into PR #1 (Phase O/P/Q + idea-intake + recommenders) and PR #1 merged — landing everything on `main` (`e6d5c9c`). The 10-file conflict was resolved to **preserve both feature sets**, not pick a winner.
+## 13. The two PRs were consolidated by keeping BOTH sides (2026-06-23)
+**Decision:** PR #2 (recency layer) was fast-forwarded into `main`, then `main` was
+merged into PR #1 (Phase O/P/Q + idea-intake + recommenders) and PR #1 merged — landing
+everything on `main` (`e6d5c9c`). The 10-file conflict was resolved to **preserve both
+feature sets**, not pick a winner.
 **Why:** The PRs were largely disjoint; dropping either would lose shipped work.
 **Consequence — deliberate redundancy a future cleanup must NOT "simplify away":**
-- `apis/apify_client.py` keeps PR #1's **global** circuit breaker (`apify_disabled`/`disable_apify`/`apify_preflight`, tripped by 401/402/403 + repeated timeouts) AND exposes `apify_credit_exhausted()` as a thin alias that `core/ui.py`'s run summary imports. Both are intentional; the alias is not dead code.
-- `apis/register_signals.py` keeps the per-signal **session circuit breaker** (`_record_signal_health` etc.) AND the broader variant-reuse pinning — different layers, both load-bearing.
-- `core/pipeline.py` keeps both `apify_preflight()` (Apify on/off precheck) and the `progress=`/`_report` discovery feedback.
-- `main.py` runs both the fact-grounding warning (`core/fact_grounding.py`) and the Phase O authenticity gate (`core/authenticity.py`) before the render prompt — distinct checks.
-- `apis/tapology_api.py` exposes one real `scrape_enabled()` with `_scrape_enabled` as a back-compat alias.
+- `apis/apify_client.py` keeps PR #1's **global** circuit breaker
+  (`apify_disabled`/`disable_apify`/`apify_preflight`, tripped by 401/402/403 + repeated
+  timeouts) AND exposes `apify_credit_exhausted()` as a thin alias that `core/ui.py`'s
+  run summary imports. Both are intentional; the alias is not dead code.
+- `apis/register_signals.py` keeps the per-signal **session circuit breaker**
+  (`_record_signal_health` etc.) AND the broader variant-reuse pinning — different
+  layers, both load-bearing.
+- `core/pipeline.py` keeps both `apify_preflight()` (Apify on/off precheck) and the
+  `progress=`/`_report` discovery feedback.
+- `main.py` runs both the fact-grounding warning (`core/fact_grounding.py`) and the
+  Phase O authenticity gate (`core/authenticity.py`) before the render prompt — distinct
+  checks.
+- `apis/tapology_api.py` exposes one real `scrape_enabled()` with `_scrape_enabled` as a
+  back-compat alias.
 
-### 13b. Exhaustions persist until the provider's REAL reset, not a guessed TTL (2026-07-02)
-**Decision:** `core/reset_window.py` encodes known reset cadences (YouTube: daily midnight Pacific; Apify: monthly on `APIFY_RESET_DAY`; Odds: monthly). Apify **402/monthly-limit** exhaustion TTLs are computed to the cycle reset; blocked YouTube uploads retry just after the daily reset. Auth (401/403) failures keep the short 30m TTL and the operator-budget trip keeps the flat 6h TTL — those clear when the *operator* acts, not when the calendar turns. `RESET_WINDOW_AUTO_ENABLE=false` restores flat TTLs.
-**Why:** A monthly credit wall re-checked every 6h wastes failing round-trips for weeks; a fixed key or raised budget shouldn't stay blocked until month-end. Matching the TTL to *what actually clears the condition* is the O10 half of the eventual quota governor (O11).
-**Consequence:** A 402 near month-end recovers within days automatically; a mid-cycle 402 stays quiet for weeks (correct — the credits won't return sooner). Manual recovery remains: delete `data/quota_state.json`.
+## 13b. Exhaustions persist until the provider's REAL reset, not a guessed TTL (2026-07-02)
+**Decision:** `core/reset_window.py` encodes known reset cadences (YouTube: daily
+midnight Pacific; Apify: monthly on `APIFY_RESET_DAY`; Odds: monthly). Apify
+**402/monthly-limit** exhaustion TTLs are computed to the cycle reset; blocked YouTube
+uploads retry just after the daily reset. Auth (401/403) failures keep the short 30m TTL
+and the operator-budget trip keeps the flat 6h TTL — those clear when the *operator*
+acts, not when the calendar turns. `RESET_WINDOW_AUTO_ENABLE=false` restores flat TTLs.
+**Why:** A monthly credit wall re-checked every 6h wastes failing round-trips for weeks;
+a fixed key or raised budget shouldn't stay blocked until month-end. Matching the TTL to
+*what actually clears the condition* is the O10 half of the eventual quota governor
+(O11).
+**Consequence:** A 402 near month-end recovers within days automatically; a mid-cycle
+402 stays quiet for weeks (correct — the credits won't return sooner). Manual recovery
+remains: delete `data/quota_state.json`.
 
-### 13c. Trade-direction validation is opt-in and warns, never blocks (2026-07-02)
-**Decision:** `core/trade_validation.py` checks that each `player → team` claim in the script co-occurs on a **single fact line**; enabled only via `SEMANTIC_TRADE_VALIDATION` (default off), surfaced after the Fact-grounding section.
-**Why:** Token grounding passes a fused trade when both names appear anywhere in the corpus (the Giannis→Heat + invented Butler→Celtics incident). Line-level co-occurrence catches that but false-positives on facts split across pasted lines — so it's an operator-judgment warning, not a gate, and off by default.
-**Consequence:** NBA-trade nights can turn it on for an extra check; everyone else pays nothing. If it proves precise in practice, promoting it to default-on is a one-env change.
+## 13c. Trade-direction validation is opt-in and warns, never blocks (2026-07-02)
+**Decision:** `core/trade_validation.py` checks that each `player → team` claim in the
+script co-occurs on a **single fact line**; enabled only via `SEMANTIC_TRADE_VALIDATION`
+(default off), surfaced after the Fact-grounding section.
+**Why:** Token grounding passes a fused trade when both names appear anywhere in the
+corpus (the Giannis→Heat + invented Butler→Celtics incident). Line-level co-occurrence
+catches that but false-positives on facts split across pasted lines — so it's an
+operator-judgment warning, not a gate, and off by default.
+**Consequence:** NBA-trade nights can turn it on for an extra check; everyone else pays
+nothing. If it proves precise in practice, promoting it to default-on is a one-env
+change.
 
-### 14. All runtime LLM calls go through one router with task tiers (2026-06-23)
-**Decision:** `core/llm_router.py` is the single entry point (`complete`/`complete_json`) for every runtime LLM call. Calls pick a **task tier** — `cheap` (tagging, variant titles, background-query, hook regen), `extract` (grounded fact extraction), `premium` (final script, research brief) — and a free-first preference chain resolves each tier to a provider: OpenRouter `:free` anchors cheap (Ollama local fallback), DeepSeek-V3 anchors extract+premium; OpenAI/Claude are opt-in paid upgrades. Direct `OpenAI()` clients and raw Anthropic `requests.post` calls are not added elsewhere.
-**Why:** the old code hardcoded gpt-4o and bolted Claude on as duplicated raw HTTP in three places — no way to route cheap work to cheap models, add a provider without touching every call site, or measure per-provider spend. Routing the cheap/extract tiers to free providers (DeepSeek/OpenRouter) takes per-run LLM cost to ~$0 (TTS then dominates); DeepSeek-V3 is near-gpt-4o quality so even premium can stay free. This is operating_plan §4's #1 cost lever.
-**Consequence:** a per-provider token ledger prices `cost_meter` for real. Provider **failover** on rate-limit/quota is a deliberate follow-up (see [credit_efficiency.md](credit_efficiency.md) O5–O6), not in the first cut — today a hard provider error degrades the caller (most catch and fall back to rule-based). Groq is wired but not a default (console signup is gated for the operator); Doubao is wired but skipped (China-region-locked, ~$0 savings over DeepSeek/OpenRouter). Thumbnail vision now goes through the same router (`complete` with image content-blocks); Anthropic/DeepSeek/Ollama are skipped rather than flattening the image away. `core/llm_client.py` is gone.
+## 14. All runtime LLM calls go through one router with task tiers (2026-06-23)
+**Decision:** `core/llm_router.py` is the single entry point
+(`complete`/`complete_json`) for every runtime LLM call. Calls pick a **task tier** —
+`cheap` (tagging, variant titles, background-query, hook regen), `extract` (grounded
+fact extraction), `premium` (final script, research brief) — and a free-first preference
+chain resolves each tier to a provider: OpenRouter `:free` anchors cheap (Ollama local
+fallback), DeepSeek-V3 anchors extract+premium; OpenAI/Claude are opt-in paid upgrades.
+Direct `OpenAI()` clients and raw Anthropic `requests.post` calls are not added
+elsewhere.
+**Why:** the old code hardcoded gpt-4o and bolted Claude on as duplicated raw HTTP in
+three places — no way to route cheap work to cheap models, add a provider without
+touching every call site, or measure per-provider spend. Routing the cheap/extract tiers
+to free providers (DeepSeek/OpenRouter) takes per-run LLM cost to ~$0 (TTS then
+dominates); DeepSeek-V3 is near-gpt-4o quality so even premium can stay free. This is
+operating_plan §4's #1 cost lever.
+**Consequence:** a per-provider token ledger prices `cost_meter` for real. Provider
+**failover** on rate-limit/quota is a deliberate follow-up (see
+[credit_efficiency.md](credit_efficiency.md) O5–O6), not in the first cut — today a hard
+provider error degrades the caller (most catch and fall back to rule-based). Groq is
+wired but not a default (console signup is gated for the operator); Doubao is wired but
+skipped (China-region-locked, ~$0 savings over DeepSeek/OpenRouter). Thumbnail vision
+now goes through the same router (`complete` with image content-blocks);
+Anthropic/DeepSeek/Ollama are skipped rather than flattening the image away.
+`core/llm_client.py` is gone.
 
-### 15. The forward roadmap is organized around internal-system pillars, not feature phases (2026-07-06)
-**Decision:** The "Candidate phases — 2026-H2 expansion" section (Phases T–W) of [roadmap.md](roadmap.md) is replaced by five **internal-systems pillars** — Run Ledger (metadata spine), Video Grading System, Fact Engine 2.0, Obsidian knowledge OS, Agent layer — with an explicit dependency order: Pillar 1 first, grading calibration and agents data-gated behind publish volume. Phases T + V fold into Pillar 1, the open thumbnail-calibration + prompt-eval work into Pillar 2, Phase W into Pillar 5; Phase U keeps its scope inside Pillar 1. This reorientation is **docs-only** — implementation is deliberately held pending operator review.
-**Why:** Three deep code audits (fact/Obsidian layer, metadata/storage, grading) converged on one finding: the system captures far more than it reads back, and no pre-publish score is calibrated against outcomes. Hook/authenticity scores are printed and discarded (batch `meta.json` only), the LLM ledger is ephemeral, `signals_json`/`variants_json` have no readers, experiment arms live in a sidecar, `thumbnail_scores` has carried "CTR correlation later" since Alembic `0002` with no join, `analyst_accuracy` backtests **views** while the loop optimizes **engaged-rate**, and grounding is string-presence, not verification. Feature-phase framing kept producing point features; system framing targets that connective tissue directly.
-**Consequence:** Pillar 1 (per-run trace + quality persistence) precedes everything downstream — every video published before it lands is a training example lost. Phases T/V/W no longer exist as standalone phases (shipped history keeps its phase names); cross-references updated in roadmap "Up next" and [handoff_synopsis.md](handoff_synopsis.md). No code, schema, or test changes shipped with this decision.
+## 15. The forward roadmap is organized around internal-system pillars, not feature phases (2026-07-06)
+**Decision:** The "Candidate phases — 2026-H2 expansion" section (Phases T–W) of
+[roadmap.md](roadmap.md) is replaced by five **internal-systems pillars** — Run Ledger
+(metadata spine), Video Grading System, Fact Engine 2.0, Obsidian knowledge OS, Agent
+layer — with an explicit dependency order: Pillar 1 first, grading calibration and
+agents data-gated behind publish volume. Phases T + V fold into Pillar 1, the open
+thumbnail-calibration + prompt-eval work into Pillar 2, Phase W into Pillar 5; Phase U
+keeps its scope inside Pillar 1. This reorientation is **docs-only** — implementation is
+deliberately held pending operator review.
+**Why:** Three deep code audits (fact/Obsidian layer, metadata/storage, grading)
+converged on one finding: the system captures far more than it reads back, and no
+pre-publish score is calibrated against outcomes. Hook/authenticity scores are printed
+and discarded (batch `meta.json` only), the LLM ledger is ephemeral,
+`signals_json`/`variants_json` have no readers, experiment arms live in a sidecar,
+`thumbnail_scores` has carried "CTR correlation later" since Alembic `0002` with no
+join, `analyst_accuracy` backtests **views** while the loop optimizes **engaged-rate**,
+and grounding is string-presence, not verification. Feature-phase framing kept producing
+point features; system framing targets that connective tissue directly.
+**Consequence:** Pillar 1 (per-run trace + quality persistence) precedes everything
+downstream — every video published before it lands is a training example lost. Phases
+T/V/W no longer exist as standalone phases (shipped history keeps its phase names);
+cross-references updated in roadmap "Up next" and
+[handoff_synopsis.md](handoff_synopsis.md). No code, schema, or test changes shipped
+with this decision.
 
-### 16. Fact provenance lives in vault frontmatter; verification is layered and fail-open (2026-07-06)
-**Decision:** Pillar 3 (Fact Engine 2.0) ships as four layers on the existing pipeline, not a new store:
-**(a)** the structured fact store is **vault note frontmatter** (`tier` / `verified_at` / `expires` / `source` read by `core/fact_store.note_metadata()`), not SQLite — the roadmap left it open and the vault is already the human-readable mirror (vision §7); writers stamp the keys (`_operator_facts/` → `tier: operator` + `verified_at`; `_sources.md` → `tier: link`), hand-written notes opt in by adding them. Ranking stays **relevance-first**: the provenance+freshness bonus is capped below one topic-overlap token (max 0.95), so tier breaks ties among equally relevant facts and expired notes drop out entirely.
-**(b)** the grounding corpus is **tiered, not filtered** — `core/grounding_tiers.py` tags every line `operator|link|web|signal|brief|context` while `TieredCorpus.full_text` stays byte-identical to the legacy corpus (so `find_ungrounded_entities()` and its tests are untouched); YouTube titles/descriptions are **context** (topic evidence, not facts) and an entity that only grounds there gets a "treat as unverified" warning; high-stakes sentences (results/trades/records/champions) backed only by web/brief warn.
-**(c)** the claim-level verifier (`core/claim_verifier.py`) is **default-on** (`CLAIM_VERIFIER_ENABLED=false` to opt out) because one extract-tier call rides the free-first chain (§14) — it decomposes the script into claims and cites the supporting fact line per claim; `GROUNDING_GATE=warn|block` mirrors the authenticity gate (§9) in both operator flows. This generalizes §13c's trade validation to all claim types, with the same warn-first philosophy.
-**(d)** operator facts **win conflicts before generation**: `core/fact_conflicts.py` detects trade-direction / reversed-result / champion disagreements between operator key facts and the signal+web corpus and drops the losing source lines pre-prompt (`FACT_CONFLICT_FILTER=false` keeps them; conflicts are always reported) — cheaper than post-hoc detection and consistent with key facts being the highest-trust input.
-Every layer fails open (LLM error, bad payload, missing frontmatter ⇒ no block, no crash), and all outputs persist into `quality_json` **v2** (`claim_support_rate`, `unsupported_claim_count`, `fact_conflict_count`, `tier_warning_count`), penalizing the grade's grounding component.
-**Why:** The Pillar 3 audit (§15) found grounding was string-presence over one undifferentiated corpus — an operator paste, a Tavily snippet, and a competitor's YouTube description carried identical weight, nothing checked claims against sources, and facts never aged. A second database for facts would fork the vault's source-of-truth role; frontmatter gets provenance + TTL with zero migration and keeps Pillar 4's "vault as mirror" path clean.
-**Consequence:** `quality_json` bumps to v2 (v1 rows stay readable — new keys are absent, viewers guard). Scripts now surface four fact-quality readings (ungrounded entities, tier warnings, conflicts, unsupported claims) that agree in the worst case and triangulate otherwise. The verifier adds one LLM call per script; batch runs inherit it per draft. Undated vault notes rank exactly as before (bonus 0), so existing vaults see no behavior change until they adopt the keys. `SEMANTIC_TRADE_VALIDATION` stays opt-in (§13c) — the verifier covers trades generically, so promotion is now optional rather than planned.
+## 16. Fact provenance lives in vault frontmatter; verification is layered and fail-open (2026-07-06)
+**Decision:** Pillar 3 (Fact Engine 2.0) ships as four layers on the existing pipeline,
+not a new store:
+**(a)** the structured fact store is **vault note frontmatter** (`tier` / `verified_at`
+/ `expires` / `source` read by `core/fact_store.note_metadata()`), not SQLite — the
+roadmap left it open and the vault is already the human-readable mirror (vision §7);
+writers stamp the keys (`_operator_facts/` → `tier: operator` + `verified_at`;
+`_sources.md` → `tier: link`), hand-written notes opt in by adding them. Ranking stays
+**relevance-first**: the provenance+freshness bonus is capped below one topic-overlap
+token (max 0.95), so tier breaks ties among equally relevant facts and expired notes
+drop out entirely.
+**(b)** the grounding corpus is **tiered, not filtered** — `core/grounding_tiers.py`
+tags every line `operator|link|web|signal|brief|context` while `TieredCorpus.full_text`
+stays byte-identical to the legacy corpus (so `find_ungrounded_entities()` and its tests
+are untouched); YouTube titles/descriptions are **context** (topic evidence, not facts)
+and an entity that only grounds there gets a "treat as unverified" warning; high-stakes
+sentences (results/trades/records/champions) backed only by web/brief warn.
+**(c)** the claim-level verifier (`core/claim_verifier.py`) is **default-on**
+(`CLAIM_VERIFIER_ENABLED=false` to opt out) because one extract-tier call rides the
+free-first chain (§14) — it decomposes the script into claims and cites the supporting
+fact line per claim; `GROUNDING_GATE=warn|block` mirrors the authenticity gate (§9) in
+both operator flows. This generalizes §13c's trade validation to all claim types, with
+the same warn-first philosophy.
+**(d)** operator facts **win conflicts before generation**: `core/fact_conflicts.py`
+detects trade-direction / reversed-result / champion disagreements between operator key
+facts and the signal+web corpus and drops the losing source lines pre-prompt
+(`FACT_CONFLICT_FILTER=false` keeps them; conflicts are always reported) — cheaper than
+post-hoc detection and consistent with key facts being the highest-trust input.
+Every layer fails open (LLM error, bad payload, missing frontmatter ⇒ no block, no
+crash), and all outputs persist into `quality_json` **v2** (`claim_support_rate`,
+`unsupported_claim_count`, `fact_conflict_count`, `tier_warning_count`), penalizing the
+grade's grounding component.
+**Why:** The Pillar 3 audit (§15) found grounding was string-presence over one
+undifferentiated corpus — an operator paste, a Tavily snippet, and a competitor's
+YouTube description carried identical weight, nothing checked claims against sources,
+and facts never aged. A second database for facts would fork the vault's source-of-truth
+role; frontmatter gets provenance + TTL with zero migration and keeps Pillar 4's "vault
+as mirror" path clean.
+**Consequence:** `quality_json` bumps to v2 (v1 rows stay readable — new keys are
+absent, viewers guard). Scripts now surface four fact-quality readings (ungrounded
+entities, tier warnings, conflicts, unsupported claims) that agree in the worst case and
+triangulate otherwise. The verifier adds one LLM call per script; batch runs inherit it
+per draft. Undated vault notes rank exactly as before (bonus 0), so existing vaults see
+no behavior change until they adopt the keys. `SEMANTIC_TRADE_VALIDATION` stays opt-in
+(§13c) — the verifier covers trades generically, so promotion is now optional rather
+than planned.
 
-### 17. Invest in a video-creation provider layer — override §8's "keep generation boring" (2026-07-07)
-**Decision:** Reverse the [operating_plan.md](operating_plan.md) §8 default (*"keep generation boring and stable; pour energy into the data moat"* / "if a change only adds generation volume it's not worth building"). Generation **quality** is now a competitive lever: 2026 SOTA AI video (Veo 3.1, Sora 2, Kling 3.0, open Wan/LTX-Video) makes slideshow-style faceless output look dated, and copying rivals' quality bar is fair game. The full tool list to add is [video_creation_stack.md](video_creation_stack.md): pluggable, free/local-first, cost-metered, fail-open **provider slots** — AI video-gen, extended TTS (+ local Kokoro/XTTS), local Whisper alignment, music/SFX beds, thumbnail text-models, avatars, clip-from-source, upscaling, storyboard shot-lists, plus distribution/ingestion borrows from [tooling_landscape.md](tooling_landscape.md).
-**Why:** the tooling scan (17 tools) showed the generator core is commodity, but *quality* still varies wildly and the market's 2026 baseline moved to real generated video — a slideshow pipeline reads as low-effort exactly when YouTube's authenticity wave rewards production value. Adding quality as **provider chains** (the pattern the asset chain + `llm_router` already use) keeps cost discipline intact, so "invest in generation" no longer means "burn margin."
-**Consequence:** §8's "don't invest in generation" clause is retired; its **moat thesis is not** — grounding + the closed analytics loop still stand, and the video layer is additive. Two coherence points: (1) every slot is free/local-first and priced in `cost_meter`, so richer video doesn't silently wreck margin (local Kokoro TTS + LTX-Video ≈ ~$0 marginal); (2) more realistic AI video *increases* reliance on the AI-disclosure/authenticity layer (§9), it doesn't remove it. Licensing: pattern-borrow freely, but MoneyPrinterV2 is AGPL-3.0 (no code lifts) and some 2026 video weights are non-commercial — check before shipping.
+## 17. Invest in a video-creation provider layer — override §8's "keep generation boring" (2026-07-07)
+**Decision:** Reverse the [operating_plan.md](operating_plan.md) §8 default (*"keep
+generation boring and stable; pour energy into the data moat"* / "if a change only adds
+generation volume it's not worth building"). Generation **quality** is now a competitive
+lever: 2026 SOTA AI video (Veo 3.1, Sora 2, Kling 3.0, open Wan/LTX-Video) makes
+slideshow-style faceless output look dated, and copying rivals' quality bar is fair
+game. The full tool list to add is [video_creation_stack.md](video_creation_stack.md):
+pluggable, free/local-first, cost-metered, fail-open **provider slots** — AI video-gen,
+extended TTS (+ local Kokoro/XTTS), local Whisper alignment, music/SFX beds, thumbnail
+text-models, avatars, clip-from-source, upscaling, storyboard shot-lists, plus
+distribution/ingestion borrows from [tooling_landscape.md](tooling_landscape.md).
+**Why:** the tooling scan (17 tools) showed the generator core is commodity, but
+*quality* still varies wildly and the market's 2026 baseline moved to real generated
+video — a slideshow pipeline reads as low-effort exactly when YouTube's authenticity
+wave rewards production value. Adding quality as **provider chains** (the pattern the
+asset chain + `llm_router` already use) keeps cost discipline intact, so "invest in
+generation" no longer means "burn margin."
+**Consequence:** §8's "don't invest in generation" clause is retired; its **moat thesis
+is not** — grounding + the closed analytics loop still stand, and the video layer is
+additive. Two coherence points: (1) every slot is free/local-first and priced in
+`cost_meter`, so richer video doesn't silently wreck margin (local Kokoro TTS +
+LTX-Video ≈ ~$0 marginal); (2) more realistic AI video *increases* reliance on the
+AI-disclosure/authenticity layer (§9), it doesn't remove it. Licensing: pattern-borrow
+freely, but MoneyPrinterV2 is AGPL-3.0 (no code lifts) and some 2026 video weights are
+non-commercial — check before shipping.
 
-### 17b. The vault mirrors machine state; dossiers are records, not facts (2026-07-07)
-**Decision:** Pillar 4 (Obsidian knowledge OS) closes the vault's one-way gap with three pieces, all fail-open when `OBSIDIAN_VAULT_PATH` is unset:
-**(a) Run dossiers** — `core/vault_dossiers.py` writes `{channel}/_runs/{date}_{slug}-{run_id}.md` from `_finalize_run` (drafted/rendered only) and re-upserts via `refresh_dossiers()` after `daily_sync` / `ops vault-sync` so post-sync actuals land. Weekly reports copy to `{channel}/_reports/{date}_weekly.md`. Dossiers carry `[run, machine]` tags and live under `_runs/`/`_reports/`, excluded from `load_facts` via `_is_machine_record` — they are **records of what we made**, never ground truth about the world.
-**(b) Vault index** — `core/vault_index.py` caches parsed notes in-process, keyed by mtime (`stat()` on unchanged files, re-read on edit). No on-disk index in `data/` — avoids cross-run staleness and temp-vault leakage. Parsing is byte-identical to the old `obsidian_facts` helpers, so ranking/filtering is unchanged; this is purely an I/O win for `batch-drafts` (N `load_facts` calls per run).
-**(c) Playbook layer** — `load_playbook()` / `playbook_block()` read exactly the strategy/belief bullets `load_facts` excludes (`_is_strategy_note`, `_machine-beliefs`, strategy-flavored bullets) and inject a bounded, clearly-labeled "CHANNEL PLAYBOOK" block into the script prompt beside the persona block. Style guidance, not facts — never overrides grounding. Fixed `_tag_set` so `[strategy]` bracket frontmatter is excluded at the note level (previously only via bullet heuristics).
-**Why:** The Pillar 4 audit (§15) found the vault was write-only for outcomes — runs, grades, and actuals lived in SQLite/traces but never in the operator's browsable encyclopedia. Full `rglob`+parse per `load_facts` call was fine for a small vault but multiplied cost in batch drafting. Strategy notes were deliberately excluded from facts but had no read path, so engagement heuristics sat unused while the LLM got no voice guidance.
-**Consequence:** Every drafted/rendered run gains a vault mirror note when a vault is configured. Same-calendar-day refresh is idempotent; cross-day refresh writes a new dated filename (run_id is stable in the name — orphaned prior-day notes are a known housekeeping item, not a grounding risk). Playbook injection adds prompt tokens only when strategy/belief notes exist. Pillar 5's weekly analyst agent can now read dossiers + reports from the vault instead of inventing a new write path.
+## 17b. The vault mirrors machine state; dossiers are records, not facts (2026-07-07)
+**Decision:** Pillar 4 (Obsidian knowledge OS) closes the vault's one-way gap with three
+pieces, all fail-open when `OBSIDIAN_VAULT_PATH` is unset:
+**(a) Run dossiers** — `core/vault_dossiers.py` writes
+`{channel}/_runs/{date}_{slug}-{run_id}.md` from `_finalize_run` (drafted/rendered only)
+and re-upserts via `refresh_dossiers()` after `daily_sync` / `ops vault-sync` so
+post-sync actuals land. Weekly reports copy to `{channel}/_reports/{date}_weekly.md`.
+Dossiers carry `[run, machine]` tags and live under `_runs/`/`_reports/`, excluded from
+`load_facts` via `_is_machine_record` — they are **records of what we made**, never
+ground truth about the world.
+**(b) Vault index** — `core/vault_index.py` caches parsed notes in-process, keyed by
+mtime (`stat()` on unchanged files, re-read on edit). No on-disk index in `data/` —
+avoids cross-run staleness and temp-vault leakage. Parsing is byte-identical to the old
+`obsidian_facts` helpers, so ranking/filtering is unchanged; this is purely an I/O win
+for `batch-drafts` (N `load_facts` calls per run).
+**(c) Playbook layer** — `load_playbook()` / `playbook_block()` read exactly the
+strategy/belief bullets `load_facts` excludes (`_is_strategy_note`, `_machine-beliefs`,
+strategy-flavored bullets) and inject a bounded, clearly-labeled "CHANNEL PLAYBOOK"
+block into the script prompt beside the persona block. Style guidance, not facts — never
+overrides grounding. Fixed `_tag_set` so `[strategy]` bracket frontmatter is excluded at
+the note level (previously only via bullet heuristics).
+**Why:** The Pillar 4 audit (§15) found the vault was write-only for outcomes — runs,
+grades, and actuals lived in SQLite/traces but never in the operator's browsable
+encyclopedia. Full `rglob`+parse per `load_facts` call was fine for a small vault but
+multiplied cost in batch drafting. Strategy notes were deliberately excluded from facts
+but had no read path, so engagement heuristics sat unused while the LLM got no voice
+guidance.
+**Consequence:** Every drafted/rendered run gains a vault mirror note when a vault is
+configured. Same-calendar-day refresh is idempotent; cross-day refresh writes a new
+dated filename (run_id is stable in the name — orphaned prior-day notes are a known
+housekeeping item, not a grounding risk). Playbook injection adds prompt tokens only
+when strategy/belief notes exist. Pillar 5's weekly analyst agent can now read dossiers
++ reports from the vault instead of inventing a new write path.
 
-### 18. A source that cannot answer must report **failure**, not "no match" (2026-08-14)
-**Decision:** Any integration that is broken, blocked, throttled or retired reports an error status (`STATUS_UNAVAILABLE` / `STATUS_RATE_LIMIT` / `STATUS_QUOTA`) — never `STATUS_INACTIVE`. `INACTIVE` means exactly one thing: *the source worked and there was genuinely nothing to say.* Concretely: non-2xx must not be swallowed into an empty list (`tapology_api`); a sentinel payload is a failure, not an empty result (`apify_client.is_no_results()`); an API that answers `HTTP 200` with an error body is a failure (`mma_stats_api._api_error()` for API-SPORTS' `errors.rateLimit`); a timeout is transient-unavailable, not a generic error (`signal_contract.classify_exception`).
-**Why:** every defect found in the 2026-08-14/15 session shared this shape, and all of them survived for weeks *because nothing crashed*. Tapology returned 403 for **33 days** while reporting "no event match". `twitter` was `inactive` on **19/19 runs** — never once producing a fact — while costing ~32s and an Apify run each time. 11 of ~37 RSS feeds were dead. A live feed was lost to a UTF-8 BOM. None tripped a breaker, appeared in `ops reliability`, or reached the data-quality monitor, because those layers all key off *failure* status.
-**Consequence:** `INACTIVE` becomes a trustworthy signal — a quiet source is genuinely quiet. Breaker semantics still differ deliberately (per §13): `QUOTA`/`AUTH` trip the session breaker; `UNAVAILABLE`/`RATE_LIMIT` do not, so a transient outage is simply retried next run. When adding an integration, ask what its *broken* looks like on the wire, not just its happy path — several of these return HTTP 200.
+## 18. A source that cannot answer must report **failure**, not "no match" (2026-08-14)
+**Decision:** Any integration that is broken, blocked, throttled or retired reports an
+error status (`STATUS_UNAVAILABLE` / `STATUS_RATE_LIMIT` / `STATUS_QUOTA`) — never
+`STATUS_INACTIVE`. `INACTIVE` means exactly one thing: *the source worked and there was
+genuinely nothing to say.* Concretely: non-2xx must not be swallowed into an empty list
+(`tapology_api`); a sentinel payload is a failure, not an empty result
+(`apify_client.is_no_results()`); an API that answers `HTTP 200` with an error body is a
+failure (`mma_stats_api._api_error()` for API-SPORTS' `errors.rateLimit`); a timeout is
+transient-unavailable, not a generic error (`signal_contract.classify_exception`).
+**Why:** every defect found in the 2026-08-14/15 session shared this shape, and all of
+them survived for weeks *because nothing crashed*. Tapology returned 403 for **33 days**
+while reporting "no event match". `twitter` was `inactive` on **19/19 runs** — never
+once producing a fact — while costing ~32s and an Apify run each time. 11 of ~37 RSS
+feeds were dead. A live feed was lost to a UTF-8 BOM. None tripped a breaker, appeared
+in `ops reliability`, or reached the data-quality monitor, because those layers all key
+off *failure* status.
+**Consequence:** `INACTIVE` becomes a trustworthy signal — a quiet source is genuinely
+quiet. Breaker semantics still differ deliberately (per §13): `QUOTA`/`AUTH` trip the
+session breaker; `UNAVAILABLE`/`RATE_LIMIT` do not, so a transient outage is simply
+retried next run. When adding an integration, ask what its *broken* looks like on the
+wire, not just its happy path — several of these return HTTP 200.
 
-### 19. Retire a paid source that produces nothing; don't keep repairing it (2026-08-14)
-**Decision:** A paid signal earns its place with measured output. Evidence comes from real run traces (`data/traces/*.json`), not impressions. When a source produces zero facts across a meaningful run history, switch it off via the catalog kill-switch (`enabled: false` in `config/apify_sources.json`) and record *why* in `disabled_note` — keep the module for revival rather than deleting it.
-**Why:** `reddit` (actor failing every run, no free-backend credentials), `twitter` (19/19 runs, zero facts, and the wall-clock floor for every discovery since signals run concurrently) and `tapology` (Cloudflare) were each costing money or time on every run for nothing. Two were *not* fixable by tuning: twitter's actor input was verified correct against `input_template` — X search now needs auth — and Tapology's 403 persisted through the r.jina.ai proxy. Distinguishing "misconfigured" from "structurally gone" before attempting a repair saves the repair.
-**Consequence:** the Apify tier is down to `tiktok_trends` + `youtube_competitors`, both verified returning real data. Retirement is reversible and documented at the point of disablement. The general rule: measure a source against traces before either repairing or removing it, and prefer a free/official backend over a paid actor for data a held key already reaches (`youtube_comments` uses the Data API at ~1 unit/video rather than a billed actor).
+## 19. Retire a paid source that produces nothing; don't keep repairing it (2026-08-14)
+**Decision:** A paid signal earns its place with measured output. Evidence comes from
+real run traces (`data/traces/*.json`), not impressions. When a source produces zero
+facts across a meaningful run history, switch it off via the catalog kill-switch
+(`enabled: false` in `config/apify_sources.json`) and record *why* in `disabled_note` —
+keep the module for revival rather than deleting it.
+**Why:** `reddit` (actor failing every run, no free-backend credentials), `twitter`
+(19/19 runs, zero facts, and the wall-clock floor for every discovery since signals run
+concurrently) and `tapology` (Cloudflare) were each costing money or time on every run
+for nothing. Two were *not* fixable by tuning: twitter's actor input was verified
+correct against `input_template` — X search now needs auth — and Tapology's 403
+persisted through the r.jina.ai proxy. Distinguishing "misconfigured" from "structurally
+gone" before attempting a repair saves the repair.
+**Consequence:** the Apify tier is down to `tiktok_trends` + `youtube_competitors`, both
+verified returning real data. Retirement is reversible and documented at the point of
+disablement. The general rule: measure a source against traces before either repairing
+or removing it, and prefer a free/official backend over a paid actor for data a held key
+already reaches (`youtube_comments` uses the Data API at ~1 unit/video rather than a
+billed actor).
 
-### 20. Derive values that can drift; don't store them beside their source (2026-08-15)
-**Decision:** When one value is computable from another, compute it. `LengthPreset.min_seconds`/`max_seconds` are properties over `min_words`/`max_words` ÷ `WORDS_PER_SECOND`, not stored fields. A cost `total` is recomputed from its lines, never carried.
-**Why:** the presets stored word ranges *and* second ranges side by side, and they silently disagreed — "Extended (420–900s)" actually produced ~300–600s, because `WORDS_PER_SECOND` was 2.4 against a measured 3.32 (median of all 14 real renders). The operator picks a length by duration, so the wrong half was the one being read. Any two hand-maintained representations of the same fact eventually diverge; the only question is whether anyone notices.
-**Consequence:** changing the rate updates every advertised duration automatically. Constants that model the real world get a **measurement script** so drift is detectable rather than assumed — `scripts/bench_script_duration.py` (words/sec vs real audio) and `scripts/bench_caption_align.py` (whisper timing vs ElevenLabs sidecars). Word ranges were deliberately *not* retuned to hit the old labels: that would change output length, TTS spend, and the meaning of a stored `length_preset` in the learned-length analytics.
+## 20. Derive values that can drift; don't store them beside their source (2026-08-15)
+**Decision:** When one value is computable from another, compute it.
+`LengthPreset.min_seconds`/`max_seconds` are properties over `min_words`/`max_words` ÷
+`WORDS_PER_SECOND`, not stored fields. A cost `total` is recomputed from its lines,
+never carried.
+**Why:** the presets stored word ranges *and* second ranges side by side, and they
+silently disagreed — "Extended (420–900s)" actually produced ~300–600s, because
+`WORDS_PER_SECOND` was 2.4 against a measured 3.32 (median of all 14 real renders). The
+operator picks a length by duration, so the wrong half was the one being read. Any two
+hand-maintained representations of the same fact eventually diverge; the only question
+is whether anyone notices.
+**Consequence:** changing the rate updates every advertised duration automatically.
+Constants that model the real world get a **measurement script** so drift is detectable
+rather than assumed — `scripts/bench_script_duration.py` (words/sec vs real audio) and
+`scripts/bench_caption_align.py` (whisper timing vs ElevenLabs sidecars). Word ranges
+were deliberately *not* retuned to hit the old labels: that would change output length,
+TTS spend, and the meaning of a stored `length_preset` in the learned-length analytics.
 
-### 21. Never pin a rotating vendor identifier in a test (2026-08-15)
-**Decision:** Tests assert the **contract**, not a third-party's current value. Assert "the cheap tier resolves to OpenRouter with a `:free` model", not a specific slug. Assert "the NBA domain resolves to ≥2 well-formed feeds", not that one of them is ESPN.
-**Why:** two tests in this repo were green while the thing they covered was dead. `test_openrouter_anchors_cheap_tier` pinned `meta-llama/llama-3.3-70b-instruct:free` — retired upstream, 404ing in production **every day** — and `test_nba_domain_feeds` asserted an ESPN URL that had been answering `202` with an empty body. A test over a vendor identifier passes right up until the vendor changes it, and then keeps passing.
-**Consequence:** liveness is checked where liveness belongs — `ops feeds` for RSS, a live probe for model slugs — while the suite stays offline and deterministic (`tests/CLAUDE.md`: no network in tests). When a vendor default must live in code, put the *verification instruction* in the comment beside it (where to re-check, what a retirement looks like) rather than trusting a stale value.
+## 21. Never pin a rotating vendor identifier in a test (2026-08-15)
+**Decision:** Tests assert the **contract**, not a third-party's current value. Assert
+"the cheap tier resolves to OpenRouter with a `:free` model", not a specific slug.
+Assert "the NBA domain resolves to ≥2 well-formed feeds", not that one of them is ESPN.
+**Why:** two tests in this repo were green while the thing they covered was dead.
+`test_openrouter_anchors_cheap_tier` pinned `meta-llama/llama-3.3-70b-instruct:free` —
+retired upstream, 404ing in production **every day** — and `test_nba_domain_feeds`
+asserted an ESPN URL that had been answering `202` with an empty body. A test over a
+vendor identifier passes right up until the vendor changes it, and then keeps passing.
+**Consequence:** liveness is checked where liveness belongs — `ops feeds` for RSS, a
+live probe for model slugs — while the suite stays offline and deterministic
+(`tests/CLAUDE.md`: no network in tests). When a vendor default must live in code, put
+the *verification instruction* in the comment beside it (where to re-check, what a
+retirement looks like) rather than trusting a stale value.
 
-### 22. Cost is metered from the operator's real plan, and only when it is actually incurred (2026-08-14)
-**Decision:** Rates in `core/cost_meter.py` are derived from the operator's actual billing (ElevenLabs **Creator**, $22 ÷ 100k chars = **$0.22/1k**), not vendor list price, with the derivation recorded so it can be redone. Render-time cost is persisted **after** the render, by the one choke point both operator flows share (`pipeline.run_media_only`), never recomputed for display alone.
-**Why:** both render paths finalize a run *before* rendering it, so `features_json.cost.tts` was `0.0` on every rendered run. `main.py` did compute the right number — into a local dict, for display. Since `unit_economics` derives contribution margin from `cost.total`, every margin was overstated by roughly its largest component: `ops economics` read *20 uploads, $0.32 total* when the truth was **$6.18 ($0.31/video, TTS 91%)**.
-**Consequence:** the run summary and the analytics ledger cannot disagree — `main.py` reads back what was persisted. Only the render lines are merged post-hoc; `llm`/`apify`/`web_search` are session-metered and already stored, so recomputing them later would replace good values with wrong ones. Historical rows were repaired by `ops backfill-cost`, which flags what it estimated (`cost_estimated`) and what remains incomplete (`cost_partial`) rather than presenting a reconstruction as measurement. *Open nuance:* on a subscription the **marginal** rate suits `cost_meter` (matching how Apify and LLM are priced), but with the quota heavily under-used the **allocated** cost per video is nearer $1 — a later economics pass, not a cost_meter change.
+## 22. Cost is metered from the operator's real plan, and only when it is actually incurred (2026-08-14)
+**Decision:** Rates in `core/cost_meter.py` are derived from the operator's actual
+billing (ElevenLabs **Creator**, $22 ÷ 100k chars = **$0.22/1k**), not vendor list
+price, with the derivation recorded so it can be redone. Render-time cost is persisted
+**after** the render, by the one choke point both operator flows share
+(`pipeline.run_media_only`), never recomputed for display alone.
+**Why:** both render paths finalize a run *before* rendering it, so
+`features_json.cost.tts` was `0.0` on every rendered run. `main.py` did compute the
+right number — into a local dict, for display. Since `unit_economics` derives
+contribution margin from `cost.total`, every margin was overstated by roughly its
+largest component: `ops economics` read *20 uploads, $0.32 total* when the truth was
+**$6.18 ($0.31/video, TTS 91%)**.
+**Consequence:** the run summary and the analytics ledger cannot disagree — `main.py`
+reads back what was persisted. Only the render lines are merged post-hoc;
+`llm`/`apify`/`web_search` are session-metered and already stored, so recomputing them
+later would replace good values with wrong ones. Historical rows were repaired by `ops
+backfill-cost`, which flags what it estimated (`cost_estimated`) and what remains
+incomplete (`cost_partial`) rather than presenting a reconstruction as measurement.
+*Open nuance:* on a subscription the **marginal** rate suits `cost_meter` (matching how
+Apify and LLM are priced), but with the quota heavily under-used the **allocated** cost
+per video is nearer $1 — a later economics pass, not a cost_meter change.
 
-### 23. Captions are timed by the ASR and spelled by the script (2026-08-16)
-**Decision:** When whisper supplies caption timing for locally-synthesized audio, the caption *text* comes from the known script, never from the transcript (`video/caption_retext.py`, aligning the two token streams with `difflib.SequenceMatcher`). ASR output is treated as a timing signal, not as copy.
-**Why:** `core/caption_align.py` transcribes blind, and it gets exactly the wrong words wrong — run 65 burned "Salkal" for "Salkilld" and "Mattius Gamarat" for "Mateusz Gamrot". Fighter and game names are the channel's entire subject, so ~45ms timing accuracy was worthless while the words were misspelled; that single gap is what kept the $0 local-TTS path (91% of run cost) unusable. We always have the script at caption time — `generate_subtitle_file(script, …)` already receives it — so the information needed was present all along, just not used. Measured cost of the substitution: **nothing** (word error p50 42ms → 43ms, line p90 117ms → 117ms) while covering every script word instead of the 243-of-251 whisper happened to hear, and correcting 12 misheard words on run 66.
-**Consequence:** the matcher must tolerate re-tokenisation, not just misspelling — whisper splits ("Quillan" → "Quill and"), writes numerals as words ("10" → "ten"), drops words and invents them; a positional zip desyncs permanently at the first one. Number-words fold onto their digits in the normaliser for that reason. Punctuation now comes from the script too, so caption line breaks follow the real sentence ends. **The gate declines rather than guesses:** below `CAPTION_RETEXT_MIN_MATCH` (0.35 — measured, real audio scores 0.87 and unrelated audio ~0.0) it returns None and the caller falls back to the proportional estimate, because a transcript that doesn't match the script has timings for different audio, and painting the script over those would produce confidently-wrong captions — §18's failure shape exactly. Anything else consuming `caption_align` directly (a bench, Phase R clip-from-source) inherits the raw ASR text and must retext too.
+## 23. Captions are timed by the ASR and spelled by the script (2026-08-16)
+**Decision:** When whisper supplies caption timing for locally-synthesized audio, the
+caption *text* comes from the known script, never from the transcript
+(`video/caption_retext.py`, aligning the two token streams with
+`difflib.SequenceMatcher`). ASR output is treated as a timing signal, not as copy.
+**Why:** `core/caption_align.py` transcribes blind, and it gets exactly the wrong words
+wrong — run 65 burned "Salkal" for "Salkilld" and "Mattius Gamarat" for "Mateusz
+Gamrot". Fighter and game names are the channel's entire subject, so ~45ms timing
+accuracy was worthless while the words were misspelled; that single gap is what kept the
+$0 local-TTS path (91% of run cost) unusable. We always have the script at caption time
+— `generate_subtitle_file(script, …)` already receives it — so the information needed
+was present all along, just not used. Measured cost of the substitution: **nothing**
+(word error p50 42ms → 43ms, line p90 117ms → 117ms) while covering every script word
+instead of the 243-of-251 whisper happened to hear, and correcting 12 misheard words on
+run 66.
+**Consequence:** the matcher must tolerate re-tokenisation, not just misspelling —
+whisper splits ("Quillan" → "Quill and"), writes numerals as words ("10" → "ten"), drops
+words and invents them; a positional zip desyncs permanently at the first one.
+Number-words fold onto their digits in the normaliser for that reason. Punctuation now
+comes from the script too, so caption line breaks follow the real sentence ends. **The
+gate declines rather than guesses:** below `CAPTION_RETEXT_MIN_MATCH` (0.35 — measured,
+real audio scores 0.87 and unrelated audio ~0.0) it returns None and the caller falls
+back to the proportional estimate, because a transcript that doesn't match the script
+has timings for different audio, and painting the script over those would produce
+confidently-wrong captions — §18's failure shape exactly. Anything else consuming
+`caption_align` directly (a bench, Phase R clip-from-source) inherits the raw ASR text
+and must retext too.
 
-### 24. Fail-open must be fail-visible, and the level says how visible (2026-08-16)
-**Decision:** A swallowed exception always leaves a trace. `S110`/`S112` are enabled in ruff so a bare `except: pass` cannot be added again, and the level is chosen per handler rather than uniformly: **`logger.warning`** when the swallow costs the system a *guarantee* (persisted quota/spend state, the run trace), **`logger.debug`** for best-effort enrichment, and **`# noqa: S110` with the reason on the line** where silence is genuinely right. `contextlib.suppress(Exception)` is not an approved way around the rule — `suppress` is for a narrow, expected exception type.
-**Why:** the 2026-08 audit counted **93** handlers that swallowed with a bare `pass`, and named them the likely home of the next silent failure — this whole cycle was sources reporting "nothing found" instead of "I am broken" (§18). But the audit's own recommendation, *"require a `logger.debug` in every handler"*, would have produced 93 lines nobody ever reads: `core/logging.py` defaults to `CONTENT_LOG_LEVEL=WARNING`, so debug is invisible unless someone is already reproducing a problem. Blanket-debug satisfies the letter of the recommendation and misses its point. The split exists so that the handful of swallows that disable a guarantee — `quota_governor.llm_add_spend`, where a lost write makes the daily-budget guard under-count spend and quietly stop guarding; `pipeline`'s `write_run_trace`, where a miss blinds `ops traces`, `ops dossier` and `data_quality` for that run — are audible at the level the operator actually runs at.
-**Consequence:** the *other* half of the rule matters as much: a healthy run must emit **zero** new warnings, because a warning that always fires teaches the operator to ignore warnings. That is enforced by test, not by intention (`tests/test_fail_open_visibility.py` asserts both the warning and the silence). The idiom itself is unchanged and still correct — a signal or provider must never raise (`apis/CLAUDE.md`) — so `BLE` (all 420 broad excepts) stays deliberately off; the correct ones outnumber the wrong ones. Writing the messages was also the point of reading all 98 by hand: "loads skipped" says nothing, "Unreadable quality_json on run %s" says what was lost. The sweep itself then surfaced a defect bigger than any handler — **`alembic/env.py` was disabling the entire logger tree on every migration** (§24a, fixed the same day), which had been quietly deleting log output the codebase already emitted.
+## 24. Fail-open must be fail-visible, and the level says how visible (2026-08-16)
+**Decision:** A swallowed exception always leaves a trace. `S110`/`S112` are enabled in
+ruff so a bare `except: pass` cannot be added again, and the level is chosen per handler
+rather than uniformly: **`logger.warning`** when the swallow costs the system a
+*guarantee* (persisted quota/spend state, the run trace), **`logger.debug`** for
+best-effort enrichment, and **`# noqa: S110` with the reason on the line** where silence
+is genuinely right. `contextlib.suppress(Exception)` is not an approved way around the
+rule — `suppress` is for a narrow, expected exception type.
+**Why:** the 2026-08 audit counted **93** handlers that swallowed with a bare `pass`,
+and named them the likely home of the next silent failure — this whole cycle was sources
+reporting "nothing found" instead of "I am broken" (§18). But the audit's own
+recommendation, *"require a `logger.debug` in every handler"*, would have produced 93
+lines nobody ever reads: `core/logging.py` defaults to `CONTENT_LOG_LEVEL=WARNING`, so
+debug is invisible unless someone is already reproducing a problem. Blanket-debug
+satisfies the letter of the recommendation and misses its point. The split exists so
+that the handful of swallows that disable a guarantee — `quota_governor.llm_add_spend`,
+where a lost write makes the daily-budget guard under-count spend and quietly stop
+guarding; `pipeline`'s `write_run_trace`, where a miss blinds `ops traces`, `ops
+dossier` and `data_quality` for that run — are audible at the level the operator
+actually runs at.
+**Consequence:** the *other* half of the rule matters as much: a healthy run must emit
+**zero** new warnings, because a warning that always fires teaches the operator to
+ignore warnings. That is enforced by test, not by intention
+(`tests/test_fail_open_visibility.py` asserts both the warning and the silence). The
+idiom itself is unchanged and still correct — a signal or provider must never raise
+(`apis/CLAUDE.md`) — so `BLE` (all 420 broad excepts) stays deliberately off; the
+correct ones outnumber the wrong ones. Writing the messages was also the point of
+reading all 98 by hand: "loads skipped" says nothing, "Unreadable quality_json on run
+%s" says what was lost. The sweep itself then surfaced a defect bigger than any handler
+— **`alembic/env.py` was disabling the entire logger tree on every migration** (§24a,
+fixed the same day), which had been quietly deleting log output the codebase already
+emitted.
 
-### 25. A gate that rewrites its input must report both numbers (2026-08-22)
-**Decision:** When a repair pass changes the artifact a check just judged, the pre-repair verdict is persisted and surfaced alongside the post-repair one. `ClaimVerification.to_dict()` carries `rewritten` / `pre_rewrite_unsupported` / `pre_rewrite_total` / `pre_rewrite_support_rate` whenever `_maybe_rewrite_unsupported_claims` adopts a rewrite, and the console line that reports the clean score says how it got there. The repair itself is unchanged and still default-on — this is disclosure, not a gate.
-**Why:** live-run 71 logged `Claim verifier: 7/12 claim(s) unsupported`, the rewrite pass restated each as attributed speculation ("Reports claim a hacker breached…", "allegedly showed"), the re-check printed `[ok] Claim check: 12/12 factual claim(s) backed by the facts`, and **only the second number survived**. `quality_json` recorded `claim_support_rate: 1.0` and `unsupported_claim_count: 0`; the report card graded the run **A (91/100)** with grounding **100/100**. Nothing was verified between the two numbers — the claims were *hedged*. This is §18's shape one layer up: not a source reporting "no match" instead of "broken", but a **fixer erasing the evidence that there was anything to fix**. The failure is silent precisely because the repair worked.
-**Consequence:** any downstream consumer keyed on the post-repair number was blind by construction, which is how candidate 52's graveyard reason codes — shipped six days earlier and reading exactly `claim_support_rate` — could never emit `thin_facts` for a heavily-hedged run; they now judge a rewritten run on what it asserted first. The new keys appear **only** on a rewritten run, so every existing reader sees the old shape unchanged and absence still means "not rewritten", never "unknown". Wave 26 (#800) closed the open call: `12/12` is still "no bare assertions left", not "all claims true", the render gate is unchanged, and the grade now falls with hedge density (phrases per 100 spoken words on the final script). `_maybe_reground_script` persists `pre_reground_ungrounded` / post count on the rewrite ledger when that pass adopts (#799), so a regen no longer reports only its post-regen result.
+## 25. A gate that rewrites its input must report both numbers (2026-08-22)
+**Decision:** When a repair pass changes the artifact a check just judged, the
+pre-repair verdict is persisted and surfaced alongside the post-repair one.
+`ClaimVerification.to_dict()` carries `rewritten` / `pre_rewrite_unsupported` /
+`pre_rewrite_total` / `pre_rewrite_support_rate` whenever
+`_maybe_rewrite_unsupported_claims` adopts a rewrite, and the console line that reports
+the clean score says how it got there. The repair itself is unchanged and still
+default-on — this is disclosure, not a gate.
+**Why:** live-run 71 logged `Claim verifier: 7/12 claim(s) unsupported`, the rewrite
+pass restated each as attributed speculation ("Reports claim a hacker breached…",
+"allegedly showed"), the re-check printed `[ok] Claim check: 12/12 factual claim(s)
+backed by the facts`, and **only the second number survived**. `quality_json` recorded
+`claim_support_rate: 1.0` and `unsupported_claim_count: 0`; the report card graded the
+run **A (91/100)** with grounding **100/100**. Nothing was verified between the two
+numbers — the claims were *hedged*. This is §18's shape one layer up: not a source
+reporting "no match" instead of "broken", but a **fixer erasing the evidence that there
+was anything to fix**. The failure is silent precisely because the repair worked.
+**Consequence:** any downstream consumer keyed on the post-repair number was blind by
+construction, which is how candidate 52's graveyard reason codes — shipped six days
+earlier and reading exactly `claim_support_rate` — could never emit `thin_facts` for a
+heavily-hedged run; they now judge a rewritten run on what it asserted first. The new
+keys appear **only** on a rewritten run, so every existing reader sees the old shape
+unchanged and absence still means "not rewritten", never "unknown". Wave 26 (#800)
+closed the open call: `12/12` is still "no bare assertions left", not "all claims true",
+the render gate is unchanged, and the grade now falls with hedge density (phrases per
+100 spoken words on the final script). `_maybe_reground_script` persists
+`pre_reground_ungrounded` / post count on the rewrite ledger when that pass adopts
+(#799), so a regen no longer reports only its post-regen result.
 
-### 26. Prefer owned gameplay over extra stock; never treat more B-roll sources as a quality upgrade (2026-08-26)
-**Decision:** TapIn backgrounds should stay in the game world. Stock live-action is optional filler, not a visual strategy. Adding Pexels/Pixabay/Coverr keys, enabling `SCENE_MATCHED_BROLL`, or borrowing MoneyPrinterTurbo's five-term stock concatenator does **not** count as generation quality under §17. The operator's measured complaint (2026-08-26): unnecessary stock is often unrelated, and a hard cut from gameplay to real-world footage with no transition is disorienting. Comparison: [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md).
-**Why:** shipped TapIn is `background_mode: hybrid` at `hybrid_local_ratio: 0.45`, so **~55% of runtime is stock** after a hard concat in `assets/composite.build_hybrid_concat_command` (no fade). Keyword search cannot tell "GTA leak" from generic city/crowd B-roll. Coverr (Wave A) only diversifies the *same class* of footage. MoneyPrinterTurbo's material service (`app/services/material.py`) is worse for this channel: an LLM emits ~5 search terms, downloads until VO duration is covered, default `max_clip_duration=5`, concat `random` or `sequential`, optional fades/slides — more cuts into more live-action, not fewer. Turbo's `local` source is exclusive (not mixed with stock). The one Turbo visual borrow worth keeping on the list is a **crossfade at the hybrid join**, not more providers.
-**Consequence:** future visual work prefers `background_mode: local`, a higher local ratio, more clips under `video/backgrounds/`, or prompt-matched AI video behind the existing fail-open slot — never a fourth stock API. Do not enable scene-matched stock for TapIn. #120 CLIP match is only in play if stock remains at all. Coverr stays fail-open with no key; do not treat `COVERR_API_KEY` as a quality lever. Config was **not** flipped in the session that recorded this — flipping `hybrid` → `local` is an operator call once enough owned clips exist.
+## 26. Prefer owned gameplay over extra stock; never treat more B-roll sources as a quality upgrade (2026-08-26)
+**Decision:** TapIn backgrounds should stay in the game world. Stock live-action is
+optional filler, not a visual strategy. Adding Pexels/Pixabay/Coverr keys, enabling
+`SCENE_MATCHED_BROLL`, or borrowing MoneyPrinterTurbo's five-term stock concatenator
+does **not** count as generation quality under §17. The operator's measured complaint
+(2026-08-26): unnecessary stock is often unrelated, and a hard cut from gameplay to
+real-world footage with no transition is disorienting. Comparison:
+[moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md).
+**Why:** shipped TapIn is `background_mode: hybrid` at `hybrid_local_ratio: 0.45`, so
+**~55% of runtime is stock** after a hard concat in
+`assets/composite.build_hybrid_concat_command` (no fade). Keyword search cannot tell
+"GTA leak" from generic city/crowd B-roll. Coverr (Wave A) only diversifies the *same
+class* of footage. MoneyPrinterTurbo's material service (`app/services/material.py`) is
+worse for this channel: an LLM emits ~5 search terms, downloads until VO duration is
+covered, default `max_clip_duration=5`, concat `random` or `sequential`, optional
+fades/slides — more cuts into more live-action, not fewer. Turbo's `local` source is
+exclusive (not mixed with stock). The one Turbo visual borrow worth keeping on the list
+is a **crossfade at the hybrid join**, not more providers.
+**Consequence:** future visual work prefers `background_mode: local`, a higher local
+ratio, more clips under `video/backgrounds/`, or prompt-matched AI video behind the
+existing fail-open slot — never a fourth stock API. Do not enable scene-matched stock
+for TapIn. #120 CLIP match is only in play if stock remains at all. Coverr stays
+fail-open with no key; do not treat `COVERR_API_KEY` as a quality lever. Config was
+**not** flipped in the session that recorded this — flipping `hybrid` → `local` is an
+operator call once enough owned clips exist.
 
-### 27. Vault subject relevance is a scored evidence matrix, not a boolean franchise gate (2026-08-27)
-**Decision:** `load_fact_records` scores each vault bullet against a **corpus of signal headlines + operator/link facts** (`core/vault_relevance.py`, scorer `vault_relevance_v1`). Anchors (`_GAME_ANCHORS`) are one weighted feature, not a hidden AND-gate. The shipped default is `scored` after the encoded P3 gate: holdout from live runs 66 and 70, both labels, scored precision **and** recall **1.0 > 0.667**, no legacy `ok` row became a miss/leak. Public `Sources:` and web-search skip use stricter `public` / `web_skip` thresholds. Discovery in scored mode fetches non-web signals first, then either `_fetch_one("web_search")` or emits `STATUS_SKIPPED`. An optional extract-tier JSON tiebreak (`VAULT_RELEVANCE_TIEBREAK`, default off) may promote operator-facing *uncertain* rows only; it never runs from public citations or web skip, and it persists `pre_tiebreak_band` next to the post-tiebreak band (§25).
-**Why:** requiring a shared franchise anchor dropped "Rockstar Games confirms the leak investigation" from a GTA topic that named Rockstar, silently. Both the good and bad cases produce an empty anchor set, so a hand list cannot separate them. A chain of boolean gates can only get stricter; the additive matrix lets corpus evidence compensate. The P1 baseline on run 71 was precision/recall **0.667**; arguing the weights without a holdout is how that class of defect ships green.
-**Consequence:** `_GAME_ANCHORS` stay load-bearing for `topic_graph` / `best_bet` identity, not for vault attach. Shadow mode still exists for comparison. P4 stays **off** until the operator opts in — the residual uncertain band on the 14-case set is 4/14, which justified shipping the code, not turning on an extra LLM call. A scorer exception while deciding web skip fails open to fetch and logs a warning (§24).
+## 27. Vault subject relevance is a scored evidence matrix, not a boolean franchise gate (2026-08-27)
+**Decision:** `load_fact_records` scores each vault bullet against a **corpus of signal
+headlines + operator/link facts** (`core/vault_relevance.py`, scorer
+`vault_relevance_v1`). Anchors (`_GAME_ANCHORS`) are one weighted feature, not a hidden
+AND-gate. The shipped default is `scored` after the encoded P3 gate: holdout from live
+runs 66 and 70, both labels, scored precision **and** recall **1.0 > 0.667**, no legacy
+`ok` row became a miss/leak. Public `Sources:` and web-search skip use stricter `public`
+/ `web_skip` thresholds. Discovery in scored mode fetches non-web signals first, then
+either `_fetch_one("web_search")` or emits `STATUS_SKIPPED`. An optional extract-tier
+JSON tiebreak (`VAULT_RELEVANCE_TIEBREAK`, default off) may promote operator-facing
+*uncertain* rows only; it never runs from public citations or web skip, and it persists
+`pre_tiebreak_band` next to the post-tiebreak band (§25).
+**Why:** requiring a shared franchise anchor dropped "Rockstar Games confirms the leak
+investigation" from a GTA topic that named Rockstar, silently. Both the good and bad
+cases produce an empty anchor set, so a hand list cannot separate them. A chain of
+boolean gates can only get stricter; the additive matrix lets corpus evidence
+compensate. The P1 baseline on run 71 was precision/recall **0.667**; arguing the
+weights without a holdout is how that class of defect ships green.
+**Consequence:** `_GAME_ANCHORS` stay load-bearing for `topic_graph` / `best_bet`
+identity, not for vault attach. Shadow mode still exists for comparison. P4 stays
+**off** until the operator opts in — the residual uncertain band on the 14-case set is
+4/14, which justified shipping the code, not turning on an extra LLM call. A scorer
+exception while deciding web skip fails open to fetch and logs a warning (§24).
 
-### 28. Edge TTS is an unmodified `[free]` extra, never the default, never "local" (2026-08-28)
-**Decision:** Wire `"edge"` into `_ALT_TTS` as an opt-in **cloud $0** provider. The 2026-08-25 LGPL-3.0 hold is lifted **only** under the Wave B constraints already recorded in [tool_integration_plan.md](tool_integration_plan.md): install **unmodified** `edge-tts` from PyPI in the `[free]` extra (never vendored, never patched — that is the LGPL linking boundary); `TTS_PROVIDER=edge` is never the default; Piper stays the true-offline Free-mode floor (`_LOCAL_TTS_ORDER` unchanged); any stream failure returns `None` and the existing `_try_alt_tts_provider` chain continues to ElevenLabs (or Free-mode block). Pronunciation uses SSML `<sub alias>` / `<phoneme>` so the lexicon is not a JSON-append workaround (#412 superseded). WordBoundary events (100-ns ticks → seconds) write the same `{word, start, end}` sidecar as ElevenLabs.
-**Why:** the operator rejected auto-appending respellings onto a voice that cannot be told how to say a word. Edge is the voice that *can* (SSML) and the $0 path that emits timings without whisper. Calling it `(local, $0)` would be the same honesty defect as a source reporting "no match" when it is broken (§18): it is networked Microsoft, $0, not local.
-**Consequence:** `is_local_tts_provider()` is False for edge; cost_meter still prices tts at $0 (same helper as Piper). `ops free-doctor` still prefers Piper. An undocumented Microsoft endpoint disappearing must not break a render. A live synth is optional operator proof and is not a CI dependency.
+## 28. Edge TTS is an unmodified `[free]` extra, never the default, never "local" (2026-08-28)
+**Decision:** Wire `"edge"` into `_ALT_TTS` as an opt-in **cloud $0** provider. The
+2026-08-25 LGPL-3.0 hold is lifted **only** under the Wave B constraints already
+recorded in [tool_integration_plan.md](tool_integration_plan.md): install **unmodified**
+`edge-tts` from PyPI in the `[free]` extra (never vendored, never patched — that is the
+LGPL linking boundary); `TTS_PROVIDER=edge` is never the default; Piper stays the
+true-offline Free-mode floor (`_LOCAL_TTS_ORDER` unchanged); any stream failure returns
+`None` and the existing `_try_alt_tts_provider` chain continues to ElevenLabs (or
+Free-mode block). Pronunciation uses SSML `<sub alias>` / `<phoneme>` so the lexicon is
+not a JSON-append workaround (#412 superseded). WordBoundary events (100-ns ticks →
+seconds) write the same `{word, start, end}` sidecar as ElevenLabs.
+**Why:** the operator rejected auto-appending respellings onto a voice that cannot be
+told how to say a word. Edge is the voice that *can* (SSML) and the $0 path that emits
+timings without whisper. Calling it `(local, $0)` would be the same honesty defect as a
+source reporting "no match" when it is broken (§18): it is networked Microsoft, $0, not
+local.
+**Consequence:** `is_local_tts_provider()` is False for edge; cost_meter still prices
+tts at $0 (same helper as Piper). `ops free-doctor` still prefers Piper. An undocumented
+Microsoft endpoint disappearing must not break a render. A live synth is optional
+operator proof and is not a CI dependency.
 
-### 29. A negative fact is a veto, not a warning — and is never handed to the rewrite pass (2026-09-07)
-**Decision:** `#333`'s store gates on `NEGATIVE_FACT_GATE`, mirroring the shape of `GROUNDING_GATE` (§3) and `AUTHENTICITY_GATE` (§9) but **defaulting to `block`, not `warn`** — the only gate in the repo that does. `warn` remains available for a run the operator decides to push through, and `auto_generate --force` bypasses it like the others. Separately, a `negative-fact:` hit is filtered out of the list handed to `_maybe_reground_script` (`content_engine._regroundable`).
-**Why:** the operator's recorded decision (planning_log, 2026-08) was explicit — the store is *"a memory of corrections already paid for, once per claim, able to VETO (operator wants a hard block, not a warning)"*. The first implementation shipped warn-only, and the reversal was recorded nowhere; a later session reading only the code would have found a warning and assumed that was the intent. The rewrite exclusion is a §4 problem: `_maybe_reground_script` prompts an LLM to **delete** every specific it is given, and nothing passes operator key facts into the negative matcher — so a stored claim that token-overlaps a pasted fact would have aimed that deletion at the operator's own ground truth, inverting "operator key facts override everything".
-**Consequence:** a run that re-asserts a walked-back claim stops by default and names the claim. Retracted claims are surfaced and can veto; they are never silently rewritten away. The matcher is still bag-of-tokens over the script only (`negative_facts.matching_negatives`), so it cannot yet weigh a negative fact *against* an operator fact — it declines to try, rather than guessing. #341's retraction watch, which would make intake automatic, still does not exist; intake stays the manual `ops negative-fact`.
+## 29. A negative fact is a veto, not a warning — and is never handed to the rewrite pass (2026-09-07)
+**Decision:** `#333`'s store gates on `NEGATIVE_FACT_GATE`, mirroring the shape of
+`GROUNDING_GATE` (§3) and `AUTHENTICITY_GATE` (§9) but **defaulting to `block`, not
+`warn`** — the only gate in the repo that does. `warn` remains available for a run the
+operator decides to push through, and `auto_generate --force` bypasses it like the
+others. Separately, a `negative-fact:` hit is filtered out of the list handed to
+`_maybe_reground_script` (`content_engine._regroundable`).
+**Why:** the operator's recorded decision (planning_log, 2026-08) was explicit — the
+store is *"a memory of corrections already paid for, once per claim, able to VETO
+(operator wants a hard block, not a warning)"*. The first implementation shipped
+warn-only, and the reversal was recorded nowhere; a later session reading only the code
+would have found a warning and assumed that was the intent. The rewrite exclusion is a
+§4 problem: `_maybe_reground_script` prompts an LLM to **delete** every specific it is
+given, and nothing passes operator key facts into the negative matcher — so a stored
+claim that token-overlaps a pasted fact would have aimed that deletion at the operator's
+own ground truth, inverting "operator key facts override everything".
+**Consequence:** a run that re-asserts a walked-back claim stops by default and names
+the claim. Retracted claims are surfaced and can veto; they are never silently rewritten
+away. The matcher is still bag-of-tokens over the script only
+(`negative_facts.matching_negatives`), so it cannot yet weigh a negative fact *against*
+an operator fact — it declines to try, rather than guessing. #341's retraction watch,
+which would make intake automatic, still does not exist; intake stays the manual `ops
+negative-fact`.
 
-### 30. `ask_confirm` accepts "yes", and Stage 0 is not byte-identical (2026-09-07)
-**Decision:** Keep `core.ask.ask_confirm` treating both `y` and `yes` as agreement. Empty Enter still uses the default (No at every safety gate). Record it as a deliberate semantics change rather than shipping it under the "the terminal keeps working byte-identically" promise in [desktop_app.md](desktop_app.md).
-**Why:** the pre-Stage-0 code was `if override != "y"`, so typing `yes` at the authenticity, grounding, thin-facts, over-length and metrics gates **refused** the override. That is the more surprising behaviour, and no operator types `yes` meaning no. But it loosens five safety gates, and it shipped inside a wave whose commit message said only "empty Enter is still No" — true, and beside the point. A gate that quietly got easier to pass is exactly the class §25 and the run-74 gate-agreement work exist to surface.
-**Consequence:** the Stage 0 promise is now "the terminal keeps working, with one recorded semantics change", not "byte-identical". `emit()` is the other half of that: it writes ANSI cursor save/jump/erase/restore to a TTY, which the pre-Stage-0 terminal never did.
+## 30. `ask_confirm` accepts "yes", and Stage 0 is not byte-identical (2026-09-07)
+**Decision:** Keep `core.ask.ask_confirm` treating both `y` and `yes` as agreement.
+Empty Enter still uses the default (No at every safety gate). Record it as a deliberate
+semantics change rather than shipping it under the "the terminal keeps working
+byte-identically" promise in [desktop_app.md](desktop_app.md).
+**Why:** the pre-Stage-0 code was `if override != "y"`, so typing `yes` at the
+authenticity, grounding, thin-facts, over-length and metrics gates **refused** the
+override. That is the more surprising behaviour, and no operator types `yes` meaning no.
+But it loosens five safety gates, and it shipped inside a wave whose commit message said
+only "empty Enter is still No" — true, and beside the point. A gate that quietly got
+easier to pass is exactly the class §25 and the run-74 gate-agreement work exist to
+surface.
+**Consequence:** the Stage 0 promise is now "the terminal keeps working, with one
+recorded semantics change", not "byte-identical". `emit()` is the other half of that: it
+writes ANSI cursor save/jump/erase/restore to a TTY, which the pre-Stage-0 terminal
+never did.
 
-### 31. Authenticity and grounding block by default; publishing refuses a block verdict only (2026-09-13)
-**Decision:** `AUTHENTICITY_GATE` and `GROUNDING_GATE` default to `block` (were `warn`, §3/§9). `warn` still makes either advisory. Publishing refuses an authenticity *block* verdict only; a `review` verdict publishes with its warning shown. `METRICS_BEFORE_NEXT` and `PUBLISH_DEADMAN_DAYS` stay off.
-**Why:** operator call, 2026-09-13 (#735), after `ops selftest` showed both gates worked but were armed on no machine: the operator's `.env` set neither, so every render passed them as warnings. Under `block` the publish list refused any verdict other than `ok`, which would have stopped every `review` video from publishing - wider than the render rule, and not what was asked for.
-**Consequence:** interactive runs ask before rendering a block verdict or unsupported claims; unattended runs (`scripts/auto_generate.py`) skip the render unless `--force`. `authenticity.blocks_render` is the one rule `main.py`, `auto_generate` and `ops selftest` share.
+## 31. Authenticity and grounding block by default; publishing refuses a block verdict only (2026-09-13)
+**Decision:** `AUTHENTICITY_GATE` and `GROUNDING_GATE` default to `block` (were `warn`,
+§3/§9). `warn` still makes either advisory. Publishing refuses an authenticity *block*
+verdict only; a `review` verdict publishes with its warning shown. `METRICS_BEFORE_NEXT`
+and `PUBLISH_DEADMAN_DAYS` stay off.
+**Why:** operator call, 2026-09-13 (#735), after `ops selftest` showed both gates worked
+but were armed on no machine: the operator's `.env` set neither, so every render passed
+them as warnings. Under `block` the publish list refused any verdict other than `ok`,
+which would have stopped every `review` video from publishing - wider than the render
+rule, and not what was asked for.
+**Consequence:** interactive runs ask before rendering a block verdict or unsupported
+claims; unattended runs (`scripts/auto_generate.py`) skip the render unless `--force`.
+`authenticity.blocks_render` is the one rule `main.py`, `auto_generate` and `ops
+selftest` share.
 
-### 32. `authenticity_score` is the grade; `authenticity_gate_score` is the gate (2026-09-20)
-**Decision:** After #804 the two numbers are different rubrics and are read differently. The **gate** — the binary 40/35/25 sum — decides the verdict (`ok` / `review` / `block`), and every reader calibrated on that series reads it through `run_quality.authenticity_gate_value`: channel health's 55/72 thresholds and the engagement fit. The **grade** — the continuous `authenticity_score` in 0..weight per check — is the report-card component and nothing else. Pre-v4 rows have no `authenticity_gate_score`, and the resolver falls back to their `authenticity_score`, which *is* the binary sum.
-**Why:** #804 fixed a real defect (authenticity scored 100/100 on 22 of 38 runs, so 28% of the report card was a constant) and correctly bumped `GRADE_VERSION` v3 → v4 so letters re-grade. But two readers outside the grader were left pointing at the field whose meaning had changed. `channel_health` reported `thin/synthetic - mean 54/100` for work that passes every gate check, and `engagement_predictor` fitted a slope across a series that changes rubric halfway through — measuring the rubric change, not the work. A version stamp tells you the number changed; it does not re-point the readers.
-**Consequence:** the continuous score is free to move without dragging health colours or predictions with it, which is what makes #803 and #50 safe to do next. The cost is that a run whose *grade* is genuinely thin no longer shows up in channel health — health answers "is the gate holding", the report card answers "how good was this one". See #813-#816 for the rest of that review.
+## 32. `authenticity_score` is the grade; `authenticity_gate_score` is the gate (2026-09-20)
+**Decision:** After #804 the two numbers are different rubrics and are read differently.
+The **gate** — the binary 40/35/25 sum — decides the verdict (`ok` / `review` /
+`block`), and every reader calibrated on that series reads it through
+`run_quality.authenticity_gate_value`: channel health's 55/72 thresholds and the
+engagement fit. The **grade** — the continuous `authenticity_score` in 0..weight per
+check — is the report-card component and nothing else. Pre-v4 rows have no
+`authenticity_gate_score`, and the resolver falls back to their `authenticity_score`,
+which *is* the binary sum.
+**Why:** #804 fixed a real defect (authenticity scored 100/100 on 22 of 38 runs, so 28%
+of the report card was a constant) and correctly bumped `GRADE_VERSION` v3 → v4 so
+letters re-grade. But two readers outside the grader were left pointing at the field
+whose meaning had changed. `channel_health` reported `thin/synthetic - mean 54/100` for
+work that passes every gate check, and `engagement_predictor` fitted a slope across a
+series that changes rubric halfway through — measuring the rubric change, not the work.
+A version stamp tells you the number changed; it does not re-point the readers.
+**Consequence:** the continuous score is free to move without dragging health colours or
+predictions with it, which is what makes #803 and #50 safe to do next. The cost is that
+a run whose *grade* is genuinely thin no longer shows up in channel health — health
+answers "is the gate holding", the report card answers "how good was this one". See
+#813-#816 for the rest of that review.

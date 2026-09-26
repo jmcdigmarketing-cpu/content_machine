@@ -17,6 +17,56 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - wave 37: one domain per run, source-shaped queries, the project timeline
+
+**Prompt (verbatim):** "Next 5 and any input for me. Focus on these Merging the three separate
+"what domain is this topic?" functions (#866) is deferred, as you chose. One live effect: a
+football topic with no obvious football keyword still gets a gaming category on YouTube. * The
+API-Sports, SEC EDGAR, FRED, stats-context and topic-fan-out queries keep their own rules, because
+those rules are specific to each source. describe the project out again and a general synopsis.
+ways it works best and its faults. also, create an official timeline for the project that maps
+out the project in it's entirity, since the earliest works. in my records, this project started
+on chat gpt last may, in 2025, so date as far back as possible. any infographics or charts you
+could make about the project too?"
+
+**Operator decision:** early history - "I'll give you dates" (none sent yet); the timeline marks
+2025-05 to 2026-05 as their slot.
+
+### Findings, with file:line
+
+- `core/youtube_meta.py:20` `CATEGORY_BY_DOMAIN` had no `soccer` (or `music`): run 98 and every
+  football upload went out as category 20, Gaming. Wave 33 added the domain to some maps only -
+  the one-copy shape again. `core/length_recommender.py:31` covered 4 of 9 domains.
+- `core/run_features.py:126` stored `infer_domain(topic, channel)` without the key facts, so a
+  football run with football facts was filed in history as gaming, and nothing stored the
+  topic or effective domain the upload path needed.
+- Query builders on question topics: SEC EDGAR "Is Nvidia overvalued after", FRED and stock
+  footage the whole question, `apis/scrapers/base.py:66` "did the Knicks beat the Celtics in
+  Game 7". API-SPORTS was already right ("Knicks").
+- History: git starts 2026-07-10 at "Pillar 6"; the oldest dated doc is 2026-06; nothing in the
+  repo dates Phases 1-4 or D-G.
+
+### Shipped
+
+1. **#872** `KNOWN_DOMAINS`; soccer -> 17, music -> 10; explicit length defaults; tests hold both maps to the list.
+2. **#866** `resolve_domains` -> `features["domains"]`; `features["domain"]` keeps the key-fact
+   override; `run_domain`; `PublishRequest.domain` set from the run in `publish()` and read by the
+   category, publish window and UFC lint; every `infer_domain` caller listed with its reason.
+3. **#874** `search_query(mode=)`: entity for SEC EDGAR and the stats scrapers, keywords for FRED
+   and stock footage; API-SPORTS pinned.
+4. [project_timeline.md](project_timeline.md) and the private page "Content OS Story" (synopsis,
+   pipeline diagram, timeline, growth / commits / backlog / scorecard / code-size charts).
+5. Filed **#873**: football videos already uploaded are still filed as Gaming.
+
+### Audit
+
+12 new tests in `test_domains_once` (10 failed on `f0af38a`; the caller list is a guard), 8 corpus
+cases (4 failed first; 4 pin behaviour already right). One disclosed behaviour change: the stored
+weighting domain now honours pasted key facts. mypy 129; ruff 0.8.4 clean; `data/` untouched.
+
+Suite 3,686 tests. Backlog **284 numbered open**, highest open **#873**. Next five: **#849 ·
+#873 · #869 · #865 · #863**.
+
 ## 2026-09-26 (Claude Code) - wave 36: own review - erased fixes, one-copy fixes, the regression corpus
 
 **Prompt (verbatim):** "forget the codex and astra review, if it hasnt been done then do it

@@ -136,15 +136,16 @@ def search_query(
     *,
     drop: tuple[str, ...] = (),
     max_len: int = 64,
-    always_entity: bool = False,
+    mode: str = "auto",
 ) -> str:
     """The name to send a name-search API: "Silksong", not the typed sentence (#852).
 
     `drop` removes the API's own noise words first ("review", "season"). A question or a
     sentence-length topic becomes its first Title-Case name, plus a number that follows
     it ("UFC 320"); a lower-case one keeps its content words. A short statement keeps
-    its words, since it usually already is the name. `always_entity` takes the name
-    whatever the length (a team search). Eleven builders each did their own version and
+    its words, since it usually already is the name. `mode="entity"` takes the name
+    whatever the length (a company, team or player search); `mode="keywords"` keeps up to
+    five content words in order (a data-series or stock-footage search, #874). Eleven builders each did their own version and
     the #852 fix reached one of them (wave 36).
     """
     text = topic or ""
@@ -152,7 +153,10 @@ def search_query(
         text = re.sub(r"\b(" + "|".join(drop) + r")\b", "", text, flags=re.I)
     text = re.sub(r"\s+", " ", text).strip(" ,.;:-")
     sentence = starts_with_question(text) or len(text.split()) > 5
-    if always_entity or sentence:
+    if mode == "keywords":
+        words = [w for w in re.findall(r"[A-Za-z0-9]+", text) if w.lower() not in FUNCTION_WORDS]
+        return " ".join(words[:5])[:max_len] or text[:max_len] or (topic or "")[:max_len]
+    if mode == "entity" or sentence:
         for phrase in title_phrases(text):
             name = re.sub(r"['’]s$", "", phrase)
             follow = re.match(re.escape(phrase) + _NUMBER_AFTER, text[text.find(phrase) :])

@@ -53,29 +53,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** `4e4261e` + this wave's commit on `main` (`git log -2`)
+**Written:** 2026-09-26 · **HEAD at write:** `f0af38a` + this wave's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit; `data/` untouched.
 
-**New rule, read before editing:** `py -m scripts.ops regressions <file>` lists the old fixes
-guarding a file; a live-run defect adds a case to `tests/regression_corpus.json` plus one per
-sibling module. Topic words come from `apis/topic_tokens` only - a test refuses a new private
-stopword list. Why: [review_2026-09-26.md](review_2026-09-26.md) (#745 and #783 erased earlier
-fixes; run 98's fix reached 1 of 7 tokenizers).
+**Read before editing:** `py -m scripts.ops regressions <file>` lists the old fixes guarding a
+file. Domains: the run stores `features["domains"]` (`topic` / `effective` / `weighting`); read
+`core/run_features.run_domain`, don't re-guess from a title. A new domain goes in
+`apis/topic_scorer.KNOWN_DOMAINS`, and the tests then demand a YouTube category and a length
+default for it. A new `infer_domain` caller must add itself to the list in
+`tests/test_domains_once.py` with its reason.
 
 **Defects first:**
-- **The operator's PC may still be on `codex/p0-test-integrity`** (local-only). On the PC:
-  `git log --oneline origin/main..HEAD` (push the branch first if it lists commits), then
-  `git switch main` and `git pull origin main`.
+- **#873** football videos uploaded before this commit are still filed as Gaming on YouTube.
+- **Behaviour change, disclosed:** `features["domain"]` now honours pasted key facts, so a
+  football run with football facts is filed in history as soccer, not gaming.
+- **The operator's PC may still be on `codex/p0-test-integrity`**; `git switch main` and pull.
 - **Use `python -m ruff`, never bare `ruff`, here:** bare is 0.15.8, CI pins 0.8.4.
-- **#866** a keyword-less football topic still gets a gaming YouTube category.
 
-**Shipped:** #871 regression corpus + shared topic text; backlog epics E1-E6; #866-#870 filed.
+**Shipped:** #872 · #866 · #874 · `docs/project_timeline.md` · the private page "Content OS
+Story". **Operator owes:** the 2025-05 to 2026-05 dates for the timeline; `ops calibration` for #849.
 
-**Operator after switching:** `ops backfill-quality --channel tapin --force --apply`,
-`ops backfill-angles --channel tapin --apply`, `ops calibration` (paste it - #849 waits on it).
-
-Suite **3,674**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **284 numbered open**, highest open **#870**. Next five: **#849 · #866 · #869 · #865 · #863**.
+Suite **3,686**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **284 numbered open**, highest open **#873**. Next five: **#849 · #873 · #869 · #865 · #863**.
 
 ## Slot — Cursor
 

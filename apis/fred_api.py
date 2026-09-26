@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 
 import requests
 
@@ -16,6 +15,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 
 _KEY = os.getenv("FRED_API_KEY", "").strip()
 _BASE = "https://api.stlouisfed.org/fred"
@@ -24,9 +24,10 @@ _UA = {"User-Agent": "ContentMachine/1.0"}
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(20\d{2}|analysis|why|how|stock|stocks)\b", "", topic, flags=re.I)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text[:64] or topic[:64]
+    """Series keywords: FRED searched the whole typed question (#874)."""
+    return search_query(
+        topic, drop=(r"20\d{2}", "analysis", "stock", "stocks"), mode="keywords", max_len=64
+    )
 
 
 def get_fred_signal(topic: str) -> dict:

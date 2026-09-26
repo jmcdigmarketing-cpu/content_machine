@@ -916,6 +916,7 @@ def run_pipeline(
         key_facts=key_facts,
         fact_source="manual" if key_facts else "signals",
         vault_relevance_audit=vault_relevance_audit,
+        signals=best_signals,
     )
     if result.menu_path:
         result.features["menu_path"] = str(result.menu_path)

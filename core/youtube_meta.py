@@ -21,10 +21,12 @@ CATEGORY_BY_DOMAIN = {
     "ufc": "17",
     "nba": "17",
     "nfl": "17",
+    "soccer": "17",
     "gaming": "20",
     "finance": "25",
     "anime": "24",
     "popculture": "24",
+    "music": "10",
 }
 DEFAULT_CATEGORY_ID = "20"
 
@@ -45,7 +47,12 @@ def category_id_for_domain(domain: str | None) -> str:
     return CATEGORY_BY_DOMAIN.get(key, DEFAULT_CATEGORY_ID)
 
 
-def category_id_for_topic(topic: str, channel_id: str | None = None) -> str:
+def category_id_for_topic(
+    topic: str, channel_id: str | None = None, *, domain: str | None = None
+) -> str:
+    """The run's own domain when the caller has it (#866); else a guess from the title."""
+    if domain:
+        return category_id_for_domain(domain)
     try:
         from apis.topic_scorer import infer_domain
 
@@ -65,14 +72,18 @@ def default_language() -> str | None:
 
 
 def apply_snippet_defaults(
-    snippet: dict[str, Any], *, topic: str = "", channel_id: str | None = None
+    snippet: dict[str, Any],
+    *,
+    topic: str = "",
+    channel_id: str | None = None,
+    domain: str | None = None,
 ) -> dict[str, Any]:
     """Fill categoryId (when empty) + defaultLanguage / defaultAudioLanguage."""
     out = dict(snippet)
     cat = str(out.get("categoryId") or "").strip()
     if not cat:
         title = topic or str(out.get("title") or "")
-        out["categoryId"] = category_id_for_topic(title, channel_id)
+        out["categoryId"] = category_id_for_topic(title, channel_id, domain=domain)
     lang = default_language()
     if lang:
         out["defaultLanguage"] = lang

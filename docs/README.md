@@ -116,6 +116,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 
 | Doc | |
 |---|---|
+| [project_timeline.md](project_timeline.md) | the official timeline, 2025-05 → today, each entry tagged by its evidence |
 | [change_log.md](change_log.md) | What shipped, by theme |
 | [planning_log.md](planning_log.md) | Brainstorming and decisions, by session |
 | [handoff_synopsis.md](handoff_synopsis.md) | Session state, newest wave first |

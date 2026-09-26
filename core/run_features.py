@@ -99,6 +99,7 @@ def build_features(
     key_facts: list[str] | None = None,
     fact_source: str = "",
     vault_relevance_audit: list[dict[str, Any]] | None = None,
+    signals: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble the normalized feature dict for a content run."""
     pkg = content_package or {}
@@ -118,12 +119,14 @@ def build_features(
         title_direction = str(getattr(research_brief, "title_direction", "") or "")
         suggested_hook = str(getattr(research_brief, "suggested_hook", "") or "")
 
-    from apis.topic_scorer import infer_domain
+    from apis.topic_scorer import infer_domain, resolve_domains
 
     preset = get_length_preset(length_choice)
 
     features = {
-        "domain": infer_domain(topic, channel_id),
+        "domain": infer_domain(topic, channel_id, key_facts=key_facts or None),
+        # #866: what the run decided the topic is, for the upload path and reports.
+        "domains": resolve_domains(topic, channel_id, key_facts=key_facts or None, signals=signals),
         "format": preset.label,
         "length_preset": preset.choice,
         "angle": classify_angle(topic, recommended_format),
@@ -184,6 +187,17 @@ def load_features(run_id: int | None) -> dict[str, Any]:
     except Exception as exc:
         logger.debug("features read skipped for run %s: %s", run_id, exc)
         return {}
+
+
+def run_domain(run_id: int | None, kind: str = "effective") -> str:
+    """The domain a run stored (#866); runs from before it fall back to `domain`."""
+    if not run_id:
+        return ""
+    features = load_features(run_id)
+    stored = features.get("domains")
+    if isinstance(stored, dict) and stored.get(kind):
+        return str(stored[kind])
+    return str(features.get("domain") or "")
 
 
 def merge_features(run_id: int | None, updates: dict[str, Any]) -> None:

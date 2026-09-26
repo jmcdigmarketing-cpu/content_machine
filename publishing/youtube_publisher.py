@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -60,7 +61,9 @@ def dry_run_insert_body(request: PublishRequest, *, channel_id: str) -> dict[str
     try:
         from core.youtube_meta import apply_snippet_defaults
 
-        snippet = apply_snippet_defaults(snippet, topic=request.title, channel_id=channel_id)
+        snippet = apply_snippet_defaults(
+            snippet, topic=request.title, channel_id=channel_id, domain=request.domain or None
+        )
     except Exception as exc:
         logger.debug("snippet defaults skipped: %s", exc)
         if not snippet.get("categoryId"):
@@ -208,20 +211,39 @@ def queued_privacy_label(privacy_status: str, publish_at=None) -> str:
     return f"{privacy_status} -> {effective} first, for review"
 
 
+def request_with_run_domain(request: PublishRequest, content_run_id: int | None) -> PublishRequest:
+    """Carry the run's stored effective domain into the upload (#866).
+
+    The title alone lost what the run knew: "Who wins Sunday's derby?" with Premier
+    League facts pasted is soccer to the run and gaming to a title-only guess.
+    """
+    if request.domain or not content_run_id:
+        return request
+    try:
+        from core.run_features import run_domain
+
+        domain = run_domain(content_run_id)
+    except Exception as exc:
+        logger.debug("run domain skipped: %s", exc)
+        return request
+    return replace(request, domain=domain) if domain else request
+
+
 def build_video_status(request: PublishRequest, *, channel_id: str | None = None) -> dict[str, Any]:
     status: dict[str, Any] = {"selfDeclaredMadeForKids": False}
     publish_at = request.publish_at
     try:
         from core.publish_windows import adjust_publish_at
 
-        domain = ""
-        try:
-            from apis.topic_scorer import infer_domain
+        domain = request.domain
+        if not domain:
+            try:
+                from apis.topic_scorer import infer_domain
 
-            domain = infer_domain(request.title or "", channel_id)
-        except Exception as exc:
-            logger.debug("publish window domain skipped: %s", exc)
-            domain = ""
+                domain = infer_domain(request.title or "", channel_id)
+            except Exception as exc:
+                logger.debug("publish window domain skipped: %s", exc)
+                domain = ""
         bumped, why = adjust_publish_at(
             publish_at,
             channel_id=channel_id,
@@ -476,6 +498,7 @@ class YouTubePublisher(Publisher):
         content_run_id: int | None = None,
     ) -> PublishResult:
         channel_id = resolve_channel_id(channel_id)
+        request = request_with_run_domain(request, content_run_id)
         idem = idempotency_key(content_run_id, channel_id, PLATFORM_YOUTUBE)
 
         if os.path.splitext(request.file_path)[0].lower().endswith("_preview"):
@@ -600,13 +623,14 @@ class YouTubePublisher(Publisher):
                         detail=hit,
                         platform=PLATFORM_YOUTUBE,
                     )
-            domain = ""
-            try:
-                from apis.topic_scorer import infer_domain
+            domain = request.domain
+            if not domain:
+                try:
+                    from apis.topic_scorer import infer_domain
 
-                domain = infer_domain(request.title, channel_id)
-            except Exception as exc:
-                logger.debug("title lint domain skipped: %s", exc)
+                    domain = infer_domain(request.title, channel_id)
+                except Exception as exc:
+                    logger.debug("title lint domain skipped: %s", exc)
             for warn in lint_ufc_title(request.title, domain=domain):
                 logger.warning("%s", warn)
             from core.cross_channel_dup import cross_channel_dup_block_reason

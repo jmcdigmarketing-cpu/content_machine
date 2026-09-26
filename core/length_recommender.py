@@ -33,6 +33,11 @@ _DEFAULT_BY_DOMAIN: dict[str, str] = {
     "ufc": "2",  # Medium
     "nba": "2",
     "nfl": "2",
+    "soccer": "2",
+    "finance": "2",
+    "anime": "2",
+    "music": "2",
+    "popculture": "2",
     "neutral": "2",
 }
 

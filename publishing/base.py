@@ -31,6 +31,8 @@ class PublishRequest:
     publish_at: datetime | None = None
     thumbnail_path: str | None = None
     caption_path: str | None = None
+    # #866: the run's stored effective domain; empty means guess from the title.
+    domain: str = ""
 
 
 @dataclass

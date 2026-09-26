@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import time
 from typing import Any
 
@@ -64,12 +63,18 @@ def set_cached(source: str, key: str, data: Any) -> None:
 
 
 def search_query_from_topic(topic: str, *, max_len: int = 48) -> str:
-    """Short query for site search boxes."""
-    text = re.sub(r"\b(20\d{2}|vs\.?|versus|preview|analysis|why|how)\b", "", topic, flags=re.I)
-    text = re.sub(r"\s+", " ", text).strip(" .,-")
-    if len(text) > max_len:
-        text = text[:max_len].rsplit(" ", 1)[0]
-    return text or topic.strip()[:max_len]
+    """A team or player name for a stats site's search box (#874).
+
+    basketball-reference searched "did the Knicks beat the Celtics in Game 7".
+    """
+    from apis.topic_tokens import search_query
+
+    return search_query(
+        topic,
+        drop=(r"20\d{2}", r"vs\.?", "versus", "preview", "analysis"),
+        mode="entity",
+        max_len=max_len,
+    )
 
 
 def detect_stat_domains(topic: str) -> list[str]:

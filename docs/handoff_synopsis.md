@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-26: wave 36, own review
+# Handoff synopsis — 2026-09-26: wave 37, domains and the timeline
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,19 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 36, own review #871
+## Last wave — 2026-09-26 (Claude Code): wave 37 #872 #866 #874 + timeline
+
+- **#872** football uploads were filed as Gaming (no `soccer` in `CATEGORY_BY_DOMAIN`); every
+  domain in `KNOWN_DOMAINS` now has a category and a length default, held by a test.
+- **#866** `resolve_domains` stored as `features["domains"]`; `publish()` carries the run's
+  effective domain on `PublishRequest.domain`; each `infer_domain` caller listed with its reason.
+- **#874** `search_query(mode=)`: EDGAR and stats scrapers by name, FRED and stock footage by keywords.
+- [project_timeline.md](project_timeline.md) + the private page "Content OS Story". Operator owes
+  the 2025-05 to 2026-05 dates. **#873** old football uploads still say Gaming.
+
+**Verify:** `python -m unittest tests.test_domains_once`; `py -m scripts.ops regressions`.
+
+## Previous — 2026-09-26 (Claude Code): wave 36, own review #871
 
 The operator dropped the Codex/Astra review and asked for one: what can be consolidated, where
 did a newer idea erase a fix, is a new system needed. [review_2026-09-26.md](review_2026-09-26.md).
@@ -44,26 +56,6 @@ flipped a held video back. That became #864.
 
 **Verify:** `python -m unittest tests.test_go_public tests.test_auto_research_view
 tests.test_commit_msg_ascii tests.test_tts_cache_guard`.
-
-## Previous — 2026-09-26 (Claude Code): wave 34 #859 #852 #850 #836 #848
-
-The roadmap's five, cheapest first. The operator's PC turned out to be on a local-only branch
-(`codex/p0-test-integrity`), so `git pull` fetched `main` without merging it and wave 33 never
-reached the machine; the switch instructions are in the handoff slot.
-
-- **#859** `domain_rss.soccer`: BBC Sport Football + The Guardian Football (unverifiable from the
-  container; `ops feeds` checks them).
-- **#852** `apis/topic_tokens.title_phrases`: API-SPORTS searches `Manchester City`; Wikipedia
-  tries `Manchester_City` first.
-- **#850** the research brief takes `key_facts`: prompt block, fallback evidence, cache digest.
-- **#836** `ops backfill-angles`: offline `rank_angles(llm_judge=False)` over `variants_json`,
-  stamped `angle_backfilled`; calibration counts them.
-- **#848** `core/auto_research.py`, on by default: reads the top 3 result pages for the angle
-  (thread-safe `link_facts._article_extract`, 20 s deadline, 3h per-URL cache), drops off-topic
-  lines, attaches `web_research` at web tier with score 0. Suite pins it off. Decisions §35.
-
-**Verify:** `python -m unittest tests.test_auto_research tests.test_backfill_angles
-tests.test_brief_sees_key_facts tests.test_wave34_queries_feeds`.
 
 ## Pipeline order (operator)
 
@@ -130,7 +122,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
 
 1. **Operator, after switching to `main`:** `ops backfill-quality --force --apply`,
    `ops backfill-angles --apply`, `ops calibration`, `ops feeds`. #849 waits on that output.
-2. **Product next (by epic, backlog.md "Epics"):** #849 (E1) · #866 domain (E2) · #863 (E3).
+2. **Product next (by epic, backlog.md "Epics"):** #849 (E1) · #873 re-file football · #863 (E3).
 3. **Structural:** #869 status verbs (E4) · #870 backfills (E6) · #867 unread keys (E5) · #865 ·
    #832 · #831 ruff bump · #834 `core/` seams. Any live-run defect: add a corpus case.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).

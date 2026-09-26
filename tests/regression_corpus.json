@@ -6,8 +6,24 @@
       "item": 843,
       "source": "run 98",
       "call": "apis.topic_tokens:content_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean", "for", "the"], "includes_all": ["manchester", "city", "prem"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean",
+          "for",
+          "the"
+        ],
+        "includes_all": [
+          "manchester",
+          "city",
+          "prem"
+        ]
+      },
       "why": "RAWG, Twitch and fan-out matched on question words"
     },
     {
@@ -15,8 +31,19 @@
       "item": 843,
       "source": "run 98; sibling found wave 36",
       "call": "apis.rss_feeds:_topic_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean", "for", "the"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean",
+          "for",
+          "the"
+        ]
+      },
       "why": "any headline containing 'what' or 'does' matched the topic"
     },
     {
@@ -24,8 +51,19 @@
       "item": 843,
       "source": "run 98; sibling found wave 36",
       "call": "core.owned_beats:_topic_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean", "for", "the"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean",
+          "for",
+          "the"
+        ]
+      },
       "why": "owned clips were matched to the topic on 'what'/'this'"
     },
     {
@@ -33,8 +71,19 @@
       "item": 843,
       "source": "run 98; sibling found wave 36",
       "call": "core.opportunity_window:_topic_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean", "for", "the"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean",
+          "for",
+          "the"
+        ]
+      },
       "why": "the opportunity window counted 'does'/'mean' as topic words"
     },
     {
@@ -42,8 +91,19 @@
       "item": 843,
       "source": "run 98; sibling found wave 36",
       "call": "analytics.competitor_context:_topic_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean", "for", "the"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean",
+          "for",
+          "the"
+        ]
+      },
       "why": "competitor titles matched the topic on question words"
     },
     {
@@ -51,8 +111,19 @@
       "item": 843,
       "source": "run 98; sibling found wave 36",
       "call": "apis.youtube_comments_signal:topic_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean", "for", "the"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean",
+          "for",
+          "the"
+        ]
+      },
       "why": "viewer questions were kept as on-topic for sharing 'mean'"
     },
     {
@@ -60,8 +131,19 @@
       "item": 843,
       "source": "run 98; sibling found wave 36",
       "call": "core.obsidian_facts:_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean", "for", "the"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean",
+          "for",
+          "the"
+        ]
+      },
       "why": "vault facts matched the topic on 'does'"
     },
     {
@@ -69,8 +151,17 @@
       "item": 843,
       "source": "run 98; sibling found wave 36",
       "call": "core.negative_facts:_tokens",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"excludes_any": ["what", "does", "this", "mean"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "excludes_any": [
+          "what",
+          "does",
+          "this",
+          "mean"
+        ]
+      },
       "why": "negative facts matched the topic on question words"
     },
     {
@@ -78,8 +169,14 @@
       "item": 852,
       "source": "run 98",
       "call": "apis.topic_tokens:title_phrases",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"equals": ["Manchester City"]},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "equals": [
+          "Manchester City"
+        ]
+      },
       "why": "signals searched the whole typed sentence"
     },
     {
@@ -87,8 +184,12 @@
       "item": 852,
       "source": "run 98",
       "call": "apis.api_sports_api:_search_query",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"equals": "Manchester City"},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "equals": "Manchester City"
+      },
       "why": "API-SPORTS searched a 48-character sentence"
     },
     {
@@ -96,8 +197,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.igdb_api:_search_query",
-      "args": ["Why is Silksong delayed again, what does Team Cherry say"],
-      "expect": {"equals": "Silksong"},
+      "args": [
+        "Why is Silksong delayed again, what does Team Cherry say"
+      ],
+      "expect": {
+        "equals": "Silksong"
+      },
       "why": "IGDB searched 'Why is Silksong delayed again, what does Team Ch'"
     },
     {
@@ -105,8 +210,12 @@
       "item": 852,
       "source": "wave 36 guard",
       "call": "apis.igdb_api:_search_query",
-      "args": ["Elden Ring Nightreign review"],
-      "expect": {"equals": "Elden Ring Nightreign"},
+      "args": [
+        "Elden Ring Nightreign review"
+      ],
+      "expect": {
+        "equals": "Elden Ring Nightreign"
+      },
       "why": "a short topic keeps its own words"
     },
     {
@@ -114,8 +223,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.tmdb_api:_search_query",
-      "args": ["Why did Dune Part Two beat every box office forecast"],
-      "expect": {"equals": "Dune Part Two"},
+      "args": [
+        "Why did Dune Part Two beat every box office forecast"
+      ],
+      "expect": {
+        "equals": "Dune Part Two"
+      },
       "why": "TMDB searched the whole sentence"
     },
     {
@@ -123,8 +236,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.tvmaze_api:_search_query",
-      "args": ["What does the Severance finale mean for Apple"],
-      "expect": {"equals": "Severance"},
+      "args": [
+        "What does the Severance finale mean for Apple"
+      ],
+      "expect": {
+        "equals": "Severance"
+      },
       "why": "TVmaze searched the whole sentence"
     },
     {
@@ -132,8 +249,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.jikan_api:_search_query",
-      "args": ["Why is Frieren the best anime of the decade"],
-      "expect": {"equals": "Frieren"},
+      "args": [
+        "Why is Frieren the best anime of the decade"
+      ],
+      "expect": {
+        "equals": "Frieren"
+      },
       "why": "Jikan searched the whole sentence"
     },
     {
@@ -141,8 +262,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.anilist_api:_search_query",
-      "args": ["Why is Frieren the best anime of the decade"],
-      "expect": {"equals": "Frieren"},
+      "args": [
+        "Why is Frieren the best anime of the decade"
+      ],
+      "expect": {
+        "equals": "Frieren"
+      },
       "why": "AniList searched the whole sentence"
     },
     {
@@ -150,8 +275,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.lastfm_api:_search_query",
-      "args": ["What does Kendrick Lamar's new album say about Drake"],
-      "expect": {"equals": "Kendrick Lamar"},
+      "args": [
+        "What does Kendrick Lamar's new album say about Drake"
+      ],
+      "expect": {
+        "equals": "Kendrick Lamar"
+      },
       "why": "Last.fm searched the whole sentence"
     },
     {
@@ -159,8 +288,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.musicbrainz_api:_search_query",
-      "args": ["What does Kendrick Lamar's new album say about Drake"],
-      "expect": {"equals": "Kendrick Lamar"},
+      "args": [
+        "What does Kendrick Lamar's new album say about Drake"
+      ],
+      "expect": {
+        "equals": "Kendrick Lamar"
+      },
       "why": "MusicBrainz searched the whole sentence"
     },
     {
@@ -168,8 +301,12 @@
       "item": 852,
       "source": "wave 36: the #852 fix reached 1 of 11 query builders",
       "call": "apis.coingecko_api:_search_query",
-      "args": ["Why is Bitcoin falling after the ETF outflows"],
-      "expect": {"equals": "Bitcoin"},
+      "args": [
+        "Why is Bitcoin falling after the ETF outflows"
+      ],
+      "expect": {
+        "equals": "Bitcoin"
+      },
       "why": "CoinGecko searched 'Why is Bitcoin falling after the ETF outflo'"
     },
     {
@@ -177,8 +314,12 @@
       "item": 841,
       "source": "run 98",
       "call": "apis.topic_scorer:infer_topic_domain",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem"],
-      "expect": {"equals": "soccer"},
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem"
+      ],
+      "expect": {
+        "equals": "soccer"
+      },
       "why": "a football story on TapIn ran as gaming"
     },
     {
@@ -186,9 +327,17 @@
       "item": 859,
       "source": "run 98",
       "call": "config.data_sources:rss_feeds_for_topic",
-      "args": ["Manchester City ofund guilty, what does this mean for the prem", "tapin"],
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem",
+        "tapin"
+      ],
       "pluck": "name",
-      "expect": {"includes_all": ["BBC Sport Football", "The Guardian Football"]},
+      "expect": {
+        "includes_all": [
+          "BBC Sport Football",
+          "The Guardian Football"
+        ]
+      },
       "why": "football topics got no football RSS"
     },
     {
@@ -196,9 +345,15 @@
       "item": 109,
       "source": "run 69",
       "call": "publishing.youtube_publisher:queued_privacy_label",
-      "args": ["public"],
-      "env": {"YOUTUBE_UNLISTED_REVIEW": "true"},
-      "expect": {"contains": "unlisted"},
+      "args": [
+        "public"
+      ],
+      "env": {
+        "YOUTUBE_UNLISTED_REVIEW": "true"
+      },
+      "expect": {
+        "contains": "unlisted"
+      },
       "why": "the queue said 'public' and the upload landed unlisted"
     },
     {
@@ -206,8 +361,14 @@
       "item": 745,
       "source": "run 66; erased by #745, restored e7ef6ad",
       "call": "core.fact_grounding:extract_entities",
-      "args": ["Why Jason Duval matters."],
-      "expect": {"equals": ["Jason Duval"]},
+      "args": [
+        "Why Jason Duval matters."
+      ],
+      "expect": {
+        "equals": [
+          "Jason Duval"
+        ]
+      },
       "why": "#745 replaced the leading stopwords and 'Why Jason Duval' became an entity again"
     },
     {
@@ -215,8 +376,12 @@
       "item": 741,
       "source": "wave 15 audit",
       "call": "core.operator_facts:is_article_chrome",
-      "args": ["Residents complained about the authorities' response to the flood."],
-      "expect": {"falsy": true},
+      "args": [
+        "Residents complained about the authorities' response to the flood."
+      ],
+      "expect": {
+        "falsy": true
+      },
       "why": "'about the author' matched 'about the authorities' and dropped a real fact"
     },
     {
@@ -224,8 +389,12 @@
       "item": 741,
       "source": "wave 15 audit guard",
       "call": "core.operator_facts:is_article_chrome",
-      "args": ["This article contains affiliate links."],
-      "expect": {"truthy": true},
+      "args": [
+        "This article contains affiliate links."
+      ],
+      "expect": {
+        "truthy": true
+      },
       "why": "real disclosure chrome is still dropped"
     },
     {
@@ -237,10 +406,16 @@
         "Rockstar Fights Drones And Hackers To Protect GTA 6 Secrets",
         "Rockstar is fighting drones and hackers to protect GTA 6 secrets. Leaks keep coming, and the studio is spending on security."
       ],
-      "kwargs": {"topic": "GTA 6 leaks"},
-      "patch_raise": ["core.llm_router.complete_json"],
+      "kwargs": {
+        "topic": "GTA 6 leaks"
+      },
+      "patch_raise": [
+        "core.llm_router.complete_json"
+      ],
       "select": "status",
-      "expect": {"equals": "passed"},
+      "expect": {
+        "equals": "passed"
+      },
       "why": "every Title Case title failed its own script"
     },
     {
@@ -248,8 +423,17 @@
       "item": 783,
       "source": "run 77; erased by the SRT force_style, restored acf88ed",
       "call": "video.render_video:_ass_safe_style",
-      "args": ["FontName=Arial,FontSize=18,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00111111&,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=72"],
-      "expect": {"excludes_any": ["FontSize", "FontName", "MarginV"], "contains": "Outline=2"},
+      "args": [
+        "FontName=Arial,FontSize=18,PrimaryColour=&H00FFFFFF&,OutlineColour=&H00111111&,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=72"
+      ],
+      "expect": {
+        "excludes_any": [
+          "FontSize",
+          "FontName",
+          "MarginV"
+        ],
+        "contains": "Outline=2"
+      },
       "why": "SRT-sized force_style burned karaoke captions at a tenth of their size"
     },
     {
@@ -257,9 +441,138 @@
       "item": 840,
       "source": "run 98",
       "call": "core.tts:concat_list_text",
-      "args": [["output/tapin/audio/seg_0.mp3", "output/tapin/audio/seg_1.mp3"]],
-      "expect": {"not_contains": "file 'output/"},
+      "args": [
+        [
+          "output/tapin/audio/seg_0.mp3",
+          "output/tapin/audio/seg_1.mp3"
+        ]
+      ],
+      "expect": {
+        "not_contains": "file 'output/"
+      },
       "why": "relative concat entries failed every join and billed each multi-sentence script twice"
+    },
+    {
+      "id": "run98-football-category",
+      "item": 872,
+      "source": "run 98; found wave 37",
+      "call": "core.youtube_meta:category_id_for_topic",
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem",
+        "tapin"
+      ],
+      "expect": {
+        "equals": "17"
+      },
+      "why": "soccer was added as a domain but not to the category map, so football uploads were filed as Gaming (20)"
+    },
+    {
+      "id": "derby-facts-domain",
+      "item": 866,
+      "source": "wave 37",
+      "call": "apis.topic_scorer:resolve_domains",
+      "args": [
+        "Who wins Sunday's derby?",
+        "tapin"
+      ],
+      "kwargs": {
+        "key_facts": [
+          "Manchester City play Manchester United in the Premier League on Sunday."
+        ]
+      },
+      "select": "effective",
+      "expect": {
+        "equals": "soccer"
+      },
+      "why": "the run knew it was football from the pasted facts; the uploader guessed gaming from the title"
+    },
+    {
+      "id": "question-sec-edgar-query",
+      "item": 874,
+      "source": "wave 37: SEC EDGAR is a company-name search",
+      "call": "apis.sec_edgar_api:_search_query",
+      "args": [
+        "Is Nvidia stock overvalued after earnings"
+      ],
+      "expect": {
+        "equals": "Nvidia"
+      },
+      "why": "EDGAR searched 'Is Nvidia overvalued after'"
+    },
+    {
+      "id": "question-fred-query",
+      "item": 874,
+      "source": "wave 37: FRED is a keyword series search",
+      "call": "apis.fred_api:_search_query",
+      "args": [
+        "What does the Fed rate cut mean for mortgage rates"
+      ],
+      "expect": {
+        "excludes_any": [
+          "What",
+          "What does",
+          "mean"
+        ],
+        "contains": "mortgage"
+      },
+      "why": "FRED searched the whole question"
+    },
+    {
+      "id": "question-stats-scraper-query",
+      "item": 874,
+      "source": "wave 37: stats sites search by team or player",
+      "call": "apis.scrapers.base:search_query_from_topic",
+      "args": [
+        "Why did the Knicks beat the Celtics in Game 7"
+      ],
+      "expect": {
+        "equals": "Knicks"
+      },
+      "why": "basketball-reference searched 'did the Knicks beat the Celtics in Game 7'"
+    },
+    {
+      "id": "question-stock-footage-query",
+      "item": 874,
+      "source": "wave 37: stock footage searches by keywords",
+      "call": "apis.topic_fanout:primary_search_query",
+      "args": [
+        "Why did the Knicks beat the Celtics in Game 7"
+      ],
+      "expect": {
+        "excludes_any": [
+          "Why",
+          "did",
+          "the "
+        ],
+        "contains": "Knicks"
+      },
+      "why": "Pexels/Pixabay searched the whole sentence"
+    },
+    {
+      "id": "fanout-list-still-first-item",
+      "item": 874,
+      "source": "wave 37 guard",
+      "call": "apis.topic_fanout:primary_search_query",
+      "args": [
+        "State of Gaming 2026. Marvel Rivals, terraria"
+      ],
+      "expect": {
+        "equals": "Marvel Rivals"
+      },
+      "why": "a listed topic still searches its first item"
+    },
+    {
+      "id": "api-sports-question-query",
+      "item": 852,
+      "source": "wave 37 pin",
+      "call": "apis.api_sports_api:_search_query",
+      "args": [
+        "Why did the Knicks beat the Celtics in Game 7"
+      ],
+      "expect": {
+        "equals": "Knicks"
+      },
+      "why": "API-SPORTS keeps its team-name rule"
     }
   ]
 }

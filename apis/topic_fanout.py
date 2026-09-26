@@ -55,4 +55,7 @@ def primary_search_query(topic: str) -> str:
     subs = parse_subtopics(topic)
     if subs:
         return subs[0]
-    return topic.strip()
+    # #874: a stock-footage search wants keywords, not the typed question.
+    from apis.topic_tokens import search_query
+
+    return search_query(topic, mode="keywords", max_len=80) or topic.strip()

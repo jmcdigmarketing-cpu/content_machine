@@ -26,28 +26,27 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-26 wave 36, own review ([review_2026-09-26.md](review_2026-09-26.md)):
-**#871** a regression corpus replays 28 frozen live-run defects (`py -m scripts.ops regressions
-[file]`); seven tokenizers and eight API query builders now share `apis/topic_tokens`, so run
-98's question-word fix and #852's name query reach every copy. Backlog grouped into epics E1-E6.
+**Just landed** - 2026-09-26 wave 37: **#872** football uploads were filed as Gaming - every
+domain now has a YouTube category and a length default, and a test holds the list · **#866** the
+run resolves its domain once (`topic` / `effective` / `weighting`), stores it, and the upload
+reads it · **#874** SEC EDGAR and the stats scrapers search by name, FRED and stock footage by
+keywords. The project timeline is [project_timeline.md](project_timeline.md).
 
-**Before that** - wave 35: **#864** `ops go-public` · **#861 #863** auto-research lines shown and
-measured · **#839 #830** · wave 34: **#848 #850 #852 #859 #836** · wave 33 (run 98):
-**#840-#847**. Earlier: [roadmap_archive.md](roadmap_archive.md) and
+**Before that** - wave 36: **#871** the regression corpus and one topic-text module
+([review_2026-09-26.md](review_2026-09-26.md)) · wave 35: **#864** `ops go-public` · wave 34:
+**#848** auto-research. Earlier: [roadmap_archive.md](roadmap_archive.md) and
 [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 36 (2026-09-26)** found that work is lost two ways - a later change erases a fix, or a
-fix reaches one copy of an idea - and built the guard for both. The list now works epic by
-epic ([backlog.md](backlog.md) "Epics") so one member does not redo another's groundwork.
+**Wave 37 (2026-09-26)** closed the domain split and the query builders the operator named. The
+list now leads with the one item that needs the operator's data, then cheap live defects.
 
 1. **#849 tell angles apart** (E1) `[L]` - needs the operator's `ops calibration` after
-   `ops backfill-angles --apply`; E1's other members (#113 #559) ride with it.
-2. **#866 one domain per run** (E2) `[M]` - resolve once, store, every caller reads it; a
-   corpus case per caller shape.
+   `ops backfill-angles --apply`.
+2. **#873 re-file old football uploads as Sports** `[S]` - full-snippet `videos.update`.
 3. **#869 one status surface** (E4) `[M]` - seven verbs into one `status` with sections.
-4. **#865 `rollback-publish --apply` sends a half snippet** `[S]`.
+4. **#865 `rollback-publish --apply` sends a half snippet** `[S]` - same fix shape as #873.
 5. **#863 the auto-research verdict** (E3) `[S]` - `ops auto-research` after ten runs.
 
 **Waiting on the operator, not on code:** switch the PC to `main` (it was on a local-only

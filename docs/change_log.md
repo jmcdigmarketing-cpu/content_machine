@@ -8,6 +8,15 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 37 — one domain per run, source-shaped queries, the timeline - 2026-09-26
+
+*3,686 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*
+
+- **#872** football uploads were filed as Gaming; every domain now has a YouTube category.
+- **#866** the run resolves `topic` / `effective` / `weighting` domains once and the upload reads them.
+- **#874** SEC EDGAR and stats scrapers search by name; FRED and stock footage by keywords.
+- [project_timeline.md](project_timeline.md): the project from May 2025 to today.
+
 ### Wave 36 — own review: the regression corpus and one topic-text module - 2026-09-26
 
 *3,674 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*

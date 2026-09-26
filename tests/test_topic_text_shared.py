@@ -79,7 +79,15 @@ class SearchQueryTests(unittest.TestCase):
     def test_always_entity_prefers_the_name_on_a_short_topic(self):
         from apis.topic_tokens import search_query
 
-        self.assertEqual(search_query("Lakers trade rumors", always_entity=True), "Lakers")
+        self.assertEqual(search_query("Lakers trade rumors", mode="entity"), "Lakers")
+
+    def test_keywords_mode_keeps_content_words_in_order(self):
+        from apis.topic_tokens import search_query
+
+        self.assertEqual(
+            search_query("What does the Fed rate cut mean for mortgage rates", mode="keywords"),
+            "Fed rate cut mortgage rates",
+        )
 
     def test_max_len(self):
         from apis.topic_tokens import search_query

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -16,6 +15,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 
 _BASE = "https://efts.sec.gov/LATEST/search-index"
 _TTL = 6 * 60 * 60
@@ -29,11 +29,13 @@ _UA = {
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(20\d{2}|stock|stocks|earnings|analysis)\b", "", topic, flags=re.I)
-    words = re.findall(r"[A-Za-z][a-z]+", text)
-    if len(words) >= 2:
-        return " ".join(words[:4])
-    return topic.strip()[:48]
+    """A company name: EDGAR searched "Is Nvidia overvalued after" (#874)."""
+    return search_query(
+        topic,
+        drop=(r"20\d{2}", "stock", "stocks", "earnings", "analysis"),
+        mode="entity",
+        max_len=48,
+    )
 
 
 def get_sec_edgar_signal(topic: str) -> dict:

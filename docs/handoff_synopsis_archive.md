@@ -7,6 +7,28 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 34 #859 #852 #850 #836 #848
+
+The roadmap's five, cheapest first. The operator's PC turned out to be on a local-only branch
+(`codex/p0-test-integrity`), so `git pull` fetched `main` without merging it and wave 33 never
+reached the machine; the switch instructions are in the handoff slot.
+
+- **#859** `domain_rss.soccer`: BBC Sport Football + The Guardian Football (unverifiable from the
+  container; `ops feeds` checks them).
+- **#852** `apis/topic_tokens.title_phrases`: API-SPORTS searches `Manchester City`; Wikipedia
+  tries `Manchester_City` first.
+- **#850** the research brief takes `key_facts`: prompt block, fallback evidence, cache digest.
+- **#836** `ops backfill-angles`: offline `rank_angles(llm_judge=False)` over `variants_json`,
+  stamped `angle_backfilled`; calibration counts them.
+- **#848** `core/auto_research.py`, on by default: reads the top 3 result pages for the angle
+  (thread-safe `link_facts._article_extract`, 20 s deadline, 3h per-URL cache), drops off-topic
+  lines, attaches `web_research` at web tier with score 0. Suite pins it off. Decisions §35.
+
+**Verify:** `python -m unittest tests.test_auto_research tests.test_backfill_angles
+tests.test_brief_sees_key_facts tests.test_wave34_queries_feeds`.
+
+
+
 ## Previous — 2026-09-26 (Claude Code): wave 33, run 98 #840-#847 + plans
 
 The operator's run 98 (tapin, "Manchester City ofund guilty, what does this mean for the prem")

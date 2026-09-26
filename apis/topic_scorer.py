@@ -437,6 +437,36 @@ def effective_domain(topic, channel_id=None, *, key_facts=None, signals=None) ->
     return domain
 
 
+# Every domain `_infer_domain_from_text` can return. Maps keyed by domain (YouTube
+# category, length default, weights) must cover each one - wave 33 added `soccer` and the
+# category map never learned it, so football uploads went out as Gaming (#872).
+KNOWN_DOMAINS = (
+    "gaming",
+    "ufc",
+    "nba",
+    "nfl",
+    "soccer",
+    "finance",
+    "anime",
+    "music",
+    "popculture",
+)
+
+
+def resolve_domains(topic, channel_id=None, *, key_facts=None, signals=None) -> dict[str, str]:
+    """The run's three answers, resolved once and stored (#866).
+
+    `topic` - what the words and pasted facts say; `effective` - that, or the channel's
+    domain when a live signal backs it; `weighting` - the channel-fallback domain that
+    history and weights are keyed by.
+    """
+    return {
+        "topic": infer_topic_domain(topic, key_facts=key_facts),
+        "effective": effective_domain(topic, channel_id, key_facts=key_facts, signals=signals),
+        "weighting": infer_domain(topic, channel_id, key_facts=key_facts),
+    }
+
+
 def get_default_weights(domain):
     if domain in _LEARNED_PROFILES:
         return dict(_LEARNED_PROFILES[domain])

@@ -62,6 +62,7 @@ A new stored feature/quality key needs a reader (the dossier Audit block is the 
 `tests/test_persisted_keys_read.py` fails.
 
 **Defects first:**
+- **Run 99 (operator, 2026-09-26) ran on old code** - TTS billed twice, retired signals listed as Gated, v4 card: the PC had not pulled `main`. The copy-paste steps are in the planning conversation; new finds #877 #878 #879.
 - **Operator step:** `py -m scripts.ops recategorize` (dry run) then `--apply` on the PC to move
   already-uploaded football videos from Gaming to Sports (#873). Needs OAuth and upload enabled.
 - **#876** game names outside the franchise list ("Silksong", "Palworld") read neutral.
@@ -72,7 +73,7 @@ A new stored feature/quality key needs a reader (the dossier Audit block is the 
 operator; key values never copied) is in `docs/project_timeline.md` and the "Content OS Story" page.
 
 Suite **3,704**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **280 numbered open**, highest **#876**. Next five: **#849 · #863 · #876 · #855 · #870**.
+backlog **283 numbered open**, highest **#879**. Next five: **#849 · #863 · #876 · #855 · #870**.
 
 ## Slot — Cursor
 

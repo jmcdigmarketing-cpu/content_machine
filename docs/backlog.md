@@ -800,7 +800,7 @@ Strategy & bigger bets
 
 ---
 
-## Numbered candidates 481–876 (2026-08-28 — docs only; no pickup order; the tail is appended in wave order, so numbers past #656 are not sorted)
+## Numbered candidates 481–879 (2026-08-28 — docs only; no pickup order; the tail is appended in wave order, so numbers past #656 are not sorted)
 
 *None restates an open item. Weighted toward the two things the desktop programme
 does not cover: **video craft**, which survives every toolkit change and is burned
@@ -1291,3 +1291,6 @@ Review 4 - what the four waves shipped green but inert (2026-09-08)
 - [x] 874. **Five source queries kept their own rules** *(E2; found wave 37)* - SEC EDGAR searched "Is Nvidia overvalued after", FRED and the stock-footage search sent the whole question, the stats scrapers "did the Knicks beat the Celtics in Game 7" `[S]` **Done wave 37:** `search_query(mode="entity"|"keywords")`: EDGAR and the stats scrapers take the name ("Nvidia", "Knicks"), FRED and stock footage take keywords ("Fed rate cut mortgage rates"). API-SPORTS unchanged and pinned. 8 corpus cases, 4 failed first.
 - [x] 875. **GTA 6 trailer runs were read as pop culture** *(E2; found wave 38 checking #856)* - `_infer_domain_from_text` tested "trailer" before the game names, so "GTA 6 trailer 3 breakdown" was `popculture`: it gated IGDB, RAWG, Steam and Twitch, took pop-culture weights and would file as Entertainment (24) `[S]` **Done wave 38:** a named game plus "trailer" is gaming unless a film cue (movie, box office, Netflix...) is present; "Minecraft movie box office" stays popculture. Two corpus cases.
 - [ ] 876. **Game names outside the franchise list read as neutral** *(E2; found wave 38)* - "Silksong delayed again" and "Palworld update" have no keyword `infer_topic_domain` knows; only a live gaming signal (`effective_domain`) makes them gaming. Grow the list from the operator's own run history (every `selected_topic` of a gaming run) rather than by hand `[S]`
+- [ ] 877. **A title built from off-topic vault facts shipped** *(found in the operator's run 99, 2026-09-26)* - "UFC week 2: Gane stops Pereira, Dana White bans White House fights" sat on a script about Contender Series contracts; the title/script check flagged both claims ("title contradicts or is not supported by the final script") and the upload went ahead (job 48, JX81cscTFdI). A flagged title should be regenerated from the final script or block the queue step, not only warn `[S]`
+- [ ] 878. **Enter at the vault prompt takes every uncertain fact** *(E3; run 99)* - "Use uncertain facts? [Enter=all / n=none]" put 6 uncertain vault lines (Gane / Pereira, Topuria, UFC Oklahoma City) into a DWCS week 2 script's facts, which is where #877's title came from. Default should be none, or confident only `[S]`
+- [ ] 879. **The "UFC week 2" best bet named no event** *(run 99)* - "continue the UFC arc (week 1 -> week 2)" meant Dana White's Contender Series week 2; the vague seed pulled UFC-wide vault facts and a 441-day-old Wikipedia UFC page. A continuation best bet should carry the series name from week 1's run `[S]`

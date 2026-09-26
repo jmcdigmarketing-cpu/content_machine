@@ -67,12 +67,19 @@ FUNCTION_WORDS = INTERROGATIVES | frozenset(
 _TOKEN = re.compile(r"[a-z0-9]+")
 
 
-def content_tokens(text: str) -> list[str]:
-    """Lower-cased tokens of `text` minus function words, in order, de-duplicated."""
+def content_tokens(text: str, *, min_len: int = 1) -> list[str]:
+    """Lower-cased tokens of `text` minus function words, in order, de-duplicated.
+
+    `min_len` drops shorter tokens (the relevance matchers use 3). Every module that
+    asks "is this about the topic?" reads this - thirteen private copies meant run 98's
+    question-word fix reached 1 of 7 of them (wave 36).
+    """
     out: list[str] = []
+    seen: set[str] = set()
     for tok in _TOKEN.findall((text or "").lower().replace("'", "")):
-        if tok in FUNCTION_WORDS or tok in out:
+        if len(tok) < min_len or tok in FUNCTION_WORDS or tok in seen:
             continue
+        seen.add(tok)
         out.append(tok)
     return out
 
@@ -119,3 +126,40 @@ def title_phrases(text: str, *, max_words: int = 3) -> list[str]:
             flush()
     flush()
     return phrases
+
+
+_NUMBER_AFTER = r"\s+((?:\d+|[IVX]+)\b)"
+
+
+def search_query(
+    topic: str,
+    *,
+    drop: tuple[str, ...] = (),
+    max_len: int = 64,
+    always_entity: bool = False,
+) -> str:
+    """The name to send a name-search API: "Silksong", not the typed sentence (#852).
+
+    `drop` removes the API's own noise words first ("review", "season"). A question or a
+    sentence-length topic becomes its first Title-Case name, plus a number that follows
+    it ("UFC 320"); a lower-case one keeps its content words. A short statement keeps
+    its words, since it usually already is the name. `always_entity` takes the name
+    whatever the length (a team search). Eleven builders each did their own version and
+    the #852 fix reached one of them (wave 36).
+    """
+    text = topic or ""
+    if drop:
+        text = re.sub(r"\b(" + "|".join(drop) + r")\b", "", text, flags=re.I)
+    text = re.sub(r"\s+", " ", text).strip(" ,.;:-")
+    sentence = starts_with_question(text) or len(text.split()) > 5
+    if always_entity or sentence:
+        for phrase in title_phrases(text):
+            name = re.sub(r"['’]s$", "", phrase)
+            follow = re.match(re.escape(phrase) + _NUMBER_AFTER, text[text.find(phrase) :])
+            if follow:
+                name = f"{name} {follow.group(1)}"
+            return name[:max_len]
+        words = [w for w in re.findall(r"[A-Za-z0-9]+", text) if w.lower() not in FUNCTION_WORDS]
+        if words:
+            return " ".join(words[:3])[:max_len]
+    return text[:max_len] or (topic or "")[:max_len]

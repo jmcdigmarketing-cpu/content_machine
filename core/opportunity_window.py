@@ -7,8 +7,9 @@ High demand + saturated coverage = closing or closed.
 
 from __future__ import annotations
 
-import re
 from typing import Any
+
+from apis.topic_tokens import content_tokens
 
 WINDOW_OPEN = "open"
 WINDOW_CLOSING = "closing"
@@ -17,22 +18,7 @@ WINDOW_MODERATE = "moderate"
 
 
 def _topic_tokens(topic: str) -> list[str]:
-    words = re.findall(r"[a-z0-9]{3,}", topic.lower())
-    stop = {
-        "the",
-        "and",
-        "for",
-        "will",
-        "that",
-        "this",
-        "with",
-        "from",
-        "about",
-        "how",
-        "why",
-        "what",
-    }
-    return [w for w in words if w not in stop]
+    return [w for w in content_tokens(topic, min_len=3) if w != "about"]
 
 
 def assess_opportunity_window(

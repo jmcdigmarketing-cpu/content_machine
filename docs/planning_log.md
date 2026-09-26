@@ -17,6 +17,56 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - wave 36: own review - erased fixes, one-copy fixes, the regression corpus
+
+**Prompt (verbatim):** "forget the codex and astra review, if it hasnt been done then do it
+yourself. are there any ideas that can b e consolidated? or like a fix for one idea presents but
+then a newer ideas erases over said work? new system maybe?"
+
+**Operator decision:** review + consolidate + build the guard; domain unification deferred (#866).
+The review is [review_2026-09-26.md](review_2026-09-26.md).
+
+### What the review found
+
+- **Five fixes erased by later work**, all found after shipping: #745 replaced the grounding
+  stopwords (`e7ef6ad` restored them: "the wave tests only asserted run 76 strings"); #783's SRT
+  `force_style` shrank karaoke captions on run 77 (`acf88ed`); the sentence cache double-billed
+  TTS (#840); #676 lost the CSS cascade; #323 was ticked without breaking the angle tie.
+- **Fixes that reached one copy:** run 98's question-word fix held in 1 of 7 tokenizers
+  (`apis/rss_feeds.py:44`, `core/owned_beats.py:16`, `core/opportunity_window.py:19`,
+  `analytics/competitor_context.py:75`, `core/obsidian_facts.py:189`,
+  `apis/youtube_comments_signal.py:91`, `core/negative_facts.py:17`); #852's name query in 1 of
+  11 `_search_query` builders. Root: 13 private stopword lists, 12 private tokenizers.
+- **Accretion:** source +46,226 / -3,412 lines since 2026-08-01; 7 of 68 persisted keys unread.
+- **Duplicate ideas in the backlog:** grouped into epics E1-E6.
+
+### Shipped
+
+1. `tests/regression_corpus.json` + `core/regression_corpus.py` + `ops regressions [file]`:
+   28 cases (13 past fixes, 15 siblings that failed on `4e4261e`).
+2. `content_tokens(min_len=)` + `search_query(drop=, max_len=, always_entity=)`; seven
+   tokenizers and eight query builders moved onto them; eight stopword lists derive from
+   `FUNCTION_WORDS`; a test refuses a new private list (four allowlisted with reasons).
+3. CLAUDE.md, next-five and tdd skills: a live-run defect adds a corpus case plus its siblings.
+4. Backlog epics; #866-#870 filed; #871 ticked.
+
+### Deliberately not done
+
+- #866 domain unification (operator's call). `api_sports`, `sec_edgar`, `fred`,
+  `stats_context`, `topic_fanout` keep API-specific query logic.
+
+### Audit
+
+21 new tests (`test_regression_corpus` 10, one subTest per corpus case;
+`test_topic_text_shared` 11). **15 of 28 corpus cases observed failing on `4e4261e`** before the
+migrations; the shared-helper tests failed on import first. Mutation check: with "what" and
+"why" removed from `FUNCTION_WORDS`, 14 of 28 cases went red across 14 modules; restored, 28 of
+28. Deriving the eight stopword lists changed no test outcome. mypy 129; ruff 0.8.4 clean;
+`data/` untouched.
+
+Suite 3,674 tests. Backlog **284 numbered open**, highest open **#870**. Next five: **#849 ·
+#866 · #869 · #865 · #863**.
+
 ## 2026-09-26 (Claude Code) - wave 35: go-public, the kept lines shown and measured, two guards
 
 **Prompt (verbatim):** "overall project status, evaluation, and growth. obvious improvements or

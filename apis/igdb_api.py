@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 import time
 
 import requests
@@ -17,6 +16,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 from core import process_state
 
 _CLIENT_ID = os.getenv("IGDB_CLIENT_ID", os.getenv("TWITCH_CLIENT_ID", "")).strip()
@@ -56,8 +56,8 @@ def _app_token() -> str | None:
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(game|gaming|meta|review|20\d{2})\b", "", topic, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()[:48] or topic[:48]
+    """The subject's name, not the typed sentence (shared rule, #852 / wave 36)."""
+    return search_query(topic, drop=("game", "gaming", "meta", "review", r"20\d{2}"), max_len=48)
 
 
 def get_igdb_signal(topic: str) -> dict:

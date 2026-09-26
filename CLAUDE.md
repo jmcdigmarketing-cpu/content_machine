@@ -101,6 +101,11 @@ py -m scripts.ops test --order reverse         # same suite, reversed — CI-blo
 - Any change to a signal must preserve `make_signal()`'s output shape — several
   tests key off it directly (e.g. `tests/test_circuit_breaker.py`,
   `tests/test_cadence_and_outlier.py`).
+- A defect a live run exposed gets a case in `tests/regression_corpus.json` (one pure call
+  and what must stay true), plus one for each sibling module with the same shape. Before
+  changing a file, `py -m scripts.ops regressions <file>` lists the old fixes guarding it.
+  Topic words come from `apis/topic_tokens` (`content_tokens`, `title_phrases`,
+  `search_query`, `FUNCTION_WORDS`) - never a private stopword list or tokenizer.
 - Don't add a second cache inside a signal — `register_signals._fetch_one` +
   `_cache_ttl_for()` already cache every signal call.
 

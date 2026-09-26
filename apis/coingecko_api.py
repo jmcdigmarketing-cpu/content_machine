@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
@@ -14,6 +12,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 
 _BASE = "https://api.coingecko.com/api/v3"
 _TTL = 3 * 60 * 60
@@ -21,8 +20,10 @@ _UA = {"User-Agent": "ContentMachine/1.0"}
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(20\d{2}|crypto|cryptocurrency|coin|token)\b", "", topic, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()[:48] or topic[:48]
+    """The subject's name, not the typed sentence (shared rule, #852 / wave 36)."""
+    return search_query(
+        topic, drop=(r"20\d{2}", "crypto", "cryptocurrency", "coin", "token"), max_len=48
+    )
 
 
 def get_coingecko_signal(topic: str) -> dict:

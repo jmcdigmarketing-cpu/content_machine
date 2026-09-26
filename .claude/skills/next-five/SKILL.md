@@ -48,6 +48,12 @@ against the recorded baseline - a new type error hides in a green suite. And
 **grep each new symbol for a production caller**; a helper only the tests reach
 is a feature that does not exist.
 
+**Replay the regression corpus** (`py -m scripts.ops regressions`) and, before editing a
+file, `py -m scripts.ops regressions <file>` to see which old fixes guard it. A defect a
+live run exposed gets a case in `tests/regression_corpus.json`; if the same shape can
+live in a sibling module (a tokenizer, a query builder), add the sibling's case too - #745
+undid a fix nobody pinned, and run 98's question-word fix reached 1 of 7 tokenizers.
+
 Report it the way `planning_log.md` does: how many behavioural regressions were
 added, **how many were observed failing before their fix**, one bullet per defect
 saying what the code did and what it does now, and a Proof paragraph of measured

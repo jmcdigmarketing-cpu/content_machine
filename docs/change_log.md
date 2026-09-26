@@ -8,6 +8,16 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 36 — own review: the regression corpus and one topic-text module - 2026-09-26
+
+*3,674 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*
+
+- **#871** `tests/regression_corpus.json` + `ops regressions [file]` replay 28 frozen live-run
+  defects on every CI run; a fix is no longer guarded only by a test beside it.
+- Seven tokenizers and eight API query builders share `apis/topic_tokens`
+  (`content_tokens`, `search_query`); eight stopword lists derive from `FUNCTION_WORDS`.
+- Backlog grouped into epics E1-E6; [review_2026-09-26.md](review_2026-09-26.md).
+
 ### Wave 35 — go-public, the kept research lines shown and measured, two guards - 2026-09-26
 
 *3,653 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*

@@ -36,6 +36,7 @@ from apis.signal_contract import (
     classify_exception,
     make_signal,
 )
+from apis.topic_tokens import FUNCTION_WORDS, content_tokens
 from apis.youtube_quota import (
     UNITS_VIDEOS_LIST,
     format_quota_detail,
@@ -47,7 +48,7 @@ from core.logging import get_logger
 logger = get_logger("apis.youtube_comments")
 
 # Words that dominate any comment section without carrying a topic signal.
-_STOP = frozenset(
+_STOP = FUNCTION_WORDS | frozenset(
     """the and for you your that this with have has had was were are but not all can
     just like get got dont don't didn't its it's they them their there then than what
     when where who why how out one two too very much more most some any own same about
@@ -90,7 +91,7 @@ def _clean(text: str) -> str:
 
 def topic_tokens(topic: str) -> set[str]:
     """Meaningful words from the topic, for relevance-checking a question."""
-    return {w for w in re.findall(r"[a-z0-9']{3,}", (topic or "").lower()) if w not in _STOP}
+    return {w for w in content_tokens(topic, min_len=3) if w not in _STOP}
 
 
 def _is_useful_question(text: str, topic: str = "") -> bool:

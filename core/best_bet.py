@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from apis.topic_tokens import FUNCTION_WORDS
 from config.channels import get_channel_profile
 from core.channel_context import (
     dominant_anchor,
@@ -175,7 +176,7 @@ _FALLBACK_ANGLES = [
     "{anchor} tier list",
 ]
 
-_STOP_WORDS = {
+_STOP_WORDS = set(FUNCTION_WORDS) | {
     "the",
     "and",
     "for",

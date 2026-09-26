@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from typing import Any
 
+from apis.topic_tokens import content_tokens
 from core.logging import get_logger
 from video.scene_plan import Scene, plan_scenes
 
@@ -14,7 +14,7 @@ logger = get_logger("core.owned_beats")
 
 
 def _topic_tokens(topic: str) -> list[str]:
-    return [t for t in re.sub(r"[^a-z0-9]+", " ", (topic or "").lower()).split() if len(t) > 2]
+    return content_tokens(topic, min_len=3)
 
 
 def assign_owned_clips(

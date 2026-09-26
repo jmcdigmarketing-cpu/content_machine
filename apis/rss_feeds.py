@@ -4,7 +4,6 @@ RSS headline fetch for research brief (not registered in variant scoring).
 
 from __future__ import annotations
 
-import re
 import xml.etree.ElementTree as ET
 from typing import Any
 from urllib.parse import urlparse
@@ -12,6 +11,7 @@ from urllib.parse import urlparse
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.topic_tokens import content_tokens
 from config.data_sources import rss_feeds_for_topic
 from core.logging import get_logger
 
@@ -42,9 +42,8 @@ def decode_feed_bytes(raw: bytes) -> str:
 
 
 def _topic_tokens(topic: str) -> list[str]:
-    words = re.findall(r"[a-z0-9]{3,}", topic.lower())
-    stop = {"the", "and", "for", "will", "that", "this", "with", "from", "about"}
-    return [w for w in words if w not in stop][:12]
+    # Shared function-word list (wave 36): "what"/"does" matched every headline.
+    return content_tokens(topic, min_len=3)[:12]
 
 
 def _anchor_phrases(topic: str) -> list[str]:

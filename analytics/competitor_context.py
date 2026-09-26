@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from apis.topic_tokens import content_tokens
 from config.competitors import competitors_data_path, get_competitor_channels
 from core.logging import get_logger
 
@@ -73,9 +73,7 @@ def ensure_competitor_snapshot(
 
 
 def _topic_tokens(topic: str) -> list[str]:
-    words = re.findall(r"[a-z0-9]{3,}", topic.lower())
-    stop = {"the", "and", "for", "will", "that", "this", "with", "from", "about", "how"}
-    return [w for w in words if w not in stop]
+    return [w for w in content_tokens(topic, min_len=3) if w != "about"]
 
 
 def _parse_published_at(raw: object) -> datetime | None:

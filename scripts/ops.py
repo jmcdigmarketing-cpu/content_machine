@@ -363,6 +363,17 @@ def cmd_auto_research(args: argparse.Namespace) -> int:
     return _run_module("analytics.auto_research_report", "--channel", args.channel)
 
 
+@_register(
+    "regressions",
+    "Replay frozen live-run defects ([file]: only the old fixes guarding that file)",
+)
+def cmd_regressions(args: argparse.Namespace) -> int:
+    from core.regression_corpus import main as corpus_main
+
+    target = (getattr(args, "path", "") or getattr(args, "target", "") or "").strip()
+    return corpus_main(["--file", target] if target else [])
+
+
 @_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
 def cmd_backfill_cost(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]

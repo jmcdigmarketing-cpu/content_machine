@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 
 import requests
 
@@ -16,6 +15,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 
 _KEY = os.getenv("TMDB_API_KEY", "").strip()
 _BASE = "https://api.themoviedb.org/3"
@@ -23,8 +23,8 @@ _TTL = 6 * 60 * 60
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(movie|film|trailer|review|20\d{2})\b", "", topic, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()[:64] or topic[:64]
+    """The subject's name, not the typed sentence (shared rule, #852 / wave 36)."""
+    return search_query(topic, drop=("movie", "film", "trailer", "review", r"20\d{2}"), max_len=64)
 
 
 def get_tmdb_signal(topic: str) -> dict:

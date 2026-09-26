@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
@@ -14,6 +12,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 
 _BASE = "https://api.tvmaze.com"
 _TTL = 6 * 60 * 60
@@ -21,8 +20,10 @@ _UA = {"User-Agent": "ContentMachine/1.0"}
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(tv|show|series|season|episode|20\d{2})\b", "", topic, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()[:64] or topic[:64]
+    """The subject's name, not the typed sentence (shared rule, #852 / wave 36)."""
+    return search_query(
+        topic, drop=("tv", "show", "series", "season", "episode", r"20\d{2}"), max_len=64
+    )
 
 
 def get_tvmaze_signal(topic: str) -> dict:

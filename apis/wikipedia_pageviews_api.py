@@ -20,6 +20,7 @@ from apis.signal_contract import (
     classify_exception,
     make_signal,
 )
+from apis.topic_tokens import FUNCTION_WORDS
 from core.logging import get_logger
 
 _WIKI_ENABLED = os.getenv("WIKIPEDIA_PAGEVIEWS_ENABLED", "true").lower() not in (
@@ -36,7 +37,7 @@ _TTL = 12 * 60 * 60
 logger = get_logger("apis.wikipedia_pageviews")
 
 
-_WIKI_STOP = frozenset(
+_WIKI_STOP = FUNCTION_WORDS | frozenset(
     """a an and are as at be been but by can could did do does for from had has have
     how in into is it its may might more most must no not of on or our out over
     should so than that the their then there these they this to up was were what when

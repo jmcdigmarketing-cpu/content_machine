@@ -88,6 +88,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | Doc | Date |
 |---|---|
 | [audit_2026-09-26.md](audit_2026-09-26.md) | 2026-09-26 — **current**; before→after of the 09-20 findings |
+| [review_2026-09-26.md](review_2026-09-26.md) | 2026-09-26 — own review: fixes erased by later work, fixes that reached one copy, the regression corpus |
 | [audit_2026-09.md](audit_2026-09.md) | 2026-09-20 |
 | [audit_2026-08.md](audit_2026-08.md) | 2026-08 |
 | [assessment.md](assessment.md) | 2026-06, addendum 2026-08 |

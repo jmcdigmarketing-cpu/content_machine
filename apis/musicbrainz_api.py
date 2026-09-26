@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 import time
 
 import requests
@@ -16,6 +15,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 
 _BASE = "https://musicbrainz.org/ws/2"
 _TTL = 12 * 60 * 60
@@ -26,8 +26,8 @@ _UA = os.getenv(
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(song|album|artist|music|20\d{2})\b", "", topic, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()[:64] or topic[:64]
+    """The subject's name, not the typed sentence (shared rule, #852 / wave 36)."""
+    return search_query(topic, drop=("song", "album", "artist", "music", r"20\d{2}"), max_len=64)
 
 
 def get_musicbrainz_signal(topic: str) -> dict:

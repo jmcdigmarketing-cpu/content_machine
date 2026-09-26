@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-26: wave 35, go-public
+# Handoff synopsis — 2026-09-26: wave 36, own review
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,23 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 35 #864 #861 #863 #839 #830
+## Last wave — 2026-09-26 (Claude Code): wave 36, own review #871
+
+The operator dropped the Codex/Astra review and asked for one: what can be consolidated, where
+did a newer idea erase a fix, is a new system needed. [review_2026-09-26.md](review_2026-09-26.md).
+
+- **Found:** five fixes erased by later work (#745 stopwords, #783 caption size, #840 TTS
+  double billing, #676, #323); run 98's question-word fix in 1 of 7 tokenizers and #852's name
+  query in 1 of 11 builders; 13 private stopword lists.
+- **Built:** `tests/regression_corpus.json` + `ops regressions [file]` (28 cases, 15 failed on
+  `4e4261e`); tokenizers and query builders on `apis/topic_tokens`; a test refusing new private
+  stopword lists; the rule in CLAUDE.md and the next-five / tdd skills.
+- **Backlog:** epics E1-E6; #866 domain (deferred), #867-#870 filed.
+
+**Verify:** `py -m scripts.ops regressions`; `python -m unittest tests.test_regression_corpus
+tests.test_topic_text_shared`.
+
+## Previous — 2026-09-26 (Claude Code): wave 35 #864 #861 #863 #839 #830
 
 The operator asked why uploads land unlisted: `YOUTUBE_UNLISTED_REVIEW` (#109, default on) holds
 an *immediate* public upload unlisted for one look, and #754 holds a grounding override; nothing
@@ -48,38 +64,6 @@ reached the machine; the switch instructions are in the handoff slot.
 
 **Verify:** `python -m unittest tests.test_auto_research tests.test_backfill_angles
 tests.test_brief_sees_key_facts tests.test_wave34_queries_feeds`.
-
-## Previous — 2026-09-26 (Claude Code): wave 33, run 98 #840-#847 + plans
-
-The operator's run 98 (tapin, "Manchester City ofund guilty, what does this mean for the prem")
-and five questions. Answers are in [planning_log.md](planning_log.md); the sample-size one is
-also in [master_plan.md](master_plan.md) M4.5 (n=23 cannot see a weak effect; r=0.3 needs ~85
-videos, so retunes are logic-driven until then).
-
-- **#840** sentence-TTS join wrote relative paths into the ffmpeg concat list: every
-  multi-sentence ElevenLabs render since 09-20 was voiced twice. Absolute entries now.
-- **#841 #842** the topic's domain comes from the topic (`infer_topic_domain`,
-  `effective_domain`, `off_niche_note`); football is TapIn's (`soccer` domain, matrix,
-  weights, `extra_domains`, per-domain sign-off and tags). Decisions §34.
-- **#843** RAWG question words, Twitch site-wide viewers, fan-out question halves, Steam
-  junk, and popularity dumps as "verified facts" - all gone.
-- **#844-#846** page titles are metadata; JS shells retry the proxy; `LINK_FACT_MAX_LINES`;
-  pasted-link lines are `tier: link` in `_link_facts/`; borrowed vault lines never pin;
-  pasted-link lines with no contact with the angle are listed, Enter drops, `k` keeps.
-- **#847** report card v5: topic 0.12 -> 0.05 (operator: lower, keep).
-- **Docs:** [vault.md](vault.md) (new), [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md)
-  (new, verified), master_plan M4.5-M4.7, desktop facts room **#860**, seven long-retired
-  desktop items closed, `.env.example` and API-doc drift fixed.
-- **CI:** run 162 went red on a docs line I added after the last suite run (#857 named an
-  unbuilt `ops` verb); fixed in `1a7fdc2`.
-
-**Verify:** `py -m scripts.ops test --order reverse` · `python -m unittest tests.test_run98_domain
-tests.test_run98_fact_intake tests.test_run98_signal_facts tests.test_tts_concat_paths
-tests.test_grade_v5`.
-
-**Operator:** `git pull`; `py -m scripts.ops calibration`; `py -m scripts.ops backfill-quality
---channel tapin --force` then `--apply`; after the next render `ops reliability` should show
-TTS-cache hits and one charge. Optional: `API_SPORTS_KEY` for football signals.
 
 ## Pipeline order (operator)
 
@@ -146,9 +130,9 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
 
 1. **Operator, after switching to `main`:** `ops backfill-quality --force --apply`,
    `ops backfill-angles --apply`, `ops calibration`, `ops feeds`. #849 waits on that output.
-2. **Product next:** #849 tell angles apart · #863 auto-research verdict after ten runs ·
-   #865 rollback snippet.
-3. **Structural (master_plan M3):** #856 · #855 · #832 · #831 ruff bump · #834 `core/` seams.
+2. **Product next (by epic, backlog.md "Epics"):** #849 (E1) · #866 domain (E2) · #863 (E3).
+3. **Structural:** #869 status verbs (E4) · #870 backfills (E6) · #867 unread keys (E5) · #865 ·
+   #832 · #831 ruff bump · #834 `core/` seams. Any live-run defect: add a corpus case.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
    contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours

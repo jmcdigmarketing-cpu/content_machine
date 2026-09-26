@@ -31,6 +31,8 @@ pre-repair one.
 - Not "the function exists" — call it with a real input and check what it does.
 - Exercise shipped `config/channels.json` when production reads it.
 - If a live run exposed the bug, put that run's actual strings in the test.
+- ...and add it to `tests/regression_corpus.json`, with a case for each sibling that
+  shares the shape. A test beside the fix is deleted with the fix; the corpus is not.
 - When a fix does not cover a case, assert the remaining gap with a docstring
   that says why and what would close it.
 

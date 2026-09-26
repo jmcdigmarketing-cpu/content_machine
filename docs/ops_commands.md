@@ -102,6 +102,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `queue-panel` | Stage 3 job queue (drag-reorder; requires pip install -e ".[app]") |
 | `recommend-length` | Recommend video length from engagement history |
 | `recommend-time` | Recommend next post time from engagement history |
+| `regressions` | Replay frozen live-run defects ([file]: only the old fixes guarding that file) |
 | `reliability` | Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate) |
 | `render-preview` | Render a 480p ultrafast review copy without changing publish media (--run-id) |
 | `requeue-upload` | Queue upload for a rendered run (--run-id required) |

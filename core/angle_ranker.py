@@ -34,6 +34,7 @@ from __future__ import annotations
 import json
 import re
 
+from apis.topic_tokens import FUNCTION_WORDS
 from core.logging import get_logger
 
 logger = get_logger("core.angle_ranker")
@@ -88,7 +89,7 @@ _THESIS_PHRASES = (
 
 # Function words carry no editorial signal; leaving them in makes every pair of
 # English sentences look similar and flattens distinctness toward zero.
-_STOPWORDS = frozenset(
+_STOPWORDS = FUNCTION_WORDS | frozenset(
     """a an and are as at be been but by can could did do does for from had has have
     how in into is it its may might more most must new no not of on or our out over
     should so than that the their then there these they this to up was were what when

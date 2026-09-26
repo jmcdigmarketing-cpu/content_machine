@@ -26,31 +26,29 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-26 wave 35: **#864** `ops go-public` flips a review-held unlisted
-upload public (refuses a grounding override) · **#861** the kept auto-research lines are printed
-· **#863** `ops auto-research` measures them (verdict after ten runs) · **#839** the commit hook
-refuses a non-ASCII subject · **#830** a test run cannot write the real TTS cache.
+**Just landed** - 2026-09-26 wave 36, own review ([review_2026-09-26.md](review_2026-09-26.md)):
+**#871** a regression corpus replays 28 frozen live-run defects (`py -m scripts.ops regressions
+[file]`); seven tokenizers and eight API query builders now share `apis/topic_tokens`, so run
+98's question-word fix and #852's name query reach every copy. Backlog grouped into epics E1-E6.
 
-**Before that** - wave 34: **#848** auto-research (on by default, decisions §35) · **#850**
-the brief sees key facts · **#852 #859** football queries and feeds · **#836** angle backfill ·
-wave 33 (run 98): **#840-#847** · wave 32: **#826 #820 #824**. Earlier:
-[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
+**Before that** - wave 35: **#864** `ops go-public` · **#861 #863** auto-research lines shown and
+measured · **#839 #830** · wave 34: **#848 #850 #852 #859 #836** · wave 33 (run 98):
+**#840-#847**. Earlier: [roadmap_archive.md](roadmap_archive.md) and
+[planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 35 (2026-09-26)** closed the small queue and the review-hold gap the operator asked
-about. What is left is gated on the operator's data (#849, #863), so the picks behind it are
-cheap defects found in passing.
+**Wave 36 (2026-09-26)** found that work is lost two ways - a later change erases a fix, or a
+fix reaches one copy of an idea - and built the guard for both. The list now works epic by
+epic ([backlog.md](backlog.md) "Epics") so one member does not redo another's groundwork.
 
-1. **#849 tell angles apart** `[L]` - needs the operator's `ops calibration` after
-   `ops backfill-angles --apply`; decide from the angle correlation whether the tie leans on
-   the editorial score, else a per-angle fact-fit measure.
-2. **#865 `rollback-publish --apply` sends a half snippet** `[S]` - the live call most likely
-   400s; send the full snippet or split the update.
-3. **#856 the "Gated (domain)" line lists retired signals** `[S]` - read the registry.
-4. **#855 `INGEST_ENABLED` is read by nothing** `[S]` - wire it or delete it.
-5. **#863 the auto-research verdict** `[S]` - `ops auto-research` after ten runs: keep, retune
-   `AUTO_RESEARCH_URLS`, or switch off.
+1. **#849 tell angles apart** (E1) `[L]` - needs the operator's `ops calibration` after
+   `ops backfill-angles --apply`; E1's other members (#113 #559) ride with it.
+2. **#866 one domain per run** (E2) `[M]` - resolve once, store, every caller reads it; a
+   corpus case per caller shape.
+3. **#869 one status surface** (E4) `[M]` - seven verbs into one `status` with sections.
+4. **#865 `rollback-publish --apply` sends a half snippet** `[S]`.
+5. **#863 the auto-research verdict** (E3) `[S]` - `ops auto-research` after ten runs.
 
 **Waiting on the operator, not on code:** switch the PC to `main` (it was on a local-only
 `codex/p0-test-integrity` branch, so wave 33 never reached it), then `ops backfill-quality

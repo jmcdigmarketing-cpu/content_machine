@@ -7,6 +7,38 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 33, run 98 #840-#847 + plans
+
+The operator's run 98 (tapin, "Manchester City ofund guilty, what does this mean for the prem")
+and five questions. Answers are in [planning_log.md](planning_log.md); the sample-size one is
+also in [master_plan.md](master_plan.md) M4.5 (n=23 cannot see a weak effect; r=0.3 needs ~85
+videos, so retunes are logic-driven until then).
+
+- **#840** sentence-TTS join wrote relative paths into the ffmpeg concat list: every
+  multi-sentence ElevenLabs render since 09-20 was voiced twice. Absolute entries now.
+- **#841 #842** the topic's domain comes from the topic (`infer_topic_domain`,
+  `effective_domain`, `off_niche_note`); football is TapIn's (`soccer` domain, matrix,
+  weights, `extra_domains`, per-domain sign-off and tags). Decisions §34.
+- **#843** RAWG question words, Twitch site-wide viewers, fan-out question halves, Steam
+  junk, and popularity dumps as "verified facts" - all gone.
+- **#844-#846** page titles are metadata; JS shells retry the proxy; `LINK_FACT_MAX_LINES`;
+  pasted-link lines are `tier: link` in `_link_facts/`; borrowed vault lines never pin;
+  pasted-link lines with no contact with the angle are listed, Enter drops, `k` keeps.
+- **#847** report card v5: topic 0.12 -> 0.05 (operator: lower, keep).
+- **Docs:** [vault.md](vault.md) (new), [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md)
+  (new, verified), master_plan M4.5-M4.7, desktop facts room **#860**, seven long-retired
+  desktop items closed, `.env.example` and API-doc drift fixed.
+- **CI:** run 162 went red on a docs line I added after the last suite run (#857 named an
+  unbuilt `ops` verb); fixed in `1a7fdc2`.
+
+**Verify:** `py -m scripts.ops test --order reverse` · `python -m unittest tests.test_run98_domain
+tests.test_run98_fact_intake tests.test_run98_signal_facts tests.test_tts_concat_paths
+tests.test_grade_v5`.
+
+**Operator:** `git pull`; `py -m scripts.ops calibration`; `py -m scripts.ops backfill-quality
+--channel tapin --force` then `--apply`; after the next render `ops reliability` should show
+TTS-cache hits and one charge. Optional: `API_SPORTS_KEY` for football signals.
+
 ## Previous — 2026-09-26 (Claude Code): wave 32 #826 #820 #824 #821 #819
 
 The roadmap's five, taken in the order cheapest-and-safest first. This container has no run

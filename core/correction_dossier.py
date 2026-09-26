@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from apis.topic_tokens import FUNCTION_WORDS
 from config.paths import DATA_DIR
 from core.logging import get_logger
 
@@ -38,7 +39,7 @@ logger = get_logger("core.correction_dossier")
 _MAX_BODY_CHARS = 8000
 _MAX_SOURCES_PER_RUN = 6
 _RETRACTION_WORDS = ("retraction", "retracted", "correction:", "we regret")
-_CLAIM_STOPWORDS = frozenset(
+_CLAIM_STOPWORDS = FUNCTION_WORDS | frozenset(
     {
         "the",
         "a",

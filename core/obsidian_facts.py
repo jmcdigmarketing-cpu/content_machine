@@ -27,13 +27,14 @@ import re
 from datetime import date
 from pathlib import Path
 
+from apis.topic_tokens import FUNCTION_WORDS, content_tokens
 from core.fact_store import FactRecord, note_metadata, rank_bonus, stamp_as_of
 from core.logging import get_logger
 from core.vault_index import iter_notes
 
 logger = get_logger("core.obsidian_facts")
 
-_STOPWORDS = {
+_STOPWORDS = set(FUNCTION_WORDS) | {
     "the",
     "and",
     "for",
@@ -187,8 +188,7 @@ def _vault_path() -> Path | None:
 
 
 def _tokens(text: str) -> set[str]:
-    words = re.findall(r"[a-z0-9]+", (text or "").lower())
-    return {w for w in words if len(w) > 3 and w not in _STOPWORDS}
+    return {w for w in content_tokens(text, min_len=4) if w not in _STOPWORDS}
 
 
 # Words too generic to establish TOPIC relevance on their own. A one-token overlap

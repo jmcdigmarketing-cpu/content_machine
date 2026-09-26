@@ -7,15 +7,18 @@ import re
 from pathlib import Path
 from typing import Any
 
+from apis.topic_tokens import FUNCTION_WORDS, content_tokens
 from config.paths import DATA_DIR
 
 STORE_PATH = Path(DATA_DIR) / "negative_facts.json"
 _TOKEN = re.compile(r"[a-z0-9]+", re.I)
-_STOP = frozenset("a an the for of to in on at as by with from is was are were".split())
+_STOP = FUNCTION_WORDS | frozenset(
+    "a an the for of to in on at as by with from is was are were".split()
+)
 
 
 def _tokens(text: str) -> set[str]:
-    return {t for t in _TOKEN.findall((text or "").lower()) if t not in _STOP and len(t) > 1}
+    return {t for t in content_tokens(text, min_len=2) if t not in _STOP}
 
 
 def franchise_for(topic: str, channel_id: str | None = None) -> str:

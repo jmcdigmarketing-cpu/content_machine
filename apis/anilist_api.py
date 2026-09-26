@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
@@ -14,6 +12,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import search_query
 
 _GQL = "https://graphql.anilist.co"
 _TTL = 6 * 60 * 60
@@ -36,8 +35,8 @@ query ($search: String) {
 
 
 def _search_query(topic: str) -> str:
-    text = re.sub(r"\b(anime|manga|episode|season|review)\b", "", topic, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()[:64] or topic[:64]
+    """The subject's name, not the typed sentence (shared rule, #852 / wave 36)."""
+    return search_query(topic, drop=("anime", "manga", "episode", "season", "review"), max_len=64)
 
 
 def _anilist_fetch(topic: str) -> dict:

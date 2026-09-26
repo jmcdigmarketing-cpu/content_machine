@@ -53,27 +53,29 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** `71d1683` + this wave's commit on `main` (`git log -2`)
+**Written:** 2026-09-26 · **HEAD at write:** `4e4261e` + this wave's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit; `data/` untouched.
 
-**Defects first:**
-- **The operator's PC may still be on `codex/p0-test-integrity`** (local-only, no upstream), so
-  waves 33-35 never reached it. On the PC: `git status`; `git log --oneline origin/main..HEAD`
-  (if it lists commits, `git push -u origin codex/p0-test-integrity` first); `git switch main`;
-  `git pull origin main`.
-- **Use `python -m ruff`, not bare `ruff`, in this container:** bare `ruff` is 0.15.8, CI pins
-  0.8.4, and a bare `ruff format .` rewrites 35 unrelated files.
-- **#865** `rollback-publish --apply` sends a snippet with only a description; likely fails live.
+**New rule, read before editing:** `py -m scripts.ops regressions <file>` lists the old fixes
+guarding a file; a live-run defect adds a case to `tests/regression_corpus.json` plus one per
+sibling module. Topic words come from `apis/topic_tokens` only - a test refuses a new private
+stopword list. Why: [review_2026-09-26.md](review_2026-09-26.md) (#745 and #783 erased earlier
+fixes; run 98's fix reached 1 of 7 tokenizers).
 
-**Shipped:** #864 `ops go-public` · #861 kept research lines printed · #863 `ops auto-research`
-(verdict after ten runs) · #839 commit hook ASCII subject · #830 TTS cache test guard.
+**Defects first:**
+- **The operator's PC may still be on `codex/p0-test-integrity`** (local-only). On the PC:
+  `git log --oneline origin/main..HEAD` (push the branch first if it lists commits), then
+  `git switch main` and `git pull origin main`.
+- **Use `python -m ruff`, never bare `ruff`, here:** bare is 0.15.8, CI pins 0.8.4.
+- **#866** a keyword-less football topic still gets a gaming YouTube category.
+
+**Shipped:** #871 regression corpus + shared topic text; backlog epics E1-E6; #866-#870 filed.
 
 **Operator after switching:** `ops backfill-quality --channel tapin --force --apply`,
-`ops backfill-angles --channel tapin --apply`, `ops calibration` (paste it - #849 waits on it),
-`ops feeds`. A held upload goes public with `ops go-public <id> --apply` after watching it.
+`ops backfill-angles --channel tapin --apply`, `ops calibration` (paste it - #849 waits on it).
 
-Suite **3,653**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **279 numbered open**, highest **#865**. Next five: **#849 · #865 · #856 · #855 · #863**.
+Suite **3,674**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **284 numbered open**, highest open **#870**. Next five: **#849 · #866 · #869 · #865 · #863**.
 
 ## Slot — Cursor
 

@@ -1,6 +1,6 @@
 # Content Machine — Positioning & Product Split
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-26
 
 This repo is intentionally split into two layers. The **intelligence layer** is the portfolio artifact, freelance deliverable, and future micro-SaaS surface. The **production tail** remains for TapIn-style YouTube automation.
 
@@ -22,7 +22,7 @@ This repo is intentionally split into two layers. The **intelligence layer** is 
 
 ## Analyst levers (v2 report)
 
-Temporal trajectory, corroboration confidence, opportunity-window status, and explainability blocks ship in `intelligence_report_v2`. See [analyst-intelligence.md](analyst-intelligence.md).
+Temporal trajectory, corroboration confidence, opportunity-window status, and explainability blocks ship in `intelligence_report_v2`. See [analyst_intelligence.md](analyst_intelligence.md).
 
 ## Intelligence layer (what to show employers/clients)
 
@@ -41,17 +41,16 @@ Temporal trajectory, corroboration confidence, opportunity-window status, and ex
 
 ```powershell
 py -m core.intelligence_report --topic "Marvel Rivals Cyclops" --channel tapin
-py -m scripts.ops intelligence-report --topic "UFC 250 Topuria" --channel tapin
 ```
 
 **Interactive:**
 
 ```powershell
 py main.py
-# Start menu → 3) Intelligence report only
+# Start menu → 3) Intelligence report only (no script/render)
 ```
 
-**Env (skip production tail globally):**
+**Env (skip production tail globally — `main.py` prints `Mode: intelligence only`):**
 
 ```powershell
 set CONTENT_MODE=intelligence

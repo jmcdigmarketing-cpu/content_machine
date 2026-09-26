@@ -1,6 +1,6 @@
 # Signals, zeros, and how to expand sources
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
 
 ## What "(zero)" means in the CLI
 
@@ -16,34 +16,21 @@ The **Signal breakdown** line lists APIs whose **score is 0** for that variant. 
 
 Composite score only uses signals that are **`connected` + `active`** with a positive weight for your channel domain (gaming, UFC, etc.).
 
----
-
-## Your current run — why most sources were empty
-
-| Signal | What you saw | Fix |
-|--------|----------------|-----|
-| **YouTube** | QUOTA EXCEEDED (~59 units left) | Wait for daily reset, or `YOUTUBE_LIGHTWEIGHT=true`, or raise quota in Google Cloud |
-| **News** | OFF | Add `NEWS_API_KEY` |
-| **Trends** | Inconsistent / zero | Set `SERPAPI_KEY` or `GLIMPSE_API_KEY`; free fallback is Wikipedia pageviews (no key) |
-| **blog_rss** | ON (not active) | Add feeds in `config/data_sources.json`; replaces Reddit for community headlines |
-| **RAWG** | OFF | Add `RAWG_API_KEY` (free tier at rawg.io) |
-| **Steam** | ON (not active) | Topic was one long sentence — Steam search wants **game names**. Use comma-separated titles or enable fanout (below) |
-| **Autocomplete** | ON (not active) | Long queries often return no suggestions |
-| **Sports / Odds** | Score 50 | APIs ran but topic wasn't a team/match — weak relevance, still shows a number |
-| **Trends** | Sometimes 100 | Works when Google has trend data for the query (your Marvel Rivals run) |
-
-Second topic (`Marvel Rivals, terraria, cod…`) scored **86.8** because **Trends** fired; YouTube was still dead on quota.
+A signal that is wired but returns nothing on every run is a cost, not a zero: across the
+38 recorded runs to 2026-09-20, `trendingnow`, `igdb`, `steam`, `tapology`, `stats_context`,
+`tvmaze` and `tmdb` returned nothing inside a 58.7 s median discovery
+([engine_upgrades.md](engine_upgrades.md); #810/#811 stopped spending threads on them).
 
 ---
 
-## Stats & blogs (new)
+## Stats & blogs
 
 | Signal | What it does |
 |--------|----------------|
 | **stats_context** | BALLDONTLIE API (preferred) → Basketball Reference + PFR + ESPN JSON for NBA/NFL topics |
 | **blog_rss** | Extra niche RSS from `config/data_sources.json` + channel SEO feeds |
 
-Full guide: **[data-sources.md](data-sources.md)**.
+Full guide: **[data_sources.md](data_sources.md)**.
 
 ---
 
@@ -105,17 +92,9 @@ TOPIC_FANOUT_ENABLED=false
 | **Local gameplay** | `video/backgrounds/gaming/` | Add more vertical `.mp4` clips (best for TapIn hybrid) |
 | **Pexels** | `PEXELS_API_KEY` | Stock B-roll |
 | **Pixabay** | `PIXABAY_API_KEY` | Stock fallback |
-| **Hybrid ratio** | `channels.json` → `hybrid_local_ratio` | More local vs stock (default 0.45) |
+| **Hybrid ratio** | `channels.json` → `hybrid_local_ratio` | More local vs stock (TapIn 0.70, MoneyWise 0.45 — decisions §26: more unrelated stock is not a quality lever) |
 | **Order** | `asset_provider_order` | e.g. `["local","pexels","pixabay"]` |
 
 Use a **specific game name** in the topic for better Pexels/Pixabay matches.
 
 ---
-
-## Pending upload job
-
-You still have a **pending** queue item (`Max Holloway…`). Start the worker when ready:
-
-```powershell
-py -m jobs.worker --loop 30
-```

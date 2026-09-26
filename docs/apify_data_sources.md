@@ -1,10 +1,17 @@
 # Apify data layer — highest-value content & data
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
 
 The Content Machine uses Apify to pull data that no free API exposes well:
-real-time social signal, competitor performance, and breaking news. With the
-upgraded plan, these run on every discovery pass for gaming/UFC topics.
+real-time social signal, competitor performance, and breaking news.
+
+**Status (2026-09-26).** Only two actors are live: `youtube_competitors` and
+`tiktok_trends`. `twitter_breaking`, `reddit_community`, `youtube_comments` and
+`instagram_figures` are `enabled: false` in the catalog — retired in August because
+free credits exhaust in a handful of runs and the paid actors are the project's main
+recurring cost ([credit_efficiency.md](credit_efficiency.md), decisions §5/§6). The
+sections below document what each actor *does* so the catalog stays understandable;
+the ranking is historical, not a recommendation to re-enable.
 
 **Catalog (single source of truth):** [`config/apify_sources.json`](../config/apify_sources.json)
 Edit targets there — subreddits, Twitter authority accounts, actor input — with
@@ -32,7 +39,7 @@ accumulated views over years. Output feeds:
 
 Treated as **context, not verified facts** in the script prompt.
 
-### 2. Twitter/X breaking news — `twitter_breaking`  ⭐
+### 2. Twitter/X breaking news — `twitter_breaking`  — **retired** (`enabled: false`)
 **Signal:** `twitter` · [`apis/twitter_signal.py`](../apis/twitter_signal.py)
 **Actor:** `apidojo/tweet-scraper`
 
@@ -42,7 +49,7 @@ top tweets and recognises **domain authority accounts** (Ariel Helwani, Schefter
 Dexerto…) — authority hits raise the score and are tagged `[authority]` in facts.
 Shortest cache (1.5h) so "just happened" topics stay fresh.
 
-### 3. Reddit community — `reddit_community`
+### 3. Reddit community — `reddit_community`  — **retired** (`enabled: false`; `blog_rss` replaces it for community headlines)
 **Signal:** `reddit` · [`apis/reddit_signal.py`](../apis/reddit_signal.py)
 **Actor:** `trudax/reddit-scraper-lite`
 
@@ -56,7 +63,7 @@ fans care about, and the exact language they use. 4h cache.
 Viral angles, hooks, and hashtag patterns — which framings already win attention
 in short-form. 3h cache.
 
-### 5. YouTube comments → audience questions — `youtube_comments`  (catalog-ready)
+### 5. YouTube comments → audience questions — `youtube_comments`  (registered, `enabled: false`)
 **Actor:** `streamers/youtube-comments-scraper`
 
 Top comments on the best videos for a topic = the questions and disagreements

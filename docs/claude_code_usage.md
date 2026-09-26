@@ -1,6 +1,6 @@
 # Using Claude Code on this repo
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
 
 Practical notes on Claude Code features/modes, specific to how this project is
 built (cost-sensitive signal layer, Windows/PowerShell dev env, existing CI
@@ -25,8 +25,8 @@ written, reviewable plan before any edit — worth the overhead here specificall
 ## Subagents (Explore / Plan / general-purpose)
 
 Use for **research**, not edits: "where is X scored," "which tests constrain
-signal Y's output shape." Keeps large-context reads (this repo has 89 test
-files, 25+ docs) out of the main conversation. Don't use a subagent to make the
+signal Y's output shape." Keeps large-context reads (hundreds of test modules,
+60+ docs — start at [README.md](README.md), the index) out of the main conversation. Don't use a subagent to make the
 actual code change — do that directly so it's easy to review as one diff.
 
 ## `/compact`
@@ -52,9 +52,25 @@ keeps the file from accumulating near-duplicate approvals every session.
 ## CI parity
 
 `.github/workflows/ci.yml` runs `ruff check .`, `ruff format --check .`
-(both blocking) and `python -m unittest discover -s tests -v` (blocking); mypy
-is non-blocking. Run the blocking three locally before calling any change done
-— "tests pass" only counts if it's the same command CI runs.
+(both blocking), `python -m unittest discover -s tests -t .` (blocking — the
+`-t .` is load-bearing: without it `tests/__init__.py` never runs and the suite
+writes the operator's real `data/` stores, see [../tests/CLAUDE.md](../tests/CLAUDE.md)),
+the same suite in **reverse order** (`py -m scripts.ops test --order reverse`,
+blocking — the verdict must not depend on discovery order), the docs lints
+(`tests.test_docs_lint`, `tests.test_docs_standard`) and the mypy ratchet
+(`scripts/mypy_ratchet.py`, blocking on *increase*). Run the blocking set locally
+before calling any change done — "tests pass" only counts if it's the same command
+CI runs.
+
+## The mailbox, and tests first
+
+Two conventions that post-date this note and matter more than any feature:
+[handoff.md](handoff.md) is read first every session and your slot is written as
+the last edit (CLAUDE.md); and a gate, check or repair pass is written **test
+first** with the test observed failing on unmodified code (`/tdd` skill —
+[../.claude/skills/tdd/SKILL.md](../.claude/skills/tdd/SKILL.md)). The
+`next-five` skill takes the roadmap's next five items through implement → audit →
+commit. New docs need a card and an index row ([docs_standard.md](docs_standard.md)).
 
 ## Background task flags
 

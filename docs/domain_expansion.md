@@ -1,10 +1,21 @@
 # Domain expansion playbook
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
 
 How new verticals (finance, anime, pop culture, music, gaming depth, sports breadth) slot into Content Machine **without sprawl**. One domain at a time; each source follows the same recipe as gaming/UFC/NBA.
 
 **Do not add all four content niches at once.** Each domain is a maintenance surface — pick by **data quality × audience × your edge**, then keep the load-bearing squares warm.
+
+**Status (2026-09-26).** Most of the "adds" below have since shipped as registered signals
+(`apis/signals_bootstrap.py`): gaming `twitch`, `igdb`, `trendingnow`; finance `fred`,
+`sec_edgar`, `finnhub`, `coingecko`, `earnings`; anime `anime` (AniList, Jikan fallback);
+pop culture `tmdb`, `tvmaze`; music `lastfm`, `musicbrainz`; sports `api_sports` (MMA,
+replaced Tapology). Not started: GDELT, Hacker News, Bluesky, PandaScore, Football-Data,
+nflverse. Wired is not the same as valuable — on the 38 recorded runs to 2026-09-20,
+`trendingnow`, `igdb`, `steam`, `tapology`, `stats_context`, `tvmaze` and `tmdb` returned
+nothing ([engine_upgrades.md](engine_upgrades.md)); the recipe below still holds, the
+"recommended order" is now a question of which wired sources to make *deliver*, not which
+to add.
 
 ---
 
@@ -22,7 +33,7 @@ Every new vertical needs five touchpoints:
 
 Optional: `config/channels.json` channel profile, `config/seo/{channel}.json` vocabulary, `core/script_brief.py` domain matrix.
 
-See [adding-a-data-source.md](adding-a-data-source.md).
+See [adding_a_data_source.md](adding_a_data_source.md).
 
 ---
 
@@ -258,7 +269,7 @@ F1: Jolpica-F1 (Ergast successor). Cricket: Sportmonks free tier.
 
 ## Related docs
 
-- [data-sources.md](data-sources.md) — current signal map
-- [adding-a-data-source.md](adding-a-data-source.md) — implementation steps
-- [signals-and-sources.md](signals-and-sources.md) — zeros, quotas, env
+- [data_sources.md](data_sources.md) — current signal map
+- [adding_a_data_source.md](adding_a_data_source.md) — implementation steps
+- [signals_and_sources.md](signals_and_sources.md) — zeros, quotas, env
 - [roadmap.md](roadmap.md) — phase tracking

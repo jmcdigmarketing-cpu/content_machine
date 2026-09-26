@@ -1,21 +1,21 @@
 # Platform publishing setup
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
 
 ## Current scope (this phase)
 
 | Platform | Status |
 |----------|--------|
 | **YouTube** | Supported — `publishing.YouTubePublisher` + worker `upload` jobs |
-| **TikTok** | **Deferred** — no publisher registered yet |
-| **Instagram** | **Deferred** — no publisher registered yet |
+| **TikTok** | **Deferred (Phase M, parked)** — no publisher registered; unblocked now that captions + grounding landed, sequenced as [master_plan.md](master_plan.md) M5 |
+| **Instagram** | **Deferred (Phase M, parked)** — same |
 | **Facebook** | Not planned |
 
 Videos include your channel intro first (`video/intro/channel_intro.mp4`). See `video/intro/README.md`.
 
 **Repurpose orchestration:** after render, the CLI calls `publishing.repurpose.enqueue_repurpose_jobs()` which formats metadata and enqueues one YouTube `upload` job per enabled platform in `publishers_enabled` (TikTok/Instagram names are logged as skipped until a far-future phase).
 
-**Thumbnail scoring:** optional after thumbnail generation when `THUMBNAIL_SCORER_ENABLED=true` (vision via `OPENAI_API_KEY`, else heuristic). Scores persist in `thumbnail_scores` (Alembic `0002`).
+**Thumbnail scoring:** optional after thumbnail generation when `THUMBNAIL_SCORER_ENABLED=true` — vision goes through the LLM router (`core.llm_router.complete` with image parts, whichever premium-tier provider is live), else the heuristic scorer. Scores persist in `thumbnail_scores` (Alembic `0002`).
 
 ## YouTube (use this now)
 

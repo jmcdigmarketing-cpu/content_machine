@@ -1,6 +1,6 @@
 # Content Machine — Vision & 12-Month Architecture
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-26
 
 **North star: stop building features, start building an intelligence system that operates media businesses.**
 Content generation is one subsystem. The durable asset is the proprietary
@@ -13,9 +13,21 @@ This doc has two halves:
    estimates, and a **revised 12-month plan** prioritized for *defensibility,
    revenue, and learning advantage* over content volume.
 
-Tactical phase tracking still lives in [roadmap.md](roadmap.md); strategy scoring
-in [content_intelligence_roadmap.md](content_intelligence_roadmap.md). This is the
-north star they ladder up to.
+Item-level tracking lives in [roadmap.md](roadmap.md) and [backlog.md](backlog.md);
+the forward horizons in [master_plan.md](master_plan.md) (the earlier
+[content_intelligence_roadmap.md](content_intelligence_roadmap.md) is archived). This is
+the north star they ladder up to.
+
+**Status (2026-09-26).** Written 2026-06 from code reading. Since then: every system §4
+called *missing* exists in a v1 — experimentation harness (`core/experiments.py`,
+`core/experiment_levers.py`), data-quality monitor (`core/data_quality.py`), unit-economics
+ledger (`core/run_ledger.py` beside `core/cost_meter.py`), quota & spend governor
+(`core/quota_governor.py`, O11), evaluation set (`core/vault_evals.py`, frozen prompt-eval
+goldens); the graveyard avoid-list §2 rated ~60% is wired into `core/best_bet.py`. The
+§3.1 warning has since been *measured*: both ranking scores are anti-correlated with
+engagement at n=12 (composite r=-0.15, report card r=-0.32 — backlog #819/#824), which is
+exactly the "modelling noise" failure this document predicted and the reason
+[master_plan.md](master_plan.md) M4 leads with volume, not features.
 
 ---
 

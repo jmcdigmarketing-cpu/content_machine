@@ -1,6 +1,6 @@
 # Analyst intelligence layer
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
 
 Decision-useful outputs beyond "what's hot right now."
 
@@ -27,7 +27,8 @@ WIKIPEDIA_PAGEVIEWS_ENABLED=true  # Leading public-interest signal (free)
 
 ## Portfolio artifacts to build next
 
-1. **Live demo** — FastAPI page: topic in → `intelligence_report` out (Phase J extension).
+1. **Live demo** — FastAPI page: topic in → `intelligence_report` out. *Parked* with #147
+   (no operator need has appeared; see [master_plan.md](master_plan.md) "Parked").
 2. **Backtest PDF** — once `YOUTUBE_ANALYTICS_SYNC` fills `publish_log.metrics_json`.
 3. **Competitor-gap matrix** — visualize `opportunity_window` across a topic batch.
 
@@ -36,12 +37,12 @@ WIKIPEDIA_PAGEVIEWS_ENABLED=true  # Leading public-interest signal (free)
 | Priority | Source | Why |
 |----------|--------|-----|
 | Done | Wikipedia pageviews | Leading indicator, free |
-| Next | Twitch viewership | Gaming demand (pairs with Steam/RAWG) |
-| Next | GDELT | Narrative/event scale |
-| Later | YouTube comment mining | Angle + sentiment from existing API |
+| Done | Twitch viewership (`twitch`, `apis/twitch_api.py`) + IGDB (`igdb`) | Gaming demand — wired; both returned nothing on the last 38 live runs (#810/#811), so wiring is not yet value |
+| Not started | GDELT | Narrative/event scale |
+| Catalog-only | YouTube comment mining (`youtube_comments`, `enabled: false`) | Angle + sentiment; paid Apify actor, off with the other retired actors |
 | Later | PAA / breakout queries | Question-shaped angles |
 
-See [adding-a-data-source.md](adding-a-data-source.md) for the extension recipe.
+See [adding_a_data_source.md](adding_a_data_source.md) for the extension recipe.
 
 ## Genre expansion
 

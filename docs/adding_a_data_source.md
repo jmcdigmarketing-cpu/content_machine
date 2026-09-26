@@ -1,8 +1,12 @@
 # Adding a data source
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
 
 Content Machine extends through a fixed recipe — the `signal_contract` abstraction is the whole point.
+
+Read [`../apis/CLAUDE.md`](../apis/CLAUDE.md) first: signals run concurrently in a thread pool, so a
+provider must be thread-safe and must **never raise** — return `make_signal()` with a failure status
+instead (decisions §18: report broken, not empty).
 
 ## 1. Implement the provider
 
@@ -37,7 +41,10 @@ reg.register("my_source", get_my_signal)
 
 ## 3. Cache
 
-Use `apis/cache_manager.py` — TTL matched to volatility:
+**Do not add a cache inside the signal.** `register_signals._fetch_one` already caches every
+signal call through `apis/cache_manager.py`, keyed by (signal, topic), with the TTL from
+`_cache_ttl_for(name)`. A second cache inside a provider hides staleness from the breaker and
+the reliability dashboard. Pick a TTL matched to volatility:
 
 | Volatility | TTL example |
 |------------|-------------|
@@ -70,7 +77,7 @@ Add `tests/test_{source}.py`:
 
 ## 7. Document
 
-Add a row to [data-sources.md](data-sources.md) and env vars to `.env.example`.
+Add a row to [data_sources.md](data_sources.md) and env vars to `.env.example`.
 
 ## Reference implementation
 

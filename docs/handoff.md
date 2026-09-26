@@ -53,35 +53,32 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** see `git log -1` on `main` after this wave's
-push (eleven signed commits from `ca0aed2`; last two are the stage3-honesty fix and this
-pass) · **Tree:** clean; `data/` untouched.
+**Written:** 2026-09-26 · **HEAD at write:** the single wave-32 commit on `main` after
+`cdb01d8` (`git log -1`) · **Tree:** clean; `data/` untouched.
 
 **Defects first:**
-- **The run-69 order-dependence was misattributed on 09-20.** Cause: `tests/test_ops_doctor._stack()`
-  built an `ExitStack` outside a `with`; on any partial install a later `patch()` target failed
-  to import and `run_mode._ollama_ready` stayed mocked for the whole process. Fixed + regression
-  test. Your full install never showed it — that is why.
-- **`ops test --order reverse` found two more leaks on its first run** (file-backed discovery
-  cache shared across tests; `_FakeCommunicate.fail` never disarmed). Both closed.
-- **My `decisions.md` rewrap broke `test_stage3_honesty`** (it split on `### 4.`). Fixed in the
-  last commit — the definitive run caught it, which is the point of the run.
-- **Environment traps:** a half-failed `pip install` nearly became the baseline; a stale
-  `.mypy_cache` under-reported by 24; two mypy versions differed by 6 — the ratchet runs
-  `--no-incremental` on the pinned interpreter mypy for both reasons.
+- **CI on `main` was red at `cdb01d8` and it was mine.** Wave 31's commit *subject* carried a
+  U+2192 arrow; `core/agent_comms.render` reads `git log -1` and the cp1252 guard failed in both
+  unit-test legs (run 159). `render` is now console-safe by construction (#838); the hook still
+  accepts non-ASCII subjects (#839, filed). Keep subjects ASCII.
+- **`angle_scores` had 0 rows because nothing persisted them** - `_finalize_run` dropped what
+  `run_discovery` computed (#819). Three waves called that "no population". Fixed; the tie is
+  unchanged until `angle_correlation` is positive at n>=5.
+- **Queued signals started after the discovery deadline** (#820) - `shutdown` had no
+  `cancel_futures`. Paid POSTs are now refused after the deadline; free stragglers still cache.
+- The mypy ratchet caught its first real error (a `no-redef` of mine) one wave after going
+  blocking. It works.
 
-**Shipped (structural, no product change):** #827 process-state registry · #828 order-proof verb
-+ CI leg · #829 preflight/inert tests · #833 mypy ratchet (129, blocking) · docs standard finished
-(ten renames, two log rollovers, `decisions.md` rewrapped word-for-word, nine stale docs read,
-decisions §33 product names, three lint rules). Before→after: [audit_2026-09-26.md](audit_2026-09-26.md).
+**Shipped:** #826 claim-type coverage line · #820 `apis/run_deadline` · #824 per-component r +
+`n_for_significance` (|r|=0.32 needs n>=36; rubric untouched) · #821/#819 measurement + lines
+(open, waiting on your `py -m scripts.ops calibration` numbers) · #835 #837 #838 fixed on the way.
 
-**Heads-up:** `HANDOFF_SYNOPSIS.md` is now `handoff_synopsis.md` (244 lines; older waves in
-`handoff_synopsis_archive.md`); `planning_log.md` rolls over by month. The 8 failures on this box
-are environmental (fastapi extra, no ffmpeg) and identical before/after; CI-shaped installs are green.
+**Operator:** run `py -m scripts.ops calibration` on the archive and paste the component,
+recurrence and claim-type lines into the next planning entry - this box has no archive.
 
-Suite **3,526**, identical in default/reverse/shuffle; mypy **129** (1.13.0); ruff clean; backlog
-**330 open / 737 done**, highest **#834**. Next five unchanged: **#826 · #821 · #820 · #824 · #819**;
-structural next: **#831 ruff bump → #834 core/ seams → M3.4 excepts**.
+Suite **3,550**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+ruff clean; backlog **329 open / 743 done**, highest **#839**. Next five:
+**#836 · #839 · #830 · #832 · #831**.
 
 ## Slot — Cursor
 

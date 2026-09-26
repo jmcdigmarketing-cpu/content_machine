@@ -796,6 +796,19 @@ def cmd_grade(args: argparse.Namespace) -> int:
         print(f"No persisted quality for run #{args.run_id} (pre-ledger run?)")
         return 1
     print(render_grade(grade))
+    # #803 / #821: the persisted recurrence and waiver lines - the card printed at
+    # generation time carries them, `ops grade` on the same run an hour later did not.
+    try:
+        import json as _json
+
+        from core.video_grade import recurrence_line, waiver_line
+
+        _quality = _json.loads(getattr(record, "quality_json", None) or "{}")
+        for extra in (recurrence_line(_quality), waiver_line(_quality)):
+            if extra:
+                print(f"  {extra}")
+    except Exception as exc:  # fail-open: the card is the deliverable
+        print(f"  (recurrence/waiver lines skipped: {exc})")
     if getattr(args, "md", False):
         from core.video_grade import grade_as_markdown
 

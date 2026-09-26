@@ -759,8 +759,11 @@ def _fetch_all(sources, topic, pinned, workers) -> tuple[dict, list[str], float 
     session breaker - the signal is retried on the next run rather than
     disabled for the process.
     """
+    from apis import run_deadline
+
     results: dict[str, Any] = {}
     budget = _discovery_deadline()
+    run_deadline.reset()
     executor = ThreadPoolExecutor(max_workers=workers)
     futures = {
         executor.submit(_fetch_one, name, func, topic, pinned): name for name, func in sources
@@ -770,13 +773,16 @@ def _fetch_all(sources, topic, pinned, workers) -> tuple[dict, list[str], float 
             name, data = future.result()
             results[name] = data
     except TimeoutError:
-        pass
-    finally:
+        # #820: a running straggler may not spend a paid call from here on, and a
+        # signal still queued behind the worker cap must never start at all.
+        run_deadline.cancel()
         # NOT `with ThreadPoolExecutor(...)`: its __exit__ joins every worker,
         # which would wait out exactly the straggler this budget exists to
         # stop. The abandoned thread runs to completion in the background and
         # its `set_cache` write still lands, so the next run gets the result
-        # for free.
+        # for free (free signals only - run_actor refuses the paid POST).
+        executor.shutdown(wait=False, cancel_futures=True)
+    else:
         executor.shutdown(wait=False)
 
     dropped = [name for name in futures.values() if name not in results]

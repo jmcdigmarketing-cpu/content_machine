@@ -29,6 +29,8 @@ logger = get_logger("core.grade_calibration")
 MIN_MEASURED = 5
 UNVERSIONED = "unversioned"
 
+from core.claim_types import claim_type_coverage_line  # noqa: E402  (#826)
+
 
 @dataclass
 class CalibrationRow:
@@ -55,6 +57,11 @@ class CalibrationRow:
     # #823: this grade was recomputed by today's code, not recorded by the
     # rubric that graded the run. It cannot be evidence that the rubric held.
     backfilled: bool = False
+    # #821: how many of the recent scripts shared this one's opener/closer shape,
+    # as #803 counted it at generation time (#823 backfilled it onto the archive).
+    recurrence_n: int | None = None
+    # #819: the editorial score of the chosen variant, once runs persist it.
+    angle_score: float | None = None
 
 
 @dataclass
@@ -71,6 +78,15 @@ class CalibrationReport:
     # population, different number - never averaged together.
     composite_correlation: float | None = None
     composite_n: int = 0
+    # #824: each grade component against engaged-rate, on the same rows the grade
+    # correlation uses: name -> (r or None when the component never varied, n).
+    component_correlations: dict[str, tuple[float | None, int]] = field(default_factory=dict)
+    # #821 / #819: (r, n) for the two candidates the rubric might one day lean on.
+    recurrence_correlation: tuple[float | None, int] = (None, 0)
+    angle_correlation: tuple[float | None, int] = (None, 0)
+    # #826: (typed, verified) over every run row, not just measured ones.
+    claim_type_coverage: tuple[int, int] = (0, 0)
+    runs_total: int = 0
 
     @property
     def measured(self) -> int:
@@ -89,6 +105,23 @@ def _pearson(xs: list[float], ys: list[float]) -> float | None:
         return None
     cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=False))
     return cov / (sx * sy)
+
+
+def n_for_significance(r: float | None, *, t: float = 1.96) -> int | None:
+    """Smallest n at which an observed |r| clears p<0.05 two-tailed (#824).
+
+    From t = r * sqrt((n - 2) / (1 - r^2)): n = 2 + t^2 (1 - r^2) / r^2. |r|=0.32 -> 36,
+    which is how far n=12 is from settling the anti-predictive report card either way.
+    None when r is unknown or zero (no n settles a correlation of nothing); a perfect
+    |r|=1 is significant as soon as a p-value exists, at n=3.
+    """
+    if r is None or abs(r) < 1e-9:
+        return None
+    if abs(r) >= 1.0:
+        return 3
+    import math
+
+    return int(math.ceil(2 + (t * t) * (1 - r * r) / (r * r)))
 
 
 def _recorded_components(quality: dict) -> dict[str, float]:
@@ -155,17 +188,24 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
     channel = resolve_channel_id(channel_id)
     report = CalibrationReport(channel_id=channel)
 
-    engagement = run_engagement_map(channel)
-    if not engagement:
-        return report
-    population = list(engagement.values())
-
     try:
         from storage.repositories.content_runs import get_content_run_repository
 
         runs = get_content_run_repository().list_for_channel(channel)
     except Exception:
         runs = []
+    report.runs_total = len(runs)
+    try:
+        from core.claim_types import claim_type_coverage
+
+        report.claim_type_coverage = claim_type_coverage(runs)  # #826: every row, measured or not
+    except Exception as exc:
+        logger.debug("claim type coverage skipped: %s", exc)
+
+    engagement = run_engagement_map(channel)
+    if not engagement:
+        return report
+    population = list(engagement.values())
 
     # #805, before the quality filter below: a run needs no quality dict to
     # have been scored and measured, and 12 of them are in exactly that state.
@@ -201,6 +241,8 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
         score = float(snapshot) if isinstance(snapshot, int | float) else grade.score
         predicted = quality.get("predicted_engaged_rate")
         version = str(quality.get("grade_version") or UNVERSIONED)
+        rec_n = quality.get("style_recurrence_n")
+        angle = quality.get("angle_score")
         report.rows.append(
             CalibrationRow(
                 run_id=run.id,
@@ -215,6 +257,8 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
                 engaged_rate=rate,
                 predicted_rate=float(predicted) if predicted is not None else None,
                 grade_version=version,
+                recurrence_n=int(rec_n) if isinstance(rec_n, int | float) else None,
+                angle_score=float(angle) if isinstance(angle, int | float) else None,
             )
         )
 
@@ -230,6 +274,41 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
         report.grade_correlation = _pearson(
             [r.grade for r in report.rows], [r.engaged_rate for r in report.rows]
         )
+
+    # #824: the same rows, per component. Recorded component when the row has a
+    # snapshot, else today's re-grade (labelled as such by `recorded`). Only under
+    # the same conditions the grade correlation itself is allowed to exist.
+    if report.measured >= MIN_MEASURED and not report.mixed_versions:
+        names: dict[str, list[tuple[float, float]]] = {}
+        for row in report.rows:
+            comps = row.components or row.regraded_components
+            for name, score in comps.items():
+                names.setdefault(name, []).append((float(score), row.engaged_rate))
+        for name, pairs in sorted(names.items()):
+            if len(pairs) >= MIN_MEASURED:
+                report.component_correlations[name] = (
+                    _pearson([s for s, _ in pairs], [e for _, e in pairs]),
+                    len(pairs),
+                )
+    # #821 / #819: the two candidates, measured before either moves the rubric.
+    rec_pairs = [
+        (float(r.recurrence_n), r.engaged_rate) for r in report.rows if r.recurrence_n is not None
+    ]
+    report.recurrence_correlation = (
+        _pearson([a for a, _ in rec_pairs], [b for _, b in rec_pairs])
+        if len(rec_pairs) >= MIN_MEASURED
+        else None,
+        len(rec_pairs),
+    )
+    ang_pairs = [
+        (float(r.angle_score), r.engaged_rate) for r in report.rows if r.angle_score is not None
+    ]
+    report.angle_correlation = (
+        _pearson([a for a, _ in ang_pairs], [b for _, b in ang_pairs])
+        if len(ang_pairs) >= MIN_MEASURED
+        else None,
+        len(ang_pairs),
+    )
 
     thumbs = _thumbnail_scores(channel)
     joined = [(thumbs[rid], engagement[rid]) for rid in thumbs.keys() & engagement.keys()]
@@ -250,6 +329,57 @@ def composite_line(report: CalibrationReport) -> str:
             f"(n={report.composite_n})"
         )
     return f"Composite vs engaged-rate: collecting ({report.composite_n}/{MIN_MEASURED})"
+
+
+def component_line(report: CalibrationReport) -> str:
+    """#824: the grade's components against engaged-rate, one line."""
+    if not report.component_correlations:
+        return ""
+    parts = []
+    for name, (r, _n) in report.component_correlations.items():
+        parts.append(f"{name} r={r:+.2f}" if r is not None else f"{name} r=n/a (constant)")
+    n_all = max(n for _, n in report.component_correlations.values())
+    return f"Per component vs engaged-rate (n={n_all}): " + ", ".join(parts)
+
+
+def significance_line(report: CalibrationReport) -> str:
+    """#824: what n would settle the grade correlation - and until then, do not retune."""
+    r = report.grade_correlation
+    if r is None:
+        return ""
+    need = n_for_significance(r)
+    if need is None:
+        return f"Grade r={r:+.2f} at n={report.measured}: no n settles a correlation of zero"
+    verdict = (
+        "significant"
+        if report.measured >= need
+        else "not significant - do not retune the rubric on it"
+    )
+    return f"Grade r={r:+.2f} at n={report.measured}: |r|={abs(r):.2f} needs n>={need} to clear p<0.05; {verdict}"
+
+
+def recurrence_line(report: CalibrationReport) -> str:
+    """#821: does a recurring opener cost engagement? Promotion into the grade waits on this."""
+    r, n = report.recurrence_correlation
+    if r is None:
+        return (
+            f"Recurring opener vs engaged-rate: collecting ({n}/{MIN_MEASURED} measured runs carry "
+            "style_recurrence_n); promotion into the grade waits on it"
+        )
+    need = n_for_significance(r)
+    tail = f" (needs n>={need} to be significant)" if need and n < need else ""
+    return f"Recurring opener vs engaged-rate r={r:+.2f} (n={n}){tail}; promotion into the grade waits on |r| clearing significance"
+
+
+def angle_line(report: CalibrationReport) -> str:
+    """#819: the tie-break candidate, measured before the tie leans on it."""
+    r, n = report.angle_correlation
+    if r is None:
+        return (
+            f"Angle score vs engaged-rate: collecting ({n} of {report.measured} measured runs carry "
+            "one; runs before wave 32 never persisted it) - the tie keeps leaning on composite"
+        )
+    return f"Angle score vs engaged-rate r={r:+.2f} (n={n}); the tie leans on composite until this is positive"
 
 
 def accuracy_line(channel_id: str | None = None, *, use_cache: bool = True) -> str | None:
@@ -402,6 +532,9 @@ def render(channel_id: str | None = None) -> str:
             "No measured runs with persisted quality yet - publish + sync-metrics, "
             "then re-run. (Runs recorded before the ledger have no quality_json.)"
         )
+        coverage = claim_type_coverage_line(report.claim_type_coverage)
+        if coverage:
+            lines.append(f"  {coverage}")
         return "\n".join(lines)
     for r in sorted(report.rows, key=lambda r: r.run_id, reverse=True)[:15]:
         pred = f"  pred {r.predicted_rate * 100:.1f}%" if r.predicted_rate is not None else ""
@@ -414,10 +547,21 @@ def render(channel_id: str | None = None) -> str:
         )
     lines.append("-" * 64)
     lines.append(f"  {snapshot_line(report)}")
+    coverage = claim_type_coverage_line(report.claim_type_coverage)
+    if coverage:
+        lines.append(f"  {coverage}")
     grade_line = summary_line(report)
     if grade_line:
         lines.append(f"  {grade_line}")
     lines.append(f"  {composite_line(report)}")
+    for extra in (
+        significance_line(report),
+        component_line(report),
+        recurrence_line(report),
+        angle_line(report),
+    ):
+        if extra:
+            lines.append(f"  {extra}")
     if report.thumbnail_correlation is not None:
         lines.append(
             f"  Thumbnail score vs engaged-rate r={report.thumbnail_correlation:+.2f} "

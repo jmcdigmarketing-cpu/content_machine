@@ -17,6 +17,148 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - wave 32: the 09-20 five #826 #820 #824 #821 #819
+
+**Prompt (verbatim):** `next 5`
+
+### What was picked and why it matches the recommendation
+
+The roadmap's five, verified per the `next-five` skill before trusting the list: the mailbox
+slot matched git (`cdb01d8`, tree clean); each item's real text and size read from
+`backlog.md`; none of the five was parked in `handoff_synopsis.md`. Two facts shaped the wave.
+This container has **no run archive** (`data/` holds two files; traces live on the operator's
+box), so #824 and #821 could not be *measured* here - they got the measurement they lacked,
+unit-tested on the fake-repo fixture `tests/test_calibration_coverage.py` already uses, and the
+operator's `py -m scripts.ops calibration` supplies the numbers. And three of the five had a
+wiring gap the map exposed once the code was read: `angle_scores` was computed but never
+persisted (#819's "0 recorded values"), a dropped signal's *queued* siblings still started after
+the deadline (#820), and `recurrence_line` hard-coded the count of 3 and was never shown by
+`ops grade` (#821). Order: cheapest and safest first, so the risky one could not strand the rest.
+
+### Shipped 1..5
+
+1. **#826** `core/claim_types.claim_type_coverage(runs) -> (typed, verified)` and
+   `claim_type_coverage_line`. A run is typed when `any(c.get("type") for c in claims)` - *not*
+   when the row has an `unsupported_types` key, because `relational_check.merge_reversals`
+   pads that key with `""` to keep lengths aligned. Printed by `grade_calibration.render`
+   (also on the no-rows branch) and by the weekly report.
+2. **#820** `apis/run_deadline.py` - a `threading.Event` registered with `process_state`;
+   `_fetch_all` resets it at start and sets it on `TimeoutError`, then shuts the executor down
+   with `cancel_futures=True` **on that branch only** (the fake pools in `test_wave8`/`test_wave9`
+   have a two-argument `shutdown`; the first version broke four of their tests). `run_actor`
+   checks the flag before building the POST, bumps `_state["cancelled_after_deadline"]`, and
+   the dropped stub's `status_detail` names it. The late `set_cache` from a *free* straggler is
+   deliberate and kept.
+3. **#824** `CalibrationReport.component_correlations` (recorded component when the row has a
+   snapshot, else today's re-grade; same `MIN_MEASURED` and mixed-version refusal as the grade),
+   `n_for_significance(r)` = ceil(2 + t^2(1-r^2)/r^2) at t=1.96 - **|r|=0.32 -> n>=36**,
+   |r|=0.5 -> 14, r=0 -> None, |r|=1 -> 3 - and `component_line`/`significance_line`. **No rubric
+   change, no `GRADE_VERSION` bump**; the item says so twice.
+4. **#821** `CalibrationRow.recurrence_n` from `quality["style_recurrence_n"]`,
+   `report.recurrence_correlation`, `recurrence_line` with the decision rule in the text
+   ("promotion into the grade waits on |r| clearing significance"). `video_grade.recurrence_line`
+   reads `authenticity._RECURRENCE_MIN`; `cmd_grade` prints `recurrence_line` and `waiver_line`.
+   **Not promoted**: floor 0.50 and count 3 stay uncalibrated until the number exists.
+5. **#819** `_finalize_run` writes `features["angle_scores"]` and the chosen variant's
+   `features["angle_score"]`; `build_quality` copies the latter into the quality dict;
+   `report.angle_correlation` + `angle_line` ("collecting (0 of N measured runs carry one; runs
+   before wave 32 never persisted it) - the tie keeps leaning on composite"). `best_variant_index`
+   unchanged. Decision: the tie leans on composite until `angle_correlation` is positive at n>=5.
+
+### Findings, with file:line
+
+- **`core/pipeline.py:_finalize_run`** - **#819's real cause.** `run_discovery` filled
+  `DiscoveryResult.angle_scores` and `_finalize_run` forwarded `discovery.meta` (which has
+  `angle_spread`) into timings, but the scores themselves reached neither
+  `record_content_run`, `build_quality` nor the trace. Three waves of "0 recorded values" were
+  a missing assignment, not a missing population.
+- **`apis/register_signals.py:_fetch_all`** - #811's `shutdown(wait=False)` had no
+  `cancel_futures`, so with `DISCOVERY_MAX_WORKERS=8` and more sources than workers, the signals
+  still queued at the deadline *started* after the drop. The test with `workers=1` proved it:
+  the second signal ran before the fix.
+- **`analytics/weekly_report.py:254`** - **#835.** `runs_total=len(report.get("rows"))`, a key
+  `build_report` never sets, so #818's "N runs" never printed. The block was also one `try`, so
+  one failing line hid the rest; each line now fails open on its own (the existing
+  `test_calibration_coverage` weekly-report test patches `build_calibration` with a
+  `MagicMock`, and the new lines raised on it - which is exactly the shape "one line hides the
+  rest" takes).
+- **`scripts/ops.py:cmd_grade`** - **#837.** #803's note said the card showed the repeated opener;
+  `cmd_grade` printed `render_grade` and stopped. `display_grade_for_run` (the pipeline path)
+  did print it, which is why nobody noticed.
+- **`core/agent_comms.py:render`** - **#838, and CI on `main` was red.** Run 159 at `cdb01d8`
+  failed both unit-test legs; reproduced here on the same HEAD: the wave 31 commit subject
+  "the before->after snapshot" used the U+2192 glyph, `render` shells out to `git log -1`, and
+  the cp1252 guard (candidate 250) failed on position 73 of the real report. Ratchet, lint and
+  format were green - the commit that made mypy blocking broke the suite through its own
+  subject line. `render` is now cp1252-safe by construction (`_console_safe`: glyph table then
+  `errors="replace"`), with a test that patches `_git` to return a glyph. #839 filed: the hook
+  should refuse a non-ASCII subject; the ASCII rule was written down and enforced by nothing.
+- **`core/grade_calibration.n_for_significance`** - first version returned None for |r|>=1 and
+  `significance_line` then said "no n settles a correlation of zero" for a perfect correlation.
+  Caught by the fixture: a grade that rises exactly with engagement is r=1.0. Now 3.
+- **Backlog text for #819 was wrong**: `variants_json` does hold the angle texts, so an
+  approximate `llm_judge=False` recompute *is* possible. Filed as #836, not done.
+
+### Deliberately not done
+
+- **Promoting recurrence into the grade** (#821) or **moving the tie** (#819). Both wait on a
+  correlation this container cannot compute; the lines print the rule they wait on.
+- **Retuning the rubric** on #824. The n rule says what would settle it (36 at the observed |r|).
+- **Backfilling `angle_scores`** (#836). Possible, approximate, its own item.
+- **Rewriting `handoff_synopsis.md`'s "Open (roadmap next)" section** - it dates from
+  2026-08 and is stale, but this wave's scope is the five; noted here rather than touched.
+
+### Audit
+
+Twenty-four behavioural regressions across six test modules (`test_claim_type_coverage`,
+`test_deadline_cancels_paid_calls`, `test_component_calibration`,
+`test_recurrence_calibration`, `test_angle_score_persisted`, plus one in
+`test_agent_handoff`). **All observed failing first**: #826's six on a missing function
+(`claim_type_coverage`), #820's three of five (the two "still posts" controls passed before the
+fix, as controls should), #824's five on missing attributes, #821's four, #819's four, and the
+glyph test with the real `UnicodeEncodeError`.
+
+Defects found by the audit, not the tests: **mypy rose 129 -> 130** on a `no-redef` (my loop
+variable `line` shadowed one already in `format_report`) - the ratchet's first real catch, one
+wave after it went blocking; four `test_wave8`/`test_wave9` errors from `cancel_futures` on the
+fake pool (fixed by scoping it to the deadline branch); two `ruff` findings (S112 on a
+`try/except/continue`, B007). The first full run also showed the cp1252 error, which turned out
+to be main's, not mine (#838).
+
+Every new symbol traced to a production caller: `claim_type_coverage` -> `build_calibration`;
+`claim_type_coverage_line`, `significance_line`, `component_line`, `recurrence_line`,
+`angle_line` -> `render` and `weekly_report.format_report`; `run_deadline.cancelled` ->
+`run_actor`; `recurrence_line`/`waiver_line` -> `cmd_grade`; `features["angle_score"]` ->
+`build_quality` -> `CalibrationRow.angle_score` -> `angle_line`.
+
+### Proof
+
+Suite **3,526 -> 3,550** in default, reverse and shuffle(seed 1) order, the same 8
+environmental failures in each (fastapi extra, ffmpeg - identical before this wave). mypy
+**129 == baseline** on pinned 1.13.0 after the `no-redef` fix. ruff and `ruff format --check`
+clean (791 files). `git status --short data/` empty. Backlog **329 open / 743 done**, highest
+**#839**.
+
+```
+$ py -m scripts.ops calibration --channel tapin      (this container: no archive)
+Grade calibration - tapin
+================================================================
+No measured runs with persisted quality yet - publish + sync-metrics, then re-run.
+
+$ py -m scripts.ops grade --run-id 1
+No persisted quality for run #1 (pre-ledger run?)
+
+(fixture render, tests/test_component_calibration.py)
+  Per component vs engaged-rate (n=6): authenticity r=n/a (constant), hook r=+1.00
+  Grade r=+1.00 at n=6: |r|=1.00 needs n>=3 to clear p<0.05; significant
+  Recurring opener vs engaged-rate: collecting (0/5 measured runs carry style_recurrence_n); promotion into the grade waits on it
+  Angle score vs engaged-rate: collecting (0 of 6 measured runs carry one; runs before wave 32 never persisted it) - the tie keeps leaning on composite
+  Claim types: 1 of 2 verified runs carry per-claim types - the rest predate #345 and cannot be backfilled, ...
+```
+
+Closed **#826 #820 #824** (+ #835 #837 #838 found and fixed). Progressed, still open: **#821
+#819**. Filed open **#836 #839**. Next five: **#836 · #839 · #830 · #832 · #831**.
+
 ## 2026-09-26 - Grand audit executed: test integrity, docs standard finished, mypy ratchet
 
 **Prompt:** "usage limit hit on gpt, do a big huge massive grand audit, update documents, and

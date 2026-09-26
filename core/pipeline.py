@@ -610,6 +610,16 @@ def _finalize_run(
         except Exception as exc:
             logger.warning("render sidecars skipped: %s", exc)
 
+    # #819: the editorial angle scores were computed on every run and persisted on
+    # none, so the tie-break candidate had 0 recorded values. features_json carries
+    # the whole map; the chosen variant's own score goes to the quality dict via
+    # build_quality so the calibration join can correlate it.
+    if discovery.angle_scores:
+        result.features["angle_scores"] = dict(discovery.angle_scores)
+        chosen = discovery.angle_scores.get(result.topic)
+        if isinstance(chosen, int | float):
+            result.features["angle_score"] = float(chosen)
+
     run_id = record_content_run(
         channel_id=channel_id,
         input_topic=input_topic,

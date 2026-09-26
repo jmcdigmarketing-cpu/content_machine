@@ -46,29 +46,29 @@ v4, gate still binary); wave 25 (documentation) [engine_upgrades.md](engine_upgr
 
 ### Recommended next five (non-app)
 
-**Operator, 2026-09-20:** two waves of measurement have now produced three numbers that all
-point the same way, and the list below follows them rather than the feature backlog. Volume
-framing is unchanged - a long video is 1-2 a month; the 3-5/week target is Shorts.
+**Wave 32 (2026-09-26) shipped the 09-20 five** - #826 #820 #824 closed, #821 #819 progressed to
+"the measurement exists, the number is the operator's to produce". Every calibration line now
+carries its own decision rule (`needs n>=36`, `promotion waits on |r|`, `collecting 0 of N`), so
+the next product step on the anti-correlation is **data, not code**: run `py -m scripts.ops
+calibration` on the archive and generate runs. The list below therefore changes shape: one item
+that gives #819 an n today, then the structural debts that bit this wave.
 
-**Both scores the pipeline ranks on are anti-correlated with engagement** on the only data that
-exists: composite **r=-0.15**, report card **r=-0.32**, same 12 videos. That is now the subject
-of the list, not a footnote in it.
+1. **#836 backfill `angle_scores` from `variants_json`** `[M]` - the angle *texts* are persisted,
+   so a deterministic `llm_judge=False` recompute gives #819's correlation an n now, stamped
+   `angle_backfilled` (the #823 pattern). Without it #819 waits on a handful of new runs.
+2. **#839 the commit hook must refuse a non-ASCII subject** `[S]` - wave 31's arrow glyph turned
+   CI on `main` red (#838) on the commit that made the ratchet blocking. The ASCII rule is written
+   down; nothing enforces it.
+3. **#830 a bare `unittest discover` writes the real `data/tts_cache`** `[S]` - the guard belongs in
+   the write path, not in `tests/__init__.py`, which never loads without `-t .`.
+4. **#832 `apis/scrapers` is a namespace package** `[S]` - the #737 shape: an installed wheel drops
+   it. `__init__.py`, the packages entry, and a test that imports from a built wheel.
+5. **#831 ruff 0.8.4 -> current** `[M]` - 47 lint + 36 format findings against today's config; one
+   format sweep, one pin bump, one commit per rule family. Its own wave, not a rider.
 
-1. **#826 say what the taxonomy actually covers** `[S]` - 10 of 37 verified runs carry per-claim
-   types; the other 27 predate #345 and are **not** backfillable. Report coverage beside the
-   verdicts so it is not mistaken for accuracy.
-2. **#821 promote style recurrence into the grade, or say why not** `[M]` - held last wave on
-   "no data to calibrate the floor". #823 supplied it: the recurrence fields now exist on 87
-   rows. Check the 0.50 floor and the count of 3 against the archive before moving the rubric.
-3. **#820 stop paying for a dropped signal** `[S]` - #811's `shutdown(wait=False)` abandons the
-   straggler's thread, which still spends its API call and its Apify credit. Cheap to bound now
-   that the deadline exists.
-4. **#824 why is the report card anti-predictive** `[L]` - r=-0.32 at n=12 is not significant,
-   so **do not retune the rubric on it**. Establish whether it is noise: re-measure per
-   component, and decide what n would settle it.
-5. **#819 what the selection tie should lean on** `[L]` - now covers the grade as well as the
-   composite. Still needs `angle_scores`, which has 0 recorded values and cannot be backfilled -
-   it unblocks after a handful of new runs, which is the strongest argument for generating some.
+**Waiting on the operator's numbers, not on code:** #821 (promote recurrence only when
+`ops calibration` shows |r| at significance) and #819 (the tie leans on composite until
+`angle_correlation` is positive at n>=5). Both lines print the rule they wait on.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

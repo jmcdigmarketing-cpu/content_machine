@@ -466,7 +466,9 @@ def recurrence_line(quality: dict[str, Any] | None) -> str:
     opener = int(row.get("style_recurrence_opener") or 0)
     closer = int(row.get("style_recurrence_closer") or 0)
     which, count = ("opener", opener) if opener >= closer else ("closer", closer)
-    if count < 3:
+    from core import authenticity
+
+    if count < authenticity._RECURRENCE_MIN:  # #821: one floor, read where it is defined
         return ""
     return f"style: the same {which} shape appears in {count}/{total} recent scripts"
 

@@ -39,6 +39,7 @@ _state: dict[str, Any] = {
     "fails": 0,
     "checked": False,
     "synced": False,  # whether we've consulted cross-run persisted state yet
+    "cancelled_after_deadline": 0,  # #820: paid POSTs refused because discovery had moved on
 }
 
 
@@ -202,7 +203,16 @@ def disable_apify(reason: str) -> None:
 
 def reset_apify_state() -> None:
     """Test/CLI helper — clear the in-process circuit breaker."""
-    _state.update({"disabled": False, "reason": "", "fails": 0, "checked": False, "synced": False})
+    _state.update(
+        {
+            "disabled": False,
+            "reason": "",
+            "fails": 0,
+            "checked": False,
+            "synced": False,
+            "cancelled_after_deadline": 0,
+        }
+    )
 
 
 def apify_credit_exhausted() -> bool:
@@ -309,6 +319,15 @@ def run_actor(
         logger.debug(
             "Apify actor %s skipped — same input failed recently (%s)", actor_id, prior_failure
         )
+        return None
+
+    # #820: the discovery that wanted this answer has already moved on. A run-sync POST
+    # now would be billed and thrown away (the dropped stub is already in the results).
+    from apis import run_deadline
+
+    if run_deadline.cancelled():
+        _state["cancelled_after_deadline"] = int(_state.get("cancelled_after_deadline") or 0) + 1
+        logger.info("Apify actor %s not started - dropped at the discovery deadline", actor_id)
         return None
 
     # Apify's REST path uses "username~actor-name", not "username/actor-name".

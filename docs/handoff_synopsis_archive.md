@@ -7,6 +7,44 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-20 (Claude Code): wave 29 #808 #805 #561 #803 #811
+
+Measurement wave. **Wave 28's four fixes are in the same commit** — the operator's call, not a
+second commit. Before building I asked the data what existed on `tapin`: 87 runs, 12 with a
+synced engaged-rate, 37 with `quality_json`, **3 with both**, and **12 with engaged-rate +
+composite_score**. Two of the recommended five changed on that evidence.
+
+**#50 was pulled and refiled data-gated** (a learner for "scripts that actually retained" has a
+training set of three). **#561 took the slot** — `build_accuracy_report` had backtested the
+recommender for months and only `intelligence_report` read it. **#803's filed premise was
+wrong**: `core/authenticity.py:35` is `_RECENT_RUNS = 12`, never one; the real gap is that
+`max()` hides a *recurring* shape.
+
+- **#808** grade recorded beside its inputs. Two writers — `build_quality`, then `merge_quality`
+  again when `thumbnail_overall` lands post-render, or every published run's snapshot is missing
+  its thumbnail component. `QUALITY_VERSION` v3 -> v4; **`GRADE_VERSION` stays v4**.
+- **#805** composite correlation computed before the quality filter (that filter is why n was 3).
+  **Measured: r=-0.15 over 12 publishes** — the first real number on the score the selection tie
+  leans on. Filed as **#819**.
+- **#561** 40% hit rate on 10 publishes, printed under the card.
+- **#803** `style_recurrence()`, 0.50 shape floor, 3+ flags. **Report-only** — no points, no
+  gate, no `GRADE_VERSION` bump (**#821** holds the promotion).
+- **#811** `DISCOVERY_DEADLINE_S`, **unset by default**. Explicit executor + `shutdown(wait=False)`:
+  a `with ThreadPoolExecutor` block joins on exit and would have defeated the budget entirely.
+  Dropped names ride `_deadline` into `DiscoveryResult.meta`, never `timings` (#813).
+
+Found on the way, filed open: **#817** the recurrence window reads all statuses, not published ·
+**#818** 37/12/3, so `ops calibration` reads "collecting" for months for historical reasons ·
+**#819** composite r=-0.15 · **#820** a dropped signal's thread is abandoned, not cancelled ·
+**#821** recurrence is report-only · **#822** hedging passes the render gate (#345) and only
+costs grade points (#800) — the two pull opposite ways.
+
+Two new *fields* were written and read by nothing and got the reader they implied rather than
+being dropped (`worst_component_drift`, `recurrence_line`). mypy drifted 139 -> 141 behind a
+green suite and is back to **139**. Next five: **#818 · #817 · #822 · #819 · #739**. Suite
+**3,437 -> 3,462**; ruff clean; `data/` untouched; backlog **326 open / 729 done**, highest
+**#822**.
+
 ## Previous — 2026-09-20 (Claude Code): wave 28 #813 #814 #815 #816
 
 Review of waves 26-27, no new features. Both waves shipped green and five defects went through

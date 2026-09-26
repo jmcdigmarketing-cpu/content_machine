@@ -89,6 +89,55 @@ def blocking_unsupported(verification_dict: dict[str, Any] | None) -> list[str]:
     return [c for c, _t in blocking_typed(verification_dict)]
 
 
+def run_has_typed_claims(verification_dict: dict[str, Any] | None) -> bool:
+    """True when at least one claim carries a type (#826).
+
+    Not "has an `unsupported_types` key": `relational_check.merge_reversals` pads that
+    list with "" to keep lengths aligned, so its presence proves nothing.
+    """
+    data = verification_dict or {}
+    for row in data.get("claims") or []:
+        if isinstance(row, dict) and normalize_type(row.get("type")):
+            return True
+    return any(normalize_type(t) for t in (data.get("unsupported_types") or []))
+
+
+def claim_type_coverage(runs: Any) -> tuple[int, int]:
+    """(typed, verified): verified runs, and how many carry per-claim types (#826).
+
+    Types exist from run 76 on (#345). Older verified runs persist a flat `unsupported`
+    list and cannot be backfilled - the type came from the verifier's own output at the
+    time and #823 does not re-run the LLM. So the taxonomy's coverage must be reported
+    beside its verdicts, or coverage gets mistaken for accuracy.
+    """
+    import json
+
+    typed = verified = 0
+    for run in runs or []:
+        try:
+            features = json.loads(getattr(run, "features_json", None) or "{}")
+        except (TypeError, ValueError):
+            features = None  # unreadable features_json: neither verified nor typed
+        verification = features.get("claim_verification") if isinstance(features, dict) else None
+        if not isinstance(verification, dict) or not verification:
+            continue
+        verified += 1
+        if run_has_typed_claims(verification):
+            typed += 1
+    return typed, verified
+
+
+def claim_type_coverage_line(coverage: tuple[int, int]) -> str:
+    typed, verified = coverage
+    if not verified:
+        return ""
+    return (
+        f"Claim types: {typed} of {verified} verified runs carry per-claim types - the rest "
+        "predate #345 and cannot be backfilled, so the taxonomy's verdicts cover that many, "
+        "not all"
+    )
+
+
 def warn_only_unsupported(verification_dict: dict[str, Any] | None) -> list[str]:
     """Unsupported claims shown to the operator but allowed through (hedged rumor, opinion)."""
     return [c for c, t in typed_unsupported(verification_dict) if not claim_blocks(c, t)]

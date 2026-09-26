@@ -163,6 +163,24 @@ class TestAgentCommsReport(unittest.TestCase):
 
         render().encode("cp1252")
 
+    def test_a_commit_subject_with_a_glyph_cannot_break_the_report(self):
+        """Wave 32 found main's HEAD subject carried a U+2192 arrow, which reached
+        the report verbatim through `git log` and failed the encode above. Git
+        output is not this module's to keep ASCII; the report must be."""
+        from unittest.mock import patch
+
+        from core import agent_comms
+
+        def _git(*args):
+            if args[0] == "log" and "-1" in args:
+                return "abc1234 Grand audit: the before\u2192after snapshot \u2014 done"
+            return ""
+
+        with patch.object(agent_comms, "_git", side_effect=_git):
+            text = agent_comms.render()
+        text.encode("cp1252")
+        self.assertIn("before->after", text)
+
 
 if __name__ == "__main__":
     unittest.main()

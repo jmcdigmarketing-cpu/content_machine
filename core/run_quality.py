@@ -171,6 +171,11 @@ def build_quality(
     except Exception as exc:
         logger.debug("authenticity scoring skipped: %s", exc)
 
+    # #819: the chosen variant's editorial score, when discovery produced one.
+    angle = features.get("angle_score")
+    if isinstance(angle, int | float) and not isinstance(angle, bool):
+        quality["angle_score"] = float(angle)
+
     try:
         from core.claim_types import hedge_density
 

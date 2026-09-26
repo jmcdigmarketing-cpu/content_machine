@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-26: wave 31, structural
+# Handoff synopsis — 2026-09-26: wave 32, the 09-20 five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,40 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 31 structural #827 #828 #829 #833
+## Last wave — 2026-09-26 (Claude Code): wave 32 #826 #820 #824 #821 #819
+
+The roadmap's five, taken in the order cheapest-and-safest first. This container has no run
+archive (`data/` holds two files), so #824 and #821 shipped the **measurement** they lacked,
+unit-tested on the fake-repo fixture; the archive's numbers come from the operator's
+`py -m scripts.ops calibration`. Three of the five had a wiring gap the map had missed.
+
+- **#826** `core/claim_types.claim_type_coverage` - a run is typed when a claim carries a type,
+  not when `unsupported_types` exists (`merge_reversals` pads it with `""`). Line in
+  `ops calibration` and the weekly report: `Claim types: N of M verified runs carry per-claim
+  types - the rest predate #345 and cannot be backfilled`.
+- **#820** `apis/run_deadline` Event: `_fetch_all` sets it at the deadline, `run_actor` refuses
+  the POST after it (`cancelled_after_deadline`, named in the dropped stub), and the executor
+  cancels the *queued* signals too - they were starting after the drop. Free stragglers still
+  cache. Measured: 1.5 s straggler under a 0.3 s deadline -> 0 POSTs.
+- **#824** per-component Pearson + `n_for_significance`: **|r|=0.32 needs n>=36**. Lines say
+  "not significant - do not retune the rubric on it". Rubric untouched, no `GRADE_VERSION` bump.
+- **#821** (open) recurrence vs engaged-rate correlated and printed with its decision rule;
+  `recurrence_line` reads `_RECURRENCE_MIN`; `ops grade` now prints it (#837).
+- **#819** (open) `angle_scores` had 0 rows because `_finalize_run` never persisted them. Now in
+  `features_json` + `quality["angle_score"]`; `angle_line` says `collecting (0 of N)`. Tie
+  unchanged. #836 filed: an approximate backfill from `variants_json` is possible.
+- **Found:** #835 weekly report `runs_total` bug; **#838 CI on `main` was red at `cdb01d8`** -
+  wave 31's commit subject carried a U+2192 arrow and `ops agents`' cp1252 guard read it from
+  `git log`; `render` is now console-safe by construction. #839 filed (hook should refuse it).
+
+**Verify:** `python -m unittest tests.test_claim_type_coverage tests.test_deadline_cancels_paid_calls
+tests.test_component_calibration tests.test_recurrence_calibration tests.test_angle_score_persisted
+tests.test_agent_handoff` · `py -m scripts.ops calibration` · `py -m scripts.ops grade --run-id <id>`.
+
+**Still open:** roadmap next five **#836 #839 #830 #832 #831**; #821/#819 wait on the operator's
+calibration numbers, not on code.
+
+## Previous — 2026-09-26 (Claude Code): wave 31 structural #827 #828 #829 #833
 
 Executed the 09-20 audit instead of writing a third one about the same findings; the
 before→after is [audit_2026-09-26.md](audit_2026-09-26.md). Ten signed commits, no product
@@ -72,44 +105,6 @@ favour of the `recent=` passthrough.
 
 Next five: **#826 · #821 · #820 · #824 · #819**. Suite **3,462 -> 3,487**; mypy **139**; ruff
 clean; `data/` untouched; backlog **325 open / 734 done**, highest **#826**.
-
-## Previous — 2026-09-20 (Claude Code): wave 29 #808 #805 #561 #803 #811
-
-Measurement wave. **Wave 28's four fixes are in the same commit** — the operator's call, not a
-second commit. Before building I asked the data what existed on `tapin`: 87 runs, 12 with a
-synced engaged-rate, 37 with `quality_json`, **3 with both**, and **12 with engaged-rate +
-composite_score**. Two of the recommended five changed on that evidence.
-
-**#50 was pulled and refiled data-gated** (a learner for "scripts that actually retained" has a
-training set of three). **#561 took the slot** — `build_accuracy_report` had backtested the
-recommender for months and only `intelligence_report` read it. **#803's filed premise was
-wrong**: `core/authenticity.py:35` is `_RECENT_RUNS = 12`, never one; the real gap is that
-`max()` hides a *recurring* shape.
-
-- **#808** grade recorded beside its inputs. Two writers — `build_quality`, then `merge_quality`
-  again when `thumbnail_overall` lands post-render, or every published run's snapshot is missing
-  its thumbnail component. `QUALITY_VERSION` v3 -> v4; **`GRADE_VERSION` stays v4**.
-- **#805** composite correlation computed before the quality filter (that filter is why n was 3).
-  **Measured: r=-0.15 over 12 publishes** — the first real number on the score the selection tie
-  leans on. Filed as **#819**.
-- **#561** 40% hit rate on 10 publishes, printed under the card.
-- **#803** `style_recurrence()`, 0.50 shape floor, 3+ flags. **Report-only** — no points, no
-  gate, no `GRADE_VERSION` bump (**#821** holds the promotion).
-- **#811** `DISCOVERY_DEADLINE_S`, **unset by default**. Explicit executor + `shutdown(wait=False)`:
-  a `with ThreadPoolExecutor` block joins on exit and would have defeated the budget entirely.
-  Dropped names ride `_deadline` into `DiscoveryResult.meta`, never `timings` (#813).
-
-Found on the way, filed open: **#817** the recurrence window reads all statuses, not published ·
-**#818** 37/12/3, so `ops calibration` reads "collecting" for months for historical reasons ·
-**#819** composite r=-0.15 · **#820** a dropped signal's thread is abandoned, not cancelled ·
-**#821** recurrence is report-only · **#822** hedging passes the render gate (#345) and only
-costs grade points (#800) — the two pull opposite ways.
-
-Two new *fields* were written and read by nothing and got the reader they implied rather than
-being dropped (`worst_component_drift`, `recurrence_line`). mypy drifted 139 -> 141 behind a
-green suite and is back to **139**. Next five: **#818 · #817 · #822 · #819 · #739**. Suite
-**3,437 -> 3,462**; ruff clean; `data/` untouched; backlog **326 open / 729 done**, highest
-**#822**.
 
 ## Pipeline order (operator)
 

@@ -8,6 +8,25 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 32 — the 09-20 five: coverage said, paid calls cancelled, the anti-correlation given its n - 2026-09-26
+
+*3,550 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean. No
+rubric change, no `GRADE_VERSION` bump. #826 #820 #824 closed; #821 #819 progressed to
+"measurement exists, number is the operator's".*
+
+- **#826** `ops calibration` and the weekly report print `Claim types: N of M verified runs
+  carry per-claim types - the rest predate #345 and cannot be backfilled`.
+- **#820** `apis/run_deadline`: after the discovery deadline `run_actor` refuses the paid POST
+  (`cancelled_after_deadline`, named in the dropped stub) and queued signals never start.
+- **#824** per-component correlation and `n_for_significance` - |r|=0.32 needs n>=36; the line
+  says "not significant - do not retune the rubric on it".
+- **#821** recurrence vs engaged-rate correlated and printed with its promotion rule;
+  `ops grade` now prints the recurrence/waiver lines (#837); the count reads `_RECURRENCE_MIN`.
+- **#819** `angle_scores` persisted at last (`features_json` + `quality["angle_score"]`);
+  `angle_line` collects. #836 filed for an approximate backfill from `variants_json`.
+- **Fixed on the way:** #835 weekly-report `runs_total`; **#838** `ops agents` cp1252 guard
+  failed on `main`'s own commit subject (U+2192) - CI run 159 red - `render` now console-safe.
+
 ### Wave 31 — the suite stops depending on order, the docs stop depending on memory - 2026-09-26
 
 *3,526 tests; default, reverse and shuffled order report the identical result; mypy 129

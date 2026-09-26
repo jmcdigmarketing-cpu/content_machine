@@ -107,8 +107,24 @@ def behind_note(behind: int) -> str:
     return f"{behind} commit(s) behind HEAD - normal for an intermittent partner"
 
 
+_GLYPHS = str.maketrans(
+    {"\u2192": "->", "\u2190": "<-", "\u2014": "-", "\u2013": "-", "\u2026": "...", "\u00b7": "-"}
+)
+
+
+def _console_safe(text: str) -> str:
+    """cp1252-safe by construction. Git output (commit subjects) is not this module's
+    to keep ASCII - wave 32 found main's HEAD subject carried a U+2192 arrow, which
+    reached the report verbatim and broke it on a Windows console (candidate 250)."""
+    return text.translate(_GLYPHS).encode("cp1252", errors="replace").decode("cp1252")
+
+
 def render() -> str:
     """Operator-facing report. ASCII only (cp1252-safe, candidate 250)."""
+    return _console_safe(_render())
+
+
+def _render() -> str:
     out: list[str] = ["Agent hand-off"]
     state = tree_state()
     out.append(f"  HEAD        : {state['head'] or 'unknown'}")

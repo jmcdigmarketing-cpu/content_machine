@@ -244,18 +244,40 @@ def format_report(report: dict[str, Any]) -> str:
 
     # Pillar 2 calibration: is the pre-publish report card predictive yet?
     try:
-        from core.grade_calibration import build_calibration, coverage_line, summary_line
+        from core.claim_types import claim_type_coverage_line
+        from core.grade_calibration import (
+            build_calibration,
+            coverage_line,
+            significance_line,
+            summary_line,
+        )
 
         built = build_calibration(report["channel_id"])
-        calibration = summary_line(built)
-        if calibration:
-            lines.append(f"  {calibration}")
-        # #818: "collecting" reads like a volume problem; it is a history one.
-        coverage = coverage_line(built, runs_total=len(report.get("rows") or []) or None)
-        if coverage:
-            lines.append(f"  {coverage}")
     except Exception as exc:
         logger.debug("build_calibration skipped: %s", exc)
+    else:
+        # Each line fails open on its own so one refusal cannot hide the others.
+        # (#826 found coverage_line was passed len(report["rows"]), a key build_report
+        # never set, so #818's "N runs" never printed.)
+        makers = (
+            ("summary", lambda: summary_line(built)),
+            # #824: the n that would settle the grade correlation, or "do not retune".
+            ("significance", lambda: significance_line(built)),
+            # #818: "collecting" reads like a volume problem; it is a history one.
+            (
+                "coverage",
+                lambda: coverage_line(built, runs_total=getattr(built, "runs_total", 0) or None),
+            ),
+            ("claim types", lambda: claim_type_coverage_line(built.claim_type_coverage)),
+        )
+        for name, make in makers:
+            try:
+                extra: str | None = make()
+            except Exception as exc:
+                logger.debug("calibration %s line skipped: %s", name, exc)
+                continue
+            if isinstance(extra, str) and extra:
+                lines.append(f"  {extra}")
 
     actions = report.get("next_actions") or []
     if actions:

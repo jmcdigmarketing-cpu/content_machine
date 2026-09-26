@@ -86,8 +86,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.11 only: pinned deps (numpy 2.4.4 needs >=3.11; Pillow 9.5.0 — kept for
-        # moviepy 1.0.3 compat — has no 3.12 wheel). 3.11 is the project's target.
+        # 3.11 only: it is the project's target and the pinned deps are built for it.
+        # (The old note about Pillow 9.5 / moviepy was stale: Pillow is 12.3 and
+        # moviepy is not a dependency — #834 tracks trying 3.12.)
         python-version: ["3.11"]
     steps:
       - uses: actions/checkout@v4
@@ -120,3 +121,40 @@ jobs:
         continue-on-error: true
       - name: Docs metric lint
         run: python -m unittest tests.test_docs_lint
+
+  test-reversed:
+    name: Unit tests (reversed order)
+    # #828: the suite's verdict must not depend on discovery order. tests/test_run69_fixes
+    # passed 13/13 alone and failed under discovery on a partial install because a
+    # half-built ExitStack in another module leaked its patches. Same install as
+    # `test`, same tests, opposite order — a pass here is the proof.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: content_machine_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ffmpeg and Qt libraries
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1
+      - name: Install dependencies
+        run: pip install -e ".[shell,app]"
+      - name: Run unit tests in reverse discovery order
+        env:
+          QT_QPA_PLATFORM: offscreen
+          CONTENT_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/content_machine_test
+        run: python -m scripts.ops test --order reverse

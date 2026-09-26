@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import threading
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("core.discovery_headroom")
@@ -98,8 +99,7 @@ def headroom_line(*, signal_count: int) -> str:
     line = "Headroom: " + " | ".join(bits)
     if short:
         line = (
-            f"! {line} -- not enough units for every signal to search; "
-            "the pool will run degraded"
+            f"! {line} -- not enough units for every signal to search; the pool will run degraded"
         )
     return line
 
@@ -121,3 +121,13 @@ def emit_headroom(line: str) -> None:
         print(f"  {line}")
     except Exception as exc:  # pragma: no cover - cp1252 consoles
         logger.debug("headroom line not printed: %s", exc)
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    global _last_line
+    with _emit_lock:
+        _last_line = None
+
+
+process_state.register_reset("core.discovery_headroom", _reset_process_state)

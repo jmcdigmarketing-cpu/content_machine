@@ -11,6 +11,7 @@ from typing import Any
 
 from config.channels import get_channel_profile, resolve_channel_id
 from config.paths import PRONUNCIATIONS_FILE, VOICES_FILE
+from core import process_state
 from core.logging import get_logger
 from core.utils import clean_script_for_tts
 from video.caption_timing import words_from_alignment
@@ -1500,3 +1501,25 @@ def _save_word_timestamps(client, voice_id, model_id, script, output_path) -> bo
     except Exception as exc:
         logger.debug("word-timestamp TTS unavailable, using plain stream: %s", exc)
         return False
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    """Per-run markers and parsed-config caches. Not `_qwen_model_cache`: a loaded
+    model is a resource, and its staleness is not what leaks between tests."""
+    global _last_cache_hit, _last_piper_mix, _last_cache_fraction
+    global _last_paid_fallback, _last_paid_fallback_from, _length_choice_context
+    global _voice_catalog_cache, _lexicon_cache
+    _last_cache_hit = False
+    _last_piper_mix = False
+    _last_cache_fraction = 0.0
+    _last_paid_fallback = False
+    _last_paid_fallback_from = ""
+    _length_choice_context = ""
+    _voice_catalog_cache = None
+    _lexicon_cache = None
+    _dead_voices.clear()
+    _lame_ok.clear()
+
+
+process_state.register_reset("core.tts", _reset_process_state)

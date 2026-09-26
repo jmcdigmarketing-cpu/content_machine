@@ -9,6 +9,8 @@ from __future__ import annotations
 import builtins
 from collections.abc import Sequence
 
+from core import process_state
+
 
 class Backend:
     def ask_text(self, prompt: str = "") -> str:
@@ -58,3 +60,6 @@ def ask_confirm(prompt: str, *, default: bool = False) -> bool:
 def ask_choice(prompt: str) -> str:
     """Raw choice string; caller interprets digits / empty / 0."""
     return ask_text(prompt).strip()
+
+
+process_state.register_reset("core.ask", reset_backend)  # #827

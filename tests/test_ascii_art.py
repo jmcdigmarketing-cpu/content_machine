@@ -13,29 +13,29 @@ from core.ascii_art import (
 )
 
 
-def _luffy_asset_available() -> bool:
-    """The mascot art (core/data/luffy_ascii.txt) is gitignored and generated
-    locally via scripts/update_luffy_art.py, so it is absent in CI / clean
-    checkouts. Tests that assert on its contents skip when it isn't present."""
+def _luffy_line_count() -> int:
     luffy_mascot_lines.cache_clear()
     try:
-        return len(luffy_mascot_lines()) >= 40
+        return len(luffy_mascot_lines())
     finally:
         luffy_mascot_lines.cache_clear()
 
 
-_LUFFY_AVAILABLE = _luffy_asset_available()
-_LUFFY_SKIP_REASON = "luffy_ascii.txt is gitignored/generated and not present in this checkout"
-
-
 class TestAsciiArt(unittest.TestCase):
+    def test_the_mascot_asset_is_bundled(self):
+        # core/data/luffy_ascii.txt is tracked in git (52 lines). These tests used to
+        # skip on its absence with a reason saying it was gitignored — so a checkout
+        # that lost the file would have gone green with the mascot tests never run.
+        self.assertGreaterEqual(
+            _luffy_line_count(), 40, "core/data/luffy_ascii.txt missing or short"
+        )
+
     def test_luffy_path_is_bundled_data(self):
         self.assertEqual(luffy_ascii_path(), Path(LUFFY_ASCII_FILE))
         self.assertTrue(
             str(luffy_ascii_path()).replace("\\", "/").endswith("core/data/luffy_ascii.txt")
         )
 
-    @unittest.skipUnless(_LUFFY_AVAILABLE, _LUFFY_SKIP_REASON)
     def test_luffy_art_loaded_preserves_content(self):
         luffy_mascot_lines.cache_clear()
         lines = luffy_mascot_lines()
@@ -77,7 +77,6 @@ class TestAsciiArt(unittest.TestCase):
             panel = startup_panel_lines("tapin")
         self.assertEqual(len(panel), len(left))
 
-    @unittest.skipUnless(_LUFFY_AVAILABLE, _LUFFY_SKIP_REASON)
     def test_startup_panel_includes_mascot_when_wide(self):
         import os
 

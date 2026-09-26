@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from core import process_state
+
 _sink: Callable[..., Any] = print
 
 
@@ -26,3 +28,6 @@ def set_emit(fn: Callable[..., Any] | None) -> None:
 
 def reset_emit() -> None:
     set_emit(print)
+
+
+process_state.register_reset("core.emit", reset_emit)  # #827

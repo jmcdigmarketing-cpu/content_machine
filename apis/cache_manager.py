@@ -12,6 +12,7 @@ from config.paths import (
     migrate_file_if_needed,
     resolve_existing_path,
 )
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("apis.cache_manager")
@@ -289,3 +290,16 @@ def reset_cache_stats() -> None:
         _write_cache_file(_stats_path(), {})
     except Exception as exc:
         logger.debug("_write_cache_file skipped: %s", exc)
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    """In-memory only: `reset_cache_stats()` also rewrites the stats file."""
+    global _resolved_path
+    with _cache_lock:
+        _resolved_path = None
+    with _stats_lock:
+        _stats.clear()
+
+
+process_state.register_reset("apis.cache_manager", _reset_process_state)

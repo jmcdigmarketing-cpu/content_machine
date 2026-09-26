@@ -20,6 +20,7 @@ import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("core.vault_index")
@@ -141,3 +142,6 @@ def clear_cache() -> None:
     """Test/CLI helper — drop the in-process index."""
     with _lock:
         _CACHE.clear()
+
+
+process_state.register_reset("core.vault_index", clear_cache)  # #827

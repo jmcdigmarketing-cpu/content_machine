@@ -27,6 +27,7 @@ from typing import Any
 
 import requests
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("apis.free_backends")
@@ -326,3 +327,6 @@ def fetch_reddit_free(query: str, subreddits: list[str], max_items: int = 20) ->
             }
         )
     return items
+
+
+process_state.register_reset("apis.free_backends", reset_reddit_token)  # #827

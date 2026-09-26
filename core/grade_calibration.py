@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("core.grade_calibration")
@@ -300,8 +301,7 @@ def snapshot_line(report: CalibrationReport) -> str:
     if drifts:
         delta, worst = max(drifts, key=lambda pair: abs(pair[0]))
         line += (
-            f" - {len(drifts)} would grade differently today "
-            f"(worst {delta:+.1f} on #{worst.run_id}"
+            f" - {len(drifts)} would grade differently today (worst {delta:+.1f} on #{worst.run_id}"
         )
         component = worst_component_drift(worst)
         line += f", {component[0]} {component[1]:+.0f})" if component else ")"
@@ -442,3 +442,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- process-global state reset (#827) --------------------------------------
+process_state.register_reset("core.grade_calibration", _ACCURACY_CACHE.clear)

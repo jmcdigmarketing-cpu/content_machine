@@ -23,6 +23,11 @@ import os
 # Bare `discover -s tests` (no `-t .`) never imports this file — see tests/CLAUDE.md.
 
 os.environ["OBSIDIAN_VAULT_PATH"] = ""
+# #827 survey: config/settings.py loads .env without override, so an operator box
+# with Ollama configured could make a real localhost probe from any test that uses
+# clear=False. Tests that exercise Ollama set these themselves via patch.dict.
+os.environ["OLLAMA_MODEL"] = ""
+os.environ["OLLAMA_BASE_URL"] = ""
 # Same class as vault isolation: dotenv override=False, so blanking before
 # config.settings import freezes Settings.database_url empty for the process.
 os.environ["DATABASE_URL"] = ""
@@ -30,6 +35,11 @@ os.environ["DATABASE_KEY"] = ""
 # TTS cache writes under data/tts_cache when on; isolate the suite (tests that
 # exercise the cache patch TTS_CACHE / TTS_CACHE_DIR themselves).
 os.environ["TTS_CACHE"] = "false"
+# #828 (found by `ops test --order reverse`): run_discovery stores its result in the
+# signal cache, which is file-backed and shared by every test in the process. Two
+# tests that discover the same topic string read each other's variants. Off for the
+# suite; tests/test_discovery_persist.py turns it on for itself.
+os.environ["DISCOVERY_CACHE"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one
@@ -152,3 +162,47 @@ _SUITE_STORE_PATCHES = (
 for _p in _SUITE_STORE_PATCHES:
     _p.start()
 _cache_manager._resolved_path = None
+
+# #827: one reset point for process-global state, run before EVERY test. A module
+# that caches a probe result, a client, a token or a session breaker at module level
+# registers its reset with core.process_state at import; this hook calls them all, so
+# what one test cached cannot decide what the next one sees. Before this,
+# tests/test_run69_fixes.py passed 13/13 alone and failed 5 under discovery because
+# tests/test_run66_fixes.py had left `(False, [])` in llm_router._ollama_probe_cache.
+import unittest as _unittest
+
+from core import process_state as _process_state
+
+_original_testcase_run = _unittest.TestCase.run
+
+
+def _run_with_clean_process_state(self, result=None):
+    _process_state.reset_all()
+    return _original_testcase_run(self, result)
+
+
+_unittest.TestCase.run = _run_with_clean_process_state
+
+# #829: on a partial install the suite used to report ~90 import errors across ~470
+# tests, and a real failure could not be told from a missing wheel. One line, once,
+# naming what is missing; CI installs everything so it never prints there.
+import importlib.util as _ilu
+import sys as _sys
+
+_OPTIONAL_RUNTIME_MODULES = (
+    "sqlalchemy",
+    "bs4",
+    "googleapiclient",
+    "elevenlabs",
+    "PIL",
+    "numpy",
+    "yt_dlp",
+    "goose3",
+)
+_missing = [m for m in _OPTIONAL_RUNTIME_MODULES if _ilu.find_spec(m) is None]
+if _missing:
+    print(
+        f"tests: {len(_missing)} runtime module(s) not installed — {', '.join(_missing)}. "
+        "Import errors below are that, not defects: pip install -e .",
+        file=_sys.stderr,
+    )

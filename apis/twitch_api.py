@@ -17,6 +17,7 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from core import process_state
 
 _CLIENT_ID = os.getenv("TWITCH_CLIENT_ID", "").strip()
 _CLIENT_SECRET = os.getenv("TWITCH_CLIENT_SECRET", "").strip()
@@ -144,3 +145,12 @@ def get_twitch_signal(topic: str) -> dict:
     except Exception as exc:
         status, detail = classify_exception(exc)
         return make_signal(connected=False, active=False, status=status, status_detail=detail)
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    global _TOKEN
+    _TOKEN = None
+
+
+process_state.register_reset("apis.twitch_api", _reset_process_state)

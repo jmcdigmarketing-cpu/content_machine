@@ -22,6 +22,7 @@ from apis.youtube_quota import (
     units_for_lightweight_search,
     units_per_search_call,
 )
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("apis.youtube_api")
@@ -464,3 +465,16 @@ def fetch_video_metadata(video_id_or_url: str) -> dict | None:
     except Exception as exc:  # network/quota/HTTP — caller falls back to manual text
         print(f"[YouTube API] Could not fetch video {video_id}: {str(exc)[:120]}")
         return None
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    global _youtube_client, _warmup_started, _API_UNREACHABLE
+    with _client_lock:
+        _youtube_client = None
+        _warmup_started = False
+    with _UNREACHABLE_LOCK:
+        _API_UNREACHABLE = ""
+
+
+process_state.register_reset("apis.youtube_api", _reset_process_state)

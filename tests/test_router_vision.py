@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from core import llm_router
 from core.llm_router import LLMUnavailableError
+from tests.optional_deps import requires_pillow
 
 
 def _image_messages() -> list[dict]:
@@ -71,15 +72,14 @@ class TestRouterVision(unittest.TestCase):
 
 class TestThumbnailVisionViaRouter(unittest.TestCase):
     def _jpeg(self) -> str:
-        try:
-            from PIL import Image
-        except ImportError:
-            self.skipTest("Pillow not installed")
+        from PIL import Image  # callers carry @requires_pillow (tests/optional_deps.py)
+
         fd, path = tempfile.mkstemp(suffix=".jpg")
         os.close(fd)
         Image.new("RGB", (1080, 1920), color=(20, 20, 180)).save(path, "JPEG")
         return path
 
+    @requires_pillow
     def test_no_openai_key_still_scores_via_router(self):
         from assets.thumbnail_scorer import score_thumbnail
 
@@ -111,6 +111,7 @@ class TestThumbnailVisionViaRouter(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    @requires_pillow
     def test_free_mode_falls_back_to_heuristic_without_calling_complete(self):
         from assets.thumbnail_scorer import score_thumbnail
 
@@ -131,6 +132,7 @@ class TestThumbnailVisionViaRouter(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    @requires_pillow
     def test_router_failure_falls_back_to_heuristic(self):
         from assets.thumbnail_scorer import score_thumbnail
 

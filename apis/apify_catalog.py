@@ -11,6 +11,7 @@ import json
 import os
 from typing import Any
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("apis.apify_catalog")
@@ -89,3 +90,12 @@ def _substitute(obj: Any, query: str) -> Any:
     if isinstance(obj, dict):
         return {k: _substitute(v, query) for k, v in obj.items()}
     return obj
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    global _cache
+    _cache = None
+
+
+process_state.register_reset("apis.apify_catalog", _reset_process_state)

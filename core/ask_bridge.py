@@ -10,6 +10,7 @@ import queue
 import threading
 from dataclasses import dataclass
 
+from core import process_state
 from core.ask import Backend
 
 # Exact prompt strings the terminal shows today (main.py / core/ui.py).
@@ -165,3 +166,6 @@ def current_bridge() -> AskBridge | None:
 def set_current_bridge(bridge: AskBridge | None) -> None:
     global _current
     _current = bridge
+
+
+process_state.register_reset("core.ask_bridge", lambda: set_current_bridge(None))  # #827

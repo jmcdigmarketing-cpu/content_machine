@@ -3,15 +3,31 @@
 from __future__ import annotations
 
 import unittest
-from contextlib import ExitStack
+from collections.abc import Iterator
+from contextlib import ExitStack, contextmanager
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from core.ops_doctor import gather, render
 
 
-def _stack(*, mock_secrets: bool = True) -> ExitStack:
-    stack = ExitStack()
+@contextmanager
+def _stack(*, mock_secrets: bool = True) -> Iterator[ExitStack]:
+    """Every `ops doctor` collaborator mocked, as one context.
+
+    Built *inside* `with ExitStack()` on purpose: the earlier shape built the stack
+    and returned it, so when a later `patch()` target failed to import (youtube.oauth
+    on a box without googleapiclient/cryptography) the patches already entered were
+    never exited and `run_mode._ollama_ready` stayed mocked for the rest of the
+    suite — the order-dependence in docs/audit_2026-09-26.md. Guarded by
+    tests/test_ops_doctor_stack_leak.py.
+    """
+    with ExitStack() as stack:
+        _enter_all(stack, mock_secrets=mock_secrets)
+        yield stack
+
+
+def _enter_all(stack: ExitStack, *, mock_secrets: bool) -> None:
     stack.enter_context(patch("core.run_mode._ollama_ready", return_value=(False, None)))
     stack.enter_context(
         patch(
@@ -51,7 +67,6 @@ def _stack(*, mock_secrets: bool = True) -> ExitStack:
         patch("core.workspace_hazards.gather", return_value={"hazards": [], "onedrive": False})
     )
     stack.enter_context(patch("core.workspace_hazards.render", return_value="workspace: ok"))
-    return stack
 
 
 class TestOpsDoctor(unittest.TestCase):
@@ -168,8 +183,8 @@ _DUMMY = "sk-test-not-a-real-secret"
 
 
 def _secrets_env(*, blank_required: str | None = None) -> dict[str, str]:
-    env = {name: _DUMMY for name in _REQUIRED_KEYS}
-    env.update({name: "" for name in _OPTIONAL_KEYS})
+    env = dict.fromkeys(_REQUIRED_KEYS, _DUMMY)
+    env.update(dict.fromkeys(_OPTIONAL_KEYS, ""))
     if blank_required:
         env[blank_required] = ""
     return env

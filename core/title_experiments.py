@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 
+from core import process_state
 from core.engagement import engaged_rate
 from core.logging import get_logger
 from core.title_features import feature_tags
@@ -95,3 +96,6 @@ def display_leaderboard(channel_id: str, *, print_fn=print) -> None:
     print_fn("\n  📊 Title patterns that engage (this channel):")
     for tag, avg, n in board:
         print_fn(f"    {avg:6.0%}  {tag:<11}{confidence_note(n)}")
+
+
+process_state.register_reset("core.title_experiments", reset_cache)  # #827

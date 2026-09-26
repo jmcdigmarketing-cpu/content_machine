@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from assets.thumbnail_scorer import score_thumbnail
+from tests.optional_deps import requires_pillow
 
 
 class TestThumbnailScorerSmoke(unittest.TestCase):
@@ -11,11 +12,9 @@ class TestThumbnailScorerSmoke(unittest.TestCase):
         with patch.dict(os.environ, {"THUMBNAIL_SCORER_ENABLED": "false"}, clear=False):
             self.assertIsNone(score_thumbnail("nope.jpg", "topic"))
 
+    @requires_pillow
     def test_heuristic_scores_file(self):
-        try:
-            from PIL import Image
-        except ImportError:
-            self.skipTest("Pillow not installed")
+        from PIL import Image
 
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             path = tmp.name

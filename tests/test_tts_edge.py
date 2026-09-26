@@ -47,6 +47,22 @@ def _edge_module():
     return _Mod()
 
 
+class _EdgeCase(unittest.TestCase):
+    """Every test starts from a disarmed, empty fake.
+
+    `_FakeCommunicate` is one class with mutable class attributes, and one test arms
+    `fail = True` to prove the fallback. Nothing reset it, so under `ops test --order
+    shuffle --seed 1` the endpoint test that ran next saw "edge endpoint gone" (#828).
+    """
+
+    def setUp(self):
+        _FakeCommunicate.fail = False
+        _FakeCommunicate.events = []
+        _FakeCommunicate.last_text = ""
+        _FakeCommunicate.last_voice = ""
+        _FakeCommunicate.last_boundary = ""
+
+
 def _boundary(text: str, offset_ticks: int, duration_ticks: int) -> dict:
     return {
         "type": "WordBoundary",
@@ -56,7 +72,7 @@ def _boundary(text: str, offset_ticks: int, duration_ticks: int) -> dict:
     }
 
 
-class TestEdgeRequestsWordTimings(unittest.TestCase):
+class TestEdgeRequestsWordTimings(_EdgeCase):
     """edge_tts 7.x defaults to SentenceBoundary, so a Communicate() built without
     `boundary=` yields no WordBoundary events at all and the .words.json branch is
     silently skipped. decisions SS23 (captions are timed by the ASR) then has nothing
@@ -75,7 +91,7 @@ class TestEdgeRequestsWordTimings(unittest.TestCase):
         self.assertEqual(_FakeCommunicate.last_boundary, "WordBoundary")
 
 
-class TestEdgeIsSentSpeakableText(unittest.TestCase):
+class TestEdgeIsSentSpeakableText(_EdgeCase):
     """`edge_tts.Communicate` ESCAPES its input -- it is not an SSML endpoint. Handing
     it `<speak>...</speak>` makes the voice read the markup aloud: measured against
     the live endpoint, one sentence went from 3.94s to 23.76s of "speak version
@@ -111,13 +127,13 @@ class TestEdgeIsSentSpeakableText(unittest.TestCase):
         self.assertNotIn("Topuria", sent)
 
 
-class TestEdgeProviderNotLocal(unittest.TestCase):
+class TestEdgeProviderNotLocal(_EdgeCase):
     def test_edge_is_not_a_local_provider(self):
         with patch.dict(os.environ, {"TTS_PROVIDER": "edge"}, clear=False):
             self.assertFalse(tts.is_local_tts_provider())
 
 
-class TestEdgeSynth(unittest.TestCase):
+class TestEdgeSynth(_EdgeCase):
     def setUp(self):
         _FakeCommunicate.last_text = ""
         _FakeCommunicate.last_voice = ""
@@ -200,7 +216,7 @@ class TestEdgeSynth(unittest.TestCase):
         self.assertIn("edge-tts", block)
 
 
-class TestEdgeVoiceMix(unittest.TestCase):
+class TestEdgeVoiceMix(_EdgeCase):
     def test_edge_is_its_own_family_not_local(self):
         from core.voice_consistency import voice_mix_warning
 

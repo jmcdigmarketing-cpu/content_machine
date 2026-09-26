@@ -13,6 +13,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("core.operator_timer")
@@ -95,8 +96,7 @@ def format_line(data: dict[str, float] | None = None) -> str | None:
     mach_m = snap["machine_s"] / 60.0
     wall_m = snap["wall_s"] / 60.0
     return (
-        f"Operator time: {wall_m:.1f} min wall "
-        f"({wait_m:.1f} min prompts, {mach_m:.1f} min machine)"
+        f"Operator time: {wall_m:.1f} min wall ({wait_m:.1f} min prompts, {mach_m:.1f} min machine)"
     )
 
 
@@ -116,3 +116,6 @@ def install_input_wrapper() -> None:
 
     builtins.input = _wrapped  # type: ignore[assignment]
     _timer._input_wrapped = True
+
+
+process_state.register_reset("core.operator_timer", clear)  # #827

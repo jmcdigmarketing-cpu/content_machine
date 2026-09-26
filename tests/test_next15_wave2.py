@@ -615,10 +615,15 @@ class TestUnreadablePageGuardStillHolds(unittest.TestCase):
     """#714. Tick leftover: d1776a0 already refuses to file a vanished
     claim on an empty body. This is the measurement that keeps the tick honest."""
 
-    def test_empty_body_does_not_file(self):
+    def test_the_guard_test_still_exists(self):
+        # This used to instantiate the other module's TestCase and call the method
+        # directly — skipping its setUp and reporting under the wrong name. The guard
+        # itself runs in tests/test_review6_defects.py; what keeps the tick honest is
+        # that it is still collected there.
         from tests.test_review6_defects import TestUnreadableSourceIsNotAVanishedClaim
 
-        TestUnreadableSourceIsNotAVanishedClaim().test_an_empty_body_does_not_file_a_correction()
+        names = unittest.TestLoader().getTestCaseNames(TestUnreadableSourceIsNotAVanishedClaim)
+        self.assertIn("test_an_empty_body_does_not_file_a_correction", names)
 
 
 if __name__ == "__main__":

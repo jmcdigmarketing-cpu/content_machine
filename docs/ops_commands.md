@@ -126,7 +126,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `sync-metrics` | Pull YouTube Analytics into performance memory |
 | `tapology-test` | Scrape Tapology fight card for a topic string |
 | `technical-qc` | Inspect a finished video for stream, frame and loudness defects |
-| `test` | Run unit tests |
+| `test` | Run unit tests (--order reverse\|shuffle [--seed N] proves order-independence) |
 | `title-card` | Write a 2-line title-card still (--path dest.png, --topic text) |
 | `title-patterns` | Title patterns that engage (A/B variant loop leaderboard) |
 | `topic-clone` | Seed a new draft from a winner run (--run-id; angles/facts refresh) |

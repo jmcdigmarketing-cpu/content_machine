@@ -172,7 +172,11 @@ class TestThoughtsReachTheAngles(unittest.TestCase):
             patch("core.pipeline.composite_score", return_value=10.0),
             patch("core.pipeline.build_registry", return_value={"youtube": {"score": 1}}),
             patch("core.pipeline.generate_variants", return_value=["v one", "v two"]) as gen,
-            patch.dict(os.environ, {"COMPETITOR_SYNC_ON_DISCOVERY": "off"}),
+            # This test asserts the discovery cache's semantics (same thoughts reuse, other
+            # thoughts do not); the suite runs with it off (tests/__init__.py, #828).
+            patch.dict(
+                os.environ, {"COMPETITOR_SYNC_ON_DISCOVERY": "off", "DISCOVERY_CACHE": "true"}
+            ),
         ):
             pipeline.run_discovery("GTA 6 thoughts audit", channel_id="tapin", brief="first")
             pipeline.run_discovery("GTA 6 thoughts audit", channel_id="tapin", brief="first")

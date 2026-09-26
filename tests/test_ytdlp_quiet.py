@@ -52,13 +52,20 @@ class TestYtdlpOptionsAreQuiet(unittest.TestCase):
         self.assertIn("logger", opts)
 
     def test_the_logger_swallows_error_lines(self):
+        import io
+        from contextlib import redirect_stderr, redirect_stdout
+
         opts = self._opts_for(free_backends._flat_search, "gta 6", 3)
         logger = opts["logger"]
         # Must not raise, must not print. yt-dlp calls all four.
-        logger.debug("d")
-        logger.info("i")
-        logger.warning("w")
-        logger.error("ERROR: [youtube] x: Sign in to confirm your age.")
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            logger.debug("d")
+            logger.info("i")
+            logger.warning("w")
+            logger.error("ERROR: [youtube] x: Sign in to confirm your age.")
+        self.assertEqual(out.getvalue(), "", "the yt-dlp logger printed to stdout")
+        self.assertEqual(err.getvalue(), "", "the yt-dlp logger printed to stderr")
 
 
 class TestAgeGateIsCountedNotShouted(unittest.TestCase):

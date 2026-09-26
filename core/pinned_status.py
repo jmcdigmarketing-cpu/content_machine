@@ -11,6 +11,8 @@ import sys
 import time
 from typing import Any
 
+from core import process_state
+
 _channel_id: str | None = None
 _quota_summary: dict[str, Any] | None = None
 _cost: float | None = None
@@ -144,3 +146,6 @@ def _write_pin(line: str) -> None:
         from core.logging import get_logger
 
         get_logger("core.pinned_status").debug("pinned status CSI skipped: %s", exc)
+
+
+process_state.register_reset("core.pinned_status", reset_pin)  # #827

@@ -10,6 +10,7 @@ import json
 from typing import Any
 
 from config.channels import resolve_channel_id
+from core import process_state
 
 _FLAG_THRESHOLD = float(__import__("os").getenv("ANALYST_FLAG_THRESHOLD", "60"))
 
@@ -208,3 +209,7 @@ def _parse_metrics(log: Any) -> dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except json.JSONDecodeError:
         return {}
+
+
+# --- process-global state reset (#827) --------------------------------------
+process_state.register_reset("core.analyst_accuracy", _HIT_RATE_CACHE.clear)

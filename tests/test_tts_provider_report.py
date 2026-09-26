@@ -40,10 +40,19 @@ class TestTtsProviderReport(unittest.TestCase):
         self.assertEqual(out["elevenlabs"], [])
 
     def test_does_not_touch_experiments_file(self):
-        with patch.dict(os.environ, {}, clear=False):
-            report("tapin", rows=[])
-        # If this imported start_experiment it would be a regression; known() already
-        # proves the lever cannot be started.
+        import tempfile
+
+        import config.paths as paths
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = os.path.join(tmp, "experiments.json")
+            with patch.object(paths, "EXPERIMENTS_FILE", target):
+                report("tapin", rows=[])
+            self.assertFalse(
+                os.path.exists(target), "the TTS provider report wrote experiments.json"
+            )
+        # known() already proves the lever cannot be started; this proves the report
+        # does not write the store either way.
 
 
 if __name__ == "__main__":

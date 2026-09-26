@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 
+from core import process_state
 from core.utils import clean_script_for_tts
 
 _DEFAULT_MAX = 5000
@@ -139,3 +140,6 @@ def record_tts_actual(actual_chars: int) -> dict[str, float | int | None]:
     snap["delta_chars"] = int(actual_chars) - forecast
     _last_forecast = snap
     return dict(snap)
+
+
+process_state.register_reset("core.tts_char_cap", reset_tts_forecast)  # #827

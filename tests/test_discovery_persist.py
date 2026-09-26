@@ -11,6 +11,9 @@ from core import pipeline
 
 def _discovery_env(**extra: str):
     env = {"COMPETITOR_SYNC_ON_DISCOVERY": "off", "APIFY_CONTENT_MACHINE_KEY": "", **extra}
+    # The suite runs with DISCOVERY_CACHE=false (tests/__init__.py, #828); this module is
+    # the one that tests the cache, so it turns it on unless a test says otherwise.
+    env.setdefault("DISCOVERY_CACHE", "true")
     return patch.dict(os.environ, env, clear=False)
 
 

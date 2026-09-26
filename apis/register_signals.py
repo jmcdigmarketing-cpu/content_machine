@@ -25,6 +25,7 @@ from apis.signal_contract import (
 )
 from apis.signals_bootstrap import get_signal_registry
 from apis.youtube_api import start_youtube_warmup_background
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("apis.register_signals")
@@ -854,3 +855,6 @@ def build_registry(
             logger.debug("synthesize_signals skipped: %s", exc)
 
     return results
+
+
+process_state.register_reset("apis.register_signals", reset_session_breaker)  # #827

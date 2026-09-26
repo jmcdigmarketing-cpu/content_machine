@@ -1258,9 +1258,15 @@ def cmd_worker(args: argparse.Namespace) -> int:
     return _run_module("jobs.worker", *extra)
 
 
-@_register("test", "Run unit tests")
-def cmd_test(_args: argparse.Namespace) -> int:
-    return _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
+@_register("test", "Run unit tests (--order reverse|shuffle [--seed N] proves order-independence)")
+def cmd_test(args: argparse.Namespace) -> int:
+    order = getattr(args, "order", "default")
+    if order == "default":
+        return _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
+    # #828: in-process so tests/__init__.py loads exactly as `-t .` loads it.
+    from core.suite_order import run_ordered
+
+    return run_ordered(order, seed=getattr(args, "seed", None))
 
 
 @_register("list-uploads", "Rendered MP4s not yet on YouTube")
@@ -2095,6 +2101,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=0,
         help="Content run id (list-uploads / requeue-upload / dossier)",
     )
+    parser.add_argument(
+        "--order",
+        choices=["default", "reverse", "shuffle"],
+        default="default",
+        help="test: run the suite in this order (#828: proves the verdict is order-free)",
+    )
+    parser.add_argument("--seed", type=int, default=None, help="test: seed for --order shuffle")
     parser.add_argument("--arm", default="", help="pick-thumbnail: text_on or face_forward")
     parser.add_argument("--path", default="", help="pick-thumbnail: exact candidate image path")
     parser.add_argument(

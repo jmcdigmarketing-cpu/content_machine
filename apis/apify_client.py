@@ -21,6 +21,7 @@ from typing import Any
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("apis.apify_client")
@@ -475,3 +476,6 @@ def fetch_dataset(dataset_id: str, *, purpose: str = "main") -> list[dict] | Non
     except Exception as exc:
         logger.debug("Apify dataset fetch failed: %s", exc)
         return None
+
+
+process_state.register_reset("apis.apify_client", reset_apify_state)  # #827

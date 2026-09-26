@@ -12,6 +12,7 @@ import subprocess
 from datetime import datetime
 from typing import Any
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("core.win_notify")
@@ -627,3 +628,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- process-global state reset (#827) --------------------------------------
+process_state.register_reset("core.win_notify", _toasted.clear)

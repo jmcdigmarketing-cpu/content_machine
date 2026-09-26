@@ -66,6 +66,7 @@ import requests
 # any tier resolution reads provider keys — even if the router is imported
 # standalone (e.g. a one-off script) without the rest of the app.
 import config.settings  # noqa: F401
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -983,3 +984,26 @@ def complete_json(
         stage=stage,
     )
     return parse_json_payload(raw)
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    """In-memory state only — the persisted dead-model store is left alone.
+
+    `reset_llm_breaker(persisted=True)` writes a file and is the CLI's tool; the
+    suite calls this before every test, so it must be free of IO.
+    """
+    global _ollama_probe_cache, _dead_models_loaded, _budget_warned
+    _ollama_probe_cache = None
+    with _llm_breaker_lock:
+        _llm_disabled_state.clear()
+        _dead_models.clear()
+        _dead_models_loaded = False
+    _clients.clear()
+    with _usage_lock:
+        _usage.calls.clear()
+    with _spend_lock:
+        _budget_warned = False
+
+
+process_state.register_reset("core.llm_router", _reset_process_state)

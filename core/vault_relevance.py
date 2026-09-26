@@ -15,6 +15,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from core import process_state
 from core.authenticity import _content_cosine
 from core.channel_context import anchor_families
 from core.fact_grounding import mentions, specific_entities
@@ -420,3 +421,13 @@ def maybe_tiebreak_uncertain(
     )
     _tiebreak_cache[key] = out
     return out
+
+
+# --- process-global state reset (#827) --------------------------------------
+def _reset_process_state() -> None:
+    global _config_cache
+    _config_cache = None
+    _tiebreak_cache.clear()
+
+
+process_state.register_reset("core.vault_relevance", _reset_process_state)

@@ -4,7 +4,7 @@
 
 Every doc in this repo, by what it is for. Conventions:
 [docs_standard.md](docs_standard.md). Current verdict on the system:
-[audit_2026-09.md](audit_2026-09.md). What happens next:
+[audit_2026-09-26.md](audit_2026-09-26.md). What happens next:
 [master_plan.md](master_plan.md).
 
 **Status keys.** `living` = kept true at HEAD · `frozen` = true on its date, never
@@ -34,6 +34,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 |---|---|
 | [architecture.md](architecture.md) | Pipeline, modules, data flow |
 | [decisions.md](decisions.md) | ADR-lite. §18, §24, §25, §26 are required reading |
+| [vault.md](vault.md) | The Obsidian vault end to end: layout, tiers, what is read back, ops verbs |
 | [credit_efficiency.md](credit_efficiency.md) | Credit, quota and spend efficiency (O1–O12) |
 | [llm_provider_strategy.md](llm_provider_strategy.md) | Router tiers, providers, what each adds |
 | [data_sources.md](data_sources.md) | Stats, blogs and APIs behind the signals |
@@ -108,6 +109,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [gpt6_part2_upgrades_2026-09-08.md](gpt6_part2_upgrades_2026-09-08.md) | 2026-09-08 — external upgrade list |
 | [run_76.md](run_76.md) | 2026-09-13 — live-run postmortem |
 | [engine_upgrades.md](engine_upgrades.md) | 2026-09-20 — measured against 38 run traces |
+| [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md) | 2026-09-26 — extractors, JS pages, football data, vault API; verified that day |
 
 ## Logs — append-only
 

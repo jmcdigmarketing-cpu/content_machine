@@ -323,7 +323,7 @@ Content / learning
 - [x] **117. Title uniqueness vs own catalog** *(2026-08-21)* — `TITLE_UNIQUENESS=warn|block|off` `[S]`
 - [x] **118. Description first-line SEO** *(2026-08-21)* — prepend title when first line is hashtags / Subscribe `[S]`
 - [ ] 119. Stock-clip **watermark detector** — skip footage that shows another channel `[M]` *(only if stock remains; §26 prefers dropping stock over policing it)*
-- [ ] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]` *(only if stock remains — §26: more APIs are not a quality upgrade; owned gameplay first)*
+- [x] 120. Embedding / CLIP b-roll match vs keyword stock search `[L]` *(only if stock remains — §26: more APIs are not a quality upgrade; owned gameplay first)* *(closed 2026-09-26 - retired: decisions §26 settled b-roll in favour of owned gameplay (desktop_app.md, 'Every L, decided'). The decision was made 2026-09-07; the checkbox was never ticked.)*
 - [x] **121. Stock query rewriter: never Pexels-search trademarked “UFC”** *(2026-08-21)* — rewrite to `mma` `[S]`
 - [x] **122. `license.yaml` beside local clips** *(2026-08-25)* — inherited nearest-folder metadata reaches the persisted local-asset attribution; root file records owned/commercial use `[S]`
 - [x] 123. Number/SSML reading rules (`29-1`, UFC 317, `$50k`) — distinct from the name lexicon `[M]`
@@ -377,11 +377,11 @@ unittest; no second signal cache; breakers via `quota_governor` only.*
 
 Massive — new product surfaces / years of work / could be different software
 
-- [ ] 141. **Content OS Desktop** (local-first Tauri/WinUI console over `core/`) `[XL]` — *new-app.* Years of UX/packaging; Python stays the engine; never a second signal cache or a breaker bypass.
-- [ ] 142. **Shorts Visual Studio** (caption/type/motion/thumbs/brand as a studio) `[XL]` — *aesthetics.* Sibling design product beside the CLI; not candidates 21–28 (those are flags).
-- [ ] 143. **Portfolio Intelligence Web OS** (vision v3, multi-channel margin) `[XL]` — *viability.* Honest: premature as SaaS until the YouTube-only data moat is real; still the 12-month architecture, not a CLI restyle.
+- [x] 141. **Content OS Desktop** (local-first Tauri/WinUI console over `core/`) `[XL]` — *new-app.* Years of UX/packaging; Python stays the engine; never a second signal cache or a breaker bypass. *(closed 2026-09-26 - retired: became the desktop programme, Stages 0-7 of desktop_app.md. The decision was made 2026-09-07; the checkbox was never ticked.)*
+- [x] 142. **Shorts Visual Studio** (caption/type/motion/thumbs/brand as a studio) `[XL]` — *aesthetics.* Sibling design product beside the CLI; not candidates 21–28 (those are flags). *(closed 2026-09-26 - absorbed: Stage 4 of desktop_app.md (#152, #151 shipped; #153 removed by choice). The decision was made 2026-09-07; the checkbox was never ticked.)*
+- [x] 143. **Portfolio Intelligence Web OS** (vision v3, multi-channel margin) `[XL]` — *viability.* Honest: premature as SaaS until the YouTube-only data moat is real; still the 12-month architecture, not a CLI restyle. *(closed 2026-09-26 - retired: a SaaS framing for a private tool; its useful parts are #169 and #476 (Stage 6). The decision was made 2026-09-07; the checkbox was never ticked.)*
 - [ ] 144. **PARKED — Distribution Sidecar** (TikTok/Reels as different software) `[XL]` — *new-app / parked.* Phase M consumes already-rendered 9:16; never Content Machine feature flags; not the next pickup.
-- [ ] 145. **Moat Suite** (Vault Companion + Clip Librarian + Cost Tower) `[XL]` — *new-app / cost.* Sibling apps over vault, clips, and `quota_governor.snapshot()`; the dataset *is* the company.
+- [x] 145. **Moat Suite** (Vault Companion + Clip Librarian + Cost Tower) `[XL]` — *new-app / cost.* Sibling apps over vault, clips, and `quota_governor.snapshot()`; the dataset *is* the company. *(closed 2026-09-26 - dissolved: its parts are #156, #157, #158, all Stage 3 panels. The decision was made 2026-09-07; the checkbox was never ticked.)*
 
 Larger — multi-week systems
 
@@ -763,8 +763,8 @@ Engineering hygiene
 
 Strategy & bigger bets
 
-- [ ] 467. **Second operator seat** — the run ledger assumes one human; the first collaborator is a schema question, not a UI one `[L]`
-- [ ] 468. **Fact engine as a standalone surface** — the grounding stack is the most differentiated code in the repo and is welded to video `[XL]`
+- [x] 467. **Second operator seat** — the run ledger assumes one human; the first collaborator is a schema question, not a UI one `[L]` *(closed 2026-09-26 - retired: single operator, private tool. The decision was made 2026-09-07; the checkbox was never ticked.)*
+- [x] 468. **Fact engine as a standalone surface** — the grounding stack is the most differentiated code in the repo and is welded to video `[XL]` *(closed 2026-09-26 - retired: nothing is published, so a standalone surface has no consumer. The decision was made 2026-09-07; the checkbox was never ticked.)*
 - [ ] 469. **Sponsored-brief run type** — a run driven by a brief, with disclosure and claim limits enforced by the gates that already exist. First non-ad revenue path that is not #79 `[M]`
 - [ ] 470. **Newsletter from the same fact corpus** — the research brief is already written; a second distribution costs no new research `[M]`
 - [ ] 471. **Audio-only distribution from existing TTS** — the mp3 exists and is discarded after render `[M]`
@@ -783,7 +783,7 @@ Strategy & bigger bets
 
 ---
 
-## Numbered candidates 481–859 (2026-08-28 — docs only; no pickup order; the tail is appended in wave order, so numbers past #656 are not sorted)
+## Numbered candidates 481–860 (2026-08-28 — docs only; no pickup order; the tail is appended in wave order, so numbers past #656 are not sorted)
 
 *None restates an open item. Weighted toward the two things the desktop programme
 does not cover: **video craft**, which survives every toolkit change and is burned
@@ -1257,3 +1257,4 @@ Review 4 - what the four waves shipped green but inert (2026-09-08)
 - [ ] 857. **Old `_operator_facts` notes still hold scraped text at operator tier** *(filed wave 33 under #845)* - they no longer pin, but they still surface as vault suggestions. A dry-run re-tier command (not built) that lists notes whose lines look link-derived (pasted-page boilerplate, no operator phrasing) and offers to move them to `_link_facts/` - the operator's vault, the operator's call `[S]`
 - [ ] 858. **Measure the thin-fact fallback after #843** *(filed wave 33)* - popularity dumps no longer count toward `FACT_ENRICH_MIN_LINES`, so the fallback (headline searches + one cheap LLM extraction) runs on more topics. Count how often over the next 10 runs and what it costs `[S]`
 - [ ] 859. **Football topics get no football RSS** *(filed wave 33)* - `config/data_sources.json` `domain_rss` has no `soccer` entry, so a Premier League story on TapIn gets only the untagged global feeds. Add two feeds the operator trusts, tagged `soccer`, and check they parse with `ops doctor` `[S]`
+- [ ] 860. **A facts room in the desktop app** *(filed wave 33 from run 98; desktop Stage 3)* - key-fact intake took 7.9 of run 98's 11.2 operator minutes, one URL at a time in a terminal prompt. A panel where the operator pastes several links at once, sees each page's lines ranked against the chosen angle with the off-topic ones (#846) greyed and the title shown as the source, ticks what to keep, and sees what the vault offered and why. Reads the same `prompt_key_facts_result` machinery, so the CLI stays the headless path. Pairs with #848 (auto-research lines appear in the same list at web tier) and #156 Vault companion `[L]`

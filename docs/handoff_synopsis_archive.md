@@ -7,6 +7,44 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-20 (Claude Code): wave 30 #817 #818 #822 #739 #823
+
+Second measurement wave, and the one where the measurements started saying no. **Two items
+closed without a behaviour change because the numbers said not to**, and one closed because its
+filed text was wrong.
+
+Verifying the recommended five moved two slots. Three waves had shipped measurements carrying
+**zero rows** (`hedge_density`, `grade_score`, `style_recurrence_*`, `angle_spread`) because no
+run had been generated since - that became **#823**. **#819 came out**: it asks what to use
+instead of composite and names `angle_scores`, which has 0 rows and cannot be backfilled.
+**I first called #739 blocked on "0 stock clips" - that was wrong**, I had looked only in
+`video/backgrounds/`; there are 52 in `assets/cache/`.
+
+- **#823** `ops backfill-quality`, mirroring `backfill_features`: as-of window via the new
+  `build_quality(recent=)`, carries forward what it does not own, dry run by default. Applied on
+  the operator's call - **87 rows, measured runs 3 -> 12**.
+- **#824, what that immediately revealed:** grade vs engaged-rate **r=-0.32 over 12 videos**,
+  worse than composite's -0.15 on the same twelve. Both scores the pipeline ranks on are
+  anti-correlated with engagement. **Not significant at n=12 - filed "do not retune on this".**
+- **#822** measured first: the hedged-rumor escape has fired **0 times** in 37 verified runs.
+  Neither gate nor rubric moved. The real gap was that `warn_only_unsupported` was never
+  persisted; now `gate_waived` with a card reader.
+- **#739** measured over 8 fractions/clip and **rejected**: gameplay 147 clips, ALWAYS 2,
+  intermittent 90, median 0.25; stock 52, ALWAYS 0, ever 6. `ops footage --persistence`.
+- **#818** coverage line (37/12/3). **#817** settled by measurement, no code change.
+
+Found: **#824** anti-predictive card · **#825** `--force` was read by four ops verbs, declared by
+none, *and* hardcoded to False after `parse_args` · **#826** per-claim types exist only from run
+76, and unlike #818 are **not** backfillable.
+
+Caught in audit, self-inflicted: right after applying #823 the snapshot line claimed "today's
+rubric reproduces every one" - tautological for a backfilled grade. Rows now stamped
+`grade_backfilled`. Also deleted a `_pinned_window` monkeypatch after writing it green, in
+favour of the `recent=` passthrough.
+
+Next five: **#826 · #821 · #820 · #824 · #819**. Suite **3,462 -> 3,487**; mypy **139**; ruff
+clean; `data/` untouched; backlog **325 open / 734 done**, highest **#826**.
+
 ## Previous — 2026-09-20 (Claude Code): wave 29 #808 #805 #561 #803 #811
 
 Measurement wave. **Wave 28's four fixes are in the same commit** — the operator's call, not a

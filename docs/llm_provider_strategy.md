@@ -1,6 +1,6 @@
 # LLM provider strategy — what's reachable today, and what each model adds
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
 
 > **Harvested 2026-08-17 from PR #26 (`claude/kimi-k3-evaluation`), which was closed
 > unmerged.** Kept for the model comparison and the sourced Kimi K3 open-weights analysis,
@@ -205,8 +205,9 @@ but this only affects runs you deliberately start in Free mode, not the default 
 ### 5.4 Optional additions, in order
 1. **Gemini** — only if the Pillar-2 **rendered-video** review is the priority; native
    video is the one capability nothing else has. (§5.2 is its prerequisite either way.)
-2. **Grok** — would *restore* the `twitter`/`tiktok_trends` capability that Apify-off
-   removed; gated on verifying it returns citable source URLs (§3.4).
+2. **Grok** — would *restore* the `twitter` capability that Apify-off removed
+   (`tiktok_trends` is still live on Apify); gated on verifying it returns citable source
+   URLs (§3.4).
 3. **Kimi K3** — last; paid-only despite open weights (§2), and nothing is blocked on it.
 
 ## 6. Crossover / unnecessary — consolidated

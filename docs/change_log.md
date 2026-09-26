@@ -8,6 +8,23 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 33 — run 98: pay once for TTS, football as football, facts that belong to the topic - 2026-09-26
+
+*3,601 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.
+Report card v5. Decisions §34.*
+
+- **#840** multi-sentence TTS was billed twice since 09-20 (relative paths in the ffmpeg concat
+  list); fixed.
+- **#841 #842** a topic's domain comes from the topic; football is TapIn's (`soccer`), with
+  its own brief, weights, sign-off and tags; off-niche topics get a notice.
+- **#843** RAWG, Twitch, Steam and fan-out stopped matching question words and site-wide
+  numbers; popularity payloads are context, not "verified facts".
+- **#844-#846** page titles are metadata; JS pages retry the reader proxy; pasted-link lines
+  are link tier in `_link_facts/`; off-topic pasted-link lines are listed before they are sent.
+- **#847** topic weight 0.12 -> 0.05 (v5).
+- **Docs:** [vault.md](vault.md), [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md),
+  master plan M4 sample schedule, the desktop facts room (#860).
+
 ### Wave 32 — the 09-20 five: coverage said, paid calls cancelled, the anti-correlation given its n - 2026-09-26
 
 *3,550 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean. No

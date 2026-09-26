@@ -2,7 +2,7 @@
 
 The vault was a one-way sidecar: facts flowed *in* (read by obsidian_facts),
 but runs/scripts/outcomes never landed *back* in it. This writes one browsable
-note per run — `{channel}/_runs/{date}_{slug}.md` — turning the vault into the
+note per run — `{channel}/_runs/{run_id}_{slug}.md` — turning the vault into the
 human-readable mirror of machine state (vision.md §7's "two faces").
 
 A dossier is a **record of what we made**, not a fact about the world, so:

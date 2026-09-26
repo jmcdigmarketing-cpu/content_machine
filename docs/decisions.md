@@ -336,7 +336,8 @@ non-commercial — check before shipping.
 **Decision:** Pillar 4 (Obsidian knowledge OS) closes the vault's one-way gap with three
 pieces, all fail-open when `OBSIDIAN_VAULT_PATH` is unset:
 **(a) Run dossiers** — `core/vault_dossiers.py` writes
-`{channel}/_runs/{date}_{slug}-{run_id}.md` from `_finalize_run` (drafted/rendered only)
+`{channel}/_runs/{run_id}_{slug}.md` from `_finalize_run` (drafted/rendered only; identity
+is the run id since the stable-path upsert - see [vault.md](vault.md))
 and re-upserts via `refresh_dossiers()` after `daily_sync` / `ops vault-sync` so
 post-sync actuals land. Weekly reports copy to `{channel}/_reports/{date}_weekly.md`.
 Dossiers carry `[run, machine]` tags and live under `_runs/`/`_reports/`, excluded from

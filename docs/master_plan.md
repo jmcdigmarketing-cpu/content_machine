@@ -82,6 +82,31 @@ Already done: [docs_standard.md](docs_standard.md), [README.md](README.md),
 superseded plans marked `archived`, `audit.md` → `audit_2026-08.md`, volatile test counts
 out of `living` docs.
 
+All five items that were listed as remaining are done: `LEGACY_NAMES` drained (ten
+renames, links rewritten), one product name per layer (decisions §33), the never-revised
+docs read against HEAD, the oldest adopted into the `Reviewed` cycle, and the metric rule
+widened to subcommand, signal and module counts.
+
+**Exit (passed 2026-09-26):** `python -m unittest discover -s tests -t .`,
+`py -m scripts.ops test --order reverse` and `--order shuffle --seed 1` report the identical
+result; CI runs the reversed leg on every push. On a bare install the run prints one line
+naming the missing modules. What actually caused the run-69 symptom — a half-built
+`ExitStack` in `tests/test_ops_doctor`, not the probe cache — is in the audit §1.1.
+
+**Not in this wave:** raising coverage, adding tests, touching any feature.
+
+---
+
+## M1 — Finish the docs standard · **done 2026-09-26**
+
+**Why now.** Half of it landed with the audit; the half-measure is worse than either
+end state, because a partially-applied convention teaches that conventions are optional.
+
+Already done: [docs_standard.md](docs_standard.md), [README.md](README.md),
+`tests/test_docs_standard.py` (11 checks, CI-blocking), doc cards on all 46 docs, four
+superseded plans marked `archived`, `audit.md` → `audit_2026-08.md`, volatile test counts
+out of `living` docs.
+
 Remaining:
 
 1. **Drain `LEGACY_NAMES`** — ten grandfathered filenames in
@@ -145,13 +170,13 @@ Logs roll over by period instead of being trimmed (docs_standard §7):
 **Why now.** These compound quietly and none of them blocks a feature today — which is
 exactly why they need a scheduled slot rather than good intentions.
 
-1. **Seams in `core/`.** 149 files, 32,701 lines, 55% of source, flat. Do not big-bang
+1. **Seams in `core/`.** The largest package and flat (prefix clusters listed in #834). Do not big-bang
    this. Introduce sub-packages along the boundaries the code already has —
    `core/llm/`, `core/vault/`, `core/video/`, `core/ops/` — moving files in small
    commits with re-export shims so imports keep working, and a rule in `CLAUDE.md` about
    where a new module goes. The rule matters more than the move.
 2. **Ratchet mypy — done 2026-09-26 (#833).** `scripts/mypy_ratchet.py` + `mypy_baseline.txt`
-   hold CI's list at 135 and fail on increase; the typecheck job is blocking. Still open:
+   hold CI's list at 129 and fail on increase; the typecheck job is blocking. Still open:
    extend the scope to `video`, `publishing`, `youtube`, `scripts`, `jobs` and delete the
    dead `video.*`/`publishing.*` override. That turns a number nobody watches into a
    number that cannot grow, without a blocking rewrite. Then pick off the 89 files by
@@ -193,8 +218,29 @@ ceiling, so this outranks new capability.
    remaining recency risk is the same one June named: the system still cannot tell that an
    event is newer than its facts. The operator paste path mitigates; it does not solve.
 
-**Exit:** predictors off the volume gate on at least one channel, and every
-recommendation surfaced with its sample size.
+5. **Retune by logic until the sample can speak.** Run 98's calibration (2026-09-26): 23
+   measured tapin videos, grade r=-0.01, composite r=-0.05. At n=23 a correlation needs
+   |r|>=0.41 to clear p<0.05, and the 95% interval for the grade is about -0.42..+0.40:
+   strong predictors are ruled out, weak ones are invisible. Videos needed at 80% power:
+
+   | true r | 0.5 | 0.4 | 0.3 | 0.2 |
+   |---|---|---|---|---|
+   | videos | 30 | 47 | 85 | 194 |
+
+   So rubric and weight changes are made on logic (a component that is the same for every
+   angle, a signal that measures Twitch instead of the topic) and stamped with
+   `GRADE_VERSION`; statistical retuning waits for n≈85. `ops calibration` prints the n
+   each correlation still needs.
+6. **Pull the facts the pipeline already finds (#848)** and **measure something per angle
+   (#849)**. Run 98 read only the pages the operator pasted, and scored five angles
+   identically because nothing about an angle is measured.
+7. **Operator time is the other volume cost.** Run 98 took 11.2 operator minutes, 7.9 of
+   them at the key-facts prompt. The app's next slot is the facts room (#860,
+   [desktop_app.md](desktop_app.md) Stage 3) - the first app work this plan schedules.
+
+**Exit:** predictors off the volume gate on at least one channel - **met on tapin
+2026-09-26** (the card's predictor printed n=23 in run 98) - and every recommendation
+surfaced with its sample size.
 
 ---
 
@@ -215,11 +261,11 @@ with a stated condition, not drift:
 
 | Item | Parked because |
 |---|---|
-| #147 FastAPI, #146 tray daemon, XL apps | No operator need has appeared; would add a surface to maintain |
+| #146 tray daemon | No operator need yet (#147's FastAPI shell shipped 2026-08-28; the XL apps became the [desktop_app.md](desktop_app.md) programme) |
 | Phase M (Instagram + TikTok linking) | Belongs with M5, not before |
 | NVENC, CUDA torch build | Waiting on a `2.8.0+cpu` → CUDA rebuild, not on hardware |
 | Heavy Pillar 6 backends | Seams live; blocked on the same CUDA build |
-| Edge TTS Wave B | Piper judgement first — TTS is ~91% of metered run cost |
+| Edge TTS as the default voice | decisions §28: shipped as an unmodified `[free]` extra, never the default; Piper judgement first |
 | `SCENE_MATCHED_BROLL` on TapIn, Coverr as a quality lever | [decisions.md](decisions.md) §26 — more unrelated stock is not a quality lever |
 | Flipping TapIn to `background_mode: local` | Operator call, pending owned-gameplay volume |
 | Merging `origin/claude/docs-optimization-review-a4l104` | 9 commits, no PR, old base, last touched 2026-07-21 — same shape as #27 |

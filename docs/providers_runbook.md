@@ -1,12 +1,13 @@
 # Providers runbook — Pillar 6 seams (code-tied)
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-26
 
 The living, in-repo version of the operator's master tool-integration runbook: each tool
 mapped to the **module that hosts it**, its **env gate**, a **proof command**, and its
 **status**. Companion to [video_creation_stack.md](video_creation_stack.md) (slot design +
 costs), [tooling_landscape.md](tooling_landscape.md) (borrow/threat verdicts), and
-[groundwork_q3_2026.md](groundwork_q3_2026.md) (new-tools documentation + 3-month roadmap).
+[master_plan.md](master_plan.md) (the current forward plan; the archived
+[groundwork_q3_2026.md](groundwork_q3_2026.md) holds the original tool notes).
 
 ## The contract ([core/providers.py](../core/providers.py))
 
@@ -118,5 +119,5 @@ believing any "parked" status here.
 ```powershell
 ruff check .
 ruff format --check .
-python -m unittest discover -s tests
+python -m unittest discover -s tests -t .
 ```

@@ -1,6 +1,6 @@
 # Credit, Quota & Spend Efficiency
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
 
 How the system avoids burning paid credits/quota, what's shipped, and the
 **prioritized backlog** of optimizations. Companion to the cost model in
@@ -14,6 +14,28 @@ How the system avoids burning paid credits/quota, what's shipped, and the
 > longer (fewer repeats).
 
 ---
+
+## 0. The live paid APIs, and where each one's cost shows
+
+Every render ends with an `Est. run cost` line split by provider; `py -m scripts.ops
+reliability` shows credits, quota and cache hits. Run 98's line, for scale:
+`$0.3029 (llm $0.0086 · tts $0.2213 · apify $0.0200 · web $0.0080 · thumb $0.0450)` - the
+voice is most of every run.
+
+| Paid API | What it buys | Where the cost shows | The $0 path |
+|---|---|---|---|
+| ElevenLabs | the voice | `tts`, and `tts_actual_chars` on the run | Piper (Free mode) or Edge `[free]` extra (§28) |
+| Flux (BFL) | the thumbnail | `thumb` | Pillow, always generated too |
+| Apify: `tiktok_trends`, `youtube_competitors` | trend and competitor signals | `apify` | yt-dlp for competitors (`SIGNAL_BACKEND=free`); none for TikTok |
+| Tavily | live web search | `web` | keyless DuckDuckGo (`WEB_SEARCH_BACKEND=duckduckgo`) |
+| DeepSeek / OpenRouter | the LLM tiers | `llm`, split by stage | local Ollama |
+| YouTube Data API | search and upload | quota units, not money | - |
+
+**Run 98 broke the principle below for the biggest line.** The sentence-level TTS join failed
+on every multi-sentence render from 2026-09-20 (relative paths in the ffmpeg concat list), and
+the whole script was re-voiced - ElevenLabs was paid about twice per render until backlog #840
+fixed it. After the next render, `ops reliability` should show TTS-cache hits and a single
+charge.
 
 ## 1. What's shipped today (baseline)
 

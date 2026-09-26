@@ -152,6 +152,40 @@ Report card: A (88/100)       : hook 85 x30%, authenticity 87 x30%, grounding 88
                                 topic 94.6 x5%, length 100 x11%   (v4 gave A 89)
 ```
 
+### Plans and documentation (the second half of the ask)
+
+- **Obsidian.** No doc covered the vault end to end, and three docs gave three different
+  dossier paths, none matching the code (`_runs/{run_id}_{slug}.md`). New
+  [vault.md](vault.md): setup, layout with what is read back, tiers, the scan, ops verbs, what
+  not to hand-edit. Corrected the `vault_dossiers.py` docstring and decisions §17b.
+  "Stable-path dossier upsert" was listed open in the synopsis and had shipped.
+- **APIs.** `credit_efficiency.md` §0 maps each live paid API to where its cost shows and its
+  $0 path, with run 98's cost line (the voice is most of it, and #840 had doubled it).
+  Drift fixed: `.env.example` (line cap 60 -> 150, enrich floor 4 -> 6, a thumbnail comment
+  contradicting itself), the `tiktok_trends` claim in `llm_provider_strategy.md`, the
+  archived pointer and missing `-t .` in `providers_runbook.md`. Filed #853 (Anthropic router
+  IDs predate Claude 5), #854 (retire steam/igdb), #855 (`INGEST_ENABLED` read by nothing).
+- **Other repositories.** [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md), every
+  row checked that day: trafilatura 2.2.0, newspaper4k 0.9.6, a self-hostable jina-ai/reader
+  (the service behind today's proxy), Playwright 1.63.0, Crawl4AI 0.9.4, soccerdata,
+  obsidian-local-rest-api. football-data.org could not be checked (blocked here) and says so.
+  Recommendation: measure extractors on the operator's own links before adopting one.
+- **Desktop app.** Seven items the app plan retired on 2026-09-07 (#120 #141 #142 #143 #145
+  #467 #468) were still open in the backlog; closed. #151 marked shipped in the plan. The
+  proposed next panel is the **facts room (#860)**: the key-facts prompt took 7.9 of run 98's
+  11.2 operator minutes. First app item the master plan schedules (M4.7).
+- **Future planning.** `master_plan.md`: M1 "remaining" list replaced (all done), mypy 135 ->
+  129, M4.5 sample schedule and the logic-first retune rule, M4.6 pull-everything and
+  per-angle measurement, M4.7 operator time, M4's exit marked met on tapin (predictor n=23),
+  parked table corrected (#147 and Edge TTS had shipped). `roadmap.md` "Just landed" was
+  still wave 31; rewritten with the next five. `docs_standard.md` stale lines fixed.
+- **Flagged, not changed:** `positioning.md` (charter) still pitches a micro-SaaS surface,
+  contradicting the private-tool constraint. The charter is the operator's call.
+- **Suite-order lesson, again.** A backlog line written after the definitive suite run named
+  an unbuilt `ops` verb and turned CI run 162 red. Fixed in `1a7fdc2`, verified in a clean
+  worktree before pushing. The skill's rule - handoff slot last, *then* the suite - exists for
+  this; it applies to every doc edit, not just the slot.
+
 ## 2026-09-26 (Claude Code) - wave 32: the 09-20 five #826 #820 #824 #821 #819
 
 **Prompt (verbatim):** `next 5`

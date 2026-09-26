@@ -59,8 +59,8 @@ described a system from two months ago.
   successor is obvious and nobody has to open the file to learn it is old.
 - No `SCREAMING_CASE`, no `kebab-case`, no `CamelCase2026H2`.
 
-Ten pre-standard names are grandfathered in `LEGACY_NAMES` in the lint. That set may
-only shrink. A rename updates its inbound links in the same commit — they are
+`LEGACY_NAMES` in the lint held the ten pre-standard names; it has been empty since
+2026-09-26 and may only stay that way. A rename updates its inbound links in the same commit — they are
 load-bearing (`roadmap.md` has 28 of them) and `tests/test_docs_lint.py` fails on a
 broken one. Leave a redirect stub only where a link from outside the repo may exist, the
 way [ROADMAP.md](../ROADMAP.md) does. Repairing a link inside a `frozen` doc is a
@@ -122,7 +122,8 @@ sections. Nothing is rewritten; the split is a move.
 
 ### Living docs
 
-A doc over ~1,500 lines has stopped being readable and started being a database.
-`roadmap.md` is at 1,774 with a single 1,084-line section, and five files hold 48% of the
-corpus. The split plan is [master_plan.md](master_plan.md) M2. New docs should not need
-it: if a section wants to grow without bound, it is a `log`, and logs get their own file.
+A `living` doc may not exceed 800 lines (`LIVING_LINE_CEILING` in
+`tests/test_docs_standard.py`; `backlog.md` is exempt as the inventory, `snapshot` and `log`
+docs by class). `roadmap.md` has its own lint at under 200. The 2026-09 split that got the
+corpus there is [master_plan.md](master_plan.md) M2. If a section wants to grow without
+bound, it is a `log`, and logs get their own file.

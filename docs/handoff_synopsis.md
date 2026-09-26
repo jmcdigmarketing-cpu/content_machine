@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-26: wave 32, the 09-20 five
+# Handoff synopsis — 2026-09-26: wave 33, run 98
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,39 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 32 #826 #820 #824 #821 #819
+## Last wave — 2026-09-26 (Claude Code): wave 33, run 98 #840-#847 + plans
+
+The operator's run 98 (tapin, "Manchester City ofund guilty, what does this mean for the prem")
+and five questions. Answers are in [planning_log.md](planning_log.md); the sample-size one is
+also in [master_plan.md](master_plan.md) M4.5 (n=23 cannot see a weak effect; r=0.3 needs ~85
+videos, so retunes are logic-driven until then).
+
+- **#840** sentence-TTS join wrote relative paths into the ffmpeg concat list: every
+  multi-sentence ElevenLabs render since 09-20 was voiced twice. Absolute entries now.
+- **#841 #842** the topic's domain comes from the topic (`infer_topic_domain`,
+  `effective_domain`, `off_niche_note`); football is TapIn's (`soccer` domain, matrix,
+  weights, `extra_domains`, per-domain sign-off and tags). Decisions §34.
+- **#843** RAWG question words, Twitch site-wide viewers, fan-out question halves, Steam
+  junk, and popularity dumps as "verified facts" - all gone.
+- **#844-#846** page titles are metadata; JS shells retry the proxy; `LINK_FACT_MAX_LINES`;
+  pasted-link lines are `tier: link` in `_link_facts/`; borrowed vault lines never pin;
+  pasted-link lines with no contact with the angle are listed, Enter drops, `k` keeps.
+- **#847** report card v5: topic 0.12 -> 0.05 (operator: lower, keep).
+- **Docs:** [vault.md](vault.md) (new), [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md)
+  (new, verified), master_plan M4.5-M4.7, desktop facts room **#860**, seven long-retired
+  desktop items closed, `.env.example` and API-doc drift fixed.
+- **CI:** run 162 went red on a docs line I added after the last suite run (#857 named an
+  unbuilt `ops` verb); fixed in `1a7fdc2`.
+
+**Verify:** `py -m scripts.ops test --order reverse` · `python -m unittest tests.test_run98_domain
+tests.test_run98_fact_intake tests.test_run98_signal_facts tests.test_tts_concat_paths
+tests.test_grade_v5`.
+
+**Operator:** `git pull`; `py -m scripts.ops calibration`; `py -m scripts.ops backfill-quality
+--channel tapin --force` then `--apply`; after the next render `ops reliability` should show
+TTS-cache hits and one charge. Optional: `API_SPORTS_KEY` for football signals.
+
+## Previous — 2026-09-26 (Claude Code): wave 32 #826 #820 #824 #821 #819
 
 The roadmap's five, taken in the order cheapest-and-safest first. This container has no run
 archive (`data/` holds two files), so #824 and #821 shipped the **measurement** they lacked,
@@ -68,44 +100,6 @@ behaviour changed.
 **Still open:** roadmap next five **#826 #821 #820 #824 #819** (product); #830–#834
 (structural, M3). `planning_log.md` rolls over again at month end.
 
-## Previous — 2026-09-20 (Claude Code): wave 30 #817 #818 #822 #739 #823
-
-Second measurement wave, and the one where the measurements started saying no. **Two items
-closed without a behaviour change because the numbers said not to**, and one closed because its
-filed text was wrong.
-
-Verifying the recommended five moved two slots. Three waves had shipped measurements carrying
-**zero rows** (`hedge_density`, `grade_score`, `style_recurrence_*`, `angle_spread`) because no
-run had been generated since - that became **#823**. **#819 came out**: it asks what to use
-instead of composite and names `angle_scores`, which has 0 rows and cannot be backfilled.
-**I first called #739 blocked on "0 stock clips" - that was wrong**, I had looked only in
-`video/backgrounds/`; there are 52 in `assets/cache/`.
-
-- **#823** `ops backfill-quality`, mirroring `backfill_features`: as-of window via the new
-  `build_quality(recent=)`, carries forward what it does not own, dry run by default. Applied on
-  the operator's call - **87 rows, measured runs 3 -> 12**.
-- **#824, what that immediately revealed:** grade vs engaged-rate **r=-0.32 over 12 videos**,
-  worse than composite's -0.15 on the same twelve. Both scores the pipeline ranks on are
-  anti-correlated with engagement. **Not significant at n=12 - filed "do not retune on this".**
-- **#822** measured first: the hedged-rumor escape has fired **0 times** in 37 verified runs.
-  Neither gate nor rubric moved. The real gap was that `warn_only_unsupported` was never
-  persisted; now `gate_waived` with a card reader.
-- **#739** measured over 8 fractions/clip and **rejected**: gameplay 147 clips, ALWAYS 2,
-  intermittent 90, median 0.25; stock 52, ALWAYS 0, ever 6. `ops footage --persistence`.
-- **#818** coverage line (37/12/3). **#817** settled by measurement, no code change.
-
-Found: **#824** anti-predictive card · **#825** `--force` was read by four ops verbs, declared by
-none, *and* hardcoded to False after `parse_args` · **#826** per-claim types exist only from run
-76, and unlike #818 are **not** backfillable.
-
-Caught in audit, self-inflicted: right after applying #823 the snapshot line claimed "today's
-rubric reproduces every one" - tautological for a backfilled grade. Rows now stamped
-`grade_backfilled`. Also deleted a `_pinned_window` monkeypatch after writing it green, in
-favour of the `recent=` passthrough.
-
-Next five: **#826 · #821 · #820 · #824 · #819**. Suite **3,462 -> 3,487**; mypy **139**; ruff
-clean; `data/` untouched; backlog **325 open / 734 done**, highest **#826**.
-
 ## Pipeline order (operator)
 
 ```
@@ -114,7 +108,7 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 
 **Titles are NOT chosen at discovery.** Discovery returns short angle lines; `core/title_generator.py` writes the YouTube title after key facts + script + grounding.
 
-**Vault mirror (Pillar 4):** when `OBSIDIAN_VAULT_PATH` is set, every drafted/rendered run writes `{channel}/_runs/{date}_{slug}-{id}.md`; `daily_sync` / `ops vault-sync` refresh dossiers with post-sync actuals. Strategy notes feed a bounded `CHANNEL PLAYBOOK` block in the script prompt (style, not facts).
+**Vault mirror (Pillar 4):** when `OBSIDIAN_VAULT_PATH` is set, every drafted/rendered run writes `{channel}/_runs/{run_id}_{slug}.md` (layout: [vault.md](vault.md)); `daily_sync` / `ops vault-sync` refresh dossiers with post-sync actuals. Strategy notes feed a bounded `CHANNEL PLAYBOOK` block in the script prompt (style, not facts).
 
 ---
 
@@ -123,14 +117,14 @@ Topic → Discovery (signals + editorial ANGLES) → pick angle → length → K
 | Feature | Where |
 |---------|--------|
 | Multi-line paste | Type `paste` at key-facts prompt |
-| Vault save (all facts) | `vault/<channel>/_operator_facts/<date>_<topic>.md` (stamped `tier: operator` + `verified_at`) |
-| LLM packing | Char budget default 12000 (`OPERATOR_KEY_FACT_CHAR_BUDGET`), soft 24 lines |
-| Priority | manual → links → vault |
+| Vault save (all facts) | typed lines -> `vault/<channel>/_operator_facts/` (`tier: operator`); pasted-link lines -> `_link_facts/` (`tier: link`, since run 98) |
+| LLM packing | Char budget 12000 (`OPERATOR_KEY_FACT_CHAR_BUDGET`), line cap 150 (`MAX_OPERATOR_KEY_FACTS`); only lines typed this run pin |
+| Priority | typed → links → vault; pasted-link lines with no contact with the angle are listed first (Enter drops, `k` keeps) |
 | Conflicts | Operator facts win — contradicting signal/web lines dropped pre-prompt (`FACT_CONFLICT_FILTER`) |
 | Playbook | Strategy/belief notes → `CHANNEL PLAYBOOK` prompt block (NOT facts) |
 | Run dossiers | `vault/<channel>/_runs/` — records of what we made, never read back as facts |
 | Link scrape | Yahoo/list items OK; ESPN WAF → use `paste`; Bing search/captcha blocked; `ck/a` unwraps |
-| Sports on TapIn | `infer_domain(key_facts=)` + NBA script matrix — pasted NBA facts override gaming default |
+| Sports on TapIn | domain from the topic (`infer_topic_domain`); football is TapIn's (`soccer`, §34); NBA/NFL/UFC/soccer matrices; pasted sport facts still override |
 | **Headless** | `auto_generate --facts-file <paste-block.txt> --fact "..."` (repeatable) |
 
 ---
@@ -167,58 +161,29 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 ## Open (roadmap next)
 
-**Pickup:** take the Pillow/requests/MoviePy dependency wave when a real render
-can verify it. Candidates **23–28** (remaining caption/thumb aesthetics) and **56–90** leftovers sit at
-the bottom of Next up. Phase M stays parked. **#147 FastAPI still skipped.**
+The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-**Already done (do not re-open):**
-- Ten-small-task wave (2026-08-25): MoneyWise persona; #21, #22, #31, #39,
-  #53, #262, #271, #298, and #299.
-- Post-wave-4 pickup (2026-08-25): #313, #282, #308–310, #232 and #122.
-- Caption-text from the script (`video/caption_retext.py`, 2026-08-16). The **$0 TTS
-  switch** is unblocked and waiting on two *operator* calls: judge
-  `output/samples/piper_lessac_run65.mp3`, then re-run
-  `py -m scripts.bench_script_duration` (Piper reads ~20% slower).
-- Silent `pass` handlers (S110/S112, 2026-08-16).
-- **PR #34 merged 2026-08-19** (`6389e87`), CI green on `main`. All seven stale PRs
-  **#26–#32 closed**. Pre-merge check: Alembic `0004`, 4/4 FKs, 37/37 feeds, 1,433
-  tests. `feat/research-intake-repair` and `feat/trade-validation-default-on` are in
-  `main` and safe to delete.
-- Coverage wave: `prepend_channel_intro`, `process_one` quota gate, `_defer_for_quota`,
-  `build_render_ffmpeg_command` **done**. Remaining: **`youtube/oauth.py` tests**
-  (never `config/secrets/`) and the `coverage` extra (report only, no CI %).
-- Router vision path (2026-08-20): thumbnail scorer uses `llm_router.complete` with
-  image parts; `core/llm_client.py` deleted. Pillar 2 *rendered-video* review is still
-  later. Semantic authenticity (`AUTHENTICITY_SEMANTIC`) default-on, warn-never-block.
-- Cheap-tier dead slugs: OpenRouter cheap repointed on live test; Ollama reports
-  unavailable when nothing is pulled (run 66 / run 70). `ops free-doctor` now says
-  **pull** vs **serve** vs OpenRouter throttled fallback.
+1. **Operator, after pulling:** `ops calibration`, `ops backfill-quality --force` (v5 re-stamp),
+   check `ops reliability` for single TTS charges. #821 and #819 wait on those numbers.
+2. **Product next:** #848 auto-research · #852 entity-aware signal queries · #859 soccer feeds ·
+   #850 brief sees key facts · #836 angle-score backfill (feeds #849).
+3. **Structural (master_plan M3):** #839 hook refuses non-ASCII subjects · #830 · #832 · #831
+   ruff bump · #834 `core/` seams.
+4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
+5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
+   contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours
+   to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
+   the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Still open:**
-1. **Reinstall the venv** after the Pillow 11.3 / requests 2.32.4 / moviepy-drop
-   pin change, then do a real thumbnail/render. Do not start with clip-from-source,
-   avatar, #147 FastAPI, or Phase M.
-2. **Pillar 6 remainder** — seams live; heavy backends wait on a **CUDA torch**
-   build (`2.8.0+cpu` on an RTX 4070 Ti), not on hardware. Clip-from-source and
-   storyboard still not started. [providers_runbook.md](providers_runbook.md),
-   [video_creation_stack.md](video_creation_stack.md).
-3. **Pillar 2 remainder** — multimodal rendered-video review (vision path now
-   exists); calibration/predictor stay volume-gated (10 measured vs threshold 15).
-4. **Unphased:** MoneyWise depth, AI Tools/Tech groundwork. Overnight `--facts-file`
-   is wired. Vault wolverine-only bullets (no franchise string) still attach.
-5. **Vault:** stable-path dossier upsert (date-prefix clones the same `run_id`).
-6. **One-time ops:** re-auth `youtube.readonly` for tapin; `oauth_setup` for MoneyWise.
-7. **Do not merge** `origin/claude/docs-optimization-review-a4l104` (9 commits, no
-   PR, last touched 2026-07-21, old base — same shape as #27).
-   `origin/feat/reddit-free-backend-and-signal-persistence` is in `main`; delete it.
-
-**Parked / excluded:** Instagram + TikTok platform linking (Phase M) · Benable bot.
+**Parked / excluded:** Phase M (Instagram + TikTok) · Benable bot · Edge TTS as default (§28).
 
 ---
 
 ## Docs to read first
 
-- `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**
+- `docs/decisions.md` §15 (pillar reorientation), §16 (Fact Engine), **§17b (vault OS)**, **§34 (topic domain, football, link tier, v5)**
+- `docs/vault.md` — the vault end to end
+- `docs/master_plan.md` — the forward plan, with the sample schedule in M4
 - `docs/credit_efficiency.md` — O1–O11 (all ✅)
 - `docs/roadmap.md` — Pillars 1–7 ✅ (Pillar 6 backends parked on CUDA torch); post-wave-4 pickup shipped
 - `docs/providers_runbook.md` — Pillar 6 tool → module → env → proof index

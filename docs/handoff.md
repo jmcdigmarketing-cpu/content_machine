@@ -53,32 +53,31 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** the single wave-32 commit on `main` after
-`cdb01d8` (`git log -1`) · **Tree:** clean; `data/` untouched.
+**Written:** 2026-09-26 · **HEAD at write:** `1a7fdc2` + this docs commit on `main` (`git log -3`)
+· **Tree:** clean after the commit; `data/` untouched.
 
 **Defects first:**
-- **CI on `main` was red at `cdb01d8` and it was mine.** Wave 31's commit *subject* carried a
-  U+2192 arrow; `core/agent_comms.render` reads `git log -1` and the cp1252 guard failed in both
-  unit-test legs (run 159). `render` is now console-safe by construction (#838); the hook still
-  accepts non-ASCII subjects (#839, filed). Keep subjects ASCII.
-- **`angle_scores` had 0 rows because nothing persisted them** - `_finalize_run` dropped what
-  `run_discovery` computed (#819). Three waves called that "no population". Fixed; the tie is
-  unchanged until `angle_correlation` is positive at n>=5.
-- **Queued signals started after the discovery deadline** (#820) - `shutdown` had no
-  `cancel_futures`. Paid POSTs are now refused after the deadline; free stragglers still cache.
-- The mypy ratchet caught its first real error (a `no-redef` of mine) one wave after going
-  blocking. It works.
+- **CI run 162 was red, and it was mine**: a backlog line added *after* the final suite run
+  named an unbuilt `ops` verb. Fixed in `1a7fdc2`, verified in a clean worktree; CI run 164 green, real-ffmpeg test included. Run every doc
+  edit before the suite, not just this slot.
+- **Every multi-sentence ElevenLabs render since 09-20 was voiced twice** (#840): the TTS join
+  wrote relative paths into the ffmpeg concat list. Fixed; the real-ffmpeg test runs in CI only.
+- **Football ran as gaming** (#841): a keyword-less topic took the channel's domain. Gating,
+  brief, templates and feeds now use the topic's own domain.
+- **Old `_operator_facts` notes hold scraped text at operator tier.** Not migrated (your vault);
+  they no longer pin. #857 is the dry-run re-tier.
 
-**Shipped:** #826 claim-type coverage line · #820 `apis/run_deadline` · #824 per-component r +
-`n_for_significance` (|r|=0.32 needs n>=36; rubric untouched) · #821/#819 measurement + lines
-(open, waiting on your `py -m scripts.ops calibration` numbers) · #835 #837 #838 fixed on the way.
+**Shipped:** #840-#847 (TTS, domain, soccer, signal hygiene, fact intake, card v5) and the docs:
+[vault.md](vault.md), [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md), master_plan
+M4.5-M4.7 (sample schedule, logic-first retunes), facts room #860, seven retired desktop items
+closed, API/env drift fixed. Decisions §34.
 
-**Operator:** run `py -m scripts.ops calibration` on the archive and paste the component,
-recurrence and claim-type lines into the next planning entry - this box has no archive.
+**Operator:** `git pull`; `py -m scripts.ops calibration`; `py -m scripts.ops backfill-quality
+--channel tapin --force` then `--apply` (v5 re-stamp); next render should show one TTS charge.
+`positioning.md` contradicts the private-tool rule - your call.
 
-Suite **3,550**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-ruff clean; backlog **329 open / 743 done**, highest **#839**. Next five:
-**#836 · #839 · #830 · #832 · #831**.
+Suite **3,601**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **283 numbered open**, highest **#860**. Next five: **#848 · #852 · #859 · #850 · #836**.
 
 ## Slot — Cursor
 

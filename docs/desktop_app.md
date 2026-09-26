@@ -1,6 +1,6 @@
 # Content OS Desktop — the programme
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
 
 The plan to leave the terminal permanently, for a real Windows 11 application.
 **Private, local, single-operator, never published.** That constraint is load
@@ -154,9 +154,18 @@ Stage 3 panels (cost, analytics, …) are later waves.
 | #162 | Experiment cockpit — arms, MDE refusals, results | report-only; never auto-assigns |
 | #160 | Legal/disclosure wizard | publish-blocking, not copy lines |
 | #159 | MoneyWise earnings board | last; second channel |
+| #860 | Facts room — paste links, rank lines against the angle, keep or drop | filed 2026-09-26 from run 98; **proposed next** (see below) |
 
 **Exit per panel:** reads real data, and the equivalent `ops` verb still works. The
 CLI is never removed — it is the headless path and the test surface.
+
+**Proposed next panel (2026-09-26): #860 the facts room.** Run 98 spent 7.9 of 11.2
+operator minutes at the key-facts prompt, pasting one URL at a time. That is now the
+largest operator cost per video, larger than any panel above removes. The machinery
+exists and was cleaned up in wave 33 (titles are metadata, pasted-link lines are link
+tier, off-topic lines are flagged against the angle), so the panel is a view over
+`prompt_key_facts_result`'s inputs and outputs, not new logic. Nothing about the app is
+scheduled in [master_plan.md](master_plan.md) today; this is the proposal for its slot.
 
 ## Stage 4 — Studio · 3–4 waves · closes #142, #151, #152, #153
 
@@ -170,7 +179,8 @@ The aesthetics work, and the reason Qt was chosen.
   word timings; removal left the burned ASS byte-identical. See **#713** for the
   part still worth solving, automatically.
 - **#151** brand-kit compiler — fonts, palette, sting, handle, banner compiled to
-  render assets *and* GUI chrome from the Stage 0 tokens
+  render assets *and* GUI chrome from the Stage 0 tokens. **Shipped 2026-09-09**
+  (`core/brand_kit.py`, `desktop/brand.py`, `--brand`).
 
 This **is** #142 "Shorts Visual Studio" — three panels in the app that exists by
 then, not a sibling product.

@@ -26,49 +26,38 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-26 wave 31 (structural, Claude Code): **#827** one reset point for
-process-global state · **#828** `ops test --order reverse|shuffle` + a reversed CI leg - the
-run-69 order-dependence was a half-built ExitStack in `test_ops_doctor`, and the first reversed
-run found two more · **#829** partial installs say one line · **#833** mypy is a blocking ratchet
-at 135 · the docs standard finished (ten renames, two log rollovers, `decisions.md` rewrapped,
-nine never-reviewed docs read). Filed **#830-#834**. Plan: [master_plan.md](master_plan.md).
+**Just landed** - 2026-09-26 wave 33 (run 98, Claude Code): **#840** every multi-sentence
+ElevenLabs render since 09-20 was billed twice (fixed) · **#841 #842** a topic's domain comes
+from the topic, and football is TapIn's (`soccer`) · **#843** popularity payloads no longer pose
+as facts · **#844-#846** page titles are metadata, pasted-link lines are link tier and checked
+against the angle · **#847** report card v5 (topic weight 0.05). Plans: [vault.md](vault.md),
+[tooling_review_2026-09-26.md](tooling_review_2026-09-26.md), the facts room **#860**.
 
-**Before that** - 2026-09-20 wave 30 (measurement): **#823** measured runs **3 -> 12** · **#824**
-report card vs engaged-rate **r=-0.32** · **#822** hedged-rumor escape fired **0 times**, waiver
-recorded · **#739** source rule rejected · **#818 #817 #825**.
-
-**Previously** - wave 27 (operator loop + resource waste) **#806 #807 #810 #812 #802**; wave 26
-(script quality) **#799** rewrite ledger · **#800** hedge density (closes §25) · **#801** intent
-replay · **#809** TTS cache default-on · **#804** continuous authenticity points (`GRADE_VERSION`
-v4, gate still binary); wave 25 (documentation) [engine_upgrades.md](engine_upgrades.md), filed
-**#799-#812**; wave 24 **#792 #796 #788 #793 #795 #797 #798**; wave 23 **#785 #787 #600 #789 #790
-#791**; wave 22 **#782 #783 #784 #601 #781**; **#153** retired.
+**Before that** - wave 32: **#826 #820 #824** closed, **#821 #819** measured · wave 31
+(structural): **#827 #828 #829 #833** (mypy ratchet, 129), docs standard finished · wave 30
+(measurement): **#823 #824 #822 #739**. Earlier waves: [roadmap_archive.md](roadmap_archive.md)
+and [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 32 (2026-09-26) shipped the 09-20 five** - #826 #820 #824 closed, #821 #819 progressed to
-"the measurement exists, the number is the operator's to produce". Every calibration line now
-carries its own decision rule (`needs n>=36`, `promotion waits on |r|`, `collecting 0 of N`), so
-the next product step on the anti-correlation is **data, not code**: run `py -m scripts.ops
-calibration` on the archive and generate runs. The list below therefore changes shape: one item
-that gives #819 an n today, then the structural debts that bit this wave.
+**Wave 33 (2026-09-26, run 98)** fixed what the run exposed and needed no sample: double-billed
+TTS, football routed as gaming, junk "facts", scraped boilerplate saved as operator facts, and
+a topic weight that scored five angles identically. The list now follows the operator's two
+open questions from that run - *pull everything* and *make football work* - ahead of the
+structural items, which keep their order in [master_plan.md](master_plan.md) M3.
 
-1. **#836 backfill `angle_scores` from `variants_json`** `[M]` - the angle *texts* are persisted,
-   so a deterministic `llm_judge=False` recompute gives #819's correlation an n now, stamped
-   `angle_backfilled` (the #823 pattern). Without it #819 waits on a handful of new runs.
-2. **#839 the commit hook must refuse a non-ASCII subject** `[S]` - wave 31's arrow glyph turned
-   CI on `main` red (#838) on the commit that made the ratchet blocking. The ASCII rule is written
-   down; nothing enforces it.
-3. **#830 a bare `unittest discover` writes the real `data/tts_cache`** `[S]` - the guard belongs in
-   the write path, not in `tests/__init__.py`, which never loads without `-t .`.
-4. **#832 `apis/scrapers` is a namespace package** `[S]` - the #737 shape: an installed wheel drops
-   it. `__init__.py`, the packages entry, and a test that imports from a built wheel.
-5. **#831 ruff 0.8.4 -> current** `[M]` - 47 lint + 36 format findings against today's config; one
-   format sweep, one pin bump, one commit per rule family. Its own wave, not a rider.
+1. **#848 auto-research** `[M]` - read the web-search result pages the pipeline already has,
+   filtered against the angle, at web tier. The operator asked for exactly this.
+2. **#852 entity-aware signal queries** `[S]` - `api_sports` searches the raw 48-character
+   topic and Wikipedia never tries "Manchester_City"; football signals stay weak until fixed.
+3. **#859 soccer RSS feeds** `[S]` - no feed is tagged `soccer`; the operator names two.
+4. **#850 the research brief sees the key facts** `[S]` - it can contradict them today.
+5. **#836 backfill angle scores** `[M]` - gives #849 (telling angles apart) an n now.
 
-**Waiting on the operator's numbers, not on code:** #821 (promote recurrence only when
-`ops calibration` shows |r| at significance) and #819 (the tie leans on composite until
-`angle_correlation` is positive at n>=5). Both lines print the rule they wait on.
+**Waiting on the operator, not on code:** `git pull`, then `py -m scripts.ops calibration`
+(per-component and today's-rubric lines) and `py -m scripts.ops backfill-quality --channel
+tapin --force` (dry run, then `--apply`) to re-stamp history as v5. #821 and #819 wait on those
+numbers. Structural queue unchanged: #839 · #830 · #832 · #831.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

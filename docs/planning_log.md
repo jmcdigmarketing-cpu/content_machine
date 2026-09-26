@@ -17,6 +17,71 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - wave 34: pull everything, football queries, the brief sees the facts
+
+**Prompt (verbatim, after the operator's terminal paste):** "next 5 after this"
+
+**What the paste showed first.** `git pull` printed "There is no tracking information for the
+current branch": the PC is on `codex/p0-test-integrity`, a local-only branch (not on GitHub),
+so `origin/main` was fetched and never merged. `ops calibration` therefore printed the old
+output, and `backfill-quality --force --apply` re-stamped 95 rows with the *old* rubric -
+harmless, and redone by running it again on `main`. The branch may hold Codex work, so the
+switch instructions check for unpushed commits first.
+
+**Operator decisions this session:** BBC Sport + The Guardian football feeds; auto-research on
+by default.
+
+### Shipped 1..5 (cheapest first; the riskiest last)
+
+1. **#859** `domain_rss.soccer` with the two feeds, tagged `soccer`.
+2. **#852** `apis/topic_tokens.title_phrases`; API-SPORTS `_search_query` and Wikipedia
+   `_article_candidates` use it.
+3. **#850** `build_research_brief(key_facts=)`: prompt block, fallback evidence, cache digest;
+   `run_pipeline` passes them.
+4. **#836** `analytics/backfill_angles.py` + `ops backfill-angles`; `CalibrationRow.angle_backfilled`.
+5. **#848** `core/auto_research.py`; `link_facts._article_extract` (pure) under `_article_facts`;
+   `web_research` formatter at web tier; pipeline hook; one summary line in `main.py`.
+   Decisions §35.
+
+### Findings, with file:line
+
+- `core/link_facts.py` `_article_facts` wrote a module global per call; parallel reads would
+  have raced on title and date. Split into a pure `_article_extract` first.
+- `core/research_brief.py` cache key (`build_key("research_brief", ...)`) had no facts in it:
+  a regenerate with new facts got the old brief for three hours.
+- `analytics/backfill_quality.py` docstring claimed the variants were never stored; the run
+  rows always held them in `variants_json` (corrected).
+- `main.py`'s fact-quality preview is built from discovery signals, so it cannot show
+  auto-research lines (#861).
+
+### Deliberately not done
+
+- Saving auto-research lines to the vault (#862) - unreviewed web text stays out.
+- Leaning the angle tie on the backfilled scores - #849 decides from the correlation first.
+
+### Audit
+
+Thirty new tests in five modules (`test_wave34_queries_feeds`, `test_brief_sees_key_facts`,
+`test_backfill_angles`, `test_auto_research`, plus the ops-verb check). **Every behavioural
+test observed failing first** (7 of 9, 4 of 4, 6 of 6, 8 of 8; the rest are guards). mypy 129
+== baseline; ruff clean; `data/` untouched; every new symbol has a production caller. All doc
+edits were made before the definitive suite run (the wave 33 lesson).
+
+### Proof
+
+Run 98's inputs replayed:
+
+```
+api_sports query      : 'Manchester City'
+wikipedia candidates  : ['Manchester_City', 'Manchester_City_Ofund_Guilty_Prem', 'Manchester_City_Ofund', 'Manchester']
+football feeds        : ['BBC Sport Football', 'The Guardian Football']
+auto-research         : Auto-research: 2 page(s) read, 2 line(s) kept, 1 off-topic dropped
+Angle-score backfill - tapin
+  3 run(s); Would update 2; skipped 1; failed 0
+```
+
+Backlog **281 numbered open**, highest **#863**. Next five: **#849 · #863 · #861 · #839 · #830**.
+
 ## 2026-09-26 (Claude Code) - wave 33: run 98 - pay once, route football, keep facts on-topic
 
 **Prompt (verbatim, before the pasted run-98 terminal log):** "take this run and note the

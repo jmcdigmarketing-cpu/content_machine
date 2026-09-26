@@ -40,6 +40,9 @@ os.environ["TTS_CACHE"] = "false"
 # tests that discover the same topic string read each other's variants. Off for the
 # suite; tests/test_discovery_persist.py turns it on for itself.
 os.environ["DISCOVERY_CACHE"] = "false"
+# #848 auto-research is on by default and fetches web pages; no test may. Tests of
+# the feature (tests/test_auto_research.py) set it themselves.
+os.environ["AUTO_RESEARCH_ENABLED"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.
 os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 # #782: fast-cut backgrounds run real ffmpeg on the local clip library; render tests mock one

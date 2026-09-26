@@ -103,7 +103,13 @@ def _article_candidates(topic: str) -> list[str]:
             kept.append(folded)
     if not kept:
         return []
-    candidates = [*_franchise_pages(topic), "_".join(kept[:6])]
+    # #852: the names the operator typed, as titles ("Manchester_City"), right after
+    # the franchise pages. Run 98 only tried 6-, 3- and 1-word joins and landed on
+    # the city of Manchester.
+    from apis.topic_tokens import title_phrases
+
+    named = ["_".join(p.split()) for p in title_phrases(topic) if len(p) >= 3]
+    candidates = [*_franchise_pages(topic), *named, "_".join(kept[:6])]
     if len(kept) >= 2:
         candidates.append("_".join(kept[:3]))
     first = kept[0]

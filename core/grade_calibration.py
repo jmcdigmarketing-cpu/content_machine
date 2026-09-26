@@ -62,6 +62,8 @@ class CalibrationRow:
     recurrence_n: int | None = None
     # #819: the editorial score of the chosen variant, once runs persist it.
     angle_score: float | None = None
+    # #836: recomputed offline from variants_json - an approximation of the live score.
+    angle_backfilled: bool = False
 
 
 @dataclass
@@ -263,6 +265,7 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
                 grade_version=version,
                 recurrence_n=int(rec_n) if isinstance(rec_n, int | float) else None,
                 angle_score=float(angle) if isinstance(angle, int | float) else None,
+                angle_backfilled=bool(quality.get("angle_backfilled")),
             )
         )
 
@@ -388,7 +391,14 @@ def angle_line(report: CalibrationReport) -> str:
             f"Angle score vs engaged-rate: collecting ({n} of {report.measured} measured runs carry "
             "one; runs before wave 32 never persisted it) - the tie keeps leaning on composite"
         )
-    return f"Angle score vs engaged-rate r={r:+.2f} (n={n}); the tie leans on composite until this is positive"
+    backfilled = sum(
+        1 for row in report.rows if row.angle_score is not None and row.angle_backfilled
+    )
+    note = f", {backfilled} of {n} backfilled approximations (#836)" if backfilled else ""
+    return (
+        f"Angle score vs engaged-rate r={r:+.2f} (n={n}{note}); "
+        "the tie leans on composite until this is positive"
+    )
 
 
 def accuracy_line(channel_id: str | None = None, *, use_cache: bool = True) -> str | None:

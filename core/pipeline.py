@@ -12,6 +12,7 @@ from apis.topic_scorer import composite_score
 from apis.topic_variants import generate_variants
 from config.channels import resolve_channel_id
 from core.asset_recorder import record_render_assets
+from core.auto_research import attach_web_research
 from core.channel_context import anchor_preservation_penalty, mcu_drift_penalty
 from core.content_engine import generate_content_package
 from core.logging import get_logger
@@ -851,6 +852,20 @@ def run_pipeline(
     wr = _word_range(length_choice)
     today = datetime.now().strftime("%Y-%m-%d")
 
+    # #848: read the web-search result pages for the chosen angle before the brief
+    # and the script see the signals. A copy - `discovery` is reused by main.py's
+    # regenerate loop and the per-angle Shorts.
+    auto_research_report: dict | None = None
+    from core.providers import flag_enabled
+
+    if flag_enabled("AUTO_RESEARCH_ENABLED", default=True):
+        best_signals, auto_research_report = attach_web_research(
+            best_signals,
+            angle=str(best_topic),
+            topic=content_topic,
+            exclude_urls=list(source_urls or []),
+        )
+
     logger.info("Building research brief for: %s", best_topic)
     t_brief = time.perf_counter()
     research_brief = build_research_brief(
@@ -858,6 +873,8 @@ def run_pipeline(
         best_signals,
         channel_id=channel_id,
         seed_topic=input_topic,
+        # #850: the brief frames the script; it must see what the operator pasted.
+        key_facts=list(key_facts or []) or None,
     )
     result.timings["research_brief"] = time.perf_counter() - t_brief
 
@@ -904,6 +921,8 @@ def run_pipeline(
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:
         result.features["angle_intent"] = result.angle_intent
+    if auto_research_report is not None:
+        result.features["auto_research"] = auto_research_report
     if len(angles) >= 2:
         from core.angle_chapters import (
             chapter_lines,

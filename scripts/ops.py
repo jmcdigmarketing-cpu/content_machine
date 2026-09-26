@@ -346,6 +346,16 @@ def cmd_backfill_quality(args: argparse.Namespace) -> int:
     return _run_module("analytics.backfill_quality", *extra)
 
 
+@_register("backfill-angles", "Score historical runs' stored angles offline (#836; approximate)")
+def cmd_backfill_angles(args: argparse.Namespace) -> int:
+    extra = ["--channel", args.channel]
+    if getattr(args, "apply", False):
+        extra.append("--apply")
+    if getattr(args, "force", False):
+        extra.append("--force")
+    return _run_module("analytics.backfill_angles", *extra)
+
+
 @_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
 def cmd_backfill_cost(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]
@@ -2313,7 +2323,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help=(
-            "backfill-quality / backfill-cost / competitor-sync / daily-sync: "
+            "backfill-quality / backfill-angles / backfill-cost / competitor-sync / daily-sync: "
             "recompute or refetch rows that are already populated"
         ),
     )

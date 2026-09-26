@@ -15,6 +15,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `apify-trueup` | Compare synthetic Apify invoice vs $0.02/run model (no network) |
 | `artifact-retention` | Report old drafts, traces, and vault _runs clones (dry-run only; never deletes) |
 | `artifacts` | Cap output/ by GB (dry-run default; --apply deletes oldest) |
+| `backfill-angles` | Score historical runs' stored angles offline (#836; approximate) |
 | `backfill-cost` | Repair missing TTS cost on runs that rendered before the fix |
 | `backfill-features` | Reconstruct features_json for historical runs |
 | `backfill-quality` | Recompute grade/hedge/style fields on historical runs (#823) |

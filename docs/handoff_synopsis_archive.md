@@ -7,6 +7,31 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 31 structural #827 #828 #829 #833
+
+Executed the 09-20 audit instead of writing a third one about the same findings; the
+before→after is [audit_2026-09-26.md](audit_2026-09-26.md). Ten signed commits, no product
+behaviour changed.
+
+- **#827** `core/process_state.py`: one reset point for process-global state, 23 modules
+  registered, run before every test from `tests/__init__.py`.
+- **#828** `ops test --order reverse|shuffle --seed N` + CI leg `Unit tests (reversed order)`.
+  The run-69 symptom was `tests/test_ops_doctor._stack()` — an `ExitStack` built outside a
+  `with`, leaking `run_mode._ollama_ready` whenever a later `patch()` target failed to import
+  (partial installs only). First reversed run found two more leaks; all closed.
+- **#829** one-line missing-modules notice; inert tests fixed; Pillow skips fail under CI.
+- **#833** `scripts/mypy_ratchet.py`: 129 on pinned mypy 1.13.0, blocking on increase.
+- Docs: ten renames (links rewritten), `handoff_synopsis.md` 1,849 → 244, `planning_log.md`
+  rolled over by month, `decisions.md` rewrapped word-for-word, nine never-reviewed docs
+  corrected, decisions §33 (Content Machine = engine, Content OS = operator app), three new
+  lint rules, roadmap/backlog repaired, **#830–#834** filed.
+
+**Verify:** `py -m scripts.ops test --order reverse` · `py scripts/mypy_ratchet.py` ·
+`python -m unittest tests.test_docs_standard tests.test_docs_lint`.
+
+**Still open:** roadmap next five **#826 #821 #820 #824 #819** (product); #830–#834
+(structural, M3). `planning_log.md` rolls over again at month end.
+
 ## Previous — 2026-09-20 (Claude Code): wave 30 #817 #818 #822 #739 #823
 
 Second measurement wave, and the one where the measurements started saying no. **Two items

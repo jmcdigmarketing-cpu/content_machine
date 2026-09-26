@@ -365,8 +365,14 @@ def link_fact_max_lines() -> int:
     return max(5, min(200, value))
 
 
-def _article_facts(url: str, *, max_lines: int | None = None) -> list[str]:
-    """Fact lines from an article page: body paragraphs, plus its meta summary when
+def _article_extract(url: str, *, max_lines: int | None = None) -> tuple[list[str], dict[str, Any]]:
+    """(fact lines, page metadata) for an article - pure, no module state.
+
+    Thread-safe, so auto-research (#848) can read several pages at once; the
+    interactive reader goes through `_article_facts`, which records the metadata
+    for `last_extract_report`.
+
+    Fact lines from an article page: body paragraphs, plus its meta summary when
     the page HAS a body.
 
     The title is never a fact (run 98 sent six "Source: <title>" lines to the model
@@ -376,23 +382,29 @@ def _article_facts(url: str, *, max_lines: int | None = None) -> list[str]:
     stats ... on the official website"), so the page returns no facts at all and
     `extract_facts_from_url` can try the reader proxy.
     """
-    global _last_extract_report
+    empty: dict[str, Any] = {
+        "kept": 0,
+        "found": 0,
+        "published": None,
+        "title": "",
+        "description": "",
+    }
     max_lines = max_lines if max_lines is not None else link_fact_max_lines()
     url = _unwrap_redirect_url(url)
     if _is_blocked_url(url):
         logger.debug("link fetch skipped blocked url %s", url)
-        return []
+        return [], empty
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=12)
         if resp.status_code != 200 or _is_bot_blocked(resp):
             blocked = _is_bot_blocked(resp)
             logger.debug("link fetch %s returned %s (blocked=%s)", url, resp.status_code, blocked)
-            return []
+            return [], empty
         html = resp.text
         soup = BeautifulSoup(html, "html.parser")
     except Exception as exc:
         logger.debug("link fetch failed for %s: %s", url, exc)
-        return []
+        return [], empty
 
     root = _main_content_root(soup)
     published = _published_date(soup)
@@ -400,7 +412,7 @@ def _article_facts(url: str, *, max_lines: int | None = None) -> list[str]:
     title = (soup.title.string if soup.title and soup.title.string else "").strip()
     if _is_blocked_title(title):
         logger.debug("link fetch rejected blocked title for %s: %s", url, title)
-        return []
+        return [], empty
 
     # The meta summary leads the facts - but only if the page turns out to have a body.
     meta_desc = soup.find("meta", attrs={"name": "description"}) or soup.find(
@@ -443,14 +455,24 @@ def _article_facts(url: str, *, max_lines: int | None = None) -> list[str]:
         if key not in seen:
             seen.add(key)
             out.append(f)
-    _last_extract_report = {
+    meta = {
         "kept": min(len(out), max_lines),
         "found": len(out),
         "published": published,
         "title": title,
         "description": description,
     }
-    return out[:max_lines]
+    return out[:max_lines], meta
+
+
+def _article_facts(url: str, *, max_lines: int | None = None) -> list[str]:
+    """`_article_extract` for the interactive reader: records the page metadata for
+    `last_extract_report` (only on success, as before)."""
+    global _last_extract_report
+    lines, meta = _article_extract(url, max_lines=max_lines)
+    if meta.get("title") or meta.get("found"):
+        _last_extract_report = meta
+    return lines
 
 
 def is_title_only(lines: list[str]) -> bool:

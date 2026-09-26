@@ -56,6 +56,7 @@ _SECTION_TIERS: tuple[tuple[str, str], ...] = tuple(
     [(h, TIER_CONTEXT) for h in CONTEXT_SECTION_HEADERS]
     + [
         ("Live web search", TIER_WEB),
+        ("Web research", TIER_WEB),  # #848 auto-research
         ("News headlines", TIER_WEB),
         ("News API", TIER_WEB),
         ("Blog/RSS", TIER_WEB),

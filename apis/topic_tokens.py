@@ -81,3 +81,41 @@ def starts_with_question(text: str) -> bool:
     """True when `text`'s first word is a question word ("what does this mean ...")."""
     first = _TOKEN.findall((text or "").lower().replace("'", ""))
     return bool(first) and first[0] in INTERROGATIVES
+
+
+_WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’.&-]*")
+
+
+def title_phrases(text: str, *, max_words: int = 3) -> list[str]:
+    """Title-Case names in the raw text, in order: "Manchester City", "Liverpool".
+
+    A run of capitalised words, broken by punctuation, a lower-case word or a function
+    word ("What does Arsenal ..." -> "Arsenal"), at most `max_words` long. Case is read
+    from the original text, so a lower-case topic has none - callers fall back to
+    `content_tokens`. Run 98's signals searched the whole typed sentence instead.
+    """
+    phrases: list[str] = []
+    run: list[str] = []
+    last_end = 0
+    raw = text or ""
+
+    def flush() -> None:
+        if run:
+            phrase = " ".join(run[:max_words])
+            if phrase not in phrases:
+                phrases.append(phrase)
+            run.clear()
+
+    for match in _WORD.finditer(raw):
+        word = match.group(0).strip(".-")
+        gap = raw[last_end : match.start()]
+        last_end = match.end()
+        if run and gap.strip():  # punctuation between words ends a name
+            flush()
+        lower = word.lower().replace("'", "").replace("’", "")
+        if word[:1].isupper() and lower not in FUNCTION_WORDS:
+            run.append(word)
+        else:
+            flush()
+    flush()
+    return phrases

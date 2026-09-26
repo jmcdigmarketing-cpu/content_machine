@@ -8,6 +8,15 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 34 — pull everything, football queries, the brief sees the facts - 2026-09-26
+
+- **#848** auto-research: the web-search result pages for the chosen angle are read and their
+  on-topic lines added at web tier (on by default; decisions §35).
+- **#850** the research brief sees the operator's key facts; its cache key includes them.
+- **#852** API-SPORTS and Wikipedia query the names in the topic, not the sentence.
+- **#859** BBC Sport and The Guardian football feeds for soccer topics.
+- **#836** `ops backfill-angles` scores the archive's stored angles offline (stamped approximate).
+
 ### Wave 33 — run 98: pay once for TTS, football as football, facts that belong to the topic - 2026-09-26
 
 *3,601 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.

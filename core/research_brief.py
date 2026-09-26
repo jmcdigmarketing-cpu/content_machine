@@ -109,6 +109,39 @@ class ResearchBrief:
         return asdict(self)
 
 
+def _operator_facts_block(key_facts: list[str] | None) -> str:
+    """The operator's key facts for the brief prompt, char-budgeted (#850)."""
+    if not key_facts:
+        return ""
+    from core.operator_facts import operator_key_fact_char_budget
+
+    budget = operator_key_fact_char_budget()
+    lines: list[str] = []
+    used = 0
+    for fact in key_facts:
+        line = f"- {str(fact).strip()}"
+        if not line[2:] or used + len(line) > budget:
+            continue
+        lines.append(line)
+        used += len(line) + 1
+    if not lines:
+        return ""
+    return (
+        "OPERATOR KEY FACTS (ground truth - the brief must not contradict these):\n"
+        + "\n".join(lines)
+        + "\n\n"
+    )
+
+
+def _facts_digest(key_facts: list[str] | None) -> str:
+    import hashlib
+
+    if not key_facts:
+        return "nofacts"
+    joined = "\n".join(sorted(str(f).strip() for f in key_facts if str(f).strip()))
+    return hashlib.sha1(joined.encode("utf-8")).hexdigest()[:12]
+
+
 def _fallback_brief(
     topic: str,
     signals: dict[str, Any],
@@ -116,6 +149,7 @@ def _fallback_brief(
     *,
     seed_topic: str = "",
     intent: str = "",
+    key_facts: list[str] | None = None,
 ) -> ResearchBrief:
     from core.angle_intent import CALM_INTENTS, detect_angle_intent, format_for_intent
 
@@ -129,7 +163,11 @@ def _fallback_brief(
         audience_sentiment="Neutral — limited research data",
         controversy_score=0.0 if calm else 0.4,
         debate_angles=[] if calm else ["Preview the stakes of the matchup or announcement"],
-        supporting_evidence=[line for line in facts.split("\n") if line.strip()][:8],
+        # The operator's facts lead the evidence (#850); signal lines fill the rest.
+        supporting_evidence=(
+            [str(f).strip() for f in (key_facts or []) if str(f).strip()]
+            + [line for line in facts.split("\n") if line.strip()]
+        )[:8],
         recommended_format=format_for_intent(resolved),
         raw_fallback=f"{script_rules}\n\n{facts}",
     )
@@ -145,7 +183,9 @@ def _build_with_llm(
     stats_lines: list[str] | None = None,
     seed_topic: str = "",
     intent: str = "",
+    key_facts: list[str] | None = None,
 ) -> ResearchBrief | None:
+    operator_block = _operator_facts_block(key_facts)
     facts = enrich_facts(topic, signals, channel_id=channel_id, seed_topic=seed_topic)
     rss_lines = "\n".join(
         f"- {h.get('title', '')} ({h.get('source', '')})" for h in (rss.get("headlines") or [])[:8]
@@ -191,7 +231,7 @@ def _build_with_llm(
 {freshness_instruction}
 {history or ''}
 
-SIGNAL FACTS (source of truth for names/events):
+{operator_block}SIGNAL FACTS (source of truth for names/events):
 {facts}
 
 RSS HEADLINES:
@@ -260,6 +300,7 @@ def _build_with_llm_deadline(
     stats_lines: list[str] | None = None,
     seed_topic: str = "",
     intent: str = "",
+    key_facts: list[str] | None = None,
 ) -> tuple[ResearchBrief | None, bool]:
     """Run `_build_with_llm` under RESEARCH_BRIEF_DEADLINE_S.
 
@@ -279,6 +320,7 @@ def _build_with_llm_deadline(
                 stats_lines=stats_lines,
                 seed_topic=seed_topic,
                 intent=intent,
+                key_facts=key_facts,
             ),
             False,
         )
@@ -294,6 +336,7 @@ def _build_with_llm_deadline(
             stats_lines=stats_lines,
             seed_topic=seed_topic,
             intent=intent,
+            key_facts=key_facts,
         )
         try:
             return future.result(timeout=deadline), False
@@ -311,15 +354,22 @@ def build_research_brief(
     channel_id: str | None = None,
     seed_topic: str = "",
     intent: str = "",
+    key_facts: list[str] | None = None,
 ) -> ResearchBrief:
     """
     Build or load cached research brief. Never raises — returns fallback on failure.
+
+    `key_facts` are the operator's (#850): they lead the prompt and the fallback
+    evidence, and a digest of them is part of the cache key.
     """
     from core.angle_intent import detect_angle_intent
 
     channel_id = resolve_channel_id(channel_id)
     resolved_intent = intent or detect_angle_intent(seed_topic or topic)
-    cache_key = build_key("research_brief", f"{channel_id}::{topic}::{resolved_intent}")
+    cache_key = build_key(
+        "research_brief",
+        f"{channel_id}::{topic}::{resolved_intent}::{_facts_digest(key_facts)}",
+    )
     cached = get_cached(cache_key)
     if cached and isinstance(cached, dict) and cached.get("narrative"):
         try:
@@ -362,11 +412,17 @@ def build_research_brief(
             stats_lines=stats_lines,
             seed_topic=seed_topic,
             intent=resolved_intent,
+            key_facts=key_facts,
         )
 
     if brief is None:
         brief = _fallback_brief(
-            topic, signals, channel_id, seed_topic=seed_topic, intent=resolved_intent
+            topic,
+            signals,
+            channel_id,
+            seed_topic=seed_topic,
+            intent=resolved_intent,
+            key_facts=key_facts,
         )
         brief.rss_headlines = list(rss.get("headlines") or [])[:8]
         brief.community_summary = community_summary

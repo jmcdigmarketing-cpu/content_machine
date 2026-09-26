@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-26: wave 33, run 98
+# Handoff synopsis — 2026-09-26: wave 34, pull everything
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,27 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 33, run 98 #840-#847 + plans
+## Last wave — 2026-09-26 (Claude Code): wave 34 #859 #852 #850 #836 #848
+
+The roadmap's five, cheapest first. The operator's PC turned out to be on a local-only branch
+(`codex/p0-test-integrity`), so `git pull` fetched `main` without merging it and wave 33 never
+reached the machine; the switch instructions are in the handoff slot.
+
+- **#859** `domain_rss.soccer`: BBC Sport Football + The Guardian Football (unverifiable from the
+  container; `ops feeds` checks them).
+- **#852** `apis/topic_tokens.title_phrases`: API-SPORTS searches `Manchester City`; Wikipedia
+  tries `Manchester_City` first.
+- **#850** the research brief takes `key_facts`: prompt block, fallback evidence, cache digest.
+- **#836** `ops backfill-angles`: offline `rank_angles(llm_judge=False)` over `variants_json`,
+  stamped `angle_backfilled`; calibration counts them.
+- **#848** `core/auto_research.py`, on by default: reads the top 3 result pages for the angle
+  (thread-safe `link_facts._article_extract`, 20 s deadline, 3h per-URL cache), drops off-topic
+  lines, attaches `web_research` at web tier with score 0. Suite pins it off. Decisions §35.
+
+**Verify:** `python -m unittest tests.test_auto_research tests.test_backfill_angles
+tests.test_brief_sees_key_facts tests.test_wave34_queries_feeds`.
+
+## Previous — 2026-09-26 (Claude Code): wave 33, run 98 #840-#847 + plans
 
 The operator's run 98 (tapin, "Manchester City ofund guilty, what does this mean for the prem")
 and five questions. Answers are in [planning_log.md](planning_log.md); the sample-size one is
@@ -74,31 +94,6 @@ tests.test_agent_handoff` · `py -m scripts.ops calibration` · `py -m scripts.o
 
 **Still open:** roadmap next five **#836 #839 #830 #832 #831**; #821/#819 wait on the operator's
 calibration numbers, not on code.
-
-## Previous — 2026-09-26 (Claude Code): wave 31 structural #827 #828 #829 #833
-
-Executed the 09-20 audit instead of writing a third one about the same findings; the
-before→after is [audit_2026-09-26.md](audit_2026-09-26.md). Ten signed commits, no product
-behaviour changed.
-
-- **#827** `core/process_state.py`: one reset point for process-global state, 23 modules
-  registered, run before every test from `tests/__init__.py`.
-- **#828** `ops test --order reverse|shuffle --seed N` + CI leg `Unit tests (reversed order)`.
-  The run-69 symptom was `tests/test_ops_doctor._stack()` — an `ExitStack` built outside a
-  `with`, leaking `run_mode._ollama_ready` whenever a later `patch()` target failed to import
-  (partial installs only). First reversed run found two more leaks; all closed.
-- **#829** one-line missing-modules notice; inert tests fixed; Pillow skips fail under CI.
-- **#833** `scripts/mypy_ratchet.py`: 129 on pinned mypy 1.13.0, blocking on increase.
-- Docs: ten renames (links rewritten), `handoff_synopsis.md` 1,849 → 244, `planning_log.md`
-  rolled over by month, `decisions.md` rewrapped word-for-word, nine never-reviewed docs
-  corrected, decisions §33 (Content Machine = engine, Content OS = operator app), three new
-  lint rules, roadmap/backlog repaired, **#830–#834** filed.
-
-**Verify:** `py -m scripts.ops test --order reverse` · `py scripts/mypy_ratchet.py` ·
-`python -m unittest tests.test_docs_standard tests.test_docs_lint`.
-
-**Still open:** roadmap next five **#826 #821 #820 #824 #819** (product); #830–#834
-(structural, M3). `planning_log.md` rolls over again at month end.
 
 ## Pipeline order (operator)
 
@@ -165,8 +160,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
 
 1. **Operator, after pulling:** `ops calibration`, `ops backfill-quality --force` (v5 re-stamp),
    check `ops reliability` for single TTS charges. #821 and #819 wait on those numbers.
-2. **Product next:** #848 auto-research · #852 entity-aware signal queries · #859 soccer feeds ·
-   #850 brief sees key facts · #836 angle-score backfill (feeds #849).
+2. **Product next:** #849 tell angles apart · #863 measure auto-research · #861 show its lines.
 3. **Structural (master_plan M3):** #839 hook refuses non-ASCII subjects · #830 · #832 · #831
    ruff bump · #834 `core/` seams.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).

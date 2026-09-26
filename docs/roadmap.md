@@ -26,38 +26,35 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-26 wave 33 (run 98, Claude Code): **#840** every multi-sentence
-ElevenLabs render since 09-20 was billed twice (fixed) · **#841 #842** a topic's domain comes
-from the topic, and football is TapIn's (`soccer`) · **#843** popularity payloads no longer pose
-as facts · **#844-#846** page titles are metadata, pasted-link lines are link tier and checked
-against the angle · **#847** report card v5 (topic weight 0.05). Plans: [vault.md](vault.md),
-[tooling_review_2026-09-26.md](tooling_review_2026-09-26.md), the facts room **#860**.
+**Just landed** - 2026-09-26 wave 34: **#848** auto-research reads the web-search result pages
+for the chosen angle (on by default, web tier, decisions §35) · **#850** the research brief sees
+the operator's key facts · **#852** signals query names ("Manchester City"), not sentences ·
+**#859** football feeds · **#836** `ops backfill-angles` gives the angle correlation an n now.
 
-**Before that** - wave 32: **#826 #820 #824** closed, **#821 #819** measured · wave 31
-(structural): **#827 #828 #829 #833** (mypy ratchet, 129), docs standard finished · wave 30
-(measurement): **#823 #824 #822 #739**. Earlier waves: [roadmap_archive.md](roadmap_archive.md)
-and [planning_log.md](planning_log.md).
+**Before that** - wave 33 (run 98): **#840** double-billed TTS fixed · **#841 #842** topic domain
+from the topic, football is TapIn's · **#843-#847** signal and fact-intake hygiene, card v5 ·
+wave 32: **#826 #820 #824** · wave 31 (structural): **#827 #828 #829 #833**. Earlier:
+[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 33 (2026-09-26, run 98)** fixed what the run exposed and needed no sample: double-billed
-TTS, football routed as gaming, junk "facts", scraped boilerplate saved as operator facts, and
-a topic weight that scored five angles identically. The list now follows the operator's two
-open questions from that run - *pull everything* and *make football work* - ahead of the
-structural items, which keep their order in [master_plan.md](master_plan.md) M3.
+**Wave 34 (2026-09-26)** finished the two open questions from run 98: *pull everything* (#848)
+and *make football work* (#852 #859), and gave the angle question an n (#836). What is left of
+"ideas grade the same" is measuring something per angle, so that leads.
 
-1. **#848 auto-research** `[M]` - read the web-search result pages the pipeline already has,
-   filtered against the angle, at web tier. The operator asked for exactly this.
-2. **#852 entity-aware signal queries** `[S]` - `api_sports` searches the raw 48-character
-   topic and Wikipedia never tries "Manchester_City"; football signals stay weak until fixed.
-3. **#859 soccer RSS feeds** `[S]` - no feed is tagged `soccer`; the operator names two.
-4. **#850 the research brief sees the key facts** `[S]` - it can contradict them today.
-5. **#836 backfill angle scores** `[M]` - gives #849 (telling angles apart) an n now.
+1. **#849 tell angles apart** `[L]` - run `ops backfill-angles --apply`, then decide from the
+   angle correlation whether the tie leans on the editorial score; if not, a per-angle
+   fact-fit measure.
+2. **#863 measure auto-research** `[S]` - ten real runs: pages, lines kept, lines the claim
+   verifier used. Retune or switch off from that.
+3. **#861 show auto-research lines on the fact screen** `[S]` - today only a count is printed.
+4. **#839 the commit hook refuses non-ASCII subjects** `[S]` - the #838 CI failure's root.
+5. **#830 bare `unittest discover` writes the real TTS cache** `[S]` - guard the write path.
 
-**Waiting on the operator, not on code:** `git pull`, then `py -m scripts.ops calibration`
-(per-component and today's-rubric lines) and `py -m scripts.ops backfill-quality --channel
-tapin --force` (dry run, then `--apply`) to re-stamp history as v5. #821 and #819 wait on those
-numbers. Structural queue unchanged: #839 · #830 · #832 · #831.
+**Waiting on the operator, not on code:** switch the PC to `main` (it was on a local-only
+`codex/p0-test-integrity` branch, so wave 33 never reached it), then `ops backfill-quality
+--force --apply` (v5 re-stamp), `ops backfill-angles --apply`, `ops calibration`, `ops feeds`.
+Structural queue: #832 · #831 · #834.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

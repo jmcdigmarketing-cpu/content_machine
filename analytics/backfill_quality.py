@@ -8,9 +8,9 @@ because no run has been generated since they landed. Measured on `tapin`
 recomputable offline and the archive can carry them today rather than in
 months.
 
-`angle_spread` / `angle_scores` (#807) are deliberately NOT here: the backlog
-records that traces never stored the five variants, so there is nothing to
-recompute from. Those need new runs.
+`angle_scores` (#807) are not here: they live in `analytics/backfill_angles.py`
+(#836), which recomputes them from `content_runs.variants_json` - the run rows
+always stored the angle texts, even though the traces did not.
 
     py -m scripts.ops backfill-quality --channel tapin           # dry run
     py -m scripts.ops backfill-quality --channel tapin --apply

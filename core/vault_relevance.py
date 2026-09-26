@@ -173,7 +173,7 @@ def build_relevance_corpus(
         for name, signal in (signals or {}).items()
         if not name.startswith("_")
         and name not in DEMAND_SIGNALS
-        and (include_web or name != "web_search")
+        and (include_web or name not in ("web_search", "web_research"))
     }
     signal_text = format_signal_facts(selected)
     if signal_text == "No structured facts from signals.":

@@ -739,3 +739,14 @@ number for every angle of a topic and showed r=-0.05 on 23 measured videos.
 **Consequence:** existing `_operator_facts` notes are not migrated - the vault is the
 operator's data - but they no longer pin. v4 and v5 rows mix until `ops backfill-quality
 --force` re-stamps them; calibration reports the re-grade under today's rubric meanwhile.
+
+## 35. Auto-research reads the pages the pipeline finds, on by default, at web tier (2026-09-26)
+**Decision:** after the angle is chosen, `run_pipeline` reads the top web-search result pages
+(`core/auto_research.py`), keeps lines that touch the angle, and adds them as a `web_research`
+signal. On by default (operator, answering "it should try and pull everything no?");
+`AUTO_RESEARCH_ENABLED=false` turns it off.
+**Why:** run 98 had six result URLs and read none; only hand-pasted pages were read.
+**Consequence:** these lines are web tier (0.6), never operator, never pinned, never saved to the
+vault, and carry score 0 so the composite and the angle tie cannot move. It adds no paid call
+(the search already ran) and at most `AUTO_RESEARCH_DEADLINE_S` of wall time; the suite pins it
+off. Its real yield is measured before anything leans on it (#863).

@@ -53,31 +53,29 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** `1a7fdc2` + this docs commit on `main` (`git log -3`)
+**Written:** 2026-09-26 · **HEAD at write:** `ea721f7` + this wave's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit; `data/` untouched.
 
 **Defects first:**
-- **CI run 162 was red, and it was mine**: a backlog line added *after* the final suite run
-  named an unbuilt `ops` verb. Fixed in `1a7fdc2`, verified in a clean worktree; CI run 164 green, real-ffmpeg test included. Run every doc
-  edit before the suite, not just this slot.
-- **Every multi-sentence ElevenLabs render since 09-20 was voiced twice** (#840): the TTS join
-  wrote relative paths into the ffmpeg concat list. Fixed; the real-ffmpeg test runs in CI only.
-- **Football ran as gaming** (#841): a keyword-less topic took the channel's domain. Gating,
-  brief, templates and feeds now use the topic's own domain.
-- **Old `_operator_facts` notes hold scraped text at operator tier.** Not migrated (your vault);
-  they no longer pin. #857 is the dry-run re-tier.
+- **The operator's PC never received wave 33.** It is on `codex/p0-test-integrity`, a local-only
+  branch with no upstream: `git pull` fetched `main` and merged nothing, so `ops calibration`
+  and the v5 backfill ran on old code. Fix on the PC: `git status`; `git log --oneline
+  origin/main..HEAD` (if it lists commits, `git push -u origin codex/p0-test-integrity` first);
+  `git switch main`; `git pull origin main`; then re-run `ops backfill-quality --channel tapin
+  --force --apply`.
+- **Auto-research (#848) is on by default and fetches web pages.** The suite pins it off in
+  `tests/__init__.py`; any new test that drives `run_pipeline` inherits that.
+- **The two football feeds are unverified here** (the container cannot reach them); `ops feeds`.
 
-**Shipped:** #840-#847 (TTS, domain, soccer, signal hygiene, fact intake, card v5) and the docs:
-[vault.md](vault.md), [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md), master_plan
-M4.5-M4.7 (sample schedule, logic-first retunes), facts room #860, seven retired desktop items
-closed, API/env drift fixed. Decisions §34.
+**Shipped:** #859 football feeds · #852 name-shaped queries · #850 brief sees key facts ·
+#836 `ops backfill-angles` · #848 auto-research. Decisions §35.
 
-**Operator:** `git pull`; `py -m scripts.ops calibration`; `py -m scripts.ops backfill-quality
---channel tapin --force` then `--apply` (v5 re-stamp); next render should show one TTS charge.
-`positioning.md` contradicts the private-tool rule - your call.
+**Operator after switching:** `ops backfill-quality --channel tapin --force --apply`,
+`ops backfill-angles --channel tapin --apply`, `ops calibration`, `ops feeds`, then one real run
+and read the new "Auto-research:" line.
 
-Suite **3,601**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **283 numbered open**, highest **#860**. Next five: **#848 · #852 · #859 · #850 · #836**.
+Suite **3,628**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **281 numbered open**, highest **#863**. Next five: **#849 · #863 · #861 · #839 · #830**.
 
 ## Slot — Cursor
 

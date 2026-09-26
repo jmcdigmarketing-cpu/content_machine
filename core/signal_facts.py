@@ -293,6 +293,17 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                         "before stating as fact):\n" + "\n".join(tw_lines)
                     )
 
+        elif name == "web_research" and isinstance(data, dict):
+            # #848: pages read for the chosen angle - web tier, verify before stating.
+            research = [
+                f"  • {str(line).strip()}" for line in data.get("lines") or [] if str(line).strip()
+            ]
+            if research:
+                lines.append(
+                    "Web research - pages read for the chosen angle (recent; verify specifics "
+                    "before stating as certainty):\n" + "\n".join(research)
+                )
+
         elif name == "web_search" and isinstance(data, dict):
             block_lines: list[str] = []
             answer = (data.get("answer") or "").strip()

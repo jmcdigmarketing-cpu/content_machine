@@ -752,6 +752,14 @@ def _run_new_video_flow_body(
 
         if result.run_id:
             print(f"  Run id: {result.run_id}")
+        try:
+            from core.auto_research import report_line
+
+            _research = report_line((result.features or {}).get("auto_research"))
+            if _research:
+                print(f"  {_research}")
+        except Exception as exc:  # a notice only
+            logger.debug("auto-research line skipped: %s", exc)
 
         # Show what facts the script was based on — thin facts = warning before render
         from core.fact_enrichment import _fact_line_count, enrich_facts

@@ -36,8 +36,17 @@ def _detect_league(topic: str) -> str:
 
 
 def _search_query(topic: str) -> str:
+    """A team-shaped query. `/teams?search=` takes a name, not a sentence: run 98
+    searched "Manchester City ofund guilty, what does this mea" (#852)."""
+    from apis.topic_tokens import content_tokens, title_phrases
+
+    phrases = title_phrases(topic)
+    multi = [p for p in phrases if " " in p]
+    if multi or phrases:
+        return (multi or phrases)[0][:48]
     text = re.sub(r"\b(20\d{2}|vs|preview|analysis)\b", "", topic, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()[:48] or topic[:48]
+    tokens = content_tokens(text)
+    return " ".join(tokens[:2]) or re.sub(r"\s+", " ", text).strip()[:48] or topic[:48]
 
 
 def gather_api_sports_context(topic: str) -> dict[str, Any]:

@@ -70,6 +70,9 @@ Only lines typed this run are pinned ahead of everything else in the prompt.
 6. New typed lines go to `_operator_facts/`, new link lines to `_link_facts/` - never the
    borrowed vault lines, which would re-title another topic's facts as this one's.
 
+Auto-research (decisions §35) adds web-search result pages read for the angle as **web**-tier
+lines in the prompt; they are never written to the vault (#862 would add an opt-in).
+
 Settings: `VAULT_RELEVANCE_MODE` (`scored` default), `VAULT_RELEVANCE_TIEBREAK` (optional LLM
 tiebreak, off), `LINK_FACT_MAX_LINES`, `LINK_READER_PROXY`.
 

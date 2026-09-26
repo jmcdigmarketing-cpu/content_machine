@@ -1,6 +1,6 @@
 # Documentation standard
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
 
 How docs in this repo are named, classified, headed, and retired. Enforced by
 [`tests/test_docs_standard.py`](../tests/test_docs_standard.py), because AGENTS.md is
@@ -105,7 +105,15 @@ doc card says which day.
 If a new idea does not fit one of those, it is probably a `§` in an existing doc rather
 than doc number 50.
 
-## 7. Size budget
+## 7. Size budget and log rollover
+
+A `log` grows by design, so it rolls over instead of being trimmed: when the live file
+passes the ceiling, the older period moves **verbatim** into a dated sibling
+(`planning_log_2026-08.md`, `handoff_synopsis_archive.md`), frozen, indexed, and linked
+from the live file's header. The live file keeps the current period plus any standing
+sections. Nothing is rewritten; the split is a move.
+
+### Living docs
 
 A doc over ~1,500 lines has stopped being readable and started being a database.
 `roadmap.md` is at 1,774 with a single 1,084-line section, and five files hold 48% of the

@@ -1,6 +1,6 @@
 # Documentation index
 
-> **Class:** index · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** index · **Status:** living · **Reviewed:** 2026-09-26
 
 Every doc in this repo, by what it is for. Conventions:
 [docs_standard.md](docs_standard.md). Current verdict on the system:
@@ -115,6 +115,9 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [change_log.md](change_log.md) | What shipped, by theme |
 | [planning_log.md](planning_log.md) | Brainstorming and decisions, by session |
 | [handoff_synopsis.md](handoff_synopsis.md) | Session state, newest wave first |
+| [handoff_synopsis_archive.md](handoff_synopsis_archive.md) | Waves older than the newest three, frozen |
+| [planning_log_2026-08.md](planning_log_2026-08.md) | August 2026 planning entries, frozen |
+| [planning_log_2026-07.md](planning_log_2026-07.md) | July 2026 planning entries, frozen |
 | [handoff.md](handoff.md) | The mailbox — read first when starting work |
 | [roadmap_archive.md](roadmap_archive.md) | Completed roadmap items, never edited again |
 

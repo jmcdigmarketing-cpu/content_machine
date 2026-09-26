@@ -352,7 +352,32 @@ def last_extract_report() -> dict[str, Any]:
     return dict(_last_extract_report)
 
 
-def _article_facts(url: str, *, max_lines: int = 40) -> list[str]:
+def link_fact_max_lines() -> int:
+    """Lines kept per scraped page (`LINK_FACT_MAX_LINES`, default 40, 5-200).
+
+    The UI has told the operator to "raise the page cap" since run 74; until run 98
+    there was nothing to raise - the cap was a literal.
+    """
+    try:
+        value = int(os.getenv("LINK_FACT_MAX_LINES", "40") or 40)
+    except ValueError:
+        value = 40
+    return max(5, min(200, value))
+
+
+def _article_facts(url: str, *, max_lines: int | None = None) -> list[str]:
+    """Fact lines from an article page: body paragraphs, plus its meta summary when
+    the page HAS a body.
+
+    The title is never a fact (run 98 sent six "Source: <title>" lines to the model
+    and saved them to the vault as operator facts); it goes to `last_extract_report`
+    for display and source capture. On a page with no body - a JS-rendered shell -
+    the meta description is site boilerplate ("View Premier League club and player
+    stats ... on the official website"), so the page returns no facts at all and
+    `extract_facts_from_url` can try the reader proxy.
+    """
+    global _last_extract_report
+    max_lines = max_lines if max_lines is not None else link_fact_max_lines()
     url = _unwrap_redirect_url(url)
     if _is_blocked_url(url):
         logger.debug("link fetch skipped blocked url %s", url)
@@ -376,17 +401,17 @@ def _article_facts(url: str, *, max_lines: int = 40) -> list[str]:
     if _is_blocked_title(title):
         logger.debug("link fetch rejected blocked title for %s: %s", url, title)
         return []
-    if title:
-        facts.append(f"Source: {title}")
 
-    # Prefer the meta description, then the first substantial paragraphs.
+    # The meta summary leads the facts - but only if the page turns out to have a body.
     meta_desc = soup.find("meta", attrs={"name": "description"}) or soup.find(
         "meta", attrs={"property": "og:description"}
     )
+    summary: list[str] = []
+    description = ""
     if meta_desc and meta_desc.get("content"):
-        content = meta_desc["content"].strip()
-        if len(content) > 25 and not _is_junk_line(content):
-            facts.extend(split_at_sentences(content, key_fact_split_width()))
+        description = meta_desc["content"].strip()
+        if len(description) > 25 and not _is_junk_line(description):
+            summary = split_at_sentences(description, key_fact_split_width())
 
     # Body paragraphs: goose3-first (cleaner main text, drops nav/sidebar chrome), with
     # the BeautifulSoup <p> scan as the fallback for JS-heavy / tiny pages. Trade-tracker
@@ -399,6 +424,8 @@ def _article_facts(url: str, *, max_lines: int = 40) -> list[str]:
     for text in body_lines:
         if len(text) > 60 and not _is_junk_line(text):
             facts.extend(split_at_sentences(text, key_fact_split_width()))
+    if facts:
+        facts = summary + facts
 
     # List items only on trade-tracker pages — Yahoo/MSN sidebars are full of <li> noise.
     if _looks_like_trade_tracker(url, title):
@@ -416,11 +443,12 @@ def _article_facts(url: str, *, max_lines: int = 40) -> list[str]:
         if key not in seen:
             seen.add(key)
             out.append(f)
-    global _last_extract_report
     _last_extract_report = {
         "kept": min(len(out), max_lines),
         "found": len(out),
         "published": published,
+        "title": title,
+        "description": description,
     }
     return out[:max_lines]
 
@@ -431,6 +459,8 @@ def is_title_only(lines: list[str]) -> bool:
     Lets the operator UI warn that a link (e.g. a JS-heavy MSN page) under-delivered so they
     paste the article text instead of shipping a script grounded only in a headline.
     """
+    # "Source:" lines are no longer produced (run 98) but pre-existing callers and
+    # vault text may still carry them.
     body = [ln for ln in (lines or []) if not ln.lower().startswith("source:")]
     return not body
 
@@ -472,7 +502,13 @@ def _reader_proxy_facts(url: str, *, max_lines: int = 12) -> list[str]:
 def extract_facts_from_url(url: str) -> list[str]:
     """Best-effort fact extraction from a URL. Returns [] on any failure."""
     global _last_extract_report
-    _last_extract_report = {"kept": 0, "found": 0, "published": None}
+    _last_extract_report = {
+        "kept": 0,
+        "found": 0,
+        "published": None,
+        "title": "",
+        "description": "",
+    }
     url = (url or "").strip()
     if not looks_like_url(url):
         return []
@@ -487,7 +523,7 @@ def extract_facts_from_url(url: str) -> list[str]:
     if is_title_only(raw) and _reader_proxy_enabled():
         proxied = _reader_proxy_facts(url)
         if proxied:
-            title_lines = [ln for ln in raw if ln.lower().startswith("source:")]
-            raw = title_lines + proxied
+            raw = proxied
+            _last_extract_report["kept"] = _last_extract_report["found"] = len(proxied)
     # Compact duplicate intros from meta + first paragraph.
     return parse_pasted_block("\n".join(raw)) or raw

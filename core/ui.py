@@ -738,14 +738,13 @@ def display_fact_preview(
     Returns True if facts are thin (warning condition).
     """
     from core.fact_enrichment import _fact_line_count
-    from core.ui_theme import ok, warn
 
     # Separate YouTube context from verified game/news data
-    _YT_HEADERS = (
-        "YouTube — real video titles",
-        "YouTube video descriptions",
-        "YouTube market titles",
-    )
+    from core.grounding_tiers import CONTEXT_SECTION_HEADERS
+    from core.ui_theme import ok, warn
+
+    # YouTube titles and popularity payloads are context, not facts (run 98).
+    _YT_HEADERS = CONTEXT_SECTION_HEADERS
     verified_lines: list[str] = []
     context_lines: list[str] = []
     in_yt = False
@@ -870,9 +869,11 @@ def _provenance_records(
     from core.operator_facts import dedupe_key
 
     today = date.today()
+    typed = {dedupe_key(claim) for claim in manual_facts}
     tiers: dict[str, str] = {}
     dates: dict[str, Any] = {}
     urls: dict[str, str] = {}
+    notes: dict[str, str] = {}
     for claim in manual_facts:
         tiers.setdefault(dedupe_key(claim), TIER_OPERATOR)
         dates.setdefault(dedupe_key(claim), today)
@@ -891,6 +892,9 @@ def _provenance_records(
         source = getattr(record, "source_url", "") or ""
         if source:
             urls.setdefault(key, source)
+        note = getattr(record, "note_path", "") or ""
+        if note:
+            notes.setdefault(key, str(note))
 
     out: list[Any] = []
     for claim in collected:
@@ -901,6 +905,9 @@ def _provenance_records(
                 tier=tiers.get(key, TIER_LINK),
                 source_url=urls.get(key, ""),
                 verified_at=dates.get(key),
+                # Marks a line borrowed from the vault, so the selector never pins it
+                # like a line the operator typed this run (run 98).
+                note_path=notes.get(key, "") if key not in typed else "",
             )
         )
     return out
@@ -928,10 +935,14 @@ def prompt_key_facts_result(
     channel_id: str = "default",
     *,
     signals: dict[str, Any] | None = None,
+    angle: str = "",
     print_fn=emit,
     input_fn=ask_text,
 ) -> KeyFactSelection:
     """Collect operator facts and return their vault-relevance audit.
+
+    `angle` is the chosen angle (run 98): pasted-link lines are checked against it
+    and the topic before they reach the prompt or the vault.
 
     Manual/link facts are collected before the authoritative vault scan so the scorer
     can use them with signal text. Candidate vault facts are never put in their own
@@ -967,6 +978,7 @@ def prompt_key_facts_result(
     from core.operator_facts import (
         capture_facts_to_vault,
         dedupe_facts,
+        dedupe_key,
         is_article_chrome,
         is_paste_command,
         max_operator_key_facts,
@@ -1008,16 +1020,27 @@ def prompt_key_facts_result(
         if looks_like_url(fact):
             print_fn("    Fetching link…")
             extracted = extract_facts_from_url(fact)
+            report = link_extract_report()
+            # The title is where the page came from, not a fact (run 98).
+            page_title = str(report.get("title") or "").strip()
+            if page_title and (extracted or report.get("description")):
+                print_fn(f"    Source: {_elide(page_title, fact_display_width())}")
+            if not extracted and page_title:
+                print_fn(
+                    "    ⚠ Only got the headline — no article body scraped (JS-heavy page?). "
+                    "Paste the article text as facts, or set LINK_READER_PROXY=1 to try a proxy."
+                )
+                pasted_sources.append({"url": fact, "title": page_title})
+                continue
             if extracted:
                 for ex in extracted:
                     print_fn(f"    + {_elide(ex, fact_display_width())}")
-                report = link_extract_report()
                 found = int(report.get("found") or 0)
                 kept = int(report.get("kept") or 0)
                 if found > kept:
                     print_fn(
                         f"    ({kept} of {found} line(s) kept — "
-                        "raise the page cap if you need the rest)"
+                        "set LINK_FACT_MAX_LINES to keep more)"
                     )
                 if is_title_only(extracted):
                     print_fn(
@@ -1027,7 +1050,7 @@ def prompt_key_facts_result(
                 link_facts.extend(extracted)
                 published = report.get("published")
                 link_provenance.extend((line, fact, published) for line in extracted)
-                pasted_sources.append({"url": fact, "title": extracted[0]})
+                pasted_sources.append({"url": fact, "title": page_title or extracted[0]})
             else:
                 issue = link_fetch_issue(fact)
                 msg = issue or "Could not extract facts from that link."
@@ -1060,10 +1083,44 @@ def prompt_key_facts_result(
         else:
             print_fn(f"  Discarded {len(leftover)} buffered line(s) of pasted text.")
 
+    # Run 98: is each pasted-link line about this topic at all? Typed and pasted
+    # lines are the operator's own words and are never questioned.
+    from core.vault_relevance import build_relevance_corpus, compact_reasons
+
+    reference = "\n".join(part for part in (angle, topic) if part)
+    if link_facts and os.getenv("FACT_OFF_TOPIC_FILTER", "true").lower() not in (
+        "0",
+        "false",
+        "no",
+    ):
+        from core.fact_selection import flag_off_topic
+
+        flagged = flag_off_topic(
+            link_facts,
+            reference=reference,
+            corpus=build_relevance_corpus(signals or {}, operator_facts=manual_facts),
+        )
+        if flagged:
+            print_fn(
+                f"  {len(flagged)} link line(s) look off-topic for "
+                f"'{_elide(angle or topic, 60)}':"
+            )
+            for line in flagged[:3]:
+                print_fn(f"    · {_elide(line, 72)}")
+            if len(flagged) > 3:
+                print_fn(f"    · …and {len(flagged) - 3} more")
+            answer = input_fn("  Drop them? [Enter=drop / k=keep]: ").strip().lower()
+            if answer in ("k", "keep"):
+                print_fn("    Kept.")
+            else:
+                gone = set(flagged)
+                link_facts = [line for line in link_facts if line not in gone]
+                link_provenance = [p for p in link_provenance if p[0] not in gone]
+                print_fn(f"    Dropped {len(flagged)} line(s) — not sent, not saved.")
+
     # Authoritative vault scan. The scorer sees signal evidence plus facts the
     # operator/link fetch supplied, never the candidate fact itself.
     from core.operator_facts import is_writing_tip
-    from core.vault_relevance import build_relevance_corpus, compact_reasons
 
     relevance_corpus = build_relevance_corpus(
         signals or {},
@@ -1255,6 +1312,9 @@ def prompt_key_facts_result(
     # foreign fact in, the write-back re-titles it, and it then matches strongly
     # forever. That is how Marvel Rivals facts ended up in an MMA-rankings note.
     new_facts = dedupe_facts(manual_facts + link_facts)
+    typed_new = dedupe_facts(manual_facts)
+    typed_keys = {dedupe_key(f) for f in typed_new}
+    link_new = [f for f in dedupe_facts(link_facts) if dedupe_key(f) not in typed_keys]
 
     if new_facts:
         try:
@@ -1265,9 +1325,14 @@ def prompt_key_facts_result(
                 print_fn(f"  intake: {warn}")
         except Exception as exc:
             logger.debug("fact intake lint skipped: %s", exc)
-        saved_path = capture_facts_to_vault(channel_id, topic, new_facts)
-        if saved_path:
-            print_fn(f"  Saved all {len(new_facts)} fact(s) to vault (full set, no cap).")
+        # Typed lines are operator tier; scraped lines are link tier (run 98).
+        saved_count = 0
+        if typed_new and capture_facts_to_vault(channel_id, topic, typed_new):
+            saved_count += len(typed_new)
+        if link_new and capture_facts_to_vault(channel_id, topic, link_new, tier="link"):
+            saved_count += len(link_new)
+        if saved_count:
+            print_fn(f"  Saved all {saved_count} fact(s) to vault (full set, no cap).")
 
     if key_facts:
         from core.operator_facts import last_fact_budget_report

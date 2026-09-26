@@ -163,12 +163,17 @@ def build_relevance_corpus(
     The candidate fact and editorial angle are intentionally not accepted arguments,
     which prevents self-grounding and the run-71 angle ambiguity by construction.
     """
-    from core.signal_facts import format_signal_facts
+    from core.signal_facts import DEMAND_SIGNALS, format_signal_facts
 
+    # Popularity payloads name whatever is trending, not the subject: run 98's Twitch
+    # top-games dump put "Marvel Rivals" in this corpus and gave an unrelated Marvel
+    # Rivals vault bullet full entity support on a Manchester City topic.
     selected = {
         name: signal
         for name, signal in (signals or {}).items()
-        if not name.startswith("_") and (include_web or name != "web_search")
+        if not name.startswith("_")
+        and name not in DEMAND_SIGNALS
+        and (include_web or name != "web_search")
     }
     signal_text = format_signal_facts(selected)
     if signal_text == "No structured facts from signals.":

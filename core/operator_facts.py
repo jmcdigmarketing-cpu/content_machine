@@ -68,7 +68,7 @@ _WRITING_TIP_MARKERS = (
 
 
 def max_operator_key_facts() -> int:
-    """Soft line cap (default 60). Char budget is the real limiter.
+    """Soft line cap (default 150, clamped 1-400). Char budget is the real limiter.
 
     `link_facts` chops a fetched page into ~400-char lines, so one news article is
     already a dozen-plus lines and a long read is dozens. The old cap of 24 could
@@ -535,8 +535,15 @@ def capture_facts_to_vault(
     facts: list[str],
     *,
     today: date | None = None,
+    tier: str = "operator",
 ) -> str | None:
-    """Persist the full operator fact set to Obsidian (all lines, no cap)."""
+    """Persist a fact set to Obsidian (all lines, no cap).
+
+    `tier="link"` is for lines scraped from pasted URLs: they go to `_link_facts/`
+    as `tier: link`. Until run 98 they were saved as operator facts, so page
+    boilerplate and off-topic paragraphs came back in later runs pinned like lines
+    the operator typed.
+    """
     from config.channels import resolve_channel_id
     from core.obsidian_facts import _vault_path
 
@@ -546,21 +553,23 @@ def capture_facts_to_vault(
     channel_id = resolve_channel_id(channel_id)
     day = (today or date.today()).isoformat()
     slug = re.sub(r"[^a-z0-9]+", "-", (topic or "run").lower()).strip("-")[:60] or "run"
-    path = vault / channel_id / "_operator_facts" / f"{day}_{slug}.md"
+    link = tier == "link"
+    folder = "_link_facts" if link else "_operator_facts"
+    path = vault / channel_id / folder / f"{day}_{slug}.md"
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         body = "\n".join(f"- {f}" for f in facts if f.strip())
         header = (
             "---\n"
             f"channel: {channel_id}\n"
-            "tags: [facts, operator, research]\n"
+            f"tags: [facts, {'link' if link else 'operator'}, research]\n"
             f"topic: {topic[:120]}\n"
             f"date: {day}\n"
-            "tier: operator\n"
+            f"tier: {'link' if link else 'operator'}\n"
             f"verified_at: {day}\n"
-            "source: content-machine (operator key facts)\n"
+            f"source: content-machine ({'pasted-link facts' if link else 'operator key facts'})\n"
             "---\n\n"
-            f"# Operator facts — {topic[:80]}\n\n"
+            f"# {'Link' if link else 'Operator'} facts — {topic[:80]}\n\n"
         )
         path.write_text(header + body + "\n", encoding="utf-8", newline="\n")
         logger.info("Saved %d operator facts to %s", len(facts), path)

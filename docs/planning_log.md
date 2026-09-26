@@ -17,6 +17,141 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - wave 33: run 98 - pay once, route football, keep facts on-topic
+
+**Prompt (verbatim, before the pasted run-98 terminal log):** "take this run and note the
+following. Can we improve fact intake more? key facts should be internally highlighted but
+are they the only things being pulled? it should try and pull everything no? also, video
+ideas still grading the same means the current system we have just isnt good enough, topic
+carries too much weight clearly. topic facts arent related to the topic at all. Do we have too
+undersized a sample to do anything real about these? any other developments when it comes to
+obsiddian utilization, apis, other repositories, the desktop application, and future
+p;lanning? focus some time on those for plans and documentation."
+
+The run: tapin, typed topic "Manchester City ofund guilty, what does this mean for the prem",
+six pasted links, 62 facts, all five angles scored 94.61, card A 89, rendered and queued public.
+The operator's `ops calibration` showed grade r=-0.01 and composite r=-0.05 over 23 videos - and
+none of wave 32's lines, so their box had not pulled `2d1bef2` yet.
+
+**Operator decisions asked this session:** fixes plus docs (auto-research designed and filed,
+not built); topic weight lowered and kept, not removed; football is part of TapIn's niche.
+
+### The answers
+
+- **Sample size.** At n=23 a correlation needs |r|>=0.41 to clear p<0.05. The 95% interval
+  for the grade is r in [-0.42, +0.40], for the composite [-0.45, +0.37]. So the data rules
+  out a strong positive predictor and cannot see a weak one. Power at 80%, two-sided 0.05:
+
+  | true r | videos needed |
+  |---|---|
+  | 0.5 | 30 |
+  | 0.4 | 47 |
+  | 0.3 | 85 |
+  | 0.2 | 194 |
+
+  At 3-5 Shorts a week, 85 videos is four to seven months. **Statistical retuning waits;
+  logic defects do not need a sample** - and everything below is a logic defect.
+- **"Ideas still grade the same."** They were identical by construction: signals are fetched
+  once per topic and copied to every angle, so the composite cannot tell angles apart and the
+  editorial score decides. Lowering the topic weight (v5) stops it inflating the card; telling
+  angles apart needs something measured per angle (#849).
+- **"Topic facts aren't related to the topic."** Four separate causes: no football domain, so
+  the topic became TapIn's "gaming" and ran gaming signals; RAWG matched the question words;
+  Twitch reported site-wide viewers; popularity dumps sat under VERIFIED FACTS. The vault's
+  "uncertain" bullets came from old scraped text saved as operator-tier, matched by
+  bag-of-words against a corpus full of those dumps.
+- **"Pull everything?"** Today the pipeline reads only pages the operator pastes and never
+  the web-search results it already has. Designed and filed as #848, next-five #1.
+
+### Shipped 1..5 (cheapest and safest first)
+
+1. **#840 TTS pays once** - `core/tts.concat_list_text` writes absolute entries. The operator's
+   own log line ("concat failed after billing 972 char(s) ... billed twice") reproduced
+   byte-for-byte in the fail-first test: `output/tapin/audio/output/tapin/audio/...seg0.mp3`,
+   rc 4294967294.
+2. **#843 signal-fact hygiene** - `apis/topic_tokens.py`; RAWG and Steam relevance; Twitch
+   inactive without a named game (and "Premier League" no longer matches League of Legends);
+   fan-out drops question halves; popularity dumps are context, out of the fact count and out
+   of the vault relevance corpus.
+3. **#841 #842 domain from the topic, plus soccer** - `infer_topic_domain` /
+   `effective_domain` / `off_niche_note`; soccer branch, weight profile, SOCCER matrix, TapIn
+   `extra_domains`, persona, per-domain sign-off and tags. Decisions §34.
+4. **#844 #845 #846 fact intake** - titles are metadata, JS shells retry the proxy,
+   `LINK_FACT_MAX_LINES`, link lines at `tier: link` in `_link_facts/`, borrowed vault lines
+   never pin, pasted-link lines checked against the angle with Enter=drop / k=keep.
+5. **#847 report card v5** - topic 0.12 -> 0.05; calibration reports today's re-grade while
+   versions mix.
+
+### Findings, with file:line
+
+- `core/tts.py` `concat_audio_segments` (~L660): relative list entries; every sentence test
+  faked the function, so nothing could see it.
+- `apis/topic_scorer.py` `_infer_domain_from_text` (L286-289 before this wave): the channel
+  fallback turned "unsure" into "confident gaming" for gating, brief, templates, feeds, tags.
+- `apis/register_signals.py` `_gated_signal_names` (L410-431): docstring promised "when unsure,
+  run everything"; the fallback meant it never was unsure on TapIn.
+- `apis/twitch_api.py` (L113, L141): site-wide streams and top-5 games returned as an active
+  signal; substring matching (`"league" in "league of legends"`).
+- `apis/rawg_api.py` `_RELEVANCE_STOP` (L16): no question words.
+- `core/signal_facts.py` (L312-314): `f"{name} data: {json}"` under VERIFIED FACTS.
+- `core/link_facts.py` `_article_facts` (L379-389): title and meta as facts; `is_title_only`
+  counted the meta line as body, so the proxy never retried a JS page.
+- `core/operator_facts.py` `capture_facts_to_vault` (L532-570): scraped lines saved as operator.
+- `core/fact_selection.py` (L53-61): "on-topic by construction" - the assumption run 98 broke.
+
+### Deliberately not done
+
+- **Auto-research (#848)** - the operator chose fixes plus docs; designed and filed.
+- **The angle tie (#849)** - v5 lowers its weight; separating angles needs a per-angle measure.
+- **Migrating old `_operator_facts` notes** - the vault is the operator's data; they no longer
+  pin, and #857 offers a dry-run re-tier.
+- **Removing the topic component** - the operator chose to keep it small.
+
+### Audit
+
+Fifty-one new tests across five new modules (`test_tts_concat_paths`,
+`test_run98_signal_facts`, `test_run98_domain`, `test_run98_fact_intake`, `test_grade_v5`).
+**Every behavioural one observed failing first**: 3 of 4 concat tests (the fourth is the
+real-ffmpeg case, skipped here); 10 of 15 signal tests (the 5 passing were guards); 17 of 20
+domain tests (3 guards); 8 of 8 intake tests; 4 of 4 v5 tests.
+
+Defects the audit caught, not the tests:
+- **mypy 129 -> 136** on my counter `saved` shadowing a `Path | None` of the same name in
+  `prompt_key_facts_result`. Renamed; back to 129.
+- Re-dumping `config/seo/tapin.json` through `json.dumps` reflowed every inline array; redone
+  as text edits so the diff carries only the change.
+- A patch in `test_earnings_signal` targeted `infer_domain`, which gating no longer calls - the
+  test still passed, meaning nothing. Moved to `infer_topic_domain`.
+- The off-topic UI test first ran with no web-search evidence and dropped the relevant
+  "Newcastle avoided sanctions" line too. The check is right to do that without evidence; the
+  test now carries run 98's real Tavily evidence, and the limit is recorded in #846.
+
+Every new symbol traced to a production caller.
+
+### Proof
+
+Suite **3,550 -> 3,601**, identical in default, reverse and shuffle(seed 1): the same 8
+environmental failures as wave 32 (fastapi extra, ffmpeg). mypy **129 == baseline**. ruff and
+format clean. `git status --short data/` empty. Backlog **288 numbered open**, highest **#858**.
+
+Run 98's inputs replayed through the new code:
+
+```
+infer_topic_domain(RUN98)     : soccer
+gated on tapin                : anime coingecko earnings finnhub fred igdb lastfm musicbrainz
+                                rawg sec_edgar steam tapology tmdb trendingnow tvmaze twitch ufc_context
+fan-out parts                 : []
+RAWG keeps 'What's This?'     : False
+brief                         : DOMAIN: soccer / SOCCER SCRIPT MATRIX (mandatory)
+default tags                  : TapIn, shorts, football, soccer
+description sign-off          : Subscribe for daily football takes.
+off-niche (Ohio election)     : Off-niche topic for this channel (no recognised niche; channel
+                                covers gaming, soccer, ufc) - signals and the script brief
+                                follow the topic, not the channel default.
+Report card: A (88/100)       : hook 85 x30%, authenticity 87 x30%, grounding 88 x24%,
+                                topic 94.6 x5%, length 100 x11%   (v4 gave A 89)
+```
+
 ## 2026-09-26 (Claude Code) - wave 32: the 09-20 five #826 #820 #824 #821 #819
 
 **Prompt (verbatim):** `next 5`

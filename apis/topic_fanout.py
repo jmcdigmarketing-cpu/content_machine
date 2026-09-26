@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import re
 
+from apis.topic_tokens import starts_with_question
+
 # Signals refetched per subtopic (short queries work better than full paragraph topics)
 FANOUT_SIGNAL_NAMES = ("steam", "rawg", "autocomplete", "trends")
 
@@ -34,6 +36,10 @@ def parse_subtopics(topic: str, *, max_parts: int = 6) -> list[str]:
         if len(part) < 2:
             continue
         if part.lower() in ("gaming", "games", "video games"):
+            continue
+        # "Man City guilty, what does this mean for the prem" is one subject and a
+        # question about it, not two subjects (run 98).
+        if starts_with_question(part):
             continue
         if part not in cleaned:
             cleaned.append(part)

@@ -11,9 +11,13 @@ from apis.signal_contract import (
     classify_http,
     make_signal,
 )
+from apis.topic_tokens import FUNCTION_WORDS
 
 # Words that carry no game-identity signal when matching a result to a topic.
-_RELEVANCE_STOP = {"the", "of", "for", "a", "an", "and", "new", "update", "vs", "is", "to"}
+# FUNCTION_WORDS added after run 98: "what", "this", "does", "mean" in a typed
+# question made "What's This?" (2 of 2 tokens) and "What does it mean!?" count as
+# matches for a Premier League topic.
+_RELEVANCE_STOP = {"new", "update", "vs"} | set(FUNCTION_WORDS)
 _ROMAN = re.compile(r"^[ivxlcdm]+$")
 
 

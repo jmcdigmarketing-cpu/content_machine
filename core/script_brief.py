@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 
-from apis.topic_scorer import infer_domain
+from apis.topic_scorer import effective_domain
 from config.channels import get_channel_profile
 from core.channel_context import channel_history_block, extract_anchors
 
@@ -24,8 +24,11 @@ def build_script_brief(
     *,
     seed_topic: str | None = None,
     key_facts: list[str] | None = None,
+    signals: dict | None = None,
 ) -> str:
-    domain = infer_domain(topic, channel_id, key_facts=key_facts)
+    # The topic's domain, or the channel's only when a live signal backs it. Run 98
+    # briefed a Premier League story as "DOMAIN: gaming" with the GAMING matrix.
+    domain = effective_domain(topic, channel_id, key_facts=key_facts, signals=signals)
     event = _extract_event_tag(topic)
     lines = [f"DOMAIN: {domain}"]
 
@@ -34,7 +37,15 @@ def build_script_brief(
     if seed_topic and seed_topic.strip().lower() != topic.strip().lower():
         lines.append(f"SEED TOPIC (user intent — do not drift): {seed_topic.strip()}")
     history = channel_history_block(channel_id) if channel_id else ""
-    if history and domain not in ("nba", "nfl", "ufc", "finance"):
+    if history and domain == "neutral":
+        # Off the channel's usual ground: the franchise nudge would pull it back.
+        lines.extend(
+            [
+                "",
+                "OFF-NICHE: cover this topic on its own terms; do not steer it to the channel's usual franchises.",
+            ]
+        )
+    elif history and domain not in ("nba", "nfl", "ufc", "finance", "soccer"):
         lines.extend(["", history])
     elif history:
         # Recent topics are useful context but drop the gaming-franchise nudge on sports runs.
@@ -81,6 +92,18 @@ def build_script_brief(
             lines.append(
                 "- CHANNEL NOTE: TapIn sports crossover — this is NBA analysis, not a gaming video."
             )
+
+    elif domain == "soccer":
+        lines.extend(
+            [
+                "",
+                "SOCCER SCRIPT MATRIX (mandatory):",
+                "- Association football. Name the club(s), competition and date from TOPIC and FACTS.",
+                "- Table positions, points, results, charges and sanctions only as FACTS state them.",
+                "- Separate what a ruling or report says from what might follow (appeals, sanctions).",
+                "- Do NOT write about video games (EA FC/FIFA) unless TOPIC names the game.",
+            ]
+        )
 
     elif domain == "nfl":
         lines.extend(

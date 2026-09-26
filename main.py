@@ -605,6 +605,14 @@ def _run_new_video_flow_body(
     print(f"  Completed in {t_disc:.1f}s")
 
     display_signal_health(discovery.base_signals, topic=topic, channel_id=channel_id)
+    try:
+        from core.channel_context import off_niche_note
+
+        _niche = off_niche_note(topic, channel_id, discovery.base_signals)
+        if _niche:
+            print(f"  {_niche}")
+    except Exception as exc:  # fail-open: a notice, never a block
+        logger.debug("off-niche note skipped: %s", exc)
 
     from core.outlier import display_outlier, get_competitor_outlier
 
@@ -694,6 +702,7 @@ def _run_new_video_flow_body(
         topic,
         channel_id,
         signals=best_signals,
+        angle=str(best_topic),
     )
     key_facts = fact_selection.facts
 

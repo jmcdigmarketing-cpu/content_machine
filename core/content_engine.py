@@ -9,7 +9,7 @@ from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.description_extras import apply_description_extras
 from core.fact_enrichment import _fact_line_count, enrich_facts
 from core.fact_grounding import find_ungrounded_entities
-from core.grounding_tiers import YOUTUBE_SECTION_HEADERS, build_tiered_corpus
+from core.grounding_tiers import CONTEXT_SECTION_HEADERS, build_tiered_corpus
 from core.llm_router import complete_json
 from core.logging import get_logger
 from core.operator_facts import (
@@ -121,7 +121,8 @@ _CONTEXT_ONLY_PREFIXES = (
 
 # Shared with the tier layer (core/grounding_tiers.py) so both split YouTube
 # context sections the same way.
-_YOUTUBE_SECTION_HEADERS = YOUTUBE_SECTION_HEADERS
+# Popularity payloads joined them in run 98's fix (grounding_tiers.CONTEXT_SECTION_HEADERS).
+_YOUTUBE_SECTION_HEADERS = CONTEXT_SECTION_HEADERS
 
 # Bullet prefixes used inside YouTube sections
 _YT_BULLET_PREFIXES = ("  •", "  →", "• ", "→ ")
@@ -409,7 +410,7 @@ You must:
 
     verified_block = verified_facts if verified_facts else "(no verified game data available)"
     context_block = (
-        f"\nCONTEXT SIGNALS — competitor video titles only (shows what's trending; "
+        f"\nCONTEXT SIGNALS — competitor video titles and popularity data only (shows what's trending; "
         f"NOT facts about specific events, patches, or heroes):\n{context_signals}"
         if context_signals
         else ""
@@ -1042,8 +1043,9 @@ def generate_content_package(
         channel_id,
         seed_topic=seed_topic or topic,
         key_facts=clean_key_facts_early or None,
+        signals=signals,
     )
-    seo_block = build_seo_prompt_block(channel_id)
+    seo_block = build_seo_prompt_block(channel_id, topic=seed_topic or topic)
     signal_facts = enrich_facts(
         topic,
         signals,

@@ -188,6 +188,8 @@ def infer_tier_from_path(rel_path: Path | str) -> str:
     parts = [p.lower() for p in Path(rel_path).parts]
     if "_operator_facts" in parts:
         return TIER_OPERATOR
+    if "_link_facts" in parts:  # run 98: scraped lines are link tier, not operator
+        return TIER_LINK
     if parts and parts[-1].startswith("_sources"):
         return TIER_LINK
     return TIER_VAULT

@@ -21,10 +21,11 @@
     "tapin": {
       "name": "TapIn Media",
       "domain": "gaming",
+      "extra_domains": ["soccer"],
       "persona": {
-        "perspective": "a plugged-in gaming + UFC fan who calls it straight",
+        "perspective": "a plugged-in gaming, UFC and football fan who calls it straight",
         "tone": "high-energy, confident, a little irreverent — never corporate",
-        "audience": "gaming and combat-sports fans who want the real take, fast",
+        "audience": "gaming, combat-sports and football fans who want the real take, fast",
         "signoff": "Tap in for more."
       },
       "caption_skin": {

@@ -70,10 +70,12 @@ def rss_feeds_for_topic(topic: str, channel_id: str) -> list[dict[str, Any]]:
     domain, so a gaming topic no longer pulls MMA/soccer feeds (and vice-versa).
     Untagged feeds remain universal.
     """
-    from apis.topic_scorer import infer_domain
+    from apis.topic_scorer import infer_topic_domain
 
     feeds = list(rss_feeds_for_channel(channel_id))
-    domain = infer_domain(topic, channel_id)
+    # The topic's own domain (run 98): the channel default routed a football story
+    # to gaming feeds and dropped the sports ones.
+    domain = infer_topic_domain(topic)
     feeds.extend(domain_rss_feeds(domain))
     deduped = _dedupe_feeds(feeds)
     return [f for f in deduped if _feed_matches_domain(f, domain)]

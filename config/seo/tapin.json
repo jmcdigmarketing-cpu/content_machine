@@ -1,6 +1,6 @@
 {
   "channel_id": "tapin",
-  "niche": "gaming and UFC short-form",
+  "niche": "gaming, UFC and football short-form",
   "default_tags": [
     "TapIn",
     "gaming",
@@ -17,14 +17,23 @@
   "description_rules": [
     "First line: hook matching the video opening",
     "2-3 short lines of context from FACTS only",
-    "End with: Subscribe for daily gaming & UFC takes.",
     "No hashtags in description body (tags field is separate)"
   ],
   "tag_rules": [
-    "8-15 tags mixing broad (UFC, gaming) and specific (fighter names, game titles from topic)",
+    "8-15 tags mixing broad (UFC, gaming, football) and specific (fighter names, game titles from topic)",
     "No spaces in multi-word tags use CamelCase or single words",
     "Never invent fighter names not in FACTS or TOPIC"
   ],
+  "signoff_by_domain": {
+    "default": "Subscribe for daily gaming & UFC takes.",
+    "gaming": "Subscribe for daily gaming takes.",
+    "ufc": "Subscribe for daily UFC takes.",
+    "soccer": "Subscribe for daily football takes."
+  },
+  "domain_tags": {
+    "soccer": {"drop": ["gaming", "esports"], "add": ["football", "soccer"]},
+    "ufc": {"drop": ["esports"]}
+  },
   "rss_feeds": [
     {
       "name": "MMA Fighting",

@@ -146,7 +146,30 @@ def on_brand_domains(channel_id: str) -> set[str]:
     domains = {profile.domain or "neutral"}
     if profile.domain == "gaming":
         domains.add("ufc")
+    domains.update(getattr(profile, "extra_domains", ()) or ())
     return domains
+
+
+def off_niche_note(topic: str, channel_id: str | None, signals: dict | None = None) -> str | None:
+    """One line when a typed topic sits outside the channel's niche, else None.
+
+    Not a block: the operator may cover anything. It says the domain came from the
+    topic, so the gaming persona and franchise history are not applied to it.
+    """
+    from apis.topic_scorer import effective_domain
+
+    if not channel_id or not (topic or "").strip():
+        return None
+    domain = effective_domain(topic, channel_id, signals=signals)
+    allowed = on_brand_domains(channel_id)
+    if domain in allowed:
+        return None
+    label = domain if domain != "neutral" else "no recognised niche"
+    niche = ", ".join(sorted(d for d in allowed if d != "neutral")) or "none set"
+    return (
+        f"Off-niche topic for this channel ({label}; channel covers {niche}) - "
+        "signals and the script brief follow the topic, not the channel default."
+    )
 
 
 def normalize_seed_topic(topic: str) -> str:

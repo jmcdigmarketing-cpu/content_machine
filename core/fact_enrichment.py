@@ -21,13 +21,13 @@ logger = get_logger("core.fact_enrichment")
 
 _MIN_FACT_LINES = int(os.getenv("FACT_ENRICH_MIN_LINES", "6"))
 
+
 # YouTube section markers — these are context-only lines; don't count toward fact threshold
-_YT_SECTION_HEADERS = (
-    "YouTube — real video titles",
-    "YouTube video descriptions",
-    "YouTube market titles",
-    "YouTube competitor performance",
-)
+def _context_headers() -> tuple[str, ...]:
+    # YouTube sections plus the popularity payloads (run 98); one shared list.
+    from core.grounding_tiers import CONTEXT_SECTION_HEADERS
+
+    return CONTEXT_SECTION_HEADERS
 
 
 def _fact_line_count(facts: str) -> int:
@@ -36,10 +36,11 @@ def _fact_line_count(facts: str) -> int:
         return 0
     count = 0
     in_yt_section = False
+    headers = _context_headers()
     for line in facts.splitlines():
         stripped = line.strip()
-        # Detect YouTube section start — skip header and all bullets within it
-        if any(stripped.startswith(h) for h in _YT_SECTION_HEADERS):
+        # Detect a context section start — skip header and all bullets within it
+        if any(stripped.startswith(h) for h in headers):
             in_yt_section = True
             continue
         # Skip YouTube bullet lines (• and →) and indented continuation lines

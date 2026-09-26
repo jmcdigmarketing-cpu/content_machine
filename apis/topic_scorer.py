@@ -110,6 +110,23 @@ _LEARNED_PROFILES = {
         "steam": 0.0,
         "autocomplete": 0.08,
     },
+    # Operator decision 2026-09-26 (run 98): football is part of TapIn's niche.
+    # api_sports is the soccer API (v3.football.api-sports.io); gaming signals zero.
+    "soccer": {
+        "youtube": 0.28,
+        "trends": 0.08,
+        "news": 0.12,
+        "wikipedia": 0.06,
+        "blog_rss": 0.1,
+        "api_sports": 0.1,
+        "sports": 0.06,
+        "live_scores": 0.06,
+        "odds": 0.04,
+        "rawg": 0.0,
+        "steam": 0.0,
+        "twitch": 0.0,
+        "autocomplete": 0.1,
+    },
     "nfl": {
         "youtube": 0.28,
         "trends": 0.08,
@@ -140,9 +157,77 @@ def _mentions(text: str, words) -> bool:
     return False
 
 
+# Association football. Checked FIRST: the NBA list claims "standings", "finals" and
+# "spurs", which a Premier League story uses too. Only unambiguous keys - bare
+# "football" means the NFL to a US audience and stays out.
+_SOCCER_KEYS = [
+    "soccer",
+    "premier league",
+    "the prem",
+    "epl",
+    "uefa",
+    "champions league",
+    "europa league",
+    "fifa",
+    "world cup",
+    "la liga",
+    "serie a",
+    "bundesliga",
+    "ligue 1",
+    "mls",
+    "ballon d'or",
+    "golden ball",
+    "manchester city",
+    "man city",
+    "manchester united",
+    "man united",
+    "man utd",
+    "arsenal",
+    "liverpool",
+    "chelsea",
+    "tottenham",
+    "newcastle united",
+    "aston villa",
+    "everton",
+    "west ham",
+    "real madrid",
+    "barcelona",
+    "psg",
+    "bayern",
+    "juventus",
+    "guardiola",
+    "haaland",
+    "mbappe",
+]
+
+# The football VIDEO GAME (EA Sports FC / FIFA) belongs to gaming.
+_FOOTBALL_GAME_RE = re.compile(
+    r"\b(?:ea\s+(?:sports\s+)?fc|ultimate team|career mode|(?:fifa|fc)\s?\d{2})\b"
+)
+
+# Franchises TapIn covers (core/channel_context._GAME_ANCHORS minus "ufc"): without
+# the channel fallback these would otherwise read as neutral.
+_GAME_FRANCHISES = [
+    "grand theft auto",
+    "call of duty",
+    "cod zombies",
+    "cod",
+    "subnautica",
+    "terraria",
+    "fortnite",
+    "valorant",
+    "minecraft",
+    "elden ring",
+    "sega",
+]
+
+
 def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: bool = True) -> str:
     """Classify domain from free text; optional channel profile fallback."""
     topic_lower = (text or "").lower()
+
+    if _mentions(topic_lower, _SOCCER_KEYS) and not _FOOTBALL_GAME_RE.search(topic_lower):
+        return "soccer"
 
     if _mentions(
         topic_lower,
@@ -279,8 +364,8 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
 
     if _mentions(
         topic_lower,
-        ["gta", "gaming", "game", "steam", "roblox", "marvel rivals", "esports"],
-    ):
+        ["gta", "gaming", "game", "steam", "roblox", "marvel rivals", "esports", *_GAME_FRANCHISES],
+    ) or _FOOTBALL_GAME_RE.search(topic_lower):
         return "gaming"
 
     if use_channel_profile:
@@ -298,19 +383,57 @@ def infer_domain(topic, channel_id=None, *, key_facts=None):
     lacks explicit sport keywords), the fact corpus wins over the channel default.
     """
     domain = _infer_domain_from_text(topic or "", channel_id)
+    return _facts_override(domain, key_facts)
+
+
+def _facts_override(domain: str, key_facts) -> str:
+    """Pasted facts that name a sport or finance win over a gaming/neutral topic."""
     if not key_facts:
         return domain
     facts_blob = "\n".join(str(f).strip() for f in key_facts if str(f).strip())
     if not facts_blob:
         return domain
     facts_domain = _infer_domain_from_text(facts_blob, use_channel_profile=False)
-    sport_domains = {"nba", "nfl", "ufc"}
+    sport_domains = {"nba", "nfl", "ufc", "soccer"}
     if facts_domain in sport_domains and domain in ("gaming", "neutral", "popculture"):
         return facts_domain
     if facts_domain == "finance" and domain in ("gaming", "neutral"):
         return facts_domain
     if domain == "neutral" and facts_domain != "neutral":
         return facts_domain
+    return domain
+
+
+def infer_topic_domain(topic, *, key_facts=None) -> str:
+    """The topic's own domain - never the channel's.
+
+    `infer_domain` falls back to the channel's domain when no keyword matches, which
+    is right for weights and history (its ~40 callers) and wrong for deciding what
+    the topic IS: run 98's football story became "gaming" and ran gaming signals.
+    Use this wherever the answer changes what is fetched or said about the topic.
+    """
+    domain = _infer_domain_from_text(topic or "", use_channel_profile=False)
+    return _facts_override(domain, key_facts)
+
+
+def effective_domain(topic, channel_id=None, *, key_facts=None, signals=None) -> str:
+    """The topic's domain; the channel's only when a live signal backs it.
+
+    "Silksong review" names no keyword, but an active RAWG match says it is a game.
+    Without that evidence a keyword-less topic is neutral, not the channel default.
+    """
+    domain = infer_topic_domain(topic, key_facts=key_facts)
+    if domain != "neutral" or not signals:
+        return domain
+    channel_domain = get_channel_profile(resolve_channel_id(channel_id)).domain
+    if not channel_domain or channel_domain == "neutral":
+        return domain
+    from apis.register_signals import _DOMAIN_GROUP, _DOMAIN_SIGNALS
+
+    backing = _DOMAIN_SIGNALS.get(_DOMAIN_GROUP.get(channel_domain, ""), set())
+    for name, sig in (signals or {}).items():
+        if name in backing and isinstance(sig, dict) and sig.get("active"):
+            return channel_domain
     return domain
 
 

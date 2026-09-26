@@ -641,6 +641,22 @@ def ffmpeg_concat_ready() -> bool:
     return ok
 
 
+def concat_list_text(paths: list[str]) -> str:
+    """The ffmpeg concat-demuxer list for `paths`, one absolute entry per line.
+
+    Absolute, not as-given: the demuxer resolves a relative entry against the list
+    file's own folder, and the list sits beside the segments. The pipeline's paths
+    are relative (`output/<ch>/audio/...`), so every entry resolved to
+    `output/<ch>/audio/output/<ch>/audio/...`, every join failed, and the whole
+    script was re-synthesized - each multi-sentence render billed twice (run 98).
+    """
+    lines = []
+    for path in paths:
+        safe = os.path.abspath(path).replace("\\", "/").replace("'", r"'\''")
+        lines.append(f"file '{safe}'")
+    return "\n".join(lines) + "\n"
+
+
 def concat_audio_segments(paths: list[str], dest: str) -> str:
     """Re-encode concatenated MP3s. Copy-concat across providers is unsafe."""
     import subprocess
@@ -650,9 +666,7 @@ def concat_audio_segments(paths: list[str], dest: str) -> str:
     list_file = dest + ".concat.txt"
     try:
         with open(list_file, "w", encoding="utf-8") as f:
-            for path in paths:
-                safe = path.replace("\\", "/").replace("'", r"'\''")
-                f.write(f"file '{safe}'\n")
+            f.write(concat_list_text(paths))
         cmd = [
             "ffmpeg",
             "-y",
@@ -670,7 +684,8 @@ def concat_audio_segments(paths: list[str], dest: str) -> str:
         ]
         proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
         if proc.returncode != 0 or not os.path.isfile(dest) or os.path.getsize(dest) <= 0:
-            err = (proc.stderr or "")[-300:]
+            # 300 chars cut run 98's doubled path off the front of the message.
+            err = (proc.stderr or "")[-2000:]
             raise RuntimeError(f"ffmpeg concat failed (rc={proc.returncode}): {err}")
         return dest
     finally:

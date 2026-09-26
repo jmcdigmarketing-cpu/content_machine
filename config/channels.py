@@ -21,6 +21,9 @@ class ChannelProfile:
     id: str
     name: str = ""
     domain: str = "neutral"
+    # Further on-brand domains beyond `domain` (channels.json "extra_domains").
+    # TapIn: football, operator decision 2026-09-26 (run 98).
+    extra_domains: tuple[str, ...] = ()
     weight_overrides: dict[str, float] = field(default_factory=dict)
     youtube_oauth_token_file: str | None = None
     asset_provider_order: tuple | None = None
@@ -115,6 +118,7 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             id=cid,
             name=cfg.get("name", cid),
             domain=cfg.get("domain", "neutral"),
+            extra_domains=tuple(str(d) for d in cfg.get("extra_domains") or ()),
             weight_overrides=dict(cfg.get("weight_overrides") or {}),
             youtube_oauth_token_file=cfg.get("youtube_oauth_token_file"),
             asset_provider_order=order,

@@ -39,14 +39,18 @@ logger = get_logger("core.video_grade")
 # banned-template hooks. Historical letters from v2 are a different rubric.
 # v4 (2026-09-20): #804 continuous authenticity points so 100/100 is no longer
 # the mode; #800 hedge-density penalty on grounding. Gate verdicts are unchanged.
-GRADE_VERSION = "v4"
+# v5 (2026-09-26, run 98): topic weight 0.12 -> 0.05, the operator's call. The
+# composite is computed once per topic and copied to every angle (run 98: five
+# angles, all 94.61), and on 23 measured videos it does not predict engagement
+# (r=-0.05). It stays in, small, rather than being removed.
+GRADE_VERSION = "v5"
 
 # Component weights (renormalized over the components actually present).
 _WEIGHTS = {
     "hook": 0.28,
     "authenticity": 0.28,
     "grounding": 0.22,
-    "topic": 0.12,
+    "topic": 0.05,  # v5; was 0.12
     "thumbnail": 0.10,
     # #645. Deliberately not carved out of the five above: taking weight from
     # hook or authenticity would change what those scores mean on top of adding

@@ -257,7 +257,11 @@ def generate_variants(
             brief=brief,
         )
 
-    if profile and profile.domain == "gaming":
+    # The gaming templates need a gaming TOPIC, not just a gaming channel: run 98's
+    # Premier League story got "patch_or_update_hook" and "meta_or_balance_take".
+    from apis.topic_scorer import infer_topic_domain
+
+    if profile and profile.domain == "gaming" and infer_topic_domain(topic) == "gaming":
         if is_established:
             # Topic has been covered multiple times — pivot to analysis/prediction
             angle_types = [
@@ -359,7 +363,9 @@ def _anchor_rules(topic: str, channel_id: str | None) -> str:
                 "movies, comics, or Avengers team-ups."
             )
     profile = get_channel_profile(channel_id) if channel_id else None
-    if profile and profile.domain == "gaming":
+    from apis.topic_scorer import infer_topic_domain
+
+    if profile and profile.domain == "gaming" and infer_topic_domain(topic) == "gaming":
         lines.append(
             "- Titles must be about the game/update named in the seed — "
             "not generic franchise lore."

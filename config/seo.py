@@ -46,26 +46,59 @@ def load_seo_hints(channel_id: str) -> dict[str, Any]:
         return {}
 
 
-def build_seo_prompt_block(channel_id: str) -> str:
+def _topic_domain(topic: str | None) -> str:
+    if not topic:
+        return ""
+    try:
+        from apis.topic_scorer import infer_topic_domain
+
+        return infer_topic_domain(topic)
+    except Exception as exc:
+        logger.debug("infer_topic_domain skipped: %s", exc)
+        return ""
+
+
+def description_signoff(channel_id: str, topic: str | None = None) -> str:
+    """The description's closing line for this topic's domain (run 98).
+
+    A football video ended "Subscribe for daily gaming & UFC takes." because the
+    sign-off was a fixed rule. `signoff_by_domain` in config/seo/<channel>.json maps a
+    topic domain to its line; "default" covers everything else.
+    """
+    by_domain = get_seo_profile(channel_id).get("signoff_by_domain") or {}
+    if not isinstance(by_domain, dict):
+        return ""
+    domain = _topic_domain(topic)
+    return str(by_domain.get(domain) or by_domain.get("default") or "")
+
+
+def build_seo_prompt_block(channel_id: str, topic: str | None = None) -> str:
     profile = get_seo_profile(channel_id)
     if not profile:
         return ""
 
     hints = load_seo_hints(channel_id)
     lines = ["SEO GUIDELINES (channel profile):"]
+    signoff = description_signoff(channel_id, topic)
 
     for key, label in (
         ("title_rules", "Title"),
         ("description_rules", "Description"),
         ("tag_rules", "Tags"),
     ):
-        rules = profile.get(key) or []
+        rules = list(profile.get(key) or [])
+        if key == "description_rules" and signoff:
+            rules.append(f"End with: {signoff}")
         if rules:
             lines.append(f"{label}:")
             for rule in rules:
                 lines.append(f"  - {rule}")
 
-    defaults = profile.get("default_tags") or []
+    defaults = (
+        default_tags_for_channel(channel_id, topic)
+        if topic
+        else (profile.get("default_tags") or [])
+    )
     if defaults:
         lines.append(
             f"Default tags to consider (merge with topic-specific): {', '.join(defaults[:12])}"
@@ -100,15 +133,19 @@ def default_tags_for_channel(channel_id: str, topic: str | None = None) -> list[
             merged.append(str(tag))
 
     if topic:
-        try:
-            from apis.topic_scorer import infer_domain
-
-            domain = infer_domain(topic, channel_id)
-            if domain not in ("ufc", "mma"):
-                drop = {"ufc", "mma", "featherweight", "lightweight"}
-                merged = [t for t in merged if t.lower() not in drop]
-        except Exception as exc:
-            logger.debug("infer_domain skipped: %s", exc)
+        # The topic's own domain (run 98): the channel fallback made a football
+        # video "gaming" and kept gaming/esports on it.
+        domain = _topic_domain(topic)
+        if domain not in ("ufc", "mma"):
+            drop = {"ufc", "mma", "featherweight", "lightweight"}
+            merged = [t for t in merged if t.lower() not in drop]
+        per_domain = (profile.get("domain_tags") or {}).get(domain) or {}
+        if isinstance(per_domain, dict):
+            gone = {str(t).lower() for t in per_domain.get("drop") or []}
+            merged = [t for t in merged if t.lower() not in gone]
+            for tag in per_domain.get("add") or []:
+                if tag and str(tag) not in merged:
+                    merged.append(str(tag))
 
     return merged
 

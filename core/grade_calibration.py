@@ -84,6 +84,10 @@ class CalibrationReport:
     # #821 / #819: (r, n) for the two candidates the rubric might one day lean on.
     recurrence_correlation: tuple[float | None, int] = (None, 0)
     angle_correlation: tuple[float | None, int] = (None, 0)
+    # Run 98 / v5: every measured row re-graded by today's rubric, vs engaged-rate.
+    # Reported when versions mix, so a rubric bump does not switch the measurement
+    # off until the history is re-stamped (`ops backfill-quality --force`).
+    regraded_correlation: float | None = None
     # #826: (typed, verified) over every run row, not just measured ones.
     claim_type_coverage: tuple[int, int] = (0, 0)
     runs_total: int = 0
@@ -270,6 +274,11 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
     # rubric is the mistake, not the fix -- measured, it produced a 0.99998
     # correlation over eight unlabelled rows.
     report.mixed_versions = len(versions) > 1 or UNVERSIONED in versions
+    if report.measured >= MIN_MEASURED:
+        report.regraded_correlation = _pearson(
+            [r.regraded if r.regraded is not None else r.grade for r in report.rows],
+            [r.engaged_rate for r in report.rows],
+        )
     if report.measured >= MIN_MEASURED and not report.mixed_versions:
         report.grade_correlation = _pearson(
             [r.grade for r in report.rows], [r.engaged_rate for r in report.rows]
@@ -524,6 +533,19 @@ def summary_line(report: CalibrationReport) -> str | None:
     )
 
 
+def regraded_line(report: CalibrationReport) -> str:
+    """Today's rubric over every measured row - shown only when versions mix."""
+    if not report.mixed_versions or report.regraded_correlation is None:
+        return ""
+    from core.video_grade import GRADE_VERSION
+
+    return (
+        f"Report-card vs engaged-rate under today's rubric ({GRADE_VERSION}), every row "
+        f"re-graded: r={report.regraded_correlation:+.2f} over {report.measured} videos - "
+        "re-stamp history with `py -m scripts.ops backfill-quality --force` to lift the refusal"
+    )
+
+
 def render(channel_id: str | None = None) -> str:
     report = build_calibration(channel_id)
     lines = [f"Grade calibration - {report.channel_id}", "=" * 64]
@@ -553,6 +575,9 @@ def render(channel_id: str | None = None) -> str:
     grade_line = summary_line(report)
     if grade_line:
         lines.append(f"  {grade_line}")
+    regrade = regraded_line(report)
+    if regrade:
+        lines.append(f"  {regrade}")
     lines.append(f"  {composite_line(report)}")
     for extra in (
         significance_line(report),

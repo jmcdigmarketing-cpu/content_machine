@@ -40,6 +40,16 @@ def get_steam_signal(topic):
 
         data = response.json()
         results = data.get("items", [])
+        # Steam's store search returns *something* for almost any string; keep only
+        # results whose name is the topic's subject (the RAWG rule, run 98).
+        from apis.rawg_api import _is_relevant, _sig_tokens
+
+        topic_tokens = set(_sig_tokens(topic or ""))
+        results = [
+            r
+            for r in results
+            if isinstance(r, dict) and _is_relevant(r.get("name") or "", topic_tokens)
+        ]
 
         if not results:
             return make_signal(

@@ -150,7 +150,7 @@ def _build_with_llm(
     rss_lines = "\n".join(
         f"- {h.get('title', '')} ({h.get('source', '')})" for h in (rss.get("headlines") or [])[:8]
     )
-    seo_block = build_seo_prompt_block(channel_id)
+    seo_block = build_seo_prompt_block(channel_id, topic=topic)
 
     seed_block = ""
     if seed_topic and seed_topic.strip().lower() != topic.strip().lower():

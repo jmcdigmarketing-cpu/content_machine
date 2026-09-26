@@ -45,7 +45,9 @@ class TestArticleFacts(unittest.TestCase):
         )
         mock_get.return_value = MagicMock(status_code=200, text=html)
         facts = lf.extract_facts_from_url("https://news.example.com/fed")
-        self.assertTrue(any("Fed holds rates" in f for f in facts))
+        # Run 98: the title is source metadata, not a fact line.
+        self.assertFalse(any("Fed holds rates" in f for f in facts))
+        self.assertEqual(lf.last_extract_report()["title"], "Fed holds rates")
         self.assertTrue(any("held interest rates steady" in f for f in facts))
         self.assertFalse(any(f == "Short." for f in facts))  # too short to include
 

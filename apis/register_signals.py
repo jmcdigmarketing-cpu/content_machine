@@ -379,6 +379,7 @@ _DOMAIN_GROUP: dict[str, str] = {
     "nba": "sports",
     "nfl": "sports",
     "ufc": "sports",
+    "soccer": "sports",
     "gaming": "gaming",
     "finance": "finance",
     "anime": "anime",
@@ -397,6 +398,9 @@ _SIGNAL_GROUP: dict[str, str] = {
 # random soccer club, CFL odds). Skip them specifically for UFC/MMA topics; the
 # MMA-native signals (ufc_context, tapology, stats_context) stay.
 _TEAM_SPORT_SIGNALS = {"sports", "odds", "live_scores", "api_sports"}
+
+# The mirror case: MMA-only scrapers return a random card for a football story.
+_MMA_ONLY_SIGNALS = {"ufc_context", "tapology"}
 
 
 def _domain_gating_enabled() -> bool:
@@ -417,9 +421,13 @@ def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
     if not _domain_gating_enabled():
         return set()
 
-    from apis.topic_scorer import infer_domain
+    # The topic's OWN domain. `infer_domain` falls back to the channel's, which made
+    # a keyword-less topic on TapIn a confident "gaming" topic: run 98's football
+    # story ran RAWG/Twitch and gated every sports signal. `channel_id` stays in the
+    # signature for callers; it no longer decides what a topic is.
+    from apis.topic_scorer import infer_topic_domain
 
-    inferred = infer_domain(topic, channel_id)
+    inferred = infer_topic_domain(topic)
     topic_group = _DOMAIN_GROUP.get(inferred)
     if not topic_group:
         return set()
@@ -428,6 +436,8 @@ def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
     # Within the sports group, team-sport signals don't cover MMA.
     if inferred == "ufc":
         gated |= _TEAM_SPORT_SIGNALS
+    if inferred == "soccer":
+        gated |= _MMA_ONLY_SIGNALS
     return gated
 
 

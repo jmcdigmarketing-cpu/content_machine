@@ -59,6 +59,19 @@ def _topic_game_hint(topic: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
+def _game_matches(game_name: str, hint: str) -> bool:
+    """Whole-token match: every content word of the game is in the topic, or every
+    content word of the topic is in the game. Substring matching let "league" in a
+    Premier League topic hit League of Legends."""
+    from apis.topic_tokens import content_tokens
+
+    game = set(content_tokens(game_name))
+    topic = set(content_tokens(hint))
+    if not game or not topic:
+        return False
+    return game <= topic or topic <= game
+
+
 def get_twitch_signal(topic: str) -> dict:
     if not _CLIENT_ID or not _CLIENT_SECRET:
         return make_signal(
@@ -100,17 +113,24 @@ def get_twitch_signal(topic: str) -> dict:
             return make_signal(connected=False, active=False, status=status, status_detail=detail)
 
         games = top.json().get("data") or []
-        matched = []
-        for g in games:
-            name = (g.get("name") or "").lower()
-            if hint and (
-                hint in name or name in hint or any(w in name for w in hint.split() if len(w) > 3)
-            ):
-                matched.append(g)
+        matched = [g for g in games if _game_matches(g.get("name") or "", hint)]
+
+        # No game named in the topic -> nothing Twitch can say about it. This used to
+        # fall through to the site-wide top streams and report their viewers as an
+        # active signal (run 98: a Premier League topic scored 98 on "Twitch").
+        if not matched:
+            sig = make_signal(
+                connected=True,
+                active=False,
+                status=STATUS_INACTIVE,
+                status_detail="Twitch: no game in the topic's top-25 match",
+            )
+            set_cache(cache_key, sig, ttl_seconds=_TTL)
+            return sig
 
         streams_resp = requests.get(
             "https://api.twitch.tv/helix/streams",
-            params={"first": 20, "game_id": matched[0]["id"]} if matched else {"first": 20},
+            params={"first": 20, "game_id": matched[0]["id"]},
             headers=headers,
             timeout=12,
         )
@@ -118,16 +138,6 @@ def get_twitch_signal(topic: str) -> dict:
         if streams_resp.status_code == 200:
             for s in streams_resp.json().get("data") or []:
                 viewers += int(s.get("viewer_count") or 0)
-
-        if not matched and not viewers:
-            sig = make_signal(
-                connected=True,
-                active=False,
-                status=STATUS_INACTIVE,
-                status_detail="Twitch: no game/viewership match",
-            )
-            set_cache(cache_key, sig, ttl_seconds=_TTL)
-            return sig
 
         score = min(45 + (viewers // 5000) + len(matched) * 8, 98)
         sig = make_signal(
@@ -138,7 +148,7 @@ def get_twitch_signal(topic: str) -> dict:
             status=STATUS_OK,
             status_detail=f"Twitch: {viewers:,} viewers"
             + (f" ({matched[0].get('name')})" if matched else ""),
-            data={"games": matched[:3] or games[:5], "viewers": viewers},
+            data={"games": matched[:3], "viewers": viewers},
         )
         set_cache(cache_key, sig, ttl_seconds=_TTL)
         return sig

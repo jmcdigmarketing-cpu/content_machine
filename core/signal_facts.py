@@ -5,6 +5,13 @@ from __future__ import annotations
 import json
 from typing import Any
 
+# Popularity payloads: how much attention a *string* gets, never a fact about the
+# subject. Run 98 filed their raw JSON under VERIFIED FACTS ("twitch data: {...
+# VALORANT ...}", "wikipedia data: {"article": "Manchester" ...}") and the
+# authenticity check counted them as "16 verified fact(s)".
+DEMAND_SIGNALS = frozenset({"twitch", "trendingnow", "trends", "autocomplete", "wikipedia"})
+DEMAND_SECTION_HEADER = "Demand signals (popularity only — NOT facts about this topic):"
+
 
 def _format_headlines(headlines: list) -> str:
     lines = []
@@ -27,6 +34,7 @@ def _format_headlines(headlines: list) -> str:
 
 def format_signal_facts(signals: dict[str, Any]) -> str:
     lines = []
+    demand: list[str] = []
 
     for name, signal in signals.items():
         if not signal.get("connected") or not signal.get("active"):
@@ -311,6 +319,11 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
 
         elif isinstance(data, dict | list):
             snippet = json.dumps(data, ensure_ascii=False)[:400]
-            lines.append(f"{name} data: {snippet}")
+            if name in DEMAND_SIGNALS:
+                demand.append(f"  • {name}: {snippet}")
+            else:
+                lines.append(f"{name} data: {snippet}")
 
+    if demand:
+        lines.append(DEMAND_SECTION_HEADER + "\n" + "\n".join(demand))
     return "\n".join(lines) if lines else "No structured facts from signals."

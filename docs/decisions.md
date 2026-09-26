@@ -715,3 +715,26 @@ that "leaves the terminal" is Content OS, and what it drives is Content Machine.
 **Consequence:** the README H1 stays "Content Machine (Content OS)" and says the split in
 one line; `living` docs use the name for the layer they describe; `frozen` and `archived`
 docs keep whatever they said on their date. A new name needs a new § here, not a new doc.
+
+## 34. A topic's domain comes from the topic; football is TapIn's; link lines are not operator facts (2026-09-26)
+**Decision:** four rules, all from run 98 (a Premier League story typed on TapIn).
+(1) What a topic *is* - which signals run, which script matrix, which angle templates, which
+feeds, tags and sign-off - comes from `topic_scorer.infer_topic_domain`, never the channel
+default. A topic with no keyword is `neutral` and gates nothing; the channel's domain is used
+only when a live signal backs it (`effective_domain`). `infer_domain` keeps its channel
+fallback for weights and history. (2) Football is part of TapIn's niche (operator decision):
+`soccer` is a domain in the sports gating group, TapIn declares it in `extra_domains`, and
+its description sign-off and tags follow the topic (`config/seo/tapin.json`). (3) Lines
+scraped from a pasted URL are `tier: link` in `_link_facts/`, not operator facts; the page
+title is source metadata, not a fact; and a vault line borrowed at operator tier is never
+pinned like a line typed this run. This amends §4: the operator's *typed* words are ground
+truth; a page they pasted is evidence, checked against the angle, and they decide on
+flagged lines. (4) Report card v5: topic weight 0.12 -> 0.05 (operator's call, keep it
+small rather than remove it).
+**Why:** the channel fallback made "unsure" look like "confident gaming": run 98 ran RAWG and
+Twitch on football, briefed a GAMING matrix, and signed off "gaming & UFC". Scraped
+boilerplate saved as operator-tier came back pinned in later runs. The composite is the same
+number for every angle of a topic and showed r=-0.05 on 23 measured videos.
+**Consequence:** existing `_operator_facts` notes are not migrated - the vault is the
+operator's data - but they no longer pin. v4 and v5 rows mix until `ops backfill-quality
+--force` re-stamps them; calibration reports the re-grade under today's rubric meanwhile.

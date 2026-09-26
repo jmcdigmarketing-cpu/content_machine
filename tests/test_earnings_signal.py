@@ -101,7 +101,7 @@ class TestRegistrationAndGating(unittest.TestCase):
         self.assertIn("earnings", rs._DOMAIN_SIGNALS["finance"])
         # Gated OUT for a non-finance (gaming) topic.
         with mock.patch.dict(os.environ, {"DOMAIN_SIGNAL_GATING": "true"}, clear=True):
-            with mock.patch("apis.topic_scorer.infer_domain", return_value="gaming"):
+            with mock.patch("apis.topic_scorer.infer_topic_domain", return_value="gaming"):
                 self.assertIn("earnings", rs._gated_signal_names("some game topic"))
 
 

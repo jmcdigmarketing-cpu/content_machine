@@ -265,7 +265,12 @@ def select_facts_for_prompt(
         if is_article_chrome(record.claim):
             drops.append(FactSelectionDrop(record.claim, "article chrome", 0.0))
             continue
-        pinned = (record.tier or "").strip().lower() == TIER_OPERATOR
+        # A line the operator typed pins; an operator-tier line BORROWED from the vault
+        # (it has a note_path) does not - run 98's vault held scraped text saved as
+        # operator before link tier existed, and it outranked this run's own facts.
+        pinned = (record.tier or "").strip().lower() == TIER_OPERATOR and not getattr(
+            record, "note_path", ""
+        )
         entries.append(
             _Entry(
                 index=index,
@@ -456,3 +461,83 @@ def measure_weight_split(
         "insertion_quality": insertion_q,
         "equal_quality": equal_q,
     }
+
+
+# --- off-topic link lines (run 98) ------------------------------------------------
+# Words that give two unrelated lines false "contact": reporting verbs, time words.
+_CONTACT_GENERIC = frozenset(
+    {
+        "about",
+        "after",
+        "also",
+        "been",
+        "before",
+        "first",
+        "have",
+        "into",
+        "last",
+        "more",
+        "most",
+        "news",
+        "other",
+        "over",
+        "reportedly",
+        "reports",
+        "said",
+        "says",
+        "than",
+        "then",
+        "there",
+        "time",
+        "today",
+        "week",
+        "which",
+        "year",
+        "years",
+    }
+)
+
+
+def _contact_tokens(text: str) -> set[str]:
+    from apis.topic_tokens import content_tokens
+
+    return {
+        t
+        for t in content_tokens(text)
+        if len(t) >= 4 and not t.isdigit() and t not in _CONTACT_GENERIC
+    }
+
+
+def _touches(tokens: set[str], known: set[str]) -> bool:
+    """Any shared token, or a shared 5-letter stem between two longer words
+    ("sanction"/"sanctions", "punished"/"punishment")."""
+    if tokens & known:
+        return True
+    stems = {k[:5] for k in known if len(k) >= 6}
+    return any(len(t) >= 6 and t[:5] in stems for t in tokens)
+
+
+def flag_off_topic(lines: list[str], *, reference: str, corpus: str) -> list[str]:
+    """Pasted-link lines with no contact at all with what is known about the topic.
+
+    Run 98 pasted a referee-panel write-up into a story about financial charges: 29
+    lines ("Challenge by Ezri Konsa on Dan Ballard (54 min)") rode into the prompt
+    because intake assumed every line of a pasted page is on-topic "by construction".
+
+    Deliberately lenient - a line is flagged only when it shares no content word
+    (or 5-letter stem) with the angle, the topic or the signal evidence, AND none of
+    its named entities appears there. "Newcastle avoided sanctions" survives a Man
+    City story because the evidence talks about sanctions. The operator decides.
+    """
+    from core.fact_grounding import mentions, specific_entities
+
+    known = _contact_tokens(reference) | _contact_tokens(corpus)
+    haystack = f"{reference}\n{corpus}".lower()
+    flagged: list[str] = []
+    for line in lines or []:
+        if _touches(_contact_tokens(line), known):
+            continue
+        if any(mentions(haystack, entity) for entity in specific_entities(line)):
+            continue
+        flagged.append(line)
+    return flagged

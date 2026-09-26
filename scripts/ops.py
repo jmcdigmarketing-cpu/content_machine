@@ -436,6 +436,10 @@ def cmd_status(args: argparse.Namespace) -> int:
     lines = [f"Status - {channel_id}", ""] + [
         f"  {line}" for line in build_status_lines(channel_id)
     ]
+    # #869: one place to ask "is the machine OK"; each line names its detail verb.
+    from core.status_summary import machine_lines
+
+    lines += ["", "Machine", *[f"  {line}" for line in machine_lines(channel_id)]]
     _emit_text("Status", "\n".join(lines) + "\n", args)
     return 0
 
@@ -1989,6 +1993,17 @@ def cmd_go_public(args: argparse.Namespace) -> int:
     return 0 if result.status in ("dry_run", "updated") else 1
 
 
+@_register(
+    "recategorize",
+    "Re-file uploaded videos under their run's YouTube category (#873; dry-run default; --apply sends)",
+)
+def cmd_recategorize(args: argparse.Namespace) -> int:
+    extra = ["--channel", args.channel]
+    if getattr(args, "apply", False):
+        extra.append("--apply")
+    return _run_module("publishing.recategorize", *extra)
+
+
 @_register("publish-dry-run", "Print the YouTube videos.insert body (no upload; tokens redacted)")
 def cmd_publish_dry_run(args: argparse.Namespace) -> int:
     from publishing.base import PublishRequest
@@ -2241,8 +2256,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--apply",
         action="store_true",
         help=(
-            "artifacts / moat-backup / ingest-clips / rollback-publish / go-public: "
-            "actually delete, copy, remux, unlist, or make public (default is dry-run)"
+            "artifacts / moat-backup / ingest-clips / rollback-publish / go-public / recategorize: "
+            "actually delete, copy, remux, unlist, make public, or re-file (default is dry-run)"
         ),
     )
     parser.add_argument(

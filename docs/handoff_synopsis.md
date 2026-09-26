@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-26: wave 37, domains and the timeline
+# Handoff synopsis — 2026-09-26: wave 38, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 37 #872 #866 #874 + timeline
+## Last wave — 2026-09-26 (Claude Code): wave 38 #865 #873 #875 #856 #867 #869
+
+- **#865** `publishing/snippet_update.py`: every snippet change reads the live snippet and sends
+  all writable fields; rollback prepends its correction.
+- **#873** `ops recategorize [--apply]` re-files uploaded videos by their run's domain (the
+  operator runs `--apply` on the PC). **#875** GTA 6 trailer topics are gaming again.
+- **#856** the Gated line hides retired signals. **#867** the dossier Audit block renders the
+  eight unread keys; `test_persisted_keys_read` holds it. **#869** `ops status` Machine block.
+- The operator's May 2025 prototype is in [project_timeline.md](project_timeline.md).
+
+**Verify:** `python -m unittest tests.test_snippet_updates tests.test_persisted_keys_read
+tests.test_status_machine`; `py -m scripts.ops regressions`.
+
+## Previous — 2026-09-26 (Claude Code): wave 37 #872 #866 #874 + timeline
 
 - **#872** football uploads were filed as Gaming (no `soccer` in `CATEGORY_BY_DOMAIN`); every
   domain in `KNOWN_DOMAINS` now has a category and a length default, held by a test.
@@ -37,25 +50,6 @@ did a newer idea erase a fix, is a new system needed. [review_2026-09-26.md](rev
 
 **Verify:** `py -m scripts.ops regressions`; `python -m unittest tests.test_regression_corpus
 tests.test_topic_text_shared`.
-
-## Previous — 2026-09-26 (Claude Code): wave 35 #864 #861 #863 #839 #830
-
-The operator asked why uploads land unlisted: `YOUTUBE_UNLISTED_REVIEW` (#109, default on) holds
-an *immediate* public upload unlisted for one look, and #754 holds a grounding override; nothing
-flipped a held video back. That became #864.
-
-- **#864** `ops go-public [video_id] [--apply]` (no id = newest unlisted hold): status-only
-  `videos.update`, refuses a grounding override; the hold message prints the command.
-- **#861** kept auto-research lines printed (`auto_research.report_lines`); reports carry
-  `kept_lines`.
-- **#863 (tool)** `ops auto-research`: pages, lines, off-topic, lines a supported claim cited.
-  Verdict after ten runs.
-- **#839** commit hook: non-ASCII subject refused, body warned.
-- **#830** `tts_cache_store` refuses the default dir under a test runner.
-- Found: **#865** `rollback-publish --apply` sends a half snippet.
-
-**Verify:** `python -m unittest tests.test_go_public tests.test_auto_research_view
-tests.test_commit_msg_ascii tests.test_tts_cache_guard`.
 
 ## Pipeline order (operator)
 
@@ -122,7 +116,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
 
 1. **Operator, after switching to `main`:** `ops backfill-quality --force --apply`,
    `ops backfill-angles --apply`, `ops calibration`, `ops feeds`. #849 waits on that output.
-2. **Product next (by epic, backlog.md "Epics"):** #849 (E1) · #873 re-file football · #863 (E3).
+2. **Product next (by epic, backlog.md "Epics"):** #849 (E1) · #863 (E3) · #876 game names (E2).
 3. **Structural:** #869 status verbs (E4) · #870 backfills (E6) · #867 unread keys (E5) · #865 ·
    #832 · #831 ruff bump · #834 `core/` seams. Any live-run defect: add a corpus case.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).

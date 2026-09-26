@@ -100,6 +100,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `publish-ics` | Write an .ics of scheduled publishes beside HTML dumps |
 | `queue-manage` | Re-queue after deleting scheduled YouTube video |
 | `queue-panel` | Stage 3 job queue (drag-reorder; requires pip install -e ".[app]") |
+| `recategorize` | Re-file uploaded videos under their run's YouTube category (#873; dry-run default; --apply sends) |
 | `recommend-length` | Recommend video length from engagement history |
 | `recommend-time` | Recommend next post time from engagement history |
 | `regressions` | Replay frozen live-run defects ([file]: only the old fixes guarding that file) |

@@ -53,28 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** `f0af38a` + this wave's commit on `main` (`git log -2`)
+**Written:** 2026-09-26 · **HEAD at write:** `3d59336` + this wave's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit; `data/` untouched.
 
-**Read before editing:** `py -m scripts.ops regressions <file>` lists the old fixes guarding a
-file. Domains: the run stores `features["domains"]` (`topic` / `effective` / `weighting`); read
-`core/run_features.run_domain`, don't re-guess from a title. A new domain goes in
-`apis/topic_scorer.KNOWN_DOMAINS`, and the tests then demand a YouTube category and a length
-default for it. A new `infer_domain` caller must add itself to the list in
-`tests/test_domains_once.py` with its reason.
+**Read before editing:** `py -m scripts.ops regressions <file>` (40 cases). A snippet change to a
+live video goes through `publishing/snippet_update.writable_snippet` - never a partial snippet.
+A new stored feature/quality key needs a reader (the dossier Audit block is the default) or
+`tests/test_persisted_keys_read.py` fails.
 
 **Defects first:**
-- **#873** football videos uploaded before this commit are still filed as Gaming on YouTube.
-- **Behaviour change, disclosed:** `features["domain"]` now honours pasted key facts, so a
-  football run with football facts is filed in history as soccer, not gaming.
+- **Operator step:** `py -m scripts.ops recategorize` (dry run) then `--apply` on the PC to move
+  already-uploaded football videos from Gaming to Sports (#873). Needs OAuth and upload enabled.
+- **#876** game names outside the franchise list ("Silksong", "Palworld") read neutral.
 - **The operator's PC may still be on `codex/p0-test-integrity`**; `git switch main` and pull.
 - **Use `python -m ruff`, never bare `ruff`, here:** bare is 0.15.8, CI pins 0.8.4.
 
-**Shipped:** #872 · #866 · #874 · `docs/project_timeline.md` · the private page "Content OS
-Story". **Operator owes:** the 2025-05 to 2026-05 dates for the timeline; `ops calibration` for #849.
+**Shipped:** #865 · #873 · #875 · #856 · #867 · #869. The May 2025 prototype (supplied by the
+operator; key values never copied) is in `docs/project_timeline.md` and the "Content OS Story" page.
 
-Suite **3,686**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **284 numbered open**, highest open **#873**. Next five: **#849 · #873 · #869 · #865 · #863**.
+Suite **3,704**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **280 numbered open**, highest **#876**. Next five: **#849 · #863 · #876 · #855 · #870**.
 
 ## Slot — Cursor
 

@@ -17,6 +17,48 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - wave 38: whole snippets, re-filed football, one status block
+
+**Prompt (verbatim):** "next 5". Mid-wave the operator sent the oldest files they could find
+(`main.py`, `openai_engine.py`, `tts.py`, `utils.py`, `.env`, and `sports/` `router.py`,
+`espn.py`, `balldontlie.py`, `sportsdata.py`, `__init__.py`): "oldest i can find".
+
+**The prototype.** 9 files, 291 lines: a topic prompt, a `sports/` router over ESPN / balldontlie
+/ SportsData.io NBA data, GPT-4o-mini "aggressive sports debate scripts" of 60-120 s ending
+"Tap In", ElevenLabs to MP3. No video, upload, database or tests. Its `sports/espn.py`
+`get_scoreboard()` is still in the repo and still called by `apis/live_scores_api.py`. The
+`.env` key values were not read into any file; only the three key names are recorded. Added to
+[project_timeline.md](project_timeline.md) and the "Content OS Story" page.
+
+### Why the list differs
+
+Recommended #849 · #873 · #869 · #865 · #863. #849 and #863 wait on operator data, so #856 and
+#867 took their places; #875 was found and fixed on the way.
+
+### Findings, with file:line
+
+- `publishing/rollback.py:26` sent a snippet holding only `description` (#865).
+- `apis/topic_scorer.py` tested "trailer" before the game names, so "GTA 6 trailer 3 breakdown"
+  was popculture and gated IGDB / RAWG / Steam / Twitch (#875) - found while checking #856.
+- `angle_scores` (wave 32) was an eighth stored key with no reader; the new scan found it (#867).
+- "Silksong" / "Palworld" are neutral to `infer_topic_domain` (#876, filed).
+
+### Shipped
+
+#865 `publishing/snippet_update.py` · #873 `publishing/recategorize.py` + `ops recategorize` ·
+#875 · #856 `displayed_gated_names` · #867 dossier Audit block + `test_persisted_keys_read` ·
+#869 `core/status_summary.py` + `reliability.summary_line`.
+
+### Audit
+
+18 new tests (snippet 11, persisted keys 3, status 4) plus 4 corpus cases (40 in all). Failing
+first: 11 of 11, 3 of 3, 4 of 4, and 2 of the 4 corpus cases (the other 2 are guards). mypy
+went to 131 on two of this wave's own lines, fixed back to 129. `ops status` run for real here:
+"Doctor: 10 of 14 checks pass; failing: ollama, local_tts, oauth, secrets".
+
+Suite 3,704 tests. Backlog **280 numbered open**, highest **#876**. Next five: **#849 · #863 ·
+#876 · #855 · #870**.
+
 ## 2026-09-26 (Claude Code) - wave 37: one domain per run, source-shaped queries, the project timeline
 
 **Prompt (verbatim):** "Next 5 and any input for me. Focus on these Merging the three separate

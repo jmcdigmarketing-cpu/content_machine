@@ -340,6 +340,24 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
     ):
         return "music"
 
+    # #875: a named game plus "trailer" is a game trailer. Only a film cue (movie, box
+    # office, Netflix...) makes a game-named topic popculture: "GTA 6 trailer 3
+    # breakdown" was popculture, so it gated IGDB/RAWG/Steam/Twitch and filed as
+    # Entertainment; "Minecraft movie box office" stays popculture.
+    game_named = _mentions(
+        topic_lower,
+        ["gta", "steam", "roblox", "marvel rivals", "esports", *_GAME_FRANCHISES],
+    )
+    if (
+        game_named
+        and _mentions(topic_lower, ["trailer"])
+        and not _mentions(
+            topic_lower,
+            ["movie", "film", "netflix", "disney+", "box office", "tv show", "oscar"],
+        )
+    ):
+        return "gaming"
+
     if (
         _mentions(
             topic_lower,

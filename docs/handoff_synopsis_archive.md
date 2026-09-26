@@ -7,6 +7,25 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 35 #864 #861 #863 #839 #830
+
+The operator asked why uploads land unlisted: `YOUTUBE_UNLISTED_REVIEW` (#109, default on) holds
+an *immediate* public upload unlisted for one look, and #754 holds a grounding override; nothing
+flipped a held video back. That became #864.
+
+- **#864** `ops go-public [video_id] [--apply]` (no id = newest unlisted hold): status-only
+  `videos.update`, refuses a grounding override; the hold message prints the command.
+- **#861** kept auto-research lines printed (`auto_research.report_lines`); reports carry
+  `kept_lines`.
+- **#863 (tool)** `ops auto-research`: pages, lines, off-topic, lines a supported claim cited.
+  Verdict after ten runs.
+- **#839** commit hook: non-ASCII subject refused, body warned.
+- **#830** `tts_cache_store` refuses the default dir under a test runner.
+- Found: **#865** `rollback-publish --apply` sends a half snippet.
+
+**Verify:** `python -m unittest tests.test_go_public tests.test_auto_research_view
+tests.test_commit_msg_ascii tests.test_tts_cache_guard`.
+
 ## Previous — 2026-09-26 (Claude Code): wave 34 #859 #852 #850 #836 #848
 
 The roadmap's five, cheapest first. The operator's PC turned out to be on a local-only branch

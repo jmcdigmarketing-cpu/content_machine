@@ -8,6 +8,16 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 38 — whole snippets, re-filed football, one status block - 2026-09-26
+
+*3,704 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*
+
+- **#865** rollback and every snippet change send the whole writable snippet.
+- **#873** `ops recategorize` moves already-uploaded football videos from Gaming to Sports.
+- **#875** GTA 6 trailer topics are gaming again, not pop culture.
+- **#856** retired signals no longer show as "Gated"; **#867** the dossier's Audit block.
+- **#869** `ops status` ends with a Machine block pointing at each detail verb.
+
 ### Wave 37 — one domain per run, source-shaped queries, the timeline - 2026-09-26
 
 *3,686 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*

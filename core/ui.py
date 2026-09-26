@@ -600,9 +600,9 @@ def display_signal_health(
         logger.debug("Signal cooldown line skipped: %s", exc)
     if topic:
         try:
-            from apis.register_signals import gated_signal_names
+            from apis.register_signals import displayed_gated_names
 
-            gated = sorted(gated_signal_names(topic, channel_id))
+            gated = sorted(displayed_gated_names(topic, channel_id))
             if gated:
                 print_fn(f"  {warn('Gated')} (domain): " + ", ".join(gated))
         except Exception as exc:

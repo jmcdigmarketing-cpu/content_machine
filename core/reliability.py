@@ -272,6 +272,28 @@ def _store_section() -> dict[str, Any]:
         return {"bytes": 0, "detail": "database n/a"}
 
 
+def summary_line(data: dict[str, Any] | None = None) -> str:
+    """One line for `ops status` (#869): Apify state, paused signals, uploads left."""
+    if data is None:
+        data = {
+            "apify": _apify_section(),
+            "signals": _signals_section(),
+            "youtube": _youtube_section(),
+        }
+    apify = str((data.get("apify") or {}).get("status") or "n/a")
+    sig = data.get("signals") or {}
+    paused = (
+        set(sig.get("disabled") or [])
+        | set(sig.get("cooldowns") or {})
+        | set(sig.get("persisted") or {})
+    )
+    uploads_left = (data.get("youtube") or {}).get("uploads_left")
+    parts = [f"Apify {apify}", f"{len(paused)} signal{'s' if len(paused) != 1 else ''} paused"]
+    if uploads_left is not None:
+        parts.append(f"YouTube uploads left {uploads_left}")
+    return "; ".join(parts)
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {

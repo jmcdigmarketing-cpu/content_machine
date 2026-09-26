@@ -573,6 +573,68 @@
         "equals": "Knicks"
       },
       "why": "API-SPORTS keeps its team-name rule"
+    },
+    {
+      "id": "gta-trailer-is-gaming",
+      "item": 875,
+      "source": "wave 38: found checking #856",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "GTA 6 trailer 3 breakdown"
+      ],
+      "expect": {
+        "equals": "gaming"
+      },
+      "why": "'trailer' was checked before the game names, so GTA 6 trailer runs gated IGDB/RAWG/Steam/Twitch and filed as Entertainment"
+    },
+    {
+      "id": "game-movie-is-popculture",
+      "item": 875,
+      "source": "wave 38 guard",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Minecraft movie box office opening weekend"
+      ],
+      "expect": {
+        "equals": "popculture"
+      },
+      "why": "a film about a game is still a film"
+    },
+    {
+      "id": "gated-line-hides-retired",
+      "item": 856,
+      "source": "wave 38",
+      "call": "apis.register_signals:displayed_gated_names",
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem",
+        "tapin"
+      ],
+      "expect": {
+        "excludes_any": [
+          "tapology",
+          "stats_context",
+          "trendingnow",
+          "tvmaze"
+        ]
+      },
+      "why": "the Gated line listed signals retired on 2026-08-29 and 2026-09-20"
+    },
+    {
+      "id": "gated-set-unchanged",
+      "item": 856,
+      "source": "wave 38 guard",
+      "call": "apis.register_signals:gated_signal_names",
+      "args": [
+        "Manchester City ofund guilty, what does this mean for the prem",
+        "tapin"
+      ],
+      "expect": {
+        "includes_all": [
+          "tapology",
+          "rawg"
+        ]
+      },
+      "why": "only the display drops retired names; gating itself is unchanged"
     }
   ]
 }

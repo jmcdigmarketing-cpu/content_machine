@@ -26,28 +26,28 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-26 wave 37: **#872** football uploads were filed as Gaming - every
-domain now has a YouTube category and a length default, and a test holds the list · **#866** the
-run resolves its domain once (`topic` / `effective` / `weighting`), stores it, and the upload
-reads it · **#874** SEC EDGAR and the stats scrapers search by name, FRED and stock footage by
-keywords. The project timeline is [project_timeline.md](project_timeline.md).
+**Just landed** - 2026-09-26 wave 38: **#865** snippet updates send the whole snippet ·
+**#873** `ops recategorize` re-files old football uploads (dry run; `--apply` is the operator's) ·
+**#875** GTA 6 trailer runs were read as pop culture, fixed · **#856** the Gated line hides retired
+signals · **#867** the run dossier shows the eight keys nothing read, and a test holds it ·
+**#869** `ops status` ends with one Machine block. The May 2025 prototype is in
+[project_timeline.md](project_timeline.md).
 
-**Before that** - wave 36: **#871** the regression corpus and one topic-text module
-([review_2026-09-26.md](review_2026-09-26.md)) · wave 35: **#864** `ops go-public` · wave 34:
-**#848** auto-research. Earlier: [roadmap_archive.md](roadmap_archive.md) and
+**Before that** - wave 37: **#872 #866 #874** domains and source queries · wave 36: **#871**
+the regression corpus. Earlier: [roadmap_archive.md](roadmap_archive.md) and
 [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 37 (2026-09-26)** closed the domain split and the query builders the operator named. The
-list now leads with the one item that needs the operator's data, then cheap live defects.
+**Wave 38 (2026-09-26)** cleared every buildable item in the last list. Two stay pinned on the
+operator's data; the other three are the cheapest open members of the epics.
 
-1. **#849 tell angles apart** (E1) `[L]` - needs the operator's `ops calibration` after
-   `ops backfill-angles --apply`.
-2. **#873 re-file old football uploads as Sports** `[S]` - full-snippet `videos.update`.
-3. **#869 one status surface** (E4) `[M]` - seven verbs into one `status` with sections.
-4. **#865 `rollback-publish --apply` sends a half snippet** `[S]` - same fix shape as #873.
-5. **#863 the auto-research verdict** (E3) `[S]` - `ops auto-research` after ten runs.
+1. **#849 tell angles apart** (E1) `[L]` - waiting on the operator's `ops calibration`. The
+   dossier now shows each run's angle scores, so the tie is visible run by run.
+2. **#863 the auto-research verdict** (E3) `[S]` - waiting on ten runs.
+3. **#876 game names from the run history** (E2) `[S]` - "Silksong", "Palworld" read neutral.
+4. **#855 `INGEST_ENABLED` is read by nothing** (E5) `[S]` - wire it or delete it.
+5. **#870 one versioned backfill** (E6) `[M]` - four backfill verbs into one registry.
 
 **Waiting on the operator, not on code:** switch the PC to `main` (it was on a local-only
 `codex/p0-test-integrity` branch, so wave 33 never reached it), then `ops backfill-quality

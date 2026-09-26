@@ -23,13 +23,27 @@ class RollbackResult:
     dossier_path: str | None = None
 
 
-def rollback_plan(video_id: str, correction: str) -> dict[str, Any]:
-    """videos.update body. Never sent until apply_rollback(apply=True)."""
+def rollback_plan(
+    video_id: str, correction: str, current_snippet: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """videos.update body. Never sent until apply_rollback(apply=True).
+
+    With the live snippet (#865) the correction is prepended to the existing
+    description and every writable field is sent; YouTube rejects a snippet without
+    title and categoryId. Without it (a dry run) the snippet shows only the new line.
+    """
     note = (correction or "").strip() or "Correction filed from Content OS."
+    line = f"Correction: {note}"
+    snippet: dict[str, Any] = {"description": line}
+    if current_snippet is not None:
+        from publishing.snippet_update import writable_snippet
+
+        old = str(current_snippet.get("description") or "").strip()
+        snippet = writable_snippet(current_snippet, description=f"{line}\n\n{old}" if old else line)
     return {
         "id": video_id,
         "status": {"privacyStatus": "unlisted"},
-        "snippet": {"description": f"Correction: {note}"},
+        "snippet": snippet,
     }
 
 
@@ -70,7 +84,12 @@ def apply_rollback(
     body = rollback_plan(video_id, correction)
     dossier = _write_dossier(channel_id, video_id, correction, body)
     if dry_run:
-        return RollbackResult("dry_run", json.dumps(body, indent=2), dossier)
+        return RollbackResult(
+            "dry_run",
+            json.dumps(body, indent=2)
+            + "\n(on --apply the live title, category and tags are read and sent back)",
+            dossier,
+        )
 
     enabled = os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() in ("1", "true", "yes")
     if not enabled:
@@ -80,9 +99,14 @@ def apply_rollback(
             dossier,
         )
     try:
+        from publishing.snippet_update import fetch_snippets
         from youtube.oauth import get_youtube_service
 
         service = get_youtube_service(channel_id)
+        live = fetch_snippets(service, [video_id]).get(video_id)
+        if live is None:
+            return RollbackResult("error", f"{video_id} not found on YouTube", dossier)
+        body = rollback_plan(video_id, correction, live)
         service.videos().update(part="status,snippet", body=body).execute()
     except Exception as exc:
         logger.warning("rollback update failed: %s", exc)

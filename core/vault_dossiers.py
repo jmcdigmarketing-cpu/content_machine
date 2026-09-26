@@ -59,6 +59,50 @@ def _legacy_dossier_paths(vault: Path, channel_id: str, run_id: int) -> list[Pat
     return [p for p in runs.glob(f"*{suffix}") if p.is_file()]
 
 
+def audit_lines(features: dict[str, Any], quality: dict[str, Any]) -> list[str]:
+    """What the run recorded about itself and nothing else showed (#867).
+
+    Eight keys were written on every run and read by nothing, so the operator never saw
+    why a brief fell back, which chapter openers were trimmed, or how the angles scored.
+    """
+    out: list[str] = []
+    scores = features.get("angle_scores")
+    if isinstance(scores, dict) and scores:
+        ranked = sorted(scores.items(), key=lambda kv: -float(kv[1] or 0))[:5]
+        out.append(
+            "- **Angle scores:** " + "; ".join(f"{float(v):.2f} {str(k)[:60]}" for k, v in ranked)
+        )
+    if features.get("all_angles"):
+        out.append("- **All angles:** one long video with every angle as a chapter")
+    for note in features.get("chapter_opener_notes") or []:
+        out.append(f"- **Chapter opener:** {note}")
+    if features.get("brief_fallback"):
+        out.append(f"- **Research brief fell back:** {features['brief_fallback']}")
+    if features.get("brief_deadline_s") is not None:
+        out.append(f"- **Brief deadline:** {features['brief_deadline_s']} s")
+    if quality.get("pre_rewrite_unsupported_count") is not None:
+        out.append(
+            f"- **Claims:** {quality['pre_rewrite_unsupported_count']} unsupported before the rewrite"
+        )
+    vault = features.get("vault_relevance")
+    if isinstance(vault, list) and vault:
+        bands: dict[str, int] = {}
+        for item in vault:
+            band = str(item.get("band") or "?") if isinstance(item, dict) else "?"
+            bands[band] = bands.get(band, 0) + 1
+        out.append(
+            f"- **Vault relevance:** {len(vault)} vault notes screened ("
+            + ", ".join(f"{b} {n}" for b, n in sorted(bands.items()))
+            + ")"
+        )
+    manifest = features.get("artifact_manifest")
+    if isinstance(manifest, dict):
+        hashes = [f"{k.split('_')[0]} {str(v)[:12]}" for k, v in manifest.items() if v]
+        if hashes:
+            out.append("- **Render hashes:** " + ", ".join(hashes))
+    return out
+
+
 def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
     features = _load_json(record.features_json)
     quality = _load_json(record.quality_json)
@@ -115,6 +159,10 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
     ]
     if grade_line:
         fm.append(f"- **Report card:** {grade_line}")
+    raw_domains = features.get("domains")
+    domains: dict[str, Any] = raw_domains if isinstance(raw_domains, dict) else {}
+    if domains.get("effective"):
+        features = {**features, "domain": domains["effective"]}
     for key, label in (
         ("domain", "Domain"),
         ("angle", "Angle"),
@@ -152,6 +200,9 @@ def _render_dossier(record: Any, *, run_id: int, day: str) -> str:
     if publish.get("youtube_video_id"):
         fm.append(f"- **Video:** https://youtu.be/{publish['youtube_video_id']}")
 
+    audit = audit_lines(features, quality)
+    if audit:
+        fm += ["", "## Audit", "", *audit]
     fm.append("")
     fm.append("## Script")
     fm.append("")

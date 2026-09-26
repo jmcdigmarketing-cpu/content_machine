@@ -7,7 +7,7 @@ The same timeline with charts of the repository's growth is the operator's priva
 "Content OS Story" (https://claude.ai/artifact/8gPYFQqVvp7BgAJXU7iLeH). Every entry names its **evidence**: `git` (a commit), `doc` (a dated heading in
 [planning_log.md](planning_log.md), [planning_log_2026-08.md](planning_log_2026-08.md),
 [planning_log_2026-07.md](planning_log_2026-07.md), [roadmap_archive.md](roadmap_archive.md)
-or [change_log.md](change_log.md)), or `operator` (the operator's own records). Append new
+or [change_log.md](change_log.md)), or `operator` (the operator's own records, including the prototype source files they supplied on 2026-09-26). Append new
 eras at the bottom; correct an entry only when better evidence arrives, and say so.
 
 **Where the evidence stops.** Git history starts on 2026-07-10 with a commit that is already
@@ -20,7 +20,9 @@ marked *date not recorded*; the operator's dates go in the slot below.
 | When | What | Evidence |
 |---|---|---|
 | 2025-05 | The project begins as ChatGPT conversations | operator |
-| *operator's slot* | Move from ChatGPT to a local codebase; first render; first upload; TapIn and MoneyWise start; Cursor / Claude Code join | operator (to fill) |
+| 2025-05 (NBA playoffs) | **The first prototype**: 9 files, 291 lines. You type a topic; a `sports/` router picks NBA data (ESPN standings for playoff topics, balldontlie for a player, SportsData.io standings otherwise); GPT-4o-mini writes "aggressive sports debate scripts", 60-120 s, ending "Tap In"; ElevenLabs voices it to an MP3. No video, no upload, no database | operator files |
+| 2025-05 → today | Its `sports/espn.py` `get_scoreboard()` is still in the repo, and `apis/live_scores_api.py` still calls it - the one line of the prototype that never changed | git |
+| *operator's slot* | Move from the prototype to a local codebase with video; first render; first upload; TapIn and MoneyWise start; Cursor / Claude Code join | operator (to fill) |
 | date not recorded | **Phase 1 Foundation** - discovery → content → optional render; OpenAI, TTS, FFmpeg vertical video, CLI | doc |
 | date not recorded | **Phase 2 Database** - PostgreSQL with JSON-file repositories side by side | doc |
 | date not recorded | **Phase 3 Efficiency & UI** - parallel signals, cache, the signal contract, health UI | doc |

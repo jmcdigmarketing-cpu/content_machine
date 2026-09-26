@@ -411,6 +411,14 @@ def gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
     return _gated_signal_names(topic, channel_id)
 
 
+def displayed_gated_names(topic: str, channel_id: str | None = None) -> set[str]:
+    """The gated names worth showing: retired signals never run, so listing them as
+    "Gated" on the run screen was noise (#856). Gating itself is unchanged."""
+    from apis.signals_bootstrap import RETIRED_SIGNALS
+
+    return {n for n in _gated_signal_names(topic, channel_id) if n not in RETIRED_SIGNALS}
+
+
 def _gated_signal_names(topic: str, channel_id: str | None = None) -> set[str]:
     """
     Names of domain-specific signals to skip for this topic.

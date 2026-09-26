@@ -783,7 +783,7 @@ Strategy & bigger bets
 
 ---
 
-## Numbered candidates 481–858 (2026-08-28 — docs only; no pickup order; the tail is appended in wave order, so numbers past #656 are not sorted)
+## Numbered candidates 481–859 (2026-08-28 — docs only; no pickup order; the tail is appended in wave order, so numbers past #656 are not sorted)
 
 *None restates an open item. Weighted toward the two things the desktop programme
 does not cover: **video craft**, which survives every toolkit change and is burned
@@ -1254,5 +1254,6 @@ Review 4 - what the four waves shipped green but inert (2026-09-08)
 - [ ] 854. **Retire steam and igdb** *(filed wave 33 under #575)* - they returned something on 1 of 33 recorded runs (`engine_upgrades.md`); after #843 they return even less. Same retirement path as trendingnow/tapology `[S]`
 - [ ] 855. **`INGEST_ENABLED` is documented and read by nothing** *(found wave 33)* - `.env.example` and `core/vault_ingest.py:12` describe it as the auto-ingest gate; no code reads it. Wire it or delete it `[S]`
 - [ ] 856. **The "Gated (domain)" line lists retired signals** *(found wave 33)* - `core/ui.py` prints the static `_SIGNAL_GROUP` membership (stats_context, tapology, tmdb, tvmaze) without checking the registry `[S]`
-- [ ] 857. **Old `_operator_facts` notes still hold scraped text at operator tier** *(filed wave 33 under #845)* - they no longer pin, but they still surface as vault suggestions. A dry-run `ops vault-retier` that lists notes whose lines look link-derived (pasted-page boilerplate, no operator phrasing) and offers to move them to `_link_facts/` - the operator's vault, the operator's call `[S]`
+- [ ] 857. **Old `_operator_facts` notes still hold scraped text at operator tier** *(filed wave 33 under #845)* - they no longer pin, but they still surface as vault suggestions. A dry-run re-tier command (not built) that lists notes whose lines look link-derived (pasted-page boilerplate, no operator phrasing) and offers to move them to `_link_facts/` - the operator's vault, the operator's call `[S]`
 - [ ] 858. **Measure the thin-fact fallback after #843** *(filed wave 33)* - popularity dumps no longer count toward `FACT_ENRICH_MIN_LINES`, so the fallback (headline searches + one cheap LLM extraction) runs on more topics. Count how often over the next 10 runs and what it costs `[S]`
+- [ ] 859. **Football topics get no football RSS** *(filed wave 33)* - `config/data_sources.json` `domain_rss` has no `soccer` entry, so a Premier League story on TapIn gets only the untagged global feeds. Add two feeds the operator trusts, tagged `soccer`, and check they parse with `ops doctor` `[S]`

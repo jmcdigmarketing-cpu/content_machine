@@ -50,7 +50,8 @@ Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/plan
 
 - `main.py` — interactive CLI (discovery → script → render → publish menu).
 - `scripts/ops.py` — operator CLI, run in batch or one-by-one. `py -m scripts.ops
-  list` prints all ~38 subcommands. Most-used: `all-checks`, `status`,
+  list` prints every subcommand (the count moves; `docs/ops_commands.md` is generated
+  from the same registry). Most-used: `all-checks`, `status`,
   `reliability` (credit/quota/cache dashboard), `weekly-report`, `test`.
 
 ## Signal architecture (read this before touching `apis/`)

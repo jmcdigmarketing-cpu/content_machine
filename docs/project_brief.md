@@ -1,6 +1,6 @@
 # Content OS — Project Brief
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-26
 
 ## Project purpose
 
@@ -16,7 +16,7 @@ The system is designed to evolve from a single-operator CLI into a shared infras
 | Multi-source signal discovery | Operational | `apis/register_signals.py`, `apis/cache_manager.py` |
 | UFC research | Operational | `apis/mma_stats_api.py`, `apis/ufc_context_api.py` (Tapology scrape **retired**, Cloudflare 403) |
 | Hybrid local + stock backgrounds | Operational (TapIn default) | `assets/composite.py`, `assets/manager.py` |
-| Operator batch CLI | Operational | `scripts/ops.py` (~40 subcommands) |
+| Operator batch CLI | Operational | `scripts/ops.py` (`ops list` / [ops_commands.md](ops_commands.md)) |
 | Channel config validation | Operational | `py -m config.validate_channels` |
 | Normalized signal health reporting | Operational | `apis/signal_contract.py`, `core/ui.py`, `ops feeds` |
 | Topic variant generation + scoring | Operational | `apis/topic_variants.py`, `apis/topic_scorer.py` |

@@ -35,13 +35,23 @@ COMPLIANT_NAME = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)*(_\d{4}-\d{2}(-\d{2})?)?\.m
 
 # Names that predate the standard. This set may only ever SHRINK — each rename
 # lands with a redirect stub (the ROADMAP.md precedent). See docs/master_plan.md M1.
-LEGACY_NAMES: frozenset[str] = frozenset()  # drained 2026-09-26 (M1.1); may only ever shrink, so: empty
+LEGACY_NAMES: frozenset[str] = (
+    frozenset()
+)  # drained 2026-09-26 (M1.1); may only ever shrink, so: empty
 
 # A number that changes is either generated or dated: a bare test count may live
 # in a frozen snapshot or an append-only log (where it was true on the day), never
 # in a doc that claims to be current. Twelve different counts were in flight
 # across the corpus when this rule landed (docs/audit_2026-09.md §2).
-VOLATILE_METRIC = re.compile(r"\b\d[\d,]{2,}\+? tests\b")
+VOLATILE_METRIC = re.compile(
+    r"\b(?:~?\d[\d,]{2,}\+? tests|~?\d{2,}\+? (?:subcommands|commands|signals|modules))\b"
+)
+
+# A living doc past this is a database, not a page (docs_standard.md §7). Set at the
+# post-split reality, not aspirationally; snapshot/log are exempt by class because they
+# are meant to grow. backlog.md is the item inventory by design.
+LIVING_LINE_CEILING = 800
+CEILING_EXEMPT = frozenset({"backlog.md"})
 
 
 def _docs() -> list[Path]:
@@ -143,6 +153,19 @@ class TestMetricDrift(unittest.TestCase):
                 if VOLATILE_METRIC.search(line):
                     bad.append(f"{md.name}:{n}")
         self.assertEqual(bad, [], "cite the command, not a count that rots")
+
+
+class TestSizeBudget(unittest.TestCase):
+    def test_living_docs_stay_under_the_ceiling(self):
+        over = []
+        for md in _docs():
+            card = _card(md)
+            if card is None or card["status"] != "living" or md.name in CEILING_EXEMPT:
+                continue
+            n = len(md.read_text(encoding="utf-8").splitlines())
+            if n > LIVING_LINE_CEILING:
+                over.append(f"{md.name}: {n} lines")
+        self.assertEqual(over, [], "split it, or make it a log that rolls over (§7)")
 
 
 class TestIndexCoverage(unittest.TestCase):

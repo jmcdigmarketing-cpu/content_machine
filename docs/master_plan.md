@@ -142,7 +142,7 @@ green (relative links survive the moves), and `decisions.md` §-numbers unchange
 **Why now.** These compound quietly and none of them blocks a feature today — which is
 exactly why they need a scheduled slot rather than good intentions.
 
-1. **Seams in `core/`.** 149 modules, 32,701 lines, 55% of source, flat. Do not big-bang
+1. **Seams in `core/`.** 149 files, 32,701 lines, 55% of source, flat. Do not big-bang
    this. Introduce sub-packages along the boundaries the code already has —
    `core/llm/`, `core/vault/`, `core/video/`, `core/ops/` — moving files in small
    commits with re-export shims so imports keep working, and a rule in `CLAUDE.md` about

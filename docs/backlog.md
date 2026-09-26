@@ -417,7 +417,7 @@ Moderate — days
 - [x] 172. Operator **HTML design system** *(2026-09-07)* — `themed_css()` generated from `design_tokens.json` (comment stamped in the page). Booth widget CSS stays as layout, not a second palette `[M]`
 - [x] 173. Per-channel **GUI chrome** *(2026-09-07)* — `RunWindow._apply_look` swaps QSS on the shipped channel combo. Token borders disagree `[M]`
 - [ ] 174. Windows **jump list** for last five drafts `[M]` — *new-app.* Taskbar right-click → open mp4 / booth, no console.
-- [ ] 175. **Command palette** over `ops` subcommands `[M]` — *UI.* ~38 commands are unlistable from memory; palette is not a rewrite of `ops.py`.
+- [ ] 175. **Command palette** over `ops` subcommands `[M]` — *UI.* the `ops` verbs (see `ops list`) are unlistable from memory; palette is not a rewrite of `ops.py`.
 - [ ] 176. Dark-mode **dossier HTML viewer** `[M]` — *UI.* Vault `_runs/` in the browser; does not change dossier schema.
 - [ ] 177. Dual-channel **status wall** (TapIn | MoneyWise) `[M]` — *UI.* Two-pane health/quota/cadence; MoneyWise go-live FAILs stay visible.
 - [ ] 178. **Render-progress pane** (ffmpeg % as a UI, not a spinner) `[M]` — *UI.* `CONTENT_RENDER_PROGRESS` exists; this is a window the operator can glance at.

@@ -80,6 +80,13 @@ Test count: `python -m unittest discover -s tests -t .`
 In a `snapshot` or a `log`, a hard number is correct — it was true on the day, and the
 doc card says which day.
 
+The lint enforces this for test, subcommand, command, signal and module counts in `living`
+docs. A **generated** doc is the other legitimate home for a number: `ops_commands.md` is
+written by `py -m scripts.ops command-ref` and byte-checked against its generator in CI
+(its doc card is emitted by the generator, with a date bumped only when the generator
+changes — a per-run date would break the byte check). A hand edit to a generated doc is
+a defect.
+
 ## 5. Lifecycle
 
 1. **New doc** → pick a class, write the card, add a line to [README.md](README.md). The

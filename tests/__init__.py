@@ -181,7 +181,7 @@ def _run_with_clean_process_state(self, result=None):
     return _original_testcase_run(self, result)
 
 
-_unittest.TestCase.run = _run_with_clean_process_state
+_unittest.TestCase.run = _run_with_clean_process_state  # type: ignore[method-assign]
 
 # #829: on a partial install the suite used to report ~90 import errors across ~470
 # tests, and a real failure could not be told from a missing wheel. One line, once,

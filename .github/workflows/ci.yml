@@ -50,7 +50,7 @@ jobs:
         continue-on-error: true
 
   typecheck:
-    name: Type check (non-blocking baseline)
+    name: Type check (ratchet — errors may fall, never rise)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,11 +60,13 @@ jobs:
           cache: pip
       - name: Install
         run: pip install -e ".[dev,app]"
-      - name: Mypy
-        # `desktop` was in none of the checked packages, so 345 lines of
-        # window.py were neither executed nor type-checked.
-        run: mypy analytics apis core config storage desktop
-        continue-on-error: true   # lenient baseline; tighten over time
+      - name: Mypy ratchet
+        # #833: the count in mypy_baseline.txt may go down, never up. A rise fails the
+        # job and prints the errors; a fall prints the new number so the baseline can be
+        # lowered in the same commit. Replaces the continue-on-error baseline that grew
+        # from ~94 (June) to 129 (September, mypy 1.13.0) with nothing watching it. `desktop` stays in
+        # the list: 345 lines of window.py were once neither executed nor type-checked.
+        run: python scripts/mypy_ratchet.py
 
   test:
     name: Unit tests

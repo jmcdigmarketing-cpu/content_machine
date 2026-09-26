@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-20: wave 30, measurement continued
+# Handoff synopsis — 2026-09-26: wave 31, structural
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,32 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-20 (Claude Code): wave 30 #817 #818 #822 #739 #823
+## Last wave — 2026-09-26 (Claude Code): wave 31 structural #827 #828 #829 #833
+
+Executed the 09-20 audit instead of writing a third one about the same findings; the
+before→after is [audit_2026-09-26.md](audit_2026-09-26.md). Ten signed commits, no product
+behaviour changed.
+
+- **#827** `core/process_state.py`: one reset point for process-global state, 23 modules
+  registered, run before every test from `tests/__init__.py`.
+- **#828** `ops test --order reverse|shuffle --seed N` + CI leg `Unit tests (reversed order)`.
+  The run-69 symptom was `tests/test_ops_doctor._stack()` — an `ExitStack` built outside a
+  `with`, leaking `run_mode._ollama_ready` whenever a later `patch()` target failed to import
+  (partial installs only). First reversed run found two more leaks; all closed.
+- **#829** one-line missing-modules notice; inert tests fixed; Pillow skips fail under CI.
+- **#833** `scripts/mypy_ratchet.py`: 129 on pinned mypy 1.13.0, blocking on increase.
+- Docs: ten renames (links rewritten), `handoff_synopsis.md` 1,849 → 244, `planning_log.md`
+  rolled over by month, `decisions.md` rewrapped word-for-word, nine never-reviewed docs
+  corrected, decisions §33 (Content Machine = engine, Content OS = operator app), three new
+  lint rules, roadmap/backlog repaired, **#830–#834** filed.
+
+**Verify:** `py -m scripts.ops test --order reverse` · `py scripts/mypy_ratchet.py` ·
+`python -m unittest tests.test_docs_standard tests.test_docs_lint`.
+
+**Still open:** roadmap next five **#826 #821 #820 #824 #819** (product); #830–#834
+(structural, M3). `planning_log.md` rolls over again at month end.
+
+## Previous — 2026-09-20 (Claude Code): wave 30 #817 #818 #822 #739 #823
 
 Second measurement wave, and the one where the measurements started saying no. **Two items
 closed without a behaviour change because the numbers said not to**, and one closed because its
@@ -85,22 +110,6 @@ being dropped (`worst_component_drift`, `recurrence_line`). mypy drifted 139 -> 
 green suite and is back to **139**. Next five: **#818 · #817 · #822 · #819 · #739**. Suite
 **3,437 -> 3,462**; ruff clean; `data/` untouched; backlog **326 open / 729 done**, highest
 **#822**.
-
-## Previous — 2026-09-20 (Claude Code): wave 28 #813 #814 #815 #816
-
-Review of waves 26-27, no new features. Both waves shipped green and five defects went through
-anyway, all the same shape: a wave changed what a value *means* or what a dict may *hold*, and
-the readers outside that wave were never re-pointed. **#813** a timed-out discovery crashed the
-intelligence report (`TypeError: float + str` out of `to_markdown`, unguarded from `main.py`) —
-#802's `variant_scoring_fallback` and #807's `angle_spread` move to `DiscoveryResult.meta`,
-persisted trace keys unchanged; **#814** a disabled reground double-counted the held-back
-negative-fact flags; **#815** `channel_health` (55/72) and `engagement_predictor` were still on
-the field #804 made continuous — both now read `run_quality.authenticity_gate_value`, recorded as
-**`decisions.md` §32**; **#816** the retention exemption re-resolved the skip set per file.
-Raised, not fixed: #809's `TTS_CACHE` default flip lets a bare `unittest discover -s tests`
-(no `-t .`) write the operator's real `data/tts_cache`. Next five unchanged: **#808 · #811 ·
-#803 · #805 · #50**. Suite **3,425 -> 3,437**; mypy **139**; ruff clean; backlog **325 open /
-724 done**, highest **#816**.
 
 ## Pipeline order (operator)
 

@@ -17,7 +17,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [../README.md](../README.md) | What the product is and how to run it |
 | [../CLAUDE.md](../CLAUDE.md) · [../AGENTS.md](../AGENTS.md) | Agent entry points — read before editing code |
 | [master_plan.md](master_plan.md) | The canonical forward plan (M0–M5) |
-| [audit_2026-09.md](audit_2026-09.md) | Where the system actually stands, with evidence |
+| [audit_2026-09-26.md](audit_2026-09-26.md) | Where the system actually stands, with evidence |
 | [handoff_synopsis.md](handoff_synopsis.md) | State as of the last working session |
 
 ## Charter — why this exists
@@ -86,7 +86,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 
 | Doc | Date |
 |---|---|
-| [audit_2026-09.md](audit_2026-09.md) | 2026-09 — current |
+| [audit_2026-09-26.md](audit_2026-09-26.md) | 2026-09-26 — **current**; before→after of the 09-20 findings |
+| [audit_2026-09.md](audit_2026-09.md) | 2026-09-20 |
 | [audit_2026-08.md](audit_2026-08.md) | 2026-08 |
 | [assessment.md](assessment.md) | 2026-06, addendum 2026-08 |
 | [code_audit_2026-07.md](code_audit_2026-07.md) | 2026-07 |

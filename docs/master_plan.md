@@ -1,6 +1,6 @@
 # Master plan
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
 
 The canonical forward plan. Supersedes `content_intelligence_roadmap.md`,
 `groundwork_q3_2026.md` and `scope_feature_store_and_research_v2.md` as *the* answer to
@@ -28,20 +28,16 @@ rule the commit *after* the rule was written; it took `.githooks/commit-msg` to 
 
 Each wave below has an **exit criterion** that is a command, not a judgement.
 
-**2026-09-25 merge note.** Main moved 73 commits past the audit base before this plan
-merged; several items landed there independently. Now done on main: the `roadmap.md`
-split (M2.1 — it is ~200 lines, history in [roadmap_archive.md](roadmap_archive.md),
-inventory in [backlog.md](backlog.md)), generated counts (`ops roadmap-index`,
-`ops command-ref`), and heavy gate/mutation work under P4's theme. Still open and
-re-verified at `730055f`: M0 (the `_ollama_probe_cache` order-dependence, untouched),
-the ruff 0.8.4 pin, the inert hook mode (fixed on this branch), and the docs sprawl
-(19 new docs arrived without cards — carded in the merge). mypy was ~139 per main's own
-planning log. [engineering_standards_backlog.md](engineering_standards_backlog.md) and
-[backlog.md](backlog.md) hold item-level detail that M3/M4 summarize.
+**Status 2026-09-26 (wave 31).** M0, M1 and M2 are **done**; their exit commands pass and
+are now CI legs, so they stay done. M3.2 (the mypy ratchet) is done; the rest of M3 is
+re-sequenced below. Evidence and before→after numbers:
+[audit_2026-09-26.md](audit_2026-09-26.md). Item ledger: [backlog.md](backlog.md)
+#827–#834. Main had independently landed the `roadmap.md` split (M2.1) and generated
+counts before this wave.
 
 ---
 
-## M0 — Test integrity (days)
+## M0 — Test integrity · **done 2026-09-26** (#827–#829)
 
 **Why now.** [audit_2026-09.md](audit_2026-09.md) §1.3: `tests/test_run69_fixes.py`
 passes 13/13 alone and fails 5 in the full suite. Those five guard the run-70 outage
@@ -66,14 +62,17 @@ until the suite is.
    only because `apis.topic_scorer` cannot import `sqlalchemy`. Confirm they pass on a
    full install; if either is a genuine bug, it has been hiding behind the noise.
 
-**Exit:** `python -m unittest discover -s tests -t .` is green, and green again with the
-module order shuffled and reversed. On a bare install the run reports skips, not errors.
+**Exit (passed 2026-09-26):** `python -m unittest discover -s tests -t .`,
+`py -m scripts.ops test --order reverse` and `--order shuffle --seed 1` report the identical
+result; CI runs the reversed leg on every push. On a bare install the run prints one line
+naming the missing modules. What actually caused the run-69 symptom — a half-built
+`ExitStack` in `tests/test_ops_doctor`, not the probe cache — is in the audit §1.1.
 
 **Not in this wave:** raising coverage, adding tests, touching any feature.
 
 ---
 
-## M1 — Finish the docs standard (this session + one follow-up)
+## M1 — Finish the docs standard · **done 2026-09-26**
 
 **Why now.** Half of it landed with the audit; the half-measure is worse than either
 end state, because a partially-applied convention teaches that conventions are optional.
@@ -106,12 +105,14 @@ Remaining:
    counts and module counts drift the same way. Widen `VOLATILE_METRIC` once the
    corpus is clean enough to pass.
 
-**Exit:** `python -m unittest tests.test_docs_standard tests.test_docs_lint` green with
-`LEGACY_NAMES` empty, and no `living` doc carrying a `Reviewed` date older than 90 days.
+**Exit (passed 2026-09-26):** `python -m unittest tests.test_docs_standard
+tests.test_docs_lint` green with `LEGACY_NAMES` empty; the nine never-reviewed docs read
+against HEAD (verdicts in the audit §3.1); one product name per layer (decisions §33).
+Still open from this wave: the 90-day `Reviewed` staleness check is not yet a lint rule.
 
 ---
 
-## M2 — Split the oversized docs (1–2 sessions)
+## M2 — Split the oversized docs · **done 2026-09-26**
 
 **Why now.** Five files are 48% of the corpus, and `roadmap.md` has a single 1,084-line
 section. Agents load these files to answer one question and spend a large fraction of a
@@ -132,12 +133,14 @@ context window doing it. This is a direct tax on every future session.
    `tests/test_docs_standard.py` (logs and snapshots exempt by class — they are supposed
    to grow). Set the ceiling at the post-split reality, not aspirationally.
 
-**Exit:** no `living` doc over the recorded ceiling, `tests/test_docs_lint.py` still
-green (relative links survive the moves), and `decisions.md` §-numbers unchanged.
+**Exit (passed 2026-09-26):** no `living` doc over 800 lines (`backlog.md` exempt by
+design), links resolve after the moves, `decisions.md` word-identical with 36 sections.
+Logs roll over by period instead of being trimmed (docs_standard §7):
+`handoff_synopsis.md` 1,849 → 244 lines, `planning_log.md` 5,268 → September only.
 
 ---
 
-## M3 — Structural debt (2–4 sessions, parallelisable)
+## M3 — Structural debt (2–4 sessions, parallelisable) · **M3.2 done**
 
 **Why now.** These compound quietly and none of them blocks a feature today — which is
 exactly why they need a scheduled slot rather than good intentions.
@@ -147,8 +150,10 @@ exactly why they need a scheduled slot rather than good intentions.
    `core/llm/`, `core/vault/`, `core/video/`, `core/ops/` — moving files in small
    commits with re-export shims so imports keep working, and a rule in `CLAUDE.md` about
    where a new module goes. The rule matters more than the move.
-2. **Ratchet mypy.** 136 errors in 89 files, up from ~94 in June. Record the count as a
-   baseline in CI and fail when it *rises*. That turns a number nobody watches into a
+2. **Ratchet mypy — done 2026-09-26 (#833).** `scripts/mypy_ratchet.py` + `mypy_baseline.txt`
+   hold CI's list at 135 and fail on increase; the typecheck job is blocking. Still open:
+   extend the scope to `video`, `publishing`, `youtube`, `scripts`, `jobs` and delete the
+   dead `video.*`/`publishing.*` override. That turns a number nobody watches into a
    number that cannot grow, without a blocking rewrite. Then pick off the 89 files by
    subsystem.
 3. **Upgrade ruff.** Pinned at 0.8.4 across CI, `pyproject.toml` and
@@ -160,9 +165,12 @@ exactly why they need a scheduled slot rather than good intentions.
    (the O11/O12 pattern, which is correct here) versus *accidental swallow*, and fix
    only the second group. Publish the split so the number stops being alarming.
 
-**Exit:** mypy baseline recorded and enforced downward-only; ruff on a current pin with
-CI green; `core/` sub-packages documented in `CLAUDE.md`; broad-except inventory in
-`docs/`.
+**Order for the rest of M3:** the ruff bump first (#831 — one format sweep, one pin bump,
+one commit per rule family), then `core/` seams (#834), then the broad-except inventory
+(M3.4). The `apis/scrapers` packaging gap (#832) is an hour and can ride any of them.
+
+**Exit:** ruff on a current pin with CI green; `core/` sub-packages documented in
+`CLAUDE.md`; broad-except inventory in `docs/`; mypy scope covers every package that ships.
 
 ---
 

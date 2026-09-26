@@ -34,7 +34,8 @@ class TestFactBudgetDecisionMatchesCode(unittest.TestCase):
             os.environ.pop("OPERATOR_KEY_FACT_CHAR_BUDGET", None)
             self.assertEqual(operator_key_fact_char_budget(), 12000)
         decisions = Path("docs/decisions.md").read_text(encoding="utf-8")
-        section = decisions.split("### 4.")[1].split("### 4b.")[0]
+        # decisions.md sections are `## N.` since the 2026-09-26 rewrap (were `### N.`).
+        section = decisions.split("## 4.")[1].split("## 4b.")[0]
         self.assertNotIn("4500", section)
         self.assertIn("12000", section)
 

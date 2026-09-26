@@ -1,6 +1,6 @@
 # Handoff — the mailbox
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-25
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
 **Read this first, before any other file, every time you start work here.** More than
 one agent works in this repo and nothing signals a switch. This file is how the
@@ -53,37 +53,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-20 · **HEAD at write:** `096c13b` (wave 30 committing now) ·
-**Tree:** clean but for the three footage folders, which stay yours.
+**Written:** 2026-09-26 · **HEAD at write:** see `git log -1` on `main` after this wave's
+push (eleven signed commits from `ca0aed2`; last two are the stage3-honesty fix and this
+pass) · **Tree:** clean; `data/` untouched.
 
 **Defects first:**
-- **#824 the report card is anti-predictive: grade vs engaged-rate r=-0.32, n=12.** Worse
-  than composite's -0.15 (#819), same twelve videos. #19 graded 79.4 -> p4; #17 graded 69.5
-  -> p71. **Both scores the pipeline ranks on are anti-correlated with engagement.** At n=12
-  this is not significant - filed explicitly as *do not retune the rubric on it*.
-- **#825 `--force` was read by four ops verbs and reachable by none.** Never declared, *and*
-  `main` set `args.force = False` after `parse_args`. `backfill-cost`, `competitor-sync` and
-  `daily-sync` have therefore never actually been force-run. Fixed, with a ratchet.
-- **#826 per-claim types exist only from run 76 on**; 27 verified runs store a flat list, so
-  76 of 84 unsupported claims cannot be told apart by bar. Unlike #818 this is **not**
-  backfillable - #823 does not re-run the verifier.
-- **Self-inflicted, caught in audit:** after applying #823 the snapshot line read "today's
-  rubric reproduces every one" - tautological, since the backfill computed those with today's
-  rubric. Rows now stamped `grade_backfilled`.
+- **The run-69 order-dependence was misattributed on 09-20.** Cause: `tests/test_ops_doctor._stack()`
+  built an `ExitStack` outside a `with`; on any partial install a later `patch()` target failed
+  to import and `run_mode._ollama_ready` stayed mocked for the whole process. Fixed + regression
+  test. Your full install never showed it — that is why.
+- **`ops test --order reverse` found two more leaks on its first run** (file-backed discovery
+  cache shared across tests; `_FakeCommunicate.fail` never disarmed). Both closed.
+- **My `decisions.md` rewrap broke `test_stage3_honesty`** (it split on `### 4.`). Fixed in the
+  last commit — the definitive run caught it, which is the point of the run.
+- **Environment traps:** a half-failed `pip install` nearly became the baseline; a stale
+  `.mypy_cache` under-reported by 24; two mypy versions differed by 6 — the ratchet runs
+  `--no-incremental` on the pinned interpreter mypy for both reasons.
 
-**Two items closed with no behaviour change, on purpose.** **#822** - the hedged-rumor escape
-has fired **0 times** in 37 verified runs, so neither the gate nor the hedge penalty moved; the
-waiver is recorded instead, re-decide at n>=10. **#739** - measured at last (gameplay 147 clips,
-ALWAYS **2**, intermittent 90, median 0.25; stock 52, ALWAYS 0, ever 6): both premises fail and
-the source rule **does not ship**. It also explains #730's false moves. **#817** closed because
-its filed text was wrong, not its code.
+**Shipped (structural, no product change):** #827 process-state registry · #828 order-proof verb
++ CI leg · #829 preflight/inert tests · #833 mypy ratchet (129, blocking) · docs standard finished
+(ten renames, two log rollovers, `decisions.md` rewrapped word-for-word, nine stale docs read,
+decisions §33 product names, three lint rules). Before→after: [audit_2026-09-26.md](audit_2026-09-26.md).
 
-**Heads-up:** I ran `ops backfill-quality --apply` on the operator's explicit call - **87 tapin
-rows rewritten**, measured runs 3 -> 12. Re-runnable with `--force`. `ops footage --persistence`
-is new and slow (8 decodes/clip).
+**Heads-up:** `HANDOFF_SYNOPSIS.md` is now `handoff_synopsis.md` (244 lines; older waves in
+`handoff_synopsis_archive.md`); `planning_log.md` rolls over by month. The 8 failures on this box
+are environmental (fastapi extra, no ffmpeg) and identical before/after; CI-shaped installs are green.
 
-Suite **3,462 -> 3,487**; mypy **139**; ruff clean; `data/` untouched. Backlog **325 open / 734
-done**, highest **#826**. Next five: **#826 · #821 · #820 · #824 · #819**.
+Suite **3,526**, identical in default/reverse/shuffle; mypy **129** (1.13.0); ruff clean; backlog
+**330 open / 737 done**, highest **#834**. Next five unchanged: **#826 · #821 · #820 · #824 · #819**;
+structural next: **#831 ruff bump → #834 core/ seams → M3.4 excepts**.
 
 ## Slot — Cursor
 

@@ -1,12 +1,35 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-20
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 31 — the suite stops depending on order, the docs stop depending on memory - 2026-09-26
+
+*3,526 tests; default, reverse and shuffled order report the identical result; mypy 129
+on the pinned 1.13.0, now a blocking ratchet; ruff clean on 0.8.4. Structural wave —
+no product behaviour changed. Before→after: [audit_2026-09-26.md](audit_2026-09-26.md).*
+
+- **#827** `core/process_state.py` — one reset point for process-global state; 23 modules
+  register an IO-free reset, `tests/__init__.py` runs them before every test.
+- **#828** `py -m scripts.ops test --order reverse|shuffle --seed N` and a reversed CI
+  leg. Root cause of the run-69 order-dependence was a half-built `ExitStack` in
+  `tests/test_ops_doctor`, leaking on partial installs only; the first reversed run found
+  two more leaks (file-backed discovery cache; `_FakeCommunicate.fail`).
+- **#829** partial installs print one line naming the missing modules; two assertion-less
+  tests assert; "Pillow not installed" skips fail under CI; stale mascot skip is an assertion.
+- **#833** `scripts/mypy_ratchet.py` + `mypy_baseline.txt`; typecheck job blocking.
+- **Docs standard finished (M1/M2):** ten legacy names renamed with links rewritten;
+  `handoff_synopsis.md` 1,849 → 244 lines and `planning_log.md` rolled over by month into
+  frozen archives; `decisions.md` rewrapped word-for-word (median line 255 → 83); nine
+  never-reviewed docs read against HEAD and corrected; decisions §33 names the two
+  products; lint gains a size ceiling, a wider metric rule and the generated-doc rule.
+- Filed **#830–#834** (TTS-cache bare-discover leak, ruff bump, `apis/scrapers` packaging,
+  mypy scope, `core/` seams). Roadmap range and developer setup corrected.
 
 ### Run 74 — the abort chain, and facts that stop being truncated - 2026-08-29
 

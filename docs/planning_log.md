@@ -17,6 +17,39 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 - Grand audit executed: test integrity, docs standard finished, mypy ratchet
+
+**Prompt:** "usage limit hit on gpt, do a big huge massive grand audit, update documents, and
+plan plan plan. push to main when complete." The Codex handoff had fallen through, so this
+session executed the 09-20 audit's open findings, re-measured, and re-planned.
+
+**Decided:** verification before capability, every rule as a check. M0–M2 done, M3.2 done,
+the rest of M3 re-sequenced (ruff bump → `core/` seams → broad-except inventory). Product
+work untouched on purpose; the roadmap's next five (#826 #821 #820 #824 #819) stand.
+
+**Corrected the record.** The 09-20 audit blamed `_ollama_probe_cache` for the run-69
+order-dependence. The cause was a half-built `ExitStack` in `tests/test_ops_doctor` that
+leaks only when a later `patch()` target fails to import — i.e. only on partial installs,
+which is why the operator's box never saw it. The module-cache class of leak was real and
+is closed by the registry, but the symptom was misattributed. Full account:
+[audit_2026-09-26.md](audit_2026-09-26.md) §1.1.
+
+**Measurement lessons (kept because they recur):** the first `pip install -e .` failed on
+one transitive wheel and the crippled suite nearly became the baseline — compare against a
+clean worktree in the same environment, twice; a stale `.mypy_cache` under-reported by 24;
+two mypy versions on one box disagreed by 6 — the ratchet runs `--no-incremental` and the
+interpreter's install. Shell pipes to `tail` masked failing exit codes twice and let two
+red commits through, which were unwound and re-committed green; one command per step.
+
+**Shipped:** ten commits — see [change_log.md](change_log.md) wave 31 and
+[handoff_synopsis.md](handoff_synopsis.md). `ops test --order reverse` is a CI leg; the
+first reversed run found two leaks nobody had reported.
+
+**Honest leftover:** the 8 failures in this container are environmental (fastapi extra,
+ffmpeg) and identical before and after; the 90-day `Reviewed` staleness rule is not yet a
+lint; `planning_log.md` is still 3,184 lines of September alone — it rolls over next month.
+
+
 ## 2026-09-20 (Claude Code) - wave 28: review of waves 26-27
 
 Operator: "review and fix". Read both diffs line by line rather than the docs. Waves 26

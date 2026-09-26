@@ -35,8 +35,8 @@ full inventory is [docs/backlog.md](docs/backlog.md), the Windows application pr
 [docs/roadmap_archive.md](docs/roadmap_archive.md). Counts come from
 `py -m scripts.ops roadmap-index`, never by hand. The forward horizons those items roll
 up into: [docs/master_plan.md](docs/master_plan.md). Where the system honestly stands:
-[docs/audit_2026-09.md](docs/audit_2026-09.md) and
-[docs/assessment.md](docs/assessment.md). Why the generated ideas/scripts come out the
+[docs/audit_2026-09-26.md](docs/audit_2026-09-26.md) (before→after of the
+09-20 findings) and [docs/assessment.md](docs/assessment.md). Why the generated ideas/scripts come out the
 way they do — the six framing layers and the selection tie:
 [docs/idea_quality_diagnosis.md](docs/idea_quality_diagnosis.md); where the project can
 realistically go next: [docs/strategy_next_level.md](docs/strategy_next_level.md); what to build
@@ -82,8 +82,9 @@ new provider or changing tier routing.
 ```powershell
 ruff check .                                   # lint — CI-blocking
 ruff format --check .                          # format — CI-blocking
-mypy analytics apis core config storage        # type check — non-blocking baseline
+python scripts/mypy_ratchet.py                 # type check — blocking ratchet: the count may fall, never rise
 python -m unittest discover -s tests -t . -v        # tests — CI-blocking; the `-t .` is load-bearing
+py -m scripts.ops test --order reverse         # same suite, reversed — CI-blocking; the verdict must not depend on order
 ```
 
 ## Hard rules

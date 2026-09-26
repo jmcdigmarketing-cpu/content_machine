@@ -7,6 +7,24 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-20 (Claude Code): wave 28 #813 #814 #815 #816
+
+Review of waves 26-27, no new features. Both waves shipped green and five defects went through
+anyway, all the same shape: a wave changed what a value *means* or what a dict may *hold*, and
+the readers outside that wave were never re-pointed. **#813** a timed-out discovery crashed the
+intelligence report (`TypeError: float + str` out of `to_markdown`, unguarded from `main.py`) —
+#802's `variant_scoring_fallback` and #807's `angle_spread` move to `DiscoveryResult.meta`,
+persisted trace keys unchanged; **#814** a disabled reground double-counted the held-back
+negative-fact flags; **#815** `channel_health` (55/72) and `engagement_predictor` were still on
+the field #804 made continuous — both now read `run_quality.authenticity_gate_value`, recorded as
+**`decisions.md` §32**; **#816** the retention exemption re-resolved the skip set per file.
+Raised, not fixed: #809's `TTS_CACHE` default flip lets a bare `unittest discover -s tests`
+(no `-t .`) write the operator's real `data/tts_cache`. Next five unchanged: **#808 · #811 ·
+#803 · #805 · #50**. Suite **3,425 -> 3,437**; mypy **139**; ruff clean; backlog **325 open /
+724 done**, highest **#816**.
+
+---
+
 ## Previous — 2026-09-20 (Cursor): wave 27 #806 #807 #810 #812 #802
 
 Operator-loop and resource waste. **#806** `ops batch-review` asks Why? after reject and writes

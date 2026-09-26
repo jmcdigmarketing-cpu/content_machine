@@ -12,7 +12,8 @@ linked doc before touching the area it covers.
 
 ## What this is
 
-Content Machine (Content OS): a Python CLI for short-form video —
+Content Machine — the engine; *Content OS* is the operator application built on it
+(decisions §33) — a Python CLI for short-form video —
 discover signals → score topics → LLM script → TTS → FFmpeg render → optional
 YouTube publish — with a closed analytics learning loop (best-bet topic,
 recommended length + post-time) and a 2026-policy compliance layer (authenticity

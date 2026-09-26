@@ -1,13 +1,17 @@
 # Content Machine (Content OS)
 
+**Content Machine** is the engine — this repo: the pipeline, signal layer and CLI. **Content OS** is the operator application built on it (desktop app, review booth, tray; decisions §33).
+
 Python CLI for short-form video: discover signals → score topics → LLM script → TTS → FFmpeg render → optional YouTube publish. With a closed analytics learning loop (best-bet topic, recommended length + post-time) and a 2026-policy compliance layer (authenticity check, AI disclosure, cadence guardrail).
 
 **Channels** (`config/channels.json`, domain-driven): `tapin` — gaming & UFC shorts · `moneywise` — finance (markets/crypto/personal finance). Add another by adding a profile + `config/seo/{id}.json`.
 
-Roadmap & current fix queue: [docs/roadmap.md](docs/roadmap.md). Honest assessment:
-[docs/assessment.md](docs/assessment.md) (June scorecard + addenda). Measured ideas for script
-generation, idea grading and resource use: [docs/engine_upgrades.md](docs/engine_upgrades.md).
-Session state: [docs/handoff_synopsis.md](docs/handoff_synopsis.md).
+Every doc, by class and status: [docs/README.md](docs/README.md). What happens next:
+[docs/master_plan.md](docs/master_plan.md) (horizons) and [docs/roadmap.md](docs/roadmap.md)
+(the next five). Where the system honestly stands: [docs/audit_2026-09-26.md](docs/audit_2026-09-26.md);
+measured ideas for script generation, idea grading and resource use:
+[docs/engine_upgrades.md](docs/engine_upgrades.md). Session state:
+[docs/handoff.md](docs/handoff.md) (the mailbox) and [docs/handoff_synopsis.md](docs/handoff_synopsis.md).
 
 ## Quick start
 

@@ -701,3 +701,17 @@ predictions with it, which is what makes #803 and #50 safe to do next. The cost 
 a run whose *grade* is genuinely thin no longer shows up in channel health — health
 answers "is the gate holding", the report card answers "how good was this one". See
 #813-#816 for the rest of that review.
+
+## 33. "Content Machine" is the engine; "Content OS" is the operator surface (2026-09-26)
+**Decision:** *Content Machine* names the project and the engine — this repository, the
+pipeline, the signal layer, the CLI (`main.py`, `scripts/ops.py`). *Content OS* names the
+operator-facing application surface built on it — the desktop app, the review booth, the
+tray, the shell. "Content Intelligence Platform" was positioning language and is retired
+from the docs.
+**Why:** the 2026-09 audit found three names in circulation across 41 docs (19 / 14 / 8)
+with nothing saying which was which, so headings, briefs and the README disagreed. The
+split follows how [desktop_app.md](desktop_app.md) already uses the words: the programme
+that "leaves the terminal" is Content OS, and what it drives is Content Machine.
+**Consequence:** the README H1 stays "Content Machine (Content OS)" and says the split in
+one line; `living` docs use the name for the layer they describe; `frozen` and `archived`
+docs keep whatever they said on their date. A new name needs a new § here, not a new doc.

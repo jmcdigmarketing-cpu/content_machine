@@ -356,6 +356,13 @@ def cmd_backfill_angles(args: argparse.Namespace) -> int:
     return _run_module("analytics.backfill_angles", *extra)
 
 
+@_register(
+    "auto-research", "Measure auto-research on stored runs: pages, lines kept, lines cited (#863)"
+)
+def cmd_auto_research(args: argparse.Namespace) -> int:
+    return _run_module("analytics.auto_research_report", "--channel", args.channel)
+
+
 @_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
 def cmd_backfill_cost(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]
@@ -1951,6 +1958,26 @@ def cmd_rollback_publish(args: argparse.Namespace) -> int:
     return 0 if result.status in ("dry_run", "updated") else 1
 
 
+@_register(
+    "go-public",
+    "Flip a review-held unlisted upload to public (no id = newest hold; dry-run default; --apply sends)",
+)
+def cmd_go_public(args: argparse.Namespace) -> int:
+    from publishing.go_public import apply_go_public
+
+    result = apply_go_public(
+        (getattr(args, "target", None) or "").strip(),
+        channel_id=args.channel,
+        dry_run=not bool(getattr(args, "apply", False)),
+    )
+    print(f"{result.status}: {result.detail}")
+    if result.status == "dry_run":
+        print(
+            f"  Nothing was sent to YouTube. Re-run with --apply to make {result.video_id} public."
+        )
+    return 0 if result.status in ("dry_run", "updated") else 1
+
+
 @_register("publish-dry-run", "Print the YouTube videos.insert body (no upload; tokens redacted)")
 def cmd_publish_dry_run(args: argparse.Namespace) -> int:
     from publishing.base import PublishRequest
@@ -2203,8 +2230,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--apply",
         action="store_true",
         help=(
-            "artifacts / moat-backup / ingest-clips / rollback-publish: "
-            "actually delete, copy, remux, or unlist (default is dry-run)"
+            "artifacts / moat-backup / ingest-clips / rollback-publish / go-public: "
+            "actually delete, copy, remux, unlist, or make public (default is dry-run)"
         ),
     )
     parser.add_argument(

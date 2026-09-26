@@ -17,6 +17,21 @@ if grep -qiE '(generated with \[?claude|generated with \[?cursor|🤖 generated)
     exit 1
 fi
 
+# #839: commit messages are ASCII (`->`, not an arrow glyph). Git passes the raw editor
+# file, so drop `#` comment lines and everything below the `-v` scissors line first.
+# The subject is refused; a non-ASCII body only warns.
+high_bytes="$(printf '[\200-\377]')"
+message="$(sed -e '/^# -\{24\} >8 -\{24\}/,$d' -e '/^#/d' "$msg_file")"
+subject="$(printf '%s\n' "$message" | grep -v '^[[:space:]]*$' | head -n 1)"
+if printf '%s\n' "$subject" | LC_ALL=C grep -q "$high_bytes"; then
+    echo "commit-msg: the subject line has a non-ASCII character; use ASCII (e.g. '->')." >&2
+    echo "  $subject" >&2
+    exit 1
+fi
+if printf '%s\n' "$message" | LC_ALL=C grep -q "$high_bytes"; then
+    echo "commit-msg: the body has non-ASCII characters; commit bodies are ASCII by rule." >&2
+fi
+
 if ! grep -qiE '^[[:space:]]*co-authored-by:' "$msg_file"; then
     echo "commit-msg: no Co-authored-by trailer — fine if a human wrote this." >&2
     echo "  If an agent did, sign it so \`git log --grep\` can tell the two apart." >&2

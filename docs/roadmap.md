@@ -26,30 +26,31 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-26 wave 34: **#848** auto-research reads the web-search result pages
-for the chosen angle (on by default, web tier, decisions §35) · **#850** the research brief sees
-the operator's key facts · **#852** signals query names ("Manchester City"), not sentences ·
-**#859** football feeds · **#836** `ops backfill-angles` gives the angle correlation an n now.
+**Just landed** - 2026-09-26 wave 35: **#864** `ops go-public` flips a review-held unlisted
+upload public (refuses a grounding override) · **#861** the kept auto-research lines are printed
+· **#863** `ops auto-research` measures them (verdict after ten runs) · **#839** the commit hook
+refuses a non-ASCII subject · **#830** a test run cannot write the real TTS cache.
 
-**Before that** - wave 33 (run 98): **#840** double-billed TTS fixed · **#841 #842** topic domain
-from the topic, football is TapIn's · **#843-#847** signal and fact-intake hygiene, card v5 ·
-wave 32: **#826 #820 #824** · wave 31 (structural): **#827 #828 #829 #833**. Earlier:
+**Before that** - wave 34: **#848** auto-research (on by default, decisions §35) · **#850**
+the brief sees key facts · **#852 #859** football queries and feeds · **#836** angle backfill ·
+wave 33 (run 98): **#840-#847** · wave 32: **#826 #820 #824**. Earlier:
 [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 34 (2026-09-26)** finished the two open questions from run 98: *pull everything* (#848)
-and *make football work* (#852 #859), and gave the angle question an n (#836). What is left of
-"ideas grade the same" is measuring something per angle, so that leads.
+**Wave 35 (2026-09-26)** closed the small queue and the review-hold gap the operator asked
+about. What is left is gated on the operator's data (#849, #863), so the picks behind it are
+cheap defects found in passing.
 
-1. **#849 tell angles apart** `[L]` - run `ops backfill-angles --apply`, then decide from the
-   angle correlation whether the tie leans on the editorial score; if not, a per-angle
-   fact-fit measure.
-2. **#863 measure auto-research** `[S]` - ten real runs: pages, lines kept, lines the claim
-   verifier used. Retune or switch off from that.
-3. **#861 show auto-research lines on the fact screen** `[S]` - today only a count is printed.
-4. **#839 the commit hook refuses non-ASCII subjects** `[S]` - the #838 CI failure's root.
-5. **#830 bare `unittest discover` writes the real TTS cache** `[S]` - guard the write path.
+1. **#849 tell angles apart** `[L]` - needs the operator's `ops calibration` after
+   `ops backfill-angles --apply`; decide from the angle correlation whether the tie leans on
+   the editorial score, else a per-angle fact-fit measure.
+2. **#865 `rollback-publish --apply` sends a half snippet** `[S]` - the live call most likely
+   400s; send the full snippet or split the update.
+3. **#856 the "Gated (domain)" line lists retired signals** `[S]` - read the registry.
+4. **#855 `INGEST_ENABLED` is read by nothing** `[S]` - wire it or delete it.
+5. **#863 the auto-research verdict** `[S]` - `ops auto-research` after ten runs: keep, retune
+   `AUTO_RESEARCH_URLS`, or switch off.
 
 **Waiting on the operator, not on code:** switch the PC to `main` (it was on a local-only
 `codex/p0-test-integrity` branch, so wave 33 never reached it), then `ops backfill-quality

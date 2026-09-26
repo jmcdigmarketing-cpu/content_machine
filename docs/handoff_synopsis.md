@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-26: wave 34, pull everything
+# Handoff synopsis — 2026-09-26: wave 35, go-public
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
 
@@ -10,7 +10,26 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 34 #859 #852 #850 #836 #848
+## Last wave — 2026-09-26 (Claude Code): wave 35 #864 #861 #863 #839 #830
+
+The operator asked why uploads land unlisted: `YOUTUBE_UNLISTED_REVIEW` (#109, default on) holds
+an *immediate* public upload unlisted for one look, and #754 holds a grounding override; nothing
+flipped a held video back. That became #864.
+
+- **#864** `ops go-public [video_id] [--apply]` (no id = newest unlisted hold): status-only
+  `videos.update`, refuses a grounding override; the hold message prints the command.
+- **#861** kept auto-research lines printed (`auto_research.report_lines`); reports carry
+  `kept_lines`.
+- **#863 (tool)** `ops auto-research`: pages, lines, off-topic, lines a supported claim cited.
+  Verdict after ten runs.
+- **#839** commit hook: non-ASCII subject refused, body warned.
+- **#830** `tts_cache_store` refuses the default dir under a test runner.
+- Found: **#865** `rollback-publish --apply` sends a half snippet.
+
+**Verify:** `python -m unittest tests.test_go_public tests.test_auto_research_view
+tests.test_commit_msg_ascii tests.test_tts_cache_guard`.
+
+## Previous — 2026-09-26 (Claude Code): wave 34 #859 #852 #850 #836 #848
 
 The roadmap's five, cheapest first. The operator's PC turned out to be on a local-only branch
 (`codex/p0-test-integrity`), so `git pull` fetched `main` without merging it and wave 33 never
@@ -61,39 +80,6 @@ tests.test_grade_v5`.
 **Operator:** `git pull`; `py -m scripts.ops calibration`; `py -m scripts.ops backfill-quality
 --channel tapin --force` then `--apply`; after the next render `ops reliability` should show
 TTS-cache hits and one charge. Optional: `API_SPORTS_KEY` for football signals.
-
-## Previous — 2026-09-26 (Claude Code): wave 32 #826 #820 #824 #821 #819
-
-The roadmap's five, taken in the order cheapest-and-safest first. This container has no run
-archive (`data/` holds two files), so #824 and #821 shipped the **measurement** they lacked,
-unit-tested on the fake-repo fixture; the archive's numbers come from the operator's
-`py -m scripts.ops calibration`. Three of the five had a wiring gap the map had missed.
-
-- **#826** `core/claim_types.claim_type_coverage` - a run is typed when a claim carries a type,
-  not when `unsupported_types` exists (`merge_reversals` pads it with `""`). Line in
-  `ops calibration` and the weekly report: `Claim types: N of M verified runs carry per-claim
-  types - the rest predate #345 and cannot be backfilled`.
-- **#820** `apis/run_deadline` Event: `_fetch_all` sets it at the deadline, `run_actor` refuses
-  the POST after it (`cancelled_after_deadline`, named in the dropped stub), and the executor
-  cancels the *queued* signals too - they were starting after the drop. Free stragglers still
-  cache. Measured: 1.5 s straggler under a 0.3 s deadline -> 0 POSTs.
-- **#824** per-component Pearson + `n_for_significance`: **|r|=0.32 needs n>=36**. Lines say
-  "not significant - do not retune the rubric on it". Rubric untouched, no `GRADE_VERSION` bump.
-- **#821** (open) recurrence vs engaged-rate correlated and printed with its decision rule;
-  `recurrence_line` reads `_RECURRENCE_MIN`; `ops grade` now prints it (#837).
-- **#819** (open) `angle_scores` had 0 rows because `_finalize_run` never persisted them. Now in
-  `features_json` + `quality["angle_score"]`; `angle_line` says `collecting (0 of N)`. Tie
-  unchanged. #836 filed: an approximate backfill from `variants_json` is possible.
-- **Found:** #835 weekly report `runs_total` bug; **#838 CI on `main` was red at `cdb01d8`** -
-  wave 31's commit subject carried a U+2192 arrow and `ops agents`' cp1252 guard read it from
-  `git log`; `render` is now console-safe by construction. #839 filed (hook should refuse it).
-
-**Verify:** `python -m unittest tests.test_claim_type_coverage tests.test_deadline_cancels_paid_calls
-tests.test_component_calibration tests.test_recurrence_calibration tests.test_angle_score_persisted
-tests.test_agent_handoff` · `py -m scripts.ops calibration` · `py -m scripts.ops grade --run-id <id>`.
-
-**Still open:** roadmap next five **#836 #839 #830 #832 #831**; #821/#819 wait on the operator's
-calibration numbers, not on code.
 
 ## Pipeline order (operator)
 
@@ -158,11 +144,11 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator, after pulling:** `ops calibration`, `ops backfill-quality --force` (v5 re-stamp),
-   check `ops reliability` for single TTS charges. #821 and #819 wait on those numbers.
-2. **Product next:** #849 tell angles apart · #863 measure auto-research · #861 show its lines.
-3. **Structural (master_plan M3):** #839 hook refuses non-ASCII subjects · #830 · #832 · #831
-   ruff bump · #834 `core/` seams.
+1. **Operator, after switching to `main`:** `ops backfill-quality --force --apply`,
+   `ops backfill-angles --apply`, `ops calibration`, `ops feeds`. #849 waits on that output.
+2. **Product next:** #849 tell angles apart · #863 auto-research verdict after ten runs ·
+   #865 rollback snippet.
+3. **Structural (master_plan M3):** #856 · #855 · #832 · #831 ruff bump · #834 `core/` seams.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
    contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours

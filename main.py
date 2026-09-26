@@ -753,10 +753,9 @@ def _run_new_video_flow_body(
         if result.run_id:
             print(f"  Run id: {result.run_id}")
         try:
-            from core.auto_research import report_line
+            from core.auto_research import report_lines
 
-            _research = report_line((result.features or {}).get("auto_research"))
-            if _research:
+            for _research in report_lines((result.features or {}).get("auto_research")):
                 print(f"  {_research}")
         except Exception as exc:  # a notice only
             logger.debug("auto-research line skipped: %s", exc)

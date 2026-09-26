@@ -159,6 +159,7 @@ def attach_web_research(
             lines=len(kept),
             off_topic=off,
             urls=used_urls,
+            kept_lines=list(kept),
             seconds=round(time.monotonic() - started, 1),
         )
         if not report["reason"]:
@@ -192,3 +193,16 @@ def report_line(report: dict[str, Any] | None) -> str:
         f"{report.get('off_topic', 0)} off-topic dropped"
         + (" (deadline hit)" if reason == "deadline" else "")
     )
+
+
+def report_lines(report: dict[str, Any] | None, *, show: int = 5) -> list[str]:
+    """The summary line plus the kept lines themselves (#861); old reports: header only."""
+    header = report_line(report)
+    if not header:
+        return []
+    kept = [str(line) for line in (report or {}).get("kept_lines") or [] if str(line).strip()]
+    out = [header]
+    out.extend(f"  - {line[:160]}" for line in kept[:show])
+    if len(kept) > show:
+        out.append(f"  (+{len(kept) - show} more)")
+    return out

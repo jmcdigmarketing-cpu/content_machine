@@ -17,6 +17,81 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - wave 35: go-public, the kept lines shown and measured, two guards
+
+**Prompt (verbatim):** "overall project status, evaluation, and growth. obvious improvements or
+weaknesses. why is the default for youtube uploads unlisted now? anything for me? next 5 after,
+ensure the prompt can provide an output so be aware of tokens"
+
+**The unlisted question.** Nothing changed recently. Two recorded rules hold an upload unlisted:
+`YOUTUBE_UNLISTED_REVIEW` (#109, 2026-08-21, default on) turns an *immediate* public upload into
+unlisted so the operator can watch it once - scheduled `publishAt` uploads are untouched - and
+#754 (operator call 2026-09-16) holds a grounding override unlisted. Channel defaults are
+`private`. The real gap: nothing flipped a held video back, only YouTube Studio by hand. That
+became #864 and took slot 1.
+
+### Why the list differs from the recommendation
+
+Recommended: **#849 · #863 · #861 · #839 · #830**. #849 needs the operator's calibration output
+after `ops backfill-angles --apply`, which their PC has not run (it was on the Codex branch), so
+it moved to next wave; #864 took its place. #863 got its tool now; its verdict needs ten runs.
+
+### Shipped 1..5 (all `[S]`, cheapest first)
+
+1. **#864** `publishing/go_public.py` + `ops go-public [video_id] [--apply]`: status-only
+   `videos.update`, dry run by default, refuses a grounding override (and a Short cut from
+   one), records `public` in the publish log. `youtube_publisher.review_hold_detail` prints
+   the command in the hold message.
+2. **#861** the report carries `kept_lines`; `auto_research.report_lines` shows five plus
+   "(+N more)"; `main.py` prints them.
+3. **#863 (tool)** `analytics/auto_research_report.py` + `ops auto-research`: pages, lines,
+   off-topic, outcomes, and kept lines a supported claim cited.
+4. **#839** `.githooks/commit-msg` strips comments and the scissors diff, refuses a non-ASCII
+   subject, warns on a non-ASCII body.
+5. **#830** `core/tts.tts_cache_store` refuses the default cache dir under a test runner.
+
+### Findings, with file:line
+
+- `publishing/rollback.py` `apply_rollback` sends `part="status,snippet"` with a snippet that
+  holds only `description`; YouTube requires `title` and `categoryId` whenever `snippet` is in
+  `part`, so the live call most likely fails. Never exercised: every test is a dry run (#865).
+- `features_json.auto_research` stored counts and URLs but not the lines, so #863's "did the
+  verifier use them" could not be answered from any stored run until this wave.
+- The container's `ruff` is 0.15.8; CI pins 0.8.4. A bare `ruff format .` reformatted 35
+  unrelated files here - reverted; always `python -m ruff` (the pinned one).
+
+### Deliberately not done
+
+- #849 - waits on the operator's data, not on code.
+- Auto-promoting after a timer - the hold exists so a human watches first.
+
+### Audit
+
+25 new tests in four modules (`test_go_public` 10, `test_auto_research_view` 7,
+`test_commit_msg_ascii` 4, `test_tts_cache_guard` 4). **Every behavioural test observed failing
+first** (10 of 10, 7 of 7, 2 of 4 and 1 of 4 - the rest are guards that must pass either way).
+mypy 129 == baseline; ruff 0.8.4 clean; `data/` untouched; every new symbol has a production
+caller (`ops go-public`, `ops auto-research`, `main.py`, `tts_cache_store`, the upload path).
+
+### Proof
+
+```
+$ py -m scripts.ops go-public abc123
+dry_run: {"id": "abc123", "status": {"privacyStatus": "public"}}
+  Nothing was sent to YouTube. Re-run with --apply to make abc123 public.
+$ py -m scripts.ops go-public            (no uploads in this container)
+invalid: No unlisted upload on record for tapin
+$ py -m scripts.ops auto-research
+Auto-research across stored runs (tapin)
+  No run has an auto-research report yet (it started in wave 34).
+Auto-research: 2 page(s) read, 7 line(s) kept, 1 off-topic dropped
+  - Line 0 about Manchester City sanctions.   ... five shown ...
+  (+2 more)
+```
+
+Suite 3,653 tests. Backlog **279 numbered open**, highest **#865**. Next five: **#849 · #865 ·
+#856 · #855 · #863**.
+
 ## 2026-09-26 (Claude Code) - wave 34: pull everything, football queries, the brief sees the facts
 
 **Prompt (verbatim, after the operator's terminal paste):** "next 5 after this"

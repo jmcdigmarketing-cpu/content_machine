@@ -15,6 +15,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `apify-trueup` | Compare synthetic Apify invoice vs $0.02/run model (no network) |
 | `artifact-retention` | Report old drafts, traces, and vault _runs clones (dry-run only; never deletes) |
 | `artifacts` | Cap output/ by GB (dry-run default; --apply deletes oldest) |
+| `auto-research` | Measure auto-research on stored runs: pages, lines kept, lines cited (#863) |
 | `backfill-angles` | Score historical runs' stored angles offline (#836; approximate) |
 | `backfill-cost` | Repair missing TTS cost on runs that rendered before the fix |
 | `backfill-features` | Reconstruct features_json for historical runs |
@@ -61,6 +62,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `free-tiers` | When each provider's free window resets or ends (#378) |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
+| `go-public` | Flip a review-held unlisted upload to public (no id = newest hold; dry-run default; --apply sends) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |
 | `grain-grade` | Encode a flat frame with the channel look and print stddev |
 | `grounding-corpus` | Replay frozen grounding verdicts (no LLM) |

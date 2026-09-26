@@ -53,29 +53,27 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** `ea721f7` + this wave's commit on `main` (`git log -2`)
+**Written:** 2026-09-26 · **HEAD at write:** `71d1683` + this wave's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit; `data/` untouched.
 
 **Defects first:**
-- **The operator's PC never received wave 33.** It is on `codex/p0-test-integrity`, a local-only
-  branch with no upstream: `git pull` fetched `main` and merged nothing, so `ops calibration`
-  and the v5 backfill ran on old code. Fix on the PC: `git status`; `git log --oneline
-  origin/main..HEAD` (if it lists commits, `git push -u origin codex/p0-test-integrity` first);
-  `git switch main`; `git pull origin main`; then re-run `ops backfill-quality --channel tapin
-  --force --apply`.
-- **Auto-research (#848) is on by default and fetches web pages.** The suite pins it off in
-  `tests/__init__.py`; any new test that drives `run_pipeline` inherits that.
-- **The two football feeds are unverified here** (the container cannot reach them); `ops feeds`.
+- **The operator's PC may still be on `codex/p0-test-integrity`** (local-only, no upstream), so
+  waves 33-35 never reached it. On the PC: `git status`; `git log --oneline origin/main..HEAD`
+  (if it lists commits, `git push -u origin codex/p0-test-integrity` first); `git switch main`;
+  `git pull origin main`.
+- **Use `python -m ruff`, not bare `ruff`, in this container:** bare `ruff` is 0.15.8, CI pins
+  0.8.4, and a bare `ruff format .` rewrites 35 unrelated files.
+- **#865** `rollback-publish --apply` sends a snippet with only a description; likely fails live.
 
-**Shipped:** #859 football feeds · #852 name-shaped queries · #850 brief sees key facts ·
-#836 `ops backfill-angles` · #848 auto-research. Decisions §35.
+**Shipped:** #864 `ops go-public` · #861 kept research lines printed · #863 `ops auto-research`
+(verdict after ten runs) · #839 commit hook ASCII subject · #830 TTS cache test guard.
 
 **Operator after switching:** `ops backfill-quality --channel tapin --force --apply`,
-`ops backfill-angles --channel tapin --apply`, `ops calibration`, `ops feeds`, then one real run
-and read the new "Auto-research:" line.
+`ops backfill-angles --channel tapin --apply`, `ops calibration` (paste it - #849 waits on it),
+`ops feeds`. A held upload goes public with `ops go-public <id> --apply` after watching it.
 
-Suite **3,628**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **281 numbered open**, highest **#863**. Next five: **#849 · #863 · #861 · #839 · #830**.
+Suite **3,653**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **279 numbered open**, highest **#865**. Next five: **#849 · #865 · #856 · #855 · #863**.
 
 ## Slot — Cursor
 

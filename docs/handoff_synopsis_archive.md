@@ -7,6 +7,39 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 32 #826 #820 #824 #821 #819
+
+The roadmap's five, taken in the order cheapest-and-safest first. This container has no run
+archive (`data/` holds two files), so #824 and #821 shipped the **measurement** they lacked,
+unit-tested on the fake-repo fixture; the archive's numbers come from the operator's
+`py -m scripts.ops calibration`. Three of the five had a wiring gap the map had missed.
+
+- **#826** `core/claim_types.claim_type_coverage` - a run is typed when a claim carries a type,
+  not when `unsupported_types` exists (`merge_reversals` pads it with `""`). Line in
+  `ops calibration` and the weekly report: `Claim types: N of M verified runs carry per-claim
+  types - the rest predate #345 and cannot be backfilled`.
+- **#820** `apis/run_deadline` Event: `_fetch_all` sets it at the deadline, `run_actor` refuses
+  the POST after it (`cancelled_after_deadline`, named in the dropped stub), and the executor
+  cancels the *queued* signals too - they were starting after the drop. Free stragglers still
+  cache. Measured: 1.5 s straggler under a 0.3 s deadline -> 0 POSTs.
+- **#824** per-component Pearson + `n_for_significance`: **|r|=0.32 needs n>=36**. Lines say
+  "not significant - do not retune the rubric on it". Rubric untouched, no `GRADE_VERSION` bump.
+- **#821** (open) recurrence vs engaged-rate correlated and printed with its decision rule;
+  `recurrence_line` reads `_RECURRENCE_MIN`; `ops grade` now prints it (#837).
+- **#819** (open) `angle_scores` had 0 rows because `_finalize_run` never persisted them. Now in
+  `features_json` + `quality["angle_score"]`; `angle_line` says `collecting (0 of N)`. Tie
+  unchanged. #836 filed: an approximate backfill from `variants_json` is possible.
+- **Found:** #835 weekly report `runs_total` bug; **#838 CI on `main` was red at `cdb01d8`** -
+  wave 31's commit subject carried a U+2192 arrow and `ops agents`' cp1252 guard read it from
+  `git log`; `render` is now console-safe by construction. #839 filed (hook should refuse it).
+
+**Verify:** `python -m unittest tests.test_claim_type_coverage tests.test_deadline_cancels_paid_calls
+tests.test_component_calibration tests.test_recurrence_calibration tests.test_angle_score_persisted
+tests.test_agent_handoff` · `py -m scripts.ops calibration` · `py -m scripts.ops grade --run-id <id>`.
+
+**Still open:** roadmap next five **#836 #839 #830 #832 #831**; #821/#819 wait on the operator's
+calibration numbers, not on code.
+
 ## Previous — 2026-09-26 (Claude Code): wave 31 structural #827 #828 #829 #833
 
 Executed the 09-20 audit instead of writing a third one about the same findings; the

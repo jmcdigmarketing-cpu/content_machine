@@ -6,6 +6,7 @@ import os
 import random
 import re
 import shutil
+import sys
 from contextlib import contextmanager
 from typing import Any
 
@@ -420,8 +421,23 @@ def tts_cache_lookup(key: str, dest_path: str) -> bool:
         return False
 
 
+def _under_test_runner() -> bool:
+    """True under `python -m unittest` or pytest (#830).
+
+    `tests/__init__.py` pins TTS_CACHE=false only when discovery runs with `-t .`;
+    a bare `unittest discover -s tests` never loads it.
+    """
+    argv0 = os.path.basename(str(sys.argv[0] if sys.argv else ""))
+    return "unittest" in argv0 or "pytest" in argv0 or "pytest" in sys.modules
+
+
 def tts_cache_store(key: str, src_path: str) -> None:
     if not tts_cache_enabled() or not key or not src_path or not os.path.isfile(src_path):
+        return
+    if not os.getenv("TTS_CACHE_DIR", "").strip() and _under_test_runner():
+        # #830: a test run never fills the operator's real data/tts_cache; a test
+        # that means to exercise the cache sets TTS_CACHE_DIR to a temp dir.
+        logger.debug("TTS cache store refused: test runner with no TTS_CACHE_DIR")
         return
     try:
         os.makedirs(tts_cache_dir(), exist_ok=True)

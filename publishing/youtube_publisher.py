@@ -185,6 +185,15 @@ def apply_unlisted_review(privacy_status: str, *, publish_at=None) -> tuple[str,
     return "unlisted", True
 
 
+def review_hold_detail(video_id: str, *, channel_id: str = "tapin") -> str:
+    """What the operator reads when a public upload is held unlisted (#109, #864)."""
+    watch = f"https://www.youtube.com/watch?v={video_id}"
+    return (
+        f"Unlisted for review (requested public): {watch} - after watching it, "
+        f"py -m scripts.ops go-public {video_id} --channel {channel_id} --apply"
+    )
+
+
 def queued_privacy_label(privacy_status: str, publish_at=None) -> str:
     """What the operator should be told at queue time, not what they asked for.
 
@@ -692,11 +701,7 @@ class YouTubePublisher(Publisher):
             if window_why and is_youtube_scheduled:
                 detail = f"{detail} [window: {window_why}]"
             if held_review and video_id:
-                watch = f"https://www.youtube.com/watch?v={video_id}"
-                detail = (
-                    f"Unlisted for review (requested public): {watch} "
-                    "- promote to public after eyeball"
-                )
+                detail = review_hold_detail(video_id, channel_id=channel_id)
             if is_youtube_scheduled:
                 try:
                     from core.win_notify import notify_upload_scheduled

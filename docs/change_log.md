@@ -8,6 +8,17 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 35 — go-public, the kept research lines shown and measured, two guards - 2026-09-26
+
+*3,653 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*
+
+- **#864** `ops go-public` flips a review-held unlisted upload to public (status only; dry run
+  by default; refuses a grounding override); the hold message prints the command.
+- **#861** the kept auto-research lines are printed under the summary line.
+- **#863** `ops auto-research` measures auto-research across stored runs (verdict after ten).
+- **#839** the commit hook refuses a non-ASCII subject and warns on a non-ASCII body.
+- **#830** a test run cannot write the real `data/tts_cache`.
+
 ### Wave 34 — pull everything, football queries, the brief sees the facts - 2026-09-26
 
 - **#848** auto-research: the web-search result pages for the chosen angle are read and their

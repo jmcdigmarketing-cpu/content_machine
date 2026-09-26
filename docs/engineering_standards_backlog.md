@@ -1,13 +1,14 @@
 # Engineering Standards Backlog — 2026-06-25
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
 
 Senior-level **standardization / hygiene** work that raises the codebase's
 engineering baseline. **Planning only — no code in this pass.**
 
-**Deconfliction (important).** This list **excludes** everything already in
-[roadmap.md](roadmap.md) (tighten mypy baseline, annotate broad excepts, raise
-render/publish coverage, Alembic FKs, observability dashboard, feature store) and in
+**Deconfliction (important).** This list **excludes** everything already tracked in
+[master_plan.md](master_plan.md) M3 and [backlog.md](backlog.md) #831–#834 (the mypy
+ratchet — landed 2026-09-26 as `scripts/mypy_ratchet.py` — and its scope, the ruff bump,
+`core/` seams, `apis/scrapers` packaging; broad excepts are M3.4) and in
 [audit_2026-06-25.md](audit_2026-06-25.md) (metrics single-source, `ui.py` split,
 silent-except annotation, vault index, web-cache collapse, breaker TTL, test-dep
 extras, moviepy fragility). Items here are *new* and grounded in counts measured
@@ -199,4 +200,5 @@ configured, fails, logs, talks to the network, builds, and ships.
 Tighten mypy *errors*, annotate the broad/silent excepts, raise render/publish
 coverage %, Alembic FKs, the observability *dashboard*, the feature store, `ui.py`
 split, metrics single-source, vault/web caches, breaker TTL, test-dep extras — see
-[roadmap.md](roadmap.md) and [audit_2026-06-25.md](audit_2026-06-25.md).
+[master_plan.md](master_plan.md), [backlog.md](backlog.md) and
+[audit_2026-06-25.md](audit_2026-06-25.md).

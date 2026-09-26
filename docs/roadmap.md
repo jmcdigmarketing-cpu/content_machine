@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -10,7 +10,7 @@ session.
 |---|---|
 | **roadmap.md** (this) | the current stage, the next five, track counts |
 | [desktop_app.md](desktop_app.md) | the Windows application programme — stages 0–7 |
-| [backlog.md](backlog.md) | every open item, numbered 21–670 plus unnumbered |
+| [backlog.md](backlog.md) | every open item, numbered from 21 to the highest `ops roadmap-index` reports, plus unnumbered |
 | [roadmap_archive.md](roadmap_archive.md) | completed waves and historical phases |
 
 Direction: [vision.md](vision.md) · pace and cost: [operating_plan.md](operating_plan.md)
@@ -26,15 +26,16 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-20 wave 30 (measurement, continued): **#823** the archive finally
-carries the fields three waves added - `backfill-quality` recomputed 87 rows with an as-of
-window, taking measured runs **3 -> 12** · **#824** which immediately produced the wave's worst
-number: **report card vs engaged-rate r=-0.32**, anti-predictive on every measured publish ·
-**#822** measured before changing anything and **neither layer moved** - the hedged-rumor escape
-has fired **0 times**; the waiver is now recorded instead · **#739** measured and the source rule
-**rejected** - gameplay bands are intermittent (2 of 147 constant, median 0.25) and stock is not
-clean (6 of 52) · **#818** the coverage line · **#817** settled by measurement, no code change ·
-**#825** `--force` was unreachable on four ops verbs.
+**Just landed** - 2026-09-26 wave 31 (structural, Claude Code): **#827** one reset point for
+process-global state · **#828** `ops test --order reverse|shuffle` + a reversed CI leg - the
+run-69 order-dependence was a half-built ExitStack in `test_ops_doctor`, and the first reversed
+run found two more · **#829** partial installs say one line · **#833** mypy is a blocking ratchet
+at 135 · the docs standard finished (ten renames, two log rollovers, `decisions.md` rewrapped,
+nine never-reviewed docs read). Filed **#830-#834**. Plan: [master_plan.md](master_plan.md).
+
+**Before that** - 2026-09-20 wave 30 (measurement): **#823** measured runs **3 -> 12** · **#824**
+report card vs engaged-rate **r=-0.32** · **#822** hedged-rumor escape fired **0 times**, waiver
+recorded · **#739** source rule rejected · **#818 #817 #825**.
 
 **Previously** - wave 27 (operator loop + resource waste) **#806 #807 #810 #812 #802**; wave 26
 (script quality) **#799** rewrite ledger · **#800** hedge density (closes §25) · **#801** intent
@@ -185,8 +186,9 @@ Stage 7; `ops doctor` reports `cuda` FAIL by design and it gates nothing.
 **Recommendation helpers:** `py -m scripts.ops recommend-time --channel tapin` ·
 `recommend-length` · best-bet shown at startup
 
-**Developer setup:** `pip install -e ".[dev]"` then `pre-commit install`;
-`ruff check .` · `ruff format .` · `mypy analytics apis core config storage`.
+**Developer setup:** `pip install -e ".[dev]"` and `git config core.hooksPath .githooks`
+(not `pre-commit install` — the repo's hooks live in `.githooks`); `ruff check .` ·
+`ruff format .` · `py scripts/mypy_ratchet.py` · `py -m scripts.ops test --order reverse`.
 Tooling config lives in `pyproject.toml`.
 
 **Troubleshooting:** [debugging.md](debugging.md)

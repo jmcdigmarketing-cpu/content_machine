@@ -7,7 +7,7 @@ Python CLI for short-form video: discover signals → score topics → LLM scrip
 Roadmap & current fix queue: [docs/roadmap.md](docs/roadmap.md). Honest assessment:
 [docs/assessment.md](docs/assessment.md) (June scorecard + addenda). Measured ideas for script
 generation, idea grading and resource use: [docs/engine_upgrades.md](docs/engine_upgrades.md).
-Session state: [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
+Session state: [docs/handoff_synopsis.md](docs/handoff_synopsis.md).
 
 ## Quick start
 
@@ -27,7 +27,7 @@ py main.py
 # Stage 2 look is on that window (token QSS, per-channel chrome). CLI is unchanged.
 ```
 
-**Windows command cheat sheet:** [docs/startup-powershell.md](docs/startup-powershell.md) — or run `.\scripts\startup.ps1` to print the list.
+**Windows command cheat sheet:** [docs/startup_powershell.md](docs/startup_powershell.md) — or run `.\scripts\startup.ps1` to print the list.
 
 ## Operator commands (batch or one-by-one)
 
@@ -84,7 +84,7 @@ py -m scripts.ops intelligence-report --topic "UFC 250 Topuria" --channel tapin
 # Or: set CONTENT_MODE=intelligence
 ```
 
-Reports → `output/{channel}/reports/*.md` and `.json` (v2: trajectory, corroboration, opportunity window, explainability). See [docs/analyst-intelligence.md](docs/analyst-intelligence.md), [docs/positioning.md](docs/positioning.md), [docs/case_study.md](docs/case_study.md).
+Reports → `output/{channel}/reports/*.md` and `.json` (v2: trajectory, corroboration, opportunity window, explainability). See [docs/analyst_intelligence.md](docs/analyst_intelligence.md), [docs/positioning.md](docs/positioning.md), [docs/case_study.md](docs/case_study.md).
 
 Re-queue after **deleting** on YouTube: `py -m scripts.queue_manage --channel tapin` (or `py main.py` → Queue manager)
 
@@ -148,8 +148,8 @@ the test suite on Python 3.11 (the version the pinned deps are validated on) —
 - [Architecture](docs/architecture.md) — modules and data flow
 - [Positioning & product split](docs/positioning.md) — intelligence layer vs production tail
 - [Case study](docs/case_study.md) — portfolio narrative + sample report link
-- [Data sources](docs/data-sources.md) — stats scrapers, blog RSS, APIs
-- [Signals & sources (operator)](docs/signals-and-sources.md) — signal health, zero-score troubleshooting
+- [Data sources](docs/data_sources.md) — stats scrapers, blog RSS, APIs
+- [Signals & sources (operator)](docs/signals_and_sources.md) — signal health, zero-score troubleshooting
 - [Debugging & operations](docs/debugging.md) — common errors, fixes, env tuning
 - [Post scheduling](docs/post_scheduling.md) — queue and `publishAt`
 - [Credit & spend efficiency](docs/credit_efficiency.md) — Apify/signal breakers, LLM router cost, quota/spend optimization backlog

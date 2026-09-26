@@ -230,7 +230,7 @@ but this only affects runs you deliberately start in Free mode, not the default 
 - [roadmap.md](roadmap.md) — Pillar 2 multimodal review (later), Phase R, Pillars 4/7.
 - [credit_efficiency.md](credit_efficiency.md) — budget ceiling, failover, breakers.
 - [assessment.md](assessment.md) — recency as the #1 content weakness.
-- [tooling_landscape.md](tooling_landscape.md), [groundwork_2026Q3.md](groundwork_2026Q3.md).
+- [tooling_landscape.md](tooling_landscape.md), [groundwork_q3_2026.md](groundwork_q3_2026.md).
 - Code seams: `core/run_mode.py` (`_PAID_NO_FREE_BACKEND`, cost modes),
   `core/llm_router.py` (`_free_mode_strict`, `_PROVIDERS`, `_DEFAULT_MODELS`),
   `core/cost_meter.py`,

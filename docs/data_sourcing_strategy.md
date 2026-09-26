@@ -5,7 +5,7 @@
 **Planning + documentation only.** Prompted by the "Virgin API Consumer vs Chad
 Third-Party Scraper" meme, this doc (a) makes the project's sourcing *policy*
 explicit in one place — today it's scattered across
-[domain-expansion.md](domain-expansion.md), [data-sources.md](data-sources.md),
+[domain_expansion.md](domain_expansion.md), [data_sources.md](data_sources.md),
 [credit_efficiency.md](credit_efficiency.md), [decisions.md](decisions.md) — and
 (b) lists only the **genuinely useful** changes that fall out of it, with an explicit
 **do-not-change** list so the meme's temptations don't turn into busywork.
@@ -16,7 +16,7 @@ explicit in one place — today it's scattered across
 
 Content Machine is deliberately **neither** the chained API purist **nor** the
 rule-breaking scraper. It runs a **risk-managed hybrid** governed by one ladder
-(from [domain-expansion.md](domain-expansion.md)):
+(from [domain_expansion.md](domain_expansion.md)):
 
 ```
 bulk dataset / official API → keyed REST API → community wrapper → HTML scrape → unofficial scrape
@@ -77,7 +77,7 @@ Ranked by usefulness ÷ effort. All opt-in, fail-safe, unit-tested per
 |---|---|---|---|---|---|
 | **S1** | *This doc* — canonical sourcing policy (the ladder + decision rule + resilience contract + compliance guardrail) as one governing artifact | Docs | `[S]` | High | consolidates scattered guidance |
 | **S2** | **Scraper politeness** in `apis/scrapers/base.py`: per-domain min-interval throttle + exponential backoff on failure + optional `robots.txt` respect | Code | `[S–M]` | **High** | base.py has a spoofed UA and **no delay/backoff/robots** (`time` used only for cache) — the real gap |
-| **S3** | **Scrape deny-guard**: encode the prose "do not scrape" rules (MAL HTML, Box Office Mojo — `domain-expansion.md:124,154`) as a config denylist that refuses to register/enable a listed scraper | Code | `[S]` | Med–High | prevents a future contributor silently wiring a fragile/ToS-hot scraper |
+| **S3** | **Scrape deny-guard**: encode the prose "do not scrape" rules (MAL HTML, Box Office Mojo — `domain_expansion.md:124,154`) as a config denylist that refuses to register/enable a listed scraper | Code | `[S]` | Med–High | prevents a future contributor silently wiring a fragile/ToS-hot scraper |
 | **S4** | **Source-tier tagging**: add a `tier` (official_api\|keyed_rest\|wrapper\|scrape\|unofficial_scrape) to the signal/source registry — makes the ladder **machine-readable** | Code | `[M]` | Med (enabler) | no tier concept exists in code today (grep-confirmed); enables S3 preference + S5 |
 | **S5** | **Sourcing surfacing** in `core/reliability.py`: a session summary of facts-by-tier ("how much of this run leaned on scraping") as a fragility early-warning | Code | `[S–M]` | Med | extends the O9 dashboard; needs S4 |
 
@@ -117,8 +117,8 @@ The only net-new work worth doing is making the *scrape rungs we already have*
 ---
 
 ## Cross-references
-- Ladder & per-domain sources: [domain-expansion.md](domain-expansion.md),
-  [data-sources.md](data-sources.md).
+- Ladder & per-domain sources: [domain_expansion.md](domain_expansion.md),
+  [data_sources.md](data_sources.md).
 - Resilience contract: [credit_efficiency.md](credit_efficiency.md) (O1–O11),
   `apis/register_signals.py`, `apis/apify_client.py`.
 - Fragility evidence: [assessment.md](assessment.md) (weakness #2).

@@ -87,7 +87,7 @@ duplicate a numbered candidate below — noted where spotted.*
 - [ ] **Free-backend probes (optional)** — TikTok/Twitter equivalents of the `[S]`
   yt-dlp / Reddit-OAuth backends, only if the Apify bill justifies it
   ([agent_reach_evaluation.md](agent_reach_evaluation.md)).
-- [ ] **MoneyWise depth wave** ([domain-expansion.md](domain-expansion.md) ROI 9.5) — `[L]`
+- [ ] **MoneyWise depth wave** ([domain_expansion.md](domain_expansion.md) ROI 9.5) — `[L]`
   earnings-calendar signal (free API), ticker-watchlist tracking, finance-tuned research
   brief sections.
 - [ ] **Third-vertical groundwork: AI Tools / Tech** (ROI 9.0) — new-channel playbook dry `[L]`
@@ -491,7 +491,7 @@ Small — hours / a PR
 - [x] 241. `ops economics --html` *(2026-08-21)* `[S]` — *cost / UI.* Allocated vs marginal already in the command.
 - [x] **242. `ops grade --html --run-id`** *(2026-08-21)* `[S]` — *UI.*
 - [x] 243. Startup **PNG wordmark** *(2026-09-07)* — `CONTENT_UI_WORDMARK=1` injects `<img class='wordmark'>` into `themed_page`. Flag off: ASCII path byte-identical. Not painted in conhost `[S]`
-- [x] 244. Windows Terminal **profile snippet** *(2026-09-07)* — `config/windows-terminal/profiles.json` schemes “Content OS TapIn” (`#0B0F14`) and “Content OS MoneyWise” (`#1B2430`). Pointer in `docs/startup-powershell.md`. Not auto-imported into WT `[S]`
+- [x] 244. Windows Terminal **profile snippet** *(2026-09-07)* — `config/windows-terminal/profiles.json` schemes “Content OS TapIn” (`#0B0F14`) and “Content OS MoneyWise” (`#1B2430`). Pointer in `docs/startup_powershell.md`. Not auto-imported into WT `[S]`
 - [x] 245. HTML **type pairing** (Segoe UI / JetBrains Mono) `[S]` *(2026-08-27)* — body stays Segoe UI; `pre` / `textarea.md` use JetBrains Mono
 - [x] 246. Blurred **9:16 poster** as booth background *(2026-09-08)* — last thumb as `.poster-chrome` `backdrop-filter: blur`. No new ffmpeg `[S]`
 - [x] 247. CSS **grain/vignette preview** toggle *(2026-09-07)* — `themed_css(grain=True, vignette=True)` emits `body.grain` / `body.vignette`. `CONTENT_UI_GRAIN` / `CONTENT_UI_VIGNETTE`. Default off. Does not change the render command (#512 does) `[S]`

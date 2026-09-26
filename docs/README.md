@@ -18,7 +18,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [../CLAUDE.md](../CLAUDE.md) · [../AGENTS.md](../AGENTS.md) | Agent entry points — read before editing code |
 | [master_plan.md](master_plan.md) | The canonical forward plan (M0–M5) |
 | [audit_2026-09.md](audit_2026-09.md) | Where the system actually stands, with evidence |
-| [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) | State as of the last working session |
+| [handoff_synopsis.md](handoff_synopsis.md) | State as of the last working session |
 
 ## Charter — why this exists
 
@@ -36,10 +36,10 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [decisions.md](decisions.md) | ADR-lite. §18, §24, §25, §26 are required reading |
 | [credit_efficiency.md](credit_efficiency.md) | Credit, quota and spend efficiency (O1–O12) |
 | [llm_provider_strategy.md](llm_provider_strategy.md) | Router tiers, providers, what each adds |
-| [data-sources.md](data-sources.md) | Stats, blogs and APIs behind the signals |
-| [signals-and-sources.md](signals-and-sources.md) | Signals, zeros, expanding sources |
-| [apify-data-sources.md](apify-data-sources.md) | The paid Apify layer |
-| [analyst-intelligence.md](analyst-intelligence.md) | The analyst layer |
+| [data_sources.md](data_sources.md) | Stats, blogs and APIs behind the signals |
+| [signals_and_sources.md](signals_and_sources.md) | Signals, zeros, expanding sources |
+| [apify_data_sources.md](apify_data_sources.md) | The paid Apify layer |
+| [analyst_intelligence.md](analyst_intelligence.md) | The analyst layer |
 | [post_scheduling.md](post_scheduling.md) | Scheduling and the upload queue |
 | [agent_collaboration.md](agent_collaboration.md) | How Cursor and Claude Code split work here |
 | [moneyprinter_vs_content_os.md](moneyprinter_vs_content_os.md) | Clip pipeline, compared |
@@ -52,11 +52,11 @@ edited after · `archived` = superseded, kept for the reasoning.
 | Doc | |
 |---|---|
 | [debugging.md](debugging.md) | Operator troubleshooting, hallucination triage |
-| [startup-powershell.md](startup-powershell.md) | Windows/PowerShell command cheat-sheet |
+| [startup_powershell.md](startup_powershell.md) | Windows/PowerShell command cheat-sheet |
 | [free_mode.md](free_mode.md) | Running at $0 |
 | [providers_runbook.md](providers_runbook.md) | Pillar 6 seams: tool → module → env → proof |
-| [adding-a-data-source.md](adding-a-data-source.md) | Adding a signal end to end |
-| [domain-expansion.md](domain-expansion.md) | Standing up a new domain/channel |
+| [adding_a_data_source.md](adding_a_data_source.md) | Adding a signal end to end |
+| [domain_expansion.md](domain_expansion.md) | Standing up a new domain/channel |
 | [platform_publish_setup.md](platform_publish_setup.md) | Platform publishing setup |
 | [youtube_quota_increase.md](youtube_quota_increase.md) | Quota-increase checklist |
 | [policy_incident_runbook.md](policy_incident_runbook.md) | When a policy strike lands |
@@ -78,7 +78,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [spec_background_query_entity_anchor.md](spec_background_query_entity_anchor.md) | Code-ready spec for entity-anchored background queries |
 | [engineering_standards_backlog.md](engineering_standards_backlog.md) | Hygiene/standards backlog |
 | [content_intelligence_roadmap.md](content_intelligence_roadmap.md) | *archived* → master_plan.md |
-| [groundwork_2026Q3.md](groundwork_2026Q3.md) | *archived* → master_plan.md |
+| [groundwork_q3_2026.md](groundwork_q3_2026.md) | *archived* → master_plan.md |
 | [intelligence_phase.md](intelligence_phase.md) | *archived* → roadmap.md |
 | [scope_feature_store_and_research_v2.md](scope_feature_store_and_research_v2.md) | *archived* → master_plan.md |
 
@@ -94,7 +94,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [next_ideas_2026-07.md](next_ideas_2026-07.md) | 2026-07 |
 | [tooling_landscape.md](tooling_landscape.md) | 2026-07 — 17 tools compared |
 | [video_creation_stack.md](video_creation_stack.md) | 2026-07 |
-| [strategy_2026H2.md](strategy_2026H2.md) | 2026-H2 strategy memo |
+| [strategy_h2_2026.md](strategy_h2_2026.md) | 2026-H2 strategy memo |
 | [tool_integration_plan.md](tool_integration_plan.md) | 2026-08-25 — top 7 |
 | [agent_reach_evaluation.md](agent_reach_evaluation.md) | 2026-08 — free/keyless backends |
 | [case_study.md](case_study.md) | Pipeline case study |
@@ -114,7 +114,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 |---|---|
 | [change_log.md](change_log.md) | What shipped, by theme |
 | [planning_log.md](planning_log.md) | Brainstorming and decisions, by session |
-| [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) | Session state, newest wave first |
+| [handoff_synopsis.md](handoff_synopsis.md) | Session state, newest wave first |
 | [handoff.md](handoff.md) | The mailbox — read first when starting work |
 | [roadmap_archive.md](roadmap_archive.md) | Completed roadmap items, never edited again |
 

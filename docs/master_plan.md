@@ -3,7 +3,7 @@
 > **Class:** plan · **Status:** living · **Reviewed:** 2026-09-25
 
 The canonical forward plan. Supersedes `content_intelligence_roadmap.md`,
-`groundwork_2026Q3.md` and `scope_feature_store_and_research_v2.md` as *the* answer to
+`groundwork_q3_2026.md` and `scope_feature_store_and_research_v2.md` as *the* answer to
 "what are we doing next". [roadmap.md](roadmap.md) stays as the item-level ledger —
 this doc says which horizon an item belongs to and why. Evidence:
 [audit_2026-09.md](audit_2026-09.md).
@@ -87,7 +87,7 @@ Remaining:
 
 1. **Drain `LEGACY_NAMES`** — ten grandfathered filenames in
    `tests/test_docs_standard.py`. Rename to `snake_case`, update inbound links in the
-   same commit (`data-sources.md` has 6, `signals-and-sources.md` 3), leave a redirect
+   same commit (`data_sources.md` has 6, `signals_and_sources.md` 3), leave a redirect
    stub only where an outside link might exist — the [ROADMAP.md](../ROADMAP.md) pattern.
    The set may only shrink; the lint fails if a name in it no longer exists.
 2. **One product name.** Three are in circulation: "Content Machine" (19 docs), "Content
@@ -102,7 +102,7 @@ Remaining:
    against HEAD. Bumping the date without doing so makes the whole card worthless — say
    so in review.
 5. **Extend the metric rule beyond test counts.** The lint currently catches `N tests`.
-   Subcommand counts (`~38` in `CLAUDE.md`, `~40` in `HANDOFF_SYNOPSIS.md`), signal
+   Subcommand counts (`~38` in `CLAUDE.md`, `~40` in `handoff_synopsis.md`), signal
    counts and module counts drift the same way. Widen `VOLATILE_METRIC` once the
    corpus is clean enough to pass.
 
@@ -121,7 +121,7 @@ context window doing it. This is a direct tax on every future session.
    Move `## Completed`, `## Intelligence phase (H → K) — complete`, `## Recently shipped`
    and the two `(proposed)` sections into `change_log.md` or a new
    `roadmap_archive_2026.md` snapshot. Target under 600 lines.
-2. **`HANDOFF_SYNOPSIS.md` (757 lines) → newest three waves.** It is a handoff; the
+2. **`handoff_synopsis.md` (757 lines) → newest three waves.** It is a handoff; the
    fourth-oldest wave is history and belongs in `change_log.md`. This file is read at the
    start of nearly every session, so its size is paid repeatedly.
 3. **`decisions.md` — wrap and re-level.** Median line length 235 characters, and it
@@ -202,7 +202,7 @@ verification exist underneath it, in both directions.
 
 ## Parked, with the reason
 
-Carried from [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) so that "parked" is a decision
+Carried from [handoff_synopsis.md](handoff_synopsis.md) so that "parked" is a decision
 with a stated condition, not drift:
 
 | Item | Parked because |

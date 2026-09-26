@@ -32,7 +32,7 @@ But two corrections change what the fix is:
 
 1. **The project was never chartered as a hot-takes machine.** Nothing in
    [vision.md](vision.md), [positioning.md](positioning.md),
-   [project_brief.md](project_brief.md), [strategy_2026H2.md](strategy_2026H2.md) or
+   [project_brief.md](project_brief.md), [strategy_h2_2026.md](strategy_h2_2026.md) or
    [decisions.md](decisions.md) frames it that way. `config/channels.json` does not
    either — the MoneyWise persona is literally *"calm, plain-spoken, mildly sceptical of
    hype — explains, never sells"* (`config/channels.json:109-172`). The hot-take framing

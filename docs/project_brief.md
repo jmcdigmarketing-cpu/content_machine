@@ -118,4 +118,4 @@ The following used to lag the code; living docs were reconciled 2026-08-20:
 - `content_run_id` FKs shipped in Alembic `0004`.
 - Remaining drift lives in dated orphan docs (`next_ideas_2026-07.md`, `code_audit_2026-07.md`, …) which keep supersession headers on purpose.
 
-See `docs/architecture.md` § *Inconsistencies and undocumented systems*, `docs/HANDOFF_SYNOPSIS.md` for session state, and `docs/debugging.md` for operator troubleshooting.
+See `docs/architecture.md` § *Inconsistencies and undocumented systems*, `docs/handoff_synopsis.md` for session state, and `docs/debugging.md` for operator troubleshooting.

@@ -49,7 +49,7 @@ Headless: `RUN_COST_MODE=free py main.py` selects Free without the prompt.
 
 ## One-time setup (so Free mode is genuinely $0)
 
-All commands are Windows/PowerShell (see [startup-powershell.md](startup-powershell.md)).
+All commands are Windows/PowerShell (see [startup_powershell.md](startup_powershell.md)).
 Install the lightweight truly-free stack once: **`pip install -e ".[free]"`** (Piper +
 ddgs — no heavy ML deps). Do *not* use `.[providers]` for Free mode: it pulls in Coqui
 `TTS`, whose `gruut` dep pins `numpy<2.0` and conflicts with the project's numpy, aborting

@@ -1407,7 +1407,7 @@ the tree (#702/#704/etc.) were not finished or committed.
 **What was picked, and why it matches the recommendation this time.** The roadmap
 said **#684 · #717 · #407 · #590 · #378**, and unlike the 2026-09-09 wave the list
 held up under step 2: every item's backlog text matched, nothing was parked in
-`HANDOFF_SYNOPSIS.md`, and no item named a dependency that does not exist. One
+`handoff_synopsis.md`, and no item named a dependency that does not exist. One
 drift worth noting: #684 is `[S]` in `backlog.md` and `[M]` in `roadmap.md`. Built
 cheapest-first - #590, #378, #407, #717, #684 - so the two `[M]`s could not strand
 the three `[S]`s.
@@ -2421,7 +2421,7 @@ breaking 28 inbound links to `roadmap.md`).
 - Pointers updated: `CLAUDE.md`, `AGENTS.md`, `ROADMAP.md` now route through the index.
 
 **Deliberately not done:** the ten `LEGACY_NAMES` renames, the product-name sweep, the
-`roadmap.md`/`HANDOFF_SYNOPSIS.md` splits and the `decisions.md` rewrap — all sequenced
+`roadmap.md`/`handoff_synopsis.md` splits and the `decisions.md` rewrap — all sequenced
 as M1/M2 rather than bundled into a structure commit, so each lands reviewable. No
 feature work, no behaviour change.
 
@@ -4246,7 +4246,7 @@ Full trace: [idea_quality_diagnosis.md](idea_quality_diagnosis.md). Direction:
 [strategy_next_level.md](strategy_next_level.md). Docs only this session — no code.
 
 **The premise needed one correction, and it changes the fix.** There is no hot-take
-charter to fight. `vision.md`, `positioning.md`, `project_brief.md`, `strategy_2026H2.md`
+charter to fight. `vision.md`, `positioning.md`, `project_brief.md`, `strategy_h2_2026.md`
 and `decisions.md` never frame the project that way, and `channels.json` actively
 contradicts it — MoneyWise's persona is *"calm, plain-spoken, mildly sceptical of hype —
 explains, never sells."* The framing is an **accretion of six layers**, each added for a
@@ -4308,7 +4308,7 @@ extension as part of the work**; horizon = **open to revisiting** the
 private/local/single-operator constraint.
 
 **Three doc contradictions found while mapping, all cheap to settle:** decisions §17
-("generation quality *is* the lever") vs `strategy_2026H2.md` §9 ("don't add more
+("generation quality *is* the lever") vs `strategy_h2_2026.md` §9 ("don't add more
 generation features") — §17 is newer and wins; `positioning.md` and `vision.md` were
 retired in substance by the 2026-08-29 private/local constraint but carry no supersession
 header; and §25's hedging loophole is documented and still open — runs 58, 73 and 75 all
@@ -4326,7 +4326,7 @@ triples the blast radius of a bad script.
 Pickup from the diagnosis entry above. Operator asked to re-familiarize and take the
 next five. Refamiliarization changed which five.
 
-**Two of the recommended five were parked elsewhere.** `HANDOFF_SYNOPSIS.md` lists
+**Two of the recommended five were parked elsewhere.** `handoff_synopsis.md` lists
 #333 and #416 as "Still parked" in four consecutive wave entries, and `:141` records
 #333 as *"Skipped at the time — needs the operator"* — while `roadmap.md` had them at
 picks 1 and 5. #333's own roadmap line concedes *"The operator's call"*, and its stated

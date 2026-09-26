@@ -6,7 +6,7 @@ The living, in-repo version of the operator's master tool-integration runbook: e
 mapped to the **module that hosts it**, its **env gate**, a **proof command**, and its
 **status**. Companion to [video_creation_stack.md](video_creation_stack.md) (slot design +
 costs), [tooling_landscape.md](tooling_landscape.md) (borrow/threat verdicts), and
-[groundwork_2026Q3.md](groundwork_2026Q3.md) (new-tools documentation + 3-month roadmap).
+[groundwork_q3_2026.md](groundwork_q3_2026.md) (new-tools documentation + 3-month roadmap).
 
 ## The contract ([core/providers.py](../core/providers.py))
 

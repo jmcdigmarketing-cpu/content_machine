@@ -45,7 +45,7 @@ argument live in the docs at the same time.
 **(a) Is generation quality a lever or not?**
 [decisions.md](decisions.md) §17 (2026-07-07) explicitly reverses `operating_plan.md`
 §8: *"Generation quality is now a competitive lever."* But
-[strategy_2026H2.md](strategy_2026H2.md) §9 still reads: *"**Don't add more generation
+[strategy_h2_2026.md](strategy_h2_2026.md) §9 still reads: *"**Don't add more generation
 features.** Faceless script→TTS→render is commodity; more of it doesn't widen the
 moat."* Both are on disk, unmarked. **§17 is newer and is the operator's call — mark §9
 superseded.**
@@ -75,7 +75,7 @@ frozen regression corpus (#350).
 
 ## 3. The real constraint, and the only three ways past it
 
-[strategy_2026H2.md](strategy_2026H2.md) §2 names the trap precisely: the learning loop
+[strategy_h2_2026.md](strategy_h2_2026.md) §2 names the trap precisely: the learning loop
 is **rate-limited by our own compliance layer**. Volume-gated analytics need n≥15+
 published per dimension; the cadence guardrail caps volume deliberately; so the moat
 waits on something the project has chosen not to do.
@@ -133,7 +133,7 @@ what makes everything after it cheap, and `main.py`'s 15 blocking `input()` call
 why two `Ctrl+C`s destroyed whole runs in run 73.
 
 The strategically important thing in the desktop programme is not the window. It is
-**[strategy_2026H2.md](strategy_2026H2.md) §8's async approval surface** — *"review a
+**[strategy_h2_2026.md](strategy_h2_2026.md) §8's async approval surface** — *"review a
 queued draft from a phone — not full autonomy, which the authenticity posture doesn't
 want anyway."* That is the single highest-leverage item in the entire backlog, because
 it attacks the 25.6-minute number directly and it does not require relaxing any
@@ -183,7 +183,7 @@ it should be re-priced now.
 ### 5b. A second channel, for statistics rather than reach
 
 `moneywise` exists in config and has barely run. Cross-channel pooling
-([strategy_2026H2.md](strategy_2026H2.md) §2) is the recorded answer to thin per-channel
+([strategy_h2_2026.md](strategy_h2_2026.md) §2) is the recorded answer to thin per-channel
 n, and it needs a real second channel to pool. The honest framing: a second channel is a
 **statistical instrument** before it is a business. Its value is that it doubles the
 dimensions the recommenders can learn from and gives the cold-start prior something to
@@ -222,7 +222,7 @@ current problem. The slot that pays first is the cheap one already identified �
 ## 6. What not to do
 
 - **Don't build volume-gated analytics before the volume exists.**
-  ([strategy_2026H2.md](strategy_2026H2.md) §9 — this clause is still correct even though
+  ([strategy_h2_2026.md](strategy_h2_2026.md) §9 — this clause is still correct even though
   its "no generation features" neighbour isn't.)
 - **Don't add a second scoring system.** The failure mode this repo keeps hitting is *a
   check measuring the wrong thing, then reporting clean* (run-73 post-mortem). Another

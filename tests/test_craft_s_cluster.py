@@ -34,7 +34,7 @@ class TestWindowsTerminalProfile(unittest.TestCase):
         self.assertEqual(money.get("background"), "#1B2430")
 
     def test_startup_docs_point_at_the_snippet(self):
-        docs = (Path(ROOT_DIR) / "docs" / "startup-powershell.md").read_text(encoding="utf-8")
+        docs = (Path(ROOT_DIR) / "docs" / "startup_powershell.md").read_text(encoding="utf-8")
         self.assertIn("windows-terminal/profiles.json", docs.replace("\\", "/"))
 
 

@@ -97,7 +97,7 @@ doc card says which day.
 | A decision and its reasoning | [decisions.md](decisions.md) — a new numbered §, never a new file |
 | What shipped | [change_log.md](change_log.md) |
 | What was discussed and decided in a session | [planning_log.md](planning_log.md) (CLAUDE.md requires this) |
-| Where the work stands right now | [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) |
+| Where the work stands right now | [handoff_synopsis.md](handoff_synopsis.md) |
 | The next N months | [master_plan.md](master_plan.md) — the canonical plan |
 | Item-level open work | [roadmap.md](roadmap.md) |
 | A point-in-time verdict on the system | a new `audit_YYYY-MM.md` snapshot |

@@ -84,11 +84,11 @@ Last verified: 2026-06-10
 | `youtube_comments` | **YouTube Data API** (not Apify) | Unanswered audience questions on a topic's top videos — the content gaps competitors left, plus audience vocabulary | `YOUTUBE_API_KEY` (~103 units/topic; the catalog's Apify actor is deliberately unused) |
 | `mma_stats` | API-SPORTS MMA host | Fighter records + physicals (replaced the Tapology scrape) | `API_SPORTS_KEY` — free tier 10 req/min, 100/day; `/fights` gated to 2022–2024, so **no upcoming cards** |
 
-Apify data layer detail: [apify-data-sources.md](apify-data-sources.md) · catalog: `config/apify_sources.json`
+Apify data layer detail: [apify_data_sources.md](apify_data_sources.md) · catalog: `config/apify_sources.json`
 
 Scoring weights per domain: `apis/topic_scorer.py` (`nba`, `nfl`, `ufc`, `gaming`).
 
-**Add a source:** [adding-a-data-source.md](adding-a-data-source.md)
+**Add a source:** [adding_a_data_source.md](adding_a_data_source.md)
 
 ---
 
@@ -190,4 +190,4 @@ Keep: `youtube`, `rawg`, `steam`, `igdb`, `twitch`, `blog_rss`, `news`, `trends`
 5. Customize `config/data_sources.json` for new RSS outlets without code changes
 6. For UFC: enable `TAPOLOGY_SCRAPE_ENABLED=true` for fight card data
 
-See also: [signals-and-sources.md](signals-and-sources.md), [architecture.md](architecture.md).
+See also: [signals_and_sources.md](signals_and_sources.md), [architecture.md](architecture.md).

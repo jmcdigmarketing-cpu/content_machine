@@ -690,7 +690,7 @@ plus the coverage-wave and router-vision Next-up lines shipped the same day.*
 - [x] Brief/agent caching (topic + channel)
 - [x] YouTube SEO: tags in content package + upload; `config/seo/`, `py -m analytics.seo_refresh`
 - [x] Alembic baseline (`0001`–`0002`); provenance on `content_runs` via models + `migrate_schema`
-- [x] Stats scrapers + `blog_rss` signal + `config/data_sources.json` — see [data-sources.md](data-sources.md)
+- [x] Stats scrapers + `blog_rss` signal + `config/data_sources.json` — see [data_sources.md](data_sources.md)
 - [x] Research brief v3 includes reference stat lines
 
 ### Phase I — Competitor Tracking
@@ -736,7 +736,7 @@ plus the coverage-wave and router-vision Next-up lines shipped the same day.*
 - [x] `twitter` — breaking news weighted by domain authority accounts (`apis/twitter_signal.py`)
 - [x] `reddit`, `tiktok_trends` — community sentiment + viral angles
 - [x] Per-domain targeting (`domain_targets`); fact formatting keeps competitor titles as context, not verified facts
-- [x] Docs: [apify-data-sources.md](apify-data-sources.md)
+- [x] Docs: [apify_data_sources.md](apify_data_sources.md)
 - [x] `youtube_comments` — wired 2026-08-14 against the official Data API (not Apify)
 - [x] Live-run tuning of actor inputs *(2026-08-14 — twitter retired; tiktok + youtube_competitors kept)*
 
@@ -1082,7 +1082,7 @@ free/local-first, cost-metered, fail-open **provider slot** (the asset-chain /
 Higgsfield (paid) + the `[search github]` repos. Heavy backends →
 `pip install -e ".[providers]"`; each seam stays OFF until its gate is set.*
 *3-month north star (new tools + roadmap + adjacent projects + code-sharing):
-[groundwork_2026Q3.md](groundwork_2026Q3.md).*
+[groundwork_q3_2026.md](groundwork_q3_2026.md).*
 
 *Status honesty (2026-07-17 reconciliation): the seam→live-path wiring is done for
 every slot below (U1–U9). The remaining `[ ]` items split into **live wiring shipped,

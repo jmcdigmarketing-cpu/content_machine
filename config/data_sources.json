@@ -154,7 +154,7 @@
     "mma": ["ufc.com", "mmafighting.com"]
   },
   "optional_apis": {
-    "notes": "Add keys in .env — see docs/data-sources.md and docs/domain-expansion.md",
+    "notes": "Add keys in .env — see docs/data_sources.md and docs/domain_expansion.md",
     "balldontlie": "BALLDONTLIE_API_KEY",
     "api_sports": "API_SPORTS_KEY",
     "fred": "FRED_API_KEY",

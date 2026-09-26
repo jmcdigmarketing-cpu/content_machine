@@ -35,20 +35,7 @@ COMPLIANT_NAME = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)*(_\d{4}-\d{2}(-\d{2})?)?\.m
 
 # Names that predate the standard. This set may only ever SHRINK — each rename
 # lands with a redirect stub (the ROADMAP.md precedent). See docs/master_plan.md M1.
-LEGACY_NAMES = frozenset(
-    {
-        "HANDOFF_SYNOPSIS.md",
-        "adding-a-data-source.md",
-        "analyst-intelligence.md",
-        "apify-data-sources.md",
-        "data-sources.md",
-        "domain-expansion.md",
-        "groundwork_2026Q3.md",
-        "signals-and-sources.md",
-        "startup-powershell.md",
-        "strategy_2026H2.md",
-    }
-)
+LEGACY_NAMES: frozenset[str] = frozenset()  # drained 2026-09-26 (M1.1); may only ever shrink, so: empty
 
 # A number that changes is either generated or dated: a bare test count may live
 # in a frozen snapshot or an append-only log (where it was true on the day), never

@@ -63,7 +63,7 @@ foreach ($block in $blocks) {
     Write-Host ""
 }
 
-Write-Host "Full guide: docs\startup-powershell.md" -ForegroundColor DarkGray
+Write-Host "Full guide: docs\startup_powershell.md" -ForegroundColor DarkGray
 Write-Host ""
 
 if ($RunWorker) {

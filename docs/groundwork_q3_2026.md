@@ -169,7 +169,7 @@ so future runs see the full arc).
     moment scoring (reuse `core/hook_score`) → subject-tracked 9:16 cut (`core/reframe.py`). Pairs
     with idea-intake (already accepts YouTube links). Note: YOLO reframe is AGPL → internal only.
 14. **MoneyWise depth wave + third vertical groundwork** — finance earnings-calendar signal + ticker
-    watchlist ([domain-expansion.md](domain-expansion.md)); dry-run the new-channel playbook for AI-Tools/Tech.
+    watchlist ([domain_expansion.md](domain_expansion.md)); dry-run the new-channel playbook for AI-Tools/Tech.
 15. **Pillar 2 calibration/predictor + multimodal review** — activate as publish volume accrues; the
     rendered-video review needs the **router vision path** (migrate the thumbnail scorer off
     `core/llm_client.py`) — a prerequisite to schedule early.
@@ -207,7 +207,7 @@ Filter: does it harden the moat (grounding/loop/compliance) or reduce cost/effor
   (interactive, headless, batch, future verticals) consumes one grounding layer.
 - **Provider-slot framework as the integration standard** — every future tool lands as a fail-open,
   env-gated seam behind `ProviderResult`; documented once in `providers_runbook.md`.
-- **New-channel playbook generator** — turn `domain-expansion.md` + the profile schema into a
+- **New-channel playbook generator** — turn `domain_expansion.md` + the profile schema into a
   scaffolder that emits a channel profile + SEO config + signal-coverage audit for a new vertical.
 
 # PART 6 — Risks, constraints & licensing (carry forward)

@@ -270,7 +270,7 @@ theme. FastAPI #147 and tray daemon #146 still skipped.*
   one — superseded, and it still carried the expired `"2026-07-25 18:00"` that #33
   replaced, so merging it would have made CI permanently red.
 - **Five orphan docs harvested before closing** (~1,000 lines that existed nowhere else):
-  `llm_provider_strategy.md`, `strategy_2026H2.md`, `next_ideas_2026-07.md`,
+  `llm_provider_strategy.md`, `strategy_h2_2026.md`, `next_ideas_2026-07.md`,
   `code_audit_2026-07.md`, `efficiency_audit_2026-07.md`. Only the new files were taken —
   their edits to shared docs were superseded, which also avoided every conflict — and each
   carries a dated header naming what has since replaced it.
@@ -980,7 +980,7 @@ degradation before the hard credit walls.*
 - **Explainability:** `core/analyst_explain.py` — why now / why this / contrarian in reports.
 - **Self-measurement:** `core/analyst_accuracy.py` — volume-gated hit-rate backtest.
 - **New signal:** `wikipedia` pageviews (`apis/wikipedia_pageviews_api.py`).
-- **Docs:** [analyst-intelligence.md](analyst-intelligence.md), [adding-a-data-source.md](adding-a-data-source.md).
+- **Docs:** [analyst_intelligence.md](analyst_intelligence.md), [adding_a_data_source.md](adding_a_data_source.md).
 
 ### Intelligence layer & positioning (2026-06)
 
@@ -999,7 +999,7 @@ degradation before the hard credit walls.*
 - **Stats scrapers:** `apis/scrapers/` (Basketball Reference, Pro-Football-Reference, ESPN JSON) → signal `stats_context`.
 - **Blog RSS signal:** `blog_rss` merges `config/seo/{channel}.json` + `config/data_sources.json` domain feeds.
 - **Research brief:** `research_brief_v3` injects reference stat lines; RSS brief path uses expanded feeds.
-- **Docs:** [data-sources.md](data-sources.md); architecture + roadmap updated.
+- **Docs:** [data_sources.md](data_sources.md); architecture + roadmap updated.
 
 ### Phase K — YouTube thumbnail API (2026-06)
 

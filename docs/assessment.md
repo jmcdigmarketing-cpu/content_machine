@@ -134,7 +134,7 @@ nearer **$1/video** at 21/90 Creator-plan utilisation. Semantic authenticity
 vs a 15-sample predictor gate). TTS still dominates real-world cost until the
 operator judges Piper. 2026 inauthentic-content policy is still existential —
 substance over volume. Pickup: [roadmap.md](roadmap.md) recommended next 5.
-Honest session state: [HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md). Audit:
+Honest session state: [handoff_synopsis.md](handoff_synopsis.md). Audit:
 [audit.md](audit_2026-08.md).
 
 ## Addendum — 2026-08-30 (idea quality)

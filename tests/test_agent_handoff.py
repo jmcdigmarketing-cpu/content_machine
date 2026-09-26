@@ -48,7 +48,7 @@ class TestMailboxExists(unittest.TestCase):
         self.assertIn("git status", body)
 
     def test_it_stays_a_mailbox_not_a_second_archive(self):
-        """HANDOFF_SYNOPSIS.md is 900+ lines; nobody reads that at the start of a
+        """handoff_synopsis.md is 900+ lines; nobody reads that at the start of a
         session. A mailbox that grows into an archive stops being read at all."""
         lines = _read(MAILBOX).splitlines()
         self.assertLess(len(lines), 120, f"handoff.md is {len(lines)} lines — trim it")

@@ -222,7 +222,7 @@ pip install vulture && python -m vulture . --min-confidence 60 \
 
 ## Cross-references
 [code_audit_2026-07.md](code_audit_2026-07.md) (the broader health pass) ·
-[strategy_2026H2.md](strategy_2026H2.md) (why "don't add generation features") ·
+[strategy_h2_2026.md](strategy_h2_2026.md) (why "don't add generation features") ·
 [free_mode.md](free_mode.md) (the `.[free]` install) ·
-[groundwork_2026Q3.md](groundwork_2026Q3.md) (what each external addition was for) ·
+[groundwork_q3_2026.md](groundwork_q3_2026.md) (what each external addition was for) ·
 [roadmap.md](roadmap.md).

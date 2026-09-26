@@ -95,7 +95,7 @@ the post-time learner resist the weekend bias that was fixed on 2026-07-22? Effo
 **zero runtime risk** — tests only.
 
 **Why it matters:** it validates the loop *before* volume exists, which is the direct
-answer to the volume paradox in [strategy_2026H2.md](strategy_2026H2.md) *(arrives with
+answer to the volume paradox in [strategy_h2_2026.md](strategy_h2_2026.md) *(arrives with
 PR #29)*. It would also catch a recommender regression that real data can't reveal for
 months.
 
@@ -143,7 +143,7 @@ specifically because its metrics went stale.
 **Build:** a CI step that (a) checks every relative markdown link resolves, and (b)
 compares metric claims in docs against generated values, failing when they disagree —
 enforcing the counting convention now recorded in
-[HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) *(arrives with PR #31)*. Effort `[S]`.
+[handoff_synopsis.md](handoff_synopsis.md) *(arrives with PR #31)*. Effort `[S]`.
 
 **Why it matters:** it converts a discipline problem into a mechanical one. Every audit so
 far has spent effort re-deriving numbers that a script could assert.
@@ -169,6 +169,6 @@ it repairs something currently broken, whereas all five ideas add new capability
 
 ## Cross-references
 [roadmap.md](roadmap.md) · [assessment.md](assessment.md) ·
-[HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) · and, arriving with open PRs:
+[handoff_synopsis.md](handoff_synopsis.md) · and, arriving with open PRs:
 `code_audit_2026-07.md` (#28) · `efficiency_audit_2026-07.md` (#30) ·
-`strategy_2026H2.md` (#29).
+`strategy_h2_2026.md` (#29).

@@ -8,7 +8,7 @@ previous one tells you what it did and what it broke.
 
 Two slots. **Overwrite your own; never edit the other agent's.** Keep each slot under
 ~25 lines — this is a mailbox, not an archive. The archive is
-[HANDOFF_SYNOPSIS.md](HANDOFF_SYNOPSIS.md) (session state) and
+[handoff_synopsis.md](handoff_synopsis.md) (session state) and
 [planning_log.md](planning_log.md) (why, append-only).
 
 ## Verify before you trust it

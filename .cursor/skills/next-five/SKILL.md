@@ -14,7 +14,7 @@ from memory and each has gone wrong in a recorded way: a wave sat uncommitted in
 the working tree for six days against rule 14; an agent plan file reached the
 repo root and survived a week because nobody looked before `git add -A`; a slot
 written after the last suite run tripped the 120-line mailbox cap and reported
-green anyway; and two of a recommended five were parked in `HANDOFF_SYNOPSIS.md`
+green anyway; and two of a recommended five were parked in `handoff_synopsis.md`
 while sitting at picks 1 and 5.
 
 ## The loop (non-negotiable)
@@ -26,7 +26,7 @@ while sitting at picks 1 and 5.
    this session.
 2. **Verify the next five before trusting the list.** `docs/roadmap.md`'s
    recommendation is prose and drifts. For each item check `docs/backlog.md` for
-   its real text and size, and grep `docs/HANDOFF_SYNOPSIS.md` for it - an item
+   its real text and size, and grep `docs/handoff_synopsis.md` for it - an item
    listed "Still parked" there is not next. Check that anything it names as a
    dependency exists in code: #333's stated trigger, #341, does not.
 3. **Build each one fail-then-fix**, per [tdd](../tdd/SKILL.md). Order cheapest
@@ -66,7 +66,7 @@ this order:
   picked and why it differs from the recommendation, shipped 1..N, the findings
   with `file:line`, what was deliberately not done, the audit, the closing count
   line;
-- prepend the wave to `docs/HANDOFF_SYNOPSIS.md` and demote the previous one;
+- prepend the wave to `docs/handoff_synopsis.md` and demote the previous one;
 - **write your `docs/handoff.md` slot last, then re-run the suite.** The slot is
   an edit. It has broken a test.
 

@@ -41,7 +41,7 @@ way they do — the six framing layers and the selection tie:
 realistically go next: [docs/strategy_next_level.md](docs/strategy_next_level.md); what to build
 next in the engine itself, measured against the 38 recorded runs:
 [docs/engine_upgrades.md](docs/engine_upgrades.md). State as of the last working session
-(branch, shipped wave, open items): [docs/HANDOFF_SYNOPSIS.md](docs/HANDOFF_SYNOPSIS.md).
+(branch, shipped wave, open items): [docs/handoff_synopsis.md](docs/handoff_synopsis.md).
 Brainstorming/decisions from planning sessions: [docs/planning_log.md](docs/planning_log.md)
 — **append a dated entry after any substantial planning session** so ideas aren't lost.
 
@@ -104,7 +104,7 @@ python -m unittest discover -s tests -t . -v        # tests — CI-blocking; the
 ## Windows
 
 Dev environment is Windows/PowerShell — see
-[docs/startup-powershell.md](docs/startup-powershell.md) for the command
+[docs/startup_powershell.md](docs/startup_powershell.md) for the command
 cheat-sheet; don't repeat it here.
 
 ## Using Claude Code on this repo

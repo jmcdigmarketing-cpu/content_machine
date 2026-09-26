@@ -17,6 +17,27 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-26 (Claude Code) - the operator's first run on main: three defects, and #849's numbers
+
+**Prompt:** the operator's PowerShell session - Codex's uncommitted work backed up to a local
+branch, `main` pulled to `9b4c255`, then Block B / C of the checklist.
+
+**What worked:** backfill-quality 96/96; backfill-angles 84 of 96; regressions 40/40; the
+status Machine block ("Doctor: 13 of 14 checks pass; failing: feeds"); `recategorize` dry run
+listed 28 videos.
+
+**What failed, and what changed:**
+- `go-public --apply` / `recategorize --apply`: 403 insufficient authentication scopes - the
+  token predates the manage scope. Now checked before any edit, with the fix named (#880).
+- `recategorize` planned run 98 for Gaming from its pre-soccer stored domain (#881).
+- "Federal Reserve Press" feed dead, the one failing Doctor check (#882).
+
+**#849's input arrived:** angle score r=-0.26 (n=22, backfilled), composite -0.06, card +0.03;
+length -0.26 is the largest component. Nothing is significant at n=23, so the tie is not
+broken by either score; the fact-fit measure is next.
+
+9 new tests, 11 failing first; suite 3,713; mypy 129; corpus 40/40.
+
 ## 2026-09-26 (Claude Code) - wave 38: whole snippets, re-filed football, one status block
 
 **Prompt (verbatim):** "next 5". Mid-wave the operator sent the oldest files they could find

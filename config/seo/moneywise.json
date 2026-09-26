@@ -46,10 +46,6 @@
     {
       "name": "CoinDesk",
       "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"
-    },
-    {
-      "name": "Federal Reserve Press",
-      "url": "https://www.federalreserve.gov/feeds/press_all.xml"
     }
   ],
   "seo_refresh_queries": [

@@ -116,14 +116,19 @@ def _row(rid, vid, run_id):
 
 
 class RecategorizeTests(unittest.TestCase):
-    def _plan(self, rows, domains, titles=None):
+    def _plan(self, rows, resolved, titles=None, legacy=None):
         from publishing.recategorize import plan_recategorize
 
         repo = MagicMock()
         repo.list_uploaded_for_channel.return_value = rows
         with (
             patch(
-                "publishing.recategorize.run_domain", side_effect=lambda rid: domains.get(rid, "")
+                "publishing.recategorize.resolved_run_domain",
+                side_effect=lambda rid: resolved.get(rid, ""),
+            ),
+            patch(
+                "publishing.recategorize.run_domain",
+                side_effect=lambda rid: (legacy or {}).get(rid, ""),
             ),
             patch(
                 "publishing.recategorize._run_title",
@@ -143,6 +148,25 @@ class RecategorizeTests(unittest.TestCase):
             titles={50: "Arsenal vs Chelsea: what the Premier League table says"},
         )
         self.assertEqual([p.category_id for p in plan], ["17"])
+
+    def test_a_stale_stored_domain_loses_to_the_title(self):
+        """Run 98 was made before soccer existed: it stored `domain: gaming`, and the
+        operator's dry run planned the Manchester City video for Gaming (20)."""
+        plan = self._plan(
+            [_row(1, "VHGnKSGODzU", 98)],
+            {},
+            titles={
+                98: "Manchester City guilty on 114 charges - what it means for the Premier League"
+            },
+            legacy={98: "gaming"},
+        )
+        self.assertEqual([(p.domain, p.category_id) for p in plan], [("soccer", "17")])
+
+    def test_keywordless_title_keeps_the_stored_domain(self):
+        plan = self._plan(
+            [_row(1, "v7", 7)], {}, titles={7: "Is this the best one yet?"}, legacy={7: "gaming"}
+        )
+        self.assertEqual([p.category_id for p in plan], ["20"])
 
     def test_unknown_domain_is_left_alone(self):
         self.assertEqual(self._plan([_row(1, "v1", 1)], {1: "neutral"}), [])
@@ -176,6 +200,118 @@ class RecategorizeTests(unittest.TestCase):
         from scripts.ops import COMMANDS
 
         self.assertIn("recategorize", COMMANDS)
+
+
+class ManageScopeTests(unittest.TestCase):
+    """The operator's saved login could upload but not edit: go-public and recategorize
+    --apply both died on YouTube's 403 "insufficient authentication scopes" (the second
+    with a traceback). An edit now checks the token first and says how to fix it."""
+
+    def test_missing_manage_scope_is_detected_from_the_token(self):
+        from publishing.snippet_update import manage_scope_problem
+
+        with (
+            patch("youtube.oauth.token_path_for_channel", return_value=__file__),
+            patch(
+                "youtube.oauth._scopes_from_token_file",
+                return_value=["https://www.googleapis.com/auth/youtube.upload"],
+            ),
+        ):
+            msg = manage_scope_problem("tapin")
+        self.assertIn("py -m youtube.oauth_setup --channel tapin", msg)
+
+    def test_a_full_token_or_no_token_is_not_blocked_here(self):
+        from publishing.snippet_update import manage_scope_problem
+
+        with (
+            patch("youtube.oauth.token_path_for_channel", return_value=__file__),
+            patch(
+                "youtube.oauth._scopes_from_token_file",
+                return_value=["https://www.googleapis.com/auth/youtube"],
+            ),
+        ):
+            self.assertEqual(manage_scope_problem("tapin"), "")
+        with patch("youtube.oauth.token_path_for_channel", return_value="/no/such/token.json"):
+            self.assertEqual(manage_scope_problem("tapin"), "")
+
+    def _blocked(self):
+        return patch(
+            "publishing.snippet_update.manage_scope_problem",
+            return_value="re-consent needed: py -m youtube.oauth_setup --channel tapin",
+        )
+
+    def test_go_public_stops_before_building_a_client(self):
+        from publishing.go_public import apply_go_public
+
+        repo = MagicMock()
+        repo.list_uploaded_for_channel.return_value = []
+        with (
+            self._blocked(),
+            patch.dict(os.environ, {"YOUTUBE_UPLOAD_ENABLED": "true"}),
+            patch("youtube.oauth.get_youtube_service") as svc,
+        ):
+            result = apply_go_public("abc", channel_id="tapin", repo=repo, dry_run=False)
+        self.assertEqual(result.status, "blocked")
+        self.assertIn("oauth_setup", result.detail)
+        svc.assert_not_called()
+
+    def test_recategorize_stops_before_building_a_client(self):
+        from publishing.recategorize import Recategorize, apply_recategorize
+
+        with (
+            self._blocked(),
+            patch.dict(os.environ, {"YOUTUBE_UPLOAD_ENABLED": "true"}),
+            patch("youtube.oauth.get_youtube_service") as svc,
+        ):
+            result = apply_recategorize(
+                "tapin", plan=[Recategorize("a", 1, "soccer", "17")], dry_run=False
+            )
+        self.assertTrue(result["mode"].startswith("blocked"))
+        self.assertIn("oauth_setup", result["mode"])
+        svc.assert_not_called()
+
+    def test_rollback_stops_before_building_a_client(self):
+        from publishing.rollback import apply_rollback
+
+        with (
+            self._blocked(),
+            patch.dict(os.environ, {"YOUTUBE_UPLOAD_ENABLED": "true", "OBSIDIAN_VAULT_PATH": ""}),
+            patch("youtube.oauth.get_youtube_service") as svc,
+        ):
+            result = apply_rollback("abc", correction="x", dry_run=False)
+        self.assertEqual(result.status, "blocked")
+        svc.assert_not_called()
+
+    def test_one_failed_update_does_not_crash_the_batch(self):
+        from publishing.recategorize import Recategorize, apply_recategorize
+
+        service = _service({"a": LIVE, "b": LIVE})
+        calls = {"n": 0}
+
+        def _update(**_kw):
+            calls["n"] += 1
+            req = MagicMock()
+            if calls["n"] == 1:
+                req.execute.side_effect = RuntimeError("HttpError 500 backend error")
+            return req
+
+        service.videos.return_value.update.side_effect = _update
+        plan = [Recategorize("a", 1, "soccer", "17"), Recategorize("b", 2, "soccer", "17")]
+        with (
+            patch.dict(os.environ, {"YOUTUBE_UPLOAD_ENABLED": "true"}),
+            patch("youtube.oauth.get_youtube_service", return_value=service),
+        ):
+            result = apply_recategorize("tapin", plan=plan, dry_run=False)
+        self.assertEqual(result["updated"], 1)
+        self.assertEqual(result["failed"], 1)
+        self.assertIn("500", result["errors"][0])
+
+    def test_youtube_scope_error_becomes_the_fix(self):
+        from publishing.snippet_update import edit_error_text
+
+        err = RuntimeError('<HttpError 403 "Request had insufficient authentication scopes.">')
+        self.assertIn("py -m youtube.oauth_setup --channel tapin", edit_error_text(err, "tapin"))
+        self.assertIn("500", edit_error_text(RuntimeError("HttpError 500"), "tapin"))
 
 
 if __name__ == "__main__":

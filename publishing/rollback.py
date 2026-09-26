@@ -98,6 +98,11 @@ def apply_rollback(
             "YOUTUBE_UPLOAD_ENABLED is not true; nothing was sent",
             dossier,
         )
+    from publishing.snippet_update import manage_scope_problem
+
+    problem = manage_scope_problem(channel_id)
+    if problem:
+        return RollbackResult("blocked", problem, dossier)
     try:
         from publishing.snippet_update import fetch_snippets
         from youtube.oauth import get_youtube_service
@@ -109,6 +114,8 @@ def apply_rollback(
         body = rollback_plan(video_id, correction, live)
         service.videos().update(part="status,snippet", body=body).execute()
     except Exception as exc:
+        from publishing.snippet_update import edit_error_text
+
         logger.warning("rollback update failed: %s", exc)
-        return RollbackResult("error", str(exc)[:300], dossier)
+        return RollbackResult("error", edit_error_text(exc, channel_id), dossier)
     return RollbackResult("updated", f"{video_id} unlisted", dossier)

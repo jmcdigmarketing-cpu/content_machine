@@ -62,6 +62,7 @@ A new stored feature/quality key needs a reader (the dossier Audit block is the 
 `tests/test_persisted_keys_read.py` fails.
 
 **Defects first:**
+- **Operator step now:** `py -m youtube.oauth_setup --channel tapin` (sign in, approve managing the account), then `ops recategorize --apply` and `ops go-public JX81cscTFdI --apply`. The PC is on `main`; Codex's uncommitted work is on local branch `codex/p0-backup` (superseded by wave 31's test-order work).
 - **Run 99 (operator, 2026-09-26) ran on old code** - TTS billed twice, retired signals listed as Gated, v4 card: the PC had not pulled `main`. The copy-paste steps are in the planning conversation; new finds #877 #878 #879.
 - **Operator step:** `py -m scripts.ops recategorize` (dry run) then `--apply` on the PC to move
   already-uploaded football videos from Gaming to Sports (#873). Needs OAuth and upload enabled.
@@ -72,8 +73,8 @@ A new stored feature/quality key needs a reader (the dossier Audit block is the 
 **Shipped:** #865 · #873 · #875 · #856 · #867 · #869. The May 2025 prototype (supplied by the
 operator; key values never copied) is in `docs/project_timeline.md` and the "Content OS Story" page.
 
-Suite **3,704**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **283 numbered open**, highest **#879**. Next five: **#849 · #863 · #876 · #855 · #870**.
+Suite **3,713**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **283 numbered open**, highest **#879** (#880-#882 done). Next five: **#849 · #863 · #876 · #855 · #870**.
 
 ## Slot — Cursor
 

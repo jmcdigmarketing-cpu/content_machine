@@ -200,6 +200,19 @@ def run_domain(run_id: int | None, kind: str = "effective") -> str:
     return str(features.get("domain") or "")
 
 
+def resolved_run_domain(run_id: int | None) -> str:
+    """The effective domain a run resolved under #866, or "" for older runs.
+
+    Older runs stored only `domain`, the channel-fallback weighting domain - and runs
+    before wave 33 had no `soccer` at all, so run 98's football video stored `gaming`.
+    Callers that need "what the video is about" re-read those from the title instead.
+    """
+    if not run_id:
+        return ""
+    stored = load_features(run_id).get("domains")
+    return str(stored.get("effective") or "") if isinstance(stored, dict) else ""
+
+
 def merge_features(run_id: int | None, updates: dict[str, Any]) -> None:
     """Merge keys into an existing features_json (e.g. the post-render cost lines).
 

@@ -8,6 +8,13 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### After wave 38 — first run on main - 2026-09-26
+
+- **#880** editing a live video checks the login's permissions first and names the one-time
+  re-sign-in; a refused video no longer crashes `recategorize`.
+- **#881** `recategorize` reads old runs' titles, so run 98 is planned for Sports, not Gaming.
+- **#882** the dead Federal Reserve feed is removed.
+
 ### Wave 38 — whole snippets, re-filed football, one status block - 2026-09-26
 
 *3,704 tests (default, reverse, shuffled: identical); mypy 129 == baseline; ruff clean.*

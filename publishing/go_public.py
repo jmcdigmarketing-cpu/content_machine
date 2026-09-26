@@ -92,14 +92,21 @@ def apply_go_public(
         return GoPublicResult(
             "blocked", "YOUTUBE_UPLOAD_ENABLED is not true; nothing was sent", target
         )
+    from publishing.snippet_update import manage_scope_problem
+
+    problem = manage_scope_problem(channel_id)
+    if problem:
+        return GoPublicResult("blocked", problem, target)
     try:
         from youtube.oauth import get_youtube_service
 
         service = get_youtube_service(channel_id)
         service.videos().update(part="status", body=body).execute()
     except Exception as exc:
+        from publishing.snippet_update import edit_error_text
+
         logger.warning("go-public update failed: %s", exc)
-        return GoPublicResult("error", str(exc)[:300], target)
+        return GoPublicResult("error", edit_error_text(exc, channel_id), target)
     if record is not None:
         try:
             repo.update(record.id, {"privacy_status": "public"})

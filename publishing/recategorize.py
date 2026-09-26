@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from core.logging import get_logger
-from core.run_features import run_domain
+from core.run_features import resolved_run_domain, run_domain
 
 logger = get_logger("publishing.recategorize")
 
@@ -62,9 +62,13 @@ def plan_recategorize(channel_id: str, *, repo=None) -> list[Recategorize]:
             continue
         seen.add(vid)
         run_id = getattr(row, "content_run_id", None)
-        domain = run_domain(run_id)
+        # The run's #866 answer first; for older runs the title read by today's rules,
+        # because their stored `domain` predates soccer (run 98 stored gaming).
+        domain = resolved_run_domain(run_id)
         if domain not in KNOWN_DOMAINS:
             domain = infer_topic_domain(_run_title(run_id))
+        if domain not in KNOWN_DOMAINS:
+            domain = run_domain(run_id)
         if domain in KNOWN_DOMAINS:
             plan.append(Recategorize(vid, run_id, domain, category_id_for_domain(domain)))
     return plan
@@ -73,16 +77,27 @@ def plan_recategorize(channel_id: str, *, repo=None) -> list[Recategorize]:
 def apply_recategorize(
     channel_id: str, *, plan: list[Recategorize], dry_run: bool = True
 ) -> dict[str, Any]:
-    result: dict[str, Any] = {"planned": len(plan), "updated": 0, "already": 0, "missing": 0}
+    result: dict[str, Any] = {
+        "planned": len(plan),
+        "updated": 0,
+        "already": 0,
+        "missing": 0,
+        "failed": 0,
+        "errors": [],
+    }
     if dry_run or not plan:
         result["mode"] = "dry_run" if dry_run else "nothing to do"
         return result
     if os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() not in ("1", "true", "yes"):
         result["mode"] = "blocked: YOUTUBE_UPLOAD_ENABLED is not true"
         return result
-    from publishing.snippet_update import fetch_snippets, writable_snippet
+    from publishing.snippet_update import fetch_snippets, manage_scope_problem, writable_snippet
     from youtube.oauth import get_youtube_service
 
+    problem = manage_scope_problem(channel_id)
+    if problem:
+        result["mode"] = f"blocked: {problem}"
+        return result
     service = get_youtube_service(channel_id)
     live = fetch_snippets(service, [p.video_id for p in plan])
     for item in plan:
@@ -97,7 +112,15 @@ def apply_recategorize(
             "id": item.video_id,
             "snippet": writable_snippet(current, categoryId=item.category_id),
         }
-        service.videos().update(part="snippet", body=body).execute()
+        try:
+            service.videos().update(part="snippet", body=body).execute()
+        except Exception as exc:  # one refusal must not lose the rest of the batch
+            result["failed"] += 1
+            from publishing.snippet_update import edit_error_text
+
+            result["errors"].append(f"{item.video_id}: {edit_error_text(exc, channel_id)}")
+            logger.warning("recategorize %s failed: %s", item.video_id, exc)
+            continue
         result["updated"] += 1
     result["mode"] = "applied"
     result["quota_units"] = -(-len(plan) // 50) + 50 * result["updated"]

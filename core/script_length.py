@@ -235,4 +235,4 @@ def length_system_addendum(preset: LengthPreset) -> str:
             "FORMAT: Medium vertical video (~1-2 minutes). "
             "Develop the angle with more than one section; avoid single-paragraph summaries."
         )
-    return "FORMAT: YouTube Short (~40-60 seconds). " "Tight, punchy, one core angle."
+    return "FORMAT: YouTube Short (~40-60 seconds). Tight, punchy, one core angle."

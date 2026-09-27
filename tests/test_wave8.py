@@ -325,22 +325,26 @@ class TestCaptionPlacementDistinguishesAnOverlay(unittest.TestCase):
             for name, fn in (
                 (
                     "sky_grass",
-                    lambda x, y: (135, 180, 235)
-                    if y < 256
-                    else (
-                        random.randint(20, 90),
-                        random.randint(70, 140),
-                        random.randint(20, 70),
+                    lambda x, y: (
+                        (135, 180, 235)
+                        if y < 256
+                        else (
+                            random.randint(20, 90),
+                            random.randint(70, 140),
+                            random.randint(20, 70),
+                        )
                     ),
                 ),
                 (
                     "sky_city",
-                    lambda x, y: (120, 170, 225)
-                    if y < 230
-                    else (
-                        random.randint(40, 220),
-                        random.randint(30, 200),
-                        random.randint(30, 200),
+                    lambda x, y: (
+                        (120, 170, 225)
+                        if y < 230
+                        else (
+                            random.randint(40, 220),
+                            random.randint(30, 200),
+                            random.randint(30, 200),
+                        )
                     ),
                 ),
             ):
@@ -508,14 +512,16 @@ class TestReviewWindowPlaysTheLastRun(unittest.TestCase):
         loop = QEventLoop()
         QTimer.singleShot(8000, loop.quit)
         window._player.mediaStatusChanged.connect(
-            lambda status: loop.quit()
-            if status
-            in (
-                QMediaPlayer.MediaStatus.LoadedMedia,
-                QMediaPlayer.MediaStatus.BufferedMedia,
-                QMediaPlayer.MediaStatus.InvalidMedia,
+            lambda status: (
+                loop.quit()
+                if status
+                in (
+                    QMediaPlayer.MediaStatus.LoadedMedia,
+                    QMediaPlayer.MediaStatus.BufferedMedia,
+                    QMediaPlayer.MediaStatus.InvalidMedia,
+                )
+                else None
             )
-            else None
         )
         if window._player.mediaStatus() not in (
             QMediaPlayer.MediaStatus.LoadedMedia,

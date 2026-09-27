@@ -2,11 +2,11 @@ import os
 import tempfile
 import unittest
 
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect
 
 from alembic import command
-from alembic.config import Config
-from alembic.script import ScriptDirectory
 from storage.alembic_runner import current_revision
 
 

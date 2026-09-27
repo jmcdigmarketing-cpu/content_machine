@@ -194,9 +194,11 @@ class _RenderHarness(unittest.TestCase):
         _patch("assets.manager.get_scene_matched_background", return_value=None)
         _patch(
             "video.render_video._probe_video_duration",
-            side_effect=lambda path: self.duration
-            if str(path).lower().endswith(".mp3") or "voice" in str(path).lower()
-            else None,
+            side_effect=lambda path: (
+                self.duration
+                if str(path).lower().endswith(".mp3") or "voice" in str(path).lower()
+                else None
+            ),
         )
         _patch(
             "video.render_video.generate_subtitle_file",

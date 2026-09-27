@@ -143,10 +143,10 @@ def main(argv=None) -> int:
     channel_id = resolve_channel_id(args.channel)
     profile = get_channel_profile(channel_id)
 
-    print(f"\n{'='*56}")
+    print(f"\n{'=' * 56}")
     print(f"  Auto Generate — {profile.name} ({channel_id})")
     print(f"  {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
-    print(f"{'='*56}\n")
+    print(f"{'=' * 56}\n")
 
     # Optional analytics sync before deciding topic
     if args.sync_analytics:

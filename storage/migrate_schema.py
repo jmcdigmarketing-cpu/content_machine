@@ -53,8 +53,7 @@ def main() -> int:
             if "idempotency_key" not in cols:
                 conn.execute(
                     text(
-                        "ALTER TABLE publish_log "
-                        "ADD COLUMN idempotency_key VARCHAR(128) DEFAULT ''"
+                        "ALTER TABLE publish_log ADD COLUMN idempotency_key VARCHAR(128) DEFAULT ''"
                     )
                 )
                 conn.execute(

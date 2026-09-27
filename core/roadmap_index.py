@@ -84,8 +84,7 @@ def render(data: dict[str, object] | None = None) -> str:
             f"  {name:22} {row['lines']:5} lines   open {row['open']:4}   done {row['done']:4}"
         )
     out.append(
-        f"  {'TOTAL':22} {'':5}         open {data['open_total']:4}   "
-        f"done {data['done_total']:4}"
+        f"  {'TOTAL':22} {'':5}         open {data['open_total']:4}   done {data['done_total']:4}"
     )
     out.append("")
     sizes = "  ".join(f"{s} {by_size[s]}" for s in SIZES)

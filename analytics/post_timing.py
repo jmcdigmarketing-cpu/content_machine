@@ -502,7 +502,7 @@ def get_recommended_time(
             )
         else:
             rationale = (
-                "learned schedule, but this slot has 0 measured posts " "— not a sample-backed rate"
+                "learned schedule, but this slot has 0 measured posts — not a sample-backed rate"
             )
         return RecommendedTime(when_utc, local_str, "analytics", rate, n, rationale, channel_id)
 

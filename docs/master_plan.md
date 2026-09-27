@@ -181,10 +181,9 @@ exactly why they need a scheduled slot rather than good intentions.
    dead `video.*`/`publishing.*` override. That turns a number nobody watches into a
    number that cannot grow, without a blocking rewrite. Then pick off the 89 files by
    subsystem.
-3. **Upgrade ruff.** Pinned at 0.8.4 across CI, `pyproject.toml` and
-   `.pre-commit-config.yaml` — consistent, and nine months old. Current ruff reports 28
-   lint findings and 28 files needing reformat. One commit for the format sweep, one for
-   the pin bump, one per rule family for the findings. The bill only grows.
+3. ~~**Upgrade ruff.**~~ **Done 2026-09-27 (#831):** 0.8.4 -> 0.15.8 in CI, `pyproject.toml`
+   and `.pre-commit-config.yaml`. 47 findings fixed one rule family per commit (RUF046,
+   RUF059, then SIM905/C420/RUF005), and I001 plus the 34-file format sweep with the pin.
 4. **Broad excepts.** 627 across the source tree, against "~18 silent" tracked in June.
    Do not attempt all of them. Inventory them, classify into *deliberate fail-open*
    (the O11/O12 pattern, which is correct here) versus *accidental swallow*, and fix

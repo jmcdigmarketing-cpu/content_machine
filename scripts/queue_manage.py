@@ -120,10 +120,7 @@ def main(argv=None) -> int:
             run = get_content_run_repository().get(args.run_id)
             topic = (run.selected_topic or run.title) if run else ""
             publish_at = next_optimal_post_time(channel_id, topic)
-            print(
-                f"  Scheduling YouTube publish: "
-                f"{format_scheduled_local(publish_at, channel_id)}"
-            )
+            print(f"  Scheduling YouTube publish: {format_scheduled_local(publish_at, channel_id)}")
         try:
             job_id = requeue_content_run(
                 args.run_id,

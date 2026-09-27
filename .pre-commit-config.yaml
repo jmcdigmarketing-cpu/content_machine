@@ -8,7 +8,7 @@
 # .githooks/pre-commit if you want it automatic.
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.15.8
     hooks:
       - id: ruff           # lint, with autofix
         args: [--fix]

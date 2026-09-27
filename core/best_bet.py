@@ -291,7 +291,7 @@ def _continuity_seed(channel_id: str, entries: list[dict]) -> BestBetResult | No
             avg_engaged_rate=0.0,
             source="continuity",
             supporting_runs=repeat_count,
-            rationale=(f"covered {anchor} {repeat_count}× — pivoting to '{seed}'" f"{kw_note}"),
+            rationale=(f"covered {anchor} {repeat_count}× — pivoting to '{seed}'{kw_note}"),
         )
 
     # Not yet saturated — replay the most recent anchor topic

@@ -710,8 +710,7 @@ def _generate_audio(script, output_path, channel_id: str | None = None, segments
         except Exception as exc:
             spent = int(getattr(exc, "spent_chars", 0) or 0)
             logger.warning(
-                "multi-voice TTS failed after billing %d char(s); re-synthesizing in one "
-                "voice: %s",
+                "multi-voice TTS failed after billing %d char(s); re-synthesizing in one voice: %s",
                 spent,
                 exc,
             )

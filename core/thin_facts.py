@@ -64,5 +64,5 @@ def thin_facts_abort_reason(
         return None
     floor = min_claim_support()
     if support < floor:
-        return f"thin facts: claim support {support:.0%} below {floor:.0%} " "— aborting before TTS"
+        return f"thin facts: claim support {support:.0%} below {floor:.0%} — aborting before TTS"
     return None

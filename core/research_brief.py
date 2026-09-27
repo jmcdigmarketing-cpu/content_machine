@@ -229,18 +229,18 @@ def _build_with_llm(
 
 {seed_block}{anchor_note}TOPIC: {topic}
 {freshness_instruction}
-{history or ''}
+{history or ""}
 
 {operator_block}SIGNAL FACTS (source of truth for names/events):
 {facts}
 
 RSS HEADLINES:
-{rss_lines or '(none)'}
+{rss_lines or "(none)"}
 
-{competitor_block or '(none)'}
+{competitor_block or "(none)"}
 
 REFERENCE STATS (use for numbers — do not invent):
-{chr(10).join('- ' + s for s in (stats_lines or [])) or '(none)'}
+{chr(10).join("- " + s for s in (stats_lines or [])) or "(none)"}
 
 {seo_block}
 

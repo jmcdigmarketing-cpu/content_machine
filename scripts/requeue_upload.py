@@ -97,7 +97,7 @@ def _print_channel_runs(channel_id: str) -> None:
     for run in runs:
         mp4 = _resolve_mp4_path(run)
         flag = "MP4" if mp4 else "no file"
-        print(f"  [{run.id}] {run.status:8} {flag:7}  " f"{(run.title or run.selected_topic)[:50]}")
+        print(f"  [{run.id}] {run.status:8} {flag:7}  {(run.title or run.selected_topic)[:50]}")
         if mp4:
             print(f"         {mp4}")
 

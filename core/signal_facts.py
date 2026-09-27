@@ -221,7 +221,7 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
             avg_views = data.get("avg_views") or 0
             if videos:
                 vid_lines = [
-                    f"- \"{v.get('title', '')[:80]}\" ({v.get('views', 0):,} views)"
+                    f'- "{v.get("title", "")[:80]}" ({v.get("views", 0):,} views)'
                     for v in videos[:5]
                     if v.get("title")
                 ]

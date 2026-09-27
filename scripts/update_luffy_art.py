@@ -60,9 +60,7 @@ def main(argv: list[str] | None = None) -> int:
 
     _write_lines(lines)
     widths = [len(line) for line in lines]
-    print(
-        f"wrote {len(lines)} lines to {OUT} " f"(width {min(widths)}-{max(widths)}, UTF-8 no BOM)"
-    )
+    print(f"wrote {len(lines)} lines to {OUT} (width {min(widths)}-{max(widths)}, UTF-8 no BOM)")
     return 0
 
 

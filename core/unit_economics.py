@@ -298,8 +298,7 @@ def render(channel_id: str | None = None, *, limit: int = 25) -> str:
         rev = f"${v.revenue_usd:.2f}" if v.revenue_usd is not None else "  n/a"
         margin = f"{v.margin_usd:+.2f}" if v.margin_usd is not None else "   --"
         lines.append(
-            f"  #{v.run_id:<5} {v.title:<40} cost ${v.cost_usd:5.2f}"
-            f"  rev {rev}  margin {margin}"
+            f"  #{v.run_id:<5} {v.title:<40} cost ${v.cost_usd:5.2f}  rev {rev}  margin {margin}"
         )
     lines.append("-" * 64)
     lines.extend(f"  {line}" for line in summary_lines(econ))

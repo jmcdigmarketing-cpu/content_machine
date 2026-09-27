@@ -490,8 +490,7 @@ def _offer_spaced_queue(
     if not ask_confirm("  Queue them across the next open slots? [y/N]: ", default=False):
         print("  Left on disk. Queue one with:")
         print(
-            f"    py -m scripts.requeue_upload --channel {channel_id} "
-            f"--run-id {run_ids[0]} --queue"
+            f"    py -m scripts.requeue_upload --channel {channel_id} --run-id {run_ids[0]} --queue"
         )
         return
     # The long video was queued earlier in this session, so hold a slot for it.
@@ -675,7 +674,7 @@ def _run_new_video_flow_body(
     subsection("Length")
     for key in ("1", "2", "3", "4"):
         p = PRESETS[key]
-        print(f"  {key}) {p.label} ({p.duration_hint()}, " f"{p.min_words}-{p.max_words} words)")
+        print(f"  {key}) {p.label} ({p.duration_hint()}, {p.min_words}-{p.max_words} words)")
 
     from core.length_recommender import (
         display_recommended_length,

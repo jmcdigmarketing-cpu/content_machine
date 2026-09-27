@@ -134,8 +134,7 @@ def get_youtube_analytics_service(channel_id: str | None = None):
         return None
     if SCOPE_YT_ANALYTICS_READONLY not in (creds.scopes or []):
         logger.warning(
-            "Token missing yt-analytics.readonly — re-run: "
-            "py -m youtube.oauth_setup --channel %s",
+            "Token missing yt-analytics.readonly — re-run: py -m youtube.oauth_setup --channel %s",
             resolve_channel_id(channel_id),
         )
         return None

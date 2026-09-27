@@ -111,7 +111,7 @@ def unattended_render_block_reason(
         )
     age_h = (float(now if now is not None else time.time()) - stamp) / 3600.0
     if age_h > hours:
-        return f"human-presence gate: last operator {age_h:.1f}h ago " f"(need within {hours:g}h)"
+        return f"human-presence gate: last operator {age_h:.1f}h ago (need within {hours:g}h)"
     return None
 
 

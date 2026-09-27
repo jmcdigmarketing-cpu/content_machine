@@ -444,7 +444,7 @@ def _command_line(argv: Any) -> str:
 def _details_html(summary: str, body: str) -> str:
     if not (body or "").strip():
         return ""
-    return "<details class='card'>" f"<summary>{escape(summary)}</summary>" f"{body}" "</details>"
+    return f"<details class='card'><summary>{escape(summary)}</summary>{body}</details>"
 
 
 def last_watch_url(channel_id: str | None = None) -> str:

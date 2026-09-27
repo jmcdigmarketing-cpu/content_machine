@@ -451,8 +451,7 @@ def blocks_render(report: AuthenticityReport) -> bool:
 def display_authenticity_report(report: AuthenticityReport, *, print_fn=print) -> None:
     icon = {"ok": "✓", "review": "!", "block": "✗"}.get(report.verdict, "?")
     print_fn(
-        f"\n  Authenticity {icon} {report.score}/100 ({report.verdict}) "
-        f"— monetisation safety check"
+        f"\n  Authenticity {icon} {report.score}/100 ({report.verdict}) — monetisation safety check"
     )
     for c in report.checks:
         mark = "✓" if c.passed else "✗"

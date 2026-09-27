@@ -40,11 +40,9 @@ def deadman_block_reason(
             logger.debug("deadman heartbeat read skipped: %s", exc)
             stamp = None
     if stamp is None:
-        return (
-            f"publish dead-man's switch: no operator heartbeat " f"(PUBLISH_DEADMAN_DAYS={days:g})"
-        )
+        return f"publish dead-man's switch: no operator heartbeat (PUBLISH_DEADMAN_DAYS={days:g})"
     current = float(now if now is not None else time.time())
     age_days = max(0.0, (current - float(stamp)) / 86400.0)
     if age_days > days:
-        return f"publish dead-man's switch: last seen {age_days:.0f}d ago " f"(limit {days:g}d)"
+        return f"publish dead-man's switch: last seen {age_days:.0f}d ago (limit {days:g}d)"
     return None

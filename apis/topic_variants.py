@@ -367,8 +367,7 @@ def _anchor_rules(topic: str, channel_id: str | None) -> str:
 
     if profile and profile.domain == "gaming" and infer_topic_domain(topic) == "gaming":
         lines.append(
-            "- Titles must be about the game/update named in the seed — "
-            "not generic franchise lore."
+            "- Titles must be about the game/update named in the seed — not generic franchise lore."
         )
     history = channel_history_block(channel_id) if channel_id else ""
     if history:

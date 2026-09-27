@@ -27,7 +27,7 @@ BULLET = "The subpoena demands account IDs and last-login IP addresses."
 
 def _write_note(root: Path) -> None:
     (root / "gta6-subpoenas.md").write_text(
-        "---\nchannel: tapin\ntier: link\ntags: [facts]\n---\n" "# GTA 6 leak\n" f"- {BULLET}\n",
+        f"---\nchannel: tapin\ntier: link\ntags: [facts]\n---\n# GTA 6 leak\n- {BULLET}\n",
         encoding="utf-8",
     )
 

@@ -89,7 +89,7 @@ def build_lower_thirds_ass(labels: list[str], words: list[dict] | None) -> str:
             continue
         start, end = span
         events.append(
-            f"Dialogue: 1,{_ass_ts(start)},{_ass_ts(end)},LowerThird,,0,0,0,," f"{_ass_text(label)}"
+            f"Dialogue: 1,{_ass_ts(start)},{_ass_ts(end)},LowerThird,,0,0,0,,{_ass_text(label)}"
         )
     if not events:
         return ""

@@ -265,8 +265,7 @@ def inspect_technical_qc(
                 issues.append(f"true peak {peak:.1f} dBFS exceeds {targets['true_peak']:.1f} dBFS")
             if loudness_range < targets["range_min"]:
                 issues.append(
-                    f"loudness range {loudness_range:.1f} LU is below "
-                    f"{targets['range_min']:.1f} LU"
+                    f"loudness range {loudness_range:.1f} LU is below {targets['range_min']:.1f} LU"
                 )
 
     return TechnicalQC(

@@ -207,8 +207,7 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
 
             if str(theme).strip().lower() not in THEMES:
                 errors.append(
-                    f"{channel_id}: unknown ui_theme {theme!r} "
-                    f"(known: {', '.join(sorted(THEMES))})"
+                    f"{channel_id}: unknown ui_theme {theme!r} (known: {', '.join(sorted(THEMES))})"
                 )
         except Exception as exc:  # registry unavailable - do not invent an error
             warnings.append(f"{channel_id}: could not check ui_theme: {exc}")

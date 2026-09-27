@@ -69,7 +69,7 @@ def youtube_api_fallback_block_reason(
             logger.debug("competitor-sync quota read skipped: %s", exc)
             remaining = None
     if remaining is not None and reserve and remaining < reserve + units_needed:
-        return f"competitor-sync: {remaining} YouTube units left, " f"reserve {reserve} for uploads"
+        return f"competitor-sync: {remaining} YouTube units left, reserve {reserve} for uploads"
     return None
 
 

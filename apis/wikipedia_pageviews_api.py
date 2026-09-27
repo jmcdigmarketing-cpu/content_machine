@@ -199,7 +199,7 @@ def _article_candidates(topic: str) -> list[str]:
 def _fetch_pageviews(article: str) -> dict | None:
     end = datetime.now(timezone.utc).date()
     start = end - timedelta(days=14)
-    url = f"{_BASE}/{article}/daily/" f"{start.strftime('%Y%m%d')}/{end.strftime('%Y%m%d')}"
+    url = f"{_BASE}/{article}/daily/{start.strftime('%Y%m%d')}/{end.strftime('%Y%m%d')}"
     resp = requests.get(
         url,
         timeout=8,

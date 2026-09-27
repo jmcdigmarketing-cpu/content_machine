@@ -439,7 +439,7 @@ def maybe_print_milestone(channel_id: str, *, print_fn=emit) -> None:
     print_fn(accent(f"  ★ Milestone — {label}"))
 
 
-HEALTH_LEGEND = "ON=ok | ON (not active)=no match | " "QUOTA/RATE LIMITED/AUTH=issue — see detail"
+HEALTH_LEGEND = "ON=ok | ON (not active)=no match | QUOTA/RATE LIMITED/AUTH=issue — see detail"
 
 SIGNAL_ORDER = (
     "youtube",
@@ -1115,8 +1115,7 @@ def prompt_key_facts_result(
         )
         if flagged:
             print_fn(
-                f"  {len(flagged)} link line(s) look off-topic for "
-                f"'{_elide(angle or topic, 60)}':"
+                f"  {len(flagged)} link line(s) look off-topic for '{_elide(angle or topic, 60)}':"
             )
             for line in flagged[:3]:
                 print_fn(f"    · {_elide(line, 72)}")

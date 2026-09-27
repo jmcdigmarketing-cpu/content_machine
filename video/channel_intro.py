@@ -161,7 +161,7 @@ def build_intro_concat_command(
     else:
         dur = max(intro_duration, 0.1)
         audio_intro = (
-            f"anullsrc=r=48000:cl=stereo,atrim=duration={dur:.3f}," f"asetpts=PTS-STARTPTS[a0]"
+            f"anullsrc=r=48000:cl=stereo,atrim=duration={dur:.3f},asetpts=PTS-STARTPTS[a0]"
         )
 
     filter_complex = (

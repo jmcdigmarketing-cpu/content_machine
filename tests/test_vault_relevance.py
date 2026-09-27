@@ -68,7 +68,7 @@ class TestRun71FeatureMatrix(unittest.TestCase):
             topic=TOPIC,
             corpus=CORPUS,
             bullet=(
-                "Marvel Rivals season 9 adds a Wolverine costume from the " "Horseman of Death era."
+                "Marvel Rivals season 9 adds a Wolverine costume from the Horseman of Death era."
             ),
             note_context="rivals Marvel Rivals season 9",
             tier=TIER_VAULT,

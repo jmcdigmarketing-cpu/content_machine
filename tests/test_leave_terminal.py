@@ -135,7 +135,7 @@ class TestFileLock(unittest.TestCase):
         self.assertTrue(
             file_lock.is_lock_error(
                 None,
-                "The process cannot access the file " "because it is being used by another process",
+                "The process cannot access the file because it is being used by another process",
             )
         )
         self.assertFalse(file_lock.is_lock_error(None, "amix failed"))

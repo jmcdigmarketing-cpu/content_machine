@@ -22,8 +22,7 @@ def build_policy_overlays_ass(
         disclaimer = ""
     if disclaimer:
         events.append(
-            f"Dialogue: 0,{_ass_ts(0.0)},{_ass_ts(hold)},Disclaimer,,0,0,0,,"
-            f"{_ass_text(disclaimer)}"
+            f"Dialogue: 0,{_ass_ts(0.0)},{_ass_ts(hold)},Disclaimer,,0,0,0,,{_ass_text(disclaimer)}"
         )
     try:
         from core.description_extras import ai_disclosure_line

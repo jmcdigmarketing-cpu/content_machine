@@ -10,9 +10,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+
+from alembic import command
 from config.settings import get_settings
 from storage.db import is_database_configured
 

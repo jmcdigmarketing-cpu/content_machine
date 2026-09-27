@@ -698,6 +698,14 @@ def _run_new_video_flow_body(
     _len_in = ask_choice(f"  Select 1-4 [{length_default}]: ")
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
+    # #883-#886: who reads it. A debate changes the script, so it is asked before writing.
+    from core.voice_plan import voice_menu_lines, voice_mode_from_choice
+
+    subsection("Voices")
+    for line in voice_menu_lines(all_angles=bool(all_angles)):
+        print(line)
+    voice_mode = voice_mode_from_choice(ask_choice("  Select [1]: "), all_angles=bool(all_angles))
+
     fact_selection = prompt_key_facts_result(
         topic,
         channel_id,
@@ -729,6 +737,7 @@ def _run_new_video_flow_body(
             relevance_corpus=fact_selection.relevance_corpus,
             menu_path="5" if seed_topic else "1",
             chapter_angles=all_angles or None,
+            voice_mode=voice_mode,
         )
 
         print()
@@ -1002,8 +1011,16 @@ def _run_new_video_flow_body(
         print("  Tags:")
         print(f"  {', '.join(result.tags)}")
 
+    _tsc = result.features.get("title_script_check")
     upload_plan = prompt_upload_plan(
-        channel_id=channel_id, topic=best_topic, grounding_override=grounding_override
+        channel_id=channel_id,
+        topic=best_topic,
+        grounding_override=grounding_override,
+        title_warnings=(
+            list(_tsc.get("warnings") or [])
+            if isinstance(_tsc, dict) and _tsc.get("status") == "failed"
+            else None
+        ),
     )
     thumb_for_upload = thumb_path or None
     if upload_plan.mode == "queue" and result.run_id and result.mp4_path:

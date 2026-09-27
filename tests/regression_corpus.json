@@ -635,6 +635,47 @@
         ]
       },
       "why": "only the display drops retired names; gating itself is unchanged"
+    },
+    {
+      "id": "run99-title-flagged",
+      "item": 877,
+      "source": "run 99 (script excerpt reconstructed from the backlog)",
+      "call": "core.youtube_meta:_heuristic_title_script_check",
+      "args": [
+        "UFC week 2: Gane stops Pereira, Dana White bans White House fights",
+        "Dana White handed out five contracts on week two of the Contender Series. The standout was a flyweight who finished his fight in the first round. Two heavyweights also earned deals after a close decision."
+      ],
+      "expect": {
+        "equals": "failed"
+      },
+      "why": "the title/script check must keep flagging a title the script never says; #877 regenerates on this verdict",
+      "select": "status"
+    },
+    {
+      "id": "run99-uncertain-enter-is-none",
+      "item": 878,
+      "source": "run 99",
+      "call": "core.ui:parse_uncertain_choice",
+      "args": [
+        ""
+      ],
+      "expect": {
+        "equals": "none"
+      },
+      "why": "Enter at 'Use uncertain facts?' took all six off-topic vault lines behind run 99's title"
+    },
+    {
+      "id": "debate-tags-leave-prose",
+      "item": 886,
+      "source": "wave 39 guard",
+      "call": "core.voice_plan:strip_speaker_tags",
+      "args": [
+        "The host city: Las Vegas. He said the co-host role is gone."
+      ],
+      "expect": {
+        "equals": "The host city: Las Vegas. He said the co-host role is gone."
+      },
+      "why": "only HOST:/CO-HOST: speaker tags are stripped; ordinary words stay in the script"
     }
   ]
 }

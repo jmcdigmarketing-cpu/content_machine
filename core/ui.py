@@ -930,6 +930,19 @@ class KeyFactSelection:
     held_back: list[Any] = field(default_factory=list)
 
 
+def parse_uncertain_choice(choice: str) -> str | list[int]:
+    """The uncertain-facts answer: "all", "none" or the printed numbers picked.
+
+    #878: Enter used to take every uncertain vault line; run 99's off-topic title was
+    built from six of them. Enter now takes none - they are opt-in.
+    """
+    text = str(choice or "").strip().lower()
+    if text in ("a", "all", "y", "yes"):
+        return "all"
+    picked = [int(tok) for tok in text.replace(",", " ").split() if tok.isdigit()]
+    return picked or "none"
+
+
 def prompt_key_facts_result(
     topic: str,
     channel_id: str = "default",
@@ -1217,26 +1230,20 @@ def prompt_key_facts_result(
         overrides.update({record.claim: "auto" for record in confident_records})
         overrides.update({record.claim: "rejected" for record in inspect_rejects})
         if uncertain_records:
-            choice = (
-                input_fn("  Use uncertain facts? [Enter=all / n=none / e.g. '2'=printed number]: ")
-                .strip()
-                .lower()
+            uncertain_pick = parse_uncertain_choice(
+                input_fn("  Use uncertain facts? [Enter=none / a=all / e.g. '2'=printed number]: ")
             )
-            if choice in ("", "y", "yes", "all"):
+            if uncertain_pick == "all":
                 chosen = list(uncertain_records)
-            elif choice in ("n", "no", "none"):
-                chosen = []
-            else:
-                picked = {
-                    int(tok)
-                    for tok in choice.replace(",", " ").split()
-                    if tok.isdigit() and 1 <= int(tok) <= len(records)
-                }
+            elif isinstance(uncertain_pick, list):
+                wanted = {n for n in uncertain_pick if 1 <= n <= len(records)}
                 chosen = [
                     record
                     for index, record in enumerate(records, 1)
-                    if index in picked and record in uncertain_records
+                    if index in wanted and record in uncertain_records
                 ]
+            else:
+                chosen = []
             selected_records.extend(chosen)
             chosen_claims = {record.claim for record in chosen}
             overrides.update(
@@ -2029,11 +2036,14 @@ def prompt_upload_plan(
     print_fn=emit,
     input_fn=ask_text,
     grounding_override: bool = False,
+    title_warnings: list[str] | None = None,
 ) -> UploadPlan:
     """Interactive upload timing and privacy (no CLI flags).
 
     `grounding_override` (#754): the operator rendered past the grounding gate, so public
     is not on the menu - the upload stays unlisted until the claim is fixed.
+    `title_warnings` (#877): the title still contradicts the script after its one
+    regeneration, so queueing it needs an explicit yes; Enter skips.
     """
     from analytics.post_timing import (
         format_scheduled_local,
@@ -2063,6 +2073,15 @@ def prompt_upload_plan(
 
     if timing == "1":
         return UploadPlan(mode="skip")
+
+    if title_warnings:
+        print_fn("\n  ⚠ The title still contradicts the script:")
+        for warning in title_warnings[:3]:
+            print_fn(f"    · {warning}")
+        confirm = input_fn("  Upload with this title anyway? [y / Enter = skip]: ")
+        if str(confirm or "").strip().lower() not in ("y", "yes"):
+            print_fn("  Skipped - nothing queued. The render is kept; option 5 re-queues it.")
+            return UploadPlan(mode="skip")
 
     privacy_map = {"1": "private", "2": "unlisted", "3": "public"}
     default_key = next(

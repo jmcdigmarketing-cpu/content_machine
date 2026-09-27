@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-09-26: wave 38, next five
+# Handoff synopsis — 2026-09-27: wave 39, next five
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-26 (Claude Code): wave 38 #865 #873 #875 #856 #867 #869
+## Last wave — 2026-09-27 (Claude Code): wave 39 voices #883-#886, #877 #878
+
+- **#883** the voice rotates: `tts.rotate: true` draws from each channel's `voice_pool`, pinned
+  once per render by `core/tts.voice_context` (cache key included) and never the previous run's
+  narrator (`core/voice_plan.pick_run_voices`). `features["voices"]` records it.
+- **#884-#886** a "Voices" prompt after the length: 1 one voice · 2 quotes in a second voice ·
+  3 a voice per chapter (all-angles only) · 4 two-host debate. `core/voice_plan.plan_segments`
+  cuts the script; `generate_audio(voices=, segments=)` renders each part in its voice and
+  shifts word timings. Debate tags are stripped in `generate_content_package`; the turns are
+  stored as `speaker_turns`. ElevenLabs + ffmpeg only; local voices stay single.
+- **#877** a flagged title is regenerated once from the script; still flagged -> `y` to upload.
+  **#878** Enter at "Use uncertain facts?" takes none.
+- Not heard yet: one debate and one quotes run on the PC (#889).
+
+**Verify:** `python -m unittest tests.test_voices tests.test_flagged_title`;
+`py -m scripts.ops regressions` (43 of 43).
+
+## Previous — 2026-09-26 (Claude Code): wave 38 #865 #873 #875 #856 #867 #869
 
 - **#865** `publishing/snippet_update.py`: every snippet change reads the live snippet and sends
   all writable fields; rollback prepends its correction.
@@ -34,22 +51,6 @@ tests.test_status_machine`; `py -m scripts.ops regressions`.
   the 2025-05 to 2026-05 dates. **#873** old football uploads still say Gaming.
 
 **Verify:** `python -m unittest tests.test_domains_once`; `py -m scripts.ops regressions`.
-
-## Previous — 2026-09-26 (Claude Code): wave 36, own review #871
-
-The operator dropped the Codex/Astra review and asked for one: what can be consolidated, where
-did a newer idea erase a fix, is a new system needed. [review_2026-09-26.md](review_2026-09-26.md).
-
-- **Found:** five fixes erased by later work (#745 stopwords, #783 caption size, #840 TTS
-  double billing, #676, #323); run 98's question-word fix in 1 of 7 tokenizers and #852's name
-  query in 1 of 11 builders; 13 private stopword lists.
-- **Built:** `tests/regression_corpus.json` + `ops regressions [file]` (28 cases, 15 failed on
-  `4e4261e`); tokenizers and query builders on `apis/topic_tokens`; a test refusing new private
-  stopword lists; the rule in CLAUDE.md and the next-five / tdd skills.
-- **Backlog:** epics E1-E6; #866 domain (deferred), #867-#870 filed.
-
-**Verify:** `py -m scripts.ops regressions`; `python -m unittest tests.test_regression_corpus
-tests.test_topic_text_shared`.
 
 ## Pipeline order (operator)
 
@@ -114,11 +115,12 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator, after switching to `main`:** `ops backfill-quality --force --apply`,
-   `ops backfill-angles --apply`, `ops calibration`, `ops feeds`. #849 waits on that output.
-2. **Product next (by epic, backlog.md "Epics"):** #849 (E1) · #863 (E3) · #876 game names (E2).
-3. **Structural:** #869 status verbs (E4) · #870 backfills (E6) · #867 unread keys (E5) · #865 ·
-   #832 · #831 ruff bump · #834 `core/` seams. Any live-run defect: add a corpus case.
+1. **Operator:** one debate run and one quotes run on the PC, to hear them (#889). The
+   backfills, calibration (n=23, nothing significant) and feeds are done; the PC is on `main`.
+2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit (E1) · #879 (E3) · #876 game
+   names (E2) · #863 waits on ten runs.
+3. **Structural:** #870 backfills (E6) · #855 (E5) · #888 dossier after render · #832 · #831
+   ruff bump · #834 `core/` seams. Any live-run defect: add a corpus case.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
    contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours

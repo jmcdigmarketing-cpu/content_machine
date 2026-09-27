@@ -53,28 +53,29 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-26 · **HEAD at write:** `3d59336` + this wave's commit on `main` (`git log -2`)
+**Written:** 2026-09-27 · **HEAD at write:** `c0ed1a0` + this wave's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit; `data/` untouched.
 
-**Read before editing:** `py -m scripts.ops regressions <file>` (40 cases). A snippet change to a
-live video goes through `publishing/snippet_update.writable_snippet` - never a partial snippet.
-A new stored feature/quality key needs a reader (the dossier Audit block is the default) or
-`tests/test_persisted_keys_read.py` fails.
+**Read before editing:** `py -m scripts.ops regressions <file>` (43 cases). A voice is resolved
+through `core/tts.resolve_tts_config` inside a `voice_context` - never pick one per synth call.
+Debate tags are stripped in `generate_content_package`; anything reading the script after that
+sees clean text. A render test must patch `record_render_assets`, `update_content_run_media` and
+set `THUMBNAIL_MODE=off`, or it writes `data/assets.json` and thumbnails (it did, once, this wave).
 
 **Defects first:**
-- **Operator step now:** `py -m youtube.oauth_setup --channel tapin` (sign in, approve managing the account), then `ops recategorize --apply` and `ops go-public JX81cscTFdI --apply`. The PC is on `main`; Codex's uncommitted work is on local branch `codex/p0-backup` (superseded by wave 31's test-order work).
-- **Run 99 (operator, 2026-09-26) ran on old code** - TTS billed twice, retired signals listed as Gated, v4 card: the PC had not pulled `main`. The copy-paste steps are in the planning conversation; new finds #877 #878 #879.
-- **Operator step:** `py -m scripts.ops recategorize` (dry run) then `--apply` on the PC to move
-  already-uploaded football videos from Gaming to Sports (#873). Needs OAuth and upload enabled.
-- **#876** game names outside the franchise list ("Silksong", "Palworld") read neutral.
-- **The operator's PC may still be on `codex/p0-test-integrity`**; `git switch main` and pull.
+- **Nothing here was heard (#889).** No ElevenLabs key or ffmpeg in the container: the tests
+  cover the segment plan, the voices asked for, word timings and stripped tags. Operator: one
+  debate run and one quotes run on the PC.
+- **#888** the run dossier shows the voices only after the overnight rewrite.
+- **#887** "Use these? [Enter=all]" (vault review path) is #878's sibling, left as an operator call.
+- **#876** game names outside the franchise list read neutral. **#879** "UFC week 2" named no series.
 - **Use `python -m ruff`, never bare `ruff`, here:** bare is 0.15.8, CI pins 0.8.4.
 
-**Shipped:** #865 · #873 · #875 · #856 · #867 · #869. The May 2025 prototype (supplied by the
-operator; key values never copied) is in `docs/project_timeline.md` and the "Content OS Story" page.
+**Shipped:** #883 · #884 · #885 · #886 · #877 · #878. The operator's steps from wave 38 are done
+(re-auth, recategorize 9 updated, run 99 public, Doctor 14 of 14).
 
-Suite **3,713**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **283 numbered open**, highest **#879** (#880-#882 done). Next five: **#849 · #863 · #876 · #855 · #870**.
+Suite **3,755**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **284 numbered open**, highest **#889**. Next five: **#849 · #879 · #876 · #855 · #870**.
 
 ## Slot — Cursor
 

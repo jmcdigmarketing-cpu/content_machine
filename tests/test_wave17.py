@@ -242,17 +242,29 @@ class TestLongFormVoicePolicy(unittest.TestCase):
             self.assertEqual(tts._resolve_tts_provider(), "elevenlabs")
 
     def test_run_media_only_passes_the_length(self):
-        text = (
-            Path(__file__)
-            .resolve()
-            .parents[1]
-            .joinpath("core/pipeline.py")
-            .read_text(encoding="utf-8")
-        )
-        self.assertIn(
-            "generate_audio(script, mp3_path, channel_id=channel_id, length_choice=length_choice)",
-            text,
-        )
+        # Was a grep for the one-line call; wave 39 added the voices to it (#883), so the
+        # call is now checked by what it receives, not by how it is spelled.
+        import tempfile
+
+        from core import pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            mp3 = os.path.join(tmp, "a.mp3")
+            mp4 = os.path.join(tmp, "a.mp4")
+            with (
+                patch.dict(os.environ, {"THUMBNAIL_MODE": "off", "CONTENT_RENDER_PROGRESS": "0"}),
+                patch.object(pipeline, "media_paths_for_topic", return_value=(mp3, "a.mp4", mp4)),
+                patch("core.tts_char_cap.tts_char_cap_reason", return_value=""),
+                patch.object(pipeline, "generate_audio") as audio,
+                patch.object(pipeline, "render_vertical_video", return_value=(None, None)),
+                patch.object(pipeline, "update_content_run_media"),
+                patch.object(pipeline, "record_render_assets"),
+                patch("core.run_trace.update_trace"),
+                patch("core.run_features.load_features", return_value={}),
+                patch("core.run_features.merge_features"),
+            ):
+                pipeline.run_media_only("topic", "script", channel_id="tapin", length_choice="4")
+        self.assertEqual(audio.call_args.kwargs["length_choice"], "4")
 
     def test_documented_in_env_example(self):
         text = (

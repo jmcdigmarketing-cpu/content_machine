@@ -100,6 +100,12 @@ def audit_lines(features: dict[str, Any], quality: dict[str, Any]) -> list[str]:
         hashes = [f"{k.split('_')[0]} {str(v)[:12]}" for k, v in manifest.items() if v]
         if hashes:
             out.append("- **Render hashes:** " + ", ".join(hashes))
+    voices = features.get("voices")
+    if isinstance(voices, dict) and voices:
+        mode = str(features.get("voice_mode") or "single")
+        out.append(
+            f"- **Voices ({mode}):** " + ", ".join(f"{role} {vid}" for role, vid in voices.items())
+        )
     return out
 
 

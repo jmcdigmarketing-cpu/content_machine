@@ -1030,6 +1030,7 @@ def generate_content_package(
     extra_directive: str = "",
     source_urls: list[str] | None = None,
     relevance_corpus: str = "",
+    voice_mode: str = "",
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -1170,6 +1171,17 @@ def generate_content_package(
         }
 
     script = str(payload["script"])
+    # #886: HOST:/CO-HOST: tags are for the voices only. Keep who said what, then strip
+    # them before grounding, the title check, captions and the description see the text.
+    speaker_turns: list[dict[str, str]] = []
+    if voice_mode == "debate":
+        from core.voice_plan import parse_speaker_turns, strip_speaker_tags
+
+        speaker_turns = parse_speaker_turns(script)
+        script = strip_speaker_tags(script)
+        payload["description"] = strip_speaker_tags(str(payload.get("description") or ""))
+        if not speaker_turns:
+            logger.warning("Debate asked for, but the script came back without HOST: tags")
     attempts = 0
     max_attempts = MAX_EXPAND_ATTEMPTS_EXTENDED if length_choice == "4" else MAX_EXPAND_ATTEMPTS
     while count_spoken_words(script) < min_words and attempts < max_attempts:
@@ -1468,6 +1480,31 @@ def generate_content_package(
     from core.youtube_meta import check_title_script_consistency
 
     title_script_check = check_title_script_consistency(title, script, topic=topic)
+    if title_script_check.get("status") == "failed":
+        # #877 (run 99): a title built from off-topic facts shipped with this warning.
+        # Retry once from the script alone; keep the retry only if it passes.
+        retry = generate_title(
+            script=script,
+            topic=topic,
+            seed_topic=seed_topic,
+            key_facts=None,
+            channel_id=channel_id,
+        )
+        retry_check = (
+            check_title_script_consistency(retry, script, topic=topic)
+            if retry and retry != title
+            else title_script_check
+        )
+        if retry_check.get("status") == "passed":
+            logger.warning("Title contradicted the script; regenerated: %r -> %r", title, retry)
+            retry_check = {**retry_check, "regenerated_from": title}
+            title, title_script_check = retry, retry_check
+            title_warnings = lint_title_grounding(
+                title,
+                facts_text=corpus.factual_text,
+                priority_facts=clean_key_facts,
+                topic=topic,
+            )
     _tsc_warnings = title_script_check.get("warnings")
     title_script_warnings = list(_tsc_warnings) if isinstance(_tsc_warnings, list) else []
     if title_script_warnings:
@@ -1540,6 +1577,7 @@ def generate_content_package(
         "title_warnings": title_warnings,
         "title_script_check": title_script_check,
         "script": script,
+        "speaker_turns": speaker_turns,
         "description": apply_description_extras(
             payload.get("description") or "",
             channel_id,

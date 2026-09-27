@@ -32,6 +32,8 @@ class ChannelProfile:
     tts_voice_id: str | None = None
     tts_model_id: str | None = None
     tts_voice_pool: dict[str, int] | None = None
+    # #883: draw each run's voice from `tts_voice_pool` instead of always `tts_voice_id`.
+    tts_rotate: bool = False
     # Optional per-channel LOCAL TTS voice(s) for the TTS_PROVIDER chain (Pillar 6 voice
     # variety, core/tts.resolve_local_voice). Value semantics depend on the active local
     # provider: Piper -> a .onnx path, Kokoro -> a voice name, XTTS -> a speaker wav. A
@@ -127,6 +129,7 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             tts_voice_id=tts.get("voice_id") or cfg.get("tts_voice_id"),
             tts_model_id=tts.get("model_id") or cfg.get("tts_model_id"),
             tts_voice_pool=voice_pool,
+            tts_rotate=bool(tts.get("rotate", cfg.get("tts_rotate", False))),
             local_tts_voice=local_voice,
             local_tts_voices=local_voices,
             background_mode=str(cfg.get("background_mode", "hybrid")).lower(),

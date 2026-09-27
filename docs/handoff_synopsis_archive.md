@@ -7,6 +7,22 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 36, own review #871
+
+The operator dropped the Codex/Astra review and asked for one: what can be consolidated, where
+did a newer idea erase a fix, is a new system needed. [review_2026-09-26.md](review_2026-09-26.md).
+
+- **Found:** five fixes erased by later work (#745 stopwords, #783 caption size, #840 TTS
+  double billing, #676, #323); run 98's question-word fix in 1 of 7 tokenizers and #852's name
+  query in 1 of 11 builders; 13 private stopword lists.
+- **Built:** `tests/regression_corpus.json` + `ops regressions [file]` (28 cases, 15 failed on
+  `4e4261e`); tokenizers and query builders on `apis/topic_tokens`; a test refusing new private
+  stopword lists; the rule in CLAUDE.md and the next-five / tdd skills.
+- **Backlog:** epics E1-E6; #866 domain (deferred), #867-#870 filed.
+
+**Verify:** `py -m scripts.ops regressions`; `python -m unittest tests.test_regression_corpus
+tests.test_topic_text_shared`.
+
 ## Previous — 2026-09-26 (Claude Code): wave 35 #864 #861 #863 #839 #830
 
 The operator asked why uploads land unlisted: `YOUTUBE_UNLISTED_REVIEW` (#109, default on) holds

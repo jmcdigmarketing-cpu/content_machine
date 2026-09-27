@@ -774,6 +774,7 @@ def run_pipeline(
     relevance_corpus: str = "",
     menu_path: str | None = None,
     chapter_angles: list[str] | None = None,
+    voice_mode: str = "single",
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -832,6 +833,19 @@ def run_pipeline(
         )
         best_topic = f"{content_topic} - all {len(angles)} angles"
         result.topic = best_topic
+
+    # #883-#886: who reads the script. Only the debate changes what the writer is asked.
+    from core.voice_plan import normalize_mode, voice_mode_directive
+
+    voice_mode = normalize_mode(voice_mode)
+    if voice_mode == "chapters" and len(angles) < 2:
+        voice_mode = "single"
+    voice_kwargs: dict[str, Any] = {}
+    if voice_mode == "debate":
+        content_brief = "\n\n".join(
+            part for part in ((content_brief or "").strip(), voice_mode_directive("debate")) if part
+        )
+        voice_kwargs["voice_mode"] = "debate"
 
     try:
         from core.cross_channel_dup import cross_channel_dup_block_reason
@@ -893,6 +907,7 @@ def run_pipeline(
         key_facts=key_facts or [],
         source_urls=source_urls or [],
         relevance_corpus=relevance_corpus,
+        **voice_kwargs,
     )
     result.timings["length_preset"] = preset.choice
     result.timings["content_package"] = time.perf_counter() - t_content
@@ -918,6 +933,9 @@ def run_pipeline(
         vault_relevance_audit=vault_relevance_audit,
         signals=best_signals,
     )
+    result.features["voice_mode"] = voice_mode
+    if content.get("speaker_turns"):
+        result.features["speaker_turns"] = list(content["speaker_turns"])
     if result.menu_path:
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:
@@ -1010,6 +1028,7 @@ def run_pipeline(
         title=result.title,
         lower_thirds=result.features.get("lower_thirds"),
         length_choice=length_choice,
+        voice_features=result.features,
     )
     result.mp3_path = mp3_path
     result.mp4_path = mp4_path
@@ -1045,8 +1064,13 @@ def run_media_only(
     lower_thirds: list[str] | None = None,
     force: bool = False,
     length_choice: str = "",
+    voice_features: dict[str, Any] | None = None,
 ) -> tuple[str, str, str]:
-    """Generate audio + video (+ publish thumbnail). Draft preset never updates upload media."""
+    """Generate audio + video (+ publish thumbnail). Draft preset never updates upload media.
+
+    `voice_features` is the unsaved run's features (voice mode, debate turns, chapters);
+    a render of a saved run reads them from `content_run_id` instead (#883-#886).
+    """
     channel_id = resolve_channel_id(channel_id)
     display_title = title or topic
     render_preset = str(render_preset or "publish").strip().lower()
@@ -1084,8 +1108,36 @@ def run_media_only(
 
     progress.stage(voice_stage_label(length_choice))
     t_tts = time.perf_counter()
-    generate_audio(script, mp3_path, channel_id=channel_id, length_choice=length_choice)
+    voices: dict[str, str] | None = None
+    segments = None
+    try:
+        from core.voice_plan import plan_for_run
+
+        voices, segments = plan_for_run(script, channel_id, content_run_id, features=voice_features)
+    except Exception as exc:
+        logger.warning("voice plan unavailable, one voice this render: %s", exc)
+    generate_audio(
+        script,
+        mp3_path,
+        channel_id=channel_id,
+        length_choice=length_choice,
+        voices=voices,
+        segments=segments,
+    )
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
+    try:
+        from core.tts import last_run_voices
+
+        used = last_run_voices()
+        if used:
+            if voice_features is not None:
+                voice_features["voices"] = used
+            if content_run_id:
+                from core.run_features import merge_features
+
+                merge_features(content_run_id, {"voices": used})
+    except Exception as exc:
+        logger.debug("run voices not recorded: %s", exc)
     if content_run_id and os.path.isfile(mp3_path + ".words.json"):
         try:
             from core.chapters import refine_run_chapters

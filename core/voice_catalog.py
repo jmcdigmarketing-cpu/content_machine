@@ -127,8 +127,10 @@ def _channel_rows() -> list[str]:
         try:
             profile = get_channel_profile(cid)
             voice_id, _model = resolve_tts_config(cid)
-            if profile.tts_voice_id:
+            if profile.tts_voice_id and not (profile.tts_rotate and profile.tts_voice_pool):
                 how = "pinned"
+            elif profile.tts_voice_pool and profile.tts_rotate:
+                how = f"rotates through a pool of {len(profile.tts_voice_pool)} (sample)"
             elif profile.tts_voice_pool:
                 how = f"pool of {len(profile.tts_voice_pool)} (sample)"
             else:

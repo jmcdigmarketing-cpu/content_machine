@@ -1,12 +1,24 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 39 — more than one voice; run 99's title - 2026-09-27
+
+*3,755 tests; mypy 129 == baseline; ruff clean; regression corpus 43 of 43.*
+
+- **#883** the channel voice rotates through its pool, chosen once per video and never the
+  previous video's.
+- **#884-#886** a "Voices" choice after the length: quotes in a second voice, a voice per
+  chapter (all-angles videos), or a two-host debate. Captions stay in sync; the debate's
+  HOST:/CO-HOST: tags never reach the captions, description or fact checks.
+- **#877** a title that contradicts its script is rewritten from the script; if it still does,
+  uploading it needs a `y`. **#878** uncertain vault facts are opt-in.
 
 ### After wave 38 — first run on main - 2026-09-26
 

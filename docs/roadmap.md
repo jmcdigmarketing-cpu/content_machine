@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-27
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -26,33 +26,31 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-26 wave 38: **#865** snippet updates send the whole snippet ·
-**#873** `ops recategorize` re-files old football uploads (dry run; `--apply` is the operator's) ·
-**#875** GTA 6 trailer runs were read as pop culture, fixed · **#856** the Gated line hides retired
-signals · **#867** the run dossier shows the eight keys nothing read, and a test holds it ·
-**#869** `ops status` ends with one Machine block. The May 2025 prototype is in
-[project_timeline.md](project_timeline.md).
+**Just landed** - 2026-09-27 wave 39, **more than one voice**: **#883** the channel voice rotates
+(once per run, never the last run's) · **#884** quotes in a second voice · **#885** a voice per
+chapter · **#886** a two-host debate - all picked at a new "Voices" prompt after the length ·
+**#877** a title that contradicts its script is regenerated, and a still-flagged one needs `y`
+to upload · **#878** uncertain vault facts are opt-in (Enter = none).
 
-**Before that** - wave 37: **#872 #866 #874** domains and source queries · wave 36: **#871**
-the regression corpus. Earlier: [roadmap_archive.md](roadmap_archive.md) and
-[planning_log.md](planning_log.md).
+**Before that** - wave 38: **#865 #873 #875 #856 #867 #869** · wave 37: **#872 #866 #874**
+domains and source queries · wave 36: **#871** the regression corpus. Earlier:
+[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 38 (2026-09-26)** cleared every buildable item in the last list. Two stay pinned on the
-operator's data; the other three are the cheapest open members of the epics.
+**Wave 39 (2026-09-27)** built the operator's voice request and run 99's two defects. The list
+changed: #863 waits on ten runs and leaves it; #879 (run 99's vague best bet) joins.
 
-1. **#849 tell angles apart** (E1) `[L]` - waiting on the operator's `ops calibration`. The
-   dossier now shows each run's angle scores, so the tie is visible run by run.
-2. **#863 the auto-research verdict** (E3) `[S]` - waiting on ten runs.
+1. **#849 tell angles apart** (E1) `[L]` - the operator's calibration (n=23) put angle at
+   r=-0.26, not significant. Fact-fit is the next thing to measure.
+2. **#879 a continuation best bet names its series** (E3) `[S]` - run 99's "UFC week 2".
 3. **#876 game names from the run history** (E2) `[S]` - "Silksong", "Palworld" read neutral.
 4. **#855 `INGEST_ENABLED` is read by nothing** (E5) `[S]` - wire it or delete it.
 5. **#870 one versioned backfill** (E6) `[M]` - four backfill verbs into one registry.
 
-**Waiting on the operator, not on code:** switch the PC to `main` (it was on a local-only
-`codex/p0-test-integrity` branch, so wave 33 never reached it), then `ops backfill-quality
---force --apply` (v5 re-stamp), `ops backfill-angles --apply`, `ops calibration`, `ops feeds`.
-Structural queue: #832 · #831 · #834.
+**Waiting on the operator, not on code:** one debate run and one quotes run, to hear them
+(#889) - the container has no voice key and no ffmpeg. `git pull` first. Structural queue:
+#832 · #831 · #834.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

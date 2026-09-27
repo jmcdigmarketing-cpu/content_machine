@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,73 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-09-27 (Claude Code) - wave 39: more than one voice, and run 99's title
+
+**Prompt (verbatim):** "are multiple voices in one video possible? next 5 as well." - with the
+operator's paste (re-auth accepted, `recategorize` updated 9 / already right 18 / missing 1,
+Doctor 14 of 14, "updated: JX81cscTFdI is public"). Asked what the voices were for, the operator
+chose every option: "all selected but also, just switching the voice up since we have other voice
+ids, Two-host debate, Quotes in a 2nd voice, Voice per chapter".
+
+### Why the list differs
+
+Recommended #849 · #863 · #876 · #855 · #870. The operator's voices request became four items
+(#883-#886), and run 99's two defects (#877, #878) took the fifth slot: its title shipped
+flagged. #849 and #863 still wait on data; #876 / #855 / #870 carry forward.
+
+### Findings, with file:line
+
+- `core/tts.py:288` `resolve_tts_config` returned `tts.voice_id` whenever it was set, so both
+  channels' `voice_pool` was dead config: every run, one voice.
+- The same function ran per synth call (`synthesize_to_path`'s retry loop and `_tts_cache_voice`),
+  so an unpinned pool would pick a new voice per sentence and never hit its own cache.
+- `core/ui.py` "Use uncertain facts? [Enter=all ...]" took all six off-topic vault lines behind
+  run 99's title; the upload menu already defaulted to Skip, so the operator queued it on purpose
+  over a check that only warned.
+- The sibling prompt "Use these? [Enter=all]" (vault review path) has the same shape (#887, filed
+  as an operator call - those lines are relevance-screened).
+
+### Shipped
+
+- **#883** `tts.rotate: true` (tapin, moneywise); `core/tts.voice_context` / `voice_role` pin the
+  voices for one render; `core/voice_plan.pick_run_voices` skips the previous run's narrator.
+  `features["voices"]` and the dossier Audit line record it.
+- **#884** quotes: `plan_segments(mode="quotes")`, and `generate_audio(voices=, segments=)`
+  synthesises each part in its role's voice, concatenates, and shifts word timings.
+- **#885** a voice per chapter from the stored `char_start`s (all-angles runs only).
+- **#886** debate: the `HOST:` / `CO-HOST:` directive, tags stripped in
+  `generate_content_package` before grounding / title check / description, turns re-attached
+  to the final sentences at render by token overlap.
+- **#877** a flagged title is regenerated once from the script alone; still flagged -> `y` to
+  upload, Enter skips. **#878** Enter at the uncertain prompt takes none.
+
+**Deliberately not done:** multi-voice on local voices (Piper/Kokoro keep one voice, with a
+warning); no mixing of Piper into a multi-voice render; the dossier is not rewritten after the
+render (#888). Nothing here was heard - no ElevenLabs key or ffmpeg in the container (#889).
+
+### Audit
+
+42 new tests (voices 33, title/uncertain 9) plus 3 corpus cases (43 in all). Failing first:
+29 of the 33 voice tests (the engine's 23, the content-engine, pipeline and render tests, and
+the 3 below); the other 4 (other modes untouched, chapters fall back, the menu, the dossier line)
+were written with their code and not seen red. 8 of 9 title/uncertain tests (the ninth, "a clean
+title is not regenerated", is a guard). One weak test that only grepped the source was replaced. A render test wrote real thumbnails and an
+`assets.json` row into the working tree on its first run; both removed and the test now patches
+them out. mypy 129 == baseline.
+
+**Found by re-reading the diff, each fixed test-first:**
+- `last_run_voices` returned the voices *asked for*, so a Piper render (or the 1-in-6 Piper
+  mix) would have stored an ElevenLabs id it never spoke, and the next run's rotation would have
+  avoided it. It now records only an ElevenLabs synth or a cache hit on one.
+- `_generate_by_sentences` resolved the cache voice per sentence; a local voice pool
+  (`local_tts_voices`) picks per call, so the keys would have scattered. Once per role again.
+- `tests/test_wave17.py` grepped `core/pipeline.py` for the one-line `generate_audio` call; it
+  now checks the length the call receives.
+- `ops voices` labelled a rotating channel "pinned"; it says "rotates through a pool of 3".
+
+Backlog **284 numbered open**, highest **#889**. Next five: **#849 · #879 · #876 · #855 ·
+#870**.
 
 ## 2026-09-26 (Claude Code) - the operator's first run on main: three defects, and #849's numbers
 

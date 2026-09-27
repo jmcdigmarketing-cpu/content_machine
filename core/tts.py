@@ -285,18 +285,80 @@ def weighted_random_voice(pool: dict[str, int] | None = None) -> str:
     return random.choice(choices)
 
 
+# #883-#886: the voices of the render in progress, {role: voice_id}, and the role now
+# speaking. Resolved once per run, so a pool cannot change voice between sentences and
+# the cache key names the voice that was actually used. None outside `generate_audio`.
+ROLE_NARRATOR = "narrator"
+_run_voices: dict[str, str] | None = None
+_active_role = ROLE_NARRATOR
+_last_voices: dict[str, str] = {}
+# What actually spoke in the render in progress: an ElevenLabs synth or a cache hit on
+# one. A Piper or Kokoro render leaves it empty, so the run never records a voice it
+# did not hear (and the next run's rotation does not avoid it).
+_voices_spoken: dict[str, str] = {}
+
+
+def _note_voice_spoken(voice_id: str = "") -> None:
+    voice = voice_id
+    if not voice and _resolve_tts_provider() == "elevenlabs":
+        voice = (_run_voices or {}).get(_active_role, "")
+    if voice:
+        _voices_spoken[_active_role] = voice
+
+
+@contextmanager
+def voice_context(voices: dict[str, str]):
+    """Pin the run's voices for one render. The dict is kept (not copied): a voice
+    resolved on first use, or a dead one replaced, is remembered for the rest of it."""
+    global _run_voices
+    previous = _run_voices
+    _run_voices = voices
+    try:
+        yield voices
+    finally:
+        _run_voices = previous
+
+
+@contextmanager
+def voice_role(role: str):
+    """The speaker for the synth calls inside (a quote, a chapter, the co-host)."""
+    global _active_role
+    previous = _active_role
+    _active_role = str(role or ROLE_NARRATOR)
+    try:
+        yield
+    finally:
+        _active_role = previous
+
+
+def last_run_voices() -> dict[str, str]:
+    """{role: voice_id} the last `generate_audio` used; {} for a local-only render."""
+    return dict(_last_voices)
+
+
 def resolve_tts_config(channel_id: str | None = None) -> tuple[str, str]:
-    """Return (voice_id, model_id) for channel."""
+    """Return (voice_id, model_id) for channel - the run's voice for the active role."""
     profile = get_channel_profile(channel_id)
     model_id = profile.tts_model_id or DEFAULT_MODEL
+    role = _active_role
+    if _run_voices is not None:
+        pinned = _run_voices.get(role) or ""
+        if pinned and pinned not in _dead_voices:
+            return pinned, model_id
 
-    if profile.tts_voice_id:
-        return profile.tts_voice_id, model_id
-
-    if profile.tts_voice_pool:
-        return weighted_random_voice(profile.tts_voice_pool), model_id
-
-    return weighted_random_voice(), model_id
+    if profile.tts_voice_id and not (
+        getattr(profile, "tts_rotate", False) and profile.tts_voice_pool
+    ):
+        voice = str(profile.tts_voice_id)
+        if voice in _dead_voices and profile.tts_voice_pool:
+            voice = weighted_random_voice(profile.tts_voice_pool)
+    elif profile.tts_voice_pool:
+        voice = weighted_random_voice(profile.tts_voice_pool)
+    else:
+        voice = weighted_random_voice()
+    if _run_voices is not None:
+        _run_voices[role] = voice
+    return voice, model_id
 
 
 def tts_cache_enabled() -> bool:
@@ -466,13 +528,62 @@ def _tts_cache_voice(channel_id: str | None) -> str:
         return ""
 
 
-def generate_audio(script, output_path, channel_id: str | None = None, length_choice: str = ""):
-    """Synthesize `script`. `length_choice` selects the long-form voice policy (#758)."""
-    with length_context(length_choice):
-        return _generate_audio(script, output_path, channel_id=channel_id)
+def generate_audio(
+    script,
+    output_path,
+    channel_id: str | None = None,
+    length_choice: str = "",
+    *,
+    voices: dict[str, str] | None = None,
+    segments: list | None = None,
+):
+    """Synthesize `script`. `length_choice` selects the long-form voice policy (#758).
+
+    `voices` pins {role: voice_id} for the run (#883); without it the first synth call
+    picks and every later one reuses it. `segments` (`core.voice_plan.Segment`) with more
+    than one role renders each part in its role's voice (#884-#886).
+    """
+    global _last_voices
+    run_voices = dict(voices or {})
+    _voices_spoken.clear()
+    try:
+        with length_context(length_choice), voice_context(run_voices):
+            return _generate_audio(script, output_path, channel_id=channel_id, segments=segments)
+    finally:
+        _last_voices = dict(_voices_spoken)
 
 
-def _generate_audio(script, output_path, channel_id: str | None = None):
+def _spoken_text(text: str) -> str:
+    spoken = clean_script_for_tts(text)
+    try:
+        from core.spoken_numbers import expand_spoken_numbers
+
+        return expand_spoken_numbers(spoken)
+    except Exception as exc:
+        logger.debug("spoken-number expand skipped: %s", exc)
+        return spoken
+
+
+def _multi_voice_parts(segments: list | None) -> tuple[list[str], list[str]]:
+    """(spoken parts, roles) when this render can use several voices, else ([], [])."""
+    parts: list[str] = []
+    roles: list[str] = []
+    for seg in segments or []:
+        spoken = _spoken_text(str(getattr(seg, "text", "") or ""))
+        if spoken.strip():
+            parts.append(spoken)
+            roles.append(str(getattr(seg, "role", "") or ROLE_NARRATOR))
+    if len(set(roles)) < 2:
+        return [], []
+    if _resolve_tts_provider() != "elevenlabs" or not ffmpeg_concat_ready():
+        logger.warning(
+            "More than one voice needs ElevenLabs and ffmpeg; this render uses one voice"
+        )
+        return [], []
+    return parts, roles
+
+
+def _generate_audio(script, output_path, channel_id: str | None = None, segments=None):
     global _last_cache_hit, _last_piper_mix, _last_cache_fraction
     global _last_paid_fallback, _last_paid_fallback_from
     _last_cache_hit = False
@@ -519,8 +630,43 @@ def _generate_audio(script, output_path, channel_id: str | None = None):
         except Exception as exc:
             logger.debug("tts actual skipped: %s", exc)
 
+    parts, roles = _multi_voice_parts(segments)
+    if parts:
+        signature = []
+        for role in dict.fromkeys(roles):
+            with voice_role(role):
+                signature.append(f"{role}={_tts_cache_voice(channel_id)}")
+        multi_key = tts_cache_key(spoken_for_alt, _resolve_tts_provider(), ";".join(signature))
+        if tts_cache_lookup(multi_key, output_path):
+            _last_cache_hit = True
+            _last_cache_fraction = 1.0
+            _record_actual(0)
+            for role in dict.fromkeys(roles):
+                with voice_role(role):
+                    _note_voice_spoken()
+            print(f"[TTS] Channel: {channel_id} | cache hit ({len(signature)} voices)")
+            return output_path
+        try:
+            return _generate_by_sentences(
+                parts, parts, output_path, channel_id, multi_key, _record_actual, roles=roles
+            )
+        except Exception as exc:
+            spent = int(getattr(exc, "spent_chars", 0) or 0)
+            logger.warning(
+                "multi-voice TTS failed after billing %d char(s); re-synthesizing in one "
+                "voice: %s",
+                spent,
+                exc,
+            )
+            cache_key = tts_cache_key(
+                spoken_for_alt, _resolve_tts_provider(), _tts_cache_voice(channel_id)
+            )
+            _record_actual(spent + len(spoken_for_alt))
+            return synthesize_to_path(spoken, spoken_for_alt, output_path, channel_id, cache_key)
+
     cache_key = tts_cache_key(spoken_for_alt, _resolve_tts_provider(), _tts_cache_voice(channel_id))
     if tts_cache_lookup(cache_key, output_path):
+        _note_voice_spoken()
         _last_cache_hit = True
         _last_cache_fraction = 1.0
         _record_actual(0)
@@ -741,24 +887,32 @@ def _generate_by_sentences(
     channel_id: str | None,
     whole_cache_key: str,
     record_actual,
+    roles: list[str] | None = None,
 ) -> str:
+    """Synthesize segments, then concat. `roles[i]` is segment i's voice role (#884)."""
     global _last_cache_hit, _last_cache_fraction
     provider = _resolve_tts_provider()
-    voice = _tts_cache_voice(channel_id)
     paths: list[str] = []
     cached_chars = 0
     synth_chars = 0
     tmp_paths: list[str] = []
+    # One cache voice per role, resolved once: a local voice pool picks per call.
+    cache_voice: dict[str, str] = {}
     try:
         for i, (sent, alt) in enumerate(zip(sents, alts, strict=True)):
             seg = f"{output_path}.seg{i}.mp3"
             tmp_paths.append(seg)
-            key = tts_cache_key(alt, provider, voice)
-            if tts_cache_lookup(key, seg):
-                cached_chars += len(alt)
-            else:
-                synthesize_to_path(sent, alt, seg, channel_id, key, allow_piper_mix=False)
-                synth_chars += len(alt)
+            role = roles[i] if roles else ROLE_NARRATOR
+            with voice_role(role):
+                if role not in cache_voice:
+                    cache_voice[role] = _tts_cache_voice(channel_id)
+                key = tts_cache_key(alt, provider, cache_voice[role])
+                if tts_cache_lookup(key, seg):
+                    _note_voice_spoken()
+                    cached_chars += len(alt)
+                else:
+                    synthesize_to_path(sent, alt, seg, channel_id, key, allow_piper_mix=False)
+                    synth_chars += len(alt)
             paths.append(seg)
         try:
             concat_audio_segments(paths, output_path)
@@ -891,6 +1045,7 @@ def synthesize_to_path(
                     f"Model: {model_id} | +timestamps"
                 )
                 _elevenlabs_record_chars(len(spoken))
+                _note_voice_spoken(voice_id)
                 tts_cache_store(cache_key, output_path)
                 return output_path
 
@@ -909,6 +1064,7 @@ def synthesize_to_path(
             _mark_voice_dead(voice_id, exc)
 
     _elevenlabs_record_chars(len(spoken))
+    _note_voice_spoken(last_voice)
     print(f"[TTS] Channel: {channel_id} | Voice: {last_voice} | Model: {model_id}")
     tts_cache_store(cache_key, output_path)
     return output_path
@@ -1540,13 +1696,17 @@ def _reset_process_state() -> None:
     model is a resource, and its staleness is not what leaks between tests."""
     global _last_cache_hit, _last_piper_mix, _last_cache_fraction
     global _last_paid_fallback, _last_paid_fallback_from, _length_choice_context
-    global _voice_catalog_cache, _lexicon_cache
+    global _voice_catalog_cache, _lexicon_cache, _run_voices, _active_role, _last_voices
     _last_cache_hit = False
     _last_piper_mix = False
     _last_cache_fraction = 0.0
     _last_paid_fallback = False
     _last_paid_fallback_from = ""
     _length_choice_context = ""
+    _run_voices = None
+    _active_role = ROLE_NARRATOR
+    _last_voices = {}
+    _voices_spoken.clear()
     _voice_catalog_cache = None
     _lexicon_cache = None
     _dead_voices.clear()

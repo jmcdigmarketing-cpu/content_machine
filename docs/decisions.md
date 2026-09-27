@@ -1,6 +1,6 @@
 # Decisions (ADR-lite)
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-27
 
 Why the load-bearing choices are the way they are. Code says *what*; this says
 *why* — so a future change (or a future Claude session) doesn't "fix" something
@@ -750,3 +750,19 @@ signal. On by default (operator, answering "it should try and pull everything no
 vault, and carry score 0 so the composite and the angle tie cannot move. It adds no paid call
 (the search already ran) and at most `AUTO_RESEARCH_DEADLINE_S` of wall time; the suite pins it
 off. Its real yield is measured before anything leans on it (#863).
+
+## 36. Voices are chosen once per run; the channel's pool rotates; the debate is a format (2026-09-27)
+**Decision:** (1) `tts.rotate: true` makes a channel's narrator a weighted pick from its
+`voice_pool`, never the previous run's; the fixed `voice_id` is the narrator only when rotate is
+off. (2) A render's voices are pinned once (`core/tts.voice_context`); nothing resolves a voice
+per sentence. (3) A video can carry roles - a quote voice, a voice per chapter, two debating
+hosts - chosen at the "Voices" prompt; single is the default. (4) Debate speaker tags are a TTS
+instruction: stripped before grounding, the title check, captions and the description, and
+kept as `speaker_turns`.
+**Why:** the operator asked for all four uses (2026-09-26), and the pool in channels.json had
+never been read - `resolve_tts_config` returned the fixed id whenever it existed.
+**Consequence:** the same characters are billed; each part is its own synth call and cache
+entry. More than one voice needs ElevenLabs and ffmpeg; a local voice or a failed concat renders
+one voice, and the characters already spent are recorded (#657). A multi-voice render is
+never Piper-mixed. Rewrites after the script (hook, grounding) can blur debate turns; the
+render re-attaches them by sentence overlap, and an unmatched sentence keeps the last speaker.

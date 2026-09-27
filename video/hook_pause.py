@@ -29,8 +29,11 @@ def first_line_end_seconds(words: list[dict] | None, script: str) -> float | Non
     n = len(first.split())
     if n < 1 or n > len(words):
         return None
+    raw_end = words[n - 1].get("end")
+    if raw_end is None:
+        return None
     try:
-        end = float(words[n - 1].get("end"))
+        end = float(raw_end)
     except (TypeError, ValueError, KeyError):
         return None
     if end <= 0:

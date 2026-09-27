@@ -66,6 +66,8 @@ jobs:
         # lowered in the same commit. Replaces the continue-on-error baseline that grew
         # from ~94 (June) to 129 (September, mypy 1.13.0) with nothing watching it. `desktop` stays in
         # the list: 345 lines of window.py were once neither executed nor type-checked.
+        # Wave 42: every shipped package is a target (video, publishing, youtube, jobs,
+        # sports and scripts joined); the baseline fell to 123.
         run: python scripts/mypy_ratchet.py
 
   test:

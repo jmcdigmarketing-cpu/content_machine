@@ -20,7 +20,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 BASELINE = ROOT / "mypy_baseline.txt"
 # Keep in step with the `typecheck` job in .github/workflows/ci.yml.
-TARGETS = ("analytics", "apis", "core", "config", "storage", "desktop")
+# #833: every package the wheel ships (assets/ is in mypy's own exclude).
+TARGETS = (
+    "analytics",
+    "apis",
+    "core",
+    "config",
+    "storage",
+    "desktop",
+    "video",
+    "publishing",
+    "youtube",
+    "jobs",
+    "sports",
+    "scripts",
+)
 
 _SUMMARY = re.compile(r"Found (\d+) errors? in \d+ files?|^Success: no issues found", re.M)
 

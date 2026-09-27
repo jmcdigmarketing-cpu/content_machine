@@ -17,6 +17,36 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-27 (Claude Code) - wave 42: Claude defaults, headline domains, one verb name, the audit builds, mypy everywhere
+
+**Prompt (verbatim):** "next 5".
+
+### Why the list is the recommendation
+
+#853 · #851 · #868 · #894 · #833 - all built. Wave 41's CI (run 186) was green first.
+
+### Findings, with file:line
+
+- `.env.example:339` shipped an *uncommented* `ANTHROPIC_MODEL=claude-sonnet-4-20250514`; the
+  router reads the bare `{PREFIX}_MODEL` for every tier, so it outranked the defaults (#853).
+- `core/best_bet.py:691`: the "no channel fallback" call fell back through
+  `CONTENT_CHANNEL_ID`. The first test passed on unmodified code - `get_settings()` reads the
+  env once at import, so patching the env changed nothing - and the first headline tried was
+  finance, dropped for the wrong reason. Reproduced only with settings patched and a truly
+  keyword-less headline ("Local man wins the lottery twice" -> gaming) (#851).
+- `video/` had no `__init__.py`; a direct mypy run stopped at "source file found twice" (#833).
+- Widening mypy found a real defect: `scripts/auto_generate.py` queued an upload with
+  `content_run_id=None` when the run failed to save (#833).
+
+### Audit
+
+16 new tests, 13 observed failing first; 3 are guards (an on-brand headline kept, a learned
+name kept, `render-preview` still the review copy). 1 corpus case (47 of 47). mypy **123**
+over twelve packages (was 129 over six). `ops package-audit` completes here for the first time:
+wheel 481, sdist 893, clean. Suite 3,841; hygiene clean.
+
+Backlog **273 numbered open**. Next five: **#857 · #862 · #825 · #834 · #887**.
+
 ## 2026-09-27 (Claude Code) - wave 41: dossier after render, a clean suite, pace-true estimates, the wheel, ruff 0.15.8
 
 **Prompt (verbatim):** "next 5".

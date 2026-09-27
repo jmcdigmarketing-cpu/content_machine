@@ -26,26 +26,26 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-27 wave 41: **#888** the dossier is rewritten after the render (voices,
-pace) · **#892** the suite no longer writes `data/` or `output/`, and `ops test` fails if it ever
-does · **#893** chapter and duration estimates at the voice's real pace · **#832** the wheel
-ships `assets`, `apis.scrapers`, `scripts` and the branding files · **#831** ruff 0.8.4 ->
-0.15.8, as its own commits.
+**Just landed** - 2026-09-27 wave 42: **#853** the Claude premium default is Sonnet 5, and
+`.env.example` no longer pins every tier · **#851** best-bet headlines are judged by their own
+words, not the env channel · **#868** `preview-render` is `reback-short` · **#894**
+`ops package-audit` builds where the system setuptools can't · **#833** mypy checks every
+shipped package, and the baseline fell 129 -> 123.
 
-**Before that** - wave 40: **#890 #891 #879 #876 #870 #855**, #849 measured · wave 39:
-**#883-#886 #877 #878** · wave 38: **#865 #873 #875 #856 #867 #869**. Earlier:
-[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
+**Before that** - wave 41: **#888 #892 #893 #832 #831** · wave 40: **#890 #891 #879 #876 #870
+#855** · wave 39: **#883-#886 #877 #878**. Earlier: [roadmap_archive.md](roadmap_archive.md)
+and [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 41 (2026-09-27)** cleared all five. The new list is small structural work the operator
-never has to act on; the product items wait on runs (#849, #863) or the operator's ear (#889).
+**Wave 42 (2026-09-27)** cleared all five. The next list reaches back into the fact-intake epic
+(E3) and the one structural item left; #887 is the operator's call, not code.
 
-1. **#853 Anthropic defaults on a current model** `[S]` - pinned to `claude-sonnet-4-20250514`.
-2. **#851 `best_bet` domain without the env channel** `[S]` - keyword-less headlines pass as gaming.
-3. **#868 `preview-render` vs `render-preview`** `[S]` - one name should say which.
-4. **#894 `ops package-audit` builds in isolation** `[S]` - it cannot build on a Debian Python.
-5. **#833 mypy over every package** (E5) `[M]` - extend `TARGETS`, drop the dead override.
+1. **#857 re-tier old scraped `_operator_facts` notes** (E3) `[S]` - a dry-run listing first.
+2. **#862 optionally save auto-research lines** (E3) `[S]` - to `_link_facts/`, behind a flag.
+3. **#825 `--force` reachable by every verb that reads it** `[S]` - verify the wave-30 fix, close.
+4. **#834 `core/` seams** `[L]` - the "where a new module goes" rule first, one cluster moved.
+5. **#887 the vault review prompt's Enter default** `[S]` - operator's call: all, or none.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 

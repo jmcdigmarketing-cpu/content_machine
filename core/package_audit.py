@@ -126,33 +126,69 @@ def stage_tree(root: Path, dest: Path) -> int:
     return copied
 
 
+_build_notes: list[str] = []
+
+
+def last_build_notes() -> list[str]:
+    """How the last `build_archives` got its archives (fallbacks, skipped sdist)."""
+    return list(_build_notes)
+
+
+def _run_build(command: list[str], staged: Path) -> tuple[bool, str]:
+    proc = subprocess.run(
+        command,
+        cwd=str(staged),
+        capture_output=True,
+        text=True,
+        timeout=_BUILD_TIMEOUT_S,
+        check=False,
+    )
+    return proc.returncode == 0, (proc.stderr or proc.stdout or "").strip()[-4000:]
+
+
+def _cause(output: str) -> str:
+    """The line that names the failure ("AttributeError: install_layout"), not pip's summary."""
+    lines = [line.strip() for line in (output or "").splitlines() if line.strip()]
+    named = [line for line in lines if re.search(r"\w+Error: ", line)]
+    return (named or lines or ["no output"])[-1][:200]
+
+
 def build_archives(out_dir: Path, *, root: Path | None = None) -> list[Path]:
     """Wheel and sdist into `out_dir`, built from a staged copy of the tree so the build
-    neither reads leftovers from the repo nor writes any into it."""
+    neither reads leftovers from the repo nor writes any into it.
+
+    #894: the wheel is built with the system setuptools first (no network needed); a
+    Debian-patched setuptools fails with `install_layout`, so a failure retries in an
+    isolated build environment. A failed sdist is reported, and the wheel is still scanned.
+    """
     source = Path(root or ROOT_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
+    _build_notes.clear()
     with tempfile.TemporaryDirectory(prefix="package-stage-") as stage:
         staged = Path(stage)
         stage_tree(source, staged)
-        commands = (
-            [sys.executable, "-m", "pip", "wheel", str(staged), "--no-deps",
-             "--no-build-isolation", "-w", str(out_dir)],
-            [sys.executable, "-c",
-             f"from setuptools import build_meta as b; b.build_sdist({str(out_dir)!r})"],
-        )  # fmt: skip
-        for command in commands:
-            proc = subprocess.run(
-                command,
-                cwd=str(staged),
-                capture_output=True,
-                text=True,
-                timeout=_BUILD_TIMEOUT_S,
-                check=False,
+        wheel = [sys.executable, "-m", "pip", "wheel", str(staged), "--no-deps"]
+        ok, first_error = _run_build([*wheel, "--no-build-isolation", "-w", str(out_dir)], staged)
+        if not ok:
+            ok, second_error = _run_build([*wheel, "-w", str(out_dir)], staged)
+            if not ok:
+                raise RuntimeError(
+                    f"wheel build failed: {first_error} | isolated retry: {second_error}"
+                )
+            _build_notes.append(
+                "wheel: built in an isolated environment (the system setuptools failed: "
+                f"{_cause(first_error)})"
             )
-            if proc.returncode != 0:
-                kind = "wheel" if "wheel" in command else "sdist"
-                tail = (proc.stderr or proc.stdout or "").strip()[-400:]
-                raise RuntimeError(f"{kind} build failed: {tail}")
+        sdist = [
+            sys.executable,
+            "-c",
+            f"from setuptools import build_meta as b; b.build_sdist({str(out_dir)!r})",
+        ]
+        ok, error = _run_build(sdist, staged)
+        if not ok:
+            _build_notes.append(
+                f"sdist not built: {error.splitlines()[-1] if error else 'no output'}"
+            )
     return sorted(p for p in out_dir.iterdir() if p.name.endswith((".whl", ".tar.gz")))
 
 
@@ -163,8 +199,9 @@ def audit() -> list[ArchiveReport]:
         return [scan_archive(path) for path in build_archives(Path(tmp))]
 
 
-def render_audit(reports: list[ArchiveReport]) -> str:
+def render_audit(reports: list[ArchiveReport], notes: list[str] | None = None) -> str:
     lines = ["Package audit (what a built wheel / sdist would ship)"]
+    lines.extend(f"  note: {note}" for note in (last_build_notes() if notes is None else notes))
     for report in reports:
         state = "clean" if not report.hits else f"{report.hits} hit(s)"
         lines.append(f"  {report.name}: {report.members} file(s) - {state}")

@@ -400,7 +400,7 @@ class TestPreviewRender(unittest.TestCase):
     def test_ops_verb_is_registered(self):
         from scripts import ops
 
-        self.assertIn("preview-render", ops.COMMANDS)
+        self.assertIn("reback-short", ops.COMMANDS)  # #868: was preview-render
 
 
 if __name__ == "__main__":

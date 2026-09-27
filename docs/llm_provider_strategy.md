@@ -85,8 +85,7 @@ Tops the July-2026 intelligence ranking; the *judge*: Pillar 2 grading, Pillar 3
 claim-verifier, authenticity passes. **It is the paid provider actually in hand**, so
 these are live options right now — not contingencies.
 · **Crossover:** already wired (`anthropic`, native messages API) — nothing to build.
-· **Gap:** `_DEFAULT_MODELS` still pins `claude-sonnet-4-…` / `claude-haiku-4-5-…`
-(see §5.1), and the router can't send it images (§5.2) even though the model supports
+· **Gap:** ~~`_DEFAULT_MODELS` pins `claude-sonnet-4-…`~~ (refreshed 2026-09-27, §5.1), and the router can't send it images (§5.2) even though the model supports
 vision.
 · **Unnecessary if** you only need generation; local Llama/Qwen write acceptable scripts.
 
@@ -183,7 +182,11 @@ here. That is the honest cost of the left column.
 
 ## 5. Verdict — ordered for the actual state
 
-### 5.1 Refresh the Anthropic default model IDs — *highest value, zero integration*
+### 5.1 Refresh the Anthropic default model IDs — *shipped 2026-09-27 (#853)*
+Premium is `claude-sonnet-5`; cheap/extract stay `claude-haiku-4-5-20251001`. `.env.example` no
+longer ships an uncommented `ANTHROPIC_MODEL`, which pinned every tier. Not yet compared on a
+real script (no key in the build container): try one run on it before relying on it.
+The original note, kept for the reasoning:
 Claude is **the live paid provider**, yet `core/llm_router._DEFAULT_MODELS` still pins
 it to `claude-sonnet-4-…` / `claude-haiku-4-5-…` while the Claude 5 family exists. The
 provider is already wired, so this is a **config-level** upgrade to the model doing

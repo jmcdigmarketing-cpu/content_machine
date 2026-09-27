@@ -126,7 +126,8 @@ def plan_scenes(
 
     # Even word-count slices.
     bounds = [round(i * len(tokens) / n) for i in range(n + 1)]
-    use_words = bool(words) and len(words) >= len(tokens) * 0.6
+    timed = list(words or [])
+    use_words = bool(timed) and len(timed) >= len(tokens) * 0.6
     scenes: list[Scene] = []
     for i in range(n):
         lo, hi = bounds[i], bounds[i + 1]
@@ -134,8 +135,8 @@ def plan_scenes(
             continue
         text = " ".join(tokens[lo:hi])
         if use_words:
-            start = float(words[min(lo, len(words) - 1)].get("start") or 0.0)
-            end = float(words[min(hi, len(words)) - 1].get("end") or start)
+            start = float(timed[min(lo, len(timed) - 1)].get("start") or 0.0)
+            end = float(timed[min(hi, len(timed)) - 1].get("end") or start)
         else:
             start = duration * lo / len(tokens)
             end = duration * hi / len(tokens)

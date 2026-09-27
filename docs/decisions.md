@@ -793,3 +793,8 @@ CI never saw it because its checkout has no `data/`. Two ruff versions meant a b
 rewrote 35 unrelated files once.
 **Consequence:** a new test that touches a new store fails CI's reversed leg until the store is
 redirected - on purpose.
+
+## 39. Model defaults follow the current family; the example never pins every tier (2026-09-27)
+**Decision:** `_DEFAULT_MODELS` names current models (Anthropic: Haiku 4.5, Sonnet 5 premium) and
+`.env.example` never ships an uncommented bare `{PROVIDER}_MODEL`, which the router reads for
+every tier. **Why:** the example's old `ANTHROPIC_MODEL` outranked any refreshed default (#853).

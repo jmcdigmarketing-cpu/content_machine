@@ -469,6 +469,11 @@ def main(argv=None) -> int:
 
         get_logger("scripts.auto_generate").debug("Post-time display skipped: %s", exc)
 
+    if result.run_id is None:
+        # #833 (mypy): an upload job needs the run it uploads; a run the store refused to
+        # save has no id, and the job would point at nothing.
+        print("  Not queued: the run was not saved, so there is nothing to link the upload to.")
+        return 1
     pub_at = next_optimal_post_time(channel_id, topic)
     repurpose = enqueue_repurpose_jobs(
         channel_id=channel_id,

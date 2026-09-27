@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-27: wave 41, next five
+# Handoff synopsis — 2026-09-27: wave 42, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
@@ -10,7 +10,19 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-27 (Claude Code): wave 41 #888 #892 #893 #832 + #831
+## Last wave — 2026-09-27 (Claude Code): wave 42 #853 #851 #868 #894 #833
+
+- **#853** Anthropic premium default `claude-sonnet-5`; `.env.example` no longer pins every tier
+  with `ANTHROPIC_MODEL` (delete it from your `.env` if it is there).
+- **#851** best-bet headlines use `infer_topic_domain` - no fallback through the env channel.
+- **#868** `ops reback-short` (was `preview-render`, which now only prints the new name).
+- **#894** `ops package-audit` retries the wheel in isolation; it completes on this container.
+- **#833** mypy over every shipped package; `video/__init__.py`; baseline 123.
+
+**Verify:** `python -m unittest tests.test_llm_defaults tests.test_best_bet_headline_domain
+tests.test_package_audit_build tests.test_mypy_targets`; `py -m scripts.ops package-audit`.
+
+## Previous — 2026-09-27 (Claude Code): wave 41 #888 #892 #893 #832 + #831
 
 - **#888** the dossier is rewritten when the render finishes; it names the voices and the pace.
 - **#892** the suite writes nothing under `data/` or `output/`; `ops test` fails and names the
@@ -37,23 +49,6 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 
 **Verify:** `python -m unittest tests.test_speech_speed tests.test_contrast_frames
 tests.test_backfill_registry tests.test_angle_fact_fit`; `py -m scripts.ops regressions` (46).
-
-## Previous — 2026-09-27 (Claude Code): wave 39 voices #883-#886, #877 #878
-
-- **#883** the voice rotates: `tts.rotate: true` draws from each channel's `voice_pool`, pinned
-  once per render by `core/tts.voice_context` (cache key included) and never the previous run's
-  narrator (`core/voice_plan.pick_run_voices`). `features["voices"]` records it.
-- **#884-#886** a "Voices" prompt after the length: 1 one voice · 2 quotes in a second voice ·
-  3 a voice per chapter (all-angles only) · 4 two-host debate. `core/voice_plan.plan_segments`
-  cuts the script; `generate_audio(voices=, segments=)` renders each part in its voice and
-  shifts word timings. Debate tags are stripped in `generate_content_package`; the turns are
-  stored as `speaker_turns`. ElevenLabs + ffmpeg only; local voices stay single.
-- **#877** a flagged title is regenerated once from the script; still flagged -> `y` to upload.
-  **#878** Enter at "Use uncertain facts?" takes none.
-- Not heard yet: one debate and one quotes run on the PC (#889).
-
-**Verify:** `python -m unittest tests.test_voices tests.test_flagged_title`;
-`py -m scripts.ops regressions` (43 of 43).
 
 ## Pipeline order (operator)
 
@@ -122,8 +117,8 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #853 Anthropic defaults · #868 verb names · #894 package-audit build · #833
-   mypy coverage · #834 `core/` seams. Any live-run defect: add a corpus case.
+3. **Structural:** #825 `--force` · #834 `core/` seams · #857 / #862 fact-intake tidy-ups.
+   Any live-run defect: add a corpus case.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
    contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours

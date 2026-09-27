@@ -7,6 +7,23 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-27 (Claude Code): wave 39 voices #883-#886, #877 #878
+
+- **#883** the voice rotates: `tts.rotate: true` draws from each channel's `voice_pool`, pinned
+  once per render by `core/tts.voice_context` (cache key included) and never the previous run's
+  narrator (`core/voice_plan.pick_run_voices`). `features["voices"]` records it.
+- **#884-#886** a "Voices" prompt after the length: 1 one voice · 2 quotes in a second voice ·
+  3 a voice per chapter (all-angles only) · 4 two-host debate. `core/voice_plan.plan_segments`
+  cuts the script; `generate_audio(voices=, segments=)` renders each part in its voice and
+  shifts word timings. Debate tags are stripped in `generate_content_package`; the turns are
+  stored as `speaker_turns`. ElevenLabs + ffmpeg only; local voices stay single.
+- **#877** a flagged title is regenerated once from the script; still flagged -> `y` to upload.
+  **#878** Enter at "Use uncertain facts?" takes none.
+- Not heard yet: one debate and one quotes run on the PC (#889).
+
+**Verify:** `python -m unittest tests.test_voices tests.test_flagged_title`;
+`py -m scripts.ops regressions` (43 of 43).
+
 ## Previous — 2026-09-26 (Claude Code): wave 38 #865 #873 #875 #856 #867 #869
 
 - **#865** `publishing/snippet_update.py`: every snippet change reads the live snippet and sends

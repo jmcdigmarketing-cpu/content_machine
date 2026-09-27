@@ -679,7 +679,7 @@ def _consider_candidate(
 ) -> dict | None:
     """Vet a headline into a candidate dict, or None when it's empty, a duplicate, off-brand,
     or a commerce/deal headline. Shared by the RSS and keyless-signal candidate loops."""
-    from apis.topic_scorer import infer_domain
+    from apis.topic_scorer import infer_topic_domain
 
     t = (title or "").strip()
     if not t:
@@ -687,8 +687,10 @@ def _consider_candidate(
     key = normalize_seed_topic(t).lower()
     if key in exclude or key in seen_local:
         return None
-    # Infer WITHOUT channel fallback so neutral/off-brand titles are dropped.
-    domain = infer_domain(t)
+    # #851: the headline's own domain. `infer_domain(t)` looked channel-free but resolved
+    # the missing channel through CONTENT_CHANNEL_ID, so on a PC pinned to tapin every
+    # keyword-less headline read "gaming" and passed.
+    domain = infer_topic_domain(t)
     if domain not in allowed:
         return None
     # Drop product/deal/affiliate headlines — commerce, not video topics.

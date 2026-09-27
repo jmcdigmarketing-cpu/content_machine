@@ -8,6 +8,15 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 42 — current Claude defaults, cleaner best bets, a working package audit - 2026-09-27
+
+*3,841 tests; mypy 123 (was 129) over every package; ruff 0.15.8 clean; corpus 47 of 47.*
+
+- **#853** Claude's premium default is Sonnet 5. If your `.env` has `ANTHROPIC_MODEL`, delete it.
+- **#851** best-bet suggestions no longer include off-niche headlines on a pinned channel.
+- **#868** `ops reback-short` replaces `ops preview-render`.
+- **#894** `ops package-audit` works on this machine type. **#833** type checks cover everything.
+
 ### Wave 41 — dossier after render, a clean suite, pace-true estimates, the wheel - 2026-09-27
 
 *3,825 tests; mypy 129 == baseline; regression corpus 46 of 46; ruff 0.8.4 -> 0.15.8 after it.*

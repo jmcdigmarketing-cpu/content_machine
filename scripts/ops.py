@@ -1271,14 +1271,14 @@ def cmd_post_publish_check(args: argparse.Namespace) -> int:
 
 
 @_register(
-    "preview-render", "Re-render a voiced Short with today's background, $0 (--path mp3 --topic)"
+    "reback-short", "Re-render a voiced Short over today's background, $0 (--path mp3 --topic)"
 )
-def cmd_preview_render(args: argparse.Namespace) -> int:
+def cmd_reback_short(args: argparse.Namespace) -> int:
     from assets.fast_cut import render_preview
 
     audio = str(getattr(args, "path", "") or "")
     if not audio or not os.path.isfile(audio):
-        print("preview-render needs --path <an existing voiced mp3>")
+        print("reback-short needs --path <an existing voiced mp3>")
         return 2
     topic = str(getattr(args, "topic", "") or "") or os.path.basename(audio)
     path = render_preview(
@@ -1286,6 +1286,14 @@ def cmd_preview_render(args: argparse.Namespace) -> int:
     )
     print(f"Preview (never queued): {path}")
     return 0
+
+
+@_register("preview-render", "Renamed to reback-short (#868); runs nothing")
+def cmd_preview_render(_args: argparse.Namespace) -> int:
+    # #868: `render-preview` (480p review copy) sat one letter-swap away. One wave as a
+    # tombstone so an old habit gets a pointer instead of the other verb.
+    print("preview-render was renamed: py -m scripts.ops reback-short --path <voiced mp3>")
+    return 2
 
 
 @_register("publish-ics", "Write an .ics of scheduled publishes beside HTML dumps")

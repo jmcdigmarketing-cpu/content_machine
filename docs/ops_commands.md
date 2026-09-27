@@ -96,12 +96,13 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `policy-runbook` | Print the strike / Content ID / appeal runbook path |
 | `post-publish-check` | Look at uploads 48h+ old: removed, blocked, age-restricted, kids |
 | `postmortem` | Slowest phase, failed signals, ungrounded claims, cost (--run-id) |
-| `preview-render` | Re-render a voiced Short with today's background, $0 (--path mp3 --topic) |
+| `preview-render` | Renamed to reback-short (#868); runs nothing |
 | `prompt-eval` | Golden-topic prompt evals: run (LLM cost) or compare last two |
 | `publish-dry-run` | Print the YouTube videos.insert body (no upload; tokens redacted) |
 | `publish-ics` | Write an .ics of scheduled publishes beside HTML dumps |
 | `queue-manage` | Re-queue after deleting scheduled YouTube video |
 | `queue-panel` | Stage 3 job queue (drag-reorder; requires pip install -e ".[app]") |
+| `reback-short` | Re-render a voiced Short over today's background, $0 (--path mp3 --topic) |
 | `recategorize` | Re-file uploaded videos under their run's YouTube category (#873; dry-run default; --apply sends) |
 | `recommend-length` | Recommend video length from engagement history |
 | `recommend-time` | Recommend next post time from engagement history |

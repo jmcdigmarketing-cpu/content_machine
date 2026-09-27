@@ -164,9 +164,11 @@ _DEFAULT_MODELS: dict[str, dict[str, str]] = {
     "ollama": {"cheap": "", "extract": "", "premium": ""},
     "doubao": {"cheap": "", "extract": "", "premium": ""},
     "anthropic": {
+        # #853: the current family - Haiku 4.5 for throwaway and extract calls, Sonnet 5
+        # for premium (scripts, grading). Only used when a tier is routed to Anthropic.
         "cheap": "claude-haiku-4-5-20251001",
         "extract": "claude-haiku-4-5-20251001",
-        "premium": "claude-sonnet-4-20250514",
+        "premium": "claude-sonnet-5",
     },
 }
 

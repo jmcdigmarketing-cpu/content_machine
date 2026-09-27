@@ -53,27 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-27 · **HEAD at write:** `5d6b65e` + wave 41's commit + the four ruff commits
-on `main` (`git log -6`) · **Tree:** clean after the commits.
+**Written:** 2026-09-27 · **HEAD at write:** `7c46a6d` + wave 42's commit on `main` (`git log -2`)
+· **Tree:** clean after the commit.
 
-**Read before editing:** ruff is **0.15.8** everywhere now (CI, `pyproject.toml`, pre-commit) -
-`pip install ruff==0.15.8`; the old "never bare `ruff`" rule is gone. The ruff format sweep
-touched 34 files: rebase uncommitted work onto it rather than merging over it. `ops test` fails
-when the suite writes under `data/` or `output/` - redirect a new store in `tests/__init__.py`.
-Time estimates divide by `spoken_words_per_second`, never `WORDS_PER_SECOND`
-(`tests/test_spoken_pace.py`). `py -m scripts.ops regressions <file>` (46 cases).
+**Read before editing:** mypy now checks every shipped package; the baseline is **123** - fix a
+new error rather than raise it. `ops preview-render` is `ops reback-short`. `decisions.md` sits
+at the 800-line ceiling: the next decision needs a split (docs_standard §7). ruff is 0.15.8.
+`ops test` fails when a run writes `data/` or `output/`. `py -m scripts.ops regressions <file>`
+(47 cases).
 
 **Defects first:**
-- **#894** `ops package-audit` cannot build on a Debian-patched Python (fails on HEAD too); an
-  isolated `pip wheel . --no-deps` builds and scans clean.
+- **Claude Sonnet 5 is untested on a real script here** (no key): if the operator routes a tier to
+  Anthropic, one run first. Their `.env` may still carry `ANTHROPIC_MODEL=` - it pins every tier.
 - **Nothing was heard:** the 0.95 pace and the debate/quotes voices wait on the operator (#889).
-- **#851** keyword-less headlines can pass as gaming through the env channel.
+- `docs/strategy_h2_2026.md:117` still says the default is Sonnet 4 (a dated strategy doc; left).
 
-**Shipped:** #888 · #892 · #893 · #832 · #831.
+**Shipped:** #853 · #851 · #868 · #894 · #833.
 
-Suite **3,825**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
-mypy **129**; backlog **278 numbered open**, highest **#894**. Next five: **#853 · #851 · #868 ·
-#894 · #833**.
+Suite **3,841**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
+mypy **123**; backlog **273 numbered open**. Next five: **#857 · #862 · #825 · #834 · #887**.
 
 ## Slot — Cursor
 

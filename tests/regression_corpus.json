@@ -718,6 +718,22 @@
         "falsy": true
       },
       "why": "a plain factual correction is not the cliche and must not be rewritten"
+    },
+    {
+      "id": "headline-domain-no-env-channel",
+      "item": 851,
+      "source": "wave 42 (best-bet headlines)",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Local man wins the lottery twice"
+      ],
+      "env": {
+        "CONTENT_CHANNEL_ID": "tapin"
+      },
+      "expect": {
+        "equals": "neutral"
+      },
+      "why": "a keyword-less headline must not read as the operator's channel domain"
     }
   ]
 }

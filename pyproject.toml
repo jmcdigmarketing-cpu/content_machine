@@ -105,11 +105,16 @@ content-machine = "main:main"
 packages = [
     "analytics",
     "apis",
+    # #832: a folder without __init__.py was a namespace package no wheel shipped.
+    "apis.scrapers",
+    # #832: the pipeline imports assets/, and core/chapter_shorts imports scripts/.
+    "assets",
     "config",
     "core",
     "desktop",
     "jobs",
     "publishing",
+    "scripts",
     "sports",
     "storage",
     # #737: explicit packages do not pull in subpackages; without this line a wheel
@@ -125,6 +130,9 @@ packages = [
 config = ["*.json", "competitors/*.json", "seo/*.json"]
 core = ["data/*"]
 analytics = ["*.json"]
+# #832: channel logos, banners and the wordmark are opened at runtime (core/brand_kit.py).
+assets = ["branding/*", "branding/*/*"]
+scripts = ["*.ps1"]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter + formatter (replaces flake8 + isort + black)

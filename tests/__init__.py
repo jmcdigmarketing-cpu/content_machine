@@ -108,18 +108,23 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+import config.competitors as _competitors
 import config.paths as _paths
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
 from core import correction_dossier as _correction_dossier
 from core import counterfactual as _counterfactual
+from core import incident_ledger as _incident_ledger
 from core import moat_backup as _moat_backup
 from core import negative_facts as _negative_facts
+from core import operator_minutes as _operator_minutes
 from core import quota_state as _quota_state
 from core import recommender_history as _recommender_history
 from core import retraction_watch as _retraction_watch
 from core import run_trace as _run_trace
 from core import trace_secrets as _trace_secrets
+from storage.repositories import channel_memory as _channel_memory
+from video import subtitles as _subtitles
 
 _SUITE_DATA_TMP = tempfile.mkdtemp(prefix="cm_suite_data_")
 atexit.register(shutil.rmtree, _SUITE_DATA_TMP, True)
@@ -163,6 +168,13 @@ _SUITE_STORE_PATCHES = (
         "STAMP_PATH_TEMPLATE",
         _suite_store("recommend_pick_{channel}.json"),
     ),
+    # #892: the measured run wrote these five data/ stores and output/video subtitles.
+    patch.object(_operator_minutes, "MINUTES_FILE", _suite_store("operator_minutes.json")),
+    patch.object(_incident_ledger, "INCIDENTS_FILE", _suite_store("incidents.json")),
+    patch.object(_paths, "RELIABILITY_HISTORY_FILE", _suite_store("reliability_history.json")),
+    patch.object(_competitors, "DATA_DIR", _SUITE_DATA_TMP),
+    patch.object(_channel_memory, "MEMORY_DIR", _suite_store("channel_memory")),
+    patch.object(_subtitles, "SUBTITLE_DIR", _suite_store("subtitles")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

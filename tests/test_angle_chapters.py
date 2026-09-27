@@ -156,7 +156,12 @@ class TestAllAnglesPipeline(unittest.TestCase):
             "script": SCRIPT,
             "description": "Five questions about GTA 6.\n\n0:00 Twelve years of waiting",
         }
-        with patch("core.llm_router.complete_json", side_effect=RuntimeError("extract down")):
+        # A 38-second fixture: which chapters clear YouTube's 10 s spacing depends on the
+        # pace, so this pins the nominal one (#893 scaled estimates to the voice's pace).
+        with (
+            patch("core.llm_router.complete_json", side_effect=RuntimeError("extract down")),
+            patch.dict("os.environ", {"TTS_SPEED": "1.0"}),
+        ):
             result = run_pipeline(
                 "GTA 6",
                 discovery=discovery,

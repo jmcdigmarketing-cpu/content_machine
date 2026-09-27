@@ -782,3 +782,14 @@ v5; the franchise list missed "Silksong"; the operator asked for a slower voice 
 "not just X" giveaway to go.
 **Consequence:** fact-fit (#849) cannot be backfilled - traces keep no fact text - so it has no
 registry entry and collects forward. Clips cached at the old pace miss once.
+
+## 38. The suite may not write the operator's files, and `ops test` enforces it (2026-09-27)
+**Decision:** a test run may not create or change anything under `data/` or `output/`. Every
+store a test can reach is redirected in `tests/__init__.py`; `ops test` snapshots both folders and
+fails, naming the files, when a run changed one. One ruff version (0.15.8) everywhere: CI,
+`pyproject.toml`, pre-commit.
+**Why:** a measured run wrote five `data/` files and two `output/` files on the operator's PC;
+CI never saw it because its checkout has no `data/`. Two ruff versions meant a bare `ruff format`
+rewrote 35 unrelated files once.
+**Consequence:** a new test that touches a new store fails CI's reversed leg until the store is
+redirected - on purpose.

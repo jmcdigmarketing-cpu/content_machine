@@ -19,10 +19,10 @@ from core.operator_facts import (
 from core.research_brief import ResearchBrief
 from core.script_brief import build_script_brief
 from core.script_length import (
-    WORDS_PER_SECOND,
     count_spoken_words,
     get_length_preset,
     length_system_addendum,
+    spoken_words_per_second,
     trim_overlength,
 )
 from core.seo import normalize_youtube_tags, tags_from_topic
@@ -1665,7 +1665,7 @@ def generate_content_package(
             relevance_corpus=relevance_corpus,
             length_choice=length_choice,
             script=script,
-            duration_s=count_spoken_words(script) / max(WORDS_PER_SECOND, 0.1),
+            duration_s=count_spoken_words(script) / max(spoken_words_per_second(channel_id), 0.1),
         ),
         "tags": tags,
         # #112. `write_render_sidecars` reads this key, and nothing had ever

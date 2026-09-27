@@ -19,6 +19,9 @@ from video.caption_timing import two_line_split_index
 
 logger = get_logger("video.subtitles")
 
+# Where a render's temporary subtitle file goes (a module name so the suite can move it, #892).
+SUBTITLE_DIR = os.path.join("output", "video")
+
 _DEFAULT_WORDS_PER_LINE = 5
 
 
@@ -255,7 +258,7 @@ def generate_subtitle_file(
     words: list[dict] | None = None,
     background_path: str | None = None,
 ) -> str:
-    output_dir = os.path.join("output", "video")
+    output_dir = SUBTITLE_DIR
     os.makedirs(output_dir, exist_ok=True)
 
     style = caption_style(channel_id)

@@ -977,7 +977,7 @@ def run_pipeline(
             trim_chapter_openers,
         )
         from core.chapters import _replace_chapter_lines
-        from core.script_length import WORDS_PER_SECOND
+        from core.script_length import spoken_words_per_second
 
         chapters = locate_chapters(result.script, angles)
         if chapters:
@@ -996,7 +996,10 @@ def run_pipeline(
                 result.description,
                 "",
                 chapter_lines(
-                    chapters, duration=spoken / max(WORDS_PER_SECOND, 0.1), total_words=spoken
+                    chapters,
+                    duration=spoken / max(spoken_words_per_second(channel_id), 0.1),
+                    total_words=spoken,
+                    channel_id=channel_id,
                 ),
             )
 
@@ -1153,16 +1156,18 @@ def run_media_only(
     )
     progress.note(f"TTS finished in {time.perf_counter() - t_tts:.1f}s")
     try:
-        from core.tts import last_run_voices
+        from core.tts import last_run_voices, speech_speed
 
         used = last_run_voices()
         if used:
+            pace = speech_speed(channel_id)
             if voice_features is not None:
                 voice_features["voices"] = used
+                voice_features["tts_speed"] = pace
             if content_run_id:
                 from core.run_features import merge_features
 
-                merge_features(content_run_id, {"voices": used})
+                merge_features(content_run_id, {"voices": used, "tts_speed": pace})
     except Exception as exc:
         logger.debug("run voices not recorded: %s", exc)
     if content_run_id and os.path.isfile(mp3_path + ".words.json"):
@@ -1443,6 +1448,14 @@ def run_media_only(
             background=background,
             thumbnail_path=thumb_path or None,
         )
+        # #888: the run was saved (and its dossier written) before this render, so the
+        # voices, pace and render assets recorded above reach the note only now.
+        try:
+            from core.vault_dossiers import write_run_dossier
+
+            write_run_dossier(content_run_id)
+        except Exception as exc:
+            logger.debug("dossier rewrite after render skipped for run %s: %s", content_run_id, exc)
 
     progress.done("Render complete")
     try:

@@ -142,9 +142,9 @@ def description_preview_html(description: str) -> str:
 
 def duration_readout(actual_seconds: Any, word_count: Any) -> str:
     try:
-        from core.script_length import WORDS_PER_SECOND
+        from core.script_length import spoken_words_per_second
 
-        estimated = float(word_count or 0) / WORDS_PER_SECOND
+        estimated = float(word_count or 0) / spoken_words_per_second()
     except (TypeError, ValueError):
         estimated = 0.0
     try:

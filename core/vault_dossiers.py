@@ -109,8 +109,10 @@ def audit_lines(features: dict[str, Any], quality: dict[str, Any]) -> list[str]:
     voices = features.get("voices")
     if isinstance(voices, dict) and voices:
         mode = str(features.get("voice_mode") or "single")
+        pace = features.get("tts_speed")
+        label = f"{mode}, {float(pace):g}x" if isinstance(pace, int | float) else mode
         out.append(
-            f"- **Voices ({mode}):** " + ", ".join(f"{role} {vid}" for role, vid in voices.items())
+            f"- **Voices ({label}):** " + ", ".join(f"{role} {vid}" for role, vid in voices.items())
         )
     return out
 

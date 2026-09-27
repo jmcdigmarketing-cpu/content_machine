@@ -17,6 +17,39 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-27 (Claude Code) - wave 41: dossier after render, a clean suite, pace-true estimates, the wheel, ruff 0.15.8
+
+**Prompt (verbatim):** "next 5".
+
+### Why the list is the recommendation
+
+#888 · #892 · #893 · #832 · #831, all built; #831 as its own commit series after the wave commit,
+as its backlog entry asks. Wave 40's CI (run 184) was green before building.
+
+### Findings, with file:line
+
+- `core/pipeline.py` `run_media_only`: the operator path saved the run and wrote its dossier
+  before rendering, and nothing rewrote it after (#888).
+- A recorder over the whole suite named every writer: the three upload tests wrote
+  `data/operator_minutes.json`, `test_angle_score_persisted` wrote channel memory, the vacuum test
+  both ledgers, and six `test_subtitles` tests wrote `output/video/temp_subtitles.*` (#892).
+- `WORDS_PER_SECOND` fed six time estimates at the old pace (#893).
+- An import scan of the shipped packages found `apis.scrapers`, `assets` and `scripts` missing
+  from the wheel - #832 named one - plus `assets/branding/*` from package-data.
+- `ops package-audit` cannot build here: Debian's setuptools raises `install_layout`, on HEAD
+  too (#894, filed). An isolated `pip wheel` builds and passes the audit's scan.
+
+### Audit
+
+15 new tests, 14 observed failing first (one guard - an unsaved render writes no dossier -
+holds before and after). Two tests changed on purpose: the all-angles fixture now pins
+`TTS_SPEED=1.0` (a 38-second script, where which chapters clear YouTube's 10 s spacing depends on
+the pace), and the #737 data-file test also lists `assets/branding/*`. `ops test --order reverse`
+ends "Suite hygiene: data/ and output/ untouched." mypy 129 == baseline; corpus 46 of 46.
+
+Backlog **278 numbered open** after #831, highest **#894**. Next five: **#853 · #851 · #868 ·
+#894 · #833**.
+
 ## 2026-09-27 (Claude Code) - wave 40: fact-fit, series names, learned games, one backfill, a slower voice
 
 **Prompt (verbatim):** "next 5". At plan approval the operator added two: "plan is good, but can

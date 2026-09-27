@@ -7,6 +7,19 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 38 #865 #873 #875 #856 #867 #869
+
+- **#865** `publishing/snippet_update.py`: every snippet change reads the live snippet and sends
+  all writable fields; rollback prepends its correction.
+- **#873** `ops recategorize [--apply]` re-files uploaded videos by their run's domain (the
+  operator runs `--apply` on the PC). **#875** GTA 6 trailer topics are gaming again.
+- **#856** the Gated line hides retired signals. **#867** the dossier Audit block renders the
+  eight unread keys; `test_persisted_keys_read` holds it. **#869** `ops status` Machine block.
+- The operator's May 2025 prototype is in [project_timeline.md](project_timeline.md).
+
+**Verify:** `python -m unittest tests.test_snippet_updates tests.test_persisted_keys_read
+tests.test_status_machine`; `py -m scripts.ops regressions`.
+
 ## Previous — 2026-09-26 (Claude Code): wave 37 #872 #866 #874 + timeline
 
 - **#872** football uploads were filed as Gaming (no `soccer` in `CATEGORY_BY_DOMAIN`); every

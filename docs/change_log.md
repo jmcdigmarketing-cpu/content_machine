@@ -8,6 +8,16 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 41 — dossier after render, a clean suite, pace-true estimates, the wheel - 2026-09-27
+
+*3,825 tests; mypy 129 == baseline; regression corpus 46 of 46; ruff 0.8.4 -> 0.15.8 after it.*
+
+- **#888** the run's notes page shows its voices and pace as soon as the render finishes.
+- **#892** tests no longer touch your `data/` or `output/` folders; `ops test` fails if one does.
+- **#893** chapter times before the render match the slower voice.
+- **#832** an installed copy now includes the brand files, the stats scrapers and `scripts/`.
+- **#831** the code checker is current (ruff 0.15.8).
+
 ### Wave 40 — a slower voice, no "not just X" frames, one backfill verb - 2026-09-27
 
 *3,810 tests; mypy 129 == baseline; ruff clean; regression corpus 46 of 46.*

@@ -241,10 +241,44 @@ class TestTheWheelShipsWhatItNeeds(unittest.TestCase):
         needed = {str(Path(p).parent).replace("\\", "/").replace("/", ".") for p in tracked}
         self.assertEqual(sorted(needed - packages), [])
 
+    def test_every_package_the_code_imports_is_listed(self):
+        """#832. The check above only looked under the listed tops, at folders with an
+        `__init__.py`. `assets` (imported by the pipeline) was never listed,
+        `apis/scrapers` had no `__init__.py`, and `core/chapter_shorts.py` imports
+        `scripts.probe_sync`: a wheel install could not import any of them."""
+        import re
+
+        root = Path(__file__).resolve().parents[1]
+        packages = set(_pyproject()["tool"]["setuptools"]["packages"])
+        # `import alembic` is the migration library, not the repository's alembic/ folder;
+        # `tests` is imported only by scripts/mutate_gates.py, a dev tool that runs the suite.
+        not_ours = {"alembic", "tests"}
+        sources = [root / "main.py"]
+        for package in packages:
+            sources.extend((root / package.replace(".", "/")).glob("*.py"))
+        imported: set[str] = set()
+        for path in sources:
+            text = path.read_text(encoding="utf-8")
+            for name in re.findall(r"^\s*(?:from|import)\s+([a-z_][\w.]*)", text, re.M):
+                parts = name.split(".")
+                for depth in range(1, len(parts) + 1):
+                    folder = root.joinpath(*parts[:depth])
+                    module = folder.with_suffix(".py")
+                    if folder.is_dir() and not module.exists() and parts[0] not in not_ours:
+                        imported.add(".".join(parts[:depth]))
+        self.assertEqual(sorted(imported - packages), [])
+
     def test_runtime_data_files_are_declared(self):
         globs = _pyproject()["tool"]["setuptools"].get("package-data", {})
         tracked = subprocess.run(
-            ["git", "ls-files", "config/*.json", "core/data/*", "analytics/*.json"],
+            [
+                "git",
+                "ls-files",
+                "config/*.json",
+                "core/data/*",
+                "analytics/*.json",
+                "assets/branding/*",
+            ],
             capture_output=True,
             text=True,
             check=True,

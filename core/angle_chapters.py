@@ -325,9 +325,10 @@ def chapter_lines(
     word_timings: list[dict[str, Any]] | None = None,
     duration: float | None = None,
     total_words: int | None = None,
+    channel_id: str | None = None,
 ) -> str:
     """YouTube chapter lines titled by angle, timed from real word starts when known."""
-    from core.script_length import WORDS_PER_SECOND
+    from core.script_length import spoken_words_per_second
 
     times = token_start_times(word_timings)
     points: list[tuple[float, str]] = []
@@ -339,7 +340,7 @@ def chapter_lines(
         elif duration and total_words:
             seconds = float(duration) * chapter.word_start / max(1, total_words)
         else:
-            seconds = chapter.word_start / max(WORDS_PER_SECOND, 0.1)
+            seconds = chapter.word_start / max(spoken_words_per_second(channel_id), 0.1)
         points.append((seconds, chapter.title))
     return youtube_chapter_lines(points)
 

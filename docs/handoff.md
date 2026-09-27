@@ -53,28 +53,27 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-27 · **HEAD at write:** `98538fd` + this wave's commit on `main` (`git log -2`)
-· **Tree:** clean after the commit; `data/` not in git.
+**Written:** 2026-09-27 · **HEAD at write:** `5d6b65e` + wave 41's commit + the four ruff commits
+on `main` (`git log -6`) · **Tree:** clean after the commits.
 
-**Read before editing:** `py -m scripts.ops regressions <file>` (46 cases). A new `.env.example`
-key needs a reader or `tests/test_env_keys_read.py` fails. Re-fill history through
-`analytics/backfills.py` (`ops backfill`), not a new verb. TTS cache keys now carry the pace
-(`voice@0.95`). Topic domains may read a learned game name last (`core/learned_domain_terms`);
-the suite pins `LEARNED_GAME_NAMES=false`.
+**Read before editing:** ruff is **0.15.8** everywhere now (CI, `pyproject.toml`, pre-commit) -
+`pip install ruff==0.15.8`; the old "never bare `ruff`" rule is gone. The ruff format sweep
+touched 34 files: rebase uncommitted work onto it rather than merging over it. `ops test` fails
+when the suite writes under `data/` or `output/` - redirect a new store in `tests/__init__.py`.
+Time estimates divide by `spoken_words_per_second`, never `WORDS_PER_SECOND`
+(`tests/test_spoken_pace.py`). `py -m scripts.ops regressions <file>` (46 cases).
 
 **Defects first:**
-- **#892 the full suite writes five `data/` files** (channel_memory/tapin, competitors_tapin,
-  operator_minutes, reliability_history, incidents). Pre-existing; none of wave 40's tests do.
-- **#893** pre-render chapter estimates assume the old pace (about 5% early until refined).
-- **#888** the dossier shows voices and pace only after the overnight rewrite.
-- **Nothing was heard:** no ElevenLabs key or ffmpeg here. The operator should listen to one
-  render at 0.95, one debate and one quotes run (#889).
-- **Use `python -m ruff`, never bare `ruff`, here:** bare is 0.15.8, CI pins 0.8.4.
+- **#894** `ops package-audit` cannot build on a Debian-patched Python (fails on HEAD too); an
+  isolated `pip wheel . --no-deps` builds and scans clean.
+- **Nothing was heard:** the 0.95 pace and the debate/quotes voices wait on the operator (#889).
+- **#851** keyword-less headlines can pass as gaming through the env channel.
 
-**Shipped:** #855 · #879 · #876 · #870 · #890 · #891; #849 measured (open until it has an n).
+**Shipped:** #888 · #892 · #893 · #832 · #831.
 
-Suite **3,810**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **282 numbered open**, highest **#893**. Next five: **#888 · #892 · #893 · #832 · #831**.
+Suite **3,825**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
+mypy **129**; backlog **278 numbered open**, highest **#894**. Next five: **#853 · #851 · #868 ·
+#894 · #833**.
 
 ## Slot — Cursor
 

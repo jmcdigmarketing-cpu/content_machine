@@ -94,9 +94,9 @@ def chapter_block(
     total_words = max(1, len(_WORD_RE.findall(text)))
     span = float(duration or 0.0)
     if span <= 0:
-        from core.script_length import WORDS_PER_SECOND
+        from core.script_length import spoken_words_per_second
 
-        span = max(60.0, total_words / WORDS_PER_SECOND)
+        span = max(60.0, total_words / spoken_words_per_second())
 
     from core.angle_chapters import token_start_times
 
@@ -185,9 +185,11 @@ def refine_run_chapters(run_id: int | None, script: str, audio_path: str) -> str
             if str(features.get("length_preset") or "") != "4":
                 return None
 
-            from core.script_length import WORDS_PER_SECOND, count_spoken_words
+            from core.script_length import count_spoken_words, spoken_words_per_second
 
-            estimated_duration = count_spoken_words(script) / max(WORDS_PER_SECOND, 0.1)
+            estimated_duration = count_spoken_words(script) / max(
+                spoken_words_per_second(record.channel_id), 0.1
+            )
             old = chapter_block(script, duration=estimated_duration, length_choice="4")
             last_end = max(
                 (

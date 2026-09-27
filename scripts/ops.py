@@ -1365,13 +1365,27 @@ def cmd_worker(args: argparse.Namespace) -> int:
 
 @_register("test", "Run unit tests (--order reverse|shuffle [--seed N] proves order-independence)")
 def cmd_test(args: argparse.Namespace) -> int:
+    # #892: the suite may not write the operator's data/ or output/; a run that did fails.
+    from core.suite_hygiene import WATCHED, changed, snapshot
+
+    before = snapshot(WATCHED)
     order = getattr(args, "order", "default")
     if order == "default":
-        return _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
-    # #828: in-process so tests/__init__.py loads exactly as `-t .` loads it.
-    from core.suite_order import run_ordered
+        code = _run_module("unittest", "discover", "-s", "tests", "-t", ".", "-v")
+    else:
+        # #828: in-process so tests/__init__.py loads exactly as `-t .` loads it.
+        from core.suite_order import run_ordered
 
-    return run_ordered(order, seed=getattr(args, "seed", None))
+        code = run_ordered(order, seed=getattr(args, "seed", None))
+    wrote = changed(before, snapshot(WATCHED))
+    if wrote:
+        print(f"\nThe suite wrote {len(wrote)} file(s) under data/ or output/ (#892):")
+        for path in wrote[:20]:
+            print(f"  {path}")
+        print("Redirect the store in tests/__init__.py; tests may not touch the operator's files.")
+        return 1
+    print("\nSuite hygiene: data/ and output/ untouched.")
+    return code
 
 
 @_register("list-uploads", "Rendered MP4s not yet on YouTube")

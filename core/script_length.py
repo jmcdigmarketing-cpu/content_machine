@@ -176,6 +176,20 @@ def trim_overlength(
     return out, max(0, current - count_spoken_words(out))
 
 
+def spoken_words_per_second(channel_id: str | None = None) -> float:
+    """Words per second at the voice's pace (#893): the nominal rate times `speech_speed`.
+
+    Time estimates - chapter lines, the description's duration, the review readout -
+    divide by this. The presets keep `WORDS_PER_SECOND`: they size scripts, not runs.
+    """
+    try:
+        from core.tts import speech_speed
+
+        return WORDS_PER_SECOND * speech_speed(channel_id)
+    except Exception:
+        return WORDS_PER_SECOND
+
+
 def estimate_duration_seconds(script: str, *, wps: float = WORDS_PER_SECOND) -> float:
     return count_spoken_words(script) / wps if wps > 0 else 0.0
 

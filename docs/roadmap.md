@@ -26,28 +26,26 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-27 wave 40: **#890** the voice speaks a touch slower (0.95; `TTS_SPEED`
-or `tts.speed` per channel) · **#891** "it's not just X - it's Y" is found as a pattern and
-restated · **#879** a continuation keeps its series name · **#876** game names learned from
-confirmed runs (`ops game-names`) · **#870** one `ops backfill` over a registry · **#855** the
-dead `INGEST_ENABLED` removed, and every documented setting now needs a reader · **#849**
-fact-fit is measured and stored (selection unchanged until it has an n).
+**Just landed** - 2026-09-27 wave 41: **#888** the dossier is rewritten after the render (voices,
+pace) · **#892** the suite no longer writes `data/` or `output/`, and `ops test` fails if it ever
+does · **#893** chapter and duration estimates at the voice's real pace · **#832** the wheel
+ships `assets`, `apis.scrapers`, `scripts` and the branding files · **#831** ruff 0.8.4 ->
+0.15.8, as its own commits.
 
-**Before that** - wave 39: **#883-#886** more than one voice, **#877 #878** · wave 38: **#865
-#873 #875 #856 #867 #869** · wave 37: **#872 #866 #874**. Earlier:
+**Before that** - wave 40: **#890 #891 #879 #876 #870 #855**, #849 measured · wave 39:
+**#883-#886 #877 #878** · wave 38: **#865 #873 #875 #856 #867 #869**. Earlier:
 [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 40 (2026-09-27)** cleared four of the five and put #849 on a measurement. The list
-changed: #849 and #863 wait on runs, not code; #888 and two items found this wave join.
+**Wave 41 (2026-09-27)** cleared all five. The new list is small structural work the operator
+never has to act on; the product items wait on runs (#849, #863) or the operator's ear (#889).
 
-1. **#888 the dossier after the render** `[S]` - voices, speed and render hashes appear
-   only after the overnight rewrite.
-2. **#892 the suite writes five `data/` files** `[S]` - redirect them and guard it.
-3. **#893 pre-render chapter times at the new pace** `[S]` - scale by `speech_speed`.
-4. **#832 `apis/scrapers` missing from the wheel** `[S]`.
-5. **#831 the ruff bump** `[M]` - its own wave-sized commit series.
+1. **#853 Anthropic defaults on a current model** `[S]` - pinned to `claude-sonnet-4-20250514`.
+2. **#851 `best_bet` domain without the env channel** `[S]` - keyword-less headlines pass as gaming.
+3. **#868 `preview-render` vs `render-preview`** `[S]` - one name should say which.
+4. **#894 `ops package-audit` builds in isolation** `[S]` - it cannot build on a Debian Python.
+5. **#833 mypy over every package** (E5) `[M]` - extend `TARGETS`, drop the dead override.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 

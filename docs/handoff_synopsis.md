@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-27: wave 40, next five
+# Handoff synopsis — 2026-09-27: wave 41, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-27 (Claude Code): wave 40 #849 #879 #876 #855 #870 + #890 #891
+## Last wave — 2026-09-27 (Claude Code): wave 41 #888 #892 #893 #832 + #831
+
+- **#888** the dossier is rewritten when the render finishes; it names the voices and the pace.
+- **#892** the suite writes nothing under `data/` or `output/`; `ops test` fails and names the
+  files if a run ever does (CI's reversed leg runs through it).
+- **#893** chapter and duration estimates use `spoken_words_per_second` (3.3 x pace).
+- **#832** the wheel ships `assets` (+ branding), `apis.scrapers` and `scripts`.
+- **#831** ruff 0.15.8 in `pyproject.toml`, CI and pre-commit; one format sweep, then one
+  commit per rule family. `pip install ruff==0.15.8` on the PC.
+
+**Verify:** `py -m scripts.ops test --order reverse` (ends "Suite hygiene: ... untouched");
+`python -m unittest tests.test_suite_hygiene tests.test_spoken_pace tests.test_wave13`.
+
+## Previous — 2026-09-27 (Claude Code): wave 40 #849 #879 #876 #855 #870 + #890 #891
 
 - **#890** every voice speaks at 0.95 (`TTS_SPEED`, or `tts.speed` per channel; 1.0 = old pace).
   ElevenLabs keeps the voice's saved stability/similarity; clips cached at the old pace miss once.
@@ -41,19 +54,6 @@ tests.test_backfill_registry tests.test_angle_fact_fit`; `py -m scripts.ops regr
 
 **Verify:** `python -m unittest tests.test_voices tests.test_flagged_title`;
 `py -m scripts.ops regressions` (43 of 43).
-
-## Previous — 2026-09-26 (Claude Code): wave 38 #865 #873 #875 #856 #867 #869
-
-- **#865** `publishing/snippet_update.py`: every snippet change reads the live snippet and sends
-  all writable fields; rollback prepends its correction.
-- **#873** `ops recategorize [--apply]` re-files uploaded videos by their run's domain (the
-  operator runs `--apply` on the PC). **#875** GTA 6 trailer topics are gaming again.
-- **#856** the Gated line hides retired signals. **#867** the dossier Audit block renders the
-  eight unread keys; `test_persisted_keys_read` holds it. **#869** `ops status` Machine block.
-- The operator's May 2025 prototype is in [project_timeline.md](project_timeline.md).
-
-**Verify:** `python -m unittest tests.test_snippet_updates tests.test_persisted_keys_read
-tests.test_status_machine`; `py -m scripts.ops regressions`.
 
 ## Pipeline order (operator)
 
@@ -121,9 +121,9 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
 1. **Operator:** listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
-   · #863 waits on ten runs (E3) · #893 chapter estimates at the new pace.
-3. **Structural:** #888 dossier after render · #892 suite writes `data/` · #832 · #831 ruff
-   bump · #834 `core/` seams. Any live-run defect: add a corpus case.
+   · #863 waits on ten runs (E3) · #851 best-bet domain.
+3. **Structural:** #853 Anthropic defaults · #868 verb names · #894 package-audit build · #833
+   mypy coverage · #834 `core/` seams. Any live-run defect: add a corpus case.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
    contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours

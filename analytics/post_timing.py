@@ -410,12 +410,24 @@ def _bucket_averages(
     counts: dict[tuple[int, int, int], int],
     min_bucket_samples: int,
 ) -> dict[tuple[int, int, int], float]:
-    """Average engagement per (weekday, hour) bucket, keeping only buckets with at least
+    """Shrunk engagement per (weekday, hour) bucket, keeping only buckets with at least
     ``min_bucket_samples`` posts. Falls back to all buckets when the floor would leave
-    nothing (thin data) so a schedule can still be learned."""
-    avg = {k: sums[k] / counts[k] for k in sums if counts[k] >= min_bucket_samples}
+    nothing (thin data) so a schedule can still be learned.
+
+    #352: each bucket regresses toward the channel mean (`recommender_confidence.
+    shrunk_mean`), so one lucky post does not outrank five steady ones.
+    """
+    from core.recommender_confidence import MODERATE_SAMPLES
+
+    total = sum(counts.values())
+    prior = (sum(sums.values()) / total) if total else 0.0
+
+    def shrunk(k: tuple[int, int, int]) -> float:
+        return (sums[k] + MODERATE_SAMPLES * prior) / (counts[k] + MODERATE_SAMPLES)
+
+    avg = {k: shrunk(k) for k in sums if counts[k] >= min_bucket_samples}
     if not avg:
-        avg = {k: sums[k] / counts[k] for k in sums}
+        avg = {k: shrunk(k) for k in sums}
     return avg
 
 

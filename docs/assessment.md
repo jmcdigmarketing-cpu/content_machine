@@ -191,3 +191,9 @@ weaknesses - where each stands").
 5. **Volume** - sample counts and intervals are printed everywhere; shrinking small samples
    toward the channel mean (#352) is next. The underlying cause - few measured videos - only
    more published videos fix.
+
+**Later the same day (wave 44):** the guard now searches before it stops (#899: Wikipedia, Google
+News and the web provider, by the event's name); #896 and #897 closed the two relevance leaks; #411
+and #506 added a ducked music bed and a second-voice caption colour; #854 retired two dead
+signals; #352 extended small-sample shrinkage to length and post-time. What remains per row is in
+the roadmap table.

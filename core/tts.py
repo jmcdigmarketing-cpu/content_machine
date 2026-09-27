@@ -597,7 +597,7 @@ def generate_audio(
     """Synthesize `script`. `length_choice` selects the long-form voice policy (#758).
 
     `voices` pins {role: voice_id} for the run (#883); without it the first synth call
-    picks and every later one reuses it. `segments` (`core.voice_plan.Segment`) with more
+    picks and every later one reuses it. `segments` (`core.voice.plan.Segment`) with more
     than one role renders each part in its role's voice (#884-#886).
     """
     global _last_voices
@@ -913,10 +913,19 @@ def concat_audio_segments(paths: list[str], dest: str) -> str:
             pass
 
 
-def _write_concat_word_sidecar(paths: list[str], dest: str) -> None:
+def _write_concat_word_sidecar(
+    paths: list[str], dest: str, *, roles: list[str] | None = None
+) -> None:
+    """Merge the segments' word timings; with more than one voice, tag each word's role.
+
+    #506: the captions colour the second voice, and this is the last place that knows
+    which segment - so which voice - spoke each word. One voice writes no `role` key,
+    so a single-voice sidecar is byte-identical to before.
+    """
+    tag = bool(roles) and len(set(roles or [])) > 1
     merged: list[dict[str, Any]] = []
     offset = 0.0
-    for path in paths:
+    for i, path in enumerate(paths):
         sidecar = path + ".words.json"
         chunk: list[dict[str, Any]] = []
         if os.path.isfile(sidecar):
@@ -927,7 +936,10 @@ def _write_concat_word_sidecar(paths: list[str], dest: str) -> None:
                     chunk = [w for w in loaded if isinstance(w, dict)]
             except (OSError, ValueError):
                 chunk = []
-        merged.extend(offset_word_timings(chunk, offset))
+        shifted = offset_word_timings(chunk, offset)
+        if tag and roles is not None and i < len(roles):
+            shifted = [dict(w, role=roles[i]) for w in shifted]
+        merged.extend(shifted)
         offset += segment_audio_duration(path)
     try:
         with open(dest + ".words.json", "w", encoding="utf-8") as f:
@@ -972,7 +984,7 @@ def _generate_by_sentences(
             paths.append(seg)
         try:
             concat_audio_segments(paths, output_path)
-            _write_concat_word_sidecar(paths, output_path)
+            _write_concat_word_sidecar(paths, output_path, roles=roles)
         except Exception as exc:
             # Tell the caller what was already paid for, so the fallback can add
             # it rather than report only its own synthesis.
@@ -1302,7 +1314,7 @@ def _elevenlabs_record_chars(chars: int) -> None:
 
 
 def _piper_voice_ready() -> bool:
-    from core.voice_catalog import any_piper_onnx_ready
+    from core.voice.catalog import any_piper_onnx_ready
 
     try:
         import importlib.util

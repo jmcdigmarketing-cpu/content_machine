@@ -17,6 +17,71 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-27 (Claude Code) - wave 44: the guard looks before it stops, music, a second caption colour, cleaner signals, core/voice
+
+**Prompt (verbatim):** "would the next wave have to include increased internal research ability,
+or fact intake? need to be able to pull more data for recency guard to be effective no? next 5 as
+well, anything for me? what about the next of the deficiencies?"
+
+**Operator's answers (plan mode):** event research ships as a sixth item beside the recommended
+five (#896 #897 #854 #352 #834). At plan approval, on the weakness table's visuals row: "INCLUDE
+THESE PLZ" - so #411 (music bed) and #506 (caption colour per voice) joined. Eight items.
+
+### Why the list differs
+
+The five were the recommendation. #899 answers the operator's question: #895 can only notice that
+no fact names the event and stop the run; nothing fetched the missing facts. #411 and #506 were the
+operator's call.
+
+### Findings, with file:line
+
+- **Search was not built for a just-happened event.** `apis/web_search_api.get_web_search_signal`
+  searched the whole typed topic; Tavily ran `topic: news` with no `days`, DuckDuckGo `text()` with
+  no time limit; auto-research only read those results. No Wikipedia text, no news search by name.
+- **#352's premise was half stale.** `core/best_bet._adjusted_domain_rates` already shrank toward
+  the channel mean; `core/length_recommender.py:118` and `analytics/post_timing._bucket_averages`
+  ranked on raw means.
+- **The sidecar forgot who spoke.** `core/tts._write_concat_word_sidecar` merged each segment's
+  timings and dropped its role, though `_generate_by_sentences` knew it (#506).
+- **The music bed was wired and never fed.** `video/render_video.py:286` mixed a third input at a
+  fixed 0.2 with no ducking; its only source was MusicGen (off); no channel had music (#411).
+- **Two signals ignored the topic** (#896 `apis/sports_data_api.py`, #897 `apis/odds_api.py`).
+- **Found while testing #899:** the first draft cached a nothing-found result for three hours, so
+  an outage on the PC would have hidden the event until the cache expired. Only finds are cached.
+
+### Shipped
+
+1. **#854** igdb and steam retired (dated notes, modules kept).
+2. **#896** teams kept only when named in the topic (`topic_tokens.contains_phrase`).
+3. **#897** odds answers for the topic's sport only (`odds_api.topic_sports`).
+4. **#352** `recommender_confidence.shrunk_mean` / `ranked_on_note`; length and post-time use them.
+5. **#506** role-tagged sidecar, `Voice2` karaoke style, `caption_skin.second_voice_color`.
+6. **#411** `channels.json` `music`, `core/music.pick_track`, sidechain ducking, reliability line.
+7. **#899** `core/event_research.py` + `web_search_api.search_recent`; pipeline, key-facts prompt,
+   run summary; `EVENT_RESEARCH_*` keys; the suite pins it off.
+8. **#834** `core/voice/` + one-wave aliases, `tests/test_core_layout.py`, the CLAUDE.md rule.
+
+### Not done, deliberately
+
+- Nothing was heard or watched: no ffmpeg, tracks or ElevenLabs key here (#900).
+- Event research did not run live: this container's proxy blocks Wikipedia and Google News. On the
+  PC it runs on a miss only.
+- The voice aliases stay one wave (#901). No `decisions.md` entry (ceiling; no decision overridden).
+
+### Audit
+
+66 new tests in eight modules (`test_retired_signals` +3, `test_sports_team_in_topic`,
+`test_odds_topic`, `test_shrunk_recommenders`, `test_caption_voice_colour`, `test_music_library`,
+`test_event_research`, `test_core_layout`). **53 observed failing before their fix**; 1 more shown
+red by reverting the fix (nothing-found is not cached); 11 are guards that pass by design (the
+single-voice ASS sha, best-bet unchanged, equal-sample ties, one odds call, quota handling, the
+kept modules, a resolved nickname, an alternate name, a find is cached); 1 was written with its
+code (the reliability music line). One older test changed by design: `test_music_bed_wiring`
+pinned the undipped mix. Corpus **52 of 52** (+3). mypy **123**: six new annotation errors in
+`event_research` / `web_search_api` were fixed rather than baselined. Every new symbol has a
+production caller. Live: `ops reliability` prints the retired signals and `Music bed: none - drop
+royalty-free tracks in assets/music/tapin`.
+
 ## 2026-09-27 (Claude Code) - wave 43: the recency guard, old scraped notes, saved research, one Enter default, more art
 
 **Prompt (verbatim):** "next 5 and commit and push, give me some infor on where we are in the

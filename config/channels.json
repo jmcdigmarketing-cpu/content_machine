@@ -35,6 +35,7 @@
         "body_font": "Arial",
         "fill_color": "#FFFFFF",
         "outline_color": "#111111",
+        "second_voice_color": "#4FC3F7",
         "boxed": false
       },
       "end_card": {
@@ -52,6 +53,10 @@
       "hook_motion": {
         "enabled": true,
         "zoom": 1.08
+      },
+      "music": {
+        "enabled": true,
+        "volume": 0.18
       },
       "background_mode": "hybrid",
       "hybrid_local_ratio": 0.70,
@@ -146,6 +151,7 @@
         "body_font": "Arial",
         "fill_color": "#F7E7A9",
         "outline_color": "#1B2430",
+        "second_voice_color": "#9FD3C7",
         "boxed": true
       },
       "end_card": {
@@ -163,6 +169,10 @@
       "hook_motion": {
         "enabled": true,
         "zoom": 1.05
+      },
+      "music": {
+        "enabled": true,
+        "volume": 0.18
       },
       "background_mode": "hybrid",
       "hybrid_local_ratio": 0.45,

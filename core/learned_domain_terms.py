@@ -4,7 +4,7 @@
 "Palworld update" named none of them and read neutral. A run already records the
 evidence: `features["domains"]` (#866) holds what the words said (`topic`) and what the
 run decided (`effective`). `topic == "neutral"` with `effective == "gaming"` means a live
-gaming signal matched to the topic (RAWG, IGDB, Steam, Twitch) made it a game - so its
+gaming signal matched to the topic (RAWG or Twitch; IGDB and Steam retired, #854) made it a game - so its
 names are game names.
 
 A name also seen in a run resolved to another domain is dropped (a sponsor, a club).

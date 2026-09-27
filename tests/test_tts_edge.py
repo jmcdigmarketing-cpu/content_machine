@@ -218,7 +218,7 @@ class TestEdgeSynth(_EdgeCase):
 
 class TestEdgeVoiceMix(_EdgeCase):
     def test_edge_is_its_own_family_not_local(self):
-        from core.voice_consistency import voice_mix_warning
+        from core.voice.consistency import voice_mix_warning
 
         with patch.dict(
             os.environ,

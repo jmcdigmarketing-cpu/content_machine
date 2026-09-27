@@ -8,6 +8,19 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 44 — the guard looks first, music, a second caption colour, cleaner signals - 2026-09-27
+
+*mypy 123 == baseline; ruff 0.15.8 clean; corpus 52 of 52.*
+
+- **#899** when no fact names the event, the system now searches for it (Wikipedia, Google News,
+  your web-search key) before asking you or stopping; the facts prompt shows what it found.
+- **#411** background music from your own tracks in `assets/music/<channel>/`, dipped under the
+  voice. **#506** in debate and quotes videos, the second voice's words light up in their own colour.
+- **#896 #897** sports facts only name teams in the topic; odds only answer for the topic's sport.
+  **#854** two dead game signals retired. **#352** length and posting-time picks no longer trust
+  three lucky videos over eight steady ones.
+- **#834** voice modules moved to `core/voice/`; a rule and a test now say where new modules go.
+
 ### Wave 43 — the recency guard, tidier vault facts, more art - 2026-09-27
 
 *3,897 tests; mypy 123 == baseline; ruff 0.15.8 clean; corpus 49 of 49; selftest 9/9.*

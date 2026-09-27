@@ -1,6 +1,6 @@
 # Content OS — Architecture
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-20
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-27
 
 ## Folder structure
 
@@ -162,6 +162,7 @@ sequenceDiagram
         Pipe->>Score: composite_score(signals, variant, channel_id)
     end
     CLI->>Pipe: run_pipeline(discovery, variant_index, ...)
+    Note over Pipe: auto-research reads the result pages (#848); on a recency miss,<br/>event_research searches the event by name (#899)
     Pipe->>LLM: generate_content_package
     alt proceed_video
         Pipe->>TTS: generate_audio

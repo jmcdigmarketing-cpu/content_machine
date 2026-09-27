@@ -1260,7 +1260,7 @@ def generate_content_package(
     # them before grounding, the title check, captions and the description see the text.
     speaker_turns: list[dict[str, str]] = []
     if voice_mode == "debate":
-        from core.voice_plan import parse_speaker_turns, strip_speaker_tags
+        from core.voice.plan import parse_speaker_turns, strip_speaker_tags
 
         speaker_turns = parse_speaker_turns(script)
         script = strip_speaker_tags(script)

@@ -479,33 +479,22 @@ def _adjusted_domain_rates(entries: list[dict]) -> dict[str, float]:
             by_domain.setdefault(e["domain"], []).append(float(r))
     if not by_domain:
         return {}
+    from core.recommender_confidence import shrunk_mean
+
     all_rates = [r for v in by_domain.values() for r in v]
     prior = sum(all_rates) / len(all_rates)
-    k = MODERATE_SAMPLES
-    return {d: (sum(v) + k * prior) / (len(v) + k) for d, v in by_domain.items()}
+    return {d: shrunk_mean(v, prior, MODERATE_SAMPLES) for d, v in by_domain.items()}
 
 
 def _ranked_on_note(raw_rate: float, adjusted_rate: float | None, *, places: int = 1) -> str:
-    """Name the figure that actually ranked, when it is not the one printed.
+    """`recommender_confidence.ranked_on_note` - shared with length and post-time (#352).
 
-    `_domain_priority` sorts on the empirical-Bayes-shrunk rate; the rationale
-    prints the raw mean. #351 then put an interval beside that raw mean, which
-    made the disagreement public — three numbers about one domain, only one of
-    which decided anything.
-
-    The raw mean stays the headline because it is what was actually observed and
-    the interval is computed over that same raw vector. This appends the ranking
-    basis rather than swapping it, so the interval keeps describing the number it
-    was derived from. Silent when shrinking changed nothing at the printed
-    precision — the note exists to flag a disagreement, not to decorate.
+    `_domain_priority` sorts on the empirical-Bayes-shrunk rate; the rationale prints
+    the raw mean, whose #351 interval would otherwise disagree in public.
     """
-    if adjusted_rate is None:
-        return ""
-    # Compare at the precision the caller prints: a note claiming a disagreement
-    # the operator cannot see on the same line is noise.
-    if f"{raw_rate:.{places}%}" == f"{adjusted_rate:.{places}%}":
-        return ""
-    return f" (ranked on {adjusted_rate:.{places}%} shrunk toward the channel mean)"
+    from core.recommender_confidence import ranked_on_note
+
+    return ranked_on_note(raw_rate, adjusted_rate, places=places)
 
 
 def _domain_priority(domain: str, adjusted: dict[str, float], counts: dict[str, int]) -> tuple:

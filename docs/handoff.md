@@ -53,28 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-27 · **HEAD at write:** `88773cd` + wave 43's commit on `main` (`git log -2`)
+**Written:** 2026-09-27 · **HEAD at write:** `367428b` + wave 44's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** a new stop sits after thin facts in `main.py` - `core/event_coverage`
-(#895, `EVENT_COVERAGE_GATE`); its prompt note is `EVENT NOT IN FACTS`, and a covered run's
-prompt is byte-identical. `ops selftest` has 9 gates; `scripts/mutate_gates.py` covers the new
-one. mypy baseline **123**. `decisions.md` is at its 800-line ceiling - split it before the next
-decision. `py -m scripts.ops regressions <file>` (49 cases).
+**Read before editing:** `core/voice_plan|catalog|consistency` moved to `core/voice/` - import the
+new paths; the old files are one-wave `sys.modules` aliases (#901 removes them), and
+`tests/test_core_layout.py` fails a new flat `core/*.py` past 243. `core/event_research` runs on a
+recency miss and fetches Wikipedia / Google News; the suite pins `EVENT_RESEARCH_ENABLED=false`.
+mypy baseline **123**. `decisions.md` is at its ceiling. Corpus 52 cases.
 
 **Defects first:**
-- **The recency guard has never met a live run.** Its false-stop risk is a fact that names the
-  event another way than the topic does (a nickname, a sponsor name). The y/N lets the operator
-  through; say so if it stops a run it should not.
-- **Weakness 3 is still live in two signals:** #896 (sports team not in the topic), #897 (odds
-  never reads the topic). Filed with line numbers, not fixed.
-- Carried: Sonnet 5 untested on a real script (no key); nothing heard of the 0.95 pace or the
-  debate/quotes voices (#889).
+- **Event research never met a live network** - this container's proxy blocks Wikipedia and Google
+  News. The logic is tested on fixtures only; the first real miss on the PC is its first run.
+- **Nothing was heard or watched:** the ducked music bed and the `Voice2` caption colour are tested
+  as an ffmpeg command and ASS text (#900). No tracks exist until the operator adds them.
+- Carried: Sonnet 5 untested on a real script; #889 debate/quotes not heard.
 
-**Shipped:** #895 · #857 · #862 · #887 · #825 · #898.
+**Shipped:** #899 · #411 · #506 · #896 · #897 · #854 · #352 · #834.
 
-Suite **3,897**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
-mypy **123**; backlog **271 numbered open**. Next five: **#896 · #897 · #854 · #352 · #834**.
+Suite **3,962**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
+mypy **123**; backlog **266 numbered open**. Next five: **#558 · #385 · #626 · #503 · #901**.
 
 ## Slot — Cursor
 

@@ -114,9 +114,9 @@ class RotationTests(unittest.TestCase):
 
 class PickRunVoicesTests(unittest.TestCase):
     def _pick(self, roles=("narrator",), previous="", profile=None, seed=0):
-        from core.voice_plan import pick_run_voices
+        from core.voice.plan import pick_run_voices
 
-        with patch("core.voice_plan.get_channel_profile", return_value=profile or _profile()):
+        with patch("core.voice.plan.get_channel_profile", return_value=profile or _profile()):
             return pick_run_voices(
                 "tapin", roles, previous_narrator=previous, rng=random.Random(seed)
             )
@@ -131,7 +131,7 @@ class PickRunVoicesTests(unittest.TestCase):
 
     def test_roles_beyond_the_pool_come_from_the_catalog(self):
         profile = _profile(tts_voice_pool={"voiceA": 1}, tts_rotate=False)
-        with patch("core.voice_plan.load_voice_registry", return_value={"x": {"voiceZ": 1}}):
+        with patch("core.voice.plan.load_voice_registry", return_value={"x": {"voiceZ": 1}}):
             voices = self._pick(roles=("narrator", "cohost"), profile=profile)
         self.assertEqual(voices, {"narrator": "voiceA", "cohost": "voiceZ"})
 
@@ -142,13 +142,13 @@ class PickRunVoicesTests(unittest.TestCase):
 
 class PlanSegmentsTests(unittest.TestCase):
     def test_single_is_one_narrator_segment(self):
-        from core.voice_plan import plan_segments
+        from core.voice.plan import plan_segments
 
         segs = plan_segments("One. Two.", "single")
         self.assertEqual([(s.text, s.role) for s in segs], [("One. Two.", "narrator")])
 
     def test_quotes_of_four_words_or_more_take_the_quote_voice(self):
-        from core.voice_plan import plan_segments
+        from core.voice.plan import plan_segments
 
         script = (
             'Dana White said, "we are not doing that fight this year." Then he left. '
@@ -164,7 +164,7 @@ class PlanSegmentsTests(unittest.TestCase):
 
     def test_chapters_split_at_char_start_one_role_each(self):
         from core.angle_chapters import AngleChapter
-        from core.voice_plan import plan_segments
+        from core.voice.plan import plan_segments
 
         script = "Intro line. First angle text. Second angle text. Third angle text."
         starts = [script.index("First"), script.index("Second"), script.index("Third")]
@@ -176,7 +176,7 @@ class PlanSegmentsTests(unittest.TestCase):
         self.assertEqual("".join(s.text for s in segs).split(), script.split())
 
     def test_debate_tags_become_two_voices(self):
-        from core.voice_plan import plan_segments
+        from core.voice.plan import plan_segments
 
         script = (
             "HOST: Topuria is the best featherweight ever.\n"
@@ -190,7 +190,7 @@ class PlanSegmentsTests(unittest.TestCase):
         self.assertNotIn("HOST", " ".join(s.text for s in segs))
 
     def test_debate_turns_survive_a_rewrite_of_the_clean_script(self):
-        from core.voice_plan import parse_speaker_turns, plan_segments, strip_speaker_tags
+        from core.voice.plan import parse_speaker_turns, plan_segments, strip_speaker_tags
 
         tagged = (
             "HOST: Topuria is the best featherweight ever.\n"
@@ -206,7 +206,7 @@ class PlanSegmentsTests(unittest.TestCase):
         self.assertEqual([s.role for s in segs], ["narrator", "cohost"])
 
     def test_strip_leaves_ordinary_text_alone(self):
-        from core.voice_plan import strip_speaker_tags
+        from core.voice.plan import strip_speaker_tags
 
         text = "The host city: Las Vegas. He said the co-host role is gone."
         self.assertEqual(strip_speaker_tags(text), text)
@@ -215,7 +215,7 @@ class PlanSegmentsTests(unittest.TestCase):
 class MultiVoiceSynthTests(unittest.TestCase):
     def test_each_segment_is_synthesized_in_its_role_voice(self):
         from core import tts
-        from core.voice_plan import Segment
+        from core.voice.plan import Segment
 
         calls = []
 
@@ -266,7 +266,7 @@ class MultiVoiceSynthTests(unittest.TestCase):
 
     def test_single_role_takes_the_ordinary_path(self):
         from core import tts
-        from core.voice_plan import Segment
+        from core.voice.plan import Segment
 
         with tempfile.TemporaryDirectory() as tmp:
             out = os.path.join(tmp, "a.mp3")
@@ -289,21 +289,21 @@ class MultiVoiceSynthTests(unittest.TestCase):
 
 class DebatePromptTests(unittest.TestCase):
     def test_directive_only_in_debate_mode(self):
-        from core.voice_plan import voice_mode_directive
+        from core.voice.plan import voice_mode_directive
 
         self.assertIn("CO-HOST:", voice_mode_directive("debate"))
         for mode in ("single", "quotes", "chapters", ""):
             self.assertEqual(voice_mode_directive(mode), "")
 
     def test_menu_offers_chapter_voices_only_with_chapters(self):
-        from core.voice_plan import voice_menu_lines
+        from core.voice.plan import voice_menu_lines
 
         self.assertNotIn("3)", " ".join(voice_menu_lines(all_angles=False)))
         self.assertIn("3)", " ".join(voice_menu_lines(all_angles=True)))
         self.assertIn("debate", " ".join(voice_menu_lines()))
 
     def test_menu_choice_maps_to_modes(self):
-        from core.voice_plan import voice_mode_from_choice
+        from core.voice.plan import voice_mode_from_choice
 
         self.assertEqual(voice_mode_from_choice(""), "single")
         self.assertEqual(voice_mode_from_choice("2"), "quotes")
@@ -315,15 +315,15 @@ class DebatePromptTests(unittest.TestCase):
 
 class RunPlanTests(unittest.TestCase):
     def test_plan_for_run_reads_the_stored_mode_and_avoids_the_last_voice(self):
-        from core.voice_plan import plan_for_run
+        from core.voice.plan import plan_for_run
 
         features = {"voice_mode": "debate"}
         prev = SimpleNamespace(id=5, features_json='{"voices": {"narrator": "voiceA"}}')
         repo = SimpleNamespace(list_for_channel=lambda cid, status=None: [prev])
         with (
-            patch("core.voice_plan.load_features", return_value=features),
-            patch("core.voice_plan._run_repo", return_value=repo),
-            patch("core.voice_plan.get_channel_profile", return_value=_profile()),
+            patch("core.voice.plan.load_features", return_value=features),
+            patch("core.voice.plan._run_repo", return_value=repo),
+            patch("core.voice.plan.get_channel_profile", return_value=_profile()),
         ):
             voices, segs = plan_for_run(
                 "HOST: One claim here.\nCO-HOST: A rebuttal there.", "tapin", 6
@@ -333,9 +333,9 @@ class RunPlanTests(unittest.TestCase):
         self.assertEqual([s.role for s in segs or []], ["narrator", "cohost"])
 
     def test_no_run_is_one_rotating_voice(self):
-        from core.voice_plan import plan_for_run
+        from core.voice.plan import plan_for_run
 
-        with patch("core.voice_plan.get_channel_profile", return_value=_profile()):
+        with patch("core.voice.plan.get_channel_profile", return_value=_profile()):
             voices, segs = plan_for_run("Plain script.", "tapin", None)
         self.assertEqual(list(voices), ["narrator"])
         self.assertIsNone(segs)
@@ -481,7 +481,7 @@ class RenderVoicesTests(unittest.TestCase):
                 patch.object(pipeline, "generate_audio") as audio,
                 patch.object(pipeline, "render_vertical_video", return_value=(None, None)),
                 patch(
-                    "core.voice_plan.plan_for_run",
+                    "core.voice.plan.plan_for_run",
                     return_value=({"narrator": "voiceB", "cohost": "voiceC"}, ["seg"]),
                 ),
                 patch(

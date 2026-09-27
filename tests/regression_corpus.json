@@ -694,10 +694,64 @@
       "select": "covered"
     },
     {
+      "id": "sports-team-not-in-topic",
+      "item": 896,
+      "source": "assessment.md weakness 3 (sports matched a cricket club)",
+      "call": "apis.sports_data_api:_team_in_topic",
+      "args": [
+        {
+          "strTeam": "Premier Cricket Club",
+          "strAlternate": ""
+        },
+        "Premier League title race goes to the last day",
+        ""
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the search term was the topic's first capital word; the club it matched is not in the topic"
+    },
+    {
+      "id": "odds-sport-not-in-topic",
+      "item": 897,
+      "source": "assessment.md weakness 3 (odds matched CFL)",
+      "call": "apis.odds_api:topic_sports",
+      "args": [
+        "GTA 6 trailer 3 breakdown",
+        [
+          {
+            "key": "americanfootball_cfl",
+            "group": "American Football",
+            "title": "CFL",
+            "description": "Canadian Football",
+            "active": true
+          }
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the odds signal scored every topic 50 with the whole sports list as its data"
+    },
+    {
+      "id": "event-research-keeps-only-the-event",
+      "item": 899,
+      "source": "wave 44 guard",
+      "call": "core.event_research:_names_it",
+      "args": [
+        "UFC Freedom 250",
+        "Stock markets close higher on Friday - Reuters"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "research on a recency miss must add lines about the event, not whatever the news search returned"
+    },
+    {
       "id": "debate-tags-leave-prose",
       "item": 886,
       "source": "wave 39 guard",
-      "call": "core.voice_plan:strip_speaker_tags",
+      "call": "core.voice.plan:strip_speaker_tags",
       "args": [
         "The host city: Las Vegas. He said the co-host role is gone."
       ],

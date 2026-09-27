@@ -288,6 +288,10 @@ def generate_subtitle_file(
                 title_font=title_font,
                 body_font=body_font,
                 anchor=anchor,
+                # #506: a two-voice render lights the second voice in its own colour.
+                voice2_primary=_ass_color(
+                    _caption_skin(channel_id).get("second_voice_color"), "#4FC3F7"
+                ),
             )
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)

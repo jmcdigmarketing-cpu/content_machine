@@ -1067,6 +1067,20 @@ def prompt_key_facts_result(
     manual_facts: list[str] = []
     link_facts: list[str] = []
 
+    # #899: before asking, look for the event if nothing discovery found names it.
+    try:
+        from core.event_research import attach_event_research, report_line
+
+        _found, research = attach_event_research(signals, topic=topic, key_facts=[])
+        if research:
+            print_fn("")
+            print_fn(f"  {report_line(research)}")
+            lines = ((_found.get("event_research") or {}).get("data") or {}).get("lines") or []
+            for line in lines[:3]:
+                print_fn(f"    - {_elide(str(line), 110)}")
+    except Exception as exc:
+        logger.debug("event research notice skipped: %s", exc)
+
     print_fn("")
     print_fn("  Add facts — paste a URL, one line, or type paste + Enter for a multi-line block.")
     print_fn("  (Trade trackers paste well as a block. Two blank lines when done with a paste.)")

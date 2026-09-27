@@ -195,6 +195,7 @@ def build_render_ffmpeg_command(
     color_grade: dict[str, float] | None = None,
     hook_motion_filter: str = "",
     channel_id: str | None = None,
+    music_volume: float | None = None,
 ) -> list[str]:
     """
     FFmpeg command: loop background video only (no stock audio), TTS audio only,
@@ -203,9 +204,10 @@ def build_render_ffmpeg_command(
     keeps the current vertical 1080x1920 output byte-identical.
 
     `music_path` (Pillar 6 music bed) adds a looped third input mixed UNDER the VO:
-    the bed is ducked to MUSIC_BED_VOLUME while `amix ... normalize=0` leaves the VO
-    at unit gain, so the voice stays dominant. `music_path=None` emits a command
-    byte-identical to the VO-only command of today.
+    the bed is scaled to `music_volume` (MUSIC_BED_VOLUME when None) and a sidechain
+    compressor keyed on the voice dips it further while someone is speaking (#411);
+    `amix ... normalize=0` leaves the VO at unit gain. `music_path=None` emits a
+    command byte-identical to the VO-only command of today.
     """
     is_draft = str(render_preset).strip().lower() == "draft"
     width = 480 if is_draft else (profile.width if profile is not None else TARGET_W)
@@ -288,9 +290,11 @@ def build_render_ffmpeg_command(
         # mix under the VO. duration=first ends the mix with the VO, and -t below
         # bounds the output either way.
         cmd += ["-stream_loop", "-1", "-i", music_path]
+        volume = MUSIC_BED_VOLUME if music_volume is None else music_volume
         filter_complex += (
-            f";[2:a]volume={MUSIC_BED_VOLUME}[bed];"
-            f"[1:a][bed]amix=inputs=2:duration=first:normalize=0[aout]"
+            f";[1:a]asplit=2[vo][sc];[2:a]volume={volume}[bed];"
+            "[bed][sc]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=350[duck];"
+            "[vo][duck]amix=inputs=2:duration=first:normalize=0[aout]"
         )
         audio_map = "[aout]"
         if _loudnorm_enabled():
@@ -320,13 +324,33 @@ def build_render_ffmpeg_command(
     return cmd
 
 
-def _resolve_music_bed(duration: float, stage) -> str | None:
-    """Music bed path when MUSIC_PROVIDER delivers one, else None (Pillar 6, fail-open).
+def _resolve_music_bed(duration: float, stage, *, channel_id: str | None = None) -> str | None:
+    """Music bed path when a source delivers one, else None (Pillar 6, fail-open).
 
-    Any miss — gate unset, backend not installed, generation error, missing file —
+    #411: with `MUSIC_PROVIDER` unset, a channel whose `music.enabled` is on gets a
+    track from its own folder (`library`); `MUSIC_PROVIDER=none` turns music off.
+    Any miss — no tracks, backend not installed, generation error, missing file —
     returns None so the caller renders VO-only exactly as today. Never raises.
     """
-    if (os.getenv("MUSIC_PROVIDER") or "none").strip().lower() in ("", "none"):
+    provider = (os.getenv("MUSIC_PROVIDER") or "").strip().lower()
+    if provider in ("", "library"):
+        if not channel_id and provider == "":
+            return None
+        try:
+            from core.music import library_status_line, music_config, pick_track
+
+            if not music_config(channel_id)["enabled"] and provider == "":
+                return None
+            track = pick_track(channel_id)
+            if track is None:
+                logger.info("%s", library_status_line(channel_id))
+                return None
+            stage(f"Music bed: {track.name}")
+            return os.path.abspath(str(track)).replace("\\", "/")
+        except Exception as exc:
+            logger.warning("Music bed skipped (VO-only): %s", exc)
+            return None
+    if provider == "none":
         return None
     try:
         from core.music import generate_bed
@@ -530,7 +554,12 @@ def render_vertical_video(
 
     # Music bed (Pillar 6): mixed under the VO when MUSIC_PROVIDER delivers; any miss
     # keeps music_path None and the command below byte-identical to the VO-only render.
-    music_path = _resolve_music_bed(duration, stage)
+    music_path = _resolve_music_bed(duration, stage, channel_id=channel_id)
+    music_volume = None
+    if music_path is not None:
+        from core.music import music_config
+
+        music_volume = music_config(channel_id)["volume"]
     color_grade = _resolve_color_grade(channel_id)
     hook_motion_filter = ""
     try:
@@ -566,6 +595,7 @@ def render_vertical_video(
         color_grade=color_grade,
         hook_motion_filter=hook_motion_filter,
         channel_id=channel_id,
+        music_volume=music_volume,
     )
     if command_callback is not None:
         try:

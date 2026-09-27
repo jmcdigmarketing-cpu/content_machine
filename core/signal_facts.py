@@ -293,6 +293,15 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                         "before stating as fact):\n" + "\n".join(tw_lines)
                     )
 
+        elif name == "event_research" and isinstance(data, dict):
+            # #899: sources that name the event the topic is about - web tier.
+            found = [f"- {str(x).strip()}" for x in data.get("lines") or [] if str(x).strip()]
+            if found:
+                lines.append(
+                    f"Event research - recent sources naming '{data.get('name', '')}' "
+                    "(verify specifics before stating as certainty):\n" + "\n".join(found)
+                )
+
         elif name == "web_research" and isinstance(data, dict):
             # #848: pages read for the chosen angle - web tier, verify before stating.
             research = [

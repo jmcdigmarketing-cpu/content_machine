@@ -79,9 +79,11 @@ class TestCommandWithMusic(unittest.TestCase):
         # Both the background and the bed loop (VO does not).
         self.assertEqual(cmd.count("-stream_loop"), 2)
         fc = cmd[cmd.index("-filter_complex") + 1]
-        # Bed ducked; VO left at unit gain by normalize=0 — voice stays dominant.
+        # Bed scaled, then dipped under speech by a compressor keyed on the VO (#411);
+        # VO left at unit gain by normalize=0 — voice stays dominant.
         self.assertIn(f"[2:a]volume={MUSIC_BED_VOLUME}[bed]", fc)
-        self.assertIn("[1:a][bed]amix=inputs=2:duration=first:normalize=0[aout]", fc)
+        self.assertIn("[bed][sc]sidechaincompress=", fc)
+        self.assertIn("[vo][duck]amix=inputs=2:duration=first:normalize=0[aout]", fc)
         # Mixed audio mapped instead of the raw VO stream; video graph unchanged.
         self.assertIn("[aout]", cmd)
         self.assertNotIn("1:a:0", cmd)

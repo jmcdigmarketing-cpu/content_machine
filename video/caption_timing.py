@@ -251,6 +251,27 @@ def _fit_chars(lines: list[list[dict]], max_chars: int) -> list[list[dict]]:
     return out
 
 
+_NARRATOR = "narrator"
+
+
+def _role(word: dict) -> str:
+    return str(word.get("role") or _NARRATOR)
+
+
+def _lines_by_voice(words: list[dict], max_words: int) -> list[list[dict]]:
+    """#506: a caption line never mixes voices - group each voice's run on its own."""
+    runs: list[list[dict]] = []
+    for w in words:
+        if runs and _role(runs[-1][-1]) == _role(w):
+            runs[-1].append(w)
+        else:
+            runs.append([w])
+    lines: list[list[dict]] = []
+    for run in runs:
+        lines.extend(group_into_lines(run, max_words))
+    return lines
+
+
 def build_ass_karaoke(
     words: list[dict],
     *,
@@ -262,9 +283,19 @@ def build_ass_karaoke(
     title_font: str | None = None,
     body_font: str | None = None,
     anchor: str = "bottom",
+    voice2_primary: str = "&H00F7C34F&",  # #506: the second voice's spoken word
 ) -> str:
-    """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing)."""
-    lines = _fit_chars(group_into_lines(words, max_words), karaoke_max_chars(size))
+    """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing).
+
+    Words carrying a non-narrator `role` (a two-voice render, #506) are grouped apart
+    and use the `Voice2` style, whose highlight is `voice2_primary`. With no such word
+    the output is byte-identical to the single-voice builder.
+    """
+    two_voices = any(_role(w) != _NARRATOR for w in words)
+    grouped = (
+        _lines_by_voice(words, max_words) if two_voices else group_into_lines(words, max_words)
+    )
+    lines = _fit_chars(grouped, karaoke_max_chars(size))
     paired = title_font is not None or body_font is not None
     title = (title_font or font).replace(",", " ").strip() or font
     body = (body_font or font).replace(",", " ").strip() or font
@@ -280,6 +311,8 @@ def build_ass_karaoke(
             text = (w["word"] or "").replace("{", "(").replace("}", ")")
             parts.append(f"{{\\k{dur_cs}}}{text}")
         style = "Title" if paired and index == 0 else ("Body" if paired else "Default")
+        if two_voices and line and _role(line[0]) != _NARRATOR:
+            style = "Voice2"
         events.append(
             f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,0,,{' '.join(parts)}"
         )
@@ -300,4 +333,11 @@ def build_ass_karaoke(
             secondary=secondary,
             alignment=alignment,
         )
+    if two_voices:
+        voice2 = (
+            f"Style: Voice2,{body if paired else font},{size},{voice2_primary},{secondary},"
+            "&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,"
+            f"{alignment},80,80,260,1\n"
+        )
+        header = header.replace("\n\n[Events]", "\n" + voice2.rstrip("\n") + "\n\n[Events]", 1)
     return header + "\n".join(events) + "\n"

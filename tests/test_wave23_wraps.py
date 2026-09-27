@@ -132,7 +132,7 @@ class TestRenderSidecar(unittest.TestCase):
 
 class TestVoiceConsistency(unittest.TestCase):
     def test_mixed_elevenlabs_and_local_warns_once(self):
-        from core.voice_consistency import voice_mix_warning
+        from core.voice.consistency import voice_mix_warning
 
         with patch.dict(
             os.environ,
@@ -144,7 +144,7 @@ class TestVoiceConsistency(unittest.TestCase):
         self.assertIn("mix", msg.lower())
 
     def test_single_provider_is_silent(self):
-        from core.voice_consistency import voice_mix_warning
+        from core.voice.consistency import voice_mix_warning
 
         with patch.dict(
             os.environ, {"TTS_PROVIDER": "piper", "INTRO_TTS_PROVIDER": ""}, clear=False

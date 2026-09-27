@@ -306,6 +306,21 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
             except (TypeError, ValueError):
                 errors.append(f"{channel_id}: hook_motion.zoom must be numeric")
 
+    music = raw_cfg.get("music")
+    if music is not None:
+        if not isinstance(music, dict):
+            errors.append(f"{channel_id}: music must be an object")
+        else:
+            if not isinstance(music.get("enabled", False), bool):
+                errors.append(f"{channel_id}: music.enabled must be boolean")
+            try:
+                volume = float(music.get("volume", 0.18))
+                # A bed over half the voice's gain competes with it (#411).
+                if not 0.0 < volume <= 0.5:
+                    errors.append(f"{channel_id}: music.volume must be > 0 and <= 0.5")
+            except (TypeError, ValueError):
+                errors.append(f"{channel_id}: music.volume must be numeric")
+
     errors.extend(_check_post_schedule(raw_cfg.get("post_schedule") or {}, channel_id))
     return errors, warnings
 

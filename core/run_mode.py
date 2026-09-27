@@ -81,7 +81,7 @@ def _tts_provider_ready(provider: str) -> bool:
     if provider == "piper":
         if not _module_available("piper"):
             return False
-        from core.voice_catalog import any_piper_onnx_ready
+        from core.voice.catalog import any_piper_onnx_ready
 
         return any_piper_onnx_ready()
     if provider == "kokoro":

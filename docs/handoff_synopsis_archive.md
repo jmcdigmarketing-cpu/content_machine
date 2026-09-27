@@ -7,6 +7,19 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-27 (Claude Code): wave 41 #888 #892 #893 #832 + #831
+
+- **#888** the dossier is rewritten when the render finishes; it names the voices and the pace.
+- **#892** the suite writes nothing under `data/` or `output/`; `ops test` fails and names the
+  files if a run ever does (CI's reversed leg runs through it).
+- **#893** chapter and duration estimates use `spoken_words_per_second` (3.3 x pace).
+- **#832** the wheel ships `assets` (+ branding), `apis.scrapers` and `scripts`.
+- **#831** ruff 0.15.8 in `pyproject.toml`, CI and pre-commit; one format sweep, then one
+  commit per rule family. `pip install ruff==0.15.8` on the PC.
+
+**Verify:** `py -m scripts.ops test --order reverse` (ends "Suite hygiene: ... untouched");
+`python -m unittest tests.test_suite_hygiene tests.test_spoken_pace tests.test_wave13`.
+
 ## Previous — 2026-09-27 (Claude Code): wave 40 #849 #879 #876 #855 #870 + #890 #891
 
 - **#890** every voice speaks at 0.95 (`TTS_SPEED`, or `tts.speed` per channel; 1.0 = old pace).

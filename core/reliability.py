@@ -294,12 +294,27 @@ def summary_line(data: dict[str, Any] | None = None) -> str:
     return "; ".join(parts)
 
 
+def _music_lines() -> list[str]:
+    """#411: whether each channel's music folder has tracks (local only, no HTTP)."""
+    try:
+        from config.channels import list_channel_ids
+        from core.music import library_status_line
+
+        return [
+            f"{library_status_line(cid)} ({cid})" for cid in list_channel_ids() if cid != "default"
+        ]
+    except Exception as exc:
+        logger.debug("music status skipped: %s", exc)
+        return []
+
+
 def gather() -> dict[str, Any]:
     """Assemble the full reliability snapshot (read-only, fail-open)."""
     return {
         "apify": _apify_section(),
         "llm": _llm_section(),
         "signals": _signals_section(),
+        "music": _music_lines(),
         "cache": _cache_section(),
         "tts_cache": _tts_cache_section(),
         "youtube": _youtube_section(),
@@ -445,6 +460,8 @@ def render(data: dict[str, Any] | None = None) -> str:
     retired = sig.get("retired") or []
     if retired:
         lines.append(f"Signals retired: {', '.join(retired)}")
+    for music_line in data.get("music") or []:
+        lines.append(music_line)
     cooldowns = sig.get("cooldowns") or {}
     if cooldowns:
         # ASCII arrow: unlike main.py, scripts/ops.py doesn't force UTF-8 stdout,

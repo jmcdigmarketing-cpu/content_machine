@@ -17,6 +17,7 @@ the recency gap on fast-moving sports/news topics.
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import requests
 
@@ -65,20 +66,21 @@ def _active_provider() -> str | None:
     return None
 
 
-def _tavily_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]:
+def _tavily_search(
+    topic: str, days: int | None = None
+) -> tuple[dict | None, tuple[str, str] | None]:
     """Returns (payload, error). payload = {answer, results:[{title,snippet,url}]}."""
-    resp = requests.post(
-        _TAVILY_URL,
-        json={
-            "api_key": _tavily_key(),
-            "query": topic,
-            "max_results": _MAX_RESULTS,
-            "search_depth": "basic",
-            "include_answer": True,
-            "topic": "news",
-        },
-        timeout=15,
-    )
+    request: dict[str, Any] = {
+        "api_key": _tavily_key(),
+        "query": topic,
+        "max_results": _MAX_RESULTS,
+        "search_depth": "basic",
+        "include_answer": True,
+        "topic": "news",
+    }
+    if days:
+        request["days"] = int(days)  # #899: news from the last N days only
+    resp = requests.post(_TAVILY_URL, json=request, timeout=15)
     if resp.status_code != 200:
         return None, classify_http(resp.status_code, resp.text)
     body = resp.json()
@@ -94,11 +96,14 @@ def _tavily_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]:
     return {"answer": (body.get("answer") or "").strip(), "results": results}, None
 
 
-def _brave_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]:
+def _brave_search(
+    topic: str, days: int | None = None
+) -> tuple[dict | None, tuple[str, str] | None]:
+    freshness = "pd" if days and days <= 1 else "pw" if not days or days <= 7 else "pm"
     resp = requests.get(
         _BRAVE_URL,
         headers={"X-Subscription-Token": _brave_key(), "Accept": "application/json"},
-        params={"q": topic, "count": _MAX_RESULTS, "freshness": "pw"},
+        params={"q": topic, "count": _MAX_RESULTS, "freshness": freshness},
         timeout=15,
     )
     if resp.status_code != 200:
@@ -116,7 +121,9 @@ def _brave_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]:
     return {"answer": "", "results": results}, None
 
 
-def _duckduckgo_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]:
+def _duckduckgo_search(
+    topic: str, days: int | None = None
+) -> tuple[dict | None, tuple[str, str] | None]:
     """Keyless web search via DuckDuckGo (ddgs) — no API key or account. Same payload
     shape as the keyed providers. Best-effort: DDG can throttle scrapers, so any failure
     returns an error tuple and the signal fails open (never raises)."""
@@ -129,14 +136,19 @@ def _duckduckgo_search(topic: str) -> tuple[dict | None, tuple[str, str] | None]
             return None, (STATUS_NO_KEY, "pip install ddgs for keyless web search")
     try:
         with DDGS() as ddgs:
-            hits = list(ddgs.text(topic, max_results=_MAX_RESULTS))
+            if days:
+                # #899: the news index with a time limit, not the evergreen web index.
+                limit = "d" if days <= 1 else "w" if days <= 7 else "m"
+                hits = list(ddgs.news(topic, timelimit=limit, max_results=_MAX_RESULTS))
+            else:
+                hits = list(ddgs.text(topic, max_results=_MAX_RESULTS))
     except Exception as exc:
         return None, classify_exception(exc)
     results = [
         {
             "title": (h.get("title") or "").strip(),
             "snippet": (h.get("body") or "").strip(),
-            "url": h.get("href") or "",
+            "url": h.get("href") or h.get("url") or "",
         }
         for h in hits
         if h.get("title") or h.get("body")
@@ -149,6 +161,31 @@ _SEARCHERS = {
     "brave": _brave_search,
     "duckduckgo": _duckduckgo_search,
 }
+
+
+def search_recent(query: str, *, days: int = 7) -> list[dict]:
+    """Results for `query` from the last `days` days, or []. Never raises (#899).
+
+    Event research searches the event's *name* ("UFC Freedom 250") with a recency
+    window; the signal above searches the whole typed topic with none. Same provider
+    choice and payload shape; its own cache key.
+    """
+    provider = _active_provider()
+    if not provider or not (query or "").strip():
+        return []
+    cache_key = build_key("web_search_recent", f"{days}d:{query}")
+    cached = get_cached(cache_key)
+    if isinstance(cached, list):
+        return cached
+    try:
+        payload, error = _SEARCHERS[provider](query, days)
+    except Exception:
+        return []
+    if error is not None:
+        return []
+    results = [r for r in (payload or {}).get("results") or [] if isinstance(r, dict)]
+    set_cache(cache_key, results, ttl_seconds=_TTL)
+    return results
 
 
 def get_web_search_signal(topic: str) -> dict:

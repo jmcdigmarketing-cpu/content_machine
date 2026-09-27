@@ -20,7 +20,12 @@ from config.channels import resolve_channel_id
 from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
-from core.recommender_confidence import confidence_note, interval_note
+from core.recommender_confidence import (
+    confidence_note,
+    interval_note,
+    ranked_on_note,
+    shrunk_mean,
+)
 from core.script_length import PRESETS, get_length_preset
 
 logger = get_logger("core.length_recommender")
@@ -117,7 +122,11 @@ def get_recommended_length(
         eligible = {c: rs for c, rs in rates.items() if len(rs) >= min_per_bucket}
         pool = eligible or rates
 
-        best_choice = max(pool, key=lambda c: sum(pool[c]) / len(pool[c]))
+        # #352: rank on the shrunk mean - three lucky videos must not outrank eight
+        # steady ones. The printed average stays the raw one.
+        prior = sum(s["engaged_rate"] for s in samples) / len(samples)
+        shrunk = {c: shrunk_mean(rs, prior) for c, rs in pool.items()}
+        best_choice = max(pool, key=lambda c: shrunk[c])
         best_rates = pool[best_choice]
         avg = sum(best_rates) / len(best_rates)
         preset = get_length_preset(best_choice)
@@ -131,6 +140,7 @@ def get_recommended_length(
                 f"{preset.label} ({preset.duration_hint()}) averages {avg:.1%} "
                 f"engagement across {len(best_rates)} video(s)"
                 f"{interval_note(best_rates)}"
+                f"{ranked_on_note(avg, shrunk[best_choice])}"
                 f"{confidence_note(len(best_rates))}"
             ),
             channel_id=channel_id,

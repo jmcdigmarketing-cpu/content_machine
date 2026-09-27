@@ -72,6 +72,16 @@ RETIRED_SIGNALS: dict[str, str] = {
         "2026-09-20: zero facts across every recorded run that called it. Module "
         "kept at apis/tmdb_api.py."
     ),
+    # #854: not §19's zero, so they stayed as a known gap until the operator's call.
+    "igdb": (
+        "2026-09-27: returned something on 1 of 33 recorded runs, plus six http errors "
+        "(wave 25 measurement), and less after #843's relevance filter; retired on the "
+        "operator's call (#854). Module kept at apis/igdb_api.py."
+    ),
+    "steam": (
+        "2026-09-27: returned something on 1 of 33 recorded runs (wave 25 measurement); "
+        "retired on the operator's call (#854). Module kept at apis/steam_api.py."
+    ),
 }
 
 

@@ -84,6 +84,20 @@ def content_tokens(text: str, *, min_len: int = 1) -> list[str]:
     return out
 
 
+def contains_phrase(text: str, phrase: str) -> bool:
+    """True when `phrase`'s words appear in `text` consecutively, as whole words.
+
+    "Manchester City" is in "Manchester City fined again"; "Premier" is not in "The
+    Premiership". Case and punctuation are ignored. An empty phrase is never found.
+    """
+    words = _TOKEN.findall((text or "").lower().replace("'", ""))
+    want = _TOKEN.findall((phrase or "").lower().replace("'", ""))
+    if not want:
+        return False
+    n = len(want)
+    return any(words[i : i + n] == want for i in range(len(words) - n + 1))
+
+
 def starts_with_question(text: str) -> bool:
     """True when `text`'s first word is a question word ("what does this mean ...")."""
     first = _TOKEN.findall((text or "").lower().replace("'", ""))

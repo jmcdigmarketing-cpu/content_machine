@@ -62,6 +62,8 @@ class ChannelProfile:
     end_card: dict[str, Any] = field(default_factory=dict)
     color_grade: dict[str, Any] = field(default_factory=dict)
     hook_motion: dict[str, Any] = field(default_factory=dict)
+    # #411: a bed from the operator's own tracks - {enabled, folder, volume}.
+    music: dict[str, Any] = field(default_factory=dict)
 
 
 def _optional_float(value) -> float | None:
@@ -162,6 +164,7 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             end_card=dict(cfg.get("end_card") or {}),
             color_grade=dict(cfg.get("color_grade") or {}),
             hook_motion=dict(cfg.get("hook_motion") or {}),
+            music=dict(cfg.get("music") or {}),
         )
 
     profiles.setdefault(

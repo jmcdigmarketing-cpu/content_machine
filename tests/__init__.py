@@ -43,6 +43,8 @@ os.environ["DISCOVERY_CACHE"] = "false"
 # #848 auto-research is on by default and fetches web pages; no test may. Tests of
 # the feature (tests/test_auto_research.py) set it themselves.
 os.environ["AUTO_RESEARCH_ENABLED"] = "false"
+# #899: event research reads Wikipedia / Google News on a recency miss - never in tests.
+os.environ["EVENT_RESEARCH_ENABLED"] = "false"
 # #876: game names learned from the operator's runs must not change a test's verdict.
 os.environ["LEARNED_GAME_NAMES"] = "false"
 # #771 turned the whisper aligner on by default; no test may load a model.

@@ -598,6 +598,25 @@ plus the coverage-wave and router-vision Next-up lines shipped the same day.*
 
 ## Completed
 
+### Moved from roadmap.md 2026-09-27 (closed 2026-09-09 and 09-10)
+
+**Closed 2026-09-10 (wave 8):** **#590** headroom before the pool · **#378**
+free-tier calendar · **#407** opener advisory · **#717** luminance-step caption
+placement · **#684** live review-room decode + the unconditional `QAudioOutput`
+behind it. Filed open: **#721 #722 #723**.
+
+**Closed 2026-09-09 (next 15):** **#714 #715 #584 #572 #580 #595 #452 #362
+#364 #336 #605 #599 #437 #713 #415**. Found: #715 comment-out guard was
+vacuous; #580 ops verb re-estimated instead of reading last-run cost.
+
+**Closed 2026-09-09 (previous next 15):** **#710 #712 #431 #549 #414 #420 #498 #711
+#708 #562 #569 #568 #430 #440 #705**. Found: the extras chapter test used
+stamps that equal-span also produces.
+
+**Closed 2026-09-09 (#702-#707 + #709):** retraction `source_urls` - Postgres
+`SKIP LOCKED` - correction-scan throttle - ReviewWindow keys - Qt fixture
+decode - jsonb cast for Text `payload_json`.
+
 ### Honesty + leave-the-terminal wave 4 (2026-08-22)
 
 - [x] **20 operator-visible pieces** — playbook lint + description sources, ungrounded numeric chips + authenticity semantic bar + grade breakdown, TTS cache-hit / Pillow-vs-Flux / signal dots / feed-stale / overnight-render + RPM-deferred + yesterday-unsynced copy, copy unlisted URL + Obsidian dossier URI + postmortem markdown, quiet-hours toast DND, sticky cost/quota + 16px type, tray last domain. **#147 FastAPI still skipped.** No Phase M, no #141/#142/#143.

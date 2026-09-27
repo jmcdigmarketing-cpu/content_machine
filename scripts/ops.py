@@ -424,7 +424,7 @@ def cmd_game_names(_args: argparse.Namespace) -> int:
     if not sources:
         print(
             "Learned game names: none yet. A name is learned when a run's topic names no "
-            "known game but a live gaming signal (RAWG, IGDB, Steam, Twitch) matches it."
+            "known game but a live gaming signal (RAWG or Twitch) matches it."
         )
         return 0
     print(f"Learned game names ({len(sources)}):")
@@ -727,7 +727,7 @@ def cmd_feeds(_args: argparse.Namespace) -> int:
     "voices", "List TTS voices — ElevenLabs account + local Piper — and what each channel uses"
 )
 def cmd_voices(_args: argparse.Namespace) -> int:
-    from core.voice_catalog import render
+    from core.voice.catalog import render
 
     print(render())
     return 0

@@ -77,3 +77,27 @@ def interval_note(values: Sequence[float]) -> str:
     if half is None:
         return ""
     return f" +/- {half * 100:.0f}pp"
+
+
+def shrunk_mean(values: Sequence[float], prior: float, k: int = MODERATE_SAMPLES) -> float:
+    """Empirical-Bayes mean: `k` pseudo-samples at `prior` plus the observed values.
+
+    A bucket with three lucky videos regresses toward the channel mean until it earns
+    its own estimate (#352); a well-sampled bucket barely moves. No values -> `prior`.
+    """
+    clean = [float(v) for v in values or [] if v is not None]
+    return (sum(clean) + k * prior) / (len(clean) + k)
+
+
+def ranked_on_note(raw_rate: float, adjusted_rate: float | None, *, places: int = 1) -> str:
+    """Name the figure that actually ranked, when it is not the one printed.
+
+    The raw mean stays the headline because it is what was observed, and the interval
+    describes it; this appends the ranking basis. Silent when shrinking changed nothing
+    at the printed precision - the note flags a disagreement, it is not decoration.
+    """
+    if adjusted_rate is None:
+        return ""
+    if f"{raw_rate:.{places}%}" == f"{adjusted_rate:.{places}%}":
+        return ""
+    return f" (ranked on {adjusted_rate:.{places}%} shrunk toward the channel mean)"

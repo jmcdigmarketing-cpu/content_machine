@@ -698,7 +698,7 @@ def _run_new_video_flow_body(
     length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
 
     # #883-#886: who reads it. A debate changes the script, so it is asked before writing.
-    from core.voice_plan import voice_menu_lines, voice_mode_from_choice
+    from core.voice.plan import voice_menu_lines, voice_mode_from_choice
 
     subsection("Voices")
     for line in voice_menu_lines(all_angles=bool(all_angles)):
@@ -762,7 +762,11 @@ def _run_new_video_flow_body(
             print(f"  Run id: {result.run_id}")
         try:
             from core.auto_research import report_lines
+            from core.event_research import report_line as event_research_line
 
+            _event_line = event_research_line((result.features or {}).get("event_research"))
+            if _event_line:
+                print(f"  Event research: {_event_line}")
             for _research in report_lines((result.features or {}).get("auto_research")):
                 print(f"  {_research}")
         except Exception as exc:  # a notice only

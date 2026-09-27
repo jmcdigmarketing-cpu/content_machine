@@ -862,7 +862,7 @@ def run_pipeline(
         result.topic = best_topic
 
     # #883-#886: who reads the script. Only the debate changes what the writer is asked.
-    from core.voice_plan import normalize_mode, voice_mode_directive
+    from core.voice.plan import normalize_mode, voice_mode_directive
 
     voice_mode = normalize_mode(voice_mode)
     if voice_mode == "chapters" and len(angles) < 2:
@@ -906,6 +906,16 @@ def run_pipeline(
             topic=content_topic,
             exclude_urls=list(source_urls or []),
         )
+
+    # #899: no fact names the event the topic names - look for it before the script.
+    from core.event_research import attach_event_research
+
+    best_signals, event_research_report = attach_event_research(
+        best_signals,
+        topic=input_topic or content_topic,
+        key_facts=list(key_facts or []),
+        exclude_urls=list(source_urls or []),
+    )
 
     logger.info("Building research brief for: %s", best_topic)
     t_brief = time.perf_counter()
@@ -967,6 +977,8 @@ def run_pipeline(
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:
         result.features["angle_intent"] = result.angle_intent
+    if event_research_report is not None:
+        result.features["event_research"] = event_research_report
     if auto_research_report is not None:
         # #862: kept in the vault only when asked, at link tier.
         maybe_save_research(channel_id, content_topic, auto_research_report)
@@ -1146,7 +1158,7 @@ def run_media_only(
     voices: dict[str, str] | None = None
     segments = None
     try:
-        from core.voice_plan import plan_for_run
+        from core.voice.plan import plan_for_run
 
         voices, segments = plan_for_run(script, channel_id, content_run_id, features=voice_features)
     except Exception as exc:
@@ -1184,7 +1196,7 @@ def run_media_only(
         except Exception as exc:
             logger.debug("verified chapters skipped for run %s: %s", content_run_id, exc)
     try:
-        from core.voice_consistency import voice_mix_warning
+        from core.voice.consistency import voice_mix_warning
 
         mix = voice_mix_warning()
         if mix:

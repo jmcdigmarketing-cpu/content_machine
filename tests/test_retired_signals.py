@@ -42,7 +42,7 @@ class TestRetirementIsNarrow(unittest.TestCase):
     def test_nothing_else_was_retired_by_accident(self):
         self.assertEqual(
             set(RETIRED_SIGNALS),
-            {"trendingnow", "tapology", "stats_context", "tvmaze", "tmdb"},
+            {"trendingnow", "tapology", "stats_context", "tvmaze", "tmdb", "igdb", "steam"},
         )
 
 
@@ -72,16 +72,31 @@ class TestZeroYieldSignalsAreRetired(unittest.TestCase):
         self.assertTrue(callable(get_tmdb_signal))
 
 
-class TestNearZeroSignalsStayRegistered(unittest.TestCase):
-    def test_igdb_and_steam_are_not_retired_at_one_in_thirty_three(self) -> None:
-        """Known gap: igdb 1/33 (+6 http errors) and steam 1/33 are not §19 zero.
-        A second measured empty window, or an operator call, would close this.
-        """
+class TestNearZeroSignalsAreRetiredOnTheOperatorsCall(unittest.TestCase):
+    """#854: igdb 1/33 (+6 http errors) and steam 1/33 were a documented known gap -
+    not §19's zero, so "a second measured empty window, or an operator call" was the
+    stated bar. The operator made the call on 2026-09-27 (wave 44). Modules stay."""
+
+    def test_they_are_not_registered(self) -> None:
         registered = get_signal_registry().get_registered_signals()
-        self.assertIn("igdb", registered)
-        self.assertIn("steam", registered)
-        self.assertNotIn("igdb", RETIRED_SIGNALS)
-        self.assertNotIn("steam", RETIRED_SIGNALS)
+        for name in ("igdb", "steam"):
+            with self.subTest(name=name):
+                self.assertNotIn(name, registered)
+                self.assertIn("2026-09-27", RETIRED_SIGNALS[name])
+
+    def test_the_modules_are_kept_for_revival(self) -> None:
+        from apis.igdb_api import get_igdb_signal
+        from apis.steam_api import get_steam_signal
+
+        self.assertTrue(callable(get_igdb_signal))
+        self.assertTrue(callable(get_steam_signal))
+
+    def test_reliability_names_them(self) -> None:
+        from core.reliability import _signals_section
+
+        retired = _signals_section()["retired"]
+        self.assertIn("igdb", retired)
+        self.assertIn("steam", retired)
 
 
 if __name__ == "__main__":

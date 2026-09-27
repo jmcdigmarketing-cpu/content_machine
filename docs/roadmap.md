@@ -26,44 +26,47 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-27 wave 43: **#895** the recency guard - a run whose facts never name
-the event the topic names ("UFC Freedom 250") stops before TTS, and the script prompt says not to
-guess · **#857** `ops vault-retier` lists old scraped `_operator_facts` notes and moves them to
-link tier on `--apply` · **#862** `AUTO_RESEARCH_SAVE` keeps auto-research lines in `_link_facts/`
-· **#887** Enter at the vault review prompt takes the confident lines only · **#825** `--force`
-proved end to end, closed · **#898** art for every domain plus five franchises.
+**Just landed** - 2026-09-27 wave 44: **#899** the recency guard now *looks* before it stops -
+Wikipedia, Google News (last 7 days) and the web provider are searched by the event's name, and the
+key-facts prompt says what was found · **#411** a per-channel music bed from your own tracks,
+ducked under the voice · **#506** the second voice's captions light up in their own colour ·
+**#896 #897** the sports and odds signals answer only for the topic · **#854** steam and igdb
+retired · **#352** length and post-time also shrink small samples · **#834** `core/voice/`, the
+first `core/` sub-package, and the rule for where new modules go.
 
-**Before that** - wave 42: **#853 #851 #868 #894 #833** · wave 41: **#888 #892 #893 #832 #831** ·
-wave 40: **#890 #891 #879 #876 #870 #855** · wave 39: **#883-#886 #877 #878**. Earlier:
-[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
+**Before that** - wave 43: **#895 #857 #862 #887 #825 #898** · wave 42: **#853 #851 #868 #894
+#833** · wave 41: **#888 #892 #893 #832 #831** · wave 40: **#890 #891 #879 #876 #870 #855**.
+Earlier: [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
-### The five weaknesses - where each stands (2026-09-27)
+### The five weaknesses - where each stands (2026-09-27, after wave 44)
 
-The operator asked whether fixes are lined up for [assessment.md](assessment.md)'s June list.
-Most of it has shipped; what is left is below, and the next five take the first of it.
+The operator's list from [assessment.md](assessment.md). Every row has shipped its main fix; what
+is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** | #558 expire notes about past events · #589 second search provider |
-| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, five dead signals retired, discovery deadline + cancel; every listed breakage fixed | #854 retire steam/igdb · #385 schema pinning · #626 contract tests |
-| 3 relevance | RAWG current-era + relevance, Twitch/Steam/fan-out hygiene, domain from the topic (#841 #851), team signals gated off for UFC | **#896** sports team not in the topic · **#897** odds signal topic-blind |
-| 4 visuals | word-timed karaoke retexted from the script, auto-placed over HUD bars, a cut every ~2.5 s from owned gameplay, clip bands, multi-voice | #411 music bed · #506 caption colour per speaker · #786 footage (operator) |
-| 5 volume | sample count beside every number, 95% intervals, low/moderate tags, recency weighting | #352 shrink small samples toward the channel mean |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research | #558 expire notes about past events · #589 re-scope (a second provider is partly covered by #899) |
+| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel | #385 schema pinning · #626 contract tests |
+| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds | - |
+| 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed | #503 caption entrance animation · #786 footage and your music tracks (operator) |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**) | more measured videos - nothing code can replace |
 
 ### Recommended next five (non-app)
 
-**Wave 43 (2026-09-27)** cleared #857 #862 #825 #887 and, on the operator's call, took the recency
-guard (#895) in #834's slot. The next list is the weakness table's cheapest open rows, plus #834.
+**Wave 44 (2026-09-27)** shipped eight: the five recommended plus event research (the operator's
+question) and the two visuals items the operator asked to include.
 
-1. **#896 sports team must be in the topic** (weakness 3) `[S]`.
-2. **#897 odds signal matches the topic or stays inactive** (weakness 3) `[S]`.
-3. **#854 retire steam and igdb** (weakness 2, E5) `[S]` - 1 of 33 runs returned anything.
-4. **#352 shrink small-sample averages toward the channel mean** (weakness 5) `[M]`.
-5. **#834 `core/` seams** `[L]` - the "where a new module goes" rule first, one cluster moved.
+1. **#558 expire vault notes about events that have happened** (weakness 1) `[M]`.
+2. **#385 pin each API's response schema** (weakness 2) `[M]` - a renamed field fails loudly.
+3. **#626 contract tests from each signal's recorded payload** (weakness 2) `[M]`.
+4. **#503 caption entrance animation per channel** (weakness 4) `[M]`.
+5. **#901 drop the voice aliases; move `vault_*` into `core/vault/`** (#834) `[S]`.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** `ops vault-retier` to see which old notes hold scraped
+**Waiting on the operator, not on code:** drop royalty-free tracks into `assets/music/tapin/` and
+`assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
+colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop
 before TTS unless facts are pasted - say if it stops a run it should not (#895). Listen to the next
 render (about 5% slower; `TTS_SPEED=1.0` undoes it), one debate and one quotes run (#889), then
@@ -111,23 +114,6 @@ Overnight stays render-free. Retention apply stays off unless the env is set.
 #737** · 12 **#733 #630 #640** · 11 **#729 #631 #636 #639 #727** · 10 **#719 #720 #724 #725 #726
 #158** · 9 **#716 #723 #722 #721 #718**. Full detail in
 [roadmap_archive.md](roadmap_archive.md).
-
-**Closed 2026-09-10 (wave 8):** **#590** headroom before the pool · **#378**
-free-tier calendar · **#407** opener advisory · **#717** luminance-step caption
-placement · **#684** live review-room decode + the unconditional `QAudioOutput`
-behind it. Filed open: **#721 #722 #723**.
-
-**Closed 2026-09-09 (next 15):** **#714 #715 #584 #572 #580 #595 #452 #362
-#364 #336 #605 #599 #437 #713 #415**. Found: #715 comment-out guard was
-vacuous; #580 ops verb re-estimated instead of reading last-run cost.
-
-**Closed 2026-09-09 (previous next 15):** **#710 #712 #431 #549 #414 #420 #498 #711
-#708 #562 #569 #568 #430 #440 #705**. Found: the extras chapter test used
-stamps that equal-span also produces.
-
-**Closed 2026-09-09 (#702-#707 + #709):** retraction `source_urls` - Postgres
-`SKIP LOCKED` - correction-scan throttle - ReviewWindow keys - Qt fixture
-decode - jsonb cast for Text `payload_json`.
 
 **RETIRED 2026-09-09 — #153 caption choreography.** Operator: *"i dont need to
 see the caption timing, i dont want to do that manually."* Karaoke ASS hashed

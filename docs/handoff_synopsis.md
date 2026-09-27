@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-27: wave 43, next five
+# Handoff synopsis — 2026-09-27: wave 44, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-27 (Claude Code): wave 43 #895 #857 #862 #887 #825 #898
+## Last wave — 2026-09-27 (Claude Code): wave 44 #899 #411 #506 #896 #897 #854 #352 #834
+
+- **#899** on a recency miss, `core/event_research` searches Wikipedia, Google News (7 days) and the
+  web provider (`search_recent`, 7 days) by the event's name, keeps lines that name it, and attaches
+  them at web tier - in the pipeline and at the key-facts prompt ("Found N line(s) naming X" /
+  "Nothing online names X yet - paste a link"). `EVENT_RESEARCH_ENABLED` (on), deadline 20 s.
+- **#411** `channels.json` `music` (both on, 0.18): tracks from `assets/music/<channel>/`, never the
+  same twice running, ducked under the voice by a sidechain compressor. No tracks = VO-only.
+- **#506** two-voice renders: the second voice's words light up in `second_voice_color`.
+- **#896 #897** sports keeps only named teams; odds only the topic's sport. **#854** steam/igdb
+  retired. **#352** length and post-time shrink small samples like best-bet.
+- **#834** `core/voice/` (plan, catalog, consistency); old names are one-wave aliases (#901);
+  `tests/test_core_layout.py` caps flat `core/*.py`.
+
+**Verify:** `python -m unittest tests.test_event_research tests.test_music_library
+tests.test_caption_voice_colour tests.test_core_layout`; `py -m scripts.ops reliability` (music +
+retired lines).
+
+## Previous — 2026-09-27 (Claude Code): wave 43 #895 #857 #862 #887 #825 #898
 
 - **#895** recency guard: `core/event_coverage.py` checks that one verified fact or pasted key
   fact names what the topic names (the `search_query(mode="entity")` name). If none does, the
@@ -39,19 +57,6 @@ tests.test_auto_research_save tests.test_vault_prompt_default tests.test_domain_
 
 **Verify:** `python -m unittest tests.test_llm_defaults tests.test_best_bet_headline_domain
 tests.test_package_audit_build tests.test_mypy_targets`; `py -m scripts.ops package-audit`.
-
-## Previous — 2026-09-27 (Claude Code): wave 41 #888 #892 #893 #832 + #831
-
-- **#888** the dossier is rewritten when the render finishes; it names the voices and the pace.
-- **#892** the suite writes nothing under `data/` or `output/`; `ops test` fails and names the
-  files if a run ever does (CI's reversed leg runs through it).
-- **#893** chapter and duration estimates use `spoken_words_per_second` (3.3 x pace).
-- **#832** the wheel ships `assets` (+ branding), `apis.scrapers` and `scripts`.
-- **#831** ruff 0.15.8 in `pyproject.toml`, CI and pre-commit; one format sweep, then one
-  commit per rule family. `pip install ruff==0.15.8` on the PC.
-
-**Verify:** `py -m scripts.ops test --order reverse` (ends "Suite hygiene: ... untouched");
-`python -m unittest tests.test_suite_hygiene tests.test_spoken_pace tests.test_wave13`.
 
 ## Pipeline order (operator)
 

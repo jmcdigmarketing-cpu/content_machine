@@ -82,7 +82,7 @@ class TestVariantScoringDeadline(unittest.TestCase):
             patch.dict(os.environ, {"VARIANT_SCORING_DEADLINE_S": "0.08"}, clear=False),
         ):
             started = time.perf_counter()
-            evaluated, raw, meta = collect_scored_variants(candidates, "tapin", {}, "GTA 6")
+            evaluated, _raw, meta = collect_scored_variants(candidates, "tapin", {}, "GTA 6")
             elapsed = time.perf_counter() - started
         self.assertLess(elapsed, 0.8, elapsed)
         self.assertTrue(evaluated)

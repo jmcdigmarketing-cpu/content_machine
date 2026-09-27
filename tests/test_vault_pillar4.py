@@ -71,7 +71,7 @@ class TestVaultIndex(VaultCase):
         of.load_facts("Nebula", "tapin")  # populates the per-process cache
         cache = vault_index._CACHE.get(str(self.vault)) or {}
         self.assertEqual(len(cache), 1)  # the one note is parsed and cached
-        mtime, entry = next(iter(cache.values()))
+        _mtime, entry = next(iter(cache.values()))
         self.assertIn("Nebula", " ".join(entry.bullets))
 
 

@@ -243,7 +243,7 @@ class TestRunMediaOnlyPersists(unittest.TestCase):
             patch.object(pipeline, "record_render_assets"),
             patch("core.run_features.load_features", side_effect=OSError("db down")),
         ):
-            mp3, mp4, _ = pipeline.run_media_only(
+            _mp3, mp4, _ = pipeline.run_media_only(
                 "topic", self.SCRIPT, channel_id="tapin", content_run_id=64
             )
         self.assertEqual(mp4, "out/v.mp4")  # render result still returned

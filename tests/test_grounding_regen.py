@@ -43,7 +43,7 @@ class TestRegroundScript(unittest.TestCase):
             "while several other stars changed teams during a chaotic week of deals."
         )
         with patch.object(ce, "_call_content_llm", return_value={"script": worse}):
-            script, remaining = ce._maybe_reground_script(
+            script, _remaining = ce._maybe_reground_script(
                 _ORIGINAL, _FACTS, _TOPIC, _flags(_ORIGINAL)
             )
         self.assertEqual(script, _ORIGINAL)  # kept original
@@ -51,7 +51,7 @@ class TestRegroundScript(unittest.TestCase):
     def test_rejects_gutted_rewrite(self):
         gutted = "Trades happened today."  # 0 flags but far too short
         with patch.object(ce, "_call_content_llm", return_value={"script": gutted}):
-            script, remaining = ce._maybe_reground_script(
+            script, _remaining = ce._maybe_reground_script(
                 _ORIGINAL, _FACTS, _TOPIC, _flags(_ORIGINAL)
             )
         self.assertEqual(script, _ORIGINAL)
@@ -59,7 +59,7 @@ class TestRegroundScript(unittest.TestCase):
     def test_disabled_is_noop(self):
         with patch.dict("os.environ", {"GROUNDING_REGEN_ENABLED": "false"}, clear=False):
             with patch.object(ce, "_call_content_llm") as mock_llm:
-                script, remaining = ce._maybe_reground_script(
+                script, _remaining = ce._maybe_reground_script(
                     _ORIGINAL, _FACTS, _TOPIC, _flags(_ORIGINAL)
                 )
                 mock_llm.assert_not_called()

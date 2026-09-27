@@ -183,7 +183,7 @@ class TestChapterOpenersStandAlone(unittest.TestCase):
     def test_a_leading_connective_is_trimmed(self):
         from core.angle_chapters import trim_chapter_openers
 
-        script, chapters, notes = trim_chapter_openers(self.SCRIPT, self._chapters())
+        script, _chapters, notes = trim_chapter_openers(self.SCRIPT, self._chapters())
         self.assertIn("The real question isn't whether", script)
         self.assertIn("Let's get concrete", script)
         self.assertNotIn("So the real question", script)

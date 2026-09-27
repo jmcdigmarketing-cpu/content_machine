@@ -388,7 +388,7 @@ class TestPreviewRender(unittest.TestCase):
             with patch("video.render_video.render_vertical_video", side_effect=fake_render):
                 path = fast_cut.render_preview(str(audio), "GTA 6", "tapin", out_dir=str(out_dir))
             self.assertEqual(len(calls), 1)
-            mp3, topic, out, script = calls[0]
+            mp3, _topic, out, script = calls[0]
             self.assertNotEqual(os.path.abspath(mp3), os.path.abspath(audio))
             self.assertTrue(str(mp3).startswith(str(out_dir)))
             self.assertEqual(script, "Rockstar")

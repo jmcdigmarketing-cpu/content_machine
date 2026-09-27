@@ -63,9 +63,7 @@ class TestClaimRewrite(unittest.TestCase):
 
     def test_rejects_gutted_rewrite(self):
         with patch.object(ce, "_call_content_llm", return_value={"script": "Patch big."}):
-            script, verification = ce._maybe_rewrite_unsupported_claims(
-                _ORIGINAL, _DIRTY, _FACTS, _TOPIC, []
-            )
+            script, _ = ce._maybe_rewrite_unsupported_claims(_ORIGINAL, _DIRTY, _FACTS, _TOPIC, [])
         self.assertEqual(script, _ORIGINAL)  # <60% of original words → rejected pre-verify
 
     def test_llm_failure_keeps_original(self):
@@ -81,16 +79,14 @@ class TestClaimRewrite(unittest.TestCase):
             patch.dict("os.environ", {"CLAIM_REGEN_ENABLED": "false"}, clear=False),
             patch.object(ce, "_call_content_llm") as llm,
         ):
-            script, verification = ce._maybe_rewrite_unsupported_claims(
-                _ORIGINAL, _DIRTY, _FACTS, _TOPIC, []
-            )
+            script, _ = ce._maybe_rewrite_unsupported_claims(_ORIGINAL, _DIRTY, _FACTS, _TOPIC, [])
         llm.assert_not_called()
         self.assertEqual(script, _ORIGINAL)
 
     def test_no_unsupported_is_noop(self):
         clean = _verification([])
         with patch.object(ce, "_call_content_llm") as llm:
-            script, verification = ce._maybe_rewrite_unsupported_claims(
+            _script, verification = ce._maybe_rewrite_unsupported_claims(
                 _ORIGINAL, clean, _FACTS, _TOPIC, []
             )
         llm.assert_not_called()

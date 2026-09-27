@@ -12,7 +12,7 @@ class TestValidateChannels(unittest.TestCase):
             "weight_overrides": {"youtube": 0.5, "blog_rss": 0.5},
             "post_schedule": {"default_slots": [{"weekday": 4, "hour": 18, "minute": 0}]},
         }
-        errors, warnings = validate_channel("tapin", cfg)
+        errors, _warnings = validate_channel("tapin", cfg)
         self.assertEqual(errors, [])
 
     def test_unknown_weight_key_fails(self):

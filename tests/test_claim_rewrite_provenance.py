@@ -150,7 +150,7 @@ class TestRewriteStampedAtTheSource(unittest.TestCase):
         after = _verification(12, 0)
         with patch.object(ce, "_call_content_llm", return_value={"script": "w " * 400}):
             with patch("core.claim_verifier.verify_claims", return_value=after):
-                script, result = ce._maybe_rewrite_unsupported_claims(
+                _script, result = ce._maybe_rewrite_unsupported_claims(
                     "w " * 400, before, "corpus", "topic", None
                 )
         self.assertTrue(result.rewritten)

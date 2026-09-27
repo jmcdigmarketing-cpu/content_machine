@@ -56,7 +56,7 @@ class TestOutputDurationIsPreserved(unittest.TestCase):
 
     def test_a_range_of_durations(self):
         for duration in (3.0, 6.0, 12.0, 45.0, 91.0, 227.0):
-            local, stock, _fade, offset = _parts(duration)
+            _local, stock, _fade, offset = _parts(duration)
             self.assertAlmostEqual(offset + stock, duration, places=2, msg=f"at {duration}s")
 
     def test_a_range_of_ratios(self):

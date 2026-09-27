@@ -17,6 +17,27 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-27 (Claude Code) - three glitches in the operator's first `ops reliability` after wave 44
+
+**Prompt:** the operator pasted the PowerShell output of the wave-44 steps (no question). The
+wave itself worked: clean pull, music folders made, `Signals retired: igdb, ... steam ...` and both
+`Music bed: none - drop royalty-free tracks ...` lines. The `cd <your content_machine folder>`
+error was the placeholder in my instructions - PowerShell reads `<` as an operator; steps now give
+no `cd` or the real path.
+
+**Found in the same output, fixed tests-first (5 of 9 new tests failed first, 4 guards):**
+- **#902** `YouTube units: ????????????????` - `core/themes._unicode_ok` trusted a UTF-8 stdout; the
+  console still best-fit the text through a legacy code page (the em dash became "-", the blocks
+  "?"). Windows now gets `#.` unless Windows Terminal or `CONTENT_UI_UNICODE=1`.
+- **#903** the trend read "2026-09-15 -> 2028-09-11": a pre-#892 test row, sorted last, supplied
+  every "now=". Future rows are ignored on load and dropped on the next record.
+- **#904** `competitor '(none)' no config at ...default.json` - the placeholder channel was checked;
+  now each real channel is.
+
+**Noted, not changed:** cache hit rates are low because every topic is new; one uploaded video has
+no metrics (`ops sync-metrics`); youtube / youtube_comments show `unavailable` 10 times in the
+incident list - worth a look in a later wave.
+
 ## 2026-09-27 (Claude Code) - wave 44: the guard looks before it stops, music, a second caption colour, cleaner signals, core/voice
 
 **Prompt (verbatim):** "would the next wave have to include increased internal research ability,

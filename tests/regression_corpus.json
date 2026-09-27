@@ -817,6 +817,31 @@
         "equals": "neutral"
       },
       "why": "a keyword-less headline must not read as the operator's channel domain"
+    },
+    {
+      "id": "reliability-future-row-dropped",
+      "item": 903,
+      "source": "operator's ops reliability, 2026-09-27",
+      "call": "core.reliability_history:drop_future_rows",
+      "args": [
+        [
+          {
+            "date": "2026-09-27"
+          },
+          {
+            "date": "2028-09-11"
+          }
+        ],
+        "2026-09-27"
+      ],
+      "expect": {
+        "equals": [
+          {
+            "date": "2026-09-27"
+          }
+        ]
+      },
+      "why": "a test-written 2028 row sorted last and supplied every 'now=' on the trend"
     }
   ]
 }

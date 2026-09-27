@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-27 · **HEAD at write:** `367428b` + wave 44's commit on `main` (`git log -2`)
+**Written:** 2026-09-27 · **HEAD at write:** `8d1bf3e` (wave 44) + the #902-#904 fix commit (`git log -2`)
 · **Tree:** clean after the commit.
 
 **Read before editing:** `core/voice_plan|catalog|consistency` moved to `core/voice/` - import the
@@ -69,7 +69,8 @@ mypy baseline **123**. `decisions.md` is at its ceiling. Corpus 52 cases.
   as an ffmpeg command and ASS text (#900). No tracks exist until the operator adds them.
 - Carried: Sonnet 5 untested on a real script; #889 debate/quotes not heard.
 
-**Shipped:** #899 · #411 · #506 · #896 · #897 · #854 · #352 · #834.
+**Shipped:** #899 · #411 · #506 · #896 · #897 · #854 · #352 · #834; then #902-#904 from the operator's
+first `ops reliability` on the PC (Windows meter `#.`, future history rows dropped, no `default` competitor warning).
 
 Suite **3,962**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
 mypy **123**; backlog **266 numbered open**. Next five: **#558 · #385 · #626 · #503 · #901**.

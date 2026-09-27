@@ -323,9 +323,20 @@ def role_color(role: str) -> str:
 
 
 def _unicode_ok() -> bool:
-    """ops paths don't force UTF-8 stdout; fall back to ASCII meters there."""
+    """Block characters only where they will render.
+
+    A UTF-8 stdout is not enough on Windows (#902): the operator's PowerShell printed
+    `ops reliability`'s meter as `????????????????` while best-fitting the em dash next
+    to it to "-" - the text passed through a legacy code page. Windows Terminal
+    (`WT_SESSION`) renders them; `CONTENT_UI_UNICODE=1` opts any console in.
+    """
     enc = (getattr(sys.stdout, "encoding", "") or "").lower()
-    return "utf" in enc
+    if "utf" not in enc:
+        return False
+    if os.name == "nt":
+        forced = os.getenv("CONTENT_UI_UNICODE", "").strip().lower() in ("1", "true", "yes", "on")
+        return forced or bool(os.getenv("WT_SESSION", "").strip())
+    return True
 
 
 def meter(used: float, cap: float, *, width: int = 10) -> str:

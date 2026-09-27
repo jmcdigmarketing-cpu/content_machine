@@ -8,6 +8,12 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### After wave 44 — three `ops reliability` glitches from the first PC run - 2026-09-27
+
+- **#902** the YouTube quota bar shows as `#` and `.` in Windows PowerShell instead of `????`.
+- **#903** the reliability trend no longer ends in 2028 (a stray test row); it heals on the next run.
+- **#904** no more competitor warning about the placeholder `default` channel.
+
 ### Wave 44 — the guard looks first, music, a second caption colour, cleaner signals - 2026-09-27
 
 *mypy 123 == baseline; ruff 0.15.8 clean; corpus 52 of 52.*

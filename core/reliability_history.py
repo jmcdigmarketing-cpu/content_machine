@@ -42,6 +42,16 @@ def _path() -> str:
     return RELIABILITY_HISTORY_FILE
 
 
+def drop_future_rows(rows: list[dict[str, Any]], today: date | str) -> list[dict[str, Any]]:
+    """Rows dated after today are not history (#903).
+
+    The operator's file held a 2028-09-11 row - a test wrote it before #892 redirected
+    this file - and, sorted last, it supplied every "now=" on the trend.
+    """
+    cutoff = today if isinstance(today, str) else today.isoformat()
+    return [r for r in rows if str(r.get("date") or "") <= cutoff]
+
+
 def _load() -> list[dict[str, Any]]:
     try:
         path = _path()
@@ -49,7 +59,13 @@ def _load() -> list[dict[str, Any]]:
             return []
         with open(path, encoding="utf-8") as fh:
             rows = json.load(fh)
-        return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+        rows = [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+        kept = drop_future_rows(rows, date.today())
+        if len(kept) != len(rows):
+            logger.info(
+                "reliability history: ignored %d future-dated row(s)", len(rows) - len(kept)
+            )
+        return kept
     except Exception as exc:
         logger.debug("reliability history unreadable: %s", exc)
         return []

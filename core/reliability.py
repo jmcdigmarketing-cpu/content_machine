@@ -186,8 +186,19 @@ def _competitor_health_section() -> list[str]:
         from core.competitor_health import inspect_competitors, warning_lines
 
         cid = resolve_channel_id(os.getenv("CONTENT_CHANNEL_ID") or None)
-        report = inspect_competitors(cid, missing_snapshot_ok=True)
-        return warning_lines(report)
+        if cid != "default":
+            return warning_lines(inspect_competitors(cid, missing_snapshot_ok=True))
+        # #904: no channel pinned - `default` is a placeholder with no competitors file,
+        # so check the real channels instead of warning about it.
+        from config.channels import list_channel_ids
+
+        lines: list[str] = []
+        for channel in (c for c in list_channel_ids() if c != "default"):
+            lines.extend(
+                f"{line} ({channel})"
+                for line in warning_lines(inspect_competitors(channel, missing_snapshot_ok=True))
+            )
+        return lines
     except Exception as exc:
         logger.debug("competitor health section skipped: %s", exc)
         return []

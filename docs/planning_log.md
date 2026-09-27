@@ -17,6 +17,55 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-27 (Claude Code) - wave 40: fact-fit, series names, learned games, one backfill, a slower voice
+
+**Prompt (verbatim):** "next 5". At plan approval the operator added two: "plan is good, but can
+we slow the talking speed just a touch, and make it so we avoid the ai giveaway of \"its not just
+this this and this... its actually this\"".
+
+### Why the list differs
+
+Recommended #849 · #879 · #876 · #855 · #870 - all five built. #849's backlog next step is a
+measurement, so it shipped as one and stays open until it has an n. The operator's two requests
+became #890 and #891.
+
+### Findings, with file:line
+
+- `core/topic_graph.py` `next_arc_topic`: a week-1 topic with no "week N" became
+  `f"{label} week {n}"` - exactly run 99's "UFC week 2" (#879).
+- `.env.example` documents 295 keys; `INGEST_ENABLED` was the only one no code reads (six more
+  are read through f-string names in `core/llm_router.py`) (#855).
+- `backfill-features` and `backfill-cost` wrote by default, the other two only with `--apply`;
+  quality's stale rule was "no grade", so a v4 row under a v5 rubric counted as current (#870).
+- `synthesize_to_path` / `_save_word_timestamps` sent no `voice_settings`: nothing set a pace (#890).
+- `core/content_engine.py:330` banned one verbatim contrast string; `core/persona_lint.py`
+  matched fixed phrases, so variants passed (#891).
+- The full suite writes five `data/` files (#892, filed; none of this wave's tests do).
+- Pre-render chapter estimates use 3.3 words/s whatever the pace (#893, filed).
+
+### Shipped
+
+#855 deleted + `tests/test_env_keys_read.py` · #879 `arc_series_name` · #876
+`core/learned_domain_terms.py` + `ops game-names` · #870 `analytics/backfills.py` + `ops backfill`
+· #849 `core/angle_fact_fit.py`, stored, calibrated, in the dossier, not used for selection ·
+#890 `speech_speed` (0.95), saved voice settings kept, local factor, cache key · #891
+`contrast_frames` + the `drop_contrast_frames` pass + the prompt's pattern description.
+
+**Deliberately not done:** fact-fit does not move `best_variant_index` (no n yet, and it cannot
+be backfilled); the old backfill verbs keep their defaults (they point at `ops backfill`);
+learned game names are not refreshed inside a long-running process.
+
+### Audit
+
+55 new tests plus 3 corpus cases (46 in all). Failing first: 51 of 55; the other 4 are guards
+that hold before and after (the "week N" path, an empty topic, selection ignoring fact-fit) and
+one dossier test written with its code. One wave-39 test changed on purpose: the cache voice now
+carries the pace (`voiceC@0.95`). The channel-config ratchet required `tts.speed` on a shipped
+channel, so both channels state 0.95. mypy 129 == baseline. `ops backfill`, `ops backfill all`,
+`ops game-names` and `ops regressions` run here (an empty local store; the PC has the rows).
+
+Backlog **282 numbered open**, highest **#893**. Next five: **#888 · #892 · #893 · #832 · #831**.
+
 ## 2026-09-27 (Claude Code) - wave 39: more than one voice, and run 99's title
 
 **Prompt (verbatim):** "are multiple voices in one video possible? next 5 as well." - with the

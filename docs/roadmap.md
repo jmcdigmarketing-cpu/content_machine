@@ -26,31 +26,34 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-27 wave 39, **more than one voice**: **#883** the channel voice rotates
-(once per run, never the last run's) · **#884** quotes in a second voice · **#885** a voice per
-chapter · **#886** a two-host debate - all picked at a new "Voices" prompt after the length ·
-**#877** a title that contradicts its script is regenerated, and a still-flagged one needs `y`
-to upload · **#878** uncertain vault facts are opt-in (Enter = none).
+**Just landed** - 2026-09-27 wave 40: **#890** the voice speaks a touch slower (0.95; `TTS_SPEED`
+or `tts.speed` per channel) · **#891** "it's not just X - it's Y" is found as a pattern and
+restated · **#879** a continuation keeps its series name · **#876** game names learned from
+confirmed runs (`ops game-names`) · **#870** one `ops backfill` over a registry · **#855** the
+dead `INGEST_ENABLED` removed, and every documented setting now needs a reader · **#849**
+fact-fit is measured and stored (selection unchanged until it has an n).
 
-**Before that** - wave 38: **#865 #873 #875 #856 #867 #869** · wave 37: **#872 #866 #874**
-domains and source queries · wave 36: **#871** the regression corpus. Earlier:
+**Before that** - wave 39: **#883-#886** more than one voice, **#877 #878** · wave 38: **#865
+#873 #875 #856 #867 #869** · wave 37: **#872 #866 #874**. Earlier:
 [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
 ### Recommended next five (non-app)
 
-**Wave 39 (2026-09-27)** built the operator's voice request and run 99's two defects. The list
-changed: #863 waits on ten runs and leaves it; #879 (run 99's vague best bet) joins.
+**Wave 40 (2026-09-27)** cleared four of the five and put #849 on a measurement. The list
+changed: #849 and #863 wait on runs, not code; #888 and two items found this wave join.
 
-1. **#849 tell angles apart** (E1) `[L]` - the operator's calibration (n=23) put angle at
-   r=-0.26, not significant. Fact-fit is the next thing to measure.
-2. **#879 a continuation best bet names its series** (E3) `[S]` - run 99's "UFC week 2".
-3. **#876 game names from the run history** (E2) `[S]` - "Silksong", "Palworld" read neutral.
-4. **#855 `INGEST_ENABLED` is read by nothing** (E5) `[S]` - wire it or delete it.
-5. **#870 one versioned backfill** (E6) `[M]` - four backfill verbs into one registry.
+1. **#888 the dossier after the render** `[S]` - voices, speed and render hashes appear
+   only after the overnight rewrite.
+2. **#892 the suite writes five `data/` files** `[S]` - redirect them and guard it.
+3. **#893 pre-render chapter times at the new pace** `[S]` - scale by `speech_speed`.
+4. **#832 `apis/scrapers` missing from the wheel** `[S]`.
+5. **#831 the ruff bump** `[M]` - its own wave-sized commit series.
 
-**Waiting on the operator, not on code:** one debate run and one quotes run, to hear them
-(#889) - the container has no voice key and no ffmpeg. `git pull` first. Structural queue:
-#832 · #831 · #834.
+**Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
+
+**Waiting on the operator, not on code:** listen to the next render (about 5% slower;
+`TTS_SPEED=1.0` undoes it), one debate and one quotes run (#889), then `ops backfill` to see what
+history is behind. Structural queue: #834.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

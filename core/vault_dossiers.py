@@ -72,6 +72,12 @@ def audit_lines(features: dict[str, Any], quality: dict[str, Any]) -> list[str]:
         out.append(
             "- **Angle scores:** " + "; ".join(f"{float(v):.2f} {str(k)[:60]}" for k, v in ranked)
         )
+    fit = features.get("angle_fact_fit")
+    if isinstance(fit, dict) and fit:
+        ranked = sorted(fit.items(), key=lambda kv: -float(kv[1] or 0))[:5]
+        out.append(
+            "- **Fact-fit:** " + "; ".join(f"{float(v):.2f} {str(k)[:60]}" for k, v in ranked)
+        )
     if features.get("all_angles"):
         out.append("- **All angles:** one long video with every angle as a chapter")
     for note in features.get("chapter_opener_notes") or []:

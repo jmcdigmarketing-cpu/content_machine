@@ -175,6 +175,10 @@ def build_quality(
     angle = features.get("angle_score")
     if isinstance(angle, int | float) and not isinstance(angle, bool):
         quality["angle_score"] = float(angle)
+    # #849: the chosen angle's fact-fit, for the calibration join.
+    fit = features.get("fact_fit")
+    if isinstance(fit, int | float) and not isinstance(fit, bool):
+        quality["fact_fit"] = float(fit)
 
     try:
         from core.claim_types import hedge_density

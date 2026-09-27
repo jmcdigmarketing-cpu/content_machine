@@ -66,6 +66,7 @@
       "tts": {
         "voice_id": "nPczCjzI2devNBz1zQrb",
         "rotate": true,
+        "speed": 0.95,
         "model_id": "eleven_multilingual_v2",
         "voice_pool": {
           "nPczCjzI2devNBz1zQrb": 4,
@@ -175,6 +176,7 @@
       "tts": {
         "voice_id": "XjLkpWUlnhS8i7gGz3lZ",
         "rotate": true,
+        "speed": 0.95,
         "model_id": "eleven_multilingual_v2",
         "voice_pool": {
           "XjLkpWUlnhS8i7gGz3lZ": 4,

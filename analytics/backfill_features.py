@@ -25,8 +25,11 @@ def _length_choice_from_timings(timings_json: str) -> str:
         return "2"
 
 
-def backfill_channel(channel_id: str, *, force: bool = False) -> int:
-    """Write reconstructed features for runs missing them. Returns count updated."""
+def backfill_channel(channel_id: str, *, force: bool = False, apply: bool = True) -> int:
+    """Write reconstructed features for runs missing them. Returns the count updated.
+
+    `apply=False` (#870's dry run) counts the rows it would write and writes nothing.
+    """
     from core.run_features import build_features
     from storage.repositories.content_runs import get_content_run_repository
 
@@ -61,7 +64,8 @@ def backfill_channel(channel_id: str, *, force: bool = False) -> int:
             if key not in features:
                 features[key] = value
 
-        repo.update(run.id, {"features_json": json.dumps(features)})
+        if apply:
+            repo.update(run.id, {"features_json": json.dumps(features)})
         updated += 1
     return updated
 

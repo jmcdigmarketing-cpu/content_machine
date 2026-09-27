@@ -54,7 +54,7 @@ Tool → module → env → status (source of truth: [providers_runbook.md](prov
 | Music/SFX bed | `core/music.py` | `MUSIC_PROVIDER=musicgen` | seam |
 | AI video / ComfyUI | `core/comfy_client.py`, `assets/ai_video_provider.py` | `AI_VIDEO_PROVIDER`, `COMFYUI_URL` | seam |
 | Expert-Panel grading | `core/grade.py` | `EXPERT_PANEL_ENABLED` | seam |
-| Multi-source ingest | `core/vault_ingest.py` | `INGEST_ENABLED` | seam (`ingest_url` real) |
+| Multi-source ingest | `core/vault_ingest.py` | none - explicit `ops ingest` only (#855) | seam (`ingest_url` real) |
 | Prompt-eval corpus | `core/run_eval_corpus.py` | `EVAL_CORPUS_LLM` | seam |
 | Avatar / auto-reframe | `core/avatar.py`, `core/reframe.py` | `AVATAR_PROVIDER`, `REFRAME_ENABLED` | seam (stubs) |
 | Distribution (n8n) | `core/events.py` (shipped) | `EVENT_WEBHOOK_URL` | wired |

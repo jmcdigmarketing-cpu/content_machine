@@ -94,11 +94,31 @@ def _ordinal_from_topic(topic: str) -> int | None:
         return None
 
 
+def arc_series_name(last_topic: str, family: str) -> str:
+    """What the arc is about, from its last topic - never just the franchise label (#879).
+
+    Run 99 continued "the UFC arc" as "UFC week 2": week 1 had no "week N", so the label
+    replaced the topic and the Contender Series was lost. The longest name in the topic
+    wins; a lower-case topic keeps its words; an empty one falls back to the label.
+    """
+    from apis.topic_tokens import title_phrases
+
+    label = _label(family)
+    text = (last_topic or "").strip()
+    names = [
+        p for p in title_phrases(text, max_words=5) if p.lower() not in (family, label.lower())
+    ]
+    if names:
+        return max(names, key=len)
+    base = text.split(":")[0].strip(" .,-!?")
+    return base or label
+
+
 def next_arc_topic(last_topic: str, ordinal: int, family: str) -> str:
     nxt = ordinal + 1
     if _WEEK_RE.search(last_topic or ""):
         return _WEEK_RE.sub(f"week {nxt}", last_topic, count=1)
-    return f"{_label(family)} week {nxt}"
+    return f"{arc_series_name(last_topic, family)} week {nxt}"
 
 
 def record_published_topic(channel_id: str, topic: str) -> None:
@@ -157,5 +177,7 @@ def follow_up_seed(channel_id: str):
         avg_engaged_rate=0.0,
         source="arc",
         supporting_runs=1,
-        rationale=f"continue the {_label(family)} arc (week {ordinal} → week {ordinal + 1})",
+        rationale=(
+            f"continue {arc_series_name(last_topic, family)} (week {ordinal} → week {ordinal + 1})"
+        ),
     )

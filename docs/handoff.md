@@ -53,29 +53,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-27 · **HEAD at write:** `c0ed1a0` + this wave's commit on `main` (`git log -2`)
-· **Tree:** clean after the commit; `data/` untouched.
+**Written:** 2026-09-27 · **HEAD at write:** `98538fd` + this wave's commit on `main` (`git log -2`)
+· **Tree:** clean after the commit; `data/` not in git.
 
-**Read before editing:** `py -m scripts.ops regressions <file>` (43 cases). A voice is resolved
-through `core/tts.resolve_tts_config` inside a `voice_context` - never pick one per synth call.
-Debate tags are stripped in `generate_content_package`; anything reading the script after that
-sees clean text. A render test must patch `record_render_assets`, `update_content_run_media` and
-set `THUMBNAIL_MODE=off`, or it writes `data/assets.json` and thumbnails (it did, once, this wave).
+**Read before editing:** `py -m scripts.ops regressions <file>` (46 cases). A new `.env.example`
+key needs a reader or `tests/test_env_keys_read.py` fails. Re-fill history through
+`analytics/backfills.py` (`ops backfill`), not a new verb. TTS cache keys now carry the pace
+(`voice@0.95`). Topic domains may read a learned game name last (`core/learned_domain_terms`);
+the suite pins `LEARNED_GAME_NAMES=false`.
 
 **Defects first:**
-- **Nothing here was heard (#889).** No ElevenLabs key or ffmpeg in the container: the tests
-  cover the segment plan, the voices asked for, word timings and stripped tags. Operator: one
-  debate run and one quotes run on the PC.
-- **#888** the run dossier shows the voices only after the overnight rewrite.
-- **#887** "Use these? [Enter=all]" (vault review path) is #878's sibling, left as an operator call.
-- **#876** game names outside the franchise list read neutral. **#879** "UFC week 2" named no series.
+- **#892 the full suite writes five `data/` files** (channel_memory/tapin, competitors_tapin,
+  operator_minutes, reliability_history, incidents). Pre-existing; none of wave 40's tests do.
+- **#893** pre-render chapter estimates assume the old pace (about 5% early until refined).
+- **#888** the dossier shows voices and pace only after the overnight rewrite.
+- **Nothing was heard:** no ElevenLabs key or ffmpeg here. The operator should listen to one
+  render at 0.95, one debate and one quotes run (#889).
 - **Use `python -m ruff`, never bare `ruff`, here:** bare is 0.15.8, CI pins 0.8.4.
 
-**Shipped:** #883 · #884 · #885 · #886 · #877 · #878. The operator's steps from wave 38 are done
-(re-auth, recategorize 9 updated, run 99 public, Doctor 14 of 14).
+**Shipped:** #855 · #879 · #876 · #870 · #890 · #891; #849 measured (open until it has an n).
 
-Suite **3,755**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
-backlog **284 numbered open**, highest **#889**. Next five: **#849 · #879 · #876 · #855 · #870**.
+Suite **3,810**, identical in default/reverse/shuffle (8 environmental here); mypy **129**;
+backlog **282 numbered open**, highest **#893**. Next five: **#888 · #892 · #893 · #832 · #831**.
 
 ## Slot — Cursor
 

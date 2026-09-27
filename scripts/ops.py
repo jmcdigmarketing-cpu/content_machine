@@ -333,11 +333,52 @@ def cmd_weekly_report(args: argparse.Namespace) -> int:
 
 @_register("backfill-features", "Reconstruct features_json for historical runs")
 def cmd_backfill_features(args: argparse.Namespace) -> int:
+    _backfill_pointer("features")
     return _run_module("analytics.backfill_features", "--channel", args.channel)
+
+
+def _backfill_pointer(name: str) -> None:
+    print(f"(#870: `py -m scripts.ops backfill {name}` does this too, as a dry run first.)")
+
+
+@_register("backfill", "Show what history is behind, or re-fill it: [name|all] [--apply] (#870)")
+def cmd_backfill(args: argparse.Namespace) -> int:
+    from analytics.backfills import REGISTRY, get_backfill, run_backfills, stale_counts
+
+    channel = getattr(args, "channel", "tapin")
+    target = (getattr(args, "target", "") or "").strip().lower()
+    apply = bool(getattr(args, "apply", False))
+    if not target:
+        counts = stale_counts(channel)
+        print(f"Backfills - {channel} (nothing written)")
+        for entry in REGISTRY:
+            stale, total = counts.get(entry.name, (0, 0))
+            print(
+                f"  {entry.name:<9} {stale} of {total} runs behind {entry.version()}  - {entry.fills}"
+            )
+        print("  Re-fill: py -m scripts.ops backfill <name|all>   (add --apply to write)")
+        return 0
+    names = [n for n in target.replace(",", " ").split() if n]
+    known = {e.name for e in REGISTRY} | {"all"}
+    unknown = [n for n in names if n not in known]
+    if unknown:
+        print(f"Unknown backfill: {', '.join(unknown)}. Known: {', '.join(sorted(known))}")
+        return 2
+    tallies = run_backfills(channel, names, apply=apply, force=bool(getattr(args, "force", False)))
+    for name, tally in tallies.items():
+        verb = "updated" if apply else "would update"
+        count = tally.get("updated" if apply else "would_update", 0)
+        print(
+            f"  {name:<9} {tally.get('stale', 0)} behind, {verb} {count}  ({get_backfill(name).fills})"
+        )
+    if not apply:
+        print("  Dry run - nothing written. Re-run with --apply.")
+    return 0
 
 
 @_register("backfill-quality", "Recompute grade/hedge/style fields on historical runs (#823)")
 def cmd_backfill_quality(args: argparse.Namespace) -> int:
+    _backfill_pointer("quality")
     extra = ["--channel", args.channel]
     if getattr(args, "apply", False):
         extra.append("--apply")
@@ -348,6 +389,7 @@ def cmd_backfill_quality(args: argparse.Namespace) -> int:
 
 @_register("backfill-angles", "Score historical runs' stored angles offline (#836; approximate)")
 def cmd_backfill_angles(args: argparse.Namespace) -> int:
+    _backfill_pointer("angles")
     extra = ["--channel", args.channel]
     if getattr(args, "apply", False):
         extra.append("--apply")
@@ -374,8 +416,26 @@ def cmd_regressions(args: argparse.Namespace) -> int:
     return corpus_main(["--file", target] if target else [])
 
 
+@_register("game-names", "Game names learned from confirmed runs, with the runs behind each (#876)")
+def cmd_game_names(_args: argparse.Namespace) -> int:
+    from core.learned_domain_terms import learned_game_name_sources
+
+    sources = learned_game_name_sources()
+    if not sources:
+        print(
+            "Learned game names: none yet. A name is learned when a run's topic names no "
+            "known game but a live gaming signal (RAWG, IGDB, Steam, Twitch) matches it."
+        )
+        return 0
+    print(f"Learned game names ({len(sources)}):")
+    for name, runs in sorted(sources.items()):
+        print(f"  {name:<28} runs {', '.join(str(r) for r in runs)}")
+    return 0
+
+
 @_register("backfill-cost", "Repair missing TTS cost on runs that rendered before the fix")
 def cmd_backfill_cost(args: argparse.Namespace) -> int:
+    _backfill_pointer("cost")
     extra = ["--channel", args.channel]
     if getattr(args, "dry_run", False):
         extra.append("--dry-run")

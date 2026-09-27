@@ -331,6 +331,61 @@ def voice_role(role: str):
         _active_role = previous
 
 
+DEFAULT_SPEECH_SPEED = 0.95  # #890: "a touch slower" (operator, 2026-09-27)
+_SPEED_MIN, _SPEED_MAX = 0.7, 1.2  # ElevenLabs' accepted range
+_saved_voice_settings: dict[str, dict[str, Any]] = {}
+
+
+def speech_speed(channel_id: str | None = None) -> float:
+    """Speaking pace: `TTS_SPEED`, else the channel's `tts.speed`, else 0.95; clamped."""
+    raw: Any = (os.getenv("TTS_SPEED", "") or "").strip()
+    if not raw:
+        try:
+            raw = getattr(get_channel_profile(channel_id), "tts_speed", None)
+        except Exception as exc:
+            logger.debug("channel speed unreadable: %s", exc)
+            raw = None
+    try:
+        value = float(raw) if raw not in (None, "") else DEFAULT_SPEECH_SPEED
+    except (TypeError, ValueError):
+        value = DEFAULT_SPEECH_SPEED
+    return round(min(_SPEED_MAX, max(_SPEED_MIN, value)), 3)
+
+
+def _elevenlabs_voice_settings(client, voice_id: str, speed: float):
+    """The voice's own saved settings with only `speed` replaced; None at 1.0 (#890).
+
+    A settings object with nothing but `speed` could reset stability and similarity to
+    the API defaults, so the saved ones are read once per voice (a free call). If that
+    read fails the speed goes alone, and the log says so once.
+    """
+    if speed == 1.0:
+        return None
+    try:
+        from elevenlabs import VoiceSettings
+    except Exception as exc:
+        logger.debug("VoiceSettings unavailable, default pace: %s", exc)
+        return None
+    saved = _saved_voice_settings.get(voice_id)
+    if saved is None:
+        try:
+            got = client.voices.settings.get(voice_id)
+            dump = getattr(got, "model_dump", None) or getattr(got, "dict", None)
+            saved = {k: v for k, v in (dump() if dump else {}).items() if v is not None}
+        except Exception as exc:
+            logger.info(
+                "Voice %s: saved settings unreadable, sending the speed alone: %s", voice_id, exc
+            )
+            saved = {}
+        saved.pop("speed", None)
+        _saved_voice_settings[voice_id] = saved
+    try:
+        return VoiceSettings(**{**saved, "speed": speed})
+    except Exception as exc:
+        logger.debug("voice settings rejected, speed only: %s", exc)
+        return VoiceSettings(speed=speed)
+
+
 def last_run_voices() -> dict[str, str]:
     """{role: voice_id} the last `generate_audio` used; {} for a local-only render."""
     return dict(_last_voices)
@@ -522,10 +577,12 @@ def _tts_cache_voice(channel_id: str | None) -> str:
         )
     try:
         voice_id, _ = resolve_tts_config(channel_id)
-        return voice_id or ""
     except Exception as exc:
         logger.debug("TTS cache voice resolve skipped: %s", exc)
         return ""
+    speed = speech_speed(channel_id)
+    # #890: a clip spoken at another pace is another clip.
+    return f"{voice_id}@{speed}" if voice_id and speed != 1.0 else (voice_id or "")
 
 
 def generate_audio(
@@ -1037,8 +1094,10 @@ def synthesize_to_path(
             # Word-level timestamps (free from the same TTS call) power accurate /
             # karaoke captions (video/caption_timing). Best-effort — any failure falls
             # back to the plain stream, so captions revert to the proportional estimate.
+            settings = _elevenlabs_voice_settings(client, voice_id, speech_speed(channel_id))
+            extra = {"voice_settings": settings} if settings is not None else {}
             if _word_timestamps_enabled() and _save_word_timestamps(
-                client, voice_id, model_id, spoken, output_path
+                client, voice_id, model_id, spoken, output_path, **extra
             ):
                 print(
                     f"[TTS] Channel: {channel_id} | Voice: {voice_id} | "
@@ -1053,6 +1112,7 @@ def synthesize_to_path(
                 voice_id=voice_id,
                 model_id=model_id,
                 text=spoken,
+                **extra,
             )
             with open(output_path, "wb") as f:
                 for chunk in audio:
@@ -1332,6 +1392,11 @@ def _variety_speed_factor(channel_id: str | None = None, *, seed: str | None = N
     return round(_VARIETY_MIN + (bucket / 999) * (_VARIETY_MAX - _VARIETY_MIN), 4)
 
 
+def _local_speed_factor(channel_id: str | None = None, *, seed: str | None = None) -> float:
+    """Delivery jitter times the channel's pace (#890), for the local voices."""
+    return round(_variety_speed_factor(channel_id, seed=seed) * speech_speed(channel_id), 4)
+
+
 def _piper_syn_config(factor: float):
     """A piper `SynthesisConfig` applying the variety speed factor, or None (plain synth).
 
@@ -1409,7 +1474,7 @@ def _kokoro_synth(script: str, output_path: str, channel_id: str | None) -> str 
 
     pipeline = KPipeline(lang_code=os.getenv("KOKORO_LANG", "a"))
     voice = resolve_local_voice("kokoro", channel_id) or "af_heart"
-    speed = _variety_speed_factor(channel_id, seed=output_path)
+    speed = _local_speed_factor(channel_id, seed=output_path)
     try:
         if speed != 1.0:
             gen = pipeline(script, voice=voice, speed=speed)
@@ -1440,7 +1505,7 @@ def _xtts_synth(script: str, output_path: str, channel_id: str | None) -> str | 
         "language": os.getenv("XTTS_LANG", "en"),
         "file_path": wav_path,
     }
-    speed = _variety_speed_factor(channel_id, seed=output_path)
+    speed = _local_speed_factor(channel_id, seed=output_path)
     try:
         if speed != 1.0:
             tts.tts_to_file(**kwargs, speed=speed)
@@ -1469,7 +1534,7 @@ def _piper_synth(script: str, output_path: str, channel_id: str | None) -> str |
 
     voice = PiperVoice.load(model)
     wav_path = _tmp_wav_path(output_path)
-    syn_config = _piper_syn_config(_variety_speed_factor(channel_id, seed=output_path))
+    syn_config = _piper_syn_config(_local_speed_factor(channel_id, seed=output_path))
     with wave.open(wav_path, "wb") as wav_file:
         _piper_write_wav(voice, script, wav_file, syn_config)
     return _transcode_to_mp3(wav_path, output_path)
@@ -1654,17 +1719,21 @@ def _word_timestamps_enabled() -> bool:
     return os.getenv("TTS_WORD_TIMESTAMPS", "true").lower() in ("1", "true", "yes")
 
 
-def _save_word_timestamps(client, voice_id, model_id, script, output_path) -> bool:
+def _save_word_timestamps(
+    client, voice_id, model_id, script, output_path, voice_settings=None
+) -> bool:
     """Convert with character alignment, write the MP3 + a word-timing sidecar.
 
     Returns True on success; False (no files written for this path) on any error so
     the caller falls back to the plain stream.
     """
     try:
+        extra = {"voice_settings": voice_settings} if voice_settings is not None else {}
         result = client.text_to_speech.convert_with_timestamps(
             voice_id=voice_id,
             model_id=model_id,
             text=script,
+            **extra,
         )
         audio_b64 = getattr(result, "audio_base_64", None) or getattr(result, "audio_base64", None)
         alignment = getattr(result, "alignment", None) or getattr(
@@ -1707,6 +1776,7 @@ def _reset_process_state() -> None:
     _active_role = ROLE_NARRATOR
     _last_voices = {}
     _voices_spoken.clear()
+    _saved_voice_settings.clear()
     _voice_catalog_cache = None
     _lexicon_cache = None
     _dead_voices.clear()

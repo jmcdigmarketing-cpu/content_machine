@@ -64,6 +64,8 @@ class CalibrationRow:
     angle_score: float | None = None
     # #836: recomputed offline from variants_json - an approximation of the live score.
     angle_backfilled: bool = False
+    # #849: share of the discovery fact pool that supported the chosen angle.
+    fact_fit: float | None = None
 
 
 @dataclass
@@ -86,6 +88,7 @@ class CalibrationReport:
     # #821 / #819: (r, n) for the two candidates the rubric might one day lean on.
     recurrence_correlation: tuple[float | None, int] = (None, 0)
     angle_correlation: tuple[float | None, int] = (None, 0)
+    fact_fit_correlation: tuple[float | None, int] = (None, 0)
     # Run 98 / v5: every measured row re-graded by today's rubric, vs engaged-rate.
     # Reported when versions mix, so a rubric bump does not switch the measurement
     # off until the history is re-stamped (`ops backfill-quality --force`).
@@ -249,6 +252,7 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
         version = str(quality.get("grade_version") or UNVERSIONED)
         rec_n = quality.get("style_recurrence_n")
         angle = quality.get("angle_score")
+        fit = quality.get("fact_fit")
         report.rows.append(
             CalibrationRow(
                 run_id=run.id,
@@ -266,6 +270,7 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
                 recurrence_n=int(rec_n) if isinstance(rec_n, int | float) else None,
                 angle_score=float(angle) if isinstance(angle, int | float) else None,
                 angle_backfilled=bool(quality.get("angle_backfilled")),
+                fact_fit=float(fit) if isinstance(fit, int | float) else None,
             )
         )
 
@@ -320,6 +325,13 @@ def build_calibration(channel_id: str | None = None) -> CalibrationReport:
         if len(ang_pairs) >= MIN_MEASURED
         else None,
         len(ang_pairs),
+    )
+    fit_pairs = [(float(r.fact_fit), r.engaged_rate) for r in report.rows if r.fact_fit is not None]
+    report.fact_fit_correlation = (
+        _pearson([a for a, _ in fit_pairs], [b for _, b in fit_pairs])
+        if len(fit_pairs) >= MIN_MEASURED
+        else None,
+        len(fit_pairs),
     )
 
     thumbs = _thumbnail_scores(channel)
@@ -399,6 +411,19 @@ def angle_line(report: CalibrationReport) -> str:
         f"Angle score vs engaged-rate r={r:+.2f} (n={n}{note}); "
         "the tie leans on composite until this is positive"
     )
+
+
+def fact_fit_line(report: CalibrationReport) -> str:
+    """#849: the per-angle candidate, measured before selection leans on it."""
+    r, n = report.fact_fit_correlation
+    if r is None:
+        return (
+            f"Fact-fit vs engaged-rate: collecting ({n} of {report.measured} measured runs carry "
+            "one; runs before wave 40 never stored it, and it cannot be backfilled)"
+        )
+    need = n_for_significance(r)
+    tail = f" (needs n>={need} to be significant)" if need and n < need else ""
+    return f"Fact-fit vs engaged-rate r={r:+.2f} (n={n}){tail}; selection ignores it until then"
 
 
 def accuracy_line(channel_id: str | None = None, *, use_cache: bool = True) -> str | None:
@@ -594,6 +619,7 @@ def render(channel_id: str | None = None) -> str:
         component_line(report),
         recurrence_line(report),
         angle_line(report),
+        fact_fit_line(report),
     ):
         if extra:
             lines.append(f"  {extra}")

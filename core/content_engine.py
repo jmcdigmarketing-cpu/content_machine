@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import os
+import re
 from collections.abc import Callable
 from types import CodeType
 from typing import Any
@@ -327,7 +328,8 @@ You must:
 - Cross-genre framing is allowed: real people, athletes, other sports, or other games introduced in the EDITORIAL ANGLE may be used as analogy, comparison, or opinion even if they are absent from VERIFIED FACTS — that is intentional creator framing, not a fabrication. Only invented GAME specifics are forbidden.
 - If a game fact is missing, say "reports suggest" or skip — do not fill from memory.
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
-- Never use stock filler transitions. Banned verbatim: "But here's the thing", "This isn't just X — it's Y", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
+- Never use stock filler transitions. Banned verbatim: "But here's the thing", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
+- Never use the contrast frame in any wording: "it's not just X, it's Y", "this isn't only X, it's actually Y", "not only X but Y", "more than just X", "less about X, more about Y", "they don't just X, they Y". Say Y directly.
 - Write for spoken delivery; no markdown, bullet points, or headers in the script body.
 {must_close}
 - Title and description must be SEO-friendly without misleading clickbait.
@@ -629,6 +631,74 @@ def _maybe_improve_hook(script: str) -> str:
             logger.info("Improved hook via regeneration")
             return candidate
     return script
+
+
+def _contrast_rewrite_enabled() -> bool:
+    return os.getenv("CONTRAST_REWRITE", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _new_specifics(old: str, new: str) -> bool:
+    """True when `new` names a person/place or a number that `old` did not."""
+    from apis.topic_tokens import title_phrases
+
+    numbers = set(re.findall(r"\d[\d.,]*", new)) - set(re.findall(r"\d[\d.,]*", old))
+    old_lower = old.lower()
+    names = [p for p in title_phrases(new) if p.lower() not in old_lower]
+    # The rewrite's own first word is capitalised because it starts the sentence.
+    first = (new.split() or [""])[0].strip(".,!?\"'")
+    names = [p for p in names if p != first]
+    return bool(numbers or names)
+
+
+def _maybe_drop_contrast_frames(script: str, *, min_words: int, max_words: int) -> str:
+    """#891: restate "it's not just X - it's Y" sentences directly (operator request).
+
+    One cheap-tier call, only when the detector finds the frame. Each rewrite is kept only
+    if the frame is gone and it adds no name or number; the script must stay inside the
+    length it already had. Anything else keeps the original sentence - the persona lint
+    still reports it on the card.
+    """
+    from core.persona_lint import contrast_frames
+
+    frames = contrast_frames(script)
+    if not frames or not _contrast_rewrite_enabled():
+        return script
+    system_prompt = (
+        "Each sentence below uses the contrast frame ('it's not just X, it's Y', 'not only X "
+        "but Y', 'more than just X'). Rewrite each to state the point directly, in the same "
+        "voice. Keep every name, number and claim; add none. Keep it about as short."
+    )
+    listed = "\n".join(f"- {frame}" for frame in frames)
+    user_prompt = (
+        f"SENTENCES:\n{listed}\n\nReturn JSON only: "
+        '{"rewrites": [{"old": "<sentence exactly as given>", "new": "<rewrite>"}]}'
+    )
+    try:
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.4, tier="cheap")
+    except Exception as exc:
+        logger.debug("contrast rewrite failed: %s", exc)
+        return script
+    rows = payload.get("rewrites") if isinstance(payload, dict) else None
+    candidate = script
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        old, new = str(row.get("old") or "").strip(), str(row.get("new") or "").strip()
+        if not old or not new or old not in candidate:
+            continue
+        if contrast_frames(new) or _new_specifics(old, new):
+            logger.info("contrast rewrite rejected: %r", new[:100])
+            continue
+        candidate = candidate.replace(old, new, 1)
+    if candidate == script:
+        return script
+    words = count_spoken_words(candidate)
+    if words < min(min_words, count_spoken_words(script)) or words > max_words:
+        return script
+    logger.info(
+        "Restated %d contrast frame(s) directly", len(frames) - len(contrast_frames(candidate))
+    )
+    return candidate
 
 
 def _reground_enabled() -> bool:
@@ -1395,6 +1465,13 @@ def generate_content_package(
         disabled=not _claim_regen_enabled(),
     )
     verification = ver_box["v"]
+    script = run_script_pass(
+        script_passes,
+        "drop_contrast_frames",
+        script,
+        lambda s: _maybe_drop_contrast_frames(s, min_words=min_words, max_words=max_words),
+        disabled=not _contrast_rewrite_enabled(),
+    )
 
     quote_check = check_quote_attribution(script, corpus.factual_text)
     quote_payload = quote_check.to_dict()

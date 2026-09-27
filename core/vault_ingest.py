@@ -9,7 +9,8 @@ same frontmatter keys `core/fact_store.py` reads (`tier`, `source`, `verified_at
 `ingest_url` reuses the article extractor in `core/link_facts.py` — which, after the
 goose3 phase, is goose3-first with a BeautifulSoup fallback (one extractor, two callers).
 
-    INGEST_ENABLED=true      # gate for any *auto* ingestion; explicit calls always work
+Ingestion is explicit only: nothing calls it on its own, so there is no gate (#855 removed
+the documented `INGEST_ENABLED`, which nothing read).
 
 `ingest(source)` detects the kind (local .pdf → `ingest_pdf` via lazy pypdf; YouTube link →
 `ingest_youtube_transcript` via lazy youtube-transcript-api; else → `ingest_url`/goose3).

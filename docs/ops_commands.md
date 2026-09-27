@@ -16,6 +16,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `artifact-retention` | Report old drafts, traces, and vault _runs clones (dry-run only; never deletes) |
 | `artifacts` | Cap output/ by GB (dry-run default; --apply deletes oldest) |
 | `auto-research` | Measure auto-research on stored runs: pages, lines kept, lines cited (#863) |
+| `backfill` | Show what history is behind, or re-fill it: [name\|all] [--apply] (#870) |
 | `backfill-angles` | Score historical runs' stored angles offline (#836; approximate) |
 | `backfill-cost` | Repair missing TTS cost on runs that rendered before the fix |
 | `backfill-features` | Reconstruct features_json for historical runs |
@@ -61,6 +62,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `free-tiers` | When each provider's free window resets or ends (#378) |
+| `game-names` | Game names learned from confirmed runs, with the runs behind each (#876) |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
 | `go-public` | Flip a review-held unlisted upload to public (no id = newest hold; dry-run default; --apply sends) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |

@@ -3,8 +3,11 @@ import re
 
 from apis.learned_weights import compute_profile_from_performance
 from config.channels import get_channel_profile, resolve_channel_id
+from core.logging import get_logger
 from storage.repositories.channel_memory import get_channel_memory_repository
 from storage.repositories.performance_memory import get_performance_memory_repository
+
+logger = get_logger("apis.topic_scorer")
 
 # Blend heuristic profiles with engagement-derived templates when outcome data exists
 _LEARNED_BLEND = float(os.getenv("LEARNED_WEIGHT_BLEND", "0.85"))
@@ -222,6 +225,17 @@ _GAME_FRANCHISES = [
 ]
 
 
+def _learned_game_names() -> frozenset[str]:
+    """#876: names confirmed as games by past runs; checked last, after every sport."""
+    try:
+        from core import learned_domain_terms
+
+        return learned_domain_terms.learned_game_names()
+    except Exception as exc:
+        logger.debug("learned game names skipped: %s", exc)
+        return frozenset()
+
+
 def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: bool = True) -> str:
     """Classify domain from free text; optional channel profile fallback."""
     topic_lower = (text or "").lower()
@@ -380,10 +394,23 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
     ):
         return "popculture"
 
-    if _mentions(
-        topic_lower,
-        ["gta", "gaming", "game", "steam", "roblox", "marvel rivals", "esports", *_GAME_FRANCHISES],
-    ) or _FOOTBALL_GAME_RE.search(topic_lower):
+    if (
+        _mentions(
+            topic_lower,
+            [
+                "gta",
+                "gaming",
+                "game",
+                "steam",
+                "roblox",
+                "marvel rivals",
+                "esports",
+                *_GAME_FRANCHISES,
+            ],
+        )
+        or _FOOTBALL_GAME_RE.search(topic_lower)
+        or _mentions(topic_lower, sorted(_learned_game_names()))
+    ):
         return "gaming"
 
     if use_channel_profile:

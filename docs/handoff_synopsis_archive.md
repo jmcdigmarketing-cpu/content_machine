@@ -7,6 +7,18 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-26 (Claude Code): wave 37 #872 #866 #874 + timeline
+
+- **#872** football uploads were filed as Gaming (no `soccer` in `CATEGORY_BY_DOMAIN`); every
+  domain in `KNOWN_DOMAINS` now has a category and a length default, held by a test.
+- **#866** `resolve_domains` stored as `features["domains"]`; `publish()` carries the run's
+  effective domain on `PublishRequest.domain`; each `infer_domain` caller listed with its reason.
+- **#874** `search_query(mode=)`: EDGAR and stats scrapers by name, FRED and stock footage by keywords.
+- [project_timeline.md](project_timeline.md) + the private page "Content OS Story". Operator owes
+  the 2025-05 to 2026-05 dates. **#873** old football uploads still say Gaming.
+
+**Verify:** `python -m unittest tests.test_domains_once`; `py -m scripts.ops regressions`.
+
 ## Previous — 2026-09-26 (Claude Code): wave 36, own review #871
 
 The operator dropped the Codex/Astra review and asked for one: what can be consolidated, where

@@ -8,6 +8,16 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 40 — a slower voice, no "not just X" frames, one backfill verb - 2026-09-27
+
+*3,810 tests; mypy 129 == baseline; ruff clean; regression corpus 46 of 46.*
+
+- **#890** the voice speaks a touch slower (0.95); `TTS_SPEED=1.0` restores the old pace.
+- **#891** "it's not just X - it's Y" and its variants are restated directly.
+- **#879** a continuation best bet keeps its series name ("UFC Contender Series week 2").
+- **#876** `ops game-names`: game names learned from confirmed runs. **#870** `ops backfill`.
+- **#855** the unread `INGEST_ENABLED` setting is gone. **#849** fact-fit is measured.
+
 ### Wave 39 — more than one voice; run 99's title - 2026-09-27
 
 *3,755 tests; mypy 129 == baseline; ruff clean; regression corpus 43 of 43.*

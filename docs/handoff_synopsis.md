@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-27: wave 39, next five
+# Handoff synopsis — 2026-09-27: wave 40, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-27 (Claude Code): wave 39 voices #883-#886, #877 #878
+## Last wave — 2026-09-27 (Claude Code): wave 40 #849 #879 #876 #855 #870 + #890 #891
+
+- **#890** every voice speaks at 0.95 (`TTS_SPEED`, or `tts.speed` per channel; 1.0 = old pace).
+  ElevenLabs keeps the voice's saved stability/similarity; clips cached at the old pace miss once.
+- **#891** `core/persona_lint.contrast_frames` finds "it's not just X - it's Y" and its variants;
+  the `drop_contrast_frames` pass restates them (no new names or numbers), the prompt names the
+  pattern, the report card's Style line shows what is left.
+- **#879** a continuation keeps its series name. **#876** `ops game-names`: names learned from
+  runs a topic-matched gaming signal confirmed. **#870** `ops backfill [name|all] [--apply]`.
+- **#855** `INGEST_ENABLED` gone; `tests/test_env_keys_read.py` holds every documented key to a
+  reader. **#849** fact-fit is stored and shown in `ops calibration`; selection ignores it.
+
+**Verify:** `python -m unittest tests.test_speech_speed tests.test_contrast_frames
+tests.test_backfill_registry tests.test_angle_fact_fit`; `py -m scripts.ops regressions` (46).
+
+## Previous — 2026-09-27 (Claude Code): wave 39 voices #883-#886, #877 #878
 
 - **#883** the voice rotates: `tts.rotate: true` draws from each channel's `voice_pool`, pinned
   once per render by `core/tts.voice_context` (cache key included) and never the previous run's
@@ -39,18 +54,6 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 
 **Verify:** `python -m unittest tests.test_snippet_updates tests.test_persisted_keys_read
 tests.test_status_machine`; `py -m scripts.ops regressions`.
-
-## Previous — 2026-09-26 (Claude Code): wave 37 #872 #866 #874 + timeline
-
-- **#872** football uploads were filed as Gaming (no `soccer` in `CATEGORY_BY_DOMAIN`); every
-  domain in `KNOWN_DOMAINS` now has a category and a length default, held by a test.
-- **#866** `resolve_domains` stored as `features["domains"]`; `publish()` carries the run's
-  effective domain on `PublishRequest.domain`; each `infer_domain` caller listed with its reason.
-- **#874** `search_query(mode=)`: EDGAR and stats scrapers by name, FRED and stock footage by keywords.
-- [project_timeline.md](project_timeline.md) + the private page "Content OS Story". Operator owes
-  the 2025-05 to 2026-05 dates. **#873** old football uploads still say Gaming.
-
-**Verify:** `python -m unittest tests.test_domains_once`; `py -m scripts.ops regressions`.
 
 ## Pipeline order (operator)
 
@@ -115,12 +118,12 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** one debate run and one quotes run on the PC, to hear them (#889). The
-   backfills, calibration (n=23, nothing significant) and feeds are done; the PC is on `main`.
-2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit (E1) · #879 (E3) · #876 game
-   names (E2) · #863 waits on ten runs.
-3. **Structural:** #870 backfills (E6) · #855 (E5) · #888 dossier after render · #832 · #831
-   ruff bump · #834 `core/` seams. Any live-run defect: add a corpus case.
+1. **Operator:** listen to the next render at 0.95; one debate and one quotes run (#889);
+   `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
+2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
+   · #863 waits on ten runs (E3) · #893 chapter estimates at the new pace.
+3. **Structural:** #888 dossier after render · #892 suite writes `data/` · #832 · #831 ruff
+   bump · #834 `core/` seams. Any live-run defect: add a corpus case.
 4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
    contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours

@@ -77,9 +77,17 @@ def _owned(key: str) -> bool:
 
 
 def backfill_channel(
-    channel_id: str, *, apply: bool = False, force: bool = False
+    channel_id: str,
+    *,
+    apply: bool = False,
+    force: bool = False,
+    run_ids: set[int] | None = None,
 ) -> dict[str, int]:
-    """Recompute script-derived quality for runs missing it. Never raises per-run."""
+    """Recompute script-derived quality for runs missing it. Never raises per-run.
+
+    `run_ids` (#870, `ops backfill`): recompute exactly these rows - the ones behind the
+    current quality/grade version - whether or not they already carry a grade.
+    """
     from core.run_quality import build_quality
     from storage.repositories.content_runs import get_content_run_repository
 
@@ -98,7 +106,11 @@ def backfill_channel(
                 existing = {}
         except (json.JSONDecodeError, TypeError):
             existing = {}
-        if existing.get("grade_score") is not None and not force:
+        if run_ids is not None:
+            if run.id not in run_ids:
+                tally["skipped"] += 1
+                continue
+        elif existing.get("grade_score") is not None and not force:
             tally["skipped"] += 1
             continue
 

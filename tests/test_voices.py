@@ -78,7 +78,8 @@ class RotationTests(unittest.TestCase):
             patch.dict(os.environ, {"TTS_PROVIDER": "elevenlabs"}),
         ):
             with tts.voice_context({"narrator": "voiceC"}):
-                self.assertEqual(tts._tts_cache_voice("tapin"), "voiceC")
+                # #890 appends the speaking pace ("voiceC@0.95"); the voice is the run's.
+                self.assertTrue(tts._tts_cache_voice("tapin").startswith("voiceC"))
                 self.assertEqual(tts.resolve_tts_config("tapin")[0], "voiceC")
 
     def test_a_dead_run_voice_is_replaced_for_the_rest_of_the_run(self):

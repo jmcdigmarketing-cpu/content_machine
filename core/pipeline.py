@@ -86,6 +86,9 @@ class DiscoveryResult:
     # this is an editorial one, and averaging an unvalidated score into another
     # unvalidated score would hide both. Same reason `raw_scores` sits out here.
     angle_scores: dict[str, float] = field(default_factory=dict)
+    # #849: variant -> share of the discovery fact pool that supports it (fact-fit).
+    # Measured and stored only; `best_variant_index` does not read it.
+    angle_fact_fit: dict[str, float] = field(default_factory=dict)
     # Run 77: the operator's typed thoughts. Angles differ by thoughts on the same seed,
     # so the cache key carries them too.
     brief: str = ""
@@ -143,6 +146,8 @@ def _discovery_from_payload(data: object) -> DiscoveryResult | None:
     raw: dict[str, Any] = raw_obj if isinstance(raw_obj, dict) else {}
     angle_obj = data.get("angle_scores")
     angle: dict[str, Any] = angle_obj if isinstance(angle_obj, dict) else {}
+    fit_obj = data.get("angle_fact_fit")
+    fit: dict[str, Any] = fit_obj if isinstance(fit_obj, dict) else {}
     timings_obj = data.get("timings")
     timings: dict[str, Any] = timings_obj if isinstance(timings_obj, dict) else {}
     meta_obj = data.get("meta")
@@ -157,6 +162,7 @@ def _discovery_from_payload(data: object) -> DiscoveryResult | None:
         channel_id=str(data.get("channel_id") or "default"),
         raw_scores={str(k): float(v) for k, v in raw.items() if isinstance(v, int | float)},
         angle_scores={str(k): float(v) for k, v in angle.items() if isinstance(v, int | float)},
+        angle_fact_fit={str(k): float(v) for k, v in fit.items() if isinstance(v, int | float)},
         brief=str(data.get("brief") or ""),
         meta={str(k): v for k, v in meta.items()},
     )
@@ -201,6 +207,7 @@ def _store_discovery_cache(result: DiscoveryResult) -> None:
             "evaluated": result.evaluated,
             "raw_scores": result.raw_scores,
             "angle_scores": result.angle_scores,
+            "angle_fact_fit": result.angle_fact_fit,
             "timings": result.timings,
             "meta": result.meta,
             "brief": result.brief,
@@ -540,6 +547,20 @@ def run_discovery(
     except Exception as exc:
         logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
 
+    # #849: fact-fit from the facts already in hand - no network, measured only.
+    angle_fact_fit: dict[str, float] = {}
+    try:
+        from core.angle_fact_fit import fact_fit, fact_lines
+        from core.signal_facts import format_signal_facts
+
+        angle_fact_fit = fact_fit(
+            [v for v, *_ in evaluated],
+            fact_lines(format_signal_facts(base_signals)),
+            seed_topic=topic,
+        )
+    except Exception as exc:
+        logger.debug("fact-fit skipped: %s", exc)
+
     # Persist this run's cache hit/miss counters for the reliability dashboard (O8).
     try:
         from apis.cache_manager import flush_cache_stats
@@ -554,6 +575,7 @@ def run_discovery(
         evaluated=evaluated,
         raw_scores=raw_scores,
         angle_scores=angle_scores,
+        angle_fact_fit=angle_fact_fit,
         timings=timings,
         meta=meta,
         channel_id=channel_id,
@@ -620,6 +642,11 @@ def _finalize_run(
         chosen = discovery.angle_scores.get(result.topic)
         if isinstance(chosen, int | float):
             result.features["angle_score"] = float(chosen)
+    if discovery.angle_fact_fit:
+        result.features["angle_fact_fit"] = dict(discovery.angle_fact_fit)
+        fit = discovery.angle_fact_fit.get(result.topic)
+        if isinstance(fit, int | float):
+            result.features["fact_fit"] = float(fit)
 
     run_id = record_content_run(
         channel_id=channel_id,

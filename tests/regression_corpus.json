@@ -676,6 +676,48 @@
         "equals": "The host city: Las Vegas. He said the co-host role is gone."
       },
       "why": "only HOST:/CO-HOST: speaker tags are stripped; ordinary words stay in the script"
+    },
+    {
+      "id": "run99-arc-keeps-series",
+      "item": 879,
+      "source": "run 99",
+      "call": "core.topic_graph:next_arc_topic",
+      "args": [
+        "UFC Contender Series: 5 contracts handed out",
+        1,
+        "ufc"
+      ],
+      "expect": {
+        "contains": "Contender Series",
+        "not_contains": "UFC week 2"
+      },
+      "why": "a week-1 topic with no 'week N' became 'UFC week 2' and lost the series it continued"
+    },
+    {
+      "id": "contrast-frame-770",
+      "item": 891,
+      "source": "run 78 (#770 chapter opener)",
+      "call": "core.persona_lint:contrast_frames",
+      "args": [
+        "And it's not just about microtransactions anymore."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the 'not just X' frame reached a script; the detector must keep finding it"
+    },
+    {
+      "id": "contrast-frame-plain-correction",
+      "item": 891,
+      "source": "wave 40 guard",
+      "call": "core.persona_lint:contrast_frames",
+      "args": [
+        "He isn't injured, he's suspended."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a plain factual correction is not the cliche and must not be rewritten"
     }
   ]
 }

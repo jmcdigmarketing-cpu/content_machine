@@ -766,3 +766,19 @@ entry. More than one voice needs ElevenLabs and ffmpeg; a local voice or a faile
 one voice, and the characters already spent are recorded (#657). A multi-voice render is
 never Piper-mixed. Rewrites after the script (hook, grounding) can blur debate turns; the
 render re-attaches them by sentence overlap, and an unmatched sentence keeps the last speaker.
+
+## 37. History is re-filled through one registry, dry run first; learned terms need a signal (2026-09-27)
+**Decision:** (1) Every derived field history can be re-filled with is an entry in
+`analytics/backfills.py` with a version and a stale rule; `ops backfill` writes nothing without
+`--apply`, and recomputes only stale rows. Features are re-filled only when missing, never
+because `FEATURE_VERSION` moved: a rebuild from the stored script has no research brief and
+would overwrite real fields with blanks. (2) A game name is learned only from a run whose words
+read neutral and whose topic-matched gaming signal made it gaming, and never from runs before
+#866's stored `domains`. (3) Speaking pace is a setting (0.95 default), applied to every voice;
+the voice's saved ElevenLabs settings are kept. (4) The contrast frame is a pattern, not a
+phrase list; a rewrite of it may not add a name or a number.
+**Why:** four backfill verbs had three defaults and a stale rule that let a v4 row pass under
+v5; the franchise list missed "Silksong"; the operator asked for a slower voice and for the
+"not just X" giveaway to go.
+**Consequence:** fact-fit (#849) cannot be backfilled - traces keep no fact text - so it has no
+registry entry and collects forward. Clips cached at the old pace miss once.

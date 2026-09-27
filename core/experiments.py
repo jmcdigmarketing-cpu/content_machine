@@ -152,7 +152,7 @@ def next_arm(channel_id: str, kind: str | None = None) -> tuple[str, str, str] |
     arms = experiment_levers.arms(lever)
     if not arms:
         return None
-    counts = {arm: 0 for arm in arms}
+    counts = dict.fromkeys(arms, 0)
     for a in _assignments(channel_id, lever):
         if a.get("arm") in counts:
             counts[a["arm"]] += 1
@@ -227,7 +227,7 @@ def experiment_report(channel_id: str) -> dict[str, Any]:
         return {"active": None}
     lever = str(active["lever"])
     assigned = _assignments(channel_id, lever)
-    counts: dict[str, int] = {arm: 0 for arm in experiment_levers.arms(lever)}
+    counts: dict[str, int] = dict.fromkeys(experiment_levers.arms(lever), 0)
     for a in assigned:
         if a.get("arm") in counts:
             counts[a["arm"]] += 1

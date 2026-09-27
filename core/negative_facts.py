@@ -13,7 +13,25 @@ from config.paths import DATA_DIR
 STORE_PATH = Path(DATA_DIR) / "negative_facts.json"
 _TOKEN = re.compile(r"[a-z0-9]+", re.I)
 _STOP = FUNCTION_WORDS | frozenset(
-    "a an the for of to in on at as by with from is was are were".split()
+    [
+        "a",
+        "an",
+        "the",
+        "for",
+        "of",
+        "to",
+        "in",
+        "on",
+        "at",
+        "as",
+        "by",
+        "with",
+        "from",
+        "is",
+        "was",
+        "are",
+        "were",
+    ]
 )
 
 

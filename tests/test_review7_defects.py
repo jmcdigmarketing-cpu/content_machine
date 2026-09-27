@@ -137,7 +137,7 @@ class TestAutoCaptionPlacementIsGated(unittest.TestCase):
 
         words = [
             {"word": w, "start": i * 0.4, "end": i * 0.4 + 0.35}
-            for i, w in enumerate("Jones beat Pereira at UFC three twenty".split())
+            for i, w in enumerate(["Jones", "beat", "Pereira", "at", "UFC", "three", "twenty"])
         ]
         with tempfile.TemporaryDirectory() as tmp:
             mp3 = os.path.join(tmp, "vo.mp3")

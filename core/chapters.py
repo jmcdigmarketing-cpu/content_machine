@@ -18,8 +18,49 @@ _CHAPTER_LINE_RE = re.compile(r"^\d{1,2}:\d{2}(?::\d{2})?\s+\S")
 _CLAUSE_SPLIT_RE = re.compile(r"\s*[,;:]\s+|\s+[-–—]\s+")
 # Words a chapter title cannot end on - run 77: "The only reason we know anything is".
 _LABEL_TAIL = frozenset(
-    """a an and are as at be but by for from if in into is it its not of on or our so than
-    that the their then this to was we were what when which who will with you your""".split()
+    [
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "but",
+        "by",
+        "for",
+        "from",
+        "if",
+        "in",
+        "into",
+        "is",
+        "it",
+        "its",
+        "not",
+        "of",
+        "on",
+        "or",
+        "our",
+        "so",
+        "than",
+        "that",
+        "the",
+        "their",
+        "then",
+        "this",
+        "to",
+        "was",
+        "we",
+        "were",
+        "what",
+        "when",
+        "which",
+        "who",
+        "will",
+        "with",
+        "you",
+        "your",
+    ]
 )
 
 

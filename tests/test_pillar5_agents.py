@@ -18,7 +18,7 @@ def _run(run_id, auth=85):
 class TestChannelHealth(unittest.TestCase):
     def test_healthy_channel_reads_green(self):
         econ = MagicMock(videos=[1, 2, 3], total_cost=0.12, total_margin=None)  # $0.04/video
-        rates = {i: 0.35 for i in range(1, 9)}
+        rates = dict.fromkeys(range(1, 9), 0.35)
         runs = [_run(i, auth=85) for i in range(1, 6)]
         with (
             patch("core.engagement_predictor.run_engagement_map", return_value=rates),

@@ -66,7 +66,7 @@ class WritableSnippetTests(unittest.TestCase):
         from publishing.snippet_update import fetch_snippets
 
         ids = [f"v{i}" for i in range(120)]
-        service = _service({i: LIVE for i in ids})
+        service = _service(dict.fromkeys(ids, LIVE))
         got = fetch_snippets(service, ids)
         self.assertEqual(len(got), 120)
         self.assertEqual(service.videos.return_value.list.call_count, 3)

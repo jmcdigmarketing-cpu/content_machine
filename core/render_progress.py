@@ -64,7 +64,7 @@ def _inject_progress_args(cmd: list[str]) -> list[str]:
     if "-progress" in cmd:
         return cmd
     out = cmd[-1]
-    return cmd[:-1] + ["-progress", "pipe:1", "-nostats", out]
+    return [*cmd[:-1], "-progress", "pipe:1", "-nostats", out]
 
 
 def _drain_stderr(proc: subprocess.Popen, bucket: list[str]) -> None:

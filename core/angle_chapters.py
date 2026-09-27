@@ -29,10 +29,62 @@ _TITLE_LIMIT = 100
 _DISTANCE_WEIGHT = 2.0
 _WINDOW_SHARE = 0.5  # #773: a chapter pick stays within half a share of its even-split target
 _KEY_STOP = FUNCTION_WORDS | frozenset(
-    """about after also been being between both could does each even from have into just
-    like made make many more most much must only other over same should since some such
-    than that their them then there these they this those through very what when where
-    which while will with would your angle take""".split()
+    [
+        "about",
+        "after",
+        "also",
+        "been",
+        "being",
+        "between",
+        "both",
+        "could",
+        "does",
+        "each",
+        "even",
+        "from",
+        "have",
+        "into",
+        "just",
+        "like",
+        "made",
+        "make",
+        "many",
+        "more",
+        "most",
+        "much",
+        "must",
+        "only",
+        "other",
+        "over",
+        "same",
+        "should",
+        "since",
+        "some",
+        "such",
+        "than",
+        "that",
+        "their",
+        "them",
+        "then",
+        "there",
+        "these",
+        "they",
+        "this",
+        "those",
+        "through",
+        "very",
+        "what",
+        "when",
+        "where",
+        "which",
+        "while",
+        "will",
+        "with",
+        "would",
+        "your",
+        "angle",
+        "take",
+    ]
 )
 
 

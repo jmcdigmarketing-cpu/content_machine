@@ -130,7 +130,7 @@ def n_for_significance(r: float | None, *, t: float = 1.96) -> int | None:
         return 3
     import math
 
-    return int(math.ceil(2 + (t * t) * (1 - r * r) / (r * r)))
+    return math.ceil(2 + (t * t) * (1 - r * r) / (r * r))
 
 
 def _recorded_components(quality: dict) -> dict[str, float]:

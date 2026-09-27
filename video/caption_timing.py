@@ -145,7 +145,7 @@ def _srt_ts(seconds: float) -> str:
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
     s = int(seconds % 60)
-    ms = int(round((seconds - int(seconds)) * 1000))
+    ms = round((seconds - int(seconds)) * 1000)
     if ms == 1000:
         ms, s = 0, s + 1
     return f"{h:02}:{m:02}:{s:02},{ms:03}"
@@ -276,7 +276,7 @@ def build_ass_karaoke(
         for w in line:
             ws = float(w["start"] or start)
             we = float(w["end"] or ws)
-            dur_cs = max(1, int(round((we - ws) * 100)))
+            dur_cs = max(1, round((we - ws) * 100))
             text = (w["word"] or "").replace("{", "(").replace("}", ")")
             parts.append(f"{{\\k{dur_cs}}}{text}")
         style = "Title" if paired and index == 0 else ("Body" if paired else "Default")

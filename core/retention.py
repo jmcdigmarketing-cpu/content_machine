@@ -110,8 +110,8 @@ def pacing_hint(channel_id: str | None) -> str:
         return ""
     if pos is None:
         return ""
-    pct = int(round(pos * 100))
-    floor = int(round(_retained_floor() * 100))
+    pct = round(pos * 100)
+    floor = round(_retained_floor() * 100)
     return (
         f"RETENTION DATA: on this channel the average viewer has dropped below "
         f"{floor}% retention by roughly {pct}% of the way in. Front-load the payoff "
@@ -131,7 +131,7 @@ def display_retention(channel_id: str, *, print_fn=print) -> None:
     pos = drop_off_ratio(channel_id)
     print_fn("\n  📉 Audience retention (channel average):")
     for p, r in avg[::4]:  # every 20%
-        bar = "█" * int(round(r * 20))
+        bar = "█" * round(r * 20)
         print_fn(f"    {int(p * 100):3d}%  {bar:<20} {r:.0%}")
     if pos is not None:
         print_fn(

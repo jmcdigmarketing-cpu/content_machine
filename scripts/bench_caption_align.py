@@ -74,7 +74,7 @@ def _percentile(values: list[float], pct: float) -> float:
     if not values:
         return 0.0
     ordered = sorted(values)
-    idx = min(len(ordered) - 1, max(0, int(round((pct / 100.0) * (len(ordered) - 1)))))
+    idx = min(len(ordered) - 1, max(0, round((pct / 100.0) * (len(ordered) - 1))))
     return ordered[idx]
 
 

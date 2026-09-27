@@ -413,7 +413,7 @@ def evaluate_authenticity(
         _substance_check(script, fact_count),
     ]
     gate_score = sum(c.weight for c in checks if c.passed)
-    score = int(round(sum(c.points for c in checks)))
+    score = round(sum(c.points for c in checks))
 
     if gate_score >= 75:
         verdict = "ok"

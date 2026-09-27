@@ -244,7 +244,7 @@ def semantic_bar_html(overlap: Any) -> str:
         val = float(overlap or 0)
     except (TypeError, ValueError):
         return ""
-    pct = max(0, min(100, int(round(val * 100))))
+    pct = max(0, min(100, round(val * 100)))
     warn = pct >= 45
     cls = "fail" if warn else "ok"
     return (

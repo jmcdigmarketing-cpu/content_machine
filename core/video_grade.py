@@ -193,7 +193,7 @@ def grade_from_parts(
     if auth is not None:
         auth_note = str(quality.get("authenticity_verdict", ""))
         gate = quality.get("authenticity_gate_score")
-        if gate is not None and int(gate) != int(round(float(auth))):
+        if gate is not None and int(gate) != round(float(auth)):
             extra = f"gate {int(gate)}"
             auth_note = f"{auth_note}; {extra}" if auth_note else extra
         raw.append(

@@ -37,7 +37,7 @@ def format_timestamp(seconds: float) -> str:
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     secs = int(seconds % 60)
-    millis = int(round((seconds - int(seconds)) * 1000))
+    millis = round((seconds - int(seconds)) * 1000)
     if millis == 1000:  # rounding spillover
         millis = 0
         secs += 1

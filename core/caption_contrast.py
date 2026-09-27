@@ -90,9 +90,9 @@ def inspect_caption_band(
         crop = rgb.crop((0, y0, width, height))
         stats = ImageStat.Stat(crop)
         band_rgb = (
-            int(round(stats.mean[0])),
-            int(round(stats.mean[1])),
-            int(round(stats.mean[2])),
+            round(stats.mean[0]),
+            round(stats.mean[1]),
+            round(stats.mean[2]),
         )
     ratio = round(contrast_ratio(fill, band_rgb), 2)
     passed = ratio >= AA_RATIO

@@ -22,7 +22,7 @@ def apply_review_key(
     pos = max(0, min(int(position_ms), int(duration_ms)))
     dur = max(0, int(duration_ms))
     holding = bool(paused)
-    frame_ms = max(1, int(round(1000.0 / float(fps or 30.0))))
+    frame_ms = max(1, round(1000.0 / float(fps or 30.0)))
     if token == "j":
         pos = max(0, pos - int(step_ms))
     elif token == "l":

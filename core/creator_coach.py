@@ -122,7 +122,7 @@ def render_coach(data: dict[str, Any]) -> str:
         lines.append(f"  Titles : lean on proven patterns — {tags}")
 
     if data.get("retention_dropoff") is not None:
-        pct = int(round(float(data["retention_dropoff"]) * 100))
+        pct = round(float(data["retention_dropoff"]) * 100)
         lines.append(f"  Pacing : viewers drop off ~{pct}% in — land the payoff before that.")
 
     cad = data.get("cadence")

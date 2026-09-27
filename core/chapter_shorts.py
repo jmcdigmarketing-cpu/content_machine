@@ -140,7 +140,7 @@ def _short_description(span: ChapterSpan, channel_id: str, parent_title: str) ->
 
 
 def _clock(seconds: float) -> str:
-    minutes, secs = divmod(int(round(max(0.0, seconds))), 60)
+    minutes, secs = divmod(round(max(0.0, seconds)), 60)
     return f"{minutes}:{secs:02d}"
 
 

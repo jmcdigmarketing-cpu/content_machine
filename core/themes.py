@@ -342,7 +342,7 @@ def meter(used: float, cap: float, *, width: int = 10) -> str:
     filled_char, empty_char = active_theme().meter_chars
     if not _unicode_ok():
         filled_char, empty_char = "#", "."
-    filled = min(width, int(round(width * min(used_f / cap_f, 1.0))))
+    filled = min(width, round(width * min(used_f / cap_f, 1.0)))
     bar = filled_char * filled + empty_char * (width - filled)
     if float(used_f).is_integer() and float(cap_f).is_integer():
         return f"{bar} {int(used_f)}/{int(cap_f)}"

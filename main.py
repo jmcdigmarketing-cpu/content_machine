@@ -883,6 +883,23 @@ def _run_new_video_flow_body(
                 print("\n  Stopped before TTS (thin facts). Draft is saved.")
                 return
 
+        # #895: enough facts, but none of them names the event - the script guessed it.
+        from core.event_coverage import abort_reason as event_abort_reason
+
+        event_reason = event_abort_reason(result.features)
+        if event_reason:
+            print(f"\n  ! {event_reason}")
+            if not ask_confirm(
+                "  Facts don't cover it - render anyway and pay TTS? [y/N]: ", default=False
+            ):
+                display_summary(
+                    timings=discovery.timings,
+                    title=result.title,
+                    cost=result.features.get("cost"),
+                )
+                print("\n  Stopped before TTS (event not in facts). Draft is saved.")
+                return
+
         from core.tts_char_cap import tts_char_cap_reason, tts_char_cap_warn
 
         cap_reason = tts_char_cap_reason(result.script, length_choice=length_choice)

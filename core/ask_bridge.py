@@ -17,6 +17,7 @@ from core.ask import Backend
 AUTH_PROMPT = "  Authenticity gate flagged this video. Render anyway? [y/N]: "
 GROUND_PROMPT = "  Grounding gate flagged unsupported claims. Render anyway? [y/N]: "
 THIN_PROMPT = "  Thin facts — render anyway and pay TTS? [y/N]: "
+EVENT_PROMPT = "  Facts don't cover it - render anyway and pay TTS? [y/N]: "
 OVER_PROMPT = "  Over length for TTS — render anyway? [y/N]: "
 METRICS_PROMPT = "  Start the next video anyway? [y/N]: "
 PROCEED_PROMPT = "  Proceed? [y = render / + longer / - shorter / 1-4 length / N = stop]: "
@@ -27,6 +28,7 @@ _GATE_PROMPTS = {
     AUTH_PROMPT: "authenticity",
     GROUND_PROMPT: "grounding",
     THIN_PROMPT: "thin_facts",
+    EVENT_PROMPT: "event_coverage",
     OVER_PROMPT: "over_length",
     METRICS_PROMPT: "metrics",
 }

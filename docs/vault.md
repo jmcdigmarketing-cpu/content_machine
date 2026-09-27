@@ -1,6 +1,6 @@
 # Obsidian vault
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-27
 
 The one place that says how Content Machine uses an Obsidian vault: where it reads facts
 from, what it writes back, and which files are safe to edit by hand. Everything here is a
@@ -23,7 +23,8 @@ Everything a channel owns lives under `<vault>/<channel>/`.
 | Path | Written by | Read back as facts? | Hand-edit? |
 |---|---|---|---|
 | `_operator_facts/<date>_<slug>.md` | the key-facts prompt: lines you **typed** (`tier: operator`) | yes, top tier | yes |
-| `_link_facts/<date>_<slug>.md` | the key-facts prompt: lines scraped from a **pasted URL** (`tier: link`, since 2026-09-26) | yes, below operator | yes |
+| `_link_facts/<date>_<slug>.md` | the key-facts prompt: lines scraped from a **pasted URL** (`tier: link`, since 2026-09-26); old scraped notes moved here by `ops vault-retier --apply` (stamped `retiered:`) | yes, below operator | yes |
+| `_link_facts/<date>_<slug>-auto-research.md` | auto-research, only with `AUTO_RESEARCH_SAVE=true` (`tier: link`, pages read in `pages:`) | yes, below operator | yes |
 | `_ingest/<date>_<slug>.md` | `py -m scripts.ops ingest <url/pdf/youtube>` (`tier: link`, `source:` url) | yes | yes |
 | `_sources.md` | pasted-link titles and web-search result URLs, append-only | yes, link tier | append only |
 | `_strategy.md` | you | playbook guidance, never facts | yes |
@@ -64,14 +65,17 @@ Only lines typed this run are pinned ahead of everything else in the prompt.
    Popularity data (Twitch, Trends, Wikipedia pageviews, autocomplete) is excluded from that
    evidence since run 98.
 4. **Confident** bullets attach automatically (`VAULT_FACTS_AUTO=true`); **uncertain** ones are
-   listed with their reasons and you choose (`Enter=all / n=none / 2,5`).
+   listed with their reasons and you opt in (`Enter=none / a=all / 2,5`, #878). With
+   `VAULT_FACTS_AUTO=false` every match is listed and Enter takes the confident ones
+   (`Enter=confident / a=all / n=none / 1 3`, #887).
 5. Selection ranks everything against the budget (`MAX_OPERATOR_KEY_FACTS`,
    `OPERATOR_KEY_FACT_CHAR_BUDGET`); what did not fit is still saved.
 6. New typed lines go to `_operator_facts/`, new link lines to `_link_facts/` - never the
    borrowed vault lines, which would re-title another topic's facts as this one's.
 
 Auto-research (decisions §35) adds web-search result pages read for the angle as **web**-tier
-lines in the prompt; they are never written to the vault (#862 would add an opt-in).
+lines in the prompt. They reach the vault only with `AUTO_RESEARCH_SAVE=true` (#862), and then
+as link tier in their own `-auto-research` note, so they never replace a pasted-link note.
 
 Settings: `VAULT_RELEVANCE_MODE` (`scored` default), `VAULT_RELEVANCE_TIEBREAK` (optional LLM
 tiebreak, off), `LINK_FACT_MAX_LINES`, `LINK_READER_PROXY`.
@@ -83,6 +87,7 @@ tiebreak, off), `LINK_FACT_MAX_LINES`, `LINK_READER_PROXY`.
 | `py -m scripts.ops vault-sync` | writes `_machine-beliefs.md` and refreshes run dossiers |
 | `py -m scripts.ops vault-eval` | subject-relevance precision/recall on the holdout set |
 | `py -m scripts.ops vault-decay` | lists notes whose `expires:` date has passed |
+| `py -m scripts.ops vault-retier` | lists `_operator_facts/` notes holding scraped page lines (`Source:` lines, page boilerplate); `--apply` moves each whole note to `_link_facts/` at link tier and never overwrites (#857) |
 | `py -m scripts.ops ingest <url>` | saves a URL, PDF or YouTube link as an `_ingest/` note |
 | `py -m scripts.ops dossier --run-id N` | one run end to end |
 | `py -m scripts.ops digest` | this week's three decisions, written to `_reports/` |
@@ -97,7 +102,6 @@ tiebreak, off), `LINK_FACT_MAX_LINES`, `LINK_READER_PROXY`.
 
 ## Open
 
-Backlog items that touch the vault: #857 re-tier old link-derived notes, #848 auto-research
-(would add web-tier lines, never operator), #555 vault deduplication, #216 dossier reader,
+Backlog items that touch the vault: #555 vault deduplication, #216 dossier reader,
 #834 a `core/vault/` sub-package, #156 Vault Companion. The desktop "facts room" proposal is in
 [desktop_app.md](desktop_app.md).

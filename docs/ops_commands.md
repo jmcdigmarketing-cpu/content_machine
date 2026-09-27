@@ -146,6 +146,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `validate` | Validate config/channels.json |
 | `vault-decay` | List vault notes whose expires date is in the past |
 | `vault-eval` | Vault subject-relevance evals: precision/recall, or compare last two |
+| `vault-retier` | List _operator_facts notes holding scraped page lines; --apply moves them to link tier (#857) |
 | `vault-sync` | Write machine beliefs + run dossiers into the Obsidian vault |
 | `voices` | List TTS voices — ElevenLabs account + local Piper — and what each channel uses |
 | `weekly-report` | Rules-based weekly intelligence (winners/losers by feature) |

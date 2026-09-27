@@ -536,6 +536,8 @@ def capture_facts_to_vault(
     *,
     today: date | None = None,
     tier: str = "operator",
+    origin: str = "",
+    sources: list[str] | None = None,
 ) -> str | None:
     """Persist a fact set to Obsidian (all lines, no cap).
 
@@ -543,6 +545,10 @@ def capture_facts_to_vault(
     as `tier: link`. Until run 98 they were saved as operator facts, so page
     boilerplate and off-topic paragraphs came back in later runs pinned like lines
     the operator typed.
+
+    `origin` names a writer other than the operator's prompt ("auto-research", #862):
+    it suffixes the file name, so it never replaces that day's pasted-link note for
+    the same topic, and it is named in `source:`. `sources` lists the pages read.
     """
     from config.channels import resolve_channel_id
     from core.obsidian_facts import _vault_path
@@ -555,10 +561,14 @@ def capture_facts_to_vault(
     slug = re.sub(r"[^a-z0-9]+", "-", (topic or "run").lower()).strip("-")[:60] or "run"
     link = tier == "link"
     folder = "_link_facts" if link else "_operator_facts"
-    path = vault / channel_id / folder / f"{day}_{slug}.md"
+    suffix = re.sub(r"[^a-z0-9]+", "-", origin.lower()).strip("-")
+    path = vault / channel_id / folder / f"{day}_{slug}{'-' + suffix if suffix else ''}.md"
+    what = origin or ("pasted-link facts" if link else "operator key facts")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         body = "\n".join(f"- {f}" for f in facts if f.strip())
+        # Frontmatter, not bullets: every bullet in a note is a fact candidate.
+        pages = " ".join(u.strip() for u in (sources or []) if u.strip())
         header = (
             "---\n"
             f"channel: {channel_id}\n"
@@ -567,8 +577,9 @@ def capture_facts_to_vault(
             f"date: {day}\n"
             f"tier: {'link' if link else 'operator'}\n"
             f"verified_at: {day}\n"
-            f"source: content-machine ({'pasted-link facts' if link else 'operator key facts'})\n"
-            "---\n\n"
+            f"source: content-machine ({what})\n"
+            + (f"pages: {pages}\n" if pages else "")
+            + "---\n\n"
             f"# {'Link' if link else 'Operator'} facts — {topic[:80]}\n\n"
         )
         path.write_text(header + body + "\n", encoding="utf-8", newline="\n")

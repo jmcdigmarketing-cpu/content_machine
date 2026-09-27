@@ -52,6 +52,8 @@ TARGETS: tuple[tuple[str, str], ...] = (
     ("core.spaced_queue", "_override_held"),
     ("core.cadence", "target_line"),
     ("core.thin_facts", "thin_facts_abort_reason"),
+    ("core.event_coverage", "covered"),
+    ("core.event_coverage", "abort_reason"),
 )
 
 _FLIPS: dict[type, type] = {

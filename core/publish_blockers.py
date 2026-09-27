@@ -125,6 +125,15 @@ def blocking_publish_reasons(
         logger.debug("thin-facts blocker skipped: %s", exc)
 
     try:
+        from core.event_coverage import abort_reason as event_abort_reason
+
+        why = event_abort_reason(features)
+        if why:
+            out.append(why)
+    except Exception as exc:
+        logger.debug("event-coverage blocker skipped: %s", exc)
+
+    try:
         # #734: no run data is not an F. Grading an empty dict made `ops blocking`
         # report "report card F" for every channel.
         if quality:

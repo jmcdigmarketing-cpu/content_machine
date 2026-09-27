@@ -37,6 +37,7 @@ _GATE_LABELS = {
     "authenticity": "Authenticity gate",
     "grounding": "Grounding gate",
     "thin_facts": "Thin facts",
+    "event_coverage": "Event not in facts",
     "over_length": "Over length for TTS",
     "metrics": "Metrics gate",
 }

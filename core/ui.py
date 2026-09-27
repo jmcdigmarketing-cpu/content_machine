@@ -1,6 +1,7 @@
 """CLI presentation helpers."""
 
 import os
+import re
 import sys
 import threading
 import time
@@ -230,6 +231,33 @@ _DOMAIN_ART: dict[str, str] = {
     │    ╲╱   │
     └─────────┘
       MARKETS """,
+    # #898: the four domains that printed nothing.
+    "soccer": """\
+  ╔══════════════╗
+  ║ ╳ ╳ ╳ ╳ ╳ ╳  ║
+  ║ ╳ ╳ ╳ ╳ ╳ ╳  ║
+  ╨      ●       ╨
+  ────────────────
+     MATCHDAY""",
+    "popculture": """\
+   ╱╲╱╲╱╲╱╲╱╲╱╲
+  ┌────────────┐
+  │ SCENE   01 │
+  │ TAKE    03 │
+  └────────────┘
+   NOW SHOWING""",
+    "anime": """\
+    *   .   *   .
+      ( ^ _ ^ )
+     ═╦═══════╦═
+    ≡≡≡≡≡≡≡≡≡≡≡≡≡
+    NEXT EPISODE""",
+    "music": """\
+    ♪    ♫     ♪
+  │ ▅ │ ▇ │ ▃ │ ▆ │
+  │ █ │ █ │ █ │ █ │
+  └───┴───┴───┴───┘
+     ON REPEAT""",
 }
 
 
@@ -247,19 +275,64 @@ def _load_art(filename: str) -> str:
 # Keyed by a tuple of trigger keywords -> (art, accent color).
 _SUPER_MARIO_GALAXY = _load_art("mario_ascii.txt")
 
+# #898: the franchises the channels actually cover.
+_GTA_ART = """\
+     \\  |  /        ,
+   ──  (   )  ──    /|
+   ▄█▄  ▄▄▄   ▄█▄  ▄▄▄
+   ███▄█████▄▄███▄████
+     GRAND THEFT AUTO"""
+
+_MARVEL_RIVALS_ART = """\
+      .-\"\"\"\"\"-.
+     / .-----. \\
+    | (   ★   ) |
+     \\ '-----' /
+      '-.....-'
+    MARVEL  RIVALS"""
+
+_MADDEN_ART = """\
+    |           |
+    |___________|
+          |
+          |
+    ══════╧══════
+     4TH  &  GOAL"""
+
+_NBA_2K_ART = """\
+    ┌───────────┐
+    │   ┌───┐   │
+    └───┴─┬─┴───┘
+       \\ ||| /
+        \\|||/
+       MY  CAREER"""
+
+_UFC_5_ART = """\
+     ___________
+    /  UFC   5  \\
+   |  ◁ ●   ▷ ●  |
+    \\___________/
+     FIGHT  NIGHT"""
+
 _FRANCHISE_ART: list[tuple[tuple[str, ...], str, str]] = [
     (
         ("super mario galaxy", "mario galaxy", "mario", "galaxy", "nintendo", "luma"),
         _SUPER_MARIO_GALAXY,
         "\033[33m",  # yellow — star bits
     ),
+    (("gta", "grand theft auto", "rockstar"), _GTA_ART, "\033[35m"),  # magenta — Vice City
+    (("marvel rivals",), _MARVEL_RIVALS_ART, "\033[31m"),  # red
+    (("madden",), _MADDEN_ART, "\033[32m"),  # green — the field
+    (("nba 2k", "2k25", "2k26", "2k27"), _NBA_2K_ART, "\033[34m"),  # blue
+    (("ufc 5",), _UFC_5_ART, "\033[91m"),  # bright red
 ]
 
 
 def _franchise_art_for(topic: str) -> tuple[str, str] | None:
+    """Whole-word match: "ufc 5" is not "UFC 500", "madden" is not "maddening" (#898)."""
     t = (topic or "").lower()
     for keywords, art, color in _FRANCHISE_ART:
-        if any(k in t for k in keywords):
+        if art and any(re.search(rf"\b{re.escape(k)}\b", t) for k in keywords):
             return art, color
     return None
 
@@ -943,6 +1016,25 @@ def parse_uncertain_choice(choice: str) -> str | list[int]:
     return picked or "none"
 
 
+def parse_vault_review_choice(choice: str) -> str | list[int]:
+    """The review-prompt answer: "confident", "all", "none" or the numbers picked.
+
+    #887: with `VAULT_FACTS_AUTO=false`, Enter took every listed match, uncertain lines
+    included - the ones #878 made opt-in on the automatic path. Enter now takes the
+    confident lines, so both paths attach the same thing when the operator just
+    presses Enter.
+    """
+    text = str(choice or "").strip().lower()
+    if text in ("", "y", "yes"):
+        return "confident"
+    if text in ("a", "all"):
+        return "all"
+    if text in ("n", "no", "none"):
+        return "none"
+    picked = [int(tok) for tok in text.replace(",", " ").split() if tok.isdigit()]
+    return picked or "none"
+
+
 def prompt_key_facts_result(
     topic: str,
     channel_id: str = "default",
@@ -1256,19 +1348,19 @@ def prompt_key_facts_result(
         print_fn(f"  From your Obsidian vault ({len(suggestions)} topic-relevant match(es)):")
         for index, record in enumerate(records, 1):
             print_fn(_record_line(index, record))
-        choice = input_fn("  Use these? [Enter=all / n=none / e.g. '1 3'=pick]: ").strip().lower()
-        if choice in ("", "y", "yes", "all"):
+        review_pick = parse_vault_review_choice(
+            input_fn("  Use these? [Enter=confident / a=all / n=none / e.g. '1 3'=pick]: ")
+        )
+        if review_pick == "confident":
+            selected_records = list(confident_records)
+        elif review_pick == "all":
             selected_records = [record for record in records if not _is_inspect_reject(record)]
-        elif choice not in ("n", "no", "none"):
-            picked = {
-                int(tok)
-                for tok in choice.replace(",", " ").split()
-                if tok.isdigit() and 1 <= int(tok) <= len(records)
-            }
+        elif isinstance(review_pick, list):
+            wanted = {n for n in review_pick if 1 <= n <= len(records)}
             selected_records = [
                 record
                 for index, record in enumerate(records, 1)
-                if index in picked and not _is_inspect_reject(record)
+                if index in wanted and not _is_inspect_reject(record)
             ]
         selected_claims = {record.claim for record in selected_records}
         overrides.update(

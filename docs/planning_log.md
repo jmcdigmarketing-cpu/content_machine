@@ -17,6 +17,82 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-27 (Claude Code) - wave 43: the recency guard, old scraped notes, saved research, one Enter default, more art
+
+**Prompt (verbatim):** "next 5 and commit and push, give me some infor on where we are in the
+project. 887? do we have any fixes lined up for theselisted below, what is the plan? then any
+more ui or ascii art? progress on the app, done?" - followed by `assessment.md`'s June
+"Weaknesses (evidence)" list, pasted whole (recency, API fragility, relevance noise, visuals,
+volume-starved learning).
+
+**Operator's answers (asked in plan mode):** #887 - Enter takes the confident lines. #834 gives
+its slot to the recency guard (weakness 1). Art - the domains with none, and franchise art.
+
+### Why the list differs
+
+The recommendation was #857 · #862 · #825 · #834 · #887. #834 (`core/` seams, `[L]`, invisible
+to the operator) moved to the next list so weakness 1 - the one the assessment calls "the #1
+content risk" and the one with no guard at all - could ship now. The art (#898) was asked for.
+
+### Findings, with file:line
+
+- **#887's premise was wrong.** The backlog said the review path's lines were "relevance-screened,
+  unlike #878's". `core/ui.py` (review branch) built `selected_records` from every record except
+  inspect-rejects, so Enter took the uncertain lines too - exactly what #878 made opt-in on the
+  automatic path.
+- **Weakness 1 had no guard.** `core/thin_facts.py` counts fact lines; three generic UFC headlines
+  are three lines. Nothing asked whether any line named the event the topic names.
+- **A second note would have replaced the first.** `capture_facts_to_vault` names notes
+  `{day}_{slug}.md`, so an auto-research note for the same topic on the same day would have
+  overwritten the operator's pasted-link note (#862 - suffixed `-auto-research`).
+- **Bullets are facts.** The first draft listed the pages read as `- <url>` bullets; every bullet
+  in a vault note is a fact candidate, so the URLs would have come back as "facts". Moved to a
+  `pages:` frontmatter line.
+- **Weakness 3 is still live in two signals** (filed, not fixed): `apis/sports_data_api.py:22`
+  `_team_search_term` falls back to the first capitalised word and `core/signal_facts.py:119`
+  files whatever teams come back (#896); `apis/odds_api.py:18` never reads the topic and scores
+  50 whenever the API answers (#897).
+- `core/ui.py` `_franchise_art_for` matched by substring; with "ufc 5" as a keyword, "UFC 500"
+  would have drawn the game (#898 - whole words).
+
+### Shipped
+
+1. **#825** closed - the `--force` chain proved for all three verbs (ops argv -> child parser ->
+   `force=True`).
+2. **#887** - `parse_vault_review_choice`: Enter/y confident, `a` all, `n` none, numbers pick.
+3. **#898** - soccer, popculture, anime, music panels; GTA, Marvel Rivals, Madden, NBA 2K, UFC 5.
+4. **#862** - `AUTO_RESEARCH_SAVE` (off) -> `_link_facts/…-auto-research.md`, link tier.
+5. **#857** - `ops vault-retier`, dry run unless `--apply`; whole notes, never overwrites.
+6. **#895** - `core/event_coverage.py`: the entity name every signal searched for must appear in
+   one verified line or key fact (numbers exact, most words, roman numerals and initials count).
+   Uncovered: an EVENT NOT IN FACTS prompt note, a y/N stop before TTS in `main.py`
+   (`EVENT_COVERAGE_GATE`), an `ops blocking` reason, a desktop gate label, selftest gate nine.
+   **The prompt changes only when the guard fires**; a covered run's prompt is byte-identical
+   (tested).
+
+### Not done, deliberately
+
+- #834 - next list. #896 / #897 - filed with their line numbers; next list.
+- The stop does not run in unattended renders beyond `blocking_publish_reasons`; overnight stays
+  render-free, so nothing unattended pays TTS on an uncovered event today.
+- No `decisions.md` entry: it sits at its 800-line ceiling and nothing here overrides a decision.
+
+### Audit
+
+56 new tests in six modules (`test_ops_force_flag` +4, `test_vault_prompt_default`,
+`test_domain_art`, `test_auto_research_save`, `test_vault_retier`, `test_event_coverage`).
+**39 observed failing before their fix.** 9 more were shown red by breaking the code they guard:
+#825's four (each link broken in turn), the URL-bullet test, #895's two engine-wiring tests
+(unwired) and the two written for mutants `ops mutate-gates` found alive (`covered`: an empty name,
+and `and -> or` on "number present, name absent"). Mutation on the new gate: **15/15 killed**.
+8 are guards that pass by design (Enter-n, number picks, art-off, whole-word negatives, Mario,
+off-by-default, the unchanged writer). Two corpus cases (**49 of 49**). mypy **123**, unchanged.
+Every new symbol has a production caller. Live: `ops selftest` 9/9; `ops vault-retier` dry run
+then `--apply` on a temp vault; every art panel printed.
+
+Suite **3,841 -> 3,897**, the same 8 environmental failures, hygiene clean. Backlog **271
+numbered open**. Next five: **#896 · #897 · #854 · #352 · #834**.
+
 ## 2026-09-27 (Claude Code) - wave 42: Claude defaults, headline domains, one verb name, the audit builds, mypy everywhere
 
 **Prompt (verbatim):** "next 5".

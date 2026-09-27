@@ -53,25 +53,28 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-27 · **HEAD at write:** `7c46a6d` + wave 42's commit on `main` (`git log -2`)
+**Written:** 2026-09-27 · **HEAD at write:** `88773cd` + wave 43's commit on `main` (`git log -2`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** mypy now checks every shipped package; the baseline is **123** - fix a
-new error rather than raise it. `ops preview-render` is `ops reback-short`. `decisions.md` sits
-at the 800-line ceiling: the next decision needs a split (docs_standard §7). ruff is 0.15.8.
-`ops test` fails when a run writes `data/` or `output/`. `py -m scripts.ops regressions <file>`
-(47 cases).
+**Read before editing:** a new stop sits after thin facts in `main.py` - `core/event_coverage`
+(#895, `EVENT_COVERAGE_GATE`); its prompt note is `EVENT NOT IN FACTS`, and a covered run's
+prompt is byte-identical. `ops selftest` has 9 gates; `scripts/mutate_gates.py` covers the new
+one. mypy baseline **123**. `decisions.md` is at its 800-line ceiling - split it before the next
+decision. `py -m scripts.ops regressions <file>` (49 cases).
 
 **Defects first:**
-- **Claude Sonnet 5 is untested on a real script here** (no key): if the operator routes a tier to
-  Anthropic, one run first. Their `.env` may still carry `ANTHROPIC_MODEL=` - it pins every tier.
-- **Nothing was heard:** the 0.95 pace and the debate/quotes voices wait on the operator (#889).
-- `docs/strategy_h2_2026.md:117` still says the default is Sonnet 4 (a dated strategy doc; left).
+- **The recency guard has never met a live run.** Its false-stop risk is a fact that names the
+  event another way than the topic does (a nickname, a sponsor name). The y/N lets the operator
+  through; say so if it stops a run it should not.
+- **Weakness 3 is still live in two signals:** #896 (sports team not in the topic), #897 (odds
+  never reads the topic). Filed with line numbers, not fixed.
+- Carried: Sonnet 5 untested on a real script (no key); nothing heard of the 0.95 pace or the
+  debate/quotes voices (#889).
 
-**Shipped:** #853 · #851 · #868 · #894 · #833.
+**Shipped:** #895 · #857 · #862 · #887 · #825 · #898.
 
-Suite **3,841**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
-mypy **123**; backlog **273 numbered open**. Next five: **#857 · #862 · #825 · #834 · #887**.
+Suite **3,897**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
+mypy **123**; backlog **271 numbered open**. Next five: **#896 · #897 · #854 · #352 · #834**.
 
 ## Slot — Cursor
 

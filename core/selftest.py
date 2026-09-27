@@ -102,6 +102,13 @@ def _thin(fact_count: int, support: float) -> bool:
     )
 
 
+def _event_uncovered(fact_line: str) -> bool:
+    from core.event_coverage import abort_reason, coverage
+
+    found = coverage("UFC Freedom 250 results", fact_line, [])
+    return abort_reason({"event_coverage": found}) is not None
+
+
 def _over_length(script: str) -> bool:
     from core.tts_char_cap import tts_char_cap_reason
 
@@ -167,6 +174,13 @@ _CASES: tuple[_Case, ...] = (
         },
         lambda: _thin(0, 0.9),
         lambda: not _thin(5, 0.9),
+    ),
+    _Case(
+        "event_coverage",
+        "Event not in facts",
+        {"EVENT_COVERAGE_GATE": "true"},
+        lambda: _event_uncovered("- UFC signs a new broadcast deal (espn.com)"),
+        lambda: not _event_uncovered("- Freedom 250 card: Topuria headlines (espn.com)"),
     ),
     _Case(
         "over_length",

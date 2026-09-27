@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-27: wave 42, next five
+# Handoff synopsis — 2026-09-27: wave 43, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-27 (Claude Code): wave 42 #853 #851 #868 #894 #833
+## Last wave — 2026-09-27 (Claude Code): wave 43 #895 #857 #862 #887 #825 #898
+
+- **#895** recency guard: `core/event_coverage.py` checks that one verified fact or pasted key
+  fact names what the topic names (the `search_query(mode="entity")` name). If none does, the
+  script prompt gets an EVENT NOT IN FACTS note and `main.py` stops before TTS with a y/N
+  (`EVENT_COVERAGE_GATE=false` turns the stop off). `ops blocking` lists it; selftest gate nine.
+- **#857** `ops vault-retier` lists old `_operator_facts/` notes holding scraped page lines;
+  `--apply` moves each whole note to `_link_facts/` at link tier. Never overwrites.
+- **#862** `AUTO_RESEARCH_SAVE=true` keeps the kept auto-research lines in
+  `_link_facts/{day}_{slug}-auto-research.md` (default off).
+- **#887** the review prompt (`VAULT_FACTS_AUTO=false`): Enter takes the confident lines, `a` all.
+- **#825** closed; **#898** art for soccer / pop culture / anime / music plus five franchises.
+- **Filed:** #896 sports team not in the topic, #897 odds signal topic-blind (weakness 3).
+
+**Verify:** `python -m unittest tests.test_event_coverage tests.test_vault_retier
+tests.test_auto_research_save tests.test_vault_prompt_default tests.test_domain_art`;
+`py -m scripts.ops selftest` (9/9); `py -m scripts.ops vault-retier`.
+
+## Previous — 2026-09-27 (Claude Code): wave 42 #853 #851 #868 #894 #833
 
 - **#853** Anthropic premium default `claude-sonnet-5`; `.env.example` no longer pins every tier
   with `ANTHROPIC_MODEL` (delete it from your `.env` if it is there).
@@ -35,25 +53,10 @@ tests.test_package_audit_build tests.test_mypy_targets`; `py -m scripts.ops pack
 **Verify:** `py -m scripts.ops test --order reverse` (ends "Suite hygiene: ... untouched");
 `python -m unittest tests.test_suite_hygiene tests.test_spoken_pace tests.test_wave13`.
 
-## Previous — 2026-09-27 (Claude Code): wave 40 #849 #879 #876 #855 #870 + #890 #891
-
-- **#890** every voice speaks at 0.95 (`TTS_SPEED`, or `tts.speed` per channel; 1.0 = old pace).
-  ElevenLabs keeps the voice's saved stability/similarity; clips cached at the old pace miss once.
-- **#891** `core/persona_lint.contrast_frames` finds "it's not just X - it's Y" and its variants;
-  the `drop_contrast_frames` pass restates them (no new names or numbers), the prompt names the
-  pattern, the report card's Style line shows what is left.
-- **#879** a continuation keeps its series name. **#876** `ops game-names`: names learned from
-  runs a topic-matched gaming signal confirmed. **#870** `ops backfill [name|all] [--apply]`.
-- **#855** `INGEST_ENABLED` gone; `tests/test_env_keys_read.py` holds every documented key to a
-  reader. **#849** fact-fit is stored and shown in `ops calibration`; selection ignores it.
-
-**Verify:** `python -m unittest tests.test_speech_speed tests.test_contrast_frames
-tests.test_backfill_registry tests.test_angle_fact_fit`; `py -m scripts.ops regressions` (46).
-
 ## Pipeline order (operator)
 
 ```
-Topic → Discovery (signals + editorial ANGLES) → pick angle → length → KEY FACTS → [fact conflicts] → script → TITLE → grounding → [trade check] → tier warnings → claim verifier → authenticity → report card → render → [vault dossier]
+Topic → Discovery (signals + editorial ANGLES) → pick angle → length → KEY FACTS → [fact conflicts] → script → TITLE → grounding → [trade check] → tier warnings → claim verifier → authenticity → [thin facts / event not in facts] → report card → render → [vault dossier]
 ```
 
 **Titles are NOT chosen at discovery.** Discovery returns short angle lines; `core/title_generator.py` writes the YouTube title after key facts + script + grounding.

@@ -26,32 +26,48 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-27 wave 42: **#853** the Claude premium default is Sonnet 5, and
-`.env.example` no longer pins every tier · **#851** best-bet headlines are judged by their own
-words, not the env channel · **#868** `preview-render` is `reback-short` · **#894**
-`ops package-audit` builds where the system setuptools can't · **#833** mypy checks every
-shipped package, and the baseline fell 129 -> 123.
+**Just landed** - 2026-09-27 wave 43: **#895** the recency guard - a run whose facts never name
+the event the topic names ("UFC Freedom 250") stops before TTS, and the script prompt says not to
+guess · **#857** `ops vault-retier` lists old scraped `_operator_facts` notes and moves them to
+link tier on `--apply` · **#862** `AUTO_RESEARCH_SAVE` keeps auto-research lines in `_link_facts/`
+· **#887** Enter at the vault review prompt takes the confident lines only · **#825** `--force`
+proved end to end, closed · **#898** art for every domain plus five franchises.
 
-**Before that** - wave 41: **#888 #892 #893 #832 #831** · wave 40: **#890 #891 #879 #876 #870
-#855** · wave 39: **#883-#886 #877 #878**. Earlier: [roadmap_archive.md](roadmap_archive.md)
-and [planning_log.md](planning_log.md).
+**Before that** - wave 42: **#853 #851 #868 #894 #833** · wave 41: **#888 #892 #893 #832 #831** ·
+wave 40: **#890 #891 #879 #876 #870 #855** · wave 39: **#883-#886 #877 #878**. Earlier:
+[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
+
+### The five weaknesses - where each stands (2026-09-27)
+
+The operator asked whether fixes are lined up for [assessment.md](assessment.md)'s June list.
+Most of it has shipped; what is left is below, and the next five take the first of it.
+
+| weakness | shipped | still open |
+|---|---|---|
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** | #558 expire notes about past events · #589 second search provider |
+| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, five dead signals retired, discovery deadline + cancel; every listed breakage fixed | #854 retire steam/igdb · #385 schema pinning · #626 contract tests |
+| 3 relevance | RAWG current-era + relevance, Twitch/Steam/fan-out hygiene, domain from the topic (#841 #851), team signals gated off for UFC | **#896** sports team not in the topic · **#897** odds signal topic-blind |
+| 4 visuals | word-timed karaoke retexted from the script, auto-placed over HUD bars, a cut every ~2.5 s from owned gameplay, clip bands, multi-voice | #411 music bed · #506 caption colour per speaker · #786 footage (operator) |
+| 5 volume | sample count beside every number, 95% intervals, low/moderate tags, recency weighting | #352 shrink small samples toward the channel mean |
 
 ### Recommended next five (non-app)
 
-**Wave 42 (2026-09-27)** cleared all five. The next list reaches back into the fact-intake epic
-(E3) and the one structural item left; #887 is the operator's call, not code.
+**Wave 43 (2026-09-27)** cleared #857 #862 #825 #887 and, on the operator's call, took the recency
+guard (#895) in #834's slot. The next list is the weakness table's cheapest open rows, plus #834.
 
-1. **#857 re-tier old scraped `_operator_facts` notes** (E3) `[S]` - a dry-run listing first.
-2. **#862 optionally save auto-research lines** (E3) `[S]` - to `_link_facts/`, behind a flag.
-3. **#825 `--force` reachable by every verb that reads it** `[S]` - verify the wave-30 fix, close.
-4. **#834 `core/` seams** `[L]` - the "where a new module goes" rule first, one cluster moved.
-5. **#887 the vault review prompt's Enter default** `[S]` - operator's call: all, or none.
+1. **#896 sports team must be in the topic** (weakness 3) `[S]`.
+2. **#897 odds signal matches the topic or stays inactive** (weakness 3) `[S]`.
+3. **#854 retire steam and igdb** (weakness 2, E5) `[S]` - 1 of 33 runs returned anything.
+4. **#352 shrink small-sample averages toward the channel mean** (weakness 5) `[M]`.
+5. **#834 `core/` seams** `[L]` - the "where a new module goes" rule first, one cluster moved.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** listen to the next render (about 5% slower;
-`TTS_SPEED=1.0` undoes it), one debate and one quotes run (#889), then `ops backfill` to see what
-history is behind. Structural queue: #834.
+**Waiting on the operator, not on code:** `ops vault-retier` to see which old notes hold scraped
+lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop
+before TTS unless facts are pasted - say if it stops a run it should not (#895). Listen to the next
+render (about 5% slower; `TTS_SPEED=1.0` undoes it), one debate and one quotes run (#889), then
+`ops backfill` to see what history is behind.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

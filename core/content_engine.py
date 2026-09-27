@@ -207,6 +207,7 @@ def _build_prompts(
     key_facts: list[str] | None = None,
     extra_directive: str = "",
     intent: str = "",
+    uncovered_event: str = "",
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
@@ -438,6 +439,11 @@ You must:
             "not fabricated specifics. This honest framing builds trust and drives comments."
         )
 
+    # #895: the facts never name what the topic names - tell the model not to guess.
+    from core.event_coverage import prompt_block as event_prompt_block
+
+    event_warning = event_prompt_block(uncovered_event)
+
     from core.channel_persona import human_context_block
 
     human_block = human_context_block(channel_id)
@@ -479,7 +485,7 @@ ACTIVE SIGNALS (scores):
 {operator_facts_block}VERIFIED FACTS (source of truth — only use specifics from here):
 {verified_block}
 {context_block}
-{thin_facts_warning}
+{thin_facts_warning}{event_warning}
 
 INSTRUCTIONS:
 - Script length: REQUIRED {min_words}-{max_words} words (~{preset.duration_hint()} when spoken).
@@ -1175,6 +1181,14 @@ def generate_content_package(
         or _fact_line_count(_verified_facts) < 3
     )
 
+    # #895: does any verified fact (or pasted key fact) name what the topic names?
+    from core.event_coverage import coverage as event_coverage
+
+    _event = event_coverage(seed_topic or topic, _verified_facts, clean_key_facts)
+    _uncovered = str(_event["name"]) if _event and not _event["covered"] else ""
+    if _uncovered:
+        logger.warning("No fact mentions %r - the script prompt says not to guess", _uncovered)
+
     brief_block = ""
     if research_brief:
         brief_block = research_brief.to_prompt_block() + "\n\n"
@@ -1203,6 +1217,7 @@ def generate_content_package(
         key_facts=key_facts,
         extra_directive=extra_directive,
         intent=resolved_intent,
+        uncovered_event=_uncovered,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude
@@ -1679,6 +1694,7 @@ def generate_content_package(
         "ungrounded_entities": ungrounded,
         "trade_warnings": trade_warnings,
         "tier_warnings": tier_warnings,
+        "event_coverage": _event,
         "fact_conflicts": conflict_features["fact_conflicts"],
         "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
         "disputed": conflict_features["disputed"],

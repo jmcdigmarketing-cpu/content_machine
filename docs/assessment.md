@@ -1,6 +1,6 @@
 # Content Machine — strengths, weaknesses & fixes
 
-> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-20
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-27
 
 Honest assessment of the system as of 2026-06. Scored 1–5 per dimension with
 evidence from the code and from live runs observed this month. The goal is a
@@ -172,3 +172,22 @@ follow: [engine_upgrades.md](engine_upgrades.md).
 - **Reliability 2.5/5 understates the waste.** Six signals - `trendingnow`, `igdb`, `steam`,
   `tapology`, `stats_context`, `tvmaze`, `tmdb` - have returned nothing on every run that called
   them, inside a **58.7 s median** discovery (#810, #811).
+
+## Addendum - 2026-09-27 (the five weaknesses, mapped)
+
+The operator pasted the June weakness list back and asked what is lined up for each. Most of it
+has shipped; the table with every item number is in [roadmap.md](roadmap.md) ("The five
+weaknesses - where each stands").
+
+1. **Recency** - wave 43 (#895) adds the missing guard: when no verified fact or pasted key fact
+   names the event the topic names, the prompt says not to guess and the run stops before TTS.
+   It checks that the facts are *about* the event; it cannot check that they are *right*.
+2. **API fragility** - failures are visible and dead signals are retired; schema pinning (#385)
+   and contract tests (#626) are open, #854 is next.
+3. **Relevance noise** - RAWG, Twitch, Steam and fan-out were fixed in waves 33-37; two signals
+   still ignore the topic: sports (#896) and odds (#897), both next.
+4. **Visuals** - word-level captions and ~2.5 s cuts from owned gameplay shipped (the June text
+   is out of date); a music bed (#411) is the largest gap left.
+5. **Volume** - sample counts and intervals are printed everywhere; shrinking small samples
+   toward the channel mean (#352) is next. The underlying cause - few measured videos - only
+   more published videos fix.

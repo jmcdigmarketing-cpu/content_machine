@@ -665,6 +665,35 @@
       "why": "Enter at 'Use uncertain facts?' took all six off-topic vault lines behind run 99's title"
     },
     {
+      "id": "vault-review-enter-is-confident",
+      "item": 887,
+      "source": "wave 43 audit of the #878 fix",
+      "call": "core.ui:parse_vault_review_choice",
+      "args": [
+        ""
+      ],
+      "expect": {
+        "equals": "confident"
+      },
+      "why": "with VAULT_FACTS_AUTO=false, Enter at 'Use these?' took the uncertain lines #878 made opt-in"
+    },
+    {
+      "id": "event-not-in-facts",
+      "item": 895,
+      "source": "assessment.md weakness 1 (UFC Freedom 250, 6/14)",
+      "call": "core.event_coverage:coverage",
+      "args": [
+        "UFC Freedom 250 results: who won",
+        "UFC/MMA headlines:\n- Dana White says the UFC will return to Abu Dhabi (espn.com)\n- UFC signs a new broadcast deal (mmajunkie.com)\n- Three fighters removed from next month's card (mmafighting.com)",
+        []
+      ],
+      "expect": {
+        "equals": false
+      },
+      "why": "three generic UFC lines passed thin facts and the script invented the Freedom 250 card from memory",
+      "select": "covered"
+    },
+    {
       "id": "debate-tags-leave-prose",
       "item": 886,
       "source": "wave 39 guard",

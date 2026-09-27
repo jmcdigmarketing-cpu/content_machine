@@ -12,7 +12,7 @@ from apis.topic_scorer import composite_score
 from apis.topic_variants import generate_variants
 from config.channels import resolve_channel_id
 from core.asset_recorder import record_render_assets
-from core.auto_research import attach_web_research
+from core.auto_research import attach_web_research, maybe_save_research
 from core.channel_context import anchor_preservation_penalty, mcu_drift_penalty
 from core.content_engine import generate_content_package
 from core.logging import get_logger
@@ -968,6 +968,8 @@ def run_pipeline(
     if result.angle_intent:
         result.features["angle_intent"] = result.angle_intent
     if auto_research_report is not None:
+        # #862: kept in the vault only when asked, at link tier.
+        maybe_save_research(channel_id, content_topic, auto_research_report)
         result.features["auto_research"] = auto_research_report
     if len(angles) >= 2:
         from core.angle_chapters import (
@@ -1003,6 +1005,9 @@ def run_pipeline(
                 ),
             )
 
+    if content.get("event_coverage"):
+        # #895: does any fact name what the topic names? main.py stops before TTS if not.
+        result.features["event_coverage"] = content["event_coverage"]
     result.features["ungrounded_entities"] = content.get("ungrounded_entities") or []
     result.features["trade_warnings"] = content.get("trade_warnings") or []
     # Pillar 3 (Fact Engine): tier lint, pre-script conflicts, claim verifier.

@@ -473,6 +473,20 @@ def cmd_vault_decay(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "vault-retier",
+    "List _operator_facts notes holding scraped page lines; --apply moves them to link tier (#857)",
+)
+def cmd_vault_retier(args: argparse.Namespace) -> int:
+    from core.vault_retier import report_lines
+
+    for line in report_lines(
+        getattr(args, "channel", "tapin"), apply=bool(getattr(args, "apply", False))
+    ):
+        print(line)
+    return 0
+
+
 @_register("queue-manage", "Re-queue after deleting scheduled YouTube video")
 def cmd_queue_manage(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]

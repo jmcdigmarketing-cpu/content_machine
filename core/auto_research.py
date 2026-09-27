@@ -7,7 +7,8 @@ topic (`fact_selection.flag_off_topic`, the same lenient rule pasted links get),
 attaches them as a `web_research` signal.
 
 Deliberately small in authority:
-- web tier, never operator; never pinned; never saved to the vault;
+- web tier, never operator; never pinned; saved to the vault only with
+  `AUTO_RESEARCH_SAVE=true`, and then to `_link_facts/` at link tier (#862);
 - score 0, so the composite and the angle tie never move;
 - no new paid call: it reuses the search that already ran;
 - bounded: `AUTO_RESEARCH_URLS` pages under `AUTO_RESEARCH_DEADLINE_S`, a per-URL
@@ -181,6 +182,45 @@ def attach_web_research(
         return base, report
 
 
+def save_kept_lines(
+    channel_id: str, topic: str, report: dict[str, Any] | None, *, today: Any = None
+) -> str | None:
+    """Write a report's kept lines to the vault's `_link_facts/` (#862). Never raises.
+
+    Link tier, never operator: nobody reviewed these lines. The note gets its own
+    `-auto-research` file name so it cannot replace a pasted-link note of the same day.
+    """
+    kept = [str(line) for line in (report or {}).get("kept_lines") or [] if str(line).strip()]
+    if not kept:
+        return None
+    try:
+        from core.operator_facts import capture_facts_to_vault
+
+        return capture_facts_to_vault(
+            channel_id,
+            topic,
+            kept,
+            today=today,
+            tier="link",
+            origin="auto-research",
+            sources=[str(u) for u in (report or {}).get("urls") or []],
+        )
+    except Exception as exc:
+        logger.debug("auto-research save skipped: %s", exc)
+        return None
+
+
+def maybe_save_research(channel_id: str, topic: str, report: dict[str, Any] | None) -> None:
+    """Save the kept lines when `AUTO_RESEARCH_SAVE` is on; record where in the report."""
+    from core.providers import flag_enabled
+
+    if not report or not flag_enabled("AUTO_RESEARCH_SAVE", default=False):
+        return
+    path = save_kept_lines(channel_id, topic, report)
+    if path:
+        report["saved_to"] = path
+
+
 def report_line(report: dict[str, Any] | None) -> str:
     """One operator-facing line for the run summary."""
     if not report:
@@ -205,4 +245,7 @@ def report_lines(report: dict[str, Any] | None, *, show: int = 5) -> list[str]:
     out.extend(f"  - {line[:160]}" for line in kept[:show])
     if len(kept) > show:
         out.append(f"  (+{len(kept) - show} more)")
+    saved = str((report or {}).get("saved_to") or "")
+    if saved:
+        out.append(f"  saved to vault: {saved}")
     return out

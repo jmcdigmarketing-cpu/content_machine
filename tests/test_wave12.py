@@ -24,6 +24,7 @@ _ALL_GATES = {
     "grounding",
     "negative_fact",
     "thin_facts",
+    "event_coverage",  # #895
     "over_length",
     "metrics",
     "unattended_render",

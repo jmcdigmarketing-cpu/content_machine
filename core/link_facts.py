@@ -166,6 +166,11 @@ def _is_junk_line(text: str) -> bool:
     return t.endswith("?") or t.count("?") >= 2
 
 
+def is_page_boilerplate(text: str) -> bool:
+    """Public name for the reader's boilerplate rule (#857 re-tiers saved notes by it)."""
+    return _is_junk_line(text)
+
+
 def _main_content_root(soup: BeautifulSoup):
     """Prefer article body over full-page scrape (sidebars, related links)."""
     for selector in (

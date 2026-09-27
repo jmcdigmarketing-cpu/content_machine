@@ -8,6 +8,22 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 43 — the recency guard, tidier vault facts, more art - 2026-09-27
+
+*3,897 tests; mypy 123 == baseline; ruff 0.15.8 clean; corpus 49 of 49; selftest 9/9.*
+
+- **#895** a run whose facts never name the event the topic names (a just-happened card, a new
+  game) stops before the voice line and asks; `EVENT_COVERAGE_GATE=false` turns the stop off.
+  **Prompt change, disclosed:** only when that happens, the script prompt gains an "EVENT NOT IN
+  FACTS" note telling the model not to state the event's result, date, card or title holders.
+  A run whose facts cover the event gets the same prompt as before.
+- **#857** `ops vault-retier` lists old vault notes that saved scraped page lines as your own
+  facts; `--apply` moves them to link tier.
+- **#862** `AUTO_RESEARCH_SAVE=true` keeps auto-research lines in the vault (off by default).
+- **#887** with `VAULT_FACTS_AUTO=false`, Enter at "Use these?" takes the confident lines only.
+- **#898** art for soccer, pop culture, anime and music topics, and for GTA, Marvel Rivals,
+  Madden, NBA 2K and UFC 5. **#825** closed.
+
 ### Wave 42 — current Claude defaults, cleaner best bets, a working package audit - 2026-09-27
 
 *3,841 tests; mypy 123 (was 129) over every package; ruff 0.15.8 clean; corpus 47 of 47.*

@@ -1,11 +1,26 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-09-27 (Claude Code): wave 40 #849 #879 #876 #855 #870 + #890 #891
+
+- **#890** every voice speaks at 0.95 (`TTS_SPEED`, or `tts.speed` per channel; 1.0 = old pace).
+  ElevenLabs keeps the voice's saved stability/similarity; clips cached at the old pace miss once.
+- **#891** `core/persona_lint.contrast_frames` finds "it's not just X - it's Y" and its variants;
+  the `drop_contrast_frames` pass restates them (no new names or numbers), the prompt names the
+  pattern, the report card's Style line shows what is left.
+- **#879** a continuation keeps its series name. **#876** `ops game-names`: names learned from
+  runs a topic-matched gaming signal confirmed. **#870** `ops backfill [name|all] [--apply]`.
+- **#855** `INGEST_ENABLED` gone; `tests/test_env_keys_read.py` holds every documented key to a
+  reader. **#849** fact-fit is stored and shown in `ops calibration`; selection ignores it.
+
+**Verify:** `python -m unittest tests.test_speech_speed tests.test_contrast_frames
+tests.test_backfill_registry tests.test_angle_fact_fit`; `py -m scripts.ops regressions` (46).
 
 ## Previous — 2026-09-27 (Claude Code): wave 39 voices #883-#886, #877 #878
 

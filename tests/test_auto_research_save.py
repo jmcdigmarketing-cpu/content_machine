@@ -68,7 +68,7 @@ class SaveKeptLinesTests(VaultCase):
     def test_the_page_urls_are_not_fact_bullets(self):
         """Every bullet in a note is a fact candidate, so the URLs go in frontmatter."""
         from core.auto_research import save_kept_lines
-        from core.vault_index import iter_notes
+        from core.vault.index import iter_notes
 
         save_kept_lines("tapin", TOPIC, dict(REPORT), today=DAY)
         [note] = [n for n in iter_notes(self.vault) if "_link_facts" in str(n.rel_path)]

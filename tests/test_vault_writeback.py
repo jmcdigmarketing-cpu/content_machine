@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core import vault_writeback as vw
+from core.vault import writeback as vw
 
 _ENTRIES = [
     {"topic": "UFC fraud callout", "engaged_rate": 0.45, "composite_score": 60, "domain": "ufc"},
@@ -20,7 +20,7 @@ class TestBuildBeliefs(unittest.TestCase):
         # (that reinforcement of fabricated seeds is the feedback loop we removed).
         with (
             patch("core.best_bet._build_entries", return_value=_ENTRIES),
-            patch("core.vault_writeback._pattern_beliefs", return_value=[]),
+            patch("core.vault.writeback._pattern_beliefs", return_value=[]),
         ):
             beliefs = vw.build_channel_beliefs("tapin")
         joined = "\n".join(beliefs)
@@ -55,7 +55,7 @@ class TestBuildBeliefs(unittest.TestCase):
     def test_no_entries_returns_empty(self):
         with (
             patch("core.best_bet._build_entries", return_value=[]),
-            patch("core.vault_writeback._pattern_beliefs", return_value=[]),
+            patch("core.vault.writeback._pattern_beliefs", return_value=[]),
         ):
             self.assertEqual(vw.build_channel_beliefs("tapin"), [])
 
@@ -65,7 +65,7 @@ class TestWriteBeliefs(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             with (
                 patch("core.best_bet._build_entries", return_value=_ENTRIES),
-                patch("core.vault_writeback._pattern_beliefs", return_value=[]),
+                patch("core.vault.writeback._pattern_beliefs", return_value=[]),
                 patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": d}, clear=False),
             ):
                 path = vw.write_channel_beliefs("tapin")
@@ -81,7 +81,7 @@ class TestWriteBeliefs(unittest.TestCase):
     def test_no_vault_returns_none(self):
         with (
             patch("core.best_bet._build_entries", return_value=_ENTRIES),
-            patch("core.vault_writeback._pattern_beliefs", return_value=[]),
+            patch("core.vault.writeback._pattern_beliefs", return_value=[]),
             patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": ""}, clear=False),
         ):
             self.assertIsNone(vw.write_channel_beliefs("tapin"))
@@ -89,12 +89,12 @@ class TestWriteBeliefs(unittest.TestCase):
     def test_written_beliefs_are_readable_back(self):
         # Machine beliefs feed the playbook layer, not load_facts (Pillar 4 / §17).
         from core import obsidian_facts as of
-        from core import vault_index
+        from core.vault import index as vault_index
 
         with tempfile.TemporaryDirectory() as d:
             with (
                 patch("core.best_bet._build_entries", return_value=_ENTRIES),
-                patch("core.vault_writeback._pattern_beliefs", return_value=[]),
+                patch("core.vault.writeback._pattern_beliefs", return_value=[]),
                 patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": d}, clear=False),
             ):
                 vw.write_channel_beliefs("tapin")

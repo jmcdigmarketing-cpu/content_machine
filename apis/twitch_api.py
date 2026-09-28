@@ -9,6 +9,7 @@ import time
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -112,7 +113,11 @@ def get_twitch_signal(topic: str) -> dict:
             status, detail = classify_http(top.status_code, top.text)
             return make_signal(connected=False, active=False, status=status, status_detail=detail)
 
-        games = top.json().get("data") or []
+        body = top.json()
+        drifted = drift("twitch", body)
+        if drifted:
+            return drift_signal(drifted)
+        games = body.get("data") or []
         matched = [g for g in games if _game_matches(g.get("name") or "", hint)]
 
         # No game named in the topic -> nothing Twitch can say about it. This used to

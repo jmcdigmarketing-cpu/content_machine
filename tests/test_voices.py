@@ -454,7 +454,7 @@ class DebatePipelineTests(unittest.TestCase):
 
 class RenderVoicesTests(unittest.TestCase):
     def test_dossier_audit_names_the_voices(self):
-        from core.vault_dossiers import audit_lines
+        from core.vault.dossiers import audit_lines
 
         text = "\n".join(
             audit_lines({"voice_mode": "debate", "voices": {"narrator": "vA", "cohost": "vB"}}, {})

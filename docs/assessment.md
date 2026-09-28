@@ -1,6 +1,6 @@
 # Content Machine — strengths, weaknesses & fixes
 
-> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-27
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-28
 
 Honest assessment of the system as of 2026-06. Scored 1–5 per dimension with
 evidence from the code and from live runs observed this month. The goal is a
@@ -197,3 +197,7 @@ News and the web provider, by the event's name); #896 and #897 closed the two re
 and #506 added a ducked music bed and a second-voice caption colour; #854 retired two dead
 signals; #352 extended small-sample shrinkage to length and post-time. What remains per row is in
 the roadmap table.
+
+**Wave 45 (2026-09-28):** vault previews of events that have happened stop feeding the script
+(#558); eight signals report a renamed field as "schema drift" and are held to recorded shapes
+(#385, #626 - ten JSON signals remain unpinned, #906); captions animate in (#503).

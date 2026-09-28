@@ -46,7 +46,7 @@ class PersistedKeysReadTests(unittest.TestCase):
 
 class DossierAuditTests(unittest.TestCase):
     def test_audit_block_renders_every_key(self):
-        from core.vault_dossiers import audit_lines
+        from core.vault.dossiers import audit_lines
 
         lines = "\n".join(
             audit_lines(
@@ -77,7 +77,7 @@ class DossierAuditTests(unittest.TestCase):
             self.assertIn(want, lines)
 
     def test_empty_run_has_no_audit_block(self):
-        from core.vault_dossiers import audit_lines
+        from core.vault.dossiers import audit_lines
 
         self.assertEqual(audit_lines({}, {}), [])
 

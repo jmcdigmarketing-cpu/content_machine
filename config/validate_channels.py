@@ -233,6 +233,11 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
             mode = str(caption_skin.get("mode", "word")).strip().lower()
             if mode not in {"plain", "word", "karaoke"}:
                 errors.append(f"{channel_id}: caption_skin.mode must be plain, word, or karaoke")
+            entrance = str(caption_skin.get("entrance", "none")).strip().lower()
+            if entrance not in {"none", "pop", "fade", "slide"}:
+                errors.append(
+                    f"{channel_id}: caption_skin.entrance must be none, pop, fade, or slide"
+                )
             for key in ("fill_color", "outline_color"):
                 value = caption_skin.get(key)
                 if value is not None and not (

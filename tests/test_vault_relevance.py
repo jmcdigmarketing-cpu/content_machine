@@ -25,7 +25,7 @@ CORPUS = (
 
 class TestRun71FeatureMatrix(unittest.TestCase):
     def test_corpus_separates_rockstar_from_wolverine(self):
-        from core.vault_relevance import score_vault_fact
+        from core.vault.relevance import score_vault_fact
 
         good = score_vault_fact(
             topic=TOPIC,
@@ -48,7 +48,7 @@ class TestRun71FeatureMatrix(unittest.TestCase):
         self.assertEqual(bad.breakdown["bullet_entities_supported"], 0)
 
     def test_note_context_rescues_entityless_follow_up(self):
-        from core.vault_relevance import score_vault_fact
+        from core.vault.relevance import score_vault_fact
 
         result = score_vault_fact(
             topic=TOPIC,
@@ -62,7 +62,7 @@ class TestRun71FeatureMatrix(unittest.TestCase):
         self.assertGreater(result.breakdown["note_cosine"], 0)
 
     def test_competing_family_is_a_penalty_not_a_hidden_gate(self):
-        from core.vault_relevance import score_vault_fact
+        from core.vault.relevance import score_vault_fact
 
         result = score_vault_fact(
             topic=TOPIC,
@@ -78,7 +78,7 @@ class TestRun71FeatureMatrix(unittest.TestCase):
         self.assertEqual(result.band, "reject")
 
     def test_no_entity_is_recorded_as_missing_not_supported(self):
-        from core.vault_relevance import score_vault_fact
+        from core.vault.relevance import score_vault_fact
 
         result = score_vault_fact(
             topic=TOPIC,
@@ -93,7 +93,7 @@ class TestRun71FeatureMatrix(unittest.TestCase):
 
 class TestCorpusBuilder(unittest.TestCase):
     def test_uses_signal_text_and_operator_facts_without_an_angle(self):
-        from core.vault_relevance import build_relevance_corpus
+        from core.vault.relevance import build_relevance_corpus
 
         signals = {
             "news": {
@@ -163,7 +163,7 @@ class TestProductionLoaderUsesTheScorer(unittest.TestCase):
 
     def test_near_threshold_reject_is_kept_for_inspection(self):
         from core.obsidian_facts import load_fact_records
-        from core.vault_relevance import VaultRelevanceDecision, is_inspect_reject
+        from core.vault.relevance import VaultRelevanceDecision, is_inspect_reject
 
         near = VaultRelevanceDecision(
             score=0.24,
@@ -226,7 +226,7 @@ class TestProductionLoaderUsesTheScorer(unittest.TestCase):
                     },
                     clear=False,
                 ),
-                patch("core.vault_relevance.score_vault_fact", side_effect=fake_score),
+                patch("core.vault.relevance.score_vault_fact", side_effect=fake_score),
             ):
                 records = load_fact_records(
                     TOPIC,
@@ -249,7 +249,7 @@ class TestProductionLoaderUsesTheScorer(unittest.TestCase):
         )
 
     def test_default_mode_is_scored_after_the_holdout_gate(self):
-        from core.vault_relevance import load_relevance_config, relevance_mode
+        from core.vault.relevance import load_relevance_config, relevance_mode
 
         load_relevance_config(refresh=True)
         with patch.dict(os.environ, {}, clear=True):
@@ -258,7 +258,7 @@ class TestProductionLoaderUsesTheScorer(unittest.TestCase):
 
 class TestShippedScorerConfig(unittest.TestCase):
     def test_shipped_config_is_valid_and_versioned(self):
-        from core.vault_relevance import load_relevance_config
+        from core.vault.relevance import load_relevance_config
 
         config = load_relevance_config(refresh=True)
         self.assertRegex(config.scorer_version, r"^vault_relevance_v\d+$")

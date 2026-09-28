@@ -89,8 +89,9 @@ py -m scripts.ops test --order reverse         # same suite, reversed — CI-blo
 
 ## Where a new module goes
 
-`core/` is splitting into sub-packages by subject (#834); `core/voice/` is the first
-(`plan`, `catalog`, `consistency`). A new module goes in the sub-package for its subject;
+`core/` is splitting into sub-packages by subject (#834); `core/voice/` (`plan`,
+`catalog`, `consistency`) and `core/vault/` (`index`, `ingest`, `relevance`, `dossiers`,
+`writeback`, `evals`, `retier`) exist. A new module goes in the sub-package for its subject;
 a new flat `core/*.py` needs a reason, and `tests/test_core_layout.py` holds the flat count
 to a ceiling that may fall, never rise. A moved module leaves a one-wave alias at its old
 name (`sys.modules[__name__] = ...`); new code imports the new path. A new sub-package is

@@ -69,7 +69,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     if not source:
         print("Usage: py -m scripts.ops ingest <url|pdf-path|youtube-link> [--channel tapin]")
         return 2
-    from core.vault_ingest import ingest, save_to_vault
+    from core.vault.ingest import ingest, save_to_vault
 
     record = ingest(source)
     lines = len([ln for ln in (record.get("text") or "").splitlines() if ln.strip()])
@@ -446,8 +446,8 @@ def cmd_backfill_cost(args: argparse.Namespace) -> int:
 
 @_register("vault-sync", "Write machine beliefs + run dossiers into the Obsidian vault")
 def cmd_vault_sync(args: argparse.Namespace) -> int:
-    from core.vault_dossiers import refresh_dossiers
-    from core.vault_writeback import write_channel_beliefs
+    from core.vault.dossiers import refresh_dossiers
+    from core.vault.writeback import write_channel_beliefs
 
     path = write_channel_beliefs(args.channel)
     if path:
@@ -459,17 +459,34 @@ def cmd_vault_sync(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("vault-decay", "List vault notes whose expires date is in the past")
+@_register(
+    "vault-decay",
+    "List vault notes whose expires date is in the past, and preview lines about past events",
+)
 def cmd_vault_decay(args: argparse.Namespace) -> int:
-    from core.fact_expiry import expired_notes
+    from core.fact_expiry import expired_notes, stale_previews
 
-    notes = expired_notes(getattr(args, "channel", None))
+    channel = getattr(args, "channel", None)
+    notes = expired_notes(channel)
     if not notes:
         print("Vault decay: no expired notes on disk.")
-        return 0
-    print(f"Vault decay: {len(notes)} expired note(s) still on disk (already dropped from prompts)")
+    else:
+        print(
+            f"Vault decay: {len(notes)} expired note(s) still on disk (already dropped from prompts)"
+        )
     for note in notes:
         print(f"  {note.get('path')} expired {note.get('expires')} ({note.get('days_past')}d past)")
+    # #558: preview lines ("... is set for Oct 4") whose event has happened.
+    previews = stale_previews(channel)
+    if previews:
+        print(
+            f"Vault decay: {len(previews)} preview line(s) about events that have happened "
+            "(no longer used; the notes are unchanged)"
+        )
+        for hit in previews[:2]:
+            print(f"  {hit['path']}: {hit['line'][:120]}")
+        if len(previews) > 2:
+            print(f"  (+{len(previews) - 2} more)")
     return 0
 
 
@@ -478,7 +495,7 @@ def cmd_vault_decay(args: argparse.Namespace) -> int:
     "List _operator_facts notes holding scraped page lines; --apply moves them to link tier (#857)",
 )
 def cmd_vault_retier(args: argparse.Namespace) -> int:
-    from core.vault_retier import report_lines
+    from core.vault.retier import report_lines
 
     for line in report_lines(
         getattr(args, "channel", "tapin"), apply=bool(getattr(args, "apply", False))
@@ -955,7 +972,7 @@ def cmd_calibration(args: argparse.Namespace) -> int:
 @_register("vault-eval", "Vault subject-relevance evals: precision/recall, or compare last two")
 def cmd_vault_eval(args: argparse.Namespace) -> int:
     """Frozen labelled cases (329 P1). No LLM cost - deterministic, safe to re-run."""
-    from core.vault_evals import main as vault_main
+    from core.vault.evals import main as vault_main
 
     forwarded: list[str] = []
     if getattr(args, "compare", False):

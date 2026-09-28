@@ -56,7 +56,7 @@ def _drive_auto_generate(argv: list[str]):
         patch("core.pipeline.best_variant_index", return_value=1),
         patch("core.outlier.get_competitor_outlier", return_value=None),
         patch("core.outlier.display_outlier"),
-        patch("core.vault_relevance.build_relevance_corpus", return_value=None),
+        patch("core.vault.relevance.build_relevance_corpus", return_value=None),
         patch("core.pipeline.run_pipeline", side_effect=_StopAtPipeline) as run_pipeline,
         patch("builtins.print"),
     ):

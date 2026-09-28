@@ -1,0 +1,40 @@
+{
+  "signal": "twitch",
+  "call": "apis.twitch_api:get_twitch_signal",
+  "topic": "Fortnite chapter 7 live event",
+  "attrs": {
+    "_CLIENT_ID": "test-id",
+    "_CLIENT_SECRET": "test-secret",
+    "_TOKEN": [
+      "test-token",
+      32503680000.0
+    ]
+  },
+  "response": {
+    "data": [
+      {
+        "id": "33214",
+        "name": "Fortnite",
+        "box_art_url": "https://static-cdn.jtvnw.net/x.jpg",
+        "igdb_id": "1905"
+      }
+    ],
+    "pagination": {
+      "cursor": "abc"
+    }
+  },
+  "other_responses": {
+    "helix/streams": {
+      "data": [
+        {
+          "id": "1",
+          "user_name": "streamer",
+          "game_id": "33214",
+          "viewer_count": 12000
+        }
+      ],
+      "pagination": {}
+    }
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#626); not a live capture - this container cannot reach the APIs. Refresh from a real response on the operator's PC (#905)."
+}

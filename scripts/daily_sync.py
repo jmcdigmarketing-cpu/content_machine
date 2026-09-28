@@ -45,7 +45,7 @@ def main(argv=None) -> int:
     # Write machine-learned channel beliefs back into the Obsidian vault (no-op
     # when OBSIDIAN_VAULT_PATH is unset or there is no analytics yet).
     try:
-        from core.vault_writeback import write_channel_beliefs
+        from core.vault.writeback import write_channel_beliefs
 
         belief_path = write_channel_beliefs(channel_id)
         if belief_path:
@@ -58,7 +58,7 @@ def main(argv=None) -> int:
     # Refresh run dossiers so post-sync actuals (views/engaged/revenue) land in
     # the vault (Pillar 4; no-op without a vault).
     try:
-        from core.vault_dossiers import refresh_dossiers
+        from core.vault.dossiers import refresh_dossiers
 
         n_doss = refresh_dossiers(channel_id)
         print(f"  Vault dossiers: {n_doss} refreshed" if n_doss else "  Vault dossiers: none")

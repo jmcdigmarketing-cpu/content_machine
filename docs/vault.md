@@ -1,6 +1,6 @@
 # Obsidian vault
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-27
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-28
 
 The one place that says how Content Machine uses an Obsidian vault: where it reads facts
 from, what it writes back, and which files are safe to edit by hand. Everything here is a
@@ -59,7 +59,7 @@ Only lines typed this run are pinned ahead of everything else in the prompt.
 1. You add facts at the key-facts prompt (typed lines, pasted blocks, URLs).
 2. Pasted-link lines with no contact with the angle, topic or signal evidence are listed;
    Enter drops them, `k` keeps them (`FACT_OFF_TOPIC_FILTER`).
-3. The vault scan scores every candidate bullet (`core/vault_relevance.py`, weights and
+3. The vault scan scores every candidate bullet (`core/vault/relevance.py`, weights and
    thresholds in `config/vault_relevance.json`): entity and cosine support against the
    signal evidence and your facts, franchise-anchor alignment, and a small tier term.
    Popularity data (Twitch, Trends, Wikipedia pageviews, autocomplete) is excluded from that
@@ -77,6 +77,12 @@ Auto-research (decisions §35) adds web-search result pages read for the angle a
 lines in the prompt. They reach the vault only with `AUTO_RESEARCH_SAVE=true` (#862), and then
 as link tier in their own `-auto-research` note, so they never replace a pasted-link note.
 
+**Previews retire on their own (#558).** A bullet that looks forward ("is set for Oct 4",
+"will launch", "scheduled for") stops being loaded once every date it names has passed - a
+year-less date takes the note's `date:` year, rolled forward past a December note. A line that
+reports a result ("knocked out ... on Oct 4") is never retired, and the note itself is not edited;
+`ops vault-decay` lists what stopped. A whole note still retires by `expires:`.
+
 Settings: `VAULT_RELEVANCE_MODE` (`scored` default), `VAULT_RELEVANCE_TIEBREAK` (optional LLM
 tiebreak, off), `LINK_FACT_MAX_LINES`, `LINK_READER_PROXY`.
 
@@ -86,7 +92,7 @@ tiebreak, off), `LINK_FACT_MAX_LINES`, `LINK_READER_PROXY`.
 |---|---|
 | `py -m scripts.ops vault-sync` | writes `_machine-beliefs.md` and refreshes run dossiers |
 | `py -m scripts.ops vault-eval` | subject-relevance precision/recall on the holdout set |
-| `py -m scripts.ops vault-decay` | lists notes whose `expires:` date has passed |
+| `py -m scripts.ops vault-decay` | lists notes whose `expires:` date has passed, and preview lines about events that have happened (#558) |
 | `py -m scripts.ops vault-retier` | lists `_operator_facts/` notes holding scraped page lines (`Source:` lines, page boilerplate); `--apply` moves each whole note to `_link_facts/` at link tier and never overwrites (#857) |
 | `py -m scripts.ops ingest <url>` | saves a URL, PDF or YouTube link as an `_ingest/` note |
 | `py -m scripts.ops dossier --run-id N` | one run end to end |

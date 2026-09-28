@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-28
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,72 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-09-28 (Claude Code) - wave 45: past-event previews retire, pinned API shapes, caption entrances, core/vault
+
+**Prompt (verbatim):** "next 5"
+
+**Operator's answer (plan mode):** #503 - "TapIn pop, MoneyWise fade (Recommended)".
+
+### Why the list is the recommendation
+
+The five were the roadmap's (#558 · #385 · #626 · #503 · #901), each checked read-only first: none
+parked in the synopsis, every dependency present. Order was cheapest first: #901, #558, #385 with
+#626, then #503.
+
+### Findings, with file:line
+
+- **A preview outlived its event.** `core/obsidian_facts.load_fact_records` looped every
+  `note.bullets`; only a note-level `expires:` retired anything, and nobody writes one on a quick
+  preview note (#558).
+- **A renamed field read as a healthy "no match".** Every pinned parser used `.get(..., [])`; of 17
+  drift cases, 9 came back `inactive`, 1 `error` and 7 a healthy `ok` - Tavily results without
+  `content` still scored 57 (#385).
+- **MoneyWise could not have faded.** It is word mode, which burns an `.srt`, and FFmpeg's SRT
+  decoder strips every override tag but `\an`. The tag would have shipped and never rendered, so
+  word mode with an entrance now writes `.ass` (`video/caption_timing.build_ass_from_words`).
+- **My first word-mode header was not FFmpeg's.** `ffmpeg -i x.srt x.ass` showed `YCbCr Matrix:
+  None` and `Encoding 1`; matched, the burn is pixel-identical to the old SRT once the fade ends.
+- **The move broke two paths.** `core/vault/evals.py:42` and `core/vault/relevance.py:27` resolved
+  `config/` from `__file__` one directory too shallow - 41 suite failures until fixed.
+- **The old-name guard had a blind spot.** `test_nothing_imports_the_old_names` matched
+  `core.vault_index` but not `from core import vault_index` (10 test files); it matches both now.
+- **#901 counted six vault modules; there are seven** (`vault_retier` landed in wave 43).
+
+### Shipped
+
+1. **#901** voice aliases deleted; `core/vault/` (index, ingest, relevance, dossiers, writeback,
+   evals, retier) with one-wave aliases; `FLAT_CEILING` 243 -> 236; `vault_` an owned prefix.
+2. **#558** `fact_recency.stale_preview`; the loader skips such bullets (notes not edited);
+   `fact_expiry.stale_previews` and an `ops vault-decay` section.
+3. **#385** `apis/schema_pins` (`PINS`, `drift`, `drift_signal`) wired into rawg, news, fred,
+   coingecko, web_search (Tavily), sports, odds, twitch.
+4. **#626** `tests/fixtures/signal_payloads/` (8) and the generated `tests/test_signal_contracts.py`.
+5. **#503** `caption_skin.entrance` (tapin pop, moneywise fade), `entrance_tag`,
+   `build_ass_karaoke(entrance=)`, `build_ass_from_words`, `subtitles.caption_entrance`.
+
+### Not done, deliberately
+
+- The fixtures are written from documented shapes, not captured: this container cannot reach the
+  APIs. Their `note` says so; #905 records real ones on the PC.
+- Ten other JSON signals are still unpinned (#906). The vault aliases stay one wave (#907).
+- `none` stays available per channel; no channel is left without an entrance.
+
+### Audit
+
+38 new test methods (`test_preview_expiry` 12, `test_schema_pins` 9, `test_signal_contracts` 3
+with 25 subcases, `test_caption_entrance` 13, `test_core_layout` +1). **33 observed failing
+before their fix**; 5 are guards that pass by design (a preview before its event, the breaker set,
+fixture-pin pairing, the recorded payloads parsing healthy, word mode without an entrance staying
+the old `.srt`). One of mine was wrong and was corrected, not the code: word mode groups 5 words,
+not 4. Corpus **55 of 55** (+2). mypy **123**, unchanged. Every new symbol has a production caller.
+Live, with FFmpeg 7.0 (imageio's binary): the MoneyWise fade differs from the SRT burn at 20 ms and
+matches it to 0.0000 mean abs difference at 1.2 s; the TapIn pop measures 628 px wide at 20 ms, 717
+px when settled. Suite **3,971 -> 4,009**, the same 8 environmental failures in all three orders;
+`data/` and `output/` untouched. Backlog **264 numbered open**, highest **#907**.
+
+Closed **#901 #558 #385 #626 #503**. Filed **#905 #906 #907**. Next five:
+**#906 · #905 · #589 · #559 · #907**.
 
 ## 2026-09-27 (Claude Code) - three glitches in the operator's first `ops reliability` after wave 44
 

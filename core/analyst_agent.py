@@ -146,7 +146,7 @@ def run_analyst(channel_id: str | None = None) -> str:
     brief = build_analyst_brief(channel)
 
     try:
-        from core.vault_dossiers import write_report_note
+        from core.vault.dossiers import write_report_note
 
         write_report_note(channel, "analyst", "Weekly analyst briefing", brief, fenced=False)
     except Exception as exc:

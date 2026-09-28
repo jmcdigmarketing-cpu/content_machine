@@ -6,7 +6,7 @@ research log: ``<vault>/<channel>/_sources.md``. ``core.obsidian_facts.load_fact
 reads it back on related future topics, so research brought in once becomes
 reusable instead of being discarded after the run.
 
-Mirrors ``core.vault_writeback`` safety:
+Mirrors ``core.vault.writeback`` safety:
 - own clearly-marked, auto-managed file per channel; never touches human notes,
 - no-op when ``OBSIDIAN_VAULT_PATH`` is unset,
 - never raises (a vault hiccup must never block video creation),

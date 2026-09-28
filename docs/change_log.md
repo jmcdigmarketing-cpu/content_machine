@@ -1,12 +1,26 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-28
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 45 — old previews retire, API shapes pinned, captions animate in - 2026-09-28
+
+*4,009 tests; mypy 123 == baseline; ruff 0.15.8 clean; corpus 55 of 55.*
+
+- **#558** a vault line previewing an event ("the fight is set for Oct 4") stops reaching the
+  script once the date has passed; your note is untouched and `ops vault-decay` lists these lines.
+- **#385 #626** eight signals now report "schema drift" when a provider renames a field, instead
+  of quietly returning nothing; each is tested against a recorded response.
+- **#503** **Finished-output change, disclosed:** each caption line now animates in - TapIn pops
+  (85% -> 100% over 120 ms), MoneyWise fades in (150 ms). MoneyWise's captions are burned from an
+  `.ass` file now (an `.srt` cannot carry the fade); once the fade ends the frame is pixel-identical
+  to before. `"entrance": "none"` in a channel's `caption_skin` turns it off.
+- **#901** vault modules moved to `core/vault/`; the old voice names are gone.
 
 ### After wave 44 — three `ops reliability` glitches from the first PC run - 2026-09-27
 

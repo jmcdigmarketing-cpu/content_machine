@@ -39,7 +39,7 @@ def _render(content_run_id):
                 side_effect=lambda rid, upd: calls.merge(rid, dict(upd)),
             ),
             patch(
-                "core.vault_dossiers.write_run_dossier",
+                "core.vault.dossiers.write_run_dossier",
                 side_effect=lambda rid: calls.dossier(rid),
             ),
         ):
@@ -71,7 +71,7 @@ class DossierAfterRenderTests(unittest.TestCase):
         self.assertNotIn("dossier", [c[0] for c in calls.mock_calls])
 
     def test_the_audit_line_shows_the_pace(self):
-        from core.vault_dossiers import audit_lines
+        from core.vault.dossiers import audit_lines
 
         text = "\n".join(
             audit_lines(

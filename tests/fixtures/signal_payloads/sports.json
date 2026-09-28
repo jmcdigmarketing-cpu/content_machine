@@ -1,0 +1,22 @@
+{
+  "signal": "sports",
+  "call": "apis.sports_data_api:get_sports_data",
+  "topic": "Kansas City Chiefs trade deadline",
+  "attrs": {
+    "SPORTSDB_API_KEY": "3"
+  },
+  "response": {
+    "teams": [
+      {
+        "idTeam": "134931",
+        "strTeam": "Kansas City Chiefs",
+        "strTeamShort": "KC",
+        "strAlternate": "Chiefs",
+        "strLeague": "NFL",
+        "strSport": "American Football",
+        "strStadium": "GEHA Field at Arrowhead Stadium"
+      }
+    ]
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#626); not a live capture - this container cannot reach the APIs. Refresh from a real response on the operator's PC (#905)."
+}

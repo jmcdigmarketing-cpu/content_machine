@@ -28,9 +28,10 @@ from datetime import date
 from pathlib import Path
 
 from apis.topic_tokens import FUNCTION_WORDS, content_tokens
+from core.fact_recency import stale_preview
 from core.fact_store import FactRecord, note_metadata, rank_bonus, stamp_as_of
 from core.logging import get_logger
-from core.vault_index import iter_notes
+from core.vault.index import iter_notes
 
 logger = get_logger("core.obsidian_facts")
 
@@ -374,14 +375,15 @@ def load_fact_records(
     topic_tokens = _tokens(topic)
     topic_distinctive = _distinctive_tokens(topic)
     scored: list[tuple[float, FactRecord]] = []
+    stale_previews = 0
     relevance_mode = "legacy"
     score_vault_fact = None
     if require_distinctive:
-        from core.vault_relevance import relevance_mode as _relevance_mode
+        from core.vault.relevance import relevance_mode as _relevance_mode
 
         relevance_mode = _relevance_mode()
         if relevance_mode in ("shadow", "scored") and corpus.strip():
-            from core.vault_relevance import score_vault_fact as _score_vault_fact
+            from core.vault.relevance import score_vault_fact as _score_vault_fact
 
             score_vault_fact = _score_vault_fact
         elif relevance_mode in ("shadow", "scored"):
@@ -401,6 +403,10 @@ def load_fact_records(
         tier, verified_at, expires, source_url = note_metadata(meta, rel)
         if expires is not None and expires < today:
             continue  # stale by declaration — champions/rosters age out
+        # #558: a preview line ("... is set for Oct 4") retires once its dates pass.
+        # The note stays on disk untouched; `ops vault-decay` lists what stopped.
+        bullets = [b for b in note.bullets if not stale_preview(b, verified_at, today)]
+        stale_previews += len(note.bullets) - len(bullets)
 
         # Relevance: overlap of topic tokens with filename + headings.
         note_tokens = _tokens(note.stem + " " + note.headings)
@@ -419,7 +425,7 @@ def load_fact_records(
             if require_distinctive
             else 0
         )
-        for bullet in note.bullets:
+        for bullet in bullets:
             if _is_strategy_bullet(bullet):
                 continue
             bullet_overlap = len(topic_tokens & _tokens(bullet))
@@ -454,7 +460,7 @@ def load_fact_records(
                     policy=relevance_policy,
                 )
                 if decision.band == "uncertain" and relevance_policy == "operator":
-                    from core.vault_relevance import maybe_tiebreak_uncertain
+                    from core.vault.relevance import maybe_tiebreak_uncertain
 
                     decision = maybe_tiebreak_uncertain(
                         decision,
@@ -466,7 +472,7 @@ def load_fact_records(
 
             if relevance_mode == "scored" and decision is not None:
                 if not decision.attaches:
-                    from core.vault_relevance import is_inspect_reject
+                    from core.vault.relevance import is_inspect_reject
 
                     if not is_inspect_reject(decision):
                         continue
@@ -503,6 +509,12 @@ def load_fact_records(
             )
             scored.append((rank, record))
 
+    if stale_previews:
+        logger.info(
+            "Vault: %d preview line(s) about events that have happened skipped "
+            "(ops vault-decay lists them)",
+            stale_previews,
+        )
     if not scored:
         return []
 

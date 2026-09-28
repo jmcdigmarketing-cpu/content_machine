@@ -1,6 +1,6 @@
 # Content OS — Architecture
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-27
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-28
 
 ## Folder structure
 
@@ -113,11 +113,11 @@ The repo serves two products:
 | `core/grounding_tiers.py` | **Pillar 3** tiered grounding corpus (operator/link/web/signal/brief/context) + high-stakes tier warnings |
 | `core/claim_verifier.py` | **Pillar 3** claim-level LLM verifier (extract tier) + `GROUNDING_GATE` |
 | `core/fact_conflicts.py` | **Pillar 3** pre-script contradiction detection — operator facts win, conflicting source lines dropped |
-| `core/obsidian_facts.py` | Vault fact reader (`load_facts` / `load_fact_records`) + **Pillar 4** playbook read path (`load_playbook`/`playbook_block`). Scored mode uses `core/vault_relevance.py`; competing-family `_GAME_ANCHORS` remain a weighted feature, not a hard gate |
-| `core/vault_relevance.py` | Additive subject-relevance scorer (`vault_relevance_v1`) + optional extract-tier tiebreak (`VAULT_RELEVANCE_TIEBREAK`, default off). Corpus = signal headlines + operator/link facts, never the angle |
-| `core/vault_evals.py` | Frozen labelled cases (`config/vault_evals.json`) + `ops vault-eval`. Holdout (runs 66+70) precision/recall **1.0/1.0** vs P1 baseline 0.667; shipped `default_mode` is `scored` |
-| `core/vault_index.py` | **Pillar 4** per-process mtime-cached vault parse (behind `load_fact_records`) |
-| `core/vault_dossiers.py` | **Pillar 4** run dossiers + reports into the vault (`_runs/`, `_reports/`) |
+| `core/obsidian_facts.py` | Vault fact reader (`load_facts` / `load_fact_records`) + **Pillar 4** playbook read path (`load_playbook`/`playbook_block`). Scored mode uses `core/vault/relevance.py`; competing-family `_GAME_ANCHORS` remain a weighted feature, not a hard gate |
+| `core/vault/relevance.py` | Additive subject-relevance scorer (`vault_relevance_v1`) + optional extract-tier tiebreak (`VAULT_RELEVANCE_TIEBREAK`, default off). Corpus = signal headlines + operator/link facts, never the angle |
+| `core/vault/evals.py` | Frozen labelled cases (`config/vault_evals.json`) + `ops vault-eval`. Holdout (runs 66+70) precision/recall **1.0/1.0** vs P1 baseline 0.667; shipped `default_mode` is `scored` |
+| `core/vault/index.py` | **Pillar 4** per-process mtime-cached vault parse (behind `load_fact_records`) |
+| `core/vault/dossiers.py` | **Pillar 4** run dossiers + reports into the vault (`_runs/`, `_reports/`) |
 | `core/channel_health.py` | **Pillar 5** Green/Yellow/Red channel health agent (`ops health`) |
 | `core/analyst_agent.py` | **Pillar 5** weekly analyst briefing (premium LLM → vault + webhook; `ops analyst`) |
 | `core/overnight.py` | **Pillar 5** overnight operator — best-bet drafts + grade + dossiers (`ops overnight`) |
@@ -130,6 +130,7 @@ The repo serves two products:
 | `apis/topic_scorer.py` | Domain inference, weights, `composite_score` + learning boosts |
 | `apis/topic_variants.py` | LLM/rule-based variant titles (incl. draft policy) |
 | `apis/signal_contract.py` | Normalized signal shape and health labels |
+| `apis/schema_pins.py` | Pinned response shapes (#385): the container and item keys each JSON parser reads; a drifted 200 returns `STATUS_UPSTREAM` "schema drift". Held to `tests/fixtures/signal_payloads/` by `tests/test_signal_contracts.py` (#626) |
 | `config/settings.py` | Env loading (`.env`), API keys, provider order |
 | `config/channels.py` | Load `channels.json`, resolve `channel_id` |
 | `assets/manager.py` | Provider chain selection per channel/topic |

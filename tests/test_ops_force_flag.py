@@ -105,8 +105,8 @@ class TestForceReachesTheCodeItGuards(unittest.TestCase):
                 daily_sync, "ensure_competitor_snapshot", return_value={"skipped": True}
             ) as snap,
             patch.object(daily_sync, "refresh_seo_hints", return_value={}),
-            patch("core.vault_writeback.write_channel_beliefs", return_value=None),
-            patch("core.vault_dossiers.refresh_dossiers", return_value=0),
+            patch("core.vault.writeback.write_channel_beliefs", return_value=None),
+            patch("core.vault.dossiers.refresh_dossiers", return_value=0),
             redirect_stdout(io.StringIO()),
         ):
             daily_sync.main(["--channel", "tapin", "--force"])

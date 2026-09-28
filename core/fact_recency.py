@@ -88,3 +88,78 @@ def drop_future_dated(text: str, today: datetime.date | None = None) -> tuple[st
         else:
             kept.append(line)
     return "\n".join(kept), dropped
+
+
+# --- #558: a preview line outlives the event it previews -------------------------------
+# "Topuria vs Holloway is set for Oct 4" stays in the vault after Oct 4. These phrases
+# mark a line as looking forward; a past-tense result line never matches them.
+_PREVIEW = re.compile(
+    r"\b(will|is set for|are set for|set to|is scheduled|are scheduled|scheduled for|"
+    r"upcoming|slated|headlines|headline|takes place|will take place|is expected to|"
+    r"is due|kicks off|goes down|coming up)\b",
+    re.IGNORECASE,
+)
+_ABBR = {name[:3]: num for name, num in _MONTHS.items()} | {"sept": 9}
+_ANY_MONTH = "|".join(sorted({*_MONTHS, *_ABBR}, key=len, reverse=True))
+# "Oct 4", "October 4, 2026", "4 Oct 2026", "4 October", "2026-10-04"
+_ANY_DATE_RE = re.compile(
+    rf"\b(?:({_ANY_MONTH})\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?(?:,?\s+(\d{{4}}))?"
+    rf"|(\d{{1,2}})(?:st|nd|rd|th)?\s+({_ANY_MONTH})\.?(?:\s+(\d{{4}}))?"
+    rf"|(\d{{4}})-(\d{{2}})-(\d{{2}}))\b",
+    re.IGNORECASE,
+)
+
+
+def _month(word: str) -> int:
+    word = word.lower()
+    return _MONTHS.get(word) or _ABBR[word]
+
+
+def _preview_dates(line: str, note_day: datetime.date | None, today: datetime.date):
+    """Dates a line names. A year-less date takes the note's year, rolled forward when that
+    would land before the note was written (a December note about "Jan 12"); with no note
+    date it takes today's year, which can only keep a line, never retire an extra one."""
+    out: list[datetime.date] = []
+    for m in _ANY_DATE_RE.finditer(line):
+        try:
+            if m.group(7):
+                out.append(datetime.date(int(m.group(7)), int(m.group(8)), int(m.group(9))))
+                continue
+            if m.group(1):
+                month, day, year = _month(m.group(1)), int(m.group(2)), m.group(3)
+            else:
+                month, day, year = _month(m.group(5)), int(m.group(4)), m.group(6)
+            if year:
+                out.append(datetime.date(int(year), month, day))
+                continue
+            anchor = note_day or today
+            when = datetime.date(anchor.year, month, day)
+            if note_day is not None and when < note_day:
+                when = datetime.date(anchor.year + 1, month, day)
+            out.append(when)
+        except (ValueError, KeyError):
+            continue
+    return out
+
+
+def _as_date(value: datetime.date | str | None) -> datetime.date | None:
+    if isinstance(value, str):
+        return datetime.date.fromisoformat(value[:10]) if value else None
+    return value
+
+
+def stale_preview(
+    line: str, note_day: datetime.date | str | None, today: datetime.date | str
+) -> bool:
+    """True when `line` previews an event and every date it names is before `today`.
+
+    The event day itself still counts as current. A line with no date, a result line
+    ("knocked out ... on Oct 4") or one future date anywhere in the line is kept.
+    Dates may be ISO strings (the regression corpus passes JSON).
+    """
+    note_day = _as_date(note_day)
+    today = _as_date(today) or datetime.date.today()
+    if not _PREVIEW.search(line or "") or _PAST_ACTION.search(line or ""):
+        return False
+    dates = _preview_dates(line, note_day, today)
+    return bool(dates) and all(d < today for d in dates)

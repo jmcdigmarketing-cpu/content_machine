@@ -272,6 +272,39 @@ def _lines_by_voice(words: list[dict], max_words: int) -> list[list[dict]]:
     return lines
 
 
+# #503: how a caption line arrives. Each is an override block that leads the line's text,
+# so per-word `\\k` timing after it is untouched.
+ENTRANCES = ("none", "pop", "fade", "slide")
+_POP = r"{\fscx85\fscy85\t(0,120,\fscx100\fscy100)}"
+_FADE = r"{\fad(150,0)}"
+
+
+def entrance_tag(
+    entrance: str | None,
+    *,
+    play_res: tuple[int, int] = (1080, 1920),
+    alignment: int = 2,
+    margin_v: int = 260,
+) -> str:
+    """The override block for `entrance` ("" for none or an unknown name).
+
+    `slide` needs the line's own position: `\\move` rises 40 px (on a 1920-px canvas,
+    scaled to the script's) onto where the style would have put it.
+    """
+    name = str(entrance or "none").strip().lower()
+    if name == "pop":
+        return _POP
+    if name == "fade":
+        return _FADE
+    if name == "slide":
+        width, height = play_res
+        x = width // 2
+        y = margin_v if alignment == 8 else height - margin_v
+        rise = max(1, round(40 * height / 1920))
+        return rf"{{\move({x},{y + rise},{x},{y},0,150)}}"
+    return ""
+
+
 def build_ass_karaoke(
     words: list[dict],
     *,
@@ -284,6 +317,7 @@ def build_ass_karaoke(
     body_font: str | None = None,
     anchor: str = "bottom",
     voice2_primary: str = "&H00F7C34F&",  # #506: the second voice's spoken word
+    entrance: str = "none",  # #503: pop / fade / slide / none
 ) -> str:
     """Karaoke ASS: each word highlights as it's spoken (per-word \\k timing).
 
@@ -300,6 +334,7 @@ def build_ass_karaoke(
     title = (title_font or font).replace(",", " ").strip() or font
     body = (body_font or font).replace(",", " ").strip() or font
     alignment = 8 if str(anchor).strip().lower() == "top" else 2
+    lead = entrance_tag(entrance, alignment=alignment)
     events: list[str] = []
     for index, line in enumerate(lines):
         start, end = _line_span(line)
@@ -314,7 +349,7 @@ def build_ass_karaoke(
         if two_voices and line and _role(line[0]) != _NARRATOR:
             style = "Voice2"
         events.append(
-            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,0,,{' '.join(parts)}"
+            f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,0,,{lead}{' '.join(parts)}"
         )
     if paired:
         header = _ASS_HEADER_PAIRED.format(
@@ -341,3 +376,70 @@ def build_ass_karaoke(
         )
         header = header.replace("\n\n[Events]", "\n" + voice2.rstrip("\n") + "\n\n[Events]", 1)
     return header + "\n".join(events) + "\n"
+
+
+# libass's canvas and style defaults for a converted .srt (FFmpeg's
+# ff_ass_subtitle_header_default, checked against `ffmpeg -i x.srt x.ass`, FFmpeg 7.0). Word mode's .ass keeps them, so the skin's
+# force_style keys land on the same canvas they were sized for.
+_SRT_CANVAS = (384, 288)
+_SRT_STYLE_DEFAULTS = {
+    "FontName": "Arial",
+    "FontSize": "16",
+    "PrimaryColour": "&Hffffff",
+    "SecondaryColour": "&Hffffff",
+    "OutlineColour": "&H0",
+    "BackColour": "&H0",
+    "Bold": "0",
+    "Italic": "0",
+    "Underline": "0",
+    "StrikeOut": "0",
+    "ScaleX": "100",
+    "ScaleY": "100",
+    "Spacing": "0",
+    "Angle": "0",
+    "BorderStyle": "1",
+    "Outline": "1",
+    "Shadow": "0",
+    "Alignment": "2",
+    "MarginL": "10",
+    "MarginR": "10",
+    "MarginV": "10",
+    "Encoding": "1",
+}
+
+
+def build_ass_from_words(
+    words: list[dict], *, max_words: int = 5, style: str = "", entrance: str = "none"
+) -> str:
+    """Word-mode captions as .ass so an entrance can render (#503).
+
+    FFmpeg's SRT decoder strips every override tag but `\\an`, so a `\\fad` in an .srt
+    never shows. Same cues as `build_srt_from_words`, on the SRT canvas, with `style`
+    (a force_style string, `Key=Value,...`) as the Default style.
+    """
+    fields = dict(_SRT_STYLE_DEFAULTS)
+    for part in (style or "").split(","):
+        key, sep, value = part.partition("=")
+        if sep and key.strip() in fields:
+            fields[key.strip()] = value.strip()
+    width, height = _SRT_CANVAS
+    try:
+        alignment, margin_v = int(fields["Alignment"]), int(fields["MarginV"])
+    except ValueError:
+        alignment, margin_v = 2, 10
+    lead = entrance_tag(entrance, play_res=_SRT_CANVAS, alignment=alignment, margin_v=margin_v)
+    events = []
+    for line in group_into_lines(words, max_words):
+        start, end = _line_span(line)
+        text = " ".join(str(w["word"] or "") for w in line).replace("{", "(").replace("}", ")")
+        events.append(f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},Default,,0,0,0,,{lead}{text}")
+    header = (
+        "[Script Info]\nScriptType: v4.00+\n"
+        f"PlayResX: {width}\nPlayResY: {height}\nScaledBorderAndShadow: yes\n"
+        "YCbCr Matrix: None\n\n"
+        "[V4+ Styles]\nFormat: " + ", ".join(["Name", *_SRT_STYLE_DEFAULTS]) + "\n"
+        "Style: Default," + ",".join(fields.values()) + "\n\n"
+        "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, "
+        "Effect, Text\n"
+    )
+    return header + "\n".join(events) + ("\n" if events else "")

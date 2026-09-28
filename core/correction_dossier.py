@@ -298,7 +298,7 @@ def _evidence_snippet(body: str) -> str:
 
 
 def _write_note(dossier: CorrectionDossier):
-    from core.vault_dossiers import write_report_note
+    from core.vault.dossiers import write_report_note
 
     # `write_report_note` writes `{date}_{kind}.md`, so `kind` has to carry the
     # video id or a second correction on the same day silently overwrites the

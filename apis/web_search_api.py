@@ -22,10 +22,12 @@ from typing import Any
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import drift
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
     STATUS_OK,
+    STATUS_UPSTREAM,
     classify_exception,
     classify_http,
     make_signal,
@@ -84,6 +86,9 @@ def _tavily_search(
     if resp.status_code != 200:
         return None, classify_http(resp.status_code, resp.text)
     body = resp.json()
+    drifted = drift("web_search", body)  # #385: a renamed field is an error, not "no results"
+    if drifted:
+        return None, (STATUS_UPSTREAM, f"schema drift: {drifted}")
     results = [
         {
             "title": (r.get("title") or "").strip(),

@@ -68,14 +68,14 @@ class TestRegistry(unittest.TestCase):
         import core.analyst_accuracy
         import core.grade_calibration
         import core.tts
-        import core.vault_relevance
+        import core.vault.relevance
         from core import process_state
 
         names = set(process_state.registered())
         for owner in (
             "core.llm_router",
             "core.tts",
-            "core.vault_relevance",
+            "core.vault.relevance",
             "core.grade_calibration",
             "core.analyst_accuracy",
             "apis.apify_catalog",

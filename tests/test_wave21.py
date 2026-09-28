@@ -52,7 +52,7 @@ class TestADraftIsNotAFailure(unittest.TestCase):
                 patch("core.pipeline.best_variant_index", return_value=0),
                 patch("core.pipeline.run_pipeline", return_value=result),
                 patch("core.experiments.next_arm", return_value=None),
-                patch("core.vault_relevance.build_relevance_corpus", return_value=None),
+                patch("core.vault.relevance.build_relevance_corpus", return_value=None),
                 patch("core.fact_enrichment.enrich_facts", return_value=""),
                 patch.object(batch_generation, "_drafts_dir", return_value=tmp),
                 patch.object(batch_generation, "_length_choice", return_value="2"),

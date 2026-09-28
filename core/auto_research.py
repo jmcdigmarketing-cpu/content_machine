@@ -134,7 +134,7 @@ def attach_web_research(
             executor.shutdown(wait=False, cancel_futures=True)
 
         from core.fact_selection import flag_off_topic
-        from core.vault_relevance import build_relevance_corpus
+        from core.vault.relevance import build_relevance_corpus
 
         corpus = build_relevance_corpus(base, include_web=True)
         cap = _env_int("AUTO_RESEARCH_MAX_LINES", 20, 1, 80)

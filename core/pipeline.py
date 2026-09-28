@@ -29,7 +29,7 @@ from core.run_trace import write_run_trace
 from core.script_length import count_spoken_words, get_length_preset, word_range
 from core.tts import generate_audio, last_tts_cache_fraction, last_tts_was_piper_mix
 from core.utils import clean_script_for_tts
-from core.vault_dossiers import write_run_dossier
+from core.vault.dossiers import write_run_dossier
 from video.render_video import render_vertical_video
 
 logger = get_logger("pipeline")
@@ -1468,7 +1468,7 @@ def run_media_only(
         # #888: the run was saved (and its dossier written) before this render, so the
         # voices, pace and render assets recorded above reach the note only now.
         try:
-            from core.vault_dossiers import write_run_dossier
+            from core.vault.dossiers import write_run_dossier
 
             write_run_dossier(content_run_id)
         except Exception as exc:

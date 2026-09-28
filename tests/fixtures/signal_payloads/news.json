@@ -1,0 +1,37 @@
+{
+  "signal": "news",
+  "call": "apis.news_api:get_news_score",
+  "topic": "UFC 320",
+  "env": {
+    "NEWS_API_KEY": "test-key"
+  },
+  "response": {
+    "status": "ok",
+    "totalResults": 2,
+    "articles": [
+      {
+        "source": {
+          "id": "espn",
+          "name": "ESPN"
+        },
+        "author": "ESPN staff",
+        "title": "UFC 320: Ankalaev vs. Pereira 2 set for Las Vegas",
+        "description": "The light heavyweight rematch headlines UFC 320.",
+        "url": "https://www.espn.com/mma/story/_/id/1",
+        "publishedAt": "2026-09-27T14:00:00Z"
+      },
+      {
+        "source": {
+          "id": null,
+          "name": "MMA Junkie"
+        },
+        "author": null,
+        "title": "UFC 320 fight card, odds and start time",
+        "description": "Everything to know before UFC 320.",
+        "url": "https://mmajunkie.usatoday.com/1",
+        "publishedAt": "2026-09-26T10:00:00Z"
+      }
+    ]
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#626); not a live capture - this container cannot reach the APIs. Refresh from a real response on the operator's PC (#905)."
+}

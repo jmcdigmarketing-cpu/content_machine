@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from core import vault_ingest as vi
+from core.vault import ingest as vi
 
 
 def _fake_pypdf(pages_text: list[str]) -> dict:
@@ -140,7 +140,7 @@ class TestOpsIngestCommand(unittest.TestCase):
             with (
                 mock.patch.dict("os.environ", {"OBSIDIAN_VAULT_PATH": d}, clear=False),
                 mock.patch(
-                    "core.vault_ingest.ingest",
+                    "core.vault.ingest.ingest",
                     return_value=vi._record("A verified fact line.", "https://x", kind="url"),
                 ),
             ):

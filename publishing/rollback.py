@@ -51,7 +51,7 @@ def _write_dossier(
     channel_id: str, video_id: str, correction: str, body: dict[str, Any]
 ) -> str | None:
     try:
-        from core.vault_dossiers import write_report_note
+        from core.vault.dossiers import write_report_note
 
         rendered = (
             f"video_id: {video_id}\n"

@@ -202,7 +202,7 @@ class TestOvernightRunsTheCanary(_IsolatedStateCase):
         with (
             patch("core.batch_generation.collect_topics", return_value=["a"]),
             patch("core.batch_generation.run_batch", return_value=[]),
-            patch("core.vault_dossiers.write_run_dossier", return_value=None),
+            patch("core.vault.dossiers.write_run_dossier", return_value=None),
             patch("core.channel_health.build_health"),
             patch("core.channel_health.health_line", return_value=""),
             patch("core.events.emit_event", return_value=True),
@@ -231,7 +231,7 @@ class TestOvernightRunsTheCanary(_IsolatedStateCase):
         with (
             patch("core.batch_generation.collect_topics", return_value=["a"]),
             patch("core.batch_generation.run_batch", return_value=[]),
-            patch("core.vault_dossiers.write_run_dossier", return_value=None),
+            patch("core.vault.dossiers.write_run_dossier", return_value=None),
             patch("core.channel_health.build_health"),
             patch("core.channel_health.health_line", return_value=""),
             patch("core.events.emit_event", return_value=True),

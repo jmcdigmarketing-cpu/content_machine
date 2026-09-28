@@ -7,8 +7,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from core import vault_dossiers, vault_index
-from core.vault_index import _parse_frontmatter
+from core.vault import dossiers as vault_dossiers
+from core.vault import index as vault_index
+from core.vault.index import _parse_frontmatter
 from tests.test_vault_pillar4 import VaultCase, _run_record
 
 

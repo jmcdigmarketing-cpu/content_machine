@@ -167,7 +167,7 @@ def write_operator_digest(channel_id: str, report: dict[str, Any]) -> Path | Non
     draft = operator_digest(report)
     if not draft:
         return None
-    from core.vault_dossiers import write_report_note
+    from core.vault.dossiers import write_report_note
 
     return write_report_note(channel_id, "digest", "Operator digest", draft, fenced=False)
 
@@ -193,7 +193,7 @@ def write_community_post_draft(channel_id: str, report: dict[str, Any]) -> Path 
     draft = community_post_draft(report)
     if not draft:
         return None
-    from core.vault_dossiers import write_report_note
+    from core.vault.dossiers import write_report_note
 
     return write_report_note(
         channel_id,
@@ -299,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
     print(rendered)
     # Pillar 4: land a copy in the vault (no-op without OBSIDIAN_VAULT_PATH).
     try:
-        from core.vault_dossiers import write_weekly_report_note
+        from core.vault.dossiers import write_weekly_report_note
 
         path = write_weekly_report_note(channel_id, rendered)
         if path:

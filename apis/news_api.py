@@ -2,6 +2,7 @@ import os
 
 import requests
 
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -66,6 +67,9 @@ def get_news_score(query):
                 status_detail=message,
             )
 
+        drifted = drift("news", data)
+        if drifted:
+            return drift_signal(drifted)
         articles = data.get("articles", [])
         score = min(len(articles) * 10, 100)
         headlines = []

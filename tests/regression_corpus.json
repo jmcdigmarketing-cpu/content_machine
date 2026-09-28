@@ -842,6 +842,36 @@
         ]
       },
       "why": "a test-written 2028 row sorted last and supplied every 'now=' on the trend"
+    },
+    {
+      "id": "vault-preview-after-the-event",
+      "item": 558,
+      "source": "backlog #558; the Topuria-Holloway preview note",
+      "call": "core.fact_recency:stale_preview",
+      "args": [
+        "Topuria vs Holloway is set for Oct 4 in Abu Dhabi.",
+        "2026-09-20",
+        "2026-10-10"
+      ],
+      "expect": {
+        "equals": true
+      },
+      "why": "a vault preview of an event that has happened was still handed to the script as a current fact"
+    },
+    {
+      "id": "vault-result-line-kept",
+      "item": 558,
+      "source": "backlog #558 (sibling: the result line)",
+      "call": "core.fact_recency:stale_preview",
+      "args": [
+        "Topuria knocked out Holloway on Oct 4 in Abu Dhabi.",
+        "2026-09-20",
+        "2026-11-10"
+      ],
+      "expect": {
+        "equals": false
+      },
+      "why": "only forward-looking lines retire; what happened stays a fact"
     }
   ]
 }

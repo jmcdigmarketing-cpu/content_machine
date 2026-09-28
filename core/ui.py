@@ -1204,7 +1204,7 @@ def prompt_key_facts_result(
 
     # Run 98: is each pasted-link line about this topic at all? Typed and pasted
     # lines are the operator's own words and are never questioned.
-    from core.vault_relevance import build_relevance_corpus, compact_reasons
+    from core.vault.relevance import build_relevance_corpus, compact_reasons
 
     reference = "\n".join(part for part in (angle, topic) if part)
     if link_facts and os.getenv("FACT_OFF_TOPIC_FILTER", "true").lower() not in (
@@ -1294,7 +1294,7 @@ def prompt_key_facts_result(
         score = getattr(record, "relevance_score", None)
         suffix = f" [{band}]"
         if isinstance(score, int | float):
-            from core.vault_relevance import VaultRelevanceDecision
+            from core.vault.relevance import VaultRelevanceDecision
 
             decision = VaultRelevanceDecision(
                 score=float(score),

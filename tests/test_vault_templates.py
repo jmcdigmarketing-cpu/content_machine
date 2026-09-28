@@ -6,7 +6,7 @@ vault tier (below `link` and `web`), and one missing `verified_at` loses freshne
 ranking — silently, because the parser is deliberately forgiving.
 
 Templates that only live in prose drift from the parser. These tests read the shipped
-files through the real reader (`core.vault_index._parse_frontmatter`) and check the
+files through the real reader (`core.vault.index._parse_frontmatter`) and check the
 values against the real tier constants, so a contract change breaks here rather than in
 the operator's vault.
 """
@@ -15,7 +15,7 @@ import pathlib
 import unittest
 
 from core.fact_store import TIER_WEIGHTS
-from core.vault_index import _parse_frontmatter
+from core.vault.index import _parse_frontmatter
 
 TEMPLATES = pathlib.Path(__file__).resolve().parents[1] / "docs" / "vault_templates"
 

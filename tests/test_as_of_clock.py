@@ -13,8 +13,8 @@ from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-from core import vault_index
 from core.fact_store import TIER_OPERATOR, TIER_VAULT, FactRecord, stamp_as_of
+from core.vault import index as vault_index
 
 
 class TestStampAsOf(unittest.TestCase):

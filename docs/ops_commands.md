@@ -144,7 +144,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `tray` | System-tray / quota chip (uploads-left + TTS chars + Apify breaker) |
 | `tts-arms` | ElevenLabs vs Piper Bayesian report (no auto-switch) |
 | `validate` | Validate config/channels.json |
-| `vault-decay` | List vault notes whose expires date is in the past |
+| `vault-decay` | List vault notes whose expires date is in the past, and preview lines about past events |
 | `vault-eval` | Vault subject-relevance evals: precision/recall, or compare last two |
 | `vault-retier` | List _operator_facts notes holding scraped page lines; --apply moves them to link tier (#857) |
 | `vault-sync` | Write machine beliefs + run dossiers into the Obsidian vault |

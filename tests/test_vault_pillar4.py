@@ -9,7 +9,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from core import obsidian_facts as of
-from core import vault_dossiers, vault_index
+from core.vault import dossiers as vault_dossiers
+from core.vault import index as vault_index
 
 
 class VaultCase(unittest.TestCase):

@@ -50,7 +50,7 @@ class TestPublicRedact(unittest.TestCase):
         self.assertIn("redaction", md.lower())
 
     def test_unpublished_dossier_withholds_full_script(self):
-        from core.vault_dossiers import _render_dossier
+        from core.vault.dossiers import _render_dossier
 
         record = SimpleNamespace(
             channel_id="tapin",

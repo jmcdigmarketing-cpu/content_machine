@@ -2,6 +2,7 @@ import os
 
 import requests
 
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -84,7 +85,11 @@ def get_odds_data(topic):
                 status_detail=detail,
             )
 
-        data = topic_sports(topic, response.json())
+        body = response.json()
+        drifted = drift("odds", body)
+        if drifted:
+            return drift_signal(drifted)
+        data = topic_sports(topic, body)
 
         if not data:
             return make_signal(

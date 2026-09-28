@@ -38,33 +38,34 @@ first `core/` sub-package, and the rule for where new modules go.
 #833** · wave 41: **#888 #892 #893 #832 #831** · wave 40: **#890 #891 #879 #876 #870 #855**.
 Earlier: [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
-### The five weaknesses - where each stands (2026-09-27, after wave 44)
+### The five weaknesses - where each stands (2026-09-28, after wave 45)
 
 The operator's list from [assessment.md](assessment.md). Every row has shipped its main fix; what
 is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research | #558 expire notes about past events · #589 re-scope (a second provider is partly covered by #899) |
-| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel | #385 schema pinning · #626 contract tests |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire | #589 second search provider on an empty answer |
+| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** schema pins, **#626** contract tests from payloads | #906 pin the other ten JSON signals · #905 record real payloads |
 | 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds | - |
-| 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed | #503 caption entrance animation · #786 footage and your music tracks (operator) |
-| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**) | more measured videos - nothing code can replace |
+| 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade) | #504 emoji in captions · #786 footage and your music tracks (operator) |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**) | #559 record the prediction at publish time · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 44 (2026-09-27)** shipped eight: the five recommended plus event research (the operator's
-question) and the two visuals items the operator asked to include.
+**Wave 45 (2026-09-28)** shipped the five recommended (#558, #385, #626, #503, #901). The list
+below follows from what they left: the pins cover eight signals of eighteen JSON readers, and the
+fixtures are documented shapes until a real response replaces them.
 
-1. **#558 expire vault notes about events that have happened** (weakness 1) `[M]`.
-2. **#385 pin each API's response schema** (weakness 2) `[M]` - a renamed field fails loudly.
-3. **#626 contract tests from each signal's recorded payload** (weakness 2) `[M]`.
-4. **#503 caption entrance animation per channel** (weakness 4) `[M]`.
-5. **#901 drop the voice aliases; move `vault_*` into `core/vault/`** (#834) `[S]`.
+1. **#906 pin the remaining JSON signals** (weakness 2) `[M]` - Brave, tmdb, tvmaze, jikan, anilist ...
+2. **#905 record real payloads into the contract fixtures** (weakness 2) `[S]` - a new ops verb.
+3. **#589 a second search provider when the first returns nothing** (weakness 1) `[M]`.
+4. **#559 record the prediction at publish time** (weakness 5) `[M]` - the residual stops moving.
+5. **#907 move `fact_*` into `core/facts/`; delete the `vault_*` aliases** (#834) `[S]`.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** drop royalty-free tracks into `assets/music/tapin/` and
+**Waiting on the operator, not on code:** render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
 `assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
 colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop

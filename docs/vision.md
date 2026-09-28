@@ -1,6 +1,6 @@
 # Content Machine — Vision & 12-Month Architecture
 
-> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** charter · **Status:** living · **Reviewed:** 2026-09-28
 
 **North star: stop building features, start building an intelligence system that operates media businesses.**
 Content generation is one subsystem. The durable asset is the proprietary
@@ -22,7 +22,7 @@ the north star they ladder up to.
 called *missing* exists in a v1 — experimentation harness (`core/experiments.py`,
 `core/experiment_levers.py`), data-quality monitor (`core/data_quality.py`), unit-economics
 ledger (`core/run_ledger.py` beside `core/cost_meter.py`), quota & spend governor
-(`core/quota_governor.py`, O11), evaluation set (`core/vault_evals.py`, frozen prompt-eval
+(`core/quota_governor.py`, O11), evaluation set (`core/vault/evals.py`, frozen prompt-eval
 goldens); the graveyard avoid-list §2 rated ~60% is wired into `core/best_bet.py`. The
 §3.1 warning has since been *measured*: both ranking scores are anti-correlated with
 engagement at n=12 (composite r=-0.15, report card r=-0.32 — backlog #819/#824), which is
@@ -88,7 +88,7 @@ to what already ships on `main`:
 | Weekly Executive Report | **Built (v1)** | `analytics/weekly_report.py` → `scripts.ops weekly-report` |
 | Hook / Title / Thumbnail Intelligence | **Partial** — `hook_score` exists; title_structure is a feature; `thumbnail_scores` table exists but CTR-correlation not closed | `core/hook_score.py`, `assets/thumbnail_scorer.py`, `storage/models.py` |
 | Asset Memory | **Foundation** — `assets` table records render assets; no retention-impact ranking yet | `storage/models.py`, `core/asset_recorder.py` |
-| Knowledge / Obsidian + prompt versions | **Built (v1)** — vault read + machine-belief writeback; `prompt_version` persisted | `core/obsidian_facts.py`, `core/vault_writeback.py`, `content_runs.prompt_version` |
+| Knowledge / Obsidian + prompt versions | **Built (v1)** — vault read + machine-belief writeback; `prompt_version` persisted | `core/obsidian_facts.py`, `core/vault/writeback.py`, `content_runs.prompt_version` |
 | Cost / unit economics | **Built (v0)** | `core/cost_meter.py` |
 
 **Implication:** the next 30–60 days are mostly *consolidation and surfacing* of

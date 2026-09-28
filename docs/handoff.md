@@ -53,27 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-27 · **HEAD at write:** `8d1bf3e` (wave 44) + the #902-#904 fix commit (`git log -2`)
+**Written:** 2026-09-28 · **HEAD at write:** `6424fda` + the wave 45 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** `core/voice_plan|catalog|consistency` moved to `core/voice/` - import the
-new paths; the old files are one-wave `sys.modules` aliases (#901 removes them), and
-`tests/test_core_layout.py` fails a new flat `core/*.py` past 243. `core/event_research` runs on a
-recency miss and fetches Wikipedia / Google News; the suite pins `EVENT_RESEARCH_ENABLED=false`.
-mypy baseline **123**. `decisions.md` is at its ceiling. Corpus 52 cases.
+**Read before editing:** the vault modules are `core/vault/` (index, ingest, relevance, dossiers,
+writeback, evals, retier) - import the new paths; `core/vault_*.py` are one-wave aliases (#907
+deletes them). The `core/voice_*` aliases are gone. `FLAT_CEILING` is 236. A JSON signal with a
+pin in `apis/schema_pins` needs a fixture in `tests/fixtures/signal_payloads/`, and the reverse.
+mypy baseline **123**. Corpus 55 cases.
 
 **Defects first:**
-- **Event research never met a live network** - this container's proxy blocks Wikipedia and Google
-  News. The logic is tested on fixtures only; the first real miss on the PC is its first run.
-- **Nothing was heard or watched:** the ducked music bed and the `Voice2` caption colour are tested
-  as an ffmpeg command and ASS text (#900). No tracks exist until the operator adds them.
-- Carried: Sonnet 5 untested on a real script; #889 debate/quotes not heard.
+- **The contract fixtures are documented shapes, not captures** - this container cannot reach the
+  APIs. A real response that differs from the docs would fail the pins on the PC (#905).
+- **Word mode changed format:** MoneyWise captions now burn from `.ass` (an `.srt` cannot carry the
+  fade). Pixel-identical to the SRT burn once the fade ends (FFmpeg 7.0 here); not watched on a
+  full render.
+- Ten JSON signals are still unpinned (#906). Carried: event research never met a live network.
 
-**Shipped:** #899 · #411 · #506 · #896 · #897 · #854 · #352 · #834; then #902-#904 from the operator's
-first `ops reliability` on the PC (Windows meter `#.`, future history rows dropped, no `default` competitor warning).
-
-Suite **3,962**, identical in default/reverse/shuffle (8 environmental here), hygiene clean;
-mypy **123**; backlog **266 numbered open**. Next five: **#558 · #385 · #626 · #503 · #901**.
+**Shipped:** #558 · #385 · #626 · #503 · #901. Suite **4,009**, the same 8 environmental failures
+in default/reverse/shuffle, hygiene clean; mypy **123**; backlog **264 numbered open**, highest
+#907. Next five: **#906 · #905 · #589 · #559 · #907**.
 
 ## Slot — Cursor
 

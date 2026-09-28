@@ -177,7 +177,7 @@ class TestDemandDumpsAreContext(unittest.TestCase):
         self.assertEqual(tiers, {TIER_CONTEXT})
 
     def test_the_vault_corpus_does_not_contain_them(self) -> None:
-        from core.vault_relevance import build_relevance_corpus
+        from core.vault.relevance import build_relevance_corpus
 
         self.assertNotIn("Marvel Rivals", build_relevance_corpus(_demand_signals()))
 

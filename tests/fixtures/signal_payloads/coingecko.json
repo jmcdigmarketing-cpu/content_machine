@@ -1,0 +1,21 @@
+{
+  "signal": "coingecko",
+  "call": "apis.coingecko_api:get_coingecko_signal",
+  "topic": "bitcoin price",
+  "response": {
+    "coins": [
+      {
+        "id": "bitcoin",
+        "name": "Bitcoin",
+        "api_symbol": "bitcoin",
+        "symbol": "BTC",
+        "market_cap_rank": 1
+      }
+    ],
+    "exchanges": [],
+    "icos": [],
+    "categories": [],
+    "nfts": []
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#626); not a live capture - this container cannot reach the APIs. Refresh from a real response on the operator's PC (#905)."
+}

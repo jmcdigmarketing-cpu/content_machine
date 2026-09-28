@@ -28,12 +28,12 @@ from scripts import ops
 
 class TestPlaybookLint(unittest.TestCase):
     def setUp(self):
-        from core import vault_index
+        from core.vault import index as vault_index
 
         vault_index.clear_cache()
 
     def tearDown(self):
-        from core import vault_index
+        from core.vault import index as vault_index
 
         vault_index.clear_cache()
 

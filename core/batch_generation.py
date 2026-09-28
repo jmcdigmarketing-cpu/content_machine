@@ -172,7 +172,7 @@ def generate_draft(
         logger.debug("next_arm skipped: %s", exc)
 
     from core.fact_selection import select_headless_facts
-    from core.vault_relevance import build_relevance_corpus
+    from core.vault.relevance import build_relevance_corpus
 
     corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
     packed = select_headless_facts(key_facts, topic=topic, corpus=corpus) if key_facts else None

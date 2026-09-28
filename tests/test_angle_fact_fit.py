@@ -152,7 +152,7 @@ class PersistenceTests(unittest.TestCase):
 
 class DossierTests(unittest.TestCase):
     def test_the_audit_block_ranks_the_angles_by_fact_fit(self):
-        from core.vault_dossiers import audit_lines
+        from core.vault.dossiers import audit_lines
 
         text = "\n".join(audit_lines({"angle_fact_fit": {ANGLES[0]: 0.67, ANGLES[2]: 0.0}}, {}))
         self.assertIn("Fact-fit:** 0.67 GTA 6 delay", text)

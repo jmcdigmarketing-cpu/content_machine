@@ -70,7 +70,7 @@ class RetierCase(unittest.TestCase):
 
 class PlanTests(RetierCase):
     def test_a_scraped_note_is_listed_and_a_typed_one_is_not(self):
-        from core.vault_retier import plan_retier
+        from core.vault.retier import plan_retier
 
         plans = plan_retier("tapin")
         self.assertEqual([Path(p.rel_path).name for p in plans], [self.scraped.name])
@@ -78,7 +78,7 @@ class PlanTests(RetierCase):
         self.assertTrue(plans[0].samples[0].startswith("Source:"))
 
     def test_the_line_rule(self):
-        from core.vault_retier import scraped_line
+        from core.vault.retier import scraped_line
 
         self.assertTrue(scraped_line("Source: Some page title"))
         self.assertTrue(scraped_line('Source video: "UFC 320 preview" by MMA Junkie'))
@@ -86,7 +86,7 @@ class PlanTests(RetierCase):
         self.assertFalse(scraped_line("Ankalaev defends the title against Pereira."))
 
     def test_another_channel_is_not_listed(self):
-        from core.vault_retier import plan_retier
+        from core.vault.retier import plan_retier
 
         self.assertEqual(plan_retier("moneywise"), [])
 
@@ -94,8 +94,8 @@ class PlanTests(RetierCase):
 class ApplyTests(RetierCase):
     def test_apply_moves_the_note_to_link_tier(self):
         from core.fact_store import note_metadata
-        from core.vault_index import _parse_frontmatter
-        from core.vault_retier import apply_retier, plan_retier
+        from core.vault.index import _parse_frontmatter
+        from core.vault.retier import apply_retier, plan_retier
 
         results = apply_retier(plan_retier("tapin"), today=date(2026, 9, 27))
         self.assertEqual([r["status"] for r in results], ["moved"])
@@ -111,7 +111,7 @@ class ApplyTests(RetierCase):
         self.assertIn("Blade joins the roster", body)
 
     def test_an_existing_target_is_never_overwritten(self):
-        from core.vault_retier import apply_retier, plan_retier
+        from core.vault.retier import apply_retier, plan_retier
 
         self.target.parent.mkdir(parents=True)
         self.target.write_text("already here", encoding="utf-8")

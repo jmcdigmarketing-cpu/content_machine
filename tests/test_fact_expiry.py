@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core import fact_expiry as fe
-from core import vault_index
+from core.vault import index as vault_index
 
 
 class TestFactExpiry(unittest.TestCase):

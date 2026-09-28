@@ -34,7 +34,7 @@ def _write_note(root: Path) -> None:
 
 class TestOperatorTiebreak(unittest.TestCase):
     def setUp(self):
-        from core.vault_relevance import reset_tiebreak_cache
+        from core.vault.relevance import reset_tiebreak_cache
 
         reset_tiebreak_cache()
 

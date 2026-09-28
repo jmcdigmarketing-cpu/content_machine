@@ -70,7 +70,7 @@ class TestSkipRespectsRecency(unittest.TestCase):
         environ.update(env or {})
         with (
             patch.dict(os.environ, environ, clear=False),
-            patch("core.vault_relevance.relevance_mode", return_value="scored"),
+            patch("core.vault.relevance.relevance_mode", return_value="scored"),
             patch("core.obsidian_facts.load_fact_records", return_value=records),
         ):
             return should_skip_web_search(topic, "tapin", corpus="gta 6 rockstar")

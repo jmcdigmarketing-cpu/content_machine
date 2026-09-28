@@ -168,7 +168,7 @@ def _run_overnight_body(
     # Mirror each drafted run into the vault (Pillar 4). run_batch persists a
     # content_run per draft, so dossiers can join grade/quality/cost by run_id.
     try:
-        from core.vault_dossiers import write_run_dossier
+        from core.vault.dossiers import write_run_dossier
 
         for o in result.outcomes:
             rid = getattr(o, "run_id", None)

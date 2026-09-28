@@ -131,14 +131,14 @@ def should_skip_web_search(
         logger.debug("web-search skip declined: event-shaped topic %r", topic)
         return False
     try:
-        from core.vault_relevance import relevance_mode
+        from core.vault.relevance import relevance_mode
 
         mode = relevance_mode()
         if mode in ("shadow", "scored"):
             if signals is None and corpus is None:
                 return False
             from core.obsidian_facts import load_fact_records
-            from core.vault_relevance import build_relevance_corpus
+            from core.vault.relevance import build_relevance_corpus
 
             text = (
                 corpus

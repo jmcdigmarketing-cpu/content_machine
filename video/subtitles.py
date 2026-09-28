@@ -129,6 +129,14 @@ def caption_style(channel_id: str | None = None) -> str:
     return str(_caption_skin(channel_id).get("mode") or "word").strip().lower()
 
 
+def caption_entrance(channel_id: str | None = None) -> str:
+    """#503: pop / fade / slide / none from `caption_skin.entrance` (unknown -> none)."""
+    from video.caption_timing import ENTRANCES
+
+    name = str(_caption_skin(channel_id).get("entrance") or "none").strip().lower()
+    return name if name in ENTRANCES else "none"
+
+
 def _ass_color(value: object, default: str) -> str:
     raw = str(value or default).strip().lstrip("#")
     if len(raw) != 6 or any(ch not in "0123456789abcdefABCDEF" for ch in raw):
@@ -292,6 +300,20 @@ def generate_subtitle_file(
                 voice2_primary=_ass_color(
                     _caption_skin(channel_id).get("second_voice_color"), "#4FC3F7"
                 ),
+                entrance=caption_entrance(channel_id),
+            )
+            ext = ".ass"
+            companion_srt = build_srt_from_words(words, max_words=max_words)
+        elif caption_entrance(channel_id) != "none":
+            # #503: an SRT cannot carry the entrance (FFmpeg strips the tag), so word
+            # mode with one burns the same cues as .ass, the .srt kept beside it.
+            from video.caption_timing import build_ass_from_words
+
+            text = build_ass_from_words(
+                words,
+                max_words=max_words,
+                style=caption_force_style(channel_id),
+                entrance=caption_entrance(channel_id),
             )
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)

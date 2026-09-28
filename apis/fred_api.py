@@ -7,6 +7,7 @@ import os
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -61,7 +62,11 @@ def get_fred_signal(topic: str) -> dict:
             status, detail = classify_http(resp.status_code, resp.text)
             return make_signal(connected=False, active=False, status=status, status_detail=detail)
 
-        series = (resp.json().get("seriess") or [])[:5]
+        body = resp.json()
+        drifted = drift("fred", body)
+        if drifted:
+            return drift_signal(drifted)
+        series = (body.get("seriess") or [])[:5]
         if not series:
             sig = make_signal(
                 connected=True,

@@ -3,6 +3,7 @@ import re
 
 import requests
 
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -148,6 +149,9 @@ def get_rawg_signal(topic):
             )
 
         data = response.json()
+        drifted = drift("rawg", data)
+        if drifted:
+            return drift_signal(drifted)
         results = data.get("results", [])
 
         # Drop fuzzy neighbors RAWG returns for loose name matches, so only the

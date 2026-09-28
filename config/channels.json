@@ -36,6 +36,7 @@
         "fill_color": "#FFFFFF",
         "outline_color": "#111111",
         "second_voice_color": "#4FC3F7",
+        "entrance": "pop",
         "boxed": false
       },
       "end_card": {
@@ -152,6 +153,7 @@
         "fill_color": "#F7E7A9",
         "outline_color": "#1B2430",
         "second_voice_color": "#9FD3C7",
+        "entrance": "fade",
         "boxed": true
       },
       "end_card": {

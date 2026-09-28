@@ -7,6 +7,18 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-27 (Claude Code): wave 42 #853 #851 #868 #894 #833
+
+- **#853** Anthropic premium default `claude-sonnet-5`; `.env.example` no longer pins every tier
+  with `ANTHROPIC_MODEL` (delete it from your `.env` if it is there).
+- **#851** best-bet headlines use `infer_topic_domain` - no fallback through the env channel.
+- **#868** `ops reback-short` (was `preview-render`, which now only prints the new name).
+- **#894** `ops package-audit` retries the wheel in isolation; it completes on this container.
+- **#833** mypy over every shipped package; `video/__init__.py`; baseline 123.
+
+**Verify:** `python -m unittest tests.test_llm_defaults tests.test_best_bet_headline_domain
+tests.test_package_audit_build tests.test_mypy_targets`; `py -m scripts.ops package-audit`.
+
 ## Previous — 2026-09-27 (Claude Code): wave 41 #888 #892 #893 #832 + #831
 
 - **#888** the dossier is rewritten when the render finishes; it names the voices and the pace.

@@ -487,7 +487,7 @@ def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     if topic:
         skip |= _gated_signal_names(topic, channel_id)
         try:
-            from core.vault_relevance import relevance_mode
+            from core.vault.relevance import relevance_mode
 
             # Scored/shadow skip after non-web fetch (build_registry two-stage).
             if relevance_mode() not in ("shadow", "scored"):
@@ -653,7 +653,7 @@ def _fetch_one(name, func, topic, pinned: dict[str, Any] | None = None):
 
 def _two_stage_web() -> bool:
     try:
-        from core.vault_relevance import relevance_mode
+        from core.vault.relevance import relevance_mode
 
         return relevance_mode() in ("shadow", "scored")
     except Exception:

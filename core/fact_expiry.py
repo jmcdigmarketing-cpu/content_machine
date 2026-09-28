@@ -29,7 +29,7 @@ def expired_notes(
             _note_matches_channel,
             _vault_path,
         )
-        from core.vault_index import iter_notes
+        from core.vault.index import iter_notes
     except Exception as exc:
         logger.debug("fact expiry imports skipped: %s", exc)
         return []
@@ -64,6 +64,54 @@ def expired_notes(
         except Exception as exc:
             logger.debug("fact expiry note skipped: %s", exc)
     out.sort(key=lambda r: r.get("expires") or "")
+    return out
+
+
+def stale_previews(
+    channel_id: str | None = None,
+    *,
+    today: date | None = None,
+) -> list[dict[str, Any]]:
+    """#558: preview bullets whose event has happened - `load_fact_records` skips them.
+
+    `[{path, line}]`, the same read `fact_recency.stale_preview` makes in the loader
+    (the note's `date:`/`verified_at:` anchors a year-less date). Nothing is edited.
+    """
+    try:
+        from core.fact_recency import stale_preview
+        from core.fact_store import note_metadata
+        from core.obsidian_facts import _is_machine_record, _note_matches_channel, _vault_path
+        from core.vault.index import iter_notes
+    except Exception as exc:
+        logger.debug("stale preview imports skipped: %s", exc)
+        return []
+    vault = _vault_path()
+    if not vault:
+        return []
+    today = today or date.today()
+    out: list[dict[str, Any]] = []
+    try:
+        notes = list(iter_notes(vault))
+    except Exception as exc:
+        logger.debug("stale preview iter skipped: %s", exc)
+        return []
+    for note in notes:
+        try:
+            rel = Path(note.rel_path)
+            meta = note.meta or {}
+            if channel_id and not _note_matches_channel(meta, rel, channel_id):
+                continue
+            if _is_machine_record(rel):
+                continue
+            _tier, verified_at, _expires, _url = note_metadata(meta, rel)
+            path = str(rel).replace("\\", "/")
+            out.extend(
+                {"path": path, "line": b}
+                for b in note.bullets
+                if stale_preview(b, verified_at, today)
+            )
+        except Exception as exc:
+            logger.debug("stale preview note skipped: %s", exc)
     return out
 
 

@@ -1,0 +1,28 @@
+{
+  "signal": "fred",
+  "call": "apis.fred_api:get_fred_signal",
+  "topic": "consumer price index inflation",
+  "attrs": {
+    "_KEY": "test-key"
+  },
+  "response": {
+    "realtime_start": "2026-09-28",
+    "realtime_end": "2026-09-28",
+    "count": 1,
+    "offset": 0,
+    "limit": 8,
+    "seriess": [
+      {
+        "id": "CPIAUCSL",
+        "realtime_start": "2026-09-28",
+        "realtime_end": "2026-09-28",
+        "title": "Consumer Price Index for All Urban Consumers: All Items in U.S. City Average",
+        "frequency": "Monthly",
+        "units": "Index 1982-1984=100",
+        "seasonal_adjustment_short": "SA",
+        "popularity": 95
+      }
+    ]
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#626); not a live capture - this container cannot reach the APIs. Refresh from a real response on the operator's PC (#905)."
+}

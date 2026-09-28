@@ -122,7 +122,7 @@ class TestAnalystAgent(unittest.TestCase):
         with (
             patch("core.analyst_agent._gather_context", return_value="## Weekly\ndata"),
             patch("core.llm_router.complete", return_value="  Headline. Do X.  ") as mock_llm,
-            patch("core.vault_dossiers.write_report_note", return_value=None),
+            patch("core.vault.dossiers.write_report_note", return_value=None),
             patch("core.events.emit_event", return_value=True) as mock_evt,
         ):
             out = analyst_agent.run_analyst("tapin")
@@ -140,7 +140,7 @@ class TestAnalystAgent(unittest.TestCase):
                 "analytics.weekly_report.build_next_actions",
                 return_value=["Lead with the fraud angle", "Retire recaps"],
             ),
-            patch("core.vault_dossiers.write_report_note", return_value=None),
+            patch("core.vault.dossiers.write_report_note", return_value=None),
             patch("core.events.emit_event", return_value=True),
         ):
             out = analyst_agent.build_analyst_brief("tapin")
@@ -175,7 +175,7 @@ class TestOvernight(unittest.TestCase):
         with (
             patch("core.batch_generation.collect_topics", return_value=["a", "b", "c"]),
             patch("core.batch_generation.run_batch", return_value=outcomes) as mock_batch,
-            patch("core.vault_dossiers.write_run_dossier", return_value="path") as mock_doss,
+            patch("core.vault.dossiers.write_run_dossier", return_value="path") as mock_doss,
             patch("core.channel_health.build_health", return_value=MagicMock()),
             patch("core.channel_health.health_line", return_value="Health: GREEN"),
             patch("core.events.emit_event", return_value=True) as mock_evt,

@@ -17,7 +17,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core import vault_evals
+from core.vault import evals as vault_evals
 
 
 class TestFixtureSetIsUsable(unittest.TestCase):
@@ -170,7 +170,7 @@ class TestReportAndPersistence(unittest.TestCase):
 
 class TestTuningIsAdvisory(unittest.TestCase):
     def test_tuning_returns_a_recommendation_without_writing_config(self):
-        from core.vault_relevance import load_relevance_config
+        from core.vault.relevance import load_relevance_config
 
         before = load_relevance_config(refresh=True)
         result = vault_evals.tune(vault_evals.load_cases())

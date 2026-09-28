@@ -7,6 +7,7 @@ import requests
 
 from apis.nba_teams import teams_in_topic as nba_teams_in_topic
 from apis.nfl_entities import team_search_term as nfl_team_search_term
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -90,6 +91,9 @@ def get_sports_data(topic):
             )
 
         data = response.json()
+        drifted = drift("sports", data)
+        if drifted:
+            return drift_signal(drifted)
 
         if not data.get("teams"):
             return make_signal(

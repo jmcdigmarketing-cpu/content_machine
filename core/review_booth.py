@@ -971,7 +971,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
 
     dossier_uri = ""
     try:
-        from core.vault_dossiers import dossier_obsidian_uri
+        from core.vault.dossiers import dossier_obsidian_uri
 
         dossier_uri = dossier_obsidian_uri(run_id, channel_id)
     except Exception as exc:

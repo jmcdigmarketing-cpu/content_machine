@@ -22,7 +22,7 @@ Three rules keep ground truth safe:
   3. **Every exclusion carries a reason.** A silent drop of ground truth is the
      worst failure this module can have.
 
-Relevance reuses `core.vault_relevance.score_vault_fact` (additive, banded,
+Relevance reuses `core.vault.relevance.score_vault_fact` (additive, banded,
 explainable) and recency reuses `core.fact_store.freshness_bonus`. The two terms
 added here — specificity and novelty — exist because neither of those answers the
 question this module actually asks: not "is this line about the topic?" but "of
@@ -189,7 +189,7 @@ def _relevance(record: FactRecord, *, topic: str, corpus: str) -> float:
     if not (topic or corpus):
         return 0.5  # nothing to score against — neutral, not zero
     try:
-        from core.vault_relevance import score_vault_fact
+        from core.vault.relevance import score_vault_fact
 
         return float(
             score_vault_fact(

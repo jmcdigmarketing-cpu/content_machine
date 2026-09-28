@@ -1,0 +1,24 @@
+{
+  "signal": "web_search",
+  "call": "apis.web_search_api:get_web_search_signal",
+  "topic": "UFC 320 results",
+  "env": {
+    "TAVILY_API_KEY": "test-key",
+    "WEB_SEARCH_BACKEND": ""
+  },
+  "method": "post",
+  "response": {
+    "query": "UFC 320 results",
+    "answer": "Results from UFC 320.",
+    "results": [
+      {
+        "title": "UFC 320 results: Pereira reclaims the belt",
+        "url": "https://www.example-mma.com/ufc-320-results",
+        "content": "Alex Pereira stopped Magomed Ankalaev in the first round.",
+        "score": 0.91
+      }
+    ],
+    "response_time": 1.2
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#626); not a live capture - this container cannot reach the APIs. Refresh from a real response on the operator's PC (#905)."
+}

@@ -243,7 +243,7 @@ def main(argv=None) -> int:
     from core.content_engine import key_facts_for_prompt
     from core.fact_selection import select_headless_facts
     from core.operator_facts import capture_facts_to_vault
-    from core.vault_relevance import build_relevance_corpus
+    from core.vault.relevance import build_relevance_corpus
 
     corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
     packed = (

@@ -113,7 +113,7 @@ This is the project's own principle, written down in `docs/decisions.md` §18, �
   breaker trips — a wrong change silently disables a paid signal across runs.
 - **`ops secrets-doctor` must never print a secret value.**
 - **No network in tests.**
-- **A new `core/` module goes in its subject's sub-package** (`core/voice/`, `core/vault/`;
+- **A new `core/` module goes in its subject's sub-package** (`core/voice/`, `core/vault/`, `core/facts/`;
   #834). `tests/test_core_layout.py` holds the flat `core/*.py` count to a ceiling; see
   "Where a new module goes" in `CLAUDE.md`.
 - **Sign your commits** — `Co-authored-by: Cursor <cursoragent@cursor.com>`. Both

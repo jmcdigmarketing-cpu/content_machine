@@ -360,7 +360,7 @@
       "id": "run66-why-is-not-a-name",
       "item": 745,
       "source": "run 66; erased by #745, restored e7ef6ad",
-      "call": "core.fact_grounding:extract_entities",
+      "call": "core.facts.grounding:extract_entities",
       "args": [
         "Why Jason Duval matters."
       ],
@@ -847,7 +847,7 @@
       "id": "vault-preview-after-the-event",
       "item": 558,
       "source": "backlog #558; the Topuria-Holloway preview note",
-      "call": "core.fact_recency:stale_preview",
+      "call": "core.facts.recency:stale_preview",
       "args": [
         "Topuria vs Holloway is set for Oct 4 in Abu Dhabi.",
         "2026-09-20",
@@ -862,7 +862,7 @@
       "id": "vault-result-line-kept",
       "item": 558,
       "source": "backlog #558 (sibling: the result line)",
-      "call": "core.fact_recency:stale_preview",
+      "call": "core.facts.recency:stale_preview",
       "args": [
         "Topuria knocked out Holloway on Oct 4 in Abu Dhabi.",
         "2026-09-20",
@@ -872,6 +872,34 @@
         "equals": false
       },
       "why": "only forward-looking lines retire; what happened stays a fact"
+    },
+    {
+      "id": "incident-deadline-is-not-an-outage",
+      "item": 908,
+      "source": "operator's ops reliability, 2026-09-27 (youtube unavailable x10)",
+      "call": "core.incident_ledger:reason_of",
+      "args": [
+        "unavailable",
+        "missed the 25s discovery deadline"
+      ],
+      "expect": {
+        "equals": "deadline"
+      },
+      "why": "'unavailable' covered a timeout, a missed deadline and a signal that never connected; the ledger could not say which"
+    },
+    {
+      "id": "incident-reset-is-not-a-missing-key",
+      "item": 908,
+      "source": "wave 46 review of #908's own reason table",
+      "call": "core.incident_ledger:reason_of",
+      "args": [
+        "unavailable",
+        "Connection reset by peer"
+      ],
+      "expect": {
+        "equals": "other"
+      },
+      "why": "the first 'no key' needle ('set ') matched 'reset by peer'"
     }
   ]
 }

@@ -55,8 +55,13 @@ def run_engagement_map(channel_id: str) -> dict[int, float]:
     return out
 
 
-def _training_rows(channel_id: str) -> list[tuple[float, float, float]]:
+def _training_rows(
+    channel_id: str, *, exclude_run_id: int | None = None
+) -> list[tuple[float, float, float]]:
     """(hook, authenticity, engaged_rate) for measured runs with quality.
+
+    #559: `exclude_run_id` leaves one run out, so a video's prediction is never fitted
+    on its own outcome.
 
     #815: the authenticity column is the binary gate sum on both sides of the
     v3/v4 boundary. #804 made ``authenticity_score`` continuous, and fitting a
@@ -72,6 +77,8 @@ def _training_rows(channel_id: str) -> list[tuple[float, float, float]]:
         from storage.repositories.content_runs import get_content_run_repository
 
         for run in get_content_run_repository().list_for_channel(channel_id):
+            if exclude_run_id is not None and int(run.id) == int(exclude_run_id):
+                continue
             rate = engagement.get(run.id)
             if rate is None:
                 continue
@@ -106,8 +113,14 @@ def _slope(xs: list[float], ys: list[float]) -> float:
     return cov / var
 
 
-def predict_engaged_rate(channel_id: str, *, quality: dict) -> Prediction | None:
-    """Expected engaged-rate for a draft's quality dict, or None below the gate."""
+def predict_engaged_rate(
+    channel_id: str, *, quality: dict, exclude_run_id: int | None = None
+) -> Prediction | None:
+    """Expected engaged-rate for a draft's quality dict, or None below the gate.
+
+    `exclude_run_id` fits without that run (#559) - the publish-time freeze passes the
+    video's own run, so its outcome is never part of its prediction.
+    """
     from core.run_quality import authenticity_gate_value
 
     hook = quality.get("hook_score")
@@ -116,7 +129,7 @@ def predict_engaged_rate(channel_id: str, *, quality: dict) -> Prediction | None
     auth = authenticity_gate_value(quality)
     if hook is None and auth is None:
         return None
-    rows = _training_rows(channel_id)
+    rows = _training_rows(channel_id, exclude_run_id=exclude_run_id)
     if len(rows) < _min_samples():
         return None
 

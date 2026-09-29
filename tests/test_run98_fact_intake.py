@@ -108,7 +108,7 @@ class TestTheTitleIsNotAFact(unittest.TestCase):
 
 class TestLinkLinesAreLinkTier(unittest.TestCase):
     def test_link_facts_are_written_as_link_tier(self) -> None:
-        from core.fact_store import TIER_LINK, infer_tier_from_path
+        from core.facts.store import TIER_LINK, infer_tier_from_path
         from core.operator_facts import capture_facts_to_vault
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -122,8 +122,8 @@ class TestLinkLinesAreLinkTier(unittest.TestCase):
         self.assertEqual(infer_tier_from_path(rel), TIER_LINK)
 
     def test_a_borrowed_vault_line_is_not_pinned_like_a_typed_one(self) -> None:
-        from core.fact_selection import select_facts_for_prompt
-        from core.fact_store import TIER_OPERATOR, FactRecord
+        from core.facts.selection import select_facts_for_prompt
+        from core.facts.store import TIER_OPERATOR, FactRecord
 
         borrowed = FactRecord(
             claim="Marvel Rivals Season 4 adds Blade to the roster with a new team-up mode.",
@@ -144,7 +144,7 @@ class TestOffTopicLines(unittest.TestCase):
     )
 
     def test_flag_only_lines_with_no_contact_with_the_topic(self) -> None:
-        from core.fact_selection import flag_off_topic
+        from core.facts.selection import flag_off_topic
 
         flagged = flag_off_topic(
             ON_TOPIC + OFF_TOPIC, reference=f"{ANGLE}\n{RUN98}", corpus=self.CORPUS

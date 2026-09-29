@@ -1,6 +1,6 @@
 # Content OS Desktop — the programme
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-26
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-29
 
 The plan to leave the terminal permanently, for a real Windows 11 application.
 **Private, local, single-operator, never published.** That constraint is load
@@ -154,12 +154,12 @@ Stage 3 panels (cost, analytics, …) are later waves.
 | #162 | Experiment cockpit — arms, MDE refusals, results | report-only; never auto-assigns |
 | #160 | Legal/disclosure wizard | publish-blocking, not copy lines |
 | #159 | MoneyWise earnings board | last; second channel |
-| #860 | Facts room — paste links, rank lines against the angle, keep or drop | filed 2026-09-26 from run 98; **proposed next** (see below) |
+| #860 | Facts room — paste links, rank lines against the angle, keep or drop | **shipped 2026-09-29** (wave 46): opens at the run window's key-facts step; `ops facts-room` stays |
 
 **Exit per panel:** reads real data, and the equivalent `ops` verb still works. The
 CLI is never removed — it is the headless path and the test surface.
 
-**Proposed next panel (2026-09-26): #860 the facts room.** Run 98 spent 7.9 of 11.2
+**Shipped 2026-09-29 (wave 46): #860 the facts room** - `core/facts/room.py` + `desktop/facts_room.py`; the proposal as written: Run 98 spent 7.9 of 11.2
 operator minutes at the key-facts prompt, pasting one URL at a time. That is now the
 largest operator cost per video, larger than any panel above removes. The machinery
 exists and was cleaned up in wave 33 (titles are metadata, pasted-link lines are link

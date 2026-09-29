@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from core.fact_store import FactRecord
+from core.facts.store import FactRecord
 
 
 class TestStructuredFactSelection(unittest.TestCase):

@@ -248,7 +248,7 @@ def _sentence_case_against(title: str, script: str) -> str:
 
 def _heuristic_title_script_check(title: str, script: str) -> dict[str, object]:
     """Deterministic fallback when verify_claims cannot run."""
-    from core.fact_grounding import find_ungrounded_entities
+    from core.facts.grounding import find_ungrounded_entities
     from core.relational_check import reversed_relations
 
     folded = _sentence_case_against(title, script)

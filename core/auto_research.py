@@ -133,7 +133,7 @@ def attach_web_research(
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
 
-        from core.fact_selection import flag_off_topic
+        from core.facts.selection import flag_off_topic
         from core.vault.relevance import build_relevance_corpus
 
         corpus = build_relevance_corpus(base, include_web=True)

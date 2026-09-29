@@ -16,7 +16,7 @@ from apis.rss_feeds import fetch_rss_context
 from config.channels import resolve_channel_id
 from config.seo import build_seo_prompt_block
 from core.channel_context import channel_history_block, extract_anchors
-from core.fact_enrichment import enrich_facts
+from core.facts.enrichment import enrich_facts
 from core.llm_router import complete_json
 from core.logging import get_logger
 from core.script_brief import build_script_brief

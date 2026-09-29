@@ -1,0 +1,24 @@
+{
+  "signal": "lastfm",
+  "call": "apis.lastfm_api:get_lastfm_signal",
+  "topic": "Espresso Sabrina Carpenter",
+  "attrs": {
+    "_KEY": "test-key"
+  },
+  "response": {
+    "results": {
+      "opensearch:totalResults": "1",
+      "trackmatches": {
+        "track": [
+          {
+            "name": "Espresso",
+            "artist": "Sabrina Carpenter",
+            "listeners": "2100000",
+            "url": "https://www.last.fm/music/Sabrina+Carpenter/_/Espresso"
+          }
+        ]
+      }
+    }
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

@@ -137,7 +137,7 @@ class TestFactAgeAtPrompt(unittest.TestCase):
     def test_preview_prints_age_for_a_dated_vault_line(self):
         from datetime import date, timedelta
 
-        from core.fact_store import FactRecord, stamp_as_of
+        from core.facts.store import FactRecord, stamp_as_of
         from core.ui import display_fact_preview
 
         old = date.today() - timedelta(days=21)

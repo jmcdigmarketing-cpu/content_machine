@@ -38,34 +38,38 @@ first `core/` sub-package, and the rule for where new modules go.
 #833** · wave 41: **#888 #892 #893 #832 #831** · wave 40: **#890 #891 #879 #876 #870 #855**.
 Earlier: [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
-### The five weaknesses - where each stands (2026-09-28, after wave 45)
+### The five weaknesses - where each stands (2026-09-29, after wave 46)
 
 The operator's list from [assessment.md](assessment.md). Every row has shipped its main fix; what
 is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire | #589 second search provider on an empty answer |
-| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** schema pins, **#626** contract tests from payloads | #906 pin the other ten JSON signals · #905 record real payloads |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact | #910 read the room's links in parallel · #911 confidence in the dossier |
+| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why | record real payloads on the PC (operator) · #386 offline replay from traces |
 | 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds | - |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade) | #504 emoji in captions · #786 footage and your music tracks (operator) |
-| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**) | #559 record the prediction at publish time · more measured videos |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report` | #909 record the best-bet pick · #912 off-slot post-time test · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 45 (2026-09-28)** shipped the five recommended (#558, #385, #626, #503, #901). The list
-below follows from what they left: the pins cover eight signals of eighteen JSON readers, and the
-fixtures are documented shapes until a real response replaces them.
+**Wave 46 (2026-09-29)** shipped ten in one commit (operator: "next 10"): #907 #908 #906 #905 #589
+#559 #113 #357 #548 #860. What they left, and the rest of the weakness table, gives the next ten:
 
-1. **#906 pin the remaining JSON signals** (weakness 2) `[M]` - Brave, tmdb, tvmaze, jikan, anilist ...
-2. **#905 record real payloads into the contract fixtures** (weakness 2) `[S]` - a new ops verb.
-3. **#589 a second search provider when the first returns nothing** (weakness 1) `[M]`.
-4. **#559 record the prediction at publish time** (weakness 5) `[M]` - the residual stops moving.
-5. **#907 move `fact_*` into `core/facts/`; delete the `vault_*` aliases** (#834) `[S]`.
+1. **#910 read the facts room's links in parallel** (weakness 1) `[S]` - the report is module state today.
+2. **#909 record the best-bet pick** (weakness 5) `[S]` - the one recommender the ledger cannot score.
+3. **#911 fact confidence in the run dossier** (E3) `[S]`.
+4. **#504 emoji in captions** (weakness 4) `[M]` - libass drops them silently.
+5. **#386 offline replay from recorded traces** (weakness 2) `[M]` - pairs with #905's recorder.
+6. **#342 learned per-source trust weights** (E3) `[M]` - from the corrections the vault already records.
+7. **#912 an off-slot post-time arm** (weakness 5) `[M]` - the only honest test of the slot.
+8. **#563 time-to-first-100-views** (weakness 5) `[M]` - a faster outcome than the 7-day rate.
+9. **#560 a hold-out set the recommenders never see** (weakness 5) `[M]`.
+10. **#459 dead-code sweep after signal retirements** (E5) `[S]` - operator call first: reddit's free backend.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
+**Waiting on the operator, not on code:** `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
 `assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
 colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop

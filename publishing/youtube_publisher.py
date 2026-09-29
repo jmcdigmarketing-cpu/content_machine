@@ -479,6 +479,16 @@ def _ensure_publish_log(
     return record.id
 
 
+def _freeze_prediction(content_run_id: int | None, channel_id: str) -> None:
+    """Record the prediction ledger at upload (#559, #113). Never blocks a publish."""
+    try:
+        from core.predictions.ledger import freeze
+
+        freeze(content_run_id, channel_id)
+    except Exception as exc:
+        logger.debug("prediction ledger skipped for run %s: %s", content_run_id, exc)
+
+
 def _update_publish_log(log_id: int, data: dict) -> None:
     if log_id:
         get_publish_log_repository().update(log_id, data)
@@ -746,6 +756,8 @@ class YouTubePublisher(Publisher):
                     "published_at": publish_when or datetime.now(timezone.utc),
                 },
             )
+            # #559 / #113: what the system predicted and recommended, frozen now.
+            _freeze_prediction(content_run_id, channel_id)
 
             result_status = "scheduled" if is_youtube_scheduled else "uploaded"
             base_detail = detail if is_youtube_scheduled else format_quota_detail()

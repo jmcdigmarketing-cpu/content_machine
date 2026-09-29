@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from core.fact_grounding import find_ungrounded_entities
+from core.facts.grounding import find_ungrounded_entities
 
 CORPUS_PATH = Path(__file__).resolve().parent.parent / "config" / "grounding_corpus.json"
 

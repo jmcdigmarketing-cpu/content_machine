@@ -114,6 +114,9 @@ def _brave_search(
     if resp.status_code != 200:
         return None, classify_http(resp.status_code, resp.text)
     body = resp.json()
+    drifted = drift("web_search_brave", body)  # #906
+    if drifted:
+        return None, (STATUS_UPSTREAM, f"schema drift: {drifted}")
     results = [
         {
             "title": (r.get("title") or "").strip(),
@@ -168,25 +171,87 @@ _SEARCHERS = {
 }
 
 
+def _fallback_enabled() -> bool:
+    """#589: `WEB_SEARCH_FALLBACK` (default on). The suite pins it off - no network."""
+    return os.getenv("WEB_SEARCH_FALLBACK", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def _ddgs_available() -> bool:
+    import importlib.util
+
+    return any(importlib.util.find_spec(m) is not None for m in ("ddgs", "duckduckgo_search"))
+
+
+def _provider_chain() -> list[str]:
+    """#589: the providers to ask in order - the active one, the other keyed one, then
+    keyless DuckDuckGo when `ddgs` is installed (operator's choice, wave 46).
+
+    Free mode (`WEB_SEARCH_BACKEND=duckduckgo`) never falls back to a paid key, and no
+    provider at all stays `[]` (the signal reports no_key, unchanged).
+    """
+    first = _active_provider()
+    if not first:
+        return []
+    if first == "duckduckgo" or not _fallback_enabled():
+        return [first]
+    chain = [first]
+    for name, has_key in (("tavily", _tavily_key()), ("brave", _brave_key())):
+        if has_key and name not in chain:
+            chain.append(name)
+    if _ddgs_available():
+        chain.append("duckduckgo")
+    return chain
+
+
+def _search_chain(
+    query: str, days: int | None = None
+) -> tuple[dict | None, str, list[str], tuple[str, str] | None, bool]:
+    """(payload, provider that answered, what the others said, first error, any empty).
+
+    The first provider with a result or an answer wins. An empty answer or an error moves
+    on to the next; both are named ("tavily empty", "brave rate_limited").
+    """
+    tried: list[str] = []
+    first_error: tuple[str, str] | None = None
+    any_empty = False
+    for provider in _provider_chain():
+        try:
+            payload, error = (
+                _SEARCHERS[provider](query, days) if days else _SEARCHERS[provider](query)
+            )
+        except Exception as exc:
+            payload, error = None, classify_exception(exc)
+        if error is not None:
+            first_error = first_error or error
+            tried.append(f"{provider} {error[0]}")
+            continue
+        if (payload or {}).get("results") or (payload or {}).get("answer"):
+            return payload, provider, tried, first_error, any_empty
+        any_empty = True
+        tried.append(f"{provider} empty")
+    return None, "", tried, first_error, any_empty
+
+
 def search_recent(query: str, *, days: int = 7) -> list[dict]:
     """Results for `query` from the last `days` days, or []. Never raises (#899).
 
     Event research searches the event's *name* ("UFC Freedom 250") with a recency
     window; the signal above searches the whole typed topic with none. Same provider
-    choice and payload shape; its own cache key.
+    chain (#589) and payload shape; its own cache key.
     """
-    provider = _active_provider()
-    if not provider or not (query or "").strip():
+    if not _provider_chain() or not (query or "").strip():
         return []
     cache_key = build_key("web_search_recent", f"{days}d:{query}")
     cached = get_cached(cache_key)
     if isinstance(cached, list):
         return cached
-    try:
-        payload, error = _SEARCHERS[provider](query, days)
-    except Exception:
-        return []
-    if error is not None:
+    payload, _provider, _tried, error, _empty = _search_chain(query, days)
+    if payload is None and error is not None:
         return []
     results = [r for r in (payload or {}).get("results") or [] if isinstance(r, dict)]
     set_cache(cache_key, results, ttl_seconds=_TTL)
@@ -194,8 +259,8 @@ def search_recent(query: str, *, days: int = 7) -> list[dict]:
 
 
 def get_web_search_signal(topic: str) -> dict:
-    provider = _active_provider()
-    if not provider:
+    chain = _provider_chain()
+    if not chain:
         return make_signal(
             connected=False,
             active=False,
@@ -209,23 +274,26 @@ def get_web_search_signal(topic: str) -> dict:
         return cached
 
     try:
-        payload, error = _SEARCHERS[provider](topic)
-        if error is not None:
+        payload, provider, tried, error, any_empty = _search_chain(topic)
+        after = f" (after {', '.join(tried)})" if tried else ""
+        if payload is None and error is not None and not any_empty:
             status, detail = error
+            if len(tried) > 1:
+                detail = f"{detail} [{' -> '.join(tried)}]"
             return make_signal(connected=False, active=False, status=status, status_detail=detail)
-
-        results = (payload or {}).get("results") or []
-        answer = (payload or {}).get("answer") or ""
-        if not results and not answer:
+        if payload is None:
             sig = make_signal(
                 connected=True,
                 active=False,
                 status=STATUS_INACTIVE,
-                status_detail=f"Web search ({provider}): no results",
+                status_detail=f"Web search ({', '.join(chain)}): no results{after if error else ''}",
             )
             set_cache(cache_key, sig, ttl_seconds=_TTL)
             return sig
 
+        results = payload.get("results") or []
+        answer = payload.get("answer") or ""
+        via = f"{' -> '.join([*tried, provider])}: " if tried else ""
         score = min(50 + len(results) * 7, 95)
         sig = make_signal(
             connected=True,
@@ -233,8 +301,8 @@ def get_web_search_signal(topic: str) -> dict:
             score=float(score),
             confidence=0.8,
             status=STATUS_OK,
-            status_detail=f"Web search ({provider}): {len(results)} result(s)",
-            data={"provider": provider, "answer": answer, "results": results},
+            status_detail=f"Web search ({provider}): {via}{len(results)} result(s)",
+            data={"provider": provider, "answer": answer, "results": results, "tried": tried},
         )
         set_cache(cache_key, sig, ttl_seconds=_TTL)
         return sig

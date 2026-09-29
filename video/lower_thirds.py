@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from core.fact_grounding import specific_entities
+from core.facts.grounding import specific_entities
 
 _TOKEN = re.compile(r"[A-Za-z0-9']+")
 _UNSAFE = re.compile(r"https?://|www\.|@|\b(?:password|api[_ -]?key|secret|token)\b", re.I)

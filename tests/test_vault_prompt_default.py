@@ -13,7 +13,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from core.fact_store import FactRecord
+from core.facts.store import FactRecord
 
 CONFIDENT = "Contender Series week 2 handed out five contracts."
 UNCERTAIN = "Gane stops Pereira at UFC Oklahoma City."

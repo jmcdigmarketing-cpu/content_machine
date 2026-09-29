@@ -1,0 +1,20 @@
+{
+  "signal": "finnhub",
+  "call": "apis.finnhub_api:get_finnhub_signal",
+  "topic": "federal reserve holds rates",
+  "attrs": {
+    "_KEY": "test-key"
+  },
+  "response": [
+    {
+      "category": "top news",
+      "datetime": 1790500000,
+      "id": 7412345,
+      "headline": "Federal Reserve holds rates steady, signals patience",
+      "source": "Reuters",
+      "summary": "The Fed left its benchmark rate unchanged.",
+      "url": "https://www.reuters.com/markets/us/fed-holds"
+    }
+  ],
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

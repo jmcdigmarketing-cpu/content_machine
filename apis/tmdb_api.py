@@ -7,6 +7,7 @@ import os
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -51,7 +52,11 @@ def get_tmdb_signal(topic: str) -> dict:
             status, detail = classify_http(search.status_code, search.text)
             return make_signal(connected=False, active=False, status=status, status_detail=detail)
 
-        results = (search.json().get("results") or [])[:6]
+        body = search.json()
+        drifted = drift("tmdb", body)
+        if drifted:
+            return drift_signal(drifted)
+        results = (body.get("results") or [])[:6]
         trending = requests.get(
             f"{_BASE}/trending/all/week",
             params={"api_key": _KEY},

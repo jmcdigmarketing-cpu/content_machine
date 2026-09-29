@@ -192,7 +192,7 @@ def build_quality(
     if ungrounded:
         quality["ungrounded_entities"] = list(ungrounded)[:20]
     try:
-        from core.fact_grounding import numeric_claims_among
+        from core.facts.grounding import numeric_claims_among
 
         numeric = numeric_claims_among(list(ungrounded) if ungrounded else [])
         if numeric:
@@ -200,7 +200,7 @@ def build_quality(
     except Exception as exc:
         logger.debug("ungrounded numeric split skipped: %s", exc)
     try:
-        from core.fact_grounding import find_plausibility_outliers
+        from core.facts.grounding import find_plausibility_outliers
 
         facts = str(features.get("grounding_text") or features.get("facts") or "")
         outliers = find_plausibility_outliers(script, facts)

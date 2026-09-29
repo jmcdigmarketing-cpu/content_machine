@@ -1,0 +1,25 @@
+{
+  "signal": "musicbrainz",
+  "call": "apis.musicbrainz_api:get_musicbrainz_signal",
+  "topic": "Short n' Sweet album",
+  "response": {
+    "created": "2026-09-28T00:00:00Z",
+    "count": 1,
+    "offset": 0,
+    "releases": [
+      {
+        "id": "a1b2",
+        "score": 100,
+        "title": "Short n' Sweet",
+        "status": "Official",
+        "date": "2024-08-23",
+        "artist-credit": [
+          {
+            "name": "Sabrina Carpenter"
+          }
+        ]
+      }
+    ]
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

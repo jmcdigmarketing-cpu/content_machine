@@ -1,12 +1,26 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-28
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-29
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 46 — ten items: a facts room, predictions kept, every API shape pinned - 2026-09-29
+
+*mypy 123 == baseline; ruff 0.15.8 clean; corpus 57 of 57.*
+
+- **#860** in the app, the key-facts step is one table: your pasted lines, every pasted link read
+  at once, off-topic lines greyed, the vault's offer, ranked by a confidence (**#548**) - tick
+  what stays. The terminal prompt is unchanged. `ops facts-room` shows the same table.
+- **#559 #113 #357** what the system predicted and recommended is saved when a video uploads and
+  scored later (`ops predictions`); the "surprise" no longer moves every sync. `ops feature-report`
+  shows which recorded features move with engagement (report-only).
+- **#906 #905 #908** all 18 JSON signals report a renamed field; `ops record-payloads` records the
+  real shapes on your PC; `ops incidents` says why a signal failed.
+- **#589** an empty web search now asks your other key, then DuckDuckGo. **#907** code tidy.
 
 ### Wave 45 — old previews retire, API shapes pinned, captions animate in - 2026-09-28
 

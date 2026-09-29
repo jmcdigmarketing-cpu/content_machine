@@ -4,7 +4,7 @@ Token grounding passes "Jon Jones defeated Tom Aspinall" whenever both names are
 facts, and the LLM claim verifier is one extract-tier call that can miss the direction or
 return nothing at all. The deterministic extractors already exist for exactly this - the
 fact-conflict filter uses them to catch operator facts that disagree with scraped sources
-(`core.fact_conflicts`: reversed results, trades to the wrong team). This points them at the
+(`core.facts.conflicts`: reversed results, trades to the wrong team). This points them at the
 finished script (against the facts) and at the title (against the script).
 
 A reversal is merged into `claim_verification` as an unsupported claim of type `result`, so
@@ -31,7 +31,7 @@ def _sentences(text: str) -> list[str]:
 def reversed_relations(text: str, reference: str) -> list[str]:
     """Sentences of `text` whose winner/loser or player/team the `reference` reverses."""
     try:
-        from core.fact_conflicts import _result_conflicts, _trade_conflicts
+        from core.facts.conflicts import _result_conflicts, _trade_conflicts
 
         claims = _sentences(text)
         facts = _sentences(reference)

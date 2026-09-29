@@ -20,7 +20,7 @@ DEFAULT_PORT = 8765
 
 def next_sentence(channel_id: str | None = None) -> str:
     """Same ranking as `ops next`: projected-cost, vault decay, then publish blocker."""
-    from core.fact_expiry import warning_lines
+    from core.facts.expiry import warning_lines
     from core.publish_blockers import publish_status_sentence
     from core.run_mode import projected_cost_block_reason
 

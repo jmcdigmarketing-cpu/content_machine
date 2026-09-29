@@ -135,7 +135,7 @@ class TestGatesSeePackedFacts(unittest.TestCase):
         self.assertGreaterEqual(operator_key_fact_char_budget(), 12000)
 
     def test_script_verbs_are_not_ungrounded_specifics(self):
-        from core.fact_grounding import find_ungrounded_entities
+        from core.facts.grounding import find_ungrounded_entities
 
         script = (
             "Start with what we actually know. Read that list again. "
@@ -160,8 +160,8 @@ class TestPasteAndChrome(unittest.TestCase):
         self.assertFalse(is_paste_command("`paste GTA 6 Developer Is Fighting Drones"))
 
     def test_run_76_chrome_never_packs_as_operator_facts(self):
-        from core.fact_selection import select_facts_for_prompt
-        from core.fact_store import TIER_OPERATOR, FactRecord
+        from core.facts.selection import select_facts_for_prompt
+        from core.facts.store import TIER_OPERATOR, FactRecord
 
         chrome = ["`paste`", "Share", "Follow Us", "ffaaa", "Like (1)", "Related Tags"]
         real = (

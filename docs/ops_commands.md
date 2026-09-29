@@ -56,6 +56,8 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `end-card-preview` | Render the channel end card as a PNG still before a full encode (--path dest.png) |
 | `env-lint` | Env keys read in code vs documented in .env.example (#639) |
 | `experiment` | Script-lever A/B report (start/stop: py -m core.experiments) |
+| `facts-room` | Rank pasted facts, links and vault lines by confidence (#860); --facts-file holds them |
+| `feature-report` | Recorded run features vs engaged rate, report-only (#357) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
 | `footage` | Gameplay folder per playlist niche (--apply measures each clip's text bands) |
 | `footage-add` | Import a gameplay file or folder (--path --game --licence [--source url] --apply) |
@@ -96,6 +98,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `policy-runbook` | Print the strike / Content ID / appeal runbook path |
 | `post-publish-check` | Look at uploads 48h+ old: removed, blocked, age-restricted, kids |
 | `postmortem` | Slowest phase, failed signals, ungrounded claims, cost (--run-id) |
+| `predictions` | What was predicted and recommended at publish vs the outcome (#113) |
 | `preview-render` | Renamed to reback-short (#868); runs nothing |
 | `prompt-eval` | Golden-topic prompt evals: run (LLM cost) or compare last two |
 | `publish-dry-run` | Print the YouTube videos.insert body (no upload; tokens redacted) |
@@ -106,6 +109,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `recategorize` | Re-file uploaded videos under their run's YouTube category (#873; dry-run default; --apply sends) |
 | `recommend-length` | Recommend video length from engagement history |
 | `recommend-time` | Recommend next post time from engagement history |
+| `record-payloads` | Record each pinned signal's live response into its contract fixture; --apply writes (#905) |
 | `regressions` | Replay frozen live-run defects ([file]: only the old fixes guarding that file) |
 | `reliability` | Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate) |
 | `render-preview` | Render a 480p ultrafast review copy without changing publish media (--run-id) |

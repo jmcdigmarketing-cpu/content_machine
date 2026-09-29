@@ -1,6 +1,6 @@
 # Content Machine — strengths, weaknesses & fixes
 
-> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-28
+> **Class:** snapshot · **Status:** frozen · **Reviewed:** 2026-09-29
 
 Honest assessment of the system as of 2026-06. Scored 1–5 per dimension with
 evidence from the code and from live runs observed this month. The goal is a
@@ -201,3 +201,8 @@ the roadmap table.
 **Wave 45 (2026-09-28):** vault previews of events that have happened stop feeding the script
 (#558); eight signals report a renamed field as "schema drift" and are held to recorded shapes
 (#385, #626 - ten JSON signals remain unpinned, #906); captions animate in (#503).
+
+**Wave 46 (2026-09-29):** all 18 JSON signals pinned (#906) and incidents say why (#908); an empty
+web search asks the next provider (#589); the engagement prediction and the recommenders' claims
+are frozen at upload and scored later (#559, #113, #357) - volume is still the limit, now measured
+honestly; the facts room (#860) ranks every pasted line by a confidence (#548).

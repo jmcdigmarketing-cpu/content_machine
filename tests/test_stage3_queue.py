@@ -300,7 +300,7 @@ class TestTitleCardWrap(unittest.TestCase):
 
 class TestNumericPlausibility(unittest.TestCase):
     def test_ten_x_purse_flags_even_when_the_span_is_in_the_facts(self):
-        from core.fact_grounding import find_plausibility_outliers, find_ungrounded_numeric
+        from core.facts.grounding import find_plausibility_outliers, find_ungrounded_numeric
 
         facts = "VERIFIED FACTS:\n- $50 million in PPV buys last year\n- purse $5 million"
         script = "The UFC purse is $50 million."

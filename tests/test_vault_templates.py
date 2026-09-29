@@ -14,7 +14,7 @@ the operator's vault.
 import pathlib
 import unittest
 
-from core.fact_store import TIER_WEIGHTS
+from core.facts.store import TIER_WEIGHTS
 from core.vault.index import _parse_frontmatter
 
 TEMPLATES = pathlib.Path(__file__).resolve().parents[1] / "docs" / "vault_templates"
@@ -55,7 +55,7 @@ class TestTemplatesParse(unittest.TestCase):
         # the parser actually extracts, not what the frontmatter happens to spell.
         from pathlib import PurePosixPath
 
-        from core.fact_store import note_metadata
+        from core.facts.store import note_metadata
 
         meta = self._meta("_sources.md")
         self.assertEqual(meta.get("tier"), "link")

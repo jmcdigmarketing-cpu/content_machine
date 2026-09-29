@@ -53,26 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-28 · **HEAD at write:** `6424fda` + the wave 45 commit (`git log -1`)
+**Written:** 2026-09-29 · **HEAD at write:** `8f3dbb4` + the wave 46 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** the vault modules are `core/vault/` (index, ingest, relevance, dossiers,
-writeback, evals, retier) - import the new paths; `core/vault_*.py` are one-wave aliases (#907
-deletes them). The `core/voice_*` aliases are gone. `FLAT_CEILING` is 236. A JSON signal with a
-pin in `apis/schema_pins` needs a fixture in `tests/fixtures/signal_payloads/`, and the reverse.
-mypy baseline **123**. Corpus 55 cases.
+**Read before editing:** `core/facts/` holds the eight `fact_*` modules (old names are one-wave
+aliases); the `core/vault_*` aliases are gone; new E1 code lives in `core/predictions/`.
+`FLAT_CEILING` 228. `prompt_key_facts_result` has a facts-room branch when a run window is
+attached (`current_bridge()`); the terminal path is unchanged. The suite pins
+`WEB_SEARCH_FALLBACK=false`. Every JSON signal needs a pin and a fixture. mypy **123**; corpus 57.
 
 **Defects first:**
-- **The contract fixtures are documented shapes, not captures** - this container cannot reach the
-  APIs. A real response that differs from the docs would fail the pins on the PC (#905).
-- **Word mode changed format:** MoneyWise captions now burn from `.ass` (an `.srt` cannot carry the
-  fade). Pixel-identical to the SRT burn once the fade ends (FFmpeg 7.0 here); not watched on a
-  full render.
-- Ten JSON signals are still unpinned (#906). Carried: event research never met a live network.
+- **The facts room never met a real window** (no display here); its model, the prompt hook and
+  the bridge round-trip are tested, the Qt dialog is thin and untested.
+- **The contract fixtures are still documented shapes** - `ops record-payloads` could not reach any
+  API from this container. Run it on the PC.
+- The room reads links one after another (#910). Best-bet picks are not recorded (#909).
 
-**Shipped:** #558 · #385 · #626 · #503 · #901. Suite **4,009**, the same 8 environmental failures
-in default/reverse/shuffle, hygiene clean; mypy **123**; backlog **264 numbered open**, highest
-#907. Next five: **#906 · #905 · #589 · #559 · #907**.
+**Shipped:** #907 #908 #906 #905 #589 #559 #113 #357 #548 #860 (one commit, operator's choice).
+Suite **4,097**, the same 8 environmental failures in default/reverse/shuffle, hygiene clean;
+backlog **259 numbered open**, highest #912. Next ten in the roadmap, from **#910 · #909 · #911**.
 
 ## Slot — Cursor
 

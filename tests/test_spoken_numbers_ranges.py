@@ -11,7 +11,7 @@ every range and percentage in the language. Measured before the fix:
     "She worked a 9-5 for a decade."     -> "She worked a nine five for a decade."
 
 Worst on MoneyWise, which is made of ranges and percentages and has just been given its
-own voice. `core/fact_grounding.py` had already solved this exact ambiguity 40 lines
+own voice. `core/facts/grounding.py` had already solved this exact ambiguity 40 lines
 away — *"Fighter records only … Bare 10-9 / 29-28 round scores must not fire"* — by
 requiring a verb cue. That guard is reused here rather than reinvented.
 

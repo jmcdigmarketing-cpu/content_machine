@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import SchemaDrift, check, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_OK,
@@ -210,6 +211,7 @@ def _fetch_pageviews(article: str) -> dict | None:
     if resp.status_code != 200:
         resp.raise_for_status()
     data = resp.json()
+    check("wikipedia", data)  # #906: a renamed field raises SchemaDrift, not "no match"
     items = data.get("items") or []
     if not items:
         return None
@@ -366,6 +368,8 @@ def get_wikipedia_pageviews_signal(topic: str) -> dict:
         set_cache(cache_key, result, ttl_seconds=_TTL)
         return result
 
+    except SchemaDrift as exc:
+        return drift_signal(str(exc))
     except Exception as exc:
         status, detail = classify_exception(exc)
         return make_signal(

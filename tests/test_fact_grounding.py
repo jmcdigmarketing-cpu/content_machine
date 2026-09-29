@@ -9,7 +9,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from core.fact_grounding import (
+from core.facts.grounding import (
     extract_entities,
     find_ungrounded_entities,
     find_ungrounded_numeric,

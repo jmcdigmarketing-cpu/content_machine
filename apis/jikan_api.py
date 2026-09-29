@@ -5,6 +5,7 @@ from __future__ import annotations
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_OK,
@@ -41,7 +42,11 @@ def get_jikan_signal(topic: str) -> dict:
             status, detail = classify_http(resp.status_code, resp.text)
             return make_signal(connected=False, active=False, status=status, status_detail=detail)
 
-        items = (resp.json().get("data") or [])[:6]
+        body = resp.json()
+        drifted = drift("jikan", body)
+        if drifted:
+            return drift_signal(drifted)
+        items = (body.get("data") or [])[:6]
         if not items:
             sig = make_signal(
                 connected=True,

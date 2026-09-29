@@ -52,18 +52,18 @@ class TestGroundingFalseAlarm(unittest.TestCase):
     SENTENCE = "My prediction? If Netflix's numbers spike on August 27, publishers follow."
 
     def test_sentence_initial_if_no_longer_flags(self):
-        from core.fact_grounding import find_ungrounded_entities
+        from core.facts.grounding import find_ungrounded_entities
 
         self.assertEqual(find_ungrounded_entities(self.SENTENCE, self.FACTS), [])
 
     def test_the_entity_extracted_is_the_real_one(self):
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         self.assertIn("Netflix", extract_entities(self.SENTENCE))
         self.assertNotIn("If Netflix", extract_entities(self.SENTENCE))
 
     def test_other_sentence_openers_too(self):
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         for text, want in (
             ("When Sony responded", "Sony"),
@@ -75,7 +75,7 @@ class TestGroundingFalseAlarm(unittest.TestCase):
 
     def test_real_inventions_are_still_caught(self):
         # The gate must not be softened into uselessness.
-        from core.fact_grounding import find_ungrounded_entities
+        from core.facts.grounding import find_ungrounded_entities
 
         flagged = find_ungrounded_entities(
             "But Shadow Legion joins Emma Frost next week.", self.FACTS
@@ -85,14 +85,14 @@ class TestGroundingFalseAlarm(unittest.TestCase):
 
     def test_legitimate_names_survive_the_trim(self):
         # A first attempt trimmed on the whole common-word list and destroyed these.
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         self.assertIn("Black Widow", extract_entities("Emma Frost and Black Widow are in."))
         self.assertIn("Season 8.5", extract_entities("The Season 8.5 update dropped."))
 
     def test_the_word_the_is_not_trimmed(self):
         # "The Rock", "The Athletic" are real names.
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         self.assertTrue(any("The" in e for e in extract_entities("The Rock returned.")))
 
@@ -244,31 +244,31 @@ class TestHyphenatedNamesReachTheGate(unittest.TestCase):
     FACTS = "Take-Two Interactive reported earnings. Rockstar Games announced August 27."
 
     def test_invented_hyphenated_name_is_flagged(self):
-        from core.fact_grounding import find_ungrounded_entities
+        from core.facts.grounding import find_ungrounded_entities
 
         self.assertIn(
             "Nova-Strike", find_ungrounded_entities("Nova-Strike launches soon.", self.FACTS)
         )
 
     def test_real_hyphenated_name_still_grounds(self):
-        from core.fact_grounding import find_ungrounded_entities
+        from core.facts.grounding import find_ungrounded_entities
 
         self.assertEqual(find_ungrounded_entities("Take-Two's CEO spoke.", self.FACTS), [])
 
     def test_hyphenated_names_extract_whole(self):
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         self.assertEqual(extract_entities("Take-Two's CEO called it strategy."), ["Take-Two"])
         self.assertIn("Spider-Man", extract_entities("Spider-Man returns next season."))
 
     def test_nested_hyphen_is_not_double_reported(self):
         # "Jean-Luc Picard" must not also yield "Jean-Luc".
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         self.assertEqual(extract_entities("Jean-Luc Picard signed."), ["Jean-Luc Picard"])
 
     def test_earlier_fixes_still_hold(self):
-        from core.fact_grounding import extract_entities, find_ungrounded_entities
+        from core.facts.grounding import extract_entities, find_ungrounded_entities
 
         self.assertEqual(
             find_ungrounded_entities("If Netflix's numbers spike.", self.FACTS + " Netflix."), []

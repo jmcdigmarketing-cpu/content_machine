@@ -207,7 +207,7 @@ class TestPublishBlockersReadTheRealRun(_Quiet):
             self.assertEqual(ops.cmd_blocking(Namespace(channel="tapin", html=False)), 0)
             with (
                 patch("core.run_mode.projected_cost_block_reason", return_value=None),
-                patch("core.fact_expiry.warning_lines", return_value=[]),
+                patch("core.facts.expiry.warning_lines", return_value=[]),
             ):
                 self.assertEqual(operator_shell.next_sentence("tapin"), "real sentence")
         self.assertEqual(status.call_count, 2)

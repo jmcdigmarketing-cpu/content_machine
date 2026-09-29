@@ -281,15 +281,15 @@ def refresh_publish_metrics(
     metrics = merge_metric_snapshots(existing, metrics, published_at=published_at)
     if log_id:
         try:
-            from core.engagement_predictor import predict_engaged_rate, surprise_residual
-            from storage.repositories.content_runs import get_content_run_repository
+            from core.engagement_predictor import surprise_residual
+            from core.predictions.ledger import frozen_engagement
 
-            rec = get_content_run_repository().get(content_run_id)
-            quality = json.loads(getattr(rec, "quality_json", None) or "{}") if rec else {}
-            pred = predict_engaged_rate(channel_id, quality=quality) if quality else None
-            if pred is not None:
-                metrics["predicted_engaged_rate"] = pred.rate
-                residual = surprise_residual(engaged_rate, pred.rate)
+            # #559: the prediction frozen at publish (fitted without this video), not a
+            # refit that includes its own outcome and moves with every later video.
+            pred = frozen_engagement(content_run_id, channel_id)
+            if pred is not None and pred.get("rate") is not None:
+                metrics["predicted_engaged_rate"] = float(pred["rate"])
+                residual = surprise_residual(engaged_rate, float(pred["rate"]))
                 if residual is not None:
                     metrics["surprise"] = residual
         except Exception as exc:

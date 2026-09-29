@@ -1,0 +1,20 @@
+{
+  "signal": "tvmaze",
+  "call": "apis.tvmaze_api:get_tvmaze_signal",
+  "topic": "Severance season 3",
+  "response": [
+    {
+      "score": 0.91,
+      "show": {
+        "id": 44933,
+        "name": "Severance",
+        "premiered": "2022-02-18",
+        "status": "Running",
+        "network": {
+          "name": "Apple TV+"
+        }
+      }
+    }
+  ],
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

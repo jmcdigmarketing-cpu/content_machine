@@ -15,7 +15,7 @@ import unittest
 from unittest.mock import patch
 
 from core import content_engine as ce
-from core.fact_store import FactRecord
+from core.facts.store import FactRecord
 
 RUN99_TITLE = "UFC week 2: Gane stops Pereira, Dana White bans White House fights"
 SCRIPT = (

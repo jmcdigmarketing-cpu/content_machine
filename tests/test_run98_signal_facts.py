@@ -152,7 +152,7 @@ def _demand_signals():
 
 class TestDemandDumpsAreContext(unittest.TestCase):
     def test_they_are_not_counted_as_verified_facts(self) -> None:
-        from core.fact_enrichment import _fact_line_count
+        from core.facts.enrichment import _fact_line_count
         from core.signal_facts import format_signal_facts
 
         text = format_signal_facts(_demand_signals())
@@ -168,7 +168,7 @@ class TestDemandDumpsAreContext(unittest.TestCase):
         self.assertIn("Marvel Rivals", context)
 
     def test_the_tier_layer_calls_them_context(self) -> None:
-        from core.fact_store import TIER_CONTEXT
+        from core.facts.store import TIER_CONTEXT
         from core.grounding_tiers import _tag_signal_facts
         from core.signal_facts import format_signal_facts
 
@@ -182,7 +182,7 @@ class TestDemandDumpsAreContext(unittest.TestCase):
         self.assertNotIn("Marvel Rivals", build_relevance_corpus(_demand_signals()))
 
     def test_a_finance_dump_is_still_a_fact(self) -> None:
-        from core.fact_enrichment import _fact_line_count
+        from core.facts.enrichment import _fact_line_count
         from core.signal_facts import format_signal_facts
 
         sig = make_signal(connected=True, active=True, score=70, data={"quote": {"c": 101.2}})

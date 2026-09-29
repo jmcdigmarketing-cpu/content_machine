@@ -13,6 +13,7 @@ from typing import Any
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import SchemaDrift, check, drift_signal
 from apis.scrapers.base import detect_stat_domains
 from apis.signal_contract import STATUS_NO_KEY, STATUS_OK, classify_exception, make_signal
 
@@ -27,6 +28,7 @@ def _headers() -> dict[str, str]:
 
 
 def _get(path: str, params: dict | None = None) -> dict | None:
+    """The JSON body, or None. A 200 that drifted from its pin raises `SchemaDrift` (#906)."""
     if not _API_KEY:
         return None
     try:
@@ -38,9 +40,11 @@ def _get(path: str, params: dict | None = None) -> dict | None:
         )
         if resp.status_code != 200:
             return None
-        return resp.json()
+        body = resp.json()
     except Exception:
         return None
+    check("balldontlie", body)
+    return body
 
 
 def _search_term(topic: str) -> str:
@@ -169,6 +173,8 @@ def get_balldontlie_stats_signal(topic: str) -> dict:
             status=STATUS_OK,
             status_detail=f"{len(lines)} lines from BALLDONTLIE API",
         )
+    except SchemaDrift as exc:
+        return drift_signal(str(exc))
     except Exception as exc:
         status, detail = classify_exception(exc)
         return make_signal(

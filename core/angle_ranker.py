@@ -247,7 +247,7 @@ def _listicle_leftover_penalty(angle: str) -> float:
 
 
 def _specificity_of(angle: str) -> float:
-    from core.fact_selection import _specificity
+    from core.facts.selection import _specificity
 
     return _specificity(angle)
 

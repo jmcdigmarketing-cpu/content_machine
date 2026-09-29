@@ -3,7 +3,7 @@
 import datetime
 import unittest
 
-from core import fact_recency as fr
+from core.facts import recency as fr
 
 _TODAY = datetime.date(2026, 6, 23)
 

@@ -195,7 +195,7 @@ class ResearchTests(ResearchCase):
 
     def test_the_lines_reach_the_facts_at_web_tier(self):
         from core.event_research import attach_event_research
-        from core.fact_store import TIER_WEB
+        from core.facts.store import TIER_WEB
         from core.grounding_tiers import _tag_signal_facts
         from core.signal_facts import format_signal_facts
 

@@ -74,5 +74,64 @@ class SignalTests(unittest.TestCase):
         self.assertNotIn(STATUS_UPSTREAM, register_signals._trip_statuses())
 
 
+class NestedPinTests(unittest.TestCase):
+    """#906: the pins the remaining JSON signals need."""
+
+    def test_a_dotted_container(self):
+        from apis.schema_pins import drift
+
+        ok = {"data": {"Page": {"media": [{"title": {"romaji": "x"}}]}}}
+        self.assertIsNone(drift("anilist", ok))
+        self.assertEqual(drift("anilist", {"data": {"Page": {}}}), "missing `data.Page.media`")
+        self.assertEqual(drift("anilist", {"data": {}}), "missing `data.Page.media`")
+
+    def test_a_null_on_the_path_is_an_empty_answer(self):
+        from apis.schema_pins import drift
+
+        self.assertIsNone(drift("anilist", {"data": None, "errors": [{"message": "x"}]}))
+
+    def test_alternative_item_keys(self):
+        from apis.schema_pins import drift
+
+        self.assertIsNone(drift("tmdb", {"results": [{"name": "Arcane"}]}))
+        self.assertIsNone(drift("tmdb", {"results": [{"title": "Dune"}]}))
+        self.assertEqual(
+            drift("tmdb", {"results": [{"original_title": "Dune"}]}),
+            "`results[]` items lack `title|name`",
+        )
+
+    def test_a_single_object_counts_as_one_item(self):
+        from apis.schema_pins import drift
+
+        one = {"results": {"trackmatches": {"track": {"name": "Espresso"}}}}
+        self.assertIsNone(drift("lastfm", one))
+
+    def test_an_optional_parent_may_be_absent(self):
+        from apis.schema_pins import drift
+
+        self.assertIsNone(drift("web_search_brave", {"type": "search"}))
+        self.assertEqual(
+            drift("web_search_brave", {"type": "search", "web": {"items": []}}),
+            "missing `web.results`",
+        )
+
+    def test_check_raises(self):
+        from apis.schema_pins import SchemaDrift, check
+
+        with self.assertRaises(SchemaDrift) as ctx:
+            check("wikipedia", {"records": []})
+        self.assertEqual(str(ctx.exception), "missing `items`")
+        check("wikipedia", {"items": []})  # healthy: no raise
+
+    def test_every_pinned_parser_is_named(self):
+        from apis.schema_pins import PINS
+
+        for name in (
+            "tmdb", "tvmaze", "jikan", "anilist", "finnhub", "balldontlie",
+            "wikipedia", "musicbrainz", "lastfm", "web_search_brave",
+        ):  # fmt: skip
+            self.assertIn(name, PINS)
+
+
 if __name__ == "__main__":
     unittest.main()

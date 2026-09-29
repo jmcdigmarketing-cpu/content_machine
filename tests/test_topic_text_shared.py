@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Lists that are deliberately not "words that name nothing" - each says why.
 ALLOWED_PRIVATE_STOP_LISTS = {
     (
-        "core/fact_grounding.py",
+        "core/facts/grounding.py",
         "_LEADING_STOPWORDS",
     ): "sentence-initial verbs trimmed off entity names",
     ("core/title_generator.py", "_PIN_STOP"): "title pin words, not topic relevance",

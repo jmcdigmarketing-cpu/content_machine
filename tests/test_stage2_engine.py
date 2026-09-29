@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.fact_grounding import find_ungrounded_entities
+from core.facts.grounding import find_ungrounded_entities
 from core.persona_lint import lint_persona_script
 
 

@@ -143,7 +143,7 @@ class TestAttach(unittest.TestCase):
 
 class TestTiers(unittest.TestCase):
     def test_every_line_is_web_tier(self) -> None:
-        from core.fact_store import TIER_WEB
+        from core.facts.store import TIER_WEB
         from core.grounding_tiers import _tag_signal_facts
         from core.signal_facts import format_signal_facts
 

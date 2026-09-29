@@ -1,6 +1,6 @@
 # Content OS — Architecture
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-28
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-29
 
 ## Folder structure
 
@@ -109,10 +109,10 @@ The repo serves two products:
 | `core/engagement_predictor.py` | Data-gated predicted engaged-rate (baseline + hook/authenticity slopes) |
 | `core/grade_calibration.py` | Grade ↔ realized-engagement calibration + thumbnail-score join (`ops calibration`) |
 | `core/prompt_evals.py` | Golden-topic prompt eval harness (`config/prompt_evals.json`, `ops prompt-eval`) |
-| `core/fact_store.py` | **Pillar 3** structured facts — `FactRecord`, provenance tiers, freshness/expiry from vault frontmatter |
+| `core/facts/store.py` | **Pillar 3** structured facts — `FactRecord`, provenance tiers, freshness/expiry from vault frontmatter |
 | `core/grounding_tiers.py` | **Pillar 3** tiered grounding corpus (operator/link/web/signal/brief/context) + high-stakes tier warnings |
 | `core/claim_verifier.py` | **Pillar 3** claim-level LLM verifier (extract tier) + `GROUNDING_GATE` |
-| `core/fact_conflicts.py` | **Pillar 3** pre-script contradiction detection — operator facts win, conflicting source lines dropped |
+| `core/facts/conflicts.py` | **Pillar 3** pre-script contradiction detection — operator facts win, conflicting source lines dropped |
 | `core/obsidian_facts.py` | Vault fact reader (`load_facts` / `load_fact_records`) + **Pillar 4** playbook read path (`load_playbook`/`playbook_block`). Scored mode uses `core/vault/relevance.py`; competing-family `_GAME_ANCHORS` remain a weighted feature, not a hard gate |
 | `core/vault/relevance.py` | Additive subject-relevance scorer (`vault_relevance_v1`) + optional extract-tier tiebreak (`VAULT_RELEVANCE_TIEBREAK`, default off). Corpus = signal headlines + operator/link facts, never the angle |
 | `core/vault/evals.py` | Frozen labelled cases (`config/vault_evals.json`) + `ops vault-eval`. Holdout (runs 66+70) precision/recall **1.0/1.0** vs P1 baseline 0.667; shipped `default_mode` is `scored` |
@@ -130,7 +130,9 @@ The repo serves two products:
 | `apis/topic_scorer.py` | Domain inference, weights, `composite_score` + learning boosts |
 | `apis/topic_variants.py` | LLM/rule-based variant titles (incl. draft policy) |
 | `apis/signal_contract.py` | Normalized signal shape and health labels |
-| `apis/schema_pins.py` | Pinned response shapes (#385): the container and item keys each JSON parser reads; a drifted 200 returns `STATUS_UPSTREAM` "schema drift". Held to `tests/fixtures/signal_payloads/` by `tests/test_signal_contracts.py` (#626) |
+| `apis/schema_pins.py` | Pinned response shapes (#385, #906 - all 18 JSON signals): the container path and item keys each parser reads; a drifted 200 returns `STATUS_UPSTREAM` "schema drift". Held to `tests/fixtures/signal_payloads/` by `tests/test_signal_contracts.py` (#626); `apis/payload_recorder.py` (`ops record-payloads`, #905) refreshes the fixtures from the live APIs |
+| `core/facts/room.py` | **#860** facts room: every pasted line and link, the vault offer, ranked by `core/facts/confidence.py` (#548); the run window's key-facts step (`desktop/facts_room.py`) and `ops facts-room` |
+| `core/predictions/` | **E1** prediction vs outcome: `ledger.py` freezes the engagement prediction and the recommenders' claims at upload (#559, #113, `ops predictions`); `features.py` measures run features against outcomes (#357, `ops feature-report`) |
 | `config/settings.py` | Env loading (`.env`), API keys, provider order |
 | `config/channels.py` | Load `channels.json`, resolve `channel_id` |
 | `assets/manager.py` | Provider chain selection per channel/topic |

@@ -12,16 +12,16 @@ from unittest.mock import MagicMock, patch
 
 from core import (
     description_extras,
-    fact_grounding,
     html_report,
     metrics_gate,
     obsidian_facts,
     postmortem,
     render_gate,
     review_booth,
-    vault_dossiers,
     win_notify,
 )
+from core.facts import grounding as fact_grounding
+from core.vault import dossiers as vault_dossiers
 from core.video_grade import GradeComponent, VideoGrade
 from scripts import ops
 

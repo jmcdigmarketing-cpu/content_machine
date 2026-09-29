@@ -206,7 +206,7 @@ def _competitor_health_section() -> list[str]:
 
 def _fact_expiry_section() -> list[str]:
     try:
-        from core.fact_expiry import warning_lines
+        from core.facts.expiry import warning_lines
 
         return warning_lines(os.getenv("CONTENT_CHANNEL_ID") or None)
     except Exception as exc:

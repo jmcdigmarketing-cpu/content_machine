@@ -12,7 +12,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.fact_store import TIER_LINK, TIER_VAULT
+from core.facts.store import TIER_LINK, TIER_VAULT
 
 TOPIC = "GTA 6 Leak and Wolverine Rage Signal a Cultural Backlash"
 CORPUS = (

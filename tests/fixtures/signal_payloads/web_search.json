@@ -4,7 +4,10 @@
   "topic": "UFC 320 results",
   "env": {
     "TAVILY_API_KEY": "test-key",
-    "WEB_SEARCH_BACKEND": ""
+    "WEB_SEARCH_BACKEND": "",
+    "BRAVE_API_KEY": "",
+    "BRAVE_SEARCH_API_KEY": "",
+    "WEB_SEARCH_FALLBACK": "false"
   },
   "method": "post",
   "response": {

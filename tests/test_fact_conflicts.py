@@ -4,7 +4,7 @@ direction, reversed results, champion claims, line filtering, display."""
 import unittest
 from unittest.mock import patch
 
-from core.fact_conflicts import (
+from core.facts.conflicts import (
     conflict_filter_enabled,
     display_fact_conflicts,
     drop_conflicting_lines,
@@ -161,7 +161,7 @@ class TestDisputedFlag(unittest.TestCase):
     """#332: arbitration must leave a first-class disputed flag, not just a string list."""
 
     def test_conflicts_stamp_disputed_and_the_losing_claim(self):
-        from core.fact_conflicts import features_from_conflicts
+        from core.facts.conflicts import features_from_conflicts
 
         source = "- Giannis traded to the Golden State Warriors (rumor mill)"
         conflicts = find_fact_conflicts(_OPERATOR, source)
@@ -191,7 +191,7 @@ class TestDisputedFlag(unittest.TestCase):
         self.assertIn("warriors", joined)
 
     def test_no_conflicts_is_not_disputed(self):
-        from core.fact_conflicts import features_from_conflicts
+        from core.facts.conflicts import features_from_conflicts
 
         feats = features_from_conflicts([], dropped=0)
         self.assertFalse(feats.get("disputed"))

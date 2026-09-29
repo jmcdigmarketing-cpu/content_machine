@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core import obsidian_facts as of
-from core.fact_store import FactRecord
+from core.facts.store import FactRecord
 from core.ui import prompt_key_facts
 from core.vault import index as vault_index
 

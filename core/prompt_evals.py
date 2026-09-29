@@ -65,7 +65,7 @@ def score_script(script: str, *, key_facts: list[str], length_choice: str) -> di
     except Exception:
         out["hook_score"] = None
     try:
-        from core.fact_grounding import find_ungrounded_entities
+        from core.facts.grounding import find_ungrounded_entities
 
         out["ungrounded_count"] = len(find_ungrounded_entities(script, "\n".join(key_facts)))
     except Exception:

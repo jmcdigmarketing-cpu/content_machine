@@ -7,7 +7,7 @@ against a competitor's video title, which the system's own prompt says is
 "NOT facts about specific events".
 
 ``build_tiered_corpus`` tags every corpus line with a provenance tier
-(``operator | signal | web | brief | context`` — see ``core/fact_store.py``),
+(``operator | signal | web | brief | context`` — see ``core/facts/store.py``),
 keeping the flat ``full_text`` byte-identical to the old grounding string so
 `find_ungrounded_entities` / trade validation behave exactly as before.
 
@@ -25,8 +25,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from core.fact_grounding import mentions, specific_entities
-from core.fact_store import (
+from core.facts.grounding import mentions, specific_entities
+from core.facts.store import (
     TIER_BRIEF,
     TIER_CONTEXT,
     TIER_OPERATOR,

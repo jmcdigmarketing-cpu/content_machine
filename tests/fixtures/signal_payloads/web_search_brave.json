@@ -1,0 +1,29 @@
+{
+  "signal": "web_search_brave",
+  "call": "apis.web_search_api:get_web_search_signal",
+  "topic": "UFC 320 results",
+  "env": {
+    "TAVILY_API_KEY": "",
+    "BRAVE_API_KEY": "",
+    "BRAVE_SEARCH_API_KEY": "test-key",
+    "WEB_SEARCH_BACKEND": "",
+    "WEB_SEARCH_FALLBACK": "false"
+  },
+  "response": {
+    "type": "search",
+    "query": {
+      "original": "UFC 320 results"
+    },
+    "web": {
+      "type": "search",
+      "results": [
+        {
+          "title": "UFC 320 results: Pereira reclaims the belt",
+          "url": "https://www.example-mma.com/ufc-320-results",
+          "description": "Alex Pereira stopped Magomed Ankalaev in the first round."
+        }
+      ]
+    }
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

@@ -9,6 +9,7 @@ from __future__ import annotations
 import queue
 import threading
 from dataclasses import dataclass
+from typing import Any
 
 from core import process_state
 from core.ask import Backend
@@ -41,6 +42,8 @@ class AskRequest:
     prompt: str
     kind: str
     gate: str | None = None
+    # #860: structured content for a request the window draws itself (facts_room rows).
+    payload: Any = None
 
 
 @dataclass
@@ -103,6 +106,23 @@ class AskBridge:
         self._fact_lines = [str(ln).strip() for ln in lines if str(ln).strip()]
         self._auto_end_facts = bool(self._fact_lines)
 
+    def take_fact_lines(self) -> list[str]:
+        """#860: the paste box's lines, taken whole for the facts room (the queue empties)."""
+        taken, self._fact_lines = self._fact_lines, []
+        return taken
+
+    def ask_room(self, rows: list[Any]) -> list[int]:
+        """#860: show the facts room; blocks until the window answers with the ticked ids."""
+        if self._closed:
+            raise KeyboardInterrupt
+        self._requests.put(AskRequest(prompt="Facts room", kind="facts_room", payload=rows))
+        answer = self._answers.get()
+        if answer is _CANCEL:
+            raise KeyboardInterrupt
+        if isinstance(answer, list | tuple | set):
+            return [int(i) for i in answer]
+        return [int(tok) for tok in str(answer).replace(",", " ").split() if tok.isdigit()]
+
     def set_progress(
         self,
         phase: str,
@@ -140,7 +160,7 @@ class AskBridge:
         except queue.Empty:
             return None
 
-    def submit(self, answer: str) -> None:
+    def submit(self, answer: Any) -> None:
         self._answers.put(answer)
 
     def cancel(self) -> None:

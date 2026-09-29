@@ -3,7 +3,7 @@ full-text parity with the legacy corpus, and the two tier lint checks."""
 
 import unittest
 
-from core.fact_store import TIER_BRIEF, TIER_CONTEXT, TIER_OPERATOR, TIER_SIGNAL, TIER_WEB
+from core.facts.store import TIER_BRIEF, TIER_CONTEXT, TIER_OPERATOR, TIER_SIGNAL, TIER_WEB
 from core.grounding_tiers import (
     TieredCorpus,
     build_tiered_corpus,

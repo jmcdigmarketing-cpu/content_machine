@@ -1,6 +1,6 @@
 """Claim-level LLM verifier (Pillar 3 — Fact Engine 2.0).
 
-Token grounding (`core/fact_grounding.py`) checks that *names* in the script
+Token grounding (`core/facts/grounding.py`) checks that *names* in the script
 appear in the facts; it cannot check that the *claim about them* is what the
 facts say (decisions §3: a real Giannis→Heat trade fused with an invented
 Butler→Celtics one passes token grounding as long as every name is present).

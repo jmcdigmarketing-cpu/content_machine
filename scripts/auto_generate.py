@@ -241,7 +241,7 @@ def main(argv=None) -> int:
     # ground-truth priority as the interactive prompt, saved in full to the vault.
     key_facts = _collect_key_facts(args.facts_file, args.fact)
     from core.content_engine import key_facts_for_prompt
-    from core.fact_selection import select_headless_facts
+    from core.facts.selection import select_headless_facts
     from core.operator_facts import capture_facts_to_vault
     from core.vault.relevance import build_relevance_corpus
 
@@ -308,7 +308,7 @@ def main(argv=None) -> int:
         display_authenticity_report,
         evaluate_authenticity,
     )
-    from core.fact_enrichment import _fact_line_count, enrich_facts
+    from core.facts.enrichment import _fact_line_count, enrich_facts
 
     facts_preview = enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)
     auth = evaluate_authenticity(

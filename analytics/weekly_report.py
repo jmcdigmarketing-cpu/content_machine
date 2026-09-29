@@ -279,6 +279,16 @@ def format_report(report: dict[str, Any]) -> str:
             if isinstance(extra, str) and extra:
                 lines.append(f"  {extra}")
 
+    # #113: what was called at publish, scored once outcomes land.
+    try:
+        from core.predictions.ledger import summary_line as ledger_line
+
+        ledger = ledger_line(report["channel_id"])
+        if ledger:
+            lines.append(f"  {ledger}")
+    except Exception as exc:
+        logger.debug("prediction ledger line skipped: %s", exc)
+
     actions = report.get("next_actions") or []
     if actions:
         lines.append("")

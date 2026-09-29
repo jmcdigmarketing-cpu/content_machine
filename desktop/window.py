@@ -305,6 +305,14 @@ class RunWindow(QMainWindow):
 
     def _show_request(self, req: AskRequest) -> None:
         self._pending = req
+        if req.kind == "facts_room":
+            # #860: one table for every pasted line, link and vault match.
+            from desktop.facts_room import open_facts_room
+
+            ids = open_facts_room(self, list(req.payload or []))
+            self._pending = None
+            self._bridge.submit(ids)
+            return
         if req.kind == "confirm":
             title = _GATE_LABELS.get(req.gate or "", "Confirm")
             self.prompt_label.setText(f"{title}\n{req.prompt.strip()}")

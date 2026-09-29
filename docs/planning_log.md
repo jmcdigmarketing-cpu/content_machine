@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-28
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-29
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,75 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-09-29 (Claude Code) - wave 46: ten in one commit - trusted inputs, predictions kept, a facts room
+
+**Prompt (verbatim):** "next 10, make a big all encompassingplan. anything for me?"
+
+**Operator's answers (plan mode):** #589 - keyed providers, then DuckDuckGo. #860 - in the run
+window. One commit for all ten (the plan proposed two).
+
+### Why these ten
+
+The roadmap's five (#906 #905 #589 #559 #907), then whole epics rather than single members, as
+the backlog's own rule asks: E1 prediction-vs-outcome (#559 with #113 and #357) and E3 fact intake
+(#860 with #548, the confidence it ranks by). #908 is new: the operator's `ops reliability` listed
+YouTube `unavailable` x10 and nothing could say why.
+
+### Findings, with file:line
+
+- **The ledger could not say why.** `core/run_trace._slim_signals` kept status / connected / active /
+  score; "unavailable" is a timeout (`signal_contract.classify_exception`), a missed deadline
+  (`register_signals._fetch_all`) or a signal that never connected (#908).
+- **The surprise was fitted on the answer.** `analytics/youtube_metrics.py:284` refit
+  `predict_engaged_rate` every sync and `engagement_predictor._training_rows` included the video's
+  own outcome; the test showed the surprise moving between two syncs (#559).
+- **Post time is followed by construction.** `core/ui.py` schedules at `next_optimal_post_time`, so
+  the ledger scores the slot's own expected rate, not "followed" (#912 filed).
+- **Nothing records the best-bet pick** - `menu_path` is the menu (#909 filed).
+- **The old-name guard missed parenthesized imports.** `tests/test_providers.py` and
+  `tests/test_wave4_honesty.py` imported moved modules inside `from core import (...)`; the aliases
+  hid it until #907 deleted them.
+- **In the window a pasted link line would have become an operator fact** if the room fed lines
+  back as typed text; the room returns its selection to the prompt instead, tiers intact.
+- **My own reason table had a trap:** the "no key" needle `"set "` matched "reset by peer" (corpus
+  case). **And the room dropped an unreadable link silently** (seen live: this container cannot
+  reach ESPN); it now names it.
+
+### Shipped
+
+1. **#907** `core/facts/` + aliases; vault aliases deleted; `FLAT_CEILING` 228.
+2. **#908** `run_trace` keeps `status_detail`; `incident_ledger.reason_of`; `ops incidents` split.
+3. **#906** ten pins (dotted paths, `title|name`, optional parent, `SchemaDrift`); 18 fixtures.
+4. **#905** `ops record-payloads` (`apis/payload_recorder.py`).
+5. **#589** `web_search_api._provider_chain` / `_search_chain`; `WEB_SEARCH_FALLBACK`.
+6. **#559** `core/predictions/ledger.freeze` at upload; sync and report card read it.
+7. **#113** the ledger keeps length / post-time / grade claims; `ops predictions`; weekly line.
+8. **#357** `ops feature-report` (`core/predictions/features.py`).
+9. **#548** `core/facts/confidence.py`; printed beside vault lines.
+10. **#860** `core/facts/room.py`, `desktop/facts_room.py`, the prompt hook, `ops facts-room`.
+
+### Not done, deliberately
+
+- No real API response recorded (no network here) - `ops record-payloads` is for the PC.
+- The room reads links one after another (#910); confidence is not in the dossier yet (#911).
+- The facts room was not opened in a real window (no display here); the dialog is thin over a
+  tested model. No `GRADE_VERSION` bump: the prediction shown is display, not a graded component.
+
+### Audit
+
+88 new test methods in nine modules. **79 observed failing before their fix**; 5 guards pass by
+design (a GraphQL null is empty, one object is one item, the first hit stops the chain, the tiers
+already survived the old prompt, and FACTS_ROOM=false keeps it); 4 were written with their code (the report card reads
+the frozen value; the publisher helper, its never-raise, and its call site). The widened old-name
+guard was shown red on HEAD's two test files. Two older tests changed by design: the
+`topic_text_shared` allowlist path, and `_drifted`'s pin unpacking. Corpus **57 of 57** (+2).
+mypy **123**, unchanged. Every new symbol has a production caller. Live here: `ops incidents` on
+synthetic traces ("deadline 6, timeout 3, not connected 1"), `ops facts-room` (names the unread
+link), `ops predictions` / `ops feature-report` (collecting at n=0), `ops record-payloads tvmaze`
+(unreachable, reported). Backlog **259 numbered open**, highest **#912**.
+
+Closed **#907 #908 #906 #905 #589 #559 #113 #357 #548 #860**. Filed **#909 #910 #911 #912**.
 
 ## 2026-09-28 (Claude Code) - wave 45: past-event previews retire, pinned API shapes, caption entrances, core/vault
 

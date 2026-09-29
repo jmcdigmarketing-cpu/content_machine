@@ -93,7 +93,7 @@ class PlanTests(RetierCase):
 
 class ApplyTests(RetierCase):
     def test_apply_moves_the_note_to_link_tier(self):
-        from core.fact_store import note_metadata
+        from core.facts.store import note_metadata
         from core.vault.index import _parse_frontmatter
         from core.vault.retier import apply_retier, plan_retier
 

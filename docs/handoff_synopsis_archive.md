@@ -7,6 +7,24 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-27 (Claude Code): wave 43 #895 #857 #862 #887 #825 #898
+
+- **#895** recency guard: `core/event_coverage.py` checks that one verified fact or pasted key
+  fact names what the topic names (the `search_query(mode="entity")` name). If none does, the
+  script prompt gets an EVENT NOT IN FACTS note and `main.py` stops before TTS with a y/N
+  (`EVENT_COVERAGE_GATE=false` turns the stop off). `ops blocking` lists it; selftest gate nine.
+- **#857** `ops vault-retier` lists old `_operator_facts/` notes holding scraped page lines;
+  `--apply` moves each whole note to `_link_facts/` at link tier. Never overwrites.
+- **#862** `AUTO_RESEARCH_SAVE=true` keeps the kept auto-research lines in
+  `_link_facts/{day}_{slug}-auto-research.md` (default off).
+- **#887** the review prompt (`VAULT_FACTS_AUTO=false`): Enter takes the confident lines, `a` all.
+- **#825** closed; **#898** art for soccer / pop culture / anime / music plus five franchises.
+- **Filed:** #896 sports team not in the topic, #897 odds signal topic-blind (weakness 3).
+
+**Verify:** `python -m unittest tests.test_event_coverage tests.test_vault_retier
+tests.test_auto_research_save tests.test_vault_prompt_default tests.test_domain_art`;
+`py -m scripts.ops selftest` (9/9); `py -m scripts.ops vault-retier`.
+
 ## Previous — 2026-09-27 (Claude Code): wave 42 #853 #851 #868 #894 #833
 
 - **#853** Anthropic premium default `claude-sonnet-5`; `.env.example` no longer pins every tier

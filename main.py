@@ -773,7 +773,7 @@ def _run_new_video_flow_body(
             logger.debug("auto-research line skipped: %s", exc)
 
         # Show what facts the script was based on — thin facts = warning before render
-        from core.fact_enrichment import _fact_line_count, enrich_facts
+        from core.facts.enrichment import _fact_line_count, enrich_facts
 
         _facts_preview = enrich_facts(
             best_topic, best_signals, channel_id=channel_id, seed_topic=topic

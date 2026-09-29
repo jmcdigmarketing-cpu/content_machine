@@ -21,7 +21,6 @@ from core import (
     music,
     reframe,
     run_eval_corpus,
-    vault_ingest,
 )
 from core.providers import (
     STATUS_OK,
@@ -31,6 +30,7 @@ from core.providers import (
     run_chain,
     selected_provider,
 )
+from core.vault import ingest as vault_ingest
 
 
 class ProviderResultShape(unittest.TestCase):

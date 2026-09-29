@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from config.paths import DATA_DIR
@@ -42,6 +43,47 @@ class Incident:
     last_at: float
     score: float
     last_status: str = ""
+    # #908: why - counts per reason (`reason_of`), and the newest detail as written.
+    reasons: dict[str, int] = field(default_factory=dict)
+    last_detail: str = ""
+
+
+# Checked in order; the first match names the reason. HTTP codes match as whole numbers
+# ("read 1500 bytes" is not a server error).
+_REASONS = (
+    ("deadline", re.compile(r"discovery deadline")),
+    ("timeout", re.compile(r"timed out|timeout")),
+    ("schema drift", re.compile(r"schema drift")),
+    ("quota", re.compile(r"quota")),
+    ("rate limit", re.compile(r"rate.?limit|\b429\b|too many requests")),
+    ("auth", re.compile(r"\b40[13]\b|unauthori[sz]ed|forbidden|invalid (?:api )?key")),
+    ("server error", re.compile(r"server error|\b50[0-4]\b")),
+    ("no key", re.compile(r"^set [a-z_]+(?:_key|_id|_token)\b|no key")),
+)
+
+
+def reason_of(status: str, detail: str | None) -> str:
+    """#908: one word for why a signal failed, from its status and detail.
+
+    `None` means the trace predates #908 (no detail was kept) - said, never guessed.
+    An empty detail on `unavailable` is a signal that never connected.
+    """
+    if detail is None:
+        return "before #908"
+    text = detail.lower()
+    for reason, pattern in _REASONS:
+        if pattern.search(text):
+            return reason
+    status = (status or "").lower()
+    if status == "unavailable" and not text.strip():
+        return "not connected"
+    if status == "quota_exceeded":
+        return "quota"
+    if status == "rate_limited":
+        return "rate limit"
+    if status == "no_key":
+        return "no key"
+    return "other"
 
 
 def _age_days(last_at: float, now: float) -> float:
@@ -74,9 +116,14 @@ def rank_incidents(
                 {"kind": "signal", "name": name, "count": 0, "last_at": 0.0, "last_status": ""},
             )
             row["count"] += 1
+            detail = sig.get("status_detail") if "status_detail" in sig else None
+            reasons = row.setdefault("reasons", {})
+            reason = reason_of(status, None if detail is None else str(detail))
+            reasons[reason] = reasons.get(reason, 0) + 1
             if ts >= float(row["last_at"]):
                 row["last_at"] = ts
                 row["last_status"] = status
+                row["last_detail"] = str(detail or "")
         for call in trace.get("llm_calls") or []:
             if not isinstance(call, dict):
                 continue
@@ -114,6 +161,8 @@ def rank_incidents(
                 last_at=last_at,
                 score=round(score, 4),
                 last_status=str(row["last_status"]),
+                reasons=dict(row.get("reasons") or {}),
+                last_detail=str(row.get("last_detail") or ""),
             )
         )
     incidents.sort(key=lambda i: (-i.score, -i.count, i.key))
@@ -133,6 +182,8 @@ def persist(incidents: list[Incident], *, path: str | None = None) -> str | None
                 "last_at": i.last_at,
                 "score": i.score,
                 "last_status": i.last_status,
+                "reasons": dict(i.reasons),
+                "last_detail": i.last_detail,
             }
             for i in incidents
         ],
@@ -152,9 +203,13 @@ def render(incidents: list[Incident], *, limit: int = 8) -> str:
         return "Incidents: none in recent traces"
     lines = ["Incidents (count x recency)", "=" * 40]
     for row in incidents[:limit]:
+        why = ""
+        if row.reasons:
+            parts = sorted(row.reasons.items(), key=lambda kv: (-kv[1], kv[0]))
+            why = " (" + ", ".join(f"{reason} {n}" for reason, n in parts) + ")"
         lines.append(
             f"  {row.kind} {row.name}: n={row.count} score={row.score:.2f} "
-            f"last={row.last_status or '?'}"
+            f"last={row.last_status or '?'}{why}"
         )
     return "\n".join(lines)
 

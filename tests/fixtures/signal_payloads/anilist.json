@@ -1,0 +1,27 @@
+{
+  "signal": "anilist",
+  "call": "apis.anilist_api:get_anilist_signal",
+  "topic": "Frieren season 2",
+  "method": "post",
+  "response": {
+    "data": {
+      "Page": {
+        "media": [
+          {
+            "id": 154587,
+            "title": {
+              "romaji": "Sousou no Frieren",
+              "english": "Frieren: Beyond Journey's End"
+            },
+            "popularity": 520000,
+            "trending": 12,
+            "status": "FINISHED",
+            "season": "FALL",
+            "seasonYear": 2023
+          }
+        ]
+      }
+    }
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

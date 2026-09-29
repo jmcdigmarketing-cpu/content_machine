@@ -28,29 +28,29 @@ RESULT = "Topuria knocked out Holloway on Oct 4 in Abu Dhabi."
 
 class StalePreviewTests(unittest.TestCase):
     def test_a_preview_whose_date_has_passed(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         self.assertTrue(stale_preview(PREVIEW, NOTE_DAY, date(2026, 10, 10)))
 
     def test_before_the_event_it_is_kept(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         self.assertFalse(stale_preview(PREVIEW, NOTE_DAY, date(2026, 10, 1)))
         self.assertFalse(stale_preview(PREVIEW, NOTE_DAY, date(2026, 10, 4)))  # fight day
 
     def test_a_result_line_is_never_touched(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         self.assertFalse(stale_preview(RESULT, NOTE_DAY, date(2026, 11, 10)))
 
     def test_a_line_with_no_date_is_kept(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         line = "Topuria will defend the belt next."
         self.assertFalse(stale_preview(line, NOTE_DAY, date(2027, 5, 1)))
 
     def test_a_yearless_date_rolls_into_the_next_year(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         line = "The rematch is scheduled for Jan 12."
         december = date(2026, 12, 15)
@@ -59,13 +59,13 @@ class StalePreviewTests(unittest.TestCase):
         self.assertTrue(stale_preview(line, december, date(2027, 1, 20)))
 
     def test_one_future_date_keeps_the_line(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         line = "After the Oct 4 card, the next event is set for November 15."
         self.assertFalse(stale_preview(line, NOTE_DAY, date(2026, 10, 10)))
 
     def test_explicit_years_and_iso_dates(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         self.assertTrue(stale_preview("GTA VI will launch on 2026-05-26.", None, date(2026, 9, 1)))
         self.assertTrue(
@@ -73,7 +73,7 @@ class StalePreviewTests(unittest.TestCase):
         )
 
     def test_without_a_note_date_a_yearless_date_is_judged_conservatively(self):
-        from core.fact_recency import stale_preview
+        from core.facts.recency import stale_preview
 
         # No `date:` in the note: "Oct 4" resolves to the current year only.
         self.assertTrue(stale_preview(PREVIEW, None, date(2026, 10, 10)))
@@ -118,7 +118,7 @@ class LoaderTests(_VaultCase):
 
 class VaultDecayTests(_VaultCase):
     def test_the_report_names_the_retired_previews(self):
-        from core.fact_expiry import stale_previews
+        from core.facts.expiry import stale_previews
 
         found = stale_previews("tapin", today=date(2026, 10, 10))
         self.assertEqual([f["line"] for f in found], [PREVIEW])
@@ -129,7 +129,7 @@ class VaultDecayTests(_VaultCase):
         buf = io.StringIO()
         with (
             redirect_stdout(buf),
-            patch("core.fact_expiry.date") as fake,
+            patch("core.facts.expiry.date") as fake,
         ):
             fake.today.return_value = date(2026, 10, 10)
             COMMANDS["vault-decay"][1](Namespace(channel="tapin"))

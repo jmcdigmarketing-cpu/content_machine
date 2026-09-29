@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core import obsidian_facts as of
-from core.fact_store import (
+from core.facts.store import (
     TIER_CONTEXT,
     TIER_LINK,
     TIER_OPERATOR,

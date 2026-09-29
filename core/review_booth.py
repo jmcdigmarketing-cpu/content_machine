@@ -866,7 +866,7 @@ def gather_booth_context(channel_id: str | None = None) -> dict[str, Any]:
     try:
         spans = quality.get("ungrounded_numeric") or []
         if not spans:
-            from core.fact_grounding import numeric_claims_among
+            from core.facts.grounding import numeric_claims_among
 
             spans = numeric_claims_among(quality.get("ungrounded_entities") or [])
         numeric_chips = numeric_chips_html(list(spans) if spans else None)

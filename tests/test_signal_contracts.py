@@ -69,23 +69,42 @@ def _call(fixture: dict[str, Any], response: Any) -> dict[str, Any]:
                 stack.enter_context(patch.object(module, name, return_value=None))
         method = fixture.get("method", "get")
         stack.enter_context(patch(f"requests.{method}", side_effect=serve))
+        stack.enter_context(patch("time.sleep"))  # musicbrainz waits 1.05 s per call
         return getattr(module, func_name)(fixture["topic"])
 
 
+def _items(node: Any) -> list[dict]:
+    if isinstance(node, dict):
+        return [node]
+    return [item for item in node or [] if isinstance(item, dict)]
+
+
 def _drifted(fixture: dict[str, Any]) -> list[tuple[str, Any]]:
-    """(label, payload) for each pinned key removed from the recorded response."""
-    container, item_keys = PINS[fixture["signal"]]
+    """(label, payload) for each pinned key removed from the recorded response.
+
+    The container's last segment is deleted from its parent (`data.Page.media` loses
+    `media`); an item key with alternatives (`title|name`) loses all of them.
+    """
+    pin = PINS[fixture["signal"]]
     response = fixture["response"]
     out: list[tuple[str, Any]] = []
-    if container is not None:
+    if pin.container is not None:
         gone = copy.deepcopy(response)
-        del gone[container]
-        out.append((f"no `{container}`", gone))
-    for key in item_keys:
+        *parents, leaf = pin.container.split(".")
+        node = gone
+        for part in parents:
+            node = node[part]
+        del node[leaf]
+        out.append((f"no `{pin.container}`", gone))
+    for key in pin.keys:
         gone = copy.deepcopy(response)
-        items = gone if container is None else gone[container]
-        for item in items:
-            item.pop(key, None)
+        node = gone
+        if pin.container is not None:
+            for part in pin.container.split("."):
+                node = node[part]
+        for item in _items(node):
+            for alt in key.split("|"):
+                item.pop(alt, None)
         out.append((f"items without `{key}`", gone))
     return out
 

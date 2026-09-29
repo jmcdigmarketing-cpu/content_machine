@@ -10,6 +10,9 @@ module that runs.
 
 #901 (wave 45) ended the voice aliases' wave and made the second move: the seven
 `vault_*` modules are `core/vault/`, their old names aliases for one wave.
+
+#907 (wave 46) ended the vault aliases' wave and moved the eight `fact_*` modules into
+`core/facts/`.
 """
 
 from __future__ import annotations
@@ -22,11 +25,25 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "core"
-# Non-alias flat modules in core/ (with __init__.py) after the vault move (#901). Lower it
+# Non-alias flat modules in core/ (with __init__.py) after the facts move (#907). Lower it
 # as modules move into sub-packages; never raise it.
-FLAT_CEILING = 236
+FLAT_CEILING = 228
 # Moves whose old name is still a one-wave alias.
 MOVED = {
+    "fact_store": "core.facts.store",
+    "fact_selection": "core.facts.selection",
+    "fact_grounding": "core.facts.grounding",
+    "fact_intake": "core.facts.intake",
+    "fact_enrichment": "core.facts.enrichment",
+    "fact_conflicts": "core.facts.conflicts",
+    "fact_expiry": "core.facts.expiry",
+    "fact_recency": "core.facts.recency",
+}
+# Moves whose alias wave is over: the old file is gone (#901 voice, #907 vault).
+RETIRED_ALIASES = {
+    "voice_plan": "core.voice.plan",
+    "voice_catalog": "core.voice.catalog",
+    "voice_consistency": "core.voice.consistency",
     "vault_dossiers": "core.vault.dossiers",
     "vault_evals": "core.vault.evals",
     "vault_index": "core.vault.index",
@@ -35,14 +52,8 @@ MOVED = {
     "vault_retier": "core.vault.retier",
     "vault_writeback": "core.vault.writeback",
 }
-# Moves whose alias wave is over: the old file is gone (#901 removed the voice aliases).
-RETIRED_ALIASES = {
-    "voice_plan": "core.voice.plan",
-    "voice_catalog": "core.voice.catalog",
-    "voice_consistency": "core.voice.consistency",
-}
 # A prefix a sub-package owns: no new flat module may start with it.
-OWNED_PREFIXES = {"voice_": "core/voice/", "vault_": "core/vault/"}
+OWNED_PREFIXES = {"voice_": "core/voice/", "vault_": "core/vault/", "fact_": "core/facts/"}
 
 
 def _is_alias(path: Path) -> bool:
@@ -81,8 +92,9 @@ class CoreLayoutTests(unittest.TestCase):
     def test_nothing_imports_the_old_names(self):
         names = [*MOVED, *RETIRED_ALIASES]
         pattern = re.compile(r"core\.(" + "|".join(names) + r")\b")
-        # `from core import vault_index` names the old module without a dot.
-        bare = re.compile(r"from core import [^\n]*\b(" + "|".join(names) + r")\b")
+        # `from core import vault_index` names the old module without a dot - on one
+        # line, or inside a parenthesized list (#907: two test files hid there).
+        bare = re.compile(r"from core import (?:\([^)]*|[^\n]*)\b(" + "|".join(names) + r")\b")
         hits = []
         for path in ROOT.rglob("*.py"):
             parts = set(path.relative_to(ROOT).parts)
@@ -102,6 +114,7 @@ class CoreLayoutTests(unittest.TestCase):
             packages = tomllib.load(f)["tool"]["setuptools"]["packages"]
         self.assertIn("core.voice", packages)
         self.assertIn("core.vault", packages)
+        self.assertIn("core.facts", packages)
 
     def test_the_rule_is_written_where_agents_read(self):
         self.assertIn("Where a new module goes", (ROOT / "CLAUDE.md").read_text(encoding="utf-8"))

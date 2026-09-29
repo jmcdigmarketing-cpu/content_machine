@@ -334,7 +334,7 @@ def _insight_check(script: str) -> AuthenticityCheck:
     found = [m for m in _INSIGHT_MARKERS if m in norm]
     ents: list[str] = []
     try:
-        from core.fact_grounding import specific_entities
+        from core.facts.grounding import specific_entities
 
         ents = list(specific_entities(script) or [])
     except Exception as exc:

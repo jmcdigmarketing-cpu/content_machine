@@ -28,8 +28,8 @@ from datetime import date
 from pathlib import Path
 
 from apis.topic_tokens import FUNCTION_WORDS, content_tokens
-from core.fact_recency import stale_preview
-from core.fact_store import FactRecord, note_metadata, rank_bonus, stamp_as_of
+from core.facts.recency import stale_preview
+from core.facts.store import FactRecord, note_metadata, rank_bonus, stamp_as_of
 from core.logging import get_logger
 from core.vault.index import iter_notes
 
@@ -328,7 +328,7 @@ def load_facts(
 
     Returns [] when the vault is unset/missing or nothing relevant is found, so it
     is always safe to call. Results are ranked by keyword overlap with the topic,
-    then by provenance tier + freshness (core/fact_store.py) so a fact verified
+    then by provenance tier + freshness (core/facts/store.py) so a fact verified
     last week outranks an equally relevant undated one; expired notes are dropped.
     Evergreen notes for the channel are always considered.
 

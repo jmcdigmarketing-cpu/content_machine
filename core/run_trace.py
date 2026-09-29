@@ -130,6 +130,9 @@ def _slim_signals(signals: dict[str, Any] | None) -> dict[str, Any]:
             "connected": sig.get("connected"),
             "active": sig.get("active"),
             "score": sig.get("score"),
+            # #908: why it failed. "unavailable" alone cannot tell a timeout from a
+            # missed deadline or a signal that never connected. Scrubbed on write.
+            "status_detail": str(sig.get("status_detail") or "")[:120],
         }
     return slim
 

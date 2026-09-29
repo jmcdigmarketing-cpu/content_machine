@@ -147,7 +147,7 @@ def search_seed_from_thoughts(text: str) -> str:
     except Exception as exc:
         logger.debug("seed anchor extraction skipped: %s", exc)
     try:
-        from core.fact_grounding import specific_entities
+        from core.facts.grounding import specific_entities
 
         for entity in specific_entities(body):
             idx = body.find(entity)

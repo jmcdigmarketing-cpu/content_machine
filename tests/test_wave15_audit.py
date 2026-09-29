@@ -16,7 +16,7 @@ class TestQuestionWordsStillTrimFromEntities(unittest.TestCase):
     that/this/these (run 66's fix), so "Why Jason Duval" became an entity again."""
 
     def test_sentence_initial_question_words_are_not_part_of_the_name(self):
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         cases = {
             "Why Jason Duval matters.": "Jason Duval",
@@ -28,7 +28,7 @@ class TestQuestionWordsStillTrimFromEntities(unittest.TestCase):
             self.assertEqual(extract_entities(sentence), [name], sentence)
 
     def test_the_wave_14_verbs_still_trim(self):
-        from core.fact_grounding import extract_entities
+        from core.facts.grounding import extract_entities
 
         self.assertEqual(extract_entities("Compare Red Dead to it."), ["Red Dead"])
 

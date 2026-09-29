@@ -17,7 +17,7 @@ gate passes it clean. The error is relational, not lexical.
 import unittest
 from unittest.mock import patch
 
-from core.fact_grounding import find_ungrounded_entities
+from core.facts.grounding import find_ungrounded_entities
 from core.youtube_meta import lint_title_grounding, title_grounding_mode
 
 # The real run-71 strings.

@@ -1,0 +1,46 @@
+{
+  "signal": "tmdb",
+  "call": "apis.tmdb_api:get_tmdb_signal",
+  "topic": "Dune Part Three trailer",
+  "attrs": {
+    "_KEY": "test-key"
+  },
+  "response": {
+    "page": 1,
+    "total_results": 2,
+    "results": [
+      {
+        "id": 1170608,
+        "media_type": "movie",
+        "title": "Dune: Part Three",
+        "release_date": "2026-12-18",
+        "popularity": 210.4
+      },
+      {
+        "id": 438631,
+        "media_type": "movie",
+        "title": "Dune",
+        "release_date": "2021-09-15",
+        "popularity": 95.1
+      }
+    ]
+  },
+  "other_responses": {
+    "trending/all/week": {
+      "page": 1,
+      "results": [
+        {
+          "id": 1,
+          "media_type": "tv",
+          "name": "Arcane"
+        },
+        {
+          "id": 1170608,
+          "media_type": "movie",
+          "title": "Dune: Part Three"
+        }
+      ]
+    }
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

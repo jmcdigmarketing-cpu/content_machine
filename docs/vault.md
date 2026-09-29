@@ -1,6 +1,6 @@
 # Obsidian vault
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-28
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-29
 
 The one place that says how Content Machine uses an Obsidian vault: where it reads facts
 from, what it writes back, and which files are safe to edit by hand. Everything here is a
@@ -39,7 +39,7 @@ prompt any more (§34). Backlog #857 proposes a dry-run re-tier.
 
 ## Tiers
 
-Each fact carries a provenance tier (`core/fact_store.py` `TIER_WEIGHTS`). The weight is how
+Each fact carries a provenance tier (`core/facts/store.py` `TIER_WEIGHTS`). The weight is how
 much a line can lend to grounding a claim.
 
 | Tier | Where it comes from | Weight |

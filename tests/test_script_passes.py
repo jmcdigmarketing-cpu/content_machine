@@ -118,7 +118,7 @@ class TestScriptPassLedger(unittest.TestCase):
         self.assertEqual(row["word_delta"], 0)
 
     def test_reground_adopt_persists_pre_and_post_unsupported_counts(self) -> None:
-        from core.fact_grounding import find_ungrounded_entities
+        from core.facts.grounding import find_ungrounded_entities
 
         original = (
             "Giannis Antetokounmpo joined the Miami Heat in a blockbuster move. "

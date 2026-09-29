@@ -464,7 +464,7 @@ def cmd_vault_sync(args: argparse.Namespace) -> int:
     "List vault notes whose expires date is in the past, and preview lines about past events",
 )
 def cmd_vault_decay(args: argparse.Namespace) -> int:
-    from core.fact_expiry import expired_notes, stale_previews
+    from core.facts.expiry import expired_notes, stale_previews
 
     channel = getattr(args, "channel", None)
     notes = expired_notes(channel)
@@ -500,6 +500,72 @@ def cmd_vault_retier(args: argparse.Namespace) -> int:
     for line in report_lines(
         getattr(args, "channel", "tapin"), apply=bool(getattr(args, "apply", False))
     ):
+        print(line)
+    return 0
+
+
+@_register(
+    "record-payloads",
+    "Record each pinned signal's live response into its contract fixture; --apply writes (#905)",
+)
+def cmd_record_payloads(args: argparse.Namespace) -> int:
+    from apis.payload_recorder import record_all, report_lines
+
+    apply = bool(getattr(args, "apply", False))
+    reports = record_all(only=getattr(args, "target", None) or None, apply=apply)
+    for line in report_lines(reports, apply=apply):
+        print(line)
+    return 0
+
+
+@_register("predictions", "What was predicted and recommended at publish vs the outcome (#113)")
+def cmd_predictions(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.predictions.ledger import report_lines
+
+    for line in report_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
+@_register("feature-report", "Recorded run features vs engaged rate, report-only (#357)")
+def cmd_feature_report(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.predictions.features import report_lines
+
+    for line in report_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
+@_register(
+    "facts-room",
+    "Rank pasted facts, links and vault lines by confidence (#860); --facts-file holds them",
+)
+def cmd_facts_room(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.facts.room import gather, table_lines, unread_lines
+
+    topic = (getattr(args, "topic", None) or getattr(args, "target", None) or "").strip()
+    if not topic:
+        print('facts-room needs a topic: py -m scripts.ops facts-room "UFC 320" --facts-file f.txt')
+        return 2
+    lines: list[str] = []
+    path = getattr(args, "facts_file", None)
+    if path:
+        with open(path, encoding="utf-8") as handle:
+            lines = [ln.strip() for ln in handle if ln.strip()]
+    unread: list[str] = []
+    rows = gather(
+        topic,
+        resolve_channel_id(getattr(args, "channel", None)),
+        pasted_lines=lines,
+        unread=unread,
+    )
+    print(
+        f"Facts room - {topic}: {len(rows)} line(s), ranked by confidence ([x] = kept by default)"
+    )
+    for line in [*table_lines(rows), *unread_lines(unread)]:
         print(line)
     return 0
 

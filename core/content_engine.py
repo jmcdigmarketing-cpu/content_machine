@@ -8,8 +8,8 @@ from typing import Any
 
 from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.description_extras import apply_description_extras
-from core.fact_enrichment import _fact_line_count, enrich_facts
-from core.fact_grounding import find_ungrounded_entities
+from core.facts.enrichment import _fact_line_count, enrich_facts
+from core.facts.grounding import find_ungrounded_entities
 from core.grounding_tiers import CONTEXT_SECTION_HEADERS, build_tiered_corpus
 from core.llm_router import complete_json
 from core.logging import get_logger
@@ -927,7 +927,7 @@ def _maybe_recenter_on_key_facts(
     """
     if not _key_fact_anchor_enabled() or not key_facts:
         return script
-    from core.fact_grounding import mentions, specific_entities
+    from core.facts.grounding import mentions, specific_entities
 
     facts_text = "\n".join(_sanitize_key_facts(key_facts))
     subjects = specific_entities(facts_text)
@@ -1135,7 +1135,7 @@ def generate_content_package(
     if os.getenv("FACT_FUTURE_DATE_FILTER", "true").lower() not in ("0", "false", "no"):
         import datetime
 
-        from core.fact_recency import drop_future_dated
+        from core.facts.recency import drop_future_dated
 
         signal_facts, _dropped_dates = drop_future_dated(signal_facts, datetime.date.today())
         if _dropped_dates:
@@ -1144,7 +1144,7 @@ def generate_content_package(
     # Pre-script contradiction detection (Pillar 3): flag source lines that
     # disagree with the operator's key facts BEFORE the LLM sees both, and
     # (default on) keep the losing lines out of the prompt entirely.
-    from core.fact_conflicts import (
+    from core.facts.conflicts import (
         conflict_filter_enabled,
         drop_conflicting_lines,
         features_from_conflicts,

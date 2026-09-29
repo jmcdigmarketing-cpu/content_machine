@@ -43,16 +43,16 @@ class TestOpsCommandRef(unittest.TestCase):
 
 class TestFactIntakeLinter(unittest.TestCase):
     def test_empty_paste_emits_no_warning(self):
-        from core.fact_intake import lint_fact_intake
+        from core.facts.intake import lint_fact_intake
 
         with self.assertLogs(level="WARNING") as cm:
-            logging.getLogger("core.fact_intake").warning("sentinel")
+            logging.getLogger("core.facts.intake").warning("sentinel")
             warns = lint_fact_intake([])
         self.assertEqual(warns, [])
         self.assertEqual([r.getMessage() for r in cm.records], ["sentinel"])
 
     def test_url_only_duplicate_and_vault_contradiction(self):
-        from core.fact_intake import lint_fact_intake
+        from core.facts.intake import lint_fact_intake
 
         warns = lint_fact_intake(
             [
@@ -70,7 +70,7 @@ class TestFactIntakeLinter(unittest.TestCase):
     def test_fetched_article_is_not_url_only(self):
         from unittest.mock import MagicMock, patch
 
-        from core.fact_intake import lint_fact_intake
+        from core.facts.intake import lint_fact_intake
         from core.link_facts import extract_facts_from_url
 
         html = (

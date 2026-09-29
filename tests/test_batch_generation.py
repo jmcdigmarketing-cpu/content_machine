@@ -53,7 +53,7 @@ class BatchCase(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self._patches = [
             patch("core.output_paths.channel_output_root", return_value=self._tmp.name),
-            patch("core.fact_enrichment.enrich_facts", return_value=""),
+            patch("core.facts.enrichment.enrich_facts", return_value=""),
             patch(
                 "core.authenticity.evaluate_authenticity",
                 return_value=SimpleNamespace(verdict="ok"),

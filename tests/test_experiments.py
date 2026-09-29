@@ -215,7 +215,7 @@ class TestBatchIntegration(ExperimentCase):
         with (
             tempfile.TemporaryDirectory() as out_tmp,
             patch("core.output_paths.channel_output_root", return_value=out_tmp),
-            patch("core.fact_enrichment.enrich_facts", return_value=""),
+            patch("core.facts.enrichment.enrich_facts", return_value=""),
             patch(
                 "core.authenticity.evaluate_authenticity",
                 return_value=SimpleNamespace(verdict="ok"),
@@ -259,7 +259,7 @@ class TestBatchIntegration(ExperimentCase):
         with (
             tempfile.TemporaryDirectory() as out_tmp,
             patch("core.output_paths.channel_output_root", return_value=out_tmp),
-            patch("core.fact_enrichment.enrich_facts", return_value=""),
+            patch("core.facts.enrichment.enrich_facts", return_value=""),
             patch(
                 "core.authenticity.evaluate_authenticity",
                 return_value=SimpleNamespace(verdict="ok"),

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -72,9 +73,13 @@ def get_finnhub_signal(topic: str) -> dict:
                 timeout=10,
             )
             if news_resp.status_code == 200:
+                news = news_resp.json()
+                drifted = drift("finnhub", news)
+                if drifted:
+                    return drift_signal(drifted)
                 headlines = [
                     {"title": n.get("headline", ""), "source": n.get("source", "")}
-                    for n in (news_resp.json() or [])[:8]
+                    for n in (news or [])[:8]
                     if n.get("headline")
                 ]
 
@@ -89,8 +94,12 @@ def get_finnhub_signal(topic: str) -> dict:
                 return make_signal(
                     connected=False, active=False, status=status, status_detail=detail
                 )
+            general = gen.json()
+            drifted = drift("finnhub", general)
+            if drifted:
+                return drift_signal(drifted)
             topic_l = topic.lower()
-            for item in gen.json() or []:
+            for item in general or []:
                 title = item.get("headline", "")
                 if title and any(w in title.lower() for w in topic_l.split() if len(w) > 3):
                     headlines.append({"title": title, "source": item.get("source", "")})

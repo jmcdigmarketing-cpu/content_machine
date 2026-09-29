@@ -16,7 +16,7 @@ _TOPIC = "NBA trades"
 
 
 def _flags(script: str) -> list[str]:
-    from core.fact_grounding import find_ungrounded_entities
+    from core.facts.grounding import find_ungrounded_entities
 
     return find_ungrounded_entities(script, _FACTS)
 

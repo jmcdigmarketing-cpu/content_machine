@@ -133,7 +133,7 @@ def _google_news(name: str, _exclude: set[str]) -> list[str]:
 def _web(name: str, exclude: set[str]) -> list[str]:
     from apis.web_search_api import search_recent
     from core.auto_research import _read
-    from core.fact_selection import flag_off_topic
+    from core.facts.selection import flag_off_topic
 
     lines: list[str] = []
     pages = 0

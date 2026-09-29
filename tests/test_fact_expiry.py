@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from core import fact_expiry as fe
+from core.facts import expiry as fe
 from core.vault import index as vault_index
 
 

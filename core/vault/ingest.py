@@ -3,7 +3,7 @@
 Replicates the *pattern* (not the package) from qiaomu/anything-to-notebooklm: turn a
 URL / PDF / YouTube link into a provenance-tagged markdown note under the Obsidian vault,
 so the verified-fact base grows from more than pasted text. Notes are written with the
-same frontmatter keys `core/fact_store.py` reads (`tier`, `source`, `verified_at`), so
+same frontmatter keys `core/facts/store.py` reads (`tier`, `source`, `verified_at`), so
 `core/obsidian_facts.load_fact_records()` picks them up on related topics.
 
 `ingest_url` reuses the article extractor in `core/link_facts.py` — which, after the

@@ -22,12 +22,12 @@ from __future__ import annotations
 import unittest
 from datetime import date, timedelta
 
-from core.fact_selection import (
+from core.facts.selection import (
     FactSelectionDrop,
     scaffolding_penalty,
     select_facts_for_prompt,
 )
-from core.fact_store import TIER_LINK, TIER_OPERATOR, FactRecord
+from core.facts.store import TIER_LINK, TIER_OPERATOR, FactRecord
 
 TODAY = date(2026, 8, 29)
 TOPIC = "GTA 6 extended look"
@@ -205,7 +205,7 @@ class TestWeightMeasurement(unittest.TestCase):
 
         Fixtures only — never the operator's data/traces store.
         """
-        from core.fact_selection import WEIGHT_MEASUREMENT, measure_weight_split
+        from core.facts.selection import WEIGHT_MEASUREMENT, measure_weight_split
 
         ufc_detail = [
             "Ilia Topuria defends the lightweight title against Justin Gaethje at UFC 317.",
@@ -241,7 +241,7 @@ class TestWeightMeasurement(unittest.TestCase):
 
     def test_overnight_facts_file_does_not_pack_in_insertion_order(self):
         """#646. auto_generate / overnight used load_key_facts insertion order."""
-        from core.fact_selection import select_headless_facts
+        from core.facts.selection import select_headless_facts
 
         lines = [*SCAFFOLDING, DETAIL[0]]
         kept = select_headless_facts(

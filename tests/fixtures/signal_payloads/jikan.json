@@ -1,0 +1,20 @@
+{
+  "signal": "jikan",
+  "call": "apis.jikan_api:get_jikan_signal",
+  "topic": "Frieren season 2",
+  "response": {
+    "pagination": {
+      "has_next_page": false
+    },
+    "data": [
+      {
+        "mal_id": 52991,
+        "title": "Sousou no Frieren",
+        "title_english": "Frieren: Beyond Journey's End",
+        "score": 9.3,
+        "status": "Finished Airing"
+      }
+    ]
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

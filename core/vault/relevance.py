@@ -18,8 +18,8 @@ from typing import Any
 from core import process_state
 from core.authenticity import _content_cosine
 from core.channel_context import anchor_families
-from core.fact_grounding import mentions, specific_entities
-from core.fact_store import tier_weight
+from core.facts.grounding import mentions, specific_entities
+from core.facts.store import tier_weight
 from core.logging import get_logger
 
 logger = get_logger("core.vault.relevance")

@@ -171,7 +171,7 @@ def generate_draft(
     except Exception as exc:
         logger.debug("next_arm skipped: %s", exc)
 
-    from core.fact_selection import select_headless_facts
+    from core.facts.selection import select_headless_facts
     from core.vault.relevance import build_relevance_corpus
 
     corpus = build_relevance_corpus(best_signals, operator_facts=key_facts or [])
@@ -217,7 +217,7 @@ def generate_draft(
         logger.debug("score_script_hook skipped: %s", exc)
     fact_count = 0
     try:
-        from core.fact_enrichment import _fact_line_count, enrich_facts
+        from core.facts.enrichment import _fact_line_count, enrich_facts
 
         fact_count = _fact_line_count(
             enrich_facts(best_topic, best_signals, channel_id=channel_id, seed_topic=topic)

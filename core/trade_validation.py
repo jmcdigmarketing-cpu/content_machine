@@ -1,6 +1,6 @@
 """Semantic trade validation — is the trade DIRECTION backed by the facts?
 
-Token-level grounding (`core/fact_grounding.py`) passes a claim like
+Token-level grounding (`core/facts/grounding.py`) passes a claim like
 "LeBron traded to the Celtics" as long as *LeBron* and *Celtics* both appear
 somewhere in the fact corpus — even if the facts actually say LeBron went to
 the Heat. That is exactly how a real incident fused a genuine Giannis→Heat

@@ -57,7 +57,7 @@ class TestOperatorShell(unittest.TestCase):
 
         with (
             patch("core.run_mode.projected_cost_block_reason", return_value=None),
-            patch("core.fact_expiry.warning_lines", return_value=[]),
+            patch("core.facts.expiry.warning_lines", return_value=[]),
             # #734: next_sentence reads the real last run through publish_status_sentence.
             # Patching blocking_publish_sentence passed only on a machine with a real trace
             # in data/traces; CI run 34781351080 had none and failed.

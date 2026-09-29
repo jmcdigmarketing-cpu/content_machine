@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-09-28: wave 45, next five
+# Handoff synopsis — 2026-09-29: wave 46, next ten
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-28
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-29
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,23 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-28 (Claude Code): wave 45 #558 #385 #626 #503 #901
+## Last wave — 2026-09-29 (Claude Code): wave 46, ten items, one commit
+
+- **#860 facts room** - in `py -m desktop`, the key-facts step reads the whole paste (every link),
+  flags off-topic lines, offers the vault, ranks by **#548** confidence and asks once; ticked rows
+  keep their tiers. `ops facts-room "topic" --facts-file f.txt` prints the same table. Terminal
+  prompt unchanged; `FACTS_ROOM=false` off.
+- **#559 / #113 / #357** the prediction and the recommenders' claims are frozen at upload
+  (`core/predictions/`); `ops predictions` scores them, `ops feature-report` measures features.
+- **#906 / #905 / #908** all 18 JSON signals pinned; `ops record-payloads` refreshes the fixtures;
+  `ops incidents` says why (deadline / timeout / not connected ...).
+- **#589** an empty web search asks your other key, then DuckDuckGo. **#907** `core/facts/`.
+
+**Verify:** `python -m unittest tests.test_facts_room tests.test_prediction_freeze
+tests.test_prediction_ledger tests.test_signal_contracts tests.test_search_fallback`;
+`py -m scripts.ops predictions`; `py -m scripts.ops incidents`.
+
+## Previous — 2026-09-28 (Claude Code): wave 45 #558 #385 #626 #503 #901
 
 - **#558** a vault line previewing an event ("... is set for Oct 4") stops feeding the prompt once
   every date in it has passed (`fact_recency.stale_preview`; a year-less date takes the note's
@@ -46,24 +62,6 @@ tests.test_signal_contracts tests.test_caption_entrance tests.test_core_layout`;
 **Verify:** `python -m unittest tests.test_event_research tests.test_music_library
 tests.test_caption_voice_colour tests.test_core_layout`; `py -m scripts.ops reliability` (music +
 retired lines).
-
-## Previous — 2026-09-27 (Claude Code): wave 43 #895 #857 #862 #887 #825 #898
-
-- **#895** recency guard: `core/event_coverage.py` checks that one verified fact or pasted key
-  fact names what the topic names (the `search_query(mode="entity")` name). If none does, the
-  script prompt gets an EVENT NOT IN FACTS note and `main.py` stops before TTS with a y/N
-  (`EVENT_COVERAGE_GATE=false` turns the stop off). `ops blocking` lists it; selftest gate nine.
-- **#857** `ops vault-retier` lists old `_operator_facts/` notes holding scraped page lines;
-  `--apply` moves each whole note to `_link_facts/` at link tier. Never overwrites.
-- **#862** `AUTO_RESEARCH_SAVE=true` keeps the kept auto-research lines in
-  `_link_facts/{day}_{slug}-auto-research.md` (default off).
-- **#887** the review prompt (`VAULT_FACTS_AUTO=false`): Enter takes the confident lines, `a` all.
-- **#825** closed; **#898** art for soccer / pop culture / anime / music plus five franchises.
-- **Filed:** #896 sports team not in the topic, #897 odds signal topic-blind (weakness 3).
-
-**Verify:** `python -m unittest tests.test_event_coverage tests.test_vault_retier
-tests.test_auto_research_save tests.test_vault_prompt_default tests.test_domain_art`;
-`py -m scripts.ops selftest` (9/9); `py -m scripts.ops vault-retier`.
 
 ## Pipeline order (operator)
 
@@ -132,9 +130,9 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #907 `core/facts/` (#834 seams) · #906 pin the remaining JSON signals.
+3. **Structural:** #910 parallel link reading · #386 offline replay · #459 dead code (operator call).
    Any live-run defect: add a corpus case.
-4. **App:** #860 facts room is the proposed next panel ([desktop_app.md](desktop_app.md)).
+4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
    contradicts the private-tool constraint in [roadmap.md](roadmap.md) - the charter is yours
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for

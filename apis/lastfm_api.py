@@ -7,6 +7,7 @@ import os
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
+from apis.schema_pins import drift, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_NO_KEY,
@@ -60,7 +61,11 @@ def get_lastfm_signal(topic: str) -> dict:
             status, detail = classify_http(track_resp.status_code, track_resp.text)
             return make_signal(connected=False, active=False, status=status, status_detail=detail)
 
-        tracks = (track_resp.json().get("results") or {}).get("trackmatches", {}).get("track") or []
+        body = track_resp.json()
+        drifted = drift("lastfm", body)
+        if drifted:
+            return drift_signal(drifted)
+        tracks = (body.get("results") or {}).get("trackmatches", {}).get("track") or []
         if isinstance(tracks, dict):
             tracks = [tracks]
 

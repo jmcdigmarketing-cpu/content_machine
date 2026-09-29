@@ -1,0 +1,44 @@
+{
+  "signal": "balldontlie",
+  "call": "apis.balldontlie_api:get_balldontlie_stats_signal",
+  "topic": "Wembanyama triple double for the Spurs",
+  "attrs": {
+    "_API_KEY": "test-key",
+    "_ENABLED": true
+  },
+  "response": {
+    "data": [
+      {
+        "id": 1028028,
+        "first_name": "Victor",
+        "last_name": "Wembanyama",
+        "position": "C",
+        "team": {
+          "abbreviation": "SAS"
+        }
+      }
+    ],
+    "meta": {
+      "per_page": 3
+    }
+  },
+  "other_responses": {
+    "/nba/v1/stats": {
+      "data": [
+        {
+          "id": 1,
+          "pts": 31,
+          "reb": 14,
+          "ast": 10,
+          "game": {
+            "date": "2026-03-02"
+          }
+        }
+      ],
+      "meta": {
+        "per_page": 5
+      }
+    }
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

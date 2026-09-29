@@ -810,7 +810,7 @@ def display_fact_preview(
     Splits verified facts from YouTube context-only titles for clarity.
     Returns True if facts are thin (warning condition).
     """
-    from core.fact_enrichment import _fact_line_count
+    from core.facts.enrichment import _fact_line_count
 
     # Separate YouTube context from verified game/news data
     from core.grounding_tiers import CONTEXT_SECTION_HEADERS
@@ -938,7 +938,7 @@ def _provenance_records(
     """
     from datetime import date
 
-    from core.fact_store import TIER_LINK, TIER_OPERATOR, TIER_VAULT, FactRecord
+    from core.facts.store import TIER_LINK, TIER_OPERATOR, TIER_VAULT, FactRecord
     from core.operator_facts import dedupe_key
 
     today = date.today()
@@ -1035,6 +1035,49 @@ def parse_vault_review_choice(choice: str) -> str | list[int]:
     return picked or "none"
 
 
+def _facts_room(
+    topic: str,
+    channel_id: str,
+    *,
+    signals: dict[str, Any] | None,
+    angle: str,
+    print_fn,
+) -> Any:
+    """#860: with a run window attached, read the whole paste and ask once.
+
+    Returns the ticked rows (`core.facts.room.RoomResult`), or None for the terminal, for
+    `FACTS_ROOM=false`, and when there is nothing to review (the prompt then asks as before).
+    """
+    from core.ask_bridge import current_bridge
+
+    bridge = current_bridge()
+    if bridge is None:
+        return None
+    from core.facts.room import gather, kept, room_enabled, table_lines, unread_lines
+
+    if not room_enabled():
+        return None
+    pasted = bridge.take_fact_lines()
+    unread: list[str] = []
+    rows = gather(
+        topic, channel_id, pasted_lines=pasted, angle=angle, signals=signals, unread=unread
+    )
+    for line in unread_lines(unread):
+        print_fn(line)
+    if not rows:
+        if pasted:
+            bridge.set_fact_lines(pasted)  # nothing read: let the prompt take them as typed
+        return None
+    print_fn("")
+    print_fn(f"  Facts room: {len(rows)} line(s) ranked by confidence - tick what to keep.")
+    for line in table_lines(rows):
+        print_fn(line)
+    result = kept(rows, bridge.ask_room(rows))
+    n_kept = len(result.manual) + len(result.link) + len(result.vault_claims)
+    print_fn(f"  Facts room: kept {n_kept} of {len(rows)}.")
+    return result
+
+
 def prompt_key_facts_result(
     topic: str,
     channel_id: str = "default",
@@ -1086,7 +1129,7 @@ def prompt_key_facts_result(
     print_fn("  (Trade trackers paste well as a block. Two blank lines when done with a paste.)")
     from core.console_input import input_pending, read_pending_lines
     from core.content_engine import key_facts_for_prompt
-    from core.fact_selection import select_facts_for_prompt
+    from core.facts.selection import select_facts_for_prompt
     from core.link_facts import (
         extract_facts_from_url,
         is_title_only,
@@ -1111,7 +1154,14 @@ def prompt_key_facts_result(
     # (claim, source url, page publication date) for every line a link produced —
     # the recency signal the selector weights most heavily.
     link_provenance: list[tuple[str, str, Any]] = []
-    while True:
+    # #860: with a run window attached, one facts room replaces the line-by-line prompts.
+    room = _facts_room(topic, channel_id, signals=signals, angle=angle, print_fn=print_fn)
+    if room is not None:
+        manual_facts.extend(room.manual)
+        link_facts.extend(room.link)
+        link_provenance.extend(room.link_provenance)
+        pasted_sources.extend(room.sources)
+    while room is None:
         fact = input_fn(
             f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1} "
             f"(or paste, empty when done): "
@@ -1185,7 +1235,7 @@ def prompt_key_facts_result(
 
     # Anything still buffered was pasted, not chosen — offer it back rather than let
     # it drift downstream and auto-answer `Proceed?` (which is how run 74 ended).
-    leftover = read_pending_lines()
+    leftover = read_pending_lines() if room is None else []
     if leftover:
         recovered = parse_pasted_block("\n".join(leftover))
         if recovered:
@@ -1207,12 +1257,18 @@ def prompt_key_facts_result(
     from core.vault.relevance import build_relevance_corpus, compact_reasons
 
     reference = "\n".join(part for part in (angle, topic) if part)
-    if link_facts and os.getenv("FACT_OFF_TOPIC_FILTER", "true").lower() not in (
-        "0",
-        "false",
-        "no",
+    # (The facts room already flagged them and the operator ticked what stays.)
+    if (
+        room is None
+        and link_facts
+        and os.getenv("FACT_OFF_TOPIC_FILTER", "true").lower()
+        not in (
+            "0",
+            "false",
+            "no",
+        )
     ):
-        from core.fact_selection import flag_off_topic
+        from core.facts.selection import flag_off_topic
 
         flagged = flag_off_topic(
             link_facts,
@@ -1308,9 +1364,24 @@ def prompt_key_facts_result(
             if reasons:
                 suffix += "; " + ", ".join(reasons)
             suffix += "]"
-        return f"    {index}. {_elide(record.claim, 120)}{suffix}"
+        from core.facts.confidence import confidence_suffix
 
-    if vault_error is not None:
+        # #548: one number for tier, relevance, age - printed, never a gate.
+        return f"    {index}. {_elide(record.claim, 120)}{suffix}{confidence_suffix(record)}"
+
+    if room is not None:
+        # #860: the room already offered the vault and the operator ticked it; its own
+        # records are used, so a second scan with a slightly different corpus cannot
+        # silently drop a ticked line.
+        records = list(room.vault_offered)
+        selected_records = list(room.vault_records)
+        overrides.update(
+            {
+                record.claim: ("accepted" if record.claim in room.vault_claims else "rejected")
+                for record in records
+            }
+        )
+    elif vault_error is not None:
         print_fn("")
         print_fn("  Vault scan unavailable — continuing without suggestions.")
     elif not suggestions:
@@ -1383,7 +1454,7 @@ def prompt_key_facts_result(
                 for record in records
             }
         )
-    from core.fact_store import stamp_as_of
+    from core.facts.store import stamp_as_of
 
     vault_accepted.extend(stamp_as_of(record) for record in selected_records)
 
@@ -1430,7 +1501,7 @@ def prompt_key_facts_result(
 
     if new_facts:
         try:
-            from core.fact_intake import lint_fact_intake
+            from core.facts.intake import lint_fact_intake
 
             vault_claims = [str(getattr(r, "claim", "") or "") for r in records]
             for warn in lint_fact_intake(new_facts, vault_claims=vault_claims):
@@ -1617,7 +1688,7 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
     turns the verifier verdict into a hard stop).
     """
     from core.claim_verifier import display_claim_verification
-    from core.fact_conflicts import display_fact_conflicts
+    from core.facts.conflicts import display_fact_conflicts
 
     features = features or {}
     needs_review = display_fact_conflicts(

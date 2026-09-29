@@ -24,7 +24,7 @@ class TestOpsNext(unittest.TestCase):
                     "Stopping before discovery."
                 ),
             ),
-            patch("core.fact_expiry.warning_lines", return_value=["1 vault note(s) expired"]),
+            patch("core.facts.expiry.warning_lines", return_value=["1 vault note(s) expired"]),
             patch(
                 "core.publish_blockers.publish_status_sentence",
                 return_value="Nothing is blocking publish: grade, authenticity, quota, and facts look clear.",

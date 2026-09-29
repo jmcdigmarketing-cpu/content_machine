@@ -114,6 +114,8 @@ packages = [
     # #834: the first core/ sub-package; explicit packages do not pull in subpackages.
     "core.voice",
     "core.vault",
+    "core.facts",
+    "core.predictions",
     "desktop",
     "jobs",
     "publishing",

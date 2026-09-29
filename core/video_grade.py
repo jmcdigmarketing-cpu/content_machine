@@ -244,9 +244,25 @@ def grade_from_parts(
 
     if channel_id:
         try:
-            from core.engagement_predictor import predict_engaged_rate
+            from core.engagement_predictor import Prediction, predict_engaged_rate
+            from core.predictions.ledger import stored
 
-            prediction = predict_engaged_rate(channel_id, quality=quality)
+            # #559: a published video shows what was predicted at publish, not a refit
+            # that includes its own outcome.
+            entry = stored(run_id) if run_id else None
+            frozen = (entry or {}).get("engaged_rate")
+            if isinstance(frozen, dict) and frozen.get("rate") is not None:
+                tag = "backfilled" if (entry or {}).get("backfilled") else "frozen at publish"
+                prediction: Prediction | None = Prediction(
+                    rate=float(frozen["rate"]),
+                    band=float(frozen.get("band") or 0.0),
+                    n=int(frozen.get("n") or 0),
+                    note=f"{frozen.get('note') or ''} ({tag})".strip(),
+                )
+            else:
+                prediction = predict_engaged_rate(
+                    channel_id, quality=quality, exclude_run_id=int(run_id) if run_id else None
+                )
             if prediction is not None:
                 grade.predicted_engaged_rate = prediction.rate
                 grade.prediction_note = prediction.note

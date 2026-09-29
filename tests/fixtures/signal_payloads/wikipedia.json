@@ -1,0 +1,152 @@
+{
+  "signal": "wikipedia",
+  "call": "apis.wikipedia_pageviews_api:get_wikipedia_pageviews_signal",
+  "topic": "Grand Theft Auto VI release date",
+  "response": {
+    "items": [
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091000",
+        "access": "all-access",
+        "agent": "user",
+        "views": 900
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091100",
+        "access": "all-access",
+        "agent": "user",
+        "views": 950
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091200",
+        "access": "all-access",
+        "agent": "user",
+        "views": 910
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091300",
+        "access": "all-access",
+        "agent": "user",
+        "views": 880
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091400",
+        "access": "all-access",
+        "agent": "user",
+        "views": 940
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091500",
+        "access": "all-access",
+        "agent": "user",
+        "views": 920
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091600",
+        "access": "all-access",
+        "agent": "user",
+        "views": 930
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091700",
+        "access": "all-access",
+        "agent": "user",
+        "views": 905
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091800",
+        "access": "all-access",
+        "agent": "user",
+        "views": 915
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026091900",
+        "access": "all-access",
+        "agent": "user",
+        "views": 925
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026092000",
+        "access": "all-access",
+        "agent": "user",
+        "views": 2400
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026092100",
+        "access": "all-access",
+        "agent": "user",
+        "views": 3100
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026092200",
+        "access": "all-access",
+        "agent": "user",
+        "views": 3600
+      },
+      {
+        "project": "en.wikipedia",
+        "article": "Grand_Theft_Auto_VI",
+        "granularity": "daily",
+        "timestamp": "2026092300",
+        "access": "all-access",
+        "agent": "user",
+        "views": 3900
+      }
+    ]
+  },
+  "other_responses": {
+    "w/api.php": {
+      "query": {
+        "pages": {
+          "1": {
+            "title": "Grand Theft Auto VI",
+            "revisions": [
+              {
+                "timestamp": "2026-09-27T18:00:00Z"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "note": "Written from the provider's documented response shape and trimmed to the fields the parser reads (#906); not a live capture - this container cannot reach the APIs. Refresh from a real response with ops record-payloads (#905)."
+}

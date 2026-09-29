@@ -80,7 +80,7 @@ def open_facts_room(parent: Any, rows: list[Any]) -> list[int]:
     dialog.exec()
     kept: list[int] = []
     for r in range(table.rowCount()):
-        cell = table.item(r, 0)
-        if cell is not None and cell.checkState() == Qt.CheckState.Checked:
-            kept.append(int(cell.data(Qt.ItemDataRole.UserRole)))
+        box = table.item(r, 0)
+        if box is not None and box.checkState() == Qt.CheckState.Checked:
+            kept.append(int(box.data(Qt.ItemDataRole.UserRole)))
     return kept

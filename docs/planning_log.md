@@ -50,6 +50,10 @@ YouTube `unavailable` x10 and nothing could say why.
 - **My own reason table had a trap:** the "no key" needle `"set "` matched "reset by peer" (corpus
   case). **And the room dropped an unreadable link silently** (seen live: this container cannot
   reach ESPN); it now names it.
+- **CI caught what this container could not:** the first push failed the mypy ratchet at 124 -
+  `desktop/facts_room.py` reused a `QTableWidgetItem` name for `table.item()`, which can be None.
+  CI installs PySide6 and type-checks Qt; this container did not have it, so the local count
+  was 123. Fixed, and PySide6 installed here so the local ratchet sees what CI sees.
 
 ### Shipped
 

@@ -113,6 +113,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `regressions` | Replay frozen live-run defects ([file]: only the old fixes guarding that file) |
 | `reliability` | Credit/quota dashboard (Apify + LLM budgets, breakers, cache hit-rate) |
 | `render-preview` | Render a 480p ultrafast review copy without changing publish media (--run-id) |
+| `replay` | Re-score a run offline from its saved signals (#386); --source SIGNAL shows one |
 | `requeue-upload` | Queue upload for a rendered run (--run-id required) |
 | `retention` | Audience-retention curve + drop-off point (pacing intelligence) |
 | `retire-renders` | Stop counting unuploaded renders past their news date (--apply) |

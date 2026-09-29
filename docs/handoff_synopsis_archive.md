@@ -7,6 +7,24 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-27 (Claude Code): wave 44 #899 #411 #506 #896 #897 #854 #352 #834
+
+- **#899** on a recency miss, `core/event_research` searches Wikipedia, Google News (7 days) and the
+  web provider (`search_recent`, 7 days) by the event's name, keeps lines that name it, and attaches
+  them at web tier - in the pipeline and at the key-facts prompt ("Found N line(s) naming X" /
+  "Nothing online names X yet - paste a link"). `EVENT_RESEARCH_ENABLED` (on), deadline 20 s.
+- **#411** `channels.json` `music` (both on, 0.18): tracks from `assets/music/<channel>/`, never the
+  same twice running, ducked under the voice by a sidechain compressor. No tracks = VO-only.
+- **#506** two-voice renders: the second voice's words light up in `second_voice_color`.
+- **#896 #897** sports keeps only named teams; odds only the topic's sport. **#854** steam/igdb
+  retired. **#352** length and post-time shrink small samples like best-bet.
+- **#834** `core/voice/` (plan, catalog, consistency); old names are one-wave aliases (#901);
+  `tests/test_core_layout.py` caps flat `core/*.py`.
+
+**Verify:** `python -m unittest tests.test_event_research tests.test_music_library
+tests.test_caption_voice_colour tests.test_core_layout`; `py -m scripts.ops reliability` (music +
+retired lines).
+
 ## Previous — 2026-09-27 (Claude Code): wave 43 #895 #857 #862 #887 #825 #898
 
 - **#895** recency guard: `core/event_coverage.py` checks that one verified fact or pasted key

@@ -132,6 +132,8 @@ The repo serves two products:
 | `apis/signal_contract.py` | Normalized signal shape and health labels |
 | `apis/schema_pins.py` | Pinned response shapes (#385, #906 - all 18 JSON signals): the container path and item keys each parser reads; a drifted 200 returns `STATUS_UPSTREAM` "schema drift". Held to `tests/fixtures/signal_payloads/` by `tests/test_signal_contracts.py` (#626); `apis/payload_recorder.py` (`ops record-payloads`, #905) refreshes the fixtures from the live APIs |
 | `core/facts/room.py` | **#860** facts room: every pasted line and link, the vault offer, ranked by `core/facts/confidence.py` (#548); the run window's key-facts step (`desktop/facts_room.py`) and `ops facts-room` |
+| `core/runs/replay.py` | **#386** each run's signals saved beside its trace (`data/traces/<run>.signals.json`, capped, scrubbed); `ops replay` re-scores them offline |
+| `video/caption_emoji.py` | **#504** emoji runs in captions switch to an emoji font (`CAPTION_EMOJI_FONT`, default Segoe UI Emoji) |
 | `core/predictions/` | **E1** prediction vs outcome: `ledger.py` freezes the engagement prediction and the recommenders' claims at upload (#559, #113, `ops predictions`); `features.py` measures run features against outcomes (#357, `ops feature-report`) |
 | `config/settings.py` | Env loading (`.env`), API keys, provider order |
 | `config/channels.py` | Load `channels.json`, resolve `channel_id` |

@@ -797,6 +797,8 @@ def run_pipeline(
     creative_brief: str = "",
     key_facts: list[str] | None = None,
     vault_relevance_audit: list[dict[str, Any]] | None = None,
+    fact_confidence: list[dict[str, Any]] | None = None,
+    best_bet: dict[str, Any] | None = None,
     source_urls: list[str] | None = None,
     relevance_corpus: str = "",
     menu_path: str | None = None,
@@ -973,6 +975,10 @@ def run_pipeline(
     result.features["voice_mode"] = voice_mode
     if content.get("speaker_turns"):
         result.features["speaker_turns"] = list(content["speaker_turns"])
+    if fact_confidence:
+        result.features["fact_confidence"] = list(fact_confidence)  # #911
+    if best_bet is not None:
+        result.features["best_bet"] = dict(best_bet)  # #909
     if result.menu_path:
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:

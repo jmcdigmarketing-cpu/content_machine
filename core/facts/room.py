@@ -70,11 +70,47 @@ def room_enabled() -> bool:
 
 
 def _default_reader(url: str) -> tuple[list[str], dict[str, Any]]:
-    from core.link_facts import extract_facts_from_url
-    from core.link_facts import last_extract_report as link_extract_report
+    from core.link_facts import extract_facts_with_report
 
-    lines = extract_facts_from_url(url)
-    return list(lines or []), dict(link_extract_report() or {})
+    lines, report = extract_facts_with_report(url)  # #910: the report rides with its lines
+    return list(lines or []), dict(report or {})
+
+
+def _deadline() -> float:
+    try:
+        return max(0.1, min(300.0, float(os.getenv("FACTS_ROOM_DEADLINE_S", "30") or 30)))
+    except ValueError:
+        return 30.0
+
+
+def _read_all(
+    urls: list[str], read: Callable[[str], tuple[list[str], dict[str, Any]]]
+) -> dict[str, tuple[list[str], dict[str, Any]]]:
+    """#910: every link at once (four at a time) under one deadline. A link that fails or
+    runs out of time is simply absent from the result."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from concurrent.futures import TimeoutError as FuturesTimeout
+
+    results: dict[str, tuple[list[str], dict[str, Any]]] = {}
+    if not urls:
+        return results
+    executor = ThreadPoolExecutor(max_workers=min(4, len(urls)))
+    futures = {executor.submit(read, url): url for url in dict.fromkeys(urls)}
+    try:
+        for future in as_completed(futures, timeout=_deadline()):
+            url = futures[future]
+            try:
+                lines, report = future.result()
+                results[url] = (list(lines or []), dict(report or {}))
+            except Exception as exc:
+                logger.debug("facts room: %s unreadable: %s", url, exc)
+    except FuturesTimeout:
+        logger.debug(
+            "facts room: deadline reached with %d link(s) unread", len(futures) - len(results)
+        )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    return results
 
 
 def _age_days(published: Any) -> int | None:
@@ -106,18 +142,15 @@ def gather(
     read = read_url or _default_reader
     typed: list[str] = []
     links: list[tuple[str, str, str, Any]] = []  # line, url, title, published
-    for raw in pasted_lines:
-        text = str(raw or "").strip()
+    cleaned = [str(raw or "").strip() for raw in pasted_lines]
+    pages = _read_all([t for t in cleaned if t and looks_like_url(t)], read)
+    for text in cleaned:
         if not text:
             continue
         if looks_like_url(text):
-            try:
-                lines, report = read(text)
-            except Exception as exc:
-                logger.debug("facts room: %s unreadable: %s", text, exc)
-                lines, report = [], {}
+            lines, report = pages.get(text, ([], {}))
             if not lines:
-                if unread is not None:
+                if unread is not None and text not in unread:
                     unread.append(text)
                 continue
             title = str(report.get("title") or "").strip() or text

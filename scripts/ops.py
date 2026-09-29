@@ -570,6 +570,34 @@ def cmd_facts_room(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "replay", "Re-score a run offline from its saved signals (#386); --source SIGNAL shows one"
+)
+def cmd_replay(args: argparse.Namespace) -> int:
+    from core.runs.replay import load_snapshot, replay, report_lines
+
+    raw = str(getattr(args, "target", None) or getattr(args, "run_id", None) or "").strip()
+    if not raw.isdigit():
+        print("replay needs a run id: py -m scripts.ops replay 123")
+        return 2
+    run_id = int(raw)
+    signal = getattr(args, "source", None)
+    if signal:
+        signals = load_snapshot(run_id) or {}
+        if signal not in signals:
+            print(f"Run {run_id}: no signal '{signal}' in its snapshot")
+            return 1
+        print(json.dumps(signals[signal], indent=2, default=str)[:20000])
+        return 0
+    report = replay(run_id)
+    if report is None:
+        print(f"Run {run_id}: no signal snapshot (runs before #386, or RUN_SIGNAL_SNAPSHOT=false)")
+        return 1
+    for line in report_lines(report):
+        print(line)
+    return 0
+
+
 @_register("queue-manage", "Re-queue after deleting scheduled YouTube video")
 def cmd_queue_manage(args: argparse.Namespace) -> int:
     extra = ["--channel", args.channel]

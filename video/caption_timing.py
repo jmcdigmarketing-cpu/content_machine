@@ -336,18 +336,22 @@ def build_ass_karaoke(
     alignment = 8 if str(anchor).strip().lower() == "top" else 2
     lead = entrance_tag(entrance, alignment=alignment)
     events: list[str] = []
+    from video.caption_emoji import wrap_emoji
+
     for index, line in enumerate(lines):
         start, end = _line_span(line)
+        style = "Title" if paired and index == 0 else ("Body" if paired else "Default")
+        if two_voices and line and _role(line[0]) != _NARRATOR:
+            style = "Voice2"
+        # #504: an emoji run switches to the emoji font and back to this line's own font.
+        line_font = title if style == "Title" else body if paired else font
         parts: list[str] = []
         for w in line:
             ws = float(w["start"] or start)
             we = float(w["end"] or ws)
             dur_cs = max(1, round((we - ws) * 100))
             text = (w["word"] or "").replace("{", "(").replace("}", ")")
-            parts.append(f"{{\\k{dur_cs}}}{text}")
-        style = "Title" if paired and index == 0 else ("Body" if paired else "Default")
-        if two_voices and line and _role(line[0]) != _NARRATOR:
-            style = "Voice2"
+            parts.append(f"{{\\k{dur_cs}}}{wrap_emoji(text, line_font)}")
         events.append(
             f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},{style},,0,0,0,,{lead}{' '.join(parts)}"
         )
@@ -428,10 +432,13 @@ def build_ass_from_words(
     except ValueError:
         alignment, margin_v = 2, 10
     lead = entrance_tag(entrance, play_res=_SRT_CANVAS, alignment=alignment, margin_v=margin_v)
+    from video.caption_emoji import wrap_emoji
+
     events = []
     for line in group_into_lines(words, max_words):
         start, end = _line_span(line)
         text = " ".join(str(w["word"] or "") for w in line).replace("{", "(").replace("}", ")")
+        text = wrap_emoji(text, fields["FontName"])  # #504
         events.append(f"Dialogue: 0,{_ass_ts(start)},{_ass_ts(end)},Default,,0,0,0,,{lead}{text}")
     header = (
         "[Script Info]\nScriptType: v4.00+\n"

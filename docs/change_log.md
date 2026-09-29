@@ -8,6 +8,16 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 47 — replay a run offline, emoji in captions, the best-bet pick kept - 2026-09-29
+
+- **#386** every run now saves its signals next to its trace, and `ops replay <run>` re-scores
+  it offline with today's code - so a scoring or facts bug can be reproduced without new calls.
+- **#504** **Finished-output change, disclosed:** an emoji in a script is now drawn in the burned
+  captions (from Segoe UI Emoji) instead of vanishing. Scripts without emoji render as before.
+- **#909** which best bet you took (or that you typed your own) is recorded and scored in
+  `ops predictions`. **#910** the facts room reads all your links at once. **#911** the run
+  dossier shows how confident its facts were.
+
 ### Wave 46 — ten items: a facts room, predictions kept, every API shape pinned - 2026-09-29
 
 *mypy 123 == baseline; ruff 0.15.8 clean; corpus 57 of 57.*

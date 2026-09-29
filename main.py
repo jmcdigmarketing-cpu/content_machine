@@ -564,6 +564,10 @@ def _run_new_video_flow_body(
             print("  Stopped — sync analytics first: py -m scripts.ops sync-metrics")
             return
 
+    from core.best_bet import pick_record
+
+    # #909: what the best-bet card offered and what was taken, for the prediction ledger.
+    best_bet_pick = pick_record([], None)
     if seed_topic:
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
         topic = seed_topic
@@ -577,8 +581,10 @@ def _run_new_video_flow_body(
             if sel.isdigit() and 1 <= int(sel) <= len(options):
                 topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")
+                best_bet_pick = pick_record(options, int(sel))
             else:
                 topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
+                best_bet_pick = pick_record(options, None)
         else:
             topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
 
@@ -732,6 +738,8 @@ def _run_new_video_flow_body(
             creative_brief=creative_brief,
             key_facts=key_facts or None,
             vault_relevance_audit=fact_selection.vault_audit,
+            fact_confidence=fact_selection.confidences,
+            best_bet=best_bet_pick,
             source_urls=fact_selection.source_urls,
             relevance_corpus=fact_selection.relevance_corpus,
             menu_path="5" if seed_topic else "1",

@@ -116,6 +116,7 @@ packages = [
     "core.vault",
     "core.facts",
     "core.predictions",
+    "core.runs",
     "desktop",
     "jobs",
     "publishing",

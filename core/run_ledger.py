@@ -211,6 +211,11 @@ def render_dossier(run_id: int) -> str:
         feats = ", ".join(f"{k}={features[k]}" for k in keep if features.get(k) not in (None, ""))
         if feats:
             lines.append(f"Features: {feats}")
+        from core.facts.confidence import confidence_summary
+
+        confidence = confidence_summary(features.get("fact_confidence"))
+        if confidence:
+            lines.append(f"Facts   : {confidence}")  # #911
         if features.get("chapters_timing_source"):
             lines.append(f"Chapters: {features['chapters_timing_source']} timing")
         technical = features.get("technical_qc")

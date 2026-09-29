@@ -93,6 +93,26 @@ def _post_time(channel_id: str, topic: str) -> dict[str, Any] | None:
         return None
 
 
+def _best_bet(record: Any) -> dict[str, Any] | None:
+    """The best-bet card's call for this run, from `features["best_bet"]` (#909)."""
+    try:
+        features = json.loads(getattr(record, "features_json", None) or "{}")
+    except (TypeError, ValueError):
+        return None
+    pick = features.get("best_bet") if isinstance(features, dict) else None
+    if not isinstance(pick, dict):
+        return None
+    rank = pick.get("picked")
+    offered = pick.get("offered") or []
+    chosen = offered[rank - 1] if isinstance(rank, int) and 1 <= rank <= len(offered) else {}
+    return {
+        "picked": rank is not None,
+        "rank": rank,
+        "expected": chosen.get("expected") if chosen else None,
+        "source": chosen.get("source") if chosen else None,
+    }
+
+
 def _grade(quality: dict[str, Any]) -> dict[str, Any] | None:
     """The grade shown for this draft: its #808 snapshot when there is one."""
     score = quality.get("grade_score")
@@ -138,6 +158,7 @@ def freeze(
             "length": _length(record, channel_id, topic),
             "post_time": _post_time(channel_id, topic),
             "grade": _grade(quality),
+            "best_bet": _best_bet(record),  # #909
         }
         if backfilled and entry["engaged_rate"] is None:
             return entry  # too few measured videos yet; a later sync may still backfill it
@@ -190,6 +211,15 @@ def ledger_rows(channel_id: str) -> list[dict[str, Any]]:
         post = entry.get("post_time") or {}
         if post.get("expected") is not None:
             row["post_error"] = float(rate) - float(post["expected"])
+        bet = entry.get("best_bet") or {}
+        if bet:
+            row["best_bet_picked"] = bool(bet.get("picked"))
+            if (
+                bet.get("picked")
+                and bet.get("source") == "analytics"
+                and bet.get("expected") is not None
+            ):
+                row["best_bet_error"] = float(rate) - float(bet["expected"])
         grade = entry.get("grade") or {}
         if grade.get("score") is not None:
             row["grade"] = float(grade["score"])
@@ -241,6 +271,24 @@ def report_lines(channel_id: str) -> list[str]:
     lines.append(
         _error_line("post-time slot", [r["post_error"] for r in rows if "post_error" in r])
     )
+    lines.append(
+        _error_line(
+            "best-bet pick (analytics)",
+            [r["best_bet_error"] for r in rows if "best_bet_error" in r],
+        )
+    )
+    picked = [r["actual"] for r in rows if r.get("best_bet_picked") is True]
+    own = [r["actual"] for r in rows if r.get("best_bet_picked") is False]
+    if picked or own:
+
+        def _mean(xs: list[float]) -> str:
+            return f"{sum(xs) / len(xs) * 100:.1f}%" if xs else "-"
+
+        lines.append(
+            f"    picked {len(picked)} (mean {_mean(picked)}) vs own topic {len(own)} "
+            f"(mean {_mean(own)})"
+            + ("" if min(len(picked), len(own)) >= _MIN_MEASURED else " - collecting")
+        )
     graded = [(r["grade"], r["actual"]) for r in rows if "grade" in r]
     if len(graded) < _MIN_MEASURED:
         lines.append(f"  grade vs engaged rate: collecting (n={len(graded)})")

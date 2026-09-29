@@ -97,3 +97,50 @@ def confidence_suffix(record: Any) -> str:
         return f" · conf {record_confidence(record).value:.2f}"
     except Exception:
         return ""
+
+
+def selection_confidences(records: list[Any]) -> list[dict[str, Any]]:
+    """#911: `{claim, tier, value, label}` per collected fact, for the run's features.
+
+    Corroboration counts other sources in the same selection (a page's URL, the vault
+    note, or the tier when neither is known).
+    """
+    rows = [r for r in records or [] if getattr(r, "claim", None)]
+    sources = [
+        (
+            str(r.claim),
+            str(getattr(r, "source_url", "") or getattr(r, "note_path", "") or r.tier or ""),
+        )
+        for r in rows
+    ]
+    counts = corroboration_counts(sources)
+    out: list[dict[str, Any]] = []
+    for record, n in zip(rows, counts, strict=True):
+        conf = record_confidence(record, corroborations=n)
+        out.append(
+            {
+                "claim": str(record.claim),
+                "tier": str(getattr(record, "tier", "") or ""),
+                "value": conf.value,
+                "label": conf.label,
+            }
+        )
+    return out
+
+
+def confidence_summary(items: list[dict[str, Any]] | None) -> str | None:
+    """`6 high, 3 medium, 1 low; lowest 0.36 "..."` - None when nothing was recorded."""
+    rows = [i for i in items or [] if isinstance(i, dict) and "value" in i]
+    if not rows:
+        return None
+    counts = {
+        label: sum(1 for i in rows if i.get("label") == label)
+        for label in ("high", "medium", "low")
+    }
+    lowest = min(rows, key=lambda i: float(i.get("value") or 0.0))
+    claim = str(lowest.get("claim") or "")
+    claim = claim if len(claim) <= 70 else claim[:69] + "…"
+    return (
+        f"{counts['high']} high, {counts['medium']} medium, {counts['low']} low; "
+        f'lowest {float(lowest.get("value") or 0.0):.2f} "{claim}"'
+    )

@@ -278,6 +278,7 @@ def generate_subtitle_file(
     # Real word timings → accurate SRT or animated karaoke ASS; else the
     # proportional SRT estimate (unchanged behaviour).
     if words:
+        from video.caption_emoji import has_emoji
         from video.caption_timing import build_ass_karaoke, build_srt_from_words
 
         max_words = caption_words_per_line()
@@ -304,7 +305,8 @@ def generate_subtitle_file(
             )
             ext = ".ass"
             companion_srt = build_srt_from_words(words, max_words=max_words)
-        elif caption_entrance(channel_id) != "none":
+        elif caption_entrance(channel_id) != "none" or has_emoji(words):
+            # #504 too: an .srt cannot switch to the emoji font.
             # #503: an SRT cannot carry the entrance (FFmpeg strips the tag), so word
             # mode with one burns the same cues as .ass, the .srt kept beside it.
             from video.caption_timing import build_ass_from_words

@@ -239,6 +239,10 @@ def write_run_trace(
         path = _trace_path(run_id)
         with open(path, "w", encoding="utf-8") as f:
             json.dump(_redact_trace_blob(trace), f, indent=2, default=str)
+        # #386: the full signals beside the trace, for `ops replay`.
+        from core.runs.replay import save_snapshot
+
+        save_snapshot(run_id, signals)
         return path
     except Exception as exc:
         logger.debug("run trace skipped for run %s: %s", run_id, exc)

@@ -101,6 +101,11 @@ def audit_lines(features: dict[str, Any], quality: dict[str, Any]) -> list[str]:
             + ", ".join(f"{b} {n}" for b, n in sorted(bands.items()))
             + ")"
         )
+    from core.facts.confidence import confidence_summary
+
+    confidence = confidence_summary(features.get("fact_confidence"))
+    if confidence:
+        out.append(f"- **Fact confidence:** {confidence}")  # #911
     manifest = features.get("artifact_manifest")
     if isinstance(manifest, dict):
         hashes = [f"{k.split('_')[0]} {str(v)[:12]}" for k, v in manifest.items() if v]

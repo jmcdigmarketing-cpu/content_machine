@@ -526,10 +526,14 @@ def _reader_proxy_facts(url: str, *, max_lines: int = 12) -> list[str]:
     return facts
 
 
-def extract_facts_from_url(url: str) -> list[str]:
-    """Best-effort fact extraction from a URL. Returns [] on any failure."""
-    global _last_extract_report
-    _last_extract_report = {
+def extract_facts_with_report(url: str) -> tuple[list[str], dict[str, Any]]:
+    """(lines, report) for one URL - the report travels with its lines (#910).
+
+    The facts room reads several pages at once; a shared `_last_extract_report` would
+    swap their titles. Returns ([], empty report) on any failure. Never touches the
+    module report, so the terminal prompt's `last_extract_report` is unaffected.
+    """
+    report: dict[str, Any] = {
         "kept": 0,
         "found": 0,
         "published": None,
@@ -538,19 +542,32 @@ def extract_facts_from_url(url: str) -> list[str]:
     }
     url = (url or "").strip()
     if not looks_like_url(url):
-        return []
+        return [], report
     if _is_blocked_url(url):
-        return []
+        return [], report
     url = _unwrap_redirect_url(url)
     yt = _youtube_facts(url)
     if yt:
-        return yt
-    raw = _article_facts(url)
+        return yt, report
+    raw, meta = _article_extract(url)
+    if meta.get("title") or meta.get("found"):
+        report = dict(meta)
     # JS-heavy pages (e.g. MSN) scrape to only a title — retry via the opt-in reader proxy.
     if is_title_only(raw) and _reader_proxy_enabled():
         proxied = _reader_proxy_facts(url)
         if proxied:
             raw = proxied
-            _last_extract_report["kept"] = _last_extract_report["found"] = len(proxied)
+            report["kept"] = report["found"] = len(proxied)
     # Compact duplicate intros from meta + first paragraph.
-    return parse_pasted_block("\n".join(raw)) or raw
+    return (parse_pasted_block("\n".join(raw)) or raw), report
+
+
+def extract_facts_from_url(url: str) -> list[str]:
+    """Best-effort fact extraction from a URL. Returns [] on any failure.
+
+    The terminal prompt's reader: its report is kept for `last_extract_report`.
+    """
+    global _last_extract_report
+    lines, report = extract_facts_with_report(url)
+    _last_extract_report = report
+    return lines

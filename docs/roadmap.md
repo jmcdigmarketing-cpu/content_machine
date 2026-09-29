@@ -38,38 +38,36 @@ first `core/` sub-package, and the rule for where new modules go.
 #833** · wave 41: **#888 #892 #893 #832 #831** · wave 40: **#890 #891 #879 #876 #870 #855**.
 Earlier: [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
-### The five weaknesses - where each stands (2026-09-29, after wave 46)
+### The five weaknesses - where each stands (2026-09-29, after wave 47)
 
 The operator's list from [assessment.md](assessment.md). Every row has shipped its main fix; what
 is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact | #910 read the room's links in parallel · #911 confidence in the dossier |
-| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why | record real payloads on the PC (operator) · #386 offline replay from traces |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier | #342 learned per-source trust |
+| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals | record real payloads on the PC (operator) |
 | 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds | - |
-| 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade) | #504 emoji in captions · #786 footage and your music tracks (operator) |
-| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report` | #909 record the best-bet pick · #912 off-slot post-time test · more measured videos |
+| 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font | #914 an emoji font off Windows · #786 footage and your music tracks (operator) |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** best-bet pick scored | #913 overnight picks · #912 off-slot post-time test · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 46 (2026-09-29)** shipped ten in one commit (operator: "next 10"): #907 #908 #906 #905 #589
-#559 #113 #357 #548 #860. What they left, and the rest of the weakness table, gives the next ten:
+**Wave 47 (2026-09-29)** shipped the first five of that list (#910 #911 #909 #504 #386). The
+next five are its remainder, one filed follow-up moved up:
 
-1. **#910 read the facts room's links in parallel** (weakness 1) `[S]` - the report is module state today.
-2. **#909 record the best-bet pick** (weakness 5) `[S]` - the one recommender the ledger cannot score.
-3. **#911 fact confidence in the run dossier** (E3) `[S]`.
-4. **#504 emoji in captions** (weakness 4) `[M]` - libass drops them silently.
-5. **#386 offline replay from recorded traces** (weakness 2) `[M]` - pairs with #905's recorder.
-6. **#342 learned per-source trust weights** (E3) `[M]` - from the corrections the vault already records.
-7. **#912 an off-slot post-time arm** (weakness 5) `[M]` - the only honest test of the slot.
-8. **#563 time-to-first-100-views** (weakness 5) `[M]` - a faster outcome than the 7-day rate.
-9. **#560 a hold-out set the recommenders never see** (weakness 5) `[M]`.
-10. **#459 dead-code sweep after signal retirements** (E5) `[S]` - operator call first: reddit's free backend.
+1. **#913 record the overnight batch's best-bet picks** (weakness 5) `[S]` - finishes #909.
+2. **#342 learned per-source trust weights** (E3) `[M]` - from the corrections the vault records.
+3. **#912 an off-slot post-time arm** (weakness 5) `[M]` - the only honest test of the slot.
+4. **#563 time-to-first-100-views** (weakness 5) `[M]` - a faster outcome than the 7-day rate.
+5. **#560 a hold-out set the recommenders never see** (weakness 5) `[M]`.
+
+Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
+**#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
+**Waiting on the operator, not on code:** render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
 `assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
 colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop

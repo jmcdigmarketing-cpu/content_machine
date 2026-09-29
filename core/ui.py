@@ -1001,6 +1001,8 @@ class KeyFactSelection:
     vault_audit: list[dict[str, Any]]
     records: list[Any] = field(default_factory=list)
     held_back: list[Any] = field(default_factory=list)
+    # #911: one {claim, tier, value, label} per collected fact, kept in the run features.
+    confidences: list[dict[str, Any]] = field(default_factory=list)
 
 
 def parse_uncertain_choice(choice: str) -> str | list[int]:
@@ -1596,6 +1598,13 @@ def prompt_key_facts_result(
         seen_urls.add(clean.lower())
         source_urls.append(clean)
 
+    try:
+        from core.facts.confidence import selection_confidences
+
+        confidences = selection_confidences(fact_records)
+    except Exception as exc:
+        logger.debug("fact confidences skipped: %s", exc)
+        confidences = []
     return KeyFactSelection(
         facts=key_facts,
         source_urls=source_urls,
@@ -1603,6 +1612,7 @@ def prompt_key_facts_result(
         vault_audit=vault_audit,
         records=fact_records,
         held_back=held_back,
+        confidences=confidences,
     )
 
 

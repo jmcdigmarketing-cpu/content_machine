@@ -17,6 +17,63 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-29 (Claude Code) - wave 47: replay a run offline, emoji in captions, the best-bet pick kept
+
+**Prompt (verbatim):** "next 5"
+
+**Operator's answers (plan mode):** #504 - render emoji with an emoji font (not strip, not word
+swap). #386 - save each run's signals, on by default.
+
+### Why these five
+
+The first five of wave 46's next-ten list, each checked read-only: #910 and #911 finish the facts
+room, #909 the prediction ledger, #504 the visuals row, #386 the API-fragility row.
+
+### Findings, with file:line
+
+- **One report for every page.** `core/link_facts._last_extract_report` is module state, set by
+  `extract_facts_from_url` and `_article_facts`; two pages read at once would swap titles (#910).
+- **The pick was never kept.** `main.py:571-580` showed the card and took the rank, and nothing
+  stored it (#909). The overnight batch picks automatically and still does not record it (#913).
+- **No emoji handling anywhere in `video/`**; the style fonts have no emoji glyphs. The font could
+  not be fetched here (github/jsDelivr 403) and this container has only the colour emoji font,
+  which libass cannot draw - so the default is Segoe UI Emoji, present on every Windows 10/11 (#914
+  for other machines).
+- **Weights only cover some signals.** My first replay test patched weights to `{"news": 1.0}` and
+  nothing moved: `news` was the only weighted signal active, so the score was the same. The test
+  now weights `web_search` alone.
+
+### Shipped
+
+1. **#910** `link_facts.extract_facts_with_report`; the room reads links concurrently under
+   `FACTS_ROOM_DEADLINE_S`, keeps paste order, names links that ran out of time.
+2. **#911** `KeyFactSelection.confidences` -> `features["fact_confidence"]` -> the dossier line.
+3. **#909** `best_bet.pick_record`, `features["best_bet"]`, the ledger's best-bet row.
+4. **#504** `video/caption_emoji.py`; karaoke and word-mode ASS switch fonts per emoji run.
+5. **#386** `core/runs/replay.py` (the fifth `core/` sub-package), the snapshot in
+   `write_run_trace`, `ops replay`.
+
+### Not done, deliberately
+
+- No emoji render was seen (no monochrome emoji font here); the ASS is tested, the pixels are the
+  operator's to check. The voice is unchanged - stripping emoji from the TTS was not the pick.
+- The overnight batch's automatic best-bet picks are not recorded (#913).
+
+### Audit
+
+45 new test methods in five modules; suite 4,097 -> 4,142. **37 observed failing before their fix**; 8 guards pass by
+design (paste order, each line's page and the terminal report already right sequentially;
+byte-identical no-emoji captions, the karaoke timing, SRT without emoji; a disabled snapshot and
+the trace list ignoring snapshots). Two of mine were wrong and corrected, not the code: "1 high"
+was 2 (operator 1.00 and link 0.85 are both high), and the replay weights seam above. Two wave-46
+room tests now patch the new reader, by design. Corpus 57 of 57 (no live-run defect this wave).
+mypy **123**, with PySide6 installed so it matches CI. Live here: the karaoke line for "UFC 320
+[fire] tonight." switches to Segoe UI Emoji and back to Impact; `ops replay` on a synthetic run
+("composite 53.2 - unchanged", coverage covered); `ops facts-room` names two unreadable links at
+once. Backlog **256 numbered open**, highest **#914**.
+
+Closed **#910 #911 #909 #504 #386**. Filed **#913 #914**. Next five: **#913 · #342 · #912 · #563 · #560**.
+
 ## 2026-09-29 (Claude Code) - wave 46: ten in one commit - trusted inputs, predictions kept, a facts room
 
 **Prompt (verbatim):** "next 10, make a big all encompassingplan. anything for me?"

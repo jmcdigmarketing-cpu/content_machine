@@ -53,25 +53,24 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-29 · **HEAD at write:** `8f3dbb4` + the wave 46 commit (`git log -1`)
+**Written:** 2026-09-29 · **HEAD at write:** `e124c14` + the wave 47 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** `core/facts/` holds the eight `fact_*` modules (old names are one-wave
-aliases); the `core/vault_*` aliases are gone; new E1 code lives in `core/predictions/`.
-`FLAT_CEILING` 228. `prompt_key_facts_result` has a facts-room branch when a run window is
-attached (`current_bridge()`); the terminal path is unchanged. The suite pins
-`WEB_SEARCH_FALLBACK=false`. Every JSON signal needs a pin and a fixture. mypy **123**; corpus 57.
+**Read before editing:** `write_run_trace` now also writes `<run>.signals.json` (#386) - any test
+driving it must redirect `core.run_trace.TRACES_DIR` or patch it. New `core/runs/`. Caption text
+passes through `video/caption_emoji.wrap_emoji` (no-emoji output byte-identical). The facts room
+reads links through `link_facts.extract_facts_with_report`; the terminal prompt still uses
+`extract_facts_from_url` + `last_extract_report`. mypy **123** (PySide6 installed here now, as in CI).
 
 **Defects first:**
-- **The facts room never met a real window** (no display here); its model, the prompt hook and
-  the bridge round-trip are tested, the Qt dialog is thin and untested.
-- **The contract fixtures are still documented shapes** - `ops record-payloads` could not reach any
-  API from this container. Run it on the PC.
-- The room reads links one after another (#910). Best-bet picks are not recorded (#909).
+- **No emoji render was seen** - no monochrome emoji font in this container; Segoe UI Emoji is
+  Windows-only (#914). The ASS font switch is tested; the pixels are the operator's to check.
+- The overnight batch's best-bet picks are not recorded (#913).
+- Carried: the facts room never met a real window; contract fixtures are still documented shapes.
 
-**Shipped:** #907 #908 #906 #905 #589 #559 #113 #357 #548 #860 (one commit, operator's choice).
-Suite **4,097**, the same 8 environmental failures in default/reverse/shuffle, hygiene clean;
-backlog **259 numbered open**, highest #912. Next ten in the roadmap, from **#910 · #909 · #911**.
+**Shipped:** #910 #911 #909 #504 #386. Suite **4,142**, the same 8 environmental failures in
+default/reverse/shuffle, hygiene clean; backlog **256 numbered open**, highest #914. Next five:
+**#913 · #342 · #912 · #563 · #560**.
 
 ## Slot — Cursor
 

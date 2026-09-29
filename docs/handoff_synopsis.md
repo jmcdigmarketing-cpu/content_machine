@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-29: wave 46, next ten
+# Handoff synopsis — 2026-09-29: wave 47, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-29
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-29 (Claude Code): wave 46, ten items, one commit
+## Last wave — 2026-09-29 (Claude Code): wave 47 #910 #911 #909 #504 #386
+
+- **#386** every run saves its signals beside its trace; `ops replay <run>` re-scores it offline
+  (composite recorded vs today, the facts block, event coverage). `RUN_SIGNAL_SNAPSHOT=false` off.
+- **#504** emoji in captions are drawn from Segoe UI Emoji (`CAPTION_EMOJI_FONT`); word mode with
+  emoji burns `.ass`. No-emoji output byte-identical.
+- **#909** the best-bet pick is kept (`features["best_bet"]`) and scored in `ops predictions`.
+- **#910** the facts room reads all pasted links at once; **#911** the dossier prints fact confidence.
+
+**Verify:** `python -m unittest tests.test_run_replay tests.test_caption_emoji
+tests.test_best_bet_pick tests.test_room_parallel_links tests.test_dossier_fact_confidence`;
+`py -m scripts.ops replay <last run>`.
+
+## Previous — 2026-09-29 (Claude Code): wave 46, ten items, one commit
 
 - **#860 facts room** - in `py -m desktop`, the key-facts step reads the whole paste (every link),
   flags off-topic lines, offers the vault, ranks by **#548** confidence and asks once; ticked rows
@@ -44,24 +57,6 @@ tests.test_prediction_ledger tests.test_signal_contracts tests.test_search_fallb
 **Verify:** `python -m unittest tests.test_preview_expiry tests.test_schema_pins
 tests.test_signal_contracts tests.test_caption_entrance tests.test_core_layout`;
 `py -m scripts.ops vault-decay`.
-
-## Previous — 2026-09-27 (Claude Code): wave 44 #899 #411 #506 #896 #897 #854 #352 #834
-
-- **#899** on a recency miss, `core/event_research` searches Wikipedia, Google News (7 days) and the
-  web provider (`search_recent`, 7 days) by the event's name, keeps lines that name it, and attaches
-  them at web tier - in the pipeline and at the key-facts prompt ("Found N line(s) naming X" /
-  "Nothing online names X yet - paste a link"). `EVENT_RESEARCH_ENABLED` (on), deadline 20 s.
-- **#411** `channels.json` `music` (both on, 0.18): tracks from `assets/music/<channel>/`, never the
-  same twice running, ducked under the voice by a sidechain compressor. No tracks = VO-only.
-- **#506** two-voice renders: the second voice's words light up in `second_voice_color`.
-- **#896 #897** sports keeps only named teams; odds only the topic's sport. **#854** steam/igdb
-  retired. **#352** length and post-time shrink small samples like best-bet.
-- **#834** `core/voice/` (plan, catalog, consistency); old names are one-wave aliases (#901);
-  `tests/test_core_layout.py` caps flat `core/*.py`.
-
-**Verify:** `python -m unittest tests.test_event_research tests.test_music_library
-tests.test_caption_voice_colour tests.test_core_layout`; `py -m scripts.ops reliability` (music +
-retired lines).
 
 ## Pipeline order (operator)
 
@@ -130,7 +125,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #910 parallel link reading · #386 offline replay · #459 dead code (operator call).
+3. **Structural:** #913 overnight best-bet picks · #914 emoji font off Windows · #459 dead code (operator call).
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

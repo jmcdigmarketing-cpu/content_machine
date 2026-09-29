@@ -179,6 +179,10 @@ class PromptTests(unittest.TestCase):
             patch.dict(os.environ, {"FACTS_ROOM": "true", **(env or {})}),
             patch("core.link_facts.extract_facts_from_url", side_effect=lambda u: list(PAGE)),
             patch(
+                "core.link_facts.extract_facts_with_report",
+                side_effect=lambda u: (list(PAGE), {"title": "ESPN: Topuria stops Holloway"}),
+            ),
+            patch(
                 "core.link_facts.last_extract_report",
                 return_value={"title": "ESPN: Topuria stops Holloway", "found": 2, "kept": 2},
             ),
@@ -251,6 +255,10 @@ class OpsTests(unittest.TestCase):
             buf = io.StringIO()
             with (
                 patch("core.link_facts.extract_facts_from_url", side_effect=lambda u: list(PAGE)),
+                patch(
+                    "core.link_facts.extract_facts_with_report",
+                    side_effect=lambda u: (list(PAGE), {"title": "ESPN: Topuria stops Holloway"}),
+                ),
                 patch(
                     "core.link_facts.last_extract_report",
                     return_value={"title": "ESPN: Topuria stops Holloway"},

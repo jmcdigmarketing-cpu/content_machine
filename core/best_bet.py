@@ -829,6 +829,24 @@ def _fresh_candidates(
     return base[:limit]
 
 
+def pick_record(options: list[Any], picked: int | None) -> dict[str, Any]:
+    """#909: what the best-bet card offered and which rank was taken (None = typed own).
+
+    Kept as `features["best_bet"]` so the prediction ledger can score the card.
+    """
+    offered = [
+        {
+            "topic": str(getattr(o, "topic", "") or ""),
+            "domain": str(getattr(o, "domain", "") or ""),
+            "expected": float(getattr(o, "avg_engaged_rate", 0.0) or 0.0),
+            "source": str(getattr(o, "source", "") or ""),
+        }
+        for o in options or []
+    ]
+    rank = picked if isinstance(picked, int) and 1 <= picked <= len(offered) else None
+    return {"offered": offered, "picked": rank}
+
+
 def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     """
     Up to `n` DISTINCT topic options, best first.

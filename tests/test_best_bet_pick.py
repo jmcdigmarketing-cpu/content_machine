@@ -42,7 +42,7 @@ class RecordTests(unittest.TestCase):
         from core.best_bet import pick_record
 
         self.assertIsNone(pick_record(OPTIONS, None)["picked"])
-        self.assertEqual(pick_record([], None), {"offered": [], "picked": None})
+        self.assertEqual(pick_record([], None), {"offered": [], "picked": None, "by": "operator"})
 
     def test_an_out_of_range_pick_is_none(self):
         from core.best_bet import pick_record
@@ -78,7 +78,8 @@ class LedgerTests(_Ledger):
         self._set_pick(9, 1)
         entry = freeze(9, "tapin")
         self.assertEqual(
-            entry["best_bet"], {"picked": True, "rank": 1, "expected": 0.30, "source": "analytics"}
+            entry["best_bet"],
+            {"picked": True, "rank": 1, "expected": 0.30, "source": "analytics", "by": "operator"},
         )
 
     def test_typed_own_topic(self):

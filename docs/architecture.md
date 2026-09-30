@@ -1,6 +1,6 @@
 # Content OS — Architecture
 
-> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-29
+> **Class:** reference · **Status:** living · **Reviewed:** 2026-09-30
 
 ## Folder structure
 
@@ -133,6 +133,10 @@ The repo serves two products:
 | `apis/schema_pins.py` | Pinned response shapes (#385, #906 - all 18 JSON signals): the container path and item keys each parser reads; a drifted 200 returns `STATUS_UPSTREAM` "schema drift". Held to `tests/fixtures/signal_payloads/` by `tests/test_signal_contracts.py` (#626); `apis/payload_recorder.py` (`ops record-payloads`, #905) refreshes the fixtures from the live APIs |
 | `core/facts/room.py` | **#860** facts room: every pasted line and link, the vault offer, ranked by `core/facts/confidence.py` (#548); the run window's key-facts step (`desktop/facts_room.py`) and `ops facts-room` |
 | `core/runs/replay.py` | **#386** each run's signals saved beside its trace (`data/traces/<run>.signals.json`, capped, scrubbed); `ops replay` re-scores them offline |
+| `core/facts/trust.py` | **#342** per-source trust: post-publish corrections (the dossier's negative facts) lower a source's factor from `TRUST_MIN_CORRECTIONS` on (floor 0.85), scaling vault fact confidence and ranking via `FactRecord.trust_source`; key-facts rejects shown only (`ops source-trust`) |
+| `analytics/view_curve.py` | **#563** views by day merged across syncs; `first_views` (days to `FIRST_VIEWS_THRESHOLD`) frozen once reached; the `ops predictions` line and `ops backfill view-curve` |
+| `storage/repositories/publish_log.py` | Publish log (JSON / Postgres). **#915** `counts_as_live`: a scheduled row past its time is live for sync, outcomes and cadence |
+| `analytics/post_timing.py` | Slots and the recommended time; **#916** `slot_claim` (the slot a video used, for the ledger); **#912** `planned_post_time` (the `post_time` experiment's off-slot arm, opt-in) |
 | `video/caption_emoji.py` | **#504** emoji runs in captions switch to an emoji font (`CAPTION_EMOJI_FONT`, default Segoe UI Emoji) |
 | `core/predictions/` | **E1** prediction vs outcome: `ledger.py` freezes the engagement prediction and the recommenders' claims at upload (#559, #113, `ops predictions`); `features.py` measures run features against outcomes (#357, `ops feature-report`) |
 | `config/settings.py` | Env loading (`.env`), API keys, provider order |

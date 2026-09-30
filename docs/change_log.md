@@ -1,12 +1,34 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-29
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 48 — scheduled videos count, the slot actually used, faster outcomes, source trust - 2026-09-30
+
+*4,209 tests; mypy 123 == baseline; ruff 0.15.8 clean; corpus 59 of 59.*
+
+- **#915** **Recommendation change, disclosed:** a video uploaded with a scheduled publish time was
+  never marked live, so its analytics were never synced and best-bet, length, post-time, the
+  engagement predictor and experiments never learned from it; the weekly cadence count also
+  dropped it once its slot passed. It now counts from its publish time. Expect the
+  recommendations to move after the next `ops sync-metrics`, and the cadence count to rise.
+- **#916** `ops predictions` now scores the post-time slot the video actually used (it scored the
+  next slot); older entries are listed as not scored.
+- **#912** an opt-in post-time test: `py -m core.experiments start post_time` makes every other
+  scheduled video post 4 hours after its slot (`POST_TIME_OFF_SLOT_HOURS`); `ops experiment`
+  compares. Nothing changes until you start it.
+- **#913** overnight and auto_generate best-bet picks are recorded; `ops predictions` splits yours
+  from automatic ones. **#560** its headline errors use only predictions made before the result.
+- **#563** each sync also pulls views by day; `ops predictions` shows how many days a video takes
+  to reach 100 views. `ops backfill view-curve --apply` fills older videos.
+- **#342** a source corrected twice or more after publishing counts a little less in fact ranking
+  and confidence (at most -15%); `ops source-trust` lists it. Your key-facts rejects are shown,
+  never applied.
 
 ### Wave 47 — replay a run offline, emoji in captions, the best-bet pick kept - 2026-09-29
 

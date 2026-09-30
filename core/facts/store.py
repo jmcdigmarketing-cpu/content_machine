@@ -78,6 +78,9 @@ class FactRecord:
     verified_at: date | None = None
     expires: date | None = None
     note_path: str = ""
+    # #342: the page used to weigh this fact's source (`source_url`, else the note's
+    # first `pages:` URL). Never cited publicly.
+    trust_source: str = ""
     # Candidate 329 P0: relevant on token evidence but with no franchise anchor shared
     # with the topic, so subject identity is unproven either way. Kept and surfaced for
     # review rather than dropped — a silent exclusion is worse than a visible guess,
@@ -172,15 +175,18 @@ def rank_bonus(
     tier: str = TIER_VAULT,
     verified_at: date | None = None,
     today: date | None = None,
+    trust: float = 1.0,
 ) -> float:
     """Provenance + freshness bonus — strictly below 1.0 by construction.
 
     Topic overlap scores in whole tokens (integers), so keeping this under one
     token means an on-topic bullet always outranks an off-topic one;
     provenance/freshness only decide order among equally relevant facts.
-    Max = 0.5 (operator tier) + 0.45 (verified today) = 0.95.
+    Max = 0.5 (operator tier) + 0.45 (verified today) = 0.95. `trust` (0.85..1.0,
+    `core/facts/trust.source_factor`, #342) scales the provenance part.
     """
-    return round(0.5 * tier_weight(tier) + freshness_bonus(verified_at, today=today), 4)
+    provenance = 0.5 * tier_weight(tier) * max(0.0, min(1.0, float(trust)))
+    return round(provenance + freshness_bonus(verified_at, today=today), 4)
 
 
 def infer_tier_from_path(rel_path: Path | str) -> str:
@@ -215,3 +221,16 @@ def note_metadata(
     source = ((meta.get("source") or "") or (meta.get("source_url") or "")).strip()
     source_url = source if source.lower().startswith(("http://", "https://")) else ""
     return tier, verified_at, expires, source_url
+
+
+def trust_source(meta: dict[str, str], source_url: str) -> str:
+    """The page a note's facts came from, for per-source trust (#342).
+
+    The machine's own writers put "content-machine (...)" in `source:` and the pages
+    under `pages:`, which nothing read. Kept apart from `source_url` on purpose: that
+    one is cited in published descriptions, and this must not add links to them.
+    """
+    if source_url:
+        return source_url
+    pages = [p for p in (meta.get("pages") or "").split() if p.startswith(("http://", "https://"))]
+    return pages[0] if pages else ""

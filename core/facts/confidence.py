@@ -46,9 +46,12 @@ def fact_confidence(
     relevance: float | None = None,
     corroborations: int = 0,
     age_days: int | None = None,
+    trust: float = 1.0,
 ) -> FactConfidence:
-    """0..1 with its four parts. Pure; never raises on odd input."""
+    """0..1 with its four parts. Pure; never raises on odd input. `trust` (#342) scales
+    the tier part for a source the corrections have demoted."""
     base = 0.0 if (tier or "").strip().lower() == TIER_CONTEXT else tier_weight(tier)
+    base *= max(0.0, min(1.0, float(trust)))
     rel = 1.0 if relevance is None else 0.5 + 0.5 * max(0.0, min(1.0, float(relevance)))
     age = _age_factor(age_days)
     bonus = 0.0 if base == 0.0 else 0.1 * max(0, min(2, int(corroborations)))
@@ -79,7 +82,10 @@ def corroboration_counts(lines: list[tuple[str, str]]) -> list[int]:
 def record_confidence(
     record: Any, *, corroborations: int = 0, today: date | None = None
 ) -> FactConfidence:
-    """`fact_confidence` for a `store.FactRecord` (tier, relevance score, verified date)."""
+    """`fact_confidence` for a `store.FactRecord` (tier, relevance score, verified date,
+    and its source's trust)."""
+    from core.facts.trust import source_factor
+
     verified = getattr(record, "verified_at", None)
     age = ((today or date.today()) - verified).days if isinstance(verified, date) else None
     score = getattr(record, "relevance_score", None)
@@ -88,6 +94,9 @@ def record_confidence(
         relevance=float(score) if isinstance(score, int | float) else None,
         corroborations=corroborations,
         age_days=age,
+        trust=source_factor(
+            str(getattr(record, "trust_source", "") or getattr(record, "source_url", "") or "")
+        ),
     )
 
 

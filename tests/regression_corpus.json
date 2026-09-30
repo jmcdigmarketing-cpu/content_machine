@@ -900,6 +900,36 @@
         "equals": "other"
       },
       "why": "the first 'no key' needle ('set ') matched 'reset by peer'"
+    },
+    {
+      "id": "scheduled-video-counts-once-live",
+      "item": 915,
+      "source": "wave 48 verification: publishing/youtube_publisher logs 'scheduled' and nothing ever sets 'uploaded'",
+      "call": "storage.repositories.publish_log:counts_as_live",
+      "args": [
+        "scheduled",
+        "2026-09-20T17:00:00+00:00",
+        "2026-09-30T12:00:00+00:00"
+      ],
+      "expect": {
+        "equals": true
+      },
+      "why": "every scheduled upload stayed 'scheduled' forever, so sync, the recommenders, the ledger and the cadence window never counted it"
+    },
+    {
+      "id": "scheduled-video-not-live-before-its-time",
+      "item": 915,
+      "source": "wave 48, sibling of scheduled-video-counts-once-live",
+      "call": "storage.repositories.publish_log:counts_as_live",
+      "args": [
+        "scheduled",
+        "2026-10-02T17:00:00+00:00",
+        "2026-09-30T12:00:00+00:00"
+      ],
+      "expect": {
+        "equals": false
+      },
+      "why": "a future slot is a reservation, not an outcome; counting it would put a video with no metrics into the learning set"
     }
   ]
 }

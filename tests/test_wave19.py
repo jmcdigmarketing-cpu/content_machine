@@ -25,7 +25,7 @@ class _StopAtPipeline(Exception):
     pass
 
 
-def _drive_auto_generate(argv: list[str]):
+def _drive_auto_generate(argv: list[str], pick: tuple = ("GTA 6", None)):
     """Run scripts.auto_generate.main up to run_pipeline and return that call."""
     from core.cadence import CadenceStatus
     from scripts import auto_generate
@@ -42,7 +42,7 @@ def _drive_auto_generate(argv: list[str]):
     spinner.__enter__ = MagicMock(return_value=SimpleNamespace(report=None))
     spinner.__exit__ = MagicMock(return_value=False)
     with (
-        patch.object(auto_generate, "_pick_topic", return_value="GTA 6"),
+        patch.object(auto_generate, "_pick_topic", return_value=pick),
         patch(
             "core.cadence.cadence_status",
             return_value=CadenceStatus(recent=0, upcoming=0, cap=5, window_days=7),

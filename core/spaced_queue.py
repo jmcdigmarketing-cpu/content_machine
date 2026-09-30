@@ -17,7 +17,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 
-from analytics.post_timing import next_optimal_post_time
+from analytics.post_timing import planned_post_time
 from core.cadence import cadence_status
 from core.logging import get_logger
 from core.run_features import load_features
@@ -60,7 +60,7 @@ def plan_spaced_uploads(
                 )
             )
             continue
-        when = next_optimal_post_time(channel_id, topic, after=after)
+        when = planned_post_time(channel_id, topic, run_id=int(run_id), after=after)
         after = when
         out.append(SpacedSlot(run_id=int(run_id), title=str(title), publish_at=when))
     return out

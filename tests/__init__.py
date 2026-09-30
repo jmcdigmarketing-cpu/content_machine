@@ -129,6 +129,7 @@ from core import retraction_watch as _retraction_watch
 from core import run_trace as _run_trace
 from core import trace_secrets as _trace_secrets
 from storage.repositories import channel_memory as _channel_memory
+from storage.repositories import publish_log as _publish_log
 from video import subtitles as _subtitles
 
 _SUITE_DATA_TMP = tempfile.mkdtemp(prefix="cm_suite_data_")
@@ -180,6 +181,9 @@ _SUITE_STORE_PATCHES = (
     patch.object(_competitors, "DATA_DIR", _SUITE_DATA_TMP),
     patch.object(_channel_memory, "MEMORY_DIR", _suite_store("channel_memory")),
     patch.object(_subtitles, "SUBTITLE_DIR", _suite_store("subtitles")),
+    # Wave 48: the ledger's post-time claim reads the run's publish-log row (#916); on the
+    # operator's PC that was the real data/publish_log.json, as it was for every reader.
+    patch.object(_publish_log, "LOG_FILE", _suite_store("publish_log.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

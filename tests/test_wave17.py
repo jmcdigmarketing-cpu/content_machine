@@ -145,9 +145,9 @@ class TestSpacedShortQueue(unittest.TestCase):
                 "core.spaced_queue.cadence_status",
                 return_value=CadenceStatus(recent=recent, upcoming=0, cap=cap, window_days=7),
             ),
-            patch(
-                "core.spaced_queue.next_optimal_post_time", side_effect=lambda *a, **k: next(times)
-            ),
+            # Wave 48 (#912): the queue asks `planned_post_time`, which is the open slot
+            # unless the post_time experiment runs.
+            patch("core.spaced_queue.planned_post_time", side_effect=lambda *a, **k: next(times)),
         ):
             return plan_spaced_uploads(items, channel_id="tapin", topic="GTA 6")
 

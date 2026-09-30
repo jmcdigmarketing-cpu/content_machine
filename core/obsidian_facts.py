@@ -29,7 +29,8 @@ from pathlib import Path
 
 from apis.topic_tokens import FUNCTION_WORDS, content_tokens
 from core.facts.recency import stale_preview
-from core.facts.store import FactRecord, note_metadata, rank_bonus, stamp_as_of
+from core.facts.store import FactRecord, note_metadata, rank_bonus, stamp_as_of, trust_source
+from core.facts.trust import source_factor
 from core.logging import get_logger
 from core.vault.index import iter_notes
 
@@ -401,6 +402,7 @@ def load_fact_records(
             continue
 
         tier, verified_at, expires, source_url = note_metadata(meta, rel)
+        weighed_source = trust_source(meta, source_url)
         if expires is not None and expires < today:
             continue  # stale by declaration — champions/rosters age out
         # #558: a preview line ("... is set for Oct 4") retires once its dates pass.
@@ -416,7 +418,9 @@ def load_fact_records(
         # or any individual bullet matches the topic (a fact can live in a note whose
         # title doesn't mention the topic).
         note_weight = overlap + (0.5 if evergreen else 0)
-        provenance = rank_bonus(tier=tier, verified_at=verified_at, today=today)
+        provenance = rank_bonus(
+            tier=tier, verified_at=verified_at, today=today, trust=source_factor(weighed_source)
+        )
         # Distinctive gate: for operator-facing suggestions, note-level relevance
         # needs a topic-identity token (not just genre vocabulary), with no
         # evergreen bypass — computed once per note, refined per bullet below.
@@ -489,6 +493,7 @@ def load_fact_records(
                 verified_at=verified_at,
                 expires=expires,
                 note_path=str(rel),
+                trust_source=weighed_source,
                 uncertain=uncertain,
                 relevance_score=decision.score if decision is not None else None,
                 relevance_band=decision.band if decision is not None else "",

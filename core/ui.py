@@ -2223,6 +2223,7 @@ def prompt_upload_plan(
     input_fn=ask_text,
     grounding_override: bool = False,
     title_warnings: list[str] | None = None,
+    run_id: int | None = None,
 ) -> UploadPlan:
     """Interactive upload timing and privacy (no CLI flags).
 
@@ -2235,6 +2236,7 @@ def prompt_upload_plan(
         format_scheduled_local,
         next_optimal_post_time,
         parse_local_time_input,
+        planned_post_time,
     )
 
     profile = get_channel_profile(channel_id)
@@ -2321,7 +2323,8 @@ def prompt_upload_plan(
         )
 
     if timing == "4":
-        publish_at = next_optimal_post_time(channel_id or "default", topic, after=now)
+        # #912: the run's slot - moved off it only while the post_time experiment runs.
+        publish_at = planned_post_time(channel_id or "default", topic, run_id=run_id, after=now)
         label = format_scheduled_local(publish_at, channel_id or "default")
         print_fn(f"  YouTube will publish at: {label}")
         print_fn(

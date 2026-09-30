@@ -30,11 +30,7 @@ def _length(choice="2", source="analytics", rate=0.30, n=6):
     )  # fmt: skip
 
 
-def _slot(source="analytics", rate=0.25, n=4):
-    return SimpleNamespace(
-        when_utc=datetime(2026, 9, 30, 17, 0, tzinfo=timezone.utc), local_str="", source=source,
-        avg_engaged_rate=rate, supporting_samples=n, rationale="",
-    )  # fmt: skip
+SLOT = datetime(2026, 9, 30, 17, 0, tzinfo=timezone.utc)
 
 
 class _Ledger(_Case):
@@ -48,22 +44,26 @@ class _Ledger(_Case):
         self.stack.enter_context(
             patch("core.length_recommender.get_recommended_length", return_value=_length())
         )
-        self.stack.enter_context(
-            patch("analytics.post_timing.get_recommended_time", return_value=_slot())
-        )
 
 
 class FreezeTests(_Ledger):
     def test_every_call_is_frozen(self):
         from core.predictions.ledger import freeze
 
-        entry = freeze(9, "tapin")
+        # #916: the claim is about the slot the video used, read from its publish-log row.
+        claim = {"used_at": SLOT.isoformat(), "on_slot": True, "expected": 0.25,
+                 "source": "analytics", "n": 4}  # fmt: skip
+        with (
+            patch("core.predictions.ledger._used_at", return_value=SLOT),
+            patch("analytics.post_timing.slot_claim", return_value=dict(claim)) as asked,
+        ):
+            entry = freeze(9, "tapin")
         self.assertEqual(
             entry["length"],
             {"recommended": "2", "chosen": "2", "expected": 0.30, "source": "analytics", "n": 6},
         )
-        self.assertEqual(entry["post_time"]["expected"], 0.25)
-        self.assertEqual(entry["post_time"]["recommended_at"], "2026-09-30T17:00:00+00:00")
+        self.assertEqual(entry["post_time"], claim)
+        self.assertEqual(asked.call_args.args[2], SLOT)
         self.assertEqual(entry["grade"], {"score": 86, "letter": "B"})
 
 

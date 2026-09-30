@@ -105,6 +105,47 @@ def _fetch_estimated_revenue(video_id, service, start_date, end_date) -> float |
     return None
 
 
+def _fetch_views_by_day(video_id, service, start_date, end_date) -> list[list[Any]] | None:
+    """[[YYYY-MM-DD, views], ...] for one video, or None (#563). Best-effort, like the
+    retention curve: a failure never breaks the headline sync."""
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="views",
+                dimensions="day",
+                filters=f"video=={video_id}",
+                sort="day",
+            )
+            .execute()
+        )
+    except Exception as exc:
+        logger.debug("views by day fetch failed for %s: %s", video_id, exc)
+        return None
+    daily: list[list[Any]] = []
+    for row in resp.get("rows") or []:
+        try:
+            daily.append([str(row[0])[:10], int(float(row[1]))])
+        except (ValueError, IndexError, TypeError):
+            continue
+    return daily or None
+
+
+def fetch_daily_views(
+    youtube_video_id: str, *, channel_id: str | None = None, start: str, end: str
+) -> list[list[Any]] | None:
+    """Views by day between two dates - `ops backfill view-curve` asks from the publish day."""
+    if not _analytics_enabled():
+        return None
+    service = get_youtube_analytics_service(resolve_channel_id(channel_id))
+    if not service:
+        return None
+    return _fetch_views_by_day(youtube_video_id, service, start, end)
+
+
 def fetch_video_metrics(
     youtube_video_id: str,
     *,
@@ -178,6 +219,9 @@ def fetch_video_metrics(
     revenue = _fetch_estimated_revenue(youtube_video_id, service, start_date, end_date)
     if revenue is not None:
         result["estimated_revenue_usd"] = revenue
+    daily = _fetch_views_by_day(youtube_video_id, service, start_date, end_date)
+    if daily:
+        result["daily_views"] = daily  # #563
     return result
 
 
@@ -218,7 +262,9 @@ def merge_metric_snapshots(
             "captured_at": current.isoformat(),
         }
     merged["snapshots"] = snaps
-    return merged
+    from analytics.view_curve import merge_view_curve
+
+    return merge_view_curve(existing, merged, published_at)  # #563
 
 
 def _existing_publish_row(

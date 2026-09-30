@@ -133,6 +133,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `shortcut` | Install Start Menu shortcut via pythonw / content_os.pyw |
 | `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
+| `source-trust` | Corrections per source and the weight they cost it (#342) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |
 | `studio` | Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]") |
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |

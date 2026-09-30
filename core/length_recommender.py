@@ -68,8 +68,12 @@ def _length_choice_from_run(timings_json: str) -> str | None:
     return choice if choice in PRESETS else None
 
 
-def _collect_length_samples(channel_id: str) -> list[dict]:
-    """Join recent runs (with a recorded length preset) to real engagement."""
+def _collect_length_samples(channel_id: str, *, exclude_run_id: int | None = None) -> list[dict]:
+    """Join recent runs (with a recorded length preset) to real engagement.
+
+    `exclude_run_id` leaves one video out, so a claim about it is not fitted on its own
+    outcome (#560: the ledger's backfilled entries).
+    """
     from storage.repositories.content_runs import get_content_run_repository
     from storage.repositories.publish_log import get_publish_log_repository
 
@@ -88,6 +92,8 @@ def _collect_length_samples(channel_id: str) -> list[dict]:
 
     samples: list[dict] = []
     for run in runs:
+        if exclude_run_id and run.id == int(exclude_run_id):
+            continue
         choice = _length_choice_from_run(run.timings_json)
         if not choice:
             continue
@@ -104,14 +110,19 @@ def get_recommended_length(
     *,
     min_total: int = 6,
     min_per_bucket: int = 3,
+    exclude_run_id: int | None = None,
 ) -> LengthRecommendation:
     """
     Recommend a length preset using engagement history (analytics) when enough
-    data exists, otherwise a per-domain default.
+    data exists, otherwise a per-domain default. `exclude_run_id` fits without one video.
     """
     channel_id = resolve_channel_id(channel_id)
     domain = _infer_domain(topic, channel_id) if topic else "neutral"
-    samples = _collect_length_samples(channel_id)
+    samples = (
+        _collect_length_samples(channel_id, exclude_run_id=exclude_run_id)
+        if exclude_run_id
+        else _collect_length_samples(channel_id)
+    )
 
     if len(samples) >= min_total:
         rates: dict[str, list[float]] = {}

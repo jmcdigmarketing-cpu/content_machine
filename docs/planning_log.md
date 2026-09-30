@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-29
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,95 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-09-30 (Claude Code) - wave 48: scheduled videos finally count, the slot actually used, faster outcomes, source trust
+
+**Prompt (verbatim):** "next 5" (after wave 47: "Next five (Recommended)" at the plan question)
+
+**Operator's answers (plan mode):** #560 - forward-only, withhold nothing. #342 - corrections
+only, bounded; key-facts rejects shown, never applied. #912 - an opt-in experiment lever. #563 -
+views by day from Analytics.
+
+### Why the list grew to seven
+
+Recommended: **#913 · #342 · #912 · #563 · #560**. Verifying them read-only found two defects
+under them that starve the learning loop, so both went in first:
+
+- **#915, the wave's finding.** `publishing/youtube_publisher.py:409,728` logs a scheduled upload
+  as `status="scheduled"` and nothing ever sets `uploaded` (grep: no writer).
+  `storage/repositories/publish_log.py` `list_uploaded_for_channel` (what `sync_channel` pulls)
+  and `list_timed_outcomes` (all four recommenders, the ledger, experiments, weekly report) took
+  only uploaded/imported. Every automatic path schedules (`core/spaced_queue`,
+  `scripts/auto_generate.py`), so those videos were never synced, never scored, never learned
+  from; `core/cadence.py` also stopped counting a video the moment its slot passed. How many of
+  the operator's videos this hid is unknown here (no `data/` in the container) - `ops predictions`
+  after one `ops sync-metrics` will say.
+- **#916.** `core/predictions/ledger._post_time` asked `get_recommended_time` right after the
+  upload, when the video's own time is already reserved (`analytics/upload_queue.
+  get_reserved_publish_times`), so `next_optimal_post_time` returned the *next* slot and
+  `post_error` scored a claim about a different slot - my own wave-46 code.
+- **#342's filed text was wrong**: tiers are per section (`core/grounding_tiers.py`), not per
+  source; the only records naming a source are the correction dossier's negative facts (URL in the
+  reason) and the key-facts rejects.
+- **#563 could not be computed** from anything stored (one 28-day total, 24h/7d snapshots).
+
+### Shipped
+
+1. **#915** `counts_as_live` / `_live_condition`: a scheduled row past its time is live, in both
+   repositories; read-side only. Corpus: two cases.
+2. **#913** `pick_record(by=)`; `collect_topics(picks=)` -> `run_batch` -> `generate_draft` ->
+   `run_pipeline`; overnight threads it; `auto_generate._pick_topic` returns the record. The ledger
+   splits your picks from automatic ones.
+3. **#916 + #912** `post_timing.slot_claim` (the used time, on a slot or not, that slot's rate);
+   the ledger scores on-slot only and says how many entries predate the fix. A `post_time` lever;
+   `planned_post_time` in the spaced queue, auto_generate and the upload menu - unchanged unless
+   the experiment is started.
+4. **#560** forward rows are the headline, backfilled apart; backfilled length and post-time claims
+   leave the video out (`exclude_run_id`); the claimed band beside the forward error.
+5. **#563** the day query in `fetch_video_metrics`; `analytics/view_curve.py` (union by day,
+   `first_views` frozen once reached, silent when the series starts after publish); the ops line;
+   `ops backfill view-curve`.
+6. **#342** `core/facts/trust.py`; `FactRecord.trust_source` from `pages:`; confidence and vault
+   ranking scaled; `ops source-trust`.
+
+### Findings on the way
+
+- **I nearly shipped a finished-output change.** The first #342 version filled `source_url` from
+  `pages:`; `core/description_extras.py` cites vault `source_url`s in the published description, so
+  descriptions would have gained links nobody asked for. Caught in the audit's reader trace; the
+  page now rides in `trust_source`, and a guard pins `source_url` empty for a pages-only note.
+- **The suite read the operator's real publish log.** `tests/__init__.py` redirected every store
+  but `data/publish_log.json`; the ledger's new publish-log lookup would have read the real file on
+  the PC. Redirected (reads count, as the traces lesson said).
+- Filed: **#917** a conflict does not say which source lost · **#918** sync pulls only the three
+  newest videos · **#919** one active experiment per channel.
+
+### Not done, deliberately
+
+- No hold-out set: forward-only by the operator's call; nothing is withheld from the recommenders.
+- No promotion of trusted sources - nothing records a source being right.
+- The requeue menus (`core/ui.py` recover/requeue) keep `next_optimal_post_time`; a requeue is not
+  an experiment sample.
+
+### Audit
+
+67 new test methods in six modules; suite 4,142 -> 4,209. **62 observed failing before their
+fix**; 5 guards pass by design (a future scheduled row stays out; a failed day query is skipped; a
+URL `source:` still wins; a pages-only note has no public citation; post-time samples leave one
+out - written after #916 had added it). One test was rewritten after the #342 redesign
+(`test_pages_give_the_source_to_weigh`; its first version was observed failing). Five older tests
+changed on purpose: two wave-47 dicts gain `by`; the wave-46 freeze test asserted the #916 defect's
+shape; the backfill order gains `view-curve`; the auto_generate driver takes the pick; wave 17's
+spaced-queue test patched `next_optimal_post_time` in `core.spaced_queue`, which now asks
+`planned_post_time` (caught by the first full run - my targeted runs had missed that module). mypy
+**123** == baseline; ruff clean; corpus 59 of 59. Live here on synthetic data: `ops predictions`
+(scheduled rows counted 7 of 7, picks "2 by you, 3 automatic", time to 100 views "median 1
+day(s)"), `ops source-trust` ("mmafighting.com: 3 correction(s) -> weight x0.85"), `ops backfill
+view-curve` dry run, and the off-slot arm 4:00 after the slot. Backlog **254 numbered open**,
+highest **#919**.
+
+Closed **#915 #913 #916 #912 #560 #563 #342**. Filed **#917 #918 #919**. Next five: **#918 · #564 ·
+#598 · #917 · #919**.
 
 ## 2026-09-29 (Claude Code) - wave 47: replay a run offline, emoji in captions, the best-bet pick kept
 

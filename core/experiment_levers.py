@@ -7,8 +7,10 @@ generation knob. Arms are chosen to be compatible with the base prompt's rules
 
 `kind` says where the directive applies: "script" levers ride the script
 prompt (creative_brief); "thumbnail" levers append to the Flux thumbnail
-prompt (`assets/flux_thumbnail`). Consumers filter by kind so a running
-thumbnail experiment never leaks visual directives into a script prompt.
+prompt (`assets/flux_thumbnail`); the "post_time" lever moves the publish time
+(`analytics/post_timing.planned_post_time`, #912) and its directive is only a
+description. Consumers filter by kind so a running thumbnail experiment never
+leaks visual directives into a script prompt.
 """
 
 from __future__ import annotations
@@ -61,6 +63,14 @@ _LEVERS: dict[str, dict] = {
                 "named slot — lighting: hard directional light with a crisp rim, high "
                 "contrast, no flat even fill"
             ),
+        },
+    },
+    "post_time": {
+        "description": "When the video goes public: the recommended slot or a few hours off it",
+        "kind": "post_time",
+        "arms": {
+            "on_slot": "publish at the recommended slot",
+            "off_slot": "publish POST_TIME_OFF_SLOT_HOURS (default 4) after the recommended slot",
         },
     },
     "thumbnail_format": {

@@ -13,11 +13,15 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from apis.topic_scorer import infer_domain
 from config.channels import get_channel_profile, resolve_channel_id
+from core.logging import get_logger
 from core.recommender_confidence import confidence_note, interval_note
+
+logger = get_logger("analytics.post_timing")
 
 # Python weekday: Monday=0 … Sunday=6
 DEFAULT_TAPIN_SLOTS = (
@@ -120,11 +124,17 @@ def _domain_from_metrics(metrics_json: str, fallback: str, channel_id: str) -> s
     return infer_domain(title, channel_id)
 
 
-def _collect_timed_samples(channel_id: str) -> list[tuple[str, datetime, float]]:
+def _collect_timed_samples(
+    channel_id: str, *, exclude_run_id: int | None = None
+) -> list[tuple[str, datetime, float]]:
+    """(domain, published_at, engaged rate) per measured video; `exclude_run_id` leaves one
+    video out so a claim about it is not fitted on its own outcome (#560)."""
     from storage.repositories.publish_log import get_publish_log_repository
 
     samples: list[tuple[str, datetime, float]] = []
     for row in get_publish_log_repository().list_timed_outcomes(channel_id):
+        if exclude_run_id and row.content_run_id == int(exclude_run_id):
+            continue
         when = row.published_at
         if not when:
             continue
@@ -292,6 +302,97 @@ def next_optimal_post_time(
     return candidates[0]
 
 
+ON_SLOT_TOLERANCE = timedelta(minutes=10)
+
+
+def _on_a_slot(channel_id: str, topic: str, when_utc: datetime) -> bool:
+    """True when `when_utc` is within ten minutes of one of the schedule's slots."""
+    schedule = get_post_schedule(channel_id)
+    try:
+        tz = ZoneInfo(schedule.timezone)
+    except Exception:
+        tz = ZoneInfo("America/New_York")
+    start = (when_utc - ON_SLOT_TOLERANCE).astimezone(tz)
+    near = _slot_candidates(channel_id, topic, after_local=start, days=2)
+    return any(abs(c - when_utc) <= ON_SLOT_TOLERANCE for c in near)
+
+
+def slot_claim(
+    channel_id: str,
+    topic: str,
+    used_at: datetime,
+    *,
+    exclude_run_id: int | None = None,
+) -> dict[str, Any]:
+    """#916: the post-time recommender's claim about the time a video actually used.
+
+    Asking `get_recommended_time` after the upload answered for the *next* open slot -
+    the video's own time was already reserved - so the ledger scored a claim about a
+    different slot. This one is about `used_at`: whether it is on a schedule slot, and
+    that slot's learned rate when the schedule is learned.
+    """
+    channel_id = resolve_channel_id(channel_id)
+    used = used_at if used_at.tzinfo else used_at.replace(tzinfo=timezone.utc)
+    learned = learn_slots_from_analytics(channel_id) if _use_learned_post_slots() else None
+    expected: float | None = None
+    n = 0
+    if learned:
+        rate, n, _rates = _slot_engagement(channel_id, topic, used, exclude_run_id=exclude_run_id)
+        expected = rate if n > 0 else None
+    return {
+        "used_at": used.isoformat(),
+        "on_slot": _on_a_slot(channel_id, topic, used),
+        "expected": expected,
+        "source": "analytics" if learned else "static",
+        "n": n,
+    }
+
+
+def off_slot_hours() -> float:
+    """`POST_TIME_OFF_SLOT_HOURS` (default 4, 1-12): how far the off-slot arm moves (#912)."""
+    try:
+        hours = float(os.getenv("POST_TIME_OFF_SLOT_HOURS", "") or 4)
+    except ValueError:
+        hours = 4.0
+    return max(1.0, min(12.0, hours))
+
+
+def planned_post_time(
+    channel_id: str,
+    topic: str = "",
+    *,
+    run_id: int | None,
+    after: datetime | None = None,
+) -> datetime:
+    """The publish time for one run: the open slot, or - when the operator has started the
+    `post_time` experiment (#912) - the slot or a few hours off it, arm recorded.
+
+    With no experiment running this is exactly `next_optimal_post_time`.
+    """
+    when = next_optimal_post_time(channel_id, topic, after=after)
+    if not run_id:
+        return when
+    try:
+        from core.experiments import next_arm, record_assignment
+
+        channel = resolve_channel_id(channel_id)
+        experiment = next_arm(channel, kind="post_time")
+        if not experiment:
+            return when
+        lever, arm, _directive = experiment
+        if arm == "off_slot":
+            shifted = when + timedelta(hours=off_slot_hours())
+            for _ in range(3):  # never land on another slot by accident
+                if not _on_a_slot(channel, topic, shifted):
+                    break
+                shifted += timedelta(hours=1)
+            when = shifted
+        record_assignment(channel, run_id, lever, arm)
+    except Exception as exc:
+        logger.debug("post-time experiment skipped: %s", exc)
+    return when
+
+
 def format_scheduled_local(when_utc: datetime, channel_id: str) -> str:
     schedule = get_post_schedule(channel_id)
     try:
@@ -446,6 +547,8 @@ def _slot_engagement(
     channel_id: str,
     topic: str,
     when_utc: datetime,
+    *,
+    exclude_run_id: int | None = None,
 ) -> tuple[float, int, list[float]]:
     """
     Average engagement + sample count + the samples themselves for the
@@ -457,7 +560,11 @@ def _slot_engagement(
     mean: this was the only one of the three recommenders that discarded its
     sample vector before returning.
     """
-    samples = _collect_timed_samples(channel_id)
+    samples = (
+        _collect_timed_samples(channel_id, exclude_run_id=exclude_run_id)
+        if exclude_run_id
+        else _collect_timed_samples(channel_id)
+    )
     if not samples:
         return 0.0, 0, []
 

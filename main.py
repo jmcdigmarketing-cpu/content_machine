@@ -1043,6 +1043,7 @@ def _run_new_video_flow_body(
     upload_plan = prompt_upload_plan(
         channel_id=channel_id,
         topic=best_topic,
+        run_id=result.run_id,
         grounding_override=grounding_override,
         title_warnings=(
             list(_tsc.get("warnings") or [])

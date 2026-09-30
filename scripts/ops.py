@@ -528,6 +528,16 @@ def cmd_predictions(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("source-trust", "Corrections per source and the weight they cost it (#342)")
+def cmd_source_trust(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.facts.trust import report_lines
+
+    for line in report_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
 @_register("feature-report", "Recorded run features vs engaged rate, report-only (#357)")
 def cmd_feature_report(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id

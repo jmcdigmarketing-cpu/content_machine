@@ -1,11 +1,30 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-27
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-09-28 (Claude Code): wave 45 #558 #385 #626 #503 #901
+
+- **#558** a vault line previewing an event ("... is set for Oct 4") stops feeding the prompt once
+  every date in it has passed (`fact_recency.stale_preview`; a year-less date takes the note's
+  `date:` year). The note is not edited; `ops vault-decay` lists the lines.
+- **#385** `apis/schema_pins`: eight signals (rawg, news, fred, coingecko, web_search/Tavily,
+  sports, odds, twitch) report `schema drift: ...` (`STATUS_UPSTREAM`, no breaker trip) when a
+  200's body lost a field they read, instead of a quiet "no match".
+- **#626** `tests/fixtures/signal_payloads/` + `tests/test_signal_contracts.py` hold each pinned
+  signal to a recorded shape (documented, not captured - #905 records real ones).
+- **#503** caption entrance: TapIn pops, MoneyWise fades (`caption_skin.entrance`, `none` turns it
+  off). MoneyWise's word-mode captions now burn as `.ass` so the fade can render; the same look.
+- **#901** voice aliases deleted; `core/vault/` (seven modules) with one-wave aliases;
+  `FLAT_CEILING` 236.
+
+**Verify:** `python -m unittest tests.test_preview_expiry tests.test_schema_pins
+tests.test_signal_contracts tests.test_caption_entrance tests.test_core_layout`;
+`py -m scripts.ops vault-decay`.
 
 ## Previous — 2026-09-27 (Claude Code): wave 44 #899 #411 #506 #896 #897 #854 #352 #834
 

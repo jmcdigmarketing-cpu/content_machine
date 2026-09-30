@@ -152,17 +152,20 @@ def _run_overnight_body(
     except Exception as exc:
         logger.debug("overnight quota gate skipped: %s", exc)
 
-    picked = collect_topics(channel, topics, file, want)
+    picks: dict[str, dict] = {}
+    picked = collect_topics(channel, topics, file, want, picks=picks)
     result.requested = len(picked)
     if not picked:
         logger.warning("overnight: no topics (best bets unavailable) for %s", channel)
         return result
 
     key_facts = load_key_facts(facts_file) if facts_file else None
+    batch_kwargs: dict[str, Any] = {}
     if key_facts:
-        result.outcomes = run_batch(channel, picked, key_facts=key_facts)
-    else:
-        result.outcomes = run_batch(channel, picked)
+        batch_kwargs["key_facts"] = key_facts
+    if picks:
+        batch_kwargs["picks"] = picks  # #913: the best-bet ranks the batch took
+    result.outcomes = run_batch(channel, picked, **batch_kwargs)
     result.drafted = sum(1 for o in result.outcomes if getattr(o, "ok", False))
 
     # Mirror each drafted run into the vault (Pillar 4). run_batch persists a

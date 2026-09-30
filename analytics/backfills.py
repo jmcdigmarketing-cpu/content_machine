@@ -154,6 +154,21 @@ def _angles_run(channel_id: str, apply: bool, force: bool) -> dict[str, int]:
     )
 
 
+# ---- view-curve: a live video with no `first_views` yet (#563).
+
+
+def _view_curve_stale(run: Any) -> bool:
+    from analytics.view_curve import stale
+
+    return stale(run)
+
+
+def _view_curve_run(channel_id: str, apply: bool, force: bool) -> dict[str, int]:
+    from analytics.view_curve import backfill
+
+    return backfill(channel_id, apply, force)
+
+
 REGISTRY: tuple[Backfill, ...] = (
     Backfill(
         "features",
@@ -172,6 +187,14 @@ REGISTRY: tuple[Backfill, ...] = (
     ),
     Backfill(
         "angles", "offline angle scores (approximate)", lambda: "v1", _angles_stale, _angles_run
+    ),
+    # #563: views by day from each video's publish day (network, so only with --apply).
+    Backfill(
+        "view-curve",
+        "views by day and the time to the first views",
+        lambda: "v1",
+        _view_curve_stale,
+        _view_curve_run,
     ),
 )
 

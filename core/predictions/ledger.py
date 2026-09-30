@@ -60,11 +60,17 @@ def _engaged(run_id: int, channel_id: str, quality: dict[str, Any]) -> dict[str,
     return {"rate": pred.rate, "band": pred.band, "n": pred.n, "note": pred.note}
 
 
-def _length(record: Any, channel_id: str, topic: str) -> dict[str, Any] | None:
+def _length(
+    record: Any, channel_id: str, topic: str, *, exclude_run_id: int | None = None
+) -> dict[str, Any] | None:
     try:
         from core.length_recommender import _length_choice_from_run, get_recommended_length
 
-        rec = get_recommended_length(channel_id, topic)
+        rec = (
+            get_recommended_length(channel_id, topic, exclude_run_id=exclude_run_id)
+            if exclude_run_id
+            else get_recommended_length(channel_id, topic)
+        )
         return {
             "recommended": rec.length_choice,
             "chosen": _length_choice_from_run(getattr(record, "timings_json", "") or ""),
@@ -77,20 +83,45 @@ def _length(record: Any, channel_id: str, topic: str) -> dict[str, Any] | None:
         return None
 
 
-def _post_time(channel_id: str, topic: str) -> dict[str, Any] | None:
+def _used_at(run_id: int, channel_id: str) -> datetime | None:
+    """When this run's video went (or goes) public, from its publish-log row."""
     try:
-        from analytics.post_timing import get_recommended_time
+        from publishing.idempotency import idempotency_key
+        from storage.repositories.publish_log import get_publish_log_repository
 
-        rec = get_recommended_time(channel_id, topic)
-        return {
-            "recommended_at": rec.when_utc.isoformat(),
-            "expected": rec.avg_engaged_rate if rec.source == "analytics" else None,
-            "source": rec.source,
-            "n": rec.supporting_samples,
-        }
+        row = get_publish_log_repository().find_by_idempotency(
+            idempotency_key(int(run_id), channel_id)
+        )
+        return row.published_at if row is not None else None
     except Exception as exc:
-        logger.debug("post-time recommendation not frozen: %s", exc)
+        logger.debug("publish time unavailable for run %s: %s", run_id, exc)
         return None
+
+
+def _post_time(
+    run_id: int, channel_id: str, topic: str, *, exclude_run_id: int | None = None
+) -> dict[str, Any] | None:
+    """#916: the claim about the slot the video used - not `get_recommended_time`, which
+    after the upload answers for the next open slot (this video's own is reserved)."""
+    used_at = _used_at(run_id, channel_id)
+    if used_at is None:
+        return None
+    try:
+        from analytics.post_timing import slot_claim
+
+        claim = slot_claim(channel_id, topic, used_at, exclude_run_id=exclude_run_id)
+    except Exception as exc:
+        logger.debug("post-time claim not frozen: %s", exc)
+        return None
+    try:
+        from core.experiments import assignment_for_run
+
+        arm = assignment_for_run(run_id)
+        if arm and arm.get("lever") == "post_time":
+            claim["arm"] = arm.get("arm")  # #912
+    except Exception as exc:
+        logger.debug("post-time arm unavailable: %s", exc)
+    return claim
 
 
 def _best_bet(record: Any) -> dict[str, Any] | None:
@@ -110,6 +141,7 @@ def _best_bet(record: Any) -> dict[str, Any] | None:
         "rank": rank,
         "expected": chosen.get("expected") if chosen else None,
         "source": chosen.get("source") if chosen else None,
+        "by": str(pick.get("by") or "operator"),  # #913: records before it were the card's
     }
 
 
@@ -150,13 +182,16 @@ def freeze(
             return None
         quality = _quality(record)
         topic = str(getattr(record, "selected_topic", "") or "")
+        # #560: a backfilled claim is made after the outcome exists, so every recommender
+        # fits without this video (the engaged-rate fit always does).
+        leave_out = int(run_id) if backfilled else None
         entry: dict[str, Any] = {
             "frozen_at": (now or datetime.now(timezone.utc)).isoformat(),
             "backfilled": bool(backfilled),
             "engaged_rate": _engaged(run_id, channel_id, quality),
             # #113: the recommenders' own claims, kept beside it.
-            "length": _length(record, channel_id, topic),
-            "post_time": _post_time(channel_id, topic),
+            "length": _length(record, channel_id, topic, exclude_run_id=leave_out),
+            "post_time": _post_time(int(run_id), channel_id, topic, exclude_run_id=leave_out),
             "grade": _grade(quality),
             "best_bet": _best_bet(record),  # #909
         }
@@ -204,16 +239,22 @@ def ledger_rows(channel_id: str) -> list[dict[str, Any]]:
         engaged = entry.get("engaged_rate") or {}
         if engaged.get("rate") is not None:
             row["engaged_error"] = float(rate) - float(engaged["rate"])
-            row["inside_band"] = abs(row["engaged_error"]) <= float(engaged.get("band") or 0.0)
+            row["engaged_band"] = float(engaged.get("band") or 0.0)
+            row["inside_band"] = abs(row["engaged_error"]) <= row["engaged_band"]
         length = entry.get("length") or {}
         if length.get("expected") is not None and length.get("chosen") == length.get("recommended"):
             row["length_error"] = float(rate) - float(length["expected"])
         post = entry.get("post_time") or {}
-        if post.get("expected") is not None:
+        if post and "used_at" not in post:
+            row["post_before_916"] = True  # scored the next slot, not this video's
+        elif post.get("expected") is not None and post.get("on_slot"):
             row["post_error"] = float(rate) - float(post["expected"])
+        if post.get("on_slot") is False:
+            row["post_off_slot"] = True
         bet = entry.get("best_bet") or {}
         if bet:
             row["best_bet_picked"] = bool(bet.get("picked"))
+            row["best_bet_by"] = str(bet.get("by") or "operator")
             if (
                 bet.get("picked")
                 and bet.get("source") == "analytics"
@@ -257,20 +298,39 @@ def report_lines(channel_id: str) -> list[str]:
         f"Prediction ledger (#113) - {channel_id}: {frozen} frozen, {len(rows)} measured"
         + (f" ({backfilled} backfilled - fitted after the fact)" if backfilled else "")
     ]
-    engaged = [r["engaged_error"] for r in rows if "engaged_error" in r]
-    lines.append(_error_line("engagement predictor", engaged))
-    if len(engaged) >= _MIN_MEASURED:
-        inside = sum(1 for r in rows if r.get("inside_band"))
-        lines.append(f"    inside its band: {inside}/{len(engaged)}")
-    lines.append(
-        _error_line(
-            "length recommender (when followed)",
-            [r["length_error"] for r in rows if "length_error" in r],
+    # #560: the headline error is forward rows only - claims frozen before the outcome.
+    forward = [r for r in rows if not r["backfilled"]]
+    back = [r for r in rows if r["backfilled"]]
+
+    def _claim(label: str, key: str, detail: list[str] | None = None) -> None:
+        lines.append(_error_line(label, [r[key] for r in forward if key in r]))
+        lines.extend(detail or [])
+        late = [r[key] for r in back if key in r]
+        if late:
+            lines.append("    " + _error_line("backfilled, left out of the fit", late).strip())
+
+    measured = [r for r in forward if "engaged_error" in r]
+    band_line: list[str] = []
+    if len(measured) >= _MIN_MEASURED:
+        band = sum(r["engaged_band"] for r in measured) / len(measured)
+        mean_abs = sum(abs(r["engaged_error"]) for r in measured) / len(measured)
+        inside = sum(1 for r in measured if r.get("inside_band"))
+        band_line.append(
+            f"    claimed band +/-{band * 100:.1f}pp (in-sample spread) vs forward "
+            f"|error| {mean_abs * 100:.1f}pp; inside the band {inside}/{len(measured)}"
         )
-    )
-    lines.append(
-        _error_line("post-time slot", [r["post_error"] for r in rows if "post_error" in r])
-    )
+    _claim("engagement predictor (frozen before the outcome)", "engaged_error", band_line)
+    _claim("length recommender (when followed)", "length_error")
+    _claim("post-time slot (videos on a slot)", "post_error")
+    off_slot = sum(1 for r in rows if r.get("post_off_slot"))
+    before = sum(1 for r in rows if r.get("post_before_916"))
+    if off_slot or before:
+        parts = []
+        if off_slot:
+            parts.append(f"{off_slot} off-slot (py -m scripts.ops experiment)")
+        if before:
+            parts.append(f"{before} frozen before #916, not scored")
+        lines.append("    " + "; ".join(parts))
     lines.append(
         _error_line(
             "best-bet pick (analytics)",
@@ -284,11 +344,20 @@ def report_lines(channel_id: str) -> list[str]:
         def _mean(xs: list[float]) -> str:
             return f"{sum(xs) / len(xs) * 100:.1f}%" if xs else "-"
 
+        by_you = sum(
+            1 for r in rows if r.get("best_bet_picked") is True and r["best_bet_by"] == "operator"
+        )
         lines.append(
-            f"    picked {len(picked)} (mean {_mean(picked)}) vs own topic {len(own)} "
-            f"(mean {_mean(own)})"
+            f"    picked {len(picked)} (mean {_mean(picked)}; {by_you} by you, "
+            f"{len(picked) - by_you} automatic) vs own topic {len(own)} (mean {_mean(own)})"
             + ("" if min(len(picked), len(own)) >= _MIN_MEASURED else " - collecting")
         )
+    try:
+        from analytics.view_curve import report_line
+
+        lines.append(report_line(channel_id))  # #563: the faster outcome
+    except Exception as exc:
+        logger.debug("time-to-first-views line skipped: %s", exc)
     graded = [(r["grade"], r["actual"]) for r in rows if "grade" in r]
     if len(graded) < _MIN_MEASURED:
         lines.append(f"  grade vs engaged rate: collecting (n={len(graded)})")

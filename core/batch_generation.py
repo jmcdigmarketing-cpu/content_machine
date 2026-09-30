@@ -108,8 +108,15 @@ def collect_topics(
     topics: list[str] | None = None,
     file: str | None = None,
     count: int = 3,
+    *,
+    picks: dict[str, dict] | None = None,
 ) -> list[str]:
-    """Explicit topics → file lines → best bets, capped at `count` for implicit sources."""
+    """Explicit topics → file lines → best bets, capped at `count` for implicit sources.
+
+    ``picks`` (optional) is filled with each best-bet topic's `pick_record` (#913) so the
+    run records that the batch took it and at which rank; explicit and file topics are
+    not picks.
+    """
     if topics:
         return [t.strip() for t in topics if t.strip()]
     if file:
@@ -117,9 +124,13 @@ def collect_topics(
             lines = [ln.strip() for ln in f if ln.strip() and not ln.lstrip().startswith("#")]
         return lines
     try:
-        from core.best_bet import get_best_bets
+        from core.best_bet import get_best_bets, pick_record
 
-        return [b.topic for b in get_best_bets(channel_id, count)]
+        bets = get_best_bets(channel_id, count)
+        if picks is not None:
+            for rank, bet in enumerate(bets, 1):
+                picks[bet.topic] = pick_record(bets, rank, by="batch")
+        return [b.topic for b in bets]
     except Exception as exc:
         logger.warning("No topics given and best bets unavailable: %s", exc)
         return []
@@ -135,12 +146,17 @@ def _length_choice(channel_id: str, topic: str) -> str:
 
 
 def generate_draft(
-    topic: str, channel_id: str, *, key_facts: list[str] | None = None
+    topic: str,
+    channel_id: str,
+    *,
+    key_facts: list[str] | None = None,
+    best_bet: dict | None = None,
 ) -> DraftOutcome:
     """One headless draft: discovery → best variant → script → saved folder.
 
     ``key_facts`` (optional) are shared operator ground truth applied to this
     topic — same ``run_pipeline(key_facts=)`` path as ``auto_generate --facts-file``.
+    ``best_bet`` is the topic's `pick_record` when the batch took it from the best bets.
     """
     from core.pipeline import run_discovery, run_pipeline
 
@@ -187,6 +203,7 @@ def generate_draft(
         creative_brief=experiment[2] if experiment else "",
         key_facts=packed,
         relevance_corpus=corpus,
+        best_bet=best_bet,
     )
     # #779: a script-only run always comes back aborted with "proceed_video=False" - the
     # pipeline records that as "drafted". Treating it as a failure kept 0 of 3 drafts on
@@ -278,11 +295,16 @@ def generate_draft(
 
 
 def run_batch(
-    channel_id: str, topics: list[str], *, key_facts: list[str] | None = None
+    channel_id: str,
+    topics: list[str],
+    *,
+    key_facts: list[str] | None = None,
+    picks: dict[str, dict] | None = None,
 ) -> list[DraftOutcome]:
     """Generate a draft per topic; one failure never kills the batch.
 
-    ``key_facts`` apply to every topic (one overnight digest, N drafts).
+    ``key_facts`` apply to every topic (one overnight digest, N drafts). ``picks`` maps
+    a best-bet topic to its `pick_record` (#913).
     """
     from apis.register_signals import franchise_batch_cache
 
@@ -306,7 +328,9 @@ def run_batch(
                 )
                 continue
             try:
-                outcomes.append(generate_draft(topic, channel_id, key_facts=key_facts))
+                pick = (picks or {}).get(topic)
+                extra = {"best_bet": pick} if pick else {}
+                outcomes.append(generate_draft(topic, channel_id, key_facts=key_facts, **extra))
             except Exception as exc:
                 logger.warning("Draft failed for %r: %s", topic, exc)
                 outcomes.append(DraftOutcome(topic=topic, error=str(exc)))
@@ -389,11 +413,12 @@ def main(argv: list[str] | None = None) -> int:
     from core.operator_facts import load_key_facts
 
     key_facts = load_key_facts(args.facts_file)
-    topics = collect_topics(args.channel, args.topics, args.file, args.count)
+    picks: dict[str, dict] = {}
+    topics = collect_topics(args.channel, args.topics, args.file, args.count, picks=picks)
     if not topics:
         print("No topics to draft (give topics, --file, or record analytics for best bets).")
         return 1
-    outcomes = run_batch(args.channel, topics, key_facts=key_facts or None)
+    outcomes = run_batch(args.channel, topics, key_facts=key_facts or None, picks=picks)
     print(render_summary(outcomes))
     return 0 if any(o.ok for o in outcomes) else 1
 

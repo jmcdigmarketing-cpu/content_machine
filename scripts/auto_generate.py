@@ -42,23 +42,26 @@ def _sync_analytics(channel_id: str) -> None:
         print(f"  Analytics sync skipped: {exc}")
 
 
-def _pick_topic(channel_id: str, topic_override: str, use_best_bet: bool) -> str:
+def _pick_topic(
+    channel_id: str, topic_override: str, use_best_bet: bool
+) -> tuple[str, dict | None]:
+    """(topic, best-bet record). The record is None unless the best bet chose it (#913)."""
     if topic_override:
-        return topic_override.strip()
+        return topic_override.strip(), None
 
     if use_best_bet:
         try:
-            from core.best_bet import get_best_bet
+            from core.best_bet import get_best_bet, pick_record
 
             bet = get_best_bet(channel_id)
             if bet:
                 print(f"\n  Best Bet: {bet.topic}")
                 print(f"  Reason  : {bet.rationale}")
-                return bet.topic
+                return bet.topic, pick_record([bet], 1, by="auto")
         except Exception as exc:
             print(f"  Best-bet failed ({exc}), falling back to input")
 
-    return input("  Topic: ").strip()
+    return input("  Topic: ").strip(), None
 
 
 def _report_chapters(result, *, cut: bool) -> None:
@@ -153,7 +156,7 @@ def main(argv=None) -> int:
         _sync_analytics(channel_id)
 
     # Topic selection
-    topic = _pick_topic(channel_id, args.topic, not args.no_best_bet)
+    topic, best_bet = _pick_topic(channel_id, args.topic, not args.no_best_bet)
     if not topic:
         print("  No topic — exiting.")
         return 1
@@ -275,6 +278,7 @@ def main(argv=None) -> int:
         key_facts=packed,
         relevance_corpus=corpus,
         chapter_angles=all_angles or None,
+        best_bet=best_bet,
     )
 
     preset = get_length_preset(length_choice)
@@ -457,7 +461,7 @@ def main(argv=None) -> int:
     from analytics.post_timing import (
         display_recommended_time,
         get_recommended_time,
-        next_optimal_post_time,
+        planned_post_time,
     )
     from publishing.repurpose import enqueue_repurpose_jobs
 
@@ -474,7 +478,7 @@ def main(argv=None) -> int:
         # save has no id, and the job would point at nothing.
         print("  Not queued: the run was not saved, so there is nothing to link the upload to.")
         return 1
-    pub_at = next_optimal_post_time(channel_id, topic)
+    pub_at = planned_post_time(channel_id, topic, run_id=result.run_id)
     repurpose = enqueue_repurpose_jobs(
         channel_id=channel_id,
         content_run_id=result.run_id,

@@ -829,10 +829,12 @@ def _fresh_candidates(
     return base[:limit]
 
 
-def pick_record(options: list[Any], picked: int | None) -> dict[str, Any]:
+def pick_record(options: list[Any], picked: int | None, *, by: str = "operator") -> dict[str, Any]:
     """#909: what the best-bet card offered and which rank was taken (None = typed own).
 
-    Kept as `features["best_bet"]` so the prediction ledger can score the card.
+    Kept as `features["best_bet"]` so the prediction ledger can score the card. `by` says
+    who took it (#913): "operator" at the card in main.py, "batch" for the overnight
+    batch, "auto" for auto_generate.
     """
     offered = [
         {
@@ -844,7 +846,7 @@ def pick_record(options: list[Any], picked: int | None) -> dict[str, Any]:
         for o in options or []
     ]
     rank = picked if isinstance(picked, int) and 1 <= picked <= len(offered) else None
-    return {"offered": offered, "picked": rank}
+    return {"offered": offered, "picked": rank, "by": str(by or "operator")}
 
 
 def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:

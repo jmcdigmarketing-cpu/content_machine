@@ -53,24 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-29 · **HEAD at write:** `e124c14` + the wave 47 commit (`git log -1`)
+**Written:** 2026-09-30 · **HEAD at write:** `20dffed` + the wave 48 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** `write_run_trace` now also writes `<run>.signals.json` (#386) - any test
-driving it must redirect `core.run_trace.TRACES_DIR` or patch it. New `core/runs/`. Caption text
-passes through `video/caption_emoji.wrap_emoji` (no-emoji output byte-identical). The facts room
-reads links through `link_facts.extract_facts_with_report`; the terminal prompt still uses
-`extract_facts_from_url` + `last_extract_report`. mypy **123** (PySide6 installed here now, as in CI).
+**Read before editing:** `list_uploaded_for_channel` / `list_timed_outcomes` now include a
+`scheduled` row whose `published_at` has passed (#915) - every learner and the cadence window see
+more rows. The suite now redirects `storage.repositories.publish_log.LOG_FILE`. `spaced_queue`,
+auto_generate and the upload menu call `post_timing.planned_post_time` (patch that, not
+`next_optimal_post_time`, in `core.spaced_queue`). `FactRecord.trust_source` is for trust only;
+`source_url` is still what descriptions cite. mypy **123**.
 
 **Defects first:**
-- **No emoji render was seen** - no monochrome emoji font in this container; Segoe UI Emoji is
-  Windows-only (#914). The ASS font switch is tested; the pixels are the operator's to check.
-- The overnight batch's best-bet picks are not recorded (#913).
-- Carried: the facts room never met a real window; contract fixtures are still documented shapes.
+- **#915 was live on the PC and its size is unknown here** (no `data/`): every scheduled upload was
+  invisible to sync and learning. `ops sync-metrics` then `ops predictions` will show it.
+- I nearly made descriptions cite `pages:` URLs (#342 first draft); caught, guarded.
+- Carried: no emoji render seen (#914); facts room never met a real window.
 
-**Shipped:** #910 #911 #909 #504 #386. Suite **4,142**, the same 8 environmental failures in
-default/reverse/shuffle, hygiene clean; backlog **256 numbered open**, highest #914. Next five:
-**#913 · #342 · #912 · #563 · #560**.
+**Shipped:** #915 #913 #916 #912 #560 #563 #342. Suite **4,209**, the same 8 environmental failures
+in default/reverse/shuffle, hygiene clean; backlog **254 numbered open**, highest #919. Next five:
+**#918 · #564 · #598 · #917 · #919**.
 
 ## Slot — Cursor
 

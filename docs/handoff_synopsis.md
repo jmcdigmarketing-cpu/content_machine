@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-09-29: wave 47, next five
+# Handoff synopsis — 2026-09-30: wave 48, next five
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-29
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-29 (Claude Code): wave 47 #910 #911 #909 #504 #386
+## Last wave — 2026-09-30 (Claude Code): wave 48 #915 #913 #916 #912 #560 #563 #342
+
+- **#915** a scheduled upload stayed `scheduled` forever, so it was never synced, scored or learned
+  from and dropped out of the cadence window after its slot. A scheduled row past its time now
+  counts (`publish_log.counts_as_live`, read-side). Recommendations shift once these count.
+- **#916 / #912** the ledger scores the slot a video used (`post_timing.slot_claim`), not the next
+  one; `py -m core.experiments start post_time` alternates on-slot and 4 h off (opt-in).
+- **#913** overnight and auto_generate best-bet picks recorded (`by`: batch / auto / operator).
+- **#560** `ops predictions` headlines forward rows only; backfilled claims leave the video out.
+- **#563** views by day at each sync; `ops predictions` shows time to 100 views;
+  `ops backfill view-curve --apply` fills past videos.
+- **#342** two or more post-publish corrections lower a source's weight (floor x0.85);
+  `ops source-trust`. Rejects shown, never applied.
+
+**Verify:** `python -m unittest tests.test_scheduled_outcomes tests.test_auto_best_bet_pick
+tests.test_post_slot_arm tests.test_forward_error_bars tests.test_first_views
+tests.test_source_trust`; `py -m scripts.ops sync-metrics`, then `py -m scripts.ops predictions`.
+
+## Previous — 2026-09-29 (Claude Code): wave 47 #910 #911 #909 #504 #386
 
 - **#386** every run saves its signals beside its trace; `ops replay <run>` re-scores it offline
   (composite recorded vs today, the facts block, event coverage). `RUN_SIGNAL_SNAPSHOT=false` off.
@@ -38,25 +56,6 @@ tests.test_best_bet_pick tests.test_room_parallel_links tests.test_dossier_fact_
 **Verify:** `python -m unittest tests.test_facts_room tests.test_prediction_freeze
 tests.test_prediction_ledger tests.test_signal_contracts tests.test_search_fallback`;
 `py -m scripts.ops predictions`; `py -m scripts.ops incidents`.
-
-## Previous — 2026-09-28 (Claude Code): wave 45 #558 #385 #626 #503 #901
-
-- **#558** a vault line previewing an event ("... is set for Oct 4") stops feeding the prompt once
-  every date in it has passed (`fact_recency.stale_preview`; a year-less date takes the note's
-  `date:` year). The note is not edited; `ops vault-decay` lists the lines.
-- **#385** `apis/schema_pins`: eight signals (rawg, news, fred, coingecko, web_search/Tavily,
-  sports, odds, twitch) report `schema drift: ...` (`STATUS_UPSTREAM`, no breaker trip) when a
-  200's body lost a field they read, instead of a quiet "no match".
-- **#626** `tests/fixtures/signal_payloads/` + `tests/test_signal_contracts.py` hold each pinned
-  signal to a recorded shape (documented, not captured - #905 records real ones).
-- **#503** caption entrance: TapIn pops, MoneyWise fades (`caption_skin.entrance`, `none` turns it
-  off). MoneyWise's word-mode captions now burn as `.ass` so the fade can render; the same look.
-- **#901** voice aliases deleted; `core/vault/` (seven modules) with one-wave aliases;
-  `FLAT_CEILING` 236.
-
-**Verify:** `python -m unittest tests.test_preview_expiry tests.test_schema_pins
-tests.test_signal_contracts tests.test_caption_entrance tests.test_core_layout`;
-`py -m scripts.ops vault-decay`.
 
 ## Pipeline order (operator)
 
@@ -125,7 +124,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #913 overnight best-bet picks · #914 emoji font off Windows · #459 dead code (operator call).
+3. **Structural:** #918 sync young videos · #917 conflict source · #919 a lever per kind · #914 emoji font off Windows · #459 dead code (operator call).
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

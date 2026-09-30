@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from storage.db import get_session
@@ -85,6 +85,38 @@ def _parse_dt(value) -> datetime | None:
         return None
 
 
+_LIVE_STATUSES = ("uploaded", "imported")
+
+
+def counts_as_live(
+    status: str, published_at: datetime | str | None, now: datetime | str | None = None
+) -> bool:
+    """True for a video that is on YouTube now (#915).
+
+    A scheduled upload is logged `scheduled` and nothing ever moves it to `uploaded`, so
+    once its `published_at` has passed it is live and must count - for analytics sync,
+    the recommenders, the prediction ledger and the cadence window alike. Times may be
+    datetimes or ISO strings.
+    """
+    if status in _LIVE_STATUSES:
+        return True
+    published = _parse_dt(published_at)
+    current = _parse_dt(now) or datetime.now(timezone.utc)
+    return status == "scheduled" and published is not None and published <= current
+
+
+def _live_condition(now: datetime):
+    """The same rule as `counts_as_live`, as a SQL condition."""
+    return or_(
+        PublishLog.status.in_(_LIVE_STATUSES),
+        and_(
+            PublishLog.status == "scheduled",
+            PublishLog.published_at.isnot(None),
+            PublishLog.published_at <= now,
+        ),
+    )
+
+
 class PublishLogRepository(ABC):
     @abstractmethod
     def create(self, data: dict[str, Any]) -> PublishLogRecord:
@@ -157,11 +189,13 @@ class JsonPublishLogRepository(PublishLogRepository):
         return None
 
     def list_uploaded_for_channel(self, channel_id: str) -> list[PublishLogRecord]:
+        now = datetime.now(timezone.utc)
         return [
             _to_record(row)
             for row in self._read()
             if row.get("channel_id") == channel_id
-            and row.get("status") == "uploaded"
+            and row.get("status") in ("uploaded", "scheduled")
+            and counts_as_live(str(row.get("status")), _parse_dt(row.get("published_at")), now)
             and row.get("youtube_video_id")
         ]
 
@@ -179,14 +213,13 @@ class JsonPublishLogRepository(PublishLogRepository):
         return out
 
     def list_timed_outcomes(self, channel_id: str) -> list[PublishLogRecord]:
-        statuses = {"uploaded", "imported"}
+        now = datetime.now(timezone.utc)
         out = []
         for row in self._read():
             if row.get("channel_id") != channel_id:
                 continue
-            if row.get("status") not in statuses:
-                continue
-            if not _parse_dt(row.get("published_at")):
+            published = _parse_dt(row.get("published_at"))
+            if not published or not counts_as_live(str(row.get("status")), published, now):
                 continue
             out.append(_to_record(row))
         return out
@@ -251,7 +284,8 @@ class PostgresPublishLogRepository(PublishLogRepository):
             rows = session.scalars(
                 select(PublishLog).where(
                     PublishLog.channel_id == channel_id,
-                    PublishLog.status == "uploaded",
+                    PublishLog.status.in_(("uploaded", "scheduled")),
+                    _live_condition(datetime.now(timezone.utc)),
                     PublishLog.youtube_video_id != "",
                 )
             ).all()
@@ -281,7 +315,7 @@ class PostgresPublishLogRepository(PublishLogRepository):
             rows = session.scalars(
                 select(PublishLog).where(
                     PublishLog.channel_id == channel_id,
-                    PublishLog.status.in_(("uploaded", "imported")),
+                    _live_condition(datetime.now(timezone.utc)),
                     PublishLog.published_at.isnot(None),
                 )
             ).all()

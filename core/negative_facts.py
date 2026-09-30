@@ -57,6 +57,16 @@ def _load() -> dict[str, list[dict[str, Any]]]:
     return data if isinstance(data, dict) else {}
 
 
+def all_records() -> list[dict[str, Any]]:
+    """Every recorded negative fact, with its franchise (#342 reads the dossier reasons)."""
+    return [
+        {**row, "franchise": franchise}
+        for franchise, rows in _load().items()
+        for row in rows or []
+        if isinstance(row, dict)
+    ]
+
+
 def record_negative(franchise: str, claim: str, *, reason: str = "") -> None:
     key = (franchise or "tapin").strip().lower() or "tapin"
     text = (claim or "").strip()

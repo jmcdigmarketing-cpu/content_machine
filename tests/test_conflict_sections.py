@@ -91,6 +91,9 @@ class FlowTests(unittest.TestCase):
         carried = text.count('"conflict_sections": conflict_features["conflict_sections"]')
         self.assertEqual(carried, 2, "a content payload drops conflict_sections")
 
+    # No network (the CI reverse run caught this test fetching NBA stats and RSS feeds):
+    # the research brief is built from live feeds and scrapers.
+    @patch("core.pipeline.build_research_brief")
     @patch("core.pipeline.write_run_dossier")
     @patch("core.pipeline.write_run_trace")
     @patch("core.pipeline.persist_quality")
@@ -98,8 +101,11 @@ class FlowTests(unittest.TestCase):
     @patch("core.pipeline.record_learning_outcome")
     @patch("core.pipeline.record_content_run", return_value=7)
     @patch("core.pipeline.generate_content_package")
-    def test_the_pipeline_keeps_them(self, mock_content, *_mocks):
+    def test_the_pipeline_keeps_them(self, mock_content, *mocks):
         from core.pipeline import DiscoveryResult, run_pipeline
+        from core.research_brief import ResearchBrief
+
+        mocks[-1].return_value = ResearchBrief(topic="NBA trades")
 
         discovery = DiscoveryResult(
             input_topic="NBA trades", base_signals={},

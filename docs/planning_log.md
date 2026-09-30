@@ -83,7 +83,16 @@ and the env-key ratchet twice (`SYNC_YOUNG_DAYS`, `MIN_OUTCOME_VIEWS` - document
 `post_time` together, `ops source-trust` "Live web search 2, News headlines 1". Backlog **250
 numbered open**, highest **#920**.
 
-Closed **#918 #598 #564 #919 #917**. Filed **#920**. Next five: **#920 · #566 · #565 · #428 · #578**.
+**CI caught what the container could not (runs 206/207, reversed-order leg):** every test passed
+but the suite wrote `data/scraper_cache/bref.json` and `espn_stats.json`. My #917 pipeline test ran
+`run_pipeline("NBA trades")` with the research brief live - `core/research_brief.py` reads RSS
+feeds and scrapes basketball-reference/ESPN for an NBA topic; CI has network, this container
+does not (the test only sat through timeouts here). A request probe found the existing
+`tests/test_pipeline_smoke.py` doing the same: 48 real requests. Both now stub
+`core.pipeline.build_research_brief`: 0 requests, and the suite runs in ~70 s instead of ~117 s.
+Filed #921 (probe the rest of the suite for real requests).
+
+Closed **#918 #598 #564 #919 #917**. Filed **#920 #921**. Next five: **#920 · #566 · #565 · #428 · #578**.
 
 ## 2026-09-30 (Claude Code) - wave 48: scheduled videos finally count, the slot actually used, faster outcomes, source trust
 

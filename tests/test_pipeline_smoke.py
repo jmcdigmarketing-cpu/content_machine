@@ -7,6 +7,17 @@ from core.pipeline import DiscoveryResult, run_pipeline
 class TestPipelineSmoke(unittest.TestCase):
     # Ledger + vault writes are patched so the test never touches the real DB,
     # data/traces/, or the operator's vault — see tests/CLAUDE.md.
+
+    def setUp(self):
+        # No network (wave 49): the research brief reads live RSS feeds and stats
+        # scrapers - 48 real requests across these tests, and on CI a scraper cache
+        # written under data/. The brief is not what these tests check.
+        from core.research_brief import ResearchBrief
+
+        brief = patch("core.pipeline.build_research_brief", return_value=ResearchBrief())
+        brief.start()
+        self.addCleanup(brief.stop)
+
     @patch("core.pipeline.write_run_dossier")
     @patch("core.pipeline.write_run_trace")
     @patch("core.pipeline.persist_quality")

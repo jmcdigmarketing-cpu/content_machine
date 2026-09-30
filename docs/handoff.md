@@ -69,8 +69,12 @@ mypy **123**.
 - The views floor is off; its value to you is the under-50 line in `ops predictions`.
 - Carried: #915's size on your PC is unknown here; no emoji render seen (#914).
 
+**CI fix after `adb9846`:** the reversed-order leg caught my #917 pipeline test scraping live
+NBA stats into `data/scraper_cache/` (CI has network, this container does not); it and
+`test_pipeline_smoke` now stub `core.pipeline.build_research_brief` (48 requests -> 0). #921.
+
 **Shipped:** #918 #598 #564 #919 #917. Suite **4,238**, the same 8 environmental failures in
-default/reverse/shuffle, hygiene clean; backlog **250 numbered open**, highest #920. Next five:
+default/reverse/shuffle, hygiene clean; backlog **251 numbered open**, highest #921. Next five:
 **#920 · #566 · #565 · #428 · #578**.
 
 ## Slot — Cursor

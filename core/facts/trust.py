@@ -100,6 +100,23 @@ def reject_counts(channel_id: str) -> dict[str, tuple[int, int]]:
     return {d: (rejected[d], offered[d]) for d in offered}
 
 
+def conflict_section_counts(channel_id: str) -> dict[str, int]:
+    """Signal sections the operator's key facts contradicted, over the channel's runs (#917)."""
+    from storage.repositories.content_runs import get_content_run_repository
+
+    counts: Counter[str] = Counter()
+    for run in get_content_run_repository().list_for_channel(channel_id) or []:
+        try:
+            features = json.loads(getattr(run, "features_json", None) or "{}")
+        except (TypeError, ValueError):
+            continue
+        sections = features.get("conflict_sections") if isinstance(features, dict) else None
+        for section in sections if isinstance(sections, list) else []:
+            if section:
+                counts[str(section)] += 1
+    return dict(counts)
+
+
 def report_lines(channel_id: str) -> list[str]:
     """`ops source-trust`: corrections per source and the weight they give it."""
     corrections = correction_counts()
@@ -116,6 +133,17 @@ def report_lines(channel_id: str) -> list[str]:
         rejects = reject_counts(channel_id)
     except Exception as exc:
         logger.debug("key-facts rejects unavailable: %s", exc)
+    try:
+        contradicted = conflict_section_counts(channel_id)
+    except Exception as exc:
+        logger.debug("conflict sections unavailable: %s", exc)
+        contradicted = {}
+    if contradicted:
+        ranked = sorted(contradicted.items(), key=lambda kv: (-kv[1], kv[0]))
+        lines.append(
+            "  signal sections contradicted by your key facts (shown only): "
+            + ", ".join(f"{name} {count}" for name, count in ranked)
+        )
     shown = [(d, r, n) for d, (r, n) in rejects.items() if r]
     for domain, rejected, offered in sorted(shown, key=lambda t: (-t[1], t[0]))[:10]:
         lines.append(

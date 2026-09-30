@@ -122,6 +122,36 @@ class TieredCorpus:
         return counts
 
 
+_NAME_CUT = re.compile(r"\s+\(|\s+[—-]\s|:")
+
+
+def _section_name(line: str) -> str:
+    """ "Live web search (tavily) — ..." -> "Live web search"; "Card: A vs B" -> "Card"."""
+    stripped = line.strip()
+    for prefix, _tier in _SECTION_TIERS:
+        if stripped.startswith(prefix):
+            return prefix.rstrip(": ").strip()
+    return _NAME_CUT.split(stripped, maxsplit=1)[0].strip()[:40]
+
+
+def line_sections(text: str) -> dict[str, str]:
+    """Each line of a signal-facts block (lowercased, stripped) -> its section's name (#917).
+
+    Same section rule as `_tag_signal_facts`: a top-level line starts a section, a
+    bullet or indented line belongs to the one above it.
+    """
+    out: dict[str, str] = {}
+    current = ""
+    for line in (text or "").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if not _CONTINUATION.match(line):
+            current = _section_name(stripped)
+        out.setdefault(stripped.lower(), current)
+    return out
+
+
 def _tag_signal_facts(signal_facts: str) -> list[tuple[str, str]]:
     """Tier per line of the enriched signal-facts block, section-aware."""
     tagged: list[tuple[str, str]] = []

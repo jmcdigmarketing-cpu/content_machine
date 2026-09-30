@@ -101,9 +101,13 @@ def _parse_slots_list(raw) -> tuple[PostSlot, ...]:
 
 
 def _engagement_from_metrics(metrics_json: str) -> float | None:
+    from core.engagement import under_view_floor
+
     try:
         metrics = json.loads(metrics_json or "{}")
     except json.JSONDecodeError:
+        return None
+    if under_view_floor(metrics):  # #564
         return None
     if "engaged_rate" in metrics:
         return float(metrics["engaged_rate"])

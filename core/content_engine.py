@@ -1152,7 +1152,7 @@ def generate_content_package(
     )
 
     clean_key_facts = clean_key_facts_early
-    conflicts = find_fact_conflicts(clean_key_facts, signal_facts)
+    conflicts = find_fact_conflicts(clean_key_facts, signal_facts, sections=True)
     conflict_features = features_from_conflicts(conflicts, dropped=0)
     conflicts_dropped = 0
     if conflicts:
@@ -1253,6 +1253,7 @@ def generate_content_package(
             "disputed_claims": conflict_features["disputed_claims"],
             "fact_conflicts": conflict_features["fact_conflicts"],
             "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
+            "conflict_sections": conflict_features["conflict_sections"],
         }
 
     script = str(payload["script"])
@@ -1699,6 +1700,7 @@ def generate_content_package(
         "fact_conflicts_dropped": conflict_features["fact_conflicts_dropped"],
         "disputed": conflict_features["disputed"],
         "disputed_claims": conflict_features["disputed_claims"],
+        "conflict_sections": conflict_features["conflict_sections"],  # #917
         # #748: a wrong actor the verifier missed (or never judged) still reaches the gate.
         "claim_verification": verification_payload,
         "quote_attribution": quote_payload,

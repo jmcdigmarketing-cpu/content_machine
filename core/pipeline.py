@@ -1036,6 +1036,7 @@ def run_pipeline(
     result.features["fact_conflicts_dropped"] = int(content.get("fact_conflicts_dropped") or 0)
     result.features["disputed"] = bool(content.get("disputed"))
     result.features["disputed_claims"] = list(content.get("disputed_claims") or [])
+    result.features["conflict_sections"] = list(content.get("conflict_sections") or [])  # #917
     result.features["lower_thirds"] = list(content.get("lower_thirds") or [])
     result.features["operator_quotes"] = list(content.get("operator_quotes") or [])
     result.features["operator_quote_used"] = bool(content.get("operator_quote_used"))

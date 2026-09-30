@@ -8,6 +8,20 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 49 — every young video synced, a views floor, experiments side by side - 2026-09-30
+
+*4,238 tests; mypy 123 == baseline; ruff 0.15.8 clean; corpus 59 of 59.*
+
+- **#918** the metrics sync now pulls every video from the last 8 days (`SYNC_YOUNG_DAYS`), not only
+  the three newest, so first-day numbers are not missed at five a week.
+- **#598** `ops weekly-report` compares scheduled uploads with immediate ones.
+- **#564** `MIN_OUTCOME_VIEWS` (off unless you set it): videos with fewer views stop counting for
+  the recommenders; `ops predictions` shows how many sit under 50 views. Nothing changes until set.
+- **#919** a hook, a thumbnail and a post-time experiment can run at the same time;
+  `py -m core.experiments stop post_time` stops just that one.
+- **#917** when your key facts contradict a signal, the run records which section lost
+  (e.g. "Live web search"); `ops source-trust` counts them.
+
 ### Wave 48 — scheduled videos count, the slot actually used, faster outcomes, source trust - 2026-09-30
 
 *4,209 tests; mypy 123 == baseline; ruff 0.15.8 clean; corpus 59 of 59.*

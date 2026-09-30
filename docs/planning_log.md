@@ -17,6 +17,74 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-30 (Claude Code) - wave 49: every young video synced, a views floor, experiments per kind, conflicts name their section
+
+**Prompt (verbatim):** "next 5"
+
+**Operator's answer (plan mode):** #564 - a views floor, off by default (not on at 50, not a
+subtracted count, not closed).
+
+### Why these five
+
+Wave 48's recommendation, unchanged: **#918 · #564 · #598 · #917 · #919** - each checked read-only.
+Once #915 made scheduled videos count, the learning loop sees every video; these make it see them
+cleanly.
+
+### Findings, with file:line
+
+- **#564 cannot be done as filed.** YouTube's API has no owner-view filter. What does matter:
+  `analytics/youtube_metrics.fetch_video_metrics` stores `averageViewPercentage / 100` as
+  `engaged_rate`, so on a 12-view video the operator's own full watches decide the number every
+  recommender learns from. A floor protects against that; nothing can subtract them.
+- **...and the same field holds two scales.** `core/engagement.engaged_rate` falls back to likes /
+  views when the key is missing - a retention share and a like share under one name (#920).
+- **#598 needed no new data.** After #915 a scheduled video keeps `status="scheduled"`; the split
+  was recorded all along and only had to be read (`analytics/weekly_report._load_rows`).
+- **#917's source is a section, not a URL.** Web-search lines are a title and a snippet
+  (`core/signal_facts.py:316-338`); the section header is the only provenance a signal line has.
+- **The field, not the call (again).** `features_from_conflicts` gained `conflict_sections`, but
+  `core/content_engine.py` copies the conflict keys one by one into two payloads and
+  `core/pipeline.py` copies them again - the section would have been computed and dropped. Caught
+  tracing the field before building the report; both hops carry it and a pipeline test pins it.
+- **A wrong hint.** `py -m core.experiments start post_time` said "Feed it: ops batch-drafts";
+  a post-time lever is fed by scheduled uploads. Seen in the live check; the message now says
+  what feeds each kind.
+- `upload_mode` first went in as `features["upload_mode"] = ...`, which the #867 guard reads as a
+  stored key; it is computed per report and never stored, so it is now built into the row.
+
+### Shipped
+
+1. **#918** `sync_metrics._to_sync`: every live video younger than `SYNC_YOUNG_DAYS` (8) plus the
+   newest `--limit`.
+2. **#598** `upload_mode` in the weekly report's dimensions and next actions.
+3. **#564** `MIN_OUTCOME_VIEWS` in `core/engagement` (every recommender) and post-time's reader;
+   `low_view_line` in `ops predictions`.
+4. **#919** one active lever per kind, legacy file read, `stop <lever>`, every lever reported.
+5. **#917** `line_sections`, `FactConflict.section`, `conflict_sections` through both hops,
+   counted in `ops source-trust` (shown only).
+
+### Not done, deliberately
+
+- The floor stays off: at the current volume it would drop real samples; the operator decides
+  from the under-50 line.
+- Conflict sections move no weight - #342's rule is post-publish corrections only.
+- #567 (a randomised publish hour) stays open; #912's arm is round-robin.
+
+### Audit
+
+29 new test methods in five modules; suite 4,209 -> 4,238. **26 observed failing before their
+fix**; 3 guards pass by design (newest-first and a future slot never synced; the floor off changes
+nothing). The start-message test was written with its fix and shown failing by restoring the old
+message. The first full run failed three guards: the #867 stored-key scan (`upload_mode`, above)
+and the env-key ratchet twice (`SYNC_YOUNG_DAYS`, `MIN_OUTCOME_VIEWS` - documented in
+`.env.example`, as planned but not yet done). mypy **123** == baseline; ruff clean; corpus 59 of
+59. Live here on synthetic data: the under-50 line (2 of 8; outcomes 8 -> 6 with the floor at
+50), "By upload_mode" with its two next actions, `ops experiment` showing `hook_style` and
+`post_time` together, `ops source-trust` "Live web search 2, News headlines 1". Backlog **250
+numbered open**, highest **#920**.
+
+Closed **#918 #598 #564 #919 #917**. Filed **#920**. Next five: **#920 · #566 · #565 · #428 · #578**.
+
 ## 2026-09-30 (Claude Code) - wave 48: scheduled videos finally count, the slot actually used, faster outcomes, source trust
 
 **Prompt (verbatim):** "next 5" (after wave 47: "Next five (Recommended)" at the plan question)

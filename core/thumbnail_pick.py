@@ -17,7 +17,7 @@ def dual_thumbnail_enabled(channel_id: str | None = None) -> bool:
     try:
         from core.experiments import active_experiment
 
-        active = active_experiment(resolve_channel_id(channel_id))
+        active = active_experiment(resolve_channel_id(channel_id), kind="thumbnail")  # #919
         return bool(active and active.get("lever") == "thumbnail_format")
     except Exception:
         return False

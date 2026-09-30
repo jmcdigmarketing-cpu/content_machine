@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-30: wave 48, next five
+# Handoff synopsis — 2026-09-30: wave 49, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
 
@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-30 (Claude Code): wave 48 #915 #913 #916 #912 #560 #563 #342
+## Last wave — 2026-09-30 (Claude Code): wave 49 #918 #598 #564 #919 #917
+
+- **#918** the metrics sync pulls every live video younger than `SYNC_YOUNG_DAYS` (8), then the
+  newest few - first-day snapshots and views by day stop being missed.
+- **#598** `ops weekly-report` has a "By upload_mode" block: scheduled vs immediate, with actions.
+- **#564** `MIN_OUTCOME_VIEWS` (off): videos under it stop teaching every recommender;
+  `ops predictions` says how many sit under 50 views. YouTube cannot separate your own views.
+- **#919** a script, a thumbnail and a post-time experiment run together;
+  `py -m core.experiments stop post_time` stops one.
+- **#917** a fact conflict names the signal section that lost; `ops source-trust` counts them.
+
+**Verify:** `python -m unittest tests.test_sync_young_videos tests.test_upload_mode_report
+tests.test_view_floor tests.test_experiments_per_kind tests.test_conflict_sections`;
+`py -m scripts.ops weekly-report`; `py -m scripts.ops predictions`.
+
+## Previous — 2026-09-30 (Claude Code): wave 48 #915 #913 #916 #912 #560 #563 #342
 
 - **#915** a scheduled upload stayed `scheduled` forever, so it was never synced, scored or learned
   from and dropped out of the cadence window after its slot. A scheduled row past its time now
@@ -40,22 +55,6 @@ tests.test_source_trust`; `py -m scripts.ops sync-metrics`, then `py -m scripts.
 **Verify:** `python -m unittest tests.test_run_replay tests.test_caption_emoji
 tests.test_best_bet_pick tests.test_room_parallel_links tests.test_dossier_fact_confidence`;
 `py -m scripts.ops replay <last run>`.
-
-## Previous — 2026-09-29 (Claude Code): wave 46, ten items, one commit
-
-- **#860 facts room** - in `py -m desktop`, the key-facts step reads the whole paste (every link),
-  flags off-topic lines, offers the vault, ranks by **#548** confidence and asks once; ticked rows
-  keep their tiers. `ops facts-room "topic" --facts-file f.txt` prints the same table. Terminal
-  prompt unchanged; `FACTS_ROOM=false` off.
-- **#559 / #113 / #357** the prediction and the recommenders' claims are frozen at upload
-  (`core/predictions/`); `ops predictions` scores them, `ops feature-report` measures features.
-- **#906 / #905 / #908** all 18 JSON signals pinned; `ops record-payloads` refreshes the fixtures;
-  `ops incidents` says why (deadline / timeout / not connected ...).
-- **#589** an empty web search asks your other key, then DuckDuckGo. **#907** `core/facts/`.
-
-**Verify:** `python -m unittest tests.test_facts_room tests.test_prediction_freeze
-tests.test_prediction_ledger tests.test_signal_contracts tests.test_search_fallback`;
-`py -m scripts.ops predictions`; `py -m scripts.ops incidents`.
 
 ## Pipeline order (operator)
 
@@ -124,7 +123,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #918 sync young videos · #917 conflict source · #919 a lever per kind · #914 emoji font off Windows · #459 dead code (operator call).
+3. **Structural:** #920 one scale for engaged rate · #914 emoji font off Windows · #459 dead code (operator call).
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

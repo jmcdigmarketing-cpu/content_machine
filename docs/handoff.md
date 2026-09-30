@@ -53,25 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-30 · **HEAD at write:** `20dffed` + the wave 48 commit (`git log -1`)
+**Written:** 2026-09-30 · **HEAD at write:** `dea9255` + the wave 49 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** `list_uploaded_for_channel` / `list_timed_outcomes` now include a
-`scheduled` row whose `published_at` has passed (#915) - every learner and the cadence window see
-more rows. The suite now redirects `storage.repositories.publish_log.LOG_FILE`. `spaced_queue`,
-auto_generate and the upload menu call `post_timing.planned_post_time` (patch that, not
-`next_optimal_post_time`, in `core.spaced_queue`). `FactRecord.trust_source` is for trust only;
-`source_url` is still what descriptions cite. mypy **123**.
+**Read before editing:** `data/experiments.json` `active` is now `{channel: {kind: {lever,
+started_at}}}` (a flat pre-#919 record still reads); ask `active_experiment(channel, kind=...)`.
+`core/engagement.engaged_rate` returns None under `MIN_OUTCOME_VIEWS` (off by default) - pass
+`floor=False` only to count them. Conflict keys are copied one by one through
+`content_engine` (two payloads) and `pipeline` - a new conflict field needs all three.
+mypy **123**.
 
 **Defects first:**
-- **#915 was live on the PC and its size is unknown here** (no `data/`): every scheduled upload was
-  invisible to sync and learning. `ops sync-metrics` then `ops predictions` will show it.
-- I nearly made descriptions cite `pages:` URLs (#342 first draft); caught, guarded.
-- Carried: no emoji render seen (#914); facts room never met a real window.
+- **`engaged_rate` holds two scales** (#920): the sync stores average view % / 100; the
+  fallback computes likes / views. Unfixed, filed.
+- The views floor is off; its value to you is the under-50 line in `ops predictions`.
+- Carried: #915's size on your PC is unknown here; no emoji render seen (#914).
 
-**Shipped:** #915 #913 #916 #912 #560 #563 #342. Suite **4,209**, the same 8 environmental failures
-in default/reverse/shuffle, hygiene clean; backlog **254 numbered open**, highest #919. Next five:
-**#918 · #564 · #598 · #917 · #919**.
+**Shipped:** #918 #598 #564 #919 #917. Suite **4,238**, the same 8 environmental failures in
+default/reverse/shuffle, hygiene clean; backlog **250 numbered open**, highest #920. Next five:
+**#920 · #566 · #565 · #428 · #578**.
 
 ## Slot — Cursor
 

@@ -78,6 +78,9 @@ class FactConflict:
     operator_line: str
     other_line: str
     detail: str
+    # #917: the corpus section the losing line came from ("Live web search", "Tapology"),
+    # or "" when the text had no sections (vault claims).
+    section: str = ""
 
     def render(self) -> str:
         return (
@@ -195,11 +198,15 @@ def _champion_conflicts(operator_lines: list[str], source_lines: list[str]) -> l
 def find_fact_conflicts(
     operator_facts: list[str] | None,
     source_text: str,
+    *,
+    sections: bool = False,
 ) -> list[FactConflict]:
     """Conflicts between operator key facts and the signal/web fact corpus.
 
     Returns [] without operator facts — there is no ground truth to compare
     against (intra-signal disagreements are deliberately not adjudicated).
+    `sections` (#917): `source_text` is a signal-facts block, so each conflict names
+    the section its losing line came from.
     """
     operator_lines = [f for f in (operator_facts or []) if (f or "").strip()]
     if not operator_lines:
@@ -222,6 +229,13 @@ def find_fact_conflicts(
             continue
         seen.add(key)
         deduped.append(c)
+    if sections:
+        from dataclasses import replace
+
+        from core.grounding_tiers import line_sections
+
+        named = line_sections(source_text)
+        deduped = [replace(c, section=named.get(c.other_line.strip().lower(), "")) for c in deduped]
     return deduped[:_MAX_CONFLICTS]
 
 
@@ -256,12 +270,14 @@ def features_from_conflicts(
             "fact_conflicts_dropped": int(dropped or 0),
             "disputed": False,
             "disputed_claims": [],
+            "conflict_sections": [],
         }
     return {
         "fact_conflicts": [c.render() for c in conflicts],
         "fact_conflicts_dropped": int(dropped or 0),
         "disputed": True,
         "disputed_claims": [c.other_line for c in conflicts],
+        "conflict_sections": [c.section for c in conflicts],  # #917
     }
 
 

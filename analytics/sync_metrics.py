@@ -79,6 +79,31 @@ def _recency_key(row):
     return (when, row.id or 0)
 
 
+def young_days() -> float:
+    """`SYNC_YOUNG_DAYS` (default 8): a live video this young is always synced (#918)."""
+    import os
+
+    try:
+        return max(0.0, float(os.getenv("SYNC_YOUNG_DAYS", "") or 8))
+    except ValueError:
+        return 8.0
+
+
+def _to_sync(rows: list, limit: int) -> list:
+    """Every live video younger than `young_days()`, then the newest `limit`, newest first.
+
+    Three-newest-only let a video age past its 24h snapshot and its first days of views
+    by day at five uploads a week (#918).
+    """
+    from datetime import datetime, timedelta, timezone
+
+    ordered = sorted(rows, key=_recency_key, reverse=True)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=young_days())
+    young = [r for r in ordered if _recency_key(r)[0] >= cutoff]
+    picked = young + [r for r in ordered[: max(1, limit)] if r not in young]
+    return sorted(picked, key=_recency_key, reverse=True)
+
+
 def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     if not _analytics_enabled():
         print("Set YOUTUBE_ANALYTICS_SYNC=true in .env")
@@ -96,11 +121,12 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
         print(f"\n  {err}\n")
         return 1
 
-    # Only the most recent `limit` uploads — older videos already have metrics
-    # and re-pulling all of them every run wastes quota/time.
-    rows = [r for r in repo.list_uploaded_for_channel(channel_id) if r.youtube_video_id]
-    rows.sort(key=_recency_key, reverse=True)
-    rows = rows[: max(1, limit)]
+    # Every young video (its first days are what the snapshots and the view curve need),
+    # then the most recent `limit` - older videos already have metrics and re-pulling all
+    # of them every run wastes quota/time.
+    rows = _to_sync(
+        [r for r in repo.list_uploaded_for_channel(channel_id) if r.youtube_video_id], limit
+    )
 
     synced = 0
     for row in rows:
@@ -118,7 +144,7 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
         if result:
             synced += 1
 
-    print(f"\n  Synced {synced}/{len(rows)} most-recent video(s) for {channel_id}")
+    print(f"\n  Synced {synced}/{len(rows)} recent video(s) for {channel_id}")
     if synced > 0:
         print("  Best-bet recommendations will reflect real engagement on next run.")
     return 0
@@ -128,7 +154,10 @@ def main():
     parser = argparse.ArgumentParser(description="Sync YouTube Analytics metrics")
     parser.add_argument("--channel", default="tapin")
     parser.add_argument(
-        "--limit", type=int, default=3, help="How many most-recent videos to sync (default 3)"
+        "--limit",
+        type=int,
+        default=3,
+        help="Newest videos to sync besides every one younger than SYNC_YOUNG_DAYS (default 3)",
     )
     args = parser.parse_args()
     raise SystemExit(sync_channel(args.channel, limit=args.limit))

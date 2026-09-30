@@ -7,6 +7,22 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-29 (Claude Code): wave 46, ten items, one commit
+
+- **#860 facts room** - in `py -m desktop`, the key-facts step reads the whole paste (every link),
+  flags off-topic lines, offers the vault, ranks by **#548** confidence and asks once; ticked rows
+  keep their tiers. `ops facts-room "topic" --facts-file f.txt` prints the same table. Terminal
+  prompt unchanged; `FACTS_ROOM=false` off.
+- **#559 / #113 / #357** the prediction and the recommenders' claims are frozen at upload
+  (`core/predictions/`); `ops predictions` scores them, `ops feature-report` measures features.
+- **#906 / #905 / #908** all 18 JSON signals pinned; `ops record-payloads` refreshes the fixtures;
+  `ops incidents` says why (deadline / timeout / not connected ...).
+- **#589** an empty web search asks your other key, then DuckDuckGo. **#907** `core/facts/`.
+
+**Verify:** `python -m unittest tests.test_facts_room tests.test_prediction_freeze
+tests.test_prediction_ledger tests.test_signal_contracts tests.test_search_fallback`;
+`py -m scripts.ops predictions`; `py -m scripts.ops incidents`.
+
 ## Previous — 2026-09-28 (Claude Code): wave 45 #558 #385 #626 #503 #901
 
 - **#558** a vault line previewing an event ("... is set for Oct 4") stops feeding the prompt once

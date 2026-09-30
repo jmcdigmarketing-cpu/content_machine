@@ -25,7 +25,7 @@ logger = get_logger("analytics.weekly_report")
 _MIN_SAMPLES = 3
 
 # Which feature dimensions to break performance down by.
-_DIMENSIONS = ("domain", "angle", "title_structure", "format", "fact_source")
+_DIMENSIONS = ("domain", "angle", "title_structure", "format", "fact_source", "upload_mode")
 
 
 def _load_rows(channel_id: str) -> list[dict[str, Any]]:
@@ -50,7 +50,13 @@ def _load_rows(channel_id: str) -> list[dict[str, Any]]:
             features = json.loads(run.features_json or "{}")
         except (json.JSONDecodeError, TypeError):
             features = {}
-        rows.append({"run_id": run.id, "engaged_rate": rate, "features": features})
+        features = features if isinstance(features, dict) else {}
+        # #598: a scheduled upload keeps status "scheduled" (#915); anything else went live
+        # when it uploaded. Read from the log here, never stored on the run.
+        mode = "scheduled" if getattr(log, "status", "") == "scheduled" else "immediate"
+        rows.append(
+            {"run_id": run.id, "engaged_rate": rate, "features": {**features, "upload_mode": mode}}
+        )
     return rows
 
 
@@ -118,6 +124,7 @@ _ACTION_PHRASES: dict[str, tuple[str, str]] = {
     "title_structure": ("Keep using {value} titles", "Drop {value} titles"),
     "format": ("Stick with the {value} format", "Rework the {value} format"),
     "fact_source": ("Keep sourcing facts via {value}", "Improve {value} fact sourcing"),
+    "upload_mode": ("Keep using {value} uploads", "Use fewer {value} uploads"),
 }
 
 

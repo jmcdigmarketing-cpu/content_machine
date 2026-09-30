@@ -358,6 +358,12 @@ def report_lines(channel_id: str) -> list[str]:
         lines.append(report_line(channel_id))  # #563: the faster outcome
     except Exception as exc:
         logger.debug("time-to-first-views line skipped: %s", exc)
+    try:
+        from core.engagement import low_view_line
+
+        lines.append(low_view_line(channel_id))  # #564
+    except Exception as exc:
+        logger.debug("low-view line skipped: %s", exc)
     graded = [(r["grade"], r["actual"]) for r in rows if "grade" in r]
     if len(graded) < _MIN_MEASURED:
         lines.append(f"  grade vs engaged rate: collecting (n={len(graded)})")

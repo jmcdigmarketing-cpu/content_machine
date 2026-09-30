@@ -2,7 +2,9 @@
 
 Wires the experimentation harness (core/experiment_levers.py arms +
 core/experiment_stats.py Bayesian winner detection) into the pipeline. One
-lever runs per channel at a time (e.g. `hook_style`); each generated draft
+lever runs per channel and kind at a time (#919: a script lever such as
+`hook_style`, a thumbnail lever and the `post_time` lever can run together -
+they touch different things); each generated draft
 gets the least-used arm (round-robin by assignment count), the arm's prompt
 directive shapes the script, and the assignment is remembered in
 data/experiments.json. Once published videos accumulate engagement, the
@@ -15,7 +17,8 @@ with exactly one varied lever. Lifecycle CLI:
 
     py -m core.experiments status --channel tapin
     py -m core.experiments start hook_style --channel tapin
-    py -m core.experiments stop --channel tapin
+    py -m core.experiments stop --channel tapin              # every running lever
+    py -m core.experiments stop post_time --channel tapin    # that lever's kind only
 
 Storage is a small JSON sidecar (atomic write, fail-open) — no schema change.
 """
@@ -108,23 +111,58 @@ def start_experiment(channel_id: str, lever: str) -> dict[str, Any]:
     record = {"lever": lever, "started_at": time.time()}
     with _lock:
         data = _load()
-        data["active"][channel_id] = record
+        by_kind = _by_kind(data["active"].get(channel_id))
+        by_kind[experiment_levers.kind(lever)] = record  # replaces the same kind only
+        data["active"][channel_id] = by_kind
         _save(data)
     logger.info("Experiment started: %s on channel %s", lever, channel_id)
     return record
 
 
-def stop_experiment(channel_id: str) -> None:
+def _by_kind(raw: Any) -> dict[str, dict[str, Any]]:
+    """{kind: {lever, started_at}}. A record from before #919 ({lever, started_at}) is
+    read as its lever's kind."""
+    if not isinstance(raw, dict):
+        return {}
+    if raw.get("lever"):
+        return {experiment_levers.kind(str(raw["lever"])): dict(raw)}
+    return {
+        str(kind): dict(rec)
+        for kind, rec in raw.items()
+        if isinstance(rec, dict) and rec.get("lever")
+    }
+
+
+def stop_experiment(channel_id: str, lever: str | None = None) -> None:
+    """Stop every running lever, or only `lever`'s kind."""
     with _lock:
         data = _load()
-        if data["active"].pop(channel_id, None) is not None:
-            _save(data)
+        by_kind = _by_kind(data["active"].get(channel_id))
+        if lever:
+            by_kind.pop(experiment_levers.kind(lever), None)
+        else:
+            by_kind = {}
+        if by_kind:
+            data["active"][channel_id] = by_kind
+        else:
+            data["active"].pop(channel_id, None)
+        _save(data)
 
 
-def active_experiment(channel_id: str) -> dict[str, Any] | None:
+def active_experiments(channel_id: str) -> list[dict[str, Any]]:
+    """Every running lever on the channel, one per kind."""
     with _lock:
-        rec = _load()["active"].get(channel_id)
-    return rec if isinstance(rec, dict) and rec.get("lever") else None
+        by_kind = _by_kind(_load()["active"].get(channel_id))
+    return list(by_kind.values())
+
+
+def active_experiment(channel_id: str, kind: str | None = None) -> dict[str, Any] | None:
+    """The running lever of `kind`, or - with no kind - the first running one."""
+    with _lock:
+        by_kind = _by_kind(_load()["active"].get(channel_id))
+    if kind is not None:
+        return by_kind.get(kind)
+    return next(iter(by_kind.values()), None)
 
 
 def _assignments(channel_id: str, lever: str) -> list[dict[str, Any]]:
@@ -143,12 +181,10 @@ def next_arm(channel_id: str, kind: str | None = None) -> tuple[str, str, str] |
 
     kind: filter to "script" or "thumbnail" levers — a consumer only receives
     directives it knows where to apply (script prompt vs Flux prompt)."""
-    active = active_experiment(channel_id)
+    active = active_experiment(channel_id, kind)
     if not active:
         return None
     lever = str(active["lever"])
-    if kind is not None and experiment_levers.kind(lever) != kind:
-        return None
     arms = experiment_levers.arms(lever)
     if not arms:
         return None
@@ -220,9 +256,10 @@ def arm_outcomes(channel_id: str, lever: str) -> dict[str, list[float]]:
     return out
 
 
-def experiment_report(channel_id: str) -> dict[str, Any]:
-    """Active experiment + assignment counts + Bayesian evaluation."""
-    active = active_experiment(channel_id)
+def experiment_report(channel_id: str, kind: str | None = None) -> dict[str, Any]:
+    """Active experiment + assignment counts + Bayesian evaluation (one kind's lever, or the
+    first running one)."""
+    active = active_experiment(channel_id, kind)
     if not active:
         return {"active": None}
     lever = str(active["lever"])
@@ -240,11 +277,19 @@ def experiment_report(channel_id: str) -> dict[str, Any]:
 
 
 def display_report(channel_id: str, *, print_fn=print) -> None:
-    report = experiment_report(channel_id)
-    if not report.get("active"):
+    running = active_experiments(channel_id)
+    if not running:
         levers = ", ".join(experiment_levers.levers())
         print_fn(f"  No experiment running. Start one: py -m core.experiments start <{levers}>")
         return
+    for active in running:
+        _display_one(
+            experiment_report(channel_id, experiment_levers.kind(str(active["lever"]))),
+            print_fn=print_fn,
+        )
+
+
+def _display_one(report: dict[str, Any], *, print_fn=print) -> None:
     lever = report["lever"]
     ev = report["evaluation"]
     print_fn(f"  Experiment: {lever} (status: {ev['status']})")
@@ -262,7 +307,7 @@ def display_report(channel_id: str, *, print_fn=print) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Script-lever A/B experiments")
     parser.add_argument("action", choices=["status", "start", "stop"])
-    parser.add_argument("lever", nargs="?", help="Lever name (for start)")
+    parser.add_argument("lever", nargs="?", help="Lever name (start; stop only that one)")
     parser.add_argument("--channel", default="tapin")
     args = parser.parse_args(argv)
 
@@ -275,11 +320,16 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(str(exc))
             return 1
-        print(f"Started '{args.lever}' on {args.channel}. Feed it: py -m scripts.ops batch-drafts")
+        feed = {
+            "post_time": "scheduled uploads now alternate on-slot and off-slot",
+            "thumbnail": "each rendered thumbnail takes the next arm",
+        }.get(experiment_levers.kind(args.lever), "feed it: py -m scripts.ops batch-drafts")
+        print(f"Started '{args.lever}' on {args.channel} - {feed}.")
         return 0
     if args.action == "stop":
-        stop_experiment(args.channel)
-        print("Experiment stopped (assignments kept for the report).")
+        stop_experiment(args.channel, args.lever)
+        what = f"'{args.lever}'" if args.lever else "Every experiment"
+        print(f"{what} stopped (assignments kept for the report).")
         return 0
     display_report(args.channel)
     return 0

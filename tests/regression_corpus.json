@@ -930,6 +930,19 @@
         "equals": false
       },
       "why": "a future slot is a reservation, not an outcome; counting it would put a video with no metrics into the learning set"
+    },
+    {
+      "id": "likes-per-view-is-not-an-engaged-rate",
+      "item": 920,
+      "source": "wave 50 verification: core/engagement fell back to likes / views when a row had no engaged_rate",
+      "call": "core.engagement:engaged_rate",
+      "args": [
+        "{\"views\": 1000, \"likes\": 40}"
+      ],
+      "expect": {
+        "equals": null
+      },
+      "why": "likes/views is about ten times smaller than the average-view-% the sync stores; mixing them under one name skewed every recommender"
     }
   ]
 }

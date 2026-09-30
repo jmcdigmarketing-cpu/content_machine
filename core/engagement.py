@@ -38,11 +38,41 @@ def under_view_floor(metrics: dict[str, Any], floor: int | None = None) -> bool:
         return False
 
 
+_BASIS_LABELS = {
+    "avg_view_pct": "average view %",
+    "engaged_views": "Studio engaged views",
+    "likes_per_view": "likes/views",
+    "unlabeled": "unlabeled",
+}
+
+
+def engaged_basis(metrics: dict[str, Any]) -> str:
+    """Which measure a row's engaged rate is (#920).
+
+    The sync stores average view % / 100 (`avg_view_pct`), the TapIn seed import stores
+    Studio's engaged-views rate (`engaged_views`), and a row with only likes and views
+    would be `likes_per_view` - about ten times smaller, so it is not counted.
+    """
+    if not isinstance(metrics, dict):
+        return "unlabeled"
+    declared = str(metrics.get("engaged_basis") or "")
+    if declared in _BASIS_LABELS:
+        return declared
+    if "engaged_rate" not in metrics:
+        return "likes_per_view" if metrics.get("views") else "unlabeled"
+    if metrics.get("average_view_percentage") is not None:
+        return "avg_view_pct"
+    if metrics.get("source") == "tapin_seed":
+        return "engaged_views"
+    return "unlabeled"
+
+
 def engaged_rate(metrics_json: str, *, floor: bool = True) -> float | None:
     """Engaged rate from a publish_log metrics blob; None when unknown.
 
-    Prefers an explicit ``engaged_rate``; otherwise derives likes/views. None as well
-    for a video under `MIN_OUTCOME_VIEWS` (#564) unless ``floor=False``.
+    Only an explicit ``engaged_rate`` counts: the likes/views fallback was another scale
+    under the same name (#920). None as well for a video under `MIN_OUTCOME_VIEWS` (#564)
+    unless ``floor=False``.
     """
     try:
         m = json.loads(metrics_json or "{}")
@@ -50,13 +80,34 @@ def engaged_rate(metrics_json: str, *, floor: bool = True) -> float | None:
             return None
         if "engaged_rate" in m:
             return float(m["engaged_rate"])
-        views = float(m.get("views", 0))
-        likes = float(m.get("likes", 0))
-        if views > 0:
-            return likes / views
     except (ValueError, TypeError, json.JSONDecodeError):
         pass
     return None
+
+
+def basis_line(channel_id: str) -> str:
+    """`ops predictions`: how many outcomes hold each measure (#920)."""
+    from collections import Counter
+
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    counts: Counter[str] = Counter()
+    for log in get_publish_log_repository().list_timed_outcomes(channel_id) or []:
+        try:
+            metrics = json.loads(log.metrics_json or "{}")
+        except (TypeError, ValueError):
+            continue
+        basis = engaged_basis(metrics)
+        if basis != "unlabeled" or "engaged_rate" in (metrics or {}):
+            counts[basis] += 1
+    if not counts:
+        return "  outcomes by measure: none yet"
+    parts = []
+    for key in ("avg_view_pct", "engaged_views", "unlabeled", "likes_per_view"):
+        if counts.get(key):
+            tail = " (not counted)" if key == "likes_per_view" else ""
+            parts.append(f"{_BASIS_LABELS[key]} {counts[key]}{tail}")
+    return "  outcomes by measure: " + ", ".join(parts)
 
 
 def low_view_line(channel_id: str) -> str:

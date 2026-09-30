@@ -7,6 +7,19 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-29 (Claude Code): wave 47 #910 #911 #909 #504 #386
+
+- **#386** every run saves its signals beside its trace; `ops replay <run>` re-scores it offline
+  (composite recorded vs today, the facts block, event coverage). `RUN_SIGNAL_SNAPSHOT=false` off.
+- **#504** emoji in captions are drawn from Segoe UI Emoji (`CAPTION_EMOJI_FONT`); word mode with
+  emoji burns `.ass`. No-emoji output byte-identical.
+- **#909** the best-bet pick is kept (`features["best_bet"]`) and scored in `ops predictions`.
+- **#910** the facts room reads all pasted links at once; **#911** the dossier prints fact confidence.
+
+**Verify:** `python -m unittest tests.test_run_replay tests.test_caption_emoji
+tests.test_best_bet_pick tests.test_room_parallel_links tests.test_dossier_fact_confidence`;
+`py -m scripts.ops replay <last run>`.
+
 ## Previous — 2026-09-29 (Claude Code): wave 46, ten items, one commit
 
 - **#860 facts room** - in `py -m desktop`, the key-facts step reads the whole paste (every link),

@@ -528,6 +528,36 @@ def cmd_predictions(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("retention-diff", "Two videos' retention curves side by side: [--run-id A B] (#565)")
+def cmd_retention_diff(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.retention import retention_diff_lines
+
+    run_a = getattr(args, "run_id", None)
+    target = str(getattr(args, "target", "") or "").strip()
+    run_b = int(target) if target.isdigit() else None
+    if (run_a is None) != (run_b is None):
+        print("retention-diff needs both runs (--run-id A B) or neither")
+        return 2
+    for line in retention_diff_lines(
+        resolve_channel_id(getattr(args, "channel", None)),
+        int(run_a) if run_a is not None else None,
+        run_b,
+    ):
+        print(line)
+    return 0
+
+
+@_register("tag-report", "Tags and hashtags ranked by lift over the channel (#428)")
+def cmd_tag_report(args: argparse.Namespace) -> int:
+    from analytics.tag_performance import report_lines
+    from config.channels import resolve_channel_id
+
+    for line in report_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
 @_register("source-trust", "Corrections per source and the weight they cost it (#342)")
 def cmd_source_trust(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id

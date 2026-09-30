@@ -8,6 +8,19 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 50 — one labelled engaged rate, lift not averages, tags, retention diffs, cost per minute - 2026-09-30
+
+*4,261 tests; mypy 122 (baseline lowered); ruff 0.15.8 clean; corpus 60 of 60.*
+
+- **#920** **Recommendation change, disclosed:** a video with no stored engaged rate used to be
+  scored on likes ÷ views - a different, much smaller number. It no longer counts; each row now
+  says which measure it holds, and `ops predictions` shows the mix. Seeded history still counts.
+- **#566** the "proven pattern" hint and `ops title-patterns` rank by lift over the channel,
+  so three lucky videos no longer outrank twelve steady ones.
+- **#428** `ops tag-report`: which tags and #hashtags go with better or worse videos.
+- **#565** `ops retention-diff`: two videos' audience curves side by side, and where the gap opened.
+- **#578** `ops economics` prints what a finished minute of video costs.
+
 ### Wave 49 — every young video synced, a views floor, experiments side by side - 2026-09-30
 
 *4,238 tests; mypy 123 == baseline; ruff 0.15.8 clean; corpus 59 of 59.*

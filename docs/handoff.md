@@ -53,29 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-30 · **HEAD at write:** `dea9255` + the wave 49 commit (`git log -1`)
+**Written:** 2026-09-30 · **HEAD at write:** `1aa4723` + the wave 50 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** `data/experiments.json` `active` is now `{channel: {kind: {lever,
-started_at}}}` (a flat pre-#919 record still reads); ask `active_experiment(channel, kind=...)`.
-`core/engagement.engaged_rate` returns None under `MIN_OUTCOME_VIEWS` (off by default) - pass
-`floor=False` only to count them. Conflict keys are copied one by one through
-`content_engine` (two payloads) and `pipeline` - a new conflict field needs all three.
-mypy **123**.
+**Read before editing:** `core/engagement.engaged_rate` no longer derives likes / views (#920);
+rows carry `engaged_basis` and `engaged_basis()` reads old rows by shape. Title patterns rank by
+shrunk lift (`pattern_lifts`). A run's word count is in `timings_json` / `quality_json`, not an
+attribute. mypy baseline **122**. Probe new pipeline-touching tests for network before pushing.
 
 **Defects first:**
-- **`engaged_rate` holds two scales** (#920): the sync stores average view % / 100; the
-  fallback computes likes / views. Unfixed, filed.
-- The views floor is off; its value to you is the under-50 line in `ops predictions`.
-- Carried: #915's size on your PC is unknown here; no emoji render seen (#914).
+- My first #578 read a `word_count` attribute that runs do not have; its test invented it and
+  passed. The live check caught it; fixed.
+- Carried: #915's size on your PC is unknown here; no emoji render seen (#914); #921 open.
 
-**CI fix after `adb9846`:** the reversed-order leg caught my #917 pipeline test scraping live
-NBA stats into `data/scraper_cache/` (CI has network, this container does not); it and
-`test_pipeline_smoke` now stub `core.pipeline.build_research_brief` (48 requests -> 0). #921.
-
-**Shipped:** #918 #598 #564 #919 #917. Suite **4,238**, the same 8 environmental failures in
-default/reverse/shuffle, hygiene clean; backlog **251 numbered open**, highest #921. Next five:
-**#920 · #566 · #565 · #428 · #578**.
+**Shipped:** #920 #566 #565 #428 #578. Suite **4,261**, the same 8 environmental failures,
+hygiene clean; backlog **246 numbered open**, highest #921. Next five:
+**#921 · #579 · #575 · #588 · #567**.
 
 ## Slot — Cursor
 

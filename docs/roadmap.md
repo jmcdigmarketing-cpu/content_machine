@@ -26,17 +26,15 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-30 wave 49: **#918** every young video is synced, not only the three
-newest · **#598** the weekly report compares scheduled with immediate uploads · **#564** a views
-floor (`MIN_OUTCOME_VIEWS`, off until you set it) keeps near-empty videos out of the learning ·
-**#919** a script, a thumbnail and a post-time experiment can run together · **#917** a fact
-conflict names the signal section that lost.
+**Just landed** - 2026-09-30 wave 50: **#920** every outcome says which measure it holds and
+likes/views stops counting · **#566** title patterns ranked by lift over the channel · **#428**
+`ops tag-report` · **#565** `ops retention-diff` · **#578** cost per finished minute.
 
-**Before that** - wave 48: **#915 #913 #916 #912 #560 #563 #342** · wave 47: **#910 #911 #909 #504
-#386** · wave 46: **#907 #908 #906 #905 #589 #559 #113 #357 #548 #860** · wave 45: **#901 #558 #385
-#626 #503**. Earlier: [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
+**Before that** - wave 49: **#918 #598 #564 #919 #917** · wave 48: **#915 #913 #916 #912 #560 #563
+#342** · wave 47: **#910 #911 #909 #504 #386** · wave 46: **#907 #908 #906 #905 #589 #559 #113 #357
+#548 #860**. Earlier: [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
-### The five weaknesses - where each stands (2026-09-30, after wave 49)
+### The five weaknesses - where each stands (2026-09-30, after wave 50)
 
 The operator's list from [assessment.md](assessment.md). Every row has shipped its main fix; what
 is left is below.
@@ -47,25 +45,25 @@ is left is below.
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals | record real payloads on the PC (operator) |
 | 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds | - |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font | #914 an emoji font off Windows · #786 footage and your music tracks (operator) |
-| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind | #920 one scale for engaged rate · more measured videos |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff | #579 cost vs RPM · #567 random publish hour · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 49 (2026-09-30)** shipped all five (#918 #598 #564 #919 #917). With the loop now seeing
-every video, the next five sharpen what it measures:
+**Wave 50 (2026-09-30)** shipped all five (#920 #566 #565 #428 #578). The next five turn to
+cost and the signals themselves, plus one test-hygiene item CI forced:
 
-1. **#920 one scale for the engaged rate** (weakness 5) `[S]` - retention share and likes/views share one name.
-2. **#566 title-pattern lift against the channel baseline** (weakness 5) `[M]` - not the raw average.
-3. **#565 retention-curve diffing** between two videos on one franchise (weakness 5) `[M]`.
-4. **#428 hashtag performance** (weakness 5) `[S]` - tags are generated and never evaluated.
-5. **#578 cost per finished minute** (weakness 5) `[S]` - not per run.
+1. **#921 probe the suite for real network requests** `[S]` - wave 49's CI failure, finished.
+2. **#579 warn when a run costs more than the channel's RPM returns** (weakness 5) `[M]` - #578's minute cost makes it computable.
+3. **#575 measure which signals actually contribute facts** (weakness 2) `[M]` - and retire the rest.
+4. **#588 detect a signal returning identical payloads every time** (weakness 2) `[M]` - a frozen cache reads as healthy.
+5. **#567 a publish-hour test that actually randomises** (weakness 5) `[M]` - #912's arm is round-robin.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
+**Waiting on the operator, not on code:** `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops tag-report`, `ops title-patterns`, `ops retention-diff` (#428 #566 #565); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
 `assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
 colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop

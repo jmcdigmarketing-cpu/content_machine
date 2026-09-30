@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-09-30: wave 49, next five
+# Handoff synopsis — 2026-09-30: wave 50, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-30 (Claude Code): wave 49 #918 #598 #564 #919 #917
+## Last wave — 2026-09-30 (Claude Code): wave 50 #920 #566 #565 #428 #578
+
+- **#920** every synced / seeded row says which measure its engaged rate is (`engaged_basis`);
+  likes/views no longer counts; `ops predictions` shows the mix.
+- **#566** `ops title-patterns` ranks by lift over the channel (shrunk); "proven" needs +1pp.
+- **#428** `ops tag-report`: tags and #hashtags by lift; tags on every video named, not ranked.
+- **#565** `ops retention-diff [--run-id A B]`: two curves side by side, where the gap opened.
+- **#578** the economics summary prints cost per finished minute.
+
+**Verify:** `python -m unittest tests.test_engaged_basis tests.test_title_lift
+tests.test_tag_performance tests.test_retention_diff tests.test_cost_per_minute`;
+`py -m scripts.ops tag-report`; `py -m scripts.ops retention-diff`.
+
+## Previous — 2026-09-30 (Claude Code): wave 49 #918 #598 #564 #919 #917
 
 - **#918** the metrics sync pulls every live video younger than `SYNC_YOUNG_DAYS` (8), then the
   newest few - first-day snapshots and views by day stop being missed.
@@ -42,19 +55,6 @@ tests.test_view_floor tests.test_experiments_per_kind tests.test_conflict_sectio
 **Verify:** `python -m unittest tests.test_scheduled_outcomes tests.test_auto_best_bet_pick
 tests.test_post_slot_arm tests.test_forward_error_bars tests.test_first_views
 tests.test_source_trust`; `py -m scripts.ops sync-metrics`, then `py -m scripts.ops predictions`.
-
-## Previous — 2026-09-29 (Claude Code): wave 47 #910 #911 #909 #504 #386
-
-- **#386** every run saves its signals beside its trace; `ops replay <run>` re-scores it offline
-  (composite recorded vs today, the facts block, event coverage). `RUN_SIGNAL_SNAPSHOT=false` off.
-- **#504** emoji in captions are drawn from Segoe UI Emoji (`CAPTION_EMOJI_FONT`); word mode with
-  emoji burns `.ass`. No-emoji output byte-identical.
-- **#909** the best-bet pick is kept (`features["best_bet"]`) and scored in `ops predictions`.
-- **#910** the facts room reads all pasted links at once; **#911** the dossier prints fact confidence.
-
-**Verify:** `python -m unittest tests.test_run_replay tests.test_caption_emoji
-tests.test_best_bet_pick tests.test_room_parallel_links tests.test_dossier_fact_confidence`;
-`py -m scripts.ops replay <last run>`.
 
 ## Pipeline order (operator)
 
@@ -123,7 +123,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #920 one scale for engaged rate · #914 emoji font off Windows · #459 dead code (operator call).
+3. **Structural:** #921 probe the suite for network · #914 emoji font off Windows · #459 dead code (operator call).
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

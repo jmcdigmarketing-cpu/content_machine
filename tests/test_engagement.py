@@ -10,8 +10,9 @@ class TestEngagedRate(unittest.TestCase):
     def test_explicit_engaged_rate_preferred(self):
         self.assertEqual(engaged_rate('{"engaged_rate": 0.42, "views": 100}'), 0.42)
 
-    def test_derived_from_likes_over_views(self):
-        self.assertAlmostEqual(engaged_rate('{"views": 200, "likes": 50}'), 0.25)
+    def test_likes_over_views_is_not_an_engaged_rate(self):
+        # #920 (operator, wave 50): the fallback was another scale under the same name.
+        self.assertIsNone(engaged_rate('{"views": 200, "likes": 50}'))
 
     def test_zero_views_returns_none(self):
         self.assertIsNone(engaged_rate('{"views": 0, "likes": 5}'))

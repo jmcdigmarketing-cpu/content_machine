@@ -96,6 +96,10 @@ class VideoEconomics:
     views: int = 0
     engaged_rate: float = 0.0
     domain: str = ""
+    # #578: the finished video's length - "render" (ffprobe at QC) or "words" (the
+    # script at the voice's spoken pace); None when neither is known.
+    minutes: float | None = None
+    minutes_source: str = ""
 
     @property
     def rpm_usd(self) -> float | None:
@@ -172,6 +176,33 @@ def _run_costs_and_titles(
     return costs, titles, domains
 
 
+def _run_minutes(channel_id: str) -> dict[int, tuple[float, str]]:
+    """run_id -> (finished minutes, "render" | "words") (#578)."""
+    out: dict[int, tuple[float, str]] = {}
+    try:
+        from core.script_length import spoken_words_per_second
+        from storage.repositories.content_runs import get_content_run_repository
+
+        wps = spoken_words_per_second(channel_id)
+        for run in get_content_run_repository().list_for_channel(channel_id):
+            qc = _load_json(run.features_json).get("technical_qc") or {}
+            seconds = qc.get("video_duration") if isinstance(qc, dict) else None
+            if isinstance(seconds, int | float) and seconds > 0:
+                out[run.id] = (round(float(seconds) / 60.0, 2), "render")
+                continue
+            # The run keeps its spoken word count in timings (pipeline) and quality.
+            words = int(
+                _load_json(getattr(run, "timings_json", "")).get("word_count")
+                or _load_json(getattr(run, "quality_json", "")).get("word_count")
+                or 0
+            )
+            if words > 0 and wps > 0:
+                out[run.id] = (round(words / wps / 60.0, 2), "words")
+    except Exception as exc:
+        logger.debug("Run lengths unavailable for unit economics: %s", exc)
+    return out
+
+
 def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> ChannelEconomics:
     """Join uploaded videos to their run costs (newest uploads first)."""
     from config.channels import resolve_channel_id
@@ -179,6 +210,7 @@ def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> Chan
     channel = resolve_channel_id(channel_id)
     econ = ChannelEconomics(channel_id=channel)
     costs, titles, domains = _run_costs_and_titles(channel)
+    minutes = _run_minutes(channel)
     try:
         from storage.repositories.publish_log import get_publish_log_repository
 
@@ -202,6 +234,8 @@ def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> Chan
                 views=int(float(metrics.get("views", 0) or 0)),
                 engaged_rate=float(metrics.get("engaged_rate", 0) or 0),
                 domain=domains.get(row.content_run_id, ""),
+                minutes=minutes.get(row.content_run_id or 0, (None, ""))[0],
+                minutes_source=minutes.get(row.content_run_id or 0, (None, ""))[1],
             )
         )
     return econ
@@ -236,8 +270,25 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
     views = sum(int(v.views or 0) for v in econ.videos)
     if views > 0:
         lines.append(f"  ${econ.total_cost / views * 1000.0:.2f} / 1k views")
+    lines.extend(minute_cost_lines(econ))
     lines.extend(domain_margin_lines(econ))
     return lines
+
+
+def minute_cost_lines(econ: ChannelEconomics) -> list[str]:
+    """#578: cost per finished minute - a Short and an eight-minute video differ per run."""
+    timed = [v for v in econ.videos if v.minutes]
+    if not timed:
+        return []
+    minutes = sum(float(v.minutes or 0) for v in timed)
+    marginal = sum(v.cost_usd for v in timed) / minutes
+    allocated = allocated_per_video(len(econ.videos)) * len(timed) / minutes
+    rendered = sum(1 for v in timed if v.minutes_source == "render")
+    return [
+        f"  cost per finished minute: ${marginal:.2f} marginal, ${allocated:.2f} allocated "
+        f"({minutes:.1f} min over {len(timed)} video(s); {rendered} measured from the render, "
+        f"{len(timed) - rendered} estimated from words)"
+    ]
 
 
 def domain_margin_lines(econ: ChannelEconomics) -> list[str]:

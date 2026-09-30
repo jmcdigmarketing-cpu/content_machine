@@ -17,6 +17,61 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-09-30 (Claude Code) - wave 50: one labelled engaged rate, lift not averages, tags, retention diffs, cost per minute
+
+**Prompt (verbatim):** "next 5"
+
+**Operator's answer:** #920 - label every row's measure, stop counting likes/views, keep seeded
+history (not "synced only", not "label only").
+
+### Why these five
+
+Wave 49's recommendation, unchanged: **#920 · #566 · #565 · #428 · #578**, each checked read-only.
+
+### Findings, with file:line
+
+- **#920 was three scales, not two.** `analytics/youtube_metrics.fetch_video_metrics` stores
+  average view % / 100; `analytics/seed_tapin._performance_entry` stores Studio's engaged-views
+  rate; `core/engagement.engaged_rate` fell back to likes / views. Nothing said which a row held.
+- **#566: the leaderboard and the "proven pattern" hint used raw averages**
+  (`core/title_experiments.pattern_leaderboard`, `winning_tags`). Shrinking toward the channel
+  never flips a sign, so "proven" also needs a margin: a shrunk lift of a point.
+- **#578: a run keeps no `word_count` attribute.** My first version read one and its test built
+  a fake run with it, so both passed and the words estimate could never fire on a real run. The
+  live check on synthetic data showed "0 estimated from words" for runs that had word counts;
+  the count lives in `timings_json` (`core/pipeline.py:956`). Fixed, and the test now builds
+  the real field - the "helper called but never fed" shape, in a test double.
+- **#565** needed nothing new stored: every synced video already keeps its retention curve.
+- The `or 0` on `content_run_id` in `core/unit_economics` also cleared a pre-existing mypy
+  error: baseline **123 -> 122**.
+
+### Shipped
+
+1. **#920** `engaged_basis` on synced and seeded rows; `engaged_basis()` reads older rows by
+   shape; no likes/views fallback; `basis_line` in `ops predictions`.
+2. **#578** `_run_minutes` (render, else words at the spoken pace); `minute_cost_lines`.
+3. **#566** `pattern_lifts`; the leaderboard and `winning_tags` rank by shrunk lift.
+4. **#428** `analytics/tag_performance.py`; `ops tag-report`.
+5. **#565** `retention_diff_lines`; `ops retention-diff`.
+
+### Not done, deliberately
+
+- Tags and title lifts are report-only: nothing picks tags from them yet.
+- The stored field is not renamed (every row and reader would move); it is labelled instead.
+
+### Audit
+
+23 new test methods in five modules; suite 4,238 -> 4,261. **22 observed failing before their
+fix**; 1 guard (nothing to time prints nothing). One older test changed on purpose: it pinned the
+likes/views fallback the operator chose to drop. The six new and changed modules make 0 network
+requests (probed). mypy **122** (baseline lowered); ruff clean; corpus 60 of 60. Live here on
+synthetic data: "outcomes by measure: average view % 8, likes/views 1 (not counted)"; "cost per
+finished minute: $0.22 marginal ... 4 measured from the render, 4 estimated from words"; title
+patterns with lift; `topuria` +7.5pp with `#shorts, ufc` named as universal; the retention diff
+naming 30%-40%. Backlog **246 numbered open**, highest **#921**.
+
+Closed **#920 #566 #565 #428 #578**. Next five: **#921 · #579 · #575 · #588 · #567**.
+
 ## 2026-09-30 (Claude Code) - wave 49: every young video synced, a views floor, experiments per kind, conflicts name their section
 
 **Prompt (verbatim):** "next 5"

@@ -94,6 +94,7 @@ def _import_videos(videos: list[dict], channel_id: str) -> int:
         metrics = {
             "views": entry["views"],
             "engaged_rate": entry["engaged_rate"],
+            "engaged_basis": "engaged_views",  # #920: Studio's engaged-views rate
             "likes": entry["likes"],
             "subscribers_gained": entry["subscribers_gained"],
             "title": entry["title"],

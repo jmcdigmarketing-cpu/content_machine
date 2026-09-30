@@ -209,6 +209,7 @@ def fetch_video_metrics(
         "subscribers_gained": int(float(parsed.get("subscribersGained", 0) or 0)),
         "average_view_percentage": avg_pct,
         "engaged_rate": engaged_rate,
+        "engaged_basis": "avg_view_pct",  # #920: average view % / 100, not likes/views
         "estimated_minutes_watched": float(parsed.get("estimatedMinutesWatched", 0) or 0),
         "period_start": start_date,
         "period_end": end_date,

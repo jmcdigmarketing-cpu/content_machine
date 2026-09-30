@@ -116,6 +116,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `replay` | Re-score a run offline from its saved signals (#386); --source SIGNAL shows one |
 | `requeue-upload` | Queue upload for a rendered run (--run-id required) |
 | `retention` | Audience-retention curve + drop-off point (pacing intelligence) |
+| `retention-diff` | Two videos' retention curves side by side: [--run-id A B] (#565) |
 | `retire-renders` | Stop counting unuploaded renders past their news date (--apply) |
 | `retraction-watch` | Re-fetch last-run source URLs for a retraction |
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
@@ -138,6 +139,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `studio` | Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]") |
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |
 | `sync-metrics` | Pull YouTube Analytics into performance memory |
+| `tag-report` | Tags and hashtags ranked by lift over the channel (#428) |
 | `tapology-test` | Scrape Tapology fight card for a topic string |
 | `technical-qc` | Inspect a finished video for stream, frame and loudness defects |
 | `test` | Run unit tests (--order reverse\|shuffle [--seed N] proves order-independence) |

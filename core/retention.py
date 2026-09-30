@@ -138,3 +138,104 @@ def display_retention(channel_id: str, *, print_fn=print) -> None:
             f"\n    ↳ Drop-off below {int(_retained_floor() * 100)}% by ~{int(pos * 100)}% "
             "in — front-load the payoff."
         )
+
+
+# --- #565: diff two videos' curves ----------------------------------------------------
+_DIFF_POINTS = [round(i / 10, 1) for i in range(11)]
+
+
+def _parse_curve(raw) -> list[tuple[float, float]]:
+    pts: list[tuple[float, float]] = []
+    for item in raw if isinstance(raw, list) else []:
+        try:
+            pts.append((float(item[0]), float(item[1])))
+        except (ValueError, IndexError, TypeError):
+            continue
+    return sorted(pts) if len(pts) >= 3 else []
+
+
+def _curved_runs(channel_id: str) -> dict[int, tuple[list[tuple[float, float]], float | None]]:
+    """run_id -> (curve, engaged rate) for measured videos that kept a curve."""
+    from core.engagement import engaged_rate
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    out: dict[int, tuple[list[tuple[float, float]], float | None]] = {}
+    for log in get_publish_log_repository().list_timed_outcomes(channel_id) or []:
+        if not log.content_run_id:
+            continue
+        try:
+            raw = (json.loads(log.metrics_json or "{}") or {}).get("retention_curve")
+        except (ValueError, TypeError):
+            continue
+        curve = _parse_curve(raw)
+        if curve:
+            out[int(log.content_run_id)] = (curve, engaged_rate(log.metrics_json))
+    return out
+
+
+def _at(curve: list[tuple[float, float]], point: float) -> float:
+    return min(curve, key=lambda p: abs(p[0] - point))[1]
+
+
+def _describe(run_id: int) -> tuple[str, str]:
+    """(title, franchise) for a run."""
+    from core.negative_facts import franchise_for
+    from storage.repositories.content_runs import get_content_run_repository
+
+    run = get_content_run_repository().get(int(run_id))
+    title = str(getattr(run, "title", "") or getattr(run, "selected_topic", "") or "")
+    topic = str(getattr(run, "selected_topic", "") or title)
+    return title, franchise_for(topic)
+
+
+def retention_diff_lines(
+    channel_id: str, run_a: int | None = None, run_b: int | None = None
+) -> list[str]:
+    """Two videos' retention side by side and where the gap opened (#565).
+
+    With no runs named: the franchise with the most measured curves, its best engaged
+    video against its worst.
+    """
+    curves = _curved_runs(channel_id)
+    if run_a is None or run_b is None:
+        by_franchise: dict[str, list[int]] = {}
+        for run_id in curves:
+            by_franchise.setdefault(_describe(run_id)[1], []).append(run_id)
+        pool = max(by_franchise.values(), key=len, default=[])
+        if len(pool) < 2:
+            return ["Retention diff: no franchise has two videos with a retention curve yet"]
+        ranked = sorted(pool, key=lambda r: curves[r][1] or 0.0, reverse=True)
+        run_a, run_b = ranked[0], ranked[-1]
+    missing = [r for r in (run_a, run_b) if r not in curves]
+    if missing:
+        return [f"Retention diff: run {missing[0]} has no retention curve (sync its metrics first)"]
+    (curve_a, rate_a), (curve_b, rate_b) = curves[run_a], curves[run_b]
+    title_a, franchise_a = _describe(run_a)
+    title_b, franchise_b = _describe(run_b)
+
+    def _rate(rate: float | None) -> str:
+        return f"{rate:.0%}" if rate is not None else "n/a"
+
+    lines = [
+        f"Retention diff (#565) - {franchise_a}"
+        + ("" if franchise_a == franchise_b else f" vs {franchise_b} (different franchises)"),
+        f"  A: run {run_a} {title_a[:50]} ({_rate(rate_a)} engaged)",
+        f"  B: run {run_b} {title_b[:50]} ({_rate(rate_b)} engaged)",
+    ]
+    gaps = []
+    for point in _DIFF_POINTS:
+        a, b = _at(curve_a, point), _at(curve_b, point)
+        gaps.append(a - b)
+        lines.append(f"    {point:4.0%}: {a:.2f} vs {b:.2f}  ({(b - a) * 100:+.0f}pp)")
+    steps = [gaps[i + 1] - gaps[i] for i in range(len(gaps) - 1)]
+    widest = max(range(len(steps)), key=lambda i: (round(abs(steps[i]), 3), -i))
+    if abs(steps[widest]) >= 0.01:
+        loser = "B" if steps[widest] > 0 else "A"
+        lines.append(
+            f"  the gap opens most between {_DIFF_POINTS[widest]:.0%} and "
+            f"{_DIFF_POINTS[widest + 1]:.0%}: {loser} loses {abs(steps[widest]) * 100:.0f}pp "
+            "more of its audience there - read that stretch of its script"
+        )
+    else:
+        lines.append("  the two curves track each other - no stretch stands out")
+    return lines

@@ -64,6 +64,60 @@ FUNCTION_WORDS = INTERROGATIVES | frozenset(
     }
 )
 
+# #925: the words a news headline is made of whatever it is about. Not function words -
+# a topic may still be *about* a trailer - but a headline that shares only these with the
+# topic is not about it: run 109's "New Uncharted Game ..." matched "Over 85 Percent Of
+# Japanese Game Developers Are Using AI" on "game". Opt-in: a matcher that wants a
+# distinctive hit asks `distinctive_tokens`.
+NEWS_REGISTER_WORDS = frozenset(
+    {
+        "new",
+        "news",
+        "game",
+        "games",
+        "gaming",
+        "video",
+        "videos",
+        "report",
+        "reports",
+        "reported",
+        "reportedly",
+        "featuring",
+        "feature",
+        "features",
+        "work",
+        "works",
+        "working",
+        "update",
+        "updates",
+        "official",
+        "officially",
+        "latest",
+        "first",
+        "big",
+        "huge",
+        "top",
+        "best",
+        "fan",
+        "fans",
+        "says",
+        "said",
+        "announced",
+        "announces",
+        "reveal",
+        "reveals",
+        "revealed",
+        "trailer",
+        "release",
+        "released",
+        "coming",
+        "soon",
+        "today",
+        "week",
+        "year",
+    }
+)
+
 _TOKEN = re.compile(r"[a-z0-9]+")
 
 
@@ -82,6 +136,16 @@ def content_tokens(text: str, *, min_len: int = 1) -> list[str]:
         seen.add(tok)
         out.append(tok)
     return out
+
+
+def distinctive_tokens(tokens: list[str]) -> list[str]:
+    """`tokens` minus news-register words and bare years (#925) - what can name a subject."""
+    return [
+        t
+        for t in tokens
+        if t not in NEWS_REGISTER_WORDS
+        and not (len(t) == 4 and t.isdigit() and t[:2] in ("19", "20"))
+    ]
 
 
 def contains_phrase(text: str, phrase: str) -> bool:

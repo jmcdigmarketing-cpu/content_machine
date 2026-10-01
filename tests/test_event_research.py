@@ -171,7 +171,10 @@ class ResearchTests(ResearchCase):
 
         def slow(url, params=None, **kw):
             time.sleep(2.0)
-            return _fake_get(url, params, **kw)
+            # #921: this thread outlives the test (shutdown(wait=False)); returning data
+            # sent it on to a second, by-then unpatched requests.get - a live Wikipedia
+            # call blamed on whichever test was running.
+            raise OSError("too late")
 
         with (
             patch.dict(os.environ, {"EVENT_RESEARCH_DEADLINE_S": "0.3"}),

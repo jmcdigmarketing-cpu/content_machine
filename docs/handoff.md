@@ -53,22 +53,24 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-09-30 · **HEAD at write:** `1aa4723` + the wave 50 commit (`git log -1`)
+**Written:** 2026-10-01 · **HEAD at write:** `9114e1d` + the wave 51 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** `core/engagement.engaged_rate` no longer derives likes / views (#920);
-rows carry `engaged_basis` and `engaged_basis()` reads old rows by shape. Title patterns rank by
-shrunk lift (`pattern_lifts`). A run's word count is in `timings_json` / `quality_json`, not an
-attribute. mypy baseline **122**. Probe new pipeline-touching tests for network before pushing.
+**Read before editing:** `tests/__init__.py` now blocks every non-loopback connection and drops
+the proxy variables; a test that tries fails, naming host, repo frame and thread - stub the
+fetcher it names. `COMPETITOR_SYNC_ON_DISCOVERY=false` in the suite. RSS headline matching is
+whole-word with `apis/topic_tokens.NEWS_REGISTER_WORDS` never matching alone. The post-time
+arm is `core.experiments.random_arm` + `POST_TIME_WINDOW_HOURS`. mypy baseline **122**.
 
 **Defects first:**
-- My first #578 read a `word_count` attribute that runs do not have; its test invented it and
-  passed. The live check caught it; fixed.
-- Carried: #915's size on your PC is unknown here; no emoji render seen (#914); #921 open.
+- Run 109's five (#922-#926), each with a corpus case. The headroom one had a test feeding the
+  same invented keys - the second "test double invents the field" in two waves.
+- A deadline test's leaked thread made a live Wikipedia call after its patch ended; fixed.
+- Carried: #927 needs your data; #915's size on your PC is unknown here; no emoji render seen (#914).
 
-**Shipped:** #920 #566 #565 #428 #578. Suite **4,261**, the same 8 environmental failures,
-hygiene clean; backlog **246 numbered open**, highest #921. Next five:
-**#921 · #579 · #575 · #588 · #567**.
+**Shipped:** #921 #579 #575 #588 #567 + #922-#926. Suite **4,294**, the same 8 environmental
+failures, 0 network attempts, hygiene clean; backlog **242 numbered open**, highest #927. Next
+five: **#927 · #585 · #574 · #570 · #571**.
 
 ## Slot — Cursor
 

@@ -34,8 +34,10 @@ def _youtube_units() -> tuple[int | None, int | None]:
         from apis.youtube_quota import get_usage_summary, uploads_remaining
 
         summary = get_usage_summary() or {}
-        limit = summary.get("units_limit")
-        used = summary.get("units_used")
+        # #922: the summary's keys are `limit` / `used`; this read `units_limit` /
+        # `units_used` (the test's invented shape) and said "unknown" on every run.
+        limit = summary.get("limit")
+        used = summary.get("used")
         if limit is None or used is None:
             return None, None
         remaining = max(0, int(limit) - int(used))

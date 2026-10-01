@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import requests
 
 from apis.cache_manager import build_key, get_cached, set_cache
-from apis.topic_tokens import content_tokens
+from apis.topic_tokens import content_tokens, distinctive_tokens
 from config.data_sources import rss_feeds_for_topic
 from core.logging import get_logger
 
@@ -56,12 +56,23 @@ def _anchor_phrases(topic: str) -> list[str]:
 
 
 def _matches_topic(text: str, tokens: list[str], *, phrases: list[str] | None = None) -> bool:
+    """A headline is on topic when it names an anchor or a distinctive topic word.
+
+    #925: tokens matched as substrings and any one counted, so "new" hit "news" and
+    "game" hit every gaming headline - run 109 kept an AI survey and a Rockstar hacker
+    story as "topic-matched". Tokens now match whole words (a trailing plural/possessive
+    "s" allowed), and news-register words (`apis/topic_tokens.NEWS_REGISTER_WORDS`) never
+    match alone.
+    """
     if not tokens and not phrases:
         return True
     lower = text.lower()
     if phrases and any(p in lower for p in phrases):
         return True
-    return any(t in lower for t in tokens)
+    # A topic made only of register words ("new game releases") keeps them.
+    wanted = distinctive_tokens(tokens) or tokens
+    words = set(content_tokens(text))
+    return any(t in words or f"{t}s" in words for t in wanted)
 
 
 def _parse_feed_xml(xml_text: str, *, limit: int = 25, url: str = "") -> list[dict[str, str]]:

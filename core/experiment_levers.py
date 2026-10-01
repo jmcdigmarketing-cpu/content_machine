@@ -70,7 +70,10 @@ _LEVERS: dict[str, dict] = {
         "kind": "post_time",
         "arms": {
             "on_slot": "publish at the recommended slot",
-            "off_slot": "publish POST_TIME_OFF_SLOT_HOURS (default 4) after the recommended slot",
+            "off_slot": (
+                "publish at a random whole hour within POST_TIME_WINDOW_HOURS (default 3) "
+                "of the recommended slot"
+            ),
         },
     },
     "thumbnail_format": {

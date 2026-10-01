@@ -27,21 +27,39 @@ class CompetitorOutlier:
         return f'"{self.title}"{ch} ({self.velocity:,.0f} views/day)'
 
 
+# #926: "surging" needs a floor. Run 109 showed a 2016 IGN video at 28 views/day - the
+# fastest in its list, but neither recent nor ahead of anything.
+SURGE_MAX_AGE_DAYS = 30
+SURGE_MIN_RATIO = 2.0
+
+
 def get_competitor_outlier(signals: dict[str, Any]) -> CompetitorOutlier | None:
-    """Return the highest view-velocity competitor video from the signals, if any."""
+    """The competitor video that is actually surging, if any.
+
+    The fastest video counts only when it is at most `SURGE_MAX_AGE_DAYS` old (a video
+    without an age is kept, as before) and at least `SURGE_MIN_RATIO` times the median
+    velocity of the others; alone in its list it needs the age test only.
+    """
     sig = (signals or {}).get("youtube_competitors")
     if not isinstance(sig, dict) or not sig.get("active"):
         return None
     data = sig.get("data") or {}
-    videos = data.get("videos") or []
+    videos = [v for v in data.get("videos") or [] if isinstance(v, dict) and v.get("title")]
     best = None
     for v in videos:
-        if not isinstance(v, dict) or not v.get("title"):
-            continue
         if best is None or (v.get("velocity") or 0) > (best.get("velocity") or 0):
             best = v
     if not best or not (best.get("velocity") or 0):
         return None
+    age = best.get("age_days")
+    if age is not None and float(age) > SURGE_MAX_AGE_DAYS:
+        return None
+    others = sorted(float(v.get("velocity") or 0) for v in videos if v is not best)
+    if others:
+        mid = len(others) // 2
+        median = others[mid] if len(others) % 2 else (others[mid - 1] + others[mid]) / 2
+        if float(best.get("velocity") or 0) < SURGE_MIN_RATIO * median:
+            return None
     return CompetitorOutlier(
         title=str(best.get("title") or "")[:140],
         channel=str(best.get("channel") or ""),

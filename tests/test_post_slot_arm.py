@@ -9,8 +9,8 @@ on-slot videos are scored (as length is scored only when followed).
 
 #912 (operator's choice: an opt-in experiment): the scheduler always takes the slot, so
 "following it" could never be tested. A `post_time` lever in the existing experiments
-alternates on-slot and off-slot (`POST_TIME_OFF_SLOT_HOURS`, default 4, later); nothing
-changes until `py -m core.experiments start post_time`.
+moved off-slot videos later (#567 since: a seeded coin flip and a random hour within
+`POST_TIME_WINDOW_HOURS`); nothing changes until `py -m core.experiments start post_time`.
 """
 
 from __future__ import annotations
@@ -209,29 +209,8 @@ class PlannedTimeTests(_Experiments):
             start_experiment("tapin", "hook_style")
         self.assertEqual(planned_post_time("tapin", "UFC", run_id=5), SLOT)
 
-    def test_the_arms_alternate_and_are_recorded(self):
-        from analytics.post_timing import planned_post_time
-        from core.experiments import assignment_for_run, start_experiment
-
-        with patch("core.experiments._measured_n", return_value=0):
-            start_experiment("tapin", "post_time")
-        with patch.dict(os.environ, {"POST_TIME_OFF_SLOT_HOURS": ""}):
-            first = planned_post_time("tapin", "UFC", run_id=5)
-            second = planned_post_time("tapin", "UFC", run_id=6)
-        self.assertEqual(first, SLOT)
-        self.assertEqual(second, SLOT + timedelta(hours=4))
-        self.assertEqual(assignment_for_run(5)["arm"], "on_slot")
-        self.assertEqual(assignment_for_run(6)["arm"], "off_slot")
-
-    def test_the_offset_can_be_set(self):
-        from analytics.post_timing import planned_post_time
-        from core.experiments import record_assignment, start_experiment
-
-        with patch("core.experiments._measured_n", return_value=0):
-            start_experiment("tapin", "post_time")
-        record_assignment("tapin", 1, "post_time", "on_slot")  # off_slot is next
-        with patch.dict(os.environ, {"POST_TIME_OFF_SLOT_HOURS": "2"}):
-            self.assertEqual(planned_post_time("tapin", "", run_id=7), SLOT + timedelta(hours=2))
+    # The round-robin and fixed +4h tests moved with #567's decision (coin flip + random
+    # hour): tests/test_post_time_random.py.
 
     def test_without_a_run_nothing_is_assigned(self):
         from analytics.post_timing import planned_post_time

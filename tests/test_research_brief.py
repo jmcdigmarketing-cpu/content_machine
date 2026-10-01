@@ -29,6 +29,8 @@ class TestBriefV4Fields(unittest.TestCase):
         self.assertNotIn("Suggested title direction", brief.to_prompt_block())
 
 
+# #921: the fallback brief enriched thin facts from live RSS and an LLM.
+@patch("core.research_brief.enrich_facts", new=lambda *a, **k: "")
 class TestResearchBrief(unittest.TestCase):
     @patch("core.research_brief._USE_LLM", False)
     @patch("analytics.competitor_context.get_competitor_prompt_block", return_value="")
@@ -52,6 +54,8 @@ class TestResearchBrief(unittest.TestCase):
         self.assertIn("RESEARCH BRIEF", block)
 
 
+# #921: the fallback brief enriched thin facts from live RSS and an LLM.
+@patch("core.research_brief.enrich_facts", new=lambda *a, **k: "")
 class TestIntentAwareBrief(unittest.TestCase):
     """#659. The brief hardcoded short_debate; the cache key omitted intent."""
 

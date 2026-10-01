@@ -149,14 +149,41 @@ def _hook_line(script: str) -> str:
     return first[:200]
 
 
-def _clean_title(raw: str, *, fallback: str) -> str:
+_TITLE_MAX = 100
+_TITLE_MIN_KEPT = 40
+# Where a title can end cleanly: punctuation, or before a trailing qualifier clause.
+_CLAUSE_BREAK = re.compile(
+    r"(?:\s*[:;,—–]\s+|\s+-\s+|\s+(?=(?:under|as|after|amid|with|while|despite|following|ahead of)\s))",
+    re.I,
+)
+
+
+def _fit_title(title: str, *, angle: str) -> str:
+    """A title within YouTube's 100 characters without cutting a phrase in half (#924).
+
+    Run 109's LLM title ran past 100 and the old word cut uploaded "... narrative magic
+    under Neil…". End at the last clause boundary that keeps 40+ characters; else use the
+    angle when it fits; only then cut at a word (with an ellipsis, as before).
+    """
+    if len(title) <= _TITLE_MAX:
+        return title
+    cuts = [m.start() for m in _CLAUSE_BREAK.finditer(title[: _TITLE_MAX + 1])]
+    for cut in reversed(cuts):
+        head = title[:cut].rstrip(" ,;:-—–")
+        if _TITLE_MIN_KEPT <= len(head) <= _TITLE_MAX:
+            return head
+    angle = re.sub(r"\s+", " ", (angle or "").strip())
+    if _TITLE_MIN_KEPT <= len(angle) <= _TITLE_MAX:
+        return angle
+    return title[: _TITLE_MAX - 3].rsplit(" ", 1)[0] + "…"
+
+
+def _clean_title(raw: str, *, fallback: str, angle: str = "") -> str:
     title = (raw or "").strip().strip('"').strip("'")
     title = re.sub(r"\s+", " ", title)
     if not title or _SLOP_RE.search(title):
         return fallback
-    if len(title) > 100:
-        title = title[:97].rsplit(" ", 1)[0] + "…"
-    return title
+    return _fit_title(title, angle=angle)
 
 
 def generate_title(
@@ -204,7 +231,7 @@ Title:"""
     if raw is None:
         return _repair_title_to_angle(fallback, topic, fallback=fallback)
 
-    title = _clean_title(raw, fallback=fallback)
+    title = _clean_title(raw, fallback=fallback, angle=topic)
     if title == fallback and facts:
         # Second attempt with explicit fact anchor when slop was rejected.
         anchor = facts[0][:80]
@@ -215,7 +242,7 @@ Title:"""
             max_tokens=40,
         )
         if retry is not None:
-            title = _clean_title(retry, fallback=fallback)
+            title = _clean_title(retry, fallback=fallback, angle=topic)
     title = _repair_title_to_angle(title, topic, fallback=fallback)
     logger.debug("Generated title: %s", title)
     return title

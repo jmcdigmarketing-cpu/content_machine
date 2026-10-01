@@ -267,6 +267,12 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
         lines.append(
             "  revenue: no data yet (needs monetized channel + yt-analytics-monetary scope)"
         )
+    earned = [v for v in econ.videos if v.revenue_usd is not None]
+    if earned:
+        losers = sum(1 for v in earned if (v.revenue_usd or 0.0) < v.cost_usd)
+        lines.append(
+            f"  {losers} of {len(earned)} video(s) with revenue cost more than they returned"
+        )
     views = sum(int(v.views or 0) for v in econ.videos)
     if views > 0:
         lines.append(f"  ${econ.total_cost / views * 1000.0:.2f} / 1k views")

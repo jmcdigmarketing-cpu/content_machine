@@ -252,8 +252,13 @@ def estimate_run_cost(
     signals: dict[str, Any] | None = None,
     rendered: bool = False,
     length_choice: str = "",
+    thumbnail_provider: str | None = None,
 ) -> dict[str, float]:
-    """Estimate the fully-loaded cost of a run. Returns a breakdown + total (USD)."""
+    """Estimate the fully-loaded cost of a run. Returns a breakdown + total (USD).
+
+    `thumbnail_provider` (#923) adds the image the render will buy - run 109 projected
+    $0.3164 and billed $0.3614, the gap exactly its Flux thumbnail.
+    """
     signals = signals or {}
     words = len([w for w in script.split() if w])
 
@@ -293,8 +298,10 @@ def estimate_run_cost(
     # Render compute is local/near-free; track a nominal cost for completeness.
     render = _rate("COST_RENDER_PER_VIDEO", 0.0) if rendered else 0.0
 
-    total = round(llm + tts + apify + web_search + render, 4)
-    return {
+    thumbnail = thumbnail_cost(thumbnail_provider) if thumbnail_provider else 0.0
+
+    total = round(llm + tts + apify + web_search + render + thumbnail, 4)
+    out = {
         "llm": round(llm, 4),
         "tts": round(tts, 4),
         "apify": round(apify, 4),
@@ -302,6 +309,9 @@ def estimate_run_cost(
         "render": round(render, 4),
         "total": total,
     }
+    if thumbnail_provider:
+        out["thumbnail"] = round(thumbnail, 4)
+    return out
 
 
 # Order + short labels for the operator-facing breakdown.

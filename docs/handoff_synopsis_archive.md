@@ -7,6 +7,24 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-30 (Claude Code): wave 48 #915 #913 #916 #912 #560 #563 #342
+
+- **#915** a scheduled upload stayed `scheduled` forever, so it was never synced, scored or learned
+  from and dropped out of the cadence window after its slot. A scheduled row past its time now
+  counts (`publish_log.counts_as_live`, read-side). Recommendations shift once these count.
+- **#916 / #912** the ledger scores the slot a video used (`post_timing.slot_claim`), not the next
+  one; `py -m core.experiments start post_time` alternates on-slot and 4 h off (opt-in).
+- **#913** overnight and auto_generate best-bet picks recorded (`by`: batch / auto / operator).
+- **#560** `ops predictions` headlines forward rows only; backfilled claims leave the video out.
+- **#563** views by day at each sync; `ops predictions` shows time to 100 views;
+  `ops backfill view-curve --apply` fills past videos.
+- **#342** two or more post-publish corrections lower a source's weight (floor x0.85);
+  `ops source-trust`. Rejects shown, never applied.
+
+**Verify:** `python -m unittest tests.test_scheduled_outcomes tests.test_auto_best_bet_pick
+tests.test_post_slot_arm tests.test_forward_error_bars tests.test_first_views
+tests.test_source_trust`; `py -m scripts.ops sync-metrics`, then `py -m scripts.ops predictions`.
+
 ## Previous — 2026-09-29 (Claude Code): wave 47 #910 #911 #909 #504 #386
 
 - **#386** every run saves its signals beside its trace; `ops replay <run>` re-scores it offline

@@ -102,6 +102,9 @@ os.environ["TTS_PIPER_MIX_EVERY"] = "0"
 # Wave 14 wired a cheap-tier LLM judge into run_discovery; the discovery tests made
 # real `complete()` calls with the operator's .env keys. Tests that want it set it.
 os.environ["ANGLE_LLM_JUDGE"] = "false"
+# #921: run_discovery syncs competitor RSS from YouTube by default ("auto"); five
+# discovery tests turned it off by hand and one did not. Tests that want it set it.
+os.environ["COMPETITOR_SYNC_ON_DISCOVERY"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move
@@ -202,9 +205,136 @@ from core import process_state as _process_state
 _original_testcase_run = _unittest.TestCase.run
 
 
+# #921: no network in the suite, enforced. Wave 49's CI failure was a test that scraped
+# live stats (CI has network; the dev container does not). Every lookup or connection
+# that is not loopback raises NetworkBlocked - an OSError, so fail-open code behaves as
+# it does offline - and is recorded; the test it happened in is then failed by name,
+# whatever the code did with the error. Proxy variables go too: a loopback proxy would
+# otherwise carry a request out past a loopback allow-list.
+import ipaddress as _ipaddress
+import socket as _socket
+import threading as _threading
+
+for _proxy_var in (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+):
+    os.environ.pop(_proxy_var, None)
+
+
+class NetworkBlocked(OSError):
+    """A test tried to reach a host that is not this machine."""
+
+
+_network_attempts: list[str] = []
+_network_lock = _threading.Lock()
+_LOOPBACK_NAMES = frozenset({"localhost", "localhost.localdomain", "ip6-localhost"})
+
+
+def _is_loopback(host) -> bool:
+    if host is None:
+        return True
+    if isinstance(host, bytes):
+        host = host.decode("ascii", "ignore")
+    name = str(host).strip().strip("[]").lower()
+    if not name or name in _LOOPBACK_NAMES:
+        return True
+    try:
+        addr = _ipaddress.ip_address(name.split("%")[0])
+    except ValueError:
+        return False
+    return addr.is_loopback or addr.is_unspecified
+
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _caller() -> str:
+    """The deepest repo frame (not this guard) that asked - names the fetcher to stub."""
+    import traceback as _traceback
+
+    for frame in reversed(_traceback.extract_stack()):
+        path = os.path.abspath(frame.filename)
+        if path.startswith(_REPO_ROOT) and not path.endswith(os.path.join("tests", "__init__.py")):
+            rel = os.path.relpath(path, _REPO_ROOT).replace(os.sep, "/")
+            return f"{rel}:{frame.lineno} {frame.name}"
+    return "?"
+
+
+def _blocked(host) -> NetworkBlocked:
+    with _network_lock:
+        _network_attempts.append(f"{host} via {_caller()} [{_threading.current_thread().name}]")
+    return NetworkBlocked(f"network blocked in tests: {host}")
+
+
+def take_network_attempts() -> list[str]:
+    """The hosts tried since the last call, cleared (a test that tries on purpose calls it)."""
+    with _network_lock:
+        out = list(_network_attempts)
+        _network_attempts.clear()
+    return out
+
+
+_real_getaddrinfo = _socket.getaddrinfo
+_real_connect = _socket.socket.connect
+_real_connect_ex = _socket.socket.connect_ex
+
+
+def _guarded_getaddrinfo(host, *args, **kwargs):
+    if not _is_loopback(host):
+        raise _blocked(host)
+    return _real_getaddrinfo(host, *args, **kwargs)
+
+
+def _remote_host(sock, address):
+    if sock.family not in (_socket.AF_INET, _socket.AF_INET6):
+        return None
+    host = address[0] if isinstance(address, tuple) and address else address
+    return None if _is_loopback(host) else host
+
+
+def _guarded_connect(self, address):
+    host = _remote_host(self, address)
+    if host is not None:
+        raise _blocked(host)
+    return _real_connect(self, address)
+
+
+def _guarded_connect_ex(self, address):
+    host = _remote_host(self, address)
+    if host is not None:
+        raise _blocked(host)
+    return _real_connect_ex(self, address)
+
+
+_socket.getaddrinfo = _guarded_getaddrinfo
+_socket.socket.connect = _guarded_connect  # type: ignore[method-assign]
+_socket.socket.connect_ex = _guarded_connect_ex  # type: ignore[method-assign]
+
+
 def _run_with_clean_process_state(self, result=None):
     _process_state.reset_all()
-    return _original_testcase_run(self, result)
+    take_network_attempts()
+    outcome = _original_testcase_run(self, result)
+    hosts = take_network_attempts()
+    if hosts and result is not None:
+        named = ", ".join(sorted(set(hosts))[:5])
+        result.addFailure(
+            self,
+            (
+                AssertionError,
+                AssertionError(
+                    f"#921: this test tried to reach the network ({len(hosts)} attempt(s): "
+                    f"{named}). Stub the fetch - tests may not depend on the network."
+                ),
+                None,
+            ),
+        )
+    return outcome
 
 
 _unittest.TestCase.run = _run_with_clean_process_state  # type: ignore[method-assign]

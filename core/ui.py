@@ -1789,6 +1789,12 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
                 f"tts ${float(projected.get('tts') or 0):.2f} "
                 f"(total ${float(projected.get('total') or 0):.2f})"
             )
+        # #579: the cost beside what the channel's RPM says the video will earn.
+        from core.rpm_cost_gate import return_line
+
+        earn = return_line(float(projected.get("total") or 0.0), features.get("expected_return"))
+        if earn:
+            print_fn(f"  {earn}")
     return needs_review
 
 

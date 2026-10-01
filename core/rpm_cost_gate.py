@@ -51,6 +51,43 @@ def trailing_rpm_and_cost(
     return (revenue / views) * 1000.0, cost
 
 
+def expected_return(videos: list[VideoEconomics]) -> dict[str, float] | None:
+    """What one more video should earn (#579): trailing RPM x median views per video.
+
+    {usd, rpm, median_views}, or None when the channel has no revenue data - an
+    unmonetized channel has no return to compare a cost against.
+    """
+    rpm, _cost = trailing_rpm_and_cost(videos)
+    if rpm is None:
+        return None
+    views = sorted(int(v.views) for v in videos if v.views > 0)
+    if not views:
+        return None
+    mid = len(views) // 2
+    median = views[mid] if len(views) % 2 else (views[mid - 1] + views[mid]) / 2
+    return {
+        "usd": round(rpm * median / 1000.0, 4),
+        "rpm": round(rpm, 4),
+        "median_views": int(median),
+    }
+
+
+def return_line(projected_total: float, expected: dict | None) -> str:
+    """The line under "Projected cost if you proceed", or "" without revenue data."""
+    if not isinstance(expected, dict) or expected.get("usd") is None:
+        return ""
+    usd = float(expected["usd"])
+    rpm = float(expected.get("rpm") or 0.0)
+    views = int(expected.get("median_views") or 0)
+    basis = f"the channel's RPM ${rpm:.2f}/1k x median {views:,} views"
+    if projected_total > usd:
+        return (
+            f"! this video would return ~${usd:.2f} at {basis} - "
+            f"less than its ${projected_total:.2f} cost"
+        )
+    return f"expected return ~${usd:.2f} at {basis}"
+
+
 def rpm_below_cost_reason(
     *,
     rpm: float | None,

@@ -19,6 +19,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from core.pipeline import DiscoveryResult
+from core.research_brief import ResearchBrief
 
 
 def _discovery(topic: str = "GTA 6 leak") -> DiscoveryResult:
@@ -38,6 +39,8 @@ class TestDraftEntryPointsNeverBillTts(unittest.TestCase):
 
         with (
             patch("core.pipeline.generate_audio") as tts,
+            # #921: the real brief fetched feeds and called an LLM.
+            patch("core.pipeline.build_research_brief", return_value=ResearchBrief()),
             patch("core.pipeline.write_run_dossier"),
             patch("core.pipeline.write_run_trace"),
             patch("core.pipeline.persist_quality"),
@@ -84,6 +87,8 @@ class TestDraftEntryPointsNeverBillTts(unittest.TestCase):
                 patch("core.pipeline.run_pipeline", return_value=drafted) as run,
                 patch("core.pipeline.run_discovery", return_value=_discovery()),
                 patch.object(batch_generation, "_drafts_dir", return_value=tmp),
+                # #921: a thin draft enriched its facts from live RSS.
+                patch("core.facts.enrichment.enrich_facts", return_value=""),
             ):
                 batch_generation.generate_draft("GTA 6 leak", channel_id="tapin")
 

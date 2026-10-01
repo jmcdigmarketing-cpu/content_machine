@@ -943,6 +943,109 @@
         "equals": null
       },
       "why": "likes/views is about ten times smaller than the average-view-% the sync stores; mixing them under one name skewed every recommender"
+    },
+    {
+      "id": "headroom-reads-the-real-quota-keys",
+      "item": 922,
+      "source": "run 109 (Uncharted, 2026-09-30): the Headroom line printed 'YouTube quota unknown (no reading)' while the YouTube signal showed 9,493 units",
+      "call": "core.discovery_headroom:headroom_line",
+      "kwargs": {
+        "signal_count": 3
+      },
+      "expect": {
+        "not_contains": "unknown"
+      },
+      "why": "the reader asked for units_limit/units_used, keys get_usage_summary never returns, so the pool's headroom was never shown"
+    },
+    {
+      "id": "projected-cost-carries-the-thumbnail",
+      "item": 923,
+      "source": "run 109 (Uncharted, 2026-09-30): projected $0.3164, billed $0.3614 - the gap was the Flux thumbnail",
+      "call": "core.cost_meter:estimate_run_cost",
+      "kwargs": {
+        "script": "word word word",
+        "rendered": true,
+        "thumbnail_provider": "flux"
+      },
+      "select": "thumbnail",
+      "expect": {
+        "truthy": true
+      },
+      "why": "the operator decides to render against the projection; an image the render buys must be in it"
+    },
+    {
+      "id": "long-title-ends-at-a-clause",
+      "item": 924,
+      "source": "run 109 (Uncharted, 2026-09-30): the uploaded title ended '... narrative magic under Neil...'",
+      "call": "core.title_generator:_fit_title",
+      "args": [
+        "Critics question if new Uncharted game can recapture series' narrative magic under Neil Druckmann's new direction at Naughty Dog"
+      ],
+      "kwargs": {
+        "angle": ""
+      },
+      "expect": {
+        "equals": "Critics question if new Uncharted game can recapture series' narrative magic"
+      },
+      "why": "a word cut at 97 characters put half a name and an ellipsis on YouTube"
+    },
+    {
+      "id": "headline-needs-a-distinctive-word",
+      "item": 925,
+      "source": "run 109 (Uncharted, 2026-09-30): blog_rss kept 'Over 85 Percent Of Japanese Game Developers Are Using AI' as topic-matched",
+      "call": "apis.rss_feeds:_matches_topic",
+      "args": [
+        "Over 85 Percent Of Japanese Game Developers Are Using AI",
+        [
+          "new",
+          "uncharted",
+          "game",
+          "featuring",
+          "nathan",
+          "drake",
+          "reportedly",
+          "works",
+          "naughty",
+          "dog"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "one generic word ('game') matched every gaming headline, and the off-topic ones fed facts and false vault entity support"
+    },
+    {
+      "id": "old-slow-competitor-is-not-surging",
+      "item": 926,
+      "source": "run 109 (Uncharted, 2026-09-30): 'Surging competitor angle' named a 2016 IGN video at 28 views/day",
+      "call": "core.outlier:get_competitor_outlier",
+      "args": [
+        {
+          "youtube_competitors": {
+            "active": true,
+            "data": {
+              "videos": [
+                {
+                  "title": "Uncharted 4: Nathan Drake's Last Adventure is Gorgeous",
+                  "channel": "IGN",
+                  "velocity": 28.0,
+                  "age_days": 3600
+                },
+                {
+                  "title": "Uncharted 3 review",
+                  "channel": "GameSpot",
+                  "velocity": 9.0,
+                  "age_days": 4800
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the fastest video in a list is not surging; the prompt told the operator to riff on a decade-old angle"
     }
   ]
 }

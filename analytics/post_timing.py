@@ -352,13 +352,22 @@ def slot_claim(
     }
 
 
-def off_slot_hours() -> float:
-    """`POST_TIME_OFF_SLOT_HOURS` (default 4, 1-12): how far the off-slot arm moves (#912)."""
+def post_time_window_hours() -> int:
+    """`POST_TIME_WINDOW_HOURS` (default 3, 1-6): how far an off-slot video may move (#567)."""
     try:
-        hours = float(os.getenv("POST_TIME_OFF_SLOT_HOURS", "") or 4)
+        hours = int(float(os.getenv("POST_TIME_WINDOW_HOURS", "") or 3))
     except ValueError:
-        hours = 4.0
-    return max(1.0, min(12.0, hours))
+        hours = 3
+    return max(1, min(6, hours))
+
+
+def _off_slot_offsets(seed: str, window: int) -> list[int]:
+    """Every whole-hour offset in +/-window except 0, in a seeded random order."""
+    import random
+
+    offsets = [h for h in range(-window, window + 1) if h]
+    random.Random(seed).shuffle(offsets)
+    return offsets
 
 
 def planned_post_time(
@@ -369,29 +378,44 @@ def planned_post_time(
     after: datetime | None = None,
 ) -> datetime:
     """The publish time for one run: the open slot, or - when the operator has started the
-    `post_time` experiment (#912) - the slot or a few hours off it, arm recorded.
+    `post_time` experiment (#912) - the slot or a random hour near it, arm recorded.
 
-    With no experiment running this is exactly `next_optimal_post_time`.
+    #567: the arm is a coin flip seeded by the run id (not a rota that tracked upload
+    order) and an off-slot video takes a random whole hour within
+    +/-`POST_TIME_WINDOW_HOURS` of the slot - never 0, never before `after` (now), never
+    on another slot. With no experiment running this is exactly `next_optimal_post_time`.
     """
     when = next_optimal_post_time(channel_id, topic, after=after)
     if not run_id:
         return when
     try:
-        from core.experiments import next_arm, record_assignment
+        from core.experiments import active_experiment, random_arm, record_assignment
 
         channel = resolve_channel_id(channel_id)
-        experiment = next_arm(channel, kind="post_time")
-        if not experiment:
+        active = active_experiment(channel, "post_time")
+        if not active:
             return when
-        lever, arm, _directive = experiment
+        lever = str(active["lever"])
+        arm = random_arm(channel, lever, run_id)
+        if not arm:
+            return when
+        offset: int | None = None
         if arm == "off_slot":
-            shifted = when + timedelta(hours=off_slot_hours())
-            for _ in range(3):  # never land on another slot by accident
-                if not _on_a_slot(channel, topic, shifted):
+            now = after or datetime.now(timezone.utc)
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+            for hours in _off_slot_offsets(
+                f"{lever}:hour:{channel}:{run_id}", post_time_window_hours()
+            ):
+                shifted = when + timedelta(hours=hours)
+                if shifted > now and not _on_a_slot(channel, topic, shifted):
+                    offset = hours
                     break
-                shifted += timedelta(hours=1)
-            when = shifted
-        record_assignment(channel, run_id, lever, arm)
+            if offset is None:
+                arm = "on_slot"  # nowhere safe to move it; stay on the slot
+            else:
+                when += timedelta(hours=offset)
+        record_assignment(channel, run_id, lever, arm, offset_hours=offset)
     except Exception as exc:
         logger.debug("post-time experiment skipped: %s", exc)
     return when

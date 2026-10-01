@@ -1,12 +1,32 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-01
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 51 — no network in the suite, cost vs return, the signal audit, a random publish hour, run 109's fixes - 2026-10-01
+
+*4,294 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 65 of 65.*
+
+- **#924** **Finished-output change, disclosed:** an LLM title over 100 characters now ends at its
+  last clause (or falls back to the angle) instead of being cut mid-name with an ellipsis - run 109
+  uploaded "... narrative magic under Neil…".
+- **#925** **Fact change, disclosed:** news and blog headlines need a distinctive topic word; one
+  generic word ("game", "new", "report") no longer makes a headline "topic-matched", so fewer,
+  better headlines reach the facts and the vault's relevance evidence.
+- **#922** the discovery Headroom line shows YouTube units left (it said "unknown" on every run).
+- **#923** the projected cost includes the thumbnail the render will buy.
+- **#926** "Surging competitor angle" only for a recent video well ahead of the rest.
+- **#921** the test suite refuses the network and fails a test that tries; seven offenders stubbed.
+- **#579** the Proceed? report says when a video would cost more than the channel's RPM returns.
+- **#575 #588** `ops signal-audit`: which signals feed the script, retirement candidates (your
+  call), and signals returning a frozen payload; `ops reliability` names a frozen one.
+- **#567** the opt-in post-time experiment flips a coin per upload and moves off-slot videos a
+  random hour (`POST_TIME_WINDOW_HOURS`, replaces `POST_TIME_OFF_SLOT_HOURS`).
 
 ### Wave 50 — one labelled engaged rate, lift not averages, tags, retention diffs, cost per minute - 2026-09-30
 

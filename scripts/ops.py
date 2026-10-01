@@ -548,6 +548,17 @@ def cmd_retention_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "signal-audit", "Which signals feed the script, and which return frozen payloads (#575 #588)"
+)
+def cmd_signal_audit(args: argparse.Namespace) -> int:
+    from core.runs.signal_audit import report_lines
+
+    for line in report_lines():
+        print(line)
+    return 0
+
+
 @_register("tag-report", "Tags and hashtags ranked by lift over the channel (#428)")
 def cmd_tag_report(args: argparse.Namespace) -> int:
     from analytics.tag_performance import report_lines
@@ -832,6 +843,12 @@ def cmd_reliability(args: argparse.Namespace) -> int:
         from core.logging import get_logger
 
         get_logger("scripts.ops").debug("Reliability trend not recorded: %s", exc)
+    # #588: a frozen signal reads as healthy everywhere else on this page.
+    from core.runs.signal_audit import reliability_line
+
+    frozen = reliability_line()
+    if frozen:
+        chunks.append(frozen)
     try:
         from core.incident_ledger import gather_and_record
         from core.incident_ledger import render as render_incidents

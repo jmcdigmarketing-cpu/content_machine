@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-01
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,89 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-10-01 (Claude Code) - wave 51: no network in the suite, cost vs return, the signal audit, a random publish hour, five run-109 defects
+
+**Prompt (verbatim):** "next 5" - with the full terminal log of run 109 (Uncharted, uploaded
+public as job 49).
+
+**Operator's answers:** fold run 109's five defects into the wave; #567 is a coin flip plus a
+random hour within +/-3 h (not "random hour every upload", not "coin flip, keep +4h"); #921 makes a
+blocked network attempt fail the suite (not "block and report only").
+
+### Why these ten
+
+Wave 50's recommendation, unchanged: **#921 · #579 · #575 · #588 · #567**, each checked read-only
+(open, not parked, dependencies present: #386's snapshots, #578's minute cost, #912's lever).
+Run 109 showed five defects, each confirmed in code before it was filed (#922-#926).
+
+### Findings, with file:line
+
+- **#922: the headroom line has never shown the quota.** `core/discovery_headroom._youtube_units`
+  read `units_limit` / `units_used`; `apis/youtube_quota.get_usage_summary` returns `limit` /
+  `used`. `tests/test_wave8.py` fed the invented keys, so the test passed while every run printed
+  "unknown" - the same shape as wave 50's invented `word_count`, again in a test double.
+- **#925: the root of the off-topic facts and the false vault support.** `apis/rss_feeds._matches_topic`
+  matched any topic token as a substring; "New Uncharted Game ..." kept 7 of 7 blog headlines on
+  "game" / "new". The Rockstar-hacker headline then sat in the vault relevance corpus and gave GTA
+  bullets `bullet entity +0.30` - run 109's uncertain list.
+- **#924:** `core/title_generator._clean_title` cut a >100-character title at a word with an
+  ellipsis: "... under Neil…" was uploaded.
+- **#921 found 7 offenders, not the 2 wave 49 knew of.** Five tests reached live RSS and OpenAI
+  through `core/facts/enrichment.enrich_facts` (called by the fallback research brief and by batch
+  drafts); one reached YouTube RSS through discovery's competitor sync (`COMPETITOR_SYNC_ON_DISCOVERY`
+  defaults to auto; five other tests had turned it off by hand); and
+  `tests/test_event_research.py`'s deadline test left a thread that, after its patch ended, made
+  a live Wikipedia call blamed on whichever test was running. The guard now names the repo frame
+  and thread, which is how that one was traced.
+- **The container's proxy is on loopback** (`HTTPS_PROXY=http://127.0.0.1:...`): a loopback
+  allow-list alone would have let every request out through it. The suite drops the proxy variables.
+- **#567: the off-slot move must check the clock.** The first test pinned a slot already in the
+  past; a random negative offset would schedule into the past, so the arm falls back to the slot
+  when no safe hour exists.
+
+### Shipped
+
+1. **#922** headroom reads `limit` / `used`.
+2. **#923** `expected_provider`; the projection and the pre-discovery cap include the image.
+3. **#924** `_fit_title` ends at a clause, else the angle.
+4. **#925** whole-word matching; `NEWS_REGISTER_WORDS` and years never match alone.
+5. **#926** surging needs <= 30 days and 2x the median.
+6. **#921** the network guard in `tests/__init__.py`; 7 offenders stubbed; competitor sync off in the suite.
+7. **#579** `expected_return`, `return_line`; the loser count in `ops economics`.
+8. **#588** `frozen_signals`; `ops reliability` line.
+9. **#575** `contribution_rows`, `retirement_candidates`; `ops signal-audit`.
+10. **#567** `random_arm`, `POST_TIME_WINDOW_HOURS`, `offset_hours` in the assignment and the ledger.
+
+### Not done, deliberately
+
+- No signal was retired: #575's numbers come from the operator's snapshots, and retiring is the
+  operator's call (decisions §19).
+- `POST_TIME_OFF_SLOT_HOURS` is gone, not aliased: it only ever applied while the opt-in
+  experiment ran.
+- The vault relevance corpus still takes every non-popularity signal's text; #925 removed the
+  cause run 109 showed rather than filtering the corpus.
+- #927 (best bet "1 sample" vs post time "15 posts" for gaming) is filed, not traced: it needs the
+  operator's data.
+- The two #912 tests that pinned round-robin and the fixed +4 h moved with #567's decision.
+
+### Audit
+
+35 new test methods in five modules, plus five stubbed and one retargeted; suite 4,261 -> 4,294.
+**30 observed failing before their fix** on a clean HEAD worktree; 5 are guards that pass there by
+design (loopback still connects, no revenue prints nothing, a recent fast video still surges, a
+register-only topic still matches, never scheduled in the past). Suite in default, reverse and
+shuffle (seed 90682): the same 8 environmental failures, **0 network attempts**, `data/` and
+`output/` untouched, ~38 s (was ~70 s). mypy **122** (one new error fixed); ruff clean; corpus 65
+of 65. Live here on run 109's inputs: headroom "9493 YouTube units left | 5 upload(s) left"; projection
+"$0.3340 (... thumb $0.0450)"; the title "Critics question if new Uncharted game can recapture
+series' narrative magic"; 1 of 7 blog headlines kept; no surging prompt; "! this video would
+return ~$0.09 ... less than its $0.33 cost"; the signal audit flagging a frozen `rawg` and naming
+`news` a retirement candidate; 200 post-time draws, 94 on the slot and the rest spread over
+-3..+3 h. Backlog **242 numbered open**, highest **#927**.
+
+Closed **#921 #579 #575 #588 #567 #922 #923 #924 #925 #926**. Filed **#927**. Next five:
+**#927 · #585 · #574 · #570 · #571**.
 
 ## 2026-09-30 (Claude Code) - wave 50: one labelled engaged rate, lift not averages, tags, retention diffs, cost per minute
 

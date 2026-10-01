@@ -119,6 +119,8 @@ def _post_time(
         arm = assignment_for_run(run_id)
         if arm and arm.get("lever") == "post_time":
             claim["arm"] = arm.get("arm")  # #912
+            if arm.get("offset_hours") is not None:
+                claim["offset_hours"] = arm["offset_hours"]  # #567
     except Exception as exc:
         logger.debug("post-time arm unavailable: %s", exc)
     return claim

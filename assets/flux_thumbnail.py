@@ -330,6 +330,29 @@ def _provider_chain(selected: str) -> list[str]:
     return chain
 
 
+def expected_provider(grade_letter: str | None = None) -> str:
+    """The image generator the next render will use, before it runs (#923).
+
+    Mirrors `generate_thumbnail`'s choice so the projected cost can include the image:
+    Pillow below the paid-grade floor or in strict Free mode; else the first entry of an
+    explicit `THUMBNAIL_PROVIDER` chain; else Flux when it is configured and first.
+    """
+    try:
+        from core.run_mode import free_mode_strict
+
+        if free_mode_strict():
+            return "pillow"
+    except Exception:
+        pass
+    if paid_thumbnail_blocked(grade_letter):
+        return "pillow"
+    selected = (os.getenv("THUMBNAIL_PROVIDER") or "").strip().lower()
+    if selected:
+        return _provider_chain(selected)[0]
+    flux_first = os.getenv("THUMBNAIL_FLUX_FIRST", "true").lower() not in ("0", "false", "no")
+    return "flux" if is_flux_configured() and flux_first else "pillow"
+
+
 def _chain_thumbnail(
     selected: str,
     topic: str,

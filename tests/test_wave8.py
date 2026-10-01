@@ -27,7 +27,7 @@ class TestDiscoveryHeadroomBeforeThePool(unittest.TestCase):
     def test_headroom_line_names_the_actual_remaining_numbers(self):
         from core.discovery_headroom import headroom_line
 
-        summary = {"units_used": 9200, "units_limit": 10000, "date": "2026-09-10"}
+        summary = {"used": 9200, "limit": 10000, "remaining": 800, "day": "2026-09-10"}
         with patch("apis.youtube_quota.get_usage_summary", return_value=summary):
             with patch("apis.youtube_quota.uploads_remaining", return_value=0):
                 line = headroom_line(signal_count=8)
@@ -41,7 +41,7 @@ class TestDiscoveryHeadroomBeforeThePool(unittest.TestCase):
         decision the operator can still make."""
         from core.discovery_headroom import headroom_line
 
-        summary = {"units_used": 9940, "units_limit": 10000, "date": "2026-09-10"}
+        summary = {"used": 9940, "limit": 10000, "remaining": 60, "day": "2026-09-10"}
         with patch("apis.youtube_quota.get_usage_summary", return_value=summary):
             with patch("apis.youtube_quota.uploads_remaining", return_value=0):
                 line = headroom_line(signal_count=8)

@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-09-30: wave 50, next five
+# Handoff synopsis — 2026-10-01: wave 51, next five
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-01
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-09-30 (Claude Code): wave 50 #920 #566 #565 #428 #578
+## Last wave — 2026-10-01 (Claude Code): wave 51 #921 #579 #575 #588 #567 + run 109's #922-#926
+
+- **Run 109 fixes:** the discovery Headroom line now shows YouTube units (#922); the projected
+  cost includes the thumbnail (#923); a long title ends at a clause, not "...under Neil…" (#924);
+  a headline needs a distinctive topic word, not "game" (#925); "surging competitor" needs a
+  recent video well ahead of the rest (#926).
+- **#921** the suite cannot reach the network: a test that tries fails, naming host, frame and
+  thread. Seven offenders stubbed; ~38 s per run.
+- **#579** the Proceed? report sets the cost against what the channel's RPM says the video earns.
+- **#575 / #588** `ops signal-audit`: runs / active / fed / cited per signal, retirement
+  candidates (your call), and frozen payloads; `ops reliability` names a frozen signal.
+- **#567** the post-time experiment flips a seeded coin; off-slot videos go to a random hour
+  within +/-`POST_TIME_WINDOW_HOURS` (3). Still opt-in.
+
+**Verify:** `python -m unittest tests.test_run109_defects tests.test_network_guard
+tests.test_cost_vs_return tests.test_signal_audit tests.test_post_time_random`;
+`py -m scripts.ops signal-audit`; `py -m scripts.ops economics`.
+
+## Previous — 2026-09-30 (Claude Code): wave 50 #920 #566 #565 #428 #578
 
 - **#920** every synced / seeded row says which measure its engaged rate is (`engaged_basis`);
   likes/views no longer counts; `ops predictions` shows the mix.
@@ -37,24 +55,6 @@ tests.test_tag_performance tests.test_retention_diff tests.test_cost_per_minute`
 **Verify:** `python -m unittest tests.test_sync_young_videos tests.test_upload_mode_report
 tests.test_view_floor tests.test_experiments_per_kind tests.test_conflict_sections`;
 `py -m scripts.ops weekly-report`; `py -m scripts.ops predictions`.
-
-## Previous — 2026-09-30 (Claude Code): wave 48 #915 #913 #916 #912 #560 #563 #342
-
-- **#915** a scheduled upload stayed `scheduled` forever, so it was never synced, scored or learned
-  from and dropped out of the cadence window after its slot. A scheduled row past its time now
-  counts (`publish_log.counts_as_live`, read-side). Recommendations shift once these count.
-- **#916 / #912** the ledger scores the slot a video used (`post_timing.slot_claim`), not the next
-  one; `py -m core.experiments start post_time` alternates on-slot and 4 h off (opt-in).
-- **#913** overnight and auto_generate best-bet picks recorded (`by`: batch / auto / operator).
-- **#560** `ops predictions` headlines forward rows only; backfilled claims leave the video out.
-- **#563** views by day at each sync; `ops predictions` shows time to 100 views;
-  `ops backfill view-curve --apply` fills past videos.
-- **#342** two or more post-publish corrections lower a source's weight (floor x0.85);
-  `ops source-trust`. Rejects shown, never applied.
-
-**Verify:** `python -m unittest tests.test_scheduled_outcomes tests.test_auto_best_bet_pick
-tests.test_post_slot_arm tests.test_forward_error_bars tests.test_first_views
-tests.test_source_trust`; `py -m scripts.ops sync-metrics`, then `py -m scripts.ops predictions`.
 
 ## Pipeline order (operator)
 
@@ -123,7 +123,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #921 probe the suite for network · #914 emoji font off Windows · #459 dead code (operator call).
+3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #927 the gaming count disagreement.
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

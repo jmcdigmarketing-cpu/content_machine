@@ -452,7 +452,15 @@ def projected_cost_block_reason() -> str | None:
         # $0, which made every realistic cap unreachable: the guard measured the
         # wrong thing and then reported clean (decisions SS18/SS24).
         worst_words = max((p.max_words for p in PRESETS.values()), default=0)
-        est = estimate_run_cost(script="word " * worst_words, signals={}, rendered=True)
+        from assets.flux_thumbnail import expected_provider
+
+        # #923: the image the render will buy is part of the worst case too.
+        est = estimate_run_cost(
+            script="word " * worst_words,
+            signals={},
+            rendered=True,
+            thumbnail_provider=expected_provider(None),
+        )
         total = float(est.get("total") or 0.0)
     except Exception as exc:
         logger.debug("projected cost estimate skipped: %s", exc)

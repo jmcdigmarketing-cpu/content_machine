@@ -132,6 +132,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `seo-refresh` | Refresh trending tag hints (YouTube + RSS) |
 | `shell` | Localhost FastAPI operator shell (GET only; no TTS/Apify/publish) |
 | `shortcut` | Install Start Menu shortcut via pythonw / content_os.pyw |
+| `signal-audit` | Which signals feed the script, and which return frozen payloads (#575 #588) |
 | `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
 | `source-trust` | Corrections per source and the weight they cost it (#342) |

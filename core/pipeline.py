@@ -1063,9 +1063,30 @@ def run_pipeline(
     result.features["cost"] = estimate_run_cost(
         script=result.script, signals=best_signals, rendered=False
     )
+    try:
+        from assets.flux_thumbnail import expected_provider
+
+        thumb_provider: str | None = expected_provider(None)
+    except Exception as exc:
+        logger.debug("thumbnail provider unknown for the projection: %s", exc)
+        thumb_provider = None
     result.features["projected_cost"] = estimate_run_cost(
-        script=result.script, signals=best_signals, rendered=True, length_choice=length_choice
+        script=result.script,
+        signals=best_signals,
+        rendered=True,
+        length_choice=length_choice,
+        thumbnail_provider=thumb_provider,
     )
+    try:
+        # #579: what the channel's RPM says this video will earn, set against the cost.
+        from core.rpm_cost_gate import expected_return
+        from core.unit_economics import channel_economics
+
+        earn = expected_return(channel_economics(channel_id).videos)
+        if earn:
+            result.features["expected_return"] = earn
+    except Exception as exc:
+        logger.debug("expected return skipped: %s", exc)
 
     if not proceed_video:
         result.aborted = True

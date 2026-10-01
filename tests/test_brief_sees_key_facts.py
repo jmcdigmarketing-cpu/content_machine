@@ -18,6 +18,8 @@ _QUIET = (
     patch("analytics.competitor_context.get_competitor_prompt_block", return_value=""),
     patch("apis.stats_context_api.gather_stats_context", return_value={"lines": []}),
     patch("core.research_brief.fetch_rss_context", return_value={"headlines": []}),
+    # #921: the fallback brief enriches thin facts from live RSS and an LLM.
+    patch("core.research_brief.enrich_facts", return_value=""),
     patch("core.research_brief.get_cached", return_value=None),
 )
 

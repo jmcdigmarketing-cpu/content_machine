@@ -196,6 +196,20 @@ def next_arm(channel_id: str, kind: str | None = None) -> tuple[str, str, str] |
     return lever, arm, experiment_levers.directive(lever, arm)
 
 
+def random_arm(channel_id: str, lever: str, run_id: int) -> str | None:
+    """A seeded coin flip between `lever`'s arms (#567), replayable from the run id.
+
+    The post-time lever uses this rather than `next_arm`'s round-robin, where the arm
+    followed upload order (and so the day and the queue) instead of chance.
+    """
+    import random
+
+    arms = experiment_levers.arms(lever)
+    if not arms:
+        return None
+    return random.Random(f"{lever}:{channel_id}:{int(run_id)}").choice(arms)
+
+
 def assignment_for_run(run_id: int | None) -> dict[str, Any] | None:
     """The {lever, arm} that shaped a run, if any (read path for trace/dossier)."""
     if not run_id:
@@ -204,25 +218,39 @@ def assignment_for_run(run_id: int | None) -> dict[str, Any] | None:
         rows = _load()["assignments"]
     for a in rows:
         if isinstance(a, dict) and a.get("run_id") == int(run_id):
-            return {"lever": str(a.get("lever", "")), "arm": str(a.get("arm", ""))}
+            out: dict[str, Any] = {"lever": str(a.get("lever", "")), "arm": str(a.get("arm", ""))}
+            if a.get("offset_hours") is not None:
+                out["offset_hours"] = a["offset_hours"]  # #567
+            return out
     return None
 
 
-def record_assignment(channel_id: str, run_id: int | None, lever: str, arm: str) -> None:
-    """Remember which arm shaped a generated run (skips runs without an id)."""
+def record_assignment(
+    channel_id: str,
+    run_id: int | None,
+    lever: str,
+    arm: str,
+    *,
+    offset_hours: int | None = None,
+) -> None:
+    """Remember which arm shaped a generated run (skips runs without an id).
+
+    `offset_hours` (#567) is how far the post-time arm moved the video off its slot.
+    """
     if not run_id:
         return
+    row: dict[str, Any] = {
+        "channel_id": channel_id,
+        "run_id": int(run_id),
+        "lever": lever,
+        "arm": arm,
+        "at": time.time(),
+    }
+    if offset_hours is not None:
+        row["offset_hours"] = int(offset_hours)
     with _lock:
         data = _load()
-        data["assignments"].append(
-            {
-                "channel_id": channel_id,
-                "run_id": int(run_id),
-                "lever": lever,
-                "arm": arm,
-                "at": time.time(),
-            }
-        )
+        data["assignments"].append(row)
         _save(data)
 
 

@@ -12,6 +12,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `all-checks` | Validate channels + unit tests + feed health |
 | `all-setup` | First-time / fresh machine setup (non-interactive) |
 | `analyst` | Weekly analyst briefing — LLM over the pillars -> lever changes (Pillar 5) |
+| `analytics-diff` | What moved in the analytics since a run, data or code (#570) |
 | `apify-trueup` | Compare synthetic Apify invoice vs $0.02/run model (no network) |
 | `artifact-retention` | Report old drafts, traces, and vault _runs clones (dry-run only; never deletes) |
 | `artifacts` | Cap output/ by GB (dry-run default; --apply deletes oldest) |
@@ -46,6 +47,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
 | `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
+| `dedupe-seed` | Duplicate seeded history from re-seeding (#927); --apply removes |
 | `demonetization` | estimatedRevenue cliff vs channel baseline (missing is unmeasured) |
 | `desc-fold` | Dry-render the description above/below YouTube's Show more fold |
 | `diff-runs` | Compare grade/cost/ungrounded/disputed for two run ids |

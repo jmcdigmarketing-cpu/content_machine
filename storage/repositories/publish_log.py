@@ -86,6 +86,41 @@ def _parse_dt(value) -> datetime | None:
 
 
 _LIVE_STATUSES = ("uploaded", "imported")
+SEED_SOURCE = "tapin_seed"
+SEED_ID_PREFIX = "seed_"
+
+
+def is_seeded(record: Any) -> bool:
+    """True for a row `analytics/seed_tapin` imported (#927): a historical video whose
+    publish time the seed invented, not one this machine published."""
+    video_id = str(getattr(record, "youtube_video_id", "") or "")
+    if video_id.startswith(SEED_ID_PREFIX):
+        return True
+    try:
+        metrics = json.loads(getattr(record, "metrics_json", None) or "{}")
+    except (TypeError, ValueError):
+        return False
+    return isinstance(metrics, dict) and metrics.get("source") == SEED_SOURCE
+
+
+def _json_default(value: Any) -> Any:
+    """#928: the JSON log stored `published_at` datetimes as-is, so json.dump raised
+    half-way through a file it had already truncated."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def _duplicate_seed_ids(rows: list[tuple[int, str]]) -> list[int]:
+    """Ids of every seeded row after the first (lowest id) for its video id."""
+    seen: set[str] = set()
+    extra: list[int] = []
+    for row_id, video_id in sorted(rows):
+        if video_id in seen:
+            extra.append(row_id)
+        else:
+            seen.add(video_id)
+    return extra
 
 
 def counts_as_live(
@@ -139,6 +174,10 @@ class PublishLogRepository(ABC):
         pass
 
     @abstractmethod
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        """Seeded rows repeated by re-seeding (#927): the count, removed when `apply`."""
+
+    @abstractmethod
     def list_timed_outcomes(self, channel_id: str) -> list[PublishLogRecord]:
         pass
 
@@ -151,9 +190,26 @@ class JsonPublishLogRepository(PublishLogRepository):
             return json.load(f)
 
     def _write(self, rows: list[dict]) -> None:
-        os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-        with open(LOG_FILE, "w", encoding="utf-8") as f:
-            json.dump(rows, f, indent=2)
+        os.makedirs(os.path.dirname(LOG_FILE) or ".", exist_ok=True)
+        # #928: serialise first, then replace - a failed dump no longer truncates the log.
+        text = json.dumps(rows, indent=2, default=_json_default)
+        tmp = f"{LOG_FILE}.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.replace(tmp, LOG_FILE)
+
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        with _lock:
+            rows = self._read()
+            seeded = [
+                (int(r.get("id", 0)), str(r.get("youtube_video_id", "")))
+                for r in rows
+                if r.get("channel_id") == channel_id and is_seeded(_to_record(r))
+            ]
+            extra = set(_duplicate_seed_ids(seeded))
+            if apply and extra:
+                self._write([r for r in rows if int(r.get("id", 0)) not in extra])
+        return len(extra)
 
     def create(self, data: dict[str, Any]) -> PublishLogRecord:
         key = str(data.get("idempotency_key") or "")
@@ -323,6 +379,25 @@ class PostgresPublishLogRepository(PublishLogRepository):
         finally:
             session.close()
 
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        session = get_session()
+        try:
+            rows = session.scalars(
+                select(PublishLog).where(
+                    PublishLog.channel_id == channel_id,
+                    PublishLog.youtube_video_id.like(f"{SEED_ID_PREFIX}%"),
+                )
+            ).all()
+            extra = set(_duplicate_seed_ids([(int(r.id), str(r.youtube_video_id)) for r in rows]))
+            if apply and extra:
+                for row in rows:
+                    if int(row.id) in extra:
+                        session.delete(row)
+                session.commit()
+            return len(extra)
+        finally:
+            session.close()
+
 
 class DualPublishLogRepository(PublishLogRepository):
     def __init__(self):
@@ -349,6 +424,9 @@ class DualPublishLogRepository(PublishLogRepository):
 
     def list_timed_outcomes(self, channel_id: str) -> list[PublishLogRecord]:
         return self._primary().list_timed_outcomes(channel_id)
+
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        return self._primary().remove_duplicate_seeds(channel_id, apply=apply)
 
 
 _repo = None

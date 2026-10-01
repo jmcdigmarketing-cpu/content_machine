@@ -7,6 +7,21 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-09-30 (Claude Code): wave 49 #918 #598 #564 #919 #917
+
+- **#918** the metrics sync pulls every live video younger than `SYNC_YOUNG_DAYS` (8), then the
+  newest few - first-day snapshots and views by day stop being missed.
+- **#598** `ops weekly-report` has a "By upload_mode" block: scheduled vs immediate, with actions.
+- **#564** `MIN_OUTCOME_VIEWS` (off): videos under it stop teaching every recommender;
+  `ops predictions` says how many sit under 50 views. YouTube cannot separate your own views.
+- **#919** a script, a thumbnail and a post-time experiment run together;
+  `py -m core.experiments stop post_time` stops one.
+- **#917** a fact conflict names the signal section that lost; `ops source-trust` counts them.
+
+**Verify:** `python -m unittest tests.test_sync_young_videos tests.test_upload_mode_report
+tests.test_view_floor tests.test_experiments_per_kind tests.test_conflict_sections`;
+`py -m scripts.ops weekly-report`; `py -m scripts.ops predictions`.
+
 ## Previous — 2026-09-30 (Claude Code): wave 48 #915 #913 #916 #912 #560 #563 #342
 
 - **#915** a scheduled upload stayed `scheduled` forever, so it was never synced, scored or learned

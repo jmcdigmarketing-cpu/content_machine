@@ -64,12 +64,19 @@ class TestProjectedCostIsAWorstCaseNotZero(unittest.TestCase):
     at a realistic $0.50 was never stopped -- the guard measured the wrong thing
     and reported clean (decisions SS18/SS24)."""
 
-    def test_a_realistic_cap_actually_blocks(self):
-        from core.run_mode import projected_cost_block_reason
+    def test_a_realistic_cap_actually_acts(self):
+        """#571 moved this from "refuses" to "cuts first": a $0.50 cap must still see a
+        worst case over it (the regression this guards), and a cap no length fits
+        must still refuse."""
+        from core.run_mode import plan_cost_cuts, projected_cost_block_reason
 
         with patch.dict(os.environ, {"PROJECTED_COST_MAX_USD": "0.50"}, clear=False):
+            plan = plan_cost_cuts()
+        self.assertIsNotNone(plan, "a $0.50 cap must see the ~$1 worst case")
+        self.assertTrue(plan.cuts, "over the cap, something is cut")
+        with patch.dict(os.environ, {"PROJECTED_COST_MAX_USD": "0.001"}, clear=False):
             reason = projected_cost_block_reason()
-        self.assertIsNotNone(reason, "a $0.50 cap must stop a run that renders for ~$1")
+        self.assertIsNotNone(reason)
         self.assertIn("PROJECTED_COST_MAX_USD", reason)
 
     def test_a_generous_cap_still_lets_the_run_start(self):

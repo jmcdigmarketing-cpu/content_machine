@@ -138,10 +138,10 @@ def _fetch_news_lines(query: str) -> list[str]:
 
 
 def _fetch_youtube_lines(query: str) -> list[str]:
-    skip = {
-        s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(",") if s.strip()
-    }
-    if "youtube" in skip:
+    from apis.register_signals import _skip_signals
+
+    # #574: the shared reader, so an operator's approved skip applies here too.
+    if "youtube" in _skip_signals():
         return []
     try:
         from apis.youtube_api import search_youtube

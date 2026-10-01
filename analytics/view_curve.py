@@ -158,6 +158,10 @@ def stale(run: Any) -> bool:
 def _needs_curve(row: Any) -> bool:
     if not getattr(row, "youtube_video_id", "") or getattr(row, "published_at", None) is None:
         return False
+    from storage.repositories.publish_log import is_seeded
+
+    if is_seeded(row):  # #927: a seeded id is not a YouTube video and its day is invented
+        return False
     try:
         metrics = json.loads(row.metrics_json or "{}")
     except (TypeError, ValueError):

@@ -17,6 +17,74 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-01 (Claude Code) - wave 52: seeded history deduped, signal usefulness at discovery, approved skips, analytics snapshots, a cost cap that cuts
+
+**Prompt (verbatim):** "next 5"
+
+**Operator's answers:** #927 - dedupe and keep seeded rows out of post time (not "dedupe only",
+not "drop seeds everywhere"); #574 - you approve each skip (not automatic); #571 - thumbnail,
+then length (not "also the free voice", not "warn only").
+
+### Why these five
+
+Wave 51's recommendation, unchanged: **#927 · #585 · #574 · #570 · #571**, each checked read-only.
+
+### Findings, with file:line
+
+- **#927 is the seed, not two readers disagreeing.** `core/best_bet._build_entries` reads this
+  machine's runs; `analytics/post_timing._collect_timed_samples` read every outcome, seeds
+  included. `analytics/seed_tapin._historical_publish_at` gives seeded videos invented publish
+  times *on the channel's current slots*, so post time "learned" its own schedule; and
+  `_import_videos` had no duplicate check while `ops all-setup` and `all-analytics` both re-seed -
+  44 more publish-log and performance rows per run. The operator's last paste shows one.
+- **#928, found building #927:** `storage/repositories/publish_log.JsonPublishLogRepository._write`
+  opened the file, then `json.dump` raised on a datetime `published_at` - the uploader passes one -
+  leaving the JSON log truncated. Only JSON-fallback installs; this one is on Postgres.
+- **The view-curve backfill asked YouTube for fake ids:** `analytics/view_curve._needs_curve`
+  counted every seeded row as stale, so `ops backfill view-curve --apply` (recommended in wave
+  48) requested views by day for `seed_tapin_N`. Same root as #927; skipped now.
+- **Wave 51's audit mixed channels:** `core/runs/signal_audit.load_runs` read every snapshot and
+  `ops signal-audit` ignored `--channel`.
+- **Performance memory's JSON store was never redirected in the suite** (`MEMORY_DIR` is a
+  relative `data/` path); now it is.
+- **A $0.30 cap cuts to Short, not Medium:** Medium's worst case is over $0.30 at the
+  ElevenLabs rate - the plan guessed Medium; the live check says Short.
+
+### Shipped
+
+1. **#927** idempotent seed, `is_seeded`, post time and view-curve skip seeds, `ops dedupe-seed`.
+2. **#928** ISO datetimes and an atomic replace in the JSON publish log.
+3. **#585** `fed_counts` / `health_lines` in the health block and the `v` view; channel filter.
+4. **#574** `core/runs/signal_skips`, `ops signal-audit --skip/--unskip/--note`, `_skip_signals` union.
+5. **#570** `core/runs/analytics_snapshot`, written by `write_run_trace`; `ops analytics-diff`.
+6. **#571** `plan_cost_cuts` / `_apply_cost_cuts` / `restore_cost_cuts`; `capped_choice` in the menu and pipeline.
+
+### Not done, deliberately
+
+- Duplicates already stored are not removed by the code on its own: `ops dedupe-seed --apply` is
+  the operator's step (a dry run prints the counts first).
+- Seeded videos still count for engagement averages (operator's choice); only their invented
+  times are ignored.
+- No signal is skipped: the evidence is on the operator's PC.
+- #929 (the best bet's 30-run window) is filed, not changed.
+
+### Audit
+
+29 new test methods in four modules (+1 view-curve test), one older test moved with #571's
+decision (`test_projected_cost`: a $0.50 cap now cuts instead of refusing); suite 4,294 -> 4,323.
+**All 29 observed failing on a clean HEAD worktree** (16 at setup, because the module they patch
+did not exist); the view-curve test failed with 2 fake-id fetches before its fix. Suite in default,
+reverse and shuffle (seed 93505): the same 8 environmental failures, 0 network attempts, `data/`
+and `output/` untouched. mypy **122**; ruff clean; corpus 67 of 67. Live here on the real 44-video
+seed file: three legacy seeds -> 132 rows; a re-seed adds 0; `ops dedupe-seed` finds and removes 88
+of each; post time reads 0 seeded samples; "Fed the script (last 5 runs): blog_rss 5/5, rawg 5/5 ·
+never: news 0/5"; the skip honoured for tapin only and named in the health block; a 44-row analytics
+snapshot and "seed_tapin_1: data changed - engaged 32% -> 39%"; a $0.30 cap -> Pillow + Short (worst
+case $0.17), $0.001 refuses and restores the env. Backlog **238 numbered open**, highest **#929**.
+
+Closed **#927 #585 #574 #570 #571 #928**. Filed **#929**. Next five:
+**#929 · #591 · #573 · #587 · #586**.
+
 ## 2026-10-01 (Claude Code) - wave 51: no network in the suite, cost vs return, the signal audit, a random publish hour, five run-109 defects
 
 **Prompt (verbatim):** "next 5" - with the full terminal log of run 109 (Uncharted, uploaded

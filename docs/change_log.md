@@ -8,6 +8,20 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 52 — seeded history deduped, signal usefulness, approved skips, analytics snapshots, a cost cap that cuts - 2026-10-01
+
+*4,323 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 67 of 67.*
+
+- **#927** **Recommendation change, disclosed:** the posting-time recommender no longer learns
+  from the 44 seeded historical videos - the seed had invented their publish times on your current
+  slots. Seeding no longer duplicates them on every `ops all-setup`; `ops dedupe-seed --apply`
+  removes the copies already stored.
+- **#928** a JSON-fallback install no longer truncates its publish log on the first upload.
+- **#585** the discovery health block shows how often each signal has fed the script.
+- **#574** `ops signal-audit --skip <name>`: stop a signal you have seen is useless; `--unskip` undoes it.
+- **#570** every run keeps the analytics the recommenders read; `ops analytics-diff <run>`.
+- **#571** `PROJECTED_COST_MAX_USD` cuts the thumbnail, then the longest length, before it refuses.
+
 ### Wave 51 — no network in the suite, cost vs return, the signal audit, a random publish hour, run 109's fixes - 2026-10-01
 
 *4,294 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 65 of 65.*

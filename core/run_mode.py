@@ -428,12 +428,7 @@ def abort_if_first_call_unusable(result: ApplyResult | None = None) -> None:
     )
 
 
-def projected_cost_block_reason() -> str | None:
-    """Refuse start when projected rendered cost exceeds PROJECTED_COST_MAX_USD.
-
-    Unset env = off (no new warnings). Uses estimate_run_cost, never post-run
-    actuals — there is no script yet, so this is a worst-case rendered estimate.
-    """
+def _cost_cap() -> float | None:
     raw = os.getenv("PROJECTED_COST_MAX_USD", "").strip()
     if not raw or raw.lower() in ("0", "off", "false", "no"):
         return None
@@ -441,36 +436,108 @@ def projected_cost_block_reason() -> str | None:
         cap = float(raw)
     except ValueError:
         return None
-    if cap <= 0:
+    return cap if cap > 0 else None
+
+
+def _worst_case(words: int, thumbnail_provider: str | None) -> float:
+    from core.cost_meter import estimate_run_cost
+
+    est = estimate_run_cost(
+        script="word " * words, signals={}, rendered=True, thumbnail_provider=thumbnail_provider
+    )
+    return float(est.get("total") or 0.0)
+
+
+@dataclass
+class CostCutPlan:
+    """What #571 would cut to bring the worst case under PROJECTED_COST_MAX_USD."""
+
+    cap: float
+    total: float
+    env: dict[str, str] = field(default_factory=dict)
+    cuts: list[str] = field(default_factory=list)
+    refusal: str | None = None
+
+
+def plan_cost_cuts() -> CostCutPlan | None:
+    """None when no cap is set or the worst case already fits; never changes the env.
+
+    There is no script yet, so the worst case is the LONGEST preset's word count plus
+    the image the render will buy (#923). Estimating from an empty string put TTS -
+    ~91% of a rendered run - at $0 and made every realistic cap unreachable (decisions
+    SS18/SS24). Over the cap (#571, operator: thumbnail, then length): a Pillow
+    thumbnail first, then the longest preset whose worst case fits; refuse only when
+    even the shortest does not. Voice and models are never changed.
+    """
+    cap = _cost_cap()
+    if cap is None:
         return None
     try:
-        from core.cost_meter import estimate_run_cost
+        from assets.flux_thumbnail import expected_provider
         from core.script_length import PRESETS
 
-        # There is no script yet, so stand in the LONGEST preset's word count.
-        # Estimating from an empty string put TTS -- ~91% of a rendered run -- at
-        # $0, which made every realistic cap unreachable: the guard measured the
-        # wrong thing and then reported clean (decisions SS18/SS24).
-        worst_words = max((p.max_words for p in PRESETS.values()), default=0)
-        from assets.flux_thumbnail import expected_provider
-
-        # #923: the image the render will buy is part of the worst case too.
-        est = estimate_run_cost(
-            script="word " * worst_words,
-            signals={},
-            rendered=True,
-            thumbnail_provider=expected_provider(None),
+        presets = sorted(PRESETS.values(), key=lambda p: p.max_words, reverse=True)
+        thumb = expected_provider(None)
+        total = _worst_case(presets[0].max_words, thumb)
+        if total <= cap:
+            return None
+        plan = CostCutPlan(cap=cap, total=total)
+        if thumb != "pillow":
+            plan.env["THUMBNAIL_PROVIDER"] = "pillow"
+            plan.cuts.append("thumbnail -> Pillow")
+            plan.total = _worst_case(presets[0].max_words, "pillow")
+            if plan.total <= cap:
+                return plan
+        for preset in presets[1:]:
+            plan.total = _worst_case(preset.max_words, "pillow")
+            if plan.total <= cap:
+                plan.env["RUN_LENGTH_CAP"] = preset.choice
+                plan.cuts.append(f"longest length -> {preset.label}")
+                return plan
+        plan.refusal = (
+            f"Projected cost ${plan.total:.2f} exceeds PROJECTED_COST_MAX_USD=${cap:.2f} even "
+            "with a Pillow thumbnail and the shortest length. Stopping before discovery."
         )
-        total = float(est.get("total") or 0.0)
+        return plan
     except Exception as exc:
         logger.debug("projected cost estimate skipped: %s", exc)
         return None
-    if total <= cap:
-        return None
-    return (
-        f"Projected cost ${total:.2f} exceeds PROJECTED_COST_MAX_USD=${cap:.2f}. "
-        "Stopping before discovery."
-    )
+
+
+def projected_cost_block_reason() -> str | None:
+    """Why the run cannot start under PROJECTED_COST_MAX_USD even after #571's cuts."""
+    plan = plan_cost_cuts()
+    return plan.refusal if plan else None
+
+
+# The values the cuts replaced, so the next run's check starts from the operator's own.
+_cost_cut_originals: dict[str, str | None] = {}
+
+
+def restore_cost_cuts() -> None:
+    for key, value in _cost_cut_originals.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+    _cost_cut_originals.clear()
+
+
+def _apply_cost_cuts() -> list[str]:
+    """Apply #571's cuts for this run; the line to print, or []. Raises when it can't fit."""
+    restore_cost_cuts()
+    plan = plan_cost_cuts()
+    if plan is None:
+        return []
+    if plan.refusal:
+        raise CostModeBlocked(plan.refusal)
+    for key, value in plan.env.items():
+        _cost_cut_originals[key] = os.environ.get(key)
+        os.environ[key] = value
+    return [
+        f"Cost cap ${plan.cap:.2f}: {', '.join(plan.cuts)}; worst case ${plan.total:.2f} "
+        "(PROJECTED_COST_MAX_USD)"
+    ]
 
 
 def guard_before_discovery() -> list[str]:
@@ -480,16 +547,14 @@ def guard_before_discovery() -> list[str]:
     leftover RUN_COST_MODE in the operator .env cannot abort unit tests.
     Returns Standard-mode warnings for the CLI to print.
     """
-    projected = projected_cost_block_reason()
-    if projected:
-        raise CostModeBlocked(projected)
+    cuts = _apply_cost_cuts()
     check = inspect_first_calls()
     if free_mode_strict() and check.blockers:
         detail = "; ".join(check.blockers)
         raise CostModeBlocked(f"{detail}. Stopping before discovery (docs/free_mode.md).")
     for warning in check.warnings:
         logger.warning("%s", warning)
-    return check.warnings
+    return cuts + list(check.warnings)
 
 
 def format_readiness_line(r: Readiness | None = None) -> str:

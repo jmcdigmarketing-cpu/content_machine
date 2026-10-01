@@ -131,7 +131,9 @@ from core import recommender_history as _recommender_history
 from core import retraction_watch as _retraction_watch
 from core import run_trace as _run_trace
 from core import trace_secrets as _trace_secrets
+from core.runs import signal_skips as _signal_skips
 from storage.repositories import channel_memory as _channel_memory
+from storage.repositories import performance_memory as _performance_memory
 from storage.repositories import publish_log as _publish_log
 from video import subtitles as _subtitles
 
@@ -187,6 +189,11 @@ _SUITE_STORE_PATCHES = (
     # Wave 48: the ledger's post-time claim reads the run's publish-log row (#916); on the
     # operator's PC that was the real data/publish_log.json, as it was for every reader.
     patch.object(_publish_log, "LOG_FILE", _suite_store("publish_log.json")),
+    # #927: seeding writes performance memory under a relative data/ path.
+    patch.object(_performance_memory, "MEMORY_DIR", _suite_store("performance_memory")),
+    patch.object(_performance_memory, "MEMORY_FILE", _suite_store("performance_memory.json")),
+    # #574: the operator's approved signal skips.
+    patch.object(_signal_skips, "SKIPS_FILE", _suite_store("signal_skips.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

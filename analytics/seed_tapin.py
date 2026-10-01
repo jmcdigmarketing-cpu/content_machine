@@ -81,12 +81,28 @@ def _historical_publish_at(domain: str, index: int, channel_id: str) -> datetime
     return local_dt.astimezone(timezone.utc)
 
 
+def _already_seeded(channel_id: str) -> set[str]:
+    """Seed video ids already in the publish log (#927: re-seeding added them again)."""
+    from storage.repositories.publish_log import is_seeded
+
+    return {
+        row.youtube_video_id
+        for row in get_publish_log_repository().list_timed_outcomes(channel_id)
+        if is_seeded(row)
+    }
+
+
 def _import_videos(videos: list[dict], channel_id: str) -> int:
+    """Import the videos not already seeded; the number imported (0 on a re-seed)."""
     perf = get_performance_memory_repository()
     publish = get_publish_log_repository()
+    present = _already_seeded(channel_id)
     count = 0
 
     for i, video in enumerate(videos, start=1):
+        video_id = f"seed_{channel_id}_{i}"
+        if video_id in present:
+            continue
         entry = _performance_entry(video, channel_id)
         perf.log_performance(entry, channel_id)
         domain = str(entry.get("domain", "neutral"))
@@ -108,7 +124,8 @@ def _import_videos(videos: list[dict], channel_id: str) -> int:
                 # content_run_id foreign key accepts them.
                 "content_run_id": None,
                 "channel_id": channel_id,
-                "youtube_video_id": f"seed_{channel_id}_{i}",
+                "youtube_video_id": video_id,
+                "idempotency_key": f"seed:{channel_id}:{i}",
                 "privacy_status": "public",
                 "status": "imported",
                 "metrics_json": json.dumps(metrics),
@@ -183,7 +200,7 @@ def main(argv=None) -> int:
     else:
         count = seed_tapin(seed_path=args.seed, channel_id=args.channel)
 
-    print(f"Seeded {count} videos for channel '{args.channel}'")
+    print(f"Seeded {count} videos for channel '{args.channel}' (already-seeded videos skipped)")
     print("Set CONTENT_CHANNEL_ID=tapin or select TapIn in the CLI to use learned weights.")
     return 0
 

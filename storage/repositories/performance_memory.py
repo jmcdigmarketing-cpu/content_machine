@@ -80,6 +80,40 @@ class PerformanceMemoryRepository(ABC):
     def has_outcome_data(self, channel_id: str = DEFAULT_CHANNEL) -> bool:
         pass
 
+    @abstractmethod
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        """Seeded entries repeated by re-seeding (#927): the count, removed when `apply`."""
+
+
+SEED_SOURCE = "tapin_seed"
+
+
+def _seed_key(entry: dict[str, Any]) -> tuple | None:
+    """One seeded video's identity; None for anything the seed did not write."""
+    if entry.get("source") != SEED_SOURCE:
+        return None
+    return (
+        str(entry.get("title") or ""),
+        str(entry.get("domain") or ""),
+        int(entry.get("views") or 0),
+        float(entry.get("engaged_rate") or 0.0),
+    )
+
+
+def _duplicate_positions(entries: list[dict[str, Any]]) -> list[int]:
+    """Positions of every seeded entry after the first of its kind."""
+    seen: set[tuple] = set()
+    extra: list[int] = []
+    for i, entry in enumerate(entries):
+        key = _seed_key(entry)
+        if key is None:
+            continue
+        if key in seen:
+            extra.append(i)
+        else:
+            seen.add(key)
+    return extra
+
 
 class JsonPerformanceMemoryRepository(PerformanceMemoryRepository):
     def _read(self, channel_id: str = DEFAULT_CHANNEL) -> list:
@@ -155,6 +189,13 @@ class JsonPerformanceMemoryRepository(PerformanceMemoryRepository):
 
     def load_all(self, channel_id: str = DEFAULT_CHANNEL) -> list[dict]:
         return self._read(channel_id)
+
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        data = self._read(channel_id)
+        extra = set(_duplicate_positions(data))
+        if apply and extra:
+            self._write([e for i, e in enumerate(data) if i not in extra], channel_id)
+        return len(extra)
 
 
 class PostgresPerformanceMemoryRepository(PerformanceMemoryRepository):
@@ -252,6 +293,34 @@ class PostgresPerformanceMemoryRepository(PerformanceMemoryRepository):
     def load_all(self, channel_id: str = DEFAULT_CHANNEL) -> list[dict]:
         return self._rows_as_entries(channel_id)
 
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        session = get_session()
+        try:
+            rows = list(
+                session.execute(
+                    select(PerformanceEntry)
+                    .where(PerformanceEntry.channel_id == channel_id)
+                    .order_by(PerformanceEntry.id)
+                ).scalars()
+            )
+            entries = []
+            for row in rows:
+                try:
+                    payload = json.loads(row.payload_json or "{}")
+                except (TypeError, ValueError):
+                    payload = {}
+                payload.setdefault("domain", row.domain)
+                entries.append(payload)
+            extra = set(_duplicate_positions(entries))
+            if apply and extra:
+                for i, row in enumerate(rows):
+                    if i in extra:
+                        session.delete(row)
+                session.commit()
+            return len(extra)
+        finally:
+            session.close()
+
 
 class DualPerformanceMemoryRepository(PerformanceMemoryRepository):
     def __init__(self):
@@ -281,6 +350,9 @@ class DualPerformanceMemoryRepository(PerformanceMemoryRepository):
 
     def load_all(self, channel_id: str = DEFAULT_CHANNEL) -> list[dict]:
         return self._primary().load_all(channel_id)
+
+    def remove_duplicate_seeds(self, channel_id: str, *, apply: bool) -> int:
+        return self._primary().remove_duplicate_seeds(channel_id, apply=apply)
 
 
 _repo = None

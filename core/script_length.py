@@ -56,6 +56,15 @@ PRESETS = {
 }
 
 
+def capped_choice(length_choice: str) -> str:
+    """`length_choice`, no longer than `RUN_LENGTH_CAP` (#571: set by the cost cap)."""
+    cap = (os.getenv("RUN_LENGTH_CAP") or "").strip()
+    choice = str(length_choice).strip()
+    if cap in PRESETS and choice in PRESETS and int(choice) > int(cap):
+        return cap
+    return choice
+
+
 def get_length_preset(length_choice: str) -> LengthPreset:
     return PRESETS.get(str(length_choice).strip(), PRESETS["2"])
 

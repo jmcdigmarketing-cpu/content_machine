@@ -548,14 +548,86 @@ def cmd_retention_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("analytics-diff", "What moved in the analytics since a run, data or code (#570)")
+def cmd_analytics_diff(args: argparse.Namespace) -> int:
+    from core.runs.analytics_snapshot import diff_lines
+
+    raw = str(getattr(args, "target", None) or getattr(args, "run_id", None) or "").strip()
+    if not raw.isdigit():
+        print("Usage: py -m scripts.ops analytics-diff <run_id>")
+        return 2
+    for line in diff_lines(int(raw)):
+        print(line)
+    return 0
+
+
+@_register("dedupe-seed", "Duplicate seeded history from re-seeding (#927); --apply removes")
+def cmd_dedupe_seed(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from storage.repositories.performance_memory import get_performance_memory_repository
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    apply = bool(getattr(args, "apply", False))
+    logs = get_publish_log_repository().remove_duplicate_seeds(channel, apply=apply)
+    perf = get_performance_memory_repository().remove_duplicate_seeds(channel, apply=apply)
+    verb = "removed" if apply else "found"
+    print(f"Seeded history for {channel} (#927): {verb} {logs} duplicate seeded publish-log row(s)")
+    print(f"  and {perf} duplicate seeded performance entr(ies).")
+    if not apply and (logs or perf):
+        print("  Each `ops all-setup` / `all-analytics` added the 44 seeded videos again.")
+        print("  Run again with --apply to keep one copy of each.")
+    return 0
+
+
 @_register(
     "signal-audit", "Which signals feed the script, and which return frozen payloads (#575 #588)"
 )
 def cmd_signal_audit(args: argparse.Namespace) -> int:
-    from core.runs.signal_audit import report_lines
+    from config.channels import resolve_channel_id
+    from core.runs import signal_skips
+    from core.runs.signal_audit import (
+        contribution_rows,
+        load_runs,
+        report_lines,
+        retirement_candidates,
+    )
 
-    for line in report_lines():
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    name = str(getattr(args, "skip", "") or "").strip().lower()
+    if name:
+        # #574: a skip you approve, with the evidence it was approved on (decisions 19).
+        rows = {r["signal"]: r for r in contribution_rows(load_runs(channel_id=channel))}
+        row = rows.get(name)
+        evidence = (
+            f"fed the script on {row['fed']} of {row['runs']} recorded runs"
+            if row
+            else "no recorded runs"
+        )
+        if name not in retirement_candidates(list(rows.values())):
+            from core.runs.signal_audit import RETIRE_MIN_RUNS
+
+            why = (
+                f"only {row['runs'] if row else 0} recorded run(s); candidates need "
+                f"{RETIRE_MIN_RUNS}+ with nothing fed"
+                if not row or (row["fed"] == 0 and row["runs"] < RETIRE_MIN_RUNS)
+                else evidence
+            )
+            print(f"  ! {name} is not a retirement candidate yet ({why}) - skipping it anyway.")
+        signal_skips.skip(channel, name, evidence=evidence, note=str(getattr(args, "note", "")))
+        print(f"{name} will be skipped for {channel} from the next discovery ({evidence}).")
+        print(f"  Undo: py -m scripts.ops signal-audit --unskip {name} --channel {channel}")
+        return 0
+    name = str(getattr(args, "unskip", "") or "").strip().lower()
+    if name:
+        done = signal_skips.unskip(channel, name)
+        print(f"{name} {'runs again' if done else 'was not skipped'} for {channel}.")
+        return 0
+    for line in report_lines(channel_id=channel):
         print(line)
+    skipped = signal_skips.skipped_for(channel)
+    for sig, entry in sorted(skipped.items()):
+        print(f"  skipped by you since {entry.get('since')}: {sig} ({entry.get('evidence')})")
     return 0
 
 
@@ -2516,6 +2588,9 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="backfill-cost: show what would change without writing",
     )
+    parser.add_argument("--skip", default="", help="signal-audit: stop running this signal (#574)")
+    parser.add_argument("--unskip", default="", help="signal-audit: run a skipped signal again")
+    parser.add_argument("--note", default="", help="signal-audit --skip: why, kept with the skip")
     parser.add_argument(
         "--apply",
         action="store_true",

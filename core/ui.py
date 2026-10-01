@@ -657,6 +657,22 @@ def display_signal_health(
         print_fn(
             f"  {warn('Issues')} ({len(issues)}): " + ", ".join(s.capitalize() for s in issues)
         )
+    fed: dict[str, tuple[int, int]] = {}
+    try:
+        # #585 / #574: what each signal has actually fed the script, and what you skipped.
+        from config.channels import resolve_channel_id
+        from core.runs.signal_audit import fed_counts, health_lines
+        from core.runs.signal_skips import skipped_for
+
+        channel = resolve_channel_id(channel_id)
+        fed = fed_counts(channel)
+        for line in health_lines(channel, [n for n in all_names if n in signals]):
+            print_fn(f"  {line}")
+        skipped = sorted(skipped_for(channel))
+        if skipped:
+            print_fn(f"  {warn('Skipped by you')} (never fed the script): " + ", ".join(skipped))
+    except Exception as exc:
+        logger.debug("signal usefulness line skipped: %s", exc)
     try:
         from datetime import datetime
 
@@ -704,7 +720,10 @@ def display_signal_health(
         for name in all_names:
             if name in signals:
                 line = format_health_line(name, signals[name])
-                print_fn(health_status(name.capitalize(), line.split(": ", 1)[-1]))
+                detail = line.split(": ", 1)[-1]
+                if name in fed and fed[name][1] >= 3:
+                    detail += f" · fed {fed[name][0]}/{fed[name][1]} recent runs"  # #585
+                print_fn(health_status(name.capitalize(), detail))
 
 
 def display_variants(

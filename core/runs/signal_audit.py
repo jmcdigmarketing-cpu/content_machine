@@ -25,6 +25,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
+from core import process_state
 from core.logging import get_logger
 
 logger = get_logger("core.runs.signal_audit")
@@ -43,8 +44,14 @@ class RunSignals:
     script: str = ""
 
 
-def load_runs(limit: int = 60) -> list[RunSignals]:
-    """The newest `limit` runs that have a signal snapshot, newest first."""
+def load_runs(
+    limit: int = 60, *, channel_id: str | None = None, with_scripts: bool = True
+) -> list[RunSignals]:
+    """The newest `limit` runs that have a signal snapshot, newest first.
+
+    `channel_id` keeps that channel's runs only (#585: wave 51 mixed tapin and
+    moneywise); `with_scripts=False` skips the database read the "fed" count never needs.
+    """
     from core import run_trace
     from core.runs.replay import load_snapshot
 
@@ -53,19 +60,24 @@ def load_runs(limit: int = 60) -> list[RunSignals]:
         stem = os.path.basename(path).split(".", 1)[0]
         if stem.isdigit():
             ids.append(int(stem))
-    try:
-        from storage.repositories.content_runs import get_content_run_repository
+    repo: Any = None
+    if with_scripts:
+        try:
+            from storage.repositories.content_runs import get_content_run_repository
 
-        repo: Any = get_content_run_repository()
-    except Exception as exc:
-        logger.debug("content runs unavailable for the signal audit: %s", exc)
-        repo = None
+            repo = get_content_run_repository()
+        except Exception as exc:
+            logger.debug("content runs unavailable for the signal audit: %s", exc)
     runs: list[RunSignals] = []
-    for run_id in sorted(ids, reverse=True)[:limit]:
+    for run_id in sorted(ids, reverse=True):
+        if len(runs) >= limit:
+            break
+        trace = run_trace.read_trace(run_id) or {}
+        if channel_id and str(trace.get("channel_id") or "") != channel_id:
+            continue
         signals = load_snapshot(run_id)
         if not signals:
             continue
-        trace = run_trace.read_trace(run_id) or {}
         script = ""
         if repo is not None:
             try:
@@ -161,10 +173,13 @@ def retirement_candidates(rows: list[dict[str, Any]]) -> list[str]:
     return sorted(r["signal"] for r in rows if r["runs"] >= RETIRE_MIN_RUNS and r["fed"] == 0)
 
 
-def report_lines(runs: list[RunSignals] | None = None) -> list[str]:
+def report_lines(
+    runs: list[RunSignals] | None = None, *, channel_id: str | None = None
+) -> list[str]:
     """`ops signal-audit`."""
-    runs = load_runs() if runs is None else runs
-    lines = [f"Signal audit over {len(runs)} recorded run(s) (#575 #588)"]
+    runs = load_runs(channel_id=channel_id) if runs is None else runs
+    where = f" for {channel_id}" if channel_id else ""
+    lines = [f"Signal audit{where} over {len(runs)} recorded run(s) (#575 #588)"]
     if not runs:
         lines.append("  no signal snapshots yet (RUN_SIGNAL_SNAPSHOT, on by default, writes them)")
         return lines
@@ -192,6 +207,46 @@ def report_lines(runs: list[RunSignals] | None = None) -> list[str]:
     return lines
 
 
+# #585: the health block reads this on every discovery; the snapshots do not change
+# within a session, so it is computed once per channel per process.
+HEALTH_MIN_RUNS = 3
+HEALTH_RUNS = 20
+_fed_cache: dict[str, dict[str, tuple[int, int]]] = {}
+
+
+def reset_cache() -> None:
+    _fed_cache.clear()
+
+
+def fed_counts(channel_id: str) -> dict[str, tuple[int, int]]:
+    """{signal: (fed, runs)} over this channel's last `HEALTH_RUNS` recorded runs."""
+    if channel_id not in _fed_cache:
+        try:
+            rows = contribution_rows(
+                load_runs(HEALTH_RUNS, channel_id=channel_id, with_scripts=False)
+            )
+            _fed_cache[channel_id] = {r["signal"]: (r["fed"], r["runs"]) for r in rows}
+        except Exception as exc:
+            logger.debug("fed counts unavailable for %s: %s", channel_id, exc)
+            _fed_cache[channel_id] = {}
+    return _fed_cache[channel_id]
+
+
+def health_lines(channel_id: str, names: list[str]) -> list[str]:
+    """The health block's usefulness line for these signals, or [] while too few runs."""
+    counts = fed_counts(channel_id)
+    seen = [(n, counts[n]) for n in names if n in counts and counts[n][1] >= HEALTH_MIN_RUNS]
+    if not seen:
+        return []
+    total = max(runs for _n, (_fed, runs) in seen)
+    fed = sorted(((n, f, r) for n, (f, r) in seen if f), key=lambda x: (-x[1] / x[2], x[0]))
+    never = sorted(n for n, (f, _r) in seen if not f)
+    parts = [", ".join(f"{n} {f}/{r}" for n, f, r in fed)] if fed else []
+    if never:
+        parts.append("never: " + ", ".join(f"{n} 0/{counts[n][1]}" for n in never))
+    return [f"Fed the script (last {total} runs): " + " · ".join(p for p in parts if p)]
+
+
 def reliability_line() -> str:
     """One line for `ops reliability`: frozen non-popularity signals, or ""."""
     try:
@@ -203,3 +258,6 @@ def reliability_line() -> str:
         return ""
     names = ", ".join(f"{f['signal']} ({len(f['runs'])} runs)" for f in frozen)
     return f"Frozen signals (same payload across topics; py -m scripts.ops signal-audit): {names}"
+
+
+process_state.register_reset("core.runs.signal_audit", reset_cache)

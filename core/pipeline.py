@@ -891,6 +891,13 @@ def run_pipeline(
         )
         return result
 
+    # #571: the cost cap may have capped the longest length this run can write.
+    from core.script_length import capped_choice
+
+    capped = capped_choice(length_choice)
+    if capped != length_choice:
+        print(f"  Length capped by the cost cap: option {length_choice} -> {capped}")
+        length_choice = capped
     preset = get_length_preset(length_choice)
     wr = _word_range(length_choice)
     today = datetime.now().strftime("%Y-%m-%d")

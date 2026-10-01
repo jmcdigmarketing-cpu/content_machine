@@ -678,9 +678,12 @@ def _run_new_video_flow_body(
     display_signal_breakdown(best_signals)
 
     subsection("Length")
+    from core.script_length import capped_choice
+
     for key in ("1", "2", "3", "4"):
         p = PRESETS[key]
-        print(f"  {key}) {p.label} ({p.duration_hint()}, {p.min_words}-{p.max_words} words)")
+        over = "  (over your cost cap)" if capped_choice(key) != key else ""
+        print(f"  {key}) {p.label} ({p.duration_hint()}, {p.min_words}-{p.max_words} words){over}")
 
     from core.length_recommender import (
         display_recommended_length,
@@ -701,7 +704,7 @@ def _run_new_video_flow_body(
             logger.debug("get_recommended_length skipped: %s", exc)
 
     _len_in = ask_choice(f"  Select 1-4 [{length_default}]: ")
-    length_choice = _len_in if _len_in in ("1", "2", "3", "4") else length_default
+    length_choice = capped_choice(_len_in if _len_in in ("1", "2", "3", "4") else length_default)
 
     # #883-#886: who reads it. A debate changes the script, so it is asked before writing.
     from core.voice.plan import voice_menu_lines, voice_mode_from_choice

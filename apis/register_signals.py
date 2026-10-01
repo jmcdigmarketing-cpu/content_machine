@@ -81,13 +81,24 @@ def _cache_topic(name: str, topic: str) -> str:
     return topic
 
 
-def _skip_signals() -> set[str]:
+def _skip_signals(channel_id: str | None = None) -> set[str]:
     """Signals to skip entirely (CONTENT_SKIP_SIGNALS), read per-call so a runtime
     toggle applies — e.g. Free mode appends the paid signals after this module is
-    already imported (core.pipeline loads eagerly at startup, see main.py)."""
-    return {
+    already imported (core.pipeline loads eagerly at startup, see main.py).
+
+    #574: plus the signals the operator skipped for this channel with
+    `ops signal-audit --skip` (evidence kept in `core/runs/signal_skips`)."""
+    skip = {
         s.strip().lower() for s in os.getenv("CONTENT_SKIP_SIGNALS", "").split(",") if s.strip()
     }
+    try:
+        from config.channels import resolve_channel_id
+        from core.runs.signal_skips import skipped_for
+
+        skip |= set(skipped_for(resolve_channel_id(channel_id)))
+    except Exception as exc:
+        logger.debug("operator signal skips unreadable: %s", exc)
+    return skip
 
 
 # Session circuit breaker
@@ -481,7 +492,7 @@ def _catalog_disabled_signals() -> set[str]:
 def _active_signal_sources(topic: str = "", channel_id: str | None = None):
     registry = get_signal_registry().get_registered_signals()
     pairs = tuple(registry.items())
-    skip = _skip_signals()
+    skip = _skip_signals(channel_id)
     skip |= _disabled_signals()
     skip |= _catalog_disabled_signals()
     if topic:

@@ -1046,6 +1046,55 @@
         "falsy": true
       },
       "why": "the fastest video in a list is not surging; the prompt told the operator to riff on a decade-old angle"
+    },
+    {
+      "id": "reseeding-keeps-one-copy",
+      "item": 927,
+      "source": "wave 52: ops all-setup / all-analytics re-seeded the 44 historical videos on every run with no duplicate check",
+      "call": "storage.repositories.publish_log:_duplicate_seed_ids",
+      "args": [
+        [
+          [
+            1,
+            "seed_tapin_1"
+          ],
+          [
+            2,
+            "seed_tapin_2"
+          ],
+          [
+            45,
+            "seed_tapin_1"
+          ],
+          [
+            46,
+            "seed_tapin_2"
+          ]
+        ]
+      ],
+      "expect": {
+        "equals": [
+          45,
+          46
+        ]
+      },
+      "why": "each copy counted again in every recommender reading the publish log; the dedupe keeps the first and removes the rest"
+    },
+    {
+      "id": "cost-cap-clamps-the-length",
+      "item": 571,
+      "source": "wave 52: PROJECTED_COST_MAX_USD refused the run instead of cutting the length that made it expensive",
+      "call": "core.script_length:capped_choice",
+      "args": [
+        "4"
+      ],
+      "env": {
+        "RUN_LENGTH_CAP": "2"
+      },
+      "expect": {
+        "equals": "2"
+      },
+      "why": "the cap sets RUN_LENGTH_CAP; a longer choice from the menu or a default must not slip past it"
     }
   ]
 }

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-01: wave 51, next five
+# Handoff synopsis — 2026-10-01: wave 52, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-01
 
@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-01 (Claude Code): wave 51 #921 #579 #575 #588 #567 + run 109's #922-#926
+## Last wave — 2026-10-01 (Claude Code): wave 52 #927 #585 #574 #570 #571 (+ #928)
+
+- **#927** seeding is idempotent; every past `all-setup` had added the 44 seeded videos again.
+  Post time and the view-curve backfill skip seeded rows (their publish times are invented);
+  engagement averages keep them. **Run `ops dedupe-seed`, then `--apply`.**
+- **#928** the JSON publish log no longer truncates itself on a datetime (Postgres unaffected).
+- **#585** discovery's health block: "Fed the script (last N runs)" per signal; `v` adds it per line.
+- **#574** `ops signal-audit --skip news --note ...` (your call, with evidence); `--unskip` reverses.
+- **#570** each run keeps what the recommenders read; `ops analytics-diff <run>` says data or code.
+- **#571** over `PROJECTED_COST_MAX_USD`: Pillow thumbnail, then a shorter longest length; refuses
+  only if Short is over.
+
+**Verify:** `python -m unittest tests.test_seed_history tests.test_signal_usefulness
+tests.test_analytics_snapshot tests.test_cost_cap_degrade`; `py -m scripts.ops dedupe-seed`.
+
+## Previous — 2026-10-01 (Claude Code): wave 51 #921 #579 #575 #588 #567 + run 109's #922-#926
 
 - **Run 109 fixes:** the discovery Headroom line now shows YouTube units (#922); the projected
   cost includes the thumbnail (#923); a long title ends at a clause, not "...under Neil…" (#924);
@@ -40,21 +55,6 @@ tests.test_cost_vs_return tests.test_signal_audit tests.test_post_time_random`;
 **Verify:** `python -m unittest tests.test_engaged_basis tests.test_title_lift
 tests.test_tag_performance tests.test_retention_diff tests.test_cost_per_minute`;
 `py -m scripts.ops tag-report`; `py -m scripts.ops retention-diff`.
-
-## Previous — 2026-09-30 (Claude Code): wave 49 #918 #598 #564 #919 #917
-
-- **#918** the metrics sync pulls every live video younger than `SYNC_YOUNG_DAYS` (8), then the
-  newest few - first-day snapshots and views by day stop being missed.
-- **#598** `ops weekly-report` has a "By upload_mode" block: scheduled vs immediate, with actions.
-- **#564** `MIN_OUTCOME_VIEWS` (off): videos under it stop teaching every recommender;
-  `ops predictions` says how many sit under 50 views. YouTube cannot separate your own views.
-- **#919** a script, a thumbnail and a post-time experiment run together;
-  `py -m core.experiments stop post_time` stops one.
-- **#917** a fact conflict names the signal section that lost; `ops source-trust` counts them.
-
-**Verify:** `python -m unittest tests.test_sync_young_videos tests.test_upload_mode_report
-tests.test_view_floor tests.test_experiments_per_kind tests.test_conflict_sections`;
-`py -m scripts.ops weekly-report`; `py -m scripts.ops predictions`.
 
 ## Pipeline order (operator)
 
@@ -123,7 +123,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #927 the gaming count disagreement.
+3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #929 the best bet's 30-run window.
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

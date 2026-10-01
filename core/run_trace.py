@@ -243,6 +243,10 @@ def write_run_trace(
         from core.runs.replay import save_snapshot
 
         save_snapshot(run_id, signals)
+        # #570: and what the recommenders read, so a later sync or code change can be told apart.
+        from core.runs.analytics_snapshot import save as save_analytics
+
+        save_analytics(run_id, channel_id)
         return path
     except Exception as exc:
         logger.debug("run trace skipped for run %s: %s", run_id, exc)

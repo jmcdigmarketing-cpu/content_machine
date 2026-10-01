@@ -133,11 +133,15 @@ def _collect_timed_samples(
 ) -> list[tuple[str, datetime, float]]:
     """(domain, published_at, engaged rate) per measured video; `exclude_run_id` leaves one
     video out so a claim about it is not fitted on its own outcome (#560)."""
-    from storage.repositories.publish_log import get_publish_log_repository
+    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
 
     samples: list[tuple[str, datetime, float]] = []
     for row in get_publish_log_repository().list_timed_outcomes(channel_id):
         if exclude_run_id and row.content_run_id == int(exclude_run_id):
+            continue
+        # #927: a seeded video's publish time was invented on the current slots, so it
+        # could only ever confirm the schedule. Engagement averages still count it.
+        if is_seeded(row):
             continue
         when = row.published_at
         if not when:

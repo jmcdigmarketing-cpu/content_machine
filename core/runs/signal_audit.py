@@ -51,7 +51,7 @@ def load_runs(
     """The newest `limit` runs that have a signal snapshot, newest first.
 
     `channel_id` keeps that channel's runs only (#585: wave 51 mixed tapin and
-    moneywise); `with_scripts=False` skips the database read the "fed" count never needs.
+    moneywise); `with_scripts=False` skips the script reads the "fed" count never needs.
     """
     from core import run_trace
     from core.runs.replay import load_snapshot
@@ -61,14 +61,6 @@ def load_runs(
         stem = os.path.basename(path).split(".", 1)[0]
         if stem.isdigit():
             ids.append(int(stem))
-    repo: Any = None
-    if with_scripts:
-        try:
-            from storage.repositories.content_runs import get_content_run_repository
-
-            repo = get_content_run_repository()
-        except Exception as exc:
-            logger.debug("content runs unavailable for the signal audit: %s", exc)
     runs: list[RunSignals] = []
     for run_id in sorted(ids, reverse=True):
         if len(runs) >= limit:
@@ -79,13 +71,9 @@ def load_runs(
         signals = load_snapshot(run_id)
         if not signals:
             continue
-        script = ""
-        if repo is not None:
-            try:
-                record = repo.get(run_id)
-                script = str(getattr(record, "script", "") or "")
-            except Exception as exc:
-                logger.debug("script for run %s unavailable: %s", run_id, exc)
+        # #939: a content run has no `script` field, so "cited" was 0 everywhere. The final
+        # script is kept beside the trace (#774); older runs fall back to the 2,000-char preview.
+        script = (run_trace.full_script(run_id) or _script_preview(run_id)) if with_scripts else ""
         runs.append(
             RunSignals(
                 run_id=run_id,
@@ -96,6 +84,17 @@ def load_runs(
             )
         )
     return runs
+
+
+def _script_preview(run_id: int) -> str:
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        record = get_content_run_repository().get(run_id)
+    except Exception as exc:
+        logger.debug("script preview for run %s unavailable: %s", run_id, exc)
+        return ""
+    return str(getattr(record, "script_preview", "") or "")
 
 
 def _seconds(trace: dict[str, Any]) -> dict[str, float]:

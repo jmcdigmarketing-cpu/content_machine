@@ -53,27 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-03 · **HEAD at write:** `79697ee` + the wave 53 commit (`git log -1`)
-· **Tree:** clean after the commit.
+**Written:** 2026-10-03 · **HEAD at write:** `5cdea53` (wave 53) + the wave 54 commit
+(`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** the suite sets `CONTENT_SKIP_DOTENV=1` and blanks every variable
-ending `_KEY/_KEYS/_TOKEN/_SECRET/_PASSWORD/_BOT` (`tests/__init__.blank_secrets`) - a test
-that needs a key sets it with `patch.dict`. A search seed with no names comes from
-`topic_scorer.domain_phrases`; angles past the scoring deadline are scored on the seed
-(`meta["unscored_on_seed"]`). `register_signals.base_pool_seconds()` feeds the trace's
-`signal_seconds`. mypy baseline **122**.
+**Read before editing:** `core/success/` is new - `videos.channel_videos` is the one reader of
+the channel's videos (seeded rows kept for titles/views, left out of anything dated); `goals`
+(`config/goals.json`, `data/channel_views_<ch>.json`, `data/weekly_focus.json`), `verdicts`
+(`data/verdicts.json`), `review` (`output/<ch>/reviews/`), `winners` (in the script prompt).
+`analytics/mailbag.py` writes `data/mailbag_<ch>.json`. All redirected in `tests/__init__.py`.
+mypy baseline **122**.
 
 **Defects first:**
-- #930: 9 failures only the operator's PC showed - seven tests reached the network with the
-  real keys from `.env`; two harness checks assumed Linux / no colour. Fixed, reproduced here.
-- #931-#933 from the soccer run: first-clause seed "State of the sport...", five angles
-  dropped silently at the deadline, Headroom printed three times.
-- This container lost its dev extras (fastapi, langdetect) mid-session; reinstalled.
-- Carried: no emoji render seen (#914).
+- #939: `signal_audit` read `record.script`, which a run does not have; its test faked the
+  field. "Cited" was 0 on every run. Fixed; the fake now uses `script_preview`.
+- The scoreboard's pace was clipped to the goal's start (found live, fixed, corpus case).
+- `config/goals.json` targets are placeholders until the operator sets them.
+- Carried: no emoji render seen (#914); the dev container can lose its pip extras.
 
-**Shipped:** #930-#933 #929 #591 #573 #586; #587 closed (no per-call retries exist). Suite
-**4,343**, 0 network attempts, `data/` clean; backlog **238 numbered open**, highest #938.
-Next five (operator's tracking picks): **#934 · #935 · #936 · #937 · #114**.
+**Shipped:** #934 #935 #936 #937 #114 + #939. Suite **4,373**, 0 network attempts, `data/`
+clean; backlog **237 numbered open**, highest #943. Next five: **#938 (decision) · #940 · #943
+· #942 · #941**.
 
 ## Slot — Cursor
 

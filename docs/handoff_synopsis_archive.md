@@ -7,6 +7,24 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-01 (Claude Code): wave 51 #921 #579 #575 #588 #567 + run 109's #922-#926
+
+- **Run 109 fixes:** the discovery Headroom line now shows YouTube units (#922); the projected
+  cost includes the thumbnail (#923); a long title ends at a clause, not "...under Neil…" (#924);
+  a headline needs a distinctive topic word, not "game" (#925); "surging competitor" needs a
+  recent video well ahead of the rest (#926).
+- **#921** the suite cannot reach the network: a test that tries fails, naming host, frame and
+  thread. Seven offenders stubbed; ~38 s per run.
+- **#579** the Proceed? report sets the cost against what the channel's RPM says the video earns.
+- **#575 / #588** `ops signal-audit`: runs / active / fed / cited per signal, retirement
+  candidates (your call), and frozen payloads; `ops reliability` names a frozen signal.
+- **#567** the post-time experiment flips a seeded coin; off-slot videos go to a random hour
+  within +/-`POST_TIME_WINDOW_HOURS` (3). Still opt-in.
+
+**Verify:** `python -m unittest tests.test_run109_defects tests.test_network_guard
+tests.test_cost_vs_return tests.test_signal_audit tests.test_post_time_random`;
+`py -m scripts.ops signal-audit`; `py -m scripts.ops economics`.
+
 ## Previous — 2026-09-30 (Claude Code): wave 50 #920 #566 #565 #428 #578
 
 - **#920** every synced / seeded row says which measure its engaged rate is (`engaged_basis`);

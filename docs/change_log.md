@@ -8,6 +8,26 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 54 — a views goal, your verdicts, the weekly review, the winners library, the mailbag - 2026-10-03
+
+*4,373 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 70 of 70.*
+
+- **#937** **Finished-output change, disclosed:** once 8+ videos are measured, the script prompt
+  carries the channel's top videos by views (title, hook, length, domain) as a pattern to learn
+  from - never words or facts to reuse. `WINNERS_IN_PROMPT=false` turns it off; `ops winners`
+  shows it.
+- **#114** **Recommendation change, disclosed:** a question two or more of your viewers asked under
+  your own uploads becomes a best-bet option ("viewers asked"). `ops mailbag` reads them (about 1
+  YouTube unit per video); `MAILBAG_SYNC=true` reads them in every sync.
+- **#934** a goal in `config/goals.json` and `ops scoreboard`: views so far, the weekly pace the
+  goal needs against the last four weeks, where that pace lands, uploads this week. The metrics
+  sync now also keeps the channel's views by day. One line in the startup banner; the head of
+  `ops weekly-report`.
+- **#935 / #936** `ops review-week`: the week's videos, your 1-5 and a line of why for each, next
+  week's focus (shown in the banner), a scorecard file per week; `ops verdicts` sets your ratings
+  against the views.
+- **#939** `ops signal-audit`'s "cited" column counts again (it read a field runs do not have).
+
 ### Wave 53 — the suite stops reading your keys, the soccer run's fixes, signal timing and diffs - 2026-10-03
 
 *4,343 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 69 of 69.*

@@ -135,6 +135,14 @@ def main():
     print_startup_panel(channel_id)
     print(f"  Using: {profile.name} ({channel_id})")
     try:
+        from core.success.goals import banner_line
+
+        goal_line = banner_line(channel_id)  # #934
+        if goal_line:
+            print(f"  {goal_line}")
+    except Exception as exc:
+        logger.debug("goal banner skipped: %s", exc)
+    try:
         from core.human_presence import touch
         from core.operator_timer import install_input_wrapper, start_run
 

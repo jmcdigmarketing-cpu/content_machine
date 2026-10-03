@@ -459,6 +459,12 @@ You must:
         _playbook = ""
     playbook = f"{_playbook}\n\n" if _playbook else ""
 
+    # #937: the channel's own top videos by views - a pattern to learn, never words or facts.
+    from core.success.winners import winners_block
+
+    _winners = winners_block(channel_id)
+    winners = f"{_winners}\n\n" if _winners else ""
+
     # Pillar 7 (SkillOpt): a trial style directive under test by the skill-optimizer, or a
     # gate-proven directive applied to a run. Bounded + clearly non-factual, like the
     # playbook block; "" in normal generation.
@@ -474,7 +480,7 @@ TODAY: {today}
 {seed_block}{angle_block}{quote_block}TOPIC:
 {topic}
 
-{human_block}{playbook}{trial}{brief_block}SCRIPT BRIEF (follow exactly):
+{human_block}{playbook}{winners}{trial}{brief_block}SCRIPT BRIEF (follow exactly):
 {script_brief}
 
 {seo_block}

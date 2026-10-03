@@ -577,6 +577,61 @@ def cmd_signal_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("scoreboard", "The goal's scoreboard: views so far, pace needed vs pace now (#934)")
+def cmd_scoreboard(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.success.goals import scoreboard_lines
+
+    for line in scoreboard_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
+@_register("review-week", "The 10-minute weekly review: rate the week, set a focus (#936)")
+def cmd_review_week(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.success.review import run_review
+
+    run_review(resolve_channel_id(getattr(args, "channel", None)))
+    return 0
+
+
+@_register("verdicts", "Your 1-5 per video against its views (#935; rate in review-week)")
+def cmd_verdicts(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.success.verdicts import verdict_report
+
+    for line in verdict_report(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
+@_register("winners", "The channel's top videos by views, as the script prompt sees them (#937)")
+def cmd_winners(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.success.winners import winners_lines
+
+    for line in winners_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
+@_register("mailbag", "Read viewers' questions on your newest uploads and cluster them (#114)")
+def cmd_mailbag(args: argparse.Namespace) -> int:
+    from analytics import mailbag
+    from config.channels import resolve_channel_id
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    try:
+        data = mailbag.fetch(channel)
+    except Exception as exc:
+        print(f"Mailbag: could not read comments ({exc}); showing the last stored read.")
+        data = None
+    for line in mailbag.mailbag_lines(channel, data):
+        print(line)
+    return 0
+
+
 @_register("dedupe-seed", "Duplicate seeded history from re-seeding (#927); --apply removes")
 def cmd_dedupe_seed(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id

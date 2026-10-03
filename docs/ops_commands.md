@@ -84,6 +84,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `list` | List all operator commands |
 | `list-uploads` | Rendered MP4s not yet on YouTube |
 | `log-override` | Record that a recommendation was ignored (--topic offered, --source chosen) |
+| `mailbag` | Read viewers' questions on your newest uploads and cluster them (#114) |
 | `migrate-layout` | Move root runtime files into data/ and config/secrets/ |
 | `migrate-schema` | Apply incremental DDL on existing Postgres |
 | `moat-backup` | Plan pg_dump + vault + traces backup (secrets excluded; dry-run) |
@@ -123,10 +124,12 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `retraction-watch` | Re-fetch last-run source URLs for a retraction |
 | `reveal` | Reveal last mp4 (or --kind thumb\|trace) in Explorer |
 | `review-room` | Stage 3 Qt review room (J/K/L + Approve; requires pip install -e ".[app]") |
+| `review-week` | The 10-minute weekly review: rate the week, set a focus (#936) |
 | `roadmap-index` | Counts per roadmap file and by size, read from the docs |
 | `rollback-publish` | Unlist a published video + correction description + dossier (dry-run default; --apply sends) |
 | `run-window` | Stage 2 Qt run window (requires pip install -e ".[app]") |
 | `schedule-drafts` | Nightly overnight drafts via Task Scheduler (--install / --remove) |
+| `scoreboard` | The goal's scoreboard: views so far, pace needed vs pace now (#934) |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |
 | `seed` | Seed TapIn performance + publish history |
 | `selftest` | Run every safety gate against fixtures; show which are armed here (#630) |
@@ -160,9 +163,11 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `vault-eval` | Vault subject-relevance evals: precision/recall, or compare last two |
 | `vault-retier` | List _operator_facts notes holding scraped page lines; --apply moves them to link tier (#857) |
 | `vault-sync` | Write machine beliefs + run dossiers into the Obsidian vault |
+| `verdicts` | Your 1-5 per video against its views (#935; rate in review-week) |
 | `voices` | List TTS voices — ElevenLabs account + local Piper — and what each channel uses |
 | `weekly-report` | Rules-based weekly intelligence (winners/losers by feature) |
 | `weights` | Print learned signal weights for channel |
 | `why-slow` | Rank last-run phase timings (slowest first) |
+| `winners` | The channel's top videos by views, as the script prompt sees them (#937) |
 | `worker` | Process one upload/render job (or use --loop N) |
 | `ypp` | YPP / membership readiness: watch-hours proxy, disclosure, cadence |

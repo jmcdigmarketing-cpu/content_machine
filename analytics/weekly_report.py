@@ -211,7 +211,24 @@ def write_community_post_draft(channel_id: str, report: dict[str, Any]) -> Path 
     )
 
 
+def _scoreboard_head(channel_id: str) -> str:
+    """#934: the goal's scoreboard opens the weekly report, ready or not."""
+    try:
+        from core.success.goals import load_goal, scoreboard_lines
+
+        if load_goal(channel_id) is None:
+            return ""
+        return "\n".join(scoreboard_lines(channel_id)) + "\n\n"
+    except Exception as exc:
+        logger.debug("scoreboard skipped in the weekly report: %s", exc)
+        return ""
+
+
 def format_report(report: dict[str, Any]) -> str:
+    return _scoreboard_head(str(report.get("channel_id") or "")) + _format_body(report)
+
+
+def _format_body(report: dict[str, Any]) -> str:
     if not report.get("ready"):
         return (
             f"Weekly report — {report['channel_id']}\n"

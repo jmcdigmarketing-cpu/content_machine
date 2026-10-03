@@ -115,6 +115,7 @@ packages = [
     "core.voice",
     "core.vault",
     "core.facts",
+    "core.success",
     "core.predictions",
     "core.runs",
     "desktop",

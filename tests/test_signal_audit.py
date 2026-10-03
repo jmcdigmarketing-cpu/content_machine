@@ -110,8 +110,10 @@ class LoaderAndVerbTests(unittest.TestCase):
             patch("core.run_trace.TRACES_DIR", d),
             patch(
                 "storage.repositories.content_runs.get_content_run_repository",
+                # #939: the real record's field. This fake used to be `script=`, a field a
+                # content run does not have, so the test passed while "cited" was always 0.
                 return_value=SimpleNamespace(
-                    get=lambda i: SimpleNamespace(script="Elden Ring Nightreign is back.")
+                    get=lambda i: SimpleNamespace(script_preview="Elden Ring Nightreign is back.")
                 ),
             ),
         ]

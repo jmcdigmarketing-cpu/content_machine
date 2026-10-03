@@ -106,22 +106,21 @@ def _fetch_estimated_revenue(video_id, service, start_date, end_date) -> float |
 
 
 def _fetch_views_by_day(video_id, service, start_date, end_date) -> list[list[Any]] | None:
-    """[[YYYY-MM-DD, views], ...] for one video, or None (#563). Best-effort, like the
-    retention curve: a failure never breaks the headline sync."""
+    """[[YYYY-MM-DD, views], ...] for one video - or the whole channel when `video_id` is
+    None (#934) - or None (#563). Best-effort, like the retention curve: a failure never
+    breaks the headline sync."""
+    query: dict[str, Any] = {
+        "ids": "channel==MINE",
+        "startDate": start_date,
+        "endDate": end_date,
+        "metrics": "views",
+        "dimensions": "day",
+        "sort": "day",
+    }
+    if video_id:
+        query["filters"] = f"video=={video_id}"
     try:
-        resp = (
-            service.reports()
-            .query(
-                ids="channel==MINE",
-                startDate=start_date,
-                endDate=end_date,
-                metrics="views",
-                dimensions="day",
-                filters=f"video=={video_id}",
-                sort="day",
-            )
-            .execute()
-        )
+        resp = service.reports().query(**query).execute()
     except Exception as exc:
         logger.debug("views by day fetch failed for %s: %s", video_id, exc)
         return None
@@ -144,6 +143,18 @@ def fetch_daily_views(
     if not service:
         return None
     return _fetch_views_by_day(youtube_video_id, service, start, end)
+
+
+def fetch_channel_daily_views(
+    *, channel_id: str | None = None, start: str, end: str
+) -> list[list[Any]] | None:
+    """The channel's views by day (every video, Shorts included) - the scoreboard (#934)."""
+    if not _analytics_enabled():
+        return None
+    service = get_youtube_analytics_service(resolve_channel_id(channel_id))
+    if not service:
+        return None
+    return _fetch_views_by_day(None, service, start, end)
 
 
 def fetch_video_metrics(

@@ -134,6 +134,7 @@ from unittest.mock import patch
 
 import config.competitors as _competitors
 import config.paths as _paths
+from analytics import mailbag as _mailbag
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
 from core import correction_dossier as _correction_dossier
@@ -148,6 +149,9 @@ from core import retraction_watch as _retraction_watch
 from core import run_trace as _run_trace
 from core import trace_secrets as _trace_secrets
 from core.runs import signal_skips as _signal_skips
+from core.success import goals as _goals
+from core.success import review as _review
+from core.success import verdicts as _verdicts
 from storage.repositories import channel_memory as _channel_memory
 from storage.repositories import performance_memory as _performance_memory
 from storage.repositories import publish_log as _publish_log
@@ -210,6 +214,13 @@ _SUITE_STORE_PATCHES = (
     patch.object(_performance_memory, "MEMORY_FILE", _suite_store("performance_memory.json")),
     # #574: the operator's approved signal skips.
     patch.object(_signal_skips, "SKIPS_FILE", _suite_store("signal_skips.json")),
+    # Wave 54: the goal (a committed file the operator edits), and the stores that track it.
+    patch.object(_goals, "GOALS_FILE", _suite_store("goals.json")),
+    patch.object(_goals, "CHANNEL_VIEWS_TEMPLATE", _suite_store("channel_views_{channel}.json")),
+    patch.object(_goals, "FOCUS_FILE", _suite_store("weekly_focus.json")),
+    patch.object(_verdicts, "VERDICTS_FILE", _suite_store("verdicts.json")),
+    patch.object(_review, "REVIEWS_ROOT", _suite_store("output")),
+    patch.object(_mailbag, "MAILBAG_TEMPLATE", _suite_store("mailbag_{channel}.json")),
 )
 for _p in _SUITE_STORE_PATCHES:
     _p.start()

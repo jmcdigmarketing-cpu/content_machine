@@ -17,6 +17,77 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-03 (Claude Code) - wave 54: a views goal and its scoreboard, your verdicts, the weekly review, the winners library, the mailbag
+
+**Prompt (verbatim):** "resume last prompt AND run the next 5. any questions for me? creative new
+ideas? how can we track and partake success better?"
+
+**Operator's answers (three questions asked):**
+- Success over the next 90 days = **views** (not engaged rate, subscribers or revenue).
+- Build: goals + scoreboard, your verdict per video, a winners library, the comment mailbag
+  (#114) - all four offered.
+- The ritual: a **10-minute weekly review** (`ops review-week`), not a daily check-in or nothing.
+
+### Why these five
+
+They are the operator's picks, filed in wave 53 as #934-#937 with #114. Each was checked read-only:
+YouTube Analytics already answers views by day per video (#563), so the channel series is the same
+query without the filter; `apis/youtube_comments_signal._fetch_comments` already reads comment
+threads; `features_json` already carries the hook, format and domain the winners need.
+
+### Findings, with file:line
+
+- **#939: the signal audit's "cited" column was always 0.** `core/runs/signal_audit.load_runs` read
+  `record.script`; `storage/repositories/content_runs.ContentRunRecord` has `script_preview`, no
+  `script`. `tests/test_signal_audit.py` faked `SimpleNamespace(script=...)`, so the test passed while
+  every real run read "". The test asserted a field the record lacks - the "helper called but never
+  fed" shape. Now the full script kept beside the trace (#774), else the preview.
+- **The live check found a pace defect:** a goal counted from 2026-10-01 clipped the pace window to two
+  days and still printed "(last 4 weeks)"; a week-old series was divided by four weeks. The first
+  test I wrote for it passed on the broken code (uniform daily views make every window agree), so it
+  was rewritten with uneven days and then failed. `core/success/goals.pace_per_week` is now pure, with a
+  corpus case.
+- **#940:** `analytics/youtube_metrics.fetch_video_metrics` asks for the last 28 days, so a stored
+  `views` is a window, not a lifetime - the winners compare windows of different ages. Filed.
+- **#941:** the channel series counts every upload; "uploads this week" counts this machine's. Filed.
+- **The container lost its dev extras mid-session** (fastapi, langdetect; ffmpeg present): 8
+  environmental failures until reinstalled. Not a code defect.
+
+### Shipped
+
+1. **#934** `core/success/goals.py`, `config/goals.json` (placeholder targets), the channel views
+   series in the sync, `ops scoreboard`, the banner line, the weekly report's head.
+2. **#935** `core/success/verdicts.py`, `ops verdicts`.
+3. **#936** `core/success/review.py`, `ops review-week`, the focus line, the weekly scorecard file.
+4. **#937** `core/success/winners.py`, `winners_block` in `core/content_engine._build_prompts`,
+   `ops winners`, `WINNERS_IN_PROMPT`.
+5. **#114** `analytics/mailbag.py`, `ops mailbag`, `MAILBAG_SYNC`, the "viewers asked" best bet.
+6. **#939** the audit reads the real script.
+
+`core/success/` is a new sub-package (`tests/test_core_layout.py` caps the flat `core/` count);
+`core/success/videos.py` is the one reader of the channel's videos the four modules share.
+
+### Not done, deliberately
+
+- **#938** (views as the recommenders' target) is a recommendation change; it waits on a decision.
+- The goal numbers in `config/goals.json` are placeholders - the operator said "views", not how many.
+- The mailbag does not reply to viewers or mark a question answered (#942); the scorecard keeps no
+  week-over-week history yet (#943).
+
+### Audit
+
+30 new test methods in `tests/test_wave54_success.py`, one older test corrected (#939's fake);
+suite 4,343 -> 4,373. **All 30 observed failing before their code:** 28 at setup (the modules did
+not exist), #939's on a real assertion (cited 0, expected 1) once the rest existed, and the two pace
+tests on assertions after the live check. Suite in default, reverse and shuffle (with fake Apify,
+balldontlie and YouTube keys): green but for the command reference, regenerated in the docs step;
+0 network attempts; `data/` and `output/` untouched. mypy **122** (three new errors in
+`review.py` fixed); ruff clean; corpus 70 of 70 (+1). Live on synthetic temp data: twelve videos
+and a 32-day channel series -> "need 7,736/week, getting 5,730/week -> behind" before the pace fix;
+the winners block over 12 videos (top 3); a scripted review wrote a verdict, a focus and
+`2026-W40.md`; four stubbed comments -> "3 viewers: Will Battlefield 6 have a battle royale mode
+at launch? (2 videos)" -> the best-bet candidate.
+
 ## 2026-10-03 (Claude Code) - wave 53: the suite stops reading your keys, the soccer run's three defects, signal timing and diffs
 
 **Prompt (verbatim):** the operator's PowerShell paste (git pull, the suite with 9 failures,

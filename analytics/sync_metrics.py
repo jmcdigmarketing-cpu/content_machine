@@ -145,6 +145,18 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
             synced += 1
 
     print(f"\n  Synced {synced}/{len(rows)} recent video(s) for {channel_id}")
+    # #934: the whole channel's views by day, for the goal's scoreboard.
+    from core.success.goals import sync_channel_views
+
+    days = sync_channel_views(channel_id)
+    if days:
+        print(f"  Channel views by day: {days} day(s) kept for the scoreboard (ops scoreboard)")
+    # #114: viewers' questions on your own uploads - opt-in, about 1 unit per video.
+    from analytics import mailbag
+
+    if mailbag.sync_enabled():
+        data = mailbag.fetch(channel_id)
+        print(f"  Mailbag: {len(data.get('clusters') or [])} question(s) (ops mailbag)")
     if synced > 0:
         print("  Best-bet recommendations will reflect real engagement on next run.")
     return 0

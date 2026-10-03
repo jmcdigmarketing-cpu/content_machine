@@ -1,0 +1,16 @@
+{
+  "tapin": {
+    "metric": "views",
+    "target": 100000,
+    "since": "2026-10-01",
+    "by": "2026-12-31",
+    "uploads_per_week": 5
+  },
+  "moneywise": {
+    "metric": "views",
+    "target": 25000,
+    "since": "2026-10-01",
+    "by": "2026-12-31",
+    "uploads_per_week": 3
+  }
+}

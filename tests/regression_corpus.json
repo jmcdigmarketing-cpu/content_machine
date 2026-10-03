@@ -1126,6 +1126,34 @@
         "contains": "5 of 5 angles scored on the seed's signals"
       },
       "why": "a silent fallback reads as a broken discovery; the operator cancelled the run"
+    },
+    {
+      "id": "scoreboard-pace-covers-the-series",
+      "item": 934,
+      "source": "wave 54 live check: a goal counted from 2026-10-01 read two days of pace and printed \"(last 4 weeks)\"",
+      "call": "core.success.goals:pace_per_week",
+      "args": [
+        [
+          [
+            "2026-09-30",
+            100
+          ],
+          [
+            "2026-10-01",
+            400
+          ],
+          [
+            "2026-10-02",
+            400
+          ]
+        ],
+        "2026-10-03"
+      ],
+      "select": "days",
+      "expect": {
+        "equals": 3
+      },
+      "why": "a short series divided by four weeks, or a new goal's two days, misstates the pace the scoreboard compares the target with"
     }
   ]
 }

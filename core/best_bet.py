@@ -929,6 +929,31 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     except Exception as exc:
         logger.debug("seasonal calendar skipped: %s", exc)
 
+    # #114: what the channel's own viewers asked, two or more of them.
+    try:
+        from analytics.mailbag import top_question
+
+        asked = top_question(channel_id, exclude=seen)
+        if asked and len(options) < n:
+            topic = str(asked["question"])
+            domain = _infer_domain(topic, channel_id)
+            count, videos = int(asked.get("count") or 0), len(asked.get("videos") or [])
+            options.append(
+                BestBetResult(
+                    topic=topic,
+                    domain=domain,
+                    avg_engaged_rate=0.0,
+                    source="mailbag",
+                    supporting_runs=0,
+                    rationale=f"viewers asked: {count} viewers on {videos} video"
+                    + ("s" if videos != 1 else ""),
+                )
+            )
+            seen.add(normalize_seed_topic(topic).lower())
+            used_domains.add(domain)
+    except Exception as exc:
+        logger.debug("mailbag candidate skipped: %s", exc)
+
     def _domain_key(d: str) -> tuple:
         return _domain_priority(d, adjusted, domain_counts)
 

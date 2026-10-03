@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-03: wave 53, next five
+# Handoff synopsis — 2026-10-03: wave 54, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
@@ -10,7 +10,23 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-03 (Claude Code): wave 53 #930-#933 #929 #591 #573 #586 (#587 closed)
+## Last wave — 2026-10-03 (Claude Code): wave 54 #934 #935 #936 #937 #114 (+ #939)
+
+The operator's goal is **views**; this wave tracks it and asks for their part in it.
+
+- **#934** `config/goals.json` (placeholder numbers - set yours) and `ops scoreboard`: so far, the
+  weekly pace needed vs the last four weeks, where that pace lands, uploads this week, best and
+  weakest. The sync keeps the channel's views by day; the banner and weekly report show it.
+- **#935 / #936** `ops review-week`: rate each of the week's videos 1-5 with a line of why, set next
+  week's focus, get `output/<ch>/reviews/<YYYY>-W<ww>.md`. `ops verdicts`: your gut vs the views.
+- **#937** the script prompt shows your top videos by views once 8+ are measured (`ops winners`;
+  `WINNERS_IN_PROMPT=false` turns it off).
+- **#114** `ops mailbag`: viewers' questions on your uploads, clustered; 2+ askers -> a best bet.
+- **#939** `ops signal-audit`'s "cited" column was always 0; it reads the real script now.
+
+**Verify:** `python -m unittest tests.test_wave54_success`; `py -m scripts.ops scoreboard`.
+
+## Previous — 2026-10-03 (Claude Code): wave 53 #930-#933 #929 #591 #573 #586 (#587 closed)
 
 - **#930** the suite skips your `.env` and blanks secret-shaped variables: the 9 failures that only
   your PC showed were seven tests reaching the network with your real keys, plus two harness checks.
@@ -38,24 +54,6 @@ tests.test_suite_env_isolation`; `py -m scripts.ops signal-audit`.
 
 **Verify:** `python -m unittest tests.test_seed_history tests.test_signal_usefulness
 tests.test_analytics_snapshot tests.test_cost_cap_degrade`; `py -m scripts.ops dedupe-seed`.
-
-## Previous — 2026-10-01 (Claude Code): wave 51 #921 #579 #575 #588 #567 + run 109's #922-#926
-
-- **Run 109 fixes:** the discovery Headroom line now shows YouTube units (#922); the projected
-  cost includes the thumbnail (#923); a long title ends at a clause, not "...under Neil…" (#924);
-  a headline needs a distinctive topic word, not "game" (#925); "surging competitor" needs a
-  recent video well ahead of the rest (#926).
-- **#921** the suite cannot reach the network: a test that tries fails, naming host, frame and
-  thread. Seven offenders stubbed; ~38 s per run.
-- **#579** the Proceed? report sets the cost against what the channel's RPM says the video earns.
-- **#575 / #588** `ops signal-audit`: runs / active / fed / cited per signal, retirement
-  candidates (your call), and frozen payloads; `ops reliability` names a frozen signal.
-- **#567** the post-time experiment flips a seeded coin; off-slot videos go to a random hour
-  within +/-`POST_TIME_WINDOW_HOURS` (3). Still opt-in.
-
-**Verify:** `python -m unittest tests.test_run109_defects tests.test_network_guard
-tests.test_cost_vs_return tests.test_signal_audit tests.test_post_time_random`;
-`py -m scripts.ops signal-audit`; `py -m scripts.ops economics`.
 
 ## Pipeline order (operator)
 
@@ -120,11 +118,11 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** listen to the next render at 0.95; one debate and one quotes run (#889);
+1. **Operator:** set `config/goals.json`, then `ops review-week` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #938 views as the recommenders' target (decision).
+3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #938 views as the recommenders' target (decision) · #940 lifetime views.
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

@@ -36,10 +36,12 @@ py main.py
 ## Operator commands (batch or one-by-one)
 
 ```powershell
-py -m scripts.ops list              # all commands
-py -m scripts.ops all-setup         # layout + DB + seed + validate + YouTube check
-py -m scripts.ops all-checks        # validate + unit tests
-py -m scripts.ops all-analytics     # seed + learn-schedule + weights + sync-metrics
+py -m scripts.ops list              # all commands, and every batch's steps
+py -m scripts.ops all               # everything: checks + analytics + the weekly review
+py -m scripts.ops all-setup         # layout + DB + seed + validate + YouTube check + dedupe dry run
+py -m scripts.ops all-checks        # validate + unit tests + feeds
+py -m scripts.ops all-analytics     # seed, schedules, weights, sync, views by day, scoreboard
+py -m scripts.ops all-review        # the weekly review: mailbag, reports, then rate the week
 
 # Individual steps
 py -m scripts.ops migrate-layout

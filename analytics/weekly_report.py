@@ -30,7 +30,7 @@ _DIMENSIONS = ("domain", "angle", "title_structure", "format", "fact_source", "u
 
 def _load_rows(channel_id: str) -> list[dict[str, Any]]:
     """Runs joined to engagement + parsed features. Only rows with engagement data."""
-    from core.best_bet import _engaged_rate
+    from core.engagement import engaged_rate as _engaged_rate
     from storage.repositories.content_runs import get_content_run_repository
     from storage.repositories.publish_log import get_publish_log_repository
 

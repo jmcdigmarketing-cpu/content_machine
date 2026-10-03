@@ -30,7 +30,10 @@ py -m scripts.ops all-setup --channel tapin
 alembic upgrade head
 ```
 
-`all-setup` runs: migrate-layout → init-db → migrate-schema → seed → validate → check-youtube.
+`all-setup` runs: migrate-layout → init-db → migrate-schema → seed → validate → check-youtube →
+dedupe-seed (dry run), and stops at the first failure. `py -m scripts.ops list` prints every batch's
+steps; `py -m scripts.ops all` runs checks, analytics and the weekly review in one go, each step
+once, and names any step that failed at the end instead of stopping (#944).
 
 ---
 

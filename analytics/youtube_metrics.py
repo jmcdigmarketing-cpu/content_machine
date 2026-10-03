@@ -16,7 +16,7 @@ from config.channels import resolve_channel_id
 from core.logging import get_logger
 from core.run_recorder import record_publish_outcome
 from storage.repositories.publish_log import get_publish_log_repository
-from youtube.oauth import get_youtube_analytics_service
+from youtube.oauth import get_youtube_analytics_service, get_youtube_service
 
 logger = get_logger("analytics.youtube_metrics")
 
@@ -155,6 +155,81 @@ def fetch_channel_daily_views(
     if not service:
         return None
     return _fetch_views_by_day(None, service, start, end)
+
+
+def fetch_channel_uploads(
+    *, channel_id: str | None = None, max_results: int = 50
+) -> list[dict[str, str]] | None:
+    """The channel's own uploads, newest first (#941: uploads made outside Content OS
+    count toward the week). 2 Data API units; None when it cannot be read."""
+    if not _analytics_enabled():
+        return None
+    service = get_youtube_service(resolve_channel_id(channel_id))
+    if not service:
+        return None
+    try:
+        from youtube.channel_uploads import uploads_playlist_items
+
+        return uploads_playlist_items(service, max_results=max_results)
+    except Exception as exc:
+        logger.debug("channel uploads unavailable: %s", exc)
+        return None
+
+
+def fetch_lifetime_views(video_ids: list[str], *, channel_id: str | None = None) -> dict[str, int]:
+    """{video_id: lifetime views} from `videos.list` statistics - 1 unit per 50 ids (#940).
+
+    The headline sync asks Analytics for the last 28 days, so a stored `views` is a
+    window, not what the video has to date.
+    """
+    if not _analytics_enabled() or not video_ids:
+        return {}
+    service = get_youtube_service(resolve_channel_id(channel_id))
+    if not service:
+        return {}
+    out: dict[str, int] = {}
+    ids = list(dict.fromkeys(v for v in video_ids if v))
+    for start in range(0, len(ids), 50):
+        chunk = ids[start : start + 50]
+        try:
+            resp = (
+                service.videos()
+                .list(
+                    part="statistics", id=",".join(chunk), fields="items(id,statistics/viewCount)"
+                )
+                .execute()
+            )
+        except Exception as exc:
+            logger.debug("lifetime views unavailable: %s", exc)
+            break
+        for item in resp.get("items") or []:
+            try:
+                out[str(item["id"])] = int((item.get("statistics") or {}).get("viewCount") or 0)
+            except (KeyError, TypeError, ValueError):
+                continue
+    return out
+
+
+def store_lifetime_views(rows: list[Any], counts: dict[str, int]) -> int:
+    """Write each row's `lifetime_views` into its metrics; the rows updated."""
+    repo = get_publish_log_repository()
+    stamped = datetime.now(timezone.utc).isoformat()
+    updated = 0
+    for row in rows:
+        views = counts.get(str(getattr(row, "youtube_video_id", "") or ""))
+        if views is None:
+            continue
+        try:
+            metrics = json.loads(row.metrics_json or "{}")
+        except (TypeError, ValueError):
+            metrics = {}
+        if not isinstance(metrics, dict):
+            metrics = {}
+        metrics["lifetime_views"] = views
+        metrics["lifetime_views_at"] = stamped
+        repo.update(row.id, {"metrics_json": json.dumps(metrics)})
+        updated += 1
+    return updated
 
 
 def fetch_video_metrics(

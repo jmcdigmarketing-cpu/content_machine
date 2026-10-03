@@ -62,15 +62,14 @@ class FloorTests(_Env):
 
     def test_every_learner_sees_it(self):
         from analytics.post_timing import _collect_timed_samples
-        from core.best_bet import _engaged_rate as best_bet_rate
         from core.engagement_predictor import run_engagement_map
-        from core.length_recommender import _engaged_rate as length_rate
+        from core.success.target import outcome  # #938: best bet and length read through it
 
         self.assertEqual(sorted(run_engagement_map("tapin")), [1, 2, 3])
         with patch.dict(os.environ, {"MIN_OUTCOME_VIEWS": "50"}):
             self.assertEqual(sorted(run_engagement_map("tapin")), [2, 3])
-            self.assertIsNone(best_bet_rate(LOW))
-            self.assertIsNone(length_rate(LOW))
+            for target in ("engaged", "views"):
+                self.assertIsNone(outcome(LOW, target_name=target), target)
             self.assertEqual(len(_collect_timed_samples("tapin")), 2)
 
 

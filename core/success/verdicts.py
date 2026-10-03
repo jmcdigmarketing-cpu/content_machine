@@ -69,38 +69,50 @@ def _agrees(rating: int, third: str) -> bool:
     return {"top": rating >= 4, "middle": rating == 3, "bottom": rating <= 2}[third]
 
 
-def verdict_report(channel_id: str) -> list[str]:
-    from core.success.videos import channel_videos
+def _scored(channel_id: str) -> dict[str, Any]:
+    """Your ratings set against the views ranking (#940: the comparable measure)."""
+    from core.success.videos import channel_videos, comparable_views
 
     verdicts = load(channel_id)
-    measured = sorted(
-        (v for v in channel_videos(channel_id) if v.views > 0), key=lambda v: v.views, reverse=True
-    )
-    head = f"Your verdicts vs the audience - {channel_id}"
-    rated = [(i, v) for i, v in enumerate(measured) if v.video_id in verdicts]
-    if len(rated) < MIN_RATED:
-        return [
-            head,
-            f"  {len(rated)} rated video(s) with views; rate {MIN_RATED - len(rated)} more "
-            "(py -m scripts.ops review-week) and this compares your gut with the views.",
-        ]
+    ranked, heading, unit = comparable_views(channel_videos(channel_id))
+    rated = [(i, v, value) for i, (v, value) in enumerate(ranked) if v.video_id in verdicts]
     agreed = 0
     loved, doubted = [], []
-    for rank, video in rated:
+    for rank, video, value in rated:
         rating = int(verdicts[video.video_id]["rating"])
-        third = _third(rank, len(measured))
+        third = _third(rank, len(ranked))
         agreed += _agrees(rating, third)
         if rating >= 4 and third == "bottom":
-            loved.append(f'"{video.title}" (you: {rating}, {video.views:,} views)')
+            loved.append(f'"{video.title}" (you: {rating}, {value:,} {unit})')
         if rating <= 2 and third == "top":
-            doubted.append(f'"{video.title}" (you: {rating}, {video.views:,} views)')
+            doubted.append(f'"{video.title}" (you: {rating}, {value:,} {unit})')
+    return {"measured": len(ranked), "rated": len(rated), "agreed": agreed, "loved": loved,
+            "doubted": doubted, "heading": heading}  # fmt: skip
+
+
+def agreement(channel_id: str) -> tuple[int, int]:
+    """(agreed, rated) for the review history (#943)."""
+    scored = _scored(channel_id)
+    return scored["agreed"], scored["rated"]
+
+
+def verdict_report(channel_id: str) -> list[str]:
+    scored = _scored(channel_id)
+    head = f"Your verdicts vs the audience - {channel_id}"
+    rated, agreed = scored["rated"], scored["agreed"]
+    if rated < MIN_RATED:
+        return [
+            head,
+            f"  {rated} rated video(s) with views; rate {MIN_RATED - rated} more "
+            "(py -m scripts.ops review-week) and this compares your gut with the views.",
+        ]
     lines = [
-        f"{head} ({len(rated)} rated videos with views)",
-        f"  agreed on {agreed} of {len(rated)} ({agreed / len(rated):.0%}) - views ranked "
-        f"in thirds over {len(measured)} measured videos",
+        f"{head} ({rated} rated videos with views)",
+        f"  agreed on {agreed} of {rated} ({agreed / rated:.0%}) - {scored['heading']} ranked "
+        f"in thirds over {scored['measured']} measured videos",
     ]
-    if loved:
-        lines.append("  rated 4-5, landed in the bottom third: " + "; ".join(loved))
-    if doubted:
-        lines.append("  rated 1-2, landed in the top third: " + "; ".join(doubted))
+    if scored["loved"]:
+        lines.append("  rated 4-5, landed in the bottom third: " + "; ".join(scored["loved"]))
+    if scored["doubted"]:
+        lines.append("  rated 1-2, landed in the top third: " + "; ".join(scored["doubted"]))
     return lines

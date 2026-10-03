@@ -8,6 +8,28 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 55 — one `ops all`, the recommenders aim at 7-day views, week over week, the mailbag loop - 2026-10-03
+
+*4,406 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 71 of 71.*
+
+- **#938** **Recommendation change, disclosed:** the best bet, the length recommender and post
+  time rank on each video's **views in its first 7 days** (the operator's goal is views), shown as
+  "N views in 7 days". A video counts only once Analytics has its views by day from the publish
+  day through day 7 - `ops all` runs `backfill view-curve --apply` to fill past ones; until then a
+  recommender falls back to its defaults. Seeded videos do not count. `RECOMMEND_TARGET=engaged`
+  is the previous behaviour; `ops analytics-diff <run>` names the switch. The engagement predictor
+  stays on the engaged rate.
+- **#944** `py -m scripts.ops all` runs checks, analytics and the weekly review in one go; every
+  setup and review verb is in a batch (`ops list` prints them); batches other than `all-setup`
+  keep going past a failed step and name it at the end.
+- **#940** winners and verdicts rank on views in the first 7 days (else views to date, which every
+  sync now fetches - 1 unit per 50 videos).
+- **#943** the scoreboard shows the last weeks and "on pace N reviews running"; the scorecard has a
+  week-over-week table.
+- **#941** "uploads this week" counts uploads made outside Content OS (2 units per sync).
+- **#942** a question you made a video from leaves the mailbag, and `ops mailbag` drafts the reply
+  for each asker's comment. Nothing is posted.
+
 ### Wave 54 — a views goal, your verdicts, the weekly review, the winners library, the mailbag - 2026-10-03
 
 *4,373 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 70 of 70.*

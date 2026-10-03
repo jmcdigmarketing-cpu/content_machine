@@ -145,6 +145,21 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
             synced += 1
 
     print(f"\n  Synced {synced}/{len(rows)} recent video(s) for {channel_id}")
+    # #940: lifetime views for every live video (the sync's own numbers are a 28-day window).
+    from analytics import youtube_metrics
+    from storage.repositories.publish_log import is_seeded
+
+    live = [
+        r
+        for r in repo.list_uploaded_for_channel(channel_id)
+        if r.youtube_video_id and not is_seeded(r)
+    ]
+    counts = youtube_metrics.fetch_lifetime_views(
+        [r.youtube_video_id for r in live], channel_id=channel_id
+    )
+    if counts:
+        stored = youtube_metrics.store_lifetime_views(live, counts)
+        print(f"  Lifetime views: {stored} video(s)")
     # #934: the whole channel's views by day, for the goal's scoreboard.
     from core.success.goals import sync_channel_views
 

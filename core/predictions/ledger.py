@@ -15,6 +15,7 @@ report that uses it says so.
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime, timezone
 from typing import Any
 
@@ -23,6 +24,12 @@ from core.logging import get_logger
 logger = get_logger("core.predictions.ledger")
 
 LEDGER_KEY = "prediction_ledger"
+
+
+def _target_name() -> str:
+    from core.success.target import target
+
+    return target()
 
 
 def _record(run_id: int) -> Any:
@@ -76,6 +83,7 @@ def _length(
             "chosen": _length_choice_from_run(getattr(record, "timings_json", "") or ""),
             "expected": rec.avg_engaged_rate if rec.source == "analytics" else None,
             "source": rec.source,
+            "target": _target_name(),  # #938: what "expected" is measured in
             "n": rec.supporting_runs,
         }
     except Exception as exc:
@@ -113,6 +121,7 @@ def _post_time(
     except Exception as exc:
         logger.debug("post-time claim not frozen: %s", exc)
         return None
+    claim["target"] = _target_name()  # #938
     try:
         from core.experiments import assignment_for_run
 
@@ -144,6 +153,7 @@ def _best_bet(record: Any) -> dict[str, Any] | None:
         "expected": chosen.get("expected") if chosen else None,
         "source": chosen.get("source") if chosen else None,
         "by": str(pick.get("by") or "operator"),  # #913: records before it were the card's
+        "target": str(pick.get("target") or "engaged"),  # #938: picks before it were rates
     }
 
 
@@ -221,48 +231,77 @@ def frozen_engagement(run_id: int | None, channel_id: str) -> dict[str, Any] | N
 _MIN_MEASURED = 5
 
 
+def _views_outcomes(channel_id: str) -> dict[int, float]:
+    """run_id -> log 7-day views, the actual a views claim is scored against (#938)."""
+    from core.success.target import TARGET_VIEWS, outcome
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    out: dict[int, float] = {}
+    for log in get_publish_log_repository().list_timed_outcomes(channel_id):
+        value = outcome(log.metrics_json, log.published_at, target_name=TARGET_VIEWS)
+        if value is not None and log.content_run_id:
+            out[int(log.content_run_id)] = value
+    return out
+
+
+def _claim_error(
+    claim: dict[str, Any], rate: float | None, views: float | None
+) -> tuple[str, float] | None:
+    """(key suffix, actual - expected) on the claim's own target; claims frozen before
+    #938 carry no target and were engaged rates."""
+    if claim.get("expected") is None:
+        return None
+    if str(claim.get("target") or "engaged") == "views":
+        return ("_views", views - float(claim["expected"])) if views is not None else None
+    return ("", rate - float(claim["expected"])) if rate is not None else None
+
+
 def ledger_rows(channel_id: str) -> list[dict[str, Any]]:
     """One row per measured run that has a ledger entry: each call beside the outcome."""
     from core.engagement_predictor import run_engagement_map
     from storage.repositories.content_runs import get_content_run_repository
 
     outcomes = run_engagement_map(channel_id)
+    views_outcomes = _views_outcomes(channel_id)
     rows: list[dict[str, Any]] = []
     for run in get_content_run_repository().list_for_channel(channel_id):
         rate = outcomes.get(int(run.id))
+        views = views_outcomes.get(int(run.id))
         entry = stored(int(run.id))
-        if rate is None or entry is None:
+        if (rate is None and views is None) or entry is None:
             continue
         row: dict[str, Any] = {
             "run_id": int(run.id),
-            "actual": float(rate),
+            "actual": float(rate) if rate is not None else None,
             "backfilled": bool(entry.get("backfilled")),
         }
         engaged = entry.get("engaged_rate") or {}
-        if engaged.get("rate") is not None:
+        if engaged.get("rate") is not None and rate is not None:
             row["engaged_error"] = float(rate) - float(engaged["rate"])
             row["engaged_band"] = float(engaged.get("band") or 0.0)
             row["inside_band"] = abs(row["engaged_error"]) <= row["engaged_band"]
         length = entry.get("length") or {}
-        if length.get("expected") is not None and length.get("chosen") == length.get("recommended"):
-            row["length_error"] = float(rate) - float(length["expected"])
+        if length.get("chosen") == length.get("recommended"):
+            scored = _claim_error(length, rate, views)
+            if scored:
+                row[f"length_error{scored[0]}"] = scored[1]
         post = entry.get("post_time") or {}
         if post and "used_at" not in post:
             row["post_before_916"] = True  # scored the next slot, not this video's
-        elif post.get("expected") is not None and post.get("on_slot"):
-            row["post_error"] = float(rate) - float(post["expected"])
+        elif post.get("on_slot"):
+            scored = _claim_error(post, rate, views)
+            if scored:
+                row[f"post_error{scored[0]}"] = scored[1]
         if post.get("on_slot") is False:
             row["post_off_slot"] = True
         bet = entry.get("best_bet") or {}
         if bet:
             row["best_bet_picked"] = bool(bet.get("picked"))
             row["best_bet_by"] = str(bet.get("by") or "operator")
-            if (
-                bet.get("picked")
-                and bet.get("source") == "analytics"
-                and bet.get("expected") is not None
-            ):
-                row["best_bet_error"] = float(rate) - float(bet["expected"])
+            if bet.get("picked") and bet.get("source") == "analytics":
+                scored = _claim_error(bet, rate, views)
+                if scored:
+                    row[f"best_bet_error{scored[0]}"] = scored[1]
         grade = entry.get("grade") or {}
         if grade.get("score") is not None:
             row["grade"] = float(grade["score"])
@@ -289,6 +328,18 @@ def _error_line(label: str, errors: list[float]) -> str:
     )
 
 
+def _error_line_views(label: str, errors: list[float]) -> str:
+    """Log-views errors as ratios: x1.6 means typically off by 60% either way."""
+    if len(errors) < _MIN_MEASURED:
+        return f"  {label}: collecting (n={len(errors)}, a rate needs {_MIN_MEASURED})"
+    mean_abs = sum(abs(e) for e in errors) / len(errors)
+    bias = sum(errors) / len(errors)
+    return (
+        f"  {label}: typically off by x{math.exp(mean_abs):.2f}, bias x{math.exp(bias):.2f} "
+        f"(n={len(errors)})"
+    )
+
+
 def report_lines(channel_id: str) -> list[str]:
     """`ops predictions`: each recommender's frozen claim against what happened."""
     from core.grade_calibration import _pearson, n_for_significance
@@ -310,6 +361,10 @@ def report_lines(channel_id: str) -> list[str]:
         late = [r[key] for r in back if key in r]
         if late:
             lines.append("    " + _error_line("backfilled, left out of the fit", late).strip())
+        # #938: claims frozen on 7-day views, scored on that scale.
+        views = [r[f"{key}_views"] for r in rows if f"{key}_views" in r]
+        if views:
+            lines.append("    " + _error_line_views("on 7-day views", views).strip())
 
     measured = [r for r in forward if "engaged_error" in r]
     band_line: list[str] = []
@@ -339,8 +394,15 @@ def report_lines(channel_id: str) -> list[str]:
             [r["best_bet_error"] for r in rows if "best_bet_error" in r],
         )
     )
-    picked = [r["actual"] for r in rows if r.get("best_bet_picked") is True]
-    own = [r["actual"] for r in rows if r.get("best_bet_picked") is False]
+    bet_views = [r["best_bet_error_views"] for r in rows if "best_bet_error_views" in r]
+    if bet_views:
+        lines.append("    " + _error_line_views("on 7-day views", bet_views).strip())
+    picked = [
+        r["actual"] for r in rows if r.get("best_bet_picked") is True and r["actual"] is not None
+    ]
+    own = [
+        r["actual"] for r in rows if r.get("best_bet_picked") is False and r["actual"] is not None
+    ]
     if picked or own:
 
         def _mean(xs: list[float]) -> str:
@@ -367,7 +429,7 @@ def report_lines(channel_id: str) -> list[str]:
         lines.append(low_view_line(channel_id))  # #564
     except Exception as exc:
         logger.debug("low-view line skipped: %s", exc)
-    graded = [(r["grade"], r["actual"]) for r in rows if "grade" in r]
+    graded = [(r["grade"], r["actual"]) for r in rows if "grade" in r and r["actual"] is not None]
     if len(graded) < _MIN_MEASURED:
         lines.append(f"  grade vs engaged rate: collecting (n={len(graded)})")
     else:

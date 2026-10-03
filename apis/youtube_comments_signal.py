@@ -251,7 +251,7 @@ def _fetch_comments(youtube, video_id: str, limit: int) -> list[dict[str, Any]]:
                 maxResults=limit,
                 textFormat="plainText",
                 fields=(
-                    "items(snippet/topLevelComment/snippet/textDisplay,"
+                    "items(id,snippet/topLevelComment/snippet/textDisplay,"
                     "snippet/topLevelComment/snippet/likeCount,snippet/totalReplyCount)"
                 ),
             )
@@ -275,6 +275,8 @@ def _fetch_comments(youtube, video_id: str, limit: int) -> list[dict[str, Any]]:
                 "likes": int(snippet.get("likeCount") or 0),
                 "replies": int((item.get("snippet") or {}).get("totalReplyCount") or 0),
                 "video_id": video_id,
+                # #942: the thread id is the top-level comment's id - the mailbag links to it.
+                "comment_id": str(item.get("id") or ""),
             }
         )
     return out

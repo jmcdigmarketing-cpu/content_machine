@@ -73,6 +73,10 @@ os.environ["CAPTION_ALIGN_BACKEND"] = "none"
 os.environ["BACKGROUND_FAST_CUT"] = "false"
 # #600: the nightly overnight run looks at 48h-old uploads through the YouTube API.
 os.environ["POST_PUBLISH_CHECK"] = "false"
+# #938: production ranks on 7-day views; the suite's recommender tests describe the
+# engaged-rate arithmetic their fixtures carry. The views mode has its own tests
+# (tests/test_wave55_five.py), which set RECOMMEND_TARGET themselves.
+os.environ["RECOMMEND_TARGET"] = "engaged"
 # Competitor-sync caps default on in production; disable in the suite so a test
 # that reads youtube_quota cannot skip API because the operator's real remaining
 # units are below the upload reserve.
@@ -218,6 +222,7 @@ _SUITE_STORE_PATCHES = (
     patch.object(_goals, "GOALS_FILE", _suite_store("goals.json")),
     patch.object(_goals, "CHANNEL_VIEWS_TEMPLATE", _suite_store("channel_views_{channel}.json")),
     patch.object(_goals, "FOCUS_FILE", _suite_store("weekly_focus.json")),
+    patch.object(_goals, "HISTORY_TEMPLATE", _suite_store("review_history_{channel}.json")),
     patch.object(_verdicts, "VERDICTS_FILE", _suite_store("verdicts.json")),
     patch.object(_review, "REVIEWS_ROOT", _suite_store("output")),
     patch.object(_mailbag, "MAILBAG_TEMPLATE", _suite_store("mailbag_{channel}.json")),

@@ -39,6 +39,27 @@ def _describe(video: Video) -> str:
     return " · ".join(parts)
 
 
+def _history_table(channel_id: str) -> list[str]:
+    rows = goals.review_history(channel_id)[-8:]
+    if not rows:
+        return ["No reviews recorded yet."]
+
+    def _n(value: object) -> str:
+        return f"{round(value):,}" if isinstance(value, int | float) else "-"
+
+    out = [
+        "| week | views so far | pace / week | need / week | on track | uploads | you agreed |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for r in rows:
+        agreed = f"{r.get('agreed')} of {r.get('rated')}" if r.get("rated") else "-"
+        out.append(
+            f"| {r['week']} | {_n(r.get('so_far'))} | {_n(r.get('pace'))} | {_n(r.get('need'))} | "
+            f"{'yes' if r.get('on_track') else 'no'} | {_n(r.get('uploads'))} | {agreed} |"
+        )
+    return out
+
+
 def scorecard_path(channel_id: str, today: date) -> str:
     year, week, _ = today.isocalendar()
     return os.path.join(REVIEWS_ROOT, channel_id, "reviews", f"{year}-W{week:02d}.md")
@@ -83,6 +104,22 @@ def run_review(
         print_fn(line)
 
     year, week_no, _ = today.isocalendar()
+    # #943: one row per ISO week, so the scoreboard can say "on pace N reviews running".
+    numbers = goals.scoreboard(channel_id, today=today) or {}
+    agreed, rated = verdicts.agreement(channel_id)
+    goals.record_week(
+        channel_id,
+        {
+            "week": f"{year}-W{week_no:02d}",
+            "so_far": numbers.get("so_far"),
+            "pace": numbers.get("pace_per_week"),
+            "need": numbers.get("need_per_week"),
+            "on_track": bool(numbers.get("on_track")),
+            "uploads": numbers.get("uploads_week"),
+            "agreed": agreed,
+            "rated": rated,
+        },
+    )
     card = [f"# Weekly review - {channel_id} - {year}-W{week_no:02d}", "", "```", *board, "```", ""]
     card += ["## This week's videos", ""]
     if rows:
@@ -93,6 +130,7 @@ def run_review(
     else:
         card.append("No videos published this week.")
     card += ["", "## Your verdicts vs the audience", "", "```", *report, "```", ""]
+    card += ["## Week over week", "", *_history_table(channel_id), ""]
     card += ["## Focus for next week", "", new_focus or old or "(none set)", ""]
     path = scorecard_path(channel_id, today)
     os.makedirs(os.path.dirname(path), exist_ok=True)

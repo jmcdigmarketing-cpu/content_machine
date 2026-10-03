@@ -53,26 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-03 · **HEAD at write:** `5cdea53` (wave 53) + the wave 54 commit
+**Written:** 2026-10-03 · **HEAD at write:** `6d60a9b` (wave 54) + the wave 55 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** `core/success/` is new - `videos.channel_videos` is the one reader of
-the channel's videos (seeded rows kept for titles/views, left out of anything dated); `goals`
-(`config/goals.json`, `data/channel_views_<ch>.json`, `data/weekly_focus.json`), `verdicts`
-(`data/verdicts.json`), `review` (`output/<ch>/reviews/`), `winners` (in the script prompt).
-`analytics/mailbag.py` writes `data/mailbag_<ch>.json`. All redirected in `tests/__init__.py`.
-mypy baseline **122**.
+**Read before editing:** the batches are `scripts/ops.BATCHES` (a step is a verb, a
+`(verb, {arg: value})` pair or another batch); `_run_batch(name, args)`. The recommenders' per-video
+value comes from `core/success/target.outcome` - log 7-day views by default, the engaged rate with
+`RECOMMEND_TARGET=engaged`; the suite pins `engaged` in `tests/__init__.py`, so a views test sets
+it. `BestBetResult.avg_engaged_rate` and the entries' `engaged_rate` key hold the target value;
+format through `target.show`. Ledger claims carry `target`; old ones are engaged. mypy **122**.
 
 **Defects first:**
-- #939: `signal_audit` read `record.script`, which a run does not have; its test faked the
-  field. "Cited" was 0 on every run. Fixed; the fake now uses `script_preview`.
-- The scoreboard's pace was clipped to the goal's start (found live, fixed, corpus case).
-- `config/goals.json` targets are placeholders until the operator sets them.
-- Carried: no emoji render seen (#914); the dev container can lose its pip extras.
+- Mine, caught by the suite before the commit: `weekly_report` imported `_engaged_rate` from
+  `core.best_bet`, which this wave removed.
+- Live check: a part-week read as a drop (fixed, corpus case); fighter-led titles infer `gaming`
+  (#946, open); the view-curve backfill re-fetches small videos forever (#947, open).
+- Carried: no emoji render seen (#914).
 
-**Shipped:** #934 #935 #936 #937 #114 + #939. Suite **4,373**, 0 network attempts, `data/`
-clean; backlog **237 numbered open**, highest #943. Next five: **#938 (decision) · #940 · #943
-· #942 · #941**.
+**Shipped:** #944 #938 #940 #943 #941 #942. Suite **4,406**, 0 network attempts, `data/` clean;
+backlog **236 numbered open**, highest #948. Next five: **#946 · #947 · #948 · #49 · #945**.
 
 ## Slot — Cursor
 

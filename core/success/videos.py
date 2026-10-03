@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from core.logging import get_logger
+from core.success.target import views_7d
 
 logger = get_logger("core.success.videos")
 
@@ -29,6 +30,8 @@ class Video:
     domain: str = ""
     first_views_days: int | None = None
     daily_views: list[list[Any]] = field(default_factory=list)
+    views_7d: int | None = None  # #940: views in the first 7 days, comparable across ages
+    lifetime_views: int | None = None  # #940: to date, from videos.list statistics
 
 
 def _metrics(raw: Any) -> dict[str, Any]:
@@ -71,12 +74,14 @@ def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Vide
             views = 0
         rate = metrics.get("engaged_rate")
         first = metrics.get("first_views")
+        published_at = _utc(getattr(row, "published_at", None))
+        lifetime = metrics.get("lifetime_views")
         run_id = getattr(row, "content_run_id", None)
         out.append(
             Video(
                 video_id=video_id,
                 title=str(getattr(row, "detail", "") or "").strip() or "(untitled)",
-                published_at=_utc(getattr(row, "published_at", None)),
+                published_at=published_at,
                 views=views,
                 engaged_rate=float(rate) if isinstance(rate, (int, float)) else None,
                 run_id=int(run_id) if isinstance(run_id, int) else None,
@@ -84,8 +89,41 @@ def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Vide
                 domain=str(metrics.get("domain") or ""),
                 first_views_days=first.get("days") if isinstance(first, dict) else None,
                 daily_views=list(metrics.get("daily_views") or []),
+                views_7d=None if seeded else views_7d(metrics, published_at),
+                lifetime_views=int(lifetime) if isinstance(lifetime, (int, float)) else None,
             )
         )
     epoch = datetime.min.replace(tzinfo=timezone.utc)
     out.sort(key=lambda v: v.published_at or epoch, reverse=True)
     return out
+
+
+# #940: the measure a ranking of videos uses. The stored `views` is the last sync's 28-day
+# window, so a three-month-old hit reads as small; views in the first 7 days compare every
+# video at the same age, and lifetime views are the honest second best.
+COMPARABLE_MIN = 8
+_MEASURES = {
+    "7d": ("views in their first 7 days", "views in 7 days"),
+    "lifetime": ("views to date", "views to date"),
+    "window": ("views (the 28-day window at each video's last sync)", "views"),
+}
+
+
+def comparable_views(
+    videos: list[Video], *, min_count: int = COMPARABLE_MIN
+) -> tuple[list[tuple[Video, int]], str, str]:
+    """([(video, value)] best first, the ranking's label, the value's unit).
+
+    The first measure that `min_count` videos have wins - a ranking never mixes two.
+    """
+    for key, read in (
+        ("7d", lambda v: v.views_7d),
+        ("lifetime", lambda v: v.lifetime_views),
+        ("window", lambda v: v.views or None),
+    ):
+        pairs = [(v, int(value)) for v in videos if (value := read(v))]
+        if len(pairs) >= min_count or key == "window":
+            pairs.sort(key=lambda p: p[1], reverse=True)
+            heading, unit = _MEASURES[key]
+            return pairs, heading, unit
+    return [], *_MEASURES["window"]

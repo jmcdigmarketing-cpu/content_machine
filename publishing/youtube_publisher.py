@@ -298,21 +298,12 @@ def build_video_status(request: PublishRequest, *, channel_id: str | None = None
 
 def _find_video_on_channel(service, title: str, *, max_results: int = 20) -> str | None:
     try:
-        channels = service.channels().list(part="contentDetails", mine=True).execute()
-        items = channels.get("items") or []
-        if not items:
-            return None
-        uploads_id = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
-        playlist = (
-            service.playlistItems()
-            .list(playlistId=uploads_id, part="snippet", maxResults=max_results)
-            .execute()
-        )
+        from youtube.channel_uploads import uploads_playlist_items
+
         target = title.strip()[:100]
-        for item in playlist.get("items") or []:
-            snippet = item.get("snippet") or {}
-            if snippet.get("title") == target:
-                return (snippet.get("resourceId") or {}).get("videoId")
+        for item in uploads_playlist_items(service, max_results=max_results):
+            if item["title"] == target:
+                return item["video_id"]
     except HttpError as e:
         if "insufficientPermissions" in str(e) or "insufficient authentication scopes" in str(e):
             logger.warning(

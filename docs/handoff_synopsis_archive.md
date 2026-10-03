@@ -7,6 +7,21 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-01 (Claude Code): wave 52 #927 #585 #574 #570 #571 (+ #928)
+
+- **#927** seeding is idempotent; every past `all-setup` had added the 44 seeded videos again.
+  Post time and the view-curve backfill skip seeded rows (their publish times are invented);
+  engagement averages keep them. **Run `ops dedupe-seed`, then `--apply`.**
+- **#928** the JSON publish log no longer truncates itself on a datetime (Postgres unaffected).
+- **#585** discovery's health block: "Fed the script (last N runs)" per signal; `v` adds it per line.
+- **#574** `ops signal-audit --skip news --note ...` (your call, with evidence); `--unskip` reverses.
+- **#570** each run keeps what the recommenders read; `ops analytics-diff <run>` says data or code.
+- **#571** over `PROJECTED_COST_MAX_USD`: Pillow thumbnail, then a shorter longest length; refuses
+  only if Short is over.
+
+**Verify:** `python -m unittest tests.test_seed_history tests.test_signal_usefulness
+tests.test_analytics_snapshot tests.test_cost_cap_degrade`; `py -m scripts.ops dedupe-seed`.
+
 ## Previous — 2026-10-01 (Claude Code): wave 51 #921 #579 #575 #588 #567 + run 109's #922-#926
 
 - **Run 109 fixes:** the discovery Headroom line now shows YouTube units (#922); the projected

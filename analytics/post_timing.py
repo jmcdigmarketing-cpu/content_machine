@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 from apis.topic_scorer import infer_domain
 from config.channels import get_channel_profile, resolve_channel_id
 from core.logging import get_logger
-from core.recommender_confidence import confidence_note, interval_note
+from core.recommender_confidence import confidence_note
 
 logger = get_logger("analytics.post_timing")
 
@@ -100,6 +100,15 @@ def _parse_slots_list(raw) -> tuple[PostSlot, ...]:
     return tuple(out)
 
 
+def _outcome(row: Any) -> float | None:
+    """#938: what a slot is scored on - 7-day views (log scale) or the engaged rate."""
+    from core.success import target as _target
+
+    if _target.target() == _target.TARGET_ENGAGED:
+        return _engagement_from_metrics(row.metrics_json)
+    return _target.outcome(row.metrics_json, getattr(row, "published_at", None))
+
+
 def _engagement_from_metrics(metrics_json: str) -> float | None:
     from core.engagement import under_view_floor
 
@@ -146,7 +155,7 @@ def _collect_timed_samples(
         when = row.published_at
         if not when:
             continue
-        engagement = _engagement_from_metrics(row.metrics_json)
+        engagement = _outcome(row)
         if engagement is None or engagement <= 0:
             continue
         domain = _domain_from_metrics(row.metrics_json, row.detail, channel_id)
@@ -645,10 +654,17 @@ def get_recommended_time(
     if learned:
         rate, n, rates = _slot_engagement(channel_id, topic, when_utc)
         if n > 0:
+            from core.success import target as _target
+
+            figure = (
+                f"{rate:.1%} avg engagement"
+                if _target.target() == _target.TARGET_ENGAGED
+                else f"{_target.show(rate)} on average"
+            )
             rationale = (
                 f"learned from {n} past {domain} post(s) in this slot — "
-                f"{rate:.1%} avg engagement"
-                f"{interval_note(rates)}"
+                f"{figure}"
+                f"{_target.interval_note(rates)}"
                 f"{confidence_note(n)}"
             )
         else:

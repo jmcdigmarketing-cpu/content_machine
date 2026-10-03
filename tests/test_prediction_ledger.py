@@ -60,9 +60,16 @@ class FreezeTests(_Ledger):
             entry = freeze(9, "tapin")
         self.assertEqual(
             entry["length"],
-            {"recommended": "2", "chosen": "2", "expected": 0.30, "source": "analytics", "n": 6},
+            {
+                "recommended": "2",
+                "chosen": "2",
+                "expected": 0.30,
+                "source": "analytics",
+                "target": "engaged",  # #938: each claim names its target
+                "n": 6,
+            },
         )
-        self.assertEqual(entry["post_time"], claim)
+        self.assertEqual(entry["post_time"], dict(claim, target="engaged"))
         self.assertEqual(asked.call_args.args[2], SLOT)
         self.assertEqual(entry["grade"], {"score": 86, "letter": "B"})
 

@@ -252,8 +252,12 @@ class TestDailyBriefBatch(unittest.TestCase):
         with patch.object(ops, "_run_batch", return_value=0) as run:
             ops.COMMANDS["daily-brief"][1](object())
         run.assert_called_once()
-        steps = run.call_args[0][0]
-        self.assertEqual(steps, ["daily-sync", "coach", "health", "reliability", "status"])
+        self.assertEqual(run.call_args[0][0], "daily-brief")
+        # #944: the steps live in ops.BATCHES; the morning brief opens with the goal's scoreboard.
+        self.assertEqual(
+            ops.batch_leaves("daily-brief"),
+            ["scoreboard", "daily-sync", "coach", "health", "reliability", "status"],
+        )
 
 
 if __name__ == "__main__":

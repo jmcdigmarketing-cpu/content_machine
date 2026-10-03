@@ -50,23 +50,30 @@ def _features(run_id: int | None) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def winners(channel_id: str) -> list[dict[str, Any]]:
-    """[{title, views, domain, format, hook}] best first, or [] below the floor."""
-    from core.success.videos import channel_videos
+def _ranked(channel_id: str) -> tuple[list[tuple[Any, int]], str, str]:
+    from core.success.videos import channel_videos, comparable_views
 
-    measured = sorted(
-        (v for v in channel_videos(channel_id) if v.views > 0), key=lambda v: v.views, reverse=True
-    )
-    if len(measured) < WINNERS_MIN_MEASURED:
+    return comparable_views(channel_videos(channel_id), min_count=WINNERS_MIN_MEASURED)
+
+
+def winners(channel_id: str) -> list[dict[str, Any]]:
+    """[{title, views, unit, domain, format, hook}] best first, or [] below the floor.
+
+    #940: ranked on views in the first 7 days once enough videos have them, else views
+    to date, else the sync's 28-day window - never a mix.
+    """
+    ranked, _heading, unit = _ranked(channel_id)
+    if len(ranked) < WINNERS_MIN_MEASURED:
         return []
-    top = min(WINNERS_MAX, max(3, math.ceil(len(measured) * 0.1)))
+    top = min(WINNERS_MAX, max(3, math.ceil(len(ranked) * 0.1)))
     out = []
-    for video in measured[:top]:
+    for video, value in ranked[:top]:
         features = _features(video.run_id)
         out.append(
             {
                 "title": video.title,
-                "views": video.views,
+                "views": value,
+                "unit": unit,
                 "domain": str(features.get("domain") or video.domain or ""),
                 "format": str(features.get("format") or ""),
                 "hook": str(features.get("hook_text") or "").strip(),
@@ -76,7 +83,7 @@ def winners(channel_id: str) -> list[dict[str, Any]]:
 
 
 def _line(w: dict[str, Any]) -> str:
-    parts = [f'"{w["title"]}" - {w["views"]:,} views']
+    parts = [f'"{w["title"]}" - {w["views"]:,} {w.get("unit") or "views"}']
     parts += [p for p in (w["domain"], w["format"]) if p]
     if w["hook"]:
         parts.append(f'hook: "{w["hook"]}"')
@@ -112,8 +119,9 @@ def winners_lines(channel_id: str) -> list[str]:
             f"{WINNERS_MIN_MEASURED} before a top video means anything."
         ]
     state = "in the script prompt" if _enabled() else "off (WINNERS_IN_PROMPT=false)"
+    _ranked_list, heading, _unit = _ranked(channel_id)
     lines = [
-        f"Winners - {channel_id}: top {len(top)} of {count} measured videos by views ({state})"
+        f"Winners - {channel_id}: top {len(top)} of {count} measured videos by {heading} ({state})"
     ]
     lines += [f"  {i}. {_line(w)}" for i, w in enumerate(top, 1)]
     return lines

@@ -80,6 +80,10 @@ def save(run_id: int | None, channel_id: str) -> str | None:
         path = _path(run_id)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         body = {"run_id": int(run_id), "channel_id": channel_id, "at": time.time()}
+        # #938: which outcome the recommenders ranked on when this run was made.
+        from core.success.target import target
+
+        body["target"] = target()
         body["rows"] = _rows(channel_id)
         with open(path, "w", encoding="utf-8") as handle:
             json.dump(body, handle, indent=1, default=str)
@@ -117,6 +121,14 @@ def diff_lines(run_id: int) -> list[str]:
     before = {r["video_id"]: r for r in then.get("rows") or [] if isinstance(r, dict)}
     now = {r["video_id"]: r for r in _rows(channel)}
     lines = [f"Analytics since run {run_id} ({channel}, {len(before)} measured video(s) then):"]
+    from core.success.target import label, target
+
+    then_target, now_target = str(then.get("target") or "engaged"), target()
+    if then_target != now_target:
+        lines.append(
+            f"  recommenders' target: {label(then_target)} -> {label(now_target)} "
+            "(RECOMMEND_TARGET) - every recommendation can move"
+        )
     changed = 0
     for vid in sorted(set(before) & set(now)):
         old, new = before[vid], now[vid]

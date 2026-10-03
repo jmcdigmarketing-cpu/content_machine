@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 from collections.abc import Callable
+from typing import Any
 
 CommandFn = Callable[[argparse.Namespace], int]
 
@@ -592,6 +593,10 @@ def cmd_review_week(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
     from core.success.review import run_review
 
+    if getattr(args, "_batch", False) and not sys.stdin.isatty():
+        # #944: a batch run from a scheduler has nobody to answer the ratings.
+        print("review-week asks for your ratings - run py -m scripts.ops review-week in a console.")
+        return 0
     run_review(resolve_channel_id(getattr(args, "channel", None)))
     return 0
 
@@ -2460,64 +2465,159 @@ def cmd_list(_args: argparse.Namespace) -> int:
         if name == "list":
             continue
         print(f"  {name:18} {help_text}")
-    print("\nBatches:")
-    print(
-        "  all-setup          migrate-layout, init-db, migrate-schema, seed, validate, check-youtube"
-    )
-    print("  all-checks         validate + test + feeds")
-    print("  all-analytics      seed, learn-schedule, weights, sync-metrics")
-    print("  daily-sync         competitor-sync + seo-refresh (daily)")
-    print(
-        "  daily-brief        daily-sync + coach + health + reliability + status (morning one-shot)"
-    )
+    print("\nBatches (#944: each step runs once; only all-setup stops at a failure):")
+    for name, (_help, steps, _stop) in BATCHES.items():
+        nested = all(_step_name(s) in BATCHES for s in steps)
+        joined = " + ".join if nested else ", ".join
+        count = f" ({len(batch_leaves(name))} steps, each once)" if nested else ""
+        print(f"  {name:18} {joined(_step_label(s) for s in steps)}{count}")
     print("\nInteractive (not batched): py main.py")
     return 0
 
 
-def _run_batch(names: list[str], args: argparse.Namespace) -> int:
-    code = 0
-    for name in names:
-        if name not in COMMANDS or name in ("list",):
-            print(f"Unknown batch step: {name}")
+# #944: the batches as one table, so `ops list`, the docs and what runs cannot disagree.
+# A step is a verb, a (verb, {argument: value}) pair, or another batch. Every batch but
+# all-setup keeps going past a failed step and names it at the end - one dead feed or an
+# unset YOUTUBE_ANALYTICS_SYNC used to hide every report after it; setup order matters.
+BatchStep = str | tuple[str, dict[str, Any]]
+BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
+    "all-setup": (
+        "First-time / fresh machine setup (non-interactive; stops at a failure)",
+        (
+            "migrate-layout",
+            "init-db",
+            "migrate-schema",
+            "seed",
+            "validate",
+            "check-youtube",
+            ("dedupe-seed", {"apply": False}),
+        ),
+        True,
+    ),
+    "all-checks": (
+        "Validate channels + unit tests + feed health",
+        ("validate", "test", "feeds"),
+        False,
+    ),
+    "all-analytics": (
+        "Seed, schedules, weights, sync metrics, views by day, scoreboard, predictions",
+        (
+            "seed",
+            "learn-schedule",
+            "weights",
+            "sync-metrics",
+            ("backfill", {"target": "view-curve", "apply": True, "force": False}),
+            "scoreboard",
+            "predictions",
+        ),
+        False,
+    ),
+    "all-review": (
+        "The weekly review: sync, mailbag, scoreboard, reports, then rate the week",
+        (
+            "sync-metrics",
+            "mailbag",
+            "scoreboard",
+            "weekly-report",
+            "predictions",
+            "verdicts",
+            "winners",
+            "signal-audit",
+            "review-week",
+        ),
+        False,
+    ),
+    "daily-brief": (
+        "Morning one-shot: scoreboard, fresh data, coach ideas, quota health, queue",
+        ("scoreboard", "daily-sync", "coach", "health", "reliability", "status"),
+        False,
+    ),
+    "all": (
+        "Everything: all-checks + all-analytics + all-review, each step once",
+        ("all-checks", "all-analytics", "all-review"),
+        False,
+    ),
+}
+
+
+def _step_name(step: BatchStep) -> str:
+    return step if isinstance(step, str) else step[0]
+
+
+def _step_label(step: BatchStep) -> str:
+    if isinstance(step, str):
+        return step
+    name, overrides = step
+    if name == "backfill":
+        return f"backfill {overrides.get('target')}{' --apply' if overrides.get('apply') else ''}"
+    return f"{name} (dry run)" if overrides.get("apply") is False else name
+
+
+def _expand(name: str) -> list[tuple[str, dict[str, Any]]]:
+    """The batch's leaf steps in order, nested batches inlined."""
+    out: list[tuple[str, dict[str, Any]]] = []
+    for step in BATCHES[name][1]:
+        step_name = _step_name(step)
+        if step_name in BATCHES:
+            out.extend(_expand(step_name))
+        else:
+            out.append((step_name, {} if isinstance(step, str) else dict(step[1])))
+    return out
+
+
+def batch_leaves(name: str) -> list[str]:
+    """The verbs a batch runs, in order, each once."""
+    seen: list[str] = []
+    for step, _overrides in _expand(name):
+        if step not in seen:
+            seen.append(step)
+    return seen
+
+
+def _run_batch(name: str, args: argparse.Namespace) -> int:
+    stop_on_failure = BATCHES[name][2]
+    ran: list[str] = []
+    failures: list[tuple[str, int]] = []
+    for step, overrides in _expand(name):
+        if step in ran:
+            continue  # `ops all` syncs once, prints the scoreboard once
+        if step not in COMMANDS:
+            print(f"Unknown batch step: {step}")
             return 1
-        step_code = COMMANDS[name][1](args)
-        if step_code != 0:
-            print(f"Stopped: '{name}' exited with {step_code}")
-            return step_code
-    return code
+        ran.append(step)
+        step_args = argparse.Namespace(**vars(args))
+        for key, value in overrides.items():
+            setattr(step_args, key, value)
+        step_args._batch = True
+        print(f"\n== {name}: {step}")
+        try:
+            code = COMMANDS[step][1](step_args)
+        except Exception as exc:
+            print(f"  ! {step} failed: {type(exc).__name__}: {exc}")
+            code = 1
+        if code != 0:
+            if stop_on_failure:
+                print(f"Stopped: '{step}' exited with {code}")
+                return code
+            failures.append((step, code))
+    if failures:
+        named = ", ".join(f"{step} (exit {code})" for step, code in failures)
+        print(f"\n{name}: {len(failures)} of {len(ran)} steps reported a problem: {named}")
+        return failures[0][1]
+    print(f"\n{name}: {len(ran)} steps done")
+    return 0
 
 
-@_register("all-setup", "First-time / fresh machine setup (non-interactive)")
-def cmd_all_setup(args: argparse.Namespace) -> int:
-    steps = [
-        "migrate-layout",
-        "init-db",
-        "migrate-schema",
-        "seed",
-        "validate",
-        "check-youtube",
-    ]
-    return _run_batch(steps, args)
+def _batch_command(name: str) -> CommandFn:
+    def run(args: argparse.Namespace) -> int:
+        return _run_batch(name, args)
+
+    run.__name__ = f"cmd_{name.replace('-', '_')}"
+    return run
 
 
-@_register("all-checks", "Validate channels + unit tests + feed health")
-def cmd_all_checks(args: argparse.Namespace) -> int:
-    return _run_batch(["validate", "test", "feeds"], args)
-
-
-@_register("all-analytics", "Seed, schedules, weights, sync metrics")
-def cmd_all_analytics(args: argparse.Namespace) -> int:
-    return _run_batch(
-        ["seed", "learn-schedule", "weights", "sync-metrics"],
-        args,
-    )
-
-
-@_register("daily-brief", "Morning one-shot: fresh data, coach ideas, quota health, queue")
-def cmd_daily_brief(args: argparse.Namespace) -> int:
-    """The 'what should I do today' batch: refresh competitor/SEO data, then the
-    coach's ranked ideas, channel health, the credit/quota dashboard, and the queue."""
-    return _run_batch(["daily-sync", "coach", "health", "reliability", "status"], args)
+for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
+    _register(_batch_name, _batch_help)(_batch_command(_batch_name))
 
 
 @_register("batch-drafts", "N ideas -> N draft scripts, unattended (no render/publish)")
@@ -2561,6 +2661,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Positional argument for some commands (e.g. ingest: a URL / PDF path / YouTube link)",
     )
     parser.add_argument("--source", default=None, help="ingest: URL / PDF path / YouTube link")
+    # #944: set to True by the batch runner on each step; review-week reads it.
+    parser.set_defaults(_batch=False)
     parser.add_argument("--channel", default="tapin", help="Channel id (default: tapin)")
     parser.add_argument(
         "--domain", default="gaming", help="Domain for compute_weights (default: gaming)"

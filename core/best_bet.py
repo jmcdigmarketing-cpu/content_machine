@@ -22,11 +22,11 @@ from core.channel_context import (
     on_brand_domains,
     recent_input_topics,
 )
-from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
 from core.engagement import subscribers_gained as _subscribers_gained
 from core.logging import get_logger
-from core.recommender_confidence import MODERATE_SAMPLES, confidence_note, interval_note
+from core.recommender_confidence import MODERATE_SAMPLES, confidence_note
+from core.success import target as _target
 
 logger = get_logger("core.best_bet")
 
@@ -103,7 +103,11 @@ def _build_entries(channel_id: str) -> list[dict]:
         if not seed:
             continue
         log = log_by_run.get(run.id)
-        engaged_rate = _engaged_rate(log.metrics_json) if log else None
+        # #938: the recommenders' target - 7-day views (log scale) or the engaged rate. The
+        # key keeps its old name; every reader below formats it through `_target`.
+        engaged_rate = (
+            _target.outcome(log.metrics_json, getattr(log, "published_at", None)) if log else None
+        )
         subs = _subscribers_gained(log.metrics_json) if log else 0
         entries.append(
             {
@@ -423,9 +427,9 @@ def get_best_bet(channel_id: str) -> BestBetResult | None:
             source="analytics",
             supporting_runs=len(rates),
             rationale=(
-                f"{best_domain} averages {avg_rate:.1%} engagement "
+                f"{best_domain} averages {_target.show(avg_rate)} "
                 f"across {len(rates)} video(s)"
-                f"{interval_note(rates)}"
+                f"{_target.interval_note(rates)}"
                 f"{_ranked_on_note(avg_rate, adjusted.get(best_domain))}"
                 f"{confidence_note(len(rates))}"
                 f"{subs_note}"
@@ -495,9 +499,7 @@ def _ranked_on_note(raw_rate: float, adjusted_rate: float | None, *, places: int
     `_domain_priority` sorts on the empirical-Bayes-shrunk rate; the rationale prints
     the raw mean, whose #351 interval would otherwise disagree in public.
     """
-    from core.recommender_confidence import ranked_on_note
-
-    return ranked_on_note(raw_rate, adjusted_rate, places=places)
+    return _target.ranked_on_note(raw_rate, adjusted_rate, places=places)  # #938
 
 
 def _domain_priority(domain: str, adjusted: dict[str, float], counts: dict[str, int]) -> tuple:
@@ -849,7 +851,13 @@ def pick_record(options: list[Any], picked: int | None, *, by: str = "operator")
         for o in options or []
     ]
     rank = picked if isinstance(picked, int) and 1 <= picked <= len(offered) else None
-    return {"offered": offered, "picked": rank, "by": str(by or "operator")}
+    # #938: what "expected" is measured in, so the ledger scores it on the same scale.
+    return {
+        "offered": offered,
+        "picked": rank,
+        "by": str(by or "operator"),
+        "target": _target.target(),
+    }
 
 
 def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
@@ -981,7 +989,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         rate = domain_rates.get(c["domain"])
         rationale = f"trending on {c['source']} now"
         if rate is not None:
-            rationale += f" · {c['domain']} averages {rate:.0%} engagement"
+            rationale += f" · {c['domain']} averages {_target.show(rate, places=0)}"
             rationale += _ranked_on_note(rate, adjusted.get(c["domain"]), places=0)
             rationale += confidence_note(domain_counts.get(c["domain"], 0))
         options.append(
@@ -1020,7 +1028,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
             # No `_ranked_on_note` here, deliberately: this is one run's own rate,
             # labelled as such, not a domain aggregate. Appending a shrunk *domain*
             # figure would compare two different quantities (#654).
-            rationale = f"{e['engaged_rate']:.0%} engagement on a past {e['domain']} video"
+            rationale = f"{_target.show(e['engaged_rate'], places=0)} on a past {e['domain']} video"
             rationale += confidence_note(domain_counts.get(e["domain"], 0))
         else:
             source = "score"

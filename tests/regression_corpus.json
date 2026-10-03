@@ -1154,6 +1154,42 @@
         "equals": 3
       },
       "why": "a short series divided by four weeks, or a new goal's two days, misstates the pace the scoreboard compares the target with"
+    },
+    {
+      "id": "weekly-totals-skip-a-part-week",
+      "item": 943,
+      "source": "wave 55 live check: a channel series starting on a Thursday printed \"W34 3,400 · W35 5,740\" - a part-week read as a drop",
+      "call": "core.success.goals:weekly_totals",
+      "args": [
+        [
+          [
+            "2026-09-03",
+            100
+          ],
+          [
+            "2026-09-04",
+            100
+          ],
+          [
+            "2026-09-07",
+            100
+          ],
+          [
+            "2026-09-13",
+            100
+          ]
+        ],
+        "2026-10-03"
+      ],
+      "expect": {
+        "equals": [
+          [
+            "2026-W37",
+            200
+          ]
+        ]
+      },
+      "why": "the scoreboard's week over week compares whole weeks; a partial first week looks like a fall in views"
     }
   ]
 }

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-03: wave 54, next five
+# Handoff synopsis — 2026-10-03: wave 55, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-03 (Claude Code): wave 54 #934 #935 #936 #937 #114 (+ #939)
+## Last wave — 2026-10-03 (Claude Code): wave 55 #944 #938 #940 #943 #941 #942
+
+- **#944** `py -m scripts.ops all` runs checks, analytics and the weekly review, each step once;
+  every setup and review verb is in a batch (`ops list`); a failed step is named at the end
+  instead of stopping the rest (`all-setup` still stops).
+- **#938** the best bet, length and post time aim at **views in each video's first 7 days**
+  (`RECOMMEND_TARGET=engaged` switches back). They need views by day from the publish day -
+  `ops all` runs `backfill view-curve --apply`. The predictor stays on engaged rate (#945).
+- **#940** winners and verdicts rank on 7-day views; every sync also keeps lifetime views.
+- **#943** the scoreboard prints the last weeks and "on pace N reviews running".
+- **#941** uploads made outside Content OS count. **#942** answered questions leave the mailbag
+  and `ops mailbag` drafts the replies (you post them).
+
+**Verify:** `python -m unittest tests.test_ops_batches tests.test_wave55_five`; `py -m scripts.ops list`.
+
+## Previous — 2026-10-03 (Claude Code): wave 54 #934 #935 #936 #937 #114 (+ #939)
 
 The operator's goal is **views**; this wave tracks it and asks for their part in it.
 
@@ -39,21 +54,6 @@ The operator's goal is **views**; this wave tracks it and asks for their part in
 
 **Verify:** `python -m unittest tests.test_wave53_five tests.test_soccer_run_fixes
 tests.test_suite_env_isolation`; `py -m scripts.ops signal-audit`.
-
-## Previous — 2026-10-01 (Claude Code): wave 52 #927 #585 #574 #570 #571 (+ #928)
-
-- **#927** seeding is idempotent; every past `all-setup` had added the 44 seeded videos again.
-  Post time and the view-curve backfill skip seeded rows (their publish times are invented);
-  engagement averages keep them. **Run `ops dedupe-seed`, then `--apply`.**
-- **#928** the JSON publish log no longer truncates itself on a datetime (Postgres unaffected).
-- **#585** discovery's health block: "Fed the script (last N runs)" per signal; `v` adds it per line.
-- **#574** `ops signal-audit --skip news --note ...` (your call, with evidence); `--unskip` reverses.
-- **#570** each run keeps what the recommenders read; `ops analytics-diff <run>` says data or code.
-- **#571** over `PROJECTED_COST_MAX_USD`: Pillow thumbnail, then a shorter longest length; refuses
-  only if Short is over.
-
-**Verify:** `python -m unittest tests.test_seed_history tests.test_signal_usefulness
-tests.test_analytics_snapshot tests.test_cost_cap_degrade`; `py -m scripts.ops dedupe-seed`.
 
 ## Pipeline order (operator)
 
@@ -118,11 +118,11 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** set `config/goals.json`, then `ops review-week` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
+1. **Operator:** set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #938 views as the recommenders' target (decision) · #940 lifetime views.
+3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #946 fighter names read as gaming · #947 view-curve re-fetch.
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

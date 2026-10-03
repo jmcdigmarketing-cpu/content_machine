@@ -17,16 +17,11 @@ import json
 from dataclasses import dataclass
 
 from config.channels import resolve_channel_id
-from core.engagement import engaged_rate as _engaged_rate
 from core.engagement import safe_infer_domain as _infer_domain
 from core.logging import get_logger
-from core.recommender_confidence import (
-    confidence_note,
-    interval_note,
-    ranked_on_note,
-    shrunk_mean,
-)
+from core.recommender_confidence import confidence_note, shrunk_mean
 from core.script_length import PRESETS, get_length_preset
+from core.success import target as _target
 
 logger = get_logger("core.length_recommender")
 
@@ -86,7 +81,7 @@ def _collect_length_samples(channel_id: str, *, exclude_run_id: int | None = Non
 
     rate_by_run: dict[int, float] = {}
     for log in log_repo.list_timed_outcomes(channel_id):
-        rate = _engaged_rate(log.metrics_json)
+        rate = _target.outcome(log.metrics_json, getattr(log, "published_at", None))  # #938
         if rate is not None and rate > 0:
             rate_by_run[log.content_run_id] = rate
 
@@ -148,10 +143,10 @@ def get_recommended_length(
             avg_engaged_rate=avg,
             supporting_runs=len(best_rates),
             rationale=(
-                f"{preset.label} ({preset.duration_hint()}) averages {avg:.1%} "
-                f"engagement across {len(best_rates)} video(s)"
-                f"{interval_note(best_rates)}"
-                f"{ranked_on_note(avg, shrunk[best_choice])}"
+                f"{preset.label} ({preset.duration_hint()}) averages {_target.show(avg)} "
+                f"across {len(best_rates)} video(s)"
+                f"{_target.interval_note(best_rates)}"
+                f"{_target.ranked_on_note(avg, shrunk[best_choice])}"
                 f"{confidence_note(len(best_rates))}"
             ),
             channel_id=channel_id,

@@ -175,13 +175,12 @@ class TestTheOpsVerbIsRegistered(unittest.TestCase):
     def test_all_checks_does_not_run_the_canary(self):
         """#663. CI has no network; putting the canary in all-checks would fail
         every build. Inspect the live batch, not a comment."""
-        import inspect
-
         from scripts import ops
 
-        source = inspect.getsource(ops.cmd_all_checks)
-        self.assertNotIn("signal-canary", source)
-        self.assertIn("feeds", source)
+        # #944: the batches are a table now; `ops all` runs all-checks too.
+        for batch in ("all-checks", "all"):
+            self.assertNotIn("signal-canary", ops.batch_leaves(batch))
+            self.assertIn("feeds", ops.batch_leaves(batch))
 
 
 class TestOvernightRunsTheCanary(_IsolatedStateCase):

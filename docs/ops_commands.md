@@ -8,9 +8,11 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | Command | What it does |
 | --- | --- |
 | `agents` | Agent hand-off: who signed what, and whether the mailbox is stale |
-| `all-analytics` | Seed, schedules, weights, sync metrics |
+| `all` | Everything: all-checks + all-analytics + all-review, each step once |
+| `all-analytics` | Seed, schedules, weights, sync metrics, views by day, scoreboard, predictions |
 | `all-checks` | Validate channels + unit tests + feed health |
-| `all-setup` | First-time / fresh machine setup (non-interactive) |
+| `all-review` | The weekly review: sync, mailbag, scoreboard, reports, then rate the week |
+| `all-setup` | First-time / fresh machine setup (non-interactive; stops at a failure) |
 | `analyst` | Weekly analyst briefing — LLM over the pillars -> lever changes (Pillar 5) |
 | `analytics-diff` | What moved in the analytics since a run, data or code (#570) |
 | `apify-trueup` | Compare synthetic Apify invoice vs $0.02/run model (no network) |
@@ -45,7 +47,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `corrections` | Re-check published videos' sources and file a correction dossier |
 | `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
-| `daily-brief` | Morning one-shot: fresh data, coach ideas, quota health, queue |
+| `daily-brief` | Morning one-shot: scoreboard, fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `dedupe-seed` | Duplicate seeded history from re-seeding (#927); --apply removes |
 | `demonetization` | estimatedRevenue cliff vs channel baseline (missing is unmeasured) |

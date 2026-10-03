@@ -31,6 +31,7 @@ logger = get_logger("core.success.goals")
 GOALS_FILE = os.path.join(ROOT_DIR, "config", "goals.json")
 CHANNEL_VIEWS_TEMPLATE = os.path.join(DATA_DIR, "channel_views_{channel}.json")
 FOCUS_FILE = os.path.join(DATA_DIR, "weekly_focus.json")
+HISTORY_TEMPLATE = os.path.join(DATA_DIR, "review_history_{channel}.json")
 PACE_DAYS = 28
 SYNC_DAYS = 90
 
@@ -100,10 +101,25 @@ def save_channel_views(channel_id: str, daily: list[list[Any]]) -> int:
     from analytics.view_curve import merge_daily
 
     stored = _read_json(_views_path(channel_id))
-    existing = stored.get("daily") if isinstance(stored, dict) else None
-    merged = merge_daily(existing, daily)
-    _write_json(_views_path(channel_id), {"channel_id": channel_id, "daily": merged})
+    stored = stored if isinstance(stored, dict) else {}
+    merged = merge_daily(stored.get("daily"), daily)
+    stored.update({"channel_id": channel_id, "daily": merged})
+    _write_json(_views_path(channel_id), stored)
     return len(merged)
+
+
+def save_channel_uploads(channel_id: str, uploads: list[dict[str, str]]) -> None:
+    """Keep the channel's own uploads list beside its views (#941)."""
+    stored = _read_json(_views_path(channel_id))
+    stored = stored if isinstance(stored, dict) else {}
+    stored.update({"channel_id": channel_id, "uploads": list(uploads)})
+    _write_json(_views_path(channel_id), stored)
+
+
+def channel_uploads(channel_id: str) -> list[dict[str, str]]:
+    stored = _read_json(_views_path(channel_id))
+    uploads = stored.get("uploads") if isinstance(stored, dict) else None
+    return list(uploads) if isinstance(uploads, list) else []
 
 
 def sync_channel_views(channel_id: str, *, today: date | None = None) -> int:
@@ -119,6 +135,16 @@ def sync_channel_views(channel_id: str, *, today: date | None = None) -> int:
     except Exception as exc:
         logger.debug("channel views by day skipped for %s: %s", channel_id, exc)
         return 0
+    # #941: the channel's own uploads, so "uploads this week" counts the ones made elsewhere.
+    from analytics.youtube_metrics import fetch_channel_uploads
+
+    try:
+        uploads = fetch_channel_uploads(channel_id=channel_id)
+    except Exception as exc:
+        logger.debug("channel uploads skipped for %s: %s", channel_id, exc)
+        uploads = None
+    if uploads is not None:
+        save_channel_uploads(channel_id, uploads)
     if not daily:
         return 0
     return save_channel_views(channel_id, daily)
@@ -170,6 +196,70 @@ def set_focus(channel_id: str, text: str) -> None:
 # ---- the scoreboard ---------------------------------------------------------------------
 
 
+def _series(daily: Any) -> dict[date, int]:
+    """{day: views} from a {date: views} dict or [[YYYY-MM-DD, views], ...]."""
+    series: dict[date, int] = {}
+    items = daily.items() if isinstance(daily, dict) else (tuple(i[:2]) for i in daily or [])
+    for day, views in items:
+        parsed = day if isinstance(day, date) else _day(day)
+        if parsed is not None:
+            series[parsed] = int(views)
+    return series
+
+
+def weekly_totals(daily: Any, today: date | str, weeks: int = 8) -> list[list[Any]]:
+    """[[YYYY-Www, views], ...] for the last `weeks` ISO weeks that ended before this one
+    and that the series covers from their Monday (#943). The current week is left out (it
+    is not over), and so is a week the series starts part-way through."""
+    end = _day(today) or _today()
+    this_monday = end - timedelta(days=end.weekday())
+    series = _series(daily)
+    if not series:
+        return []
+    # A week the series starts part-way through would read as a drop (wave 55 live check).
+    first = min(series)
+    first_monday = first if first.weekday() == 0 else first + timedelta(days=7 - first.weekday())
+    totals: dict[tuple[int, int], int] = {}
+    for day, views in series.items():
+        if first_monday <= day < this_monday:
+            year, week, _ = day.isocalendar()
+            totals[(year, week)] = totals.get((year, week), 0) + views
+    keys = sorted(totals)[-weeks:]
+    return [[f"{y}-W{w:02d}", totals[(y, w)]] for y, w in keys]
+
+
+# ---- the review history (#943; `ops review-week` writes one row per ISO week) -----------
+
+
+def _history_path(channel_id: str) -> str:
+    return HISTORY_TEMPLATE.format(channel=channel_id)
+
+
+def review_history(channel_id: str) -> list[dict[str, Any]]:
+    rows = _read_json(_history_path(channel_id))
+    rows = (
+        [r for r in rows if isinstance(r, dict) and r.get("week")] if isinstance(rows, list) else []
+    )
+    return sorted(rows, key=lambda r: str(r["week"]))
+
+
+def record_week(channel_id: str, row: dict[str, Any]) -> None:
+    """Add this week's row; a second review in the same week replaces it."""
+    rows = [r for r in review_history(channel_id) if r.get("week") != row.get("week")]
+    rows.append(dict(row))
+    _write_json(_history_path(channel_id), sorted(rows, key=lambda r: str(r["week"])))
+
+
+def on_pace_streak(rows: list[dict[str, Any]]) -> int:
+    """Consecutive most recent reviews that were on track."""
+    streak = 0
+    for row in reversed(rows):
+        if not row.get("on_track"):
+            break
+        streak += 1
+    return streak
+
+
 def pace_per_week(daily: Any, today: date | str) -> dict[str, Any]:
     """{"per_week", "days"}: views a week over the last `PACE_DAYS` the series covers.
 
@@ -178,12 +268,7 @@ def pace_per_week(daily: Any, today: date | str) -> dict[str, Any]:
     series is not divided by four weeks (both found in wave 54's live check).
     """
     end = _day(today) or _today()
-    series: dict[date, int] = {}
-    items = daily.items() if isinstance(daily, dict) else (tuple(i[:2]) for i in daily or [])
-    for day, views in items:
-        parsed = day if isinstance(day, date) else _day(day)
-        if parsed is not None:
-            series[parsed] = int(views)
+    series = _series(daily)
     covered = [d for d in series if d < end]
     start = max(end - timedelta(days=PACE_DAYS), min(covered, default=end))
     days = (end - start).days
@@ -216,6 +301,17 @@ def scoreboard(channel_id: str, *, today: date | None = None) -> dict[str, Any] 
         if v.published_at is not None and week_start < v.published_at.date() <= today
     ]
     ranked = sorted(week, key=lambda v: v.views, reverse=True)
+    uploads_week, outside = len(week), 0
+    listed = channel_uploads(channel_id)
+    if listed:
+        known = {v.video_id for v in channel_videos(channel_id, include_seeded=False)}
+        in_week = [
+            u
+            for u in listed
+            if (d := _day(u.get("published_at"))) is not None and week_start < d <= today
+        ]
+        uploads_week = len(in_week)
+        outside = sum(1 for u in in_week if u.get("video_id") not in known)
     return {
         "channel_id": channel_id,
         "goal": goal,
@@ -227,7 +323,10 @@ def scoreboard(channel_id: str, *, today: date | None = None) -> dict[str, Any] 
         "pace_days": window_days,
         "on_track": pace is not None and need is not None and pace >= need,
         "projected": projected,
-        "uploads_week": len(week),
+        "uploads_week": uploads_week,
+        "uploads_outside": outside,
+        "weeks": weekly_totals(daily, today),
+        "streak": on_pace_streak(review_history(channel_id)),
         "best": ranked[0] if ranked else None,
         "weakest": ranked[-1] if len(ranked) > 1 else None,
         "focus": focus(channel_id),
@@ -284,8 +383,23 @@ def scoreboard_lines(channel_id: str, *, today: date | None = None) -> list[str]
                 f"  at this pace: ~{board['projected']:,} by {goal['by'].isoformat()} "
                 f"({board['projected'] / goal['target']:.0%} of the goal)"
             )
+    weeks = board["weeks"]
+    if weeks:
+        line = "  weeks: " + " · ".join(f"{w.split('-')[1]} {v:,}" for w, v in weeks)
+        if len(weeks) >= 2 and weeks[-2][1]:
+            change = weeks[-1][1] / weeks[-2][1] - 1
+            line += (
+                f" ({weeks[-1][0].split('-')[1]} vs {weeks[-2][0].split('-')[1]}: {change:+.0%})"
+            )
+        lines.append(line)
+    if board["streak"]:
+        plural = "s" if board["streak"] != 1 else ""
+        lines.append(f"  on pace {board['streak']} review{plural} running")
     plan = f" of {goal['uploads_per_week']}" if goal["uploads_per_week"] else ""
-    lines.append(f"  uploads, last 7 days: {board['uploads_week']}{plan}")
+    elsewhere = (
+        f" ({board['uploads_outside']} made outside Content OS)" if board["uploads_outside"] else ""
+    )
+    lines.append(f"  uploads, last 7 days: {board['uploads_week']}{plan}{elsewhere}")
     best, weakest = board["best"], board["weakest"]
     if best is not None:
         line = f'  best: "{best.title}" {best.views:,} views'

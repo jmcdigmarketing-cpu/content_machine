@@ -17,6 +17,118 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-03 (Claude Code) - wave 55: one `ops all`, the recommenders aim at 7-day views, week over week, the mailbag loop
+
+**Prompt (verbatim):** "are all of the setup and review commands integrated in the script ops all?
+also, next 5."
+
+**The answer: no.** `scripts/ops.py` had four batches, all older than waves 47-54:
+- `all-setup`: migrate-layout, init-db, migrate-schema, seed, validate, check-youtube;
+- `all-checks`: validate, test, feeds;
+- `all-analytics`: seed, learn-schedule, weights, sync-metrics;
+- `daily-brief`: daily-sync, coach, health, reliability, status.
+
+Nothing ran scoreboard, verdicts, winners, mailbag, review-week, predictions, weekly-report,
+signal-audit, dedupe-seed or the view-curve backfill, and there was no `ops all`.
+`_run_batch` stopped at the first non-zero step (an unset `YOUTUBE_ANALYTICS_SYNC` hid every report
+after `sync-metrics`), and `cmd_list` described the batches in hand-written text.
+
+**Operator's answers (three questions, asked in plan mode):**
+- Batches: **one `ops all` for everything** (not "a weekly `all-review` only", not "document them").
+- #938: **7-day views, switchable** (not lifetime views, not "keep engaged rate").
+- #942: **draft the reply, you post** (not "post automatically", not "mark answered only").
+
+### Why these
+
+The operator's batch question became #944. The five are wave 54's list: #938 #940 #943 #942 #941.
+
+### Findings, with file:line
+
+- **The batch runner hid failures.** `scripts/ops._run_batch` returned at the first non-zero step.
+  The batches are now one table (`BATCHES`). Every batch but `all-setup` keeps going and ends with
+  "N of M steps reported a problem: ...". A step runs once per invocation, so `ops all` syncs once.
+- **A defect of mine, caught before the commit:**
+  - `analytics/weekly_report._load_rows` imported `_engaged_rate` from `core.best_bet`. Moving the
+    best bet onto `core/success/target` removed that name, so `ops weekly-report` would have raised.
+    `tests/test_upload_mode_report.py` caught it.
+  - The weekly report now imports from `core.engagement`. It is the engagement breakdown and stays
+    on engaged rate.
+- **The ops flag ratchet caught `_batch`** (`tests/test_ops_force_flag.py`). It is now a parser default.
+- **The live check found a part-week reading as a drop:** a channel series starting on a Thursday
+  printed "W34 3,400 · W35 5,740". `goals.weekly_totals` now counts only weeks the series covers from
+  Monday, with a corpus case.
+- **The live check found #946:** `apis/topic_scorer.infer_domain` returns `gaming` for "Topuria vs
+  Holloway breakdown", "Jon Jones retires" and "Holloway vs Gaethje". The synthetic UFC domain fell
+  under the 4-sample bar because of it, so the views best bet still said gaming.
+- **#947:** `analytics/view_curve._needs_curve` keeps a video stale until `first_views` exists. A
+  video under 100 views never gets one, so the backfill `ops all` now runs re-fetches it every time.
+- **The predictor was left on engaged rate, on purpose.** `predict_engaged_rate` feeds
+  `quality["predicted_engaged_rate"]`, the grade's surprise and the ledger's frozen entries. All of
+  them are stored on the rate scale and calibrate the report card. Filed **#945**: a views
+  prediction beside it.
+
+### Shipped
+
+1. **#944** `BATCHES`, `batch_leaves`, the keep-going runner, `all-review`, `all`. `ops list` prints
+   the table. `review-week` in a batch asks only in a console.
+2. **#943** `weekly_totals`, `record_week` / `review_history` / `on_pace_streak`, the "weeks:" and
+   "on pace" lines, and the scorecard's week-over-week table.
+3. **#941** `youtube/channel_uploads.uploads_playlist_items`, shared with the publisher's
+   duplicate check. `fetch_channel_uploads`, and the "(N made outside Content OS)" count.
+4. **#942**:
+   - `comment_id` from `_fetch_comments`;
+   - `mailbag.answered` from run topics and best-bet picks;
+   - `top_question` compares normalised topics and skips answered ones;
+   - `reply_drafts` gives `watch?v=...&lc=...` plus the new video's link.
+5. **#940** `target.views_7d`, `Video.views_7d` / `lifetime_views`, `fetch_lifetime_views` /
+   `store_lifetime_views` in every sync, and `videos.comparable_views` for winners and verdicts.
+6. **#938**:
+   - `core/success/target.py` (`target`, `outcome`, `show`, `interval_note`, `ranked_on_note`);
+   - best bet, length and post time read it;
+   - `pick_record` and the ledger claims carry `target`, and `ledger_rows` scores each claim on its
+     own scale (`*_error_views` as ratios);
+   - the analytics snapshot names a target change.
+
+### Not done, deliberately
+
+- **#945** (the predictor), **#946** (fighter names) and **#947** (the re-fetch) are filed.
+- Mailbag replies are not posted (operator).
+- The suite pins `RECOMMEND_TARGET=engaged`. The existing recommender tests describe the
+  engaged-rate arithmetic their fixtures carry. The views mode has its own tests, and one asserts
+  the production default is views.
+
+### Audit
+
+**Tests:**
+- 33 new test methods: 10 in `tests/test_ops_batches.py`, 23 in `tests/test_wave55_five.py`.
+- Six older tests moved with the decisions:
+  - the `daily-brief` steps;
+  - the canary-not-in-`all-checks` check, now on the table;
+  - `pick_record` and the frozen claims, which gain `target`;
+  - the view-floor test, which reads `target.outcome` in both modes.
+- Suite 4,373 -> 4,406.
+
+**Fail-first:**
+- **32 of 33 observed failing on a clean HEAD worktree.** The other is a guard: `review-week` typed
+  directly still runs.
+- In place, 11 failed on real assertions once their symbols existed: the cited mailbag and pick
+  checks, three recommenders on the wrong target, the winners' measure, and the two weekly tests
+  after the live check.
+
+**Checks:**
+- Default, reverse and shuffle (fake keys in the environment): 0 failures, 0 network attempts,
+  `data/` and `output/` untouched.
+- mypy **122**. ruff clean. Corpus 71 of 71 (+1).
+
+**Live check on synthetic temp data:**
+- `ops all-review` ran 9 steps and ended "1 of 9 steps reported a problem: sync-metrics (exit 1)".
+  `review-week` said to run it in a console.
+- Best bet: under `engaged` "gaming averages 46.2% engagement"; under `views` "gaming averages 515
+  views in 7 days".
+- Length: "Long" under engaged, "Short averages 6,040 views in 7 days" under views.
+- Winners: "1. UFC 321 results - 7,700 views in 7 days".
+- Scoreboard: "uploads, last 7 days: 2 of 5 (1 made outside Content OS)".
+
 ## 2026-10-03 (Claude Code) - wave 54: a views goal and its scoreboard, your verdicts, the weekly review, the winners library, the mailbag
 
 **Prompt (verbatim):** "resume last prompt AND run the next 5. any questions for me? creative new

@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-03: wave 55, next five
+# Handoff synopsis — 2026-10-03: wave 56, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-03 (Claude Code): wave 55 #944 #938 #940 #943 #941 #942
+## Last wave — 2026-10-03 (Claude Code): wave 56 #949 #950 #953
+
+- **#949** `py -m scripts.ops backlog`: fresh best bets onto the open slots of the next two weeks
+  (news first, dropped past 3 days; evergreen after), drafted; every draft that clears the gates
+  (grade B+, no unsupported claim, no weak hook) renders and is scheduled; the rest wait for
+  `batch-review`. `--dry-run` spends nothing; `backlog list`; `backlog pull --run-id N` vetoes.
+  The worker uploads ~6 a day; YouTube publishes at the slot with the PC off. tapin's gaming
+  schedule gives 3 slots a week.
+- **#950** `schedule_auto_generate.ps1` registers this checkout. **#953** fail-first recipe.
+- Next: packaging (#951), then Phase M on the direct APIs (#952).
+
+**Verify:** `python -m unittest tests.test_backlog`; `py -m scripts.ops backlog --dry-run`.
+
+## Previous — 2026-10-03 (Claude Code): wave 55 #944 #938 #940 #943 #941 #942
 
 - **#944** `py -m scripts.ops all` runs checks, analytics and the weekly review, each step once;
   every setup and review verb is in a batch (`ops list`); a failed step is named at the end
@@ -40,20 +53,6 @@ The operator's goal is **views**; this wave tracks it and asks for their part in
 - **#939** `ops signal-audit`'s "cited" column was always 0; it reads the real script now.
 
 **Verify:** `python -m unittest tests.test_wave54_success`; `py -m scripts.ops scoreboard`.
-
-## Previous — 2026-10-03 (Claude Code): wave 53 #930-#933 #929 #591 #573 #586 (#587 closed)
-
-- **#930** the suite skips your `.env` and blanks secret-shaped variables: the 9 failures that only
-  your PC showed were seven tests reaching the network with your real keys, plus two harness checks.
-- **#931** an all-lowercase overview seeds on the names it mentions ("premier league champions
-  league"), and the menu asks `Search for this?` - Enter keeps it, or type a better seed.
-- **#932** angles that miss the scoring deadline stay, scored on the seed; the menu says how many.
-- **#933** Headroom prints once. **#929** every measured run counts in the best bet.
-- **#591** `ops signal-audit` prints seconds p50 / p90 per signal. **#573** one RSS fetch per run.
-- **#586** `ops signal-diff <A> --run-id <B>`. **#587** closed: no per-call retries exist to pool.
-
-**Verify:** `python -m unittest tests.test_wave53_five tests.test_soccer_run_fixes
-tests.test_suite_env_isolation`; `py -m scripts.ops signal-audit`.
 
 ## Pipeline order (operator)
 

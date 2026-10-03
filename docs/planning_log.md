@@ -17,6 +17,80 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-03 (Claude Code) - wave 56: `ops backlog`, fresh best bets into two weeks of scheduled videos
+
+**Prompt (verbatim):** "yes backlog would be great, for that we just need to pull best bet fresh
+then perform. a backlog of videos based off those topics, how many vids at a time could we do this
+with? how could this project catch up to others of its kind AND the industry standard". It came
+after "can i upload directly from here, away from the pc?" and the answer that only YouTube's own
+scheduled publish runs with the PC off.
+
+**Operator's answers (plan mode):**
+- Approval: **auto if it passes, you veto** (not "you approve each", not "fully automatic").
+- Horizon: **2 weeks / ~10 videos**.
+- Freshness: **news first, evergreen later**.
+- Catch-up lever after the backlog: **packaging**.
+- Phase M route: **direct APIs in this repo**.
+- Order: **backlog -> packaging -> Phase M**.
+
+The operator pasted research on TikTok/Instagram upload APIs. It is answered in #952 and was not
+acted on.
+
+### How many at a time (measured)
+
+- **Cadence cap:** 5 per rolling 7 days (`core/cadence.MAX_VIDEOS_PER_WEEK`).
+- **Upload quota:** about 6 uploads a day (10,000 units / 1,600 per `videos.insert`).
+  `jobs/worker._defer_for_quota` holds the rest until the next day.
+- **Cost:** about $0.26-0.36 a video. The live projection was $1.28 for 5.
+- **The live check:** tapin's slot planner, given no topic, uses the gaming schedule of 3 slots a
+  week (`config/channels.json` `domain_slots.gaming`). So two weeks is about 6 videos, not 10. More
+  needs more slots in that schedule.
+
+### Findings, with file:line
+
+- `core/spaced_queue.plan_spaced_uploads` sets `room = cap - recent - upcoming` for the current
+  window only. Everything past it was "cadence cap reached". `publishing/backlog.fits_cap` checks
+  every rolling 7-day window that contains the slot.
+- `scripts/schedule_auto_generate.ps1` hard-coded `C:\Users\jonma\OneDrive\Desktop\content_machine`
+  (#950).
+- **#953, the fail-first check was leaking.** In a HEAD worktree the editable install's
+  `_EditableFinder` served `publishing/backlog.py` from the main checkout, so 10 of 12 new tests
+  "passed" on HEAD. With the finder removed, 12 of 12 fail. The recipe is now in the next-five
+  skill.
+- Dual-thumbnail renders wait for a human pick (`core/thumbnail_pick`). The backlog takes the
+  thumbnail experiment's next arm, so no upload waits.
+
+### Shipped
+
+1. **#949** `publishing/backlog.py`:
+   - `fits_cap`, `plan_backlog_slots`, `topic_kind`, `pick_backlog_topics`, `backlog_gate`;
+   - `upload_days`, `projected_cost`, `run_backlog`, `scheduled_lines`, `pull`;
+   - `ops backlog [list | pull --run-id N] [--weeks] [--dry-run] [--yes]`.
+2. **#950** the PowerShell task resolves this checkout from `$PSScriptRoot`.
+3. **#953** the skill's fail-first recipe.
+
+### Not done, deliberately
+
+- `ops backlog` is not in `ops all`, because it spends money.
+- Slots come from the schedule with no topic, i.e. tapin's gaming slots; UFC slots are not used.
+- The post-time experiment's off-slot arm is not applied to backlog slots, since there are no run
+  ids when slots are planned.
+- **#951** (packaging) and **#952** (Phase M) are filed in the operator's order.
+
+### Audit
+
+- 12 new test methods in `tests/test_backlog.py`; suite 4,406 -> 4,418.
+- **12 of 12 observed failing on a clean HEAD worktree** with the editable finder removed (see #953).
+- Default, reverse and shuffle (fake keys) green, after documenting `BACKLOG_NEWS_DAYS` /
+  `BACKLOG_MIN_GRADE` for the env lint. 0 network attempts; `data/` and `output/` untouched.
+- mypy **122** (one new `datetime | None` fixed). ruff clean.
+- **Live check:**
+  - The dry run on the real schedule, with 2 videos already scheduled, planned 5 slots. 4 news
+    topics were dropped because the first open slot was 6 days out.
+  - A full run with stubbed drafting and render queued the 2 drafts that passed, at their slots.
+    Three waited, each naming its gate: "1 unsupported claim(s)", "weak hook",
+    "grade C (needs B or better)".
+
 ## 2026-10-03 (Claude Code) - wave 55: one `ops all`, the recommenders aim at 7-day views, week over week, the mailbag loop
 
 **Prompt (verbatim):** "are all of the setup and review commands integrated in the script ops all?

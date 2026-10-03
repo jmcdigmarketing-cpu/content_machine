@@ -48,6 +48,14 @@ against the recorded baseline - a new type error hides in a green suite. And
 **grep each new symbol for a production caller**; a helper only the tests reach
 is a feature that does not exist.
 
+**Fail-first on a clean HEAD worktree imports from the wrong tree** (#953, wave 56). The
+editable install's `_EditableFinder` serves a module the worktree lacks from the main checkout,
+so a test of a brand-new module passes on HEAD. Remove it before running the new tests there:
+
+```bash
+python -c "import sys, unittest; sys.meta_path[:] = [f for f in sys.meta_path if 'editable' not in (getattr(f, '__name__', '') or type(f).__name__).lower()]; sys.argv = ['unittest', 'tests.test_x']; unittest.main(module=None)"
+```
+
 **Replay the regression corpus** (`py -m scripts.ops regressions`) and, before editing a
 file, `py -m scripts.ops regressions <file>` to see which old fixes guard it. A defect a
 live run exposed gets a case in `tests/regression_corpus.json`; if the same shape can

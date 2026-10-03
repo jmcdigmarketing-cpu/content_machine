@@ -2620,6 +2620,38 @@ for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
     _register(_batch_name, _batch_help)(_batch_command(_batch_name))
 
 
+@_register("backlog", "Fresh best bets -> drafts -> render the passes -> schedule two weeks (#949)")
+def cmd_backlog(args: argparse.Namespace) -> int:
+    """`ops backlog [--weeks 2] [--dry-run] [--yes]`, `ops backlog list`,
+    `ops backlog pull --run-id N` (the veto)."""
+    from config.channels import resolve_channel_id
+    from publishing import backlog
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    action = str(getattr(args, "target", "") or "").strip().lower()
+    if action == "list":
+        for line in backlog.scheduled_lines(channel):
+            print(line)
+        return 0
+    if action == "pull":
+        run_id = int(getattr(args, "run_id", 0) or 0)
+        if not run_id:
+            print("Usage: py -m scripts.ops backlog pull --run-id <run>")
+            return 2
+        print(backlog.pull(channel, run_id))
+        return 0
+    if action:
+        print("Usage: py -m scripts.ops backlog [list | pull --run-id N] [--weeks 2] [--dry-run]")
+        return 2
+    backlog.run_backlog(
+        channel,
+        weeks=int(getattr(args, "weeks", 2) or 2),
+        dry_run=bool(getattr(args, "dry_run", False)),
+        yes=bool(getattr(args, "yes", False)),
+    )
+    return 0
+
+
 @_register("batch-drafts", "N ideas -> N draft scripts, unattended (no render/publish)")
 def cmd_batch_drafts(args: argparse.Namespace) -> int:
     """Headless volume-with-variation: best-bet topics (or py -m core.batch_generation
@@ -2759,7 +2791,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="backfill-cost: show what would change without writing",
+        help="backfill-cost / backlog: show what would happen without writing or spending",
+    )
+    parser.add_argument(
+        "--weeks", type=int, default=2, help="backlog: how many weeks of slots to fill (#949)"
+    )
+    parser.add_argument(
+        "--yes", action="store_true", help="backlog: draft, render and schedule without asking"
     )
     parser.add_argument("--skip", default="", help="signal-audit: stop running this signal (#574)")
     parser.add_argument("--unskip", default="", help="signal-audit: run a skipped signal again")

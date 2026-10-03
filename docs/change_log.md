@@ -8,6 +8,19 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 56 — `ops backlog`: two weeks of scheduled videos from fresh best bets - 2026-10-03
+
+*4,418 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 71 of 71.*
+
+- **#949** `py -m scripts.ops backlog` plans the open post-time slots of the next two weeks under
+  the cadence cap, puts news topics on the first slots (dropped past 3 days) and evergreen after,
+  drafts them, and **renders and schedules on its own** each draft that clears every gate (grade B
+  or better, no unsupported claim, no weak hook, no authenticity block, not stale). Others wait for
+  `ops batch-review`. `--dry-run` shows the plan, cost and upload days and spends nothing;
+  `ops backlog list` shows what is scheduled; `ops backlog pull --run-id N` vetoes one. The worker
+  uploads (about 6 a day); YouTube publishes each at its slot, PC on or off.
+- **#950** `scripts\schedule_auto_generate.ps1` registers this checkout, not a hard-coded old path.
+
 ### Wave 55 — one `ops all`, the recommenders aim at 7-day views, week over week, the mailbag loop - 2026-10-03
 
 *4,406 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 71 of 71.*

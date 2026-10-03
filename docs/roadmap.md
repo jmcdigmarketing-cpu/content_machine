@@ -26,13 +26,13 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-10-03 wave 55: **#944** every setup and review verb in a batch and one
-`ops all` (the operator asked; none of waves 47-54's verbs were batched), **#938** the best bet,
-length and post time aim at 7-day views (`RECOMMEND_TARGET=engaged` switches back), **#940**
-7-day and lifetime views per video, **#943** week over week and an on-pace streak, **#941** uploads
-made outside Content OS, **#942** answered questions leave the mailbag with a reply draft.
+**Just landed** - 2026-10-03 wave 56: **#949** `ops backlog` - fresh best bets drafted, the
+ones that clear every gate rendered and scheduled over the next two weeks (news on the first
+slots), the rest left for `batch-review`, `ops backlog pull` to veto; **#950** the auto-generate
+task's hard-coded old path; **#953** fail-first on a HEAD worktree no longer imports new modules
+from the main checkout.
 
-**Before that** - wave 54: **#934 #935 #936 #937 #114 #939** · wave 53: **#930-#933 #929 #591 #573 #586** (#587 closed) · wave 52: **#927 #928 #585 #574 #570 #571** · wave 51: **#921 #579 #575 #588 #567
+**Before that** - wave 55: **#944 #938 #940 #943 #941 #942** · wave 54: **#934 #935 #936 #937 #114 #939** · wave 53: **#930-#933 #929 #591 #573 #586** (#587 closed) · wave 52: **#927 #928 #585 #574 #570 #571** · wave 51: **#921 #579 #575 #588 #567
 #922-#926** · wave 50: **#920 #566 #428 #565 #578**. Earlier: [roadmap_archive.md](roadmap_archive.md)
 and [planning_log.md](planning_log.md).
 
@@ -51,23 +51,24 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**Wave 55 (2026-10-03)** answered the operator's batch question with #944 and built all five of
-wave 54's list. Its live check found #946 (fighter-led titles counted as gaming, which skews every
-recommender's domain counts) and putting the view-curve backfill in `ops all` showed #947. The next
-five keep to views:
+**Wave 56 (2026-10-03)** built the backlog the operator asked for (away from the PC, videos keep
+publishing). The operator set the order after it: **packaging, then Phase M** (direct APIs,
+#952). The next five:
 
-1. **#946 fighter names read as gaming** `[S]` - "Jon Jones retires" is not a gaming video.
-2. **#947 the view-curve backfill re-fetches small videos forever** `[S]` - stale means "no 7-day series".
-3. **#948 impressions and click-through in the sync** `[M]` - views = impressions x CTR; judge the thumbnail on CTR.
-4. **#49 a first-day alert** `[M]` - a video far under the channel's 7-day baseline on day one says so.
-5. **#945 a 7-day-views prediction** `[M]` - beside the engaged-rate one, so the ledger can say whether quality predicts views.
+1. **#951 packaging** (with #948) `[M]` - what YouTube reports for the feed and for clicks; titles and thumbnails judged on it.
+2. **#946 fighter names read as gaming** `[S]` - skews every recommender's domain counts.
+3. **#947 the view-curve backfill re-fetches small videos forever** `[S]` - `ops all` runs it weekly.
+4. **#49 a first-day alert** `[M]` - a video far under the channel's 7-day baseline says so on day one.
+5. **#945 a 7-day-views prediction** `[M]` - beside the engaged-rate one.
+
+Then **#952 Phase M**: TikTok (inbox mode until the audit) and Instagram Reels.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** `py -m scripts.ops all` once a week (it runs `backfill view-curve --apply`, which the 7-day views target needs; `RECOMMEND_TARGET=engaged` switches the recommenders back) (#944 #938). Set your numbers in `config\goals.json` (the committed ones are placeholders), then `ops sync-metrics`, `ops scoreboard`, and `ops review-week` once a week (#934 #936); `ops mailbag` (#114); `ops winners` shows what the script prompt now sees (#937). `git pull` then the suite - it no longer reads your `.env` (#930). `ops signal-diff <A> --run-id <B>` on two runs of the same topic (#586). `ops dedupe-seed` then `--apply` - every past `all-setup` added the 44 seeded videos again (#927). `ops signal-audit --skip <name>` once a signal has fed nothing in 10+ runs (#574). After your next run, `ops analytics-diff <run>` (#570). `ops signal-audit` - which signals ever feed the script, and which return a frozen payload; retiring any is your call (#575 #588). `py -m core.experiments start post_time` now flips a coin per upload and moves off-slot ones a random hour (#567). `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops tag-report`, `ops title-patterns`, `ops retention-diff` (#428 #566 #565); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
+**Waiting on the operator, not on code:** before time away, `py -m scripts.ops backlog --dry-run`, then `backlog`, then `worker` (#949). `py -m scripts.ops all` once a week (it runs `backfill view-curve --apply`, which the 7-day views target needs; `RECOMMEND_TARGET=engaged` switches the recommenders back) (#944 #938). Set your numbers in `config\goals.json` (the committed ones are placeholders), then `ops sync-metrics`, `ops scoreboard`, and `ops review-week` once a week (#934 #936); `ops mailbag` (#114); `ops winners` shows what the script prompt now sees (#937). `git pull` then the suite - it no longer reads your `.env` (#930). `ops signal-diff <A> --run-id <B>` on two runs of the same topic (#586). `ops dedupe-seed` then `--apply` - every past `all-setup` added the 44 seeded videos again (#927). `ops signal-audit --skip <name>` once a signal has fed nothing in 10+ runs (#574). After your next run, `ops analytics-diff <run>` (#570). `ops signal-audit` - which signals ever feed the script, and which return a frozen payload; retiring any is your call (#575 #588). `py -m core.experiments start post_time` now flips a coin per upload and moves off-slot ones a random hour (#567). `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops tag-report`, `ops title-patterns`, `ops retention-diff` (#428 #566 #565); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
 `assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
 colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop

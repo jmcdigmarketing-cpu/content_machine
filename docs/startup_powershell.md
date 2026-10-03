@@ -37,6 +37,21 @@ once, and names any step that failed at the end instead of stopping (#944).
 
 ---
 
+## Before time away from the PC (#949)
+
+```powershell
+py -m scripts.ops backlog --dry-run --channel tapin   # slots, topics, cost, upload days - nothing spent
+py -m scripts.ops backlog --channel tapin             # draft, render the passes, schedule
+py -m scripts.ops worker                              # upload them (~6 a day; leave the PC on until done)
+py -m scripts.ops backlog list --channel tapin        # what is scheduled
+py -m scripts.ops backlog pull --run-id 123           # veto one before it goes public
+```
+
+Uploaded videos go public at their slot on YouTube's side, so the PC can be off by then. Drafts
+that miss a gate wait for `py -m scripts.ops batch-review`.
+
+---
+
 ## Every session (normal workflow)
 
 **Terminal 1 — create content (interactive)**

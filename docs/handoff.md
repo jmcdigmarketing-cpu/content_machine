@@ -53,25 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-03 · **HEAD at write:** `6d60a9b` (wave 54) + the wave 55 commit
+**Written:** 2026-10-03 · **HEAD at write:** `23b741c` (wave 55) + the wave 56 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** the batches are `scripts/ops.BATCHES` (a step is a verb, a
-`(verb, {arg: value})` pair or another batch); `_run_batch(name, args)`. The recommenders' per-video
-value comes from `core/success/target.outcome` - log 7-day views by default, the engaged rate with
-`RECOMMEND_TARGET=engaged`; the suite pins `engaged` in `tests/__init__.py`, so a views test sets
-it. `BestBetResult.avg_engaged_rate` and the entries' `engaged_rate` key hold the target value;
-format through `target.show`. Ledger claims carry `target`; old ones are engaged. mypy **122**.
+**Read before editing:** `publishing/backlog.py` is the backlog: slots (`plan_backlog_slots`,
+rolling cap via `fits_cap`, counting published + scheduled + queued), topics
+(`pick_backlog_topics`, news first within `BACKLOG_NEWS_DAYS`), the gate (`backlog_gate`), the
+run (`run_backlog`, which reuses `batch_generation.run_batch`, `batch_review._render`,
+`spaced_queue.queue_spaced_uploads`) and the veto (`pull`). It is not in `ops all`. Fail-first on a
+HEAD worktree: remove `_EditableFinder` from `sys.meta_path` (next-five skill) or new modules are
+imported from the main checkout. mypy **122**.
 
 **Defects first:**
-- Mine, caught by the suite before the commit: `weekly_report` imported `_engaged_rate` from
-  `core.best_bet`, which this wave removed.
-- Live check: a part-week read as a drop (fixed, corpus case); fighter-led titles infer `gaming`
-  (#946, open); the view-curve backfill re-fetches small videos forever (#947, open).
-- Carried: no emoji render seen (#914).
+- #953: the fail-first worktree leaked new modules (10 of 12 passed on HEAD); fixed in the method.
+- #950: the auto-generate task pointed at an old OneDrive checkout.
+- Open: #946 fighter names infer gaming; #947 view-curve re-fetch; the backlog plans on the
+  gaming schedule only (3 slots a week).
 
-**Shipped:** #944 #938 #940 #943 #941 #942. Suite **4,406**, 0 network attempts, `data/` clean;
-backlog **236 numbered open**, highest #948. Next five: **#946 · #947 · #948 · #49 · #945**.
+**Shipped:** #949 #950 #953. Suite **4,418**, 0 network attempts, `data/` clean; backlog **238
+numbered open**, highest #952. Next: **#951 · #946 · #947 · #49 · #945**, then #952 Phase M.
 
 ## Slot — Cursor
 

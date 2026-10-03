@@ -9,7 +9,8 @@
 # and queues the video for upload. Start the worker separately:
 #   py -m jobs.worker --loop 30
 
-$ProjectDir = "C:\Users\jonma\OneDrive\Desktop\content_machine"
+# #950: this checkout, wherever it lives (it used to be a hard-coded OneDrive path).
+$ProjectDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Python     = "py"
 $TaskName   = "ContentMachine_AutoGenerate"
 $LogFile    = "$ProjectDir\logs\auto_generate.log"

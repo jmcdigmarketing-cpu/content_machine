@@ -7,6 +7,20 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-03 (Claude Code): wave 53 #930-#933 #929 #591 #573 #586 (#587 closed)
+
+- **#930** the suite skips your `.env` and blanks secret-shaped variables: the 9 failures that only
+  your PC showed were seven tests reaching the network with your real keys, plus two harness checks.
+- **#931** an all-lowercase overview seeds on the names it mentions ("premier league champions
+  league"), and the menu asks `Search for this?` - Enter keeps it, or type a better seed.
+- **#932** angles that miss the scoring deadline stay, scored on the seed; the menu says how many.
+- **#933** Headroom prints once. **#929** every measured run counts in the best bet.
+- **#591** `ops signal-audit` prints seconds p50 / p90 per signal. **#573** one RSS fetch per run.
+- **#586** `ops signal-diff <A> --run-id <B>`. **#587** closed: no per-call retries exist to pool.
+
+**Verify:** `python -m unittest tests.test_wave53_five tests.test_soccer_run_fixes
+tests.test_suite_env_isolation`; `py -m scripts.ops signal-audit`.
+
 ## Previous — 2026-10-01 (Claude Code): wave 52 #927 #585 #574 #570 #571 (+ #928)
 
 - **#927** seeding is idempotent; every past `all-setup` had added the 44 seeded videos again.

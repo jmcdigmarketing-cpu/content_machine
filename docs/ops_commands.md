@@ -24,6 +24,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `backfill-cost` | Repair missing TTS cost on runs that rendered before the fix |
 | `backfill-features` | Reconstruct features_json for historical runs |
 | `backfill-quality` | Recompute grade/hedge/style fields on historical runs (#823) |
+| `backlog` | Fresh best bets -> drafts -> render the passes -> schedule two weeks (#949) |
 | `batch-drafts` | N ideas -> N draft scripts, unattended (no render/publish) |
 | `batch-review` | Review waiting drafts in one pass; render the yeses; space them (#760) |
 | `blocking` | One-sentence: what's blocking publish (existing gates only) |

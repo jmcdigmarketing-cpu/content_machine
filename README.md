@@ -42,6 +42,7 @@ py -m scripts.ops all-setup         # layout + DB + seed + validate + YouTube ch
 py -m scripts.ops all-checks        # validate + unit tests + feeds
 py -m scripts.ops all-analytics     # seed, schedules, weights, sync, views by day, scoreboard
 py -m scripts.ops all-review        # the weekly review: mailbag, reports, then rate the week
+py -m scripts.ops backlog --dry-run # plan two weeks of scheduled videos (then without --dry-run)
 
 # Individual steps
 py -m scripts.ops migrate-layout

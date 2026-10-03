@@ -17,6 +17,22 @@ Tests that genuinely exercise vault behaviour set the variable themselves via
 """
 
 import os
+import re as _re
+
+# #930: the operator's .env held real keys (Apify, balldontlie), so seven tests reached the
+# network on the PC and nowhere else. The suite skips the project .env and blanks any
+# secret-shaped variable already in the process environment: it sees what CI sees.
+os.environ["CONTENT_SKIP_DOTENV"] = "1"
+_SECRET_NAME = _re.compile(r"(_KEY|_KEYS|_TOKEN|_SECRET|_PASSWORD|_BOT)$")
+
+
+def blank_secrets(environ) -> None:
+    for name in list(environ):
+        if _SECRET_NAME.search(name):
+            environ[name] = ""
+
+
+blank_secrets(os.environ)
 
 # Loaded only when tests are imported as the `tests` package. That happens for
 # `python -m unittest tests.test_*`, pytest, and `unittest discover -s tests -t .`.

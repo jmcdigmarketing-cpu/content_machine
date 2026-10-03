@@ -166,6 +166,21 @@ def search_seed_from_thoughts(text: str) -> str:
     bare_anchor = len(found) == 1 and not found[0][3]
     if terms and not bare_anchor:
         return _cap_words(" ".join(terms))
+    if not terms:
+        # #931: an all-lowercase overview names no one, and its first clause ("State of
+        # the sport, pro football (soccer) as") searched for "State". Known league /
+        # competition / franchise names in it are the subject.
+        try:
+            from apis.topic_scorer import domain_phrases
+
+            known: list[str] = []
+            for phrase in domain_phrases(body):
+                if phrase not in known:
+                    known.append(phrase)
+            if known:
+                return _cap_words(" ".join(known[:3]))
+        except Exception as exc:
+            logger.debug("seed domain phrases skipped: %s", exc)
     if clause and len(clause.split()) <= 6 and (not terms or terms[0].lower() in clause.lower()):
         return clause
     if terms:

@@ -1095,6 +1095,37 @@
         "equals": "2"
       },
       "why": "the cap sets RUN_LENGTH_CAP; a longer choice from the menu or a default must not slip past it"
+    },
+    {
+      "id": "lowercase-overview-seeds-on-known-names",
+      "item": 931,
+      "source": "operator's PC run, 2026-10-01 (soccer overview): the search seed became 'State of the sport, pro football (soccer) as'",
+      "call": "core.idea_intake:search_seed_from_thoughts",
+      "args": [
+        "State of the sport, pro football (soccer) as of oct 1 2026, including la liaga, bundsaleiga, premier league, and early champions league projections"
+      ],
+      "expect": {
+        "equals": "premier league champions league"
+      },
+      "why": "with no capitalised names the first clause won; Wikipedia matched 'State' and the sports signal looked for a team called State"
+    },
+    {
+      "id": "deadline-fallback-is-said",
+      "item": 932,
+      "source": "operator's PC run, 2026-10-01 (soccer overview): one angle at 0.0 with no explanation after variant scoring timed out",
+      "call": "core.pipeline:variant_fallback_note",
+      "args": [
+        {
+          "unscored_on_seed": 5
+        }
+      ],
+      "kwargs": {
+        "total": 5
+      },
+      "expect": {
+        "contains": "5 of 5 angles scored on the seed's signals"
+      },
+      "why": "a silent fallback reads as a broken discovery; the operator cancelled the run"
     }
   ]
 }

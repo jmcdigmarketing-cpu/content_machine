@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-01
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,80 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-10-03 (Claude Code) - wave 53: the suite stops reading your keys, the soccer run's three defects, signal timing and diffs
+
+**Prompt (verbatim):** the operator's PowerShell paste (git pull, the suite with 9 failures,
+`dedupe-seed` finding and removing 132, `signal-audit` 0 runs, a soccer run of `main.py`,
+`analytics-diff 110` none), then "next 5"; resumed with "resume last prompt AND run the next 5.
+any questions for me? creative new ideas? how can we track and partake success better?"
+
+**Operator's answers:** #931 - known phrases and you confirm the seed (not "phrases only", not
+"ask every time"); #932 - keep the angles and score them on the seed (not "seed alone, say why").
+For what comes next: success = **views**; wave 54 builds goals + scoreboard, your verdict per video,
+a winners library and the comment mailbag (#114); the ritual is a 10-minute weekly review.
+
+### Why these five
+
+Wave 52's recommendation - #929 #591 #573 #587 #586 - each checked read-only, after the paste's
+defects. #587 did not survive the check (below); #591 was narrowed.
+
+### Findings, with file:line
+
+- **#930 the 9 PC-only failures were the suite reading `.env`.** `config/settings._load_dotenv`
+  loaded the operator's file, so `APIFY_CONTENT_MACHINE_KEY` / `BALLDONTLIE_API_KEY` were set and
+  seven tests reached the network; #921's guard failed them, as designed. Reproduced here with fake
+  keys in the environment (7 failures), then fixed in `tests/__init__.py` (skip `.env`, blank
+  secret-shaped names) and `config/settings.py:16`. The other two: the health-block test asserted
+  plain text where PowerShell gets colour, and `tests/test_githooks.py` read mode bits Windows does
+  not keep (now `git ls-files -s` on Windows).
+- **#931** `core/idea_intake.search_seed_from_thoughts` took the first clause of an all-lowercase
+  sentence: "State of the sport, pro football (soccer) as". Now `apis/topic_scorer.py:245`
+  `domain_phrases` returns known names in typed order, and `main.py:540` asks to confirm.
+- **#932** `core/pipeline.collect_scored_variants` dropped every angle that missed
+  `VARIANT_SCORING_DEADLINE_S` without a word; now scored on the seed's signals (`:405`) and
+  `variant_fallback_note` (`:415`) prints why.
+- **#933** `apis/register_signals.build_registry` emitted Headroom for every variant (`:888`).
+- **#929** `core/best_bet._build_entries` read the newest 30 runs only (`:98`).
+- **#573's premise was half right:** the brief already had one cache key per angle; what repeated was
+  `fetch_rss_context(topic)` keyed by the *angle* (`core/research_brief.py:386`), plus the stats
+  context, once per angle and again for the intelligence report.
+- **#591's premise was half right:** the spinner's "typ ~Ns" already comes from median phase timings.
+  What did not exist was time per signal.
+- **#587's premise is false.** No signal retries per call except YouTube's single reconnect (#781);
+  an Apify failure is cached and trips the breaker; the run-level budget is the discovery deadline
+  (#820), which cancels outstanding paid calls. Closed with no code.
+
+### Shipped
+
+1. **#930** `CONTENT_SKIP_DOTENV`, `blank_secrets`, the ANSI-safe health test, the Windows hooks check.
+2. **#931** `domain_phrases`, the seed from known names, the confirm prompt.
+3. **#932** unscored angles scored on the seed, `meta["unscored_on_seed"]`, the menu note.
+4. **#933** Headroom for the base pool only.
+5. **#929** every measured run counts in the best bet.
+6. **#591** `register_signals.base_pool_seconds()`, `signal_seconds` in the trace, p50 / p90 in `ops signal-audit`.
+7. **#573** the brief's RSS and stats context fetched by seed.
+8. **#586** `signal_audit.diff_runs`, `ops signal-diff <A> --run-id <B>`.
+9. **#587** closed, evidence above.
+
+### Not done, deliberately
+
+- The confirm prompt is skipped when input is piped (batch / tests) - `input_pending` guards it.
+- #591 times the base pool only; variant registries reuse its signals.
+- Filed for wave 54: **#934-#937** (the operator's tracking picks) and **#938** (views as the
+  recommenders' target - a recommendation change, so its own decision).
+
+### Audit
+
+20 new test methods in three new modules plus two harness tests; two deadline tests moved with #932's
+decision (angles kept, `unscored_on_seed == 2`). Suite 4,323 -> 4,343. **16 observed failing on a
+clean HEAD worktree**; the other 4 are guards that pass on both (named subjects still win the seed;
+`.env` still loads outside the suite; the coloured-console and Windows-mode harness checks cannot
+fail on Linux). Suite in default, reverse and shuffle (seed 55544, run with fake Apify, balldontlie
+and YouTube keys in the environment): green after reinstalling the dev extras this container had
+lost, 0 network attempts, `data/` untouched. mypy **122**; ruff clean; corpus 69 of 69 (+2: #931,
+#932). Live on synthetic traces: `ops signal-audit` printed "rawg 3 3 3 0 2.5s / 9.0s"; `ops
+signal-diff 201 --run-id 202` printed "news: inactive -> ok, payload changed, fact lines +2 / -0".
 
 ## 2026-10-01 (Claude Code) - wave 52: seeded history deduped, signal usefulness at discovery, approved skips, analytics snapshots, a cost cap that cuts
 

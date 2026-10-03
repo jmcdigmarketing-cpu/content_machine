@@ -381,7 +381,9 @@ def build_research_brief(
 
     from analytics.competitor_context import get_competitor_prompt_block
 
-    rss = fetch_rss_context(topic, channel_id)
+    # #573: the run's seed, not the angle - every angle of a run (and the intelligence
+    # report's brief per variant) shares one fetch instead of refetching every feed.
+    rss = fetch_rss_context(seed_topic or topic, channel_id)
     competitor_block = get_competitor_prompt_block(channel_id, topic)
     community_summary = "\n".join(
         f"- {h.get('title', '')} ({h.get('source', '')})" for h in (rss.get("headlines") or [])[:6]
@@ -391,7 +393,7 @@ def build_research_brief(
     try:
         from apis.stats_context_api import gather_stats_context
 
-        stats_ctx = gather_stats_context(topic)
+        stats_ctx = gather_stats_context(seed_topic or topic)  # #573: once per run
         stats_lines = list(stats_ctx.get("lines") or [])[:10]
     except Exception as exc:
         logger.debug("Stats context unavailable for %r: %s", topic, exc)

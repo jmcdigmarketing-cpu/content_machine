@@ -17,6 +17,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import tempfile
 import unittest
 from argparse import Namespace
@@ -67,18 +68,23 @@ class _Traces(unittest.TestCase):
         signal_audit.reset_cache()
         self._tmp.cleanup()
 
-    def _health(self, signals, *, channel="tapin", expand=False):
+    def _health(self, signals, *, channel="tapin", expand=False, console=False):
         from core.ui import display_signal_health
 
         lines: list[str] = []
-        with patch("core.ask.ask_text", return_value="v" if expand else ""):
+        # #930: in a real console (the operator's PowerShell) the labels are coloured;
+        # CI's stdout is not a TTY, so a plain-text assert passed there and failed on the PC.
+        with (
+            patch("core.ask.ask_text", return_value="v" if expand else ""),
+            patch("sys.stdout.isatty", return_value=console),
+        ):
             display_signal_health(
                 signals,
                 channel_id=channel,
                 print_fn=lambda *a: lines.append(" ".join(map(str, a))),
                 ask=expand,
             )
-        return "\n".join(lines)
+        return re.sub(r"\x1b\[[0-9;]*m", "", "\n".join(lines))
 
 
 class ContributionAtDiscoveryTests(_Traces):
@@ -147,6 +153,11 @@ class ApprovedSkipTests(_Traces):
         self._ops(skip="news")
         self._ops(unskip="news")
         self.assertNotIn("news", _skip_signals("tapin"))
+
+    def test_the_skip_line_reads_the_same_in_a_coloured_console(self):
+        self._ops(skip="news")
+        text = self._health({"rawg": _sig(RAWG)}, console=True)
+        self.assertIn("Skipped by you (never fed the script): news", text)
 
     def test_the_health_block_names_the_skip(self):
         self._ops(skip="news")

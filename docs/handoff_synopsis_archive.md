@@ -1,11 +1,24 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-30
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-09-30 (Claude Code): wave 50 #920 #566 #565 #428 #578
+
+- **#920** every synced / seeded row says which measure its engaged rate is (`engaged_basis`);
+  likes/views no longer counts; `ops predictions` shows the mix.
+- **#566** `ops title-patterns` ranks by lift over the channel (shrunk); "proven" needs +1pp.
+- **#428** `ops tag-report`: tags and #hashtags by lift; tags on every video named, not ranked.
+- **#565** `ops retention-diff [--run-id A B]`: two curves side by side, where the gap opened.
+- **#578** the economics summary prints cost per finished minute.
+
+**Verify:** `python -m unittest tests.test_engaged_basis tests.test_title_lift
+tests.test_tag_performance tests.test_retention_diff tests.test_cost_per_minute`;
+`py -m scripts.ops tag-report`; `py -m scripts.ops retention-diff`.
 
 ## Previous — 2026-09-30 (Claude Code): wave 49 #918 #598 #564 #919 #917
 

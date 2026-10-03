@@ -1,6 +1,6 @@
 # Handoff — the mailbox
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-09-26
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
 **Read this first, before any other file, every time you start work here.** More than
 one agent works in this repo and nothing signals a switch. This file is how the
@@ -53,25 +53,27 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-01 · **HEAD at write:** `c5a5433` + the wave 52 commit (`git log -1`)
+**Written:** 2026-10-03 · **HEAD at write:** `79697ee` + the wave 53 commit (`git log -1`)
 · **Tree:** clean after the commit.
 
-**Read before editing:** seeded history is `publish_log.is_seeded` (id `seed_*` or source
-`tapin_seed`); post time and the view-curve backfill skip it, engagement averages keep it. The
-seed is idempotent. `_skip_signals(channel_id)` unions `CONTENT_SKIP_SIGNALS` with the operator's
-`core/runs/signal_skips`. `write_run_trace` also writes `<run>.analytics.json`. The cost cap
-plans cuts (`plan_cost_cuts`, pure) and applies them per run (`_apply_cost_cuts`, restored next
-check); `capped_choice` clamps the length. mypy baseline **122**.
+**Read before editing:** the suite sets `CONTENT_SKIP_DOTENV=1` and blanks every variable
+ending `_KEY/_KEYS/_TOKEN/_SECRET/_PASSWORD/_BOT` (`tests/__init__.blank_secrets`) - a test
+that needs a key sets it with `patch.dict`. A search seed with no names comes from
+`topic_scorer.domain_phrases`; angles past the scoring deadline are scored on the seed
+(`meta["unscored_on_seed"]`). `register_signals.base_pool_seconds()` feeds the trace's
+`signal_seconds`. mypy baseline **122**.
 
 **Defects first:**
-- #927 was the seed: invented slot times, and 44 more copies per `all-setup`. Duplicates on the
-  operator's DB stay until they run `ops dedupe-seed --apply`.
-- #928: the JSON publish log truncated on a datetime (JSON-fallback installs only).
-- Carried: #915's size on the PC unknown here; no emoji render seen (#914).
+- #930: 9 failures only the operator's PC showed - seven tests reached the network with the
+  real keys from `.env`; two harness checks assumed Linux / no colour. Fixed, reproduced here.
+- #931-#933 from the soccer run: first-clause seed "State of the sport...", five angles
+  dropped silently at the deadline, Headroom printed three times.
+- This container lost its dev extras (fastapi, langdetect) mid-session; reinstalled.
+- Carried: no emoji render seen (#914).
 
-**Shipped:** #927 #585 #574 #570 #571 + #928. Suite **4,323**, the same 8 environmental
-failures, 0 network attempts, hygiene clean; backlog **238 numbered open**, highest #929. Next
-five: **#929 · #591 · #573 · #587 · #586**.
+**Shipped:** #930-#933 #929 #591 #573 #586; #587 closed (no per-call retries exist). Suite
+**4,343**, 0 network attempts, `data/` clean; backlog **238 numbered open**, highest #938.
+Next five (operator's tracking picks): **#934 · #935 · #936 · #937 · #114**.
 
 ## Slot — Cursor
 

@@ -387,6 +387,22 @@ def collect_scored_variants(
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
 
+    # #932: an angle that missed the deadline used to vanish - all five did on
+    # 2026-10-01, leaving the seed alone at 0.0. Score it on the seed's signals, already
+    # fetched (no network), and say so.
+    scored = {v for v, _s, _sig in evaluated}
+    unscored = [v for v in candidates if v not in scored]
+    for variant in unscored:
+        try:
+            score = float(composite_score(base_signals, variant, channel_id))
+        except Exception as exc:
+            logger.debug("seed-signal score failed for %r: %s", variant, exc)
+            score = 0.0
+        evaluated.append((variant, score, dict(base_signals)))
+        raw_scores[variant] = score
+    if unscored:
+        meta["fallback"] = "deadline"
+        meta["unscored_on_seed"] = len(unscored)
     order = {v: i for i, v in enumerate(candidates)}
     evaluated.sort(key=lambda e: order.get(e[0], len(candidates)))
     if not evaluated:
@@ -394,6 +410,19 @@ def collect_scored_variants(
         raw_scores = {topic: 0.0}
         meta["fallback"] = "deadline"
     return evaluated, raw_scores, meta
+
+
+def variant_fallback_note(meta: dict[str, Any], *, total: int) -> str:
+    """The angle menu's line when scoring hit its deadline (#932), or ""."""
+    count = int((meta or {}).get("unscored_on_seed") or 0)
+    if not count:
+        return ""
+    deadline = variant_scoring_deadline_s()
+    budget = f"{deadline:.0f}s " if deadline else ""
+    return (
+        f"{count} of {total} angles scored on the seed's signals - variant scoring hit its "
+        f"{budget}deadline (VARIANT_SCORING_DEADLINE_S)"
+    )
 
 
 def run_discovery(
@@ -522,6 +551,8 @@ def run_discovery(
     meta: dict[str, Any] = {}
     if scoring_meta.get("fallback"):
         meta["variant_scoring_fallback"] = scoring_meta["fallback"]
+    if scoring_meta.get("unscored_on_seed"):
+        meta["unscored_on_seed"] = scoring_meta["unscored_on_seed"]
     # #811: which signals missed the discovery deadline. `meta`, not `timings` —
     # the intelligence report sums that dict and prints every key as seconds (#813).
     if deadline and deadline.get("dropped"):

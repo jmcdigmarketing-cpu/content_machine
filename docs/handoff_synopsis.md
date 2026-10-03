@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-10-01: wave 52, next five
+# Handoff synopsis — 2026-10-03: wave 53, next five
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-01
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,21 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-01 (Claude Code): wave 52 #927 #585 #574 #570 #571 (+ #928)
+## Last wave — 2026-10-03 (Claude Code): wave 53 #930-#933 #929 #591 #573 #586 (#587 closed)
+
+- **#930** the suite skips your `.env` and blanks secret-shaped variables: the 9 failures that only
+  your PC showed were seven tests reaching the network with your real keys, plus two harness checks.
+- **#931** an all-lowercase overview seeds on the names it mentions ("premier league champions
+  league"), and the menu asks `Search for this?` - Enter keeps it, or type a better seed.
+- **#932** angles that miss the scoring deadline stay, scored on the seed; the menu says how many.
+- **#933** Headroom prints once. **#929** every measured run counts in the best bet.
+- **#591** `ops signal-audit` prints seconds p50 / p90 per signal. **#573** one RSS fetch per run.
+- **#586** `ops signal-diff <A> --run-id <B>`. **#587** closed: no per-call retries exist to pool.
+
+**Verify:** `python -m unittest tests.test_wave53_five tests.test_soccer_run_fixes
+tests.test_suite_env_isolation`; `py -m scripts.ops signal-audit`.
+
+## Previous — 2026-10-01 (Claude Code): wave 52 #927 #585 #574 #570 #571 (+ #928)
 
 - **#927** seeding is idempotent; every past `all-setup` had added the 44 seeded videos again.
   Post time and the view-curve backfill skip seeded rows (their publish times are invented);
@@ -42,19 +56,6 @@ tests.test_analytics_snapshot tests.test_cost_cap_degrade`; `py -m scripts.ops d
 **Verify:** `python -m unittest tests.test_run109_defects tests.test_network_guard
 tests.test_cost_vs_return tests.test_signal_audit tests.test_post_time_random`;
 `py -m scripts.ops signal-audit`; `py -m scripts.ops economics`.
-
-## Previous — 2026-09-30 (Claude Code): wave 50 #920 #566 #565 #428 #578
-
-- **#920** every synced / seeded row says which measure its engaged rate is (`engaged_basis`);
-  likes/views no longer counts; `ops predictions` shows the mix.
-- **#566** `ops title-patterns` ranks by lift over the channel (shrunk); "proven" needs +1pp.
-- **#428** `ops tag-report`: tags and #hashtags by lift; tags on every video named, not ranked.
-- **#565** `ops retention-diff [--run-id A B]`: two curves side by side, where the gap opened.
-- **#578** the economics summary prints cost per finished minute.
-
-**Verify:** `python -m unittest tests.test_engaged_basis tests.test_title_lift
-tests.test_tag_performance tests.test_retention_diff tests.test_cost_per_minute`;
-`py -m scripts.ops tag-report`; `py -m scripts.ops retention-diff`.
 
 ## Pipeline order (operator)
 
@@ -123,7 +124,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #929 the best bet's 30-run window.
+3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #938 views as the recommenders' target (decision).
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which

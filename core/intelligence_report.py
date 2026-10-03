@@ -124,7 +124,9 @@ def build_intelligence_report(
 
     brief_dict: dict[str, Any] = {}
     if include_brief:
-        brief = build_research_brief(variant, signals, channel_id=channel_id)
+        brief = build_research_brief(
+            variant, signals, channel_id=channel_id, seed_topic=discovery.input_topic
+        )
         brief_dict = brief.to_dict()
 
     from analytics.competitor_context import list_recent_competitor_titles, snapshot_age_hours

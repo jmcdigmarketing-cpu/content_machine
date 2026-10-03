@@ -42,6 +42,7 @@ class RunSignals:
     topic: str
     signals: dict[str, Any] = field(default_factory=dict)
     script: str = ""
+    seconds: dict[str, float] = field(default_factory=dict)
 
 
 def load_runs(
@@ -91,9 +92,36 @@ def load_runs(
                 topic=str(trace.get("selected_topic") or trace.get("input_topic") or ""),
                 signals=signals,
                 script=script,
+                seconds=_seconds(trace),
             )
         )
     return runs
+
+
+def _seconds(trace: dict[str, Any]) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for name, value in (trace.get("signal_seconds") or {}).items():
+        try:
+            out[str(name)] = float(value)
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _percentile(values: list[float], q: float) -> float:
+    """Nearest-rank percentile: p50 of [1, 2, 9] is 2, p90 is 9."""
+    ordered = sorted(values)
+    rank = max(1, -(-int(q * 100) * len(ordered) // 100))
+    return ordered[min(rank, len(ordered)) - 1]
+
+
+def seconds_by_signal(runs: list[RunSignals]) -> dict[str, tuple[float, float]]:
+    """{signal: (p50, p90)} over the runs that recorded its seconds (#591)."""
+    samples: dict[str, list[float]] = {}
+    for run in runs:
+        for name, value in (run.seconds or {}).items():
+            samples.setdefault(name, []).append(value)
+    return {n: (_percentile(v, 0.5), _percentile(v, 0.9)) for n, v in samples.items() if v}
 
 
 def _payload_hash(signal: Any) -> str | None:
@@ -184,11 +212,17 @@ def report_lines(
         lines.append("  no signal snapshots yet (RUN_SIGNAL_SNAPSHOT, on by default, writes them)")
         return lines
     rows = contribution_rows(runs)
-    lines.append("  contribution - runs / active / fed the prompt / cited in the script:")
+    timing = seconds_by_signal(runs)
+    header = "  contribution - runs / active / fed the prompt / cited in the script"
+    lines.append(header + (" / seconds p50/p90:" if timing else ":"))
     for r in rows:
-        lines.append(
+        line = (
             f"    {r['signal']:<22} {r['runs']:>3} {r['active']:>4} {r['fed']:>4} {r['cited']:>4}"
         )
+        if r["signal"] in timing:
+            p50, p90 = timing[r["signal"]]
+            line += f"   {p50:.1f}s / {p90:.1f}s"
+        lines.append(line)
     candidates = retirement_candidates(rows)
     if candidates:
         lines.append(
@@ -204,6 +238,47 @@ def report_lines(
             f"  frozen: {f['signal']} returned the same payload on {len(f['runs'])} runs "
             f"across {f['topics']} topics (runs {', '.join(map(str, f['runs'][:8]))}) - {note}"
         )
+    return lines
+
+
+def _status(signal: Any) -> str:
+    if not isinstance(signal, dict):
+        return "absent"
+    status = str(signal.get("status") or "")
+    if status:
+        return status
+    return "ok" if signal.get("active") else "inactive"
+
+
+def diff_runs(run_a: int, run_b: int) -> list[str]:
+    """`ops signal-diff A B` (#586): per signal, what changed between two recorded runs.
+
+    Status, payload (same / changed, by hash) and the fact lines it fed the prompt -
+    all from #386's snapshots, nothing fetched.
+    """
+    from core.runs.replay import load_snapshot
+
+    a, b = load_snapshot(run_a) or {}, load_snapshot(run_b) or {}
+    lines = [f"Signal diff: run {run_a} -> run {run_b} (#586)"]
+    for run_id, snap in ((run_a, a), (run_b, b)):
+        if not snap:
+            lines.append(f"  run {run_id}: no signal snapshot (runs before #386)")
+    if not a or not b:
+        return lines
+    for name in sorted((set(a) | set(b)) - {n for n in set(a) | set(b) if n.startswith("_")}):
+        sa, sb = a.get(name), b.get(name)
+        before, after = _status(sa), _status(sb)
+        parts = [f"{before} -> {after}"] if before != after else []
+        ha, hb = _payload_hash(sa), _payload_hash(sb)
+        if ha == hb:
+            parts.append("same payload" if ha else "no payload")
+        else:
+            parts.append("payload changed")
+            fa = set(_fed_lines(name, sa)) if isinstance(sa, dict) else set()
+            fb = set(_fed_lines(name, sb)) if isinstance(sb, dict) else set()
+            if fa != fb:
+                parts.append(f"fact lines +{len(fb - fa)} / -{len(fa - fb)}")
+        lines.append(f"  {name}: " + ", ".join(parts))
     return lines
 
 

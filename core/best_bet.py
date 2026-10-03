@@ -88,11 +88,14 @@ def _build_entries(channel_id: str) -> list[dict]:
     run_repo = get_content_run_repository()
     log_repo = get_publish_log_repository()
 
-    runs = run_repo.list_for_channel(channel_id)[:_TOP_N]
-    if not runs:
+    all_runs = run_repo.list_for_channel(channel_id)
+    if not all_runs:
         return []
 
     log_by_run = {log.content_run_id: log for log in log_repo.list_timed_outcomes(channel_id)}
+    # #929: every measured run counts, as it does for post time, the predictor and the
+    # ledger; the 30-run window only bounds runs with no outcome yet.
+    runs = [r for i, r in enumerate(all_runs) if i < _TOP_N or r.id in log_by_run]
 
     entries = []
     for run in runs:

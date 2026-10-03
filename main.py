@@ -535,6 +535,11 @@ def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
     brief = creative_brief or creative_brief_for_run(parsed)
     if topic.lower() != " ".join(typed.split()).lower():
         print(f"  Search seed: {topic}")
+        # #931: the seed is a guess pulled out of prose; confirm it before discovery
+        # spends anything on it (run of 2026-10-01 searched "State of the sport ... as").
+        override = ask_text("  Search for this? [Enter = yes, or type a better seed]: ").strip()
+        if override:
+            topic = override
         print("  Your thoughts steer the angles, their ranking, and the script.")
     return topic, brief
 
@@ -640,6 +645,11 @@ def _run_new_video_flow_body(
         angle_scores=discovery.angle_scores,
         own_idea=seed_topic,
     )
+    from core.pipeline import variant_fallback_note
+
+    note = variant_fallback_note(discovery.meta or {}, total=len(discovery.evaluated))
+    if note:
+        print(f"  ! {note}")  # #932
 
     angle_count = len(discovery.evaluated)
     prompt = f"\n  Choose 1-{angle_count} (Enter = best"

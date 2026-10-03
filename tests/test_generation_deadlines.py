@@ -86,7 +86,9 @@ class TestVariantScoringDeadline(unittest.TestCase):
             elapsed = time.perf_counter() - started
         self.assertLess(elapsed, 0.8, elapsed)
         self.assertTrue(evaluated)
-        self.assertEqual(evaluated[0][0], "GTA 6")
+        # #932 (operator): the angles are kept, scored on the seed's signals - they used
+        # to be dropped and the seed offered alone at 0.0.
+        self.assertEqual([row[0] for row in evaluated], candidates)
         self.assertEqual(meta.get("fallback"), "deadline")
 
     def test_run_discovery_records_the_scoring_fallback(self) -> None:
@@ -125,7 +127,8 @@ class TestVariantScoringDeadline(unittest.TestCase):
         self.assertEqual(result.meta.get("variant_scoring_fallback"), "deadline")
         self.assertNotIn("variant_scoring_fallback", result.timings)
         self.assertTrue(all(isinstance(v, int | float) for v in result.timings.values()))
-        self.assertEqual(result.evaluated[0][0], "GTA 6 deadline-802")
+        self.assertEqual([row[0] for row in result.evaluated], ["angle a", "angle b"])  # #932
+        self.assertEqual(result.meta.get("unscored_on_seed"), 2)
 
     def test_the_marker_still_reaches_the_persisted_timings(self) -> None:
         """timings_json/trace keys are unchanged — only the in-memory home moved."""

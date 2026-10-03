@@ -136,6 +136,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `shortcut` | Install Start Menu shortcut via pythonw / content_os.pyw |
 | `signal-audit` | Which signals feed the script, and which return frozen payloads (#575 #588) |
 | `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
+| `signal-diff` | What each signal returned differently between two runs: <A> --run-id B (#586) |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
 | `source-trust` | Corrections per source and the weight they cost it (#342) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |

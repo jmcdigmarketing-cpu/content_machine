@@ -779,7 +779,28 @@ def _discovery_deadline() -> float | None:
     return budget if budget > 0 else None
 
 
-def _fetch_all(sources, topic, pinned, workers) -> tuple[dict, list[str], float | None]:
+# #591: how long each signal of the last base pool took (variant pools run concurrently
+# and are not recorded). The run trace keeps it; `ops signal-audit` reads p50 / p90.
+_base_seconds: dict[str, float] = {}
+
+
+def base_pool_seconds() -> dict[str, float]:
+    return dict(_base_seconds)
+
+
+def _reset_base_seconds() -> None:
+    _base_seconds.clear()
+
+
+def _timed_fetch(name, func, topic, pinned):
+    started = time.perf_counter()
+    got_name, data = _fetch_one(name, func, topic, pinned)
+    return got_name, data, time.perf_counter() - started
+
+
+def _fetch_all(
+    sources, topic, pinned, workers, *, seconds: dict[str, float] | None = None
+) -> tuple[dict, list[str], float | None]:
     """Run every signal concurrently, stopping at the deadline. Returns
     (results, dropped names, budget).
 
@@ -795,12 +816,14 @@ def _fetch_all(sources, topic, pinned, workers) -> tuple[dict, list[str], float 
     run_deadline.reset()
     executor = ThreadPoolExecutor(max_workers=workers)
     futures = {
-        executor.submit(_fetch_one, name, func, topic, pinned): name for name, func in sources
+        executor.submit(_timed_fetch, name, func, topic, pinned): name for name, func in sources
     }
     try:
         for future in as_completed(futures, timeout=budget):
-            name, data = future.result()
+            name, data, took = future.result()
             results[name] = data
+            if seconds is not None:
+                seconds[name] = round(took, 3)
     except TimeoutError:
         # #820: a running straggler may not spend a paid call from here on, and a
         # signal still queued behind the worker cap must never start at all.
@@ -816,6 +839,8 @@ def _fetch_all(sources, topic, pinned, workers) -> tuple[dict, list[str], float 
 
     dropped = [name for name in futures.values() if name not in results]
     for name in dropped:
+        if seconds is not None and budget:
+            seconds[name] = float(budget)  # at least the whole budget
         results[name] = make_signal(
             connected=True,
             active=False,
@@ -858,15 +883,21 @@ def build_registry(
                 pinned[name] = reuse_signals[name]
 
     # #590. Before anything is spent, not after a wall is hit. Fail-open: a
-    # broken reading must never stop discovery.
-    try:
-        from core.discovery_headroom import emit_headroom, headroom_line
+    # broken reading must never stop discovery. #933: the base pool only - each angle's
+    # registry (reuse_signals set) re-printed it mid-spinner once #922 made units move.
+    if not reuse_signals:
+        try:
+            from core.discovery_headroom import emit_headroom, headroom_line
 
-        emit_headroom(headroom_line(signal_count=len(sources) + (1 if web_source else 0)))
-    except Exception as exc:
-        logger.debug("discovery headroom skipped: %s", exc)
+            emit_headroom(headroom_line(signal_count=len(sources) + (1 if web_source else 0)))
+        except Exception as exc:
+            logger.debug("discovery headroom skipped: %s", exc)
 
-    results, dropped, budget = _fetch_all(sources, topic, pinned, workers)
+    timing: dict[str, float] | None = {} if not reuse_signals else None
+    results, dropped, budget = _fetch_all(sources, topic, pinned, workers, seconds=timing)
+    if timing is not None:
+        _base_seconds.clear()
+        _base_seconds.update(timing)
     if dropped:
         # `_synthesis` sets the precedent for a non-signal metadata key here.
         # `core/pipeline` lifts it into `DiscoveryResult.meta` — never into
@@ -893,3 +924,4 @@ def build_registry(
 
 
 process_state.register_reset("apis.register_signals", reset_session_breaker)  # #827
+process_state.register_reset("apis.register_signals.base_seconds", _reset_base_seconds)  # #591

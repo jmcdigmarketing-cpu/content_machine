@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-30
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-03
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -26,15 +26,16 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-09-30 wave 50: **#920** every outcome says which measure it holds and
-likes/views stops counting · **#566** title patterns ranked by lift over the channel · **#428**
-`ops tag-report` · **#565** `ops retention-diff` · **#578** cost per finished minute.
+**Just landed** - 2026-10-03 wave 53: the PC-only suite failures (**#930**), the soccer run's
+seed / silent angles / triple Headroom (**#931 #932 #933**), **#929** every measured run counts in
+the best bet, **#591** seconds per signal in `ops signal-audit`, **#573** one RSS fetch per run,
+**#586** `ops signal-diff`; **#587** closed (no per-call retries exist to pool).
 
-**Before that** - wave 49: **#918 #598 #564 #919 #917** · wave 48: **#915 #913 #916 #912 #560 #563
-#342** · wave 47: **#910 #911 #909 #504 #386** · wave 46: **#907 #908 #906 #905 #589 #559 #113 #357
-#548 #860**. Earlier: [roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
+**Before that** - wave 52: **#927 #928 #585 #574 #570 #571** · wave 51: **#921 #579 #575 #588 #567
+#922-#926** · wave 50: **#920 #566 #428 #565 #578**. Earlier: [roadmap_archive.md](roadmap_archive.md)
+and [planning_log.md](planning_log.md).
 
-### The five weaknesses - where each stands (2026-09-30, after wave 50)
+### The five weaknesses - where each stands (2026-10-03, after wave 53)
 
 The operator's list from [assessment.md](assessment.md). Every row has shipped its main fix; what
 is left is below.
@@ -42,31 +43,33 @@ is left is below.
 | weakness | shipped | still open |
 |---|---|---|
 | 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost | - |
-| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve | #587 retry budget · record real payloads on the PC (operator) |
-| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds | - |
+| 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
+| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names | - |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font | #914 an emoji font off Windows · #786 footage and your music tracks (operator) |
-| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time | #929 one sample definition · more measured videos |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts | #938 views as the target · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 52 (2026-10-01)** shipped all five (#927 #585 #574 #570 #571). #927 turned out to be
-the seed: every `ops all-setup` added the 44 historical videos again, with invented publish
-times on your own slots that post time then "learned" from. It also found #928 (the JSON
-publish log truncated itself on a datetime). The next five stay with speed and cost at
-discovery, plus the sample-size question #927 left:
+**Wave 53 (2026-10-03)** finished #929 #591 #573 #586 and closed #587 (its premise was false),
+after fixing what the operator's soccer run and suite paste showed (#930-#933). The operator then
+set the goal - **views** - and picked what to build to track it and take part in it, so the next
+five change from engine plumbing to the scoreboard:
 
-1. **#929 the best bet reads only the newest 30 runs** `[S]` - one sample definition across the recommenders.
-2. **#591 signal timing histogram** (weakness 2) `[S]` - the spinner's estimate is hardcoded.
-3. **#573 cache the research brief across variants** (cost) `[M]` - the same topic is briefed once per angle.
-4. **#587 a retry budget per run** (weakness 2) `[M]` - retries are per call, unbounded per run.
-5. **#586 signal result diffing between runs** (weakness 2) `[M]` - what changed for the same topic.
+1. **#934 a goal and a scoreboard** `[M]` - views target, pace needed vs pace now, every week.
+2. **#935 your verdict per video** `[S]` - your 1-5 against the audience's views.
+3. **#936 ops review-week** `[M]` - the 10-minute weekly ritual (operator's pick).
+4. **#937 a winners library** in the script prompt `[M]` - your top videos by views, shown to the writer.
+5. **#114 the comment mailbag** `[M]` - viewers' questions clustered into topic candidates.
+
+Filed, not next: **#938** make views the recommenders' target - a recommendation change that needs
+its own decision.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
 
 **Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
 
-**Waiting on the operator, not on code:** `ops dedupe-seed` then `--apply` - every past `all-setup` added the 44 seeded videos again (#927). `ops signal-audit --skip <name>` once a signal has fed nothing in 10+ runs (#574). After your next run, `ops analytics-diff <run>` (#570). `ops signal-audit` - which signals ever feed the script, and which return a frozen payload; retiring any is your call (#575 #588). `py -m core.experiments start post_time` now flips a coin per upload and moves off-slot ones a random hour (#567). `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops tag-report`, `ops title-patterns`, `ops retention-diff` (#428 #566 #565); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
+**Waiting on the operator, not on code:** `git pull` then the suite - it no longer reads your `.env` (#930). `ops signal-diff <A> --run-id <B>` on two runs of the same topic (#586). `ops dedupe-seed` then `--apply` - every past `all-setup` added the 44 seeded videos again (#927). `ops signal-audit --skip <name>` once a signal has fed nothing in 10+ runs (#574). After your next run, `ops analytics-diff <run>` (#570). `ops signal-audit` - which signals ever feed the script, and which return a frozen payload; retiring any is your call (#575 #588). `py -m core.experiments start post_time` now flips a coin per upload and moves off-slot ones a random hour (#567). `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops tag-report`, `ops title-patterns`, `ops retention-diff` (#428 #566 #565); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
 `assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
 colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop

@@ -561,6 +561,22 @@ def cmd_analytics_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "signal-diff", "What each signal returned differently between two runs: <A> --run-id B (#586)"
+)
+def cmd_signal_diff(args: argparse.Namespace) -> int:
+    from core.runs.signal_audit import diff_runs
+
+    target = str(getattr(args, "target", "") or "").strip()
+    run_b = getattr(args, "run_id", None)
+    if not target.isdigit() or run_b is None:
+        print("Usage: py -m scripts.ops signal-diff <run A> --run-id <run B>")
+        return 2
+    for line in diff_runs(int(target), int(run_b)):
+        print(line)
+    return 0
+
+
 @_register("dedupe-seed", "Duplicate seeded history from re-seeding (#927); --apply removes")
 def cmd_dedupe_seed(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id

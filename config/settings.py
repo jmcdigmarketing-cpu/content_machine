@@ -12,6 +12,9 @@ def _load_dotenv() -> None:
     `export` prefixes, and multi-line values — previously a hand-rolled parser
     that mis-read inline comments lived here.
     """
+    # #930: the test suite sets this, so it sees what CI sees (no keys), not the operator's .env.
+    if os.getenv("CONTENT_SKIP_DOTENV", "").strip().lower() in ("1", "true", "yes"):
+        return
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
     if not os.path.isfile(path):
         return

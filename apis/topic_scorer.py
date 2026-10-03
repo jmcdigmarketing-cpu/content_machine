@@ -236,6 +236,31 @@ def _learned_game_names() -> frozenset[str]:
         return frozenset()
 
 
+# #931: names that identify a subject on their own - leagues, competitions, clubs,
+# franchises - as opposed to the category words ("soccer", "fight") the classifier also uses.
+_SUBJECT_EXTRA = ("nba", "nfl", "super bowl", "ufc", "mma")
+_CATEGORY_WORDS = frozenset({"soccer"})
+
+
+def domain_phrases(text: str) -> list[str]:
+    """Known league / competition / club / franchise names in `text`, in typed order.
+
+    For a typed overview with no capitalised names ("... la liga, premier league, and
+    early champions league projections"), these are what a search should be for.
+    """
+    lower = (text or "").lower()
+    names = [
+        k for k in (*_SOCCER_KEYS, *_SUBJECT_EXTRA, *_GAME_FRANCHISES) if k not in _CATEGORY_WORDS
+    ]
+    found: list[tuple[int, int, str]] = []
+    for name in sorted(set(names), key=len, reverse=True):
+        for match in re.finditer(r"\b" + re.escape(name) + r"\b", lower):
+            start, end = match.span()
+            if not any(start < e and s < end for s, e, _n in found):
+                found.append((start, end, name))
+    return [name for _s, _e, name in sorted(found)]
+
+
 def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: bool = True) -> str:
     """Classify domain from free text; optional channel profile fallback."""
     topic_lower = (text or "").lower()

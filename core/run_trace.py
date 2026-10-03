@@ -231,6 +231,15 @@ def write_run_trace(
             trace["schema_revision"] = current_revision()
         except Exception as exc:
             logger.debug("schema revision skipped: %s", exc)
+        try:
+            # #591: how long each base-pool signal took, for `ops signal-audit`'s p50 / p90.
+            from apis.register_signals import base_pool_seconds
+
+            seconds = base_pool_seconds()
+            if seconds:
+                trace["signal_seconds"] = {k: round(float(v), 2) for k, v in seconds.items()}
+        except Exception as exc:
+            logger.debug("signal seconds skipped: %s", exc)
         if menu_path:
             trace["menu_path"] = str(menu_path)
         if angle_intent:

@@ -1,12 +1,30 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-01
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 53 — the suite stops reading your keys, the soccer run's fixes, signal timing and diffs - 2026-10-03
+
+*4,343 tests; mypy 122 == baseline; ruff 0.15.8 clean; corpus 69 of 69.*
+
+- **#931** **Input change, disclosed:** an all-lowercase overview seeds discovery on the league /
+  competition / franchise names it mentions ("premier league champions league"), and the menu asks
+  you to confirm or replace the seed before searching.
+- **#932** **Menu change, disclosed:** angles that miss the scoring deadline are kept, scored on the
+  seed's signals, and the menu says so (they used to vanish, leaving the seed alone at 0.0).
+- **#933** the Headroom line prints once per discovery, not once per angle.
+- **#929** **Recommendation change, disclosed:** the best bet counts every measured run, not only
+  those among the newest 30.
+- **#930** the suite no longer reads `.env` or your keys - it fails the same way on your PC as on CI.
+- **#591** `ops signal-audit` prints p50 / p90 seconds per signal from the run traces.
+- **#573** one RSS fetch per run, by its seed, instead of one per angle.
+- **#586** `ops signal-diff <A> --run-id <B>`: what each signal returned differently.
+- **#587** closed with no code: there are no per-call retries to pool.
 
 ### Wave 52 — seeded history deduped, signal usefulness, approved skips, analytics snapshots, a cost cap that cuts - 2026-10-01
 

@@ -1,12 +1,43 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 57 — paid views apart from organic, footage that matches the topic, packaging data, the policy site - 2026-10-04
+
+*4,504 tests; mypy 121 (baseline lowered from 122); ruff 0.15.8 clean; corpus 78 of 78.*
+
+- **#954** **Recommendation change, disclosed:** every number the system learns from is organic.
+  The metrics sync asks YouTube Analytics for each video's views by day and traffic source and
+  keeps the paid (ADVERTISING) days; the 7-day target, winners, verdicts, the scoreboard ("so far
+  ... (+N paid, not counted)") and the learning memory leave them out, and `ops winners` names the
+  videos that had paid views. `ops ypp` reads YouTube's own channel numbers the sync now stores -
+  Shorts views over 90 days, long-form watch hours over 12 months, subscribers - with ads
+  excluded, as YouTube excludes them; before that sync it shows an estimate labelled as one. A
+  video synced before this wave counts none of its views as paid until `ops backfill view-curve
+  --apply` (in `ops all`) fetches its paid days.
+- **#947** that backfill no longer fetches a small video's whole history on every `ops all`.
+- **#955** **Finished-output change, disclosed:** a video's gameplay comes from the folder whose
+  name is in the topic, the topic's playlist, the topic's own sport, or a folder the cheap model
+  says is the topic's subject - never a random game. A topic with no matching footage gets stock
+  B-roll, or a plain background in the channel's colour (the render used to fail there). The
+  owned-clip cuts use only clips that name something in the topic. `py -m scripts.ops
+  footage-gaps` lists the gameplay worth recording and the past videos that may show another game.
+- **#946** athlete and fighter names count as their sport ("Wemby", "Holloway vs Gaethje"):
+  `config\domain_names.json` holds the names (edit it), and names past runs confirmed are learned;
+  `ops game-names` lists them.
+- **#951** `py -m scripts.ops packaging`: Shorts - the share of starts not swiped away and the
+  share of views from the Shorts feed; long-form - thumbnail impressions and click-through from
+  the YouTube Reporting API, which the metrics sync collects once it is enabled in Google Cloud
+  Console. The scoreboard's best and weakest video show the same figure.
+- **#956** `py -m scripts.ops policy-site --name "..." --email "..." --output-dir <folder>` writes
+  the privacy policy, terms, data-deletion page and home page the TikTok, Instagram and Google
+  apps ask for; steps in `docs/platform_publish_setup.md`.
 
 ### Wave 56 — `ops backlog`: two weeks of scheduled videos from fresh best bets - 2026-10-03
 

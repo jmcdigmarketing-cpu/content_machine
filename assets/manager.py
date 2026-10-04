@@ -120,6 +120,21 @@ def get_stock_only_background(topic: str, channel_id=None) -> AssetResult:
     raise Exception("No stock background video found for topic.")
 
 
+def _plain_or_raise(topic: str, channel_id, duration: float | None, message: str) -> AssetResult:
+    """#955: a plain branded background rather than a failed render - or another game."""
+    from assets import plain_background
+
+    asset = plain_background.plain_background(channel_id, duration)
+    if asset:
+        logger.warning(
+            "No footage matches '%s' and no stock clip came back - plain background "
+            "(py -m scripts.ops footage-gaps lists what to record)",
+            (topic or "")[:60],
+        )
+        return asset
+    raise Exception(message)
+
+
 def get_background_asset(
     topic: str,
     channel_id=None,
@@ -130,7 +145,8 @@ def get_background_asset(
     Select background video for render.
 
     hybrid (default): local gameplay segment + stock B-roll when both exist;
-    falls back to stock-only or local-only if one source is missing.
+    falls back to stock-only or local-only if one source is missing, and to a plain
+    branded background when neither is there (#955: never another game's footage).
     """
     from config.channels import get_channel_profile, resolve_channel_id
 
@@ -141,12 +157,20 @@ def get_background_asset(
         asset = get_local_background_asset(topic, channel_id)
         if asset:
             return asset
-        raise Exception(
-            "No local background in video/backgrounds/. Add gameplay clips or use hybrid/stock mode."
+        return _plain_or_raise(
+            topic,
+            channel_id,
+            duration,
+            "No local background in video/backgrounds/. Add gameplay clips or use hybrid/stock mode.",
         )
 
     if mode == "stock":
-        return get_stock_only_background(topic, channel_id)
+        asset = get_stock_background_asset(topic, channel_id)
+        if asset:
+            return asset
+        return _plain_or_raise(
+            topic, channel_id, duration, "No stock background video found for topic."
+        )
 
     # hybrid
     local = get_local_background_asset(topic, channel_id)
@@ -170,13 +194,20 @@ def get_background_asset(
         logger.warning("Hybrid mode: no stock clip — using local gameplay only")
         return local
     if stock and not local:
-        logger.warning("Hybrid mode: no local clips in video/backgrounds/ — using stock only")
+        logger.warning(
+            "Hybrid mode: no owned footage matches '%s' — using stock only "
+            "(py -m scripts.ops footage-gaps)",
+            (topic or "")[:60],
+        )
         return stock
     if stock:
         return stock
 
-    raise Exception(
-        "No background video found. Add files under video/backgrounds/ or configure stock API keys."
+    return _plain_or_raise(
+        topic,
+        channel_id,
+        duration,
+        "No background video found. Add files under video/backgrounds/ or configure stock API keys.",
     )
 
 

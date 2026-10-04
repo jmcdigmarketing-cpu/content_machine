@@ -52,6 +52,22 @@ that miss a gate wait for `py -m scripts.ops batch-review`.
 
 ---
 
+## Ads, footage, packaging (wave 57)
+
+```powershell
+py -m scripts.ops backfill view-curve --apply --channel tapin   # once: each video's paid views (#954)
+py -m scripts.ops ypp --channel tapin             # YouTube's own YPP numbers, ads excluded (after sync-metrics)
+py -m scripts.ops footage-gaps --channel tapin    # gameplay to record; past videos that may show another game
+py -m scripts.ops packaging --channel tapin       # Shorts stayed / feed share; long-form CTR
+py -m scripts.ops policy-site --name "Your Name" --email "you@example.com" --output-dir C:\dev\policy_site
+```
+
+Click-through needs "YouTube Reporting API" enabled in Google Cloud Console (same sign-in); the
+next `sync-metrics` creates the report job and CTR appears a day or two later. The policy-site
+steps (free hosting, TikTok's URL check) are in `docs/platform_publish_setup.md`.
+
+---
+
 ## Every session (normal workflow)
 
 **Terminal 1 — create content (interactive)**

@@ -1190,6 +1190,208 @@
         ]
       },
       "why": "the scoreboard's week over week compares whole weeks; a partial first week looks like a fall in views"
+    },
+    {
+      "id": "fighter-names-read-ufc",
+      "item": 946,
+      "source": "wave 55 live check: \"Topuria vs Holloway breakdown\", \"Jon Jones retires\" and \"Holloway vs Gaethje\" all read gaming",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Holloway vs Gaethje"
+      ],
+      "expect": {
+        "equals": "ufc"
+      },
+      "why": "only UFC/MMA-style words made a topic ufc, so a fighter-led title fell to the channel's gaming and skewed every recommender's per-domain counts"
+    },
+    {
+      "id": "nickname-reads-its-sport",
+      "item": 946,
+      "source": "operator screenshots 2026-10-04: the Wemby Short filed as gaming and cut UFC 5 footage",
+      "call": "apis.topic_scorer:infer_domain",
+      "args": [
+        "Wemby's 40-point night",
+        "tapin"
+      ],
+      "expect": {
+        "equals": "nba"
+      },
+      "why": "\"wembanyama\" is an NBA key, the nickname was not; the channel fallback turned the topic into gaming"
+    },
+    {
+      "id": "nickname-topic-cuts-its-sport",
+      "item": 955,
+      "source": "operator screenshots 2026-10-04: the Wemby Short cut UFC 5 fighters",
+      "call": "assets.local_provider:choose_footage",
+      "args": [
+        "Wemby's 40-point night",
+        [
+          "video/backgrounds/gaming/sports/2k26",
+          "video/backgrounds/gaming/sports/UFC 5",
+          "video/backgrounds/gaming/sports/Madden 26"
+        ],
+        "tapin"
+      ],
+      "kwargs": {
+        "use_llm": false
+      },
+      "env": {
+        "LEARNED_GAME_NAMES": "false"
+      },
+      "expect": {
+        "equals": [
+          "video/backgrounds/gaming/sports/2k26",
+          "domain"
+        ]
+      },
+      "why": "no folder name or playlist key matched, so the chooser asked the model with a trademark-stripped query and then took a random game folder; the topic's own domain names the footage"
+    },
+    {
+      "id": "unmatched-topic-takes-no-folder",
+      "item": 955,
+      "source": "operator screenshots 2026-10-04: the Clair Obscur Short cut Madden",
+      "call": "assets.local_provider:choose_footage",
+      "args": [
+        "Clair Obscur sweeps the nominations",
+        [
+          "video/backgrounds/gaming/sports/2k26",
+          "video/backgrounds/gaming/sports/UFC 5",
+          "video/backgrounds/gaming/sports/Madden 26"
+        ],
+        "tapin"
+      ],
+      "kwargs": {
+        "use_llm": false
+      },
+      "env": {
+        "LEARNED_GAME_NAMES": "false"
+      },
+      "expect": {
+        "equals": [
+          null,
+          "none"
+        ]
+      },
+      "why": "a topic whose game has no folder must take stock or a plain background, never another game's footage"
+    },
+    {
+      "id": "owned-clips-need-a-topic-word",
+      "item": 955,
+      "source": "wave 57: the sibling of the random folder in core/owned_beats",
+      "call": "core.owned_beats:topic_clips",
+      "args": [
+        {
+          "clips": {
+            "/lib/ufc5_knockout.mp4": {
+              "source": "UFC 5",
+              "duration_s": 10
+            },
+            "/lib/madden_touchdown.mp4": {
+              "source": "Madden 26",
+              "duration_s": 12
+            }
+          }
+        }
+      ],
+      "kwargs": {
+        "topic": "Wemby's 40-point night"
+      },
+      "expect": {
+        "equals": []
+      },
+      "why": "clips were ranked by topic-word hits and the zero-hit ones used too, so any clip in the index could land under any topic"
+    },
+    {
+      "id": "organic-7d-views-exclude-ads",
+      "item": 954,
+      "source": "operator screenshots 2026-10-04: 76.3% of 28-day views were YouTube advertising after a $10 campaign",
+      "call": "core.success.target:views_7d",
+      "args": [
+        {
+          "daily_views": [
+            [
+              "2026-09-10",
+              1000
+            ],
+            [
+              "2026-09-11",
+              1000
+            ],
+            [
+              "2026-09-12",
+              900
+            ],
+            [
+              "2026-09-13",
+              500
+            ],
+            [
+              "2026-09-14",
+              200
+            ],
+            [
+              "2026-09-15",
+              100
+            ],
+            [
+              "2026-09-16",
+              100
+            ]
+          ],
+          "daily_paid_views": [
+            [
+              "2026-09-10",
+              1000
+            ],
+            [
+              "2026-09-11",
+              950
+            ],
+            [
+              "2026-09-12",
+              880
+            ],
+            [
+              "2026-09-13",
+              480
+            ],
+            [
+              "2026-09-14",
+              190
+            ],
+            [
+              "2026-09-15",
+              100
+            ],
+            [
+              "2026-09-16",
+              100
+            ]
+          ],
+          "paid_since": "2026-09-01"
+        },
+        "2026-09-10T18:00:00+00:00"
+      ],
+      "expect": {
+        "equals": 100
+      },
+      "why": "the recommenders ranked on 7-day views that included ad views, so a boosted video read as a winner and best bet chased its topic"
+    },
+    {
+      "id": "ypp-estimate-leaves-ads-out",
+      "item": 954,
+      "source": "wave 57: the sibling in core/ypp_readiness",
+      "call": "core.ypp_readiness:_organic_views",
+      "args": [
+        {
+          "views": 3800,
+          "paid_views": 3700
+        }
+      ],
+      "expect": {
+        "equals": 100.0
+      },
+      "why": "promotion views do not count toward YPP; the readiness estimate summed them as Shorts views"
     }
   ]
 }

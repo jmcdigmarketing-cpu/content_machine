@@ -11,7 +11,12 @@ A name also seen in a run resolved to another domain is dropped (a sponsor, a cl
 Runs from before #866 stored no `domains`; their `domain` was the channel fallback, so
 run 98's Manchester City story said "gaming", and they teach nothing.
 
-Loaded once per process. `LEARNED_GAME_NAMES=false` turns it off; the suite pins that,
+Sport names (#946) are learned the same way from runs resolved to a sport: "Steveson signs
+with the UFC" teaches `steveson` -> ufc, so "Steveson's debut" stops reading as the channel's
+gaming. A name seen in a run resolved to any other domain teaches nothing, and a name made only
+of news-register words ("New Update") is not a name.
+
+Loaded once per process. `LEARNED_GAME_NAMES=false` turns both off; the suite pins that,
 so the operator's history cannot change a test's verdict.
 """
 
@@ -27,6 +32,10 @@ from core.logging import get_logger
 logger = get_logger("core.learned_domain_terms")
 
 _sources: dict[str, list[int]] | None = None
+_sport_sources: dict[str, tuple[str, list[int]]] | None = None
+
+# The domains a name can be learned for (#946); apis/topic_scorer checks them last.
+SPORT_DOMAINS = frozenset({"nba", "nfl", "ufc", "soccer"})
 
 
 def _enabled() -> bool:
@@ -93,6 +102,59 @@ def _load() -> dict[str, list[int]]:
     return {name: sorted(ids) for name, ids in learned.items() if name not in elsewhere}
 
 
+def _is_name(name: str) -> bool:
+    from apis.topic_tokens import content_tokens, distinctive_tokens
+
+    return bool(distinctive_tokens(content_tokens(name, min_len=3)))
+
+
+def _load_sports() -> dict[str, tuple[str, list[int]]]:
+    """{name: (sport, run ids)} - names only ever seen in runs resolved to one sport."""
+    taught: dict[str, dict[str, list[int]]] = {}
+    elsewhere: set[str] = set()
+    try:
+        repo = _run_repo()
+        runs = [run for cid in _channel_ids() for run in (repo.list_for_channel(cid) or [])]
+    except Exception as exc:
+        logger.debug("learned sport names unavailable: %s", exc)
+        return {}
+    for run in runs:
+        domains = _domains(run)
+        if not domains:
+            continue
+        topic = str(getattr(run, "selected_topic", "") or getattr(run, "input_topic", "") or "")
+        names = [name for name in _names(topic) if _is_name(name)]
+        effective = domains.get("effective")
+        if effective in SPORT_DOMAINS and domains.get("topic") == effective:
+            rid = int(getattr(run, "id", 0) or 0)
+            for name in names:
+                taught.setdefault(name, {}).setdefault(str(effective), []).append(rid)
+        elif effective not in (None, "", "neutral"):
+            elsewhere.update(names)
+    out: dict[str, tuple[str, list[int]]] = {}
+    for name, sports in taught.items():
+        if len(sports) != 1 or name in elsewhere:
+            continue
+        ((sport, ids),) = sports.items()
+        out[name] = (sport, sorted(ids))
+    return out
+
+
+def learned_sport_name_sources() -> dict[str, tuple[str, list[int]]]:
+    """{learned name: (sport, run ids that taught it)}; {} when off or unreadable (#946)."""
+    global _sport_sources
+    if not _enabled():
+        return {}
+    if _sport_sources is None:
+        _sport_sources = _load_sports()
+    return dict(_sport_sources)
+
+
+def learned_sport_names() -> dict[str, str]:
+    """{lower-cased athlete / fighter name: sport} learned from confirmed runs."""
+    return {name: sport for name, (sport, _ids) in learned_sport_name_sources().items()}
+
+
 def learned_game_name_sources() -> dict[str, list[int]]:
     """{learned name: run ids that taught it}; {} when off or unreadable."""
     global _sources
@@ -109,8 +171,9 @@ def learned_game_names() -> frozenset[str]:
 
 
 def reset_learned_terms() -> None:
-    global _sources
+    global _sources, _sport_sources
     _sources = None
+    _sport_sources = None
 
 
 process_state.register_reset("core.learned_domain_terms", reset_learned_terms)

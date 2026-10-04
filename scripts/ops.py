@@ -309,7 +309,7 @@ def cmd_moat_backup(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("ypp", "YPP / membership readiness: watch-hours proxy, disclosure, cadence")
+@_register("ypp", "YPP readiness: YouTube's own numbers with ads excluded, disclosure, cadence")
 def cmd_ypp(args: argparse.Namespace) -> int:
     from core.ypp_readiness import inspect_ypp, render_report
 
@@ -417,9 +417,12 @@ def cmd_regressions(args: argparse.Namespace) -> int:
     return corpus_main(["--file", target] if target else [])
 
 
-@_register("game-names", "Game names learned from confirmed runs, with the runs behind each (#876)")
+@_register(
+    "game-names",
+    "Game and athlete names learned from confirmed runs, with the runs behind each (#876 #946)",
+)
 def cmd_game_names(_args: argparse.Namespace) -> int:
-    from core.learned_domain_terms import learned_game_name_sources
+    from core.learned_domain_terms import learned_game_name_sources, learned_sport_name_sources
 
     sources = learned_game_name_sources()
     if not sources:
@@ -427,10 +430,20 @@ def cmd_game_names(_args: argparse.Namespace) -> int:
             "Learned game names: none yet. A name is learned when a run's topic names no "
             "known game but a live gaming signal (RAWG or Twitch) matches it."
         )
+    else:
+        print(f"Learned game names ({len(sources)}):")
+        for name, runs in sorted(sources.items()):
+            print(f"  {name:<28} runs {', '.join(str(r) for r in runs)}")
+    sport_sources = learned_sport_name_sources()
+    if not sport_sources:
+        print(
+            "Learned athlete names: none yet. A name is learned from runs resolved to one "
+            "sport (#946); config/domain_names.json holds the seeded ones."
+        )
         return 0
-    print(f"Learned game names ({len(sources)}):")
-    for name, runs in sorted(sources.items()):
-        print(f"  {name:<28} runs {', '.join(str(r) for r in runs)}")
+    print(f"Learned athlete names ({len(sport_sources)}; config/domain_names.json adds more):")
+    for name, (sport, runs) in sorted(sport_sources.items()):
+        print(f"  {name:<28} {sport:<7} runs {', '.join(str(r) for r in runs)}")
     return 0
 
 
@@ -634,6 +647,37 @@ def cmd_mailbag(args: argparse.Namespace) -> int:
         data = None
     for line in mailbag.mailbag_lines(channel, data):
         print(line)
+    return 0
+
+
+@_register(
+    "policy-site", "Build the privacy / terms / data-deletion pages the app sites link to (#956)"
+)
+def cmd_policy_site(args: argparse.Namespace) -> int:
+    from publishing.policy_site import build_policy_site
+
+    name = (getattr(args, "name", "") or "").strip()
+    email = (getattr(args, "email", "") or "").strip()
+    if not name or not email:
+        print(
+            'Usage: py -m scripts.ops policy-site --name "<shown name>" --email "<contact>" '
+            "[--output-dir <folder>]"
+        )
+        print("  Both go only into the built pages, never into this repo.")
+        print("  Steps: docs/platform_publish_setup.md (the policy site, #956)")
+        return 2
+    out = getattr(args, "output_dir", "") or os.path.join("output", "policy_site")
+    try:
+        written = build_policy_site(out, name=name, email=email)
+    except ValueError as exc:
+        print(f"Policy site not built: {exc}")
+        return 2
+    print(f"Policy site (#956): {len(written)} pages in {os.path.abspath(out)}")
+    for path in written:
+        print(f"  {os.path.basename(path)}")
+    print("  Upload the folder to a public repo with GitHub Pages on (or Cloudflare Pages /")
+    print("  Netlify), then give each app the index.html, privacy.html, terms.html and")
+    print("  data-deletion.html addresses. Steps: docs/platform_publish_setup.md")
     return 0
 
 
@@ -1589,6 +1633,32 @@ def cmd_footage_add(args: argparse.Namespace) -> int:
         else:
             print(f"Imported {row.source} -> {row.dest} (muted H.264, licence recorded)")
     return 1 if any(r.status == "failed" for r in rows) else 0
+
+
+@_register(
+    "packaging",
+    "Shorts stayed / feed share, long-form impressions and CTR, per recent video (#951)",
+)
+def cmd_packaging(args: argparse.Namespace) -> int:
+    from analytics import packaging
+    from config.channels import resolve_channel_id
+
+    for line in packaging.packaging_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
+
+
+@_register(
+    "footage-gaps",
+    "What gameplay to record, and past videos that may show another game (#955)",
+)
+def cmd_footage_gaps(args: argparse.Namespace) -> int:
+    from assets import footage_gaps
+    from config.channels import resolve_channel_id
+
+    for line in footage_gaps.footage_gap_lines(resolve_channel_id(getattr(args, "channel", None))):
+        print(line)
+    return 0
 
 
 @_register("post-publish-check", "Look at uploads 48h+ old: removed, blocked, age-restricted, kids")
@@ -2775,8 +2845,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         default="",
-        help="vault-eval: save results outside the default data directory",
+        help="vault-eval: save results outside the default data directory; "
+        "policy-site: where to write the pages (default output/policy_site)",
     )
+    parser.add_argument("--name", default="", help="policy-site: the name the pages show (#956)")
+    parser.add_argument("--email", default="", help="policy-site: the contact address (#956)")
     parser.add_argument(
         "--file",
         default=None,

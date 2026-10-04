@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,121 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-10-04 (Claude Code) - wave 57: paid views apart from organic, footage that matches the topic, packaging data, the policy site
+
+**Prompt (verbatim):** "could a privacy/terms page for IG and Tiktok, have to be separate? what
+would have to be on it? could it be a free domain with info, no credentials or access to the
+machine or just a website? which niches would be good to get gameplay for? intake these analytics
+as the first ad campaign just went theough for $10 in September and it's saying i need advertiser
+verification, what dat mean? how could these help and how should we change around this if change
+is needed? next 5 too" - with eight YouTube Studio screenshots.
+
+**What the screenshots said (28 days):**
+- 76.3% of views came from "YouTube advertising" - about 3.7K of 4.8K; organic about 1.1K.
+- Shorts 4.2K views and 0 subscribers; long-form 542 views and +7 subscribers.
+- The Shorts feed was 8.8% of views, search 2.3%; 99.9% new viewers.
+- The Wemby Short's background was UFC 5 fighters; the Clair Obscur Short's was Madden.
+
+**Answers given (no code):**
+- **Policy site.** One site serves TikTok, Instagram and Google's consent screen - not one per
+  platform. It is static: free hosting, no credentials, no connection to the PC. Free GitHub
+  Pages needs a public repo, so a separate one; TikTok verifies the URL by a signature file (URL
+  prefix). The catch: TikTok's app review says apps "must not be for private or personal use",
+  and an unaudited client posts only SELF_ONLY to private accounts - recorded on #952.
+- **Advertiser verification.** Google Ads confirms who pays: personal details and a government
+  photo ID, 30 days to start, a few business days' review, the name must match the payments
+  profile, and the verified legal name and location then show in ad disclosures. With no more
+  ads planned, only the ads account pauses.
+- **The ads.** About $2.70 per 1,000 views, 0 subscribers, and promotion views, watch time and
+  subscribers do not count toward YPP. If promoting again: a long video already working
+  organically, with the subscriber goal. Long-form is where subscribers come from, so 1K
+  subscribers + 4K hours is the realistic YPP path, not 10M Shorts views.
+- **Gameplay:** real EA FC video (the folder holds screenshots) and 2K26 clips of the stars
+  covered; more GTA V / Online for the GTA VI run-up (19 Nov 2026); Minecraft and Roblox; none
+  for Twitch or AI. `ops footage-gaps` now gives the list from the runs.
+
+**Picked, and how it differs from the recommendation.** The roadmap's five were #951 #946 #947
+#49 #945. The screenshots found two defects bigger than any of them - ads counted as organic
+everywhere (#954) and another game's footage (#955) - so those went in, with #951 (the
+operator's pick), #946 (the footage fix needs it) and #947 (the same code as #954's backfill).
+#956 is the operator's question. #49 and #945 move to the next wave. Two defaults were taken in
+the plan and stated there: ad views stay out of learning (shown apart), and the policy site takes
+the name and address only at build time.
+
+### Findings, with file:line
+
+- **#954** `analytics/youtube_metrics.fetch_video_metrics` stored one `views` and `daily_views` for
+  all traffic; `core/success/target.views_7d`, `core/success/videos.comparable_views`,
+  `core/success/winners`, `core/success/goals.scoreboard`, `refresh_publish_metrics` (performance
+  memory) and `core/ypp_readiness` all read them. `ypp_readiness._watch_hours_from_metrics` read an
+  `averageViewDuration` the sync never stores (every video got the 20 s stand-in), summed the
+  28-day window as if it were 90 days or a year, and counted Shorts minutes toward the 4,000 hours.
+- **#947** `analytics/view_curve._needs_curve` read "no `first_views`". Fixing it found a second
+  shape: `_fetch_views_by_day` returned None for "asked, no views" as well as for a failure, so a
+  zero-view video would never have been marked fetched.
+- **#955** `assets/local_provider.candidate_clips` (old lines 175-182): the model was shown
+  `resolve_background_query`'s trademark-stripped rewrite (an LLM call of its own, every render),
+  then `random.choice` over every folder. Fast cut and the hybrid fallback each asked again. The
+  sibling: `core/owned_beats.assign_owned_clips` ranked by topic-word hits and used the 0-hit
+  clips too. An unmatched topic with no stock key failed the render outright
+  (`assets/manager.get_background_asset`).
+- **#946** `apis/topic_scorer._infer_domain_from_text` knew "wembanyama", not "Wemby"; fighters only
+  through "ufc"/"fight"/"mma".
+- **#948 was wrong about the API.** The YouTube Analytics API has no impressions or click-through
+  metric; the Reporting API's `channel_reach_basic_a1` (2026-01-15) has them per video per day.
+- `youtube_metrics.merge_metric_snapshots` rebuilds the metrics from each fetch, so any key another
+  writer stored is dropped unless re-added after (filed **#958**). The engaged rate still includes
+  paid viewers (**#957**). A promotion ledger is **#959**.
+
+### Shipped
+
+1. **#956** `publishing/policy_pages/` (four templates) and `publishing/policy_site.py`;
+   `ops policy-site --name --email --output-dir`; steps in `docs/platform_publish_setup.md`
+   (moved there from a planned `docs/policy_site.md` - that runbook already held the TikTok and
+   Instagram setup).
+2. **#946** `config/domain_names.json` (82 names) and learned sport names
+   (`core/learned_domain_terms.learned_sport_names`), checked by `topic_scorer._sport_from_names`
+   after every keyword list; `ops game-names` lists them.
+3. **#955** `choose_footage` (keyword, alias, domain, model with NONE), `footage:<how>:<folder>` on
+   the background asset, `assets/plain_background.py`, `owned_beats.topic_clips`,
+   `assets/footage_gaps.py` + `ops footage-gaps`; `"domain"` on four playlist rows.
+4. **#954 + #947** paid views by day and by source; organic 7-day target, comparable views,
+   winners, verdicts, scoreboard, performance memory; YPP from YouTube's own numbers
+   (`fetch_ypp_numbers`, `data/ypp_<channel>.json`); coverage markers and the new staleness.
+5. **#951** `engagedViews` -> `stayed_share`; `analytics/packaging.py` + `ops packaging`;
+   `analytics/reach_report.py` (job, daily CSVs, merge) in the sync; the scoreboard's best /
+   weakest carry the figure; `youtube.oauth.get_youtube_reporting_service`.
+
+### Not done, deliberately
+
+- No ad-spend ledger (#959) and no organic engaged rate (#957).
+- A video synced before this wave counts none of its views as paid until the backfill runs once.
+- The reach report's history starts around the day its job is created; nothing back-fills it.
+- TikTok's route (#952) is the operator's call.
+
+### Audit
+
+- 86 new test methods (policy site 11, sport names 11, footage 22, paid views 24, packaging 18);
+  suite 4,418 -> 4,504.
+- **83 of 86 observed failing on a clean HEAD worktree** (editable finder removed). The three that
+  pass are guards for unchanged behaviour: a league or game word still wins over a name; matching
+  owned clips are still used; a row with no paid series still counts its views.
+- One existing test changed on purpose: `tests/test_local_folder_pick` pinned "a GTA topic still
+  draws Fortnite when only Fortnite exists" as a known gap, saying it closes "by refusing local
+  footage when no folder token matches" - #955 does that.
+- Default, reverse and shuffle (fake keys) green; 0 network attempts; `data/` and `output/`
+  untouched. Corpus 71 -> 78 (+7). mypy **121** (was 122: the old `candidate_clips` passed a
+  possibly-None folder to `os.path.join`; two new errors fixed before commit). ruff clean.
+- **Live check** (temp stores, real ops verbs, real FFmpeg, network blocked - 0 attempts):
+  Wemby -> 2k26 (domain), Holloway vs Gaethje -> UFC 5 (domain), Clair Obscur -> no folder, its
+  background a 1080x1920 plain card; `footage-gaps` listed Minecraft and the two pre-#955 runs;
+  winners ranked the boosted Short (3,800 views, 3,700 paid) below the organic ones and named its
+  paid views; the scoreboard read "(+3,700 paid, not counted)"; `ops ypp` read 37/1,000
+  subscribers, ads excluded; `ops packaging` read stayed 62% / feed 82% and CTR 3.5% of 4,000
+  impressions; `policy-site` refused without values and wrote four pages with all three links.
+
+Backlog: 237 numbered open, highest #959.
 
 ## 2026-10-03 (Claude Code) - wave 56: `ops backlog`, fresh best bets into two weeks of scheduled videos
 

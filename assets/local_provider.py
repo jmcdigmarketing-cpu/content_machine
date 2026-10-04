@@ -1,8 +1,28 @@
+"""Owned gameplay backgrounds from `video/backgrounds/` (#782 #786 #955).
+
+A topic draws footage from one folder, chosen in this order (`choose_footage`):
+
+1. keyword - a folder name in the topic ("Fortnite reload" -> Fortnite);
+2. alias - the first matching playlist row's `footage` ("NFL draft" -> Madden 26, #786);
+3. domain - the topic's own domain, athlete names included (#946), to the playlist row
+   carrying it ("Wemby's 40-point night" -> nba -> Basketball -> 2k26);
+4. llm - the cheap tier, shown the operator's topic, which may answer NONE.
+
+Nothing else (#955). The chain used to end in the model shown the trademark-stripped stock
+rewrite, then `random.choice` over every game folder: the Wemby Short cut UFC 5 fighters and
+the Clair Obscur Short cut Madden. An unmatched topic now gets no local clips, so the render
+takes stock B-roll or a plain branded background - never another game. The decision is kept
+per topic for the process (fast cut and the hybrid fallback read one choice) and recorded on
+the background asset as `footage:<how>:<folder>` for `ops footage-gaps`.
+"""
+
 import json
 import os
 import random
 
 from typing import Optional
+
+from core import process_state
 
 from assets.base import AssetProvider
 from assets.category import detect_category
@@ -115,23 +135,57 @@ def _alias_choose_folder(topic: str, folders: list[str], channel_id=None) -> str
     return None
 
 
+def _domain_choose_folder(topic: str, folders: list[str], channel_id=None) -> str | None:
+    """The footage folder of the playlist row carrying the topic's own domain (#955).
+
+    "Wemby's 40-point night" names no folder and no playlist key, but it reads nba (#946),
+    and the Basketball row says `"domain": "nba"`, `footage: ["2k26"]`.
+    """
+    try:
+        from apis.topic_scorer import infer_topic_domain
+        from core.playlists import playlist_map
+
+        domain = infer_topic_domain(topic or "")
+        rows = playlist_map(channel_id or "tapin")
+    except Exception as exc:
+        logger.debug("footage by domain skipped: %s", exc)
+        return None
+    if not domain or domain == "neutral":
+        return None
+    by_name = {os.path.basename(f).casefold(): f for f in folders}
+    for row in rows:
+        if str(row.get("domain") or "") != domain:
+            continue
+        for name in row.get("footage") or []:
+            folder = by_name.get(str(name).casefold())
+            if folder:
+                return folder
+    return None
+
+
 def _ai_choose_folder(topic, folders):
+    """The cheap tier picks the folder whose game or sport IS the topic's subject, or none.
+
+    It is shown the operator's topic (#955): the stock rewrite strips trademarks, so the
+    model never saw "Wemby" and picked whatever looked sporty.
+    """
     if not folders:
         return None
 
     folder_list_text = "\n".join(f"- {os.path.relpath(f, BASE_VIDEO_DIR)}" for f in folders)
 
     prompt = f"""
-Select the most relevant folder for this topic.
+Pick the background-footage folder for a short video about this topic.
 
 Topic:
 {topic}
 
-Available folders:
+Folders (each holds gameplay of one game or sport):
 {folder_list_text}
 
-Return ONLY the exact folder path.
-No explanation.
+Answer with the exact folder path ONLY if that folder's game or sport IS the subject of the
+topic. If no folder's game or sport is the subject, answer NONE. Never pick a different game or
+sport because it looks similar.
 """
 
     try:
@@ -141,10 +195,12 @@ No explanation.
         choice = complete(
             prompt,
             tier="cheap",
-            system="Select best folder from list.",
+            system="Select the matching folder from the list, or answer NONE.",
             temperature=0,
             max_tokens=120,
         ).strip()
+        if choice.strip("`'\" .").upper() == "NONE":
+            return None
         for folder in folders:
             if os.path.relpath(folder, BASE_VIDEO_DIR) == choice:
                 return folder
@@ -153,14 +209,69 @@ No explanation.
     return None
 
 
+def choose_footage(
+    topic: str, folders: list[str], channel_id=None, *, use_llm: bool = True
+) -> tuple[str | None, str]:
+    """(folder, how) - how is keyword / alias / domain / llm - or (None, "none")."""
+    for how, pick in (
+        ("keyword", lambda: _keyword_choose_folder(topic, folders)),
+        ("alias", lambda: _alias_choose_folder(topic, folders, channel_id)),
+        ("domain", lambda: _domain_choose_folder(topic, folders, channel_id)),
+    ):
+        folder = pick()
+        if folder:
+            return folder, how
+    if use_llm:
+        folder = _ai_choose_folder(topic, folders)
+        if folder:
+            return folder, "llm"
+    return None, "none"
+
+
+_choices: dict[tuple[str, str, tuple[str, ...]], tuple[str | None, str]] = {}
+
+
+def _remember(
+    topic: str, channel_id, folders: tuple[str, ...], choice: tuple[str | None, str]
+) -> None:
+    _choices[(topic or "", str(channel_id or ""), folders)] = choice
+
+
+def footage_choice(topic: str, folders: list[str], channel_id=None) -> tuple[str | None, str]:
+    """`choose_footage`, decided once per topic and library for the process."""
+    key = (topic or "", str(channel_id or ""), tuple(folders))
+    if key not in _choices:
+        _remember(topic, channel_id, tuple(folders), choose_footage(topic, folders, channel_id))
+    return _choices[key]
+
+
+def last_footage_choice(topic: str, channel_id=None) -> tuple[str | None, str] | None:
+    """The most recent decision for `topic` on `channel_id` this process, or None."""
+    for (t, c, _folders), choice in reversed(list(_choices.items())):
+        if t == (topic or "") and c == str(channel_id or ""):
+            return choice
+    return None
+
+
+def footage_source_id(folder: str | None, how: str) -> str:
+    """`footage:<how>:<folder name>` - what the background asset row records (#955)."""
+    return f"footage:{how}:{os.path.basename(folder) if folder else ''}"
+
+
+def reset_footage_choices() -> None:
+    _choices.clear()
+
+
+process_state.register_reset("assets.local_provider.footage_choices", reset_footage_choices)
+
+
 class LocalAssetProvider(AssetProvider):
     name = "local"
 
-    def candidate_clips(self, topic: str, category: str, channel_id=None) -> list[str]:
-        """Every clip in the folder this topic picks (one game), for multi-shot backgrounds
-        (#782). `find_video` draws its single clip from the same list."""
+    def choose(self, topic: str, category: str, channel_id=None) -> tuple[str | None, str]:
+        """The folder this topic's footage comes from, and how it was chosen (#955)."""
         if not os.path.exists(BASE_VIDEO_DIR):
-            return []
+            return None, "none"
 
         category_path = os.path.join(BASE_VIDEO_DIR, category)
         if not os.path.exists(category_path):
@@ -168,18 +279,16 @@ class LocalAssetProvider(AssetProvider):
 
         candidate_folders = _get_subfolders(category_path) or _get_subfolders(BASE_VIDEO_DIR)
         if not candidate_folders:
-            return []
+            return None, "none"
+        return footage_choice(topic, candidate_folders, channel_id)
 
-        from assets.background_query import resolve_background_query
-
-        chosen_folder = _keyword_choose_folder(topic, candidate_folders) or _alias_choose_folder(
-            topic, candidate_folders, channel_id
-        )
+    def candidate_clips(self, topic: str, category: str, channel_id=None) -> list[str]:
+        """Every clip in the folder this topic picks (one game), for multi-shot backgrounds
+        (#782). `find_video` draws its single clip from the same list. No folder matches ->
+        [] (#955): never another game's footage."""
+        chosen_folder, _how = self.choose(topic, category, channel_id)
         if not chosen_folder:
-            pick_topic = resolve_background_query(topic, category, channel_id)
-            chosen_folder = _ai_choose_folder(pick_topic, candidate_folders) or random.choice(
-                candidate_folders
-            )
+            return []
         return [
             os.path.join(chosen_folder, f)
             for f in sorted(os.listdir(chosen_folder))
@@ -200,9 +309,11 @@ class LocalAssetProvider(AssetProvider):
                 path = chosen
         except Exception as exc:
             logger.debug("clip anti-repeat skipped: %s", exc)
+        folder, how = self.choose(topic, category, channel_id)
         return AssetResult(
             path=path,
             provider=self.name,
+            source_id=footage_source_id(folder, how),
             query=topic,
             attribution=_license_attribution(path),
         )

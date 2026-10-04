@@ -66,10 +66,11 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
 | `footage` | Gameplay folder per playlist niche (--apply measures each clip's text bands) |
 | `footage-add` | Import a gameplay file or folder (--path --game --licence [--source url] --apply) |
+| `footage-gaps` | What gameplay to record, and past videos that may show another game (#955) |
 | `free-cost` | Prove the $0/Piper path billed $0 (or say that it did not) |
 | `free-doctor` | Check the truly-free ($0) stack: Ollama, Piper, signals, DuckDuckGo |
 | `free-tiers` | When each provider's free window resets or ends (#378) |
-| `game-names` | Game names learned from confirmed runs, with the runs behind each (#876) |
+| `game-names` | Game and athlete names learned from confirmed runs, with the runs behind each (#876 #946) |
 | `gen-skills` | Regenerate skills/content-ops/SKILL.md from the ops registry (Agent Skills) |
 | `go-public` | Flip a review-held unlisted upload to public (no id = newest hold; dry-run default; --apply sends) |
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |
@@ -96,12 +97,14 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `next` | One action to take now across gates, quota, and vault decay |
 | `overnight` | Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5) |
 | `package-audit` | Build the wheel and sdist; flag secrets, tokens or operator paths (#640) |
+| `packaging` | Shorts stayed / feed share, long-form impressions and CTR, per recent video (#951) |
 | `paid-signals` | Attribute tiktok_trends / youtube_competitors lift; recommend keep/disable (no catalog write) |
 | `pick-thumbnail` | Pick text_on or face_forward for a dual-thumbnail run |
 | `playbook-lint` | Warn when untagged strategy bullets can still feed facts |
 | `playlists` | Franchise playlists: show the map; --apply creates missing (#601) |
 | `policy-canary` | Hash YouTube inauthentic-content page (local fixture; no HTTP default) |
 | `policy-runbook` | Print the strike / Content ID / appeal runbook path |
+| `policy-site` | Build the privacy / terms / data-deletion pages the app sites link to (#956) |
 | `post-publish-check` | Look at uploads 48h+ old: removed, blocked, age-restricted, kids |
 | `postmortem` | Slowest phase, failed signals, ungrounded claims, cost (--run-id) |
 | `predictions` | What was predicted and recommended at publish vs the outcome (#113) |
@@ -173,4 +176,4 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `why-slow` | Rank last-run phase timings (slowest first) |
 | `winners` | The channel's top videos by views, as the script prompt sees them (#937) |
 | `worker` | Process one upload/render job (or use --loop N) |
-| `ypp` | YPP / membership readiness: watch-hours proxy, disclosure, cadence |
+| `ypp` | YPP readiness: YouTube's own numbers with ads excluded, disclosure, cadence |

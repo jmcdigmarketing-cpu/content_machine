@@ -166,6 +166,25 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     days = sync_channel_views(channel_id)
     if days:
         print(f"  Channel views by day: {days} day(s) kept for the scoreboard (ops scoreboard)")
+    # #954: YouTube's own YPP numbers - Shorts views 90 days, long-form hours 12 months,
+    # subscribers - with ads excluded, as YouTube excludes them.
+    from core.ypp_readiness import save_ypp_numbers
+
+    numbers = youtube_metrics.fetch_ypp_numbers(channel_id=channel_id)
+    if numbers:
+        save_ypp_numbers(channel_id, numbers)
+        subs = numbers.get("subscribers")
+        print(
+            f"  YPP numbers (ads excluded): {subs if subs is not None else '?'} subscribers, "
+            f"{float(numbers.get('long_hours_365d') or 0):,.0f} long-form hours, "
+            f"{int(numbers.get('shorts_views_90d') or 0):,} Shorts views (ops ypp)"
+        )
+    # #951: thumbnail impressions and click-through from the Reporting API's reach report.
+    from analytics import reach_report
+
+    line = reach_report.sync_reach(channel_id)
+    if line:
+        print(line)
     # #114: viewers' questions on your own uploads - opt-in, about 1 unit per video.
     from analytics import mailbag
 

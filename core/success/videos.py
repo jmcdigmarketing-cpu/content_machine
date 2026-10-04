@@ -32,6 +32,15 @@ class Video:
     daily_views: list[list[Any]] = field(default_factory=list)
     views_7d: int | None = None  # #940: views in the first 7 days, comparable across ages
     lifetime_views: int | None = None  # #940: to date, from videos.list statistics
+    daily_paid_views: list[list[Any]] = field(default_factory=list)  # #954
+    paid_views: int = 0  # #954: every paid (ADVERTISING) view the sync has seen, all days
+    paid_window: int = 0  # #954: the paid views inside `views`' 28-day window
+    packaging: dict[str, Any] = field(default_factory=dict)  # #951: analytics/packaging
+
+    @property
+    def organic_views(self) -> int:
+        """`views` (the last sync's window) without its paid views (#954)."""
+        return max(0, self.views - self.paid_window)
 
 
 def _metrics(raw: Any) -> dict[str, Any]:
@@ -46,6 +55,33 @@ def _utc(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def _int(value: Any) -> int:
+    try:
+        return max(0, int(float(value or 0)))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _total(daily: list[Any]) -> int:
+    total = 0
+    for item in daily:
+        try:
+            total += int(float(item[1]))
+        except (TypeError, ValueError, IndexError):
+            continue
+    return total
+
+
+def _packaging(metrics: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from analytics.packaging import packaging_figures
+
+        return packaging_figures(metrics)
+    except Exception as exc:
+        logger.debug("packaging figures skipped: %s", exc)
+        return {}
 
 
 def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Video]:
@@ -77,6 +113,7 @@ def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Vide
         published_at = _utc(getattr(row, "published_at", None))
         lifetime = metrics.get("lifetime_views")
         run_id = getattr(row, "content_run_id", None)
+        paid_daily = list(metrics.get("daily_paid_views") or [])
         out.append(
             Video(
                 video_id=video_id,
@@ -91,6 +128,10 @@ def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Vide
                 daily_views=list(metrics.get("daily_views") or []),
                 views_7d=None if seeded else views_7d(metrics, published_at),
                 lifetime_views=int(lifetime) if isinstance(lifetime, (int, float)) else None,
+                daily_paid_views=paid_daily,
+                paid_views=_total(paid_daily),
+                paid_window=_int(metrics.get("paid_views")),
+                packaging=_packaging(metrics),
             )
         )
     epoch = datetime.min.replace(tzinfo=timezone.utc)
@@ -100,7 +141,9 @@ def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Vide
 
 # #940: the measure a ranking of videos uses. The stored `views` is the last sync's 28-day
 # window, so a three-month-old hit reads as small; views in the first 7 days compare every
-# video at the same age, and lifetime views are the honest second best.
+# video at the same age, and lifetime views are the honest second best. #954: every measure
+# is organic - lifetime views less the paid views the sync has seen (a lower bound on the
+# paid part, so an upper bound on organic), the window less its own paid views.
 COMPARABLE_MIN = 8
 _MEASURES = {
     "7d": ("views in their first 7 days", "views in 7 days"),
@@ -118,8 +161,13 @@ def comparable_views(
     """
     for key, read in (
         ("7d", lambda v: v.views_7d),
-        ("lifetime", lambda v: v.lifetime_views),
-        ("window", lambda v: v.views or None),
+        (
+            "lifetime",
+            lambda v: (
+                max(0, v.lifetime_views - v.paid_views) if v.lifetime_views is not None else None
+            ),
+        ),
+        ("window", lambda v: v.organic_views or None),
     ):
         pairs = [(v, int(value)) for v in videos if (value := read(v))]
         if len(pairs) >= min_count or key == "window":

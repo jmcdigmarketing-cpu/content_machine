@@ -17,15 +17,14 @@ def _topic_tokens(topic: str) -> list[str]:
     return content_tokens(topic, min_len=3)
 
 
-def assign_owned_clips(
-    scenes: list[Scene],
-    index: dict[str, Any],
-    *,
-    topic: str,
-) -> list[str]:
-    """Map beats to clip_index paths. Empty index -> [] (keep the single loop)."""
+def topic_clips(index: dict[str, Any], *, topic: str) -> list[str]:
+    """Clip-index paths whose path or source shares a word with the topic, best first.
+
+    #955: ranking by hits and then taking the zero-hit clips too put another game's footage
+    under the topic, the same shape as the local provider's random folder.
+    """
     clips = (index or {}).get("clips") or {}
-    if not scenes or not isinstance(clips, dict) or not clips:
+    if not isinstance(clips, dict):
         return []
     tokens = _topic_tokens(topic)
     ranked: list[tuple[int, float, str]] = []
@@ -34,11 +33,29 @@ def assign_owned_clips(
             continue
         blob = f"{path} {((meta or {}).get('source') or '')}".lower()
         score = sum(1 for tok in tokens if tok in blob)
+        if score < 1:
+            continue
         duration = float((meta or {}).get("duration_s") or 0.0)
         ranked.append((score, duration, str(path)))
     ranked.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    return [path for _score, _dur, path in ranked]
+
+
+def assign_owned_clips(
+    scenes: list[Scene],
+    index: dict[str, Any],
+    *,
+    topic: str,
+) -> list[str]:
+    """Map beats to clip_index paths. Empty index -> [] (keep the single loop).
+
+    Only clips that name something in the topic (`topic_clips`, #955).
+    """
+    clips = (index or {}).get("clips") or {}
+    if not scenes or not isinstance(clips, dict) or not clips:
+        return []
     paths = []
-    for _score, _dur, path in ranked:
+    for path in topic_clips(index, topic=topic):
         meta = clips.get(path) or {}
         hud = meta.get("hud")
         if hud is None and os.path.isfile(path):
@@ -105,7 +122,9 @@ def try_owned_beat_background(
                 for i in range(min(len(paths), len(scenes)))
             ]
             composed = compose_scene_matched_background(segments, duration)
-            return AssetResult(path=composed.path, provider="owned", query=topic)
+            return AssetResult(
+                path=composed.path, provider="owned", source_id="footage:owned:", query=topic
+            )
         except Exception as exc:
             logger.info("owned beat concat failed; looping first clip: %s", exc)
-    return AssetResult(path=paths[0], provider="owned", query=topic)
+    return AssetResult(path=paths[0], provider="owned", source_id="footage:owned:", query=topic)

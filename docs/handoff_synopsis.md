@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-10-03: wave 56, next five
+# Handoff synopsis — 2026-10-04: wave 57, next five
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,30 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-03 (Claude Code): wave 56 #949 #950 #953
+## Last wave — 2026-10-04 (Claude Code): wave 57 #954 #947 #955 #946 #951 #956 (#948 closed)
+
+From the operator's Studio screenshots and first $10 ad campaign (76.3% of 28-day views were ads).
+
+- **#954** ads apart from organic: the sync keeps paid views by day and by traffic source; the
+  7-day target, winners, verdicts, the scoreboard ("+N paid, not counted") and performance memory
+  read organic. `ops ypp` reads YouTube's own numbers (Shorts views 90 days, long-form hours 12
+  months, subscribers), ads excluded. **Run `ops backfill view-curve --apply` once** - until then a
+  video synced before this wave counts none of its views as paid. **#947** the backfill no longer
+  re-fetches small videos.
+- **#955** footage must match the topic: keyword, playlist alias, the topic's own sport, then the
+  model with NONE allowed - no random game. Unmatched -> stock or a plain branded background.
+  `ops footage-gaps`: what to record, and past videos that may show another game.
+- **#946** athlete names read as their sport (`config/domain_names.json` + names learned from runs).
+- **#951** `ops packaging`: Shorts stayed (not swiped away) and feed share; long-form impressions
+  and CTR via the Reporting API (enable it in Cloud Console). **#948** closed: the Analytics API
+  has no impressions metric.
+- **#956** `ops policy-site --name --email --output-dir`: the privacy / terms / data-deletion pages.
+  TikTok refuses personal apps in review - its route is the operator's call (#952).
+
+**Verify:** `python -m unittest tests.test_paid_views tests.test_footage_match tests.test_packaging`;
+`py -m scripts.ops footage-gaps`; `py -m scripts.ops packaging`.
+
+## Previous — 2026-10-03 (Claude Code): wave 56 #949 #950 #953
 
 - **#949** `py -m scripts.ops backlog`: fresh best bets onto the open slots of the next two weeks
   (news first, dropped past 3 days; evergreen after), drafted; every draft that clears the gates
@@ -37,22 +60,6 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
   and `ops mailbag` drafts the replies (you post them).
 
 **Verify:** `python -m unittest tests.test_ops_batches tests.test_wave55_five`; `py -m scripts.ops list`.
-
-## Previous — 2026-10-03 (Claude Code): wave 54 #934 #935 #936 #937 #114 (+ #939)
-
-The operator's goal is **views**; this wave tracks it and asks for their part in it.
-
-- **#934** `config/goals.json` (placeholder numbers - set yours) and `ops scoreboard`: so far, the
-  weekly pace needed vs the last four weeks, where that pace lands, uploads this week, best and
-  weakest. The sync keeps the channel's views by day; the banner and weekly report show it.
-- **#935 / #936** `ops review-week`: rate each of the week's videos 1-5 with a line of why, set next
-  week's focus, get `output/<ch>/reviews/<YYYY>-W<ww>.md`. `ops verdicts`: your gut vs the views.
-- **#937** the script prompt shows your top videos by views once 8+ are measured (`ops winners`;
-  `WINNERS_IN_PROMPT=false` turns it off).
-- **#114** `ops mailbag`: viewers' questions on your uploads, clustered; 2+ askers -> a best bet.
-- **#939** `ops signal-audit`'s "cited" column was always 0; it reads the real script now.
-
-**Verify:** `python -m unittest tests.test_wave54_success`; `py -m scripts.ops scoreboard`.
 
 ## Pipeline order (operator)
 
@@ -117,11 +124,11 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
+1. **Operator:** `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #946 fighter names read as gaming · #947 view-curve re-fetch.
+3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #958 a metrics refresh drops other writers' keys · #957 an organic engaged rate.
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
@@ -129,7 +136,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Parked / excluded:** Phase M (Instagram + TikTok) · Benable bot · Edge TTS as default (§28).
+**Next:** Phase M (#952) - Instagram first; TikTok's route is the operator's call. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

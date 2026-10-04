@@ -14,6 +14,10 @@ their days are invented.
 The scoreboard says what is true this week: views so far against the target, the weekly
 pace the target needs against the last four weeks' pace, where that pace lands by the
 deadline, uploads this week against the plan, and the week's best and weakest video.
+
+Every one of those is organic (#954): the sync also keeps the channel's paid (ADVERTISING)
+views by day, they are taken out day by day, and the paid total is named beside the views
+so a $10 promotion cannot read as the channel finding its pace.
 """
 
 from __future__ import annotations
@@ -108,6 +112,32 @@ def save_channel_views(channel_id: str, daily: list[list[Any]]) -> int:
     return len(merged)
 
 
+def save_channel_paid_views(channel_id: str, daily: list[list[Any]]) -> int:
+    """Merge the channel's paid views by day into the store (#954); the days kept."""
+    from analytics.view_curve import merge_daily
+
+    stored = _read_json(_views_path(channel_id))
+    stored = stored if isinstance(stored, dict) else {}
+    merged = merge_daily(stored.get("paid_daily"), daily)
+    stored.update({"channel_id": channel_id, "paid_daily": merged})
+    _write_json(_views_path(channel_id), stored)
+    return len(merged)
+
+
+def channel_paid_daily(channel_id: str) -> dict[date, int]:
+    """{day: paid views} the sync kept for the channel (#954); {} before it has run."""
+    stored = _read_json(_views_path(channel_id))
+    out: dict[date, int] = {}
+    for item in (stored.get("paid_daily") if isinstance(stored, dict) else None) or []:
+        try:
+            day, views = _day(item[0]), int(float(item[1]))
+        except (TypeError, ValueError, IndexError):
+            continue
+        if day is not None:
+            out[day] = views
+    return out
+
+
 def save_channel_uploads(channel_id: str, uploads: list[dict[str, str]]) -> None:
     """Keep the channel's own uploads list beside its views (#941)."""
     stored = _read_json(_views_path(channel_id))
@@ -145,13 +175,26 @@ def sync_channel_views(channel_id: str, *, today: date | None = None) -> int:
         uploads = None
     if uploads is not None:
         save_channel_uploads(channel_id, uploads)
+    # #954: the paid views by day over the same days, so the scoreboard counts organic.
+    from analytics.youtube_metrics import fetch_channel_paid_daily_views
+
+    try:
+        paid = fetch_channel_paid_daily_views(
+            channel_id=channel_id, start=start.isoformat(), end=end.isoformat()
+        )
+    except Exception as exc:
+        logger.debug("channel paid views skipped for %s: %s", channel_id, exc)
+        paid = None
+    if paid is not None:
+        save_channel_paid_views(channel_id, paid)
     if not daily:
         return 0
     return save_channel_views(channel_id, daily)
 
 
 def channel_daily_views(channel_id: str) -> tuple[dict[date, int], str]:
-    """({day: views}, source) - "channel" (the synced series), "videos" (summed), or ""."""
+    """({day: organic views}, source) - "channel" (the synced series), "videos" (summed),
+    or "". Paid views are taken out day by day (#954)."""
     stored = _read_json(_views_path(channel_id))
     series = stored.get("daily") if isinstance(stored, dict) else None
     out: dict[date, int] = {}
@@ -163,17 +206,19 @@ def channel_daily_views(channel_id: str) -> tuple[dict[date, int], str]:
         if day is not None:
             out[day] = views
     if out:
-        return out, "channel"
+        paid = channel_paid_daily(channel_id)
+        return {d: max(0, v - paid.get(d, 0)) for d, v in out.items()}, "channel"
     from core.success.videos import channel_videos
 
     for video in channel_videos(channel_id, include_seeded=False):
+        paid_days = _series(getattr(video, "daily_paid_views", None) or [])
         for item in video.daily_views:
             try:
                 day, views = _day(item[0]), int(float(item[1]))
             except (TypeError, ValueError, IndexError):
                 continue
             if day is not None:
-                out[day] = out.get(day, 0) + views
+                out[day] = out.get(day, 0) + max(0, views - paid_days.get(day, 0))
     return out, ("videos" if out else "")
 
 
@@ -285,6 +330,7 @@ def scoreboard(channel_id: str, *, today: date | None = None) -> dict[str, Any] 
     since: date = goal["since"] or date.min
     daily, source = channel_daily_views(channel_id)
     so_far = sum(v for d, v in daily.items() if since <= d <= today)
+    paid_so_far = sum(v for d, v in channel_paid_daily(channel_id).items() if since <= d <= today)
     days_left = (goal["by"] - today).days
     remaining = max(0, goal["target"] - so_far)
     need = remaining * 7 / days_left if days_left > 0 else None
@@ -300,7 +346,7 @@ def scoreboard(channel_id: str, *, today: date | None = None) -> dict[str, Any] 
         for v in channel_videos(channel_id, include_seeded=False)
         if v.published_at is not None and week_start < v.published_at.date() <= today
     ]
-    ranked = sorted(week, key=lambda v: v.views, reverse=True)
+    ranked = sorted(week, key=lambda v: v.organic_views, reverse=True)
     uploads_week, outside = len(week), 0
     listed = channel_uploads(channel_id)
     if listed:
@@ -316,6 +362,7 @@ def scoreboard(channel_id: str, *, today: date | None = None) -> dict[str, Any] 
         "channel_id": channel_id,
         "goal": goal,
         "so_far": so_far,
+        "paid_so_far": paid_so_far,
         "source": source,
         "days_left": days_left,
         "need_per_week": need,
@@ -367,8 +414,9 @@ def scoreboard_lines(channel_id: str, *, today: date | None = None) -> list[str]
         left = (
             f"{board['days_left']} days left" if board["days_left"] > 0 else "the deadline passed"
         )
+        paid = f" (+{board['paid_so_far']:,} paid, not counted)" if board.get("paid_so_far") else ""
         lines.append(
-            f"  so far: {board['so_far']:,} views ({share:.0%}) · {left} · "
+            f"  so far: {board['so_far']:,} views ({share:.0%}){paid} · {left} · "
             f"source: {_SOURCES[board['source']]}"
         )
         need, pace = board["need_per_week"], board["pace_per_week"]
@@ -402,13 +450,24 @@ def scoreboard_lines(channel_id: str, *, today: date | None = None) -> list[str]
     lines.append(f"  uploads, last 7 days: {board['uploads_week']}{plan}{elsewhere}")
     best, weakest = board["best"], board["weakest"]
     if best is not None:
-        line = f'  best: "{best.title}" {best.views:,} views'
+        line = f'  best: "{best.title}" {best.organic_views:,} views{_packaging_note(best)}'
         if weakest is not None:
-            line += f' · weakest: "{weakest.title}" {weakest.views:,} views'
+            line += (
+                f' · weakest: "{weakest.title}" {weakest.organic_views:,} views'
+                f"{_packaging_note(weakest)}"
+            )
         lines.append(line)
     if board["focus"]:
         lines.append(f"  focus this week: {board['focus']}")
     return lines
+
+
+def _packaging_note(video: Any) -> str:
+    """ " (stayed 62% · feed 41%)" - what the title and thumbnail did (#951), or ""."""
+    from analytics.packaging import figure_text
+
+    text = figure_text(getattr(video, "packaging", None) or {})
+    return f" ({text})" if text else ""
 
 
 def banner_line(channel_id: str, *, today: date | None = None) -> str:

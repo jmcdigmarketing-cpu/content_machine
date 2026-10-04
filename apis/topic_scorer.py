@@ -236,6 +236,86 @@ def _learned_game_names() -> frozenset[str]:
         return frozenset()
 
 
+_SPORT_NAME_DOMAINS = ("nba", "nfl", "ufc", "soccer")
+_seed_sport_names: dict[str, str] | None = None
+_names_pattern: tuple[tuple[tuple[str, str], ...], re.Pattern[str]] | None = None
+
+
+def _seeded_sport_names() -> dict[str, str]:
+    """#946: {name: sport} from config/domain_names.json, read once per process."""
+    global _seed_sport_names
+    if _seed_sport_names is None:
+        import json
+
+        from config.paths import DOMAIN_NAMES_FILE
+
+        names: dict[str, str] = {}
+        try:
+            with open(DOMAIN_NAMES_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError) as exc:
+            logger.debug("domain names unreadable: %s", exc)
+            data = {}
+        for sport, entries in data.items() if isinstance(data, dict) else ():
+            if sport not in _SPORT_NAME_DOMAINS or not isinstance(entries, list):
+                continue
+            for entry in entries:
+                key = str(entry).strip().lower()
+                if key:
+                    names.setdefault(key, sport)
+        _seed_sport_names = names
+    return _seed_sport_names
+
+
+def _learned_sport_names() -> dict[str, str]:
+    """#946: athlete / fighter names past runs confirmed as one sport."""
+    try:
+        from core import learned_domain_terms
+
+        return learned_domain_terms.learned_sport_names()
+    except Exception as exc:
+        logger.debug("learned sport names skipped: %s", exc)
+        return {}
+
+
+def _sport_from_names(topic_lower: str) -> str | None:
+    """The one sport whose seeded or learned names the topic mentions, else None.
+
+    Checked after every keyword list, so a league, club, game or franchise word wins. Two
+    sports named ("Messi vs LeBron") is no answer. The seed wins over a learned name.
+    """
+    global _names_pattern
+    names = {**_learned_sport_names(), **_seeded_sport_names()}
+    if not names or not topic_lower:
+        return None
+    key = tuple(sorted(names.items()))
+    if _names_pattern is None or _names_pattern[0] != key:
+        ordered = sorted(names, key=len, reverse=True)
+        compiled = re.compile(r"\b(?:" + "|".join(re.escape(n) for n in ordered) + r")\b")
+        _names_pattern = (key, compiled)
+    found = _names_pattern[1].finditer(topic_lower)
+    sports = {names[m.group(0)] for m in found if m.group(0) in names}
+    return sports.pop() if len(sports) == 1 else None
+
+
+def _reset_sport_names() -> None:
+    global _seed_sport_names, _names_pattern
+    _seed_sport_names = None
+    _names_pattern = None
+
+
+def _register_sport_names_reset() -> None:
+    try:
+        from core import process_state
+
+        process_state.register_reset("apis.topic_scorer.sport_names", _reset_sport_names)
+    except Exception as exc:  # pragma: no cover - the registry is always importable
+        logger.debug("sport names reset not registered: %s", exc)
+
+
+_register_sport_names_reset()
+
+
 # #931: names that identify a subject on their own - leagues, competitions, clubs,
 # franchises - as opposed to the category words ("soccer", "fight") the classifier also uses.
 _SUBJECT_EXTRA = ("nba", "nfl", "super bowl", "ufc", "mma")
@@ -437,6 +517,11 @@ def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: 
         or _mentions(topic_lower, sorted(_learned_game_names()))
     ):
         return "gaming"
+
+    # #946: "Holloway vs Gaethje", "Wemby's 40-point night" - a name, not a keyword.
+    sport = _sport_from_names(topic_lower)
+    if sport:
+        return sport
 
     if use_channel_profile:
         profile = get_channel_profile(channel_id)

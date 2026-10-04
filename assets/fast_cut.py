@@ -407,10 +407,19 @@ def try_fast_cut_background(
         )
         return None
     try:
-        return _compose(keys, windows, topic, float(duration), words)
+        asset = _compose(keys, windows, topic, float(duration), words)
     except Exception as exc:
         logger.warning("fast cut failed; keeping the old background: %s", exc)
         return None
+    try:
+        from assets.local_provider import footage_source_id, last_footage_choice
+
+        choice = last_footage_choice(topic, channel_id)
+        if asset is not None and choice is not None:
+            asset.source_id = footage_source_id(*choice)  # #955: which folder, and how
+    except Exception as exc:
+        logger.debug("fast cut footage record skipped: %s", exc)
+    return asset
 
 
 def _render_shot(clip: str, start: float, length: float, path: str) -> None:

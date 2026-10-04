@@ -14,6 +14,11 @@ A video counts under `views` only when its views-by-day series starts on its pub
 (the sync's 28-day window does not, for anything older than four weeks; `ops backfill
 view-curve --apply` fetches from the publish day). The engagement predictor stays on the
 engaged rate: its predictions are frozen into the grade and the ledger on that scale.
+
+The 7 days are organic (#954): the ADVERTISING views by day the sync keeps
+(`daily_paid_views`) are taken out, so a boosted video is not a winner the recommenders
+chase. A row synced before #954 has no paid series and counts none as paid until the
+backfill fetches it.
 """
 
 from __future__ import annotations
@@ -39,16 +44,24 @@ def label(target_name: str | None = None) -> str:
     return _LABELS[target_name or target()]
 
 
-def views_7d(metrics: dict[str, Any], published_at: datetime | None) -> int | None:
+def views_7d(
+    metrics: dict[str, Any], published_at: datetime | str | None, *, organic: bool = True
+) -> int | None:
     """Views in the video's first 7 days (publish day + 6, Pacific), or None.
 
     None unless the series starts on or before the publish day and reaches its seventh
     day: a later start cannot say what the first days were, and a shorter series is not
     seven days yet. A video whose first day had no views at all reads as a late start -
-    left out rather than guessed.
+    left out rather than guessed. Paid views on those days are taken out (#954) unless
+    `organic=False`.
     """
     from analytics.view_curve import publish_day
 
+    if isinstance(published_at, str):
+        try:
+            published_at = datetime.fromisoformat(published_at)
+        except ValueError:
+            return None
     start = publish_day(published_at)
     if start is None or not isinstance(metrics, dict):
         return None
@@ -62,7 +75,23 @@ def views_7d(metrics: dict[str, Any], published_at: datetime | None) -> int | No
     if not series or min(series) > start or max(series) < start + timedelta(days=6):
         return None
     end = start + timedelta(days=6)
-    return sum(v for d, v in series.items() if start <= d <= end)
+    total = sum(v for d, v in series.items() if start <= d <= end)
+    if organic:
+        total = max(0, total - paid_between(metrics, start, end))
+    return total
+
+
+def paid_between(metrics: dict[str, Any], start: date, end: date) -> int:
+    """The paid views the sync kept for the days `start`..`end` (#954); 0 when none."""
+    paid = 0
+    for item in metrics.get("daily_paid_views") or []:
+        try:
+            day, views = date.fromisoformat(str(item[0])[:10]), int(float(item[1]))
+        except (TypeError, ValueError, IndexError):
+            continue
+        if start <= day <= end:
+            paid += views
+    return paid
 
 
 def outcome(

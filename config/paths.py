@@ -23,6 +23,8 @@ EXPERIMENTS_FILE = os.path.join(DATA_DIR, "experiments.json")
 TOPIC_GRAPH_FILE = os.path.join(DATA_DIR, "topic_graph.json")
 CLIP_INDEX_FILE = os.path.join(DATA_DIR, "clip_index.json")
 SEASONAL_CALENDAR_FILE = os.path.join(ROOT_DIR, "config", "seasonal_calendar.json")
+# #946: athlete / fighter names per sport, checked after every keyword list.
+DOMAIN_NAMES_FILE = os.path.join(ROOT_DIR, "config", "domain_names.json")
 FEED_HEALTH_FILE = os.path.join(DATA_DIR, "feed_health.json")
 SIGNAL_CANARY_FILE = os.path.join(DATA_DIR, "signal_canary.json")
 RELIABILITY_HISTORY_FILE = os.path.join(DATA_DIR, "reliability_history.json")

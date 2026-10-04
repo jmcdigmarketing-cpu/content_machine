@@ -26,6 +26,11 @@ _REPORT_TZ = ZoneInfo("America/Los_Angeles")
 _MIN_MEASURED = 5
 
 
+def _today() -> date:
+    """Today in YouTube Analytics' day (Pacific)."""
+    return datetime.now(_REPORT_TZ).date()
+
+
 def threshold() -> int:
     """`FIRST_VIEWS_THRESHOLD` (default 100)."""
     try:
@@ -82,14 +87,39 @@ def days_to_views(daily: Any, published_on: date | str | None, limit: int) -> di
     return None
 
 
+def _earliest(*values: Any) -> str | None:
+    days = sorted(str(v)[:10] for v in values if _day(v) is not None)
+    return days[0] if days else None
+
+
+def _latest(*values: Any) -> str | None:
+    days = sorted(str(v)[:10] for v in values if _day(v) is not None)
+    return days[-1] if days else None
+
+
 def merge_view_curve(
     existing: dict[str, Any], merged: dict[str, Any], published_at: datetime | None
 ) -> dict[str, Any]:
-    """Carry the day series and `first_views` into a freshly merged metrics dict."""
+    """Carry the day series and `first_views` into a freshly merged metrics dict.
+
+    #954: the paid views by day are kept the same way, with what the fetches covered:
+    `views_since` / `views_until` and `paid_since` widen, never narrow.
+    """
     old = existing if isinstance(existing, dict) else {}
     daily = merge_daily(old.get("daily_views"), merged.get("daily_views"))
     if daily:
         merged["daily_views"] = daily
+    if "daily_paid_views" in old or "daily_paid_views" in merged:
+        merged["daily_paid_views"] = merge_daily(
+            old.get("daily_paid_views"), merged.get("daily_paid_views")
+        )
+    for key, pick in (("views_since", _earliest), ("paid_since", _earliest)):
+        value = pick(old.get(key), merged.get(key))
+        if value:
+            merged[key] = value
+    until = _latest(old.get("views_until"), merged.get("views_until"))
+    if until:
+        merged["views_until"] = until
     if isinstance(old.get("first_views"), dict):
         merged["first_views"] = old["first_views"]  # frozen once reached
     elif daily:
@@ -155,23 +185,55 @@ def stale(run: Any) -> bool:
     return row is not None and _needs_curve(row)
 
 
+def first_week_covered(metrics: dict[str, Any], start: date) -> bool:
+    """The fetched days include the first 7 from `start`, paid series too (#947 #954).
+
+    Read from what the fetches covered (`views_since` / `views_until`, `paid_since`) - a
+    day with no views has no row, so the series alone cannot say. Rows from before those
+    markers fall back to the series' own first and last day.
+    """
+    end = start + timedelta(days=6)
+    series = merge_daily([], metrics.get("daily_views"))
+    since = _day(metrics.get("views_since")) or (_day(series[0][0]) if series else None)
+    until = _day(metrics.get("views_until")) or (_day(series[-1][0]) if series else None)
+    paid_since = _day(metrics.get("paid_since"))
+    return (
+        since is not None
+        and since <= start
+        and until is not None
+        and until >= end
+        and paid_since is not None
+        and paid_since <= start
+    )
+
+
 def _needs_curve(row: Any) -> bool:
+    """#947: stale while the first week (views and paid views) is not fetched.
+
+    It used to read "no `first_views`" - a video that never reached the threshold has none,
+    so every `ops all` fetched its whole history again. A video under a week old is left to
+    the metrics sync, which reads every young video (#918).
+    """
     if not getattr(row, "youtube_video_id", "") or getattr(row, "published_at", None) is None:
         return False
     from storage.repositories.publish_log import is_seeded
 
     if is_seeded(row):  # #927: a seeded id is not a YouTube video and its day is invented
         return False
+    start = publish_day(row.published_at)
+    if start is None or start + timedelta(days=7) > _today():
+        return False
     try:
         metrics = json.loads(row.metrics_json or "{}")
     except (TypeError, ValueError):
         metrics = {}
-    return not isinstance(metrics, dict) or "first_views" not in metrics
+    return not isinstance(metrics, dict) or not first_week_covered(metrics, start)
 
 
 def backfill(channel_id: str, apply: bool, force: bool) -> dict[str, int]:
-    """Fetch views by day from each video's publish day; network only with `apply`."""
-    from analytics.youtube_metrics import fetch_daily_views
+    """Fetch views by day and paid views by day (#954) from each video's publish day;
+    network only with `apply`."""
+    from analytics import youtube_metrics
     from storage.repositories.publish_log import get_publish_log_repository
 
     repo = get_publish_log_repository()
@@ -179,26 +241,35 @@ def backfill(channel_id: str, apply: bool, force: bool) -> dict[str, int]:
     todo = [r for r in rows if force or _needs_curve(r)]
     updated = 0
     if apply:
-        today = datetime.now(_REPORT_TZ).date()
+        today = _today()
         for row in todo:
             start = publish_day(row.published_at)
             if start is None or not row.youtube_video_id:
                 continue
             end = min(start + timedelta(days=28), today)
-            daily = fetch_daily_views(
-                row.youtube_video_id,
-                channel_id=channel_id,
-                start=start.isoformat(),
-                end=end.isoformat(),
+            window = {"start": start.isoformat(), "end": end.isoformat()}
+            daily = youtube_metrics.fetch_daily_views(
+                row.youtube_video_id, channel_id=channel_id, **window
             )
-            if not daily:
+            if daily is None:
                 continue
+            paid = youtube_metrics.fetch_daily_paid_views(
+                row.youtube_video_id, channel_id=channel_id, **window
+            )
             try:
                 metrics = json.loads(row.metrics_json or "{}")
             except (TypeError, ValueError):
                 metrics = {}
             metrics = metrics if isinstance(metrics, dict) else {}
-            merged = merge_view_curve(metrics, dict(metrics, daily_views=daily), row.published_at)
+            fresh = dict(
+                metrics,
+                daily_views=daily,
+                views_since=window["start"],
+                views_until=window["end"],
+            )
+            if paid is not None:
+                fresh.update(daily_paid_views=paid, paid_since=window["start"])
+            merged = merge_view_curve(metrics, fresh, row.published_at)
             repo.update(row.id, {"metrics_json": json.dumps(merged)})
             updated += 1
     return {"runs": len(rows), "stale": len(todo), "would_update": len(todo), "updated": updated}

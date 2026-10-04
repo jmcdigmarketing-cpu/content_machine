@@ -1,11 +1,27 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-10-03 (Claude Code): wave 54 #934 #935 #936 #937 #114 (+ #939)
+
+The operator's goal is **views**; this wave tracks it and asks for their part in it.
+
+- **#934** `config/goals.json` (placeholder numbers - set yours) and `ops scoreboard`: so far, the
+  weekly pace needed vs the last four weeks, where that pace lands, uploads this week, best and
+  weakest. The sync keeps the channel's views by day; the banner and weekly report show it.
+- **#935 / #936** `ops review-week`: rate each of the week's videos 1-5 with a line of why, set next
+  week's focus, get `output/<ch>/reviews/<YYYY>-W<ww>.md`. `ops verdicts`: your gut vs the views.
+- **#937** the script prompt shows your top videos by views once 8+ are measured (`ops winners`;
+  `WINNERS_IN_PROMPT=false` turns it off).
+- **#114** `ops mailbag`: viewers' questions on your uploads, clustered; 2+ askers -> a best bet.
+- **#939** `ops signal-audit`'s "cited" column was always 0; it reads the real script now.
+
+**Verify:** `python -m unittest tests.test_wave54_success`; `py -m scripts.ops scoreboard`.
 
 ## Previous — 2026-10-03 (Claude Code): wave 53 #930-#933 #929 #591 #573 #586 (#587 closed)
 

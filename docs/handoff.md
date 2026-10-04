@@ -53,25 +53,26 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-03 · **HEAD at write:** `23b741c` (wave 55) + the wave 56 commit
+**Written:** 2026-10-04 · **HEAD at write:** `fc0e857` (wave 56) + the wave 57 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** `publishing/backlog.py` is the backlog: slots (`plan_backlog_slots`,
-rolling cap via `fits_cap`, counting published + scheduled + queued), topics
-(`pick_backlog_topics`, news first within `BACKLOG_NEWS_DAYS`), the gate (`backlog_gate`), the
-run (`run_backlog`, which reuses `batch_generation.run_batch`, `batch_review._render`,
-`spaced_queue.queue_spaced_uploads`) and the veto (`pull`). It is not in `ops all`. Fail-first on a
-HEAD worktree: remove `_EditableFinder` from `sys.meta_path` (next-five skill) or new modules are
-imported from the main checkout. mypy **122**.
+**Read before editing:** paid views live in each video's `daily_paid_views` / `paid_since`
+(`youtube_metrics._fetch_views_by_source_day`); `target.views_7d` subtracts them, and
+`view_curve.first_week_covered` reads the `views_since` / `views_until` / `paid_since` markers.
+`merge_metric_snapshots` rebuilds metrics per fetch - carry new keys in `merge_view_curve` (#958).
+Footage: `local_provider.choose_footage` (keyword, alias, domain, model-or-NONE; no random),
+cached per topic; the asset row's `source_id` is `footage:<how>:<folder>`. mypy **121**.
 
 **Defects first:**
-- #953: the fail-first worktree leaked new modules (10 of 12 passed on HEAD); fixed in the method.
-- #950: the auto-generate task pointed at an old OneDrive checkout.
-- Open: #946 fighter names infer gaming; #947 view-curve re-fetch; the backlog plans on the
-  gaming schedule only (3 slots a week).
+- #954: ads were counted as organic by every recommender, the scoreboard and YPP; until
+  `ops backfill view-curve --apply` runs, pre-wave rows count no paid views.
+- #955: unmatched topics took a random game folder; the render now takes stock or a plain card.
+- #948's API was wrong (Analytics has no impressions); CTR comes from the Reporting API.
+- Open: #957 engaged rate includes paid viewers; #958 a refresh drops other writers' keys.
 
-**Shipped:** #949 #950 #953. Suite **4,418**, 0 network attempts, `data/` clean; backlog **238
-numbered open**, highest #952. Next: **#951 · #946 · #947 · #49 · #945**, then #952 Phase M.
+**Shipped:** #954 #947 #955 #946 #951 #956 (#948 closed). Suite **4,504**, 0 network attempts,
+`data/` clean; backlog **237 numbered open**, highest #959. Next: **#952 Instagram · #958 · #957 ·
+#49 · #945**; TikTok's route is the operator's call.
 
 ## Slot — Cursor
 

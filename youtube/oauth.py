@@ -145,6 +145,24 @@ def get_youtube_analytics_service(channel_id: str | None = None):
     )
 
 
+def get_youtube_reporting_service(channel_id: str | None = None):
+    """The YouTube Reporting API (bulk reports) - thumbnail impressions and click-through
+    (#951). Same token and `yt-analytics.readonly` scope as the Analytics client."""
+    if live_youtube_forbidden():
+        logger.debug("live YouTube Reporting client forbidden (C9)")
+        return None
+    creds = load_credentials(channel_id)
+    if not creds:
+        return None
+    if SCOPE_YT_ANALYTICS_READONLY not in (creds.scopes or []):
+        return None
+    from googleapiclient.discovery import build
+
+    return build(
+        "youtubereporting", "v1", credentials=creds, cache_discovery=False, static_discovery=True
+    )
+
+
 def run_interactive_oauth(
     channel_id: str | None = None,
     *,

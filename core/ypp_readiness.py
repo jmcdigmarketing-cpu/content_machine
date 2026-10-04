@@ -1,23 +1,36 @@
 """YPP / membership readiness checklist (candidate 87).
 
-Watch-hours proxy, AI disclosure, cadence headroom. Fail-open when metrics
-are missing — this is a checklist, not a publish gate.
+Watch hours, AI disclosure, cadence headroom. Fail-open when metrics are missing - this is a
+checklist, not a publish gate.
+
+#954: the threshold reads YouTube's own channel numbers, which the metrics sync stores in
+`data/ypp_<channel>.json` (`youtube_metrics.fetch_ypp_numbers`): Shorts views over the last
+90 days and long-form watch hours over the last 12 months, ads excluded as YouTube excludes
+them, plus subscribers - both paths need 1,000. Until that has run it falls back to an
+estimate from the synced videos, labelled as one: their window views less the paid ones, and
+watch time from `estimated_minutes_watched` (the 20 s stand-in only when that is missing).
+The old check counted ad views, summed a 28-day window as if it were 90 days or a year, read
+an `averageViewDuration` the sync never stored, and counted Shorts minutes toward the hours.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
+from config.paths import DATA_DIR
 from core.logging import get_logger
 
 logger = get_logger("core.ypp_readiness")
 
-# YouTube YPP Shorts alternative: 10M Shorts views in 90 days is one path;
-# classic is 1k subs + 4k public watch hours. We only have views/duration.
+# YPP: 1,000 subscribers and either 4,000 public long-form watch hours in 12 months or
+# 10M public Shorts views in 90 days. Promotion views, watch time and subscribers do not count.
 WATCH_HOURS_TARGET = 4000.0
 SHORTS_VIEWS_TARGET = 10_000_000
+SUBSCRIBERS_TARGET = 1000
+YPP_TEMPLATE = os.path.join(DATA_DIR, "ypp_{channel}.json")
 
 
 @dataclass
@@ -37,6 +50,25 @@ class YppReport:
         return bool(self.checks) and all(c.ok for c in self.checks)
 
 
+def save_ypp_numbers(channel_id: str, numbers: dict[str, Any]) -> None:
+    """Keep the sync's YPP numbers (#954) for `ops ypp`."""
+    path = YPP_TEMPLATE.format(channel=channel_id)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    tmp = f"{path}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(dict(numbers), f, indent=2)
+    os.replace(tmp, path)
+
+
+def load_ypp_numbers(channel_id: str) -> dict[str, Any] | None:
+    try:
+        with open(YPP_TEMPLATE.format(channel=channel_id), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def _load_json(raw: str | None) -> dict[str, Any]:
     try:
         data = json.loads(raw or "{}")
@@ -46,11 +78,15 @@ def _load_json(raw: str | None) -> dict[str, Any]:
 
 
 def _watch_hours_from_metrics(metrics: dict[str, Any]) -> float:
-    """Approximate watch hours from views * averageViewDuration seconds."""
+    """Watch hours for one synced video: its `estimated_minutes_watched`, else an estimate
+    from views x average view duration (a 20 s stand-in when that is missing too)."""
     try:
-        views = float(metrics.get("views") or 0)
+        minutes = float(metrics.get("estimated_minutes_watched") or 0)
     except (TypeError, ValueError):
-        views = 0.0
+        minutes = 0.0
+    if minutes > 0:
+        return minutes / 60.0
+    views = _organic_views(metrics)
     dur = metrics.get("averageViewDuration") or metrics.get("average_view_duration") or 0
     try:
         seconds = float(dur)
@@ -62,18 +98,45 @@ def _watch_hours_from_metrics(metrics: dict[str, Any]) -> float:
     return (views * seconds) / 3600.0
 
 
-def inspect_ypp(
-    channel_id: str,
-    *,
-    metrics_rows: list[dict[str, Any]] | None = None,
-    disclosure: str | None = None,
-    cadence: Any = None,
-) -> YppReport:
-    from config.channels import resolve_channel_id
+def _organic_views(metrics: dict[str, Any]) -> float:
+    """The window's views less the paid ones the sync saw (#954)."""
+    try:
+        views = float(metrics.get("views") or 0)
+    except (TypeError, ValueError):
+        views = 0.0
+    try:
+        paid = float(metrics.get("paid_views") or 0)
+    except (TypeError, ValueError):
+        paid = 0.0
+    return max(0.0, views - paid)
 
-    cid = resolve_channel_id(channel_id)
-    report = YppReport(channel_id=cid)
 
+def threshold_from_numbers(numbers: dict[str, Any]) -> YppCheck:
+    """The YPP check on YouTube's own numbers, ads excluded (#954)."""
+    shorts = int(numbers.get("shorts_views_90d") or 0)
+    hours = float(numbers.get("long_hours_365d") or 0.0)
+    subs = numbers.get("subscribers")
+    views_ok = hours >= WATCH_HOURS_TARGET or shorts >= SHORTS_VIEWS_TARGET
+    if isinstance(subs, int):
+        ok = views_ok and subs >= SUBSCRIBERS_TARGET
+        subs_text = f"{subs:,}/{SUBSCRIBERS_TARGET:,} subscribers"
+    else:
+        ok = views_ok
+        subs_text = "subscribers unknown"
+    as_of = f" (as of {numbers['as_of']})" if numbers.get("as_of") else ""
+    paid = int(numbers.get("shorts_paid_90d") or 0)
+    paid_text = f"; {paid:,} paid Shorts views not counted" if paid else ""
+    return YppCheck(
+        "ypp_threshold",
+        ok,
+        f"{subs_text} · {hours:,.0f}/{WATCH_HOURS_TARGET:,.0f} long-form watch hours "
+        f"(12 months) or {shorts:,}/{SHORTS_VIEWS_TARGET:,} Shorts views (90 days), "
+        f"ads excluded{paid_text}{as_of}",
+    )
+
+
+def _estimated_threshold(cid: str, metrics_rows: list[dict[str, Any]] | None) -> YppCheck:
+    """From the synced videos when YouTube's numbers are not stored yet; labelled an estimate."""
     rows = metrics_rows
     if rows is None:
         rows = []
@@ -93,27 +156,39 @@ def inspect_ypp(
             continue
         if m.get("views") is not None or m.get("estimated_revenue_usd") is not None:
             have_metrics = True
-        try:
-            views += float(m.get("views") or 0)
-        except (TypeError, ValueError):
-            pass
+        views += _organic_views(m)
         hours += _watch_hours_from_metrics(m)
 
     if not have_metrics:
-        report.checks.append(
-            YppCheck("ypp_threshold", True, "no metrics yet — fail-open (run sync-metrics)")
-        )
+        return YppCheck("ypp_threshold", True, "no metrics yet — fail-open (run sync-metrics)")
+    return YppCheck(
+        "ypp_threshold",
+        hours >= WATCH_HOURS_TARGET or views >= SHORTS_VIEWS_TARGET,
+        f"~{hours:.0f}h (need {WATCH_HOURS_TARGET:.0f}) or {views:,.0f} Shorts views "
+        f"(need {SHORTS_VIEWS_TARGET:,}) — either path; an estimate from synced videos' "
+        "windows, ads left out (py -m scripts.ops sync-metrics stores YouTube's own numbers)",
+    )
+
+
+def inspect_ypp(
+    channel_id: str,
+    *,
+    metrics_rows: list[dict[str, Any]] | None = None,
+    disclosure: str | None = None,
+    cadence: Any = None,
+    numbers: dict[str, Any] | None = None,
+) -> YppReport:
+    from config.channels import resolve_channel_id
+
+    cid = resolve_channel_id(channel_id)
+    report = YppReport(channel_id=cid)
+
+    if numbers is None and metrics_rows is None:
+        numbers = load_ypp_numbers(cid)
+    if numbers:
+        report.checks.append(threshold_from_numbers(numbers))
     else:
-        hours_ok = hours >= WATCH_HOURS_TARGET
-        shorts_ok = views >= SHORTS_VIEWS_TARGET
-        report.checks.append(
-            YppCheck(
-                "ypp_threshold",
-                hours_ok or shorts_ok,
-                f"~{hours:.0f}h (need {WATCH_HOURS_TARGET:.0f}) or "
-                f"{views:,.0f} Shorts views (need {SHORTS_VIEWS_TARGET:,.0f}) — either path",
-            )
-        )
+        report.checks.append(_estimated_threshold(cid, metrics_rows))
 
     disc = disclosure
     if disc is None:

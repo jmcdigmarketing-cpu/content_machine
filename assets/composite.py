@@ -197,6 +197,7 @@ def compose_hybrid_background(
     return AssetResult(
         path=output_path,
         provider="hybrid",
+        source_id=local.source_id,  # #955: the gameplay half's footage:<how>:<folder>
         query=local.query or stock.query,
         attribution=attribution,
     )

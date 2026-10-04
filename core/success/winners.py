@@ -9,6 +9,9 @@ it, from the publish log otherwise (seeded videos: real titles and views).
 
 `winners_block` puts them in the script prompt as a pattern to learn from, never as words or
 facts to reuse. A finished-output change, disclosed; `WINNERS_IN_PROMPT=false` turns it off.
+
+#954: the ranking is organic (`comparable_views`), so a boosted video is never a winner for
+its paid views; `ops winners` names the videos with paid views and how many.
 """
 
 from __future__ import annotations
@@ -124,4 +127,23 @@ def winners_lines(channel_id: str) -> list[str]:
         f"Winners - {channel_id}: top {len(top)} of {count} measured videos by {heading} ({state})"
     ]
     lines += [f"  {i}. {_line(w)}" for i, w in enumerate(top, 1)]
+    lines += paid_lines(channel_id)
     return lines
+
+
+def paid_lines(channel_id: str) -> list[str]:
+    """The videos with paid views and how many (#954): ranked on organic, said here."""
+    from core.success.videos import channel_videos
+
+    boosted = sorted(
+        (v for v in channel_videos(channel_id) if v.paid_views > 0),
+        key=lambda v: v.paid_views,
+        reverse=True,
+    )
+    if not boosted:
+        return []
+    shown = "; ".join(f'"{v.title}" {v.paid_views:,} paid' for v in boosted[:3])
+    more = f" (+{len(boosted) - 3} more)" if len(boosted) > 3 else ""
+    return [
+        f"  ads: {len(boosted)} video(s) had paid views, ranked on organic only - {shown}{more}"
+    ]

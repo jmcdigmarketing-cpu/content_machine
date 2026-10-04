@@ -140,6 +140,8 @@ analytics = ["*.json"]
 # #832: channel logos, banners and the wordmark are opened at runtime (core/brand_kit.py).
 assets = ["branding/*", "branding/*/*"]
 scripts = ["*.ps1"]
+# #956: the policy-site templates `ops policy-site` fills in.
+publishing = ["policy_pages/*.html"]
 
 # ---------------------------------------------------------------------------
 # Ruff — linter + formatter (replaces flake8 + isort + black)

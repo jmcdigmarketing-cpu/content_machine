@@ -61,17 +61,19 @@ class TestKeywordFolderPick(unittest.TestCase):
         # The stock rewrite for a gaming topic does not mention Fortnite.
         self.assertIsNone(_keyword_choose_folder("video game gameplay esports", folders))
 
-    def test_known_gap_gta_topic_still_falls_through_when_only_fortnite_exists(self):
-        """Until a gta/ folder exists, a GTA topic can still draw Fortnite clips.
-
-        Keyword matching cannot invent a missing franchise library. Closing this
-        means adding `video/backgrounds/gaming/gta/` clips, or refusing local
-        footage when no folder token matches.
-        """
+    def test_a_gta_topic_never_draws_fortnite_when_only_fortnite_exists(self):
+        """Was the known gap this file named: "until a gta/ folder exists, a GTA topic can
+        still draw Fortnite clips ... closing this means refusing local footage when no
+        folder token matches". #955 closed it: no folder is the topic's game, so no local
+        clip - the render takes stock B-roll or a plain background instead."""
         with tempfile.TemporaryDirectory() as tmp:
             fortnite = os.path.join(tmp, "gaming", "fortnite")
-            fn_clip = _touch_clip(fortnite, "fn.mp4")
+            _touch_clip(fortnite, "fn.mp4")
 
+            from assets import local_provider
+
+            local_provider.reset_footage_choices()
+            self.addCleanup(local_provider.reset_footage_choices)
             with (
                 patch("assets.local_provider.BASE_VIDEO_DIR", tmp),
                 patch.dict(os.environ, {"BACKGROUND_QUERY_LLM": "false"}, clear=False),
@@ -79,8 +81,7 @@ class TestKeywordFolderPick(unittest.TestCase):
             ):
                 result = LocalAssetProvider().find_video("GTA 6 trailer", "gaming")
 
-        self.assertIsNotNone(result)
-        self.assertEqual(result.path, fn_clip)
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":

@@ -105,10 +105,38 @@ def _fetch_estimated_revenue(video_id, service, start_date, end_date) -> float |
     return None
 
 
+def _fetch_engaged_views(video_id, service, start_date, end_date) -> int | None:
+    """`engagedViews` for one video, or None (#951). Its own best-effort query: a metric the
+    API rejected would otherwise take the headline numbers down with it.
+
+    Since 2025-03-31 a Shorts view is any start or replay; engaged views keep the old
+    counting, so engaged / views is the share of starts that were not swiped away.
+    """
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="engagedViews",
+                dimensions="video",
+                filters=f"video=={video_id}",
+            )
+            .execute()
+        )
+        rows = _named_rows(resp or {})
+        return int(float(rows[0]["engagedViews"])) if rows else None
+    except Exception as exc:
+        logger.debug("engagedViews fetch skipped for %s: %s", video_id, exc)
+        return None
+
+
 def _fetch_views_by_day(video_id, service, start_date, end_date) -> list[list[Any]] | None:
     """[[YYYY-MM-DD, views], ...] for one video - or the whole channel when `video_id` is
-    None (#934) - or None (#563). Best-effort, like the retention curve: a failure never
-    breaks the headline sync."""
+    None (#934) - or None when the query failed (#563). Best-effort, like the retention
+    curve: a failure never breaks the headline sync. [] is "asked, no views" (#947: a video
+    with none must still count as fetched, or the backfill asks again forever)."""
     query: dict[str, Any] = {
         "ids": "channel==MINE",
         "startDate": start_date,
@@ -130,7 +158,7 @@ def _fetch_views_by_day(video_id, service, start_date, end_date) -> list[list[An
             daily.append([str(row[0])[:10], int(float(row[1]))])
         except (ValueError, IndexError, TypeError):
             continue
-    return daily or None
+    return daily
 
 
 def fetch_daily_views(
@@ -155,6 +183,169 @@ def fetch_channel_daily_views(
     if not service:
         return None
     return _fetch_views_by_day(None, service, start, end)
+
+
+# #954: what YouTube calls paid traffic. Promotion views, watch time and subscribers do not
+# count toward YPP, and a boosted video is not a winner the recommenders should chase.
+PAID_SOURCES = frozenset({"ADVERTISING"})
+# creatorContentType values whose watch time counts toward YPP's 4,000 public hours.
+LONG_FORM_TYPES = frozenset({"VIDEO_ON_DEMAND", "LIVE_STREAM"})
+
+
+def _named_rows(resp: dict[str, Any]) -> list[dict[str, Any]]:
+    """The report's rows as {column name: value}, read by header, not by position."""
+    headers = [str(h.get("name") or "") for h in resp.get("columnHeaders") or []]
+    return [dict(zip(headers, row, strict=False)) for row in resp.get("rows") or []]
+
+
+def _fetch_views_by_source_day(
+    video_id: str | None, service: Any, start_date: str, end_date: str
+) -> tuple[list[list[Any]], dict[str, int]] | None:
+    """(paid views by day, {traffic source: views} over the range), or None (#954).
+
+    One Analytics query - views by day and `insightTrafficSourceType`, for one video or (no
+    id) the whole channel. An empty paid list means "asked, none paid".
+    """
+    query: dict[str, Any] = {
+        "ids": "channel==MINE",
+        "startDate": start_date,
+        "endDate": end_date,
+        "metrics": "views",
+        "dimensions": "day,insightTrafficSourceType",
+        "sort": "day",
+    }
+    if video_id:
+        query["filters"] = f"video=={video_id}"
+    try:
+        resp = service.reports().query(**query).execute()
+    except Exception as exc:
+        logger.debug("views by source failed for %s: %s", video_id or "channel", exc)
+        return None
+    paid: dict[str, int] = {}
+    by_source: dict[str, int] = {}
+    for row in _named_rows(resp or {}):
+        try:
+            day = str(row["day"])[:10]
+            source = str(row["insightTrafficSourceType"])
+            views = int(float(row["views"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        by_source[source] = by_source.get(source, 0) + views
+        if source in PAID_SOURCES:
+            paid[day] = paid.get(day, 0) + views
+    return [[day, paid[day]] for day in sorted(paid)], by_source
+
+
+def fetch_daily_paid_views(
+    youtube_video_id: str, *, channel_id: str | None = None, start: str, end: str
+) -> list[list[Any]] | None:
+    """A video's paid views by day - `ops backfill view-curve` asks from the publish day."""
+    if not _analytics_enabled():
+        return None
+    service = get_youtube_analytics_service(resolve_channel_id(channel_id))
+    if not service:
+        return None
+    result = _fetch_views_by_source_day(youtube_video_id, service, start, end)
+    return result[0] if result is not None else None
+
+
+def fetch_channel_paid_daily_views(
+    *, channel_id: str | None = None, start: str, end: str
+) -> list[list[Any]] | None:
+    """The channel's paid views by day - the scoreboard counts organic (#954)."""
+    if not _analytics_enabled():
+        return None
+    service = get_youtube_analytics_service(resolve_channel_id(channel_id))
+    if not service:
+        return None
+    result = _fetch_views_by_source_day(None, service, start, end)
+    return result[0] if result is not None else None
+
+
+def _by_source_and_type(
+    service: Any, start_date: str, end_date: str, metric: str
+) -> dict[tuple[str, str], float] | None:
+    """{(traffic source, content type): metric} for the whole channel, or None."""
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics=metric,
+                dimensions="insightTrafficSourceType,creatorContentType",
+            )
+            .execute()
+        )
+    except Exception as exc:
+        logger.debug("%s by source and type failed: %s", metric, exc)
+        return None
+    out: dict[tuple[str, str], float] = {}
+    for row in _named_rows(resp or {}):
+        try:
+            key = (str(row["insightTrafficSourceType"]), str(row["creatorContentType"]))
+            out[key] = out.get(key, 0.0) + float(row[metric])
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
+def _subscriber_count(channel_id: str) -> int | None:
+    """The channel's subscribers from `channels.list` statistics (1 unit), or None."""
+    service = get_youtube_service(channel_id)
+    if not service:
+        return None
+    try:
+        resp = (
+            service.channels()
+            .list(part="statistics", mine=True, fields="items(statistics/subscriberCount)")
+            .execute()
+        )
+        items = resp.get("items") or []
+        count = (items[0].get("statistics") or {}).get("subscriberCount") if items else None
+        return int(count) if count is not None else None
+    except Exception as exc:
+        logger.debug("subscriber count unavailable: %s", exc)
+        return None
+
+
+def fetch_ypp_numbers(
+    *, channel_id: str | None = None, today: date | None = None
+) -> dict[str, Any] | None:
+    """YouTube's own YPP numbers with ads left out (#954), or None.
+
+    Shorts views over the last 90 days and long-form watch hours over the last 365 - the two
+    paths' measures - from two channel queries by traffic source and content type, plus the
+    subscriber count. Paid views and paid watch time are excluded, as YouTube excludes them.
+    """
+    if not _analytics_enabled():
+        return None
+    cid = resolve_channel_id(channel_id)
+    service = get_youtube_analytics_service(cid)
+    if not service:
+        return None
+    end = today or date.today()
+    views = _by_source_and_type(
+        service, (end - timedelta(days=90)).isoformat(), end.isoformat(), "views"
+    )
+    minutes = _by_source_and_type(
+        service, (end - timedelta(days=365)).isoformat(), end.isoformat(), "estimatedMinutesWatched"
+    )
+    if views is None and minutes is None:
+        return None
+    out: dict[str, Any] = {"as_of": end.isoformat()}
+    if views is not None:
+        shorts = {k: v for k, v in views.items() if k[1] == "SHORTS"}
+        out["shorts_views_90d"] = int(sum(v for k, v in shorts.items() if k[0] not in PAID_SOURCES))
+        out["shorts_paid_90d"] = int(sum(v for k, v in shorts.items() if k[0] in PAID_SOURCES))
+    if minutes is not None:
+        organic = sum(
+            v for k, v in minutes.items() if k[1] in LONG_FORM_TYPES and k[0] not in PAID_SOURCES
+        )
+        out["long_hours_365d"] = round(organic / 60.0, 1)
+    out["subscribers"] = _subscriber_count(cid)
+    return out
 
 
 def fetch_channel_uploads(
@@ -303,12 +494,26 @@ def fetch_video_metrics(
     curve = _fetch_retention_curve(youtube_video_id, service, start_date, end_date)
     if curve:
         result["retention_curve"] = curve
+    engaged = _fetch_engaged_views(youtube_video_id, service, start_date, end_date)
+    if engaged is not None:
+        result["engaged_views"] = engaged  # #951
+        if views > 0:
+            result["stayed_share"] = round(min(1.0, engaged / views), 4)
     revenue = _fetch_estimated_revenue(youtube_video_id, service, start_date, end_date)
     if revenue is not None:
         result["estimated_revenue_usd"] = revenue
     daily = _fetch_views_by_day(youtube_video_id, service, start_date, end_date)
-    if daily:
-        result["daily_views"] = daily  # #563
+    if daily is not None:
+        if daily:
+            result["daily_views"] = daily  # #563
+        result["views_since"], result["views_until"] = start_date, end_date
+    sources = _fetch_views_by_source_day(youtube_video_id, service, start_date, end_date)
+    if sources is not None:
+        paid_daily, by_source = sources
+        result["daily_paid_views"] = paid_daily  # #954: [] = asked, none paid
+        result["paid_since"] = start_date
+        result["paid_views"] = sum(int(v) for _day, v in paid_daily)
+        result["views_by_source"] = by_source
     return result
 
 
@@ -389,7 +594,8 @@ def refresh_publish_metrics(
     if not metrics:
         return False
 
-    views = int(metrics.get("views", 0))
+    # #954: what the learning memory keeps is organic - a boosted video is not a winner.
+    views = max(0, int(metrics.get("views", 0)) - int(metrics.get("paid_views", 0) or 0))
     engaged_rate = float(metrics.get("engaged_rate", 0.0))
     domain = infer_domain(topic or title, channel_id)
 

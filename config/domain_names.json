@@ -1,0 +1,28 @@
+{
+  "_note": "#946: athlete and fighter names that name their sport on their own. Checked after every keyword list in apis/topic_scorer (a league, club, game or franchise word still wins) and before the channel fallback, so 'Holloway vs Gaethje' reads ufc and 'Wemby's 40-point night' nba instead of tapin's gaming. Lower case, one name per entry; full names where a surname alone is ambiguous. Names learned from past runs add to these (py -m scripts.ops game-names lists them).",
+  "ufc": [
+    "topuria", "ilia topuria", "holloway", "max holloway", "gaethje", "justin gaethje",
+    "jon jones", "alex pereira", "makhachev", "islam makhachev", "adesanya",
+    "israel adesanya", "du plessis", "dricus du plessis", "chimaev", "khamzat chimaev",
+    "aspinall", "tom aspinall", "o'malley", "sean o'malley", "dvalishvili",
+    "merab dvalishvili", "pantoja", "ankalaev", "prochazka", "conor mcgregor",
+    "mcgregor", "volkanovski", "poirier", "dustin poirier", "strickland", "dana white"
+  ],
+  "nba": [
+    "wemby", "victor wembanyama", "lebron", "lebron james", "jokic", "nikola jokic",
+    "doncic", "luka doncic", "steph curry", "stephen curry", "gilgeous-alexander",
+    "shai gilgeous-alexander", "jayson tatum", "jalen brunson", "anthony edwards",
+    "haliburton", "embiid", "joel embiid", "kevin durant", "kawhi leonard", "ja morant",
+    "cooper flagg"
+  ],
+  "nfl": [
+    "patrick mahomes", "travis kelce", "josh allen", "lamar jackson", "joe burrow",
+    "jalen hurts", "saquon barkley", "aaron rodgers", "justin herbert", "cj stroud",
+    "c.j. stroud", "caleb williams", "micah parsons", "jayden daniels"
+  ],
+  "soccer": [
+    "messi", "lionel messi", "cristiano ronaldo", "ronaldo", "salah", "mohamed salah",
+    "lamine yamal", "yamal", "bellingham", "jude bellingham", "vinicius", "erling haaland",
+    "kylian mbappe", "harry kane"
+  ]
+}

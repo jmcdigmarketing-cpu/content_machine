@@ -94,6 +94,7 @@ def cmd_ingest_clips(args: argparse.Namespace) -> int:
     result = ingest_clips(
         apply=bool(getattr(args, "apply", False)),
         move=bool(getattr(args, "move", False)),
+        progress=lambda line: print(line, flush=True),
     )
     print(render_ingest(result))
     if any(row.status == "failed" for row in result.rows):

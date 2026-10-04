@@ -8,6 +8,16 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Follow-up — `ops ingest-clips` is safe to stop and run again - 2026-10-04
+
+*4,511 tests; mypy 121; corpus 79 of 79.*
+
+- **#960** `py -m scripts.ops ingest-clips --apply` prints one line per capture as it re-encodes,
+  so a long file no longer looks hung. Stopping it with Ctrl+C leaves no half-written clip in the
+  library, and running it again skips the captures already imported instead of copying them twice.
+  GTA Online captures go to the GTA V folder. `ops footage` no longer says an empty niche "falls
+  back to a random game".
+
 ### Wave 57 — paid views apart from organic, footage that matches the topic, packaging data, the policy site - 2026-10-04
 
 *4,504 tests; mypy 121 (baseline lowered from 122); ruff 0.15.8 clean; corpus 78 of 78.*

@@ -70,8 +70,9 @@ cached per topic; the asset row's `source_id` is `footage:<how>:<folder>`. mypy 
 - #948's API was wrong (Analytics has no impressions); CTR comes from the Reporting API.
 - Open: #957 engaged rate includes paid viewers; #958 a refresh drops other writers' keys.
 
-**Shipped:** #954 #947 #955 #946 #951 #956 (#948 closed). Suite **4,504**, 0 network attempts,
-`data/` clean; backlog **237 numbered open**, highest #959. Next: **#952 Instagram · #958 · #957 ·
+**Shipped:** #954 #947 #955 #946 #951 #956 (#948 closed), then #960 (ingest-clips safe to
+re-run). Suite **4,511**, 0 network attempts,
+`data/` clean; backlog **237 numbered open**, highest #960. Next: **#952 Instagram · #958 · #957 ·
 #49 · #945**; TikTok's route is the operator's call.
 
 ## Slot — Cursor

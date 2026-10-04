@@ -17,6 +17,22 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-04 (Claude Code) - follow-up: #960 `ops ingest-clips` from the operator's first run
+
+**Prompt:** the operator pasted their PowerShell session: `footage-gaps` was an invalid choice
+(their checkout predates wave 57 - `git pull`), `ingest-clips --apply` was stopped with Ctrl+C
+during a long re-encode, and the `footage-add` example path did not exist (a placeholder).
+
+**Findings:** `assets/clip_ingest._remux_muted_h264` wrote straight to the clip's final name, so
+the interrupted run left a half mp4 the renderer would pick; `plan_ingest` kept no memory of
+imported captures (`_unique_dest` would have added `_2` copies); no progress output; "Grand Theft
+Auto Online" captures unmatched; `render_coverage` still promised "a random game".
+
+**Shipped (#960):** `.part` then rename; "imported" status from the clip index; an unindexed clip at
+the planned name is replaced; a progress line per file; GTA Online aliases; the coverage text.
+7 new tests, **7 of 7 observed failing** on unmodified code; suite 4,504 -> 4,511; corpus +1;
+mypy 121; ruff clean; `data/` untouched.
+
 ## 2026-10-04 (Claude Code) - wave 57: paid views apart from organic, footage that matches the topic, packaging data, the policy site
 
 **Prompt (verbatim):** "could a privacy/terms page for IG and Tiktok, have to be separate? what

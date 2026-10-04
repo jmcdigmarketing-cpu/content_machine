@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,9 @@ _NAME_ALIASES: tuple[tuple[str, str], ...] = (
     ("grand theft auto vi", "GTA V"),
     ("grand theft auto v", "GTA V"),
     ("grand theft auto 5", "GTA V"),
+    # #960: Xbox names GTA Online captures "Grand Theft Auto Online (Xbox Series X_S)-...".
+    ("grand theft auto online", "GTA V"),
+    ("gta online", "GTA V"),
     ("marvel rivals", "Marvel Rivals"),
     ("call of duty", "Call of Duty"),
     ("gta vi", "GTA V"),
@@ -146,16 +150,29 @@ def plan_ingest(
     source_dirs: list[str] | None = None,
     library_root: str | None = None,
 ) -> list[IngestRow]:
+    """#960: a capture already in the clip index is "imported" (never copied twice), and a
+    clip at its planned name that no index row vouches for is a half-written leftover of an
+    interrupted run - it is replaced, not kept beside a `_2` copy."""
     sources = source_dirs if source_dirs is not None else default_source_dirs()
     library = library_root if library_root is not None else BASE_VIDEO_DIR
     folders = _library_folders(library)
+    clips = _load_index(CLIP_INDEX_FILE).get("clips") or {}
+    imported = {os.path.normcase(os.path.abspath(str((m or {}).get("source") or ""))): dest
+                for dest, m in clips.items()}  # fmt: skip
+    indexed = {os.path.normcase(os.path.abspath(d)) for d in clips}
     rows: list[IngestRow] = []
     for src in _iter_source_files(sources):
         folder = match_folder(os.path.basename(src), folders)
         if not folder:
             rows.append(IngestRow(source=src, dest=None, status="unmatched", reason="no folder"))
             continue
-        dest = _unique_dest(folder, Path(src).stem)
+        done = imported.get(os.path.normcase(os.path.abspath(src)))
+        if done and os.path.isfile(done):
+            rows.append(IngestRow(source=src, dest=done, status="imported"))
+            continue
+        first = os.path.join(folder, Path(src).stem + ".mp4")
+        leftover = os.path.isfile(first) and os.path.normcase(os.path.abspath(first)) not in indexed
+        dest = first if leftover else _unique_dest(folder, Path(src).stem)
         rows.append(IngestRow(source=src, dest=dest, status="matched"))
     return rows
 
@@ -233,7 +250,10 @@ def _remux_timeout(src: str) -> int:
 
 
 def _remux_muted_h264(src: str, dest: str) -> None:
+    """Re-encode into `<dest>.part`, then rename (#960): a stopped run leaves no half clip
+    under a name the renderer would pick (it takes any .mp4 in the folder)."""
     os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+    part = dest + ".part"
     cmd = [
         "ffmpeg",
         "-y",
@@ -248,18 +268,25 @@ def _remux_muted_h264(src: str, dest: str) -> None:
         "-an",
         "-movflags",
         "+faststart",
-        dest,
+        "-f",
+        "mp4",
+        part,
     ]
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        timeout=_remux_timeout(src),
-        check=False,
-    )
-    if result.returncode != 0 or not os.path.isfile(dest):
-        err = (result.stderr or result.stdout or "ffmpeg remux failed")[-400:]
-        raise RuntimeError(err)
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=_remux_timeout(src),
+            check=False,
+        )
+        if result.returncode != 0 or not os.path.isfile(part):
+            err = (result.stderr or result.stdout or "ffmpeg remux failed")[-400:]
+            raise RuntimeError(err)
+        os.replace(part, dest)
+    finally:
+        if os.path.exists(part):
+            os.remove(part)
 
 
 def _load_index(path: str) -> dict[str, Any]:
@@ -337,16 +364,28 @@ def ingest_clips(
     library_root: str | None = None,
     apply: bool = False,
     move: bool = False,
+    progress: Callable[[str], None] | None = None,
 ) -> IngestResult:
     rows = plan_ingest(source_dirs=source_dirs, library_root=library_root)
     result = IngestResult(rows=rows, dry_run=not apply, move=move)
     if not apply:
         return result
     done: list[IngestRow] = []
+    todo = sum(1 for r in rows if r.status == "matched" and r.dest)
+    n = 0
     for row in rows:
         if row.status != "matched" or not row.dest:
             done.append(row)
             continue
+        n += 1
+        if progress is not None:
+            seconds = _probe_duration(row.source)
+            length = f", {int(seconds // 60)}:{int(seconds % 60):02d} long" if seconds else ""
+            folder = os.path.basename(os.path.dirname(row.dest))
+            progress(
+                f"  {n}/{todo} re-encoding {os.path.basename(row.source)} -> {folder}/{length} "
+                "(safe to stop and run again)"
+            )
         try:
             _remux_muted_h264(row.source, row.dest)
             _record_index(row.dest, row.source)
@@ -587,7 +626,7 @@ def render_coverage(rows: list[dict[str, Any]]) -> str:
                 )
             lines.append(f"  {row['niche']:<16} {row['folder']} ({row['clips']} clips{crop})")
         else:
-            lines.append(f"  {row['niche']:<16} NO FOOTAGE - falls back to a random game or stock")
+            lines.append(f"  {row['niche']:<16} NO FOOTAGE - stock B-roll or a plain background (#955)")
     lines.append(
         "Add a file: py -m scripts.ops footage-add --path <file.mp4> --game Minecraft "
         '--source <url> --licence "<terms>" --apply'

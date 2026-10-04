@@ -1392,6 +1392,23 @@
         "equals": 100.0
       },
       "why": "promotion views do not count toward YPP; the readiness estimate summed them as Shorts views"
+    },
+    {
+      "id": "gta-online-capture-finds-gta-v",
+      "item": 960,
+      "source": "operator's ingest-clips dry run 2026-10-04: a GTA Online Xbox capture was unmatched",
+      "call": "assets.clip_ingest:match_folder",
+      "args": [
+        "Grand Theft Auto Online (Xbox Series X_S)-2026_06_23-01_11_15.mp4",
+        [
+          "/lib/gaming/open world/GTA V",
+          "/lib/gaming/sports/UFC 5"
+        ]
+      ],
+      "expect": {
+        "equals": "/lib/gaming/open world/GTA V"
+      },
+      "why": "Xbox names GTA Online captures 'Grand Theft Auto Online', which no alias covered, so the clip stayed out of the library"
     }
   ]
 }

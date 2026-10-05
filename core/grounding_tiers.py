@@ -58,6 +58,7 @@ _SECTION_TIERS: tuple[tuple[str, str], ...] = tuple(
         ("Live web search", TIER_WEB),
         ("Web research", TIER_WEB),  # #848 auto-research
         ("Event research", TIER_WEB),  # #899 research on a recency miss
+        ("Reference text", TIER_WEB),  # #963 Wikipedia intros
         ("News headlines", TIER_WEB),
         ("News API", TIER_WEB),
         ("Blog/RSS", TIER_WEB),
@@ -74,6 +75,7 @@ _SECTION_TIERS: tuple[tuple[str, str], ...] = tuple(
         ("Stats:", TIER_SIGNAL),
         ("Game database", TIER_SIGNAL),
         ("RAWG", TIER_SIGNAL),
+        ("Reference data", TIER_SIGNAL),  # #963 Wikidata claims
         ("sports teams (API)", TIER_SIGNAL),
     ]
 )

@@ -1099,6 +1099,38 @@ def _facts_room(
     return result
 
 
+def _research_verdict(
+    topic: str,
+    signals: dict[str, Any],
+    who: dict[str, Any],
+    event_report: dict[str, Any] | None,
+    print_fn,
+) -> None:
+    """#965: what the lookup found and whether a paste would add anything."""
+    from core.facts.entity_lookup import report_line as who_line
+    from core.facts.freshness import attach_fresh_research
+
+    print_fn("")
+    print_fn(f"  {who_line(who)}")
+    data = ((signals.get("entity_research") or {}).get("data")) or {}
+    for line in (data.get("wikidata_lines") or [])[:4]:
+        print_fn(f"    - {_elide(str(line), 110)}")
+    try:
+        _signals, verdict = attach_fresh_research(signals, topic=topic, event_report=event_report)
+    except Exception as exc:
+        logger.debug("freshness notice skipped: %s", exc)
+        return
+    why = "; ".join(verdict.get("why") or [])
+    if verdict.get("need") == "fresh":
+        deeper = verdict.get("deeper") or {}
+        found = f" - {deeper.get('lines', 0)} recent line(s) found" if deeper else ""
+        print_fn(f"  Fresh: {why}{found}.")
+        print_fn("  A review, patch-notes or news link would help - paste it below.")
+    else:
+        print_fn(f"  Settled: {why or 'nothing new found'} - nothing to paste.")
+        print_fn("  Enter to continue, or add an article or a fact.")
+
+
 def prompt_key_facts_result(
     topic: str,
     channel_id: str = "default",
@@ -1120,11 +1152,21 @@ def prompt_key_facts_result(
     from core.obsidian_facts import is_playbook_line
 
     subsection("Key facts (ground truth — highest priority)", print_fn)
-    print_fn("  Cover the things that go stale — add as many as apply:")
-    print_fn("    · Who holds what NOW (champion, ranking, roster, CEO)")
-    print_fn("    · Latest result/event + its date")
-    print_fn("    · Hard numbers (score, record, odds, price)")
-    print_fn("    · Recency anchor (e.g. 'as of June 2026, ...')")
+    # #963 #965: look up who's who first; a verdict replaces the fixed checklist.
+    looked_up = dict(signals or {})
+    who: dict[str, Any] | None = None
+    try:
+        from core.facts.entity_lookup import attach_entity_research
+
+        looked_up, who = attach_entity_research(signals, topic=topic, angle=angle)
+    except Exception as exc:
+        logger.debug("who's-who notice skipped: %s", exc)
+    if not (who and who.get("lines")):
+        print_fn("  Cover the things that go stale — add as many as apply:")
+        print_fn("    · Who holds what NOW (champion, ranking, roster, CEO)")
+        print_fn("    · Latest result/event + its date")
+        print_fn("    · Hard numbers (score, record, odds, price)")
+        print_fn("    · Recency anchor (e.g. 'as of June 2026, ...')")
 
     key_facts: list[str] = []
     vault_accepted: list[str] = []
@@ -1132,10 +1174,11 @@ def prompt_key_facts_result(
     link_facts: list[str] = []
 
     # #899: before asking, look for the event if nothing discovery found names it.
+    research: dict[str, Any] | None = None
     try:
         from core.event_research import attach_event_research, report_line
 
-        _found, research = attach_event_research(signals, topic=topic, key_facts=[])
+        _found, research = attach_event_research(looked_up, topic=topic, key_facts=[])
         if research:
             print_fn("")
             print_fn(f"  {report_line(research)}")
@@ -1144,6 +1187,8 @@ def prompt_key_facts_result(
                 print_fn(f"    - {_elide(str(line), 110)}")
     except Exception as exc:
         logger.debug("event research notice skipped: %s", exc)
+    if who and who.get("lines"):
+        _research_verdict(topic, looked_up, who, research, print_fn)
 
     print_fn("")
     print_fn("  Add facts — paste a URL, one line, or type paste + Enter for a multi-line block.")

@@ -1435,6 +1435,72 @@
         "equals": "ufc"
       },
       "why": "fighters missing from config/domain_names.json read neutral, so their topic could cut another game's footage"
+    },
+    {
+      "id": "lebron-team-needs-no-paste",
+      "item": 963,
+      "source": "operator 2026-10-05: 'i shouldnt have to fact intake' what team LeBron is on",
+      "call": "core.facts.entity_lookup:names_for",
+      "args": [
+        "what team is lebron on in 2026"
+      ],
+      "expect": {
+        "includes_all": [
+          "lebron"
+        ]
+      },
+      "why": "nothing looked up the people a topic names; a lower-case topic must still yield the player so his current team is fetched"
+    },
+    {
+      "id": "ghost-of-yotei-stays-one-name",
+      "item": 963,
+      "source": "wave 58: a game named 'X of Y' split into two lookups",
+      "call": "apis.topic_tokens:title_phrases",
+      "args": [
+        "Ghost of Yotei first impressions"
+      ],
+      "kwargs": {
+        "max_words": 5,
+        "connectors": true
+      },
+      "expect": {
+        "equals": [
+          "Ghost of Yotei"
+        ]
+      },
+      "why": "title_phrases broke the name at 'of', so the lookup searched 'Ghost' and 'Yotei'"
+    },
+    {
+      "id": "accented-name-stays-one-token",
+      "item": 963,
+      "source": "wave 58 live check: fresh research for Wikidata's 'Ghost of Yōtei' kept 0 headlines spelled 'Yotei'",
+      "call": "apis.topic_tokens:content_tokens",
+      "args": [
+        "Pokémon Legends"
+      ],
+      "expect": {
+        "equals": [
+          "pokemon",
+          "legends"
+        ]
+      },
+      "why": "[a-z0-9]+ on lower-cased text split an accented word into pieces ('pok', 'mon')"
+    },
+    {
+      "id": "headline-without-accent-names-it",
+      "item": 963,
+      "source": "wave 58: the sibling in core/event_coverage (line tokens and initials)",
+      "call": "core.event_coverage:covered",
+      "args": [
+        "Ghost of Yōtei",
+        [
+          "Ghost of Yotei patch 1.03 fixes stutter"
+        ]
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the coverage guard and event research match names by these tokens; an accent made a headline miss"
     }
   ]
 }

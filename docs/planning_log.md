@@ -17,6 +17,73 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-05 (Claude Code) - wave 58: research by need - known facts found for you, pasting only for what is new
+
+**Prompt (verbatim):** "can we improve the fact intake, fact generation, and automated research
+aspect so we can get more up to date info without me having to drag articles manually? obviously
+we shouldnt scrap the fact intake since it will be useful for more niche topics but it will not
+be mandatory to see what team lebron is on in 2026, like i shouldnt have to fact intake such a
+known topic. things like that. vs if a game has just come out it may be harder to get accurate
+and useful info so i would paste articles. obviously not hardcoded to that but that where i am
+coming from. one more time for me, what do i need to do for phase M? plan the next 10 as well."
+Choices at plan time: research first, then Phase M; TikTok through TikTok Studio. Mid-wave: "need a
+website 4 this, remind me later" (the Google consent-screen publish - a reminder is set for
+2026-10-07) and "im lying i got buffer" -> Buffer for TikTok and Instagram both; the direct
+Instagram build (#952) is parked and Phase M becomes #968, a pack for Buffer.
+
+**Why the list differs:** the recommended five (#952 Instagram, #958, #957, #49, #945) were set
+aside for the operator's ask; #952 changed shape mid-wave. The next ten were planned with the
+operator: wave 58 = #963-#967, then #968 #962 #958 #957 #49.
+
+### Findings, with file:line
+- **Nothing looked up the people, teams and games a topic names.** Event research
+  (`core/event_research.py:202`) ran only on an event miss; the facts prompt asked for "Who holds
+  what NOW" (`core/ui.py:1123`); no player->team data anywhere (`apis/nfl_entities.PLAYER_TO_TEAM`,
+  12 hard-coded QBs).
+- **The script prompt let athletes in from memory** (`core/content_engine.py:329`, again in the
+  angle block) and its anti-memory rule (:321) named champion/record/ranking, not team or role.
+- **The claim verifier counted LLM-written research-brief lines as support**
+  (`core/grounding_tiers.py:108-110,189-192`) and extracted no affiliations
+  (`core/claim_verifier.py:236-238`).
+- **The length expansion had no facts block** (`core/content_engine.py:997-1035`) yet asked for
+  "more specific facts about what happened".
+- **No search key, or the vault skip, meant auto-research read nothing** ("no web results").
+- **`title_phrases` split "Ghost of Yotei" at "of"** - `search_query` (every signal) still does (#969).
+- **Found on the live check:** `content_tokens` matched `[a-z0-9]+`, so "Pokémon" was "pok" + "mon"
+  and Wikidata's "Ghost of Yōtei" never matched a headline spelled "Yotei": the fresh-topic
+  research kept 0 lines. Accents fold now (`apis/topic_tokens.fold_accents`); the live check then
+  kept 2.
+- **The live-check harness itself:** importing `tests` pins every research flag off
+  (`tests/__init__.py`), so the first run "found nothing" - a harness fault, not the code.
+
+### Shipped
+1. **#963** `core/facts/entity_lookup.py`: Wikidata (aliases, current team / position / head coach
+   with no end date, release date, developer, platforms - dated lines, signal tier) and the
+   Wikipedia intro (web tier), keyless, parallel, cached finds only; `run_pipeline` and the facts
+   prompt; `apis/topic_scorer.sport_names_in`; `title_phrases(connectors=True)`; accents fold.
+2. **#964** `core/facts/freshness.py`: `assess` (release within `FRESH_DAYS`, new or missing article,
+   a 48 h news burst, event research on a miss), `attach_fresh_research` (recent-news research for
+   a fresh topic's main name), `features.research`; Google News fallback in auto-research.
+3. **#965** the facts prompt's verdict ("nothing to paste" / "a link would help"); draft meta keeps
+   the verdict and paste count; `ops batch-review` names fresh drafts nobody pasted for.
+4. **#966** PEOPLE rule in three prompt places; affiliations in the verifier; `weak_lines` - a
+   strict claim backed only by a brief line is unsupported; `_expand_script(facts=)`.
+   **Disclosed:** the topic line is brief tier, so it no longer backs a strict claim alone.
+5. **#967** `ops auto-research` "Research by need": verdicts, who's-who lines cited, pastes, before vs after.
+
+### Not done
+#968-#962-#958-#957-#49 (wave B). #969 (signals' `search_query`) waits on a replay check. No
+real Wikidata/Wikipedia call was made here (the proxy blocks them); the operator's first run is
+the live proof.
+
+### Audit
+51 new tests in six modules, **49 of 51 observed failing on unmodified code** (two guards pass:
+the fallback can be switched off; initials still read). Regression corpus +4 (81 -> 85, 85 of 85). ruff 0.15.8 clean; mypy 121 = baseline; suite default / reverse /
+shuffle green; 0 network attempts; `data/` and `output/` untouched. Live check (real prompt and
+pipeline, fixtures for the three keyless sources): LeBron -> "Settled: ... since 2003 - nothing
+to paste" with the Lakers line in VERIFIED FACTS; a game out 4 days -> "Fresh ... 2 recent
+line(s) found ... a link would help".
+
 ## 2026-10-05 (Claude Code) - follow-up: #961 a revoked YouTube sign-in, from the operator's backfill
 
 **Prompt:** the operator pasted their PowerShell session after `git pull`: `ingest-clips --apply`

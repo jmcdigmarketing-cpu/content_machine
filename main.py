@@ -792,7 +792,16 @@ def _run_new_video_flow_body(
         try:
             from core.auto_research import report_lines
             from core.event_research import report_line as event_research_line
+            from core.facts.entity_lookup import report_line as entity_research_line
 
+            _who_line = entity_research_line((result.features or {}).get("entity_research"))
+            if _who_line:
+                print(f"  {_who_line}")
+            from core.facts.freshness import verdict_line
+
+            _need_line = verdict_line((result.features or {}).get("research"))
+            if _need_line:
+                print(f"  {_need_line}")
             _event_line = event_research_line((result.features or {}).get("event_research"))
             if _event_line:
                 print(f"  Event research: {_event_line}")

@@ -7,6 +7,21 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-03 (Claude Code): wave 55 #944 #938 #940 #943 #941 #942
+
+- **#944** `py -m scripts.ops all` runs checks, analytics and the weekly review, each step once;
+  every setup and review verb is in a batch (`ops list`); a failed step is named at the end
+  instead of stopping the rest (`all-setup` still stops).
+- **#938** the best bet, length and post time aim at **views in each video's first 7 days**
+  (`RECOMMEND_TARGET=engaged` switches back). They need views by day from the publish day -
+  `ops all` runs `backfill view-curve --apply`. The predictor stays on engaged rate (#945).
+- **#940** winners and verdicts rank on 7-day views; every sync also keeps lifetime views.
+- **#943** the scoreboard prints the last weeks and "on pace N reviews running".
+- **#941** uploads made outside Content OS count. **#942** answered questions leave the mailbag
+  and `ops mailbag` drafts the replies (you post them).
+
+**Verify:** `python -m unittest tests.test_ops_batches tests.test_wave55_five`; `py -m scripts.ops list`.
+
 ## Previous — 2026-10-03 (Claude Code): wave 54 #934 #935 #936 #937 #114 (+ #939)
 
 The operator's goal is **views**; this wave tracks it and asks for their part in it.

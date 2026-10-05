@@ -111,9 +111,15 @@ def _wikipedia(name: str, _exclude: set[str]) -> list[str]:
 
 
 def _google_news(name: str, _exclude: set[str]) -> list[str]:
+    return google_news_headlines(name)
+
+
+def google_news_headlines(name: str, *, window: str = "7d") -> list[str]:
+    """Google News headlines naming `name` from the last `window` ("2d", "7d"), each with
+    its day. Keyless; raises on a network error (callers decide what an outage means)."""
     resp = requests.get(
         _NEWS_RSS,
-        params={"q": f'"{name}" when:7d', "hl": "en-US", "gl": "US", "ceid": "US:en"},
+        params={"q": f'"{name}" when:{window}', "hl": "en-US", "gl": "US", "ceid": "US:en"},
         headers=_HEADERS,
         timeout=8,
     )

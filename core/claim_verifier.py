@@ -208,14 +208,23 @@ def _numbered_facts(
     return numbered
 
 
+def _weak_key(line: str) -> str:
+    return " ".join(str(line or "").strip().lstrip("•-→ ").lower().split())
+
+
 def verify_claims(
     script: str,
     facts_text: str,
     *,
     topic: str = "",
     priority_facts: list[str] | None = None,
+    weak_lines: set[str] | None = None,
 ) -> ClaimVerification | None:
     """Decompose the script into factual claims and verify each against the facts.
+
+    `weak_lines` (#966) are corpus lines an LLM wrote - the research brief - that cannot by
+    themselves back a claim that blocks (`claim_types.claim_blocks`): a brief written from
+    model memory must not "support" a stale team or result.
 
     Returns ``None`` when disabled, when there is nothing to verify, or on any
     LLM/parse failure — callers must treat ``None`` as "no verdict", not "ok".
@@ -234,7 +243,8 @@ def verify_claims(
         "You are a fact-checker for a short-form video script. You are given "
         "numbered VERIFIED FACTS (the ONLY source of truth) and a SCRIPT. "
         f"Extract up to {_MAX_CLAIMS} declarative factual claims the script asserts "
-        "as true — specific events, results, trades, signings, records, stats, "
+        "as true — specific events, results, trades, signings, who plays for, coaches, "
+        "leads or owns what (a person's team, title or job), records, stats, "
         "dates, versions. Skip opinions, predictions, hypotheticals, and "
         "rhetorical questions. For each claim decide:\n"
         "- type: one of result, award, stat, date, schedule, rumor, opinion, other "
@@ -248,8 +258,10 @@ def verify_claims(
     )
     user_prompt = f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{facts_block}\n\nSCRIPT:\n{script}"
 
-    from core.claim_types import normalize_type
+    from core.claim_types import claim_blocks, normalize_type
     from core.llm_router import complete_json
+
+    weak = {_weak_key(line) for line in weak_lines or () if _weak_key(line)}
 
     try:
         payload = complete_json(
@@ -278,12 +290,20 @@ def verify_claims(
         raw_citation = item.get("citation")
         if supported and isinstance(raw_citation, int) and 1 <= raw_citation <= len(facts):
             citation = facts[raw_citation - 1]
+        claim_type = normalize_type(item.get("type"))
+        if (
+            supported
+            and citation
+            and _weak_key(citation) in weak
+            and claim_blocks(claim, claim_type)
+        ):
+            supported, citation = False, ""  # #966: the brief alone backs nothing strict
         verification.claims.append(
             VerifiedClaim(
                 claim=claim,
                 supported=supported,
                 citation_line=citation,
-                claim_type=normalize_type(item.get("type")),
+                claim_type=claim_type,
             )
         )
     if not verification.claims:

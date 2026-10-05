@@ -53,27 +53,25 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-05 · **HEAD at write:** `7eee9ea` (#960) + the #961 commit
-(`git log -1`) · **Tree:** clean after the commit.
+**Written:** 2026-10-05 · **HEAD at write:** `f3929ae` (#961) + the wave 58 commit (`git log -1`)
+· **Tree:** clean after the commit.
 
-**Read before editing:** paid views live in each video's `daily_paid_views` / `paid_since`
-(`youtube_metrics._fetch_views_by_source_day`); `target.views_7d` subtracts them, and
-`view_curve.first_week_covered` reads the `views_since` / `views_until` / `paid_since` markers.
-`merge_metric_snapshots` rebuilds metrics per fetch - carry new keys in `merge_view_curve` (#958).
-Footage: `local_provider.choose_footage` (keyword, alias, domain, model-or-NONE; no random),
-cached per topic; the asset row's `source_id` is `footage:<how>:<folder>`. mypy **121**.
+**Read before editing:** who's who is `core/facts/entity_lookup` (Wikidata + Wikipedia, keyless,
+`entity_research` signal: "Reference data" lines at signal tier, "Reference text" at web tier).
+Settled/fresh is `core/facts/freshness` (`features.research`), read by the facts prompt
+(`core/ui._research_verdict`) and `ops batch-review`. `tests/__init__.py` pins every research flag
+off - a live script that imports `tests` must turn them back on. `content_tokens` folds accents
+now (`fold_accents`). The verifier's `weak_lines` = brief-tier lines. mypy **121**.
 
 **Defects first:**
-- #954: ads were counted as organic by every recommender, the scoreboard and YPP; until
-  `ops backfill view-curve --apply` runs, pre-wave rows count no paid views.
-- #955: unmatched topics took a random game folder; the render now takes stock or a plain card.
-- #948's API was wrong (Analytics has no impressions); CTR comes from the Reporting API.
-- Open: #957 engaged rate includes paid viewers; #958 a refresh drops other writers' keys.
+- The script could state a team or title from memory, and a brief written from memory counted as
+  support (#966); "Pokémon" tokenized as "pok" + "mon" (fixed); `search_query` still splits
+  "Ghost of Yotei" at "of" for every signal (#969, needs a replay check).
+- No real Wikidata/Wikipedia/Google News call was made here (proxy) - the operator's run is the proof.
 
-**Shipped:** #954 #947 #955 #946 #951 #956 (#948 closed), then #960 (ingest-clips safe to
-re-run), then #961 (a revoked sign-in fails once: `oauth.sign_in_problem`, memo reset per test).
-Suite **4,519**, 0 network attempts, `data/` clean; backlog **238 numbered open**, highest #962.
-Next: **#952 Instagram (awaits the operator's yes) · #962 · #958 · #957 · #945**.
+**Shipped:** #963 #964 #965 #966 #967 (+ accent folding). Suite **4,570**, 0 network attempts,
+`data/` clean; corpus 85; backlog **240 numbered open**, highest #969. Phase M is Buffer now:
+next **#968 ops crosspost · #962 · #958 · #957 · #49**; #952's direct APIs parked.
 
 ## Slot — Cursor
 

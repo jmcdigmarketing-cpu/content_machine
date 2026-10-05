@@ -121,6 +121,15 @@ NEWS_REGISTER_WORDS = frozenset(
 _TOKEN = re.compile(r"[a-z0-9]+")
 
 
+def fold_accents(text: str) -> str:
+    """ "Pokémon" -> "Pokemon", "Yōtei" -> "Yotei": accents fold to the base letter (#963),
+    so an accented name and a headline that drops the accent share their tokens."""
+    import unicodedata
+
+    decomposed = unicodedata.normalize("NFKD", text or "")
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+
+
 def content_tokens(text: str, *, min_len: int = 1) -> list[str]:
     """Lower-cased tokens of `text` minus function words, in order, de-duplicated.
 
@@ -130,7 +139,7 @@ def content_tokens(text: str, *, min_len: int = 1) -> list[str]:
     """
     out: list[str] = []
     seen: set[str] = set()
-    for tok in _TOKEN.findall((text or "").lower().replace("'", "")):
+    for tok in _TOKEN.findall(fold_accents(text or "").lower().replace("'", "")):
         if len(tok) < min_len or tok in FUNCTION_WORDS or tok in seen:
             continue
         seen.add(tok)
@@ -171,20 +180,29 @@ def starts_with_question(text: str) -> bool:
 _WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’.&-]*")
 
 
-def title_phrases(text: str, *, max_words: int = 3) -> list[str]:
+# #963: lower-case words that sit inside a name - "Ghost of Yotei", "Call of Duty",
+# "Lord of the Rings" - when `title_phrases(..., connectors=True)`.
+NAME_CONNECTORS = frozenset({"of", "the", "de", "la", "del", "da", "von", "van"})
+
+
+def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) -> list[str]:
     """Title-Case names in the raw text, in order: "Manchester City", "Liverpool".
 
     A run of capitalised words, broken by punctuation, a lower-case word or a function
     word ("What does Arsenal ..." -> "Arsenal"), at most `max_words` long. Case is read
     from the original text, so a lower-case topic has none - callers fall back to
     `content_tokens`. Run 98's signals searched the whole typed sentence instead.
+    `connectors=True` keeps a lower-case `NAME_CONNECTORS` word between two capitalised
+    ones inside the name ("Ghost of Yotei", not "Ghost" and "Yotei") - for name lookups.
     """
     phrases: list[str] = []
     run: list[str] = []
+    held: list[str] = []  # connector words waiting for a capitalised word
     last_end = 0
     raw = text or ""
 
     def flush() -> None:
+        held.clear()
         if run:
             phrase = " ".join(run[:max_words])
             if phrase not in phrases:
@@ -199,7 +217,11 @@ def title_phrases(text: str, *, max_words: int = 3) -> list[str]:
             flush()
         lower = word.lower().replace("'", "").replace("’", "")
         if word[:1].isupper() and lower not in FUNCTION_WORDS:
+            run.extend(held)
+            held.clear()
             run.append(word)
+        elif connectors and run and word == lower and lower in NAME_CONNECTORS:
+            held.append(word)
         else:
             flush()
     flush()

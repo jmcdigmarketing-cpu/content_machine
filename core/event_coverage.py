@@ -23,7 +23,7 @@ import math
 import re
 from typing import Any
 
-from apis.topic_tokens import content_tokens, search_query
+from apis.topic_tokens import content_tokens, fold_accents, search_query
 
 _ROMAN = {
     "ii": "2",
@@ -61,7 +61,7 @@ def _name_tokens(name: str) -> list[str]:
 def _line_tokens(line: str) -> set[str]:
     """A line's words, roman numerals as digits, plus the initials of short word runs
     ("Grand Theft Auto" also reads as "gta")."""
-    words = _WORDS.findall((line or "").lower().replace("'", ""))
+    words = _WORDS.findall(fold_accents(line or "").lower().replace("'", ""))
     tokens = {_ROMAN.get(w, w) for w in content_tokens(line)}
     for size in (2, 3, 4):
         for i in range(len(words) - size + 1):

@@ -293,6 +293,22 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                         "before stating as fact):\n" + "\n".join(tw_lines)
                     )
 
+        elif name == "entity_research" and isinstance(data, dict):
+            # #963: who's who - Wikidata claims (structured, signal tier) and Wikipedia
+            # intros (prose, web tier), each its own section so each gets its tier.
+            claims = [f"  • {str(x).strip()}" for x in data.get("wikidata_lines") or [] if x]
+            if claims:
+                lines.append(
+                    f"Reference data - Wikidata, current as of {data.get('as_of', '')} "
+                    "(who plays where, who holds what, release dates):\n" + "\n".join(claims)
+                )
+            intros = [f"  • {str(x).strip()}" for x in data.get("wikipedia_lines") or [] if x]
+            if intros:
+                lines.append(
+                    "Reference text - Wikipedia introductions (verify specifics before stating "
+                    "as certainty):\n" + "\n".join(intros)
+                )
+
         elif name == "event_research" and isinstance(data, dict):
             # #899: sources that name the event the topic is about - web tier.
             found = [f"- {str(x).strip()}" for x in data.get("lines") or [] if str(x).strip()]

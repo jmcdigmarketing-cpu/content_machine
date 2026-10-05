@@ -99,6 +99,40 @@ def _read(url: str) -> list[str]:
     return list(lines)
 
 
+def _news_fallback(
+    base: dict[str, Any], report: dict[str, Any], *, angle: str, topic: str
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """#964: no web search results (no key, or the vault skip) - read Google News headlines
+    that name the topic's subject instead of nothing. Keyless; `AUTO_RESEARCH_NEWS_FALLBACK=
+    false` turns it off."""
+    from core.providers import flag_enabled
+
+    if not flag_enabled("AUTO_RESEARCH_NEWS_FALLBACK", default=True):
+        return base, report
+    try:
+        from core.event_coverage import event_name
+        from core.event_research import google_news_headlines
+
+        name = event_name(topic) or event_name(angle)
+        lines = google_news_headlines(name)[: _env_int("AUTO_RESEARCH_MAX_LINES", 20, 1, 80)]
+    except Exception as exc:
+        logger.debug("news fallback skipped: %s", exc)
+        return base, report
+    if not lines:
+        return base, report
+    report.update(reason="news fallback", lines=len(lines), kept_lines=list(lines))
+    base[SIGNAL_NAME] = make_signal(
+        connected=True,
+        active=True,
+        score=0,
+        confidence=0.5,
+        status=STATUS_OK,
+        status_detail=f"Auto-research: {len(lines)} Google News headline(s) naming {name!r}",
+        data={"lines": lines, "urls": []},
+    )
+    return base, report
+
+
 def attach_web_research(
     signals: dict[str, Any] | None,
     *,
@@ -114,7 +148,7 @@ def attach_web_research(
         candidates = _rank(_candidate_urls(base, set(exclude_urls or [])), reference)
         if not candidates:
             report["reason"] = "no web results"
-            return base, report
+            return _news_fallback(base, report, angle=angle, topic=topic)
         chosen = candidates[: _env_int("AUTO_RESEARCH_URLS", 3, 1, 6)]
         deadline = _deadline_s()
         started = time.monotonic()
@@ -228,6 +262,11 @@ def report_line(report: dict[str, Any] | None) -> str:
     reason = str(report.get("reason") or "")
     if reason in ("no web results", ""):
         return "Auto-research: no web results to read"
+    if reason == "news fallback":
+        return (
+            f"Auto-research: no web results - read {report.get('lines', 0)} Google News "
+            "headline(s) instead"
+        )
     return (
         f"Auto-research: {report.get('pages', 0)} page(s) read, {report.get('lines', 0)} line(s) kept, "
         f"{report.get('off_topic', 0)} off-topic dropped"

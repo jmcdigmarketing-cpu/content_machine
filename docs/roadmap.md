@@ -26,16 +26,17 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-10-04 wave 57, from the operator's Studio screenshots and first $10 ad
-campaign: **#954** paid views apart from organic everywhere the system learns (76.3% of 28-day
-views were ads), and YPP read from YouTube's own numbers with ads excluded; **#947** the
-view-curve backfill stops re-fetching small videos; **#955** footage must match the topic - no
-more random game folder (the Wemby Short cut UFC 5, the Clair Obscur Short cut Madden), `ops
-footage-gaps`; **#946** athlete names read as their sport; **#951** packaging - Shorts "stayed"
-and feed share, long-form impressions and CTR from the Reporting API (**#948** corrected: the
-Analytics API has none); **#956** the privacy / terms / data-deletion site, `ops policy-site`.
+**Just landed** - 2026-10-05 wave 58, research by need: **#963** who's who looked up on every run
+(Wikidata's current team, title, release date and the Wikipedia intro - keyless), **#964** settled or
+fresh from evidence, with a fresh topic researched deeper and a Google News fallback when web search
+returns nothing, **#965** the facts prompt says "nothing to paste" or asks for a link, **#966** no team
+or title from memory (prompt rule, verifier, expansion), **#967** `ops auto-research` counts pastes.
 
-**Before that** - wave 56: **#949 #950 #953** · wave 55: **#944 #938 #940 #943 #941 #942** · wave 54: **#934 #935 #936 #937 #114 #939** · wave 53: **#930-#933 #929 #591 #573 #586** (#587 closed) · wave 52: **#927 #928 #585 #574 #570 #571** · wave 51: **#921 #579 #575 #588 #567
+**Before that** - wave 57: **#954** paid views apart from organic (76.3% of 28-day views were ads),
+YPP from YouTube's own numbers; **#947**; **#955** footage must match the topic, `ops footage-gaps`;
+**#946**; **#951** packaging (**#948** corrected); **#956** `ops policy-site`.
+
+wave 56: **#949 #950 #953** · wave 55: **#944 #938 #940 #943 #941 #942** · wave 54: **#934 #935 #936 #937 #114 #939** · wave 53: **#930-#933 #929 #591 #573 #586** (#587 closed) · wave 52: **#927 #928 #585 #574 #570 #571** · wave 51: **#921 #579 #575 #588 #567
 #922-#926**. Earlier: [roadmap_archive.md](roadmap_archive.md)
 and [planning_log.md](planning_log.md).
 
@@ -54,25 +55,30 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**Wave 57 (2026-10-04)** was set by the operator's screenshots rather than the list: ads were
-76% of the views and every recommender counted them (#954), and two Shorts showed another
-game's footage (#955). Packaging (#951), the operator's pick, shipped with them. The order the
-operator set ends at Phase M, so it leads - Instagram first, because TikTok's route is open:
+**Wave 58 (2026-10-05)** was the operator's ask, not the list: "i shouldnt have to fact intake"
+a known topic (#963-#967 shipped). Phase M was next in the order the operator set, and changed
+shape mid-wave - "i got buffer": TikTok and Instagram both go through Buffer (it schedules and
+posts with the PC off), so the direct Instagram build (#952) is parked and Phase M becomes a
+pack for Buffer:
 
-1. **#952 Phase M, Instagram** `[L]` - `InstagramPublisher` on the Graph API (own account, a role on the app: no App Review), its OAuth setup and metrics. TikTok waits on the operator's call: TikTok's review refuses personal apps, so TikTok Studio's scheduler or an audited poster.
-2. **#958 a metrics refresh keeps what other writers stored** `[S]` - the paid series, lifetime views and CTR survive today only by write order.
-3. **#957 an organic engaged rate** `[S]` - the engagement predictor and `RECOMMEND_TARGET=engaged` still read paid viewers' watch time.
-4. **#49 a first-day alert** `[M]` - a video far under the channel's 7-day baseline says so on day one.
-5. **#945 a 7-day-views prediction** `[M]` - beside the engaged-rate one.
+1. **#968 ops crosspost, the Buffer pack** `[M]` - per video: the mp4, TikTok and Instagram captions with the AI-disclosure line, the slot; `--done` so the cadence guardrail counts it.
+2. **#962 soccer topics that name only a tournament stage** `[S]` - five of 23 renders had no footage.
+3. **#958 a metrics refresh keeps what other writers stored** `[S]` - the paid series, lifetime views and CTR survive today only by write order.
+4. **#957 an organic engaged rate** `[S]` - the engagement predictor and `RECOMMEND_TARGET=engaged` still read paid viewers' watch time.
+5. **#49 a first-day alert** `[M]` - a video far under the channel's 7-day baseline says so on day one.
+
+Then **#945** (a 7-day-views prediction) and **#969** (signals still search "Ghost" for "Ghost of
+Yotei" - needs a replay check first).
 
 **#959** a promotion ledger only if the operator runs ads again.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
 
-**Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten.
+**Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten; #963-#965
+(does a settled topic still get a paste?) needs ten runs in `ops auto-research`.
 
-**Waiting on the operator, not on code:** if `ops backfill` stops with "YouTube sign-in ... expired or been revoked", run `py -m youtube.oauth_setup --channel tapin` and the backfill again; a sign-in that dies again within a week means the Google Cloud consent screen is in Testing - publish it with the policy site's links (#961). After `git pull`, `py -m scripts.ops backfill view-curve --apply` once - it fetches every video's paid views from its publish day, and until then a video synced before wave 57 counts none of its views as paid (#954 #947); then `ops winners`, `ops scoreboard` and `ops ypp` (YouTube's own YPP numbers after the next `ops sync-metrics`). Turn on "YouTube Reporting API" in Google Cloud Console (same sign-in), then `ops sync-metrics` creates the reach job; CTR shows in `ops packaging` a day or two later (#951). `ops footage-gaps` for what gameplay to record and which past videos may show another game (#955); add names to `config/domain_names.json` when a player reads as the wrong sport (#946). For the TikTok / Instagram apps: `ops policy-site --name ... --email ... --output-dir ...`, upload it to a public repo with Pages on (#956), and decide TikTok's route (#952). before time away, `py -m scripts.ops backlog --dry-run`, then `backlog`, then `worker` (#949). `py -m scripts.ops all` once a week (it runs `backfill view-curve --apply`, which the 7-day views target needs; `RECOMMEND_TARGET=engaged` switches the recommenders back) (#944 #938). Set your numbers in `config\goals.json` (the committed ones are placeholders), then `ops sync-metrics`, `ops scoreboard`, and `ops review-week` once a week (#934 #936); `ops mailbag` (#114); `ops winners` shows what the script prompt now sees (#937). `git pull` then the suite - it no longer reads your `.env` (#930). `ops signal-diff <A> --run-id <B>` on two runs of the same topic (#586). `ops dedupe-seed` then `--apply` - every past `all-setup` added the 44 seeded videos again (#927). `ops signal-audit --skip <name>` once a signal has fed nothing in 10+ runs (#574). After your next run, `ops analytics-diff <run>` (#570). `ops signal-audit` - which signals ever feed the script, and which return a frozen payload; retiring any is your call (#575 #588). `py -m core.experiments start post_time` now flips a coin per upload and moves off-slot ones a random hour (#567). `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops tag-report`, `ops title-patterns`, `ops retention-diff` (#428 #566 #565); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
+**Waiting on the operator, not on code:** `git pull`, then a run on a known topic - the facts prompt should say "Settled ... nothing to paste" and list the Wikidata lines; a run on a game out this week should say "Fresh" and ask for a link; say if either is wrong (#963-#965). Connect TikTok and Instagram in Buffer (Instagram as a Professional account) for #968. Build the policy site and publish the Google consent screen (a reminder is set for 2026-10-07). if `ops backfill` stops with "YouTube sign-in ... expired or been revoked", run `py -m youtube.oauth_setup --channel tapin` and the backfill again; a sign-in that dies again within a week means the Google Cloud consent screen is in Testing - publish it with the policy site's links (#961). After `git pull`, `py -m scripts.ops backfill view-curve --apply` once - it fetches every video's paid views from its publish day, and until then a video synced before wave 57 counts none of its views as paid (#954 #947); then `ops winners`, `ops scoreboard` and `ops ypp` (YouTube's own YPP numbers after the next `ops sync-metrics`). Turn on "YouTube Reporting API" in Google Cloud Console (same sign-in), then `ops sync-metrics` creates the reach job; CTR shows in `ops packaging` a day or two later (#951). `ops footage-gaps` for what gameplay to record and which past videos may show another game (#955); add names to `config/domain_names.json` when a player reads as the wrong sport (#946). For the TikTok / Instagram apps: `ops policy-site --name ... --email ... --output-dir ...`, upload it to a public repo with Pages on (#956), and decide TikTok's route (#952). before time away, `py -m scripts.ops backlog --dry-run`, then `backlog`, then `worker` (#949). `py -m scripts.ops all` once a week (it runs `backfill view-curve --apply`, which the 7-day views target needs; `RECOMMEND_TARGET=engaged` switches the recommenders back) (#944 #938). Set your numbers in `config\goals.json` (the committed ones are placeholders), then `ops sync-metrics`, `ops scoreboard`, and `ops review-week` once a week (#934 #936); `ops mailbag` (#114); `ops winners` shows what the script prompt now sees (#937). `git pull` then the suite - it no longer reads your `.env` (#930). `ops signal-diff <A> --run-id <B>` on two runs of the same topic (#586). `ops dedupe-seed` then `--apply` - every past `all-setup` added the 44 seeded videos again (#927). `ops signal-audit --skip <name>` once a signal has fed nothing in 10+ runs (#574). After your next run, `ops analytics-diff <run>` (#570). `ops signal-audit` - which signals ever feed the script, and which return a frozen payload; retiring any is your call (#575 #588). `py -m core.experiments start post_time` now flips a coin per upload and moves off-slot ones a random hour (#567). `ops sync-metrics` then `ops predictions` - scheduled videos now sync and count (#915); `ops backfill view-curve --apply` for past videos' time to 100 views (#563); `py -m core.experiments start post_time` only if you want the off-slot test (#912); `ops source-trust` (#342); `ops weekly-report` for scheduled vs immediate (#598); `ops tag-report`, `ops title-patterns`, `ops retention-diff` (#428 #566 #565); `ops predictions` names how many videos sit under 50 views - set `MIN_OUTCOME_VIEWS=50` only if that looks right (#564). Render one video whose script has an emoji to see it drawn (#504); after your next run, `ops replay <run>` (#386) and `ops predictions` (the best-bet row, #909). `ops record-payloads` then `--apply` if the diff looks right (#905, real API shapes into the tests); on the next run in `py -m desktop`, use the facts room and time the key-facts step against run 98's 7.9 min (#860); `ops incidents` after a few runs says what YouTube's "unavailable" is (#908). Render one video per channel to see the caption entrance (#503; `"entrance": "none"` in `caption_skin` turns it off) and run `ops vault-decay` to see which preview lines stopped being used (#558). Drop royalty-free tracks into `assets/music/tapin/` and
 `assets/music/moneywise/` (#411), then render one debate video to hear the bed and see the second
 colour (#900); on a just-happened topic, watch what the key-facts prompt finds (#899). `ops vault-retier` to see which old notes hold scraped
 lines, then `--apply` if the list is right (#857); the next run on a just-happened event should stop
@@ -86,7 +92,7 @@ live TTS run, check that `ops reliability` reports TTS-cache hits rather than `0
 `ARTIFACT_RETENTION_APPLY` stays unset unless you want overnight to delete.
 
 **Dropped from this list** (stay open): **#730** (operator call) · **#728** (no clip) ·
-**#628** · **#731** · Phase M · Ollama. **#739 is closed, not dropped** - measured and rejected.
+**#628** · **#731** · #952's direct APIs (Buffer instead) · Ollama. **#739 is closed, not dropped** - measured and rejected.
 
 **Closed 2026-09-20 (wave 30):** **#817 #818 #822 #739 #823**. Filed open: **#824 #825 #826**.
 Two items closed *without* a behaviour change because the measurement said not to (#822, #739);
@@ -148,13 +154,13 @@ Every open item belongs to exactly one. Counts come from
 | `publish` | YouTube API, policy, scheduling, disclosure |
 | `analytics` | the learning loop and its statistical honesty |
 | `ops` | CLI, tests, docs, packaging hygiene |
-| `parked` | deliberately not now — Phase M, volume-gated studios |
+| `parked` | deliberately not now — direct TikTok/Instagram APIs (Buffer instead), volume-gated studios |
 
 ---
 
 ## Still not happening
 
-Phase M multi-platform (TikTok/Reels) stays parked. No SaaS, no web product, no
+Direct TikTok/Instagram publishing APIs stay parked - Phase M goes through Buffer (#968). No SaaS, no web product, no
 second operator seat, no standalone fact-engine surface — all retired on the
 private/local constraint. The CUDA torch wheel is uninstalled by choice until
 Stage 7; `ops doctor` reports `cuda` FAIL by design and it gates nothing.

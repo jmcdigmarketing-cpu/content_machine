@@ -283,6 +283,9 @@ def generate_draft(
         "tier_warnings": result.features.get("tier_warnings") or [],
         "fact_conflicts": result.features.get("fact_conflicts") or [],
         "claim_verification": result.features.get("claim_verification"),
+        # #965: settled or fresh, and whether anyone pasted facts for it.
+        "research": result.features.get("research"),
+        "key_facts_count": len(packed or []),
         "experiment": out.experiment_arm or None,
         "cost": result.features.get("cost"),
         "created_at": datetime.now().isoformat(timespec="seconds"),

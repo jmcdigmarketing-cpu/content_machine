@@ -7,13 +7,13 @@
 | Platform | Status |
 |----------|--------|
 | **YouTube** | Supported — `publishing.YouTubePublisher` + worker `upload` jobs |
-| **TikTok** | **Deferred (Phase M, #952)** — no publisher registered; sequenced as [master_plan.md](master_plan.md) M5. Read the TikTok caveat under the policy site below first |
-| **Instagram** | **Deferred (Phase M, parked)** — same |
+| **TikTok** | **Through Buffer (Phase M, #968)** — the operator schedules the pack Content OS makes; no TikTok app (its review refuses personal apps - caveat below) |
+| **Instagram** | **Through Buffer (Phase M, #968)** — same pack; Instagram must be a Professional (Creator or Business) account for Buffer to post Reels. A direct Graph API publisher (#952) stays parked as an option |
 | **Facebook** | Not planned |
 
 Videos include your channel intro first (`video/intro/channel_intro.mp4`). See `video/intro/README.md`.
 
-**Repurpose orchestration:** after render, the CLI calls `publishing.repurpose.enqueue_repurpose_jobs()` which formats metadata and enqueues one YouTube `upload` job per enabled platform in `publishers_enabled` (TikTok/Instagram names are logged as skipped until a far-future phase).
+**Repurpose orchestration:** after render, the CLI calls `publishing.repurpose.enqueue_repurpose_jobs()` which formats metadata and enqueues one YouTube `upload` job per enabled platform in `publishers_enabled` (TikTok/Instagram names are logged as skipped: those go out through Buffer, #968).
 
 **Thumbnail scoring:** optional after thumbnail generation when `THUMBNAIL_SCORER_ENABLED=true` — vision goes through the LLM router (`core.llm_router.complete` with image parts, whichever premium-tier provider is live), else the heuristic scorer. Scores persist in `thumbnail_scores` (Alembic `0002`).
 
@@ -74,7 +74,16 @@ realistic routes (#952). Instagram differs: an app used only by people with a ro
 Standard Access, without App Review or Business Verification
 ([Instagram content publishing](https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/content-publishing)).
 
-## TikTok & Instagram (later phase)
+## TikTok & Instagram through Buffer (operator, 2026-10-05)
+
+Buffer schedules TikToks and Instagram Reels and posts them with the PC off, so no developer app,
+token or policy page is needed for either. Once #968 ships, the crosspost verb writes a
+folder per rendered video (mp4, `tiktok.txt`, `instagram.txt`, `slot.txt`); upload it in Buffer
+for each channel at the suggested slot, then mark it posted with the verb's done flag. Turn on
+each platform's own AI-generated label in Buffer's composer where offered - the caption carries
+the disclosure line either way. The direct-API notes below are kept for the parked #952.
+
+## TikTok & Instagram direct APIs (parked, #952)
 
 When you are ready, credential sources are documented below. **Do not add these to `.env` until that phase ships.**
 

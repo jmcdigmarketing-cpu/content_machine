@@ -278,24 +278,39 @@ def _learned_sport_names() -> dict[str, str]:
         return {}
 
 
-def _sport_from_names(topic_lower: str) -> str | None:
-    """The one sport whose seeded or learned names the topic mentions, else None.
-
-    Checked after every keyword list, so a league, club, game or franchise word wins. Two
-    sports named ("Messi vs LeBron") is no answer. The seed wins over a learned name.
-    """
+def _name_matches(topic_lower: str) -> list[tuple[str, str]]:
+    """(name, sport) for each seeded or learned sport name in the text, in order."""
     global _names_pattern
     names = {**_learned_sport_names(), **_seeded_sport_names()}
     if not names or not topic_lower:
-        return None
+        return []
     key = tuple(sorted(names.items()))
     if _names_pattern is None or _names_pattern[0] != key:
         ordered = sorted(names, key=len, reverse=True)
         compiled = re.compile(r"\b(?:" + "|".join(re.escape(n) for n in ordered) + r")\b")
         _names_pattern = (key, compiled)
     found = _names_pattern[1].finditer(topic_lower)
-    sports = {names[m.group(0)] for m in found if m.group(0) in names}
+    return [(m.group(0), names[m.group(0)]) for m in found if m.group(0) in names]
+
+
+def _sport_from_names(topic_lower: str) -> str | None:
+    """The one sport whose seeded or learned names the topic mentions, else None.
+
+    Checked after every keyword list, so a league, club, game or franchise word wins. Two
+    sports named ("Messi vs LeBron") is no answer. The seed wins over a learned name.
+    """
+    sports = {sport for _name, sport in _name_matches(topic_lower)}
     return sports.pop() if len(sports) == 1 else None
+
+
+def sport_names_in(text: str) -> list[str]:
+    """#963: the athlete and fighter names (seeded or learned) the text mentions, in order -
+    found in a lower-case topic too, where Title-Case name runs find nothing."""
+    out: list[str] = []
+    for name, _sport in _name_matches((text or "").lower()):
+        if name not in out:
+            out.append(name)
+    return out
 
 
 def _reset_sport_names() -> None:

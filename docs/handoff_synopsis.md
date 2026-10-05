@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-10-04: wave 57, next five
+# Handoff synopsis — 2026-10-05: wave 58, next five
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,28 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-04 (Claude Code): wave 57 #954 #947 #955 #946 #951 #956 (#948 closed)
+## Last wave — 2026-10-05 (Claude Code): wave 58 #963 #964 #965 #966 #967 (research by need)
+
+The operator: "i shouldnt have to fact intake" a known topic (what team LeBron is on), but would
+paste for a game that just came out - "obviously not hardcoded".
+
+- **#963** who's who on every run: Wikidata (current team / title / head coach, release date,
+  developer, platforms - dated, signal tier) and the Wikipedia intro, keyless, for up to four
+  names in the topic and angle (aliases: "Wemby"). Batch drafts get it too.
+- **#964** settled or fresh from evidence (a release in 30 days, a new or missing article, a 48 h
+  news burst, event research on a miss); a fresh topic gets recent-news research for its name;
+  no web results -> Google News headlines instead of nothing.
+- **#965** the facts prompt: "Settled ... nothing to paste" or "Fresh ... a link would help".
+  `ops batch-review` names fresh drafts nobody pasted for.
+- **#966** no team or title from memory: prompt rule, the verifier asks about affiliations and a
+  brief-only line backs nothing strict, the expansion sees the verified facts.
+- **#967** `ops auto-research` counts pastes per verdict. Accents fold in `content_tokens`.
+- Phase M changed mid-wave: Buffer for TikTok and Instagram (#968); #952's direct APIs parked.
+
+**Verify:** `python -m unittest tests.test_entity_lookup tests.test_freshness tests.test_research_prompt`;
+a run on a known topic; `py -m scripts.ops auto-research`.
+
+## Previous — 2026-10-04 (Claude Code): wave 57 #954 #947 #955 #946 #951 #956 (#948 closed)
 
 From the operator's Studio screenshots and first $10 ad campaign (76.3% of 28-day views were ads).
 
@@ -45,21 +66,6 @@ From the operator's Studio screenshots and first $10 ad campaign (76.3% of 28-da
 - Next: packaging (#951), then Phase M on the direct APIs (#952).
 
 **Verify:** `python -m unittest tests.test_backlog`; `py -m scripts.ops backlog --dry-run`.
-
-## Previous — 2026-10-03 (Claude Code): wave 55 #944 #938 #940 #943 #941 #942
-
-- **#944** `py -m scripts.ops all` runs checks, analytics and the weekly review, each step once;
-  every setup and review verb is in a batch (`ops list`); a failed step is named at the end
-  instead of stopping the rest (`all-setup` still stops).
-- **#938** the best bet, length and post time aim at **views in each video's first 7 days**
-  (`RECOMMEND_TARGET=engaged` switches back). They need views by day from the publish day -
-  `ops all` runs `backfill view-curve --apply`. The predictor stays on engaged rate (#945).
-- **#940** winners and verdicts rank on 7-day views; every sync also keeps lifetime views.
-- **#943** the scoreboard prints the last weeks and "on pace N reviews running".
-- **#941** uploads made outside Content OS count. **#942** answered questions leave the mailbag
-  and `ops mailbag` drafts the replies (you post them).
-
-**Verify:** `python -m unittest tests.test_ops_batches tests.test_wave55_five`; `py -m scripts.ops list`.
 
 ## Pipeline order (operator)
 
@@ -124,7 +130,7 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
+1. **Operator:** a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); the policy site and Google's Publish app (reminder 2026-10-07); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
@@ -136,7 +142,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** Phase M (#952) - Instagram first; TikTok's route is the operator's call. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #968 ops crosspost (Phase M through Buffer) · #962 · #958 · #957 · #49. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

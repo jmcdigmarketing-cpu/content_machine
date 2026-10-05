@@ -247,6 +247,11 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     words = draft.script.split()
     opener = " ".join(words[:30]) + (" ..." if len(words) > 30 else "")
     print_fn(f"    opens: {opener}")
+    from core.facts.freshness import review_note
+
+    note = review_note(meta.get("research"), pasted=int(meta.get("key_facts_count") or 0))
+    if note:
+        print_fn(f"    ? {note}")
     blocking = _blocking_claims(draft)
     for claim in blocking[:3]:
         print_fn(f"    ! unsupported: {claim}")

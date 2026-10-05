@@ -61,6 +61,10 @@ os.environ["DISCOVERY_CACHE"] = "false"
 os.environ["AUTO_RESEARCH_ENABLED"] = "false"
 # #899: event research reads Wikipedia / Google News on a recency miss - never in tests.
 os.environ["EVENT_RESEARCH_ENABLED"] = "false"
+# #963: the who's-who lookup reads Wikidata / Wikipedia on every run - never in tests.
+os.environ["ENTITY_RESEARCH_ENABLED"] = "false"
+# #964: with no web results, auto-research reads Google News headlines - never in tests.
+os.environ["AUTO_RESEARCH_NEWS_FALLBACK"] = "false"
 # #589: the web-search fallback may reach keyless DuckDuckGo when ddgs is installed;
 # the fallback tests turn it on with their own fakes.
 os.environ["WEB_SEARCH_FALLBACK"] = "false"

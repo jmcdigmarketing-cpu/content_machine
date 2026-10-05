@@ -947,6 +947,15 @@ def run_pipeline(
             exclude_urls=list(source_urls or []),
         )
 
+    # #963: who's who - the people, teams and games the topic names, looked up on every run
+    # (Wikidata's current team / release date, Wikipedia's intro), so a known topic needs no
+    # paste and a batch draft gets them too.
+    from core.facts.entity_lookup import attach_entity_research
+
+    best_signals, entity_research_report = attach_entity_research(
+        best_signals, topic=input_topic or content_topic, angle=str(best_topic)
+    )
+
     # #899: no fact names the event the topic names - look for it before the script.
     from core.event_research import attach_event_research
 
@@ -955,6 +964,13 @@ def run_pipeline(
         topic=input_topic or content_topic,
         key_facts=list(key_facts or []),
         exclude_urls=list(source_urls or []),
+    )
+
+    # #964: settled or fresh - a fresh topic gets the recent-news research for its main name.
+    from core.facts.freshness import attach_fresh_research
+
+    best_signals, research_need = attach_fresh_research(
+        best_signals, topic=input_topic or content_topic, event_report=event_research_report
     )
 
     logger.info("Building research brief for: %s", best_topic)
@@ -1023,6 +1039,9 @@ def run_pipeline(
         result.features["angle_intent"] = result.angle_intent
     if event_research_report is not None:
         result.features["event_research"] = event_research_report
+    if entity_research_report is not None:
+        result.features["entity_research"] = entity_research_report
+    result.features["research"] = research_need
     if auto_research_report is not None:
         # #862: kept in the vault only when asked, at link tier.
         maybe_save_research(channel_id, content_topic, auto_research_report)

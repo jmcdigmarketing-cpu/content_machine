@@ -8,6 +8,30 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 58 — research by need: known facts found for you, pasting only for what is new - 2026-10-05
+
+*4,570 tests; mypy 121; ruff 0.15.8 clean; corpus 85 of 85.*
+
+- **#963** Every run looks up the people, teams and games the topic names - Wikidata's current
+  team, title, head coach, release date, developer and platforms, and the Wikipedia intro -
+  without a key, and puts them in the facts the script may use. A known topic ("what team is
+  LeBron on") needs no paste; overnight and batch drafts get them too. Turn off with
+  `ENTITY_RESEARCH_ENABLED=false`.
+- **#964** Each topic is called settled or fresh from what was found (a release in the last 30
+  days, a new or missing Wikipedia article, a burst of news, an event nothing named). A fresh
+  topic gets recent-news research on its own; with no web search results, auto-research reads
+  Google News headlines instead of nothing.
+- **#965** The key-facts prompt says "Settled ... nothing to paste" or "Fresh ... a review,
+  patch-notes or news link would help" instead of the same checklist every time.
+  `ops batch-review` names a fresh draft nobody pasted for.
+- **#966** **Script change, disclosed:** the script may name anyone but states a current team,
+  title or job only from the facts; a claim backed only by the research brief (or the topic
+  line) no longer counts as supported when it is the kind that blocks; the length expansion
+  sees the verified facts.
+- **#967** `ops auto-research` shows, per run, settled/fresh, the who's-who lines and how many
+  were cited, and whether facts were pasted.
+- Accented names ("Pokémon", "Yōtei") are no longer split into pieces when topics are matched.
+
 ### Follow-up — an expired YouTube sign-in stops once and says how to fix it - 2026-10-05
 
 *4,519 tests; mypy 121; corpus 81 of 81.*

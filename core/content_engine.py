@@ -10,6 +10,7 @@ from config.seo import build_seo_prompt_block, default_tags_for_channel
 from core.description_extras import apply_description_extras
 from core.facts.enrichment import _fact_line_count, enrich_facts
 from core.facts.grounding import find_ungrounded_entities
+from core.facts.store import TIER_BRIEF
 from core.grounding_tiers import CONTEXT_SECTION_HEADERS, build_tiered_corpus
 from core.llm_router import complete_json
 from core.logging import get_logger
@@ -319,6 +320,7 @@ ANTI-HALLUCINATION RULES (strictly enforced):
 - Do NOT introduce hero names (e.g. Cyclops, White Fox, Hawkeye) that are not named in VERIFIED FACTS.
 - Do NOT invent patch version numbers, balance changes, mode names, or release dates.
 - SPORTS/MMA: Do NOT state who is champion, a fighter's record, ranking, or who they have fought/beaten from memory — titles and records change and your training data is stale. Use only statuses that appear in VERIFIED FACTS.
+- PEOPLE: name anyone, but state a person's current team, club, title, job or contract only from VERIFIED FACTS or OPERATOR KEY FACTS — trades, signings and hires happen after your training. "Reference data - Wikidata" lines are current; if no fact says where someone plays now, do not say it.
 - Do NOT invent fight results, opponents, event cards, dates, or quotes. If the outcome of a fight or event is NOT in VERIFIED FACTS, frame it as the question or hypothetical it is ("if Topuria loses…", "fans are asking whether…") — never assert it happened.
 - Competitor video titles in CONTEXT SIGNALS are NOT factual evidence — they show what's trending, not what's true.
 - If the facts are silent on specifics: write at the community/opinion level ("players are frustrated that…", "the debate right now is…") without inventing the specific thing they're debating.
@@ -326,7 +328,7 @@ ANTI-HALLUCINATION RULES (strictly enforced):
 
 You must:
 - Use ONLY game-specific facts (patches, heroes, seasons, results, dates, stats) that appear in VERIFIED FACTS or RESEARCH BRIEF.
-- Cross-genre framing is allowed: real people, athletes, other sports, or other games introduced in the EDITORIAL ANGLE may be used as analogy, comparison, or opinion even if they are absent from VERIFIED FACTS — that is intentional creator framing, not a fabrication. Only invented GAME specifics are forbidden.
+- Cross-genre framing is allowed: real people, athletes, other sports, or other games introduced in the EDITORIAL ANGLE may be used as analogy, comparison, or opinion even if they are absent from VERIFIED FACTS — that is intentional creator framing, not a fabrication. Only invented GAME specifics are forbidden, and a person's current team, title or role still comes only from VERIFIED FACTS.
 - If a game fact is missing, say "reports suggest" or skip — do not fill from memory.
 - If VERIFIED FACTS lack patch/hero specifics, write an analysis/opinion angle about the game's meta or community sentiment — do not invent specifics to fill space.
 - Never use stock filler transitions. Banned verbatim: "But here's the thing", "But wait, there's more", "Here's the kicker", "Let that sink in". Pivot with a concrete fact instead.
@@ -352,7 +354,8 @@ You must:
             "used as an analogy for game mechanics) are INTENTIONAL cross-genre framing — "
             "keep them and lean into the comparison; they are allowed even if not in "
             "VERIFIED FACTS. Only GAME-SPECIFIC claims (patches, heroes, seasons, dates, "
-            f"numbers) must still come from VERIFIED FACTS:\n{creative_brief.strip()}\n\n"
+            "numbers) and a person's current team, title or role must still come from "
+            f"VERIFIED FACTS:\n{creative_brief.strip()}\n\n"
         )
 
     quote_block = ""
@@ -779,7 +782,9 @@ def _claim_regen_enabled() -> bool:
     return os.getenv("CLAIM_REGEN_ENABLED", "true").lower() not in ("0", "false", "no")
 
 
-def _maybe_rewrite_unsupported_claims(script, verification, corpus_text, topic, priority_facts):
+def _maybe_rewrite_unsupported_claims(
+    script, verification, corpus_text, topic, priority_facts, weak_lines=None
+):
     """Act on the claim verifier's verdict: rewrite unsupported claims out (or attribute them).
 
     Token grounding can pass while the *claims* are invented (e.g. real names, fabricated
@@ -819,7 +824,9 @@ def _maybe_rewrite_unsupported_claims(script, verification, corpus_text, topic, 
 
     from core.claim_verifier import verify_claims
 
-    re_check = verify_claims(candidate, corpus_text, topic=topic, priority_facts=priority_facts)
+    re_check = verify_claims(
+        candidate, corpus_text, topic=topic, priority_facts=priority_facts, weak_lines=weak_lines
+    )
     if re_check is not None and len(re_check.unsupported) < len(verification.unsupported):
         logger.info(
             "Claim rewrite adopted: unsupported %d -> %d",
@@ -1001,22 +1008,30 @@ def _expand_script(
     min_words: int,
     max_words: int,
     length_choice: str,
+    facts: str = "",
 ) -> str:
     current = count_spoken_words(script)
     preset = get_length_preset(length_choice)
+    # #966: new specifics come from the verified facts, never memory or competitor titles.
+    verified, _context = _split_facts_block(facts or "")
+    verified = verified.strip()[:6000] or "(none - add analysis and opinion, not new facts)"
     prompt = f"""Expand this video script for TOPIC: {topic}
 
 Current script ({current} words) is short of the {min_words}-word target (max {max_words}).
 Format: {preset.label} video ({preset.duration_hint()}).
 {length_system_addendum(preset)}
 
-Add LENGTH WITH SUBSTANCE ONLY: more specific facts about what happened, concrete detail, and
-sharper opinion/analysis. Keep all facts from the original.
+Add LENGTH WITH SUBSTANCE ONLY: more specific facts from VERIFIED FACTS below, concrete
+detail, and sharper opinion/analysis. Keep all facts from the original. Any new name, number,
+date, team or result must appear in VERIFIED FACTS - nothing from memory.
 BANNED filler — do NOT add any of this to pad the count: "fans are divided", "the lifeblood of
 the sport", "the future of X depends on it", "in conclusion", "a testament to", restating points
 already made, or vague abstractions. If you cannot reach {min_words} words HONESTLY with real
 substance, return the script unchanged rather than padding.
 Do not repeat the opening verbatim. Return JSON only: {{"script": "..."}}
+
+VERIFIED FACTS (the only source for new specifics):
+{verified}
 
 ORIGINAL:
 {script}
@@ -1073,6 +1088,7 @@ def _relength_after_postprocessing(
                 min_words=min_words,
                 max_words=max_words,
                 length_choice=length_choice,
+                facts=grounding_text,
             )
         except Exception as exc:  # expansion is best-effort, never fatal
             logger.warning("Late script expand failed: %s", exc)
@@ -1289,6 +1305,7 @@ def generate_content_package(
             min_words=min_words,
             max_words=max_words,
             length_choice=length_choice,
+            facts=signal_facts,
         )
         attempts += 1
 
@@ -1460,8 +1477,14 @@ def generate_content_package(
 
     quote_pre = check_quote_attribution(script, corpus.factual_text)
     script_before_rewrite = script
+    # #966: research-brief lines (LLM-written) back nothing strict on their own.
+    brief_lines = set(corpus.text_for_tiers({TIER_BRIEF}).splitlines())
     verification = verify_claims(
-        script, corpus.factual_text, topic=topic, priority_facts=clean_key_facts
+        script,
+        corpus.factual_text,
+        topic=topic,
+        priority_facts=clean_key_facts,
+        weak_lines=brief_lines,
     )
     if verification and verification.unsupported:
         logger.warning(
@@ -1474,7 +1497,7 @@ def generate_content_package(
 
     def _run_claim_rewrite(s: str):
         new, ver = _maybe_rewrite_unsupported_claims(
-            s, ver_box["v"], corpus.factual_text, topic, clean_key_facts
+            s, ver_box["v"], corpus.factual_text, topic, clean_key_facts, brief_lines
         )
         ver_box["v"] = ver
         return new

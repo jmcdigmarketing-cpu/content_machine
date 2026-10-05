@@ -8,6 +8,10 @@ lines a *supported* claim actually cited (`claim_verification.claims[].citation_
 
 Runs from before wave 35 have counts but no `kept_lines`, so they cannot count cites.
 
+It also measures research by need (#967): each run's settled/fresh verdict (#964), its
+who's-who lines (#963) and how many a supported claim cited, and whether facts were
+pasted - so "a known topic needs no paste" is a count, not a promise.
+
     py -m scripts.ops auto-research --channel tapin
 """
 
@@ -51,6 +55,63 @@ def _cited(kept: list[str], claims: list[dict[str, Any]]) -> int:
     return hits
 
 
+def _research(runs: list[Any]) -> dict[str, Any]:
+    """#967: settled/fresh verdicts, who's-who lines, and pastes - before and after."""
+    out: dict[str, Any] = {
+        "with_verdict": 0, "settled": 0, "settled_pasted": 0, "fresh": 0, "fresh_pasted": 0,
+        "who_lines": 0, "who_cited": 0, "before": 0, "before_pasted": 0, "rows": [],
+    }  # fmt: skip
+    for run in runs:
+        features = _load(getattr(run, "features_json", None))
+        pasted = int(features.get("key_facts_count") or 0) > 0
+        verdict = features.get("research")
+        need = str(verdict.get("need") or "") if isinstance(verdict, dict) else ""
+        if need not in ("settled", "fresh"):
+            out["before"] += 1
+            out["before_pasted"] += int(pasted)
+            continue
+        out["with_verdict"] += 1
+        out[need] += 1
+        out[f"{need}_pasted"] += int(pasted)
+        who = features.get("entity_research")
+        who = who if isinstance(who, dict) else {}
+        claims = (features.get("claim_verification") or {}).get("claims") or []
+        cited = _cited([str(x) for x in who.get("kept_lines") or []],
+                       [c for c in claims if isinstance(c, dict)])  # fmt: skip
+        out["who_lines"] += int(who.get("lines") or 0)
+        out["who_cited"] += cited
+        out["rows"].append({
+            "run_id": getattr(run, "id", None), "need": need, "pasted": pasted,
+            "who": int(who.get("lines") or 0), "cited": cited,
+            "topic": str(getattr(run, "input_topic", "") or "")[:50],
+        })  # fmt: skip
+    return out
+
+
+def render_research(research: dict[str, Any]) -> list[str]:
+    lines = ["  Research by need (#963-#967):"]
+    if not research["with_verdict"]:
+        lines.append("    no run has a settled/fresh verdict yet (it started in wave 58).")
+    else:
+        lines.append(
+            f"    {research['with_verdict']} run(s): settled {research['settled']} "
+            f"(pasted {research['settled_pasted']}), fresh {research['fresh']} "
+            f"(pasted {research['fresh_pasted']}); who's-who lines {research['who_lines']}, "
+            f"cited {research['who_cited']}"
+        )
+        for row in research["rows"][-5:]:
+            lines.append(
+                f"    #{row['run_id']}: {row['need']}, {row['who']} who's-who line(s), cited "
+                f"{row['cited']}, {'pasted' if row['pasted'] else 'no paste'} - {row['topic']}"
+            )
+    if research["before"]:
+        lines.append(
+            f"    before the verdict: {research['before_pasted']} of {research['before']} "
+            "run(s) had pasted facts"
+        )
+    return lines
+
+
 def summarize(runs: list[Any]) -> dict[str, Any]:
     summary: dict[str, Any] = {
         "runs": len(runs),
@@ -62,6 +123,7 @@ def summarize(runs: list[Any]) -> dict[str, Any]:
         "cite_measurable": 0,
         "reasons": Counter(),
         "rows": [],
+        "research": _research(runs),
     }
     for run in runs:
         features = _load(getattr(run, "features_json", None))
@@ -95,8 +157,11 @@ def summarize(runs: list[Any]) -> dict[str, Any]:
 def render(summary: dict[str, Any], channel_id: str = "") -> str:
     head = f"Auto-research across stored runs{f' ({channel_id})' if channel_id else ''}"
     n = summary["with_report"]
+    research = render_research(summary.get("research") or _research([]))
     if not n:
-        return f"{head}\n  No run has an auto-research report yet (it started in wave 34)."
+        return "\n".join(
+            [head, "  No run has an auto-research report yet (it started in wave 34).", *research]
+        )
     lines = [
         head,
         f"  runs with a report : {n} of {summary['runs']}",
@@ -123,7 +188,7 @@ def render(summary: dict[str, Any], channel_id: str = "") -> str:
         lines.append(
             f"  {10 - n} more run(s) before the #863 verdict (keep, retune or switch off)."
         )
-    return "\n".join(lines)
+    return "\n".join(lines + research)
 
 
 def main(argv: list[str] | None = None) -> int:

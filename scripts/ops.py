@@ -375,6 +375,13 @@ def cmd_backfill(args: argparse.Namespace) -> int:
         )
     if not apply:
         print("  Dry run - nothing written. Re-run with --apply.")
+        return 0
+    from youtube.oauth import sign_in_problem
+
+    problem = sign_in_problem(channel)
+    if problem:
+        print(f"  Stopped: {problem}")
+        return 1
     return 0
 
 

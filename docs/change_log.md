@@ -1,12 +1,22 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Follow-up — an expired YouTube sign-in stops once and says how to fix it - 2026-10-05
+
+*4,519 tests; mypy 121; corpus 81 of 81.*
+
+- **#961** When Google refuses the saved YouTube sign-in (`invalid_grant`: expired or revoked),
+  the run logs one error that names `py -m youtube.oauth_setup --channel <id>` and the 7-day
+  expiry of a consent screen in Testing, instead of retrying and logging once per video.
+  `ops backfill` stops at the first refusal and exits 1; `python -m youtube.check_setup` shows
+  the same line. Re-running `oauth_setup` clears it. Usman and Salkilld now read as UFC.
 
 ### Follow-up — `ops ingest-clips` is safe to stop and run again - 2026-10-04
 

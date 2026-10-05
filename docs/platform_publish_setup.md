@@ -1,6 +1,6 @@
 # Platform publishing setup
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-04
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-05
 
 ## Current scope (this phase)
 
@@ -26,6 +26,14 @@ Videos include your channel intro first (`video/intro/channel_intro.mp4`). See `
 5. Worker: `py -m jobs.worker --loop 30`
 
 Keys: [Google Cloud Console](https://console.cloud.google.com/) → Credentials → OAuth client + enable YouTube Data API v3 / YouTube Analytics API / YouTube Reporting API (thumbnail impressions and click-through, #951; same sign-in).
+
+**"YouTube sign-in ... has expired or been revoked" (#961).** Google refused the saved token
+(`invalid_grant`). Run `py -m youtube.oauth_setup --channel tapin` and repeat the command that
+stopped. If it happens again about a week later, the OAuth consent screen (Google Auth Platform ->
+Audience) is in **Testing**, where Google ends every sign-in after 7 days: press **Publish app**
+and give the policy site's home page and privacy links (below). Google lets an unverified app
+serve a handful of users; the sign-in then shows a "Google hasn't verified this app" warning,
+which you pass once via Advanced.
 
 ## The policy site (#956)
 

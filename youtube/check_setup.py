@@ -15,6 +15,7 @@ from youtube.constants import SCOPE_YOUTUBE_UPLOAD, SCOPE_YT_ANALYTICS_READONLY
 from youtube.oauth import (
     _client_secrets_path,
     load_credentials,
+    sign_in_problem,
     token_has_scope,
     token_path_for_channel,
 )
@@ -59,7 +60,8 @@ def check_channel_setup(channel_id: str | None = None) -> SetupReport:
 
     creds = load_credentials(channel_id)
     if token_path and os.path.isfile(token_path) and not creds:
-        issues.append("Token file exists but credentials are invalid or expired")
+        problem = sign_in_problem(channel_id)
+        issues.append(problem or "Token file exists but credentials are invalid or expired")
 
     if os.getenv("YOUTUBE_ANALYTICS_SYNC", "").lower() in ("1", "true", "yes"):
         if not token_has_scope(channel_id, SCOPE_YT_ANALYTICS_READONLY):

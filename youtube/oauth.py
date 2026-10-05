@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import os
 
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
@@ -16,6 +17,7 @@ from config.paths import (
     DEFAULT_OAUTH_TOKEN,
     migrate_file_if_needed,
 )
+from core import process_state
 from core.logging import get_logger
 from youtube.constants import (
     OAUTH_SCOPES_FULL,
@@ -70,9 +72,50 @@ def live_youtube_forbidden() -> bool:
     )
 
 
+# #961: token file path -> (its mtime, what to tell the operator) after Google refused the
+# token for good (`invalid_grant`). A refused token never comes back, so this process does not
+# ask again - one error, not one per video - until the token file changes (oauth_setup).
+_SIGN_IN_PROBLEMS: dict[str, tuple[float, str]] = {}
+
+
+def _mtime(path: str) -> float:
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return -1.0
+
+
+def _revoked_message(channel_id: str) -> str:
+    return (
+        f"YouTube sign-in for {channel_id} has expired or been revoked - run: "
+        f"py -m youtube.oauth_setup --channel {channel_id}. If it expires again in about a "
+        "week, the Google Cloud OAuth consent screen is in Testing: publish it (In production) "
+        "with the policy site's home page and privacy links (docs/platform_publish_setup.md)."
+    )
+
+
+def _reset_sign_in_problems() -> None:
+    _SIGN_IN_PROBLEMS.clear()
+
+
+process_state.register_reset("youtube.oauth", _reset_sign_in_problems)
+
+
+def sign_in_problem(channel_id: str | None = None) -> str:
+    """Why the channel's YouTube sign-in is refused (#961), or "" - cleared when the token
+    file changes."""
+    path = token_path_for_channel(channel_id)
+    known = _SIGN_IN_PROBLEMS.get(path)
+    if known and known[0] == _mtime(path):
+        return known[1]
+    return ""
+
+
 def load_credentials(channel_id: str | None = None) -> Credentials | None:
     path = token_path_for_channel(channel_id)
     if not os.path.isfile(path):
+        return None
+    if sign_in_problem(channel_id):
         return None
 
     scopes = _scopes_from_token_file(path)
@@ -85,6 +128,14 @@ def load_credentials(channel_id: str | None = None) -> Credentials | None:
             creds.refresh(Request())
             save_credentials(creds, channel_id)
             logger.info("Refreshed YouTube OAuth token for %s", resolve_channel_id(channel_id))
+        except RefreshError as e:
+            if "invalid_grant" not in str(e):
+                logger.error("OAuth refresh failed: %s", e)
+                return None
+            message = _revoked_message(resolve_channel_id(channel_id))
+            _SIGN_IN_PROBLEMS[path] = (_mtime(path), message)
+            logger.error("%s", message)
+            return None
         except Exception as e:
             logger.error("OAuth refresh failed: %s", e)
             return None
@@ -110,6 +161,7 @@ def save_credentials(creds: Credentials, channel_id: str | None = None) -> str:
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
+    _SIGN_IN_PROBLEMS.pop(path, None)
     return path
 
 

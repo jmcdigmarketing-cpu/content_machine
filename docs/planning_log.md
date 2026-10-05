@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -16,6 +16,33 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
 
 ---
+
+## 2026-10-05 (Claude Code) - follow-up: #961 a revoked YouTube sign-in, from the operator's backfill
+
+**Prompt:** the operator pasted their PowerShell session after `git pull`: `ingest-clips --apply`
+now ran with a line per capture, `ops footage` and `ops footage-gaps` worked, and
+`py -m scripts.ops backfill view-curve --apply --channel tapin` printed
+`[ERROR] OAuth refresh failed: ('invalid_grant: Token has been expired or revoked.' ...)` once per
+video until Ctrl+C.
+
+**Findings:** `youtube/oauth.py` `load_credentials` refreshed the expired token on every call and
+logged Google's raw error with no remedy; `analytics/view_curve.backfill` treated each `None` as
+one video's miss and went on (36 refreshes, 36 errors). `youtube.check_setup` said only "invalid
+or expired". The likely cause is a consent screen in Testing (7-day sign-ins). In the tests,
+`tests/test_youtube_check_setup.py`'s `os.path.isfile` patch is global, so channel profiles first
+loaded under it cache `default` only - a later test resolved "tapin" to "default". From
+`footage-gaps`: Usman and Salkilld were not seeded names; five soccer runs named only a tournament
+stage or two nations (#962); Football has no clips.
+
+**Shipped (#961):** `invalid_grant` remembered per token file until the file changes, one ERROR
+naming `py -m youtube.oauth_setup --channel <id>` and the Testing expiry; the backfill stops at the
+first refusal, `ops backfill` prints it and exits 1; `check_setup` shows it; a network failure is
+still retried; the memo is reset per test (`core.process_state`); the check-setup test clears the
+profile cache; Usman and Salkilld seeded. 8 new tests, **7 of 8 observed failing** on unmodified
+code (the eighth guards that a new token file is tried again); live check on a real token file
+and 36 synthetic videos: 1 refresh (was 36), exit 1, 0 network attempts. Corpus +2; mypy 121;
+ruff clean; `data/` untouched. **Not done:** #962 (soccer stages), the Instagram build (#952,
+waiting on the operator's yes).
 
 ## 2026-10-04 (Claude Code) - follow-up: #960 `ops ingest-clips` from the operator's first run
 

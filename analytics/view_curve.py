@@ -252,6 +252,10 @@ def backfill(channel_id: str, apply: bool, force: bool) -> dict[str, int]:
                 row.youtube_video_id, channel_id=channel_id, **window
             )
             if daily is None:
+                from youtube.oauth import sign_in_problem
+
+                if sign_in_problem(channel_id):
+                    break  # #961: every other video would be refused the same way
                 continue
             paid = youtube_metrics.fetch_daily_paid_views(
                 row.youtube_video_id, channel_id=channel_id, **window

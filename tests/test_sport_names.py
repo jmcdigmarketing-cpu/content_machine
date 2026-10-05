@@ -54,6 +54,13 @@ class SeedNamesTests(unittest.TestCase):
             self.assertEqual(infer_topic_domain(topic), "ufc", topic)
         self.assertEqual(infer_domain("Topuria vs Holloway breakdown", "tapin"), "ufc")
 
+    def test_the_fighters_footage_gaps_found_read_ufc(self):
+        # #961: the operator's footage-gaps, 2026-10-05 - runs 63 and 65 named these fighters.
+        from apis.topic_scorer import infer_topic_domain
+
+        for topic in ("Kamaru Usman returns", "Salkilld's knockout"):
+            self.assertEqual(infer_topic_domain(topic), "ufc", topic)
+
     def test_a_nickname_reads_as_its_sport(self):
         from apis.topic_scorer import infer_domain
 

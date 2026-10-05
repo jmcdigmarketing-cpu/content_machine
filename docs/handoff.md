@@ -53,7 +53,7 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-04 · **HEAD at write:** `fc0e857` (wave 56) + the wave 57 commit
+**Written:** 2026-10-05 · **HEAD at write:** `7eee9ea` (#960) + the #961 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
 **Read before editing:** paid views live in each video's `daily_paid_views` / `paid_since`
@@ -71,9 +71,9 @@ cached per topic; the asset row's `source_id` is `footage:<how>:<folder>`. mypy 
 - Open: #957 engaged rate includes paid viewers; #958 a refresh drops other writers' keys.
 
 **Shipped:** #954 #947 #955 #946 #951 #956 (#948 closed), then #960 (ingest-clips safe to
-re-run). Suite **4,511**, 0 network attempts,
-`data/` clean; backlog **237 numbered open**, highest #960. Next: **#952 Instagram · #958 · #957 ·
-#49 · #945**; TikTok's route is the operator's call.
+re-run), then #961 (a revoked sign-in fails once: `oauth.sign_in_problem`, memo reset per test).
+Suite **4,519**, 0 network attempts, `data/` clean; backlog **238 numbered open**, highest #962.
+Next: **#952 Instagram (awaits the operator's yes) · #962 · #958 · #957 · #945**.
 
 ## Slot — Cursor
 

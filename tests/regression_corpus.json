@@ -1409,6 +1409,32 @@
         "equals": "/lib/gaming/open world/GTA V"
       },
       "why": "Xbox names GTA Online captures 'Grand Theft Auto Online', which no alias covered, so the clip stayed out of the library"
+    },
+    {
+      "id": "revoked-youtube-sign-in-names-the-fix",
+      "item": 961,
+      "source": "operator's backfill view-curve --apply 2026-10-05: 36 'OAuth refresh failed: invalid_grant' lines, no remedy",
+      "call": "youtube.oauth:_revoked_message",
+      "args": [
+        "tapin"
+      ],
+      "expect": {
+        "contains": "py -m youtube.oauth_setup --channel tapin"
+      },
+      "why": "a revoked token was refreshed and logged once per video with Google's raw error and no fix; it now fails once and says what to run"
+    },
+    {
+      "id": "usman-reads-ufc",
+      "item": 961,
+      "source": "operator's footage-gaps 2026-10-05: run 63 named Usman, run 65 Salkilld",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Kamaru Usman returns"
+      ],
+      "expect": {
+        "equals": "ufc"
+      },
+      "why": "fighters missing from config/domain_names.json read neutral, so their topic could cut another game's footage"
     }
   ]
 }

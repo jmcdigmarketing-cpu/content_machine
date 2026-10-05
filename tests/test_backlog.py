@@ -88,7 +88,9 @@ class _Stores(unittest.TestCase):
         body = {"topic": topic, "variant": topic, "title": topic, "run_id": run_id,
                 "channel_id": "tapin", "length_choice": "1", "hook_verdict": "strong",
                 "authenticity_verdict": "ok", "claim_verification": {},
-                "created_at": NOW.replace(tzinfo=None).isoformat()}  # fmt: skip
+                # A draft made just now: the staleness gate measures age on the real clock,
+                # so a fixed date turned this test red two days after it was written.
+                "created_at": datetime.now().isoformat(timespec="seconds")}  # fmt: skip
         body.update(meta)
         with open(os.path.join(folder, "meta.json"), "w", encoding="utf-8") as f:
             json.dump(body, f)

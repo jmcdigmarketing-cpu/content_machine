@@ -124,6 +124,14 @@ def main():
     section("Content Machine")
     channel_id = prompt_channel_selection()
     profile = get_channel_profile(channel_id)
+    try:  # #971: a dead sign-in said up front, not after the render
+        from youtube.oauth import sign_in_status
+
+        _sign_in = sign_in_status(channel_id)
+        if _sign_in:
+            print(f"  ! {_sign_in}")
+    except Exception as exc:
+        logger.debug("sign-in check skipped: %s", exc)
     from core.themes import set_channel_theme
 
     set_channel_theme(channel_id)

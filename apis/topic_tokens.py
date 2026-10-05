@@ -61,6 +61,19 @@ FUNCTION_WORDS = INTERROGATIVES | frozenset(
         "would",
         "you",
         "your",
+        # #972: indefinite pronouns - "Somebody has to be the East favorite" (run 113) is
+        # not a name, and nothing a topic is about.
+        "anybody",
+        "anyone",
+        "anything",
+        "everybody",
+        "everyone",
+        "everything",
+        "nobody",
+        "nothing",
+        "somebody",
+        "someone",
+        "something",
     }
 )
 

@@ -7,6 +7,19 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-03 (Claude Code): wave 56 #949 #950 #953
+
+- **#949** `py -m scripts.ops backlog`: fresh best bets onto the open slots of the next two weeks
+  (news first, dropped past 3 days; evergreen after), drafted; every draft that clears the gates
+  (grade B+, no unsupported claim, no weak hook) renders and is scheduled; the rest wait for
+  `batch-review`. `--dry-run` spends nothing; `backlog list`; `backlog pull --run-id N` vetoes.
+  The worker uploads ~6 a day; YouTube publishes at the slot with the PC off. tapin's gaming
+  schedule gives 3 slots a week.
+- **#950** `schedule_auto_generate.ps1` registers this checkout. **#953** fail-first recipe.
+- Next: packaging (#951), then Phase M on the direct APIs (#952).
+
+**Verify:** `python -m unittest tests.test_backlog`; `py -m scripts.ops backlog --dry-run`.
+
 ## Previous — 2026-10-03 (Claude Code): wave 55 #944 #938 #940 #943 #941 #942
 
 - **#944** `py -m scripts.ops all` runs checks, analytics and the weekly review, each step once;

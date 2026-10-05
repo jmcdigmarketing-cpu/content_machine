@@ -120,7 +120,9 @@ def _news_fallback(
         return base, report
     if not lines:
         return base, report
-    report.update(reason="news fallback", lines=len(lines), kept_lines=list(lines))
+    before = str(report.get("reason") or "")
+    reason = "news fallback" if before in ("", "no web results") else f"news fallback ({before})"
+    report.update(reason=reason, lines=len(lines), kept_lines=list(lines))
     base[SIGNAL_NAME] = make_signal(
         connected=True,
         active=True,
@@ -199,6 +201,9 @@ def attach_web_research(
         )
         if not report["reason"]:
             report["reason"] = "ok" if kept else "nothing on-topic"
+        if not kept:
+            # #972: run 113 read 0 pages before the deadline and kept nothing.
+            return _news_fallback(base, report, angle=angle, topic=topic)
         if kept:
             base[SIGNAL_NAME] = make_signal(
                 connected=True,
@@ -262,10 +267,10 @@ def report_line(report: dict[str, Any] | None) -> str:
     reason = str(report.get("reason") or "")
     if reason in ("no web results", ""):
         return "Auto-research: no web results to read"
-    if reason == "news fallback":
+    if reason.startswith("news fallback"):
+        why = reason[len("news fallback") :].strip(" ()") or "no web results"
         return (
-            f"Auto-research: no web results - read {report.get('lines', 0)} Google News "
-            "headline(s) instead"
+            f"Auto-research: {why} - read {report.get('lines', 0)} Google News headline(s) instead"
         )
     return (
         f"Auto-research: {report.get('pages', 0)} page(s) read, {report.get('lines', 0)} line(s) kept, "

@@ -17,6 +17,65 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-05 (Claude Code) - wave 59: run 113's fixes, the sign-in in `ops all`, the Buffer pack
+
+**Prompt:** "next 5" with run 113 pasted (`python main.py`, Enter at the channel menu, "NBA
+preseason hot takes", a two-host debate, queued public); then "what's going on with the yt setup
+not working now? it was working fine before and now we need a website? ... how [can] it work
+again with buffer"; then, away from the keyboard: "let's ensure the script ops all is including
+that if isn't already. Plan out the next 15 and proceed with the next 5 stated above".
+
+**Answered:** nothing in the code broke YouTube. Google refused tapin's sign-in (Testing mode: 7
+days, #961), and run 113 went to "Default", whose old generic sign-in has no analytics permission
+- two separate faults. The website is only for publishing the consent screen; a weekly
+`oauth_setup` works without it. Buffer covers TikTok and Instagram; YouTube analytics still need
+the Google sign-in.
+
+**Why the list differs:** the recommended five (#958 #957 #49 #945 #969) moved to wave 60; run
+113's defects and the operator's `ops all` request came first, with #968 and #962.
+
+### Findings, with file:line
+- `core/ui.prompt_channel_selection:1865` defaulted to `CONTENT_CHANNEL_ID` -> "default", and the
+  settings are cached (`get_settings`), so a later change to the variable was ignored.
+- `scripts/ops.py` `BATCHES["all"]` never runs `check-youtube`; only `all-setup` does.
+- `core/facts/grounding._extract_mononyms` took any capitalised 4+ letter word in a sports script:
+  "Somebody", "You're", "Miami's".
+- `core/content_engine` returns `payload["description"]` from the first draft; the claim rewrite
+  (#322) changes only the script.
+- `core/auto_research.attach_web_research`: every page timing out kept nothing, and #964's
+  fallback ran only on "no web results".
+- `core/ui.display_fact_preview` cut at 8 lines - the 8th was a heading.
+- Footage was chosen from the angle's words only (`video/render_video.py:457` passes the angle).
+- **Found on the way:** `tests/test_backlog.py` dated drafts 2026-10-03 while the staleness gate
+  reads the real clock - red from 2026-10-05, on unmodified HEAD; the next push would have failed CI.
+- Live check: the footage folder scan lists only folders that hold clips, so the first harness
+  (empty folders) "found nothing" - a harness fault; with a clip in each, seed -> 2k26 and soccer -> EA FC.
+
+### Shipped
+1. **#970** Enter takes an explicit `CONTENT_CHANNEL_ID`, else the latest real channel run; Default
+   labelled and warned; a public upload on Default needs a yes.
+2. **#971** `youtube.oauth.sign_in_status`; batches that need the sign-in check once, skip
+   `sync-metrics` / `backfill` with the fix line, run the rest, exit 1; startup and `ops status` line.
+3. **#972** pronouns in `FUNCTION_WORDS`, contractions/possessives in grounding;
+   `youtube_meta.drop_unbacked_sentences` on the description; news fallback on nothing kept; the
+   preview drops a trailing heading. Plus the backlog test's clock.
+4. **#968** `publishing/crosspost.py`, `ops crosspost` / `list` / `done --run-id N`; its own store,
+   not the publish log (no platform column; every reader assumes YouTube) - a change from the plan.
+5. **#962** `set_footage_context` / `footage_context_for_run`: the run's topic and stored sport, tried
+   after the angle's words; no keywords for "semi-final" (every sport has one).
+
+### Audit
+39 new tests in five modules, **35 of 39 observed failing on unmodified code** (four guards: two
+menu cases, "a real unbacked name is still flagged", "the angle alone finds nothing"; one sign-in
+case errors there only because its patch target is new). Corpus +3 (85 -> 88). ruff clean; mypy
+121; suite default / reverse / shuffle green; 0 network attempts; `data/` and `output/` untouched.
+Live check: `ops all` with no sign-in -> one fix line, sync-metrics and backfill skipped, 14 steps
+run, exit 1; `ops crosspost` on a real 3 s render -> four files, list / done / list; footage seed ->
+2k26, soccer domain -> EA Sports FC.
+
+**Next 15** (operator): wave 59 above; wave 60 #958 #957 #49 #945 #969; wave 61 #973 #974 #551
+#339 #863.
+
 ## 2026-10-05 (Claude Code) - wave 58: research by need - known facts found for you, pasting only for what is new
 
 **Prompt (verbatim):** "can we improve the fact intake, fact generation, and automated research

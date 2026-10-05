@@ -311,3 +311,38 @@ def check_title_script_consistency(
         "warnings": warnings,
         "total": verification.total,
     }
+
+
+_DESC_SENTENCE = re.compile(r"(?<=[.!?])\s+")
+
+
+def drop_unbacked_sentences(description: str, claims: list[str]) -> tuple[str, list[str]]:
+    """(description, dropped): drop each sentence that restates an unbacked claim (#972).
+
+    Run 113's description said "Giannis and Bam look unstoppable in Heat preseason" as fact
+    after the claim rewrite had restated it in the script as a rumor - the description was
+    written with the first draft and never revisited. A sentence restates a claim when it
+    holds at least three quarters of the claim's content words. If every sentence would go,
+    the first is kept and attributed ("Reports say ...") rather than emptied.
+    """
+    from apis.topic_tokens import content_tokens
+
+    wanted = [set(content_tokens(c, min_len=3)) for c in claims or [] if str(c).strip()]
+    wanted = [w for w in wanted if len(w) >= 3]
+    text = (description or "").strip()
+    if not wanted or not text:
+        return description, []
+    sentences = [s for s in _DESC_SENTENCE.split(text) if s.strip()]
+    kept: list[str] = []
+    dropped: list[str] = []
+    for sentence in sentences:
+        have = set(content_tokens(sentence, min_len=3))
+        if any(len(w & have) / len(w) >= 0.75 for w in wanted):
+            dropped.append(sentence)
+        else:
+            kept.append(sentence)
+    if not dropped:
+        return description, []
+    if not kept:
+        return f"Reports say {sentences[0][0].lower()}{sentences[0][1:]}", []
+    return " ".join(kept), dropped

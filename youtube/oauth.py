@@ -142,6 +142,21 @@ def load_credentials(channel_id: str | None = None) -> Credentials | None:
     return creds if creds.valid else None
 
 
+def sign_in_status(channel_id: str | None = None) -> str:
+    """#971: "" when the channel's YouTube sign-in works for uploads and analytics, else one
+    line naming what is wrong and the command that fixes it. May refresh the token."""
+    cid = resolve_channel_id(channel_id)
+    fix = f"py -m youtube.oauth_setup --channel {cid}"
+    path = token_path_for_channel(cid)
+    if not os.path.isfile(path):
+        return f"No YouTube sign-in for {cid} ({path}) - run: {fix}"
+    if SCOPE_YT_ANALYTICS_READONLY not in _scopes_from_token_file(path):
+        return f"YouTube sign-in for {cid} lacks the analytics permission - run: {fix}"
+    if load_credentials(cid) is None:
+        return sign_in_problem(cid) or f"YouTube sign-in for {cid} is not usable - run: {fix}"
+    return ""
+
+
 def token_has_scope(channel_id: str | None, scope: str) -> bool:
     path = token_path_for_channel(channel_id)
     if not os.path.isfile(path):

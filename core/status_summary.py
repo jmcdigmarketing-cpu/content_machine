@@ -53,7 +53,16 @@ def _budget(_channel_id: str) -> str:
     return "Budget: " + summary_line()
 
 
+def _sign_in(channel_id: str) -> str:
+    """#971: the channel's YouTube sign-in, or what is wrong with it and the fix."""
+    from youtube.oauth import sign_in_status
+
+    problem = sign_in_status(channel_id)
+    return f"Sign-in: {problem}" if problem else f"Sign-in: ok ({channel_id})"
+
+
 FAMILIES: list[tuple[str, str, Callable[[str], str]]] = [
+    ("Sign-in", "ops check-youtube", _sign_in),
     ("Doctor", "ops doctor", _doctor),
     ("Keys", "ops secrets-doctor", _secrets),
     ("Health", "ops health", _health),

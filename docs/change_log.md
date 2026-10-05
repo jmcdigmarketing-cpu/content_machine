@@ -8,6 +8,26 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 59 — run 113's fixes, the sign-in in `ops all`, the Buffer pack - 2026-10-05
+
+*mypy 121; ruff 0.15.8 clean; corpus 88 of 88.*
+
+- **#970** Enter at the channel menu now picks the channel you last made a video for (or
+  `CONTENT_CHANNEL_ID` when set); "Default" says it is not a channel, and a public upload on it asks
+  first.
+- **#971** `py -m scripts.ops all` checks the YouTube sign-in first. When it is missing, expired or
+  lacks the analytics permission it prints the one command that fixes it, skips the two steps that
+  need it, and runs everything else. `ops status` and the start of `main.py` show the same line.
+- **#972** "Somebody", "You're" and "Miami's" are no longer reported as made-up names; the
+  description no longer states a claim the script had to hedge; when every page auto-research tries
+  times out it reads Google News headlines instead; the facts preview no longer ends on an empty
+  heading.
+- **#968** `py -m scripts.ops crosspost` writes a folder per rendered video for Buffer - the mp4,
+  the TikTok and Instagram captions (hashtags and the AI-disclosure line included) and the time to
+  post; `crosspost list` shows what is waiting, `crosspost done --run-id N` marks it posted.
+- **#962** Background footage follows the video's own topic and sport when the angle's wording
+  names neither (run 113's angle had dropped "NBA").
+
 ### Wave 58 — research by need: known facts found for you, pasting only for what is new - 2026-10-05
 
 *4,570 tests; mypy 121; ruff 0.15.8 clean; corpus 85 of 85.*

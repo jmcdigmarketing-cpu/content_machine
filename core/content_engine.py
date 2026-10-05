@@ -1001,6 +1001,22 @@ def _maybe_recenter_on_key_facts(
     return script
 
 
+def _final_description(description: str, before: Any, after: Any) -> str:
+    """#972: the description loses any sentence restating a claim the verifier did not back,
+    before or after the claim rewrite (the rewrite fixes the script, not the description)."""
+    from core.youtube_meta import drop_unbacked_sentences
+
+    claims = [
+        str(getattr(c, "claim", "") or "")
+        for v in (before, after)
+        for c in (getattr(v, "unsupported", None) or [])
+    ]
+    text, dropped = drop_unbacked_sentences(description, claims)
+    if dropped:
+        logger.info("Description: dropped %d unbacked sentence(s)", len(dropped))
+    return text
+
+
 def _expand_script(
     *,
     script: str,
@@ -1493,6 +1509,7 @@ def generate_content_package(
             verification.total,
             "; ".join(c.claim for c in verification.unsupported[:5]),
         )
+    verification_before = verification
     ver_box = {"v": verification}
 
     def _run_claim_rewrite(s: str):
@@ -1701,7 +1718,7 @@ def generate_content_package(
         "script": script,
         "speaker_turns": speaker_turns,
         "description": apply_description_extras(
-            payload.get("description") or "",
+            _final_description(payload.get("description") or "", verification_before, verification),
             channel_id,
             title=title,
             topic=topic,

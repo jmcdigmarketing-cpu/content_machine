@@ -143,14 +143,24 @@ def _domain_choose_folder(topic: str, folders: list[str], channel_id=None) -> st
     """
     try:
         from apis.topic_scorer import infer_topic_domain
-        from core.playlists import playlist_map
 
         domain = infer_topic_domain(topic or "")
-        rows = playlist_map(channel_id or "tapin")
     except Exception as exc:
         logger.debug("footage by domain skipped: %s", exc)
         return None
+    return _folder_for_domain(domain, folders, channel_id)
+
+
+def _folder_for_domain(domain: str, folders: list[str], channel_id=None) -> str | None:
+    """The footage folder of the playlist row whose `"domain"` is `domain`, or None."""
     if not domain or domain == "neutral":
+        return None
+    try:
+        from core.playlists import playlist_map
+
+        rows = playlist_map(channel_id or "tapin")
+    except Exception as exc:
+        logger.debug("footage by domain skipped: %s", exc)
         return None
     by_name = {os.path.basename(f).casefold(): f for f in folders}
     for row in rows:
@@ -212,7 +222,8 @@ sport because it looks similar.
 def choose_footage(
     topic: str, folders: list[str], channel_id=None, *, use_llm: bool = True
 ) -> tuple[str | None, str]:
-    """(folder, how) - how is keyword / alias / domain / llm - or (None, "none")."""
+    """(folder, how) - how is keyword / alias / domain / seed / run-domain / llm - or
+    (None, "none"). `seed` and `run-domain` come from `set_footage_context` (#962)."""
     for how, pick in (
         ("keyword", lambda: _keyword_choose_folder(topic, folders)),
         ("alias", lambda: _alias_choose_folder(topic, folders, channel_id)),
@@ -221,6 +232,19 @@ def choose_footage(
         folder = pick()
         if folder:
             return folder, how
+    seed, domain = _contexts.get(topic or "", ("", ""))
+    if seed and seed != topic:
+        for pick in (
+            lambda: _keyword_choose_folder(seed, folders),
+            lambda: _alias_choose_folder(seed, folders, channel_id),
+            lambda: _domain_choose_folder(seed, folders, channel_id),
+        ):
+            folder = pick()
+            if folder:
+                return folder, "seed"
+    folder = _folder_for_domain(domain, folders, channel_id)
+    if folder:
+        return folder, "run-domain"
     if use_llm:
         folder = _ai_choose_folder(topic, folders)
         if folder:
@@ -229,6 +253,40 @@ def choose_footage(
 
 
 _choices: dict[tuple[str, str, tuple[str, ...]], tuple[str | None, str]] = {}
+# #962: angle text -> (the run's own topic, the sport its facts name). Run 113's angle had
+# dropped the "NBA" the operator typed; the soccer runs named only a tournament stage.
+_contexts: dict[str, tuple[str, str]] = {}
+
+
+def set_footage_context(topic: str, *, seed: str = "", domain: str = "") -> None:
+    """Tell the chooser what run `topic` belongs to - tried after the topic's own words."""
+    _contexts[topic or ""] = (seed or "", domain or "")
+
+
+def footage_context_for_run(content_run_id: int | None) -> tuple[str, str]:
+    """(input topic, sport) of a saved run: the stored topic domain (#866, read with the
+    pasted facts), else the input topic's own. ("", "") when there is no run."""
+    if not content_run_id:
+        return "", ""
+    try:
+        import json
+
+        from apis.topic_scorer import infer_topic_domain
+        from storage.repositories.content_runs import get_content_run_repository
+
+        run = get_content_run_repository().get(int(content_run_id))
+        if run is None:
+            return "", ""
+        seed = str(getattr(run, "input_topic", "") or "")
+        features = json.loads(getattr(run, "features_json", "") or "{}")
+        stored = (features.get("domains") or {}) if isinstance(features, dict) else {}
+        domain = str(stored.get("topic") or "") if isinstance(stored, dict) else ""
+        if not domain or domain == "neutral":
+            domain = infer_topic_domain(seed)
+        return seed, "" if domain == "neutral" else domain
+    except Exception as exc:
+        logger.debug("footage context for run %s skipped: %s", content_run_id, exc)
+        return "", ""
 
 
 def _remember(
@@ -260,6 +318,7 @@ def footage_source_id(folder: str | None, how: str) -> str:
 
 def reset_footage_choices() -> None:
     _choices.clear()
+    _contexts.clear()
 
 
 process_state.register_reset("assets.local_provider.footage_choices", reset_footage_choices)

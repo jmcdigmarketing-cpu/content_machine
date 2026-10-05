@@ -48,6 +48,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `corrections` | Re-check published videos' sources and file a correction dossier |
 | `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
+| `crosspost` | Buffer pack for TikTok + Instagram: [list \| done --run-id N] (#968) |
 | `daily-brief` | Morning one-shot: scoreboard, fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `dedupe-seed` | Duplicate seeded history from re-seeding (#927); --apply removes |

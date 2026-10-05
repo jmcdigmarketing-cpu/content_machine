@@ -1305,6 +1305,15 @@ def run_media_only(
             # an unqualified command means the caller reports it as successful.
             ffmpeg_commands[label] = command
 
+    # #962: footage may follow the run's own topic and sport when the angle names neither.
+    try:
+        from assets.local_provider import footage_context_for_run, set_footage_context
+
+        seed, run_domain = footage_context_for_run(content_run_id)
+        if seed or run_domain:
+            set_footage_context(topic, seed=seed, domain=run_domain)
+    except Exception as exc:
+        logger.debug("footage context skipped: %s", exc)
     _, background = render_vertical_video(
         mp3_path,
         topic,

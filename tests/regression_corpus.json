@@ -1501,6 +1501,56 @@
         "truthy": true
       },
       "why": "the coverage guard and event research match names by these tokens; an accent made a headline miss"
+    },
+    {
+      "id": "somebody-is-not-a-name",
+      "item": 972,
+      "source": "run 113: grounding flagged 'Somebody' ('Somebody has to be the East favorite')",
+      "call": "core.facts.grounding:find_ungrounded_entities",
+      "args": [
+        "You're punishing them. Somebody has to be the East favorite, and Miami's the team. NBA preseason.",
+        "Miami Heat NBA preseason"
+      ],
+      "expect": {
+        "excludes_any": [
+          "Somebody",
+          "You're",
+          "Miami's"
+        ]
+      },
+      "why": "a sentence-initial pronoun or contraction counted as an unbacked name and cost the grounding score"
+    },
+    {
+      "id": "pronouns-are-function-words",
+      "item": 972,
+      "source": "run 113: the sibling in apis/topic_tokens, which every topic matcher reads",
+      "call": "apis.topic_tokens:content_tokens",
+      "args": [
+        "Somebody has to be the East favorite"
+      ],
+      "expect": {
+        "excludes_any": [
+          "somebody"
+        ]
+      },
+      "why": "indefinite pronouns were in no shared stop list"
+    },
+    {
+      "id": "zero-pages-says-deadline-and-fallback",
+      "item": 972,
+      "source": "run 113: 'Auto-research: 0 page(s) read ... (deadline hit)' with nothing in its place",
+      "call": "core.auto_research:report_line",
+      "args": [
+        {
+          "reason": "news fallback (deadline)",
+          "lines": 3,
+          "pages": 0
+        }
+      ],
+      "expect": {
+        "contains": "deadline - read 3 Google News headline(s) instead"
+      },
+      "why": "a run whose pages all timed out kept no research; the Google News fallback now covers it and says why"
     }
   ]
 }

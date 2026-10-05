@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import re
 
+from apis.topic_tokens import FUNCTION_WORDS
+
 # Initial-capital word (excludes ALL-CAPS acronyms, which are usually known).
 # Hyphenated compounds count as ONE word: "Take-Two", "Spider-Man", "Jean-Luc".
 _CAP = r"[A-Z][a-z]+(?:-[A-Z]?[a-z]+)*"
@@ -427,9 +429,11 @@ def _extract_mononyms(text: str, *, covered_spans: list[tuple[int, int]]) -> lis
         start, end = match.span()
         if any(start >= s and end <= e for s, e in covered_spans):
             continue
-        name = match.group(1)
+        # #972: "Miami's" is Miami; "You're" and "Somebody" are not names (run 113).
+        name = re.sub(r"['’]s$", "", match.group(1))
         key = name.lower()
-        if len(name) < 4 or key in _MONONYM_SKIP:
+        head = re.split(r"['’]", key)[0]
+        if len(name) < 4 or key in _MONONYM_SKIP or head in FUNCTION_WORDS:
             continue
         if key not in seen:
             seen.add(key)

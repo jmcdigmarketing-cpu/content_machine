@@ -113,6 +113,13 @@ class BatchTableTests(unittest.TestCase):
 
 
 class BatchRunTests(unittest.TestCase):
+    def setUp(self):
+        # #971: these tests are about step order; a working sign-in is assumed (its own
+        # behaviour is tests/test_signin_health.py).
+        p = patch("youtube.oauth.sign_in_status", return_value="")
+        p.start()
+        self.addCleanup(p.stop)
+
     def test_ops_all_runs_each_step_once(self):
         from scripts.ops import COMMANDS
 

@@ -876,9 +876,14 @@ def display_fact_preview(
 
     # Show verified facts first (what the LLM actually used as source-of-truth)
     if verified_lines:
-        for line in verified_lines[:8]:
+        shown = verified_lines[:8]
+        while shown and shown[-1].endswith(":"):
+            shown.pop()  # #972: a heading whose lines were cut off says nothing
+        for line in shown:
             short = _elide(line, fact_display_width())
             print_fn(f"  {short}")
+        if len(verified_lines) > len(shown):
+            print_fn(f"  (+{len(verified_lines) - len(shown)} more fact line(s))")
     else:
         print_fn("  (no verified game/news data — script based on topic angle only)")
 
@@ -1862,11 +1867,44 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
     return needs_review
 
 
+_GENERIC_CHANNEL = "default"
+_GENERIC_NOTE = "not a channel - no niche, the generic sign-in"
+
+
+def _last_used_channel(candidates: list[str]) -> str:
+    """#970: the real channel with the most recent run, or ""."""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        repo = get_content_run_repository()
+        latest = {
+            cid: max((int(r.id or 0) for r in repo.list_for_channel(cid)), default=0)
+            for cid in candidates
+        }
+    except Exception as exc:
+        logger.debug("last-used channel unavailable: %s", exc)
+        return ""
+    best = max(latest.items(), key=lambda item: item[1], default=("", 0))
+    return best[0] if best[1] > 0 else ""
+
+
+def preferred_channel(ids: list[str]) -> str:
+    """#970: Enter's channel - an explicit CONTENT_CHANNEL_ID, else the last real channel
+    used, else the configured default. Run 113 took "default" on Enter."""
+    explicit = (os.getenv("CONTENT_CHANNEL_ID") or "").strip()
+    if explicit and explicit != _GENERIC_CHANNEL and explicit in ids:
+        return explicit
+    last = _last_used_channel([c for c in ids if c != _GENERIC_CHANNEL])
+    if last:
+        return last
+    return resolve_channel_id(explicit or get_settings().content_channel_id)
+
+
 def prompt_channel_selection(*, print_fn=emit, input_fn=ask_text) -> str:
     """Interactive channel picker; returns resolved channel_id."""
     profiles = get_channel_profiles()
     ids = list_channel_ids()
-    default_id = resolve_channel_id(get_settings().content_channel_id)
+    default_id = preferred_channel(ids)
 
     subsection("Channel", print_fn)
     default_index = ids.index(default_id) if default_id in ids else 0
@@ -1874,17 +1912,20 @@ def prompt_channel_selection(*, print_fn=emit, input_fn=ask_text) -> str:
         profile = profiles[cid]
         marker = " *" if i - 1 == default_index else "  "
         domain = f" — {profile.domain}" if profile.domain != "neutral" else ""
-        print_fn(f"{marker}{i}. {profile.name} ({cid}){domain}")
+        note = f"  ({_GENERIC_NOTE})" if cid == _GENERIC_CHANNEL else ""
+        print_fn(f"{marker}{i}. {profile.name} ({cid}){domain}{note}")
 
     hint = str(default_index + 1)
     choice = input_fn(f"  Select 1-{len(ids)} [Enter = {hint}]: ").strip()
-    if not choice:
-        return default_id
-    if choice.isdigit():
-        idx = int(choice) - 1
-        if 0 <= idx < len(ids):
-            return ids[idx]
-    return default_id
+    picked = default_id
+    if choice.isdigit() and 0 <= int(choice) - 1 < len(ids):
+        picked = ids[int(choice) - 1]
+    if picked == _GENERIC_CHANNEL and len(ids) > 1:
+        print_fn(
+            f"  Using 'Default' - {_GENERIC_NOTE}. Uploads go to whichever account that sign-in "
+            "is; pick a channel for its niche, footage and schedule."
+        )
+    return picked
 
 
 @dataclass
@@ -2364,6 +2405,12 @@ def prompt_upload_plan(
         print_fn("  Public is held unlisted first so you can eyeball the watch URL.")
     priv = input_fn(f"  Select 1-3 [{default_key}]: ").strip() or default_key
     privacy_status = privacy_map.get(priv, fallback_priv)
+    if privacy_status == "public" and (channel_id or _GENERIC_CHANNEL) == _GENERIC_CHANNEL:
+        # #970: run 113 went public on 'default' because Enter picked it.
+        print_fn(f"  'Default' is {_GENERIC_NOTE}: a public upload goes to that account.")
+        sure = input_fn("  Upload public on Default anyway? [y / Enter = private]: ")
+        if str(sure or "").strip().lower() not in ("y", "yes"):
+            privacy_status = "private"
 
     now = datetime.now(timezone.utc)
     if timing == "2":

@@ -53,25 +53,24 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-05 · **HEAD at write:** `f3929ae` (#961) + the wave 58 commit (`git log -1`)
-· **Tree:** clean after the commit.
+**Written:** 2026-10-05 · **HEAD at write:** `fd49136` (wave 58) + the wave 59 commit
+(`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** who's who is `core/facts/entity_lookup` (Wikidata + Wikipedia, keyless,
-`entity_research` signal: "Reference data" lines at signal tier, "Reference text" at web tier).
-Settled/fresh is `core/facts/freshness` (`features.research`), read by the facts prompt
-(`core/ui._research_verdict`) and `ops batch-review`. `tests/__init__.py` pins every research flag
-off - a live script that imports `tests` must turn them back on. `content_tokens` folds accents
-now (`fold_accents`). The verifier's `weak_lines` = brief-tier lines. mypy **121**.
+**Read before editing:** the channel default is `core/ui.preferred_channel` (explicit
+`CONTENT_CHANNEL_ID`, else the latest real channel run). Batches that need the YouTube sign-in check
+`youtube.oauth.sign_in_status` once and skip `_SIGN_IN_STEPS` (`scripts/ops.py`). Crossposts live in
+`data/crosspost_<channel>.json` (`publishing/crosspost.py`), not the publish log. Footage takes the
+run's topic/sport from `assets/local_provider.set_footage_context`, set in `run_media_only`.
+Who's-who / settled-fresh are wave 58 (`core/facts/entity_lookup`, `freshness`). mypy **121**.
 
 **Defects first:**
-- The script could state a team or title from memory, and a brief written from memory counted as
-  support (#966); "Pokémon" tokenized as "pok" + "mon" (fixed); `search_query` still splits
-  "Ghost of Yotei" at "of" for every signal (#969, needs a replay check).
-- No real Wikidata/Wikipedia/Google News call was made here (proxy) - the operator's run is the proof.
+- Run 113 went to "Default" (generic sign-in, no analytics scope) and was queued **public** as job
+  50 - the operator must cancel it before running the worker; tapin's sign-in is refused (#961).
+- `tests/test_backlog.py` had a fixed draft date that the real-clock staleness gate turned red on
+  2026-10-05 (fixed); look for the same shape before trusting a date in a fixture.
 
-**Shipped:** #963 #964 #965 #966 #967 (+ accent folding). Suite **4,570**, 0 network attempts,
-`data/` clean; corpus 85; backlog **240 numbered open**, highest #969. Phase M is Buffer now:
-next **#968 ops crosspost · #962 · #958 · #957 · #49**; #952's direct APIs parked.
+**Shipped:** #970 #971 #972 #968 #962. Corpus 88, 0 network attempts, `data/` clean; backlog **240
+numbered open**, highest #974. Next: **#958 · #957 · #49 · #945 · #969**, then #973 #974 #551 #339 #863.
 
 ## Slot — Cursor
 

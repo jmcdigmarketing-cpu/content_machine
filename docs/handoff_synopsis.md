@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-05: wave 58, next five
+# Handoff synopsis — 2026-10-05: wave 59, next five
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-05 (Claude Code): wave 58 #963 #964 #965 #966 #967 (research by need)
+## Last wave — 2026-10-05 (Claude Code): wave 59 #970 #971 #972 #968 #962
+
+From run 113 (an NBA Short that went to "Default", queued public) and the operator's ask.
+
+- **#970** Enter at the channel menu takes the last real channel; "Default" is labelled, warned,
+  and a public upload on it needs a yes. `CONTENT_CHANNEL_ID=tapin` in `.env` still wins.
+- **#971** `ops all` checks the YouTube sign-in first: one line with the fix, `sync-metrics` and
+  `backfill` skipped, the rest run. Same line at startup and in `ops status`.
+- **#972** "Somebody" is not a name; the description drops a sentence restating an unbacked claim;
+  auto-research falls back to Google News when every page times out; no empty preview heading.
+- **#968** `ops crosspost` - a Buffer folder per rendered video (mp4, TikTok / Instagram captions,
+  slot); `crosspost list`, `crosspost done --run-id N`.
+- **#962** footage follows the run's own topic and sport when the angle names neither.
+- A test's fixed date (`test_backlog`) turned red with time; fixed.
+
+**Verify:** `python -m unittest tests.test_channel_menu tests.test_signin_health tests.test_crosspost`;
+`py -m scripts.ops all`; `py -m scripts.ops crosspost`.
+
+## Previous — 2026-10-05 (Claude Code): wave 58 #963 #964 #965 #966 #967 (research by need)
 
 The operator: "i shouldnt have to fact intake" a known topic (what team LeBron is on), but would
 paste for a game that just came out - "obviously not hardcoded".
@@ -53,19 +71,6 @@ From the operator's Studio screenshots and first $10 ad campaign (76.3% of 28-da
 
 **Verify:** `python -m unittest tests.test_paid_views tests.test_footage_match tests.test_packaging`;
 `py -m scripts.ops footage-gaps`; `py -m scripts.ops packaging`.
-
-## Previous — 2026-10-03 (Claude Code): wave 56 #949 #950 #953
-
-- **#949** `py -m scripts.ops backlog`: fresh best bets onto the open slots of the next two weeks
-  (news first, dropped past 3 days; evergreen after), drafted; every draft that clears the gates
-  (grade B+, no unsupported claim, no weak hook) renders and is scheduled; the rest wait for
-  `batch-review`. `--dry-run` spends nothing; `backlog list`; `backlog pull --run-id N` vetoes.
-  The worker uploads ~6 a day; YouTube publishes at the slot with the PC off. tapin's gaming
-  schedule gives 3 slots a week.
-- **#950** `schedule_auto_generate.ps1` registers this checkout. **#953** fail-first recipe.
-- Next: packaging (#951), then Phase M on the direct APIs (#952).
-
-**Verify:** `python -m unittest tests.test_backlog`; `py -m scripts.ops backlog --dry-run`.
 
 ## Pipeline order (operator)
 
@@ -130,7 +135,7 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); the policy site and Google's Publish app (reminder 2026-10-07); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
+1. **Operator:** cancel job 50 (`scripts.queue_manage --channel default --cancel N`), `CONTENT_CHANNEL_ID=tapin` in `.env`, `py -m youtube.oauth_setup --channel tapin`; then a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); the policy site and Google's Publish app (reminder 2026-10-07); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
@@ -142,7 +147,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #968 ops crosspost (Phase M through Buffer) · #962 · #958 · #957 · #49. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #958 · #957 · #49 · #945 · #969 (wave 60), then #973 #974 #551 #339 #863. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

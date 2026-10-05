@@ -2652,13 +2652,38 @@ def batch_leaves(name: str) -> list[str]:
     return seen
 
 
+# #971: the batch steps that talk to YouTube with the channel's sign-in (mailbag reads
+# comments with the API key; the reports read what the sync stored).
+_SIGN_IN_STEPS = frozenset({"sync-metrics", "backfill"})
+
+
+def _batch_sign_in(name: str, args: argparse.Namespace) -> str:
+    """The sign-in problem for a batch that needs the sign-in, else "" (#971)."""
+    if name == "all-setup" or not _SIGN_IN_STEPS & set(batch_leaves(name)):
+        return ""
+    try:
+        from youtube.oauth import sign_in_status
+
+        return sign_in_status(getattr(args, "channel", None))
+    except Exception as exc:  # a check, never the reason a batch stops
+        return f"YouTube sign-in could not be checked ({exc})"
+
+
 def _run_batch(name: str, args: argparse.Namespace) -> int:
     stop_on_failure = BATCHES[name][2]
     ran: list[str] = []
     failures: list[tuple[str, int]] = []
+    sign_in = _batch_sign_in(name, args)
+    skipped: list[str] = []
+    if sign_in:
+        print(f"\n== {name}: sign-in\n  ! {sign_in}")
+        print(f"  The steps that need it ({', '.join(sorted(_SIGN_IN_STEPS))}) are skipped.")
     for step, overrides in _expand(name):
-        if step in ran:
+        if step in ran or step in skipped:
             continue  # `ops all` syncs once, prints the scoreboard once
+        if sign_in and step in _SIGN_IN_STEPS:
+            skipped.append(step)
+            continue
         if step not in COMMANDS:
             print(f"Unknown batch step: {step}")
             return 1
@@ -2678,12 +2703,14 @@ def _run_batch(name: str, args: argparse.Namespace) -> int:
                 print(f"Stopped: '{step}' exited with {code}")
                 return code
             failures.append((step, code))
+    if skipped:
+        print(f"\n{name}: skipped {', '.join(skipped)} - {sign_in}")
     if failures:
         named = ", ".join(f"{step} (exit {code})" for step, code in failures)
         print(f"\n{name}: {len(failures)} of {len(ran)} steps reported a problem: {named}")
         return failures[0][1]
     print(f"\n{name}: {len(ran)} steps done")
-    return 0
+    return 1 if skipped else 0
 
 
 def _batch_command(name: str) -> CommandFn:
@@ -2696,6 +2723,43 @@ def _batch_command(name: str) -> CommandFn:
 
 for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
     _register(_batch_name, _batch_help)(_batch_command(_batch_name))
+
+
+@_register("crosspost", "Buffer pack for TikTok + Instagram: [list | done --run-id N] (#968)")
+def cmd_crosspost(args: argparse.Namespace) -> int:
+    """`ops crosspost` packs the newest rendered videos; `crosspost list`; `crosspost done
+    --run-id N` marks one posted."""
+    from config.channels import resolve_channel_id
+    from publishing import crosspost
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    action = str(getattr(args, "target", "") or "").strip().lower()
+    if action == "list":
+        print("\n".join(crosspost.waiting_lines(channel)))
+        return 0
+    if action == "done":
+        run_id = int(getattr(args, "run_id", 0) or 0)
+        if not run_id:
+            print("crosspost done needs the run: py -m scripts.ops crosspost done --run-id N")
+            return 2
+        if crosspost.mark_posted(channel, run_id):
+            print(f"Run {run_id} marked posted to TikTok and Instagram.")
+            return 0
+        print(f"Run {run_id} was never packed - run: py -m scripts.ops crosspost")
+        return 1
+    packed = crosspost.pack_new(channel)
+    if not packed:
+        print(f"Crosspost - {channel}: no new rendered video to pack.")
+        print("\n".join(crosspost.waiting_lines(channel)))
+        return 0
+    print(f"Crosspost - {channel}: {len(packed)} video(s) ready for Buffer")
+    for item in packed:
+        note = "" if item.reel_ok else "  (TikTok only - too long for a Reel)"
+        print(f"  run {item.run_id}: {item.folder}{note}")
+    print(
+        "  Open each folder: video.mp4 + tiktok.txt / instagram.txt into Buffer, slot.txt says when."
+    )
+    return 0
 
 
 @_register("backlog", "Fresh best bets -> drafts -> render the passes -> schedule two weeks (#949)")

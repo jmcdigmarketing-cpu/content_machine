@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
@@ -157,6 +158,55 @@ def sign_in_status(channel_id: str | None = None) -> str:
     return ""
 
 
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _signed_in_at(path: str) -> str:
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return ""
+    return str(data.get("signed_in_at") or "") if isinstance(data, dict) else ""
+
+
+def _reminder_days() -> float:
+    try:
+        return float(os.getenv("SIGN_IN_REMINDER_DAYS", "6") or 6)
+    except ValueError:
+        return 6.0
+
+
+def sign_in_reminder(channel_id: str | None = None) -> str:
+    """#974: "" unless the channel's sign-in is `SIGN_IN_REMINDER_DAYS` (6) days old or more.
+
+    A Testing-mode consent screen ends a sign-in after 7 days (#961). The age comes from the
+    `signed_in_at` stamp a fresh sign-in writes (a refresh rewrites the file, so its mtime
+    cannot say); a token from before the stamp says nothing. 0 turns the reminder off - for
+    once the consent screen is published (#956)."""
+    limit = _reminder_days()
+    if limit <= 0:
+        return ""
+    cid = resolve_channel_id(channel_id)
+    stamp = _signed_in_at(token_path_for_channel(cid))
+    try:
+        when = datetime.fromisoformat(stamp) if stamp else None
+    except ValueError:
+        return ""
+    if when is None:
+        return ""
+    when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+    age = (_now() - when).total_seconds() / 86400
+    if age < limit:
+        return ""
+    return (
+        f"YouTube sign-in for {cid} is {int(age)} days old - a Testing-mode sign-in stops at 7 "
+        f"days; renew now: py -m youtube.oauth_setup --channel {cid} "
+        "(SIGN_IN_REMINDER_DAYS=0 once the consent screen is published)"
+    )
+
+
 def token_has_scope(channel_id: str | None, scope: str) -> bool:
     path = token_path_for_channel(channel_id)
     if not os.path.isfile(path):
@@ -164,8 +214,12 @@ def token_has_scope(channel_id: str | None, scope: str) -> bool:
     return scope in _scopes_from_token_file(path)
 
 
-def save_credentials(creds: Credentials, channel_id: str | None = None) -> str:
+def save_credentials(
+    creds: Credentials, channel_id: str | None = None, *, signed_in: bool = False
+) -> str:
+    """Write the token; `signed_in` stamps a fresh sign-in, a refresh keeps the stamp (#974)."""
     path = token_path_for_channel(channel_id)
+    stamp = _now().isoformat() if signed_in else _signed_in_at(path)
     payload = {
         "token": creds.token,
         "refresh_token": creds.refresh_token,
@@ -174,6 +228,8 @@ def save_credentials(creds: Credentials, channel_id: str | None = None) -> str:
         "client_secret": creds.client_secret,
         "scopes": list(creds.scopes or oauth_scopes()),
     }
+    if stamp:
+        payload["signed_in_at"] = stamp
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
     _SIGN_IN_PROBLEMS.pop(path, None)
@@ -248,7 +304,7 @@ def run_interactive_oauth(
     scopes = oauth_scopes(include_analytics=include_analytics)
     flow = InstalledAppFlow.from_client_secrets_file(secrets, scopes)
     creds = flow.run_local_server(port=0)
-    path = save_credentials(creds, channel_id)
+    path = save_credentials(creds, channel_id, signed_in=True)
     print(f"Token saved for channel '{channel_id}': {path}")
     print(f"  Scopes: {', '.join(scopes)}")
     return path

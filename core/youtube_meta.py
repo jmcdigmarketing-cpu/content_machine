@@ -316,14 +316,17 @@ def check_title_script_consistency(
 _DESC_SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
 
-def drop_unbacked_sentences(description: str, claims: list[str]) -> tuple[str, list[str]]:
+def drop_unbacked_sentences(
+    description: str, claims: list[str], *, label: str = ""
+) -> tuple[str, list[str]]:
     """(description, dropped): drop each sentence that restates an unbacked claim (#972).
 
     Run 113's description said "Giannis and Bam look unstoppable in Heat preseason" as fact
     after the claim rewrite had restated it in the script as a rumor - the description was
     written with the first draft and never revisited. A sentence restates a claim when it
     holds at least three quarters of the claim's content words. If every sentence would go,
-    the first is kept and attributed ("Reports say ...") rather than emptied.
+    the first is kept and attributed ("Reports say ...") rather than emptied. With a
+    `label` (#339's unconfirmed mode) each such sentence is kept behind the label instead.
     """
     from apis.topic_tokens import content_tokens
 
@@ -339,6 +342,8 @@ def drop_unbacked_sentences(description: str, claims: list[str]) -> tuple[str, l
         have = set(content_tokens(sentence, min_len=3))
         if any(len(w & have) / len(w) >= 0.75 for w in wanted):
             dropped.append(sentence)
+            if label:
+                kept.append(f"{label} {sentence}")
         else:
             kept.append(sentence)
     if not dropped:

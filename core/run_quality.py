@@ -200,6 +200,18 @@ def build_quality(
     except Exception as exc:
         logger.debug("ungrounded numeric split skipped: %s", exc)
     try:
+        from core.facts.date_math import find_elapsed_mismatches
+
+        facts_text = str(features.get("grounding_text") or features.get("facts") or "")
+        mismatches = find_elapsed_mismatches(script, facts_text)
+        if mismatches:
+            quality["date_mismatches"] = mismatches[:8]  # #551
+    except Exception as exc:
+        logger.debug("date arithmetic check skipped: %s", exc)
+    research = features.get("research")
+    if isinstance(research, dict) and research.get("script_mode") == "unconfirmed":
+        quality["script_mode"] = "unconfirmed"  # #339
+    try:
         from core.facts.grounding import find_plausibility_outliers
 
         facts = str(features.get("grounding_text") or features.get("facts") or "")

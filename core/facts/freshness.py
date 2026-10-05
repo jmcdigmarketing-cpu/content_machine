@@ -198,6 +198,24 @@ def attach_fresh_research(
         return base, {"need": "settled", "why": [], "main": "", "looked_up": 0}
 
 
+def script_mode(verdict: dict[str, Any] | None, fact_lines: int) -> str:
+    """#339: "unconfirmed" for a fresh topic with fewer than `UNCONFIRMED_MAX_FACTS` (5)
+    verified fact lines - the script labels what is not confirmed instead of dropping it -
+    else "standard"."""
+    if not verdict or verdict.get("need") != "fresh":
+        return "standard"
+    return "unconfirmed" if fact_lines < _env_int("UNCONFIRMED_MAX_FACTS", 5) else "standard"
+
+
+def mode_note(verdict: dict[str, Any] | None) -> str:
+    """`ops batch-review`: a draft written in unconfirmed mode says so."""
+    if not verdict or verdict.get("script_mode") != "unconfirmed":
+        return ""
+    return (
+        "written in unconfirmed mode (fresh topic, thin facts) - claims are labelled, not dropped"
+    )
+
+
 def review_note(verdict: dict[str, Any] | None, *, pasted: int) -> str:
     """#965: a fresh draft nobody pasted facts for, named in `ops batch-review`."""
     if not verdict or verdict.get("need") != "fresh" or pasted > 0:

@@ -154,6 +154,51 @@ def summarize(runs: list[Any]) -> dict[str, Any]:
     return summary
 
 
+VERDICT_RUNS = 10
+
+
+def verdict(summary: dict[str, Any]) -> dict[str, str] | None:
+    """#863: keep, retune, give longer or switch off - once `VERDICT_RUNS` runs stored their
+    kept lines (the ones whose cites can be counted); None before then."""
+    runs = int(summary.get("cite_measurable") or 0)
+    if runs < VERDICT_RUNS:
+        return None
+    rows = [r for r in summary.get("rows") or [] if r.get("cited") is not None]
+    lines = sum(int(r.get("lines") or 0) for r in rows)
+    cited = sum(int(r.get("cited") or 0) for r in rows)
+    deadline = sum(1 for r in rows if "deadline" in str(r.get("reason") or ""))
+    basis = f"{cited} of {lines} kept line(s) cited over {runs} run(s)"
+    if cited == 0:
+        call, act = "switch off", "nothing it kept backed a claim - set AUTO_RESEARCH_ENABLED=false"
+    elif lines and cited / lines < 0.10:
+        call, act = "retune", "few kept lines are used - read fewer pages: AUTO_RESEARCH_URLS=2"
+    elif deadline * 2 >= len(rows):
+        call, act = (
+            "longer",
+            (f"the deadline cut {deadline} of {len(rows)} run(s) - raise AUTO_RESEARCH_DEADLINE_S"),
+        )
+    else:
+        call, act = "keep", "it earns its time - leave it on"
+    return {"call": call, "line": f"#863 verdict: {call} ({basis}) - {act}"}
+
+
+def _runs(channel_id: str) -> list[Any]:
+    from storage.repositories.content_runs import get_content_run_repository
+
+    return list(get_content_run_repository().list_for_channel(channel_id) or [])
+
+
+def verdict_line(channel_id: str) -> str:
+    """`ops status`: the verdict once it is due, else ""."""
+    try:
+        runs = _runs(channel_id)
+    except Exception as exc:
+        logger.debug("auto-research verdict skipped: %s", exc)
+        return ""
+    found = verdict(summarize(runs))
+    return f"Auto-research {found['line']} (ops auto-research)" if found else ""
+
+
 def render(summary: dict[str, Any], channel_id: str = "") -> str:
     head = f"Auto-research across stored runs{f' ({channel_id})' if channel_id else ''}"
     n = summary["with_report"]
@@ -184,9 +229,14 @@ def render(summary: dict[str, Any], channel_id: str = "") -> str:
             f"    #{row['run_id']}: {row['pages']} page(s), {row['lines']} line(s), "
             f"cited {cited} [{row['reason']}] {row['topic']}"
         )
-    if n < 10:
+    found = verdict(summary)
+    if found:
+        lines.append(f"  {found['line']}")
+    else:
+        left = VERDICT_RUNS - int(summary["cite_measurable"])
         lines.append(
-            f"  {10 - n} more run(s) before the #863 verdict (keep, retune or switch off)."
+            f"  {left} more run(s) with kept lines before the #863 verdict "
+            "(keep, retune or switch off)."
         )
     return "\n".join(lines + research)
 

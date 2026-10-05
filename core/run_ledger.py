@@ -167,6 +167,10 @@ def render_dossier(run_id: int) -> str:
         # A number the operator never sees cannot change a decision.
         for span in quality.get("numeric_outliers") or []:
             lines.append(f"  implausible amount: {span}")
+        for note in quality.get("date_mismatches") or []:  # #551
+            lines.append(f"  date check: {note}")
+        if quality.get("script_mode") == "unconfirmed":  # #339
+            lines.append("  script mode: unconfirmed (fresh topic, thin facts - claims labelled)")
         if quality.get("competitor_title_duplicate"):
             lines.append(f"  title: {quality['competitor_title_duplicate']}")
         if quality.get("topic_saturation"):

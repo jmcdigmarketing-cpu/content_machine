@@ -8,6 +8,24 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 61 — script honesty: title frames, a sign-in reminder, date arithmetic, unconfirmed mode - 2026-10-05
+
+*mypy 121; ruff 0.15.8 clean; corpus 98 of 98.*
+
+- **#973** A title no longer ends on an "X, not Y" frame - "Heat's preseason chemistry is a trap,
+  not a peak" becomes "Heat's preseason chemistry is a trap" - and the title prompt asks for none.
+- **#974** From day 6 of a YouTube sign-in, `py -m scripts.ops all`, the start of `main.py` and
+  `ops status` remind you to renew it before Google's 7-day Testing limit ends it; `ops all`
+  still runs every step. Starts with your next sign-in. `SIGN_IN_REMINDER_DAYS=0` turns it off.
+- **#551** "It's been 18 months since ..." is checked against the date in the sentence and the
+  dates in the facts; a wrong count is flagged with the other unbacked specifics and shown in the
+  run's dossier.
+- **#339** A brand-new topic with few facts is written in unconfirmed mode: the script says what
+  is confirmed and labels what is not ("not confirmed yet") instead of leaving the news out, and
+  the description does the same. `UNCONFIRMED_MAX_FACTS` sets "few" (5).
+- **#863** `py -m scripts.ops auto-research` makes the keep / retune / switch-off call itself once
+  ten runs carry the numbers, and `ops status` repeats it.
+
 ### Wave 60 — measurement: kept keys, an organic rate, a first-day alert, a views prediction - 2026-10-05
 
 *mypy 121; ruff 0.15.8 clean; corpus 93 of 93.*

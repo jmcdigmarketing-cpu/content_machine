@@ -26,14 +26,13 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-10-05 wave 60 (measurement): **#958** a metrics refresh keeps what other
-writers stored, **#957** an organic engaged rate for boosted videos, **#49** a first-day alert,
-**#945** a 7-day-views prediction frozen at publish, **#969** signals search whole names ("Ghost of
-Yotei", "Pokémon").
+**Just landed** - 2026-10-05 wave 61 (script honesty): **#973** titles lose an "X, not Y" frame,
+**#974** a reminder from day 6 before a Testing-mode sign-in expires, **#551** "18 months since"
+checked against the dates, **#339** a fresh topic with thin facts labels what is not confirmed
+instead of dropping it, **#863** `ops auto-research` makes its own keep / retune / switch-off call.
 
-**Before that** - wave 59: **#970 #971 #972 #968 #962** · wave 58: **#963-#967** · wave 57: **#954 #947
-#955 #946 #951 #956** · wave 56: **#949 #950 #953** · wave 55: **#944 #938 #940 #943 #941 #942** ·
-wave 54: **#934-#937 #114 #939**. Earlier: [roadmap_archive.md](roadmap_archive.md)
+**Before that** - wave 60: **#958 #957 #49 #945 #969** · wave 59: **#970 #971 #972 #968 #962** · wave 58: **#963-#967** · wave 57: **#954 #947
+#955 #946 #951 #956** · wave 56: **#949 #950 #953** · wave 55: **#944 #938 #940 #943 #941 #942**. Earlier: [roadmap_archive.md](roadmap_archive.md)
 and [planning_log.md](planning_log.md).
 
 ### The five weaknesses - where each stands (2026-10-03, after wave 53)
@@ -43,7 +42,7 @@ is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost | - |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic, **#339** unconfirmed mode | #977 does unconfirmed mode hold up |
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
 | 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport | - |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out | #914 an emoji font off Windows · #786 footage and your music tracks (operator; `ops footage-gaps` lists what) |
@@ -51,23 +50,21 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**Wave 60 (2026-10-05)** was the first half of the operator's next 15, as planned. #969's
-replay check could not run here (no stored runs, and `ops replay` re-scores saved signals rather
-than re-asking); a before/after sweep of `search_query` over 203 name-shaped strings stood in and
-found the connector path broken three ways, all fixed. Wave 61, as planned:
+**Waves 60 and 61 (2026-10-05)** finished the operator's next 15 as planned. Wave 61's build
+filed four follow-ons, which lead the next five with the one check that needs a real video:
 
-1. **#973 titles get the contrast-frame check** `[S]` - run 113's "a trap, not a peak".
-2. **#974 a sign-in reminder before a Testing-mode sign-in expires** `[S]` - one line in `ops all` and at startup from day 6.
-3. **#551 date arithmetic** `[M]` - "18 months since" must match the dates in the facts.
-4. **#339 "unconfirmed" as a script mode** `[M]` - a fresh topic with thin facts says what is not confirmed instead of dropping it.
-5. **#863 the auto-research verdict** `[S]` - computed by `ops auto-research` once ten runs store their lines.
+1. **#976 angles get the contrast-frame check** `[S]` - run 113's frame came from the angle; #973 only cuts it from the title.
+2. **#978 the date check on titles and descriptions** `[S]` - #551 reads the script only.
+3. **#979 Buffer posts in the weekly report** `[S]` - `ops crosspost done` is recorded and counted nowhere.
+4. **#977 does unconfirmed mode hold up** `[S]` - count its runs and whether their labelled claims were later confirmed.
+5. **#975 the organic engaged rate on a real boosted video** `[S]` - #957 was built without a live call; check it after the next boosted sync.
 
 **#959** a promotion ledger only if the operator runs ads again.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
 
-**Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863 needs ten; #963-#965
+**Waiting on runs:** #849 fact-fit needs 5+ measured runs carrying it; #863's call prints itself at ten; #963-#965
 (does a settled topic still get a paste?) needs ten runs in `ops auto-research`.
 
 **Waiting on the operator, not on code:** cancel job 50 before running the worker

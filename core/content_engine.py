@@ -188,6 +188,17 @@ def _regroundable(ungrounded: list[str]) -> list[str]:
     return [item for item in ungrounded or [] if not str(item).startswith(NEGATIVE_PREFIX)]
 
 
+# #339: a fresh topic with thin facts - label what is not confirmed instead of dropping it.
+UNCONFIRMED_BLOCK = (
+    "\n⚠ UNCONFIRMED MODE: this topic is new and the VERIFIED FACTS are thin. Say plainly what "
+    "is confirmed (only what the facts state) and what is not confirmed yet. Anything beyond the "
+    "facts - leaks, reports, early impressions, numbers nobody has published - is labelled in the "
+    "sentence that says it ('not confirmed yet', 'early reports say', 'unconfirmed') rather than "
+    "left out, so the viewer gets the news and knows how solid it is. Never state it as fact; "
+    "never invent a number to fill the gap. Close by naming what would confirm it."
+)
+
+
 def _build_prompts(
     *,
     topic: str,
@@ -209,6 +220,7 @@ def _build_prompts(
     extra_directive: str = "",
     intent: str = "",
     uncovered_event: str = "",
+    script_mode: str = "standard",
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
@@ -446,6 +458,8 @@ You must:
     from core.event_coverage import prompt_block as event_prompt_block
 
     event_warning = event_prompt_block(uncovered_event)
+    if script_mode == "unconfirmed":  # #339
+        event_warning += UNCONFIRMED_BLOCK
 
     from core.channel_persona import human_context_block
 
@@ -783,7 +797,14 @@ def _claim_regen_enabled() -> bool:
 
 
 def _maybe_rewrite_unsupported_claims(
-    script, verification, corpus_text, topic, priority_facts, weak_lines=None
+    script,
+    verification,
+    corpus_text,
+    topic,
+    priority_facts,
+    weak_lines=None,
+    *,
+    script_mode: str = "standard",
 ):
     """Act on the claim verifier's verdict: rewrite unsupported claims out (or attribute them).
 
@@ -809,6 +830,16 @@ def _maybe_rewrite_unsupported_claims(
         "add any new facts, names, numbers, or events. Keep the hook, voice, stance, "
         'and roughly the same length. Return JSON only: {"script": "..."}'
     )
+    if script_mode == "unconfirmed":  # #339: the news stays, labelled
+        system_prompt = (
+            "You are revising a short-form video script about a NEW topic whose facts are "
+            "thin. You are given VERIFIED FACTS (the only source of truth) and UNSUPPORTED "
+            "CLAIMS the script states as fact. Do not remove them: restate each as not "
+            "confirmed yet, in the sentence that says it ('not confirmed yet', 'early "
+            "reports say', 'unconfirmed'), so the viewer knows how solid it is. Do NOT add "
+            "any new facts, names, numbers, or events. Keep the hook, voice, stance, and "
+            'roughly the same length. Return JSON only: {"script": "..."}'
+        )
     user_prompt = (
         f"TOPIC: {topic}\n\nVERIFIED FACTS:\n{corpus_text}\n\n"
         f"UNSUPPORTED CLAIMS (remove or attribute each):\n{claims_block}\n\nSCRIPT:\n{script}"
@@ -1001,7 +1032,19 @@ def _maybe_recenter_on_key_facts(
     return script
 
 
-def _final_description(description: str, before: Any, after: Any) -> str:
+def _script_mode_for(
+    research_need: dict[str, Any] | None, verified_facts: str, key_facts: list[str]
+) -> str:
+    """#339: the script mode from the run's settled/fresh verdict and how many verified fact
+    lines (plus pasted key facts) the script has."""
+    from core.facts.freshness import script_mode
+
+    return script_mode(research_need, _fact_line_count(verified_facts) + len(key_facts or []))
+
+
+def _final_description(
+    description: str, before: Any, after: Any, *, script_mode: str = "standard"
+) -> str:
     """#972: the description loses any sentence restating a claim the verifier did not back,
     before or after the claim rewrite (the rewrite fixes the script, not the description)."""
     from core.youtube_meta import drop_unbacked_sentences
@@ -1011,9 +1054,13 @@ def _final_description(description: str, before: Any, after: Any) -> str:
         for v in (before, after)
         for c in (getattr(v, "unsupported", None) or [])
     ]
-    text, dropped = drop_unbacked_sentences(description, claims)
+    label = "Not confirmed yet:" if script_mode == "unconfirmed" else ""
+    text, dropped = drop_unbacked_sentences(description, claims, label=label)
     if dropped:
-        logger.info("Description: dropped %d unbacked sentence(s)", len(dropped))
+        logger.info(
+            "Description: %s %d unbacked sentence(s)", "labelled" if label else "dropped",
+            len(dropped),
+        )  # fmt: skip
     return text
 
 
@@ -1145,6 +1192,7 @@ def generate_content_package(
     source_urls: list[str] | None = None,
     relevance_corpus: str = "",
     voice_mode: str = "",
+    research_need: dict[str, Any] | None = None,
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -1224,6 +1272,9 @@ def generate_content_package(
 
     _event = event_coverage(seed_topic or topic, _verified_facts, clean_key_facts)
     _uncovered = str(_event["name"]) if _event and not _event["covered"] else ""
+    _mode = _script_mode_for(research_need, _verified_facts, clean_key_facts)
+    if _mode == "unconfirmed":
+        logger.info("Script mode: unconfirmed (fresh topic, thin facts) - claims labelled (#339)")
     if _uncovered:
         logger.warning("No fact mentions %r - the script prompt says not to guess", _uncovered)
 
@@ -1256,6 +1307,7 @@ def generate_content_package(
         extra_directive=extra_directive,
         intent=resolved_intent,
         uncovered_event=_uncovered,
+        script_mode=_mode,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude
@@ -1514,8 +1566,9 @@ def generate_content_package(
 
     def _run_claim_rewrite(s: str):
         new, ver = _maybe_rewrite_unsupported_claims(
-            s, ver_box["v"], corpus.factual_text, topic, clean_key_facts, brief_lines
-        )
+            s, ver_box["v"], corpus.factual_text, topic, clean_key_facts, brief_lines,
+            script_mode=_mode,
+        )  # fmt: skip
         ver_box["v"] = ver
         return new
 
@@ -1718,7 +1771,12 @@ def generate_content_package(
         "script": script,
         "speaker_turns": speaker_turns,
         "description": apply_description_extras(
-            _final_description(payload.get("description") or "", verification_before, verification),
+            _final_description(
+                payload.get("description") or "",
+                verification_before,
+                verification,
+                script_mode=_mode,
+            ),
             channel_id,
             title=title,
             topic=topic,
@@ -1738,6 +1796,7 @@ def generate_content_package(
         "prompt_version": current_prompt_version(),
         "brief_version": research_brief.version if research_brief else "",
         "word_count": count_spoken_words(script),
+        "script_mode": _mode,  # #339
         "ungrounded_entities": ungrounded,
         "trade_warnings": trade_warnings,
         "tier_warnings": tier_warnings,

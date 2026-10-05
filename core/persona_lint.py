@@ -59,6 +59,35 @@ def contrast_frames(text: str) -> list[str]:
     return hits
 
 
+# #973: a title's version of the frame is barer - "X is a trap, not a peak", "the defense is
+# the story, not his scoring", "isn't a peak, it's a trap". Run 113's title passed the script
+# patterns, which need an intensifier.
+_TITLE_TAIL = re.compile(
+    r",\s*not\s+(?:a|an|the|his|her|their|its|just)?\s*[\w'’ -]{2,40}[.!?]?\s*$", re.I
+)
+_TITLE_ANSWERED = re.compile(
+    rf"\b{_NEG}\s+(?:a|an|the)?\s*[\w'’-]+\s*[,;:\u2014\u2013-]\s*{_SAID}\b", re.I
+)
+
+
+def title_contrast_frame(title: str) -> str:
+    """The "X, not Y" frame in a title (#973), or ""."""
+    flat = (title or "").replace("\u2019", "'").replace("\u2018", "'").strip()
+    if not flat:
+        return ""
+    for pattern in (_TITLE_TAIL, _TITLE_ANSWERED, *_FRAME_IN_SENTENCE):
+        match = pattern.search(flat)
+        if match:
+            return match.group(0).strip(" ,")
+    return ""
+
+
+def drop_contrast_tail(title: str) -> str:
+    """The title without a trailing ", not Y" clause; unchanged when it has none."""
+    text = (title or "").strip()
+    return _TITLE_TAIL.sub("", text).rstrip(" ,;:-") or text
+
+
 # Spoken-number ranges that #327 already protects. Do not treat them as filler.
 _RANGE_RE = re.compile(r"\b\d+\s*-\s*\d+\s*(%|years?|months?)\b", re.I)
 

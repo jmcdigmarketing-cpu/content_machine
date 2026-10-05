@@ -597,6 +597,9 @@ def find_ungrounded_entities(script: str, grounding_text: str) -> list[str]:
             continue  # every distinctive token is backed by the facts
         ungrounded.append(entity)
     ungrounded.extend(find_ungrounded_numeric(script, grounding_text))
+    from core.facts.date_math import find_elapsed_mismatches
+
+    ungrounded.extend(find_elapsed_mismatches(script, grounding_text))  # #551
     return ungrounded
 
 

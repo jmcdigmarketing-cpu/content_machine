@@ -158,4 +158,13 @@ def build_status_lines(channel_id: str) -> list[str]:
     except Exception as exc:
         logger.debug("first-day lines skipped: %s", exc)
 
+    try:
+        from analytics.auto_research_report import verdict_line
+
+        line = verdict_line(channel_id)  # #863: once ten runs carry it
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("auto-research verdict line skipped: %s", exc)
+
     return lines

@@ -53,24 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-05 · **HEAD at write:** `a592c51` (wave 59) + the wave 60 commit
-(`git log -1`) · **Tree:** clean after the commit; wave 61 comes next as its own commit.
+**Written:** 2026-10-05 · **HEAD at write:** `60f8d5e` (wave 60) + the wave 61 commit
+(`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** a metrics refresh now merges onto the stored blob
-(`youtube_metrics.merge_metric_snapshots`) - a key you stop writing stays at its last value.
-`core.engagement.engaged_rate` reads `organic_engaged_rate` first (#957). The first-day verdict is
-judged once, only when a sync captures the 24h snapshot (`analytics/first_day.check`). The ledger
-freezes `views_7d` beside `engaged_rate`. `title_phrases` reads Unicode letters and "the" only after
-another connector; `search_query` uses connectors. mypy **121**.
+**Read before editing:** `youtube.oauth.save_credentials` carries `signed_in_at` through refreshes
+(`signed_in=True` only from `run_interactive_oauth`); `sign_in_reminder` never skips a step.
+`core/facts/date_math` feeds `find_elapsed_mismatches` into the ungrounded list. Unconfirmed mode is
+chosen in `content_engine._script_mode_for` from the verdict the pipeline now passes as
+`research_need`, and comes back as `content["script_mode"]`. Titles pass `_drop_frame` in
+`_clean_title`. Wave 60: metrics merge onto the stored blob; `engaged_rate()` prefers organic. mypy **121**.
 
 **Defects first:**
-- #957's per-source `estimatedMinutesWatched` was never seen from the live API (docs unreachable
-  here) - #975; a refusal loses nothing else.
-- The connector sweep found `title_phrases` cutting accented names ("Ghost of Y") in the who's-who
-  lookup since wave 58 (fixed). The live check found old 24h snapshots about to be alerted (fixed).
+- None found in wave 61's own build beyond what the tests drove. Open: the angle generator still
+  writes "X, not Y" angles (#976); #957 unseen on the live API (#975); a sign-in from before #974
+  has no stamp, so no reminder until the operator signs in again.
 
-**Shipped:** #958 #957 #49 #945 #969. Corpus 93, 0 network attempts, `data/` clean; highest #975.
-Next: **#973 · #974 · #551 · #339 · #863** (wave 61).
+**Shipped:** #973 #974 #551 #339 #863 (verdict automated; closes when applied). Corpus 98,
+0 network attempts, `data/` clean; highest #979. Next: **#976 · #978 · #979 · #977 · #975**.
 
 ## Slot — Cursor
 

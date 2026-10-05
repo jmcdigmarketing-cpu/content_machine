@@ -178,12 +178,30 @@ def _fit_title(title: str, *, angle: str) -> str:
     return title[: _TITLE_MAX - 3].rsplit(" ", 1)[0] + "…"
 
 
+_FRAME_CUT_MIN = 20
+
+
 def _clean_title(raw: str, *, fallback: str, angle: str = "") -> str:
     title = (raw or "").strip().strip('"').strip("'")
     title = re.sub(r"\s+", " ", title)
     if not title or _SLOP_RE.search(title):
         return fallback
+    title = _drop_frame(title, angle)
     return _fit_title(title, angle=angle)
+
+
+def _drop_frame(title: str, angle: str) -> str:
+    """#973: "X is a trap, not a peak" -> "X is a trap" when the cut still stands as a title
+    (20+ characters) and keeps the angle."""
+    from core.persona_lint import drop_contrast_tail, title_contrast_frame
+
+    if not title_contrast_frame(title):
+        return title
+    cut = drop_contrast_tail(title)
+    if cut == title or len(cut) < _FRAME_CUT_MIN or (angle and not _title_keeps_angle(cut, angle)):
+        return title
+    logger.info("Title contrast frame cut: %r -> %r", title, cut)
+    return cut
 
 
 def generate_title(
@@ -218,6 +236,7 @@ RULES:
 - Accurate > catchy. No clickbait templates.
 - BANNED phrases: {", ".join(_SLOP_PATTERNS[:8])}, etc.
 - No ellipsis. No "My Hot Take" framing. No questions as the whole title.
+- No contrast frame ("X, not Y", "a trap, not a peak", "isn't X, it's Y") - say what it is.
 - Return ONLY the title line — no quotes, no JSON, no explanation.
 
 Title:"""

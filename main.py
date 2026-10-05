@@ -130,6 +130,12 @@ def main():
         _sign_in = sign_in_status(channel_id)
         if _sign_in:
             print(f"  ! {_sign_in}")
+        else:
+            from youtube.oauth import sign_in_reminder
+
+            _reminder = sign_in_reminder(channel_id)  # #974
+            if _reminder:
+                print(f"  ~ {_reminder}")
     except Exception as exc:
         logger.debug("sign-in check skipped: %s", exc)
     from core.themes import set_channel_theme

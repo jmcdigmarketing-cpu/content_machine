@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-05: wave 60, measurement
+# Handoff synopsis — 2026-10-05: wave 61, script honesty
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-05 (Claude Code): wave 60 #958 #957 #49 #945 #969 (measurement)
+## Last wave — 2026-10-05 (Claude Code): wave 61 #973 #974 #551 #339 #863 (script honesty)
+
+The second half of the operator's next 15, as planned.
+
+- **#973** a title loses an "X, not Y" frame ("a trap, not a peak" -> "a trap"); the angle that
+  carried run 113's frame is #976.
+- **#974** from day 6 of a sign-in, `ops all`, startup and `ops status` say renew now; every step
+  still runs. Only a sign-in made after this update is stamped - sign in once to start it.
+- **#551** "18 months since" is checked against the dates in the sentence and the facts; a wrong
+  count joins the flagged specifics and the dossier.
+- **#339** a fresh topic with thin facts is written in unconfirmed mode - what is not confirmed is
+  labelled, not dropped; the dossier and `ops batch-review` say so.
+- **#863** `ops auto-research` makes its own keep / retune / switch-off call at ten runs.
+
+**Verify:** `python -m unittest tests.test_title_frames tests.test_signin_reminder tests.test_date_math`;
+`py -m scripts.ops status`; `py -m scripts.ops auto-research`.
+
+## Previous — 2026-10-05 (Claude Code): wave 60 #958 #957 #49 #945 #969 (measurement)
 
 The first half of the operator's next 15, as planned.
 
@@ -44,27 +61,6 @@ From run 113 (an NBA Short that went to "Default", queued public) and the operat
 
 **Verify:** `python -m unittest tests.test_channel_menu tests.test_signin_health tests.test_crosspost`;
 `py -m scripts.ops all`; `py -m scripts.ops crosspost`.
-
-## Previous — 2026-10-05 (Claude Code): wave 58 #963 #964 #965 #966 #967 (research by need)
-
-The operator: "i shouldnt have to fact intake" a known topic (what team LeBron is on), but would
-paste for a game that just came out - "obviously not hardcoded".
-
-- **#963** who's who on every run: Wikidata (current team / title / head coach, release date,
-  developer, platforms - dated, signal tier) and the Wikipedia intro, keyless, for up to four
-  names in the topic and angle (aliases: "Wemby"). Batch drafts get it too.
-- **#964** settled or fresh from evidence (a release in 30 days, a new or missing article, a 48 h
-  news burst, event research on a miss); a fresh topic gets recent-news research for its name;
-  no web results -> Google News headlines instead of nothing.
-- **#965** the facts prompt: "Settled ... nothing to paste" or "Fresh ... a link would help".
-  `ops batch-review` names fresh drafts nobody pasted for.
-- **#966** no team or title from memory: prompt rule, the verifier asks about affiliations and a
-  brief-only line backs nothing strict, the expansion sees the verified facts.
-- **#967** `ops auto-research` counts pastes per verdict. Accents fold in `content_tokens`.
-- Phase M changed mid-wave: Buffer for TikTok and Instagram (#968); #952's direct APIs parked.
-
-**Verify:** `python -m unittest tests.test_entity_lookup tests.test_freshness tests.test_research_prompt`;
-a run on a known topic; `py -m scripts.ops auto-research`.
 
 ## Pipeline order (operator)
 
@@ -132,7 +128,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
 1. **Operator:** cancel job 50 (`scripts.queue_manage --channel default --cancel N`), `CONTENT_CHANNEL_ID=tapin` in `.env`, `py -m youtube.oauth_setup --channel tapin`; then a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); the policy site and Google's Publish app (reminder 2026-10-07); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
-   · #863 waits on ten runs (E3) · #851 best-bet domain.
+   · #863's call prints itself at ten runs (E3).
 3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #975 the organic rate on a real boosted video.
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
@@ -141,7 +137,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #973 · #974 · #551 · #339 · #863 (wave 61). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #976 · #978 · #979 · #977 · #975. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

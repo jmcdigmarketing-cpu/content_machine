@@ -2669,6 +2669,18 @@ def _batch_sign_in(name: str, args: argparse.Namespace) -> str:
         return f"YouTube sign-in could not be checked ({exc})"
 
 
+def _batch_sign_in_reminder(name: str, args: argparse.Namespace) -> str:
+    """#974: a Testing-mode sign-in about to expire, for a batch that needs the sign-in."""
+    if name == "all-setup" or not _SIGN_IN_STEPS & set(batch_leaves(name)):
+        return ""
+    try:
+        from youtube.oauth import sign_in_reminder
+
+        return sign_in_reminder(getattr(args, "channel", None))
+    except Exception:  # a reminder, never the reason a batch stops
+        return ""
+
+
 def _run_batch(name: str, args: argparse.Namespace) -> int:
     stop_on_failure = BATCHES[name][2]
     ran: list[str] = []
@@ -2678,6 +2690,10 @@ def _run_batch(name: str, args: argparse.Namespace) -> int:
     if sign_in:
         print(f"\n== {name}: sign-in\n  ! {sign_in}")
         print(f"  The steps that need it ({', '.join(sorted(_SIGN_IN_STEPS))}) are skipped.")
+    else:
+        reminder = _batch_sign_in_reminder(name, args)
+        if reminder:  # #974: said before it expires; every step still runs
+            print(f"\n== {name}: sign-in\n  ~ {reminder}")
     for step, overrides in _expand(name):
         if step in ran or step in skipped:
             continue  # `ops all` syncs once, prints the scoreboard once

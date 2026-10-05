@@ -17,6 +17,57 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-05 (Claude Code) - wave 61: script honesty - title frames, sign-in reminder, date arithmetic, unconfirmed mode, the auto-research call
+
+**Prompt:** "complete wave 60 and 61" - the second half of the next 15, after wave 60 (`60f8d5e`,
+CI green on both branches).
+
+**Why the list matches:** wave 59's plan unchanged. #863's verdict could not be read from real
+runs here (the operator's run history is not in this container), so the call is computed by the
+code from the same summary and prints itself once ten runs carry it; the item stays open until the
+operator applies it.
+
+### Findings, with file:line
+- `core/persona_lint.contrast_frames:41` needs an intensifier and runs on the script only; run
+  113's title "a trap, not a peak" came from the angle (`title_generator._repair_title_to_angle`
+  falls back to it), so the angle generator is the source - #976.
+- `youtube/oauth.load_credentials:129` saves the token on every refresh, so the file's mtime
+  cannot give the sign-in's age; a stamp written at sign-in and carried through refreshes can.
+- `core/facts/grounding.find_ungrounded_entities:583` checks names and numbers, never the
+  arithmetic between a count and a date.
+- `core/content_engine._maybe_rewrite_unsupported_claims:785` and `youtube_meta.drop_unbacked_sentences`
+  only remove or attribute; nothing chose labelling over removal for a new topic with thin facts.
+- `analytics/auto_research_report.render` printed "N more runs before the #863 verdict" and then
+  nothing - no rule made the call.
+
+### Shipped
+1. **#973** `title_contrast_frame` / `drop_contrast_tail`; a title rule; `_clean_title` cuts a
+   frame when 20+ characters and the angle remain (the angle fallback passes through it too).
+2. **#974** `signed_in_at` stamped at sign-in, kept on refresh; `sign_in_reminder` from day 6 in
+   `ops all` (every step still runs), startup and `ops status`; `SIGN_IN_REMINDER_DAYS=0` off.
+3. **#551** `core/facts/date_math.find_elapsed_mismatches`: same-sentence dates and topic-sharing
+   dated fact lines (written, ISO, bare year), one unit or 25% tolerance; into the ungrounded list,
+   `quality.date_mismatches` and the dossier.
+4. **#339** `freshness.script_mode` (fresh and < 5 fact lines); an UNCONFIRMED MODE prompt block,
+   a restate-not-remove rewrite, "Not confirmed yet:" in the description; in the verdict, quality,
+   dossier and `ops batch-review`. The standard prompt is unchanged.
+5. **#863** `auto_research_report.verdict`: off / retune / longer / keep at ten runs with kept lines;
+   `ops status` repeats it.
+
+### Audit
+46 new tests in five modules, **44 of 46 observed failing on unmodified code** (two guards: a cut
+too short to stand, standard mode adds no block). Corpus +5 (93 -> 98), all 5 failing on HEAD.
+ruff clean; mypy 121; suite default / reverse / shuffle green; 0 network attempts; `data/` and
+`output/` untouched. Live check: run 113's title -> "Heat's preseason chemistry is a trap"; a
+token stamped 6 days ago -> `ops all` prints the reminder and runs sync-metrics and backfill (exit
+0), the stamp survives a refresh; "6 months since" the Feb 2025 trade and "three weeks ago" for a
+3-day-old game flagged, "seven years since 2019" not; a fresh topic with 2 fact lines -> unconfirmed;
+12 synthetic runs with 6 of 36 lines cited -> "#863 verdict: keep".
+
+**Next five:** #976 angles get the frame check · #978 the date check on titles and descriptions ·
+#979 Buffer posts in the weekly report · #977 does unconfirmed mode hold up · #975 the organic
+rate on a real boosted video.
+
 ## 2026-10-05 (Claude Code) - wave 60: measurement - kept keys, organic rate, first-day alert, views prediction, whole names
 
 **Prompt:** "complete wave 60 and 61" - the ten items planned in wave 59's next 15. This is

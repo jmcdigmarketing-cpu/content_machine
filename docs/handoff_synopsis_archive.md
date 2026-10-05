@@ -7,6 +7,27 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-05 (Claude Code): wave 58 #963 #964 #965 #966 #967 (research by need)
+
+The operator: "i shouldnt have to fact intake" a known topic (what team LeBron is on), but would
+paste for a game that just came out - "obviously not hardcoded".
+
+- **#963** who's who on every run: Wikidata (current team / title / head coach, release date,
+  developer, platforms - dated, signal tier) and the Wikipedia intro, keyless, for up to four
+  names in the topic and angle (aliases: "Wemby"). Batch drafts get it too.
+- **#964** settled or fresh from evidence (a release in 30 days, a new or missing article, a 48 h
+  news burst, event research on a miss); a fresh topic gets recent-news research for its name;
+  no web results -> Google News headlines instead of nothing.
+- **#965** the facts prompt: "Settled ... nothing to paste" or "Fresh ... a link would help".
+  `ops batch-review` names fresh drafts nobody pasted for.
+- **#966** no team or title from memory: prompt rule, the verifier asks about affiliations and a
+  brief-only line backs nothing strict, the expansion sees the verified facts.
+- **#967** `ops auto-research` counts pastes per verdict. Accents fold in `content_tokens`.
+- Phase M changed mid-wave: Buffer for TikTok and Instagram (#968); #952's direct APIs parked.
+
+**Verify:** `python -m unittest tests.test_entity_lookup tests.test_freshness tests.test_research_prompt`;
+a run on a known topic; `py -m scripts.ops auto-research`.
+
 ## Previous — 2026-10-04 (Claude Code): wave 57 #954 #947 #955 #946 #951 #956 (#948 closed)
 
 From the operator's Studio screenshots and first $10 ad campaign (76.3% of 28-day views were ads).

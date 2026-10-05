@@ -1648,6 +1648,77 @@
         "equals": "Reasons"
       },
       "why": "'the' joins a name only after another connector ('Lord of the Rings')"
+    },
+    {
+      "id": "run113-title-contrast-frame",
+      "item": 973,
+      "source": "run 113 (2026-10-04): the title was 'Heat's preseason chemistry is a trap, not a peak'",
+      "call": "core.persona_lint:title_contrast_frame",
+      "args": [
+        "Heat's preseason chemistry is a trap, not a peak"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the script's contrast-frame patterns need an intensifier and never read the title"
+    },
+    {
+      "id": "run113-title-frame-cut",
+      "item": 973,
+      "source": "#973 sibling: the title generator's cleaner, which the LLM title and the angle fallback both pass",
+      "call": "core.title_generator:_clean_title",
+      "args": [
+        "Heat's preseason chemistry is a trap, not a peak"
+      ],
+      "kwargs": {
+        "fallback": "fallback",
+        "angle": "Heat preseason chemistry trap"
+      },
+      "expect": {
+        "equals": "Heat's preseason chemistry is a trap"
+      },
+      "why": "a framed title shipped; the ', not Y' tail is cut when the rest still holds the angle"
+    },
+    {
+      "id": "run113-tail-cut-helper",
+      "item": 973,
+      "source": "#973 sibling: the shared tail cutter",
+      "call": "core.persona_lint:drop_contrast_tail",
+      "args": [
+        "Heat's preseason chemistry is a trap, not a peak"
+      ],
+      "expect": {
+        "equals": "Heat's preseason chemistry is a trap"
+      },
+      "why": "one cutter for every caller"
+    },
+    {
+      "id": "elapsed-years-against-the-year-named",
+      "item": 551,
+      "source": "#551: 'N years since <year>' was never checked against the year it names",
+      "call": "core.facts.date_math:find_elapsed_mismatches",
+      "args": [
+        "It's been 40 years since 2019 for them.",
+        ""
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "grounding checked names and numbers, never the arithmetic between them"
+    },
+    {
+      "id": "elapsed-mismatch-reaches-grounding",
+      "item": 551,
+      "source": "#551 sibling: the ungrounded list the reground pass reads",
+      "call": "core.facts.grounding:find_ungrounded_entities",
+      "args": [
+        "It's been 40 years since 2019 for them.",
+        ""
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a wrong count joins the specifics the script must fix"
     }
   ]
 }

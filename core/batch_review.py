@@ -252,6 +252,11 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     note = review_note(meta.get("research"), pasted=int(meta.get("key_facts_count") or 0))
     if note:
         print_fn(f"    ? {note}")
+    from core.facts.freshness import mode_note
+
+    mode = mode_note(meta.get("research"))  # #339
+    if mode:
+        print_fn(f"    ~ {mode}")
     blocking = _blocking_claims(draft)
     for claim in blocking[:3]:
         print_fn(f"    ! unsupported: {claim}")

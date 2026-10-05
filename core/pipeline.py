@@ -1000,8 +1000,11 @@ def run_pipeline(
         key_facts=key_facts or [],
         source_urls=source_urls or [],
         relevance_corpus=relevance_corpus,
+        research_need=research_need,
         **voice_kwargs,
     )
+    if content.get("script_mode") == "unconfirmed":  # #339: drafts, review, dossier read it
+        research_need = {**(research_need or {}), "script_mode": "unconfirmed"}
     result.timings["length_preset"] = preset.choice
     result.timings["content_package"] = time.perf_counter() - t_content
 

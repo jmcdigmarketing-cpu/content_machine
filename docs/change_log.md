@@ -8,6 +8,26 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 60 — measurement: kept keys, an organic rate, a first-day alert, a views prediction - 2026-10-05
+
+*mypy 121; ruff 0.15.8 clean; corpus 93 of 93.*
+
+- **#958** A metrics sync no longer throws away numbers other steps stored for a video (lifetime
+  views, thumbnail reach); the fresh numbers replace only what they cover.
+- **#957** A video with paid views gets an engaged rate without the ad viewers, worked out from
+  views and minutes watched by traffic source. Everything that learns from the engaged rate uses
+  it. Videos with no paid views are unchanged.
+- **#49** A first-day alert: the first sync after a video's first day compares its organic views
+  with the channel's usual first day. Far below (under half) or far above (over double) prints a
+  line in the sync and in `py -m scripts.ops status` for a week, and sends a
+  `first_day_anomaly` event when `EVENT_WEBHOOK_URL` is set. Thresholds: `FIRST_DAY_LOW`,
+  `FIRST_DAY_HIGH`, `FIRST_DAY_MIN_BASELINE`.
+- **#945** Each published video also gets a 7-day-views prediction from its script's hook and
+  authenticity scores, frozen at publish; `py -m scripts.ops predictions` shows how far off it runs.
+- **#969** Signals search the whole name - "Ghost of Yotei", "League of Legends", "What Remains of
+  Edith Finch" - not its first word; accented names ("Ghost of Yōtei", "Pokémon") are no longer cut
+  at the accent.
+
 ### Wave 59 — run 113's fixes, the sign-in in `ops all`, the Buffer pack - 2026-10-05
 
 *mypy 121; ruff 0.15.8 clean; corpus 88 of 88.*

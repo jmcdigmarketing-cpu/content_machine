@@ -236,6 +236,57 @@ def _fetch_views_by_source_day(
     return [[day, paid[day]] for day in sorted(paid)], by_source
 
 
+def _fetch_watch_by_source(
+    video_id: str, service: Any, start_date: str, end_date: str
+) -> dict[str, tuple[int, float]] | None:
+    """{traffic source: (views, minutes watched)} for one video, or None (#957)."""
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="views,estimatedMinutesWatched",
+                dimensions="insightTrafficSourceType",
+                filters=f"video=={video_id}",
+            )
+            .execute()
+        )
+    except Exception as exc:
+        logger.debug("watch time by source failed for %s: %s", video_id, exc)
+        return None
+    out: dict[str, tuple[int, float]] = {}
+    for row in _named_rows(resp or {}):
+        try:
+            source = str(row["insightTrafficSourceType"])
+            views, minutes = int(float(row["views"])), float(row["estimatedMinutesWatched"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        old_views, old_minutes = out.get(source, (0, 0.0))
+        out[source] = (old_views + views, old_minutes + minutes)
+    return out
+
+
+def organic_engaged_rate(
+    average_view_percentage: float, watch: dict[str, tuple[int, float]]
+) -> float | None:
+    """#957: the average view % without the paid viewers, as a 0..1 rate, or None.
+
+    organic % = total % x (organic minutes / organic views) / (all minutes / all views) -
+    the video's length cancels out. None when either side has no views or minutes.
+    """
+    all_views = sum(v for v, _m in watch.values())
+    all_minutes = sum(m for _v, m in watch.values())
+    organic = [(v, m) for source, (v, m) in watch.items() if source not in PAID_SOURCES]
+    org_views = sum(v for v, _m in organic)
+    org_minutes = sum(m for _v, m in organic)
+    if not (average_view_percentage and all_views and all_minutes and org_views and org_minutes):
+        return None
+    ratio = (org_minutes / org_views) / (all_minutes / all_views)
+    return round(min(1.0, average_view_percentage / 100.0 * ratio), 4)
+
+
 def fetch_daily_paid_views(
     youtube_video_id: str, *, channel_id: str | None = None, start: str, end: str
 ) -> list[list[Any]] | None:
@@ -512,9 +563,19 @@ def fetch_video_metrics(
         paid_daily, by_source = sources
         result["daily_paid_views"] = paid_daily  # #954: [] = asked, none paid
         result["paid_since"] = start_date
-        result["paid_views"] = sum(int(v) for _day, v in paid_daily)
+        paid_total = sum(int(v) for _day, v in paid_daily)
+        result["paid_views"] = paid_total
         result["views_by_source"] = by_source
+        if paid_total > 0:  # #957: an unboosted video's two rates are the same
+            watch = _fetch_watch_by_source(youtube_video_id, service, start_date, end_date)
+            organic = organic_engaged_rate(avg_pct, watch) if watch else None
+            if organic is not None:
+                result["organic_engaged_rate"] = organic
     return result
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def _snapshot_bucket(published_at: datetime | None, now: datetime) -> str | None:
@@ -537,18 +598,23 @@ def merge_metric_snapshots(
     published_at: datetime | None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Keep the first 24h/7d snapshots; later syncs only update the live totals."""
-    current = now or datetime.now(timezone.utc)
-    merged = dict(metrics)
+    """Keep the first 24h/7d snapshots; later syncs only update the live totals.
+
+    #958: the stored metrics are the base - lifetime views (#940), reach (#951), the
+    first-day verdict (#49) - and the fresh fetch overwrites only the keys it returned.
+    """
+    current = now or _now()
+    old = existing if isinstance(existing, dict) else {}
+    merged = {**old, **metrics}
     snaps: dict[str, Any] = {}
-    if isinstance(existing, dict):
-        prev = existing.get("snapshots")
-        if isinstance(prev, dict):
-            snaps = dict(prev)
+    prev = old.get("snapshots")
+    if isinstance(prev, dict):
+        snaps = dict(prev)
     bucket = _snapshot_bucket(published_at, current)
     if bucket and bucket not in snaps:
         snaps[bucket] = {
             "views": metrics.get("views"),
+            "paid_views": metrics.get("paid_views"),  # #49: first-day views are organic
             "engaged_rate": metrics.get("engaged_rate"),
             "likes": metrics.get("likes"),
             "captured_at": current.isoformat(),
@@ -617,8 +683,15 @@ def refresh_publish_metrics(
         except (TypeError, ValueError, json.JSONDecodeError):
             existing = {}
         published_at = row.published_at
+    had_first_day = "24h" in (existing.get("snapshots") or {})
     metrics = merge_metric_snapshots(existing, metrics, published_at=published_at)
-    if log_id:
+    if log_id and not had_first_day:  # #49: judged when this sync captures the 24h snapshot
+        from analytics import first_day
+
+        first_day.check(
+            channel_id, metrics, log_id=log_id, run_id=content_run_id,
+            video_id=youtube_video_id, title=title or topic,
+        )  # fmt: skip
         try:
             from core.engagement_predictor import surprise_residual
             from core.predictions.ledger import frozen_engagement

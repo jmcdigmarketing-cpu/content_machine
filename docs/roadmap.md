@@ -26,15 +26,14 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-10-05 wave 59: **#970** Enter at the channel menu takes your last real
-channel (run 113 went to "Default"), **#971** `ops all` checks the YouTube sign-in first and skips
-only what needs it, **#972** run 113's script defects ("Somebody" as a name, a hedged claim restated
-in the description, 0 pages read, an empty heading), **#968** `ops crosspost` - the Buffer pack,
-**#962** footage follows the run's own topic and sport.
+**Just landed** - 2026-10-05 wave 60 (measurement): **#958** a metrics refresh keeps what other
+writers stored, **#957** an organic engaged rate for boosted videos, **#49** a first-day alert,
+**#945** a 7-day-views prediction frozen at publish, **#969** signals search whole names ("Ghost of
+Yotei", "Pokémon").
 
-**Before that** - wave 58 (research by need): **#963 #964 #965 #966 #967** · wave 57: **#954 #947
+**Before that** - wave 59: **#970 #971 #972 #968 #962** · wave 58: **#963-#967** · wave 57: **#954 #947
 #955 #946 #951 #956** · wave 56: **#949 #950 #953** · wave 55: **#944 #938 #940 #943 #941 #942** ·
-wave 54: **#934-#937 #114 #939** · wave 53: **#930-#933 #929 #591 #573 #586**. Earlier: [roadmap_archive.md](roadmap_archive.md)
+wave 54: **#934-#937 #114 #939**. Earlier: [roadmap_archive.md](roadmap_archive.md)
 and [planning_log.md](planning_log.md).
 
 ### The five weaknesses - where each stands (2026-10-03, after wave 53)
@@ -48,24 +47,20 @@ is left is below.
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
 | 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport | - |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out | #914 an emoji font off Windows · #786 footage and your music tracks (operator; `ops footage-gaps` lists what) |
-| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR | #945 a views prediction · #957 an organic engaged rate · more measured videos |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction | #975 the organic rate on a real boosted video · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 59 (2026-10-05)** was run 113 plus the list: the channel menu put an NBA Short on
-"Default" (#970), `ops all` now checks the sign-in first (#971, operator's ask), run 113's script
-defects (#972), the Buffer pack (#968) and footage that follows the run (#962). The operator asked
-for the next 15; waves 60 and 61:
+**Wave 60 (2026-10-05)** was the first half of the operator's next 15, as planned. #969's
+replay check could not run here (no stored runs, and `ops replay` re-scores saved signals rather
+than re-asking); a before/after sweep of `search_query` over 203 name-shaped strings stood in and
+found the connector path broken three ways, all fixed. Wave 61, as planned:
 
-1. **#958 a metrics refresh keeps what other writers stored** `[S]` - the paid series, lifetime views and CTR survive today only by write order.
-2. **#957 an organic engaged rate** `[S]` - the engagement predictor and `RECOMMEND_TARGET=engaged` still read paid viewers' watch time.
-3. **#49 a first-day alert** `[M]` - a video far under the channel's 7-day baseline says so on day one.
-4. **#945 a 7-day-views prediction** `[M]` - beside the engaged-rate one.
-5. **#969 every signal searches "Ghost of Yotei", not "Ghost"** `[S]` - after an `ops replay` check.
-
-Then wave 61: **#973** titles get the contrast-frame check · **#974** a weekly sign-in reminder
-while the consent screen is in Testing · **#551** date arithmetic · **#339** "unconfirmed" as a
-script mode for fresh, thin topics · **#863** the auto-research verdict once ten runs carry it.
+1. **#973 titles get the contrast-frame check** `[S]` - run 113's "a trap, not a peak".
+2. **#974 a sign-in reminder before a Testing-mode sign-in expires** `[S]` - one line in `ops all` and at startup from day 6.
+3. **#551 date arithmetic** `[M]` - "18 months since" must match the dates in the facts.
+4. **#339 "unconfirmed" as a script mode** `[M]` - a fresh topic with thin facts says what is not confirmed instead of dropping it.
+5. **#863 the auto-research verdict** `[S]` - computed by `ops auto-research` once ten runs store their lines.
 
 **#959** a promotion ledger only if the operator runs ads again.
 

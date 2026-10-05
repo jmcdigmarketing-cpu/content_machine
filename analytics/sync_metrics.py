@@ -128,6 +128,9 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
         [r for r in repo.list_uploaded_for_channel(channel_id) if r.youtube_video_id], limit
     )
 
+    from analytics import first_day
+
+    started = first_day._now()
     synced = 0
     for row in rows:
         title = (row.detail or "").strip() or "(untitled)"
@@ -145,6 +148,8 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
             synced += 1
 
     print(f"\n  Synced {synced}/{len(rows)} recent video(s) for {channel_id}")
+    for line in first_day.recent_lines(channel_id, since=started):  # #49
+        print(f"  {line}")
     # #940: lifetime views for every live video (the sync's own numbers are a 28-day window).
     from analytics import youtube_metrics
     from storage.repositories.publish_log import is_seeded

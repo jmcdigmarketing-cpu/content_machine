@@ -53,24 +53,24 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-05 · **HEAD at write:** `fd49136` (wave 58) + the wave 59 commit
-(`git log -1`) · **Tree:** clean after the commit.
+**Written:** 2026-10-05 · **HEAD at write:** `a592c51` (wave 59) + the wave 60 commit
+(`git log -1`) · **Tree:** clean after the commit; wave 61 comes next as its own commit.
 
-**Read before editing:** the channel default is `core/ui.preferred_channel` (explicit
-`CONTENT_CHANNEL_ID`, else the latest real channel run). Batches that need the YouTube sign-in check
-`youtube.oauth.sign_in_status` once and skip `_SIGN_IN_STEPS` (`scripts/ops.py`). Crossposts live in
-`data/crosspost_<channel>.json` (`publishing/crosspost.py`), not the publish log. Footage takes the
-run's topic/sport from `assets/local_provider.set_footage_context`, set in `run_media_only`.
-Who's-who / settled-fresh are wave 58 (`core/facts/entity_lookup`, `freshness`). mypy **121**.
+**Read before editing:** a metrics refresh now merges onto the stored blob
+(`youtube_metrics.merge_metric_snapshots`) - a key you stop writing stays at its last value.
+`core.engagement.engaged_rate` reads `organic_engaged_rate` first (#957). The first-day verdict is
+judged once, only when a sync captures the 24h snapshot (`analytics/first_day.check`). The ledger
+freezes `views_7d` beside `engaged_rate`. `title_phrases` reads Unicode letters and "the" only after
+another connector; `search_query` uses connectors. mypy **121**.
 
 **Defects first:**
-- Run 113 went to "Default" (generic sign-in, no analytics scope) and was queued **public** as job
-  50 - the operator must cancel it before running the worker; tapin's sign-in is refused (#961).
-- `tests/test_backlog.py` had a fixed draft date that the real-clock staleness gate turned red on
-  2026-10-05 (fixed); look for the same shape before trusting a date in a fixture.
+- #957's per-source `estimatedMinutesWatched` was never seen from the live API (docs unreachable
+  here) - #975; a refusal loses nothing else.
+- The connector sweep found `title_phrases` cutting accented names ("Ghost of Y") in the who's-who
+  lookup since wave 58 (fixed). The live check found old 24h snapshots about to be alerted (fixed).
 
-**Shipped:** #970 #971 #972 #968 #962. Corpus 88, 0 network attempts, `data/` clean; backlog **240
-numbered open**, highest #974. Next: **#958 · #957 · #49 · #945 · #969**, then #973 #974 #551 #339 #863.
+**Shipped:** #958 #957 #49 #945 #969. Corpus 93, 0 network attempts, `data/` clean; highest #975.
+Next: **#973 · #974 · #551 · #339 · #863** (wave 61).
 
 ## Slot — Cursor
 

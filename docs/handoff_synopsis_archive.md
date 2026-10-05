@@ -1,11 +1,34 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-04
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-10-04 (Claude Code): wave 57 #954 #947 #955 #946 #951 #956 (#948 closed)
+
+From the operator's Studio screenshots and first $10 ad campaign (76.3% of 28-day views were ads).
+
+- **#954** ads apart from organic: the sync keeps paid views by day and by traffic source; the
+  7-day target, winners, verdicts, the scoreboard ("+N paid, not counted") and performance memory
+  read organic. `ops ypp` reads YouTube's own numbers (Shorts views 90 days, long-form hours 12
+  months, subscribers), ads excluded. **Run `ops backfill view-curve --apply` once** - until then a
+  video synced before this wave counts none of its views as paid. **#947** the backfill no longer
+  re-fetches small videos.
+- **#955** footage must match the topic: keyword, playlist alias, the topic's own sport, then the
+  model with NONE allowed - no random game. Unmatched -> stock or a plain branded background.
+  `ops footage-gaps`: what to record, and past videos that may show another game.
+- **#946** athlete names read as their sport (`config/domain_names.json` + names learned from runs).
+- **#951** `ops packaging`: Shorts stayed (not swiped away) and feed share; long-form impressions
+  and CTR via the Reporting API (enable it in Cloud Console). **#948** closed: the Analytics API
+  has no impressions metric.
+- **#956** `ops policy-site --name --email --output-dir`: the privacy / terms / data-deletion pages.
+  TikTok refuses personal apps in review - its route is the operator's call (#952).
+
+**Verify:** `python -m unittest tests.test_paid_views tests.test_footage_match tests.test_packaging`;
+`py -m scripts.ops footage-gaps`; `py -m scripts.ops packaging`.
 
 ## Previous — 2026-10-03 (Claude Code): wave 56 #949 #950 #953
 

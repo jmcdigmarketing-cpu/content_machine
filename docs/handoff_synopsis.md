@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-05: wave 59, next five
+# Handoff synopsis — 2026-10-05: wave 60, measurement
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-05 (Claude Code): wave 59 #970 #971 #972 #968 #962
+## Last wave — 2026-10-05 (Claude Code): wave 60 #958 #957 #49 #945 #969 (measurement)
+
+The first half of the operator's next 15, as planned.
+
+- **#958** a metrics sync no longer drops what other writers stored (lifetime views, reach).
+- **#957** a boosted video keeps an organic engaged rate (ad viewers out); every reader of the
+  engaged rate uses it. Not yet seen on a real boosted video - #975.
+- **#49** a first-day alert: a video far below (or above) the channel's usual first day is printed by
+  the sync and `ops status`, and sent as `first_day_anomaly` to `EVENT_WEBHOOK_URL`.
+- **#945** a 7-day-views prediction frozen at publish beside the engaged-rate one; `ops predictions`
+  scores it.
+- **#969** signals search whole names: "Ghost of Yotei", "League of Legends", "Pokémon" (accented
+  letters used to end a word, in the who's-who lookup too).
+
+**Verify:** `python -m unittest tests.test_first_day tests.test_organic_engaged tests.test_search_names`;
+`py -m scripts.ops predictions`; `py -m scripts.ops status`.
+
+## Previous — 2026-10-05 (Claude Code): wave 59 #970 #971 #972 #968 #962
 
 From run 113 (an NBA Short that went to "Default", queued public) and the operator's ask.
 
@@ -48,29 +65,6 @@ paste for a game that just came out - "obviously not hardcoded".
 
 **Verify:** `python -m unittest tests.test_entity_lookup tests.test_freshness tests.test_research_prompt`;
 a run on a known topic; `py -m scripts.ops auto-research`.
-
-## Previous — 2026-10-04 (Claude Code): wave 57 #954 #947 #955 #946 #951 #956 (#948 closed)
-
-From the operator's Studio screenshots and first $10 ad campaign (76.3% of 28-day views were ads).
-
-- **#954** ads apart from organic: the sync keeps paid views by day and by traffic source; the
-  7-day target, winners, verdicts, the scoreboard ("+N paid, not counted") and performance memory
-  read organic. `ops ypp` reads YouTube's own numbers (Shorts views 90 days, long-form hours 12
-  months, subscribers), ads excluded. **Run `ops backfill view-curve --apply` once** - until then a
-  video synced before this wave counts none of its views as paid. **#947** the backfill no longer
-  re-fetches small videos.
-- **#955** footage must match the topic: keyword, playlist alias, the topic's own sport, then the
-  model with NONE allowed - no random game. Unmatched -> stock or a plain branded background.
-  `ops footage-gaps`: what to record, and past videos that may show another game.
-- **#946** athlete names read as their sport (`config/domain_names.json` + names learned from runs).
-- **#951** `ops packaging`: Shorts stayed (not swiped away) and feed share; long-form impressions
-  and CTR via the Reporting API (enable it in Cloud Console). **#948** closed: the Analytics API
-  has no impressions metric.
-- **#956** `ops policy-site --name --email --output-dir`: the privacy / terms / data-deletion pages.
-  TikTok refuses personal apps in review - its route is the operator's call (#952).
-
-**Verify:** `python -m unittest tests.test_paid_views tests.test_footage_match tests.test_packaging`;
-`py -m scripts.ops footage-gaps`; `py -m scripts.ops packaging`.
 
 ## Pipeline order (operator)
 
@@ -139,7 +133,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863 waits on ten runs (E3) · #851 best-bet domain.
-3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #958 a metrics refresh drops other writers' keys · #957 an organic engaged rate.
+3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #975 the organic rate on a real boosted video.
    Any live-run defect: add a corpus case.
 4. **App:** #860 facts room shipped wave 46; next Stage 3 panel per [desktop_app.md](desktop_app.md).
 5. **Operator calls, standing:** `positioning.md` still pitches a micro-SaaS surface, which
@@ -147,7 +141,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #958 · #957 · #49 · #945 · #969 (wave 60), then #973 #974 #551 #339 #863. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #973 · #974 · #551 · #339 · #863 (wave 61). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

@@ -190,7 +190,8 @@ def starts_with_question(text: str) -> bool:
     return bool(first) and first[0] in INTERROGATIVES
 
 
-_WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’.&-]*")
+# #969: letters are Unicode letters - "Yōtei" and "Pokémon" are one word, not "Y" + "tei".
+_WORD = re.compile(r"[^\W_](?:[^\W_]|['’.&-])*")
 
 
 # #963: lower-case words that sit inside a name - "Ghost of Yotei", "Call of Duty",
@@ -207,6 +208,8 @@ def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) ->
     `content_tokens`. Run 98's signals searched the whole typed sentence instead.
     `connectors=True` keeps a lower-case `NAME_CONNECTORS` word between two capitalised
     ones inside the name ("Ghost of Yotei", not "Ghost" and "Yotei") - for name lookups.
+    #969: "the" only follows another connector ("Lord of the Rings", never "Reasons the
+    Lakers"), connectors do not count toward `max_words`, and a cut name never ends on one.
     """
     phrases: list[str] = []
     run: list[str] = []
@@ -217,8 +220,24 @@ def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) ->
     def flush() -> None:
         held.clear()
         if run:
-            phrase = " ".join(run[:max_words])
-            if phrase not in phrases:
+            kept: list[str] = []
+            names = 0
+            cut = False
+            for word in run:
+                is_connector = word in NAME_CONNECTORS
+                if not is_connector and names >= max_words:
+                    cut = True
+                    break
+                kept.append(word)
+                names += 0 if is_connector else 1
+            if cut and any(w in NAME_CONNECTORS for w in kept):
+                # the name after the last connector was cut: "Southern District of New"
+                while kept and kept[-1] not in NAME_CONNECTORS:
+                    kept.pop()
+            while kept and kept[-1] in NAME_CONNECTORS:
+                kept.pop()
+            phrase = " ".join(kept)
+            if phrase and phrase not in phrases:
                 phrases.append(phrase)
             run.clear()
 
@@ -233,7 +252,13 @@ def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) ->
             run.extend(held)
             held.clear()
             run.append(word)
-        elif connectors and run and word == lower and lower in NAME_CONNECTORS:
+        elif (
+            connectors
+            and run
+            and word == lower
+            and lower in NAME_CONNECTORS
+            and (held or lower != "the")
+        ):
             held.append(word)
         else:
             flush()
@@ -270,7 +295,7 @@ def search_query(
         words = [w for w in re.findall(r"[A-Za-z0-9]+", text) if w.lower() not in FUNCTION_WORDS]
         return " ".join(words[:5])[:max_len] or text[:max_len] or (topic or "")[:max_len]
     if mode == "entity" or sentence:
-        for phrase in title_phrases(text):
+        for phrase in title_phrases(text, connectors=True):  # #969: "Ghost of Yotei"
             name = re.sub(r"['’]s$", "", phrase)
             follow = re.match(re.escape(phrase) + _NUMBER_AFTER, text[text.find(phrase) :])
             if follow:

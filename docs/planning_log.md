@@ -17,6 +17,53 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-05 (Claude Code) - wave 60: measurement - kept keys, organic rate, first-day alert, views prediction, whole names
+
+**Prompt:** "complete wave 60 and 61" - the ten items planned in wave 59's next 15. This is
+wave 60; wave 61 follows as its own commit.
+
+**Why the list matches:** it is wave 59's plan unchanged. #969's stated check (`ops replay`)
+could not stand in: replay re-scores a run's saved signals and never re-asks for them, and this
+container holds no stored runs. A before/after sweep of `search_query` over every name-shaped
+string in `tests/`, the corpus and the planning logs (203) was run instead, before the change.
+
+### Findings, with file:line
+- `analytics/youtube_metrics.merge_metric_snapshots:533` started from `dict(metrics)`; lifetime
+  views and reach survived only because their writers ran later in the same sync.
+- `fetch_video_metrics` stores one `averageViewPercentage` for every view, ads included.
+- Nothing compared the 24h snapshot with anything (`run_ledger:271` only prints it).
+- `core/predictions/ledger.freeze:175` froze only an engaged-rate prediction.
+- `apis/topic_tokens._WORD:191` was ASCII-only: "Ghost of Yōtei" -> "Ghost of Y" and "Pokémon"
+  -> "Pok", in the who's-who lookup (`core/facts/entity_lookup:112`) too; with connectors on,
+  "the" glued "Reasons the Lakers" and a cut name ended "Southern District of New". The sweep
+  found all three; after the fix, 22 of 203 strings change and each is a name kept whole.
+- **Found by the live check:** a video whose 24h snapshot predates #49 would have been judged
+  (and alerted) on the first sync after the upgrade. It is judged only when this sync captures it.
+
+### Shipped
+1. **#958** the stored metrics are the base; the fresh fetch overwrites only what it returned.
+2. **#957** boosted videos: views and minutes by traffic source, `organic_engaged_rate` =
+   avg % x organic minutes-per-view / all minutes-per-view; `engaged_rate()` reads it first.
+   **Recommendation input changed, disclosed.** Not checked on the live API (docs unreachable) - #975.
+3. **#49** `analytics/first_day.py`: organic first-day views against the median 24h of the other
+   videos (0.5x / 2x, 5 needed); stored once, printed by the sync and `ops status`, sent as
+   `first_day_anomaly`. First day rather than the backlog's "first hour": the sync's earliest
+   snapshot is the 24h one.
+4. **#945** `predict_views_7d` (shared `_fit`), frozen as `views_7d`, scored in `ops predictions`.
+5. **#969** `search_query` keeps connector names; `title_phrases` reads Unicode letters, "the"
+   only after another connector, connectors outside `max_words`, never ends on a cut name.
+
+### Audit
+37 new tests in five modules, **28 of 37 observed failing on unmodified code** (nine guards:
+plain names unchanged, "the" alone, a cut before a connector, identifiers, fresh values win,
+unreadable blobs, an unboosted video not asked, a failed question). Engaged-rate predictions
+identical to HEAD over 200 random fits. Corpus +5 (88 -> 93), 3 failing on HEAD. ruff clean;
+mypy 121; suite default / reverse / shuffle green; 0 network attempts; `data/` and `output/`
+untouched. Live check (the real `sync_channel`, a fake Analytics service): a boosted video with
+3,000 views (2,880 paid) -> organic rate 0.83 against 0.40 total, first day "low" (120 vs a 410
+median), one `first_day_anomaly`, no repeat on the second sync, lifetime views and reach kept;
+`ops predictions` on 22 synthetic runs -> "7-day views prediction: typically off by x1.28".
+
 ## 2026-10-05 (Claude Code) - wave 59: run 113's fixes, the sign-in in `ops all`, the Buffer pack
 
 **Prompt:** "next 5" with run 113 pasted (`python main.py`, Enter at the channel menu, "NBA

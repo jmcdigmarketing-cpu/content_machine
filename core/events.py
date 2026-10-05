@@ -14,7 +14,8 @@ raises or blocks the pipeline. EVENT_WEBHOOK_EVENTS (csv) filters event types.
     EVENT_WEBHOOK_TIMEOUT=5
 
 Envelope: {"event": "<type>", "at": "<iso8601>", "payload": {...}}
-Event types emitted today: run_completed, video_published, batch_completed.
+Event types emitted today: run_completed, video_published, batch_completed,
+first_day_anomaly (#49).
 """
 
 from __future__ import annotations

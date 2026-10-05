@@ -151,4 +151,11 @@ def build_status_lines(channel_id: str) -> list[str]:
     except Exception as exc:
         logger.debug("Database status section skipped: %s", exc)
 
+    try:
+        from analytics.first_day import recent_lines
+
+        lines.extend(recent_lines(channel_id))  # #49: a first day far from the usual
+    except Exception as exc:
+        logger.debug("first-day lines skipped: %s", exc)
+
     return lines

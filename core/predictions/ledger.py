@@ -67,6 +67,19 @@ def _engaged(run_id: int, channel_id: str, quality: dict[str, Any]) -> dict[str,
     return {"rate": pred.rate, "band": pred.band, "n": pred.n, "note": pred.note}
 
 
+def _views(run_id: int, channel_id: str, quality: dict[str, Any]) -> dict[str, Any] | None:
+    """#945: the 7-day-views prediction beside the engaged-rate one, fitted without the run."""
+    from core.engagement_predictor import predict_views_7d
+
+    if not quality:
+        return None
+    pred = predict_views_7d(channel_id, quality=quality, exclude_run_id=int(run_id))
+    if pred is None:
+        return None
+    return {"log_views": pred.log_views, "views": pred.views, "band": pred.band, "n": pred.n,
+            "note": pred.note}  # fmt: skip
+
+
 def _length(
     record: Any, channel_id: str, topic: str, *, exclude_run_id: int | None = None
 ) -> dict[str, Any] | None:
@@ -207,6 +220,9 @@ def freeze(
             "grade": _grade(quality),
             "best_bet": _best_bet(record),  # #909
         }
+        if not backfilled:
+            # #945: never backfilled - a views claim fitted after the outcome measures nothing.
+            entry["views_7d"] = _views(run_id, channel_id, quality)
         if backfilled and entry["engaged_rate"] is None:
             return entry  # too few measured videos yet; a later sync may still backfill it
         from core.run_features import merge_features
@@ -275,6 +291,9 @@ def ledger_rows(channel_id: str) -> list[dict[str, Any]]:
             "actual": float(rate) if rate is not None else None,
             "backfilled": bool(entry.get("backfilled")),
         }
+        predicted_views = entry.get("views_7d") or {}
+        if predicted_views.get("log_views") is not None and views is not None:
+            row["views_pred_error"] = views - float(predicted_views["log_views"])  # #945
         engaged = entry.get("engaged_rate") or {}
         if engaged.get("rate") is not None and rate is not None:
             row["engaged_error"] = float(rate) - float(engaged["rate"])
@@ -377,6 +396,12 @@ def report_lines(channel_id: str) -> list[str]:
             f"|error| {mean_abs * 100:.1f}pp; inside the band {inside}/{len(measured)}"
         )
     _claim("engagement predictor (frozen before the outcome)", "engaged_error", band_line)
+    lines.append(
+        _error_line_views(
+            "7-day views prediction (frozen before the outcome, #945)",
+            [r["views_pred_error"] for r in forward if "views_pred_error" in r],
+        )
+    )
     _claim("length recommender (when followed)", "length_error")
     _claim("post-time slot (videos on a slot)", "post_error")
     off_slot = sum(1 for r in rows if r.get("post_off_slot"))

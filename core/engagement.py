@@ -71,13 +71,16 @@ def engaged_rate(metrics_json: str, *, floor: bool = True) -> float | None:
     """Engaged rate from a publish_log metrics blob; None when unknown.
 
     Only an explicit ``engaged_rate`` counts: the likes/views fallback was another scale
-    under the same name (#920). None as well for a video under `MIN_OUTCOME_VIEWS` (#564)
+    under the same name (#920). A boosted video's ``organic_engaged_rate`` is read first
+    (#957), so ad viewers who skip do not count against the script. None as well for a video under `MIN_OUTCOME_VIEWS` (#564)
     unless ``floor=False``.
     """
     try:
         m = json.loads(metrics_json or "{}")
         if floor and under_view_floor(m):
             return None
+        if m.get("organic_engaged_rate") is not None:  # #957: ad viewers left out
+            return float(m["organic_engaged_rate"])
         if "engaged_rate" in m:
             return float(m["engaged_rate"])
     except (ValueError, TypeError, json.JSONDecodeError):
@@ -92,11 +95,14 @@ def basis_line(channel_id: str) -> str:
     from storage.repositories.publish_log import get_publish_log_repository
 
     counts: Counter[str] = Counter()
+    organic = 0
     for log in get_publish_log_repository().list_timed_outcomes(channel_id) or []:
         try:
             metrics = json.loads(log.metrics_json or "{}")
         except (TypeError, ValueError):
             continue
+        if isinstance(metrics, dict) and metrics.get("organic_engaged_rate") is not None:
+            organic += 1
         basis = engaged_basis(metrics)
         if basis != "unlabeled" or "engaged_rate" in (metrics or {}):
             counts[basis] += 1
@@ -107,6 +113,8 @@ def basis_line(channel_id: str) -> str:
         if counts.get(key):
             tail = " (not counted)" if key == "likes_per_view" else ""
             parts.append(f"{_BASIS_LABELS[key]} {counts[key]}{tail}")
+    if organic:
+        parts.append(f"{organic} read without ad viewers (#957)")
     return "  outcomes by measure: " + ", ".join(parts)
 
 

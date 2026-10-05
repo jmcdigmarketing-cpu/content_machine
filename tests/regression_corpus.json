@@ -1551,6 +1551,103 @@
         "contains": "deadline - read 3 Google News headline(s) instead"
       },
       "why": "a run whose pages all timed out kept no research; the Google News fallback now covers it and says why"
+    },
+    {
+      "id": "metrics-refresh-keeps-other-writers-keys",
+      "item": 958,
+      "source": "wave 57 doing #954: lifetime views and reach survived a refresh only by write order",
+      "call": "analytics.youtube_metrics:merge_metric_snapshots",
+      "args": [
+        {
+          "views": 100,
+          "lifetime_views": 5400
+        },
+        {
+          "views": 300
+        }
+      ],
+      "kwargs": {
+        "published_at": null
+      },
+      "select": "lifetime_views",
+      "expect": {
+        "equals": 5400
+      },
+      "why": "the merge rebuilt metrics from the fresh fetch, dropping any key another writer stored"
+    },
+    {
+      "id": "view-curve-keeps-frozen-first-views",
+      "item": 958,
+      "source": "#958 sibling: the day-series merge carries its own keys the same way",
+      "call": "analytics.view_curve:merge_view_curve",
+      "args": [
+        {
+          "first_views": {
+            "threshold": 100,
+            "days": 1
+          }
+        },
+        {
+          "views": 5
+        },
+        null
+      ],
+      "select": "first_views",
+      "expect": {
+        "equals": {
+          "threshold": 100,
+          "days": 1
+        }
+      },
+      "why": "a frozen answer must survive a refresh whose window no longer starts at publish"
+    },
+    {
+      "id": "search-query-keeps-of-names",
+      "item": 969,
+      "source": "wave 58: signals searched 'Ghost' for 'Ghost of Yotei review'",
+      "call": "apis.topic_tokens:search_query",
+      "args": [
+        "Ghost of Yotei review"
+      ],
+      "kwargs": {
+        "mode": "entity"
+      },
+      "expect": {
+        "equals": "Ghost of Yotei"
+      },
+      "why": "search_query split a name at 'of'; every signal and the event guard read it"
+    },
+    {
+      "id": "accented-name-is-one-word",
+      "item": 969,
+      "source": "#969 sweep: the who's-who lookup read 'Ghost of Yōtei' as 'Ghost of Y'",
+      "call": "apis.topic_tokens:title_phrases",
+      "args": [
+        "Ghost of Yōtei released 2026-10-01"
+      ],
+      "kwargs": {
+        "max_words": 5,
+        "connectors": true
+      },
+      "expect": {
+        "equals": [
+          "Ghost of Yōtei"
+        ]
+      },
+      "why": "the word pattern was ASCII-only, so an accented letter ended the name"
+    },
+    {
+      "id": "the-does-not-glue-sentence-words",
+      "item": 969,
+      "source": "#969 sweep: '5 Reasons the Lakers Are Overrated' -> 'Reasons the Lakers'",
+      "call": "apis.topic_tokens:search_query",
+      "args": [
+        "5 Reasons the Lakers Are Overrated: A Deep Dive"
+      ],
+      "expect": {
+        "equals": "Reasons"
+      },
+      "why": "'the' joins a name only after another connector ('Lord of the Rings')"
     }
   ]
 }

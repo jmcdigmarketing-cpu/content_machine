@@ -9,11 +9,15 @@ Data-gated per the roadmap: below ``PREDICTOR_MIN_SAMPLES`` (default 15)
 measured runs it returns None — a prediction from single-digit history would
 be noise wearing a number. Follows the `core/recommender_confidence.py`
 philosophy: thin bases must say so.
+
+#945: `predict_views_7d` fits the same two inputs to log 7-day organic views (the
+recommenders' target since #938), so the ledger can say whether quality predicts views.
 """
 
 from __future__ import annotations
 
 import json
+import math
 import os
 from dataclasses import dataclass
 
@@ -55,8 +59,29 @@ def run_engagement_map(channel_id: str) -> dict[int, float]:
     return out
 
 
+def run_views_map(channel_id: str) -> dict[int, float]:
+    """run_id -> log1p of 7-day organic views (#945), the scale the views target ranks on."""
+    try:
+        from core.success.target import TARGET_VIEWS, outcome
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        logs = get_publish_log_repository().list_timed_outcomes(channel_id)
+    except Exception as exc:
+        logger.debug("views map load failed: %s", exc)
+        return {}
+    out: dict[int, float] = {}
+    for log in logs:
+        value = outcome(log.metrics_json, log.published_at, target_name=TARGET_VIEWS)
+        if value is not None and log.content_run_id:
+            out[int(log.content_run_id)] = float(value)
+    return out
+
+
 def _training_rows(
-    channel_id: str, *, exclude_run_id: int | None = None
+    channel_id: str,
+    *,
+    exclude_run_id: int | None = None,
+    outcomes: dict[int, float] | None = None,
 ) -> list[tuple[float, float, float]]:
     """(hook, authenticity, engaged_rate) for measured runs with quality.
 
@@ -69,7 +94,7 @@ def _training_rows(
     """
     from core.run_quality import authenticity_gate_value
 
-    engagement = run_engagement_map(channel_id)
+    engagement = run_engagement_map(channel_id) if outcomes is None else outcomes
     if not engagement:
         return []
     rows: list[tuple[float, float, float]] = []
@@ -132,46 +157,90 @@ def predict_engaged_rate(
     rows = _training_rows(channel_id, exclude_run_id=exclude_run_id)
     if len(rows) < _min_samples():
         return None
-
-    hooks = [r[0] for r in rows]
-    auths = [r[1] for r in rows]
-    rates = [r[2] for r in rows]
+    predicted, band, baseline, deltas = _fit(rows, hook, auth, high=0.95)
     n = len(rows)
-    baseline = sum(rates) / n
-    slope_h = _slope(hooks, rates)
-    slope_a = _slope(auths, rates)
-
-    predicted = baseline
     parts = [f"baseline {baseline * 100:.1f}%"]
-    if hook is not None:
-        delta = (float(hook) - sum(hooks) / n) * slope_h
-        predicted += delta
-        if abs(delta) >= 0.0005:
-            parts.append(f"hook {delta * 100:+.1f}pp")
-    if auth is not None:
-        delta = (float(auth) - sum(auths) / n) * slope_a
-        predicted += delta
-        if abs(delta) >= 0.0005:
-            parts.append(f"authenticity {delta * 100:+.1f}pp")
-
-    predicted = max(0.0, min(0.95, predicted))
-    residuals = [
-        rate
-        - min(
-            0.95,
-            max(
-                0.0,
-                baseline + (h - sum(hooks) / n) * slope_h + (a - sum(auths) / n) * slope_a,
-            ),
-        )
-        for h, a, rate in rows
-    ]
-    band = (sum(r * r for r in residuals) / n) ** 0.5
+    parts += [f"{name} {delta * 100:+.1f}pp" for name, delta in deltas if abs(delta) >= 0.0005]
     return Prediction(
         rate=round(predicted, 4),
         band=round(band, 4),
         n=n,
         note=f"{', '.join(parts)}; n={n}, ±{band * 100:.1f}pp",
+    )
+
+
+def _fit(
+    rows: list[tuple[float, float, float]],
+    hook: float | None,
+    auth: float | None,
+    *,
+    high: float,
+) -> tuple[float, float, float, list[tuple[str, float]]]:
+    """(prediction, residual band, baseline, [(input, delta)]): the channel mean plus a
+    least-squares slope per input, clamped to 0..`high`."""
+    hooks = [r[0] for r in rows]
+    auths = [r[1] for r in rows]
+    values = [r[2] for r in rows]
+    n = len(rows)
+    baseline = sum(values) / n
+    slope_h = _slope(hooks, values)
+    slope_a = _slope(auths, values)
+    mean_h, mean_a = sum(hooks) / n, sum(auths) / n
+
+    predicted = baseline
+    deltas: list[tuple[str, float]] = []
+    if hook is not None:
+        delta = (float(hook) - mean_h) * slope_h
+        predicted += delta
+        deltas.append(("hook", delta))
+    if auth is not None:
+        delta = (float(auth) - mean_a) * slope_a
+        predicted += delta
+        deltas.append(("authenticity", delta))
+    predicted = max(0.0, min(high, predicted))
+    residuals = [
+        value - min(high, max(0.0, baseline + (h - mean_h) * slope_h + (a - mean_a) * slope_a))
+        for h, a, value in rows
+    ]
+    band = (sum(r * r for r in residuals) / n) ** 0.5
+    return predicted, band, baseline, deltas
+
+
+@dataclass
+class ViewsPrediction:
+    log_views: float  # predicted log1p(7-day organic views)
+    views: int  # the same, in views
+    band: float  # +/- residual std on the log scale
+    n: int
+    note: str
+
+
+def predict_views_7d(
+    channel_id: str, *, quality: dict, exclude_run_id: int | None = None
+) -> ViewsPrediction | None:
+    """#945: expected 7-day organic views for a draft's quality, or None below the gate."""
+    from core.run_quality import authenticity_gate_value
+
+    hook = quality.get("hook_score")
+    auth = authenticity_gate_value(quality)
+    if hook is None and auth is None:
+        return None
+    rows = _training_rows(
+        channel_id, exclude_run_id=exclude_run_id, outcomes=run_views_map(channel_id)
+    )
+    if len(rows) < _min_samples():
+        return None
+    predicted, band, baseline, deltas = _fit(rows, hook, auth, high=math.log1p(1e9))
+    n = len(rows)
+    parts = [f"baseline {math.expm1(baseline):,.0f} views"]
+    parts += [f"{name} x{math.exp(delta):.2f}" for name, delta in deltas if abs(delta) >= 0.005]
+    log_views = round(predicted, 4)
+    return ViewsPrediction(
+        log_views=log_views,
+        views=round(math.expm1(log_views)),
+        band=round(band, 4),
+        n=n,
+        note=f"{', '.join(parts)}; n={n}, x{math.exp(band):.2f} either way",
     )
 
 

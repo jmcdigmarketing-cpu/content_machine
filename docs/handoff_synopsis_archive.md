@@ -7,6 +7,23 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-05 (Claude Code): wave 60 #958 #957 #49 #945 #969 (measurement)
+
+The first half of the operator's next 15, as planned.
+
+- **#958** a metrics sync no longer drops what other writers stored (lifetime views, reach).
+- **#957** a boosted video keeps an organic engaged rate (ad viewers out); every reader of the
+  engaged rate uses it. Not yet seen on a real boosted video - #975.
+- **#49** a first-day alert: a video far below (or above) the channel's usual first day is printed by
+  the sync and `ops status`, and sent as `first_day_anomaly` to `EVENT_WEBHOOK_URL`.
+- **#945** a 7-day-views prediction frozen at publish beside the engaged-rate one; `ops predictions`
+  scores it.
+- **#969** signals search whole names: "Ghost of Yotei", "League of Legends", "Pokémon" (accented
+  letters used to end a word, in the who's-who lookup too).
+
+**Verify:** `python -m unittest tests.test_first_day tests.test_organic_engaged tests.test_search_names`;
+`py -m scripts.ops predictions`; `py -m scripts.ops status`.
+
 ## Previous — 2026-10-05 (Claude Code): wave 59 #970 #971 #972 #968 #962
 
 From run 113 (an NBA Short that went to "Default", queued public) and the operator's ask.

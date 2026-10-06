@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-06: wave 62, money, one app window, growth
+# Handoff synopsis — 2026-10-06: wave 63, hook learning, one header line, Analytics
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
 
@@ -10,7 +10,23 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-06 (Claude Code): wave 62 #980 #981 #982 #983 #976 (the operator's asks)
+## Last wave — 2026-10-06 (Claude Code): wave 63 #985 #986 #984 #978 #979 (the recommended five)
+
+The five wave 62 recommended, built cheapest first.
+
+- **#985** `analytics/hook_learning`: which opening-line traits held viewers past the swipe; the
+  opt-in hook rewrite uses it once 10 videos are measured; one line in `ops growth`.
+- **#986** one header line at startup (channel, sign-in, spent, uploads left, queue, last video);
+  INFO logs go to `data/logs/content_machine.log` (`CONTENT_LOG_FILE`, blank = off).
+- **#984** an Analytics page in the app: tiles, views per video shaded by who stayed, the lines.
+- **#978** the date check reads the title and description too.
+- **#979** Buffer packed / posted this week in the weekly report and `ops status`.
+- The back-home list gained "Pause the YouTube ads"; the Story page was updated to 10-06.
+
+**Verify:** `python -m unittest tests.test_hook_learning tests.test_quiet_terminal tests.test_analytics_page`;
+`py main.py` (the header); `py -m desktop` -> Analytics.
+
+## Previous — 2026-10-06 (Claude Code): wave 62 #980 #981 #982 #983 #976 (the operator's asks)
 
 From the operator's message while away: a tick-list, a spend total, a real app, why views are low.
 
@@ -43,23 +59,6 @@ The second half of the operator's next 15, as planned.
 
 **Verify:** `python -m unittest tests.test_title_frames tests.test_signin_reminder tests.test_date_math`;
 `py -m scripts.ops status`; `py -m scripts.ops auto-research`.
-
-## Previous — 2026-10-05 (Claude Code): wave 60 #958 #957 #49 #945 #969 (measurement)
-
-The first half of the operator's next 15, as planned.
-
-- **#958** a metrics sync no longer drops what other writers stored (lifetime views, reach).
-- **#957** a boosted video keeps an organic engaged rate (ad viewers out); every reader of the
-  engaged rate uses it. Not yet seen on a real boosted video - #975.
-- **#49** a first-day alert: a video far below (or above) the channel's usual first day is printed by
-  the sync and `ops status`, and sent as `first_day_anomaly` to `EVENT_WEBHOOK_URL`.
-- **#945** a 7-day-views prediction frozen at publish beside the engaged-rate one; `ops predictions`
-  scores it.
-- **#969** signals search whole names: "Ghost of Yotei", "League of Legends", "Pokémon" (accented
-  letters used to end a word, in the who's-who lookup too).
-
-**Verify:** `python -m unittest tests.test_first_day tests.test_organic_engaged tests.test_search_names`;
-`py -m scripts.ops predictions`; `py -m scripts.ops status`.
 
 ## Pipeline order (operator)
 
@@ -136,7 +135,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #985 · #986 · #984 · #978 · #979 (reordered by `ops growth`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #988 · #987 · #989 · #990 · #977 (reordered by `ops growth`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

@@ -89,6 +89,13 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
     return out
 
 
+def videos(channel_id: str) -> list[dict[str, Any]]:
+    """Videos with a full first week, oldest first (#984: the app's bar chart)."""
+    measured = [r for r in _rows(channel_id) if r["views7"] is not None]
+    far = datetime.min.replace(tzinfo=timezone.utc)
+    return sorted(measured, key=lambda r: r["published"] or far)
+
+
 def _median(values: list[float]) -> float:
     return float(statistics.median(values)) if values else 0.0
 
@@ -193,6 +200,12 @@ def render(channel_id: str) -> str:
         lines.append(f"  from the Shorts feed: {rep['feed_share']:.0%} of organic views")
     lines.append(f"  posting: {rep['per_week']:.1f} a week over the last {_WINDOW_DAYS} days")
     lines.append(f"  paid: {rep['paid_share']:.0%} of all views")
+    try:
+        from analytics.hook_learning import render_line
+
+        lines.append(f"  {render_line(channel_id)}")  # #985: which openers held viewers
+    except Exception as exc:
+        logger.debug("hook learning line skipped: %s", exc)
     found = levers(rep)
     lines.append("")
     if not found:

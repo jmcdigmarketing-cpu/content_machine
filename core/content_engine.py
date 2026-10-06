@@ -623,18 +623,35 @@ def run_script_pass(
     return after_script
 
 
-def _maybe_improve_hook(script: str) -> str:
+def _maybe_improve_hook(script: str, *, channel_id: str = "") -> str:
     """
     Opt-in (HOOK_REGEN_ENABLED=true): rewrite a weak opening line into a stronger
     hook. Only swaps in the rewrite if it actually scores higher; otherwise the
     original script is returned untouched.
+
+    #985: once the channel has `HOOK_LEARN_MIN` videos with a stayed share, the prompt
+    quotes the openers that held viewers best and names the trait that held more. An
+    opener carrying a trait that held fewer viewers is rewritten even when its score
+    passed; that rewrite is kept only if it drops the trait and still passes.
     """
     from core.hook_score import hook_regen_enabled, score_script_hook
 
     if not hook_regen_enabled():
         return script
     current = score_script_hook(script)
-    if current.passed or not current.hook:
+    if not current.hook:
+        return script
+    guidance: dict[str, Any] = {}
+    try:
+        from analytics.hook_learning import regen_guidance, traits_of
+
+        guidance = regen_guidance(channel_id)
+        carried = traits_of(current.hook)
+    except Exception as exc:
+        logger.debug("hook learning skipped: %s", exc)
+        carried = set()
+    avoid = [t for t in guidance.get("avoid") or [] if t["trait"] in carried]
+    if current.passed and not avoid:
         return script
 
     system_prompt = (
@@ -644,6 +661,17 @@ def _maybe_improve_hook(script: str) -> str:
         "Do not invent facts not already implied by the script. Keep the rest of the "
         "script identical."
     )
+    if guidance:
+        held = "\n".join(f"- {hook}" for hook in guidance.get("examples") or [])
+        notes = [
+            f"On this channel openers with {t['trait']} held {t['with']:.0%} of viewers past "
+            f"the swipe vs {t['without']:.0%} without."
+            for t in (guidance.get("prefer") or []) + avoid
+        ]
+        system_prompt += (
+            "\nOpeners that held viewers best on this channel (match the shape, not the "
+            f"words or facts):\n{held}\n" + " ".join(notes)
+        )
     user_prompt = (
         f"SCRIPT:\n{script}\n\nReturn JSON only with the full script, first sentence "
         'replaced:\n{"script": "..."}'
@@ -656,7 +684,16 @@ def _maybe_improve_hook(script: str) -> str:
         return script
     if isinstance(payload, dict) and payload.get("script"):
         candidate = str(payload["script"])
-        if score_script_hook(candidate).score > current.score:
+        scored = score_script_hook(candidate)
+        if avoid and current.passed:
+            from analytics.hook_learning import traits_of
+
+            dropped = not any(t["trait"] in traits_of(scored.hook) for t in avoid)
+            if dropped and scored.passed:
+                logger.info("Rewrote the hook away from %s (#985)", avoid[0]["trait"])
+                return candidate
+            return script
+        if scored.score > current.score:
             logger.info("Improved hook via regeneration")
             return candidate
     return script
@@ -1384,7 +1421,7 @@ def generate_content_package(
         script_passes,
         "improve_hook",
         script,
-        _maybe_improve_hook,
+        lambda text: _maybe_improve_hook(text, channel_id=channel_id),
         disabled=not hook_regen_enabled(),
     )
 

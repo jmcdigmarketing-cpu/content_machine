@@ -167,6 +167,13 @@ their first-day verdict. `py -m desktop`, `content_os.pyw` and `ops shortcut` (S
 Desktop, via pythonw - no console) open it; `--chip` keeps the chip; the old flags open single
 windows; a missing PySide6 under pythonw is a message box.
 
+**Shipped 2026-10-06 (wave 63): #984 Analytics** - second in the sidebar
+(`desktop/analytics_page.py`): tiles for median 7-day views, the stayed split, posts a week and
+the paid share; one bar per video of its organic 7-day views, shaded by its stayed-share third
+(one blue ramp checked against the app's dark surface; grey = not synced) with a tooltip per bar;
+then the hook-learning line (#985), the scoreboard and the prediction ledger. The first content of
+#149's analytics studio; `ops growth` stays.
+
 **Exit per panel:** reads real data, and the equivalent `ops` verb still works. The
 CLI is never removed — it is the headless path and the test surface.
 

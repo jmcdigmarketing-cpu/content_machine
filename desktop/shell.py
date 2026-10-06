@@ -42,6 +42,7 @@ QStackedWidget { padding: 0px; }
 
 PAGES: list[tuple[str, str]] = [
     ("Home", "home"),
+    ("Analytics", "analytics"),  # #984
     ("New video", "run"),
     ("Review", "review"),
     ("Queue", "queue"),
@@ -61,6 +62,10 @@ def build_page(key: str, channel_id: str = "tapin") -> QWidget:
         if index >= 0:  # the app's channel (#970), not the combo's first entry ("Default")
             window.channel.setCurrentIndex(index)
         return window
+    if key == "analytics":
+        from desktop.analytics_page import AnalyticsPage
+
+        return AnalyticsPage(channel_id=channel_id)
     if key == "review":
         from core.review_booth import gather_booth_context
         from desktop.review import ReviewWindow

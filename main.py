@@ -115,6 +115,35 @@ def _run_intelligence_report_flow_body(channel_id: str) -> None:
     print_report_summary(report)
 
 
+def _print_startup(channel_id: str) -> None:
+    """#986: one header line; a line of its own only for something to act on."""
+    try:
+        from core.status import header_line
+
+        print(f"  {header_line(channel_id)}")  # channel, sign-in, spend (#980), quota, queue
+    except Exception as exc:
+        logger.debug("startup header skipped: %s", exc)
+    try:  # #971: a dead sign-in said up front, not after the render
+        from youtube.oauth import sign_in_reminder, sign_in_status
+
+        _sign_in = sign_in_status(channel_id)
+        if _sign_in:
+            print(f"  ! {_sign_in}")
+        else:
+            _reminder = sign_in_reminder(channel_id)  # #974
+            if _reminder:
+                print(f"  ~ {_reminder}")
+    except Exception as exc:
+        logger.debug("sign-in check skipped: %s", exc)
+    try:
+        from apis.youtube_quota import format_uploads_left, uploads_remaining
+
+        if uploads_remaining() < 1:
+            print(f"  ! YouTube: {format_uploads_left()}")
+    except Exception as exc:
+        logger.debug("uploads-left startup line skipped: %s", exc)
+
+
 def main():
     from core.intelligence_report import intelligence_mode_enabled, production_tail_enabled
 
@@ -123,27 +152,6 @@ def main():
 
     section("Content Machine")
     channel_id = prompt_channel_selection()
-    profile = get_channel_profile(channel_id)
-    try:  # #971: a dead sign-in said up front, not after the render
-        from youtube.oauth import sign_in_status
-
-        _sign_in = sign_in_status(channel_id)
-        if _sign_in:
-            print(f"  ! {_sign_in}")
-        else:
-            from youtube.oauth import sign_in_reminder
-
-            _reminder = sign_in_reminder(channel_id)  # #974
-            if _reminder:
-                print(f"  ~ {_reminder}")
-    except Exception as exc:
-        logger.debug("sign-in check skipped: %s", exc)
-    try:  # #980: everything the project has cost, all time
-        from core.money.ledger import spend_line
-
-        print(f"  {spend_line()}")
-    except Exception as exc:
-        logger.debug("spend line skipped: %s", exc)
     from core.themes import set_channel_theme
 
     set_channel_theme(channel_id)
@@ -153,7 +161,7 @@ def main():
     from core.ascii_art import print_startup_panel
 
     print_startup_panel(channel_id)
-    print(f"  Using: {profile.name} ({channel_id})")
+    _print_startup(channel_id)
     try:
         from core.success.goals import banner_line
 
@@ -172,17 +180,11 @@ def main():
     except Exception as exc:
         logger.debug("operator timer/heartbeat skipped: %s", exc)
     try:
-        from apis.youtube_quota import format_uploads_left
+        from core.win_notify import notify_uploads_left
 
-        print(f"  YouTube: {format_uploads_left()}")
-        try:
-            from core.win_notify import notify_uploads_left
-
-            notify_uploads_left()
-        except Exception as exc:
-            logger.debug("uploads-left toast skipped: %s", exc)
+        notify_uploads_left()
     except Exception as exc:
-        logger.debug("uploads-left startup line skipped: %s", exc)
+        logger.debug("uploads-left toast skipped: %s", exc)
     if intelligence_mode_enabled():
         print("  Mode: intelligence only (CONTENT_MODE=intelligence)")
 

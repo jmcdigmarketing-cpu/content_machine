@@ -1782,8 +1782,11 @@ def cmd_worker(args: argparse.Namespace) -> int:
 @_register("test", "Run unit tests (--order reverse|shuffle [--seed N] proves order-independence)")
 def cmd_test(args: argparse.Namespace) -> int:
     # #892: the suite may not write the operator's data/ or output/; a run that did fails.
+    from core.logging import detach_log_file
     from core.suite_hygiene import WATCHED, changed, snapshot
 
+    detach_log_file()  # #986: this process's log file must not collect the suite's records
+    os.environ["CONTENT_LOG_FILE"] = ""
     before = snapshot(WATCHED)
     order = getattr(args, "order", "default")
     if order == "default":

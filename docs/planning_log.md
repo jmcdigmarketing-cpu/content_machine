@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -14,6 +14,78 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > Rolls over by month once it passes the size ceiling (docs_standard.md §7): this file holds
 > the current period; earlier months are frozen in [planning_log_2026-08.md](planning_log_2026-08.md)
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
+
+---
+
+## 2026-10-06 (Claude Code) - wave 63: the hook learns from who stayed, one header line, an Analytics page
+
+**Prompt (verbatim):** "make sure my to do is updated, update the story artifact too as well.
+next 5 after"
+
+**Picked:** the five wave 62 recommended - #985 #986 #984 #978 #979 - all verified open in the
+backlog and none parked in the synopsis. Built cheapest first: #978, #979, #986, #985, #984.
+
+**Outside the repo:** the back-home list gained "Pause the YouTube ads" (the growth review's
+recommendation was missing from it) and, after the commit, wave 63's two operator items. No
+ticks had been saved yet. The Story page (frozen at 09-26) was brought up to date after the
+commit, from measured numbers.
+
+### Shipped
+1. **#978** `date_math.find_meta_mismatches`: the #551 check over the title and description,
+   tagged by where; `build_quality(title=, description=)`; the pipeline passes both.
+2. **#979** `crosspost.week_counts` / `week_line`: packed and posted this week, at the end of
+   the weekly report and in `ops status`.
+3. **#986** `status.header_line` + `main._print_startup`: one line on a healthy start (was six);
+   a dead sign-in, a renewal due or no uploads left keep a line of their own. INFO and up go to
+   `data/logs/content_machine.log` (`CONTENT_LOG_FILE`), the console keeps its level.
+4. **#985** `analytics/hook_learning.py`: the hook score's r with stayed, per-trait stayed with
+   vs without, the three openers that held best; feeds the opt-in hook rewrite once 10 videos are
+   measured (prompt change, disclosed) and prints in `ops growth`.
+5. **#984** `desktop/analytics_page.py`: tiles, a bar per video shaded by stayed third, the
+   hook / scoreboard / prediction lines; second in the sidebar.
+
+### Findings, with file:line
+- `main.py:124-188` (before): six separate startup prints, and `core/logging.py:23` set the
+  console to WARNING with no other handler, so every `logger.info` in the app was dropped.
+- `desktop/home.py:34` and the new header count `list_active_jobs()` for every channel: TapIn's
+  count includes job 50 on "Default" -> filed **#989**.
+- The audit's own run caught one: `ops test --order reverse|shuffle` runs the suite inside the
+  `scripts.ops` process, which had attached the new log file on import, so the tests logged into
+  `data/logs/` and #892's hygiene check failed (every test passed). CI runs that order. `ops test`
+  now detaches the file first (`core.logging.detach_log_file`), and the file is only created on
+  the first record (`delay=True`). Two tests, both seen failing first.
+- `config/channels.json:66-67`: TapIn prepends `video/intro/channel_intro.mp4`, 2.15 s, before the
+  first spoken word; #513's first-frame check samples *after* it. The growth review's first lever
+  is the first second, so **#988** now leads the next five (report the sting, test without it).
+- The INFO log file has no reader -> **#990** an ops verb for the log.
+- `core/content_engine.py` `_maybe_improve_hook` took no channel, so nothing it did could be
+  per-channel; it now takes `channel_id` (the pass passes it).
+- Live check: the Analytics page scrolled sideways at 1180 px (four tiles in a row, legend on one
+  line) and each bar showed a seam at its base (a rounded rect unioned with a square). Both fixed
+  before commit; the hook line said "settles at n=5" at n=12 - it now says it clears p<0.05.
+
+### Not done, on purpose
+- The hook rewrite stays opt-in (`HOOK_REGEN_ENABLED`); learning changes what it is told, not
+  whether it runs.
+- No corpus case: nothing here came from a live run's defect.
+- `test_spend_total.test_startup_shows_it` changed on purpose: startup shows the spend inside the
+  header now, and the test checks that.
+
+### Next five (wave 64)
+#988 the first-frame check · #987 hook variants · #989 the queue count per channel · #990 an ops verb for the log · #977 does unconfirmed mode hold up. Then #991 a series format, #975 (operator).
+
+### Audit
+38 new behavioural tests, **38 observed failing on a clean HEAD worktree before their fix** (5 + 5
++ 10 + 8 + 8 for the five items, 2 for the `ops test` log-file defect the audit found). Suite
+4,724 -> **4,762**, green in default, reverse and shuffle order (fake keys) with `data/` and
+`output/` untouched; mypy **121** (= baseline); ruff 0.15.8 clean; corpus 99 of 99; 0 network
+attempts. Every new symbol has a production caller (`find_meta_mismatches` <- `build_quality`;
+`week_line` <- weekly report, `ops status`; `header_line` <- `main._print_startup`;
+`attach_log_file` / `detach_log_file` <- `setup_logging` / `ops test`; `hook_learning` <- `ops
+growth`, `_maybe_improve_hook`, the Analytics page; `growth.videos` / `AnalyticsPage` <- the
+shell). Live check on synthetic stores: `ops growth` with the hook line (r=+0.77 over 12),
+the header, the log file, the title and description flags, the Buffer line, the Analytics page
+screenshot.
 
 ---
 

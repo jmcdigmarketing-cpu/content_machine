@@ -1,6 +1,6 @@
 # Handoff — the mailbox
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-03
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
 
 **Read this first, before any other file, every time you start work here.** More than
 one agent works in this repo and nothing signals a switch. This file is how the
@@ -53,22 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-06 · **HEAD at write:** `8826680` (wave 61) + the wave 62 commit
+**Written:** 2026-10-06 · **HEAD at write:** `0d3926d` (wave 62) + the wave 63 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** `py -m desktop` / `content_os.pyw` open `desktop/shell.MainShell` (one
-window, pages built on first open via `build_page`); `--run` and the old flags open single
-windows, `--chip` the chip. Home reads `desktop/home.home_lines` (fail-open per card). Money paid
-is `core/money/ledger.py` (`data/spend_ledger.json`, `ops spend`); run usage is shown beside the
-total, never added. `ops growth` is `analytics/growth.py`. mypy **121**.
+**Read before editing:** startup prints `core.status.header_line` (one line; `main._print_startup`
+adds a line only for a dead sign-in, a renewal or no uploads). `core.logging` attaches a rotating
+INFO file (`data/logs/`, `CONTENT_LOG_FILE`; the suite blanks it, `ops test` detaches it). The
+hook rewrite takes `channel_id` and reads `analytics/hook_learning.regen_guidance`. The app's
+Analytics page is `desktop/analytics_page.py` (second in `PAGES`). mypy **121**.
 
 **Defects first:**
-- The embedded run window opened on "Default" and called itself MoneyWise (fixed, test added).
-- Qt widget tests skip in a container without `libEGL` (`apt-get install libegl1`); CI has it.
-- The operator's tick-list lives in an artifact page's database - read it before planning.
+- `ops test --order reverse|shuffle` logged the suite into `data/logs/` (in-process runner);
+  fixed with `detach_log_file`, two tests. Anything else that runs the suite in-process must too.
+- The header and Home count every channel's jobs (#989).
+- TapIn opens on a 2.15 s channel intro before the hook (`config/channels.json`) - #988.
 
-**Shipped:** #980 #981 #982 #983 #976. Corpus 99, 0 network attempts, `data/` clean; highest
-#986. Next: **#985 · #986 · #984 · #978 · #979**, reordered by the operator's `ops growth`.
+**Shipped:** #985 #986 #984 #978 #979. Corpus 99, 0 network attempts, `data/` clean; highest
+#991. Next: **#988 · #987 · #989 · #990 · #977**, reordered by the operator's `ops growth`.
 
 ## Slot — Cursor
 

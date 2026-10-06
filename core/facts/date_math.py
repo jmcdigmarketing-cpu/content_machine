@@ -84,11 +84,15 @@ def _show(value: float) -> str:
     return f"{value:.0f}" if abs(value - round(value)) < 0.05 else f"{value:.1f}"
 
 
+def _today() -> datetime.date:
+    return datetime.date.today()
+
+
 def find_elapsed_mismatches(
     script: str, facts: str, *, today: datetime.date | None = None
 ) -> list[str]:
     """Elapsed-time phrases the dates do not support: '"ten years since" - 2019 gives 7'."""
-    today = today or datetime.date.today()
+    today = today or _today()
     fact_lines = [line for line in (facts or "").splitlines() if line.strip()]
     found: list[str] = []
     for sentence in _SENTENCE.split(script or ""):
@@ -143,3 +147,18 @@ def _check_facts(
         return ""
     day, actual = anchored[0]
     return f"the facts date it {day.isoformat()} ({_show(actual)} {unit}(s))"
+
+
+def find_meta_mismatches(
+    title: str, description: str, facts: str, *, today: datetime.date | None = None
+) -> list[str]:
+    """#978: the same check over the title and the description, each flag tagged by where.
+
+    These are the two lines a viewer reads first; #551 read only the script.
+    """
+    found: list[str] = []
+    for where, text in (("title", title), ("description", description)):
+        found.extend(
+            f"{where}: {note}" for note in find_elapsed_mismatches(text, facts, today=today)
+        )
+    return found

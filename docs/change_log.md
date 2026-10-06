@@ -1,12 +1,30 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 63 — the hook learns from who stayed, one header line, an Analytics page - 2026-10-06
+
+*mypy 121; ruff 0.15.8 clean; corpus 99 of 99.*
+
+- **#985** Which opening lines held viewers past the swipe: `py -m scripts.ops growth` prints the
+  hook score's correlation with the stayed share and, per trait (a number, a name, a question ...),
+  how many stayed with it and without. Once 10 videos are measured the opt-in hook rewrite
+  (`HOOK_REGEN_ENABLED=true`) is shown the openers that held best and rewrites one carrying a trait
+  that held fewer viewers.
+- **#986** `py main.py` starts with one line - channel, sign-in, money spent, uploads left, queue,
+  the last video's views - plus a line only for something to fix. Routine detail goes to
+  `data/logs/content_machine.log` (`CONTENT_LOG_FILE`; blank turns it off).
+- **#984** The app has an Analytics page: four numbers, a bar per video of its first-week views
+  shaded by how many viewers stayed, and the hook, goal and prediction lines.
+- **#978** "3 Years Since ..." in a title or description is checked against the dates too.
+- **#979** The weekly report and `ops status` say how many videos were packed for Buffer and
+  posted to TikTok / Instagram this week.
 
 ### Wave 62 — money spent, one app window, where the views go - 2026-10-06
 

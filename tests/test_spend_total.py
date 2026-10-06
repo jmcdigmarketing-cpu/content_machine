@@ -164,9 +164,13 @@ class ShownTests(unittest.TestCase):
             self.assertIn("Spent so far: $54.00", build_status_lines("tapin"))
 
     def test_startup_shows_it(self):
+        # #986: startup prints one header line; the spend total is one of its parts.
+        from core import status
+
         with open("main.py", encoding="utf-8") as f:
-            text = f.read()
-        self.assertIn("spend_line", text)
+            self.assertIn("header_line", f.read())
+        with patch("core.money.ledger.total_spent", return_value={"total": 54.0, "count": 2}):
+            self.assertEqual(status._hdr_spent(), "spent $54.00")
 
 
 if __name__ == "__main__":

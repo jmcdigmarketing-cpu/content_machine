@@ -23,6 +23,8 @@ import re as _re
 # network on the PC and nowhere else. The suite skips the project .env and blanks any
 # secret-shaped variable already in the process environment: it sees what CI sees.
 os.environ["CONTENT_SKIP_DOTENV"] = "1"
+# #986: no log file from the suite (data/ stays untouched).
+os.environ["CONTENT_LOG_FILE"] = ""
 _SECRET_NAME = _re.compile(r"(_KEY|_KEYS|_TOKEN|_SECRET|_PASSWORD|_BOT)$")
 
 

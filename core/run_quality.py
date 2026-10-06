@@ -112,6 +112,8 @@ def build_quality(
     exclude_run_id: int | None = None,
     composite_score: float | None = None,
     recent: list[str] | None = None,
+    title: str = "",
+    description: str = "",
 ) -> dict[str, Any]:
     """Score a finished script on the existing quality axes (pure reads, fail-open)."""
     features = features or {}
@@ -204,6 +206,11 @@ def build_quality(
 
         facts_text = str(features.get("grounding_text") or features.get("facts") or "")
         mismatches = find_elapsed_mismatches(script, facts_text)
+        from core.facts.date_math import find_meta_mismatches
+
+        mismatches += find_meta_mismatches(  # #978: the title and description too
+            title or str(features.get("title") or ""), description, facts_text
+        )
         if mismatches:
             quality["date_mismatches"] = mismatches[:8]  # #551
     except Exception as exc:

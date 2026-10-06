@@ -27,7 +27,7 @@ import os
 import re
 import shutil
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from config.paths import DATA_DIR
@@ -235,6 +235,39 @@ def mark_posted(channel_id: str, run_id: int) -> bool:
     entry["posted"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     _save(channel_id, data)
     return True
+
+
+def _stamp(value: Any) -> datetime | None:
+    try:
+        when = datetime.fromisoformat(str(value or ""))
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
+def week_counts(channel_id: str, *, days: int = 7, now: datetime | None = None) -> tuple[int, int]:
+    """#979: (packed, posted) in the last `days` days, from the stored stamps."""
+    cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=days)
+    packed = posted = 0
+    for entry in (_load(channel_id).get("runs") or {}).values():
+        if not isinstance(entry, dict):
+            continue
+        when = _stamp(entry.get("packed"))
+        packed += bool(when and when >= cutoff)
+        when = _stamp(entry.get("posted"))
+        posted += bool(when and when >= cutoff)
+    return packed, posted
+
+
+def week_line(channel_id: str, *, now: datetime | None = None) -> str:
+    """One line for the weekly report and `ops status`; "" when nothing was packed or posted."""
+    packed, posted = week_counts(channel_id, now=now)
+    if not packed and not posted:
+        return ""
+    return (
+        f"Buffer this week: {packed} packed, {posted} posted (TikTok + Instagram; "
+        "mark each with ops crosspost done --run-id N)"
+    )
 
 
 def waiting_lines(channel_id: str) -> list[str]:

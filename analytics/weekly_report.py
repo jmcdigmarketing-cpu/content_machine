@@ -224,8 +224,21 @@ def _scoreboard_head(channel_id: str) -> str:
         return ""
 
 
+def _buffer_tail(channel_id: str) -> str:
+    """#979: what went to TikTok and Instagram this week; the rest of the report is YouTube."""
+    try:
+        from publishing.crosspost import week_line
+
+        line = week_line(channel_id)
+    except Exception as exc:
+        logger.debug("buffer line skipped in the weekly report: %s", exc)
+        return ""
+    return f"\n\n  {line}" if line else ""
+
+
 def format_report(report: dict[str, Any]) -> str:
-    return _scoreboard_head(str(report.get("channel_id") or "")) + _format_body(report)
+    channel_id = str(report.get("channel_id") or "")
+    return _scoreboard_head(channel_id) + _format_body(report) + _buffer_tail(channel_id)
 
 
 def _format_body(report: dict[str, Any]) -> str:

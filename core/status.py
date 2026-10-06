@@ -166,6 +166,15 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("first-day lines skipped: %s", exc)
 
     try:
+        from publishing.crosspost import week_line
+
+        line = week_line(channel_id)  # #979: TikTok and Instagram, from the Buffer packs
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("buffer week line skipped: %s", exc)
+
+    try:
         from analytics.auto_research_report import verdict_line
 
         line = verdict_line(channel_id)  # #863: once ten runs carry it
@@ -175,3 +184,83 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("auto-research verdict line skipped: %s", exc)
 
     return lines
+
+
+# #986: one header line at startup instead of six. Each reader fails open; an empty part is
+# left out. Module-level so a test patches one part at a time.
+def _hdr_name(channel_id: str) -> str:
+    from config.channels import get_channel_profile
+
+    return str(get_channel_profile(channel_id).name or channel_id)
+
+
+def _hdr_sign_in(channel_id: str) -> str:
+    from youtube.oauth import sign_in_reminder, sign_in_status
+
+    if sign_in_status(channel_id):
+        return "signed out"
+    return "sign-in due" if sign_in_reminder(channel_id) else "sign-in ok"
+
+
+def _hdr_spent() -> str:
+    from core.money.ledger import total_spent
+
+    spent = total_spent()
+    if not spent.get("count"):
+        return "spent: not entered"
+    return f"spent ${float(spent.get('total') or 0):,.2f}"
+
+
+def _hdr_uploads() -> str:
+    from apis.youtube_quota import uploads_remaining
+
+    return f"~{uploads_remaining()} uploads left"
+
+
+def _hdr_queue() -> str:
+    from core.job_queue import list_active_jobs, queue_depth
+
+    return f"queue {queue_depth(list_active_jobs())}"
+
+
+def _hdr_last(channel_id: str) -> str:
+    import json
+
+    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+
+    rows = [
+        r
+        for r in get_publish_log_repository().list_uploaded_for_channel(channel_id) or []
+        if getattr(r, "youtube_video_id", "") and not is_seeded(r)
+    ]
+    if not rows:
+        return ""
+    row = max(rows, key=lambda r: str(getattr(r, "published_at", "") or ""))
+    try:
+        metrics = json.loads(row.metrics_json or "{}")
+        views = int(metrics.get("views") or 0) - int(metrics.get("paid_views") or 0)
+    except (TypeError, ValueError):
+        return ""
+    return f"last video {max(0, views):,} views"
+
+
+def header_line(channel_id: str) -> str:
+    """channel · sign-in · spent · uploads left · queue · last video's organic views."""
+    readers = (
+        lambda: _hdr_name(channel_id),
+        lambda: _hdr_sign_in(channel_id),
+        _hdr_spent,
+        _hdr_uploads,
+        _hdr_queue,
+        lambda: _hdr_last(channel_id),
+    )
+    parts: list[str] = []
+    for read in readers:
+        try:
+            part = read()
+        except Exception as exc:
+            logger.debug("header part skipped: %s", exc)
+            continue
+        if part:
+            parts.append(str(part))
+    return " · ".join(parts)

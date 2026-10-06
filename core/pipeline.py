@@ -715,6 +715,8 @@ def _finalize_run(
             features=result.features,
             exclude_run_id=run_id,
             composite_score=result.score,
+            title=result.title or "",
+            description=result.description or "",
         )
         persist_quality(run_id, quality)
     except Exception:

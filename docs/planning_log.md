@@ -17,6 +17,78 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-06 (Claude Code) - wave 64: the first second, hook variants, the ads ledger, queue per channel, unconfirmed checked
+
+**Prompts (verbatim):** "next 5. anything for me? update all docs and artifacts after
+accordingly." Then, after Claude advised pausing the ads: "isn't content kind of like a get the
+ball rolling type of ordeal though? ... it's like building wealth. easier to be popular if you
+have more viewrrs, artificial or not. And the main weak point was our reach as a channel. So
+maybe that's a week 3-4 october question to stop the ads once we have a big enough sample size".
+Then: "add within artifact and add another reminder for the 24th specifically. go ahead on wave
+64".
+
+**The ads decision (the operator's call, recorded):** keep the ads until **Oct 24** as a measured
+test, not pause them now. Claude's points, kept for the record: on Shorts each video is judged
+mostly on its own test audience, social proof barely reaches the feed, and the learning sample
+grows with videos, not views - so the test needs numbers: subscribers per 1,000 paid vs organic
+views, cost per subscriber, spillover onto the other videos. That is #959, pulled forward in
+place of #990. A reminder fires 2026-10-24 14:00 UTC (`trig_019BBVmBdf9EYuNrtMBpQMyw`); the
+back-home list's ads item became "Run the ads as a measured test until Oct 24".
+`growth_review_2026-10.md` stays as written (a frozen snapshot); this entry supersedes its
+"pause ads".
+
+**Picked:** #989 #959 #988 #987 #977, cheapest first.
+
+### Shipped
+1. **#989** `job_queue.channel_depth` / `channel_queue_text`: header, Home and chip count the
+   channel's jobs, "(+1 other channel)" for the rest.
+2. **#959** `analytics/promotions.py` + `ops promotions`; `ops spend add --kind ads --video ID
+   --days N`; the latest finished campaign's call in `ops status` and `ops growth`.
+3. **#988** `channel_intro.intro_for_run` (opt-in `INTRO_TEST=alternate`), `render_vertical_video
+   (with_intro=)`, `quality["opening"]`, the run card line, `growth.intro_split` / `intro_line`
+   in `ops growth` and the Analytics page, an `intro` lever.
+4. **#987** `content_engine._hook_variants` + `hook_learning.rank_openers`: `HOOK_VARIANTS` (3)
+   openers in one cheap call, the best grounded one kept, every variant on the ledger row.
+5. **#977** `analytics/unconfirmed_check.py`: labelled claims against later runs' facts -
+   confirmed / contradicted / open; in `ops auto-research` and `ops status`.
+
+### Findings, with file:line
+- `core/pipeline.py` (render step) sampled the first frame and the caption contrast at the
+  intro offset unconditionally; with no intro that would have sampled 2 s into the hook. It now
+  samples at 0 s when the run has no intro.
+- Live check: a kept hook variant restated the script's next sentence word for word, so the voice
+  would have said it twice. Variants that repeat a later sentence (80% of their content words)
+  are refused; my own first test script had the same repetition and was rewritten.
+- `core/facts/grounding.find_ungrounded_entities` returned [] for "Silksong gets a sequel in
+  2027" against facts without 2027 (the numeric check covers records and amounts, not years), so
+  #977 confirms a claim only when every number and name in it is in the later facts.
+- `scripts/ops.py` already had a shared `--days` (clock-ahead); `spend add` reuses it instead of a
+  duplicate argument.
+
+### Not done, on purpose
+- The first caption timing (#994), paid vs organic subscribers (#992), the vault's corrections
+  as evidence (#995) - filed.
+- Hook variants stay opt-in; with the rewrite on they now run every time (disclosed; two wave
+  63 tests updated to say so).
+- No corpus case: nothing came from a live run's defect.
+
+### Next five (wave 65)
+#990 a reader for the log · #994 the first caption by 0.5 s · #992 paid vs organic subscribers ·
+#995 unconfirmed against the vault's corrections · #991 a series format. Then #993, #975.
+
+### Audit
+41 new behavioural tests in five new files, **all 41 observed failing on a clean HEAD worktree
+before their fix** (4 + 12 + 10 + 7 + 8; the repeat-sentence test from the live check
+included); three existing tests changed on purpose (two wave 63 hook tests, the Analytics page's
+lines). Suite 4,762 -> **4,803**, green in default, reverse and shuffle order (fake keys) with
+`data/` and `output/` untouched; mypy **121** (= baseline - the first run found 7 new errors in
+`analytics/promotions.py`, two unannotated lists, fixed); ruff 0.15.8 clean; corpus 99 of 99; 0
+network attempts. Every new symbol has a production caller. Live check on synthetic stores: the
+queue line, `ops promotions` before and on Oct 24, the intro decision and run card, ranked hook
+variants (which found the repetition defect), the unconfirmed totals.
+
+---
+
 ## 2026-10-06 (Claude Code) - wave 63: the hook learns from who stayed, one header line, an Analytics page
 
 **Prompt (verbatim):** "make sure my to do is updated, update the story artifact too as well.

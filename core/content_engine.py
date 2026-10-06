@@ -623,80 +623,108 @@ def run_script_pass(
     return after_script
 
 
-def _maybe_improve_hook(script: str, *, channel_id: str = "") -> str:
-    """
-    Opt-in (HOOK_REGEN_ENABLED=true): rewrite a weak opening line into a stronger
-    hook. Only swaps in the rewrite if it actually scores higher; otherwise the
-    original script is returned untouched.
+def hook_variant_count() -> int:
+    try:
+        return max(1, min(5, int(os.getenv("HOOK_VARIANTS", "3"))))
+    except ValueError:
+        return 3
 
-    #985: once the channel has `HOOK_LEARN_MIN` videos with a stayed share, the prompt
-    quotes the openers that held viewers best and names the trait that held more. An
-    opener carrying a trait that held fewer viewers is rewritten even when its score
-    passed; that rewrite is kept only if it drops the trait and still passes.
-    """
-    from core.hook_score import hook_regen_enabled, score_script_hook
 
+def _hook_variants(script: str, *, channel_id: str = "") -> tuple[str, dict[str, Any]]:
+    """
+    Opt-in (HOOK_REGEN_ENABLED=true): ask for `HOOK_VARIANTS` (#987, default 3) new first
+    sentences in one cheap call and keep the best, ranked by `hook_learning.rank_openers` -
+    the hook scorer, plus the channel's learned trait gaps once #985 has enough videos (the
+    prompt then also quotes the openers that held viewers best). A variant is kept only if it
+    outranks the current opener, passes the scorer, and adds no name or number the script does
+    not already have. Returns the script and the variants tried, for the pass's ledger row.
+    """
+    from analytics.hook_learning import rank_openers, regen_guidance
+    from core.hook_score import hook_regen_enabled, score_hook, score_script_hook
+
+    extra: dict[str, Any] = {"variants": [], "picked": ""}
     if not hook_regen_enabled():
-        return script
+        return script, extra
     current = score_script_hook(script)
     if not current.hook:
-        return script
+        return script, extra
     guidance: dict[str, Any] = {}
     try:
-        from analytics.hook_learning import regen_guidance, traits_of
-
         guidance = regen_guidance(channel_id)
-        carried = traits_of(current.hook)
     except Exception as exc:
         logger.debug("hook learning skipped: %s", exc)
-        carried = set()
-    avoid = [t for t in guidance.get("avoid") or [] if t["trait"] in carried]
-    if current.passed and not avoid:
-        return script
-
+    count = hook_variant_count()
     system_prompt = (
-        "You rewrite ONLY the first sentence of a short-form video script into a "
+        f"Write {count} different first sentences for this short-form video script - each a "
         "stronger hook: a specific fact, number, or contradiction, under 12 words. "
         "Never open with 'Today', 'Let's', 'In this video', 'Welcome', or a question. "
-        "Do not invent facts not already implied by the script. Keep the rest of the "
-        "script identical."
+        "Use only names and numbers already in the script; invent nothing."
     )
     if guidance:
         held = "\n".join(f"- {hook}" for hook in guidance.get("examples") or [])
         notes = [
             f"On this channel openers with {t['trait']} held {t['with']:.0%} of viewers past "
             f"the swipe vs {t['without']:.0%} without."
-            for t in (guidance.get("prefer") or []) + avoid
+            for t in (guidance.get("prefer") or []) + (guidance.get("avoid") or [])
         ]
         system_prompt += (
             "\nOpeners that held viewers best on this channel (match the shape, not the "
             f"words or facts):\n{held}\n" + " ".join(notes)
         )
     user_prompt = (
-        f"SCRIPT:\n{script}\n\nReturn JSON only with the full script, first sentence "
-        'replaced:\n{"script": "..."}'
+        f"SCRIPT:\n{script}\n\nReturn JSON only:\n"
+        '{"openers": ["first sentence 1", "first sentence 2", "..."]}'
     )
     try:
         # Rewriting one sentence is throwaway work → cheap tier.
-        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.7, tier="cheap")
+        payload = _call_content_llm(system_prompt, user_prompt, temperature=0.8, tier="cheap")
     except Exception as exc:
-        logger.debug("hook regen failed: %s", exc)
-        return script
-    if isinstance(payload, dict) and payload.get("script"):
-        candidate = str(payload["script"])
-        scored = score_script_hook(candidate)
-        if avoid and current.passed:
-            from analytics.hook_learning import traits_of
+        logger.debug("hook variants failed: %s", exc)
+        return script, extra
+    openers: list[str] = []
+    if isinstance(payload, dict):
+        raw = payload.get("openers")
+        if isinstance(raw, list):
+            openers = [str(o).strip() for o in raw if str(o or "").strip()][:count]
+        elif payload.get("script"):  # a model that rewrote the whole script anyway
+            from core.hook_score import extract_hook
 
-            dropped = not any(t["trait"] in traits_of(scored.hook) for t in avoid)
-            if dropped and scored.passed:
-                logger.info("Rewrote the hook away from %s (#985)", avoid[0]["trait"])
-                return candidate
-            return script
-        if scored.score > current.score:
-            logger.info("Improved hook via regeneration")
-            return candidate
-    return script
+            openers = [extract_hook(str(payload["script"]))]
+    baseline = dict(rank_openers([current.hook], guidance)).get(current.hook, 0.0)
+    from apis.topic_tokens import content_tokens
+
+    tail = script.split(current.hook, 1)[1] if current.hook in script else script
+    later = [set(content_tokens(s)) for s in re.split(r"(?<=[.!?])\s+", tail) if s.strip()]
+    best = ""
+    for opener, score in rank_openers(openers, guidance):
+        row: dict[str, Any] = {"opener": opener, "score": score}
+        words = set(content_tokens(opener))
+        if _new_specifics(script, opener):
+            row["refused"] = "new specifics (a name or number the script does not have)"
+        elif words and any(len(words & s) >= 0.8 * len(words) for s in later):
+            # Live check: the kept opener restated the next sentence, so the voice said it twice.
+            row["refused"] = "repeats a later sentence of the script"
+        elif not score_hook(opener).passed:
+            row["refused"] = "below the hook threshold"
+        elif score <= baseline:
+            row["refused"] = f"no better than the current opener ({baseline:g})"
+        elif not best:
+            best = opener
+        extra["variants"].append(row)
+    if not best:
+        return script, extra
+    extra["picked"] = best
+    rest = script.strip()[len(current.hook) :] if script.strip().startswith(current.hook) else ""
+    if not rest:
+        index = script.find(current.hook)
+        rest = script[index + len(current.hook) :] if index >= 0 else script
+    logger.info("Hook variant kept (#987): %s", best)
+    return best + rest, extra
+
+
+def _maybe_improve_hook(script: str, *, channel_id: str = "") -> str:
+    """The script with the best hook variant, or unchanged (see `_hook_variants`)."""
+    return _hook_variants(script, channel_id=channel_id)[0]
 
 
 def _contrast_rewrite_enabled() -> bool:
@@ -1421,7 +1449,7 @@ def generate_content_package(
         script_passes,
         "improve_hook",
         script,
-        lambda text: _maybe_improve_hook(text, channel_id=channel_id),
+        lambda text: _hook_variants(text, channel_id=channel_id),
         disabled=not hook_regen_enabled(),
     )
 

@@ -169,6 +169,13 @@ def render_dossier(run_id: int) -> str:
             lines.append(f"  implausible amount: {span}")
         for note in quality.get("date_mismatches") or []:  # #551
             lines.append(f"  date check: {note}")
+        opening = quality.get("opening")
+        if isinstance(opening, dict):  # #988: what the viewer sees before the hook
+            if opening.get("intro"):
+                secs = float(opening.get("intro_seconds") or 0)
+                lines.append(f"  opens on: a {secs:.2f} s channel intro, then the first word")
+            else:
+                lines.append("  opens on: the first word (no channel intro)")
         if quality.get("script_mode") == "unconfirmed":  # #339
             lines.append("  script mode: unconfirmed (fresh topic, thin facts - claims labelled)")
         if quality.get("competitor_title_duplicate"):

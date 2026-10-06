@@ -7,6 +7,23 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-05 (Claude Code): wave 61 #973 #974 #551 #339 #863 (script honesty)
+
+The second half of the operator's next 15, as planned.
+
+- **#973** a title loses an "X, not Y" frame ("a trap, not a peak" -> "a trap"); the angle that
+  carried run 113's frame is #976.
+- **#974** from day 6 of a sign-in, `ops all`, startup and `ops status` say renew now; every step
+  still runs. Only a sign-in made after this update is stamped - sign in once to start it.
+- **#551** "18 months since" is checked against the dates in the sentence and the facts; a wrong
+  count joins the flagged specifics and the dossier.
+- **#339** a fresh topic with thin facts is written in unconfirmed mode - what is not confirmed is
+  labelled, not dropped; the dossier and `ops batch-review` say so.
+- **#863** `ops auto-research` makes its own keep / retune / switch-off call at ten runs.
+
+**Verify:** `python -m unittest tests.test_title_frames tests.test_signin_reminder tests.test_date_math`;
+`py -m scripts.ops status`; `py -m scripts.ops auto-research`.
+
 ## Previous — 2026-10-05 (Claude Code): wave 60 #958 #957 #49 #945 #969 (measurement)
 
 The first half of the operator's next 15, as planned.

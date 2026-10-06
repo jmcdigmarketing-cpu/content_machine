@@ -1319,6 +1319,10 @@ def run_media_only(
             set_footage_context(topic, seed=seed, domain=run_domain)
     except Exception as exc:
         logger.debug("footage context skipped: %s", exc)
+    # #988: what opens the video - the channel intro, or straight into the hook.
+    from video.channel_intro import intro_for_run, opening_record, resolve_intro_path
+
+    with_intro = intro_for_run(channel_id, content_run_id)
     _, background = render_vertical_video(
         mp3_path,
         topic,
@@ -1329,7 +1333,18 @@ def run_media_only(
         command_callback=_capture_ffmpeg_command,
         render_preset=render_preset,
         lower_thirds=lower_thirds,
+        with_intro=with_intro,
     )
+    if content_run_id and render_preset != "draft":
+        try:
+            from core.run_quality import merge_quality
+
+            merge_quality(
+                content_run_id,
+                {"opening": opening_record(channel_id, with_intro, resolve_intro_path(channel_id))},
+            )
+        except Exception as exc:
+            logger.debug("opening record skipped: %s", exc)
     technical_qc_data: dict[str, Any] = {}
     if os.path.isfile(mp4_path):
         try:
@@ -1350,7 +1365,8 @@ def run_media_only(
         from core.first_frame import render_check as first_frame_render_check
         from scripts.probe_sync import intro_offset_seconds
 
-        offset = 0.0 if render_preset == "draft" else intro_offset_seconds(channel_id)
+        no_intro = render_preset == "draft" or not with_intro
+        offset = 0.0 if no_intro else intro_offset_seconds(channel_id)
         frame_check = inspect_video(mp4_path, intro_offset=offset)
         if frame_check is not None:
             progress.note(first_frame_render_check(frame_check))
@@ -1366,7 +1382,8 @@ def run_media_only(
         from core.caption_contrast import render_check as contrast_render_check
         from scripts.probe_sync import grab_frame, intro_offset_seconds
 
-        offset = 0.0 if render_preset == "draft" else intro_offset_seconds(channel_id)
+        no_intro = render_preset == "draft" or not with_intro
+        offset = 0.0 if no_intro else intro_offset_seconds(channel_id)
         with _tmp.TemporaryDirectory() as tmp:
             still = os.path.join(tmp, "contrast.png")
             if grab_frame(mp4_path, max(0.0, offset) + 1.0, still):

@@ -31,10 +31,10 @@ def _sign_in(channel_id: str) -> str:
     return sign_in_reminder(channel_id) or f"YouTube sign-in ok ({channel_id})"
 
 
-def _queue_line(_channel_id: str) -> str:
-    from core.job_queue import list_active_jobs, queue_depth_badge
+def _queue_line(channel_id: str) -> str:
+    from core.job_queue import channel_queue_text, list_active_jobs
 
-    return f"Queue: {queue_depth_badge(list_active_jobs())}"
+    return channel_queue_text(list_active_jobs(), channel_id, label="Queue:")  # #989
 
 
 def _recent_lines(channel_id: str, limit: int = 5) -> list[str]:

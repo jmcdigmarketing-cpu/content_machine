@@ -175,6 +175,24 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("buffer week line skipped: %s", exc)
 
     try:
+        from analytics.unconfirmed_check import status_line as unconfirmed_line
+
+        line = unconfirmed_line(channel_id)  # #977: once a labelled claim has resolved
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("unconfirmed claims line skipped: %s", exc)
+
+    try:
+        from analytics.promotions import status_line
+
+        line = status_line(channel_id)  # #959: the last finished ad campaign's call
+        if line:
+            lines.append(line)
+    except Exception as exc:
+        logger.debug("promotions line skipped: %s", exc)
+
+    try:
         from analytics.auto_research_report import verdict_line
 
         line = verdict_line(channel_id)  # #863: once ten runs carry it
@@ -217,10 +235,10 @@ def _hdr_uploads() -> str:
     return f"~{uploads_remaining()} uploads left"
 
 
-def _hdr_queue() -> str:
-    from core.job_queue import list_active_jobs, queue_depth
+def _hdr_queue(channel_id: str) -> str:
+    from core.job_queue import channel_queue_text, list_active_jobs
 
-    return f"queue {queue_depth(list_active_jobs())}"
+    return channel_queue_text(list_active_jobs(), channel_id)  # #989: this channel's jobs
 
 
 def _hdr_last(channel_id: str) -> str:
@@ -251,7 +269,7 @@ def header_line(channel_id: str) -> str:
         lambda: _hdr_sign_in(channel_id),
         _hdr_spent,
         _hdr_uploads,
-        _hdr_queue,
+        lambda: _hdr_queue(channel_id),
         lambda: _hdr_last(channel_id),
     )
     parts: list[str] = []

@@ -40,6 +40,7 @@ def _patches(report=REPORT, videos=VIDEOS):
         patch("analytics.growth.report", return_value=report),
         patch("analytics.growth.videos", return_value=videos),
         patch("analytics.hook_learning.render_line", return_value="Hook vs stayed: collecting"),
+        patch("analytics.growth.intro_line", return_value="Intro: 51% with vs 62% without"),
         patch("core.success.goals.scoreboard_lines", return_value=["Goal: 10k views"]),
         patch("core.predictions.ledger.summary_line", return_value="Predictions: 3 scored"),
     ]
@@ -77,6 +78,7 @@ class DataTests(unittest.TestCase):
         self.assertIn("Hook vs stayed: collecting", lines)
         self.assertIn("Goal: 10k views", lines)
         self.assertIn("Predictions: 3 scored", lines)
+        self.assertIn("Intro: 51% with vs 62% without", lines)  # #988
 
     def test_collecting_below_five(self):
         data = self._data(report={**REPORT, "n": 3}, videos=VIDEOS[:3])

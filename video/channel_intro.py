@@ -196,6 +196,26 @@ def build_intro_concat_command(
     ]
 
 
+def intro_for_run(channel_id: str | None, run_id: int | None) -> bool:
+    """#988: does this run's video open on the channel intro?
+
+    Yes whenever an intro file resolves - unless `INTRO_TEST=alternate`, which drops it on every
+    even run id so videos with and without it build up side by side for `ops growth`.
+    """
+    if not resolve_intro_path(channel_id):
+        return False
+    test = os.getenv("INTRO_TEST", "").strip().lower()
+    return not (test == "alternate" and run_id is not None and int(run_id) % 2 == 0)
+
+
+def opening_record(channel_id: str | None, with_intro: bool, path: str | None) -> dict:
+    """What the run's quality keeps about its first seconds (#988)."""
+    seconds = 0.0
+    if with_intro and path:
+        seconds = round(float(_probe_duration(path) or DEFAULT_INTRO_DURATION), 2)
+    return {"intro": bool(with_intro), "intro_seconds": seconds}
+
+
 def prepend_channel_intro(
     body_path: str,
     *,

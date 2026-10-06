@@ -8,6 +8,25 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 64 — the first second, hook variants, what the ads bought - 2026-10-06
+
+*mypy 121; ruff 0.15.8 clean; corpus 99 of 99.*
+
+- **#959** `py -m scripts.ops promotions` shows what each ad campaign bought: paid views and the
+  cost of each, subscribers and the cost of each, how the promoted videos turned views into
+  subscribers against the others, and whether the others' organic views rose. It says keep or
+  stop on the campaign's last day. Enter a campaign with `py -m scripts.ops spend add --amount 10
+  --what "first campaign" --kind ads --date 2026-10-04 --video VIDEO_ID --days 21`.
+- **#988** Each video's run card says what it opens on. `INTRO_TEST=alternate` in `.env` drops
+  the channel intro on every other render; `ops growth` and the Analytics page then compare how
+  many viewers stayed with and without it.
+- **#987** With `HOOK_REGEN_ENABLED=true`, three new first sentences are written per run and the
+  best one kept - only if it is better, invents no name or number, and doesn't repeat a later
+  sentence.
+- **#989** The queue count is this channel's: "queue 2 (+1 other channel)".
+- **#977** `ops auto-research` says how the "not confirmed yet" claims turned out: confirmed,
+  contradicted or still open.
+
 ### Wave 63 — the hook learns from who stayed, one header line, an Analytics page - 2026-10-06
 
 *mypy 121; ruff 0.15.8 clean; corpus 99 of 99.*

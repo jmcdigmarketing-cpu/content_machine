@@ -171,3 +171,23 @@ def regen_guidance(channel_id: str) -> dict[str, Any]:
         "prefer": [t for t in got["traits"] if t["gap"] >= _GAP][:2],
         "avoid": [t for t in reversed(got["traits"]) if t["gap"] <= -_GAP][:2],
     }
+
+
+def rank_openers(hooks: list[str], guidance: dict[str, Any]) -> list[tuple[str, float]]:
+    """#987: openers best first - the scorer's score plus the learned trait gaps (x100).
+
+    Before learning is ready (`guidance` empty) it is the scorer alone. A stable sort, so a tie
+    keeps the order the openers came in.
+    """
+    from core.hook_score import score_hook
+
+    learned = [*(guidance.get("prefer") or []), *(guidance.get("avoid") or [])]
+    scored: list[tuple[str, float]] = []
+    for hook in hooks:
+        text = (hook or "").strip()
+        if not text:
+            continue
+        traits = traits_of(text)
+        bonus = sum(float(t["gap"]) * 100 for t in learned if t["trait"] in traits)
+        scored.append((text, round(score_hook(text).score + bonus, 1)))
+    return sorted(scored, key=lambda pair: -pair[1])

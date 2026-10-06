@@ -111,6 +111,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `postmortem` | Slowest phase, failed signals, ungrounded claims, cost (--run-id) |
 | `predictions` | What was predicted and recommended at publish vs the outcome (#113) |
 | `preview-render` | Renamed to reback-short (#868); runs nothing |
+| `promotions` | What each ad campaign bought: paid views, subscribers, spillover (#959) |
 | `prompt-eval` | Golden-topic prompt evals: run (LLM cost) or compare last two |
 | `publish-dry-run` | Print the YouTube videos.insert body (no upload; tokens redacted) |
 | `publish-ics` | Write an .ics of scheduled publishes beside HTML dumps |

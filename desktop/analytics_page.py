@@ -107,7 +107,15 @@ def analytics_data(channel_id: str) -> dict[str, Any]:
 
         return [summary_line(channel_id) or ""]
 
-    readers = (("hook", hook), ("scoreboard", scoreboard), ("predictions", predictions))
+    def intro() -> list[str]:
+        return [growth.intro_line(channel_id)]  # #988
+
+    readers = (
+        ("intro", intro),
+        ("hook", hook),
+        ("scoreboard", scoreboard),
+        ("predictions", predictions),
+    )
     for name, read in readers:
         try:
             data["lines"].extend(line for line in read() or [] if line)

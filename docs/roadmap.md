@@ -26,14 +26,15 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-10-06 wave 63: **#985** the hook learns from who stayed past the swipe,
-**#986** one header line at startup and the detail in a log file, **#984** an Analytics page in the
-app, **#978** the date check on titles and descriptions, **#979** Buffer posts in the weekly report.
+**Just landed** - 2026-10-06 wave 64: **#988** the first second - what opens each video is recorded,
+and `INTRO_TEST=alternate` tests the 2.15 s intro against none; **#987** hook variants; **#959**
+the promotion ledger (`ops promotions`, for the Oct 24 ads decision); **#989** the queue count per
+channel; **#977** whether unconfirmed claims held up.
 
-**Before that** - wave 62: **#980 #981 #982 #983 #976** (money spent, one app window, `ops growth`;
-[growth_review_2026-10.md](growth_review_2026-10.md)) · wave 61: **#973 #974 #551 #339 #863** ·
-wave 60: **#958 #957 #49 #945 #969** · wave 59: **#970 #971 #972 #968 #962**. Earlier:
-[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
+**Before that** - wave 63: **#985 #986 #984 #978 #979** · wave 62: **#980 #981 #982 #983 #976**
+([growth_review_2026-10.md](growth_review_2026-10.md)) · wave 61: **#973 #974 #551 #339 #863** ·
+wave 60: **#958 #957 #49 #945 #969**. Earlier: [roadmap_archive.md](roadmap_archive.md) and
+[planning_log.md](planning_log.md).
 
 ### The five weaknesses - where each stands (2026-10-03, after wave 53)
 
@@ -42,28 +43,25 @@ is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode | #977 does unconfirmed mode hold up |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode, **#977** checked against later runs | #977 does unconfirmed mode hold up |
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
 | 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport | - |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out | #914 an emoji font off Windows · #786 footage and your music tracks (operator; `ops footage-gaps` lists what) |
-| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers | #975 the organic rate on a real boosted video · more measured videos |
+| 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers, **#988** the intro measured, **#959** what each ad campaign bought | #975 the organic rate on a real boosted video · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 63 (2026-10-06)** shipped the five recommended after wave 62. The next five come from the
-growth review's first lever (what the first second shows) and two gaps wave 63 found:
+**Wave 64 (2026-10-06)** shipped #988 #987 #989 #977 and pulled **#959** forward: the operator
+keeps the ads until **Oct 24** as a measured test (a reminder is set), so the decision needs
+`ops promotions`. #990 moved here. The next five:
 
-1. **#988 the first-frame check** `[M]` - every TapIn video opens on a 2.15 s channel intro
-   (`config/channels.json`) before the hook; report it, and test with and without.
-2. **#987 hook variants** `[M]` - two or three openings per script, kept by #985's traits.
-3. **#989 the queue count per channel** `[S]` - the header counts every channel's jobs.
-4. **#990 an ops verb for the log** `[S]` - the new log file needs a reader.
-5. **#977 does unconfirmed mode hold up** `[S]`.
+1. **#990 a reader for the log** `[S]` - an ops verb that prints it; moved from wave 64.
+2. **#994 the first caption by 0.5 s** `[S]` - the rest of #988.
+3. **#992 paid vs organic subscribers** `[S]` - before Oct 24 if the API allows it.
+4. **#995 unconfirmed claims against the vault's corrections** `[S]`.
+5. **#991 a series format** `[M]`.
 
-Then **#991** (a series format) and **#975** (the organic rate on a real boosted video). The
-operator's `ops growth` output reorders all of them.
-
-**#959** a promotion ledger only if the operator runs ads again.
+Then **#993** (what the variants teach) and **#975** (the organic rate on a real boosted video).
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
@@ -76,7 +74,9 @@ back): git pull; cancel job 50 before any worker run (`scripts.queue_manage --ch
 `--cancel N`); `CONTENT_CHANNEL_ID=tapin` in `.env`; `youtube.oauth_setup --channel tapin`; `ops
 all`; `ops spend add` for what was paid; `pip install -e ".[app]"` + `ops shortcut`; `ops growth`
 pasted back; `ops backfill view-curve --apply`; Buffer, the policy site, the Reporting API,
-`ops footage-gaps`, one debate and one quotes render; pause the YouTube ads; open Analytics
+`ops footage-gaps`, one debate and one quotes render; the ads as a measured test until Oct 24
+(`ops spend add --kind ads --video ID --days 21`, then `ops promotions`); open Analytics;
+`INTRO_TEST=alternate` and `HOOK_REGEN_ENABLED=true` in `.env`
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

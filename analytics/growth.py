@@ -85,6 +85,7 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             "feed": figures.get("feed"),
             "views": views,
             "paid": paid,
+            "run_id": getattr(row, "content_run_id", None),
         })  # fmt: skip
     return out
 
@@ -94,6 +95,57 @@ def videos(channel_id: str) -> list[dict[str, Any]]:
     measured = [r for r in _rows(channel_id) if r["views7"] is not None]
     far = datetime.min.replace(tzinfo=timezone.utc)
     return sorted(measured, key=lambda r: r["published"] or far)
+
+
+def _opening(run_id: Any) -> dict[str, Any] | None:
+    """The run's recorded opening (#988), or None before wave 64 / without a run."""
+    if not run_id:
+        return None
+    from storage.repositories.content_runs import get_content_run_repository
+
+    run = get_content_run_repository().get(int(run_id))
+    try:
+        quality = json.loads(getattr(run, "quality_json", None) or "{}") if run else {}
+    except (TypeError, ValueError):
+        return None
+    opening = quality.get("opening") if isinstance(quality, dict) else None
+    return opening if isinstance(opening, dict) else None
+
+
+_INTRO_MIN = 3
+
+
+def intro_split(channel_id: str) -> dict[str, Any]:
+    """#988: median stayed share of videos that opened on the intro vs those that did not."""
+    with_intro: list[float] = []
+    without: list[float] = []
+    for row in _rows(channel_id):
+        if row.get("stayed") is None:
+            continue
+        opening = _opening(row.get("run_id"))
+        if opening is None:
+            continue
+        (with_intro if opening.get("intro") else without).append(float(row["stayed"]))
+    out: dict[str, Any] = {"n_with": len(with_intro), "n_without": len(without)}
+    if with_intro:
+        out["with"] = round(_median(with_intro), 3)
+    if without:
+        out["without"] = round(_median(without), 3)
+    return out
+
+
+def intro_line(channel_id: str) -> str:
+    split = intro_split(channel_id)
+    if split["n_with"] >= _INTRO_MIN and split["n_without"] >= _INTRO_MIN:
+        return (
+            f"Intro: {split['with']:.0%} stayed past the swipe with the channel intro "
+            f"(n={split['n_with']}) vs {split['without']:.0%} without it (n={split['n_without']})"
+        )
+    return (
+        f"Intro: {split['n_without']} video(s) without the channel intro so far, "
+        f"{split['n_with']} with it - INTRO_TEST=alternate in .env drops it on every other "
+        f"render until both have {_INTRO_MIN}"
+    )
 
 
 def _median(values: list[float]) -> float:
@@ -133,6 +185,10 @@ def report(channel_id: str) -> dict[str, Any]:
     out["per_week"] = round(len(recent) / (_WINDOW_DAYS / 7), 2)
     total = sum(r["views"] for r in rows)
     out["paid_share"] = round(sum(r["paid"] for r in rows) / total, 4) if total else 0.0
+    try:
+        out["intro_split"] = intro_split(channel_id)  # #988
+    except Exception as exc:
+        logger.debug("intro split skipped: %s", exc)
     return out
 
 
@@ -170,6 +226,18 @@ def levers(rep: dict[str, Any]) -> list[dict[str, Any]]:
             f"Only {feed:.0%} of organic views came from the Shorts feed - the feed is where "
             "Shorts grow. Vertical, under 60 s, #Shorts-ready, and a hook in the first second."
         )})  # fmt: skip
+    intro = rep.get("intro_split") or {}
+    if (
+        intro.get("n_with", 0) >= _INTRO_MIN
+        and intro.get("n_without", 0) >= _INTRO_MIN
+        and intro["without"] - intro["with"] >= 0.05
+    ):
+        found.append({"key": "intro", "score": 1 + (intro["without"] - intro["with"]) * 10,
+                      "line": (
+            f"Videos without the channel intro held {intro['without']:.0%} of viewers past the "
+            f"swipe, those with it {intro['with']:.0%}. The intro spends the first second on a "
+            "logo: set CHANNEL_INTRO_ENABLED=false (or keep it only at the end)."
+        )})  # fmt: skip
     return sorted(found, key=lambda lever: -lever["score"])[:3]
 
 
@@ -200,6 +268,18 @@ def render(channel_id: str) -> str:
         lines.append(f"  from the Shorts feed: {rep['feed_share']:.0%} of organic views")
     lines.append(f"  posting: {rep['per_week']:.1f} a week over the last {_WINDOW_DAYS} days")
     lines.append(f"  paid: {rep['paid_share']:.0%} of all views")
+    try:
+        from analytics.promotions import status_line
+
+        ads = status_line(channel_id)  # #959
+        if ads:
+            lines.append(f"  {ads}")
+    except Exception as exc:
+        logger.debug("promotions line skipped: %s", exc)
+    try:
+        lines.append(f"  {intro_line(channel_id)}")  # #988
+    except Exception as exc:
+        logger.debug("intro line skipped: %s", exc)
     try:
         from analytics.hook_learning import render_line
 

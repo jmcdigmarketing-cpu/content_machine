@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-06: wave 63, hook learning, one header line, Analytics
+# Handoff synopsis — 2026-10-06: wave 64, the first second, hook variants, the ads ledger
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-06 (Claude Code): wave 63 #985 #986 #984 #978 #979 (the recommended five)
+## Last wave — 2026-10-06 (Claude Code): wave 64 #989 #959 #988 #987 #977 (the ads test)
+
+The recommended five, with #959 pulled forward: the operator keeps the ads until Oct 24 as a
+measured test (reminder `trig_019BBVmBdf9EYuNrtMBpQMyw`, 2026-10-24 14:00 UTC).
+
+- **#959** `ops promotions`: per ad campaign, paid views and their cost, subscribers and their
+  cost, subscribers per 1,000 views promoted vs the rest, spillover; keep / stop on its last day.
+  Enter campaigns with `ops spend add --kind ads --video ID --days 21`.
+- **#988** what opens each video is recorded; the run card says it; `INTRO_TEST=alternate` drops
+  the intro on every other render and `ops growth` compares the stayed share with and without.
+- **#987** hook variants: three openers per run (opt-in), the best grounded one kept.
+- **#989** the queue count is the channel's own, "(+1 other channel)" for the rest.
+- **#977** labelled claims checked against later runs: confirmed / contradicted / open.
+
+**Verify:** `python -m unittest tests.test_promotions tests.test_first_second tests.test_hook_variants`;
+`py -m scripts.ops promotions`; `py -m scripts.ops growth`.
+
+## Previous — 2026-10-06 (Claude Code): wave 63 #985 #986 #984 #978 #979 (the recommended five)
 
 The five wave 62 recommended, built cheapest first.
 
@@ -42,23 +59,6 @@ From the operator's message while away: a tick-list, a spend total, a real app, 
 
 **Verify:** `python -m unittest tests.test_spend_total tests.test_growth_report tests.test_desktop_shell`;
 `py -m scripts.ops spend`; `py -m desktop`.
-
-## Previous — 2026-10-05 (Claude Code): wave 61 #973 #974 #551 #339 #863 (script honesty)
-
-The second half of the operator's next 15, as planned.
-
-- **#973** a title loses an "X, not Y" frame ("a trap, not a peak" -> "a trap"); the angle that
-  carried run 113's frame is #976.
-- **#974** from day 6 of a sign-in, `ops all`, startup and `ops status` say renew now; every step
-  still runs. Only a sign-in made after this update is stamped - sign in once to start it.
-- **#551** "18 months since" is checked against the dates in the sentence and the facts; a wrong
-  count joins the flagged specifics and the dossier.
-- **#339** a fresh topic with thin facts is written in unconfirmed mode - what is not confirmed is
-  labelled, not dropped; the dossier and `ops batch-review` say so.
-- **#863** `ops auto-research` makes its own keep / retune / switch-off call at ten runs.
-
-**Verify:** `python -m unittest tests.test_title_frames tests.test_signin_reminder tests.test_date_math`;
-`py -m scripts.ops status`; `py -m scripts.ops auto-research`.
 
 ## Pipeline order (operator)
 
@@ -135,7 +135,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #988 · #987 · #989 · #990 · #977 (reordered by `ops growth`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #990 · #994 · #992 · #995 · #991 (reordered by `ops growth`). **Oct 24:** the ads decision (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

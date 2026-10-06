@@ -174,6 +174,9 @@ the paid share; one bar per video of its organic 7-day views, shaded by its stay
 then the hook-learning line (#985), the scoreboard and the prediction ledger. The first content of
 #149's analytics studio; `ops growth` stays.
 
+**Wave 64 (2026-10-06):** the Analytics page adds the intro line (#988: stayed share with and
+without the channel intro), and Home's queue card counts the channel's own jobs (#989).
+
 **Exit per panel:** reads real data, and the equivalent `ops` verb still works. The
 CLI is never removed — it is the headless path and the test surface.
 

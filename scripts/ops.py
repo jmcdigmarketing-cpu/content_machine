@@ -2823,6 +2823,8 @@ def cmd_spend(args: argparse.Namespace) -> int:
             entry = ledger.add_entry(
                 float(amount), str(getattr(args, "what", "") or ""), kind,
                 monthly=bool(getattr(args, "monthly", False)), on=on,
+                videos=list(getattr(args, "video", None) or []),
+                days=getattr(args, "days", None) or None,
             )  # fmt: skip
         except ValueError as exc:
             print(f"Not added: {exc}")
@@ -2843,6 +2845,15 @@ def cmd_spend(args: argparse.Namespace) -> int:
         return 1
     for line in ledger.ledger_lines():
         print(line)
+    return 0
+
+
+@_register("promotions", "What each ad campaign bought: paid views, subscribers, spillover (#959)")
+def cmd_promotions(args: argparse.Namespace) -> int:
+    from analytics.promotions import render
+    from config.channels import resolve_channel_id
+
+    print(render(resolve_channel_id(getattr(args, "channel", None))))
     return 0
 
 
@@ -2963,7 +2974,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--days",
         type=int,
         default=0,
-        help="clock-ahead: days to shift the clock (0 = 365)",
+        help="clock-ahead: days to shift the clock (0 = 365); spend add --kind ads: days it ran",
     )
     parser.add_argument(
         "--topic",
@@ -3011,6 +3022,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--monthly", action="store_true", help="spend add: a subscription billed every month"
     )
     parser.add_argument("--date", default="", help="spend add / end: YYYY-MM-DD (default today)")
+    parser.add_argument(
+        "--video", action="append", default=None,
+        help="spend add --kind ads: a promoted video id (repeat for each) (#959)",
+    )  # fmt: skip
     parser.add_argument("--entry", type=int, default=None, help="spend end: the entry number")
     parser.add_argument("--email", default="", help="policy-site: the contact address (#956)")
     parser.add_argument(

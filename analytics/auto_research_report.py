@@ -199,10 +199,22 @@ def verdict_line(channel_id: str) -> str:
     return f"Auto-research {found['line']} (ops auto-research)" if found else ""
 
 
+def _unconfirmed(channel_id: str) -> list[str]:
+    if not channel_id:
+        return []
+    try:
+        from analytics.unconfirmed_check import render_lines
+
+        return render_lines(channel_id)  # #977
+    except Exception as exc:
+        logger.debug("unconfirmed lines skipped: %s", exc)
+        return []
+
+
 def render(summary: dict[str, Any], channel_id: str = "") -> str:
     head = f"Auto-research across stored runs{f' ({channel_id})' if channel_id else ''}"
     n = summary["with_report"]
-    research = render_research(summary.get("research") or _research([]))
+    research = render_research(summary.get("research") or _research([])) + _unconfirmed(channel_id)
     if not n:
         return "\n".join(
             [head, "  No run has an auto-research report yet (it started in wave 34).", *research]

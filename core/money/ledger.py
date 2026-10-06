@@ -54,7 +54,14 @@ def entries() -> list[dict[str, Any]]:
 
 
 def add_entry(
-    amount: float, what: str, kind: str, *, monthly: bool = False, on: date | None = None
+    amount: float,
+    what: str,
+    kind: str,
+    *,
+    monthly: bool = False,
+    on: date | None = None,
+    videos: list[str] | None = None,
+    days: int | None = None,
 ) -> dict[str, Any]:
     """Record a payment; ValueError for a negative amount, an unknown kind or no description."""
     if amount is None or float(amount) < 0:
@@ -72,6 +79,12 @@ def add_entry(
         "kind": kind,
         "monthly": bool(monthly),
     }
+    # #959: an ad campaign keeps the Shorts it promoted and how long it ran.
+    picked = [str(v).strip() for v in videos or [] if str(v).strip()]
+    if picked:
+        entry["videos"] = picked
+    if days:
+        entry["days"] = int(days)
     rows.append(entry)
     _save(rows)
     return entry

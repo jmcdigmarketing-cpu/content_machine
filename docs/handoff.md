@@ -53,23 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-06 · **HEAD at write:** `0d3926d` (wave 62) + the wave 63 commit
+**Written:** 2026-10-06 · **HEAD at write:** `aa591fc` (wave 63) + the wave 64 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** startup prints `core.status.header_line` (one line; `main._print_startup`
-adds a line only for a dead sign-in, a renewal or no uploads). `core.logging` attaches a rotating
-INFO file (`data/logs/`, `CONTENT_LOG_FILE`; the suite blanks it, `ops test` detaches it). The
-hook rewrite takes `channel_id` and reads `analytics/hook_learning.regen_guidance`. The app's
-Analytics page is `desktop/analytics_page.py` (second in `PAGES`). mypy **121**.
+**Read before editing:** an `ads` spend entry is a campaign (`videos`, `days`);
+`analytics/promotions` reads it (`ops promotions`). The render step decides the intro per run
+(`video/channel_intro.intro_for_run`, `INTRO_TEST=alternate`) and records `quality["opening"]`;
+anything sampling "after the intro" must check it. The hook pass is
+`content_engine._hook_variants` (returns script + ledger extra); `_maybe_improve_hook` wraps it.
+`analytics/unconfirmed_check` judges labelled claims by later runs only. mypy **121**.
 
 **Defects first:**
-- `ops test --order reverse|shuffle` logged the suite into `data/logs/` (in-process runner);
-  fixed with `detach_log_file`, two tests. Anything else that runs the suite in-process must too.
-- The header and Home count every channel's jobs (#989).
-- TapIn opens on a 2.15 s channel intro before the hook (`config/channels.json`) - #988.
+- A kept hook variant could restate the next sentence (live check) - refused now; keep that guard.
+- `ops promotions` cannot split subscribers into paid and organic (#992) - it compares videos.
+- The operator decides the ads on **Oct 24** (reminder `trig_019BBVmBdf9EYuNrtMBpQMyw`).
 
-**Shipped:** #985 #986 #984 #978 #979. Corpus 99, 0 network attempts, `data/` clean; highest
-#991. Next: **#988 · #987 · #989 · #990 · #977**, reordered by the operator's `ops growth`.
+**Shipped:** #989 #959 #988 #987 #977. Corpus 99, 0 network attempts, `data/` clean; highest
+#995. Next: **#990 · #994 · #992 · #995 · #991**, reordered by the operator's `ops growth`.
 
 ## Slot — Cursor
 

@@ -377,6 +377,7 @@ def render_vertical_video(
     command_callback: Callable[[str, list[str]], None] | None = None,
     render_preset: str = "publish",
     lower_thirds: list[str] | None = None,
+    with_intro: bool | None = None,
 ):
     if progress is None and is_render_progress_enabled():
         progress = RenderProgress()
@@ -661,7 +662,8 @@ def render_vertical_video(
 
     from video.channel_intro import prepend_channel_intro, resolve_intro_path
 
-    if render_preset != "draft" and resolve_intro_path(channel_id):
+    # #988: with_intro=False (INTRO_TEST=alternate) renders this video without the intro.
+    if render_preset != "draft" and with_intro is not False and resolve_intro_path(channel_id):
         stage("Prepending channel intro...")
         try:
             prepend_channel_intro(

@@ -127,7 +127,8 @@ class RewriteTests(unittest.TestCase):
 
         def fake_llm(system, user, **kw):
             seen["system"] = system
-            return {"script": "Jon Jones retired 2 times in 3 years. The rest of it."}
+            # #987: the old fake's "2 times in 3 years" invented numbers and is now refused.
+            return {"openers": ["Jon Jones walked away for good and nobody stopped him."]}
 
         a, b = _patched()
         with (
@@ -141,21 +142,26 @@ class RewriteTests(unittest.TestCase):
             )
         self.assertIn("Conor McGregor lost 3 straight fights.", seen.get("system", ""))
         self.assertIn("a number", seen["system"])
-        self.assertTrue(out.startswith("Jon Jones retired 2 times"))
+        self.assertTrue(out.startswith("Jon Jones walked away for good"))
 
-    def test_nothing_learned_keeps_the_old_behaviour(self):
+    def test_nothing_learned_ranks_by_the_scorer_alone(self):
+        # #987 changed this: with the rewrite switched on, variants are asked for every run;
+        # with nothing learned yet they compete on the hook scorer alone, and a variant that
+        # does not beat the current opener is not kept.
         from core import content_engine
 
         a, b = _patched(HOOKS[:4])
         with (
             a, b,
             patch.dict("os.environ", {"HOOK_REGEN_ENABLED": "true"}),
-            patch.object(content_engine, "_call_content_llm") as llm,
+            patch.object(content_engine, "_call_content_llm",
+                         return_value={"openers": ["Here is something about Jon Jones."]}) as llm,
         ):  # fmt: skip
-            script = "Did Jon Jones really retire for good? The rest of it."
+            script = "Jon Jones won 27 fights and lost once. The rest of it."
             self.assertEqual(content_engine._maybe_improve_hook(script, channel_id="tapin"),
                              script)  # fmt: skip
-        llm.assert_not_called()
+        system = llm.call_args[0][0]
+        self.assertNotIn("held viewers best", system)
 
 
 class GrowthTests(unittest.TestCase):

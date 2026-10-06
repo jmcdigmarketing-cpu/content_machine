@@ -30,6 +30,23 @@ def queue_depth_badge(jobs: list[JobRecord] | None) -> str:
     return str(queue_depth(jobs))
 
 
+def channel_depth(jobs: list[JobRecord] | None, channel_id: str) -> tuple[int, int]:
+    """#989: (this channel's active jobs, every other channel's)."""
+    mine = sum(1 for job in jobs or [] if job.channel_id == channel_id)
+    return mine, len(jobs or []) - mine
+
+
+def channel_queue_text(
+    jobs: list[JobRecord] | None, channel_id: str, *, label: str = "queue"
+) -> str:
+    """'queue 2', or 'queue 2 (+1 other channel)' when another channel has jobs waiting."""
+    mine, others = channel_depth(jobs, channel_id)
+    if not others:
+        return f"{label} {mine}"
+    noun = "channel" if others == 1 else "channels"
+    return f"{label} {mine} (+{others} other {noun})"
+
+
 def apply_drag_order(repo: JobRepository, ordered_ids: list[int]) -> None:
     by_id = {job.id: job for job in repo.list_active_jobs()}
     for index, job_id in enumerate(ordered_ids):

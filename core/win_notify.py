@@ -504,9 +504,9 @@ def run_tray(
     text = show_quota_chip(toast_it=True, channel_id=cid)
     print(text)
     try:
-        from core.job_queue import list_active_jobs, queue_depth_badge
+        from core.job_queue import channel_queue_text, list_active_jobs
 
-        print(f"queue {queue_depth_badge(list_active_jobs())}")
+        print(channel_queue_text(list_active_jobs(), cid))  # #989
     except Exception as exc:
         logger.debug("tray queue badge skipped: %s", exc)
     try:

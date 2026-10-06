@@ -66,10 +66,25 @@ def _clean_angle_lines(raw: str, angle_types) -> list[str]:
         text = _LENS_PAREN_RE.sub(
             lambda m: "" if m.group(1).strip().lower() in _lens_names() else m.group(0), text
         ).strip()
+        text = _drop_angle_frame(text)
         if len(text.split()) < 2 or text in out:
             continue
         out.append(text)
     return out
+
+
+_FRAME_CUT_MIN = 20
+
+
+def _drop_angle_frame(angle: str) -> str:
+    """#976: run 113's "... is a trap, not a peak" -> "... is a trap" when the rest still
+    stands (20+ characters); the title (#973), brief and script then never see the frame."""
+    from core.persona_lint import drop_contrast_tail, title_contrast_frame
+
+    if not title_contrast_frame(angle):
+        return angle
+    cut = drop_contrast_tail(angle)
+    return cut if len(cut) >= _FRAME_CUT_MIN else angle
 
 
 def _heuristic_angles(topic: str, angle_types) -> list[str]:

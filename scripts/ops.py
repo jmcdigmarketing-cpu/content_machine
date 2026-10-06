@@ -2147,7 +2147,7 @@ def cmd_end_card_preview(args: argparse.Namespace) -> int:
 def cmd_run_window(_args: argparse.Namespace) -> int:
     from desktop.launch import launch
 
-    return launch()
+    return launch(mode="run")
 
 
 @_register(
@@ -2232,12 +2232,13 @@ def cmd_reveal(args: argparse.Namespace) -> int:
     return 0
 
 
-@_register("shortcut", "Install Start Menu shortcut via pythonw / content_os.pyw")
+@_register("shortcut", "Start Menu + Desktop shortcuts that open the Content OS app (#982)")
 def cmd_shortcut(_args: argparse.Namespace) -> int:
-    from core.win_shell import install_start_menu_shortcut
+    from core.win_shell import install_app_desktop_shortcut, install_start_menu_shortcut
 
-    path = install_start_menu_shortcut()
-    print(path)
+    print(install_start_menu_shortcut())
+    print(install_app_desktop_shortcut())
+    print('Open "Content OS" from Start or the Desktop (needs: pip install -e ".[app]").')
     return 0
 
 
@@ -2778,6 +2779,70 @@ def cmd_crosspost(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "growth", "Where the views go: stayed share, cadence, feed, paid - the 3 biggest gaps (#983)"
+)
+def cmd_growth(args: argparse.Namespace) -> int:
+    from analytics.growth import render
+    from config.channels import resolve_channel_id
+
+    print(render(resolve_channel_id(getattr(args, "channel", None))))
+    return 0
+
+
+@_register(
+    "spend",
+    "Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, "
+    "`end --entry N` (#980)",
+)
+def cmd_spend(args: argparse.Namespace) -> int:
+    from datetime import date
+
+    from core.money import ledger
+
+    action = str(getattr(args, "target", "") or "").strip().lower()
+    raw_date = str(getattr(args, "date", "") or "").strip()
+    try:
+        on = date.fromisoformat(raw_date) if raw_date else None
+    except ValueError:
+        print(f"--date must be YYYY-MM-DD, not {raw_date!r}")
+        return 2
+    if action == "add":
+        amount = getattr(args, "amount", None)
+        kind = str(getattr(args, "kind", "") or "").strip().lower()
+        if amount is None:
+            print("spend add needs --amount, e.g. --amount 10")
+            return 2
+        if kind not in ledger.KINDS:
+            print(f"spend add needs --kind: one of {', '.join(ledger.KINDS)}")
+            return 2
+        try:
+            entry = ledger.add_entry(
+                float(amount), str(getattr(args, "what", "") or ""), kind,
+                monthly=bool(getattr(args, "monthly", False)), on=on,
+            )  # fmt: skip
+        except ValueError as exc:
+            print(f"Not added: {exc}")
+            return 2
+        every = " a month" if entry["monthly"] else ""
+        print(f"Added #{entry['id']}: ${entry['amount']:,.2f}{every} - {entry['what']} ({kind})")
+        print(ledger.spend_line())
+        return 0
+    if action == "end":
+        entry_id = getattr(args, "entry", None)
+        if not entry_id:
+            print("spend end needs the entry: py -m scripts.ops spend end --entry N")
+            return 2
+        if ledger.end_entry(int(entry_id), on=on):
+            print(f"Ended #{entry_id}; it stops counting after {(on or date.today()).isoformat()}.")
+            return 0
+        print(f"No entry #{entry_id} - py -m scripts.ops spend lists them")
+        return 1
+    for line in ledger.ledger_lines():
+        print(line)
+    return 0
+
+
 @_register("backlog", "Fresh best bets -> drafts -> render the passes -> schedule two weeks (#949)")
 def cmd_backlog(args: argparse.Namespace) -> int:
     """`ops backlog [--weeks 2] [--dry-run] [--yes]`, `ops backlog list`,
@@ -2937,6 +3002,13 @@ def build_parser() -> argparse.ArgumentParser:
         "policy-site: where to write the pages (default output/policy_site)",
     )
     parser.add_argument("--name", default="", help="policy-site: the name the pages show (#956)")
+    parser.add_argument("--amount", type=float, default=None, help="spend add: dollars (#980)")
+    parser.add_argument("--what", default="", help="spend add: what the payment was for")
+    parser.add_argument(
+        "--monthly", action="store_true", help="spend add: a subscription billed every month"
+    )
+    parser.add_argument("--date", default="", help="spend add / end: YYYY-MM-DD (default today)")
+    parser.add_argument("--entry", type=int, default=None, help="spend end: the entry number")
     parser.add_argument("--email", default="", help="policy-site: the contact address (#956)")
     parser.add_argument(
         "--file",

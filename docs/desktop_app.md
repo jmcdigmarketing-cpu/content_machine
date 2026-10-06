@@ -1,6 +1,6 @@
 # Content OS Desktop — the programme
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-09-29
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-06
 
 The plan to leave the terminal permanently, for a real Windows 11 application.
 **Private, local, single-operator, never published.** That constraint is load
@@ -109,7 +109,7 @@ The daily driver: one window that makes a video without PowerShell.
 command refuses honestly. CI does not install the extra; the bridge tests do
 not need a display. The CLI is unchanged (`py main.py` without `--gui`).
 
-Launch: `py -m desktop` · `py main.py --gui` · `py -m scripts.ops run-window`.
+Launch: `py -m desktop` · `py main.py --gui` (both the one app window since #981) · `py -m scripts.ops run-window` (this window alone).
 
 ## Stage 2 — Look · shipped 2026-09-07 · closes #150, #172, #173
 
@@ -124,7 +124,7 @@ reduced-chroma are token flags (#527). CLI is unchanged.
 **Exit (met):** widget stylesheet is non-empty token QSS, not default Qt; missing
 PySide6 still refuses with exit 2 and no WARNING.
 
-Launch: `py -m desktop` · `py main.py --gui` · `py -m scripts.ops run-window`.
+Launch: `py -m desktop` · `py main.py --gui` (both the one app window since #981) · `py -m scripts.ops run-window` (this window alone).
 
 ## Stage 3 — Panels · 5–6 waves · closes 13 items
 
@@ -155,6 +155,17 @@ Stage 3 panels (cost, analytics, …) are later waves.
 | #160 | Legal/disclosure wizard | publish-blocking, not copy lines |
 | #159 | MoneyWise earnings board | last; second channel |
 | #860 | Facts room — paste links, rank lines against the angle, keep or drop | **shipped 2026-09-29** (wave 46): opens at the run window's key-facts step; `ops facts-room` stays |
+
+**Shipped 2026-10-06 (wave 62): #981 one window, #982 the launcher** - the operator: "it kinda
+opens another terminal when i run from the folder, but it actually doesn't do anything ... I
+wanted more typical desktop application". `content_os.pyw` had run the quota chip; the panels
+above were seven windows behind seven flags. `desktop/shell.py` `MainShell` is one window - a
+sidebar (Home, New video, Review, Queue, Costs, Studio, Brand) over the existing windows as
+pages, each built when first opened, a failing page showing why. Home (`desktop/home.py`) shows
+the money spent (#980), the sign-in and its reminder, the queue and the last five videos with
+their first-day verdict. `py -m desktop`, `content_os.pyw` and `ops shortcut` (Start Menu and
+Desktop, via pythonw - no console) open it; `--chip` keeps the chip; the old flags open single
+windows; a missing PySide6 under pythonw is a message box.
 
 **Exit per panel:** reads real data, and the equivalent `ops` verb still works. The
 CLI is never removed — it is the headless path and the test surface.

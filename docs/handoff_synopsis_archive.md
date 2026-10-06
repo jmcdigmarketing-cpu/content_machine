@@ -1,11 +1,29 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-10-05 (Claude Code): wave 59 #970 #971 #972 #968 #962
+
+From run 113 (an NBA Short that went to "Default", queued public) and the operator's ask.
+
+- **#970** Enter at the channel menu takes the last real channel; "Default" is labelled, warned,
+  and a public upload on it needs a yes. `CONTENT_CHANNEL_ID=tapin` in `.env` still wins.
+- **#971** `ops all` checks the YouTube sign-in first: one line with the fix, `sync-metrics` and
+  `backfill` skipped, the rest run. Same line at startup and in `ops status`.
+- **#972** "Somebody" is not a name; the description drops a sentence restating an unbacked claim;
+  auto-research falls back to Google News when every page times out; no empty preview heading.
+- **#968** `ops crosspost` - a Buffer folder per rendered video (mp4, TikTok / Instagram captions,
+  slot); `crosspost list`, `crosspost done --run-id N`.
+- **#962** footage follows the run's own topic and sport when the angle names neither.
+- A test's fixed date (`test_backlog`) turned red with time; fixed.
+
+**Verify:** `python -m unittest tests.test_channel_menu tests.test_signin_health tests.test_crosspost`;
+`py -m scripts.ops all`; `py -m scripts.ops crosspost`.
 
 ## Previous — 2026-10-05 (Claude Code): wave 58 #963 #964 #965 #966 #967 (research by need)
 

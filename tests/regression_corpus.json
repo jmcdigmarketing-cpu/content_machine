@@ -1719,6 +1719,22 @@
         "truthy": true
       },
       "why": "a wrong count joins the specifics the script must fix"
+    },
+    {
+      "id": "run113-angle-contrast-frame",
+      "item": 976,
+      "source": "run 113 (2026-10-04): the angle 'Heat's preseason chemistry is a trap, not a peak' carried the frame into the title",
+      "call": "apis.topic_variants:_clean_angle_lines",
+      "args": [
+        "1. Heat's preseason chemistry is a trap, not a peak",
+        []
+      ],
+      "expect": {
+        "equals": [
+          "Heat's preseason chemistry is a trap"
+        ]
+      },
+      "why": "the frame came from the angle; #973 could only cut it from the title"
     }
   ]
 }

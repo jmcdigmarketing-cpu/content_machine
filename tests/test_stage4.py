@@ -382,7 +382,8 @@ class TestStudioSlice(unittest.TestCase):
 
         self.assertEqual(desktop_mode(["--studio"]), "studio")
         self.assertEqual(desktop_mode(["--review"]), "review")
-        self.assertEqual(desktop_mode([]), "run")
+        self.assertEqual(desktop_mode([]), "shell")  # #981: no flag opens the one app window
+        self.assertEqual(desktop_mode(["--run"]), "run")
 
     def test_safe_title_grid_covers_the_bottom_chrome_band(self):
         from core.safe_title_grid import safe_title_rects

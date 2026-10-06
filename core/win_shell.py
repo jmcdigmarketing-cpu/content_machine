@@ -162,6 +162,10 @@ def desktop_booth_shortcut_path() -> str:
     return os.path.join(desktop_dir(), BOOTH_SHORTCUT_NAME)
 
 
+def desktop_app_shortcut_path() -> str:
+    return os.path.join(desktop_dir(), SHORTCUT_NAME)
+
+
 def pythonw_executable() -> str:
     exe = sys.executable or "python"
     if os.name == "nt":
@@ -217,7 +221,16 @@ def install_start_menu_shortcut() -> str:
     return _install_pythonw_shortcut(
         dest=start_menu_shortcut_path(),
         script=pyw_launcher_path(),
-        description="Content OS operator (no console flash)",
+        description="Content OS (the app window, no console)",
+    )
+
+
+def install_app_desktop_shortcut() -> str:
+    """#982: a Desktop .lnk to the app window (content_os.pyw via pythonw - no console)."""
+    return _install_pythonw_shortcut(
+        dest=desktop_app_shortcut_path(),
+        script=pyw_launcher_path(),
+        description="Content OS",
     )
 
 

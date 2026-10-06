@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-10-05: wave 61, script honesty
+# Handoff synopsis — 2026-10-06: wave 62, money, one app window, growth
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-05
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-05 (Claude Code): wave 61 #973 #974 #551 #339 #863 (script honesty)
+## Last wave — 2026-10-06 (Claude Code): wave 62 #980 #981 #982 #983 #976 (the operator's asks)
+
+From the operator's message while away: a tick-list, a spend total, a real app, why views are low.
+
+- **#980** `ops spend add/end` and "Spent so far: $X" at startup, in `ops status` and on Home.
+- **#981** one app window: sidebar (Home, New video, Review, Queue, Costs, Studio, Brand), Home
+  cards for money, sign-in, queue and the last five videos.
+- **#982** `content_os.pyw` and the `ops shortcut` Start Menu / Desktop shortcuts open it, no
+  console; `--chip` for the old chip.
+- **#983** `ops growth` - views, stayed split, feed share, cadence, paid share, three levers.
+- **#976** angles lose an "X, not Y" frame.
+- The back-home tick-list is an artifact page; the brainstorm is
+  [growth_review_2026-10.md](growth_review_2026-10.md).
+
+**Verify:** `python -m unittest tests.test_spend_total tests.test_growth_report tests.test_desktop_shell`;
+`py -m scripts.ops spend`; `py -m desktop`.
+
+## Previous — 2026-10-05 (Claude Code): wave 61 #973 #974 #551 #339 #863 (script honesty)
 
 The second half of the operator's next 15, as planned.
 
@@ -43,24 +60,6 @@ The first half of the operator's next 15, as planned.
 
 **Verify:** `python -m unittest tests.test_first_day tests.test_organic_engaged tests.test_search_names`;
 `py -m scripts.ops predictions`; `py -m scripts.ops status`.
-
-## Previous — 2026-10-05 (Claude Code): wave 59 #970 #971 #972 #968 #962
-
-From run 113 (an NBA Short that went to "Default", queued public) and the operator's ask.
-
-- **#970** Enter at the channel menu takes the last real channel; "Default" is labelled, warned,
-  and a public upload on it needs a yes. `CONTENT_CHANNEL_ID=tapin` in `.env` still wins.
-- **#971** `ops all` checks the YouTube sign-in first: one line with the fix, `sync-metrics` and
-  `backfill` skipped, the rest run. Same line at startup and in `ops status`.
-- **#972** "Somebody" is not a name; the description drops a sentence restating an unbacked claim;
-  auto-research falls back to Google News when every page times out; no empty preview heading.
-- **#968** `ops crosspost` - a Buffer folder per rendered video (mp4, TikTok / Instagram captions,
-  slot); `crosspost list`, `crosspost done --run-id N`.
-- **#962** footage follows the run's own topic and sport when the angle names neither.
-- A test's fixed date (`test_backlog`) turned red with time; fixed.
-
-**Verify:** `python -m unittest tests.test_channel_menu tests.test_signin_health tests.test_crosspost`;
-`py -m scripts.ops all`; `py -m scripts.ops crosspost`.
 
 ## Pipeline order (operator)
 
@@ -137,7 +136,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #976 · #978 · #979 · #977 · #975. **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #985 · #986 · #984 · #978 · #979 (reordered by `ops growth`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

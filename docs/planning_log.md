@@ -17,6 +17,71 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-06 (Claude Code) - wave 62: money spent, one app window, `ops growth`; the back-home list and a growth review
+
+**Prompt (verbatim, operator away from the PC):** "next 5, note i am still afk so any commands
+cannot be run now. start working on a list of items for me to complete and i will tick them off
+when i get home. Anything else? brainstorm, what does this project lack that other projects like
+this do better? why are we still barely getting 500views per post? better or more advertising?
+can i also get a total money spent across everything with the project in entirety when i boot
+up, like in ui? any other ideas, cleaner ui? what does the desktop app need or do? it kinda opens
+another terminal when i run from the folder, but it actually doesn't do anything for me atm. and
+is not what i wanted. I wanted more typical desktop application, is that possible?"
+
+**Why the list differs:** the recommended five (#976 #978 #979 #977 #975) gave way to what the
+operator asked for; #976 came along, the rest moved behind the growth-review items.
+
+**Delivered outside the repo:** a tick-list artifact page ("Content OS Back-Home List") with the
+14 things only the operator can do, each with its PowerShell. It stores ticks in the page's
+database so Claude can read them back.
+
+### Findings, with file:line
+- `content_os.pyw` (the file in the folder and the Start Menu target, `ops shortcut`) called
+  `core/win_notify.run_tray:482` - a quota chip and a toast. That is the "opens a terminal and
+  does nothing".
+- The Qt app existed (`desktop/`, Stages 0-4) as seven windows behind seven flags in
+  `desktop/launch.py`; nothing joined them.
+- No total of money paid anywhere. Runs carry an estimate (`core/cost_meter.estimate_run_cost`);
+  subscriptions, top-ups and ads are in no API.
+- **Found by the live check:** the run window, embedded, opened on "Default" (the combo's first
+  entry, ignoring #970) and titled itself "MoneyWise" (`desktop/window.py` `_apply_look` knew only
+  TapIn).
+- **Found by the suite:** `tests/test_backlog.py::test_pull_on_an_uploaded_video_says_what_it_needs`
+  scheduled a video at a fixed 2026-10-03 + 3 days while `list_future_scheduled` reads the real
+  clock - red from 2026-10-06 on unmodified HEAD (the same shape as wave 59's fixture). Anchored
+  to the real clock.
+- The container lacked `libEGL`, so every Qt widget test skipped locally (CI installs it). It was
+  installed for this wave; the widget tests and screenshots ran.
+
+### Shipped
+1. **#980** `core/money/ledger.py`, `ops spend` (`add --amount --what --kind [--monthly] [--date]`,
+   `end --entry`); the line at startup, in `ops status` and on Home. Run usage is shown beside the
+   total, never added to it.
+2. **#981** `desktop/shell.py` `MainShell` + `desktop/home.py`; the run page on the app's channel.
+3. **#982** `content_os.pyw` opens the app (`--chip` keeps the chip); `ops shortcut` adds Start Menu
+   and Desktop shortcuts; a message box under pythonw without PySide6. **`py -m desktop` with no
+   flag now opens the app window** - `tests/test_stage4` changed on purpose (`--run` opens the run
+   window alone).
+4. **#983** `analytics/growth.py` + `ops growth`: views, stayed split, feed share, cadence, paid
+   share, three ranked levers.
+5. **#976** `apis/topic_variants._drop_angle_frame`.
+
+Brainstorm answers: [growth_review_2026-10.md](growth_review_2026-10.md). Briefly: reach is
+decided in the first second and by volume, not by titles or ads; pause ads (76% of 28-day views
+were paid); one video a day; owned footage. What similar tools do better: hook variants tested
+on retention, daily cross-posting, trend speed, series, a persona. Filed #984 #985 #986.
+
+### Audit
+32 new tests in four modules (plus one existing expectation changed), **29 of 32 observed
+failing on unmodified code** (three guards: the chip path, a short angle, a plain angle).
+Corpus +1 (98 -> 99), failing on HEAD. ruff clean; mypy at baseline; suite default / reverse /
+shuffle green; 0 network attempts; `data/` and `output/` untouched. Live check: `ops spend`
+empty -> "not entered yet - py -m scripts.ops spend add (61 runs used ~$4.12 in API credits)";
+three entries -> "Spent so far: $81.00 - subscriptions $66.00, ads $10.00, credits $5.00"; the app
+window offscreen, Home cards rendered (screenshot sent), all six pages opened as the real windows.
+
+**Next five:** #985 · #986 · #984 · #978 · #979, reordered by what `ops growth` shows.
+
 ## 2026-10-05 (Claude Code) - wave 61: script honesty - title frames, sign-in reminder, date arithmetic, unconfirmed mode, the auto-research call
 
 **Prompt:** "complete wave 60 and 61" - the second half of the next 15, after wave 60 (`60f8d5e`,

@@ -53,23 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-05 · **HEAD at write:** `60f8d5e` (wave 60) + the wave 61 commit
+**Written:** 2026-10-06 · **HEAD at write:** `8826680` (wave 61) + the wave 62 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** `youtube.oauth.save_credentials` carries `signed_in_at` through refreshes
-(`signed_in=True` only from `run_interactive_oauth`); `sign_in_reminder` never skips a step.
-`core/facts/date_math` feeds `find_elapsed_mismatches` into the ungrounded list. Unconfirmed mode is
-chosen in `content_engine._script_mode_for` from the verdict the pipeline now passes as
-`research_need`, and comes back as `content["script_mode"]`. Titles pass `_drop_frame` in
-`_clean_title`. Wave 60: metrics merge onto the stored blob; `engaged_rate()` prefers organic. mypy **121**.
+**Read before editing:** `py -m desktop` / `content_os.pyw` open `desktop/shell.MainShell` (one
+window, pages built on first open via `build_page`); `--run` and the old flags open single
+windows, `--chip` the chip. Home reads `desktop/home.home_lines` (fail-open per card). Money paid
+is `core/money/ledger.py` (`data/spend_ledger.json`, `ops spend`); run usage is shown beside the
+total, never added. `ops growth` is `analytics/growth.py`. mypy **121**.
 
 **Defects first:**
-- None found in wave 61's own build beyond what the tests drove. Open: the angle generator still
-  writes "X, not Y" angles (#976); #957 unseen on the live API (#975); a sign-in from before #974
-  has no stamp, so no reminder until the operator signs in again.
+- The embedded run window opened on "Default" and called itself MoneyWise (fixed, test added).
+- Qt widget tests skip in a container without `libEGL` (`apt-get install libegl1`); CI has it.
+- The operator's tick-list lives in an artifact page's database - read it before planning.
 
-**Shipped:** #973 #974 #551 #339 #863 (verdict automated; closes when applied). Corpus 98,
-0 network attempts, `data/` clean; highest #979. Next: **#976 · #978 · #979 · #977 · #975**.
+**Shipped:** #980 #981 #982 #983 #976. Corpus 99, 0 network attempts, `data/` clean; highest
+#986. Next: **#985 · #986 · #984 · #978 · #979**, reordered by the operator's `ops growth`.
 
 ## Slot — Cursor
 

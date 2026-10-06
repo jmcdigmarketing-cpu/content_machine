@@ -111,6 +111,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [run_76.md](run_76.md) | 2026-09-13 — live-run postmortem |
 | [engine_upgrades.md](engine_upgrades.md) | 2026-09-20 — measured against 38 run traces |
 | [tooling_review_2026-09-26.md](tooling_review_2026-09-26.md) | 2026-09-26 — extractors, JS pages, football data, vault API; verified that day |
+| [growth_review_2026-10.md](growth_review_2026-10.md) | 2026-10-06 — why about 500 views, ads, what similar tools do, the one-window app |
 
 ## Logs — append-only
 

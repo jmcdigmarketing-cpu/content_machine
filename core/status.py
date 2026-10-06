@@ -92,6 +92,13 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("weekly target line skipped: %s", exc)
 
     try:
+        from core.money.ledger import spend_line
+
+        lines.append(spend_line())  # #980: everything paid, all time
+    except Exception as exc:
+        logger.debug("spend total line skipped: %s", exc)
+
+    try:
         from core.spend_week import spend_warning_line
 
         spend = spend_warning_line()

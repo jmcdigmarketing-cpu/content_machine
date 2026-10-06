@@ -118,6 +118,7 @@ packages = [
     "core.success",
     "core.predictions",
     "core.runs",
+    "core.money",
     "desktop",
     "jobs",
     "publishing",

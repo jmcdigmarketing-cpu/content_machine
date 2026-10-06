@@ -138,6 +138,12 @@ def main():
                 print(f"  ~ {_reminder}")
     except Exception as exc:
         logger.debug("sign-in check skipped: %s", exc)
+    try:  # #980: everything the project has cost, all time
+        from core.money.ledger import spend_line
+
+        print(f"  {spend_line()}")
+    except Exception as exc:
+        logger.debug("spend line skipped: %s", exc)
     from core.themes import set_channel_theme
 
     set_channel_theme(channel_id)

@@ -184,7 +184,9 @@ class RunWindow(QMainWindow):
         pixmap = QPixmap()
         pixmap.loadFromData(QByteArray(icon_svg(cid).encode("utf-8")))
         self.setWindowIcon(QIcon(pixmap))
-        self.brand.setText("TapIn" if cid == "tapin" else "MoneyWise")
+        # #981: the channel's own name - "Default" read as MoneyWise here.
+        self.brand.setText({"tapin": "TapIn", "moneywise": "MoneyWise"}.get(cid) or (
+            get_channel_profiles()[cid].name if cid in get_channel_profiles() else cid))  # fmt: skip
 
     def _restore_geometry(self) -> None:
         state = load_window_state(self._channel_id())

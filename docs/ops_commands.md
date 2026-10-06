@@ -77,6 +77,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `grade` | Pre-publish report card for a run (--run-id required, Pillar 2) |
 | `grain-grade` | Encode a flat frame with the channel look and print stddev |
 | `grounding-corpus` | Replay frozen grounding verdicts (no LLM) |
+| `growth` | Where the views go: stayed share, cadence, feed, paid - the 3 biggest gaps (#983) |
 | `health` | Channel health — Green/Yellow/Red across engagement/cadence/cost (Pillar 5) |
 | `incidents` | Rank recent signal/provider failures by count x recency |
 | `ingest` | Ingest a URL / PDF path / YouTube link into the vault as a provenance note |
@@ -143,12 +144,13 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `sendto-facts` | Install Explorer Send-to shortcut targeting facts.txt |
 | `seo-refresh` | Refresh trending tag hints (YouTube + RSS) |
 | `shell` | Localhost FastAPI operator shell (GET only; no TTS/Apify/publish) |
-| `shortcut` | Install Start Menu shortcut via pythonw / content_os.pyw |
+| `shortcut` | Start Menu + Desktop shortcuts that open the Content OS app (#982) |
 | `signal-audit` | Which signals feed the script, and which return frozen payloads (#575 #588) |
 | `signal-canary` | Probe every signal at $0 — a dead source found before a real run needs it |
 | `signal-diff` | What each signal returned differently between two runs: <A> --run-id B (#586) |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
 | `source-trust` | Corrections per source and the weight they cost it (#342) |
+| `spend` | Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, `end --entry N` (#980) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |
 | `studio` | Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]") |
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |

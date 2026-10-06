@@ -277,7 +277,8 @@ class VetoTests(_Stores):
                 "channel_id": "tapin",
                 "status": "scheduled",
                 "youtube_video_id": "v9",
-                "published_at": NOW + timedelta(days=3),
+                # list_future_scheduled reads the real clock; a fixed date went stale 2026-10-06.
+                "published_at": datetime.now(timezone.utc) + timedelta(days=3),
                 "content_run_id": 11,
                 "detail": "x",
             }

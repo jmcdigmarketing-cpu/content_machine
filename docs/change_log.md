@@ -8,6 +8,23 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 62 — money spent, one app window, where the views go - 2026-10-06
+
+*mypy at baseline; ruff 0.15.8 clean; corpus 99 of 99.*
+
+- **#980** "Spent so far: $X" at startup, in `py -m scripts.ops status` and on the app's Home page.
+  Enter each payment once with `py -m scripts.ops spend add --amount 22 --what "ElevenLabs" --kind
+  subscription --monthly`; a monthly one keeps counting until `spend end --entry N`. What the runs
+  used in API credits is shown beside it.
+- **#981** The desktop app is one window: a sidebar with Home, New video, Review, Queue, Costs,
+  Studio and Brand. Home shows the money, the YouTube sign-in, the queue and the last five videos.
+- **#982** `content_os.pyw` (and the Start Menu and Desktop shortcuts from `py -m scripts.ops
+  shortcut`) open that window with no terminal. `content_os.pyw --chip` is the old quota chip.
+- **#983** `py -m scripts.ops growth` shows where the views go - 7-day views, how many viewers
+  stayed past the swipe, the Shorts-feed share, posts a week, the paid share - and the three
+  biggest gaps with what to change.
+- **#976** Angles no longer end on an "X, not Y" frame.
+
 ### Wave 61 — script honesty: title frames, a sign-in reminder, date arithmetic, unconfirmed mode - 2026-10-05
 
 *mypy 121; ruff 0.15.8 clean; corpus 98 of 98.*

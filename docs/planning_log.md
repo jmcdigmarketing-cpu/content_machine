@@ -17,6 +17,73 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-08 (Claude Code) - live runs 118-120 intake: why run 118 had no facts, 15 improvements filed
+
+**Prompt (verbatim, with four pasted runs from 2026-10-06):** "are facts needed to avoid runs like
+this? why can we not pull more up to date data? ... second prompt assume goy is a title, when i am
+wanting a video on the game of the year race for 2027 ... intake these, see to do list progress, and
+update all relevent documentation and plan out 15 improvements off this data", then "continue with
+the previous prompt".
+
+**The runs:** **118** NFL "Seahawks and Chargers, week 4" - stopped by the grounding gate (8 of 8
+claims unsupported; the title regenerated from "collapse vs 49ers" to "Loss to Cardinals: An
+Unacceptable Editorial Angle"; the script put Seattle in the AFC West). **GOTY 2027** - cancelled at the
+angle menu; every angle treated "Game of the Year 2027" as one game. **119** Shavkat Rakhmonov / Michael
+Morales - two links pasted, B 80, 3 claims unsupported, rendered past the gate, queued unlisted (job
+51). **120** AI game-mod mashups - five links and a README, B 78, 1 claim unsupported, rendered past the
+gate and scheduled with option 4 (job 52). Three uploads went up; the sync read 69 subscribers; the
+goal reads 868 of 100,000 views at 352 a week.
+
+**Answers given.** Facts are needed for anything recent - results, records, who plays whom next -
+because the script may not state those from the model's memory, which predates them; run 118's two
+invented opponents are the proof, and the gate was right to stop it. But the operator should not have
+to paste them, and run 118 had none for three reasons, each confirmed in code: typing "yes" at the
+seed prompt made "yes" the search word (`main.py:577`); the seed was "nfl" because
+`parse_pasted_idea` and `title_phrases` do not read lowercase "seahawks"/"chargers" as names; and
+nothing fetches NFL results (`sports/espn.py` is the NBA board; `apis/live_scores_api.py:69` "NFL
+live scores not wired yet"). News and auto-research also search the seed, so the auto-research read
+Los Angeles ballot-measure pages. Tips until the fixes land: Enter (or a real seed) at "Search for
+this?", capitalised names, `paste` for an article.
+
+### Findings, with file:line
+- `publishing/youtube_publisher.py:285-288`: option 4 sends `private` + `publishAt`, which YouTube
+  makes public at the slot, so the gate's "stays unlisted" lock does not hold; `core/ui.py:2443-2459`
+  only prints a note. Run 120 went public on Oct 7 22:00 EDT. **#1000**
+- `apis/topic_scorer.infer_topic_domain`: "...video games" -> neutral (run 120 called off-niche, seven
+  off-domain signals ran), "NBA 2K25 ..." -> nba (a best bet labelled [nba]). **#1006**
+- `core/facts/entity_lookup.names_for` -> `title_phrases`: "People" -> Wikidata "human" and 97
+  headlines "named human"; "Game" for GOTY. **#1005**
+- `core/angle_chapters.chapter_lines`: run 119's description publishes the angle "UFC 305 adds Kamaru
+  Usman vs Shavkat Rakhmonov fantasy matchup hype" as a chapter. **#1009**; angles themselves carry
+  "obsolete by 2025" and "UFC 305" with no date check. **#1008**
+- Run 119's "19-0 with 8 KO and 10 SUB" fuses API-SPORTS' 18-0-0 with the links' 19-0 (8 + 10 = 18).
+  **#1011**
+- Run 120: the script stopped inside chapter 4 with no closer; chapter 5 never written; a 0:06 chapter
+  offered as a Short. **#1010** Typed lines "0", ".", "Follow Us", "Start here" became facts and the
+  README was saved twice (171 facts). **#1012** Both renders locked for claims the sources back.
+  **#1013** Variant scoring hit its 15 s deadline in every run, so angle scores tie. **#1014** Award
+  race read as a title. **#1007**
+- CI on `4948a42`: the branch's reversed-order leg exited 139 (segfault) while `main` passed every
+  job on the same commit - the first in the last 40 runs; re-run once.
+
+### Also seen, not filed
+TTS made 61 per-sentence requests for one voice (cache 0%); Technical QC found a black and a frozen
+interval in both renders without saying where; the post-time reason printed "3 past ufc posts" and "3
+past gaming posts" with the same numbers; "blog_rss fed 4/4" while it has no feeds; a quote-attribution
+false positive on a TikTok caption; Long and Extended videos on a Shorts channel (they would count
+toward YPP's long-form hours, of which there are 0).
+
+### To-do progress
+5 of 18 ticked (pull, job 50, `.env` channel, sign-in, `ops all`). The startup line still said "(+1
+other channel)" after job 50 was ticked, and "spent: not entered" - no spend entry yet. The list
+gains: check job 50, run 120 went public, run 119's wrong record line, and the topic tips.
+
+### Next five (wave 66)
+#1000 · #1001 · #1002 · #1003 · #1004. Then #1009 #1008 #1013 #1012 #1006 #1005 #1007 #1010 #1011
+#1014, and #999 #990 #995 #975 #991 #993. Each fix adds a regression-corpus case for its run.
+
+---
+
 ## 2026-10-08 (Claude Code) - wave 65: a careful ads budget - cap, paid subscribers, after the ads, what to promote; the first caption
 
 **Prompt (verbatim):** "next 5, what's next for me? any questions? ad strategies? i am very

@@ -124,7 +124,7 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** cancel job 50 (`scripts.queue_manage --channel default --cancel N`), `CONTENT_CHANNEL_ID=tapin` in `.env`, `py -m youtube.oauth_setup --channel tapin`; then a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); stop the running ad in Studio, then `ops spend add --kind ads`, `spend end`, `spend result`, `ADS_MONTHLY_CAP=20`; the policy site and Google's Publish app (skipped for now); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
+1. **Operator:** check job 50 is really gone (`scripts.queue_manage --channel default --cancel N`; the startup line still said "+1 other channel" on Oct 6); run 120 went public on schedule (#1000) - watch it; run 119 stays unlisted (its record line is wrong, #1011); at "Search for this?" press Enter or type a seed, never "yes" (#1001); `CONTENT_CHANNEL_ID=tapin` in `.env`, `py -m youtube.oauth_setup --channel tapin`; then a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); stop the running ad in Studio, then `ops spend add --kind ads`, `spend end`, `spend result`, `ADS_MONTHLY_CAP=20`; the policy site and Google's Publish app (skipped for now); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863's call prints itself at ten runs (E3).
@@ -136,7 +136,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #999 · #990 · #995 · #975 · #991. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Live runs 118-120 (2026-10-06):** filed #1000-#1014 - see planning_log 2026-10-08. **Next:** #1000 · #1001 · #1002 · #1003 · #1004. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

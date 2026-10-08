@@ -53,22 +53,21 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-08 · **HEAD at write:** `1987f07` (wave 64) + the wave 65 commit
-(`git log -1`) · **Tree:** clean after the commit.
+**Written:** 2026-10-08 · **HEAD at write:** `4948a42` (wave 65) + the runs 118-120 intake commit
+(`git log -1`, docs only) · **Tree:** clean after the commit.
 
-**Read before editing:** an ads entry can carry `result` {subscribers, spent} from the campaign
-page (`ledger.set_result`, `ops spend result`); `ledger.charged` is what an entry cost - use it,
-not `amount`. `ADS_MONTHLY_CAP` / `ADS_MAX_PER_SUB` are read in `ledger.ads_cap` and
-`promotions.max_per_subscriber`. `quality["opening"]` gains `first_caption_s` /
-`late_first_caption` from the subtitle file beside the mp4. mypy **121**.
+**Read before editing:** an ads entry can carry `result` {subscribers, spent}; `ledger.charged` is
+what an entry cost. `quality["opening"]` has `first_caption_s` / `late_first_caption`. The operator's
+runs 118-120 are in planning_log 2026-10-08: #1000-#1014 each name the file:line. mypy **121**.
 
 **Defects first:**
-- A failed intro prepend is still recorded as an intro (#999, next) - it skews #988's split.
-- The operator's ad was still spending on 2026-10-08; they were told to stop it. Oct 24 reminder
-  `trig_019BBVmBdf9EYuNrtMBpQMyw` stands.
+- A scheduled upload of a gate-flagged render goes public at the slot (#1000) - run 120 did.
+- Run 118 got no facts: "yes" became the seed (#1001), lowercase teams are not names (#1002), no NFL
+  feed (#1003). The chapter titles publish unchecked angle text (#1009).
+- CI `4948a42`: the branch's reversed leg segfaulted (exit 139) once; `main` passed every job.
 
-**Shipped:** #996 #992 #998 #997 #994. Corpus 99, 0 network attempts, `data/` clean; highest
-#999. Next: **#999 · #990 · #995 · #975 · #991**.
+**Shipped:** wave 65 (#996 #992 #998 #997 #994) and this intake (docs). Highest #1014. Next:
+**#1000 · #1001 · #1002 · #1003 · #1004**.
 
 ## Slot — Cursor
 

@@ -43,25 +43,30 @@ is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode, **#977** checked against later runs | #977 does unconfirmed mode hold up |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode, **#977** checked against later runs | **#1003** NFL results from ESPN · **#1004** news and research search the subject · **#1002** lowercase team names (runs 118-120) |
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
-| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport | - |
+| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport | **#1006** video games read as gaming · **#1005** no who's-who for common words · **#1007** award races |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out | #914 an emoji font off Windows · #786 footage and your music tracks (operator; `ops footage-gaps` lists what) |
 | 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers, **#988** the intro measured, **#959** what each ad campaign bought, **#992** paid subscribers, **#998** after the ads | #975 the organic rate on a real boosted video · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 65 (2026-10-08)** pulled the ad tools forward on the operator's prompt ("calculated and
-worth it", $40 spent in about four days): #992 #996 #997 #998, plus #994. #990, #995 and #991 moved
-here. The next five:
+**Wave 65 (2026-10-08)** shipped the ad tools (#992 #996 #997 #998) and #994. Then the operator's
+live runs 118-120 (2026-10-06, pasted 10-08) filed **#1000-#1014**: a scheduled upload bypassed the
+grounding gate's unlisted lock, and run 118 got no facts because "yes" became the search seed, the
+lowercase team names were not names and nothing fetches NFL results. The next five put safety first,
+then the up-to-date data chain:
 
-1. **#999 a failed intro prepend recorded as an intro** `[S]` - found this wave; it skews #988's split.
-2. **#990 a reader for the log** `[S]` - an ops verb that prints it; moved twice.
-3. **#995 unconfirmed claims against the vault's corrections** `[S]`.
-4. **#975 the organic rate on a real boosted video** `[S]` - the $40 campaign is that video.
-5. **#991 a series format** `[M]`.
+1. **#1000 a gate-flagged render scheduled on YouTube goes public** `[S]` - run 120 did.
+2. **#1001 "yes" at the seed prompt; the seed keeps the teams** `[S]`.
+3. **#1002 lowercase team names are names** `[S]`.
+4. **#1003 NFL scores, records and next games from ESPN** `[M]` - "why can we not pull more up to date data?"
+5. **#1004 news and auto-research search the subject** `[S]`.
 
-Then **#993** (what the variants teach).
+Then **#1009** chapter titles checked · **#1008** angles date-checked · **#1013** confirm a claim
+without a re-render · **#1012** typed fact lines filtered · **#1006** video games read as gaming ·
+**#1005** · **#1007** award races · **#1010** · **#1011** · **#1014**; and **#999 #990 #995 #975
+#991 #993**.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
@@ -77,7 +82,8 @@ pasted back; `ops backfill view-curve --apply`; Buffer, the policy site, the Rep
 `ops footage-gaps`, one debate and one quotes render; **stop the running ad in Studio**, then enter
 it (`ops spend add --kind ads --video ID`, `spend end`, `spend result --subs N`) and read `ops
 promotions` on Oct 24; `ADS_MONTHLY_CAP=20`, `INTRO_TEST=alternate` and `HOOK_REGEN_ENABLED=true`
-in `.env`; open Analytics
+in `.env`; open Analytics; check job 50 is gone and that run 120 (public on schedule) is fine;
+at "Search for this?" press Enter or type a seed - never "yes" - until #1001 lands
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

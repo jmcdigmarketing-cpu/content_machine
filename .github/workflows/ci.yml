@@ -158,7 +158,20 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[shell,app]"
       - name: Run unit tests in reverse discovery order
+        # 4948a42: this leg died twice with exit 139 (a native crash) while main's run of the
+        # same commit passed, and no local run reproduced it. faulthandler prints the Python
+        # stack at a crash; the annotation carries it, since the job log is not readable
+        # everywhere the result is.
         env:
           QT_QPA_PLATFORM: offscreen
+          PYTHONFAULTHANDLER: "1"
           CONTENT_TEST_DATABASE_URL: postgresql://postgres:test@localhost:5432/content_machine_test
-        run: python -m scripts.ops test --order reverse
+        run: |
+          set +e
+          python -m scripts.ops test --order reverse 2>&1 | tee "$RUNNER_TEMP/reversed-output.txt"
+          code=${PIPESTATUS[0]}
+          if [ "$code" != "0" ]; then
+            stack=$(grep -A 40 -E "Fatal Python error|^(FAIL|ERROR):" "$RUNNER_TEMP/reversed-output.txt" | head -60 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=reversed-order suite (exit $code)::${stack:-no Python stack printed}"
+          fi
+          exit $code

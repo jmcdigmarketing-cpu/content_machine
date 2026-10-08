@@ -63,8 +63,13 @@ this?", capitalised names, `paste` for an article.
   README was saved twice (171 facts). **#1012** Both renders locked for claims the sources back.
   **#1013** Variant scoring hit its 15 s deadline in every run, so angle scores tie. **#1014** Award
   race read as a title. **#1007**
-- CI on `4948a42`: the branch's reversed-order leg exited 139 (segfault) while `main` passed every
-  job on the same commit - the first in the last 40 runs; re-run once.
+- CI on `4948a42`: the branch's reversed-order leg exited 139, again on a re-run, then both test
+  legs on main and the branch for the intake commit. Not this repo's code: PySide6 6.12.0, released
+  that morning and allowed by `PySide6>=6.7.0`, aborts at interpreter exit after a QtMultimedia
+  decode ("none_dealloc: deallocating None", runtime finalizing) - reproduced locally by installing
+  it, gone on 6.11.2. Pinned `<6.12` (**#1015**: lift when a 6.12.x exits cleanly). The reversed CI
+  leg now runs with `PYTHONFAULTHANDLER=1` and puts the crash stack in an annotation - which is how
+  this was read, since the job logs are not reachable from the session.
 
 ### Also seen, not filed
 TTS made 61 per-sentence requests for one voice (cache 0%); Technical QC found a black and a frozen

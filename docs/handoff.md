@@ -64,9 +64,10 @@ runs 118-120 are in planning_log 2026-10-08: #1000-#1014 each name the file:line
 - A scheduled upload of a gate-flagged render goes public at the slot (#1000) - run 120 did.
 - Run 118 got no facts: "yes" became the seed (#1001), lowercase teams are not names (#1002), no NFL
   feed (#1003). The chapter titles publish unchecked angle text (#1009).
-- CI `4948a42`: the branch's reversed leg segfaulted (exit 139) once; `main` passed every job.
+- CI exit 139 from 2026-10-08: PySide6 6.12.0 aborts at exit after a QtMultimedia decode - pinned
+  `<6.12` in `[app]` (#1015). The reversed leg annotates a crash stack (`PYTHONFAULTHANDLER`).
 
-**Shipped:** wave 65 (#996 #992 #998 #997 #994) and this intake (docs). Highest #1014. Next:
+**Shipped:** wave 65 (#996 #992 #998 #997 #994), this intake (docs) and the pin. Highest #1015. Next:
 **#1000 · #1001 · #1002 · #1003 · #1004**.
 
 ## Slot — Cursor

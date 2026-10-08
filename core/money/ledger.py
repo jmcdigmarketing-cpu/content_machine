@@ -11,6 +11,11 @@ entered once (`py -m scripts.ops spend add`) into `data/spend_ledger.json`:
 
 What the runs used (`run_usage`) is shown beside the total and never added to it - it was paid
 for by those same credits and subscriptions.
+
+An ad campaign can carry its result from YouTube Studio's campaign page (#992, `spend result`):
+the subscribers it brought and what it actually charged, which then counts instead of the budget.
+`ADS_MONTHLY_CAP` (#996) is the most ads may cost in a calendar month; `ads_budget_line` says
+where this month stands against it.
 """
 
 from __future__ import annotations
@@ -90,6 +95,47 @@ def add_entry(
     return entry
 
 
+def set_result(
+    entry_id: int,
+    *,
+    subscribers: int | None = None,
+    spent: float | None = None,
+    on: date | None = None,
+) -> dict[str, Any] | None:
+    """#992: what an ad campaign's page in YouTube Studio reports - the subscribers it brought and
+    what it charged. None when there is no such entry; ValueError for another kind, a negative
+    number or nothing to record. A second call changes only what it is given."""
+    if subscribers is None and spent is None:
+        raise ValueError("give the subscribers (--subs) or what it charged (--amount)")
+    if (subscribers is not None and int(subscribers) < 0) or (spent is not None and spent < 0):
+        raise ValueError("numbers must be 0 or more")
+    rows = _load()
+    for row in rows:
+        if int(row.get("id") or 0) != int(entry_id):
+            continue
+        if row.get("kind") != "ads":
+            raise ValueError(f"entry #{entry_id} is not an ad campaign (kind {row.get('kind')})")
+        result = dict(row.get("result") or {})
+        if subscribers is not None:
+            result["subscribers"] = int(subscribers)
+        if spent is not None:
+            result["spent"] = round(float(spent), 2)
+        result["date"] = (on or date.today()).isoformat()
+        row["result"] = result
+        _save(rows)
+        return row
+    return None
+
+
+def charged(entry: dict[str, Any]) -> float:
+    """What an entry cost: a campaign's charge from its result (#992), else its amount."""
+    spent = (entry.get("result") or {}).get("spent")
+    try:
+        return float(spent if spent is not None else entry.get("amount") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def end_entry(entry_id: int, *, on: date | None = None) -> bool:
     """Stop a monthly entry counting after `on`'s month; False when there is no such entry."""
     rows = _load()
@@ -111,7 +157,7 @@ def _day(value: Any) -> date | None:
 def entry_total(entry: dict[str, Any], today: date) -> float:
     """What an entry has cost by `today`."""
     start = _day(entry.get("date"))
-    amount = float(entry.get("amount") or 0)
+    amount = charged(entry)
     if start is None or start > today:
         return 0.0
     if not entry.get("monthly"):
@@ -186,4 +232,72 @@ def ledger_lines(*, today: date | None = None) -> list[str]:
             f"  #{row.get('id')}  {row.get('date')}  ${float(row.get('amount') or 0):,.2f}{every}"
             f"  {row.get('kind')}  {row.get('what')}{ended}  (so far ${so_far:,.2f})"
         )
+        if row.get("result"):
+            lines.append(f"      result: {result_text(row)}")
+    ads = ads_budget_line(today=today)  # #996
+    if ads:
+        lines.append(ads)
     return lines
+
+
+def result_text(entry: dict[str, Any]) -> str:
+    """ "12 subscribers, $38.50 charged - $3.21 per subscriber" (#992)."""
+    result = entry.get("result") or {}
+    subs = result.get("subscribers")
+    cost = charged(entry)
+    parts = []
+    if subs is not None:
+        parts.append(f"{int(subs)} subscribers")
+    parts.append(f"${cost:,.2f} charged")
+    text = ", ".join(parts)
+    if subs:
+        text += f" - ${cost / int(subs):,.2f} per subscriber"
+    return text
+
+
+def ads_cap() -> float | None:
+    """#996: `ADS_MONTHLY_CAP` in dollars; None when blank, not a number or negative."""
+    try:
+        cap = float(os.getenv("ADS_MONTHLY_CAP", "").strip())
+    except ValueError:
+        return None
+    return cap if cap >= 0 else None
+
+
+def ads_this_month(today: date | None = None) -> float:
+    """What ad campaigns dated in `today`'s calendar month cost."""
+    today = today or date.today()
+    total = 0.0
+    for row in _load():
+        day = _day(row.get("date"))
+        if row.get("kind") == "ads" and day and (day.year, day.month) == (today.year, today.month):
+            total += charged(row)
+    return round(total, 2)
+
+
+def _next_month(today: date) -> date:
+    return date(today.year + (today.month == 12), today.month % 12 + 1, 1)
+
+
+def ads_over_cap(*, today: date | None = None) -> bool:
+    """True when a cap is set and this month's ads have reached it."""
+    cap = ads_cap()
+    return cap is not None and ads_this_month(today) >= cap
+
+
+def ads_budget_line(*, today: date | None = None) -> str:
+    """ "Ads this month: $40.00 of your $20.00 cap - $20.00 over; no new campaign until Nov 1",
+    or "" when there is no cap and no ad campaign was ever entered."""
+    today = today or date.today()
+    cap = ads_cap()
+    spent = ads_this_month(today)
+    if cap is None:
+        if not any(r.get("kind") == "ads" for r in _load()):
+            return ""
+        return f"Ads this month: ${spent:,.2f} - no cap set (ADS_MONTHLY_CAP in .env)"
+    line = f"Ads this month: ${spent:,.2f} of your ${cap:,.2f} cap"
+    if spent < cap:
+        return f"{line} (${cap - spent:,.2f} left)"
+    nxt = _next_month(today)
+    over = f"${spent - cap:,.2f} over" if spent > cap else "spent"
+    return f"{line} - {over}; no new campaign until {nxt:%b} {nxt.day}"

@@ -2793,10 +2793,15 @@ def cmd_growth(args: argparse.Namespace) -> int:
     return 0
 
 
+def _amount_arg(args: argparse.Namespace) -> float | None:
+    raw = getattr(args, "amount", None)
+    return None if raw is None else float(raw)
+
+
 @_register(
     "spend",
     "Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, "
-    "`end --entry N` (#980)",
+    "`end --entry N`, `result --entry N --subs N` (#980, #992)",
 )
 def cmd_spend(args: argparse.Namespace) -> int:
     from datetime import date
@@ -2819,6 +2824,8 @@ def cmd_spend(args: argparse.Namespace) -> int:
         if kind not in ledger.KINDS:
             print(f"spend add needs --kind: one of {', '.join(ledger.KINDS)}")
             return 2
+        cap = ledger.ads_cap()
+        month_before = ledger.ads_this_month(on) if kind == "ads" else 0.0
         try:
             entry = ledger.add_entry(
                 float(amount), str(getattr(args, "what", "") or ""), kind,
@@ -2832,6 +2839,32 @@ def cmd_spend(args: argparse.Namespace) -> int:
         every = " a month" if entry["monthly"] else ""
         print(f"Added #{entry['id']}: ${entry['amount']:,.2f}{every} - {entry['what']} ({kind})")
         print(ledger.spend_line())
+        if kind == "ads":  # #996: recorded either way - the money is spent - but said
+            month_after = ledger.ads_this_month(on)
+            if cap is not None and month_before <= cap < month_after:
+                when = on or date.today()
+                print(f"This takes {when:%B}'s ads over your ${cap:,.2f} cap.")
+            print(ledger.ads_budget_line(today=on))
+        return 0
+    if action == "result":  # #992: what the campaign's page in YouTube Studio reports
+        entry_id = getattr(args, "entry", None)
+        subs = getattr(args, "subs", None)
+        if not entry_id or (subs is None and _amount_arg(args) is None):
+            print(
+                "spend result needs the campaign and a number: py -m scripts.ops spend result "
+                "--entry N --subs N [--amount WHAT_IT_CHARGED]"
+            )
+            return 2
+        try:
+            row = ledger.set_result(int(entry_id), subscribers=subs, spent=_amount_arg(args), on=on)
+        except ValueError as exc:
+            print(f"Not recorded: {exc}")
+            return 2
+        if row is None:
+            print(f"No entry #{entry_id} - py -m scripts.ops spend lists them")
+            return 1
+        print(f"Campaign #{entry_id}: {ledger.result_text(row)}")
+        print("py -m scripts.ops promotions shows what it bought.")
         return 0
     if action == "end":
         entry_id = getattr(args, "entry", None)
@@ -3026,7 +3059,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video", action="append", default=None,
         help="spend add --kind ads: a promoted video id (repeat for each) (#959)",
     )  # fmt: skip
-    parser.add_argument("--entry", type=int, default=None, help="spend end: the entry number")
+    parser.add_argument(
+        "--entry", type=int, default=None, help="spend end / result: the entry number"
+    )
+    parser.add_argument(
+        "--subs", type=int, default=None,
+        help="spend result: subscribers the campaign's page in YouTube Studio reports (#992)",
+    )  # fmt: skip
     parser.add_argument("--email", default="", help="policy-site: the contact address (#956)")
     parser.add_argument(
         "--file",

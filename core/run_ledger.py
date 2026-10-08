@@ -176,6 +176,13 @@ def render_dossier(run_id: int) -> str:
                 lines.append(f"  opens on: a {secs:.2f} s channel intro, then the first word")
             else:
                 lines.append("  opens on: the first word (no channel intro)")
+            if opening.get("first_caption_s") is not None:  # #994
+                after = float(opening["first_caption_s"]) - float(opening.get("intro_seconds") or 0)
+                where = "after the intro" if opening.get("intro") else "into the video"
+                if opening.get("late_first_caption"):
+                    lines.append(f"  LATE: no words on screen for {after:.2f} s {where}")
+                else:
+                    lines.append(f"  first caption {after:.2f} s {where}")
         if quality.get("script_mode") == "unconfirmed":  # #339
             lines.append("  script mode: unconfirmed (fresh topic, thin facts - claims labelled)")
         if quality.get("competitor_title_duplicate"):

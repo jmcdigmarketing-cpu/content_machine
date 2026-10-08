@@ -1338,11 +1338,21 @@ def run_media_only(
     if content_run_id and render_preset != "draft":
         try:
             from core.run_quality import merge_quality
+            from video.caption_timing import first_cue_seconds, subtitle_beside
 
-            merge_quality(
-                content_run_id,
-                {"opening": opening_record(channel_id, with_intro, resolve_intro_path(channel_id))},
+            # #994: when the first caption appears, from the subtitle file the render burned.
+            first_cue = first_cue_seconds(subtitle_beside(mp4_path))
+            opening = opening_record(
+                channel_id, with_intro, resolve_intro_path(channel_id), first_cue=first_cue
             )
+            merge_quality(content_run_id, {"opening": opening})
+            if opening.get("late_first_caption"):
+                logger.warning(
+                    "first caption %.2f s after the %s - no words on screen while viewers decide "
+                    "to swipe (FIRST_CAPTION_MAX_S)",
+                    float(first_cue or 0),
+                    "intro" if with_intro else "start",
+                )
         except Exception as exc:
             logger.debug("opening record skipped: %s", exc)
     technical_qc_data: dict[str, Any] = {}

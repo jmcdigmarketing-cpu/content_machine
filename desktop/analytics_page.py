@@ -110,8 +110,14 @@ def analytics_data(channel_id: str) -> dict[str, Any]:
     def intro() -> list[str]:
         return [growth.intro_line(channel_id)]  # #988
 
+    def promote() -> list[str]:
+        from analytics.promotions import candidates_line
+
+        return [candidates_line(channel_id)]  # #997
+
     readers = (
         ("intro", intro),
+        ("promote", promote),
         ("hook", hook),
         ("scoreboard", scoreboard),
         ("predictions", predictions),

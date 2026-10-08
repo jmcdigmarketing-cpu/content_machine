@@ -1,6 +1,6 @@
 # Content OS Desktop — the programme
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-06
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-08
 
 The plan to leave the terminal permanently, for a real Windows 11 application.
 **Private, local, single-operator, never published.** That constraint is load
@@ -176,6 +176,9 @@ then the hook-learning line (#985), the scoreboard and the prediction ledger. Th
 
 **Wave 64 (2026-10-06):** the Analytics page adds the intro line (#988: stayed share with and
 without the channel intro), and Home's queue card counts the channel's own jobs (#989).
+
+**Wave 65 (2026-10-08):** Home gains an Ads card - this month's ads against `ADS_MONTHLY_CAP`
+(#996) - and the Analytics page names the video worth promoting, if any (#997).
 
 **Exit per panel:** reads real data, and the equivalent `ops` verb still works. The
 CLI is never removed — it is the headless path and the test surface.

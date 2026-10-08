@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -14,6 +14,81 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > Rolls over by month once it passes the size ceiling (docs_standard.md §7): this file holds
 > the current period; earlier months are frozen in [planning_log_2026-08.md](planning_log_2026-08.md)
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
+
+---
+
+## 2026-10-08 (Claude Code) - wave 65: a careful ads budget - cap, paid subscribers, after the ads, what to promote; the first caption
+
+**Prompt (verbatim):** "next 5, what's next for me? any questions? ad strategies? i am very
+cautious about spending too much as i ran up like $40 total really really quickly. Like the
+attention but it needs to be calculated and worth it"
+
+**The operator's answers (asked in plan mode):** ceiling **$20 a month, nothing new until the
+Oct 24 decision**; the campaign is **still spending**; the ~$40 was **all YouTube ads**; the
+campaign's page in YouTube Studio **shows the subscribers it brought**.
+
+**Advice given, recorded:** stop the running ad today - $40 in about four days is twice the
+ceiling, and running to Oct 24 at that pace is about $160 more. Stopping does not spoil the
+test: the days after it are the best test of the snowball idea (#998). Oct 24 stays the
+decision day, now "does November get one $20 test". For later tests: only a video that already
+held organic viewers (#997), a total budget and an end date (never an open daily budget), $5-10
+over 3-5 days, one video at a time, the stop rule set before starting (`ADS_MAX_PER_SUB`), and
+ad views and watch time do not count toward monetization. The back-home list gained "Stop the
+running ad in YouTube Studio" at the top before any code was written.
+
+**Picked, and why it differs from the recommendation (#990 #994 #992 #995 #991):** the prompt
+was about ad money, so #992 stayed and three new ad items (#996 #997 #998) took the places of
+#990, #995 and #991; #994 stayed as the free lever (the first second). Built cheapest and safest
+first: ledger and cap, campaign result, after the ads, candidates, first caption.
+
+### Shipped
+1. **#996** `ledger.ads_cap` / `ads_this_month` / `ads_over_cap` / `ads_budget_line`
+   (`ADS_MONTHLY_CAP`): `ops spend`, `ops promotions`, `ops status`, the app's Home, startup only
+   when over; `spend add --kind ads` warns and still records. `promotions.max_per_subscriber`
+   (`ADS_MAX_PER_SUB`): stop above it, also mid-campaign; a keep names the price.
+2. **#992** `ledger.set_result` / `charged` / `result_text` + `ops spend result --entry N --subs
+   N [--amount CHARGED]`; `ops promotions` reads paid subscribers from the campaign page.
+3. **#998** before -> during -> after per campaign, `held`; a keep rule at 7+ days after.
+4. **#997** `promotions.candidates` / `candidate_lines` / `candidates_line`: two at most, a test
+   sized to what the cap has left; `ops promotions` and the Analytics page.
+5. **#994** `caption_timing.first_cue_seconds` / `subtitle_beside`; `opening_record(first_cue=)`
+   keeps `first_caption_s` and `late_first_caption` (`FIRST_CAPTION_MAX_S` 0.5); WARNING and run
+   card line.
+
+### Findings, with file:line
+- `video/render_video.py:663-678` catches a failed intro prepend and keeps the render, but
+  `core/pipeline.py` records `opening.intro` from `intro_for_run` and samples at the intro
+  offset - such a video sits on the wrong side of #988's split. Filed **#999**, first of the next
+  five.
+- `analytics/promotions.render` took no date, so its after-the-ads line depended on the day the
+  test ran; it takes `today=` now (the test pins Oct 24).
+- The Analytics API's traffic-source report could not be checked for `subscribersGained` from
+  the cloud session (the documentation host is blocked), so #992 takes the campaign page's count,
+  which the operator confirmed exists.
+- Live check: with $40 entered against a $20 cap, `spend add` says "This takes October's ads over
+  your $20.00 cap" and every reader says "no new campaign until Nov 1"; a keep verdict did not
+  say what a subscriber cost, so it does now.
+
+### Not done, on purpose
+- No default for `ADS_MAX_PER_SUB`: the first campaign's cost per paid subscriber sets it.
+- The cap never blocks `spend add` - the ledger records money already spent.
+- No corpus case: nothing came from a live run's defect.
+
+### Next five (wave 66)
+#999 a failed intro prepend recorded as an intro · #990 a reader for the log · #995 unconfirmed
+against the vault's corrections · #975 the organic rate on the boosted video · #991 a series
+format. Then #993.
+
+### Audit
+38 new behavioural tests in five new files, **all 38 observed failing on a clean HEAD worktree
+before their fix** (8 + 10 + 7 + 5 + 8). One assertion was added after the live check (a keep
+names the price), inside a test already observed failing. No existing test changed. Suite 4,803 ->
+**4,841**, green in default, reverse and shuffle order with `data/` and `output/` untouched; mypy
+**121** (= baseline); ruff 0.15.8 clean; corpus 99 of 99; 0 network attempts across the suite.
+Every new symbol has a production caller. Live check on a temp ledger and synthetic metrics: $40
+against a $20 cap through `spend add` / `end` / `result`, `ops spend`, `ops promotions` on Oct 12
+and Oct 24, `ADS_MAX_PER_SUB=2` stopping a $4.28 subscriber, the candidates line, and a karaoke
+subtitle whose first word at 0.78 s reads LATE on the run card.
 
 ---
 

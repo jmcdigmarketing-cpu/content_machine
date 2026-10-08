@@ -14,9 +14,14 @@ All pure + deterministic so they're unit-tested without the API or a render.
 One exception: `words_from_caption_align` wires the Pillar-6 whisper alignment seam
 (`core/caption_align.py`) for audio *without* an ElevenLabs sidecar — env-gated OFF
 by default and fail-open (returns None), so it never breaks the proportional path.
+
+`first_cue_seconds` reads back when the first caption of a burned subtitle file starts (#994).
 """
 
 from __future__ import annotations
+
+import os
+import re
 
 
 def _as_time(value: object) -> float | None:
@@ -450,3 +455,42 @@ def build_ass_from_words(
         "Effect, Text\n"
     )
     return header + "\n".join(events) + ("\n" if events else "")
+
+
+_ASS_CUE = re.compile(r"^Dialogue:\s*\d+,(\d+):(\d{2}):(\d{2}(?:\.\d+)?),")
+_SRT_CUE = re.compile(r"^(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->")
+
+
+def first_cue_seconds(path: str | None) -> float | None:
+    """#994: the earliest cue start in an .ass or .srt file, in seconds; None without one."""
+    if not path or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8-sig", errors="replace") as f:
+            text = f.read()
+    except OSError:
+        return None
+    starts: list[float] = []
+    for line in text.splitlines():
+        line = line.strip()
+        ass = _ASS_CUE.match(line)
+        if ass:
+            h, m, sec = ass.groups()
+            starts.append(int(h) * 3600 + int(m) * 60 + float(sec))
+            continue
+        srt = _SRT_CUE.match(line)
+        if srt:
+            h, m, sec, ms = srt.groups()
+            starts.append(int(h) * 3600 + int(m) * 60 + int(sec) + int(ms) / 1000)
+    return round(min(starts), 3) if starts else None
+
+
+def subtitle_beside(video_path: str | None) -> str | None:
+    """The subtitle file the render wrote next to the video (.ass, the burned one, before .srt)."""
+    if not video_path:
+        return None
+    base = os.path.splitext(video_path)[0]
+    for ext in (".ass", ".srt"):
+        if os.path.isfile(base + ext):
+            return base + ext
+    return None

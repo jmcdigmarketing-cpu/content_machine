@@ -1,6 +1,6 @@
 # Handoff — the mailbox
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
 
 **Read this first, before any other file, every time you start work here.** More than
 one agent works in this repo and nothing signals a switch. This file is how the
@@ -53,23 +53,22 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-06 · **HEAD at write:** `aa591fc` (wave 63) + the wave 64 commit
+**Written:** 2026-10-08 · **HEAD at write:** `1987f07` (wave 64) + the wave 65 commit
 (`git log -1`) · **Tree:** clean after the commit.
 
-**Read before editing:** an `ads` spend entry is a campaign (`videos`, `days`);
-`analytics/promotions` reads it (`ops promotions`). The render step decides the intro per run
-(`video/channel_intro.intro_for_run`, `INTRO_TEST=alternate`) and records `quality["opening"]`;
-anything sampling "after the intro" must check it. The hook pass is
-`content_engine._hook_variants` (returns script + ledger extra); `_maybe_improve_hook` wraps it.
-`analytics/unconfirmed_check` judges labelled claims by later runs only. mypy **121**.
+**Read before editing:** an ads entry can carry `result` {subscribers, spent} from the campaign
+page (`ledger.set_result`, `ops spend result`); `ledger.charged` is what an entry cost - use it,
+not `amount`. `ADS_MONTHLY_CAP` / `ADS_MAX_PER_SUB` are read in `ledger.ads_cap` and
+`promotions.max_per_subscriber`. `quality["opening"]` gains `first_caption_s` /
+`late_first_caption` from the subtitle file beside the mp4. mypy **121**.
 
 **Defects first:**
-- A kept hook variant could restate the next sentence (live check) - refused now; keep that guard.
-- `ops promotions` cannot split subscribers into paid and organic (#992) - it compares videos.
-- The operator decides the ads on **Oct 24** (reminder `trig_019BBVmBdf9EYuNrtMBpQMyw`).
+- A failed intro prepend is still recorded as an intro (#999, next) - it skews #988's split.
+- The operator's ad was still spending on 2026-10-08; they were told to stop it. Oct 24 reminder
+  `trig_019BBVmBdf9EYuNrtMBpQMyw` stands.
 
-**Shipped:** #989 #959 #988 #987 #977. Corpus 99, 0 network attempts, `data/` clean; highest
-#995. Next: **#990 · #994 · #992 · #995 · #991**, reordered by the operator's `ops growth`.
+**Shipped:** #996 #992 #998 #997 #994. Corpus 99, 0 network attempts, `data/` clean; highest
+#999. Next: **#999 · #990 · #995 · #975 · #991**.
 
 ## Slot — Cursor
 

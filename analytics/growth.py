@@ -79,6 +79,7 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             views, paid = 0, 0
         out.append({
             "title": str(getattr(row, "detail", "") or row.youtube_video_id)[:60],
+            "video_id": str(row.youtube_video_id),  # #997: which one to promote
             "published": published,
             "views7": views_7d(metrics, published) if published else None,
             "stayed": figures.get("stayed"),

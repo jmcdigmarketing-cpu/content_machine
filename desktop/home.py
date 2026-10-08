@@ -22,6 +22,12 @@ def _money(_channel_id: str) -> str:
     return spend_line()
 
 
+def _ads(_channel_id: str) -> str:
+    from core.money.ledger import ads_budget_line
+
+    return ads_budget_line()  # #996: "" with no cap and no campaign
+
+
 def _sign_in(channel_id: str) -> str:
     from youtube.oauth import sign_in_reminder, sign_in_status
 
@@ -74,6 +80,7 @@ def _research(_channel_id: str) -> str:
 # Readers by name, looked up at call time.
 SECTIONS: list[tuple[str, str]] = [
     ("Money", "_money"),
+    ("Ads", "_ads"),
     ("Sign-in", "_sign_in"),
     ("Queue", "_queue_line"),
     ("Last videos", "_last_videos"),

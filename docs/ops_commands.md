@@ -151,7 +151,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `signal-diff` | What each signal returned differently between two runs: <A> --run-id B (#586) |
 | `skillopt` | SkillOpt-Sleep — gated skill-directive optimizer (frozen prompt-evals gate) |
 | `source-trust` | Corrections per source and the weight they cost it (#342) |
-| `spend` | Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, `end --entry N` (#980) |
+| `spend` | Money spent on the project: total, `add --amount N --what X --kind K [--monthly]`, `end --entry N`, `result --entry N --subs N` (#980, #992) |
 | `status` | Queue, uploads, recent runs, SEO/competitors |
 | `studio` | Stage 4 Qt thumbnail canvas (last thumb + overlay; requires pip install -e ".[app]") |
 | `studio-deleted` | Cancel publish_log rows whose YouTube videos were Studio-deleted |

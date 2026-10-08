@@ -208,12 +208,32 @@ def intro_for_run(channel_id: str | None, run_id: int | None) -> bool:
     return not (test == "alternate" and run_id is not None and int(run_id) % 2 == 0)
 
 
-def opening_record(channel_id: str | None, with_intro: bool, path: str | None) -> dict:
-    """What the run's quality keeps about its first seconds (#988)."""
+def first_caption_limit() -> float:
+    """#994: `FIRST_CAPTION_MAX_S` - how long after the intro (or the start) the first caption
+    may wait; default 0.5 s."""
+    try:
+        return max(0.0, float(os.getenv("FIRST_CAPTION_MAX_S", "0.5")))
+    except ValueError:
+        return 0.5
+
+
+def opening_record(
+    channel_id: str | None,
+    with_intro: bool,
+    path: str | None,
+    *,
+    first_cue: float | None = None,
+) -> dict:
+    """What the run's quality keeps about its first seconds (#988), and when the first caption
+    appears in the final video (#994; `first_cue` is its start in the burned subtitle file)."""
     seconds = 0.0
     if with_intro and path:
         seconds = round(float(_probe_duration(path) or DEFAULT_INTRO_DURATION), 2)
-    return {"intro": bool(with_intro), "intro_seconds": seconds}
+    out: dict = {"intro": bool(with_intro), "intro_seconds": seconds}
+    if first_cue is not None:
+        out["first_caption_s"] = round(seconds + float(first_cue), 2)
+        out["late_first_caption"] = float(first_cue) > first_caption_limit()
+    return out
 
 
 def prepend_channel_intro(

@@ -142,6 +142,13 @@ def _print_startup(channel_id: str) -> None:
             print(f"  ! YouTube: {format_uploads_left()}")
     except Exception as exc:
         logger.debug("uploads-left startup line skipped: %s", exc)
+    try:  # #996: only when this month's ads reached ADS_MONTHLY_CAP
+        from core.money.ledger import ads_budget_line, ads_over_cap
+
+        if ads_over_cap():
+            print(f"  ! {ads_budget_line()}")
+    except Exception as exc:
+        logger.debug("ads cap startup line skipped: %s", exc)
 
 
 def main():

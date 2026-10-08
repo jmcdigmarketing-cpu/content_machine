@@ -97,6 +97,14 @@ def build_status_lines(channel_id: str) -> list[str]:
         lines.append(spend_line())  # #980: everything paid, all time
     except Exception as exc:
         logger.debug("spend total line skipped: %s", exc)
+    try:
+        from core.money.ledger import ads_budget_line
+
+        ads = ads_budget_line()  # #996: this month's ads against ADS_MONTHLY_CAP
+        if ads:
+            lines.append(ads)
+    except Exception as exc:
+        logger.debug("ads cap line skipped: %s", exc)
 
     try:
         from core.spend_week import spend_warning_line

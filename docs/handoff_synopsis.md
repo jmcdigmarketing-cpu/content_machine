@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-10-06: wave 64, the first second, hook variants, the ads ledger
+# Handoff synopsis — 2026-10-08: wave 65, a careful ads budget and the first caption
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-06 (Claude Code): wave 64 #989 #959 #988 #987 #977 (the ads test)
+## Last wave — 2026-10-08 (Claude Code): wave 65 #996 #992 #998 #997 #994 (a careful ads budget)
+
+The operator spent $40 on ads in about four days and wants spending "calculated and worth it":
+a $20 monthly ceiling, nothing new until the Oct 24 decision; the campaign was still spending
+(advice: stop it in Studio today; the to-do list says so first).
+
+- **#996** `ADS_MONTHLY_CAP`: "Ads this month: $40.00 of your $20.00 cap - over; no new campaign
+  until Nov 1" in `ops spend`, `ops promotions`, `ops status`, Home, and startup when over.
+  `ADS_MAX_PER_SUB`: stop once a paid subscriber costs more, also mid-campaign.
+- **#992** `ops spend result --entry N --subs N [--amount CHARGED]`: the campaign page's
+  subscribers; `ops promotions` shows the cost per paid subscriber; the charge counts in the total.
+- **#998** before -> during -> after the ads: did organic views hold once they stopped.
+- **#997** "Worth promoting": at most two videos that held organic viewers, a test sized to the cap.
+- **#994** the first caption time on the run card; LATE after 0.5 s (`FIRST_CAPTION_MAX_S`).
+
+**Verify:** `python -m unittest tests.test_ads_cap tests.test_campaign_result tests.test_after_the_ads tests.test_promote_candidates tests.test_first_caption`;
+`py -m scripts.ops spend`; `py -m scripts.ops promotions`.
+
+## Previous — 2026-10-06 (Claude Code): wave 64 #989 #959 #988 #987 #977 (the ads test)
 
 The recommended five, with #959 pulled forward: the operator keeps the ads until Oct 24 as a
 measured test (reminder `trig_019BBVmBdf9EYuNrtMBpQMyw`, 2026-10-24 14:00 UTC).
@@ -42,23 +60,6 @@ The five wave 62 recommended, built cheapest first.
 
 **Verify:** `python -m unittest tests.test_hook_learning tests.test_quiet_terminal tests.test_analytics_page`;
 `py main.py` (the header); `py -m desktop` -> Analytics.
-
-## Previous — 2026-10-06 (Claude Code): wave 62 #980 #981 #982 #983 #976 (the operator's asks)
-
-From the operator's message while away: a tick-list, a spend total, a real app, why views are low.
-
-- **#980** `ops spend add/end` and "Spent so far: $X" at startup, in `ops status` and on Home.
-- **#981** one app window: sidebar (Home, New video, Review, Queue, Costs, Studio, Brand), Home
-  cards for money, sign-in, queue and the last five videos.
-- **#982** `content_os.pyw` and the `ops shortcut` Start Menu / Desktop shortcuts open it, no
-  console; `--chip` for the old chip.
-- **#983** `ops growth` - views, stayed split, feed share, cadence, paid share, three levers.
-- **#976** angles lose an "X, not Y" frame.
-- The back-home tick-list is an artifact page; the brainstorm is
-  [growth_review_2026-10.md](growth_review_2026-10.md).
-
-**Verify:** `python -m unittest tests.test_spend_total tests.test_growth_report tests.test_desktop_shell`;
-`py -m scripts.ops spend`; `py -m desktop`.
 
 ## Pipeline order (operator)
 
@@ -123,7 +124,7 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** cancel job 50 (`scripts.queue_manage --channel default --cancel N`), `CONTENT_CHANNEL_ID=tapin` in `.env`, `py -m youtube.oauth_setup --channel tapin`; then a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); the policy site and Google's Publish app (reminder 2026-10-07); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
+1. **Operator:** cancel job 50 (`scripts.queue_manage --channel default --cancel N`), `CONTENT_CHANNEL_ID=tapin` in `.env`, `py -m youtube.oauth_setup --channel tapin`; then a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); stop the running ad in Studio, then `ops spend add --kind ads`, `spend end`, `spend result`, `ADS_MONTHLY_CAP=20`; the policy site and Google's Publish app (skipped for now); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
    `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863's call prints itself at ten runs (E3).
@@ -135,7 +136,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #990 · #994 · #992 · #995 · #991 (reordered by `ops growth`). **Oct 24:** the ads decision (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #999 · #990 · #995 · #975 · #991. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

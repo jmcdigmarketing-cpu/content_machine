@@ -1,11 +1,28 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-10-06 (Claude Code): wave 62 #980 #981 #982 #983 #976 (the operator's asks)
+
+From the operator's message while away: a tick-list, a spend total, a real app, why views are low.
+
+- **#980** `ops spend add/end` and "Spent so far: $X" at startup, in `ops status` and on Home.
+- **#981** one app window: sidebar (Home, New video, Review, Queue, Costs, Studio, Brand), Home
+  cards for money, sign-in, queue and the last five videos.
+- **#982** `content_os.pyw` and the `ops shortcut` Start Menu / Desktop shortcuts open it, no
+  console; `--chip` for the old chip.
+- **#983** `ops growth` - views, stayed split, feed share, cadence, paid share, three levers.
+- **#976** angles lose an "X, not Y" frame.
+- The back-home tick-list is an artifact page; the brainstorm is
+  [growth_review_2026-10.md](growth_review_2026-10.md).
+
+**Verify:** `python -m unittest tests.test_spend_total tests.test_growth_report tests.test_desktop_shell`;
+`py -m scripts.ops spend`; `py -m desktop`.
 
 ## Previous — 2026-10-05 (Claude Code): wave 61 #973 #974 #551 #339 #863 (script honesty)
 

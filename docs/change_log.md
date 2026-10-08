@@ -1,12 +1,32 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-06
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 65 — a careful ads budget, and the first caption - 2026-10-08
+
+*mypy 121; ruff 0.15.8 clean; corpus 99 of 99.*
+
+- **#996** `ADS_MONTHLY_CAP=20` in `.env` sets a monthly ads ceiling. "Ads this month: $40.00 of
+  your $20.00 cap - $20.00 over; no new campaign until Nov 1" shows in `ops spend`, `ops
+  promotions`, `ops status` and the app's Home, and at startup once the month reaches it.
+  `ADS_MAX_PER_SUB` is the most one subscriber from an ad may cost: `ops promotions` says stop
+  above it, even while the campaign runs.
+- **#992** `py -m scripts.ops spend result --entry N --subs N --amount WHAT_IT_CHARGED` records
+  what the campaign's page in YouTube Studio reports; `ops promotions` then shows the cost of each
+  paid subscriber, and the spend total counts what was charged.
+- **#998** `ops promotions` shows organic views a day before, during and after the ads - whether
+  the views held once the ads stopped.
+- **#997** `ops promotions` and the Analytics page name at most two videos worth a small test:
+  ones that already kept viewers past the swipe and were never promoted, with a test sized to
+  what the cap has left.
+- **#994** The run card says when the first caption appears, and flags it when the viewer sees no
+  words for more than 0.5 s (`FIRST_CAPTION_MAX_S`).
 
 ### Wave 64 — the first second, hook variants, what the ads bought - 2026-10-06
 

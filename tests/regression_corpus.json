@@ -1916,6 +1916,224 @@
         "equals": "Seahawks Chargers week 4"
       },
       "why": "the seed keeps the teams and the week"
+    },
+    {
+      "id": "run120-extended-trim-uses-extended-cap",
+      "item": 1010,
+      "source": "run 120 (2026-10-07): an Extended script trimmed against the 5,000-character Long ceiling stopped inside chapter 4 at 1,010 words",
+      "call": "core.content_engine:_trim_to_cap",
+      "args": [
+        "Hook line with a fact. Second point. Third point. Fourth point. Fifth point. Closer line."
+      ],
+      "kwargs": {
+        "max_words": 2000,
+        "min_words": 5,
+        "length_choice": "4"
+      },
+      "env": {
+        "SCRIPT_TRIM": "true",
+        "TTS_MAX_CHARS": "40"
+      },
+      "select": 1,
+      "expect": {
+        "equals": 0
+      },
+      "why": "the trim must use the ceiling the TTS check applies to this length (Extended: 12,000), not the raw Long one"
+    },
+    {
+      "id": "run120-trim-keeps-the-closer",
+      "item": 1010,
+      "source": "run 120: the trim dropped sentences from the end, closer first",
+      "call": "core.script_length:trim_overlength",
+      "args": [
+        "Hook line with a fact. Second point about the team. Third point about the coach. Fourth point about the schedule. Closer: watch Sunday."
+      ],
+      "kwargs": {
+        "max_words": 15,
+        "min_words": 5
+      },
+      "env": {
+        "SCRIPT_TRIM": "true"
+      },
+      "select": 0,
+      "expect": {
+        "contains": "Closer: watch Sunday."
+      },
+      "why": "the closer is the payoff; the sentence before it goes instead"
+    },
+    {
+      "id": "run120-unwritten-chapter-found",
+      "item": 1010,
+      "source": "run 120: five angles chosen, chapter 5 ('legal gray zone') never written",
+      "call": "core.angle_chapters:uncovered_angles",
+      "args": [
+        "Modders are blending games with AI right now. Studios tolerate the mods quietly. New tools make cross-game mods possible. Players want AI mods that just work.",
+        [
+          "Modders are already blending games with AI",
+          "Why studios quietly tolerate AI mods",
+          "The tools making cross-game mods possible",
+          "What players actually want from AI mods",
+          "The legal gray zone nobody has settled"
+        ]
+      ],
+      "expect": {
+        "equals": [
+          4
+        ]
+      },
+      "why": "an angle the script never reaches is written or left out, not published at 0:06"
+    },
+    {
+      "id": "run120-angle-past-year",
+      "item": 1008,
+      "source": "run 120: angle 'obsolete by 2025' offered in October 2026 (scored 96.7)",
+      "call": "core.facts.event_dates:stale_angle_reason",
+      "args": [
+        "These developers think AI will make cross-compatible gaming mods obsolete by 2025"
+      ],
+      "kwargs": {
+        "today": "2026-10-09"
+      },
+      "expect": {
+        "contains": "2025"
+      },
+      "why": "a year that has passed cannot be a prediction"
+    },
+    {
+      "id": "run119-angle-past-event",
+      "item": 1008,
+      "source": "run 119: angle 'faces real threat at UFC 305' two years after UFC 305 (scored 100.0)",
+      "call": "core.facts.event_dates:stale_angle_reason",
+      "args": [
+        "Shavkat Rakhmonov's undefeated streak faces real threat at UFC 305"
+      ],
+      "kwargs": {
+        "today": "2026-10-09"
+      },
+      "expect": {
+        "contains": "UFC 305"
+      },
+      "why": "a numbered event that has happened is not an upcoming threat"
+    },
+    {
+      "id": "run119-angle-dropped-before-menu",
+      "item": 1008,
+      "source": "run 119",
+      "call": "apis.topic_variants:_clean_angle_lines",
+      "args": [
+        "Shavkat Rakhmonov's undefeated streak faces real threat at UFC 305\nRakhmonov's grappling is the cleanest path to a title shot",
+        []
+      ],
+      "kwargs": {
+        "topic": "Shavkat Rakhmonov"
+      },
+      "expect": {
+        "equals": [
+          "Rakhmonov's grappling is the cleanest path to a title shot"
+        ]
+      },
+      "why": "the menu never offers a stale angle; #976 cuts frames at the same place"
+    },
+    {
+      "id": "title-past-year-sibling",
+      "item": 1008,
+      "source": "sibling of runs 119-120: the video title's date check (#978) knew elapsed-time phrases only",
+      "call": "core.facts.date_math:find_meta_mismatches",
+      "args": [
+        "Chargers predictions for 2025: can they turn it around",
+        "",
+        ""
+      ],
+      "kwargs": {},
+      "expect": {
+        "truthy": true
+      },
+      "why": "the title a viewer reads first gets the same past-year check as the angles"
+    },
+    {
+      "id": "run119-chapter-title-unsupported",
+      "item": 1009,
+      "source": "run 119's description: '2:21 UFC 305 adds Kamaru Usman vs Shavkat Rakhmonov fantasy matchup hype' - no such booking, never said",
+      "call": "core.angle_chapters:chapter_title_problem",
+      "args": [
+        "UFC 305 adds Kamaru Usman vs Shavkat Rakhmonov fantasy matchup hype",
+        "The welterweight belt is the only fight left that means anything for him. Belal Muhammad holds it, and the division has run out of excuses to keep Rakhmonov waiting."
+      ],
+      "kwargs": {
+        "script": "Shavkat Rakhmonov has never lost a professional fight. He is 19-0, with eight knockouts and ten submissions. The welterweight belt is the only fight left that means anything for him. Belal Muhammad holds it, and the division has run out of excuses to keep Rakhmonov waiting.",
+        "today": "2026-10-09"
+      },
+      "expect": {
+        "truthy": true
+      },
+      "why": "a chapter title names only what the script says"
+    },
+    {
+      "id": "run119-chapter-retitled-from-the-chapter",
+      "item": 1009,
+      "source": "run 119",
+      "call": "core.angle_chapters:choose_chapter_title",
+      "args": [
+        "The welterweight belt is the only fight left that means anything for him. Belal Muhammad holds it, and the division has run out of excuses to keep Rakhmonov waiting."
+      ],
+      "kwargs": {
+        "angle": "UFC 305 adds Kamaru Usman vs Shavkat Rakhmonov fantasy matchup hype",
+        "script": "Shavkat Rakhmonov has never lost a professional fight. He is 19-0, with eight knockouts and ten submissions. The welterweight belt is the only fight left that means anything for him. Belal Muhammad holds it, and the division has run out of excuses to keep Rakhmonov waiting.",
+        "today": "2026-10-09"
+      },
+      "select": 0,
+      "expect": {
+        "not_contains": "305"
+      },
+      "why": "the refused angle is replaced by a label from the chapter itself"
+    },
+    {
+      "id": "runs118-120-no-per-angle-fetch",
+      "item": 1014,
+      "source": "runs 118-120: every run hit the 15 s variant-scoring deadline re-fetching signals per angle",
+      "call": "core.pipeline:variant_signal_rescore_enabled",
+      "args": [],
+      "env": {
+        "VARIANT_SIGNAL_RESCORE": ""
+      },
+      "expect": {
+        "falsy": true
+      },
+      "why": "angles are scored on the seed's signals unless asked; the per-angle fetch ranked nothing"
+    },
+    {
+      "id": "run120-claim-confirmed-without-rerender",
+      "item": 1013,
+      "source": "run 120: 'Claude Opus 5.5 dropped on September 22' held the render unlisted though its own research said so",
+      "call": "core.facts.claim_confirm:apply_confirmation",
+      "args": [
+        {
+          "total": 3,
+          "supported": 2,
+          "support_rate": 0.667,
+          "unsupported": [
+            "Claude Opus 5.5 dropped on September 22"
+          ],
+          "unsupported_types": [
+            "stat"
+          ],
+          "claims": [
+            {
+              "claim": "Claude Opus 5.5 dropped on September 22",
+              "supported": false
+            }
+          ]
+        },
+        "Claude Opus 5.5 dropped on September 22"
+      ],
+      "kwargs": {
+        "source": "https://www.anthropic.com/news"
+      },
+      "select": "unsupported",
+      "expect": {
+        "equals": []
+      },
+      "why": "a confirmed claim stops counting against the run - the hold lifts without paying for the voice again"
     }
   ]
 }

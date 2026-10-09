@@ -246,7 +246,8 @@ class TestPublicAtSlot(unittest.TestCase):
             patch(
                 "storage.repositories.content_runs.get_content_run_repository", return_value=repo
             ),
-            patch("core.spaced_queue.load_features", return_value=parent_features or {}),
+            # #1013: the parent's hold is go-public's one rule, read there.
+            patch("publishing.go_public.load_features", return_value=parent_features or {}),
             patch("core.spaced_queue.enqueue_repurpose_jobs") as enqueue,
         ):
             queue_spaced_uploads([slot], channel_id="tapin")

@@ -34,7 +34,9 @@ class TestDiscoveryPersist(unittest.TestCase):
             first = pipeline.run_discovery("GTA 6 persist-a", channel_id="tapin")
             second = pipeline.run_discovery("GTA 6 persist-a", channel_id="tapin")
         self.assertEqual(v.call_count, 1)
-        self.assertEqual(r.call_count, 2, "scoring calls build_registry once more on the first run")
+        # #1014: angles are scored on the seed's signals, so the first run fetches once (it
+        # used to fetch again per angle) and the second reuses the cache.
+        self.assertEqual(r.call_count, 1, "one fetch for the seed, none per angle, none cached")
         self.assertEqual(first.evaluated[0][0], second.evaluated[0][0])
         self.assertEqual(second.evaluated[0][0], "angle one")
 

@@ -25,6 +25,8 @@ from video.subtitles import load_word_timings
 logger = get_logger("core.chapter_shorts")
 
 SHORTS_MAX_SECONDS = 180.0
+# #1010: run 120 offered a 0:06 chapter as a Short. The Cursor brief's A5 figure (#1053).
+SHORTS_MIN_SECONDS = 20.0
 _LEAD_PAD = 0.12
 _TAIL_TRIM = 0.05
 _WORD_RE = re.compile(r"[A-Za-z0-9']+")
@@ -46,7 +48,7 @@ class ChapterSpan:
 
     @property
     def fits_shorts(self) -> bool:
-        return 0.0 < self.seconds <= SHORTS_MAX_SECONDS
+        return SHORTS_MIN_SECONDS <= self.seconds <= SHORTS_MAX_SECONDS
 
 
 @dataclass
@@ -155,7 +157,12 @@ def chapter_report_lines(chapters: list[AngleChapter], spans: list[ChapterSpan])
         if span is None:
             lines.append(f"{chapter.index + 1}. {chapter.title}  {placed}  length unknown")
             continue
-        verdict = "fits" if span.fits_shorts else f"over the {cap} Shorts cap"
+        if span.fits_shorts:
+            verdict = "fits"
+        elif span.seconds < SHORTS_MIN_SECONDS:
+            verdict = f"under the {_clock(SHORTS_MIN_SECONDS)} Shorts minimum"
+        else:
+            verdict = f"over the {cap} Shorts cap"
         lines.append(
             f"{chapter.index + 1}. {chapter.title}  {placed}  {_clock(span.seconds)}  {verdict}"
         )
@@ -247,7 +254,9 @@ def cut_chapter_shorts(
                     span.title,
                     None,
                     "",
-                    f"{span.seconds:.0f}s is over the 3-minute Shorts limit",
+                    f"{span.seconds:.0f}s is under the {SHORTS_MIN_SECONDS:.0f}s Shorts minimum"
+                    if span.seconds < SHORTS_MIN_SECONDS
+                    else f"{span.seconds:.0f}s is over the 3-minute Shorts limit",
                 )
             )
             continue

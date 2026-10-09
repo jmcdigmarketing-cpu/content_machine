@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-09: wave 66, run 124's idea runs as intended
+# Handoff synopsis — 2026-10-09: wave 67, angles and chapters checked
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,27 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-09 (Claude Code): wave 66 #1016 #1001-#1005 #1003 #1012 #1017 #1018 (run 124's idea)
+## Last wave — 2026-10-09 (Claude Code): wave 67 #1008 #1009 #1010 #1013 #1014 (runs 119-120)
+
+The operator, afk: "make sure the to do list is updated ... can we work towards the next 5?". The
+to-do list was current; Claude reads its ticks each session (no notification on a change). The
+roadmap's five, the defects runs 119-120 exposed:
+
+- **#1010** a chosen chapter is written: the trim used the Long ceiling on Extended (run 120 lost
+  chapter 5 and the closer); now the Extended ceiling, the closer kept, a missing chapter written once
+  from the facts or left out and said so; Shorts need 20 s.
+- **#1008** stale angles ("by 2025", "UFC 305") dropped before the menu, with a "! N angles dropped"
+  line; the angle prompt and the video title carry the date check.
+- **#1009** chapter titles come from the chapter and are checked ("Chapter N retitled" on the card).
+- **#1014** no per-angle signal fetch (`VARIANT_SIGNAL_RESCORE` brings it back); the judge sees facts
+  and today's date; a shared score prints once.
+- **#1013** `ops verify-claim --run-id N`: confirm a flagged claim with a source (or reject it) and
+  the hold lifts - no re-render; go-public names it when it refuses.
+
+**Verify:** `python -m unittest tests.test_chapters_complete tests.test_angle_dates tests.test_chapter_titles_checked tests.test_angle_scores_signal tests.test_verify_claim`;
+`py -m scripts.ops regressions`; `py -m scripts.ops verify-claim --run-id 120`.
+
+## Previous — 2026-10-09 (Claude Code): wave 66 #1016 #1001-#1005 #1003 #1012 #1017 #1018 (run 124's idea)
 
 The operator's run 124 ("How the 0-4 chargers can turn it around this year") was "a good video,
 just not what i intended"; they will rerun the same idea. Asked: speed 1.05, stock only as a last
@@ -49,23 +69,6 @@ a $20 monthly ceiling, nothing new until the Oct 24 decision; the campaign was s
 
 **Verify:** `python -m unittest tests.test_ads_cap tests.test_campaign_result tests.test_after_the_ads tests.test_promote_candidates tests.test_first_caption`;
 `py -m scripts.ops spend`; `py -m scripts.ops promotions`.
-
-## Previous — 2026-10-06 (Claude Code): wave 64 #989 #959 #988 #987 #977 (the ads test)
-
-The recommended five, with #959 pulled forward: the operator keeps the ads until Oct 24 as a
-measured test (reminder `trig_019BBVmBdf9EYuNrtMBpQMyw`, 2026-10-24 14:00 UTC).
-
-- **#959** `ops promotions`: per ad campaign, paid views and their cost, subscribers and their
-  cost, subscribers per 1,000 views promoted vs the rest, spillover; keep / stop on its last day.
-  Enter campaigns with `ops spend add --kind ads --video ID --days 21`.
-- **#988** what opens each video is recorded; the run card says it; `INTRO_TEST=alternate` drops
-  the intro on every other render and `ops growth` compares the stayed share with and without.
-- **#987** hook variants: three openers per run (opt-in), the best grounded one kept.
-- **#989** the queue count is the channel's own, "(+1 other channel)" for the rest.
-- **#977** labelled claims checked against later runs: confirmed / contradicted / open.
-
-**Verify:** `python -m unittest tests.test_promotions tests.test_first_second tests.test_hook_variants`;
-`py -m scripts.ops promotions`; `py -m scripts.ops growth`.
 
 ## Pipeline order (operator)
 
@@ -130,7 +133,7 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** `git pull`, `pip install -e ".[app]"`; in ElevenLabs lower Stability (~35-45) and raise Style (~20-30) on the TapIn voices; rerun the Chargers idea (Enter on angle 1); record Madden / UFC 5 gameplay (`ops footage-add`) - stock is now a last resort; fix run 119's chapter title, then `go-public`; hand Cursor `docs/cursor_brief_2026-10.md`; `ops spend add` for what was paid; `CONTENT_CHANNEL_ID=tapin` and `youtube.oauth_setup --channel tapin` if not done; Buffer for TikTok and Instagram (#968); the Reporting API (#951); `ops backfill all --apply` if `ops backfill` agrees.
+1. **Operator:** `git pull`, `pip install -e ".[app]"`; in ElevenLabs lower Stability (~35-45) and raise Style (~20-30) on the TapIn voices; rerun the Chargers idea (Enter on angle 1); record Madden / UFC 5 gameplay (`ops footage-add`) - stock is now a last resort; confirm runs 119 and 120's claims with `ops verify-claim --run-id N` (run 119's chapter line: Studio by hand), then `go-public`; hand Cursor `docs/cursor_brief_2026-10.md`; `ops spend add` for what was paid; `CONTENT_CHANNEL_ID=tapin` and `youtube.oauth_setup --channel tapin` if not done; Buffer for TikTok and Instagram (#968); the Reporting API (#951); `ops backfill all --apply` if `ops backfill` agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863's call prints itself at ten runs (E3).
 3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #975 the organic rate on a real boosted video.
@@ -141,7 +144,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Run 124 (2026-10-08):** wave 66 - see planning_log 2026-10-09. **Next:** #1008 · #1009 · #1010 · #1013 · #1014. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Runs 119-120:** wave 67 - see planning_log 2026-10-09. **Next:** #1007 · #1006 · #1011 · #1033 · #1060. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

@@ -73,7 +73,11 @@ class DeadlineTests(unittest.TestCase):
 
         angles = [f"angle {i}" for i in range(5)]
         with (
-            patch.dict("os.environ", {"VARIANT_SCORING_DEADLINE_S": "0.1"}),
+            # #1014: the per-angle fetch this deadline guards is opt-in now.
+            patch.dict(
+                "os.environ",
+                {"VARIANT_SCORING_DEADLINE_S": "0.1", "VARIANT_SIGNAL_RESCORE": "true"},
+            ),
             patch.object(pipeline, "_score_variant", side_effect=slow),
             patch.object(pipeline, "composite_score", return_value=41.5),
         ):

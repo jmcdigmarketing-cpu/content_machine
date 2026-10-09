@@ -7,6 +7,23 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-06 (Claude Code): wave 64 #989 #959 #988 #987 #977 (the ads test)
+
+The recommended five, with #959 pulled forward: the operator keeps the ads until Oct 24 as a
+measured test (reminder `trig_019BBVmBdf9EYuNrtMBpQMyw`, 2026-10-24 14:00 UTC).
+
+- **#959** `ops promotions`: per ad campaign, paid views and their cost, subscribers and their
+  cost, subscribers per 1,000 views promoted vs the rest, spillover; keep / stop on its last day.
+  Enter campaigns with `ops spend add --kind ads --video ID --days 21`.
+- **#988** what opens each video is recorded; the run card says it; `INTRO_TEST=alternate` drops
+  the intro on every other render and `ops growth` compares the stayed share with and without.
+- **#987** hook variants: three openers per run (opt-in), the best grounded one kept.
+- **#989** the queue count is the channel's own, "(+1 other channel)" for the rest.
+- **#977** labelled claims checked against later runs: confirmed / contradicted / open.
+
+**Verify:** `python -m unittest tests.test_promotions tests.test_first_second tests.test_hook_variants`;
+`py -m scripts.ops promotions`; `py -m scripts.ops growth`.
+
 ## Previous — 2026-10-06 (Claude Code): wave 63 #985 #986 #984 #978 #979 (the recommended five)
 
 The five wave 62 recommended, built cheapest first.

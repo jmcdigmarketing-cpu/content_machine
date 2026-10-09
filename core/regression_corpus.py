@@ -87,7 +87,7 @@ def run_case(case: dict[str, Any]) -> tuple[bool, Any]:
             for target in case.get("patch_raise") or []:
                 stack.enter_context(patch(target, side_effect=RuntimeError("regression corpus")))
             got = fn(*(case.get("args") or []), **(case.get("kwargs") or {}))
-        if case.get("select"):
+        if case.get("select") is not None:  # 0 is an index, not "no select"
             got = got[case["select"]]
         if case.get("pluck"):
             got = [item.get(case["pluck"]) for item in got]

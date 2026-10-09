@@ -20,7 +20,6 @@ from datetime import datetime
 from analytics.post_timing import planned_post_time
 from core.cadence import cadence_status
 from core.logging import get_logger
-from core.run_features import load_features
 from publishing.repurpose import enqueue_repurpose_jobs
 
 logger = get_logger("core.spaced_queue")
@@ -77,7 +76,16 @@ def _override_held(features_json: str) -> bool:
     if features.get("grounding_override"):
         return True
     parent = features.get("parent_run_id")
-    return bool(parent and load_features(int(parent)).get("grounding_override"))
+    if not parent:
+        return False
+    # #1013: one rule for the parent - go-public's - so a claim confirmed with
+    # `verify-claim` releases a Short cut from the run here too.
+    from publishing.go_public import override_held
+
+    try:
+        return override_held(int(parent))
+    except (TypeError, ValueError):
+        return False
 
 
 def slot_privacy(requested: str | None, *, features_json: str = "") -> str:

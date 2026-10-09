@@ -318,6 +318,36 @@ def _score_variant(
     return variant, score, variant_signals, raw
 
 
+def variant_signal_rescore_enabled() -> bool:
+    """#1014: re-fetch signals per angle (the pre-wave-67 path). Off by default."""
+    return os.getenv("VARIANT_SIGNAL_RESCORE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _seed_score_variant(
+    variant: str,
+    channel_id: str,
+    base_signals: dict[str, Any],
+    *,
+    seed_topic: str = "",
+):
+    """One angle scored on the seed's signals - no network (#1014). The composite reads the
+    angle only through its domain and history; the anchor and drift penalties read its text."""
+    from apis.topic_scorer import composite_score_raw
+
+    score = float(composite_score(base_signals, variant, channel_id))
+    try:
+        raw = float(composite_score_raw(base_signals, variant, channel_id))
+    except Exception:
+        raw = score
+    if seed_topic:
+        penalty = anchor_preservation_penalty(variant, seed_topic) + mcu_drift_penalty(
+            variant, seed_topic
+        )
+        score = max(0.0, score - penalty)
+        raw = raw - penalty
+    return variant, score, dict(base_signals), raw
+
+
 def _word_range(length_choice: str) -> tuple[int, int]:
     return word_range(length_choice)
 
@@ -347,7 +377,13 @@ def collect_scored_variants(
     *,
     report: Callable[..., None] | None = None,
 ) -> tuple[list[tuple[str, float, dict[str, Any]]], dict[str, float], dict[str, Any]]:
-    """Score angle candidates under VARIANT_SCORING_DEADLINE_S.
+    """Score angle candidates.
+
+    #1014: by default every angle is scored on the seed's signals with its anchor and drift
+    penalties - no per-angle fetch. Runs 118-120 re-fetched every unpinned signal per angle,
+    hit the 15 s deadline every time, fell back to the seed's number anyway and left the
+    fetches running. VARIANT_SIGNAL_RESCORE=true restores that path, under
+    VARIANT_SCORING_DEADLINE_S.
 
     Does not use `with ThreadPoolExecutor` — that waits for hung workers on
     exit. Unfinished futures are cancelled and the pool is shut down with
@@ -358,6 +394,22 @@ def collect_scored_variants(
     meta: dict[str, Any] = {}
     total = len(candidates)
     if not candidates:
+        return evaluated, raw_scores, meta
+
+    if not variant_signal_rescore_enabled():
+        for done, variant in enumerate(candidates, start=1):
+            try:
+                _v, score, signals, raw = _seed_score_variant(
+                    variant, channel_id, base_signals, seed_topic=topic
+                )
+            except Exception as exc:
+                logger.debug("seed-signal score failed for %r: %s", variant, exc)
+                score, signals, raw = 0.0, dict(base_signals), 0.0
+            evaluated.append((variant, score, signals))
+            raw_scores[variant] = raw
+            if report is not None:
+                report("Scoring variants", done, total, variant)
+        meta["scored_on"] = "seed"
         return evaluated, raw_scores, meta
 
     deadline = variant_scoring_deadline_s()
@@ -413,6 +465,16 @@ def collect_scored_variants(
         raw_scores = {topic: 0.0}
         meta["fallback"] = "deadline"
     return evaluated, raw_scores, meta
+
+
+def angles_dropped_note(meta: dict[str, Any] | None) -> str:
+    """One menu line for the angles #1008 dropped before the menu, or "" for none."""
+    dropped = [d for d in (meta or {}).get("angles_dropped") or [] if isinstance(d, dict)]
+    if not dropped:
+        return ""
+    reasons = "; ".join(str(d.get("reason") or "") for d in dropped[:3])
+    noun = "angle" if len(dropped) == 1 else "angles"
+    return f"{len(dropped)} {noun} dropped for a stale date - {reasons}"
 
 
 def variant_fallback_note(meta: dict[str, Any], *, total: int) -> str:
@@ -527,7 +589,12 @@ def run_discovery(
     )
 
     _report("Fetching signals & variants")
-    variant_kwargs: dict[str, Any] = {"channel_id": channel_id, "repeat_count": repeat_count}
+    variant_report: dict[str, Any] = {}  # #1008: angles dropped for a stale date
+    variant_kwargs: dict[str, Any] = {
+        "channel_id": channel_id,
+        "repeat_count": repeat_count,
+        "report": variant_report,
+    }
     if brief:
         variant_kwargs["brief"] = brief
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -556,6 +623,8 @@ def run_discovery(
         meta["variant_scoring_fallback"] = scoring_meta["fallback"]
     if scoring_meta.get("unscored_on_seed"):
         meta["unscored_on_seed"] = scoring_meta["unscored_on_seed"]
+    if variant_report.get("angles_dropped"):
+        meta["angles_dropped"] = list(variant_report["angles_dropped"])
     # #811: which signals missed the discovery deadline. `meta`, not `timings` —
     # the intelligence report sums that dict and prints every key as seconds (#813).
     if deadline and deadline.get("dropped"):
@@ -568,14 +637,26 @@ def run_discovery(
     # blends a thesis-fit score in; off, the ranking is deterministic and network-free.
     # Fail-open: a missing editorial score costs a tiebreaker, never the run.
     angle_scores: dict[str, float] = {}
+    signal_fact_lines: list[str] = []
+    try:
+        from core.angle_fact_fit import fact_lines
+        from core.signal_facts import format_signal_facts
+
+        signal_fact_lines = fact_lines(format_signal_facts(base_signals))
+    except Exception as exc:
+        logger.debug("signal fact lines skipped: %s", exc)
     try:
         from core.angle_ranker import rank_angles, score_spread
+        from core.facts.event_dates import run_date
         from core.providers import flag_enabled
 
+        # #1014: the judge sees the facts in hand and today's date, not the thesis alone.
         angle_scores = rank_angles(
             [v for v, *_ in evaluated],
             seed_topic=f"{topic}. {brief}" if brief else topic,
             llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
+            facts=signal_fact_lines,
+            today=run_date().isoformat(),
         )
         meta["angle_spread"] = score_spread(angle_scores)
     except Exception as exc:
@@ -584,12 +665,11 @@ def run_discovery(
     # #849: fact-fit from the facts already in hand - no network, measured only.
     angle_fact_fit: dict[str, float] = {}
     try:
-        from core.angle_fact_fit import fact_fit, fact_lines
-        from core.signal_facts import format_signal_facts
+        from core.angle_fact_fit import fact_fit
 
         angle_fact_fit = fact_fit(
             [v for v, *_ in evaluated],
-            fact_lines(format_signal_facts(base_signals)),
+            signal_fact_lines,
             seed_topic=topic,
         )
     except Exception as exc:
@@ -1011,6 +1091,7 @@ def run_pipeline(
         relevance_corpus=relevance_corpus,
         research_need=research_need,
         own_idea=own_idea,  # #1016: angle 1, the operator's own idea - no take pushed on it
+        chapter_angles=angles if len(angles) >= 2 else None,  # #1010
         **voice_kwargs,
     )
     if content.get("script_mode") == "unconfirmed":  # #339: drafts, review, dossier read it
@@ -1061,7 +1142,10 @@ def run_pipeline(
         result.features["auto_research"] = auto_research_report
     if len(angles) >= 2:
         from core.angle_chapters import (
+            MIN_CHAPTER_WORDS,
+            angle_headline,
             chapter_lines,
+            drop_thin_chapters,
             features_from_chapters,
             locate_chapters,
             trim_chapter_openers,
@@ -1078,6 +1162,19 @@ def run_pipeline(
                 logger.info("%s", note)
             if opener_notes:
                 result.features["chapter_opener_notes"] = opener_notes
+            # #1010: a chapter the script never wrote, or one too short to stand alone, is
+            # left out of the description and the Shorts list instead of published at 0:06.
+            chapters, thin = drop_thin_chapters(result.script, chapters)
+            placed = {chapter.angle for chapter in chapters}
+            missing = [angle_headline(a) for a in angles if a not in placed]
+            if missing:
+                result.features["chapters_missing"] = missing
+                for headline in missing:
+                    logger.warning("Chapter not written, left out of the chapters: %s", headline)
+            if thin:
+                logger.info(
+                    "%d chapter(s) under %d words folded back", len(thin), MIN_CHAPTER_WORDS
+                )
             spoken = count_spoken_words(result.script)
             result.features["all_angles"] = True
             result.features["angle_chapters"] = features_from_chapters(chapters)
@@ -1093,6 +1190,8 @@ def run_pipeline(
                 ),
             )
 
+    if (content.get("chapters_written") or {}).get("missing"):
+        result.features["chapters_written"] = dict(content["chapters_written"])  # #1010
     if content.get("event_coverage"):
         # #895: does any fact name what the topic names? main.py stops before TTS if not.
         result.features["event_coverage"] = content["event_coverage"]

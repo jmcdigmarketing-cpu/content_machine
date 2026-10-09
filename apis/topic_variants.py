@@ -44,8 +44,16 @@ def _lens_names() -> frozenset[str]:
     )
 
 
-def _clean_angle_lines(raw: str, angle_types) -> list[str]:
-    """Angle lines out of an LLM reply: no preamble, lens labels, markdown, or label prefix."""
+def _clean_angle_lines(
+    raw: str, angle_types, *, topic: str = "", dropped: list[dict] | None = None
+) -> list[str]:
+    """Angle lines out of an LLM reply: no preamble, lens labels, markdown, or label prefix.
+
+    #1008: an angle that predicts a year that has passed, or names a numbered event that has
+    happened (and the topic does not), is dropped here with its reason in ``dropped``.
+    """
+    from core.facts.event_dates import stale_angle_reason
+
     labels = {str(t).strip().lower() for t in angle_types or ()}
 
     def _is_label(text: str) -> bool:
@@ -69,6 +77,12 @@ def _clean_angle_lines(raw: str, angle_types) -> list[str]:
         ).strip()
         text = _drop_angle_frame(text)
         if len(text.split()) < 2 or text in out:
+            continue
+        reason = stale_angle_reason(text, topic=topic)
+        if reason:
+            logger.info("Angle dropped (%s): %s", reason, text)
+            if dropped is not None:
+                dropped.append({"angle": text, "reason": reason})
             continue
         out.append(text)
     return out
@@ -210,10 +224,17 @@ _LENS_EXAMPLES = {
 
 
 def generate_variants(
-    topic, autocomplete=None, *, channel_id=None, repeat_count: int = 0, brief: str = ""
+    topic,
+    autocomplete=None,
+    *,
+    channel_id=None,
+    repeat_count: int = 0,
+    brief: str = "",
+    report: dict | None = None,
 ):
     """Five editorial angles for ``topic``. ``brief`` is the operator's own thoughts
-    (run 77) — they reach the angle prompt and choose the frame when the seed names none."""
+    (run 77) — they reach the angle prompt and choose the frame when the seed names none.
+    ``report`` receives ``angles_dropped`` (#1008) when given."""
     extract_entities(topic)
     topic_lower = topic.lower()
 
@@ -263,7 +284,9 @@ def generate_variants(
                 "lottery_projection",
             ]
 
-        return generate_ai_titles(topic, angle_types, channel_id=channel_id, brief=brief)
+        return generate_ai_titles(
+            topic, angle_types, channel_id=channel_id, brief=brief, report=report
+        )
 
     profile = get_channel_profile(channel_id) if channel_id else None
     is_established = repeat_count >= _ESTABLISHED_THRESHOLD
@@ -283,6 +306,7 @@ def generate_variants(
             is_established=is_established,
             intent=intent,
             brief=brief,
+            report=report,
         )
 
     # The gaming templates need a gaming TOPIC, not just a gaming channel: run 98's
@@ -317,7 +341,12 @@ def generate_variants(
         ]
 
     return generate_ai_titles(
-        topic, angle_types, channel_id=channel_id, is_established=is_established, brief=brief
+        topic,
+        angle_types,
+        channel_id=channel_id,
+        is_established=is_established,
+        brief=brief,
+        report=report,
     )
 
 
@@ -419,8 +448,12 @@ def generate_ai_angles(
     is_established: bool = False,
     intent=None,
     brief: str = "",
+    report: dict | None = None,
 ):
+    from core.facts.event_dates import run_date
+
     angle_block = "\n".join(angle_types)
+    dropped: list[dict] = []
 
     thoughts_block = ""
     thoughts = (brief or "").strip()
@@ -482,6 +515,8 @@ Rules:
 - Never drop the named subject from the seed topic.
 - BANNED headline templates: "just broke the league", "nobody's talking about",
   "reshapes the entire season", "the real winner isn't", "left fans furious", "my hot take".
+- Today is {run_date().isoformat()}. Never predict a year that has already passed, and never
+  name a numbered event (UFC 305, WrestleMania 40) unless the topic names it.
 
 The publishable YouTube title is generated LATER from verified facts + script.
 
@@ -495,7 +530,7 @@ Return exactly {len(angle_types)} angle lines.
         logger.warning("Variant LLM unavailable (%s) — using heuristic angles", exc)
         return _heuristic_angles(topic, angle_types)
 
-    clean = _clean_angle_lines(raw, angle_types)
+    clean = _clean_angle_lines(raw, angle_types, topic=topic, dropped=dropped)
     if len(clean) < _MIN_REAL_ANGLES:
         # One re-ask, not a loop: run 77 kept 3 of 5 lines as junk, leaving 2 real angles.
         try:
@@ -506,11 +541,13 @@ Return exactly {len(angle_types)} angle lines.
                 temperature=0.7,
                 max_tokens=400,
             )
-            for line in _clean_angle_lines(retry, angle_types):
+            for line in _clean_angle_lines(retry, angle_types, topic=topic, dropped=dropped):
                 if line not in clean:
                     clean.append(line)
         except Exception as exc:
             logger.warning("Variant LLM re-ask failed (%s) — keeping %d angle(s)", exc, len(clean))
+    if report is not None and dropped:
+        report["angles_dropped"] = dropped
     return clean[:5] or _heuristic_angles(topic, angle_types)
 
 
@@ -522,6 +559,7 @@ def generate_ai_titles(
     is_established: bool = False,
     intent=None,
     brief: str = "",
+    report: dict | None = None,
 ):
     """Back-compat alias — returns editorial angles, not publishable titles."""
     return generate_ai_angles(
@@ -531,6 +569,7 @@ def generate_ai_titles(
         is_established=is_established,
         intent=intent,
         brief=brief,
+        report=report,
     )
 
 

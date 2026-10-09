@@ -17,6 +17,87 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-09 (Claude Code) - wave 67: angles and chapters checked, a claim confirmed without a re-render
+
+**Prompt (verbatim):** *"make sure the to do list is updated, you can't see the to do list? is it a
+cloud container thing? I am afk so those will be done when i get home, can we work towards the next
+5?"* (then *"Try again"* twice while the plan was being written).
+
+**The to-do list:** it was current (v8 carried every wave-66 item) and Claude can read it and its
+ticks at any time - 9 ticked, the last on 2026-10-08. What Claude cannot get is a *notification*
+when a tick changes: the artifact service refused to register the wake subscription. So the page is
+read at the start of each session, not watched.
+
+**Picked:** the roadmap's five, unchanged - #1008 #1009 #1010 #1013 #1014, the defects runs 119-120
+exposed that wave 66 did not reach. #1007 (award races) moves to wave 68.
+
+**Found while building, with file:line:**
+- `core/content_engine.py` (the trim, then at ~1899) capped Extended with `tts_char_cap.max_chars()`
+  - 5,000, the Long ceiling - while the TTS refuse check allows Extended `effective_cap()` 12,000;
+  `core/script_length.trim_overlength` then dropped sentences from the end to the 1,000-word floor.
+  A 1,439-word five-chapter replay came out at 1,000 words, chapter 5 and the closer gone - run 120.
+- `core/angle_chapters.locate_chapters` placed every chosen angle, written or not (the keyword
+  fallback fabricates a start), and titled each chapter with the angle text written before any facts.
+- `core/pipeline.collect_scored_variants` re-fetched every signal outside `_VARIANT_REUSE_DEFAULT`
+  once per angle, with the angle as the search text: the 15 s deadline, then the seed's number anyway.
+- `apis/topic_variants.generate_ai_angles`: no date in the prompt; none of `find_elapsed_mismatches`,
+  `stale_preview`, `is_future_dated_claim` flags "by 2025" or "at UFC 305" (checked, today 2026-10-09).
+- Nothing recorded an operator's confirmation of a claim; the hold (`grounding_override`) had two
+  copies of its parent rule (`go_public.override_held`, `spaced_queue._override_held`).
+- Sibling: the video title's date check (#978) knew elapsed-time phrases only - "Chargers predictions
+  for 2025" passed in 2026.
+- `core/regression_corpus.run_case` read `select: 0` as "no select", so a case on a tuple's first
+  item checked the whole tuple - a guard that could not fail.
+
+**Shipped (wave 67), tests written first and watched failing on 1b43610:**
+1. **#1010 every chosen chapter is written** - `_trim_to_cap` (the Extended ceiling), the trim keeps
+   the closer, `uncovered_angles` + the `missing_chapters` pass (one premium call, kept only if it
+   covers the angle, adds no unbacked specific and fits), the locator may say an angle is absent,
+   `drop_thin_chapters`, the run card names a chapter left out, Shorts need 20 s. 13 tests, 13 failed first.
+2. **#1008 angles are date-checked** - `core/facts/event_dates`, stale angles dropped in
+   `_clean_angle_lines`, today's date in the prompt, "! N angles dropped for a stale date" on the menu;
+   the title gets the past-year check too. 12 tests, 12 failed first.
+3. **#1009 chapter titles from the chapter** - the locator's one call returns titles;
+   `chapter_title_problem` / `choose_chapter_title`; `title_source` / `title_note` stored; "Chapter N
+   retitled" on the run card. 9 tests, 9 failed first.
+4. **#1014 angle scores without the per-angle fetch** - seed-signal scoring with the anchor/drift
+   penalties (`VARIANT_SIGNAL_RESCORE` restores the old path), the judge sees facts and today's date,
+   a shared score prints once. 8 tests, 5 failed first (3 controls).
+5. **#1013 `ops verify-claim`** - `core/facts/claim_confirm`; a confirmation recomputes the counts and
+   the grade and releases the hold (and a Short cut from the run); a rejection lists the cut; one rule
+   for the parent hold. 13 tests, 13 failed first.
+- The corpus runner's `select: 0`: 1 test, 1 failed first.
+
+**Totals:** 56 new tests, 53 observed failing before their fix (3 controls); 11 regression-corpus cases,
+all 11 failing on 1b43610 (123 held). Older tests changed expectation because behaviour changed, each
+with the reason in place: `test_angle_chapters` (run 78's "A $1 Billion Opportunity?" is retitled - its
+paragraph says "billions"; chapter spans timed at one word a second so they clear the 20 s minimum),
+`test_soccer_run_fixes` and `test_generation_deadlines` (the deadline path they guard is opt-in now),
+`test_discovery_persist` (one fetch, not two), `test_wave18` (the parent hold is read in go-public).
+`score_hook` and the report card are untouched - **GRADE_VERSION stays v5**.
+
+**Proof** (`scratchpad/rerun_119_120.py`, the same inputs through 1b43610 and through this wave):
+angles kept 3 of 3 -> 1 of 3 ("UFC 305 was around 2024", "'by 2025' is a year that has passed");
+run 119's chapter title "UFC 305 adds Kamaru Usman vs Shavkat Rakhmonov fantasy matchup hype" (the
+angle, unchecked) -> "The welterweight belt is the only" ("'305' is not in the chapter"); a 1,439-word
+five-chapter Extended script 1,439 -> 1,000 words with chapter 5 and the closer lost -> 1,439 kept; a
+0:06 chapter as a Short True -> False; per-angle signal fetches 5 -> 0; run 120's blocking claims after
+a confirmation 1 -> 0, the hold lifts with no re-render.
+
+**Not done, deliberately:** the last-resort chapter label still cuts at 40 characters mid-phrase
+(#1080 - the model's title comes first in a live run); numbered events beyond UFC (#1082); a confirmed
+claim is not yet saved as a fact for later runs (#1083); fixing run 119's published description needs
+#1066 - Studio by hand for now. Found and filed: #1081 (the seasonal calendar's UFC 322 date looks a
+year off - check it against a dated source rather than guess).
+
+**Audit:** ruff and format clean; mypy 121 = baseline; suite 4,980 OK in default, reverse and shuffle
+order, "data/ and output/ untouched"; `ops regressions` 123 of 123; every new symbol has a production
+caller; 0 network attempts across the suite.
+
+**Count:** 355 open, 961 done, highest #1083 (`ops roadmap-index`).
+
+---
+
 ## 2026-10-09 (Claude Code) - wave 66: run 124's idea runs as intended; the next 100; Cursor's brief
 
 **Prompt (verbatim, 2026-10-08, with run 124 pasted):** *"Run 119's record line is wrong. "19-0 with

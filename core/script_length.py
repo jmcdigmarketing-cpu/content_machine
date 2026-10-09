@@ -137,7 +137,8 @@ def trim_overlength(
     """Drop trailing padding sentences when over length.
 
     Never clips mid-sentence (hard cap remains refuse in TTS). Never drops the
-    hook (first sentence). Never goes below min_words. Returns (script, words_removed).
+    hook (first sentence) and keeps the closer (last sentence) while anything else
+    can go (#1010). Never goes below min_words. Returns (script, words_removed).
     Optional ``max_chars`` is the TTS ceiling so we trim padding before refusing.
     """
     if not trim_enabled():
@@ -176,6 +177,13 @@ def trim_overlength(
                 sentences = trial
                 changed = True
                 break
+    # #1010: run 120 lost its closer and a whole chapter here - the end went first. The
+    # closer is the payoff, so the sentence before it goes instead.
+    while _too_long(sentences) and len(sentences) > 2:
+        trial = sentences[:-2] + sentences[-1:]
+        if not _ok(trial):
+            break
+        sentences = trial
     while _too_long(sentences) and len(sentences) > 1:
         trial = sentences[:-1]
         if not _ok(trial):

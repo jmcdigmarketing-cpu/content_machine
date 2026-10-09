@@ -716,11 +716,14 @@ def _run_new_video_flow_body(
         own_idea=None if idea_line else seed_topic,
         idea_angle=idea_line or None,
     )
-    from core.pipeline import variant_fallback_note
+    from core.pipeline import angles_dropped_note, variant_fallback_note
 
     note = variant_fallback_note(discovery.meta or {}, total=len(discovery.evaluated))
     if note:
         print(f"  ! {note}")  # #932
+    dropped_note = angles_dropped_note(discovery.meta)
+    if dropped_note:
+        print(f"  ! {dropped_note}")  # #1008
 
     angle_count = len(discovery.evaluated)
     if idea_line:
@@ -854,6 +857,10 @@ def _run_new_video_flow_body(
             print("  Chapters:")
             for chapter in chapters_from_features(result.features["angle_chapters"]):
                 print(f"    {chapter.index + 1}. {chapter.title}")
+        from core.angle_chapters import chapter_card_lines
+
+        for line in chapter_card_lines(result.features):  # #1010
+            print(f"  ! {line}")
 
         from core.hook_score import display_hook_score, score_script_hook
 

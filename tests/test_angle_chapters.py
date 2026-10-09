@@ -66,6 +66,15 @@ def _expected_word_starts() -> list[int]:
     return starts
 
 
+def _assert_titles_checked(case: unittest.TestCase, titles: list[str]) -> None:
+    """#1009: a headline labels its chapter only when the chapter supports it. Chapter 3's
+    "A $1 Billion Opportunity?" names a figure its paragraph never says ("earned billions"),
+    so it is retitled from the paragraph; the other four headlines stand."""
+    case.assertEqual(titles[:2] + titles[3:], RUN78_HEADLINES[:2] + RUN78_HEADLINES[3:])
+    case.assertNotEqual(titles[2], RUN78_HEADLINES[2])
+    case.assertTrue(titles[2].startswith("The online economy"), titles[2])
+
+
 def _timings(script: str, step: float = 0.4) -> list[dict]:
     return [
         {"word": w, "start": round(i * step, 3), "end": round(i * step + 0.35, 3)}
@@ -97,7 +106,7 @@ class TestLocateChapters(unittest.TestCase):
         with patch("core.llm_router.complete_json", return_value=openers):
             chapters = locate_chapters(SCRIPT, RUN78_ANGLES)
         self.assertEqual([c.word_start for c in chapters], _expected_word_starts())
-        self.assertEqual([c.title for c in chapters], RUN78_HEADLINES)
+        _assert_titles_checked(self, [c.title for c in chapters])
 
     def test_openers_out_of_order_fall_back_to_keyword_alignment(self):
         from core.angle_chapters import locate_chapters
@@ -179,7 +188,7 @@ class TestAllAnglesPipeline(unittest.TestCase):
             self.assertIn(headline, kwargs["creative_brief"])
         self.assertIn("my thoughts", kwargs["creative_brief"])
         rows = result.features["angle_chapters"]
-        self.assertEqual([r["title"] for r in rows], RUN78_HEADLINES)
+        _assert_titles_checked(self, [r["title"] for r in rows])
         self.assertEqual([r["word_start"] for r in rows], _expected_word_starts())
         self.assertIn(f"0:00 {RUN78_HEADLINES[0]}", result.description)
         self.assertIn(RUN78_HEADLINES[4], result.description)
@@ -196,7 +205,9 @@ class TestChapterSpans(unittest.TestCase):
             AngleChapter(index=i, title=RUN78_HEADLINES[i], angle=RUN78_ANGLES[i], word_start=s)
             for i, s in enumerate(starts)
         ]
-        words = _timings(SCRIPT, step=0.4)
+        # #1010: one word a second keeps every chapter over the 20 s Shorts minimum; at 0.4 s
+        # these 23-31 word chapters were 9-12 s - shorter than anything now offered as a Short.
+        words = _timings(SCRIPT, step=1.0)
         audio_end = words[-1]["end"] + 0.3
         spans = chapter_spans(
             SCRIPT, chapters, word_timings=words, intro_offset=3.0, audio_duration=audio_end
@@ -273,9 +284,12 @@ class TestCutChapterShorts(unittest.TestCase):
         ids = iter(range(100, 110))
         with (
             patch.object(chapter_shorts, "get_content_run_repository", return_value=repo),
-            patch.object(chapter_shorts, "load_word_timings", return_value=_timings(SCRIPT)),
+            # #1010: chapters over the 20 s Shorts minimum (see TestChapterSpans).
+            patch.object(
+                chapter_shorts, "load_word_timings", return_value=_timings(SCRIPT, step=1.0)
+            ),
             patch.object(chapter_shorts, "_intro_offset", return_value=3.0),
-            patch.object(chapter_shorts, "_probe_duration", return_value=60.0),
+            patch.object(chapter_shorts, "_probe_duration", return_value=150.0),
             patch.object(chapter_shorts.subprocess, "run", side_effect=_ffmpeg),
             patch.object(
                 chapter_shorts, "record_content_run", side_effect=lambda **kw: next(ids)

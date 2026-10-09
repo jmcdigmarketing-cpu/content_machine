@@ -1371,6 +1371,101 @@ ORIGINAL:
     return script
 
 
+def _trim_to_cap(
+    script: str, *, max_words: int, min_words: int, length_choice: str
+) -> tuple[str, int]:
+    """Trim padding against the ceiling the TTS check will apply to this length (#1010).
+
+    Run 120 trimmed an Extended script against the raw `TTS_MAX_CHARS` (5,000, the Long
+    ceiling) while the TTS refuse check allowed Extended 12,000: the trim cut it to the
+    1,000-word floor, inside chapter 4, with chapter 5 and the closer gone.
+    """
+    cap = None
+    try:
+        from core.tts_char_cap import effective_cap
+
+        cap = effective_cap(length_choice=length_choice)
+    except Exception as exc:
+        logger.debug("tts cap for trim skipped: %s", exc)
+    return trim_overlength(script, max_words=max_words, min_words=min_words, max_chars=cap)
+
+
+def _write_missing_chapters(
+    script: str,
+    angles: list[str],
+    *,
+    topic: str,
+    max_words: int,
+    length_choice: str,
+    grounding_text: str,
+    ungrounded: list[str],
+) -> tuple[str, list[str], dict[str, Any]]:
+    """Write the chosen chapters the script never reached, before its closer (#1010).
+
+    Run 120 was asked for five chapters and stopped inside the fourth. One premium call
+    writes what is missing; it is kept only when it now covers those angles, adds no
+    specific the facts do not back, and still fits the TTS ceiling for this length.
+    Returns (script, ungrounded, extra) - ``extra["missing"]`` is 1-based chapter numbers.
+    """
+    from core.angle_chapters import angle_headline, uncovered_angles
+
+    missing = uncovered_angles(script, angles)
+    extra: dict[str, Any] = {"missing": [i + 1 for i in missing], "written": False}
+    if not missing:
+        return script, ungrounded, extra
+    wanted = "\n".join(f"{i + 1}. {angle_headline(angles[i])}" for i in missing)
+    verified, _context = _split_facts_block(grounding_text or "")
+    verified = verified.strip()[:6000] or "(none - analysis and opinion only, no new specifics)"
+    prompt = f"""This script for TOPIC: {topic} was planned as one chapter per angle, in order,
+but it never gets to these chapters:
+{wanted}
+
+Write each missing chapter and insert it, in order, BEFORE the script's final closing line.
+Each one opens with its own hook sentence that works with no context and lands on its own
+payoff line. Keep every existing sentence verbatim. Any name, number, date or result must
+appear in VERIFIED FACTS - nothing from memory. If the facts cannot support a chapter, return
+the script unchanged. Return JSON only: {{"script": "..."}}
+
+VERIFIED FACTS:
+{verified}
+
+SCRIPT:
+{script}
+"""
+    try:
+        data = complete_json(
+            prompt, tier="premium", temperature=0.5, max_tokens=3000, stage="missing_chapters"
+        )
+    except Exception as exc:
+        logger.warning("Missing-chapter pass failed: %s", exc)
+        return script, ungrounded, extra
+    candidate = str(data.get("script") or "").strip() if isinstance(data, dict) else ""
+    if count_spoken_words(candidate) <= count_spoken_words(script):
+        return script, ungrounded, extra
+    if uncovered_angles(candidate, angles):
+        logger.info("Missing-chapter rewrite still skips a chapter - kept the original")
+        return script, ungrounded, extra
+    before = set(find_ungrounded_entities(script, grounding_text))
+    fresh = [e for e in find_ungrounded_entities(candidate, grounding_text) if e not in before]
+    if fresh:
+        logger.info("Missing-chapter rewrite named %s not in the facts - reverted", fresh[:3])
+        return script, ungrounded, extra
+    try:
+        from core.tts_char_cap import effective_cap, tts_char_count
+
+        cap = effective_cap(length_choice=length_choice)
+        if cap and tts_char_count(candidate) > cap:
+            logger.info("Missing-chapter rewrite is over the TTS ceiling - kept the original")
+            return script, ungrounded, extra
+    except Exception as exc:
+        logger.debug("missing-chapter cap check skipped: %s", exc)
+    if max_words and count_spoken_words(candidate) > max_words:
+        logger.info("Missing-chapter rewrite is over %s words - kept the original", max_words)
+        return script, ungrounded, extra
+    extra["written"] = True
+    return candidate, ungrounded, extra
+
+
 def _relength_after_postprocessing(
     script: str,
     *,
@@ -1452,6 +1547,7 @@ def generate_content_package(
     voice_mode: str = "",
     research_need: dict[str, Any] | None = None,
     own_idea: bool = False,
+    chapter_angles: list[str] | None = None,
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -1781,6 +1877,31 @@ def generate_content_package(
         ungrounded=ungrounded,
     )
 
+    # #1010: an all-angles video covers every chosen angle. Runs before the claim verifier,
+    # so a written chapter is checked like the rest of the script.
+    chapters_box: dict[str, Any] = {"missing": [], "written": False}
+
+    def _run_missing_chapters(s: str):
+        new, _u, extra = _write_missing_chapters(
+            s,
+            list(chapter_angles or []),
+            topic=topic,
+            max_words=max_words,
+            length_choice=length_choice,
+            grounding_text=grounding_text,
+            ungrounded=ungrounded,
+        )
+        chapters_box.update(extra)
+        return new, extra
+
+    script = run_script_pass(
+        script_passes,
+        "missing_chapters",
+        script,
+        _run_missing_chapters,
+        disabled=len(chapter_angles or []) < 2,
+    )
+
     # Semantic trade validation (opt-in): player→team pairings must co-occur on a
     # fact line, catching fused trades that token grounding passes.
     trade_warnings: list[str] = []
@@ -1896,18 +2017,10 @@ def generate_content_package(
     except Exception as exc:
         logger.debug("rumor language skipped: %s", exc)
 
-    tts_cap = None
-    try:
-        from core.tts_char_cap import max_chars as tts_max
-
-        tts_cap = tts_max()
-    except Exception as exc:
-        logger.debug("tts cap for trim skipped: %s", exc)
-
     # Odds rewrite can add words ("will win" -> "is favored to win"); trim after
     # that so a post-trim cap check cannot refuse a script we just made fit.
-    script, trimmed_n = trim_overlength(
-        script, max_words=max_words, min_words=min_words, max_chars=tts_cap
+    script, trimmed_n = _trim_to_cap(
+        script, max_words=max_words, min_words=min_words, length_choice=length_choice
     )
     if trimmed_n:
         logger.info("Script trim pass dropped %s padding word(s) (still unclipped)", trimmed_n)
@@ -2097,4 +2210,5 @@ def generate_content_package(
         "cta_summary": cta_report,
         "sentence_rhythm": rhythm_hits,
         "script_passes": script_passes,
+        "chapters_written": chapters_box,  # #1010
     }

@@ -174,6 +174,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `vault-retier` | List _operator_facts notes holding scraped page lines; --apply moves them to link tier (#857) |
 | `vault-sync` | Write machine beliefs + run dossiers into the Obsidian vault |
 | `verdicts` | Your 1-5 per video against its views (#935; rate in review-week) |
+| `verify-claim` | List, confirm (--claim N --source URL) or reject (--claim N --reject) a held run's flagged claims - no re-render; dry-run default, --apply writes (#1013) |
 | `voices` | List TTS voices — ElevenLabs account + local Piper — and what each channel uses |
 | `weekly-report` | Rules-based weekly intelligence (winners/losers by feature) |
 | `weights` | Print learned signal weights for channel |

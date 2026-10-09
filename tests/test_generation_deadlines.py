@@ -79,7 +79,12 @@ class TestVariantScoringDeadline(unittest.TestCase):
         candidates = ["angle a", "angle b"]
         with (
             patch("core.pipeline._score_variant", side_effect=_hang),
-            patch.dict(os.environ, {"VARIANT_SCORING_DEADLINE_S": "0.08"}, clear=False),
+            # #1014: the per-angle fetch this deadline guards is opt-in now.
+            patch.dict(
+                os.environ,
+                {"VARIANT_SCORING_DEADLINE_S": "0.08", "VARIANT_SIGNAL_RESCORE": "true"},
+                clear=False,
+            ),
         ):
             started = time.perf_counter()
             evaluated, _raw, meta = collect_scored_variants(candidates, "tapin", {}, "GTA 6")
@@ -110,6 +115,7 @@ class TestVariantScoringDeadline(unittest.TestCase):
                 os.environ,
                 {
                     "VARIANT_SCORING_DEADLINE_S": "0.08",
+                    "VARIANT_SIGNAL_RESCORE": "true",  # #1014: the per-angle path is opt-in
                     "COMPETITOR_SYNC_ON_DISCOVERY": "off",
                     "APIFY_CONTENT_MACHINE_KEY": "",
                 },

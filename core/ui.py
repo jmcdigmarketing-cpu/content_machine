@@ -816,6 +816,10 @@ def display_variants(
         except Exception:
             winning = frozenset()
 
+    if display_tied:
+        # #1014: one topic's signals score every angle, so the number is the topic's - shown
+        # once, with the angles ordered by fit. Five "IT'S OVER 9000" badges ranked nothing.
+        print_fn(f"  Topic score {score_badge(shown[0])} - every angle shares it")
     first = 2 if idea else 1
     for i, (variant, score, _) in enumerate(evaluated, start=first):
         best = i - first == best_i and not idea
@@ -826,6 +830,10 @@ def display_variants(
             if hits:
                 hint = paint(f"  ▲ {hits[0]}", "\033[32m")
         editorial = ""
+        if display_tied and variant in angle:
+            editorial = paint(f"  [fit {angle[variant]:.2f}]", "\033[90m")
+            print_fn(f"{marker} {i}. {variant}{editorial}{hint}")
+            continue
         if angle_breaks_it and variant in angle:
             editorial = paint(f"  [ed {angle[variant]:.2f}]", "\033[90m")
         print_fn(f"{marker} {i}. {score_badge(score)} {variant}{editorial}{hint}")

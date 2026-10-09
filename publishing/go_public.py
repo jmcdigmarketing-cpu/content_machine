@@ -83,7 +83,8 @@ def apply_go_public(
         return GoPublicResult(
             "refused",
             f"run {record.content_run_id} was rendered past the grounding gate; it stays "
-            "unlisted until the flagged claim is fixed (#754)",
+            "unlisted until the flagged claim is fixed (#754) - confirm or reject it with: "
+            f"py -m scripts.ops verify-claim --run-id {record.content_run_id}",
             target,
         )
     body = go_public_plan(target)

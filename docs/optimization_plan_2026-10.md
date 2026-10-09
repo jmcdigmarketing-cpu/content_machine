@@ -33,7 +33,7 @@ thumbnail), so progress is visible rather than internal.
 | #1005 | Who's-who never looks up a common word | M | C | Done (wave 66) |
 | #1007 | An award race is a race, not a title | M | C | Now |
 | #1006 | Game titles with a league name read as gaming | M | C | Now |
-| #1008 | Angles get the date and past-event checks | M | C | Now |
+| #1008 | Angles get the date and past-event checks | M | C | Done (wave 67) |
 | #1021 | Angle-pick learning: weight the frames the operator keeps choosing | M | C | Next |
 
 ## B — Live, dated data (8)
@@ -43,7 +43,7 @@ thumbnail), so progress is visible rather than internal.
 | #1003 | NFL records, results and next games from ESPN | M | C | Done (wave 66) |
 | #1004 | News and auto-research search the subject | S | C | Done (wave 66) |
 | #1011 | A signal's stale record loses to today's facts | S | C | Now |
-| #1014 | Variant scoring that is not noise (one cheap call) | M | C | Now |
+| #1014 | Variant scoring that is not noise (one cheap call) | M | C | Done (wave 67) |
 | #1022 | One ESPN client for every league, injuries included | M | C | Next |
 | #1023 | Schedule-aware topics (games, cards, award dates) | M | C | Next |
 | #1024 | Best bets stop recycling stale or 0-view topics | M | C | Next |
@@ -55,9 +55,9 @@ thumbnail), so progress is visible rather than internal.
 |---|---|---|---|---|
 | #1012 | Lines pasted at `Fact N` pass the junk filter | S | C | Done (wave 66) |
 | #1017 | Uncertain vault facts must name the subject | M | C | Done (wave 66) |
-| #1009 | Chapter titles come from the script and are checked | M | C | Now |
-| #1010 | A chosen chapter cannot go missing | M | C | Now |
-| #1013 | Confirm a flagged claim without a re-render | M | C | Now |
+| #1009 | Chapter titles come from the script and are checked | M | C | Done (wave 67) |
+| #1010 | A chosen chapter cannot go missing | M | C | Done (wave 67) |
+| #1013 | Confirm a flagged claim without a re-render | M | C | Done (wave 67) |
 | #1026 | Claim -> fact provenance on the run card | M | C | Next |
 | #1027 | Vault anchors beyond game titles | M | C | Next |
 | #1028 | A numeric-claim checker | M | C | Next |
@@ -197,11 +197,12 @@ thumbnail), so progress is visible rather than internal.
 
 ## Order of attack
 
-1. **Wave 67 (Claude):** #1007, #1008, #1009 + #1010, #1013, #1014. The angle and chapter
-   defects of runs 119-120 that wave 66 did not reach, and the noisy variant scores.
+1. **Wave 67 (Claude) - done 2026-10-09:** #1008, #1009 + #1010, #1013, #1014. #1007 moved to
+   wave 68 (the roadmap took the five runs 119-120 exposed).
 2. **Cursor phase A (media):** #1040, #1041, #1047, #1048, #1035 + #1036, #1053, #1044 -
    the operator's complaints about stock, thumbnails and the voice, in that order.
-3. **Wave 68 (Claude):** #1011, #1033, #1060, #1024, #1022.
+3. **Wave 68 (Claude):** #1007, #1006, #1011, #1033, #1060 - the rest of the "Now" horizon.
+   Then #1024, #1022 and #1082 (numbered events beyond UFC, filed in wave 67).
 4. **Cursor phase B (the app):** #1067, #1068, #1064, then #161, #157, #1070, #451.
 
 ## What this plan is not

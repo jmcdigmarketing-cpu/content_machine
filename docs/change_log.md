@@ -8,6 +8,28 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 67 — angles and chapters checked; a claim confirmed without a re-render - 2026-10-09
+
+*mypy 121; ruff 0.15.8 clean; corpus 123 of 123.*
+
+- **#1010** An Extended video keeps every chosen chapter: the trim used the Long ceiling on Extended
+  and cut run 120 to 1,000 words, losing chapter 5 and the closer. The trim now uses the Extended
+  ceiling and keeps the closing line; a chapter the script never reached is written once from the
+  facts, or left out of the chapter list and named on the run card; a chapter Short needs 20 s.
+- **#1008** Angles that predict a year that has passed ("by 2025") or name a numbered event that
+  has happened ("UFC 305") are dropped before the menu, which says how many and why. The video
+  title gets the same past-year check.
+- **#1009** Chapter titles come from what each chapter says and are checked: a name or number the
+  script never says is refused (run 119's "UFC 305 adds Kamaru Usman ..."); the card says "Chapter
+  N retitled".
+- **#1014** Angles are scored on the topic's signals without a fetch per angle (no more "hit its 15s
+  deadline"); the angle judge sees the facts and today's date; the shared score prints once.
+  `VARIANT_SIGNAL_RESCORE=true` restores the per-angle fetch.
+- **#1013** `py -m scripts.ops verify-claim --run-id N` lists a held run's flagged claims; `--claim K
+  --source LINK --apply` confirms one (the hold lifts once none blocks - no re-render), `--reject`
+  lists the sentence to cut.
+- The regression corpus runner reads `select: 0` as an index.
+
 ### Wave 66 — your idea stays yours; facts, names and hooks on solid ground - 2026-10-09
 
 *mypy 121; ruff 0.15.8 clean; corpus 112 of 112.*

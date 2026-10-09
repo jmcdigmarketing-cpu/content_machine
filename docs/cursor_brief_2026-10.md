@@ -97,7 +97,12 @@ timing across a join (a synthetic 3-paragraph timing set), and on the cache key.
 minimum (run 120 offered a 6-second chapter), no re-hook, no end card - saves it beside the
 long video, and the queue prompt defaults to No; `short_source: chapter_cut` is never read.
 
-**Do.** A 20 s minimum, a re-hook first line (the chapter's strongest fact as on-screen text),
+**Already done by Claude (wave 67, #1010/#1009 - in your file, with a handoff note):**
+`chapter_shorts.SHORTS_MIN_SECONDS = 20` with an "under the 0:20 Shorts minimum" verdict, and each
+chapter's title is now checked against the script (`angle_chapters.choose_chapter_title`), so a
+Short's title is too. A chapter the script never wrote no longer reaches the list.
+
+**Do.** A re-hook first line (the chapter's strongest fact as on-screen text),
 an end card pointing to the long video, `output/<ch>/shorts/`, queued by default, and
 `short_source` read by the growth report (#1054 is Claude's half).
 
@@ -114,7 +119,7 @@ Technical QC flags a black or frozen stretch longer than 0.5 s, with the timesta
 | Order | Item | Done means |
 |---|---|---|
 | B1 | #1067 the new-video page with an intent card | type an idea; angle 1 is your idea worded for search (`apis.topic_variants.idea_angle`), the intent read (`core.angle_intent`), Enter keeps it |
-| B2 | #1068 + #1064 the review room confirms claims and goes public | each flagged claim with its sources; confirm, fix or cut; `go-public` from the window |
+| B2 | #1068 + #1064 the review room confirms claims and goes public | each flagged claim with its sources; confirm, fix or cut; `go-public` from the window. The engine half shipped in wave 67 (#1013): call `core.facts.claim_confirm` (`run_flagged_claims`, `confirm_claim`, `reject_claim`) - the same functions `ops verify-claim` uses |
 | B3 | #161 the publish calendar | a week view of queued and scheduled uploads, cadence guardrail visible |
 | B4 | #157 the clip librarian | search, licence, anti-repeat and per-clip performance over `data/clip_index.json` |
 | B5 | #1070 settings | key *names* only (never values), channel config, voice settings |

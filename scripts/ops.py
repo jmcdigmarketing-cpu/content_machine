@@ -2468,6 +2468,73 @@ def cmd_rollback_publish(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "verify-claim",
+    "List, confirm (--claim N --source URL) or reject (--claim N --reject) a held run's "
+    "flagged claims - no re-render; dry-run default, --apply writes (#1013)",
+)
+def cmd_verify_claim(args: argparse.Namespace) -> int:
+    from core.facts.claim_confirm import confirm_claim, reject_claim, run_flagged_claims
+
+    run_id = getattr(args, "run_id", None)
+    if not run_id:
+        print("verify-claim needs --run-id N (the run go-public refused).")
+        return 2
+    number = getattr(args, "claim", None)
+    apply = bool(getattr(args, "apply", False))
+    if not number:
+        rows = run_flagged_claims(run_id)
+        if not rows:
+            print(f"Run {run_id} has no flagged claims on record.")
+            return 0
+        print(f"Run {run_id} - flagged claims:")
+        for row in rows:
+            kind = f"[{row.claim_type}] " if row.claim_type else ""
+            bar = "blocks" if row.blocking else "warns only"
+            print(f"  {row.number}. {kind}{row.claim}  ({bar})")
+            if row.found_in:
+                print(f"     this run's own research says: {row.found_in[:200]}")
+        print(
+            f"  Confirm: py -m scripts.ops verify-claim --run-id {run_id} --claim N "
+            '--source "LINK" --apply'
+        )
+        print(f"  Reject:  py -m scripts.ops verify-claim --run-id {run_id} --claim N --reject")
+        return 0
+    if getattr(args, "reject", False):
+        result = reject_claim(run_id, number, dry_run=not apply)
+        if result.status == "invalid":
+            print(result.detail)
+            return 2
+        print(f"Rejected claim: {result.claim}")
+        for sentence in result.sentences or ["(no sentence of the stored script carries it)"]:
+            print(f"  cut: {sentence}")
+        print("  The run stays unlisted: cut the sentence and re-render, or take the video down.")
+        if not apply:
+            print("  Nothing was recorded. Re-run with --apply to keep the rejection on the run.")
+        return 0
+    result = confirm_claim(
+        run_id,
+        number,
+        source=str(getattr(args, "source", None) or ""),
+        note=str(getattr(args, "note", "") or ""),
+        dry_run=not apply,
+    )
+    if result.status == "invalid":
+        print(result.detail)
+        return 2
+    print(f"Confirmed claim: {result.claim}")
+    if result.released:
+        print(
+            f"  Run {run_id} leaves the hold: py -m scripts.ops go-public --channel "
+            f"{args.channel} --apply"
+        )
+    elif result.remaining:
+        print(f"  Still held for {len(result.remaining)} claim(s): {result.remaining[0][:120]}")
+    if not apply:
+        print("  Nothing was written. Re-run with --apply to record it.")
+    return 0
+
+
+@_register(
     "go-public",
     "Flip a review-held unlisted upload to public (no id = newest hold; dry-run default; --apply sends)",
 )
@@ -2962,7 +3029,17 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Positional argument for some commands (e.g. ingest: a URL / PDF path / YouTube link)",
     )
-    parser.add_argument("--source", default=None, help="ingest: URL / PDF path / YouTube link")
+    parser.add_argument(
+        "--source",
+        default=None,
+        help="ingest: URL / PDF path / YouTube link; verify-claim: where the claim is confirmed",
+    )
+    parser.add_argument(
+        "--claim", type=int, default=None, help="verify-claim: the flagged claim's number"
+    )
+    parser.add_argument(
+        "--reject", action="store_true", help="verify-claim: the claim is wrong - list the cut"
+    )
     # #944: set to True by the batch runner on each step; review-week reads it.
     parser.set_defaults(_batch=False)
     parser.add_argument("--channel", default="tapin", help="Channel id (default: tapin)")
@@ -3091,13 +3168,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--skip", default="", help="signal-audit: stop running this signal (#574)")
     parser.add_argument("--unskip", default="", help="signal-audit: run a skipped signal again")
-    parser.add_argument("--note", default="", help="signal-audit --skip: why, kept with the skip")
+    parser.add_argument(
+        "--note",
+        default="",
+        help="signal-audit --skip: why, kept with the skip; verify-claim: kept with the source",
+    )
     parser.add_argument(
         "--apply",
         action="store_true",
         help=(
-            "artifacts / moat-backup / ingest-clips / rollback-publish / go-public / recategorize: "
-            "actually delete, copy, remux, unlist, make public, or re-file (default is dry-run)"
+            "artifacts / moat-backup / ingest-clips / rollback-publish / go-public / recategorize "
+            "/ verify-claim: actually delete, copy, remux, unlist, make public, re-file or record "
+            "(default is dry-run)"
         ),
     )
     parser.add_argument(

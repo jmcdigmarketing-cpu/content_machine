@@ -265,20 +265,41 @@ def _specificity_of(angle: str) -> float:
     return _specificity(angle)
 
 
-def _cheap_judge(angles: list[str], seed_topic: str) -> dict[str, float] | None:
+def _cheap_judge(
+    angles: list[str],
+    seed_topic: str,
+    *,
+    facts: list[str] | None = None,
+    today: str = "",
+) -> dict[str, float] | None:
     """Score each angle 0-1 against the typed thesis via the cheap LLM chain.
 
+    #1014: with ``facts`` and ``today`` it also scores whether the facts in hand can back
+    the angle and whether it is current - one call, the same one, no per-angle fetch.
     Fail-open: any error or unparseable reply returns None. Does not add a
     provider — uses ``complete(tier="cheap")`` as already routed.
     """
     if not angles or not (seed_topic or "").strip():
         return None
     numbered = "\n".join(f"{i + 1}. {angle}" for i, angle in enumerate(angles))
+    known = [line.strip() for line in (facts or []) if str(line).strip()][:12]
+    context = ""
+    if today:
+        context += f"Today is {today}.\n"
+    if known:
+        context += "Facts in hand:\n" + "\n".join(f"- {line[:200]}" for line in known) + "\n"
+    criteria = (
+        "how well it answers the operator's thesis questions"
+        if not context
+        else "how well it answers the operator's thesis questions, whether the facts in hand "
+        "can back it, and whether it is current (a year that has passed predicted, or an "
+        "event that has happened treated as upcoming, scores near 0)"
+    )
     prompt = (
-        "Score each angle 0-1 for how well it answers the operator's thesis "
-        'questions. Return JSON only: {"scores": [n, n, ...]} in the same '
+        f"Score each angle 0-1 for {criteria}. "
+        'Return JSON only: {"scores": [n, n, ...]} in the same '
         "order as the angles. No commentary.\n\n"
-        f"Thesis:\n{seed_topic.strip()}\n\nAngles:\n{numbered}\n"
+        f"{context}Thesis:\n{seed_topic.strip()}\n\nAngles:\n{numbered}\n"
     )
     try:
         from core.llm_router import complete
@@ -321,6 +342,8 @@ def rank_angles(
     *,
     seed_topic: str = "",
     llm_judge: bool = False,
+    facts: list[str] | None = None,
+    today: str = "",
 ) -> dict[str, float]:
     """`{angle: 0..1}` — an editorial score per angle. Never raises.
 
@@ -351,7 +374,7 @@ def rank_angles(
         scores[angle] = round(min(1.0, max(0.0, composite)), 4)
 
     if llm_judge:
-        judged = _cheap_judge(cleaned, seed_topic)
+        judged = _cheap_judge(cleaned, seed_topic, facts=facts, today=today)
         if judged:
             for angle in scores:
                 scores[angle] = round(

@@ -154,11 +154,18 @@ def find_meta_mismatches(
 ) -> list[str]:
     """#978: the same check over the title and the description, each flag tagged by where.
 
-    These are the two lines a viewer reads first; #551 read only the script.
+    These are the two lines a viewer reads first; #551 read only the script. The title also
+    gets #1008's past-year check ("predictions for 2025" in 2026) - not the description,
+    which can say "had sold 2M by 2025" in the past tense.
     """
+    from core.facts.event_dates import past_year_prediction
+
     found: list[str] = []
     for where, text in (("title", title), ("description", description)):
         found.extend(
             f"{where}: {note}" for note in find_elapsed_mismatches(text, facts, today=today)
         )
+    stale = past_year_prediction(title, today)
+    if stale:
+        found.append(f"title: {stale}")
     return found

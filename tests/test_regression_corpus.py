@@ -77,6 +77,21 @@ class RunCaseTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("raised", str(got))
 
+    def test_select_zero_is_an_index(self):
+        """Wave 67: `select: 0` was read as "no select", so a case on a tuple's first item
+        checked the whole tuple - a `not_contains` on it could never fail."""
+        case = {
+            "id": "x",
+            "call": "core.script_length:trim_overlength",
+            "args": ["One sentence here. Two sentence here."],
+            "kwargs": {"max_words": 0},
+            "select": 0,
+            "expect": {"contains": "Two sentence"},
+        }
+        ok, got = run_case(case)
+        self.assertTrue(ok, got)
+        self.assertIsInstance(got, str)
+
     def test_unknown_expectation_is_a_failure(self):
         case = {
             "id": "x",

@@ -27,6 +27,7 @@ from typing import Any
 
 from apis.cache_manager import build_key, get_cached, set_cache
 from apis.signal_contract import STATUS_OK, make_signal
+from apis.topic_tokens import names_any, subject_markers, subject_terms
 from core.logging import get_logger
 
 logger = get_logger("core.auto_research")
@@ -177,9 +178,15 @@ def attach_web_research(
         kept: list[str] = []
         used_urls: list[str] = []
         off = 0
+        # #1004: a page none of whose lines names the topic's subject is about something
+        # else - run 118 read Los Angeles ballot-measure pages for an NFL topic.
+        markers = subject_markers(subject_terms(topic) or subject_terms(angle))
         for c in chosen:  # ranked order, not completion order
             lines = pages.get(c["url"]) or []
             if not lines:
+                continue
+            if markers and not any(names_any(line, markers) for line in lines):
+                off += len(lines)
                 continue
             flagged = set(flag_off_topic(lines, reference=reference, corpus=corpus))
             off += len(flagged)

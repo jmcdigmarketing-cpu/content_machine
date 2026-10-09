@@ -733,9 +733,13 @@ def display_variants(
     raw_scores: dict[str, float] | None = None,
     angle_scores: dict[str, float] | None = None,
     own_idea: str | None = None,
+    idea_angle: str | None = None,
     print_fn=emit,
 ) -> int:
     """Print variant list; return index of highest score.
+
+    `idea_angle` (#1016): the operator's own idea worded for search, shown as angle 1 -
+    the one Enter keeps - with the generated angles numbered from 2.
 
     When ``channel_id`` is given, each variant whose title matches a pattern that
     has historically over-engaged on this channel is annotated "▲ proven pattern"
@@ -766,10 +770,18 @@ def display_variants(
     known_angles = {k: float(v) for k, v in angle.items() if v is not None}
     angle_breaks_it = all(a is not None for a in angle_values) and score_spread(known_angles) > 0
 
-    subsection("Scored angles (Enter = best)", print_fn)
+    subsection(
+        "Scored angles (Enter = your idea)"
+        if (idea_angle or "").strip()
+        else "Scored angles (Enter = best)",
+        print_fn,
+    )
     print_fn("  (YouTube title is generated after key facts + script — not here.)")
     own = (own_idea or "").strip()
-    if own:
+    idea = (idea_angle or "").strip()
+    if idea:
+        print_fn(f"  * 1. {idea}  (your idea, worded for search - Enter keeps it)")
+    elif own:
         print_fn(f"    0. {own}  (your idea — type 0 to keep it)")
     if display_tied:
         if raw_known and len({round(float(r), 2) for r in raw_values}) > 1:  # type: ignore[arg-type]
@@ -804,8 +816,10 @@ def display_variants(
         except Exception:
             winning = frozenset()
 
-    for i, (variant, score, _) in enumerate(evaluated, start=1):
-        marker = paint("  *", "\033[1m\033[33m") if i - 1 == best_i else "   "
+    first = 2 if idea else 1
+    for i, (variant, score, _) in enumerate(evaluated, start=first):
+        best = i - first == best_i and not idea
+        marker = paint("  *", "\033[1m\033[33m") if best else "   "
         hint = ""
         if winning and feature_tags:
             hits = [t for t in feature_tags(variant) if t in winning]
@@ -1210,9 +1224,9 @@ def prompt_key_facts_result(
     from core.link_facts import last_extract_report as link_extract_report
     from core.operator_facts import (
         capture_facts_to_vault,
+        clean_typed_lines,
         dedupe_facts,
         dedupe_key,
-        is_article_chrome,
         is_paste_command,
         max_operator_key_facts,
         operator_key_fact_char_budget,
@@ -1232,17 +1246,26 @@ def prompt_key_facts_result(
         link_facts.extend(room.link)
         link_provenance.extend(room.link_provenance)
         pasted_sources.extend(room.sources)
+    # #1012: lines answered here, with whether each arrived inside a paste; filtered once
+    # the loop ends (an ad marker drops the ad unit before it). Run 124 pasted a Yahoo
+    # article line by line and "Shopify", "Sponsored", "0", "/" became key facts.
+    typed: list[tuple[str, bool]] = []
+    previous_pending = False
+    read_urls: set[str] = set()
     while room is None:
         fact = input_fn(
-            f"  Fact {len(manual_facts) + len(link_facts) + len(vault_accepted) + 1} "
+            f"  Fact {len(manual_facts) + len(typed) + len(link_facts) + len(vault_accepted) + 1} "
             f"(or paste, empty when done): "
         ).strip()
+        pending_now = input_pending()
+        in_paste = pending_now or previous_pending
+        previous_pending = pending_now
         if not fact:
             # Run 74: a blank line in the middle of a paste is a paragraph break, not
             # the operator pressing Enter. Ending here dropped ~40 paragraphs of the
             # article and left them buffered to answer the prompts that followed.
             # `read_multiline_paste` has always known this; this prompt did not.
-            if input_pending():
+            if pending_now:
                 continue
             break
         if is_paste_command(fact) or paste_command_rest(fact):
@@ -1258,6 +1281,12 @@ def prompt_key_facts_result(
                 print_fn("    No facts parsed — try shorter lines or one trade per paragraph.")
             continue
         if looks_like_url(fact):
+            url_key = fact.strip().rstrip("/").lower()
+            if url_key in read_urls:
+                # #1012: run 124 read the same Yahoo link twice and kept its 13 lines twice.
+                print_fn("    Skipped - already read this link.")
+                continue
+            read_urls.add(url_key)
             print_fn("    Fetching link…")
             extracted = extract_facts_from_url(fact)
             report = link_extract_report()
@@ -1299,10 +1328,19 @@ def prompt_key_facts_result(
             continue
         if "\n" in fact:
             manual_facts.extend(parse_pasted_block(fact))
-        elif is_article_chrome(fact):
-            print_fn("    Skipped page chrome (Share / timestamps / paste verb).")
         else:
-            manual_facts.append(fact)
+            typed.append((fact, in_paste))
+
+    if typed:
+        kept_typed, skipped_typed = clean_typed_lines(typed)
+        manual_facts.extend(kept_typed)
+        if skipped_typed:
+            shown = ", ".join(f'"{_elide(line, 30)}"' for line in skipped_typed[:6])
+            more = f" and {len(skipped_typed) - 6} more" if len(skipped_typed) > 6 else ""
+            print_fn(
+                f"  Skipped {len(skipped_typed)} line(s) that are page furniture, ads or "
+                f"headings, not facts: {shown}{more}"
+            )
 
     # Anything still buffered was pasted, not chosen — offer it back rather than let
     # it drift downstream and auto-answer `Proceed?` (which is how run 74 ended).
@@ -1372,14 +1410,20 @@ def prompt_key_facts_result(
         operator_facts=[*manual_facts, *link_facts],
     )
     vault_error: Exception | None = None
+    vault_report: dict[str, Any] = {}
     try:
+        from core.facts.entity_lookup import names_for
         from core.obsidian_facts import load_fact_records
 
+        # #1017: an uncertain fact must name the topic's subject (run 124 offered eight
+        # about Marvel Rivals, NetEase and the Braves for a Chargers video).
         records = load_fact_records(
             topic,
             channel_id,
             require_distinctive=True,
             corpus=relevance_corpus,
+            subject_names=names_for(topic, angle=angle or ""),
+            report=vault_report,
         )
     except Exception as exc:
         vault_error = exc
@@ -1457,13 +1501,18 @@ def prompt_key_facts_result(
         print_fn("  Vault scan unavailable — continuing without suggestions.")
     elif not suggestions:
         print_fn("")
-        print_fn("  Vault scan: no topic-relevant facts — skipped.")
+        dropped = int(vault_report.get("uncertain_off_subject") or 0)
+        tail = (
+            f" ({dropped} unrelated dropped: they name nothing the topic names)" if dropped else ""
+        )
+        print_fn(f"  Vault scan: no topic-relevant facts — skipped.{tail}")
     elif auto_attach:
         print_fn("")
         print_fn(
             format_vault_scan_line(
                 confident=len(confident_records),
                 uncertain=len(uncertain_records),
+                off_subject=int(vault_report.get("uncertain_off_subject") or 0),
             )
         )
         for index, record in enumerate(records, 1):
@@ -1742,7 +1791,7 @@ def display_grounding_report(
     return True
 
 
-def format_vault_scan_line(*, confident: int, uncertain: int) -> str:
+def format_vault_scan_line(*, confident: int, uncertain: int, off_subject: int = 0) -> str:
     """The vault-scan headline, splitting proven matches from unproven ones (329 P0).
 
     A note relevant on token evidence but sharing no franchise anchor with the topic
@@ -1751,11 +1800,17 @@ def format_vault_scan_line(*, confident: int, uncertain: int) -> str:
     visible and correctable rather than invisible.
     """
     total = confident + uncertain
+    # #1017: what was dropped for naming nothing the topic names, so the drop is visible.
+    dropped = (
+        f" ({off_subject} unrelated dropped: they name nothing the topic names)"
+        if off_subject
+        else ""
+    )
     if not uncertain:
-        return f"  Vault scan: auto-attached {total} topic-relevant fact(s):"
+        return f"  Vault scan: auto-attached {total} topic-relevant fact(s){dropped}:"
     return (
         f"  Vault scan: {confident} confident fact(s) auto-attached; "
-        f"{uncertain} uncertain (subject unproven; review below):"
+        f"{uncertain} uncertain (subject unproven; review below){dropped}:"
     )
 
 
@@ -2443,6 +2498,14 @@ def prompt_upload_plan(
         # #912: the run's slot - moved off it only while the post_time experiment runs.
         publish_at = planned_post_time(channel_id or "default", topic, run_id=run_id, after=now)
         label = format_scheduled_local(publish_at, channel_id or "default")
+        if grounding_override:
+            # #1000: YouTube turns a scheduled `publishAt` public at the slot - run 120 went
+            # public with its flagged claim. Queue it for the slot instead, never scheduled.
+            print_fn(
+                f"  Queued for {label} as {privacy_status}: it will not go public at the slot "
+                "while the flagged claim stands (go-public once it is fixed)."
+            )
+            return UploadPlan(mode="queue", scheduled_at=publish_at, privacy_status=privacy_status)
         print_fn(f"  YouTube will publish at: {label}")
         print_fn(
             "  Run worker once to upload the file; your PC does not need to be on at publish time."

@@ -70,10 +70,9 @@ class TestScriptPassLedger(unittest.TestCase):
         self.assertEqual(row.get("skip_reason") or "", "")
 
     def test_disabled_hook_is_recorded_as_disabled_not_as_a_run(self) -> None:
+        # #1018: the hook pass is on by default now; this pins what "off" records.
         ledger: list[dict] = []
-        env = {k: v for k, v in os.environ.items() if k != "HOOK_REGEN_ENABLED"}
-        with patch.dict("os.environ", env, clear=True):
-            os.environ.pop("HOOK_REGEN_ENABLED", None)
+        with patch.dict("os.environ", {"HOOK_REGEN_ENABLED": "false"}):
             from core.hook_score import hook_regen_enabled
 
             self.assertFalse(hook_regen_enabled())

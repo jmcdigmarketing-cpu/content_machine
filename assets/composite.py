@@ -200,6 +200,7 @@ def compose_hybrid_background(
         source_id=local.source_id,  # #955: the gameplay half's footage:<how>:<folder>
         query=local.query or stock.query,
         attribution=attribution,
+        credits=list(local.credits or []),  # #1019
     )
 
 

@@ -1,6 +1,6 @@
 # Handoff — the mailbox
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
 **Read this first, before any other file, every time you start work here.** More than
 one agent works in this repo and nothing signals a switch. This file is how the
@@ -53,22 +53,29 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-08 · **HEAD at write:** `4948a42` (wave 65) + the runs 118-120 intake commit
-(`git log -1`, docs only) · **Tree:** clean after the commit.
+**Written:** 2026-10-09 · **HEAD at write:** `7f31d49` + the wave 66 commit (`git log -1`) ·
+**Tree:** clean after the commit.
 
-**Read before editing:** an ads entry can carry `result` {subscribers, spent}; `ledger.charged` is
-what an entry cost. `quality["opening"]` has `first_caption_s` / `late_first_caption`. The operator's
-runs 118-120 are in planning_log 2026-10-08: #1000-#1014 each name the file:line. mypy **121**.
+**Read before editing:** angle 1 is the operator's own idea (`apis.topic_variants.idea_angle`,
+`main._typed_idea`, `run_pipeline(own_idea=, own_topic=)`); `ANGLE_PLAN` is a calm intent;
+`apis.topic_tokens` now holds `COMMON_CAPITALISED`, `name_phrases`, `subject_terms`,
+`subject_markers`, `names_any` - use them, not a private list. Two default-on LLM passes
+(`HOOK_REGEN_ENABLED`, `KEEP_TO_IDEA`) are pinned off in `tests/__init__.py`. TapIn is
+`background_mode: local_first`; both channels speak at 1.05. mypy **121**.
 
 **Defects first:**
-- A scheduled upload of a gate-flagged render goes public at the slot (#1000) - run 120 did.
-- Run 118 got no facts: "yes" became the seed (#1001), lowercase teams are not names (#1002), no NFL
-  feed (#1003). The chapter titles publish unchecked angle text (#1009).
-- CI exit 139 from 2026-10-08: PySide6 6.12.0 aborts at exit after a QtMultimedia decode - pinned
-  `<6.12` in `[app]` (#1015). The reversed leg annotates a crash stack (`PYTHONFAULTHANDLER`).
+- The ESPN fixture (`tests/fixtures/signal_payloads/live_scores.json`) is written from ESPN's
+  documented shape - this session's network policy blocks site.api.espn.com. Refresh it with
+  `record-payloads` on the PC; no injuries yet (#1022).
+- Run 119's description still carries the "UFC 305" chapter title (#1009). Its record line is
+  right after all (a decision win) - #1011 is reworded.
+- `docs/decisions.md` is at its 800-line ceiling: the `local_first` decision is in planning_log
+  2026-10-09 instead.
 
-**Shipped:** wave 65 (#996 #992 #998 #997 #994), this intake (docs) and the pin. Highest #1015. Next:
-**#1000 · #1001 · #1002 · #1003 · #1004**.
+**Shipped:** wave 66 - #1016 #1001 #1002 #1003 #1004 #1005 #1012 #1017 #1018 + #1000 #1019 #1020,
+speed 1.05; the next 100 ([optimization_plan_2026-10.md](optimization_plan_2026-10.md)); Cursor's
+run ([cursor_brief_2026-10.md](cursor_brief_2026-10.md)). Highest #1079. Next:
+**#1008 · #1009 · #1010 · #1013 · #1014**.
 
 ## Slot — Cursor
 

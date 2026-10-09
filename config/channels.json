@@ -59,7 +59,7 @@
         "enabled": true,
         "volume": 0.18
       },
-      "background_mode": "hybrid",
+      "background_mode": "local_first",
       "hybrid_local_ratio": 0.70,
       "asset_provider_order": ["local", "pexels", "pixabay", "coverr"],
       "output_subdir": "tapin",
@@ -72,7 +72,7 @@
       "tts": {
         "voice_id": "nPczCjzI2devNBz1zQrb",
         "rotate": true,
-        "speed": 0.95,
+        "speed": 1.05,
         "model_id": "eleven_multilingual_v2",
         "voice_pool": {
           "nPczCjzI2devNBz1zQrb": 4,
@@ -188,7 +188,7 @@
       "tts": {
         "voice_id": "XjLkpWUlnhS8i7gGz3lZ",
         "rotate": true,
-        "speed": 0.95,
+        "speed": 1.05,
         "model_id": "eleven_multilingual_v2",
         "voice_pool": {
           "XjLkpWUlnhS8i7gGz3lZ": 4,

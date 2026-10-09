@@ -74,6 +74,8 @@ edited after · `archived` = superseded, kept for the reasoning.
 | [operating_plan.md](operating_plan.md) | Pace, cost, channels, ops |
 | [backlog.md](backlog.md) | Full open-item inventory (roadmap.md stays short) |
 | [desktop_app.md](desktop_app.md) | The Windows application programme |
+| [optimization_plan_2026-10.md](optimization_plan_2026-10.md) | The next 100: fourteen epics, owners and horizons (backlog epic E7) |
+| [cursor_brief_2026-10.md](cursor_brief_2026-10.md) | Cursor's run: media first (footage, thumbnails, voice, Shorts), then the app |
 | [content_quality_plan.md](content_quality_plan.md) | Five quality issues, traced and planned |
 | [spec_quality_fixes_1_to_4.md](spec_quality_fixes_1_to_4.md) | Code-ready specs for quality fixes §1–§4 |
 | [spec_background_query_entity_anchor.md](spec_background_query_entity_anchor.md) | Code-ready spec for entity-anchored background queries |

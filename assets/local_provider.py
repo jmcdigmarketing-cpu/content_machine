@@ -72,6 +72,48 @@ def _license_attribution(clip_path: str) -> str | None:
         return None
 
 
+def _needs_credit(license_name: str) -> bool:
+    low = license_name.lower()
+    return "attribution" in low or "cc by" in low or "cc-by" in low
+
+
+def clip_credit(clip_path: str) -> str | None:
+    """#1019: the credit line a clip's licence requires (CC BY), else None.
+
+    Owned footage and licences without an attribution term need no credit.
+    """
+    sidecar = _nearest_license_file(clip_path)
+    if not sidecar:
+        return None
+    try:
+        with open(sidecar, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError, TypeError) as exc:
+        logger.debug("clip credit: licence unreadable (%s): %s", sidecar, exc)
+        return None
+    if not isinstance(data, dict):
+        return None
+    license_name = str(data.get("license") or "").strip()
+    if not _needs_credit(license_name):
+        return None
+    folder = os.path.basename(os.path.dirname(sidecar))
+    short = license_name.split(";")[0].strip()
+    sources = [str(s).strip() for s in data.get("sources") or [] if str(s).strip()]
+    owner = str(data.get("owner") or "").strip()
+    who = ", ".join(sources) if sources else owner
+    return f"{folder} gameplay: {short}" + (f" - {who}" if who else "")
+
+
+def clip_credits(clip_paths) -> list[str]:
+    """One credit per licence folder, in first-use order (#1019)."""
+    found: list[str] = []
+    for path in clip_paths or []:
+        line = clip_credit(path)
+        if line and line not in found:
+            found.append(line)
+    return found
+
+
 def _get_subfolders(base_path):
     folders = []
     for root, _, files in os.walk(base_path):
@@ -375,4 +417,5 @@ class LocalAssetProvider(AssetProvider):
             source_id=footage_source_id(folder, how),
             query=topic,
             attribution=_license_attribution(path),
+            credits=clip_credits([path]),
         )

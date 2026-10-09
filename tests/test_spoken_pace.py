@@ -30,7 +30,8 @@ class SpokenPaceTests(unittest.TestCase):
         from core.script_length import WORDS_PER_SECOND, spoken_words_per_second
 
         with _env():
-            self.assertAlmostEqual(spoken_words_per_second("tapin"), WORDS_PER_SECOND * 0.95)
+            # tapin's own pace: 1.05 since the operator's 2026-10-08 "upped a bit".
+            self.assertAlmostEqual(spoken_words_per_second("tapin"), WORDS_PER_SECOND * 1.05)
         with _env("1.0"):
             self.assertAlmostEqual(spoken_words_per_second("tapin"), WORDS_PER_SECOND)
 

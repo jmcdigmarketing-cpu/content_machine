@@ -8,6 +8,7 @@ from core.angle_intent import (
     ANGLE_DEFAULT,
     ANGLE_EXPLAINER,
     ANGLE_LIST,
+    ANGLE_PLAN,
     ANGLE_REACTION,
     ANGLE_RETROSPECTIVE,
     ANGLE_TUTORIAL,
@@ -126,6 +127,14 @@ _REACTION_ANGLES = [
 # asks what is broken; that is the point.
 INTENT_ANGLES = {
     ANGLE_REACTION: _REACTION_ANGLES,
+    # #1016: an idea asking what has to happen. No controversy frame, no counter-take.
+    ANGLE_PLAN: [
+        "the_plan_that_answers_it",
+        "what_has_to_change_first",
+        "where_it_stands_now",
+        "the_path_in_order",
+        "what_it_would_take",
+    ],
     ANGLE_EXPLAINER: [
         "how_it_actually_works",
         "the_part_people_get_wrong",
@@ -172,6 +181,10 @@ _LENS_EXAMPLES = {
     ANGLE_REACTION: (
         "what struck you first, a detail most viewers missed, how it compares to "
         "expectations, what it signals for what comes next, the standout moment"
+    ),
+    ANGLE_PLAN: (
+        "the plan that answers the question, the first thing that has to change, where it "
+        "stands now, the path in order, what it would take"
     ),
     ANGLE_EXPLAINER: (
         "the mechanism itself, the common misconception, the reason it was built "
@@ -350,6 +363,14 @@ def _subject_terms(topic: str) -> list[str]:
             continue
         if w not in terms:
             terms.append(w)
+    # #1016: a team in a lower-case idea ("the 0-4 chargers") is the subject too.
+    from apis.nba_teams import team_names_in as nba_teams
+    from apis.nfl_entities import team_names_in as nfl_teams
+
+    for team in nfl_teams(topic) + nba_teams(topic):
+        nickname = team.split()[-1]
+        if nickname not in terms:
+            terms.append(nickname)
     return terms[:3]
 
 
@@ -511,3 +532,66 @@ def generate_ai_titles(
         intent=intent,
         brief=brief,
     )
+
+
+# #1016: words a rewording must not add. Present in the operator's own idea, they are theirs.
+_TAKE_MARKERS = re.compile(
+    r"\b(?:done|finished|over|dead|doomed|overrated|underrated|fraud|frauds|myth|lie|lies|"
+    r"exposed|truth|secret|nobody|everyone is wrong|wrong|disaster|the end|hot take|"
+    r"actually|really|mirage|fake)\b",
+    re.I,
+)
+_IDEA_KEEP = 0.6
+
+
+def _idea_words(text: str) -> set[str]:
+    from apis.topic_tokens import COMMON_CAPITALISED, content_tokens
+
+    return {t for t in content_tokens(text) if t not in COMMON_CAPITALISED}
+
+
+def idea_angle(idea: str, channel_id: str | None = None) -> str:
+    """#1016: the operator's idea worded for search - angle 1, the one Enter keeps.
+
+    "100% the intention of my idea, maybe just worded with more seo velocity" (operator,
+    2026-10-08). One cheap call; the rewording is refused - and the idea kept word for word
+    - when it drops more than 40% of the idea's words, adds a take ("done", "overrated",
+    "the end") the idea did not have, or turns into a different question. Never raises.
+    """
+    plain = " ".join((idea or "").split())
+    if not plain:
+        return ""
+    prompt = (
+        "Reword this YouTube video idea as a title-style angle with stronger search "
+        "phrasing (names in full, the year if it is implied). Keep its question, its "
+        "subject and its stance EXACTLY - add no opinion, prediction, claim or new "
+        "question. Under 90 characters. Return the angle line only.\n\n"
+        f"Idea: {plain}"
+    )
+    try:
+        from core import llm_router
+
+        raw = llm_router.complete(prompt, tier="cheap", temperature=0.3, max_tokens=60)
+    except Exception as exc:
+        logger.debug("idea angle kept verbatim (no model): %s", exc)
+        return plain
+    line = str(raw or "").strip().splitlines()[0:1]
+    candidate = line[0].strip().strip("\"'").strip() if line else ""
+    if not candidate or len(candidate) > 110:
+        return plain
+    wanted = _idea_words(plain)
+    kept = len(wanted & _idea_words(candidate)) / len(wanted) if wanted else 1.0
+    added_take = [
+        m.group(0).lower()
+        for m in _TAKE_MARKERS.finditer(candidate)
+        if not re.search(rf"\b{re.escape(m.group(0))}\b", plain, re.I)
+    ]
+    if kept < _IDEA_KEEP or added_take:
+        logger.info(
+            "idea angle refused (kept %.0f%% of the idea's words%s): %r",
+            kept * 100,
+            f", added {added_take}" if added_take else "",
+            candidate,
+        )
+        return plain
+    return candidate

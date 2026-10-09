@@ -1735,6 +1735,187 @@
         ]
       },
       "why": "the frame came from the angle; #973 could only cut it from the title"
+    },
+    {
+      "id": "run124-next-is-not-a-name",
+      "item": 1005,
+      "source": "run 124 (2026-10-08): the angle's sentence-initial 'Next Sunday' was looked up and Wikidata gave NeXT",
+      "call": "apis.topic_tokens:name_phrases",
+      "args": [
+        "Next Sunday the Chargers play"
+      ],
+      "expect": {
+        "equals": [
+          "Chargers"
+        ]
+      },
+      "why": "a phrase made only of common words is not a name"
+    },
+    {
+      "id": "run120-people-is-not-a-name",
+      "item": 1005,
+      "source": "#1005 sibling (run 120): sentence-initial 'People' resolved to 'human'",
+      "call": "core.facts.entity_lookup:names_for",
+      "args": [
+        "People working with ai to blend video games"
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "the who's-who lookup must not look up common words"
+    },
+    {
+      "id": "run124-lowercase-team",
+      "item": 1002,
+      "source": "run 124: 'the 0-4 chargers' gave the who's-who lookup no name",
+      "call": "core.facts.entity_lookup:names_for",
+      "args": [
+        "How the 0-4 chargers can turn it around this year"
+      ],
+      "expect": {
+        "equals": [
+          "Los Angeles Chargers"
+        ]
+      },
+      "why": "a lower-case team is still the subject"
+    },
+    {
+      "id": "phone-chargers-are-not-a-team",
+      "item": 1002,
+      "source": "#1002 sibling: a nickname is a team only when the text reads as football",
+      "call": "apis.nfl_entities:team_names_in",
+      "args": [
+        "best phone chargers 2026"
+      ],
+      "expect": {
+        "equals": []
+      },
+      "why": "word match plus a sport cue, never a bare substring"
+    },
+    {
+      "id": "run124-subject-query",
+      "item": 1004,
+      "source": "run 118/124: news searched the whole typed sentence and got iPhone and Uber stories",
+      "call": "apis.topic_tokens:subject_terms",
+      "args": [
+        "How the 0-4 chargers can turn it around this year"
+      ],
+      "expect": {
+        "equals": [
+          "Los Angeles Chargers"
+        ]
+      },
+      "why": "news and auto-research search the subject"
+    },
+    {
+      "id": "run124-sponsored-typed-line",
+      "item": 1012,
+      "source": "run 124: 'Sponsored' pasted at Fact N became a key fact",
+      "call": "core.operator_facts:is_junk_line",
+      "args": [
+        "Sponsored"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "ad furniture is never a fact"
+    },
+    {
+      "id": "run124-player-chrome-line",
+      "item": 1012,
+      "source": "#1012 sibling: video-player chrome 'Duration' / '0' / '/' from the same paste",
+      "call": "core.operator_facts:is_junk_line",
+      "args": [
+        "Duration"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "video-player furniture is never a fact"
+    },
+    {
+      "id": "run124-start-here-names-nothing",
+      "item": 1017,
+      "source": "run 124: 'Never done this before? Read Start here.' was offered as an uncertain fact for a Chargers video",
+      "call": "apis.topic_tokens:names_any",
+      "args": [
+        "Never done this before? Read Start here.",
+        [
+          "Los Angeles Chargers",
+          "Chargers"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "an uncertain fact must name what the topic names"
+    },
+    {
+      "id": "run124-hook-history-superlative",
+      "item": 1018,
+      "source": "run 124: the hook 'Only one team in NFL history has made the playoffs after starting 0-4' was unsupported",
+      "call": "core.script_craft:find_ungrounded_superlatives",
+      "args": [
+        "Only one team in NFL history has made the playoffs after starting 0-4.",
+        ""
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a history superlative needs a fact behind it"
+    },
+    {
+      "id": "no-team-has-ever",
+      "item": 1018,
+      "source": "#1018 sibling: the 'no team has ever' form of the same claim",
+      "call": "core.script_craft:find_ungrounded_superlatives",
+      "args": [
+        "No team has ever come back from 0-4.",
+        ""
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the same unsupported claim in other words"
+    },
+    {
+      "id": "stock-opener-everyone-missing",
+      "item": 1018,
+      "source": "#1018: 'Here's the part everyone's missing' recurred as an opener",
+      "call": "core.hook_score:stock_opener",
+      "args": [
+        "Here's the part everyone's missing about the Chargers."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a stock opener is rewritten by the hook pass"
+    },
+    {
+      "id": "run124-how-can-is-a-plan",
+      "item": 1016,
+      "source": "run 124: 'how can' was no intent cue, so the prompt said TAKE A SIDE",
+      "call": "core.angle_intent:detect_angle_intent",
+      "args": [
+        "How the 0-4 chargers can turn it around this year"
+      ],
+      "expect": {
+        "equals": "plan"
+      },
+      "why": "a plan question is answered, not argued"
+    },
+    {
+      "id": "run118-seed-keeps-teams",
+      "item": 1001,
+      "source": "run 118: the seed of 'NFl analysis of week 4 with the seahawks and chargers ...' was 'nfl'",
+      "call": "core.idea_intake:search_seed_from_thoughts",
+      "args": [
+        "NFl analysis of week 4 with the seahawks and chargers, what went wrong and what is next for both teams going forward"
+      ],
+      "expect": {
+        "equals": "Seahawks Chargers week 4"
+      },
+      "why": "the seed keeps the teams and the week"
     }
   ]
 }

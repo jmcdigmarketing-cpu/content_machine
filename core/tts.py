@@ -731,10 +731,12 @@ def _generate_audio(script, output_path, channel_id: str | None = None, segments
 
     from core.script_length import split_spoken_sentences
 
-    # Gated on the cache it exists to serve. With TTS_CACHE off (the default)
-    # every lookup misses and every store is a no-op, so splitting buys nothing
-    # and still costs N synth calls, an ffmpeg re-encode, and an encoder boundary
-    # at every sentence break in every video.
+    # Gated on the cache it exists to serve. TTS_CACHE is ON by default, so a normal
+    # render is voiced one sentence per call and joined with ffmpeg: each sentence is
+    # read without its neighbours (no previous/next-text stitching), which is where
+    # the operator's "robotic" seams come from (2026-10-08; the Cursor brief's A4 moves
+    # this to paragraph calls). With TTS_CACHE=false splitting buys nothing, so the
+    # whole script goes in one call.
     sents = split_spoken_sentences(spoken) if tts_cache_enabled() else []
     alts = split_spoken_sentences(spoken_for_alt) if tts_cache_enabled() else []
     if len(sents) == len(alts) and len(sents) > 1 and ffmpeg_concat_ready():

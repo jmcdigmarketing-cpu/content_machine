@@ -1,6 +1,6 @@
 # Planning log
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
 A durable record of planning/brainstorming sessions so ideas aren't lost when the
 ephemeral plan files (`~/.claude/plans/*.md`) are cleared. **Newest first.** Each entry
@@ -14,6 +14,139 @@ backlog itself lives in [roadmap.md](roadmap.md).
 > Rolls over by month once it passes the size ceiling (docs_standard.md §7): this file holds
 > the current period; earlier months are frozen in [planning_log_2026-08.md](planning_log_2026-08.md)
 > and [planning_log_2026-07.md](planning_log_2026-07.md).
+
+---
+
+## 2026-10-09 (Claude Code) - wave 66: run 124's idea runs as intended; the next 100; Cursor's brief
+
+**Prompt (verbatim, 2026-10-08, with run 124 pasted):** *"Run 119's record line is wrong. "19-0 with
+8 KOs and 10 submissions" only adds up to 18 wins: the system mixed an old 18-0 record with the
+articles' 19-0. It's unlisted; I'd leave it that way or delete it. What if its dec win? thumbnails are
+pretty terrible btw talking speed has to be upped a bit, next 5. see the attached run on topic to
+video idea because this is a good video, just not what i intended and the system will take the hot
+take and change my idea away from my intention too often. when attaching uncertain facts, the
+system needs to be smarter bc ever since it has been added, it will involve subjects which have
+nothing to do and are why they were marked uncertain. lets be smart and realize why they were
+uncertain, shouldn't be excusable when there isnt even any topic similarity. operator key facts
+picks up sponsored and unrelated. we have the correct mechanisms in place they just dont work
+correctly atm. hooks have performed pretty poorly consistently how can we improve that? I also want
+you to draft up a very large run for cursor to work on, and plan out the next 100 optimizations, be
+it within documentation, ui, color, inner working, long term strategy, big and small, but not so
+small next 5's currentl efficiency drops, I also dont want these to be so small they are smaller
+tasks for the big root problem. (yes but no, yhou get what i am getting at, strategic division
+good, stalling bad) I am going to use the same video idea when this is done, make sure it runs
+better plz. Anything for me? how have we moved closer to the diamonds of this idea and how are we
+close to dirt versions of this idea? next for the future, desktop application progress?"* and
+*"...lot lot lot to process here so plan plan and document so our progress isnt lost via session
+limit. how can clipping be better and how does it perform in actuality? will these shorts be how
+long? and hwere will they be put when cut? the stock video really drives me crazy, i would rather
+download a lot of uncopyrighted footage instead. is there naything we can change about the voice to
+make sound better? idk less robotic? what about reposition integration, are we even using these? yt
+analytics api added too. good luck soldier"*
+
+**Asked and answered:** speech speed **1.05**; stock **"only as a last resort"** (labelled);
+angle 1 **"100% the intention of my idea, maybe just worded with more seo velocity ... rephrasing
+which i want, [not] making it a hot take"** (the other angles may regenerate); Cursor **both, media
+first**.
+
+**Correction - the decision win.** The 2026-10-08 intake (entry below) called run 119's "19-0 with
+8 knockouts and 10 submissions" arithmetic that "adds up to 18". The operator asked "What if its dec
+win?" - and it is: Rakhmonov's 19th win (Garry, UFC 310, Dec 2024) went to a decision, so 8 + 10 +
+1 = 19 and the line is right. #1011 is reworded: the defect left is API-SPORTS' stale 18-0-0, which
+predates that fight; the "method counts must add up" rule is dropped. Run 119 can go public once its
+chapter title (#1009) is fixed.
+
+**Run 124, measured** ("How the 0-4 chargers can turn it around this year", chosen angle "Next four
+games will define whether this team can recover or fold"):
+- intent `default` (`core/angle_intent.py` had no "how can" cue) -> the prompt said "TAKE A SIDE",
+  "my prediction" (`core/content_engine.py` default branch) and the script closed "My call: they
+  beat Denver"; the operator's words sat under "EDITORIAL ANGLE (the creator's deliberate take)";
+  only option 5 ever offered "your idea" (`main.py`, as 0, never the default);
+- `_thesis_terms` kept "can turn it around this" whole (`core/angle_ranker.py`) and lower-case
+  "chargers" was no subject term, so every angle's seed fidelity was 0;
+- who's-who looked up "Next" (sentence-initial in the angle) and Wikidata's case-blind match gave
+  NeXT: "97 news headline(s) named NeXT in 48 hours";
+- 31 lines pasted at `Fact N` became typed (never-questioned) facts, among them "Shopify" twice,
+  "Sponsored", "call to action icon", "View on Watch", "Current Time", "/", "Duration", "0", "html";
+  the same Yahoo URL was read twice; 46 lines packed for the script;
+- 8 uncertain vault facts, none about the Chargers, each "bullet entity +0.30" - the feature asks
+  whether a bullet's capitalised words appear anywhere in the corpus (`core/vault/relevance.py`);
+- the hook "0-4 for the first time since 2017, and only one team in NFL history has made the playoffs
+  from here" was the claim verifier's one unsupported claim; the next sentence was the stock "Here's
+  the part everyone's missing";
+- `live_scores` said "NBA scoreboard only"; news searched the whole sentence.
+
+**Shipped (wave 66), tests written first and watched failing on 7f31d49:**
+1. **#1016 your idea stays yours** - `ANGLE_PLAN`, `intent_of` (the brief counts), `idea_angle`
+   (angle 1, refused if it drops 40% of the idea's words or adds a take), Enter keeps it for option 1
+   and 5, `own_idea` removes the take push and the insight beat, the idea block heads the prompt,
+   the title prompt carries it, `_keep_to_idea` (one check, one rewrite, the card says when it still
+   fails), fidelity reads content words and lower-case teams. 20 tests, 19 failed first.
+2. **The subject read right** - #1001 (y/yes/ok accept; the seed keeps teams and week), #1002
+   (`team_names_in`, full names), #1005 (`COMMON_CAPITALISED`, `name_phrases`, Wikidata class and
+   case checks), #1004 (`subject_terms`; news queries the quoted names and keeps headlines that name
+   them; auto-research drops a page that never names the subject). 17 tests, 15 failed first.
+3. **#1003 NFL from ESPN** - league-aware `sports/espn.py`, team record/standing/next game as a
+   dated "ESPN team (as of ...)" signal block, the team page pinned. 5 tests, 5 failed first.
+4. **Clean facts** - #1012 `is_junk_line` + `clean_typed_lines` + read-once links, 6 tests, 5 failed
+   first; #1017 an uncertain vault fact must name the subject (or a franchise alias), 5 tests, 5
+   failed first.
+5. **#1018 hooks on solid ground** - history/"no team has ever" superlatives, `stock_opener`,
+   `_hook_problems`, the hook pass on by default after the corpus is built and rebuilding a problem
+   hook from VERIFIED FACTS, repair passes may replace a flagged hook. 9 tests, 9 failed first.
+- Riders: **#1000** (flagged render never scheduled public; `hold_flagged_schedule` catches old
+  jobs), **#1019** CC BY credits to the description, **#1020** `local_first` (TapIn) and the
+  "STOCK (last resort ...)" render line, speed 1.05 for both channels, the stale `TTS_CACHE` comment.
+  21 tests, 20 failed first.
+
+**Totals:** 83 new tests, 78 observed failing before their fix (the 5 others are controls that pin
+unchanged behaviour); 13 regression-corpus cases, all 13 failing on 7f31d49. Six older tests changed
+expectation because a decision changed, each with the reason in place: `test_hybrid_background` (2,
+TapIn is `local_first`), `test_spoken_pace` and `test_dossier_after_render` (tapin speaks at 1.05),
+`test_entity_lookup` (a team is looked up by its full name), `test_script_passes` (the hook pass is on
+by default; the test now pins what "off" records).
+
+**Decisions recorded here** (docs/decisions.md is at its 800-line ceiling): section 26 left
+`hybrid` -> owned-only "an operator call once enough owned clips exist"; the operator made it -
+TapIn is `local_first`, never blended. `score_hook` was not changed (the stock-opener penalty lives
+in the hook pass), so **GRADE_VERSION stays v5**. The two new default-on passes (`HOOK_REGEN_ENABLED`,
+`KEEP_TO_IDEA`) cost a cheap call each per run, plus at most one premium rewrite when the script
+does not answer the idea; the suite pins both off like auto-research.
+
+**Not done, deliberately:** ESPN injuries and the other leagues (#1022); the generated angles 2-N may
+still be takes (the operator: "it can regenerate"); the ESPN fixture is written from the documented
+shape - this session's network policy blocks site.api.espn.com - so refresh it with `record-payloads`
+on the PC; `event_coverage.covered` elsewhere is still case-blind (the who's-who lookup no longer
+reaches it with a common word).
+
+**Answers given:** clipping (a re-encode of the chapter at its timestamps, up to 180 s, no minimum,
+saved beside the long video, queue default No, never measured - Cursor A5 / #1053, #1054); stock
+(last resort now; there is no public-domain NFL footage - owned Madden 26 clips, stat cards #1042,
+CC Commons stills); voice (robotic because each sentence is voiced alone - Cursor A4; now: lower
+Stability, raise Style in ElevenLabs); repurpose (YouTube only - `publishers_enabled` is
+`["youtube"]`; `crosspost` builds a Buffer pack by hand); the Reporting API (CTR stored for
+long-form only, read by nothing - #1058); desktop (stages 0-2 and 4 done, 3 partial, 5-7 not started -
+Cursor phase B).
+
+**The next 100:** [optimization_plan_2026-10.md](optimization_plan_2026-10.md) - fourteen epics
+(intent, live data, fact hygiene, script and hooks, voice, footage, thumbnails, Shorts, learning,
+publishing safety, the app, cost, engineering, strategy), #1021-#1079 filed, the rest reuse
+existing numbers. **Cursor:** [cursor_brief_2026-10.md](cursor_brief_2026-10.md).
+
+**Audit:** ruff clean; mypy 121 = baseline (the run first showed 129 - eight from a shadowed loop
+variable in the new ESPN block, fixed); the suite in default, reverse and shuffle order with
+"data/ and output/ untouched"; corpus 112/112; 0 network attempts across the suite; every new
+function has a production caller (grepped).
+
+**Proof - run 124's inputs replayed** (`scratchpad/rerun_124.py`, pure functions, before -> after):
+intent `default` -> `plan`; who's-who `['Next']` -> `['Los Angeles Chargers']`; typed lines 31 ->
+29 kept (with "Shopify", "Sponsored", "/", "Duration") -> 9 kept, 22 dropped; uncertain vault facts
+8 offered -> 0 that name the subject; hook superlatives flagged `[]` -> `['only one team in NFL
+history', 'in NFL history']`; news query the whole sentence -> `"Los Angeles Chargers"`; live_scores
+"NBA scoreboard only" -> "ESPN NFL: Los Angeles Chargers 0-4"; a hot-take rewording of the idea
+refused, an SEO rewording kept.
+
+**Count:** `ops roadmap-index` - 356 open, 956 done, highest #1079.
 
 ---
 

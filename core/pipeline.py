@@ -282,11 +282,14 @@ def best_variant_index(
 def chosen_variant(
     discovery: DiscoveryResult,
     variant_index: int | None,
+    *,
+    own_topic: str = "",
 ) -> tuple[str, float, Any]:
-    """#664. `variant_index == -1` means keep the operator's typed idea."""
+    """#664. `variant_index == -1` means keep the operator's typed idea - #1016: worded
+    for search when `own_topic` (angle 1) is given."""
     evaluated = discovery.evaluated
     if variant_index == -1:
-        return discovery.input_topic, 0.0, discovery.base_signals
+        return (own_topic or discovery.input_topic), 0.0, discovery.base_signals
     if variant_index is not None and 0 <= variant_index < len(evaluated):
         return evaluated[variant_index]
     index = best_variant_index(evaluated, discovery.raw_scores, discovery.angle_scores)
@@ -837,6 +840,8 @@ def run_pipeline(
     menu_path: str | None = None,
     chapter_angles: list[str] | None = None,
     voice_mode: str = "single",
+    own_idea: bool = False,
+    own_topic: str = "",
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -875,7 +880,9 @@ def run_pipeline(
 
     result.variants = [(v, s) for v, s, _ in evaluated]
 
-    best_topic, best_score, best_signals = chosen_variant(discovery, variant_index)
+    best_topic, best_score, best_signals = chosen_variant(
+        discovery, variant_index, own_topic=own_topic if own_idea else ""
+    )
     result.topic = best_topic
     result.score = best_score
     result.signals = best_signals
@@ -1003,6 +1010,7 @@ def run_pipeline(
         source_urls=source_urls or [],
         relevance_corpus=relevance_corpus,
         research_need=research_need,
+        own_idea=own_idea,  # #1016: angle 1, the operator's own idea - no take pushed on it
         **voice_kwargs,
     )
     if content.get("script_mode") == "unconfirmed":  # #339: drafts, review, dossier read it
@@ -1335,6 +1343,11 @@ def run_media_only(
         lower_thirds=lower_thirds,
         with_intro=with_intro,
     )
+    if content_run_id and background is not None and getattr(background, "credits", None):
+        # #1019: a CC BY clip's credit reaches the description that gets uploaded.
+        from core.description_extras import persist_footage_credits
+
+        persist_footage_credits(content_run_id, background.credits)
     if content_run_id and render_preset != "draft":
         try:
             from core.run_quality import merge_quality

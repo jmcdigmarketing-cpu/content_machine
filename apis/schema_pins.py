@@ -65,6 +65,8 @@ PINS: dict[str, Pin] = {
     "wikipedia": Pin("items", ("views",)),  # wikimedia.org pageviews per-article
     "musicbrainz": Pin("releases", ("title",)),  # musicbrainz.org/ws/2/release
     "lastfm": Pin("results.trackmatches.track", ("name",)),  # ws.audioscrobbler.com
+    # #1003: the NFL team page (record, standing, next game); the NBA board is unpinned.
+    "live_scores": Pin("team", ("displayName",)),  # site.api.espn.com .../nfl/teams/<abbr>
 }
 
 

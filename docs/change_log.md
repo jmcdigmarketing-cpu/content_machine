@@ -1,12 +1,37 @@
 # Content OS — Changelog
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
 Initial changelog summarizing major modifications present in the codebase as of documentation generation. Versions are grouped by theme rather than release tags (the project does not yet use semantic versioning or tagged releases).
 
 ---
 
 ## [Unreleased] — Content OS evolution (2026)
+
+### Wave 66 — your idea stays yours; facts, names and hooks on solid ground - 2026-10-09
+
+*mypy 121; ruff 0.15.8 clean; corpus 112 of 112.*
+
+- **#1016** When you type your own idea, angle 1 is that idea worded for search and Enter keeps it
+  (menu option 1 and option 5). Choosing it means no "take a side" push and no added opinion beat;
+  a "how can ..." idea is answered as a plan; the script is checked against your idea and rewritten
+  once if it does not answer it (`KEEP_TO_IDEA`), and the report card says when it still does not.
+- **#1001** "yes" at "Search for this?" means yes; the seed keeps the teams and the week.
+- **#1002 #1005** Lower-case team names are looked up ("the 0-4 chargers" -> Los Angeles Chargers);
+  a sentence-initial common word ("Next", "People") is never looked up.
+- **#1004** News and auto-research search the topic's names, and drop headlines and pages that name
+  none of them.
+- **#1003** NFL topics get ESPN's record, standing and next game for each named team, dated.
+- **#1012** Lines pasted at `Fact N` lose page furniture: ads ("Sponsored", "Shopify"), video-player
+  chrome ("Duration", "0:00", "/"), subheads; a link already read is not read again.
+- **#1017** An uncertain vault fact is offered only when it names the topic's subject; the scan line
+  says how many were dropped.
+- **#1018** A first sentence that is unsupported ("only one team in NFL history ..."), a stock opener
+  or a repeat of a recent opener is rebuilt from the facts; the hook pass is on by default.
+- **#1000** A render past the grounding gate is never scheduled to go public at its slot.
+- **#1019** Creative Commons Attribution footage is credited in the YouTube description.
+- **#1020** TapIn uses owned footage first; stock only when nothing owned matches, and the render
+  says so ("STOCK (last resort ...)"). Both channels speak at 1.05.
 
 ### Wave 65 — a careful ads budget, and the first caption - 2026-10-08
 

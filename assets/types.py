@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -9,3 +9,5 @@ class AssetResult:
     source_id: str = ""
     query: str = ""
     attribution: Optional[str] = None
+    # #1019: credit lines a licence requires (CC BY), for the YouTube description.
+    credits: list[str] = field(default_factory=list)

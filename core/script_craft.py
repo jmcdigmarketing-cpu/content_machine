@@ -20,6 +20,14 @@ _SUPERLATIVE = (
     re.compile(r"\bthe biggest\b", re.I),
     re.compile(r"\bnever before\b", re.I),
     re.compile(r"\bthe only\b", re.I),
+    # #1018 (run 124's hook): "Only one team in NFL history has made the playoffs ...".
+    re.compile(
+        r"\bonly (?:one|two|three|four|five|\d+)\b[^.!?]{0,60}?\bin [a-z ]{0,20}history\b", re.I
+    ),
+    re.compile(
+        r"\bno (?:team|player|fighter|club|one|quarterback|coach)\b[^.!?]{0,40}?\bever\b", re.I
+    ),
+    re.compile(r"\bin (?:nfl|nba|ufc|league|franchise|team|\w+) history\b", re.I),
 )
 
 

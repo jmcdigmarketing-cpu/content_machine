@@ -91,8 +91,10 @@ def _today() -> str:
 def names_for(topic: str, *, angle: str = "") -> list[str]:
     """Up to `MAX_NAMES` names to look up: Title-Case names in the topic, then the angle,
     then any seeded or learned athlete name (lower-case topics have no Title-Case runs)."""
+    from apis.nba_teams import team_names_in as nba_team_names_in
+    from apis.nfl_entities import team_names_in as nfl_team_names_in
     from apis.topic_scorer import sport_names_in
-    from apis.topic_tokens import title_phrases
+    from apis.topic_tokens import name_phrases
 
     out: list[str] = []
     seen: set[str] = set()
@@ -108,10 +110,23 @@ def names_for(topic: str, *, angle: str = "") -> list[str]:
         seen.add(key)
         out.append(name)
 
+    # #1005: a phrase made only of common words ("Next Sunday", "People") is not a name.
+    both = f"{topic} {angle}"
     for text in (topic, angle):
-        for phrase in title_phrases(text or "", max_words=5, connectors=True):
+        for phrase in name_phrases(text or "", max_words=5, connectors=True):
             add(phrase)
-    for name in sport_names_in(f"{topic} {angle}"):
+    # #1002: a team by its full name - "Lakers" becomes "Los Angeles Lakers" where it was
+    # typed, and a lower-case topic's team ("0-4 chargers") is found at all.
+    for team in nfl_team_names_in(both) + nba_team_names_in(both):
+        nickname = team.split()[-1].lower()
+        at = next((i for i, name in enumerate(out) if name.lower() == nickname), None)
+        if at is not None:
+            seen.discard(out[at].lower())
+            out[at] = team
+            seen.add(team.lower())
+        else:
+            add(team)
+    for name in sport_names_in(both):
         add(name)
     return out[:MAX_NAMES]
 
@@ -130,6 +145,17 @@ def _names_it(name: str, text: str) -> bool:
     return covered(name, [text])
 
 
+# #1005: a class, not a thing - "human: any single member of Homo sapiens" (run 120's "People").
+_CLASS_DESCRIPTION = re.compile(r"^(?:any|every|class of|type of|kind of|group of)\b", re.I)
+
+
+def _same_case(name: str, found: str) -> bool:
+    """A one-word name must match past its first letter: "Next" is not "NeXT" (run 124)."""
+    if " " in name.strip() or not found:
+        return True
+    return name.strip()[1:] == found.strip()[1:] or name.strip().lower() != found.strip().lower()
+
+
 def _search_wikidata(name: str) -> dict[str, Any] | None:
     hits = _get_json(
         _WIKIDATA_API,
@@ -139,10 +165,14 @@ def _search_wikidata(name: str) -> dict[str, Any] | None:
     for hit in hits:
         if not isinstance(hit, dict) or not hit.get("id"):
             continue
-        if "disambiguation" in str(hit.get("description") or "").lower():
+        description = str(hit.get("description") or "")
+        if "disambiguation" in description.lower() or _CLASS_DESCRIPTION.match(description):
             continue
         matched = str((hit.get("match") or {}).get("text") or hit.get("label") or "")
-        if _names_it(name, matched) or _names_it(name, str(hit.get("label") or "")):
+        label = str(hit.get("label") or "")
+        if not (_same_case(name, matched) and _same_case(name, label)):
+            continue
+        if _names_it(name, matched) or _names_it(name, label):
             return hit
     return None
 

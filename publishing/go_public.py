@@ -34,7 +34,8 @@ def go_public_plan(video_id: str) -> dict[str, Any]:
     return {"id": video_id, "status": {"privacyStatus": "public"}}
 
 
-def _override_held(run_id: int | None) -> bool:
+def override_held(run_id: int | None) -> bool:
+    """The run - or the run a Short was cut from - was rendered past the grounding gate."""
     features = load_features(run_id)
     if features.get("grounding_override"):
         return True
@@ -78,7 +79,7 @@ def apply_go_public(
     if record is None and not video_id:
         return GoPublicResult("invalid", f"No unlisted upload on record for {channel_id}")
     target = video_id or str(record.youtube_video_id).strip()
-    if record is not None and _override_held(record.content_run_id):
+    if record is not None and override_held(record.content_run_id):
         return GoPublicResult(
             "refused",
             f"run {record.content_run_id} was rendered past the grounding gate; it stays "

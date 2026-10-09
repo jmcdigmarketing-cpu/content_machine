@@ -248,3 +248,36 @@ def apply_description_extras(
         return body
     tail = "\n".join(additions)
     return f"{body}\n\n{tail}" if body else tail
+
+
+def add_footage_credits(description: str, credits: list[str] | None) -> str:
+    """#1019: a "Footage:" block with the credits a clip licence requires; added once."""
+    lines = [str(c).strip() for c in credits or [] if str(c).strip()]
+    body = (description or "").rstrip()
+    if not lines or "Footage:" in body:
+        return body
+    block = "Footage:\n" + "\n".join(lines)
+    return f"{body}\n\n{block}" if body else block
+
+
+def persist_footage_credits(run_id: int | None, credits: list[str] | None) -> str | None:
+    """Write the credits into the run row's description - the copy `main.py` queues
+    (`core.chapters.current_description`). Returns the new description, or None."""
+    if not run_id or not credits:
+        return None
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        repo = get_content_run_repository()
+        record = repo.get(int(run_id))
+        if record is None:
+            return None
+        before = str(getattr(record, "description", "") or "")
+        after = add_footage_credits(before, credits)
+        if after == before.rstrip():
+            return None
+        repo.update(int(run_id), {"description": after})
+        return after
+    except Exception as exc:
+        logger.warning("footage credits not written to run %s: %s", run_id, exc)
+        return None

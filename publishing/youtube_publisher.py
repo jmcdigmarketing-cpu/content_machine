@@ -229,6 +229,32 @@ def request_with_run_domain(request: PublishRequest, content_run_id: int | None)
     return replace(request, domain=domain) if domain else request
 
 
+def hold_flagged_schedule(request: PublishRequest, content_run_id: int | None) -> PublishRequest:
+    """#1000: a run rendered past the grounding gate never gets a YouTube `publishAt`.
+
+    YouTube turns a scheduled private upload public at the slot - run 120 went public with
+    its flagged claim. The menu no longer offers it; this catches jobs queued before that.
+    """
+    if not request.publish_at or not content_run_id:
+        return request
+    try:
+        from publishing.go_public import override_held
+
+        held = override_held(content_run_id)
+    except Exception as exc:
+        logger.debug("flagged-schedule check skipped for run %s: %s", content_run_id, exc)
+        return request
+    if not held:
+        return request
+    privacy = "private" if request.privacy_status == "private" else "unlisted"
+    logger.warning(
+        "run %s was rendered past the grounding gate - uploading %s, not scheduled public",
+        content_run_id,
+        privacy,
+    )
+    return replace(request, publish_at=None, privacy_status=privacy)
+
+
 def build_video_status(request: PublishRequest, *, channel_id: str | None = None) -> dict[str, Any]:
     status: dict[str, Any] = {"selfDeclaredMadeForKids": False}
     publish_at = request.publish_at
@@ -500,6 +526,7 @@ class YouTubePublisher(Publisher):
     ) -> PublishResult:
         channel_id = resolve_channel_id(channel_id)
         request = request_with_run_domain(request, content_run_id)
+        request = hold_flagged_schedule(request, content_run_id)
         idem = idempotency_key(content_run_id, channel_id, PLATFORM_YOUTUBE)
 
         if os.path.splitext(request.file_path)[0].lower().endswith("_preview"):

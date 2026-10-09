@@ -1,6 +1,6 @@
 # Content OS Desktop — the programme
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-08
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-09
 
 The plan to leave the terminal permanently, for a real Windows 11 application.
 **Private, local, single-operator, never published.** That constraint is load
@@ -8,6 +8,14 @@ bearing: it retires work rather than deferring it.
 
 Current stage and the next five live in [roadmap.md](roadmap.md). Items referenced
 by number are in [backlog.md](backlog.md).
+
+**Progress (2026-10-09).** Stages 0, 1, 2 and 4 are shipped; Stage 3 is part-way (review room,
+queue, cost tower, facts room, the one-window shell #981, Analytics #984); Stages 5-7 are not
+started. Wave 66 gave the engine what the next page needs: angle 1 as the operator's own idea
+(`apis.topic_variants.idea_angle`) and its intent (`core.angle_intent`). The next app work is
+Cursor's phase B in [cursor_brief_2026-10.md](cursor_brief_2026-10.md): the new-video page with
+an intent card (#1067), the review room confirming claims and going public (#1068, #1064), then
+#161, #157, settings (#1070) and phone approval (#451).
 
 ---
 

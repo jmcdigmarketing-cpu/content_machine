@@ -221,15 +221,39 @@ def _build_prompts(
     intent: str = "",
     uncovered_event: str = "",
     script_mode: str = "standard",
+    own_idea: bool = False,
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
 
-    from core.angle_intent import CALM_INTENTS, detect_angle_intent
+    from core.angle_intent import ANGLE_PLAN, CALM_INTENTS, intent_of
 
-    resolved_intent = intent or detect_angle_intent(seed_topic or topic)
+    resolved_intent = intent or intent_of(seed_topic or topic, creative_brief)
     calm = resolved_intent in CALM_INTENTS
-    if calm:
+    if resolved_intent == ANGLE_PLAN:
+        # #1016 (run 124): "how can the 0-4 Chargers turn it around" asks for a plan.
+        voice_take = (
+            "- Answer the question asked. Do not invent a controversy, do not argue a "
+            "different question, do not force a hot take."
+        )
+        framing_take = (
+            "- THE OPERATOR'S IDEA is a question; the script is its answer. Shape it as "
+            "hook → where it stands now (record, results, injuries - from VERIFIED FACTS) → "
+            "the specific things that have to happen, in order, each tied to a fact → payoff."
+        )
+        must_close = (
+            "- Close on the single thing that decides it, or the order of what has to happen - "
+            "not a hot take and not a comment-bait question."
+        )
+        user_take = (
+            "- FORMAT is a plan: answer the operator's idea as asked. Name what must change, "
+            "in order, each tied to a verified fact. Do NOT take a different side, do NOT "
+            "write a hot take, do NOT turn it into a debate about something else.\n"
+            "- Cut hedging and filler. Every sentence moves the plan forward.\n"
+            '- Close on a SPECIFIC line. NEVER "what do you think? drop your thoughts in the '
+            'comments".'
+        )
+    elif calm:
         voice_take = (
             "- Be clear, not a debate. Explain the mechanism. Do not invent a controversy "
             "or force a hot take onto a question that asked how something works."
@@ -249,6 +273,27 @@ def _build_prompts(
             "- Cut hedging and filler. Every sentence teaches or specifies.\n"
             "- Close on a SPECIFIC line — the mechanism, the exception, or the practical "
             'implication. NEVER "what do you think? drop your thoughts in the comments".'
+        )
+    elif own_idea:
+        # #1016: the operator kept their own idea (angle 1). Its stance, if any, is theirs;
+        # no other take is pushed onto it.
+        voice_take = (
+            "- Answer the operator's idea as asked. If it states a view, make THAT case with "
+            "the facts; never swap in a different take or a contrarian counter-take."
+        )
+        framing_take = (
+            "- THE OPERATOR'S IDEA is the spine; facts are what carry it. Shape the script as "
+            "hook → the idea's question or claim → the facts that answer it → payoff."
+        )
+        must_close = (
+            "- Close on the specific answer to the operator's idea - not a new hot take and not "
+            "a comment-bait question."
+        )
+        user_take = (
+            "- Answer the operator's idea as asked; rephrase it if it helps, never change it.\n"
+            "- Cut hedging and filler. Every sentence answers the idea.\n"
+            '- Close on a SPECIFIC line. NEVER "what do you think? drop your thoughts in the '
+            'comments".'
         )
     else:
         voice_take = (
@@ -360,8 +405,9 @@ You must:
     angle_block = ""
     if creative_brief and creative_brief.strip():
         angle_block = (
-            "EDITORIAL ANGLE (the creator's deliberate take — build the entire script "
-            "around THIS thesis and point of view, not a generic overview). Names, "
+            "THE OPERATOR'S IDEA - EDITORIAL ANGLE (what this video is for: the script "
+            "answers THIS, as asked - the ANGLE below may reword it but never replace its "
+            "question or its point of view, and never turn it into a hot take). Names, "
             "people, athletes, sports, or other genres referenced here (e.g. a fighter "
             "used as an analogy for game mechanics) are INTENTIONAL cross-genre framing — "
             "keep them and lean into the comparison; they are allowed even if not in "
@@ -494,7 +540,7 @@ You must:
     user_prompt = f"""
 TODAY: {today}
 
-{seed_block}{angle_block}{quote_block}TOPIC:
+{angle_block}{seed_block}{quote_block}ANGLE:
 {topic}
 
 {human_block}{playbook}{winners}{trial}{brief_block}SCRIPT BRIEF (follow exactly):
@@ -630,7 +676,67 @@ def hook_variant_count() -> int:
         return 3
 
 
-def _hook_variants(script: str, *, channel_id: str = "") -> tuple[str, dict[str, Any]]:
+def _recent_openers(channel_id: str) -> list[str]:
+    """The first sentences of the channel's recent uploads (#1018). [] on any failure."""
+    try:
+        from core.authenticity import _recent_scripts
+        from core.hook_score import extract_hook
+
+        return [
+            h
+            for h in (extract_hook(s) for s in _recent_scripts(channel_id, exclude_run_id=None))
+            if h
+        ]
+    except Exception as exc:
+        logger.debug("recent openers unavailable: %s", exc)
+        return []
+
+
+def _hook_problems(
+    hook: str, grounding_text: str, *, recent_openers: list[str] | None = None
+) -> list[str]:
+    """#1018: why a first sentence is not on solid ground - [] when it is.
+
+    An unsupported superlative or name, a number the facts never state, a stock opener,
+    or a near-repeat of a recent upload's opener (the same measure `style_recurrence`
+    reports on).
+    """
+    from difflib import SequenceMatcher
+
+    from core.hook_score import stock_opener
+    from core.script_craft import find_ungrounded_superlatives
+
+    hook = (hook or "").strip()
+    if not hook:
+        return []
+    problems: list[str] = []
+    grounding = grounding_text or ""
+    if grounding.strip():
+        for hit in find_ungrounded_superlatives(hook, grounding):
+            problems.append(f"unsupported: {hit}")
+        numbers = set(re.findall(r"\d[\d.,-]*\d|\d", hook))
+        missing = sorted(n for n in numbers if n not in grounding)
+        if missing:
+            problems.append(f"unsupported number(s): {', '.join(missing)}")
+        try:
+            for name in find_ungrounded_entities(hook, grounding):
+                problems.append(f"unsupported: {name}")
+        except Exception as exc:
+            logger.debug("hook entity check skipped: %s", exc)
+    label = stock_opener(hook)
+    if label:
+        problems.append(f"stock opener: {label}")
+    low = hook.lower()
+    for other in recent_openers or []:
+        if SequenceMatcher(None, low, other.lower()).ratio() >= 0.8:
+            problems.append("repeats a recent upload's opener")
+            break
+    return problems
+
+
+def _hook_variants(
+    script: str, *, channel_id: str = "", grounding_text: str = ""
+) -> tuple[str, dict[str, Any]]:
     """
     Opt-in (HOOK_REGEN_ENABLED=true): ask for `HOOK_VARIANTS` (#987, default 3) new first
     sentences in one cheap call and keep the best, ranked by `hook_learning.rank_openers` -
@@ -648,6 +754,10 @@ def _hook_variants(script: str, *, channel_id: str = "") -> tuple[str, dict[str,
     current = score_script_hook(script)
     if not current.hook:
         return script, extra
+    recent = _recent_openers(channel_id) if channel_id else []
+    problems = _hook_problems(current.hook, grounding_text, recent_openers=recent)
+    if problems:
+        extra["problems"] = problems
     guidance: dict[str, Any] = {}
     try:
         guidance = regen_guidance(channel_id)
@@ -657,9 +767,21 @@ def _hook_variants(script: str, *, channel_id: str = "") -> tuple[str, dict[str,
     system_prompt = (
         f"Write {count} different first sentences for this short-form video script - each a "
         "stronger hook: a specific fact, number, or contradiction, under 12 words. "
-        "Never open with 'Today', 'Let's', 'In this video', 'Welcome', or a question. "
-        "Use only names and numbers already in the script; invent nothing."
+        "Never open with 'Today', 'Let's', 'In this video', 'Welcome', or a question, and "
+        "never with a stock line ('Here's the part everyone's missing', 'Nobody wants to "
+        "say this'). Use only names and numbers already in the script; invent nothing."
     )
+    if problems and grounding_text.strip():
+        # #1018: the current hook is not on solid ground - build the new one from facts.
+        facts_excerpt = "\n".join(
+            line.strip() for line in grounding_text.splitlines() if line.strip()
+        )[:2500]
+        system_prompt += (
+            "\nThe current first sentence has these problems: " + "; ".join(problems) + ". "
+            "Build each opener on one fact from VERIFIED FACTS below - a name or number from "
+            "them is allowed; a claim they do not state is not (no 'only one in history', "
+            f"no 'never before').\nVERIFIED FACTS:\n{facts_excerpt}"
+        )
     if guidance:
         held = "\n".join(f"- {hook}" for hook in guidance.get("examples") or [])
         notes = [
@@ -691,6 +813,8 @@ def _hook_variants(script: str, *, channel_id: str = "") -> tuple[str, dict[str,
 
             openers = [extract_hook(str(payload["script"]))]
     baseline = dict(rank_openers([current.hook], guidance)).get(current.hook, 0.0)
+    if problems:
+        baseline = float("-inf")  # any sound opener beats an unsupported or stock one
     from apis.topic_tokens import content_tokens
 
     tail = script.split(current.hook, 1)[1] if current.hook in script else script
@@ -699,7 +823,10 @@ def _hook_variants(script: str, *, channel_id: str = "") -> tuple[str, dict[str,
     for opener, score in rank_openers(openers, guidance):
         row: dict[str, Any] = {"opener": opener, "score": score}
         words = set(content_tokens(opener))
-        if _new_specifics(script, opener):
+        opener_problems = _hook_problems(opener, grounding_text, recent_openers=recent)
+        if opener_problems:
+            row["refused"] = "; ".join(opener_problems)
+        elif not problems and _new_specifics(script, opener):
             row["refused"] = "new specifics (a name or number the script does not have)"
         elif words and any(len(words & s) >= 0.8 * len(words) for s in later):
             # Live check: the kept opener restated the next sentence, so the voice said it twice.
@@ -827,8 +954,10 @@ def _maybe_reground_script(
         "by those facts. Rewrite so the script asserts ONLY what the facts support: "
         "remove or generalize every flagged name, team, trade, signing, roster move, "
         "score, or version that is not in the facts. Do NOT introduce any new specific, "
-        "and do NOT present a rumor or prediction as a fact. Keep the opening hook, the "
-        "length, the tone, and all SUPPORTED content. Return JSON only: "
+        "and do NOT present a rumor or prediction as a fact. Keep the opening hook "
+        "unless the hook itself makes a flagged claim - then open on the strongest "
+        "VERIFIED fact instead (#1018). Keep the length, the tone, and all SUPPORTED "
+        "content. Return JSON only: "
         '{"script": "..."}'
     )
     user_prompt = (
@@ -892,7 +1021,9 @@ def _maybe_rewrite_unsupported_claims(
         "asserts that are NOT backed by those facts. Rewrite the script so that each "
         "unsupported claim is either REMOVED or restated as clearly attributed "
         "speculation ('reports claim…', 'the rumor is…', 'unconfirmed, but…'). Do NOT "
-        "add any new facts, names, numbers, or events. Keep the hook, voice, stance, "
+        "add any new facts, names, numbers, or events. Keep the hook (unless the hook "
+        "itself is an unsupported claim - then open on the strongest VERIFIED fact), "
+        "voice, stance, "
         'and roughly the same length. Return JSON only: {"script": "..."}'
     )
     if script_mode == "unconfirmed":  # #339: the news stays, labelled
@@ -941,11 +1072,73 @@ def _maybe_rewrite_unsupported_claims(
     return script, verification
 
 
+def _keep_to_idea_enabled() -> bool:
+    return os.getenv("KEEP_TO_IDEA", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _keep_to_idea(
+    script: str, idea: str, *, min_words: int, max_words: int, grounding_text: str = ""
+) -> tuple[str, dict[str, Any]]:
+    """#1016: does the script answer the operator's idea? One cheap check; on "no", one
+    rewrite that answers it with the same facts, kept only when the check then says yes
+    and the length holds. Returns (script, extra) - `extra` lands on the pass ledger row,
+    which the report card prints."""
+    idea = " ".join((idea or "").split())
+    if not idea or not script.strip():
+        return script, {}
+
+    def _check(text: str) -> tuple[bool, str]:
+        payload = _call_content_llm(
+            "You check whether a short video script answers the creator's idea as asked "
+            "(not a different question, not a hot take on something else). "
+            'Return JSON only: {"answers": true|false, "missing": "<what it fails to answer>"}',
+            f"IDEA:\n{idea}\n\nSCRIPT:\n{text}",
+            temperature=0.0,
+            tier="cheap",
+        )
+        if not isinstance(payload, dict):
+            return True, ""  # no verdict is not a failure
+        return bool(payload.get("answers", True)), str(payload.get("missing") or "").strip()
+
+    try:
+        answers, missing = _check(script)
+    except Exception as exc:
+        logger.debug("idea check skipped: %s", exc)
+        return script, {}
+    if answers:
+        return script, {"answers_idea": True}
+    extra: dict[str, Any] = {"answers_idea": False, "missing_before": missing}
+    try:
+        payload = _call_content_llm(
+            "Rewrite this short video script so it answers the creator's idea as asked. "
+            "Use ONLY the facts already in the script and the VERIFIED FACTS; add no new "
+            "name, number or claim. Keep the voice and roughly the length. "
+            'Return JSON only: {"script": "..."}',
+            f"IDEA:\n{idea}\n\nWHAT IT FAILS TO ANSWER:\n{missing}\n\n"
+            f"VERIFIED FACTS:\n{grounding_text}\n\nSCRIPT:\n{script}",
+            temperature=0.4,
+            tier="premium",
+        )
+        candidate = str((payload or {}).get("script") or "").strip()
+        words = count_spoken_words(candidate)
+        if candidate and min(min_words, count_spoken_words(script)) <= words <= max_words:
+            ok, _left = _check(candidate)
+            if ok:
+                logger.info("Rewrote the script to answer the operator's idea")
+                return candidate, {**extra, "answers_idea": True}
+    except Exception as exc:
+        logger.debug("idea rewrite failed: %s", exc)
+    logger.warning("script may not answer the operator's idea: %s", missing or "(no detail)")
+    return script, extra
+
+
 def _insight_injection_enabled() -> bool:
     return os.getenv("INSIGHT_INJECTION_ENABLED", "true").lower() not in ("0", "false", "no")
 
 
-def _maybe_inject_insight(script: str, grounding_text: str, topic: str, *, intent: str = "") -> str:
+def _maybe_inject_insight(
+    script: str, grounding_text: str, topic: str, *, intent: str = "", own_idea: bool = False
+) -> str:
     """Add one opinion/prediction/'why it matters' beat when a script reads as a recap.
 
     Default-on (``INSIGHT_INJECTION_ENABLED``). No-op when the script already
@@ -955,8 +1148,8 @@ def _maybe_inject_insight(script: str, grounding_text: str, topic: str, *, inten
     """
     from core.angle_intent import CALM_INTENTS, detect_angle_intent
 
-    if (intent or detect_angle_intent(topic)) in CALM_INTENTS:
-        return script
+    if own_idea or (intent or detect_angle_intent(topic)) in CALM_INTENTS:
+        return script  # #1016: the operator's own idea is not given a take it did not have
     if not _insight_injection_enabled():
         return script
     from core.authenticity import has_insight
@@ -1258,13 +1451,15 @@ def generate_content_package(
     relevance_corpus: str = "",
     voice_mode: str = "",
     research_need: dict[str, Any] | None = None,
+    own_idea: bool = False,
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
     angle_headline, drop_shorts_tags = _content_tag_helpers()
-    from core.angle_intent import detect_angle_intent
+    from core.angle_intent import intent_of
 
-    resolved_intent = detect_angle_intent(seed_topic or topic)
+    # #1016: the operator's brief counts when the angle and seed carry no intent.
+    resolved_intent = intent_of(seed_topic or topic, creative_brief)
     clean_key_facts_early = _sanitize_key_facts(key_facts)
     script_brief = build_script_brief(
         topic,
@@ -1373,6 +1568,7 @@ def generate_content_package(
         intent=resolved_intent,
         uncovered_event=_uncovered,
         script_mode=_mode,
+        own_idea=own_idea,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude
@@ -1445,16 +1641,8 @@ def generate_content_package(
     script_passes: list[dict[str, Any]] = []
     from core.hook_score import hook_regen_enabled
 
-    script = run_script_pass(
-        script_passes,
-        "improve_hook",
-        script,
-        lambda text: _hook_variants(text, channel_id=channel_id),
-        disabled=not hook_regen_enabled(),
-    )
-
-    # The fact corpus the script must stay grounded in (also used by the insight
-    # beat so it can't invent specifics) — built before injection + grounding.
+    # The fact corpus the script must stay grounded in (also used by the hook pass and
+    # the insight beat so neither can invent specifics) — built before them.
     # Tiered (Pillar 3): every line carries a provenance tier; full_text is the
     # same flat string the token-grounding check has always seen.
     corpus = build_tiered_corpus(
@@ -1465,6 +1653,15 @@ def generate_content_package(
         key_facts=clean_key_facts,
     )
     grounding_text = corpus.full_text
+
+    # #1018: on by default; an unsupported, stock or repeated hook is rebuilt from facts.
+    script = run_script_pass(
+        script_passes,
+        "improve_hook",
+        script,
+        lambda text: _hook_variants(text, channel_id=channel_id, grounding_text=grounding_text),
+        disabled=not hook_regen_enabled(),
+    )
 
     # Key-fact anchor: if the script drifted off the operator's pasted subject,
     # recenter it FIRST (subject-level) — before insight/grounding tweak the prose.
@@ -1483,8 +1680,25 @@ def generate_content_package(
         script_passes,
         "inject_insight",
         script,
-        lambda s: _maybe_inject_insight(s, grounding_text, topic, intent=resolved_intent),
+        lambda s: _maybe_inject_insight(
+            s, grounding_text, topic, intent=resolved_intent, own_idea=own_idea
+        ),
         disabled=not _insight_injection_enabled(),
+    )
+
+    # #1016: the script answers what the operator typed, or is rewritten once to.
+    script = run_script_pass(
+        script_passes,
+        "keep_to_idea",
+        script,
+        lambda s: _keep_to_idea(
+            s,
+            creative_brief or seed_topic,
+            min_words=min_words,
+            max_words=max_words,
+            grounding_text=grounding_text,
+        ),
+        disabled=not (_keep_to_idea_enabled() and (creative_brief or "").strip()),
     )
 
     llm_tags = payload.get("tags") or []
@@ -1715,6 +1929,7 @@ def generate_content_package(
         seed_topic=seed_topic,
         key_facts=key_facts,
         channel_id=channel_id,
+        brief=creative_brief,
     )
 
     # Candidate 321: the title is the last thing generated and was the only operator-
@@ -1746,6 +1961,7 @@ def generate_content_package(
             seed_topic=seed_topic,
             key_facts=None,
             channel_id=channel_id,
+            brief=creative_brief,
         )
         retry_check = (
             check_title_script_consistency(retry, script, topic=topic)

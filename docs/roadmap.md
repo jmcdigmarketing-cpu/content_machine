@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-08
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-09
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -26,15 +26,18 @@ deferred — see [desktop_app.md](desktop_app.md).
 
 ## Now
 
-**Just landed** - 2026-10-08 wave 65, the operator's careful ads budget: **#996** a monthly ads cap
-(`ADS_MONTHLY_CAP`) and a most-per-subscriber stop (`ADS_MAX_PER_SUB`); **#992** paid subscribers
-from the campaign page (`ops spend result`); **#998** before -> during -> after the ads; **#997**
-which video is worth promoting; **#994** the first caption on screen by 0.5 s.
+**Just landed** - 2026-10-09 wave 66, built so the operator's run 124 idea ("How the 0-4 chargers
+can turn it around this year") runs as intended: **#1016** your idea stays yours (angle 1 is your
+idea worded for search, Enter keeps it, no take pushed onto it); **#1001 #1002 #1005 #1004** the
+subject read right; **#1003** NFL records and next games from ESPN; **#1012 #1017** pasted junk and
+unrelated vault facts kept out; **#1018** hooks on solid ground; riders **#1000** (a flagged render
+never goes public at its slot), **#1019** CC BY credits, **#1020** stock only as a last resort, voice
+speed 1.05. The next 100: [optimization_plan_2026-10.md](optimization_plan_2026-10.md); Cursor's run:
+[cursor_brief_2026-10.md](cursor_brief_2026-10.md).
 
-**Before that** - wave 64: **#988 #987 #959 #989 #977** · wave 63: **#985 #986 #984 #978 #979** ·
-wave 62: **#980 #981 #982 #983 #976** ([growth_review_2026-10.md](growth_review_2026-10.md)) ·
-wave 61: **#973 #974 #551 #339 #863**. Earlier: [roadmap_archive.md](roadmap_archive.md) and
-[planning_log.md](planning_log.md).
+**Before that** - wave 65: **#996 #992 #998 #997 #994** · wave 64: **#988 #987 #959 #989 #977** ·
+wave 63: **#985 #986 #984 #978 #979** · wave 62: **#980 #981 #982 #983 #976**. Earlier:
+[roadmap_archive.md](roadmap_archive.md) and [planning_log.md](planning_log.md).
 
 ### The five weaknesses - where each stands (2026-10-03, after wave 53)
 
@@ -43,30 +46,27 @@ is left is below.
 
 | weakness | shipped | still open |
 |---|---|---|
-| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode, **#977** checked against later runs | **#1003** NFL results from ESPN · **#1004** news and research search the subject · **#1002** lowercase team names (runs 118-120) |
+| 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode, **#977** checked against later runs, **#1003** NFL from ESPN, **#1004** news searches the subject, **#1002** lowercase teams, **#1012** pasted junk out, **#1017** uncertain vault facts must name the subject | **#1011** a stale signal record · **#1022** every league + injuries · **#1024** stale best bets |
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
-| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport | **#1006** video games read as gaming · **#1005** no who's-who for common words · **#1007** award races |
-| 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out | #914 an emoji font off Windows · #786 footage and your music tracks (operator; `ops footage-gaps` lists what) |
+| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport, **#1005** no who's-who for common words, **#1016** your idea stays yours | **#1006** video games read as gaming · **#1007** award races · **#1008** angles date-checked |
+| 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out, **#1020** stock only as a last resort, **#1019** CC BY credits | thumbnails **#1047**, the voice **#1035**, licensed footage **#1040** (Cursor) · #786 your footage (operator) |
 | 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers, **#988** the intro measured, **#959** what each ad campaign bought, **#992** paid subscribers, **#998** after the ads | #975 the organic rate on a real boosted video · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 65 (2026-10-08)** shipped the ad tools (#992 #996 #997 #998) and #994. Then the operator's
-live runs 118-120 (2026-10-06, pasted 10-08) filed **#1000-#1014**: a scheduled upload bypassed the
-grounding gate's unlisted lock, and run 118 got no facts because "yes" became the search seed, the
-lowercase team names were not names and nothing fetches NFL results. The next five put safety first,
-then the up-to-date data chain:
+**Wave 66 (2026-10-09)** shipped the run-124 five (#1016 #1001-#1005 #1003 #1012 #1017 #1018) and
+the riders. What runs 119-120 exposed that it did not reach is next - the angle and chapter layer,
+which writes text no fact checks, and the variant scores that tie at 100:
 
-1. **#1000 a gate-flagged render scheduled on YouTube goes public** `[S]` - run 120 did.
-2. **#1001 "yes" at the seed prompt; the seed keeps the teams** `[S]`.
-3. **#1002 lowercase team names are names** `[S]`.
-4. **#1003 NFL scores, records and next games from ESPN** `[M]` - "why can we not pull more up to date data?"
-5. **#1004 news and auto-research search the subject** `[S]`.
+1. **#1008 angles get the date and past-event checks** `[M]` - "UFC 305" in October 2026.
+2. **#1009 chapter titles from the script, checked** `[M]` - run 119's description.
+3. **#1010 a chosen chapter cannot go missing** `[M]` - run 120 lost chapter 5.
+4. **#1013 confirm a flagged claim without a re-render** `[M]` - two unlisted renders wait on it.
+5. **#1014 variant scoring that is not noise** `[M]` - every run "hit its 15s deadline".
 
-Then **#1009** chapter titles checked · **#1008** angles date-checked · **#1013** confirm a claim
-without a re-render · **#1012** typed fact lines filtered · **#1006** video games read as gaming ·
-**#1005** · **#1007** award races · **#1010** · **#1011** · **#1014**; and **#999 #990 #995 #975
-#991 #993**.
+Then **#1007** award races · **#1006** · **#1011** · **#1033** personas · **#1060** post time per
+sport · **#1024** stale best bets; Cursor runs phase A meanwhile (**#1040 #1041 #1047 #1048 #1035
+#1036 #1053 #1044**). Wave 67 picks one item the operator will see in the next run (#1009).
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
@@ -75,15 +75,11 @@ Parked for an operator call: **#459** dead-code sweep (it would remove reddit's 
 (does a settled topic still get a paste?) needs ten runs in `ops auto-research`.
 
 **Waiting on the operator, not on code:** the back-home tick-list (an artifact page Claude reads
-back): git pull; cancel job 50 before any worker run (`scripts.queue_manage --channel default`,
-`--cancel N`); `CONTENT_CHANNEL_ID=tapin` in `.env`; `youtube.oauth_setup --channel tapin`; `ops
-all`; `ops spend add` for what was paid; `pip install -e ".[app]"` + `ops shortcut`; `ops growth`
-pasted back; `ops backfill view-curve --apply`; Buffer, the policy site, the Reporting API,
-`ops footage-gaps`, one debate and one quotes render; **stop the running ad in Studio**, then enter
-it (`ops spend add --kind ads --video ID`, `spend end`, `spend result --subs N`) and read `ops
-promotions` on Oct 24; `ADS_MONTHLY_CAP=20`, `INTRO_TEST=alternate` and `HOOK_REGEN_ENABLED=true`
-in `.env`; open Analytics; check job 50 is gone and that run 120 (public on schedule) is fine;
-at "Search for this?" press Enter or type a seed - never "yes" - until #1001 lands
+back): git pull and `pip install -e ".[app]"`; in ElevenLabs lower Stability (~35-45) and raise
+Style (~20-30) on the TapIn voices; `ops spend add` for what was paid; record 20-30 min of Madden /
+UFC 5 gameplay (`ops footage-add`) - with stock a last resort it is what fills a video; fix run
+119's chapter title, then `go-public`; rerun the Chargers idea and press Enter on angle 1; hand
+Cursor [cursor_brief_2026-10.md](cursor_brief_2026-10.md); read `ops promotions` on Oct 24.
 
 **Still the operator's, unchanged:** review the 05:00 drafts (`ops batch-review`); one OAuth
 consent then `ops playlists --apply`; gameplay files for the empty niches (#786). After the first

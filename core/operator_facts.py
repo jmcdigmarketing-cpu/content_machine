@@ -334,6 +334,99 @@ def is_article_chrome(text: str) -> bool:
     return bool(_LIKE_RE.match(low) or _TIMESTAMP_RE.match(body))
 
 
+# #1012 (run 124): ad units and video-player furniture a pasted article brings with it.
+_AD_MARKERS = frozenset(
+    {"sponsored", "advertisement", "ad", "promoted", "paid partnership", "call to action icon",
+     "skip ad", "ad feedback", "sponsored content"}
+)  # fmt: skip
+_PLAYER_CHROME = frozenset(
+    {"current time", "duration", "view on watch", "watch", "html", "loaded", "play", "pause",
+     "mute", "unmute", "fullscreen", "replay", "live", "watch now", "read more", "see more",
+     "continue reading", "advertisement"}
+)  # fmt: skip
+_SYMBOLS_ONLY = re.compile(r"^[\W\d_]+$")
+_CAPTION_PREFIX = re.compile(
+    r"^(?:related (?:video|article|story)|watch|video|read more|recommended|more from)\s*:", re.I
+)
+_PARAGRAPH_CHARS = 80
+_HEADING_MAX_WORDS = 6
+
+
+def is_junk_line(text: str) -> bool:
+    """#1012: a line no reading of which is a fact - typed or pasted.
+
+    Page chrome (`is_article_chrome`), bare symbols and numbers ("0", "/", "1:06"), ad and
+    video-player furniture ("Sponsored", "Duration", "View on Watch"), a "Related video:"
+    caption, and a single word ("Shopify").
+    """
+    body = (text or "").strip().strip("`\"'").strip()
+    if is_article_chrome(body) or _SYMBOLS_ONLY.match(body):
+        return True
+    low = body.lower().rstrip(".:")
+    if low in _AD_MARKERS or low in _PLAYER_CHROME or _CAPTION_PREFIX.match(body):
+        return True
+    return len(body.split()) < 2
+
+
+# A statement has a verb; a subhead ("Overcoming a disastrous start") usually does not.
+_STATEMENT_VERB = re.compile(
+    r"\b(?:is|are|was|were|be|been|has|have|had|will|would|can|could|won|lost|beat|beats|"
+    r"leads|led|signed|scored|says|said|holds|held|named|returns|joins|out)\b",
+    re.I,
+)
+
+
+def _reads_as_page_text(line: str) -> bool:
+    """A pasted line that is a subhead or a fragment, not a statement about the subject."""
+    words = line.split()
+    has_digit = any(ch.isdigit() for ch in line)
+    if len(words) < 4 and not has_digit:
+        return True
+    ends_like_a_sentence = line.rstrip().endswith((".", "!", "?", '"', "\u201d", ")"))
+    return (
+        len(words) <= _HEADING_MAX_WORDS
+        and not has_digit
+        and not ends_like_a_sentence
+        and not _STATEMENT_VERB.search(line)
+    )
+
+
+def clean_typed_lines(entries: list[tuple[str, bool]]) -> tuple[list[str], list[str]]:
+    """#1012: (kept, dropped) for lines answered at the `Fact N` prompt, in order.
+
+    Each entry is (line, arrived_in_a_paste). Junk (`is_junk_line`) never stays. A line that
+    arrived inside a paste is page text: a heading or a short fragment is dropped, and an ad
+    marker ("Sponsored", "call to action icon") also drops the short lines since the last
+    paragraph - the ad unit it closes ("Get started faster, no design skills needed.",
+    "Shopify"). A line typed on its own keeps the operator's benefit of the doubt.
+    """
+    kept: list[str | None] = []
+    dropped: list[str] = []
+    since_paragraph: list[int] = []  # indexes in `kept` of short pasted lines
+    for raw, in_paste in entries:
+        line = (raw or "").strip()
+        if not line:
+            continue
+        low = line.lower().rstrip(".:")
+        if in_paste and low in _AD_MARKERS:
+            for index in since_paragraph:
+                if kept[index] is not None:
+                    dropped.append(str(kept[index]))
+                    kept[index] = None
+            since_paragraph.clear()
+            dropped.append(line)
+            continue
+        if is_junk_line(line) or (in_paste and _reads_as_page_text(line)):
+            dropped.append(line)
+            continue
+        kept.append(line)
+        if not in_paste or len(line) >= _PARAGRAPH_CHARS:
+            since_paragraph.clear()
+        else:
+            since_paragraph.append(len(kept) - 1)
+    return [line for line in kept if line is not None], dropped
+
+
 def parse_pasted_block(text: str) -> list[str]:
     """Turn a multi-line paste (trade tracker, article excerpt) into fact lines."""
     if not text or not text.strip():

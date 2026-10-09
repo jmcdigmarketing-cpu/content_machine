@@ -146,9 +146,10 @@ def validate_channel(channel_id: str, raw_cfg: dict) -> tuple[list[str], list[st
         )
 
     mode = str(raw_cfg.get("background_mode", "hybrid")).lower()
-    if mode not in ("hybrid", "stock", "local"):
+    if mode not in ("hybrid", "stock", "local", "local_first"):
         errors.append(
-            f"{channel_id}: background_mode must be hybrid, stock, or local (got {mode!r})"
+            f"{channel_id}: background_mode must be hybrid, stock, local or local_first "
+            f"(got {mode!r})"
         )
     try:
         ratio = float(raw_cfg.get("hybrid_local_ratio", 0.45))

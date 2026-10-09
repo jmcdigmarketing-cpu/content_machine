@@ -1,10 +1,18 @@
+import re
+
 from apis.nba_teams import is_nba_topic, team_display_matches, teams_in_topic
+from apis.nfl_entities import NFL_TEAM_ABBR
+from apis.nfl_entities import team_names_in as nfl_team_names_in
+from apis.schema_pins import SchemaDrift, check, drift_signal
 from apis.signal_contract import (
     STATUS_INACTIVE,
     STATUS_OK,
     classify_exception,
     make_signal,
 )
+from core.logging import get_logger
+
+logger = get_logger("apis.live_scores")
 
 LIVE_SCORES_CACHE_TTL = 60 * 10  # 10 minutes — post-game results refresh quickly
 
@@ -57,22 +65,87 @@ def _match_score(event, topic_teams):
     return hits
 
 
+def _team_line(payload, league):
+    """Record, standing and next game from an ESPN team page (#1003). Raises SchemaDrift."""
+    check("live_scores", payload)
+    team = payload["team"]
+    record = ""
+    for item in (team.get("record") or {}).get("items") or []:
+        if item.get("type") == "total" or not record:
+            record = str(item.get("summary") or "")
+            if item.get("type") == "total":
+                break
+    nxt = (team.get("nextEvent") or [{}])[0] or {}
+    return {
+        "team": team.get("displayName"),
+        "record": record,
+        "standing": str(team.get("standingSummary") or ""),
+        "next_game": str(nxt.get("name") or ""),
+        "next_date": str(nxt.get("date") or "")[:10],
+        "league": league,
+    }
+
+
+def _nfl_signal(topic, teams):
+    """#1003: each named team's record, standing and next game, plus that week's game."""
+    from sports.espn import get_scoreboard, get_team
+
+    week_match = re.search(r"\bweek\s+(\d{1,2})\b", topic or "", re.I)
+    week = int(week_match.group(1)) if week_match else None
+    try:
+        rows = [_team_line(get_team("nfl", NFL_TEAM_ABBR[t]), "nfl") for t in teams[:2]]
+    except SchemaDrift as drift_exc:
+        return drift_signal(str(drift_exc))
+    nicknames = [t.split()[-1].lower() for t in teams]
+    game = None
+    try:
+        events = (get_scoreboard("nfl", week=week) or {}).get("events") or []
+        parsed = [_parse_event(ev) for ev in events]
+        parsed.sort(key=lambda g: _match_score(g, nicknames), reverse=True)
+        if parsed and _match_score(parsed[0], nicknames):
+            game = parsed[0]
+    except Exception as exc:  # the team pages are the facts; the board is a bonus
+        logger.debug("NFL scoreboard skipped: %s", exc)
+    rows = [r for r in rows if r.get("team")]
+    if not rows:
+        return make_signal(connected=True, active=False, status=STATUS_INACTIVE,
+                           status_detail="ESPN NFL: no team page read")  # fmt: skip
+    detail = "; ".join(f"{r['team']} {r['record']}".strip() for r in rows)
+    return make_signal(
+        connected=True,
+        active=True,
+        score=80 if game else 70,
+        confidence=0.95,
+        data={"teams": rows, "matched_game": game, "week": week, "source": "ESPN NFL"},
+        status=STATUS_OK,
+        status_detail=f"ESPN NFL: {detail}",
+    )
+
+
 def get_live_scores_signal(topic):
     """
-    ESPN NBA scoreboard — final/live box scores for games tied to the topic.
+    ESPN scoreboards - the NFL team pages and board (#1003), else the NBA board.
     """
+    nfl_teams = nfl_team_names_in(topic or "")
+    if nfl_teams:
+        try:
+            return _nfl_signal(topic, nfl_teams)
+        except Exception as e:
+            status, detail = classify_exception(e)
+            return make_signal(connected=False, active=False, status=status,
+                               status_detail=detail)  # fmt: skip
     if not is_nba_topic(topic):
         return make_signal(
             connected=True,
             active=False,
             status=STATUS_INACTIVE,
-            status_detail="NBA scoreboard only (NFL live scores not wired yet)",
+            status_detail="No NFL or NBA team in the topic",
         )
 
     try:
         from sports.espn import get_scoreboard
 
-        board = get_scoreboard()
+        board = get_scoreboard("nba")
         events = board.get("events") or []
         topic_teams = teams_in_topic(topic)
 

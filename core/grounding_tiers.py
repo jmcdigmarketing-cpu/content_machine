@@ -72,6 +72,7 @@ _SECTION_TIERS: tuple[tuple[str, str], ...] = tuple(
         ("Tapology", TIER_SIGNAL),
         ("Card:", TIER_SIGNAL),
         ("ESPN live/final", TIER_SIGNAL),
+        ("ESPN team", TIER_SIGNAL),  # #1003 record, standing, next game
         ("Stats:", TIER_SIGNAL),
         ("Game database", TIER_SIGNAL),
         ("RAWG", TIER_SIGNAL),

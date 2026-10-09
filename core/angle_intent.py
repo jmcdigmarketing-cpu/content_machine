@@ -27,9 +27,13 @@ ANGLE_LIST = "list"
 ANGLE_TUTORIAL = "tutorial"
 ANGLE_COMPARISON = "comparison"
 ANGLE_RETROSPECTIVE = "retrospective"
+# #1016 (run 124): "How the 0-4 chargers can turn it around this year" asks what has to
+# happen. It was `default`, so the prompt said "TAKE A SIDE" and the angles were takes.
+ANGLE_PLAN = "plan"
 
 ALL_INTENTS = (
     ANGLE_REACTION,
+    ANGLE_PLAN,
     ANGLE_EXPLAINER,
     ANGLE_LIST,
     ANGLE_TUTORIAL,
@@ -41,7 +45,14 @@ ALL_INTENTS = (
 # Formats that must not be ordered to take a side. Used by the research brief
 # and the script prompt (#659 / #660).
 CALM_INTENTS = frozenset(
-    {ANGLE_EXPLAINER, ANGLE_LIST, ANGLE_TUTORIAL, ANGLE_COMPARISON, ANGLE_RETROSPECTIVE}
+    {
+        ANGLE_PLAN,
+        ANGLE_EXPLAINER,
+        ANGLE_LIST,
+        ANGLE_TUTORIAL,
+        ANGLE_COMPARISON,
+        ANGLE_RETROSPECTIVE,
+    }
 )
 
 # Phrases, not bare adjectives. "looks" alone appears in "looks broken"; "amazing"
@@ -85,6 +96,24 @@ _QUESTION = re.compile(r"\?")
 # pins it. Ordered: the first match wins, so the more specific frames are checked
 # before the more general ones.
 _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        ANGLE_PLAN,
+        (
+            "how can ",
+            "how could ",
+            "how will ",
+            "how do the ",
+            "what it takes",
+            "what will it take",
+            "what would it take",
+            "turn it around",
+            "turn things around",
+            "path to ",
+            "can still ",
+            "how to fix",
+            "what needs to change",
+        ),
+    ),
     (
         ANGLE_TUTORIAL,
         ("how to ", "how do i ", "guide to", "tips for", "beginner's guide", "walkthrough"),
@@ -163,6 +192,7 @@ def detect_angle_intent(topic: str | None) -> str:
 
 
 _INTENT_NOTES = {
+    ANGLE_PLAN: "plan (read from your idea) - answers what has to happen; no hot take",
     ANGLE_REACTION: "reaction (read from your topic) - analysis/critique framings suppressed",
     ANGLE_EXPLAINER: "explainer (read from your topic) - take/controversy framings suppressed",
     ANGLE_LIST: "list / ranking (read from your topic)",
@@ -170,6 +200,17 @@ _INTENT_NOTES = {
     ANGLE_COMPARISON: "comparison (read from your topic)",
     ANGLE_RETROSPECTIVE: "retrospective (read from your topic)",
 }
+
+
+def intent_of(*texts: str | None) -> str:
+    """The first non-default intent among `texts` (the angle, the seed, the operator's
+    brief), else default. #1016: a script whose angle said nothing kept the take push
+    even when the operator's own words asked "how can ..."."""
+    for text in texts:
+        intent = detect_angle_intent(text)
+        if intent != ANGLE_DEFAULT:
+            return intent
+    return ANGLE_DEFAULT
 
 
 def format_for_intent(intent: str) -> str:

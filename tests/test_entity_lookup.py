@@ -158,7 +158,8 @@ class NamesTests(unittest.TestCase):
         from core.facts.entity_lookup import names_for
 
         names = names_for("Is LeBron James done with the Lakers?", angle="LeBron's last season")
-        self.assertEqual(names[:2], ["LeBron James", "Lakers"])
+        # #1002: a team is looked up by its full name, where it was typed.
+        self.assertEqual(names[:2], ["LeBron James", "Los Angeles Lakers"])
 
     def test_a_lower_case_topic_still_finds_a_known_player(self):
         from core.facts.entity_lookup import names_for

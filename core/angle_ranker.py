@@ -200,7 +200,10 @@ def _thesis_terms(seed_topic: str) -> list[str]:
     for match in re.finditer(r"\b((?:will|what|why|is|does|can)\b[^?]{8,80})", text, flags=re.I):
         words = _WORD_RE.findall(match.group(1).lower())
         if len(words) >= 4:
-            out.append(" ".join(words[:5]))
+            # #1016: the question's content words. "can turn it around this" was kept
+            # whole, no angle contained it, and every angle's fidelity was 0 (run 124).
+            content = [w for w in words if w not in FUNCTION_WORDS][:4]
+            out.append(" ".join(content) if len(content) >= 2 else " ".join(words[:5]))
     return out
 
 
@@ -235,7 +238,17 @@ def _fidelity(angle: str, seed_terms: list[str]) -> float:
     if not seed_terms:
         return _NEUTRAL_FIDELITY
     low = (angle or "").lower()
-    kept = sum(1 for term in seed_terms if term.lower() in low)
+    angle_words = set(_WORD_RE.findall(low))
+
+    def _kept(term: str) -> bool:
+        term = term.lower()
+        if term in low:
+            return True
+        words = _WORD_RE.findall(term)
+        # A multi-word thesis term counts when most of its words are there (#1016).
+        return len(words) >= 2 and sum(w in angle_words for w in words) * 3 >= len(words) * 2
+
+    kept = sum(1 for term in seed_terms if _kept(term))
     return round(kept / len(seed_terms), 4)
 
 

@@ -39,9 +39,12 @@ import subprocess
 import tempfile
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from core.logging import get_logger
+
+if TYPE_CHECKING:
+    from assets.types import AssetResult
 
 logger = get_logger("assets.fast_cut")
 
@@ -517,7 +520,6 @@ def prune_backgrounds(out_dir: str, *, days: int = _KEEP_TMP_DAYS) -> int:
 
 
 def _compose(keys: list[str], windows, topic: str, duration: float, words):
-    from assets.types import AssetResult
     from config.paths import DATA_DIR, ensure_data_dir
 
     shots = plan_windowed_shots(cut_points(duration, words), keys, windows)
@@ -563,11 +565,20 @@ def _compose(keys: list[str], windows, topic: str, duration: float, words):
         logger.debug("clip memory record skipped: %s", exc)
     files = len({clip for clip, _s, _l in shots})
     logger.info("fast cut: %d shots from %d file(s) (%s)", len(shots), files, topic)
-    return AssetResult(
+    return fast_cut_result(output, topic, shots)
+
+
+def fast_cut_result(output: str, topic: str, shots) -> AssetResult:
+    """The cut background, with the credits its clips' licences require (#1019)."""
+    from assets.local_provider import clip_credits
+    from assets.types import AssetResult as _AssetResult
+
+    return _AssetResult(
         path=output,
         provider="fast_cut",
         query=topic,
         attribution=f"Gameplay (local), {len(shots)} shots",
+        credits=clip_credits(dict.fromkeys(clip for clip, _s, _l in shots)),
     )
 
 

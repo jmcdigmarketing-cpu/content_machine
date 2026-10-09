@@ -1,6 +1,6 @@
-# Handoff synopsis — 2026-10-08: wave 65, a careful ads budget and the first caption
+# Handoff synopsis — 2026-10-09: wave 66, run 124's idea runs as intended
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
 Use in a fresh session to continue `content_machine` without re-reading the full thread.
 
@@ -10,7 +10,29 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-08 (Claude Code): wave 65 #996 #992 #998 #997 #994 (a careful ads budget)
+## Last wave — 2026-10-09 (Claude Code): wave 66 #1016 #1001-#1005 #1003 #1012 #1017 #1018 (run 124's idea)
+
+The operator's run 124 ("How the 0-4 chargers can turn it around this year") was "a good video,
+just not what i intended"; they will rerun the same idea. Asked: speed 1.05, stock only as a last
+resort, angle 1 = "100% the intention of my idea ... worded with more seo velocity", Cursor both
+(media first). Correction: run 119's "19-0 with 8 KOs and 10 submissions" is right (a decision win).
+
+- **#1016** angle 1 is your idea worded for search, Enter keeps it (option 1 and 5); no take pushed
+  onto it; `plan` intent; the script checked against the idea (`KEEP_TO_IDEA`).
+- **#1001 #1002 #1005 #1004** "yes" is a yes; lower-case teams are names ("Los Angeles Chargers");
+  no who's-who for "Next"/"People"; news and auto-research search the subject.
+- **#1003** ESPN NFL: record, standing, next game, dated, at signal tier.
+- **#1012 #1017** pasted page junk dropped at `Fact N`; an uncertain vault fact must name the subject.
+- **#1018** a hook must be a fact: history superlatives and stock openers rebuilt from facts; the
+  hook pass is on by default.
+- Riders: **#1000** flagged render never scheduled public, **#1019** CC BY credits, **#1020**
+  `local_first` (TapIn), speed 1.05. The next 100: optimization_plan_2026-10.md; Cursor:
+  cursor_brief_2026-10.md.
+
+**Verify:** `python -m unittest tests.test_idea_stays_yours tests.test_hooks_solid_ground tests.test_typed_fact_filter tests.test_uncertain_vault_subject tests.test_subject_names tests.test_subject_queries tests.test_espn_nfl tests.test_flagged_schedule tests.test_local_first_footage tests.test_footage_credits tests.test_seed_prompt_yes`;
+`py -m scripts.ops regressions`; then rerun the Chargers idea and press Enter on angle 1.
+
+## Previous — 2026-10-08 (Claude Code): wave 65 #996 #992 #998 #997 #994 (a careful ads budget)
 
 The operator spent $40 on ads in about four days and wants spending "calculated and worth it":
 a $20 monthly ceiling, nothing new until the Oct 24 decision; the campaign was still spending
@@ -44,22 +66,6 @@ measured test (reminder `trig_019BBVmBdf9EYuNrtMBpQMyw`, 2026-10-24 14:00 UTC).
 
 **Verify:** `python -m unittest tests.test_promotions tests.test_first_second tests.test_hook_variants`;
 `py -m scripts.ops promotions`; `py -m scripts.ops growth`.
-
-## Previous — 2026-10-06 (Claude Code): wave 63 #985 #986 #984 #978 #979 (the recommended five)
-
-The five wave 62 recommended, built cheapest first.
-
-- **#985** `analytics/hook_learning`: which opening-line traits held viewers past the swipe; the
-  opt-in hook rewrite uses it once 10 videos are measured; one line in `ops growth`.
-- **#986** one header line at startup (channel, sign-in, spent, uploads left, queue, last video);
-  INFO logs go to `data/logs/content_machine.log` (`CONTENT_LOG_FILE`, blank = off).
-- **#984** an Analytics page in the app: tiles, views per video shaded by who stayed, the lines.
-- **#978** the date check reads the title and description too.
-- **#979** Buffer packed / posted this week in the weekly report and `ops status`.
-- The back-home list gained "Pause the YouTube ads"; the Story page was updated to 10-06.
-
-**Verify:** `python -m unittest tests.test_hook_learning tests.test_quiet_terminal tests.test_analytics_page`;
-`py main.py` (the header); `py -m desktop` -> Analytics.
 
 ## Pipeline order (operator)
 
@@ -124,8 +130,7 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** check job 50 is really gone (`scripts.queue_manage --channel default --cancel N`; the startup line still said "+1 other channel" on Oct 6); run 120 went public on schedule (#1000) - watch it; run 119 stays unlisted (its record line is wrong, #1011); at "Search for this?" press Enter or type a seed, never "yes" (#1001); `CONTENT_CHANNEL_ID=tapin` in `.env`, `py -m youtube.oauth_setup --channel tapin`; then a run on a known topic, then one on a new game - say if "Settled"/"Fresh" is wrong (#963-#965); connect TikTok and Instagram in Buffer (#968); stop the running ad in Studio, then `ops spend add --kind ads`, `spend end`, `spend result`, `ADS_MONTHLY_CAP=20`; the policy site and Google's Publish app (skipped for now); `ops backfill view-curve --apply` once (paid views, #954); enable the YouTube Reporting API (#951); `ops footage-gaps` (#955); set `config/goals.json`, then `py -m scripts.ops all` once a week; listen to the next render at 0.95; one debate and one quotes run (#889);
-   `ops backfill` to see what history is behind, then `ops backfill all --apply` if it agrees.
+1. **Operator:** `git pull`, `pip install -e ".[app]"`; in ElevenLabs lower Stability (~35-45) and raise Style (~20-30) on the TapIn voices; rerun the Chargers idea (Enter on angle 1); record Madden / UFC 5 gameplay (`ops footage-add`) - stock is now a last resort; fix run 119's chapter title, then `go-public`; hand Cursor `docs/cursor_brief_2026-10.md`; `ops spend add` for what was paid; `CONTENT_CHANNEL_ID=tapin` and `youtube.oauth_setup --channel tapin` if not done; Buffer for TikTok and Instagram (#968); the Reporting API (#951); `ops backfill all --apply` if `ops backfill` agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863's call prints itself at ten runs (E3).
 3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #975 the organic rate on a real boosted video.
@@ -136,7 +141,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Live runs 118-120 (2026-10-06):** filed #1000-#1014 - see planning_log 2026-10-08. **Next:** #1000 · #1001 · #1002 · #1003 · #1004. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Run 124 (2026-10-08):** wave 66 - see planning_log 2026-10-09. **Next:** #1008 · #1009 · #1010 · #1013 · #1014. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

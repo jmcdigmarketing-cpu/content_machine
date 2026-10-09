@@ -3,7 +3,7 @@ import os
 import subprocess
 from collections.abc import Callable
 
-from assets.manager import get_background_asset
+from assets.manager import footage_label, get_background_asset
 from core.logging import get_logger
 from core.render_progress import (
     RenderProgress,
@@ -458,7 +458,8 @@ def render_vertical_video(
         asset = get_background_asset(topic, channel_id, duration=duration)
     background_path = asset.path
     if progress:
-        progress.note(f"Background: {asset.provider} — {os.path.basename(background_path)}")
+        # #1020: say what it is - a stock background reads "STOCK (last resort ...)".
+        progress.note(f"Background: {footage_label(asset)} — {os.path.basename(background_path)}")
     logger.info("Background provider=%s path=%s", asset.provider, background_path)
     if asset.attribution:
         logger.info("Attribution: %s", asset.attribution)

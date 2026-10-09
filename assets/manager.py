@@ -22,7 +22,26 @@ _PROVIDERS = {
     "ai_video": AIVideoProvider,
 }
 
-VALID_BACKGROUND_MODES = ("hybrid", "stock", "local")
+# #1020 local_first: owned footage, else stock as a last resort, else plain - never blended.
+VALID_BACKGROUND_MODES = ("hybrid", "stock", "local", "local_first")
+
+_STOCK_PROVIDERS = frozenset({"pexels", "pixabay", "coverr"})
+
+
+def footage_label(asset: AssetResult) -> str:
+    """#1020: what the background is, in the operator's words (printed by the render)."""
+    provider = str(getattr(asset, "provider", "") or "")
+    if provider in _STOCK_PROVIDERS:
+        return f"STOCK (last resort - no owned footage matches) from {provider}"
+    if provider == "scene_matched":
+        return "STOCK B-roll cut to the script (scene-matched)"
+    if provider == "hybrid":
+        return "owned gameplay + stock B-roll (hybrid)"
+    if provider == "plain":
+        return "plain branded background (no footage matches)"
+    if provider in ("fast_cut", "local", "owned"):
+        return f"owned gameplay ({provider})"
+    return provider or "unknown"
 
 
 def resolve_background_mode(channel_id=None) -> str:
@@ -162,6 +181,22 @@ def get_background_asset(
             channel_id,
             duration,
             "No local background in video/backgrounds/. Add gameplay clips or use hybrid/stock mode.",
+        )
+
+    if mode == "local_first":
+        asset = get_local_background_asset(topic, channel_id)
+        if asset:
+            return asset
+        stock = get_stock_background_asset(topic, channel_id)
+        if stock:
+            logger.warning(
+                "No owned footage matches '%s' - stock as a last resort "
+                "(py -m scripts.ops footage-gaps lists what to record)",
+                (topic or "")[:60],
+            )
+            return stock
+        return _plain_or_raise(
+            topic, channel_id, duration, "No owned or stock background video found for topic."
         )
 
     if mode == "stock":

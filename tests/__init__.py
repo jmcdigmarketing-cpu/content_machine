@@ -61,6 +61,10 @@ os.environ["DISCOVERY_CACHE"] = "false"
 # #848 auto-research is on by default and fetches web pages; no test may. Tests of
 # the feature (tests/test_auto_research.py) set it themselves.
 os.environ["AUTO_RESEARCH_ENABLED"] = "false"
+# #1018 / #1016: default-on extra LLM passes (the hook rewrite, the does-it-answer-the-idea
+# check); a test that wants one turns it on, so no other test's scripted replies shift.
+os.environ["HOOK_REGEN_ENABLED"] = "false"
+os.environ["KEEP_TO_IDEA"] = "false"
 # #899: event research reads Wikipedia / Google News on a recency miss - never in tests.
 os.environ["EVENT_RESEARCH_ENABLED"] = "false"
 # #963: the who's-who lookup reads Wikidata / Wikipedia on every run - never in tests.

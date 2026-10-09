@@ -28,19 +28,20 @@ class TestHybridBackground(unittest.TestCase):
         self.assertIn("-pix_fmt", cmd)
         self.assertIn("-an", cmd)
 
-    def test_tapin_channel_uses_hybrid(self):
+    def test_tapin_channel_uses_local_first(self):
+        # decisions.md section 26 left `hybrid` -> owned-only as an operator call; the
+        # operator made it on 2026-10-08 ("Stock only as a last resort", #1020).
         profile = get_channel_profile("tapin")
-        self.assertEqual(profile.background_mode, "hybrid")
+        self.assertEqual(profile.background_mode, "local_first")
         self.assertAlmostEqual(profile.hybrid_local_ratio, 0.70)
         self.assertEqual(profile.asset_provider_order[0], "local")
-        self.assertEqual(profile.background_mode, "hybrid")
 
-    def test_shipped_tapin_ratio_is_seventy_not_flipped_to_local(self):
+    def test_shipped_tapin_ratio_is_seventy_and_mode_local_first(self):
         from config.validate_channels import _load_raw, validate_channel
 
         raw = _load_raw().get("channels", {})
         tapin = raw["tapin"]
-        self.assertEqual(tapin.get("background_mode"), "hybrid")
+        self.assertEqual(tapin.get("background_mode"), "local_first")
         self.assertAlmostEqual(float(tapin["hybrid_local_ratio"]), 0.70)
         moneywise = raw["moneywise"]
         self.assertAlmostEqual(float(moneywise["hybrid_local_ratio"]), 0.45)

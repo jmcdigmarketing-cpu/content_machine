@@ -117,6 +117,24 @@ def _cap_words(text: str) -> str:
     return " ".join(text.split()[:_SEED_MAX_WORDS]).strip(" ,:;")
 
 
+def _team_nicknames(text: str) -> list[str]:
+    """NFL and NBA teams the text names, as nicknames ("Chargers"), in order typed."""
+    try:
+        from apis.nba_teams import team_names_in as nba
+        from apis.nfl_entities import team_names_in as nfl
+    except Exception as exc:  # pragma: no cover - both are pure modules
+        logger.debug("team names unavailable: %s", exc)
+        return []
+    lower = (text or "").lower()
+    teams = nfl(text) + nba(text)
+    nick = [t.split()[-1] for t in teams]
+    return sorted(nick, key=lambda n: lower.find(n.lower()) if n.lower() in lower else 999)
+
+
+def _is_league(term: str) -> bool:
+    return term.strip().lower() in ("nfl", "nba", "afc", "nfc", "ufc", "mma")
+
+
 def search_seed_from_thoughts(text: str) -> str:
     """The subject to search for, out of an idea typed as prose. Never raises.
 
@@ -161,6 +179,15 @@ def search_seed_from_thoughts(text: str) -> str:
     for _start, _end, term, _version in found:
         if term.lower() not in {t.lower() for t in terms}:
             terms.append(term)
+
+    # #1001: teams in a lower-case idea are its subject - run 118's seed was "nfl", the
+    # Seahawks, the Chargers and the week dropped.
+    teams = _team_nicknames(body)
+    if teams:
+        week = re.search(r"\bweek\s+\d{1,2}\b", body, re.I)
+        named = {t.lower() for t in teams}
+        extra = [t for t in terms if t.lower() not in named and not _is_league(t)]
+        return " ".join([*extra, *teams, *([week.group(0).lower()] if week else [])])
 
     clause = _first_clause(body)
     bare_anchor = len(found) == 1 and not found[0][3]

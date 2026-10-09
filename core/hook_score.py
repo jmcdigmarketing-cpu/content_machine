@@ -177,7 +177,38 @@ def score_script_hook(script: str) -> HookScore:
 
 
 def hook_regen_enabled() -> bool:
-    return os.getenv("HOOK_REGEN_ENABLED", "").strip().lower() in ("1", "true", "yes")
+    """#1018: on by default - the operator: "hooks have performed pretty poorly
+    consistently". One cheap call; `HOOK_REGEN_ENABLED=false` turns it off."""
+    raw = os.getenv("HOOK_REGEN_ENABLED", "").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
+# #1018: openers the channel kept reusing. Not a score change (`score_hook` is a report-card
+# component); a hook that starts like one is rewritten by the hook pass.
+_STOCK_OPENERS = (
+    ("here's the part everyone", "here's the part everyone ..."),
+    ("heres the part everyone", "here's the part everyone ..."),
+    ("here's what nobody", "here's what nobody ..."),
+    ("heres what nobody", "here's what nobody ..."),
+    ("nobody wants to say", "nobody wants to say ..."),
+    ("nobody is talking about", "nobody is talking about ..."),
+    ("nobody's talking about", "nobody is talking about ..."),
+    ("everyone is sleeping on", "everyone is sleeping on ..."),
+    ("here's the thing", "here's the thing"),
+    ("what if i told you", "what if I told you"),
+    ("you won't believe", "you won't believe"),
+    ("this changes everything", "this changes everything"),
+    ("let's talk about", "let's talk about"),
+)
+
+
+def stock_opener(hook: str) -> str | None:
+    """The stock opener a hook starts with (#1018), else None."""
+    low = (hook or "").strip().lower().replace("\u2019", "'")
+    for start, label in _STOCK_OPENERS:
+        if start in low[:40]:
+            return label
+    return None
 
 
 def display_hook_score(hs: HookScore, *, print_fn=print) -> None:

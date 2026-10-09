@@ -370,14 +370,24 @@ def _run_new_video_flow(
 
 
 def _parse_angle_choice(
-    choice: str, count: int, best_default: int, *, allow_own: bool
+    choice: str, count: int, best_default: int, *, allow_own: bool, idea_first: bool = False
 ) -> tuple[str, int]:
     """("all" | "own" | "one", variant index) for the angle menu answer (run 78).
 
     "A" puts every angle in one long video; the best angle's signals still drive it.
     An out-of-range number falls back to the best angle instead of raising.
+    `idea_first` (#1016): angle 1 is the operator's own idea and Enter keeps it; the
+    generated angles are numbered from 2.
     """
     raw = (choice or "").strip().lower()
+    if idea_first:
+        if raw in ("", "1", "0"):
+            return "own", -1
+        if raw == "a" and count >= 2:
+            return "all", best_default
+        if raw.isdigit() and 2 <= int(raw) <= count + 1:
+            return "one", int(raw) - 2
+        return "own", -1
     if allow_own and raw == "0":
         return "own", -1
     if raw == "a" and count >= 2:
@@ -385,6 +395,15 @@ def _parse_angle_choice(
     if raw.isdigit() and 1 <= int(raw) <= count:
         return "one", int(raw) - 1
     return "one", best_default
+
+
+def _typed_idea(
+    *, topic: str, creative_brief: str, seed_topic: str | None, from_best_bet: bool
+) -> str:
+    """#1016: the idea the operator typed (option 1 or option 5), or "" for a best bet."""
+    if from_best_bet and not seed_topic:
+        return ""
+    return (creative_brief or seed_topic or topic or "").strip()
 
 
 def _make_fresh_angle_shorts(
@@ -549,6 +568,9 @@ def _offer_spaced_queue(
     print(f"  Queued {len(queued)}. Run the worker: py -m jobs.worker --loop 30")
 
 
+_YES_WORDS = frozenset({"y", "yes", "ok", "okay", "sure", "yep", "yeah", "ya", "yea"})
+
+
 def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
     """Option 1 type-your-own: a topic, or the idea in your own words (run 77).
 
@@ -575,7 +597,8 @@ def _ask_topic_or_thoughts(creative_brief: str = "") -> tuple[str, str]:
         # #931: the seed is a guess pulled out of prose; confirm it before discovery
         # spends anything on it (run of 2026-10-01 searched "State of the sport ... as").
         override = ask_text("  Search for this? [Enter = yes, or type a better seed]: ").strip()
-        if override:
+        # #1001: run 118 typed "yes" and searched for "yes".
+        if override and override.lower().strip(".!") not in _YES_WORDS:
             topic = override
         print("  Your thoughts steer the angles, their ranking, and the script.")
     return topic, brief
@@ -610,6 +633,7 @@ def _run_new_video_flow_body(
 
     # #909: what the best-bet card offered and what was taken, for the prediction ledger.
     best_bet_pick = pick_record([], None)
+    from_best_bet = False
     if seed_topic:
         # Idea intake (option 5) — user already gave the idea; skip best-bet.
         topic = seed_topic
@@ -624,6 +648,7 @@ def _run_new_video_flow_body(
                 topic = options[int(sel) - 1].topic
                 print(f"  Using: {topic}")
                 best_bet_pick = pick_record(options, int(sel))
+                from_best_bet = True
             else:
                 topic, creative_brief = _ask_topic_or_thoughts(creative_brief)
                 best_bet_pick = pick_record(options, None)
@@ -675,12 +700,21 @@ def _run_new_video_flow_body(
     if _intent != _ANGLE_DEFAULT:
         print(f"  {_intent_note(_intent)}")
 
+    # #1016: angle 1 is the operator's own idea, worded for search; Enter keeps it.
+    from apis.topic_variants import idea_angle
+
+    typed_idea = _typed_idea(
+        topic=topic, creative_brief=creative_brief, seed_topic=seed_topic,
+        from_best_bet=from_best_bet,
+    )  # fmt: skip
+    idea_line = idea_angle(typed_idea, channel_id) if typed_idea else ""
     best_default = display_variants(
         discovery.evaluated,
         channel_id=channel_id,
         raw_scores=discovery.raw_scores,
         angle_scores=discovery.angle_scores,
-        own_idea=seed_topic,
+        own_idea=None if idea_line else seed_topic,
+        idea_angle=idea_line or None,
     )
     from core.pipeline import variant_fallback_note
 
@@ -689,20 +723,24 @@ def _run_new_video_flow_body(
         print(f"  ! {note}")  # #932
 
     angle_count = len(discovery.evaluated)
-    prompt = f"\n  Choose 1-{angle_count} (Enter = best"
-    if seed_topic:
-        prompt += ", 0 = your idea"
+    if idea_line:
+        prompt = f"\n  Choose 1-{angle_count + 1} (Enter = your idea"
+    else:
+        prompt = f"\n  Choose 1-{angle_count} (Enter = best"
+        if seed_topic:
+            prompt += ", 0 = your idea"
     if angle_count >= 2:
         prompt += ", A = all angles in one long video"
     prompt += "): "
     choice = ask_choice(prompt)
 
     mode, variant_index = _parse_angle_choice(
-        choice, angle_count, best_default, allow_own=bool(seed_topic)
+        choice, angle_count, best_default, allow_own=bool(seed_topic), idea_first=bool(idea_line)
     )
     all_angles: list[str] = []
     if mode == "own":
-        best_topic, best_score, best_signals = str(seed_topic), 0.0, discovery.base_signals
+        own_topic = idea_line or str(seed_topic)
+        best_topic, best_score, best_signals = own_topic, 0.0, discovery.base_signals
     else:
         best_topic, best_score, best_signals = discovery.evaluated[variant_index]
         if mode == "all":
@@ -721,7 +759,10 @@ def _run_new_video_flow_body(
         )
     else:
         print(f"  {best_topic}")
-    print(f"  Score: {best_score}")
+    if mode == "own":
+        print("  Your idea - kept as typed, worded for search (not scored against the angles)")
+    else:
+        print(f"  Score: {best_score}")
     display_signal_breakdown(best_signals)
 
     subsection("Length")
@@ -795,6 +836,8 @@ def _run_new_video_flow_body(
             menu_path="5" if seed_topic else "1",
             chapter_angles=all_angles or None,
             voice_mode=voice_mode,
+            own_idea=mode == "own",  # #1016: angle 1 - no take pushed onto your idea
+            own_topic=best_topic if mode == "own" else "",
         )
 
         print()

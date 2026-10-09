@@ -343,6 +343,7 @@ _PASS_SHORT = {
     "improve_hook": "hook",
     "recenter_key_facts": "recenter",
     "reground": "reground",
+    "keep_to_idea": "idea",
 }
 
 
@@ -360,12 +361,22 @@ def format_script_passes(passes: list[dict[str, Any]] | None) -> str:
         sign = f"+{delta}w" if delta >= 0 else f"{delta}w"
         bits.append(f"{short} {sign}")
         cost += float(row.get("cost_usd") or 0)
+    # #1016: the operator's idea went unanswered even after the one rewrite - say so.
+    unanswered = [
+        str(r.get("missing_before") or "")
+        for r in passes
+        if r.get("name") == "keep_to_idea" and r.get("answers_idea") is False
+    ]
+    note = ""
+    if unanswered:
+        what = unanswered[0] or "no detail"
+        note = f"; script may not answer your idea ({what})"
     if not bits:
-        return "passes: none adopted"
+        return "passes: none adopted" + note
     line = "passes: " + ", ".join(bits)
     if cost:
         line += f" ${cost:.3f}"
-    return line
+    return line + note
 
 
 def grade_as_markdown(grade: VideoGrade) -> str:

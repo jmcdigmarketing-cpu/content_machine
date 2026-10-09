@@ -64,7 +64,7 @@ class DossierAfterRenderTests(unittest.TestCase):
         merged = next(
             c.args[1] for c in calls.mock_calls if c[0] == "merge" and "voices" in c.args[1]
         )
-        self.assertEqual(merged.get("tts_speed"), 0.95)
+        self.assertEqual(merged.get("tts_speed"), 1.05)  # tapin's pace since 2026-10-08
 
     def test_an_unsaved_render_writes_no_dossier(self):
         calls = _render(None)

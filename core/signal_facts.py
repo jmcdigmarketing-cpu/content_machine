@@ -32,6 +32,12 @@ def _format_headlines(headlines: list) -> str:
     return "\n".join(lines) if lines else ""
 
 
+def _today() -> str:
+    from datetime import date
+
+    return date.today().isoformat()
+
+
 def format_signal_facts(signals: dict[str, Any]) -> str:
     lines = []
     demand: list[str] = []
@@ -189,6 +195,24 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                 lines.append(" — ".join(parts))
 
         elif name == "live_scores" and isinstance(data, dict):
+            espn_teams: list[dict[str, Any]] = [
+                item
+                for item in data.get("teams") or []
+                if isinstance(item, dict) and item.get("team")
+            ]
+            if espn_teams:
+                # #1003: dated, so the script says "as of" and a stale record is visible.
+                rows = []
+                for team_row in espn_teams:
+                    row = f"- {team_row['team']}: {team_row.get('record') or 'record n/a'}"
+                    if team_row.get("standing"):
+                        row += f", {team_row['standing']}"
+                    if team_row.get("next_game"):
+                        row += f"; next: {team_row['next_game']}"
+                        if team_row.get("next_date"):
+                            row += f" ({team_row['next_date']})"
+                    rows.append(row)
+                lines.append(f"ESPN team (as of {_today()}):\n" + "\n".join(rows))
             game = data.get("matched_game")
             if game:
                 lines.append(

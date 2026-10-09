@@ -1,11 +1,27 @@
 # Handoff synopsis — archive
 
-> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-08
+> **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
 Waves older than the newest three, and the July/August 2026 shipped-notes, moved verbatim out of
 [handoff_synopsis.md](handoff_synopsis.md) when it rolled over (docs_standard.md §7). Source order kept.
 
 ---
+
+## Previous — 2026-10-06 (Claude Code): wave 63 #985 #986 #984 #978 #979 (the recommended five)
+
+The five wave 62 recommended, built cheapest first.
+
+- **#985** `analytics/hook_learning`: which opening-line traits held viewers past the swipe; the
+  opt-in hook rewrite uses it once 10 videos are measured; one line in `ops growth`.
+- **#986** one header line at startup (channel, sign-in, spent, uploads left, queue, last video);
+  INFO logs go to `data/logs/content_machine.log` (`CONTENT_LOG_FILE`, blank = off).
+- **#984** an Analytics page in the app: tiles, views per video shaded by who stayed, the lines.
+- **#978** the date check reads the title and description too.
+- **#979** Buffer packed / posted this week in the weekly report and `ops status`.
+- The back-home list gained "Pause the YouTube ads"; the Story page was updated to 10-06.
+
+**Verify:** `python -m unittest tests.test_hook_learning tests.test_quiet_terminal tests.test_analytics_page`;
+`py main.py` (the header); `py -m desktop` -> Analytics.
 
 ## Previous — 2026-10-06 (Claude Code): wave 62 #980 #981 #982 #983 #976 (the operator's asks)
 

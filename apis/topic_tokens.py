@@ -131,6 +131,29 @@ NEWS_REGISTER_WORDS = frozenset(
     }
 )
 
+# #1005: words a sentence capitalises without naming anything. A phrase made only of these
+# (plus FUNCTION_WORDS and NEWS_REGISTER_WORDS) is not a name: run 124's angle opened "Next
+# Sunday ..." and Wikidata matched "Next" to NeXT; run 120's sentence-initial "People" became
+# "human", and "Game of the year" looked up "Game". A name that merely *contains* one of
+# them ("New York Jets", "Best Buy") keeps it.
+COMMON_CAPITALISED = (
+    FUNCTION_WORDS
+    | NEWS_REGISTER_WORDS
+    | frozenset(
+        {
+            "next", "last", "people", "person", "start", "here", "there", "never", "always",
+            "every", "all", "some", "more", "most", "less", "just", "still", "now", "then",
+            "if", "but", "so", "not", "no", "yes", "also", "even", "only", "again", "after",
+            "before", "while", "because", "though", "season", "team", "teams", "player",
+            "players", "time", "times", "world", "state", "rankings", "ranking", "divisional",
+            "read", "watch", "look", "see", "get", "make", "take", "inside", "breaking",
+            "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+            "tonight", "tomorrow", "yesterday", "january", "february", "march", "april",
+            "june", "july", "august", "september", "october", "november", "december",
+        }
+    )
+)  # fmt: skip
+
 _TOKEN = re.compile(r"[a-z0-9]+")
 
 
@@ -264,6 +287,83 @@ def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) ->
             flush()
     flush()
     return phrases
+
+
+def name_phrases(text: str, *, max_words: int = 3, connectors: bool = False) -> list[str]:
+    """`title_phrases` without the phrases made only of common words (#1005).
+
+    "Next Sunday the Chargers play" -> ["Chargers"]; "Read Start here." -> []. A phrase
+    with one real name word stays whole ("New York Jets").
+    """
+    out: list[str] = []
+    for phrase in title_phrases(text, max_words=max_words, connectors=connectors):
+        words = [w.lower().replace("'", "").replace("’", "") for w in phrase.split()]
+        if all(w in COMMON_CAPITALISED or w in NAME_CONNECTORS or w.isdigit() for w in words):
+            continue
+        out.append(phrase)
+    return out
+
+
+def subject_terms(topic: str, *, limit: int = 4) -> list[str]:
+    """#1004: what a topic is about, for a name search - the teams it names (lower-case too,
+    as full names) then its real name phrases. [] when it names nothing.
+
+    "How the 0-4 chargers can turn it around this year" -> ["Los Angeles Chargers"].
+    """
+    from apis.nba_teams import team_names_in as nba_teams
+    from apis.nfl_entities import team_names_in as nfl_teams
+
+    out: list[str] = []
+    for term in nfl_teams(topic) + nba_teams(topic):
+        if term not in out:
+            out.append(term)
+    covered = " ".join(out).lower()
+    for phrase in name_phrases(topic, max_words=5, connectors=True):
+        if phrase.lower() not in covered and phrase not in out:
+            out.append(phrase)
+    return out[:limit]
+
+
+def subject_markers(terms: list[str]) -> list[str]:
+    """The words that say a text is about these names.
+
+    A known team marks by its nickname ("Los Angeles Chargers" -> "Chargers", never "Los
+    Angeles"). Any other name also marks by each word that is not a common one: a title
+    run over-reaches into the next word ("Wolverine Rage Signal a ...") and the text says
+    "Wolverine Rage".
+    """
+    from apis.nba_teams import NBA_TEAM_NAMES
+    from apis.nfl_entities import NFL_TEAM_NAMES
+
+    teams = set(NFL_TEAM_NAMES.values()) | set(NBA_TEAM_NAMES.values())
+    markers: list[str] = []
+
+    def add(marker: str) -> None:
+        if marker and marker not in markers:
+            markers.append(marker)
+
+    for term in terms or []:
+        term = str(term).strip()
+        if not term:
+            continue
+        add(term)
+        words = term.split()
+        if term in teams:
+            add(words[-1])
+            continue
+        parts = [part for word in words for part in word.split("-") if part]
+        for part in parts if len(parts) > 1 else []:  # "Netflix-only" -> "Netflix"
+            if len(part) >= 4 and part.lower() not in COMMON_CAPITALISED:
+                add(part)
+    return markers
+
+
+def names_any(text: str, markers: list[str]) -> bool:
+    """Whether `text` names any marker, as whole words. A file stem counts:
+    "gta6-subpoenas" names GTA."""
+    low = re.sub(r"[-_]+", " ", (text or "").lower())
+    low = re.sub(r"(?<=[a-z])(?=\d)|(?<=\d)(?=[a-z])", " ", low)
+    return any(re.search(rf"\b{re.escape(m.lower())}\b", low) for m in markers if m)
 
 
 _NUMBER_AFTER = r"\s+((?:\d+|[IVX]+)\b)"

@@ -66,6 +66,11 @@ _JUNK_MARKERS = (
     "terms of",
     "privacy policy",
     "advertisement",
+    # #1012 (run 124): an ad unit inside an article body.
+    "sponsored content",
+    "sponsored by",
+    "paid partnership",
+    "call to action",
     "log in",
     "logged in",
     "create an account",

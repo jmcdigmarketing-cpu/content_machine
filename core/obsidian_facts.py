@@ -26,6 +26,7 @@ import os
 import re
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from apis.topic_tokens import FUNCTION_WORDS, content_tokens
 from core.facts.recency import stale_preview
@@ -299,6 +300,53 @@ def _distinctive_tokens(text: str) -> set[str]:
     return _tokens(text) - _GENERIC_TOKENS
 
 
+def _subject_markers(topic: str, names: list[str] | None) -> list[str]:
+    """#1017: the words that say a fact is about the topic's subject - each name, its last
+    word ("Los Angeles Chargers" -> "Chargers"), and a team's players ("Herbert")."""
+    from apis.topic_tokens import subject_markers
+
+    if names is None:
+        try:
+            from core.facts.entity_lookup import names_for
+
+            names = names_for(topic)
+        except Exception as exc:
+            logger.debug("subject names unavailable for %r: %s", topic, exc)
+            names = []
+    markers = subject_markers(list(names or []))
+    try:
+        from apis.nfl_entities import PLAYER_TO_TEAM
+
+        teams = {m.lower() for m in markers}
+        markers += [p for p, team in PLAYER_TO_TEAM.items() if team in teams]
+    except Exception as exc:  # pragma: no cover - a pure module
+        logger.debug("player names unavailable: %s", exc)
+    return markers
+
+
+def _names_the_subject(
+    text: str, markers: list[str], topic_distinctive: set[str], topic_families: set[str]
+) -> bool:
+    # A franchise alias is the same subject: "Grand Theft Auto 6" for a GTA VI topic.
+    if topic_families and topic_families & _anchor_families(text):
+        return True
+    if markers:
+        from apis.topic_tokens import names_any
+
+        return names_any(text, markers)
+    return bool(topic_distinctive & _distinctive_tokens(text))
+
+
+def _anchor_families(text: str) -> set[str]:
+    try:
+        from core.channel_context import anchor_families
+
+        return set(anchor_families(text))
+    except Exception as exc:  # pragma: no cover - a pure module
+        logger.debug("anchor families unavailable: %s", exc)
+        return set()
+
+
 def _note_matches_channel(meta: dict[str, str], rel_path: Path, channel_id: str) -> bool:
     declared = (meta.get("channel") or "").lower()
     if declared:
@@ -360,6 +408,8 @@ def load_fact_records(
     require_distinctive: bool = False,
     corpus: str = "",
     relevance_policy: str = "operator",
+    subject_names: list[str] | None = None,
+    report: dict[str, Any] | None = None,
 ) -> list[FactRecord]:
     """`load_facts` with provenance — one FactRecord per relevant bullet (Pillar 3).
 
@@ -377,6 +427,9 @@ def load_fact_records(
     topic_distinctive = _distinctive_tokens(topic)
     scored: list[tuple[float, FactRecord]] = []
     stale_previews = 0
+    off_subject = 0
+    subject = _subject_markers(topic, subject_names)
+    topic_families = _anchor_families(topic)
     relevance_mode = "legacy"
     score_vault_fact = None
     if require_distinctive:
@@ -486,6 +539,20 @@ def load_fact_records(
                     continue
                 uncertain = legacy_uncertain
 
+            if (
+                uncertain
+                and relevance_policy == "operator"
+                and not _names_the_subject(
+                    f"{note.stem} {note.headings} {bullet}",
+                    subject,
+                    topic_distinctive,
+                    topic_families,
+                )
+            ):
+                # #1017: run 124's eight uncertain facts named nothing the topic names.
+                off_subject += 1
+                continue
+
             record = FactRecord(
                 claim=bullet,
                 tier=tier,
@@ -514,6 +581,12 @@ def load_fact_records(
             )
             scored.append((rank, record))
 
+    if report is not None:
+        report["uncertain_off_subject"] = off_subject
+    if off_subject:
+        logger.info(
+            "Vault: %d uncertain fact(s) dropped - they name nothing the topic names", off_subject
+        )
     if stale_previews:
         logger.info(
             "Vault: %d preview line(s) about events that have happened skipped "

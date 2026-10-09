@@ -211,8 +211,11 @@ def generate_title(
     seed_topic: str = "",
     key_facts: list[str] | None = None,
     channel_id: str = "default",
+    brief: str = "",
 ) -> str:
-    """Generate a fact-grounded title from the finished script + operator facts."""
+    """Generate a fact-grounded title from the finished script + operator facts.
+
+    `brief` (#1016): the operator's own idea - the title promises what it asks."""
     hook = _hook_line(script)
     facts = facts_for_prompt(key_facts)
     facts_block = (
@@ -220,11 +223,17 @@ def generate_title(
     )
 
     pin = (_angle_pin_phrases(topic) or [topic])[0]
+    plain_brief = " ".join((brief or "").split())[:300]
+    idea_line = (
+        f"THE OPERATOR'S IDEA (the title promises what this asks - no other take): {plain_brief}\n"
+        if plain_brief
+        else ""
+    )
     prompt = f"""Write ONE YouTube Shorts title for this video.
 
 EDITORIAL ANGLE: {topic}
 SEED TOPIC: {seed_topic or topic}
-SCRIPT HOOK: {hook or topic}
+{idea_line}SCRIPT HOOK: {hook or topic}
 
 OPERATOR FACTS (title must not contradict these):
 {facts_block}

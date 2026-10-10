@@ -156,3 +156,59 @@ class TestTheRecurrenceIsReadBack(unittest.TestCase):
         text = "\n".join(printed).lower()
         self.assertIn("7/12", text)
         self.assertIn("opener", text)
+
+
+class StockPhraseTests(unittest.TestCase):
+    def test_a_repeated_sentence_is_rewritten_once_and_the_count_is_kept(self) -> None:
+        from core.authenticity import rewrite_repeated
+
+        stock = "The path back starts Sunday for this roster."
+        recent = [f"Setup line {i}. {stock} Tail {i}." for i in range(8)]
+        script = f"Ten turnovers buried the Chargers. {stock} Tap in for more."
+        rewritten, verdict = rewrite_repeated(script, recent)
+        self.assertGreaterEqual(verdict["pre_rewrite_count"], 8)
+        self.assertTrue(verdict["rewritten"])
+        self.assertNotIn("path back starts", rewritten.lower())
+        self.assertIn("Tap in for more", rewritten)
+        again, second = rewrite_repeated(rewritten, recent)
+        self.assertEqual(again, rewritten)
+        self.assertFalse(second["rewritten"])
+
+    def test_a_script_that_does_not_repeat_is_left_alone(self) -> None:
+        from core.authenticity import rewrite_repeated
+
+        recent = [f"The path back starts Sunday for roster {i}." for i in range(8)]
+        script = "Herbert threw for three hundred and the line held all night."
+        rewritten, verdict = rewrite_repeated(script, recent)
+        self.assertEqual(rewritten, script)
+        self.assertFalse(verdict["rewritten"])
+        self.assertEqual(verdict["pre_rewrite_count"], 0)
+
+
+class CloserPayoffTests(unittest.TestCase):
+    def test_a_closer_that_ignores_the_hook_is_rewritten_once(self):
+        from core.authenticity import payoff_closer
+
+        script = "Ten turnovers buried the Chargers. The path back starts Sunday. Tap in for more."
+        rewritten, verdict = payoff_closer(script)
+        self.assertFalse(verdict["closer_answered"])
+        self.assertTrue(verdict["rewritten"])
+        self.assertTrue(
+            any(word in rewritten.lower() for word in ("turnovers", "chargers", "buried"))
+        )
+        self.assertIn("Tap in for more", rewritten)
+        again, second = payoff_closer(rewritten)
+        self.assertTrue(second["closer_answered"])
+        self.assertEqual(again, rewritten)
+
+    def test_a_closer_that_names_the_hook_stays(self):
+        from core.authenticity import payoff_closer
+
+        script = (
+            "Ten turnovers buried the Chargers. "
+            "Those turnovers are the whole story. Tap in for more."
+        )
+        rewritten, verdict = payoff_closer(script)
+        self.assertTrue(verdict["closer_answered"])
+        self.assertFalse(verdict["rewritten"])
+        self.assertEqual(rewritten, script)

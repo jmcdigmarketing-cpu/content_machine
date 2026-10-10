@@ -122,6 +122,77 @@ def _nfl_signal(topic, teams):
     )
 
 
+def _injury_names(payload: dict) -> list[str]:
+    names: list[str] = []
+    for item in (payload or {}).get("injuries") or []:
+        if not isinstance(item, dict):
+            continue
+        athlete = item.get("athlete") or {}
+        name = athlete.get("displayName") if isinstance(athlete, dict) else ""
+        if not name:
+            continue
+        status = str(item.get("status") or "").strip()
+        details = item.get("details") if isinstance(item.get("details"), dict) else {}
+        detail = str((details or {}).get("detail") or "").strip()
+        bit = name
+        extra = ", ".join(part for part in (status, detail) if part)
+        if extra:
+            bit += f" ({extra})"
+        names.append(bit)
+    return names
+
+
+def _other_league_signal(topic: str, matches: list[tuple[str, str, str]]):
+    """#1022: one league's named teams, each with its injury report."""
+    from sports.espn import get_injuries, get_scoreboard, get_team
+
+    league = matches[0][0]
+    rows = []
+    for _full, _league, abbr in [(m[1], m[0], m[2]) for m in matches if m[0] == league][:2]:
+        try:
+            row = _team_line(get_team(league, abbr), league)
+        except SchemaDrift as drift_exc:
+            return drift_signal(str(drift_exc))
+        try:
+            row["injuries"] = _injury_names(get_injuries(league, abbr))
+        except Exception as exc:
+            logger.warning("injury report unavailable for %s %s: %s", league, abbr, exc)
+            row["injuries"] = []
+        rows.append(row)
+    nicknames = [row["team"].split()[-1].lower() for row in rows if row.get("team")]
+    game = None
+    try:
+        events = (get_scoreboard(league) or {}).get("events") or []
+        parsed = [_parse_event(ev) for ev in events]
+        parsed.sort(key=lambda g: _match_score(g, nicknames), reverse=True)
+        if parsed and _match_score(parsed[0], nicknames):
+            game = parsed[0]
+    except Exception as exc:
+        logger.debug("%s scoreboard skipped: %s", league, exc)
+    rows = [r for r in rows if r.get("team")]
+    if not rows:
+        return make_signal(
+            connected=True,
+            active=False,
+            status=STATUS_INACTIVE,
+            status_detail=f"ESPN {league}: no team page read",
+        )
+    detail = "; ".join(f"{r['team']} {r['record']}".strip() for r in rows)
+    return make_signal(
+        connected=True,
+        active=True,
+        score=80 if game else 70,
+        confidence=0.95,
+        data={
+            "teams": rows,
+            "matched_game": game,
+            "source": f"ESPN {league.upper()}",
+        },
+        status=STATUS_OK,
+        status_detail=f"ESPN {league}: {detail}",
+    )
+
+
 def get_live_scores_signal(topic):
     """
     ESPN scoreboards - the NFL team pages and board (#1003), else the NBA board.
@@ -134,6 +205,15 @@ def get_live_scores_signal(topic):
             status, detail = classify_exception(e)
             return make_signal(connected=False, active=False, status=status,
                                status_detail=detail)  # fmt: skip
+    from sports.teams import other_teams_in
+
+    others = other_teams_in(topic or "")
+    if others:
+        try:
+            return _other_league_signal(topic, others)
+        except Exception as e:
+            status, detail = classify_exception(e)
+            return make_signal(connected=False, active=False, status=status, status_detail=detail)
     if not is_nba_topic(topic):
         return make_signal(
             connected=True,

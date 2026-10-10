@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: wave 70, slang read, two asks, research for the stance
+# Handoff synopsis — 2026-10-10: the next fifteen, plus runs 131-133
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,30 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): wave 70 #1096 #1089 #1095 (slang read, two asks, research for the stance)
+## Last wave — 2026-10-10 (Cursor): the next fifteen, plus runs 131-133
+
+Runs 131-133 were healthy renders that still warned or looked up the wrong thing.
+#1099 drops a hyphenated ordinary phrase from who's who. #1100 puts a font file on
+the chapter-Shorts drawtext and still cuts the chapter when the font is missing.
+#1101 ignores a black stretch that starts in the end-card tail.
+
+The fifteen: games with a league name read as gaming (#1006); an operator record
+beats a stale signal record (#1011); "bounce back" and "is him" are cues (#1098);
+WrestleMania, Super Bowl, and Madden editions expire like UFC numbers (#1082);
+the closer is rewritten once when it misses the hook (#1032); an award is a race
+(#1007); a kept angle frame leads the next prompt (#1021); the post-time line
+names the posts that chose the hour (#1060, measured as a mislabel first); a
+passed date and a 0-view topic leave the best-bet pool (#1024); NHL, MLB, college
+football, and soccer come with an injury line (#1022); this week's games can be
+a best bet (#1023); the run card names the fact and tier behind each claim
+(#1026); a UFC card that does not name the fighter is not an anchor (#1027);
+"own 26" and "39.5" stay only when the facts have them (#1028); a repeated
+sentence is dropped once (#1030).
+
+Filed and left open: #1102, #1103, #1104. #1088 stays an operator call.
+`roadmap-index`: open 333, done 801, highest #1104.
+
+## Previous — 2026-10-10 (Claude Code): wave 70 #1096 #1089 #1095 (slang read, two asks, research for the stance)
 
 The operator picked the three left from wave 69's list, and asked for a fresh Cursor prompt.
 
@@ -43,23 +66,6 @@ miscommunication?"): a read of 6b5f648 found the idea still misheard four ways a
 
 **Verify:** `python -m unittest tests.test_intent_eval tests.test_own_take tests.test_stance_last_pass tests.test_one_intent tests.test_angle_mode`;
 `py -m scripts.ops regressions`; then type "Jets are doomed" and "Bolts bounce back week 5" (M -> h).
-
-## Previous — 2026-10-10 (Claude Code): wave 68 #1084 #1085 #1033 #1086 #1087 (run 125)
-
-Run 125, "Chargers Hopeium going into week 5", asked for points of hope and got five takes against
-it; the operator: "why am i still getting hot takes on all videos". Decided: a topic that names no
-stance is **neutral analysis**; a take only when asked by name.
-
-- **#1084** hope read as hope (`ANGLE_HOPE`), a take only on request (`ANGLE_TAKE`); neutral by
-  default in the angle lenses and tables, a STANCE line, the script prompt, the insight beat, the
-  title, the angle judge and the brief; an angle that knocks the idea's stance is dropped before the
-  menu. **#1033** TapIn's persona no longer promises "the real take".
-- **#1085** angle 1 adds no year (it said 2023), number or question.
-- **#1086** `verify-claim` refuses "LINK"; **#1087** `go-public` names the run and title, and needs
-  the id when several videos are held.
-
-**Verify:** `python -m unittest tests.test_operator_stance tests.test_idea_angle_guard tests.test_claim_and_publish_guards`;
-`py -m scripts.ops regressions`; then rerun "Chargers Hopeium going into week 5".
 
 ## Pipeline order (operator)
 
@@ -135,7 +141,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Run 125:** wave 68; **topic -> angle:** waves 69-70 - see planning_log 2026-10-10. **Next:** #1007 · #1021 · #1006 · #1011 · #1060; #1088 is an operator call; #1097 is Cursor's. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #1102 · #1103 · #1104 · #1045 · #1052. #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

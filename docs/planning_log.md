@@ -17,6 +17,38 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - next fifteen, plus the three breaks from runs 131-133
+
+**Prompt:** Intake today's three TapIn runs, fix the three breaks they measured, then build the roadmap's next fifteen open items, cheapest first. Leave #1088 for the operator.
+
+**Picked:** the fifteen from the Now/Next engine list (#1006, #1011, #1098, #1082, #1032, #1007, #1021, #1060, #1024, #1022, #1023, #1026, #1027, #1028, #1030), after the intake.
+
+**Shipped:**
+1. #1099 who's-who dropped "Long-term" and "next" on run 132's angle.
+2. #1100 chapter Shorts use a font file. A missing font still cuts the chapter.
+3. #1101 the end-card black stretch is not a QC warning. A body stretch still is.
+4. #1006 a league-named game reads as gaming. A real NBA topic stays nba.
+5. #1011 an operator record wins over a stale signal record. Method counts do not.
+6. #1098 "bounce back" is hope and "is him" is a take, with the model off.
+7. #1082 WrestleMania, Super Bowl, and a Madden edition use a dated fact first.
+8. #1032 the closer is rewritten once when it does not answer the hook.
+9. #1007 an award topic gets contender frames and that year's releases.
+10. #1021 a kept frame leads the next angle prompt.
+11. #1060 the post-time line names the posts that chose the hour. Measured: six UFC posts were labelled nfl.
+12. #1024 a passed date and a 0-view history topic are not offered again.
+13. #1022 NHL, MLB, college football, and soccer, each with an injury line.
+14. #1023 this week's games and a near award date can be a best bet.
+15. #1026 the run card names the fact and tier behind each claim.
+16. #1027 a UFC card that does not name the fighter is not an anchor.
+17. #1028 "own 26" and "39.5" stay when the facts have them.
+18. #1030 a repeated sentence is dropped once, and the count from before is kept.
+
+**Filed, not built:** #1102 run 133's file is named `all_5_angles` after chapters were left out (`core/angle_chapters.py`). #1103 run 132's description sources are UFC Vegas 122 pages. #1104 the grounding tier splits "San Antonio" into "Antonio" and flags "Lose" (`core/facts/grounding.py`).
+
+**Not done:** #1088 (operator call). #1025 (Later). #1029 (needs stayed-share history). #1038 (the operator's blind listen). Desktop B2 (#1068, #1064).
+
+**Audit:** `py -m scripts.ops roadmap-index` — backlog open 333, done 801, highest #1104. The new tests failed first (ImportError or the named wrong result) before each fix.
+
 ## 2026-10-10 (Cursor) - #1097 angle-step mode drop-down
 
 **Prompt:** Phase B1. The desktop angle step offers the mode keys and answers the existing M path. The card shows the discovery read. Do not edit `core/angle_intent.py`.

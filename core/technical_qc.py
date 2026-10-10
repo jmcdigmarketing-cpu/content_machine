@@ -67,6 +67,21 @@ def parse_frame_findings(stderr: str, *, minimum: float = FRAME_MIN_SECONDS) -> 
     return findings
 
 
+def without_tail(
+    findings: list[FrameFinding], *, duration: float, tail_s: float
+) -> list[FrameFinding]:
+    """Drop a stretch that starts in the last `tail_s` seconds.
+
+    The appended end card is a still frame (about 1.5s). blackdetect and
+    freezedetect report it at the end of every finished render. A stretch
+    earlier in the video is kept.
+    """
+    if duration <= 0 or tail_s <= 0:
+        return list(findings)
+    cutoff = max(0.0, float(duration) - float(tail_s) - 0.05)
+    return [item for item in findings if item.start < cutoff]
+
+
 _LOUDNESS_JSON_RE = re.compile(r'\{\s*"input_i".*?\}', re.S)
 
 
@@ -170,6 +185,7 @@ def inspect_technical_qc(
     path: str,
     *,
     expected_size: tuple[int, int] | None = None,
+    tail_s: float = 0.0,
 ) -> TechnicalQC:
     """Inspect a finished video. Never raises; unavailable is not a pass."""
     source = str(path or "")
@@ -282,7 +298,11 @@ def inspect_technical_qc(
             issues.append("black/freeze analysis unavailable")
         else:
             stderr = frame_probe.stderr or ""
-            findings = parse_frame_findings(stderr)
+            findings = without_tail(
+                parse_frame_findings(stderr),
+                duration=float(video_duration or 0.0),
+                tail_s=tail_s,
+            )
             black = [item for item in findings if item.kind == "black"]
             frozen = [item for item in findings if item.kind == "frozen"]
             black_count = len(black)

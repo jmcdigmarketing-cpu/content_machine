@@ -211,6 +211,11 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                         row += f"; next: {team_row['next_game']}"
                         if team_row.get("next_date"):
                             row += f" ({team_row['next_date']})"
+                    injuries = [
+                        str(item) for item in (team_row.get("injuries") or []) if str(item).strip()
+                    ]
+                    if injuries:
+                        row += "; injuries: " + "; ".join(injuries)
                     rows.append(row)
                 lines.append(f"ESPN team (as of {_today()}):\n" + "\n".join(rows))
             game = data.get("matched_game")

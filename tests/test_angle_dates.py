@@ -38,6 +38,33 @@ class PastYearTests(unittest.TestCase):
 
 
 class NumberedEventTests(unittest.TestCase):
+    def test_wrestlemania_super_bowl_and_madden_use_a_fact_first(self):
+        # #1082: only UFC numbers were dated. A fact's date wins; the estimate is the fallback.
+        from core.facts.event_dates import past_numbered_event
+
+        self.assertIn(
+            "2024",
+            past_numbered_event(
+                "WrestleMania 40 rematch",
+                TODAY,
+                facts="WrestleMania 40 took place on 2024-04-07",
+            ),
+        )
+        self.assertEqual(
+            past_numbered_event(
+                "WrestleMania 40 rematch",
+                TODAY,
+                facts="WrestleMania 40 is set for 2027-04-04",
+            ),
+            "",
+        )
+        self.assertIn(
+            "2024",
+            past_numbered_event("Super Bowl LVIII halftime", TODAY),
+        )
+        self.assertIn("Madden 25", past_numbered_event("Madden 25 ratings", TODAY))
+        self.assertEqual(past_numbered_event("Madden 27 ratings", TODAY), "")
+
     def test_a_numbered_event_years_ago(self):
         from core.facts.event_dates import past_numbered_event
 

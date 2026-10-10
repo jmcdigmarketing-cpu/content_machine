@@ -2558,6 +2558,11 @@ def cmd_intent_check(args: argparse.Namespace) -> int:
             print(f"  {mark} {row.get('idea')!s:<52} {read.intent:<13} want {row.get('intent')}"
                   f"  [{read.source}{': ' + read.cue if read.cue else ''}]")  # fmt: skip
         print(f"  {held} of {len(rows)} read as recorded")
+        from core.angle_intent import cue_gaps
+
+        gaps = cue_gaps(rows)
+        if gaps:
+            print("  cue gaps: " + ", ".join(gaps))
     return 0
 
 

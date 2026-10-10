@@ -2,8 +2,8 @@
 
 `core/angle_intent.py`'s docstring has said since run 73 that the operator "is shown the result
 on the angle screen, and they can override it". On 6b5f648 the screen printed the mode and had
-no key to change it: an idea the cue list misread ("Bolts bounce back week 5" reads neutral)
-could only be retyped. "M = change mode" now picks the mode, writes the angles again from the
+no key to change it: an idea the cue list misses ("Can Herbert save the season" reads
+neutral) could only be retyped. "M = change mode" now picks the mode, writes the angles again from the
 signals already fetched (no new discovery), and records the choice as the operator's - the
 labelled data #1089 (stance beyond the cue words) and #1021 (angle-pick learning) need.
 """
@@ -15,7 +15,7 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
-IDEA = "Bolts bounce back week 5"
+IDEA = "Can Herbert save the season"
 
 
 class KeyTests(unittest.TestCase):

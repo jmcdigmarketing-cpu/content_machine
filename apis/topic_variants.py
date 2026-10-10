@@ -15,6 +15,7 @@ from core.angle_intent import (
     ANGLE_TAKE,
     ANGLE_TUTORIAL,
     detect_angle_intent,
+    order_frames,
 )
 from core.channel_context import channel_history_block, extract_anchors
 from core.llm_router import complete
@@ -281,6 +282,55 @@ _LENS_EXAMPLES = {
 }
 
 
+_AWARD_RE = re.compile(
+    r"\b(?:game of the year|goty|the game awards|ballon d['’]or|ballon dor|"
+    r"rookie of the year|\bmvp\b)\b",
+    re.I,
+)
+
+# #1007: an award is a race among contenders, not a video about one title.
+AWARD_FRAMES = [
+    "the_contenders",
+    "the_criteria",
+    "who_is_being_overlooked",
+    "what_would_decide_it",
+    "the_case_against_the_favorite",
+]
+
+
+def award_race(text: str) -> bool:
+    return bool(_AWARD_RE.search(text or ""))
+
+
+def frames_for(topic: str, intent: str) -> list[str] | None:
+    """Contender frames when the topic is an award and nobody asked for another lens."""
+    if intent in ("", ANGLE_DEFAULT) and award_race(topic):
+        return list(AWARD_FRAMES)
+    return None
+
+
+_YEAR_RE = re.compile(r"\b(20\d{2})\b")
+
+
+def award_contender_facts(topic: str, releases: list[dict]) -> list[str]:
+    """Dated lines for releases in the year the award topic names. Recorded payload only."""
+    if not award_race(topic):
+        return []
+    named = _YEAR_RE.search(topic or "")
+    if not named:
+        return []
+    year = named.group(1)
+    lines: list[str] = []
+    for row in releases:
+        if not isinstance(row, dict):
+            continue
+        released = str(row.get("released") or "")
+        name = str(row.get("name") or "").strip()
+        if name and released.startswith(year):
+            lines.append(f"{name} released {released} (RAWG)")
+    return lines
+
+
 def generate_variants(
     topic,
     autocomplete=None,
@@ -362,6 +412,18 @@ def generate_variants(
 
         read = read_intent(topic, brief)
         intent, also = read.intent, read.also
+    award_frames = frames_for(f"{topic} {brief or ''}", intent or ANGLE_DEFAULT)
+    if award_frames:
+        return generate_ai_titles(
+            topic,
+            award_frames,
+            channel_id=channel_id,
+            is_established=is_established,
+            intent=intent,
+            brief=brief,
+            report=report,
+        )
+
     if intent in INTENT_ANGLES:
         from core.angle_intent import stated_side
 
@@ -530,6 +592,9 @@ def generate_ai_angles(
 ):
     from core.facts.event_dates import run_date
 
+    angle_types = order_frames(list(angle_types), channel_id)
+    if report is not None:
+        report["angle_frames"] = list(angle_types)  # #1021: the pick maps back to a frame
     angle_block = "\n".join(angle_types)
     dropped: list[dict] = []
 

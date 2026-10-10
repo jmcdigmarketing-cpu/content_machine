@@ -1104,6 +1104,7 @@ def _maybe_rewrite_unsupported_claims(
     weak_lines=None,
     *,
     script_mode: str = "standard",
+    line_tiers: dict | None = None,
 ):
     """Act on the claim verifier's verdict: rewrite unsupported claims out (or attribute them).
 
@@ -1157,7 +1158,12 @@ def _maybe_rewrite_unsupported_claims(
     from core.claim_verifier import verify_claims
 
     re_check = verify_claims(
-        candidate, corpus_text, topic=topic, priority_facts=priority_facts, weak_lines=weak_lines
+        candidate,
+        corpus_text,
+        topic=topic,
+        priority_facts=priority_facts,
+        weak_lines=weak_lines,
+        line_tiers=line_tiers,
     )
     if re_check is not None and len(re_check.unsupported) < len(verification.unsupported):
         logger.info(
@@ -2119,12 +2125,14 @@ def generate_content_package(
     script_before_rewrite = script
     # #966: research-brief lines (LLM-written) back nothing strict on their own.
     brief_lines = set(corpus.text_for_tiers({TIER_BRIEF}).splitlines())
+    line_tiers = {str(line).strip(): tier for tier, line in corpus.lines if str(line).strip()}
     verification = verify_claims(
         script,
         corpus.factual_text,
         topic=topic,
         priority_facts=clean_key_facts,
         weak_lines=brief_lines,
+        line_tiers=line_tiers,
     )
     if verification and verification.unsupported:
         logger.warning(
@@ -2139,7 +2147,7 @@ def generate_content_package(
     def _run_claim_rewrite(s: str):
         new, ver = _maybe_rewrite_unsupported_claims(
             s, ver_box["v"], corpus.factual_text, topic, clean_key_facts, brief_lines,
-            script_mode=_mode,
+            script_mode=_mode, line_tiers=line_tiers,
         )  # fmt: skip
         ver_box["v"] = ver
         return new
@@ -2188,6 +2196,17 @@ def generate_content_package(
             logger.info("%s", note)
     except Exception as exc:
         logger.debug("rumor language skipped: %s", exc)
+
+    from core.authenticity import _recent_scripts, payoff_closer, rewrite_repeated
+
+    script = run_script_pass(script_passes, "closer_payoff", script, payoff_closer)
+    _recent = _recent_scripts(channel_id, exclude_run_id=None) if channel_id else []
+    script = run_script_pass(
+        script_passes,
+        "stock_phrases",
+        script,
+        lambda text, recent=_recent: rewrite_repeated(text, recent),
+    )
 
     # Odds rewrite can add words ("will win" -> "is favored to win"); trim after
     # that so a post-trim cap check cannot refuse a script we just made fit.

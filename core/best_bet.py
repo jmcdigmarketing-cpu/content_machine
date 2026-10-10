@@ -11,7 +11,7 @@ from __future__ import annotations
 import random
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from apis.topic_tokens import FUNCTION_WORDS
@@ -122,9 +122,61 @@ def _build_entries(channel_id: str) -> list[dict]:
                 # #365: the weighting in get_best_bet reads this. Without it every
                 # weight is 1.0 and the "decayed" mean is the arithmetic one.
                 "age_days": _published_age_days(log),
+                "views": _views_of(log),  # #1024
             }
         )
     return entries
+
+
+def _views_of(log: Any) -> int | None:
+    """View count on a publish-log row, or None when the row has no views field."""
+    if log is None:
+        return None
+    import json
+
+    try:
+        data = json.loads(getattr(log, "metrics_json", None) or "{}")
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("views") is None:
+        return None
+    try:
+        return int(data["views"])
+    except (TypeError, ValueError):
+        return None
+
+
+def _today() -> date:
+    return date.today()
+
+
+_SLASH_DATE = re.compile(r"\b(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?\b")
+
+
+def pooled_drop_reason(topic: str, views: int | None, *, today: date | None = None) -> str:
+    """Why a history-pool topic must not be offered again (#1024), or ""."""
+    if views == 0:
+        return "0 views"
+    day = today or _today()
+    from core.facts.event_dates import past_numbered_event
+
+    numbered = past_numbered_event(topic, day)
+    if numbered:
+        return numbered
+    match = _SLASH_DATE.search(topic or "")
+    if not match:
+        return ""
+    month, dom = int(match.group(1)), int(match.group(2))
+    year = int(match.group(3)) if match.group(3) else day.year
+    if year < 100:
+        year += 2000
+    try:
+        when = date(year, month, dom)
+    except ValueError:
+        return ""
+    if when < day:
+        return f"event date {when.isoformat()} has passed"
+    return ""
 
 
 def _filter_on_brand(entries: list[dict], channel_id: str) -> list[dict]:
@@ -870,7 +922,26 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     the historical engagement ranking when no fresh headlines are available.
     """
     entries = _build_entries(channel_id)
+    scheduled: list[tuple[str, str]] = []
+    try:
+        from core.seasonal_calendar import fetch_week_topics
+
+        scheduled = fetch_week_topics()
+    except Exception as exc:
+        logger.debug("week topics skipped: %s", exc)
     if not entries:
+        if scheduled:
+            return [
+                BestBetResult(
+                    topic=topic,
+                    domain=domain,
+                    avg_engaged_rate=0.0,
+                    source="schedule",
+                    supporting_runs=0,
+                    rationale="on the board this week",
+                )
+                for topic, domain in scheduled[:n]
+            ]
         single = get_best_bet(channel_id)
         return [single] if single else []
 
@@ -890,6 +961,21 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
 
     options: list[BestBetResult] = []
     seen: set[str] = set(recent)
+    for topic, domain in scheduled:  # #1023
+        key = normalize_seed_topic(topic).lower()
+        if not key or key in seen or len(options) >= n:
+            continue
+        options.append(
+            BestBetResult(
+                topic=topic,
+                domain=domain,
+                avg_engaged_rate=0.0,
+                source="schedule",
+                supporting_runs=0,
+                rationale="on the board this week",
+            )
+        )
+        seen.add(key)
     used_domains: set[str] = set()
     used_anchors: set[str] = set()  # per-franchise cap so gaming isn't all one game (e.g. GTA)
 
@@ -1015,6 +1101,8 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     def _emit_hist(e: dict) -> bool:
         key = normalize_seed_topic(e["topic"]).lower()
         if not key or key in seen:
+            return False
+        if pooled_drop_reason(e["topic"], e.get("views"), today=_today()):
             return False
         anchor = _first_anchor(e["topic"])
         if anchor and anchor in used_anchors:

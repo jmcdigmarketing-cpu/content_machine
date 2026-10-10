@@ -689,6 +689,8 @@ def run_discovery(
         meta["unscored_on_seed"] = scoring_meta["unscored_on_seed"]
     if variant_report.get("angles_dropped"):
         meta["angles_dropped"] = list(variant_report["angles_dropped"])
+    if variant_report.get("angle_frames"):
+        meta["angle_frames"] = list(variant_report["angle_frames"])  # #1021
     meta["intent_read"] = run_read.as_dict()  # #1089
     # #811: which signals missed the discovery deadline. `meta`, not `timings` —
     # the intelligence report sums that dict and prints every key as seconds (#813).
@@ -752,6 +754,8 @@ def regenerate_angles(
         meta["variant_scoring_fallback"] = scoring_meta["fallback"]
     if report.get("angles_dropped"):
         meta["angles_dropped"] = list(report["angles_dropped"])
+    if report.get("angle_frames"):
+        meta["angle_frames"] = list(report["angle_frames"])  # #1021
     angle_scores, angle_fact_fit = _editorial_scores(
         evaluated, discovery.input_topic, discovery.brief, discovery.base_signals, meta
     )
@@ -1576,9 +1580,14 @@ def run_media_only(
     if os.path.isfile(mp4_path):
         try:
             from core.technical_qc import inspect_technical_qc, render_technical_qc
+            from video.channel_outro import resolve_end_card
 
             expected_size = (480, 854) if render_preset == "draft" else (1080, 1920)
-            technical_qc = inspect_technical_qc(mp4_path, expected_size=expected_size)
+            card = resolve_end_card(channel_id)
+            tail_s = float(card["duration"]) if card else 0.0
+            technical_qc = inspect_technical_qc(
+                mp4_path, expected_size=expected_size, tail_s=tail_s
+            )
             technical_qc_data = technical_qc.to_dict()
             qc_line = render_technical_qc(technical_qc)
             progress.note(qc_line)

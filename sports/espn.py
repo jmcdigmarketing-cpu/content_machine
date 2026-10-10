@@ -8,7 +8,14 @@ scoreboard only, so an NFL recap had no result to stand on. Network calls live h
 import requests
 
 _SITE = "https://site.api.espn.com/apis/site/v2/sports"
-LEAGUES = {"nba": "basketball/nba", "nfl": "football/nfl"}
+LEAGUES = {
+    "nba": "basketball/nba",
+    "nfl": "football/nfl",
+    "nhl": "hockey/nhl",
+    "mlb": "baseball/mlb",
+    "college-football": "football/college-football",
+    "soccer": "soccer/eng.1",
+}
 
 # Kept for callers that imported the old constant.
 BASE_URL = f"{_SITE}/{LEAGUES['nba']}"
@@ -29,3 +36,8 @@ def get_scoreboard(league: str = "nba", *, week: int | None = None) -> dict:
 def get_team(league: str, team: str) -> dict:
     """A team page: record, standing and next game. `team` is ESPN's abbreviation."""
     return _get(f"{_SITE}/{LEAGUES[league]}/teams/{team.lower()}")
+
+
+def get_injuries(league: str, team: str) -> dict:
+    """The team's injury report (the same site path as the team page, #1022)."""
+    return _get(f"{_SITE}/{LEAGUES[league]}/teams/{team.lower()}/injuries")

@@ -410,6 +410,18 @@ def build_research_brief(
         if sc.get("active") and isinstance(sc.get("data"), dict):
             stats_lines = list(sc["data"].get("lines") or [])[:10]
 
+    from apis.topic_variants import award_contender_facts
+
+    rawg = signals.get("rawg") or {}
+    rawg_data = rawg.get("data") if isinstance(rawg, dict) else None
+    releases: list[dict] = []
+    if isinstance(rawg_data, list):
+        releases = rawg_data
+    elif isinstance(rawg_data, dict):
+        found = rawg_data.get("results") or rawg_data.get("games") or []
+        releases = found if isinstance(found, list) else []
+    stats_lines = list(stats_lines) + award_contender_facts(seed_topic or topic, releases)
+
     brief = None
     timed_out = False
     if _USE_LLM:

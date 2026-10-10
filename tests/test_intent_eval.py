@@ -31,6 +31,16 @@ def _done(item: str) -> bool:
     return bool(re.search(rf"^- \[x\] {re.escape(item)}\.", backlog, re.M))
 
 
+class CuePromotionTests(unittest.TestCase):
+    def test_bounce_back_and_him_read_without_the_model(self):
+        # The PC table was 22 of 24: these two stayed default with the model on.
+        from core.angle_intent import detect_angle_intent
+
+        self.assertEqual(detect_angle_intent("Bolts bounce back week 5"), "hope")
+        self.assertEqual(detect_angle_intent("Herbert is HIM"), "take")
+        self.assertEqual(detect_angle_intent("Herbert is himself again"), "default")
+
+
 class IntentEvalTests(unittest.TestCase):
     def _enforced(self) -> list[dict]:
         return [r for r in _rows() if not r.get("needs") or _done(str(r["needs"]))]

@@ -85,6 +85,16 @@ _DATE_WITH_YEAR = re.compile(
     r"\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\b",
     re.IGNORECASE,
 )
+# #1028. A percent, or a bare stat. Round scores and "August 27" are skipped.
+_PERCENT = re.compile(r"\b(\d+(?:\.\d+)?)\s*(?:%|percent)\b", re.I)
+_BARE_STAT = re.compile(r"\b\d+(?:\.\d+)?\b")
+_NUMERIC_SKIP = re.compile(
+    r"\b\d{1,2}-\d{1,2}(?:-\d{1,2})?\b"
+    r"|\b(?:January|February|March|April|May|June|July|August|September|October|"
+    r"November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+"
+    r"\d{1,2}(?:st|nd|rd|th)?\b",
+    re.I,
+)
 
 # Common words that, alone, never make a phrase a "specific" worth verifying.
 # Used both to drop all-common phrases and to pick out distinctive tokens.
@@ -537,6 +547,32 @@ def find_ungrounded_numeric(script: str, grounding_text: str) -> list[str]:
             _consider(match.group(0), require_sports=True)
     for match in _PURSE.finditer(text):
         _consider(match.group(0), require_sports=False)
+    # #1028: a percent, or a bare stat (run 131's "own 26"), has to be in the facts.
+    # Round scores and month-days stay out: those tests already pin that.
+    covered = [m.span() for m in _NUMERIC_SKIP.finditer(text)]
+    covered.extend(m.span() for m in _PURSE.finditer(text))
+    grounding_raw = (grounding_text or "").lower().replace(",", "")
+
+    def _grounded_number(token: str) -> bool:
+        return bool(re.search(rf"(?<!\d){re.escape(token)}(?!\d)", grounding_raw))
+
+    def _inside_skip(start: int, end: int) -> bool:
+        return any(s <= start and end <= e for s, e in covered)
+
+    for match in _PERCENT.finditer(text):
+        if _grounded_number(match.group(1)):
+            continue
+        _consider(match.group(0), require_sports=False)
+    if sports:
+        for match in _BARE_STAT.finditer(text):
+            if _inside_skip(*match.span()):
+                continue
+            token = match.group(0)
+            if "." not in token and len(token) < 2:
+                continue
+            if _grounded_number(token):
+                continue
+            _consider(token, require_sports=True)
     return found
 
 

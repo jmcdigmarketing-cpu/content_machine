@@ -72,7 +72,62 @@ class TestChapterShortPlate(unittest.TestCase):
         command = " ".join(seen[0])
         self.assertIn("This sentence is the strongest one in the chapter.", command)
         self.assertIn("The Long Video", command)
+        self.assertIn("fontfile=", command)
         self.assertEqual(made[0].run_id, 41)
+
+    def test_a_missing_font_still_cuts_the_chapter(self):
+        # Run 133: bare drawtext died with "Fontconfig error: Cannot load default config file".
+        text = "This sentence is the strongest one in the chapter and it is long enough."
+        span = ChapterSpan(
+            index=0,
+            title="Chapter title",
+            angle="the angle",
+            start=1.0,
+            end=31.0,
+            text=text,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            source = os.path.join(tmp, "long.mp4")
+            with open(source, "wb") as handle:
+                handle.write(b"0")
+            record = SimpleNamespace(
+                id=9,
+                channel_id="tapin",
+                input_topic="NBA",
+                composite_score=1.0,
+                title="The Long Video",
+                tags_json="[]",
+                mp4_path=source,
+                features_json="{}",
+            )
+            seen: list[list[str]] = []
+
+            def fake_ffmpeg(argv, **kwargs):
+                seen.append(list(argv))
+                with open(argv[-1], "wb") as handle:
+                    handle.write(b"clip")
+                return SimpleNamespace(returncode=0, stderr="")
+
+            with (
+                patch(
+                    "core.chapter_shorts.get_content_run_repository",
+                    return_value=SimpleNamespace(get=lambda run_id: record),
+                ),
+                patch(
+                    "core.chapter_shorts._record_spans",
+                    return_value=([object()], [span], text),
+                ),
+                patch("core.chapter_shorts.subprocess.run", side_effect=fake_ffmpeg),
+                patch("core.chapter_shorts.record_content_run", return_value=41),
+                patch("video.channel_outro._font_file", return_value=None),
+            ):
+                made = cut_chapter_shorts(9, output_root=tmp)
+
+            self.assertEqual(len(made), 1)
+            self.assertEqual(made[0].skipped, "")
+            command = " ".join(seen[0])
+            self.assertNotIn("drawtext", command)
+            self.assertTrue(os.path.isfile(made[0].mp4_path))
 
 
 class TestShortsDefaultIsQueue(unittest.TestCase):

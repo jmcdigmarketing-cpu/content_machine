@@ -94,7 +94,7 @@ def names_for(topic: str, *, angle: str = "") -> list[str]:
     from apis.nba_teams import team_names_in as nba_team_names_in
     from apis.nfl_entities import team_names_in as nfl_team_names_in
     from apis.topic_scorer import sport_names_in
-    from apis.topic_tokens import name_phrases
+    from apis.topic_tokens import name_phrases, phrase_is_ordinary
 
     out: list[str] = []
     seen: set[str] = set()
@@ -102,7 +102,7 @@ def names_for(topic: str, *, angle: str = "") -> list[str]:
     def add(name: str) -> None:
         name = re.sub(r"['’]s$", "", name.strip())
         key = name.lower()
-        if len(key) < 3 or key in seen:
+        if len(key) < 3 or key in seen or phrase_is_ordinary(name):
             return
         # "LeBron" after "LeBron James" adds nothing.
         if any(key in s.split() or key == s for s in seen):

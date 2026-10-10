@@ -234,6 +234,23 @@ def _drawtext(text: str) -> str:
     return cleaned.replace("%", "%%")
 
 
+def shorts_video_filter(rehook: str, card: str, end_at: float, *, font_path: str | None) -> str:
+    """drawtext for the re-hook and the end line, or "" when there is no font.
+
+    A bare drawtext asks Fontconfig for a default config. On this PC that file
+    is missing and the cut fails, so the filter names a font file. No font means
+    the chapter is still cut, without the on-screen lines.
+    """
+    if not font_path:
+        return ""
+    escaped = font_path.replace("\\", "/").replace(":", r"\:").replace("'", r"\'")
+    font_opt = f"fontfile='{escaped}':"
+    return (
+        f"drawtext={font_opt}text='{rehook}':enable='lt(t,2.5)',"
+        f"drawtext={font_opt}text='{card}':enable='gte(t,{end_at:.3f})'"
+    )
+
+
 def _shorts_dir(channel_id: str | None, output_root: str | None) -> str:
     if output_root:
         root = os.path.join(output_root, channel_id or "default", "shorts")
@@ -289,18 +306,45 @@ def cut_chapter_shorts(
         rehook = _drawtext(strongest_sentence(span.text))
         card = _drawtext(f"Full video: {record.title or ''}")
         end_at = max(0.0, span.seconds - 2.0)
+        from video.channel_outro import _font_file
+
+        font = _font_file()
+        video_filter = shorts_video_filter(rehook, card, end_at, font_path=font)
+        if not video_filter:
+            logger.warning("chapter short cut without on-screen text: no font file")
         argv = [
-            "ffmpeg", "-y", "-loglevel", "error",
-            "-ss", f"{span.start:.3f}", "-i", source, "-t", f"{span.seconds:.3f}",
-            "-vf",
-            (
-                f"drawtext=text='{rehook}':enable='lt(t,2.5)',"
-                f"drawtext=text='{card}':enable='gte(t,{end_at:.3f})'"
-            ),
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart",
-            dest,
-        ]  # fmt: skip
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-ss",
+            f"{span.start:.3f}",
+            "-i",
+            source,
+            "-t",
+            f"{span.seconds:.3f}",
+        ]
+        if video_filter:
+            argv.extend(["-vf", video_filter])
+        argv.extend(
+            [
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "20",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "160k",
+                "-movflags",
+                "+faststart",
+                dest,
+            ]
+        )
         try:
             proc = subprocess.run(argv, capture_output=True, text=True, timeout=900)
             failed = proc.returncode != 0 or not os.path.isfile(dest)

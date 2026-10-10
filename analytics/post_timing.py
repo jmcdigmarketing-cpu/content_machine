@@ -354,7 +354,9 @@ def slot_claim(
     expected: float | None = None
     n = 0
     if learned:
-        rate, n, _rates = _slot_engagement(channel_id, topic, used, exclude_run_id=exclude_run_id)
+        rate, n, _rates, _label = _slot_engagement(
+            channel_id, topic, used, exclude_run_id=exclude_run_id
+        )
         expected = rate if n > 0 else None
     return {
         "used_at": used.isoformat(),
@@ -590,16 +592,13 @@ def _slot_engagement(
     when_utc: datetime,
     *,
     exclude_run_id: int | None = None,
-) -> tuple[float, int, list[float]]:
+) -> tuple[float, int, list[float], str]:
     """
-    Average engagement + sample count + the samples themselves for the
-    (weekday, hour) bucket that `when_utc` falls in, drawn from the same timed
-    publish history that learn_slots_from_analytics() uses. Prefers same-domain
-    samples, then falls back to all domains in that slot.
+    Average engagement, sample count, the samples, and the domain word for them.
 
-    The rates ride along because #351's interval needs the spread, not just the
-    mean: this was the only one of the three recommenders that discarded its
-    sample vector before returning.
+    When this sport has its own learned slots, the samples are that sport's: those
+    chose the hour. Otherwise the hour came from the pooled posts (#1060), and the
+    word names those posts — not the topic's sport.
     """
     samples = (
         _collect_timed_samples(channel_id, exclude_run_id=exclude_run_id)
@@ -607,7 +606,7 @@ def _slot_engagement(
         else _collect_timed_samples(channel_id)
     )
     if not samples:
-        return 0.0, 0, []
+        return 0.0, 0, [], "neutral"
 
     static = _load_static_post_schedule(channel_id)
     try:
@@ -617,19 +616,19 @@ def _slot_engagement(
 
     target = _bucket_key(when_utc, tz)
     domain = infer_domain(topic, channel_id) if topic else None
+    in_slot = [(d, eng) for d, when, eng in samples if _bucket_key(when, tz) == target]
+    if not in_slot:
+        return 0.0, 0, [], domain or "neutral"
 
-    same_domain = [
-        eng
-        for d, when, eng in samples
-        if _bucket_key(when, tz) == target and (domain is None or d == domain)
-    ]
-    if same_domain:
-        return sum(same_domain) / len(same_domain), len(same_domain), same_domain
+    owned = bool(domain) and domain in get_post_schedule(channel_id).domain_slots
+    same = [eng for d, eng in in_slot if domain is None or d == domain]
+    if owned and same:
+        return sum(same) / len(same), len(same), same, domain or "neutral"
 
-    any_domain = [eng for _d, when, eng in samples if _bucket_key(when, tz) == target]
-    if any_domain:
-        return sum(any_domain) / len(any_domain), len(any_domain), any_domain
-    return 0.0, 0, []
+    pooled = [eng for _d, eng in in_slot]
+    names = {d for d, _eng in in_slot}
+    label = names.pop() if len(names) == 1 else "mixed"
+    return sum(pooled) / len(pooled), len(pooled), pooled, label
 
 
 def get_recommended_time(
@@ -652,7 +651,7 @@ def get_recommended_time(
     domain = infer_domain(topic, channel_id) if topic else "neutral"
 
     if learned:
-        rate, n, rates = _slot_engagement(channel_id, topic, when_utc)
+        rate, n, rates, label = _slot_engagement(channel_id, topic, when_utc)
         if n > 0:
             from core.success import target as _target
 
@@ -662,7 +661,7 @@ def get_recommended_time(
                 else f"{_target.show(rate)} on average"
             )
             rationale = (
-                f"learned from {n} past {domain} post(s) in this slot — "
+                f"learned from {n} past {label} post(s) in this slot — "
                 f"{figure}"
                 f"{_target.interval_note(rates)}"
                 f"{confidence_note(n)}"

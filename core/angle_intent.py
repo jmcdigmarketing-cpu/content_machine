@@ -17,7 +17,9 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections import Counter
 from dataclasses import asdict, dataclass, fields
+from pathlib import Path
 
 from core import process_state
 
@@ -147,6 +149,8 @@ _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "is finished",
             "are finished",
             "is a bust",
+            # #1098: "Herbert is HIM" stayed default. Word-bounded so "is himself" does not match.
+            "is him",
         ),
     ),
     (
@@ -166,6 +170,8 @@ _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "what's going right",
             "whats going right",
             "upside",
+            # #1098: "Bolts bounce back week 5" stayed default on the live table.
+            "bounce back",
         ),
     ),
     (
@@ -239,6 +245,13 @@ _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+def _cue_hit(cue: str, low: str) -> bool:
+    """Substring match, except a cue that would swallow the next letter ("is him" / "himself")."""
+    if cue.endswith(" him"):
+        return re.search(rf"\b{re.escape(cue)}\b", low) is not None
+    return cue in low
+
+
 def _asks(topic: str | None) -> list[tuple[str, str]]:
     """Every (intent, cue) the text asks for, in table order - the reaction cues, then the
     cue tables, one cue per intent (#1096)."""
@@ -253,7 +266,7 @@ def _asks(topic: str | None) -> list[tuple[str, str]]:
     for intent, cues in _INTENT_CUES:
         if intent == ANGLE_HOPE and _NO_HOPE.search(text):
             continue
-        cue = next((c for c in cues if c in low), "")
+        cue = next((c for c in cues if _cue_hit(c, low)), "")
         if cue:
             out.append((intent, cue.strip()))
     if out:
@@ -285,6 +298,23 @@ def _detect(topic: str | None) -> tuple[str, str]:
 def detect_angle_intent(topic: str | None) -> str:
     """The frame the operator asked for, read from the topic they typed."""
     return _detect(topic)[0]
+
+
+def cue_gaps(rows: list[dict] | None) -> list[str]:
+    """Phrases on needs-1089 rows that the cue words still miss (#1098).
+
+    `ops intent-check --table` prints these. An empty list means the fixture's
+    slang rows now read from the cue table, so no model call is required.
+    """
+    gaps: list[str] = []
+    for row in rows or []:
+        if str(row.get("needs") or "") != "1089":
+            continue
+        idea = str(row.get("idea") or "")
+        if detect_angle_intent(idea) == row.get("intent"):
+            continue
+        gaps.append(str(row.get("phrase") or idea))
+    return gaps
 
 
 @dataclass(frozen=True)
@@ -657,3 +687,57 @@ def stance_rule(intent: str, idea: str = "") -> str:
         "contrarian counter-take, no hot take and no mocking the fans or the subject; the "
         "operator asks by name when they want a take."
     )
+
+
+# #1021: which frame the operator actually kept. The generator reads this.
+PICKS_FILE = Path(__file__).resolve().parents[1] / "data" / "angle_picks.json"
+
+
+def _load_picks() -> list[dict]:
+    if not PICKS_FILE.is_file():
+        return []
+    try:
+        data = json.loads(PICKS_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    return data if isinstance(data, list) else []
+
+
+def record_pick(channel_id: str, *, kind: str, frame: str = "", edited: bool = False) -> None:
+    """Remember an angle-menu choice: own idea, one generated angle, or all."""
+    rows = _load_picks()
+    rows.append(
+        {
+            "channel": channel_id,
+            "kind": kind,
+            "frame": frame,
+            "edited": bool(edited),
+        }
+    )
+    PICKS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PICKS_FILE.write_text(json.dumps(rows), encoding="utf-8")
+
+
+def kept_frames(channel_id: str) -> list[str]:
+    """Frames the operator kept as generated, most often first.
+
+    Their own idea and a pick they edited do not count: those are not a frame
+    they chose to keep.
+    """
+    counts: Counter[str] = Counter()
+    for row in _load_picks():
+        if row.get("channel") != channel_id or row.get("kind") != "one" or row.get("edited"):
+            continue
+        frame = str(row.get("frame") or "").strip()
+        if frame:
+            counts[frame] += 1
+    return [name for name, _count in counts.most_common()]
+
+
+def order_frames(frames: list[str], channel_id: str | None) -> list[str]:
+    """Lead with the frames this channel keeps. The rest stay in table order."""
+    if not channel_id:
+        return list(frames)
+    present = set(frames)
+    front = [name for name in kept_frames(channel_id) if name in present]
+    return front + [name for name in frames if name not in front]

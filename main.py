@@ -788,6 +788,13 @@ def _run_new_video_flow_body(
     mode, variant_index = _parse_angle_choice(
         choice, angle_count, best_default, allow_own=bool(seed_topic), idea_first=bool(idea_line)
     )
+    from core.angle_intent import record_pick
+
+    _frames = list((getattr(discovery, "meta", None) or {}).get("angle_frames") or [])
+    _frame = ""
+    if mode == "one" and 0 <= variant_index < len(_frames):
+        _frame = str(_frames[variant_index])
+    record_pick(channel_id, kind=mode, frame=_frame, edited=mode == "own")  # #1021
     all_angles: list[str] = []
     if mode == "own":
         own_topic = idea_line or str(seed_topic)

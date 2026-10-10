@@ -50,6 +50,7 @@ class VerifiedClaim:
     supported: bool
     citation_line: str = ""  # the fact line that backs a supported claim
     claim_type: str = ""  # #345 - result|award|stat|date|schedule|rumor|opinion|other
+    tier: str = ""  # #1026 - operator | signal | web | brief | context, or ""
 
 
 @dataclass
@@ -107,6 +108,7 @@ class ClaimVerification:
                     "supported": bool(c.supported),
                     "citation_line": (c.citation_line or "")[:200],
                     "type": c.claim_type,
+                    "tier": c.tier,
                 }
                 for c in self.claims[:_MAX_CLAIMS]
             ],
@@ -219,6 +221,7 @@ def verify_claims(
     topic: str = "",
     priority_facts: list[str] | None = None,
     weak_lines: set[str] | None = None,
+    line_tiers: dict[str, str] | None = None,
 ) -> ClaimVerification | None:
     """Decompose the script into factual claims and verify each against the facts.
 
@@ -290,6 +293,9 @@ def verify_claims(
         raw_citation = item.get("citation")
         if supported and isinstance(raw_citation, int) and 1 <= raw_citation <= len(facts):
             citation = facts[raw_citation - 1]
+        tier = ""
+        if citation and line_tiers:
+            tier = str(line_tiers.get(citation.strip()) or "")
         claim_type = normalize_type(item.get("type"))
         if (
             supported
@@ -297,18 +303,34 @@ def verify_claims(
             and _weak_key(citation) in weak
             and claim_blocks(claim, claim_type)
         ):
-            supported, citation = False, ""  # #966: the brief alone backs nothing strict
+            supported, citation, tier = False, "", ""  # #966: the brief alone backs nothing strict
         verification.claims.append(
             VerifiedClaim(
                 claim=claim,
                 supported=supported,
                 citation_line=citation,
                 claim_type=claim_type,
+                tier=tier,
             )
         )
     if not verification.claims:
         return None
     return verification
+
+
+def _provenance_lines(verification_dict: dict[str, Any]) -> list[str]:
+    """#1026: each claim, the fact that backs it, and that fact's tier. Missing is 'none'."""
+    lines: list[str] = []
+    for item in verification_dict.get("claims") or []:
+        if not isinstance(item, dict):
+            continue
+        claim = str(item.get("claim") or "").strip()
+        if not claim:
+            continue
+        fact = str(item.get("citation_line") or "").strip() or "none"
+        tier = str(item.get("tier") or "").strip() or "none"
+        lines.append(f"    - {claim}  |  {fact}  |  {tier}")
+    return lines
 
 
 def display_claim_verification(verification_dict: dict[str, Any] | None, *, print_fn=print) -> bool:
@@ -326,6 +348,8 @@ def display_claim_verification(verification_dict: dict[str, Any] | None, *, prin
     density_note = ""
     if isinstance(density_raw, int | float) and float(density_raw) > 0:
         density_note = f" (hedge density {float(density_raw):.1f}/100w)"
+    for line in _provenance_lines(verification_dict):
+        print_fn(line)
     if not unsupported:
         print_fn(
             f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts."

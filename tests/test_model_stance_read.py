@@ -1,10 +1,11 @@
 """#1089: an idea the cue words cannot read gets one cheap model read, shown and correctable.
 
 Measured on ecd737c: "Bolts bounce back week 5", "Herbert is HIM" and "Can Herbert save the
-season" read `default` - the cue tables in `core/angle_intent.py` are a lexicon, and slang it
-has never seen falls to neutral analysis. The lexicon was kept deliberately small because "an
-inference that cannot be seen or overridden is the wrong kind of magic"; since wave 69 the read
-is shown with the words that set it and "M" overrides it, so a model read can be both.
+season" read `default`. #1098 put the first two in the cue table. The model path is pinned on
+the third: slang the cues still miss falls to neutral, and one cheap read is shown and
+correctable. The lexicon was kept deliberately small because "an inference that cannot be
+seen or overridden is the wrong kind of magic"; since wave 69 the read is shown with the
+words that set it and "M" overrides it, so a model read can be both.
 
 Rules pinned here: the cue words always win; the model is asked only when every text reads
 neutral; its answer counts only when it quotes the idea's own words; it is asked once per run
@@ -20,8 +21,8 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
-IDEA = "Bolts bounce back week 5"
-REPLY = '{"mode": "hope", "phrase": "bounce back"}'
+IDEA = "Can Herbert save the season"
+REPLY = '{"mode": "hope", "phrase": "save the season"}'
 
 
 def _on():
@@ -32,10 +33,10 @@ class ReplyTests(unittest.TestCase):
     def test_a_reply_counts_only_with_the_ideas_own_words(self):
         from core.angle_intent import model_read_from_reply
 
-        self.assertEqual(model_read_from_reply(IDEA, REPLY), ("hope", "bounce back"))
+        self.assertEqual(model_read_from_reply(IDEA, REPLY), ("hope", "save the season"))
         self.assertEqual(
-            model_read_from_reply(IDEA, 'Sure: {"mode": "hope", "phrase": "Bounce Back"}'),
-            ("hope", "Bounce Back"),
+            model_read_from_reply(IDEA, 'Sure: {"mode": "hope", "phrase": "Save the Season"}'),
+            ("hope", "Save the Season"),
         )
         for bad in ('{"mode": "hope", "phrase": "comeback"}',  # not the idea's words
                     '{"mode": "neutral", "phrase": "week 5"}', '{"mode": "rage", "phrase": "back"}',
@@ -62,10 +63,10 @@ class ResolveTests(unittest.TestCase):
 
         with _on(), patch("core.llm_router.complete", return_value=REPLY) as call:
             read = resolve_intent(IDEA)
-        self.assertEqual((read.intent, read.source, read.cue), ("hope", "model", "bounce back"))
+        self.assertEqual((read.intent, read.source, read.cue), ("hope", "model", "save the season"))
         self.assertEqual(call.call_count, 1)
         note = angle_intent_note(read)
-        self.assertIn("read by the model from 'bounce back'", note)
+        self.assertIn("read by the model from 'save the season'", note)
         self.assertIn("M if wrong", note)
 
     def test_the_cue_words_always_win_and_cost_nothing(self):
@@ -194,7 +195,7 @@ class CheckVerbTests(unittest.TestCase):
             text += out.getvalue()
         self.assertIn("hope", text)
         self.assertIn("model", text)
-        self.assertIn("bounce back", text)
+        self.assertIn("save the season", text)
         self.assertIn("hopeium", text)
 
     def test_the_table_counts_what_reads_as_recorded(self):

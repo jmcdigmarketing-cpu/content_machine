@@ -73,6 +73,33 @@ class TestVerifyClaims(unittest.TestCase):
             with patch("core.llm_router.complete_json", return_value=payload):
                 self.assertIsNone(cv.verify_claims(_SCRIPT, _FACTS))
 
+    def test_the_card_names_the_fact_and_its_tier(self):
+        payload = {
+            "claims": [
+                {"claim": "Gaethje won by TKO", "supported": True, "citation": 1},
+                {"claim": "He is the champion", "supported": False, "citation": None},
+            ]
+        }
+        fact = "Gaethje won by TKO in round 2"
+        with patch("core.llm_router.complete_json", return_value=payload):
+            result = cv.verify_claims(
+                _SCRIPT,
+                fact,
+                line_tiers={fact: "signal"},
+            )
+        card = result.to_dict()
+        backed = next(row for row in card["claims"] if row["supported"])
+        self.assertEqual(backed["citation_line"], fact)
+        self.assertEqual(backed["tier"], "signal")
+        open_claim = next(row for row in card["claims"] if not row["supported"])
+        self.assertEqual(open_claim["tier"], "")
+        printed: list[str] = []
+        cv.display_claim_verification(card, print_fn=printed.append)
+        shown = "\n".join(printed)
+        self.assertIn(fact, shown)
+        self.assertIn("signal", shown)
+        self.assertIn("none", shown)
+
     def test_out_of_range_citation_ignored(self):
         payload = {"claims": [{"claim": "c", "supported": True, "citation": 99}]}
         with patch("core.llm_router.complete_json", return_value=payload):

@@ -139,6 +139,8 @@ os.environ["ANGLE_LLM_JUDGE"] = "false"
 # #921: run_discovery syncs competitor RSS from YouTube by default ("auto"); five
 # discovery tests turned it off by hand and one did not. Tests that want it set it.
 os.environ["COMPETITOR_SYNC_ON_DISCOVERY"] = "false"
+# #1023: best bets read ESPN boards. The suite stubs that fetch; a real run does not.
+os.environ["BEST_BET_SCHEDULE"] = "false"
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move

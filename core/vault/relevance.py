@@ -193,9 +193,22 @@ def _entity_support(text: str, corpus: str) -> tuple[float | None, int, int, lis
 def _anchor_alignment(
     topic: str, note_context: str, bullet: str
 ) -> tuple[float, list[str], list[str]]:
+    from core.channel_context import _BROAD_FAMILIES
+
     topic_families = anchor_families(topic)
     fact_families = anchor_families(f"{note_context} {bullet}")
-    if topic_families and (fact_families - topic_families):
+    # #1027: sharing only the league (both say "UFC") is not the bonus. A note
+    # earns it by naming the same team, game or person the topic names.
+    topic_specific = topic_families - _BROAD_FAMILIES
+    fact_specific = fact_families - _BROAD_FAMILIES
+    if topic_specific:
+        if topic_specific & fact_specific:
+            alignment = 1.0
+        elif fact_specific:
+            alignment = -1.0
+        else:
+            alignment = 0.0
+    elif topic_families and (fact_families - topic_families):
         alignment = -1.0
     elif topic_families & fact_families:
         alignment = 1.0

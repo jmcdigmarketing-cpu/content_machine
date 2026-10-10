@@ -14,6 +14,27 @@ from core.facts.conflicts import (
 _OPERATOR = ["Giannis Antetokounmpo was traded to the Miami Heat on June 22, 2026"]
 
 
+class TestStaleRecord(unittest.TestCase):
+    def test_operator_record_beats_the_older_signal(self):
+        # #1011: API-SPORTS said 18-0-0; the operator's links said 19-0. The 19th
+        # win was a decision, so 8 KO + 10 SUB is not a third number to reconcile.
+        operator = ["Islam Makhachev is 19-0 after the decision win"]
+        source = "API-SPORTS: Islam Makhachev record 18-0-0 (8 KO, 10 SUB)"
+        conflicts = find_fact_conflicts(operator, source)
+        self.assertEqual(len(conflicts), 1)
+        self.assertEqual(conflicts[0].kind, "record")
+        kept, dropped = drop_conflicting_lines(source, conflicts)
+        self.assertEqual(dropped, 1)
+        self.assertNotIn("18-0-0", kept)
+        same = find_fact_conflicts(operator, "Islam Makhachev is 19-0")
+        self.assertEqual(same, [])
+
+    def test_a_method_count_is_not_a_record_conflict(self):
+        operator = ["Islam Makhachev is 19-0 after the decision win"]
+        source = "Islam Makhachev has 8 knockouts and 10 submissions"
+        self.assertEqual(find_fact_conflicts(operator, source), [])
+
+
 class TestTradeDirection(unittest.TestCase):
     def test_conflicting_destination_flags(self):
         source = "News headlines:\n- Giannis traded to the Golden State Warriors (rumor mill)"

@@ -54,21 +54,21 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**Wave 70 (2026-10-10)** closed the rest of the topic -> angle list the operator picked: slang the
-cue words miss gets one model read, shown with the words it read and fixed with M (#1089); an idea
-with two asks gets both (#1096); a hope or plan run counts the facts that back it and searches for
-them when there are none (#1095). Cursor's prompt was refreshed (`docs/cursor_brief_2026-10.md`).
-Next, the "Now" horizon:
+**2026-10-10** shipped the previous five (#1007, #1021, #1006, #1011, #1060) and the rest of that
+engine list (#1098, #1082, #1024, #1022, #1023, #1026, #1027, #1028, #1030, #1032), plus the three
+breaks from runs 131-133 (#1099, #1100, #1101). `py -m scripts.ops roadmap-index`: backlog open
+333, done 801, highest #1104. The next five are the three defects those runs left, then the
+cheapest open Next items that are not an operator call:
 
-1. **#1007 an award race is a race** `[M]` - "Game of the year 2027" became one game.
-2. **#1021 angle-pick learning** `[M]` - M corrections and model reads are recorded now.
-3. **#1006 video games and mods read as gaming** `[S]` - run 120 ran seven off-domain signals.
-4. **#1011 a signal's stale record loses to today's facts** `[S]` - run 119's 18-0-0.
-5. **#1060 post time learned per sport** `[M]` - NFL and UFC audiences are not one slot.
+1. **#1102 an all-angles file named after chapters were left out** `[S]` - run 133.
+2. **#1103 a Topuria description cited UFC Vegas 122** `[S]` - run 132.
+3. **#1104 grounding splits "San Antonio" and flags "Lose"** `[S]` - run 132.
+4. **#1045 visual variety** `[S]` - a per-clip cap, no reuse within the last N videos.
+5. **#1052 Shorts packaging** `[S]` - a Short gets its own title and hashtags.
 
-Then **#1098** (your corrections become cue words) · **#1088** (the established-franchise critique
-pivot - an operator call) · **#1024** stale best bets · **#1022** · **#1082**. Cursor: phase A
-(**#1040 #1041 #1047 #1048 #1035 #1036 #1053 #1044**), then B1 with **#1097**.
+**#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
+#1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),
+desktop B2 (#1068, #1064).
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.

@@ -71,7 +71,7 @@
     {"idea": "Is there any hope for the Jets?", "source": "#1094 (any hope read as no hope)", "intent": "hope"},
     {"idea": "The Jets don't have any hope", "source": "#1094", "intent": "default"},
     {"idea": "No hope for the Jets", "source": "#1084", "intent": "default"},
-    {"idea": "Bolts bounce back week 5", "source": "#1094 (slang the cue list has never seen)", "intent": "hope", "needs": "1089", "phrase": "bounce back"},
-    {"idea": "Herbert is HIM", "source": "#1094 (slang the cue list has never seen)", "intent": "take", "needs": "1089", "phrase": "is HIM"}
+    {"idea": "Bolts bounce back week 5", "source": "#1098 (was slang; now a cue)", "intent": "hope"},
+    {"idea": "Herbert is HIM", "source": "#1098 (was slang; now a cue)", "intent": "take"}
   ]
 }

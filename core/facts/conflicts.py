@@ -69,12 +69,15 @@ _DIVISION_WORDS = frozenset(
     }
 )
 
+# "Islam is 19-0" / "record 18-0-0". A percent range ("10-15%") is not a record.
+_RECORD_RE = re.compile(r"\b(\d{1,2})\s*-\s*(\d{1,2})(?:\s*-\s*(\d{1,2}))?(?!\s*%)")
+
 _MAX_CONFLICTS = 6
 
 
 @dataclass(frozen=True)
 class FactConflict:
-    kind: str  # trade_direction | reversed_result | champion
+    kind: str  # trade_direction | reversed_result | champion | record
     operator_line: str
     other_line: str
     detail: str
@@ -195,6 +198,48 @@ def _champion_conflicts(operator_lines: list[str], source_lines: list[str]) -> l
     return out
 
 
+def _record_pair(line: str) -> tuple[int, int] | None:
+    match = _RECORD_RE.search(line or "")
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
+def _shares_subject(left: str, right: str) -> bool:
+    from apis.topic_tokens import content_tokens
+
+    names = {tok for tok in content_tokens(left) if len(tok) >= 5}
+    return any(tok in names for tok in content_tokens(right) if len(tok) >= 5)
+
+
+def _record_conflicts(operator_lines: list[str], source_lines: list[str]) -> list[FactConflict]:
+    """A win-loss record on the same name. The operator line wins. Method counts
+    (8 KO, 10 SUB) are not records and are not added up."""
+    out: list[FactConflict] = []
+    for op_line in operator_lines:
+        op_record = _record_pair(op_line)
+        if op_record is None:
+            continue
+        for src_line in source_lines:
+            src_record = _record_pair(src_line)
+            if src_record is None or src_record == op_record:
+                continue
+            if not _shares_subject(op_line, src_line):
+                continue
+            out.append(
+                FactConflict(
+                    kind="record",
+                    operator_line=op_line,
+                    other_line=src_line,
+                    detail=(
+                        f"Record disagrees: operator has {op_record[0]}-{op_record[1]}, "
+                        f"source has {src_record[0]}-{src_record[1]}"
+                    ),
+                )
+            )
+    return out
+
+
 def find_fact_conflicts(
     operator_facts: list[str] | None,
     source_text: str,
@@ -219,6 +264,7 @@ def find_fact_conflicts(
         _trade_conflicts(operator_lines, source_lines)
         + _result_conflicts(operator_lines, source_lines)
         + _champion_conflicts(operator_lines, source_lines)
+        + _record_conflicts(operator_lines, source_lines)
     )
 
     seen: set[tuple[str, str, str]] = set()

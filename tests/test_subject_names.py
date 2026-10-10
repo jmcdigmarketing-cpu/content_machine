@@ -72,6 +72,25 @@ class NamePhrasesTests(unittest.TestCase):
         self.assertEqual(name_phrases("Never done this before? Read Start here."), [])
         self.assertEqual(name_phrases("Ghost of Yotei", connectors=True), ["Ghost of Yotei"])
 
+    def test_run_132_hyphenated_common_words_are_not_names(self):
+        # Run 132 looked up "Long-term" (long-term potentiation) and "next" (Next.js).
+        from apis.topic_tokens import name_phrases
+        from core.facts.entity_lookup import names_for
+
+        angle = "Long-term outlook: Can Illia Topuria adapt before UFC's next title cycle?"
+        phrases = name_phrases(angle, max_words=5, connectors=True)
+        self.assertNotIn("Long-term", phrases)
+        self.assertIn("Illia Topuria", phrases)
+        names = names_for(
+            "Whats nextb for the UFC's best and brightest, Illia topuria, Islam, and more",
+            angle=angle,
+        )
+        lowered = [name.lower() for name in names]
+        self.assertNotIn("long-term", lowered)
+        self.assertNotIn("next", lowered)
+        self.assertTrue(any("islam" in name for name in lowered), names)
+        self.assertTrue(any("illia" in name or "topuria" in name for name in lowered), names)
+
 
 class WikidataTests(unittest.TestCase):
     def _hit(self, hits, name):

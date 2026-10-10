@@ -150,6 +150,8 @@ COMMON_CAPITALISED = (
             "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
             "tonight", "tomorrow", "yesterday", "january", "february", "march", "april",
             "june", "july", "august", "september", "october", "november", "december",
+            # Run 132: "Long-term outlook" was looked up as long-term potentiation.
+            "long", "term", "short", "outlook",
         }
     )
 )  # fmt: skip
@@ -289,16 +291,31 @@ def title_phrases(text: str, *, max_words: int = 3, connectors: bool = False) ->
     return phrases
 
 
+def phrase_is_ordinary(phrase: str) -> bool:
+    """True when every part of `phrase` is a common word, including across a hyphen.
+
+    "Long-term" is long + term. "New York Jets" stays a name because York and Jets
+    are not common words. "next" is common on its own.
+    """
+    parts: list[str] = []
+    for word in (phrase or "").split():
+        cleaned = word.lower().replace("'", "").replace("’", "")
+        parts.extend(part for part in cleaned.split("-") if part)
+    return bool(parts) and all(
+        part in COMMON_CAPITALISED or part in NAME_CONNECTORS or part.isdigit() for part in parts
+    )
+
+
 def name_phrases(text: str, *, max_words: int = 3, connectors: bool = False) -> list[str]:
     """`title_phrases` without the phrases made only of common words (#1005).
 
     "Next Sunday the Chargers play" -> ["Chargers"]; "Read Start here." -> []. A phrase
-    with one real name word stays whole ("New York Jets").
+    with one real name word stays whole ("New York Jets"). A hyphen does not hide a
+    common word: "Long-term" is not a name.
     """
     out: list[str] = []
     for phrase in title_phrases(text, max_words=max_words, connectors=connectors):
-        words = [w.lower().replace("'", "").replace("’", "") for w in phrase.split()]
-        if all(w in COMMON_CAPITALISED or w in NAME_CONNECTORS or w.isdigit() for w in words):
+        if phrase_is_ordinary(phrase):
             continue
         out.append(phrase)
     return out

@@ -208,6 +208,19 @@ class TestNumericGateSeesCombatSports(unittest.TestCase):
             find_ungrounded_numeric(script, "VERIFIED FACTS:\n- Patch 2.1 shipped."), []
         )
 
+    def test_run_131_stats_stay_when_the_facts_have_them(self):
+        # Run 131: "own 26" and "39.5" are real stats. They stay when the facts
+        # have those numbers, and a different number is flagged like any other miss.
+        script = "The NFL club can own 26 and hit 39.5 percent from three."
+        facts = "VERIFIED FACTS:\n- They own 26 and shoot 39.5 percent."
+        self.assertEqual(find_ungrounded_numeric(script, facts), [])
+        missed = find_ungrounded_numeric(
+            "The NFL club can own 27 and hit 40 percent from three.",
+            facts,
+        )
+        self.assertTrue(any("27" in item for item in missed), missed)
+        self.assertTrue(any("40" in item for item in missed), missed)
+
     def test_round_scores_still_ignored_in_boxing_context(self):
         script = "Cejudo took a 10-9 round and a 29-28 card in the boxing bout."
         self.assertEqual(find_ungrounded_numeric(script, self.FACTS), [])

@@ -224,6 +224,85 @@ def style_recurrence(script: str, recent: list[str]) -> dict[str, Any]:
     return reading
 
 
+def _sentence_shape(sentence: str) -> str:
+    return " ".join(_normalise(sentence).split()[:8])
+
+
+def rewrite_repeated(script: str, recent: list[str]) -> tuple[str, dict[str, Any]]:
+    """Drop one sentence that already appears across recent scripts (#1030).
+
+    The returned count is from before the drop. A script that does not repeat
+    is returned unchanged. A second call does not drop again.
+    """
+    sentences = [part.strip() for part in _SENTENCE_SPLIT.split(script or "") if part.strip()]
+    shapes = [
+        _sentence_shape(part)
+        for other in recent or []
+        for part in _SENTENCE_SPLIT.split(other)
+        if part.strip() and not _STOCK_CLOSER.match(part.strip())
+    ]
+    counts: list[int] = []
+    for sentence in sentences:
+        if _STOCK_CLOSER.match(sentence):
+            counts.append(0)
+            continue
+        shape = _sentence_shape(sentence)
+        if len(shape.split()) < 4:
+            counts.append(0)
+            continue
+        counts.append(
+            sum(
+                1
+                for other in shapes
+                if SequenceMatcher(None, shape, other).ratio() >= _RECURRENCE_SIM
+            )
+        )
+    worst = max(counts) if counts else 0
+    verdict = {"pre_rewrite_count": worst, "rewritten": False}
+    if worst < _RECURRENCE_MIN or len(sentences) < 2:
+        return script, verdict
+    index = counts.index(worst)
+    kept = [sentence for i, sentence in enumerate(sentences) if i != index]
+    if not kept:
+        return script, verdict
+    verdict["rewritten"] = True
+    return " ".join(kept), verdict
+
+
+_STOCK_CLOSER = re.compile(r"^tap in for more\.?$", re.I)
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+
+
+def payoff_closer(script: str) -> tuple[str, dict[str, Any]]:
+    """Rewrite the payoff once when it shares no word with the hook (#1032).
+
+    "Tap in for more" is the sign-off, not the payoff. The returned dict is the
+    pre-rewrite verdict: ``closer_answered`` is false when a rewrite was needed.
+    A second call on the rewritten script does not rewrite again.
+    """
+    from apis.topic_tokens import content_tokens
+
+    sentences = [part.strip() for part in _SENTENCE_SPLIT.split(script or "") if part.strip()]
+    verdict = {"closer_answered": True, "rewritten": False}
+    if len(sentences) < 2:
+        return script, verdict
+    payoff_at = len(sentences) - 1
+    while payoff_at > 0 and _STOCK_CLOSER.match(sentences[payoff_at].strip()):
+        payoff_at -= 1
+    if payoff_at <= 0:
+        return script, verdict
+    hook_tokens = {tok for tok in content_tokens(sentences[0]) if len(tok) >= 4}
+    pay_tokens = {tok for tok in content_tokens(sentences[payoff_at]) if len(tok) >= 4}
+    if not hook_tokens or hook_tokens & pay_tokens:
+        return script, verdict
+    subject = max(hook_tokens, key=len)
+    body = sentences[payoff_at].rstrip()
+    if body.endswith("."):
+        body = body[:-1]
+    sentences[payoff_at] = f"{body} on {subject}."
+    return " ".join(sentences), {"closer_answered": False, "rewritten": True}
+
+
 def _semantic_enabled() -> bool:
     return os.getenv("AUTHENTICITY_SEMANTIC", "true").strip().lower() in ("1", "true", "yes")
 

@@ -2444,6 +2444,21 @@
         }
       },
       "why": "growth's intro split counted a video that has no intro"
+    },
+    {
+      "id": "run132-long-term-is-not-a-name",
+      "item": 1099,
+      "source": "run 132: Who's who looked up Long-term (long-term potentiation) and next (Next.js)",
+      "call": "apis.topic_tokens:name_phrases",
+      "args": [
+        "Long-term outlook: Can Illia Topuria adapt before UFC's next title cycle?"
+      ],
+      "kwargs": {"max_words": 5, "connectors": true},
+      "expect": {
+        "excludes_any": ["Long-term", "next", "Next"],
+        "includes_all": ["Illia Topuria"]
+      },
+      "why": "a hyphen kept Long-term out of the common-word list, so Wikidata resolved it"
     }
   ]
 }

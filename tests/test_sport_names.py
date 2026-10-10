@@ -70,8 +70,28 @@ class SeedNamesTests(unittest.TestCase):
         from apis.topic_scorer import infer_topic_domain
 
         self.assertEqual(infer_topic_domain("Messi in EA FC 26 ratings"), "gaming")
-        self.assertEqual(infer_topic_domain("LeBron in NBA 2K26"), "nba")
         self.assertEqual(infer_topic_domain("GTA 6 trailer breakdown"), "gaming")
+
+    def test_a_league_named_game_reads_as_gaming(self):
+        # #1006: "NBA 2K25" and a Smash Bros headline were labelled nba.
+        from apis.topic_scorer import infer_topic_domain
+
+        gaming = (
+            "NBA 2K25 is shutting down its single-player mode",
+            "LeBron in NBA 2K26",
+            "People working with ai to blend video games",
+            "Madden NFL 26 ratings",
+            "UFC 5 career mode",
+            "a new mod for skyrim",
+            "7 Switch 2 Characters Nintendo Should Add to the Next Super Smash Bros.",
+        )
+        for topic in gaming:
+            self.assertEqual(infer_topic_domain(topic), "gaming", topic)
+        self.assertEqual(
+            infer_topic_domain("NBA finals and award predictions preseason for the 2027 season"),
+            "nba",
+        )
+        self.assertEqual(infer_topic_domain("faces real threat at UFC 297"), "ufc")
 
     def test_the_seed_names_only_sports(self):
         from apis.topic_scorer import KNOWN_DOMAINS

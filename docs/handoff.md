@@ -79,24 +79,25 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `6347801` plus the #1097 commit ·
-**Tree:** `.agents/` and `.codex/` untracked. `docs/startup_powershell.md` is
-modified (the project path) and is not mine; leave it.
+**Written:** 2026-10-10 · **HEAD at write:** `3ef604d` · **Tree:** this wave is
+uncommitted until the commit that follows. Leave `docs/startup_powershell.md`.
+Leave `.agents/` and `.codex/` untracked.
 
 **Defects first:**
-- `footage-licence` replays a fixture. It does not search the network.
-- yt-dlp pin not re-measured.
-- Stock repeats when the cache has only one clip for that query.
-- No brand font file is in the repo. A bright Flux picture is left without text.
-- Thumbnail auto-pick runs only when `THUMBNAIL_SCORER_ENABLED` is on.
-- A one-paragraph script is not rewritten by the lexicon.
-- `voice_delivery` and `tts_model` are registered and not started.
-- #1038 and the #217 editor stay open.
-- Enter on the Shorts offer now cuts and queues.
-- A freeze to the end of the file has a start and no duration.
-- The intent card calls `idea_angle` on the UI thread when the topic field
-  finishes editing.
+- #1102 run 133's file is named `all_5_angles` after chapters were left out.
+- #1103 run 132's description sources are UFC Vegas 122 pages.
+- #1104 grounding splits "San Antonio" and flags "Lose".
+- #1088 is still an operator call.
+- A real startup now reads ESPN boards for best bets (`BEST_BET_SCHEDULE`).
+- B1 leftovers still open: footage-licence is a fixture, no brand font, the
+  thumbnail scorer is off unless enabled, `voice_delivery` and `tts_model` are
+  not started, #1038 and #217 stay open.
 
-**Shipped:** #1067 `6347801`. #1097: the angle step lists the ten modes. A change
-sends `m`, then the mode key. The card shows the discovery read. 3 tests failed
-first. This run stops at B1. B2-B6 stay.
+**Shipped:** runs 131-133 (#1099 #1100 #1101) and the fifteen
+(#1006 #1011 #1098 #1082 #1032 #1007 #1021 #1060 #1024 #1022 #1023 #1026
+#1027 #1028 #1030). Each new test failed first. The suite then failed on
+three older pins; those stay: league words are vault families only (the
+search seed is unchanged), the model-path fixtures use a phrase the cues
+still miss, and a purse's inner number is not a second finding. mypy 109.
+Next: #1102 #1103 #1104 #1045 #1052. Shared files: `main.py`,
+`core/pipeline.py`, `core/content_engine.py`, `.env.example`.

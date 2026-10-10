@@ -207,6 +207,18 @@ _SOCCER_KEYS = [
 _FOOTBALL_GAME_RE = re.compile(
     r"\b(?:ea\s+(?:sports\s+)?fc|ultimate team|career mode|(?:fifa|fc)\s?\d{2})\b"
 )
+# #1006: a league name plus a game edition is the game, not the league. Checked
+# before the league keyword lists, which otherwise claim "NBA 2K25" and "Madden NFL".
+# UFC 1-5 are the game; UFC 297 is the promotion. "mod" is a whole word.
+_VIDEO_GAME_RE = re.compile(
+    r"\bvideo games?\b"
+    r"|\bmodding\b|\bmods?\b"
+    r"|\b(?:nba|nfl)\s*2k\d{0,2}\b"
+    r"|\bmadden(?:\s+nfl)?(?:\s+\d{2,4})?\b"
+    r"|\bufc\s+[1-5]\b"
+    r"|\bsmash bros\b",
+    re.I,
+)
 
 # Franchises TapIn covers (core/channel_context._GAME_ANCHORS minus "ufc"): without
 # the channel fallback these would otherwise read as neutral.
@@ -289,8 +301,14 @@ def _name_matches(topic_lower: str) -> list[tuple[str, str]]:
         ordered = sorted(names, key=len, reverse=True)
         compiled = re.compile(r"\b(?:" + "|".join(re.escape(n) for n in ordered) + r")\b")
         _names_pattern = (key, compiled)
+    from apis.topic_tokens import phrase_is_ordinary
+
     found = _names_pattern[1].finditer(topic_lower)
-    return [(m.group(0), names[m.group(0)]) for m in found if m.group(0) in names]
+    return [
+        (m.group(0), names[m.group(0)])
+        for m in found
+        if m.group(0) in names and not phrase_is_ordinary(m.group(0))
+    ]
 
 
 def _sport_from_names(topic_lower: str) -> str | None:
@@ -359,6 +377,9 @@ def domain_phrases(text: str) -> list[str]:
 def _infer_domain_from_text(text: str, channel_id=None, *, use_channel_profile: bool = True) -> str:
     """Classify domain from free text; optional channel profile fallback."""
     topic_lower = (text or "").lower()
+
+    if _VIDEO_GAME_RE.search(topic_lower):
+        return "gaming"
 
     if _mentions(topic_lower, _SOCCER_KEYS) and not _FOOTBALL_GAME_RE.search(topic_lower):
         return "soccer"

@@ -28,6 +28,19 @@ _GAME_ANCHORS = (
     "ufc",
 )
 
+# #1027: leagues, teams and the fighters this channel keeps coming back to.
+_LEAGUE_ANCHORS = ("premier league", "ufc", "nfl", "nba", "nhl", "mlb", "soccer")
+_SUBJECT_ANCHORS = (
+    "islam makhachev",
+    "illia topuria",
+    "ilia topuria",
+    "justin gaethje",
+    "makhachev",
+    "topuria",
+    "gaethje",
+)
+_BROAD_FAMILIES = {"ufc", "nfl", "nba", "nhl", "mlb", "soccer", "premier league"}
+
 _MCU_DRIFT_MARKERS = (
     "mcu",
     "avengers",
@@ -56,7 +69,12 @@ def extract_anchors(text: str) -> list[str]:
 
 
 def anchor_families(text: str) -> set[str]:
-    """Collapse alias anchors (GTA / Grand Theft Auto) into one family."""
+    """Collapse alias anchors (GTA / Grand Theft Auto) into one family.
+
+    Leagues, fighters and team nicknames are families for the vault scorer (#1027).
+    They stay out of ``extract_anchors``: that list is the search seed, and a league
+    word there turned a lowercase soccer overview into "Soccer Premier League".
+    """
     families: set[str] = set()
     for raw in extract_anchors(text):
         key = raw.lower()
@@ -64,6 +82,20 @@ def anchor_families(text: str) -> set[str]:
             families.add("gta")
         else:
             families.add(key)
+    lower = (text or "").lower()
+    for league in _LEAGUE_ANCHORS:
+        if re.search(rf"\b{re.escape(league)}\b", lower):
+            families.add(league)
+    for subject in _SUBJECT_ANCHORS:
+        if re.search(rf"\b{re.escape(subject)}\b", lower):
+            families.add(subject.split()[-1])
+    from apis.nfl_entities import team_names_in
+    from sports.teams import other_teams_in
+
+    for full in (*team_names_in(text), *(full for _lg, full, _ab in other_teams_in(text))):
+        nick = full.split()[-1].lower()
+        if nick:
+            families.add(nick)
     return families
 
 

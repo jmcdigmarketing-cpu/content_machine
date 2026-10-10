@@ -153,7 +153,7 @@ class TestNoDataVsDataSaysDefault(unittest.TestCase):
             patch("analytics.post_timing.learn_slots_from_analytics", return_value=learned),
             patch("analytics.post_timing.next_optimal_post_time", return_value=when),
             patch("analytics.post_timing.format_scheduled_local", return_value="Wed 12:00"),
-            patch("analytics.post_timing._slot_engagement", return_value=(0.0, 0, [])),
+            patch("analytics.post_timing._slot_engagement", return_value=(0.0, 0, [], "neutral")),
         ):
             learned_empty = get_recommended_time("tapin", "Marvel Rivals update")
         with (

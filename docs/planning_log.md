@@ -17,6 +17,21 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1040 licensed footage, folder licence kept
+
+**Prompt:** Phase A of `docs/cursor_brief_2026-10.md`, A1 first. The 2026-09-20 slot:
+`footage-add` overwrote a folder's licence string.
+
+**Decision:** Keep the folder `license` string once it is set. The imported file gets
+`<clip>.license.yaml`. Bulk intake parses recorded Commons, Internet Archive, and NASA
+JSON and refuses a missing, non-commercial, or copyrighted licence. No live HTTP in
+this verb — the operator passes `--fixture`.
+
+**Shipped:** `folder_licence_keep`, per-file sidecar, `clip_credit` prefers it,
+`ops footage-licence`. 13 tests. 11 failed before the intake module existed; the
+owned-folder assertion saw `CC BY 4.0` replace `owned gameplay (operator capture)`.
+A Windows BOM fixture then failed `json.loads` on utf-8; the reader uses utf-8-sig.
+
 ## 2026-10-10 (Claude Code) - wave 70: slang read, two asks, research for the stance; Cursor's prompt
 
 **Prompt (verbatim):** the operator quoted wave 69's "not done" list - "#1089, next wave: slang the

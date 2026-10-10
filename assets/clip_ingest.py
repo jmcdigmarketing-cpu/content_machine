@@ -340,9 +340,12 @@ def _bands(dest: str, duration: float | None) -> dict[str, float] | None:
         return None
 
 
-def _record_index(dest: str, source: str) -> None:
-    ensure_data_dir()
-    path = CLIP_INDEX_FILE
+def _record_index(dest: str, source: str, *, index_path: str | None = None) -> None:
+    path = index_path or CLIP_INDEX_FILE
+    if index_path is None:
+        ensure_data_dir()
+    else:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     data = _load_index(path)
     duration = _probe_duration(dest)
     width, height, codec = _probe_stream(dest)
@@ -413,8 +416,32 @@ def _game_folder(library: str, game: str, group: str) -> str:
     return os.path.join(library, *group.replace("\\", "/").split("/"), clean)
 
 
-def _write_licence(folder: str, *, source_url: str, licence: str) -> None:
-    """license.yaml (JSON, like the root one) for the folder; new sources are appended."""
+def folder_licence_keep(existing_licence: str, incoming: str) -> str:
+    """The folder ``license.yaml`` string after ``footage-add`` (#1040).
+
+    An existing licence is kept. Fortnite and Marvel Rivals were owned captures;
+    a later CC BY file rewrote that string and the whole folder read as third-party.
+    A folder with no licence yet takes the incoming one.
+    """
+    existing = (existing_licence or "").strip()
+    if existing:
+        return existing
+    return (incoming or "").strip()
+
+
+def licence_sidecar_path(dest: str) -> str:
+    """``<clip>.license.yaml`` beside the file, not the folder's shared yaml."""
+    return os.path.splitext(dest)[0] + ".license.yaml"
+
+
+def _write_licence(folder: str, *, dest: str, source_url: str, licence: str) -> None:
+    """Folder ``license.yaml`` (JSON) plus a per-file sidecar. Sources are appended.
+
+    The folder ``license`` string is not replaced once set (#1040). The file that
+    was just imported records the licence it was added under.
+    """
+    from assets.licensed_intake import commercial_use_of
+
     path = os.path.join(folder, "license.yaml")
     data: dict[str, Any] = {}
     if os.path.isfile(path):
@@ -424,7 +451,7 @@ def _write_licence(folder: str, *, source_url: str, licence: str) -> None:
             data = loaded if isinstance(loaded, dict) else {}
         except (OSError, ValueError):
             data = {}
-    data["license"] = licence
+    data["license"] = folder_licence_keep(str(data.get("license") or ""), licence)
     data.setdefault("owner", "third party (see sources)")
     data.setdefault("commercial_use", True)
     sources = [str(s) for s in data.get("sources") or []]
@@ -433,6 +460,14 @@ def _write_licence(folder: str, *, source_url: str, licence: str) -> None:
     data["sources"] = sources
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2)
+    sidecar = {
+        "license": licence.strip(),
+        "owner": str(data.get("owner") or "third party (see sources)"),
+        "commercial_use": commercial_use_of(licence),
+        "sources": [source_url] if source_url else [],
+    }
+    with open(licence_sidecar_path(dest), "w", encoding="utf-8") as fh:
+        json.dump(sidecar, fh, indent=2)
 
 
 def add_footage(
@@ -464,7 +499,7 @@ def add_footage(
         return IngestRow(source=src, dest=dest, status="matched")
     try:
         _remux_muted_h264(src, dest)
-        _write_licence(folder, source_url=source_url, licence=licence.strip())
+        _write_licence(folder, dest=dest, source_url=source_url, licence=licence.strip())
         _record_index(dest, source_url or src)
     except Exception as exc:
         logger.warning("footage-add failed (%s): %s", src, exc)
@@ -510,9 +545,7 @@ def add_footage_folder(
             )
         )
     if not rows:
-        return [
-            IngestRow(source=folder, dest=None, status="failed", reason="no video files found")
-        ]
+        return [IngestRow(source=folder, dest=None, status="failed", reason="no video files found")]
     return rows
 
 
@@ -626,10 +659,16 @@ def render_coverage(rows: list[dict[str, Any]]) -> str:
                 )
             lines.append(f"  {row['niche']:<16} {row['folder']} ({row['clips']} clips{crop})")
         else:
-            lines.append(f"  {row['niche']:<16} NO FOOTAGE - stock B-roll or a plain background (#955)")
+            lines.append(
+                f"  {row['niche']:<16} NO FOOTAGE - stock B-roll or a plain background (#955)"
+            )
     lines.append(
         "Add a file: py -m scripts.ops footage-add --path <file.mp4> --game Minecraft "
         '--source <url> --licence "<terms>" --apply'
+    )
+    lines.append(
+        "Licensed search: py -m scripts.ops footage-licence --catalogue commons|archive|cc0 "
+        '--fixture <recorded.json> --niche "AI Development" --subject robots --apply'
     )
     return "\n".join(lines)
 

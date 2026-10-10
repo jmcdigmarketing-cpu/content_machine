@@ -1644,6 +1644,54 @@ def cmd_footage_add(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "footage-licence",
+    "Save a recorded Commons, Internet Archive, or NASA (cc0) search "
+    "(--catalogue --fixture --niche --subject --apply)",
+)
+def cmd_footage_licence(args: argparse.Namespace) -> int:
+    from assets.clip_ingest import BASE_VIDEO_DIR
+    from assets.licensed_intake import ingest_fixture
+    from config.paths import CLIP_INDEX_FILE
+
+    catalogue = str(getattr(args, "catalogue", "") or "")
+    fixture = str(getattr(args, "fixture", "") or "")
+    niche = str(getattr(args, "niche", "") or "")
+    subject = str(getattr(args, "subject", "") or "")
+    if not fixture or not os.path.isfile(fixture):
+        print("footage-licence: --fixture must be a recorded search JSON file")
+        return 1
+    if catalogue.strip().lower() not in ("commons", "archive", "cc0"):
+        print("footage-licence: --catalogue is commons, archive, or cc0")
+        return 1
+    if not niche.strip() or not subject.strip():
+        print("footage-licence: --niche and --subject are required")
+        return 1
+    library = str(getattr(args, "library", "") or "") or BASE_VIDEO_DIR
+    apply_now = bool(getattr(args, "apply", False))
+    try:
+        rows = ingest_fixture(
+            fixture,
+            catalogue=catalogue,
+            niche=niche,
+            subject=subject,
+            library_root=library,
+            index_path=CLIP_INDEX_FILE,
+            apply=apply_now,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"footage-licence: {exc}")
+        return 1
+    for row in rows:
+        if row.status == "failed":
+            print(f"refused {os.path.basename(row.source or row.dest or '')}: {row.reason}")
+        elif row.status == "matched":
+            print(f"DRY RUN - would save {row.source} -> {row.dest} (add --apply)")
+        else:
+            print(f"Saved {row.dest} ({row.source})")
+    return 1 if rows and all(r.status == "failed" for r in rows) else 0
+
+
+@_register(
     "packaging",
     "Shorts stayed / feed share, long-form impressions and CTR, per recent video (#951)",
 )
@@ -3260,6 +3308,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--group",
         default="",
         help="footage-add: library sub-path for a new game (default gaming/other)",
+    )
+    parser.add_argument(
+        "--catalogue",
+        default="",
+        help="footage-licence: commons, archive, or cc0",
+    )
+    parser.add_argument(
+        "--fixture",
+        default="",
+        help="footage-licence: recorded search JSON (no network)",
+    )
+    parser.add_argument("--niche", default="", help="footage-licence: niche folder")
+    parser.add_argument("--subject", default="", help="footage-licence: subject folder")
+    parser.add_argument(
+        "--library",
+        default="",
+        help="footage-licence: library root (default video/backgrounds)",
     )
     parser.add_argument(
         "--move",

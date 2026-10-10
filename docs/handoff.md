@@ -79,29 +79,16 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-09-20 · **HEAD at write:** `096c13b` · **Tree:** footage intake only;
-do not commit Claude's uncommitted calibration/clip-band files.
+**Written:** 2026-10-10 · **HEAD at write:** `52822fe` plus the #1040 commit (`git log -1`) ·
+**Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
-- **`footage-add` still overwrites the folder `license` string.** Fortnite (32 owned)
-  and Marvel Rivals (16 owned) would have been labelled third-party. Mixed yaml
-  rewritten after import (GTA V pattern). Same footgun on the next mixed folder.
-- **Pinned `yt-dlp==2026.6.9` 403s YouTube DASH.** Probe worked; download needed a
-  temp 2026.8.19 extractor. Pin unchanged.
-- **Twitch, Football, AI still empty.** This batch did not fill them.
+- `footage-licence` replays a fixture. It does not search Commons, Archive, or NASA
+  over the network. Twitch, Football, and AI stay empty until a fixture is applied.
+- yt-dlp pin not re-measured this session.
 
-**Intake (7/7 gameplay, muted 1080p H.264, not committed):**
-Forza Horizon 5 `flUiLwMaiOU` CC-BY; Fortnite `Am18G4IDNnM` CC-BY mixed;
-Steep `EnGiQrWBrko` CC-BY; Mario Kart 8 `npz4T7sznog` title-claims reuse;
-CSGO `QnA_YwbRZ2k`+`OikR-0gh8QE` title-claims reuse; Marvel Rivals
-`stsnPWyDSLE` CC-BY mixed. `ops footage --channel tapin`: Marvel Rivals 17,
-Fortnite 33 on disk. New folders are umbrella-only.
-
-**Operator paste:**
-```
-Footage per playlist niche ...
-  Marvel Rivals    Marvel Rivals (17 clips, ...)
-  Twitch           NO FOOTAGE
-  Football         NO FOOTAGE
-  AI Development   NO FOOTAGE
-```
+**Shipped:** #1040. `footage-add` keeps an existing folder licence and writes
+`<clip>.license.yaml`. Measured before the fix: owned Fortnite became `CC BY 4.0`.
+`ops footage-licence --catalogue commons|archive|cc0 --fixture ... --niche --subject`.
+Refuses a missing, non-commercial, or copyrighted hit and writes nothing for it.
+Next: #1041 stock anti-repeat.

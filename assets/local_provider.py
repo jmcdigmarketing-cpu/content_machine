@@ -35,6 +35,9 @@ BASE_VIDEO_DIR = os.path.join("video", "backgrounds")
 
 
 def _nearest_license_file(clip_path: str) -> str | None:
+    own = os.path.splitext(clip_path)[0] + ".license.yaml"
+    if clip_path and os.path.isfile(own):
+        return own
     base = os.path.abspath(BASE_VIDEO_DIR)
     current = os.path.abspath(os.path.dirname(clip_path))
     while current == base or current.startswith(base + os.sep):

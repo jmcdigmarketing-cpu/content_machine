@@ -2414,6 +2414,20 @@
       },
       "source": "sibling of the hope count, for run 124's plan idea",
       "why": "what has to happen backs a plan idea"
+    },
+    {
+      "id": "footage-add-keeps-owned-licence",
+      "item": 1040,
+      "source": "2026-09-20 footage intake: Fortnite and Marvel Rivals were owned captures",
+      "call": "assets.clip_ingest:folder_licence_keep",
+      "args": [
+        "owned gameplay (operator capture)",
+        "CC BY 4.0"
+      ],
+      "expect": {
+        "equals": "owned gameplay (operator capture)"
+      },
+      "why": "footage-add rewrote the folder license string, so an owned folder was labelled third-party"
     }
   ]
 }

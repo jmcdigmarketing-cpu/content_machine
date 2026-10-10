@@ -16,8 +16,57 @@ import subprocess
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-_BLACK_RE = re.compile(r"\bblack_start\s*:\s*([0-9.]+)", re.I)
-_FREEZE_RE = re.compile(r"\bfreeze_start(?:\s*:|\s*=)\s*([0-9.]+)", re.I)
+FRAME_MIN_SECONDS = 0.5
+
+
+def frame_filter() -> str:
+    """Black and freeze detection. Both windows are half a second."""
+    return "blackdetect=d=0.5:pix_th=0.10,freezedetect=n=-60dB:d=0.5"
+
+
+@dataclass(frozen=True)
+class FrameFinding:
+    kind: str
+    start: float
+    duration: float | None
+
+
+def parse_frame_findings(stderr: str, *, minimum: float = FRAME_MIN_SECONDS) -> list[FrameFinding]:
+    """Black or frozen stretches longer than ``minimum`` seconds, with a start time.
+
+    ffmpeg prints the start and the duration on one line or on successive lines.
+    A duration is paired with the start that came before it.
+    """
+    starts = {
+        "black": re.compile(r"black_start\s*:\s*([0-9.]+)", re.I),
+        "frozen": re.compile(r"freeze_start(?:\s*:|\s*=)\s*([0-9.]+)", re.I),
+    }
+    durations = {
+        "black": re.compile(r"black_duration\s*:\s*([0-9.]+)", re.I),
+        "frozen": re.compile(r"freeze_duration(?:\s*:|\s*=)\s*([0-9.]+)", re.I),
+    }
+    pending: dict[str, float | None] = {"black": None, "frozen": None}
+    findings: list[FrameFinding] = []
+    for line in (stderr or "").splitlines():
+        for kind in ("black", "frozen"):
+            started = starts[kind].search(line)
+            if started:
+                pending[kind] = float(started.group(1))
+            lasted = durations[kind].search(line)
+            if lasted and pending[kind] is not None:
+                duration = float(lasted.group(1))
+                if duration > minimum:
+                    findings.append(FrameFinding(kind=kind, start=pending[kind], duration=duration))
+                pending[kind] = None
+    # A start with no duration means the stretch was still going at the end of
+    # the file. The filter's d= already required it to be longer than minimum.
+    for kind in ("black", "frozen"):
+        start = pending[kind]
+        if start is not None:
+            findings.append(FrameFinding(kind=kind, start=start, duration=None))
+    return findings
+
+
 _LOUDNESS_JSON_RE = re.compile(r'\{\s*"input_i".*?\}', re.S)
 
 
@@ -220,7 +269,7 @@ def inspect_technical_qc(
                 "-i",
                 source,
                 "-vf",
-                "blackdetect=d=0.25:pix_th=0.10,freezedetect=n=-60dB:d=1.0",
+                frame_filter(),
                 "-an",
                 "-f",
                 "null",
@@ -233,12 +282,21 @@ def inspect_technical_qc(
             issues.append("black/freeze analysis unavailable")
         else:
             stderr = frame_probe.stderr or ""
-            black_count = len(_BLACK_RE.findall(stderr))
-            freeze_count = len(_FREEZE_RE.findall(stderr))
-            if black_count:
-                issues.append(f"{black_count} black interval(s) detected")
-            if freeze_count:
-                issues.append(f"{freeze_count} frozen interval(s) detected")
+            findings = parse_frame_findings(stderr)
+            black = [item for item in findings if item.kind == "black"]
+            frozen = [item for item in findings if item.kind == "frozen"]
+            black_count = len(black)
+            freeze_count = len(frozen)
+            for item in black:
+                if item.duration is None:
+                    issues.append(f"black stretch at {item.start:.3f}s")
+                else:
+                    issues.append(f"black stretch at {item.start:.3f}s ({item.duration:.3f}s)")
+            for item in frozen:
+                if item.duration is None:
+                    issues.append(f"frozen stretch at {item.start:.3f}s")
+                else:
+                    issues.append(f"frozen stretch at {item.start:.3f}s ({item.duration:.3f}s)")
 
     integrated = peak = loudness_range = None
     if has_audio:

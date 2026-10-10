@@ -79,7 +79,7 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `e1bfcf2` plus the #1053 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `eed3404` plus the #1044 commit (`git log -1`) ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
@@ -91,10 +91,10 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - A one-paragraph script is not rewritten by the lexicon.
 - `voice_delivery` and `tts_model` are registered and not started.
 - #1038 and the #217 editor stay open.
-- Enter on the Shorts offer now cuts and queues. That is a behaviour change
-  from skip.
+- Enter on the Shorts offer now cuts and queues.
+- A freeze that runs to the end of the file has a start and no duration. It is
+  reported. The length of that open stretch is not known.
 
-**Shipped:** #217 `e1bfcf2`. #1053: re-hook and end card are on the ffmpeg
-command, the file is under `<channel>/shorts/`, Enter cuts and queues. 2 tests
-failed first. #1054 was not built. Next: #1044 black and frozen frames.
-`core/technical_qc.py` gets a handoff note before the edit.
+**Shipped:** #1053 `eed3404`. #1044: stretches longer than 0.5s keep their start.
+A 0.35s black stretch and a 0.40s freeze were dropped. 2 tests failed first.
+Next: #999 failed intro. `core/pipeline.py` gets a handoff note before the edit.

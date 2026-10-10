@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1044 black and freeze start times
+
+**Prompt:** Phase A6. A black or frozen stretch longer than 0.5s should be reported with its start time. Both filters use `d=0.5`.
+
+**Decision:** `parse_frame_findings` reads ffmpeg stderr. A duration of 0.5s or less is dropped. A start with no duration is kept, because the filter only prints a start after the window has already passed, and a freeze that runs to the end of the file has no duration line. `inspect_technical_qc` uses that parser.
+
+**Shipped:** 2 tests failed first (`ImportError`). The kept starts are 4.0s black and 8.0s frozen.
+
 ## 2026-10-10 (Cursor) - #1053 chapter Shorts re-hook and queue
 
 **Prompt:** Phase A5. Draw the chapter's strongest sentence at the start, name the long video on an end card, write `output/<channel>/shorts/`, and make Enter queue the cut. The 20s minimum already shipped. Do not build #1054.

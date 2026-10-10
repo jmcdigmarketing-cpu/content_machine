@@ -1,6 +1,6 @@
 # Cursor brief — media first, then the app (October 2026)
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-09
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-10
 
 The operator, 2026-10-08: *"draft up a very large run for cursor to work on"*. Asked how to
 split it, they chose **both, media first**. The media phase answers what they said about the
@@ -15,11 +15,51 @@ this page is the order, the files and the definition of done.
 
 ---
 
+## Start here (2026-10-10) - the prompt to paste into Cursor
+
+Nothing in Phase A has started (your last commit is 2026-09-20). Claude shipped waves 66-70 since;
+the handoff slot names the commit. Paste this as Cursor's first message:
+
+```text
+You are the Cursor agent on content_machine (C:\dev\content_machine); Claude Code works here too.
+1. git pull. Read docs/handoff.md first, both slots. Check the Claude slot's HEAD with
+   `git log <sha>..HEAD --oneline` and `git status --short`. Your own slot (2026-09-20) is stale.
+2. Read docs/cursor_brief_2026-10.md in full: it is your order, your files and your definition of
+   done. Each task's spec is its line in docs/backlog.md.
+3. Do Phase A in order: A1 #1040 licensed footage in bulk - first fix `footage-add` overwriting a
+   folder's licence (your own 09-20 slot found it); A2 #1041; A3 #1047 #1048 thumbnails; A4 #1035
+   #1036 voice; A5 #1053 chapter Shorts; A6 #1044; A7 #999. Then Phase B from B1: #1067 the
+   new-video page with #1097, the angle-step mode drop-down.
+4. Tests first: watch each new test fail on unmodified code, and say how many did in the commit.
+   No network in tests; no writes to data/ or output/. Done means all of: `ruff check .`,
+   `ruff format --check .`, `python scripts/mypy_ratchet.py` (121 or fewer),
+   `python -m unittest discover -s tests -t .`, `py -m scripts.ops test --order reverse`.
+   A live-run defect gets a case in tests/regression_corpus.json. Every new function has a
+   production caller.
+5. Yours: assets/, video/, core/tts.py, core/chapter_shorts.py, desktop/. Claude's: the core/
+   engine (core/angle_intent.py, core/facts/, core/auto_research.py, core/content_engine.py), apis/,
+   sports/. Shared - leave a note in your handoff slot before editing: main.py (its angle screen
+   changed in waves 69-70), core/pipeline.py, config/channels.json, .env.example.
+6. #1097: the CLI angle screen already takes "M = change mode", and the desktop answers it through
+   the ask bridge. Build a drop-down on the angle step: offer core.angle_intent.MODE_KEYS; show the
+   read from core.angle_intent.intent_read_from(discovery.meta["intent_read"]) - its intent, its
+   source (cue / model / default) and the words that set it; on a change call
+   core.pipeline.regenerate_angles(discovery, core.angle_intent.operator_intent(mode, read)) and
+   pass intent_read= to run_pipeline. Do not change core/angle_intent.py.
+7. One commit per task, ASCII body, ending `Co-authored-by: Cursor <cursoragent@cursor.com>`.
+   Never commit .env, config/secrets/, .agents/ or .codex/. Never `git stash`
+   (video/backgrounds/* are permission-locked; a stash deletes untracked files).
+8. After each task: tick it in docs/backlog.md with what you measured, add a dated entry to
+   docs/planning_log.md, and write your docs/handoff.md slot as your last edit.
+```
+
+---
+
 ## Rules (read first)
 
 1. **Read [handoff.md](handoff.md) first, and write the Cursor slot as your last edit.**
    Verify the Claude slot against `git log <sha>..HEAD --oneline` and `git status --short`.
-2. **Start from Claude's wave 66 commit** (the handoff slot names it). Pull first.
+2. **Start from Claude's latest wave commit** (the handoff slot names it - wave 70 as of 2026-10-10). Pull first.
 3. **Sign every commit** `Co-authored-by: Cursor <cursoragent@cursor.com>`. ASCII bodies.
 4. **Tests first.** Write the test, watch it fail on unmodified code, then fix (the repo's
    `tdd` skill). Say in the commit how many failed first.
@@ -37,7 +77,7 @@ this page is the order, the files and the definition of done.
 
 | Cursor owns | Claude owns | Shared - leave a handoff note before editing |
 |---|---|---|
-| `assets/`, `video/`, `core/tts.py`, `core/chapter_shorts.py`, `desktop/` | `core/` engine (`content_engine`, `facts/`, `vault/`, `ui.py` prompts), `apis/`, `sports/` | `main.py`, `core/pipeline.py`, `config/channels.json`, `.env.example` |
+| `assets/`, `video/`, `core/tts.py`, `core/chapter_shorts.py`, `desktop/` | `core/` engine (`content_engine`, `angle_intent`, `auto_research`, `facts/`, `vault/`, `ui.py` prompts), `apis/`, `sports/` | `main.py` (the angle screen changed in waves 69-70), `core/pipeline.py`, `config/channels.json`, `.env.example` |
 
 ---
 
@@ -118,7 +158,7 @@ Technical QC flags a black or frozen stretch longer than 0.5 s, with the timesta
 
 | Order | Item | Done means |
 |---|---|---|
-| B1 | #1067 the new-video page with an intent card (+ #1097) | type an idea; angle 1 is your idea worded for search (`apis.topic_variants.idea_angle`), the intent read (`core.angle_intent.read_intent` - intent, source, the cue that set it), Enter keeps it. Wave 69: the mode can be changed (`MODE_KEYS`; the CLI's "M" prompt, which the ask bridge already carries) and the angles rewritten from the signals in hand (`core.pipeline.regenerate_angles`) - a drop-down here is #1097 |
+| B1 | #1067 the new-video page with an intent card (+ #1097) | type an idea; angle 1 is your idea worded for search (`apis.topic_variants.idea_angle`), the intent read (`core.angle_intent.read_intent` - intent, source, the cue that set it), Enter keeps it. Wave 69: the mode can be changed (`MODE_KEYS`; the CLI's "M" prompt, which the ask bridge already carries) and the angles rewritten from the signals in hand (`core.pipeline.regenerate_angles`) - a drop-down here is #1097. Wave 70: discovery keeps the run's read in `meta["intent_read"]` (`intent_read_from`), including a model read with the words it read from - show it on the card |
 | B2 | #1068 + #1064 the review room confirms claims and goes public | each flagged claim with its sources; confirm, fix or cut; `go-public` from the window. The engine half shipped in wave 67 (#1013): call `core.facts.claim_confirm` (`run_flagged_claims`, `confirm_claim`, `reject_claim`) - the same functions `ops verify-claim` uses |
 | B3 | #161 the publish calendar | a week view of queued and scheduled uploads, cadence guardrail visible |
 | B4 | #157 the clip librarian | search, licence, anti-repeat and per-clip performance over `data/clip_index.json` |

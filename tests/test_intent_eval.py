@@ -41,8 +41,36 @@ class IntentEvalTests(unittest.TestCase):
         wrong = [
             f"{r['idea']!r} ({r['source']}): {detect_angle_intent(r['idea'])}, want {r['intent']}"
             for r in self._enforced()
-            if detect_angle_intent(r["idea"]) != r["intent"]
+            if not r.get("phrase") and detect_angle_intent(r["idea"]) != r["intent"]
         ]
+        self.assertEqual(wrong, [])
+
+    def test_slang_rows_read_through_the_model(self):
+        """#1089: a `phrase` row is slang the cue words miss; the model naming that phrase
+        must carry the run (a read naming words the idea lacks is refused - see
+        tests/test_model_stance_read.py). The real model's agreement is `ops intent-check
+        --table`, on the PC."""
+        import json
+        import os
+        from unittest.mock import patch
+
+        from core.angle_intent import detect_angle_intent, reset_model_reads, resolve_intent
+
+        wrong: list[str] = []
+        for row in [r for r in self._enforced() if r.get("phrase")]:
+            mode = {"default": "neutral"}.get(row["intent"], row["intent"])
+            reply = json.dumps({"mode": mode, "phrase": row["phrase"]})
+            reset_model_reads()
+            with (
+                patch.dict(os.environ, {"STANCE_MODEL_READ": "true"}),
+                patch("core.llm_router.complete", return_value=reply),
+            ):
+                read = resolve_intent(row["idea"])
+            if (read.intent, read.cue) != (row["intent"], row["phrase"]):
+                wrong.append(f"{row['idea']!r}: {read.intent} [{read.cue}]")
+            if detect_angle_intent(row["idea"]) == row["intent"]:
+                wrong.append(f"{row['idea']!r} now reads by cue - drop its phrase")
+        reset_model_reads()
         self.assertEqual(wrong, [])
 
     def test_angles_kept_and_dropped(self):

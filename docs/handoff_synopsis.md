@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: wave 69, your idea heard once and kept
+# Handoff synopsis — 2026-10-10: wave 70, slang read, two asks, research for the stance
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): wave 69 #1094 #1090 #1093 #1091 #1092 (your idea, heard once and kept)
+## Last wave — 2026-10-10 (Claude Code): wave 70 #1096 #1089 #1095 (slang read, two asks, research for the stance)
+
+The operator picked the three left from wave 69's list, and asked for a fresh Cursor prompt.
+
+- **#1089** an idea no cue word reads ("Bolts bounce back week 5") gets one cheap model read, made
+  once in discovery; it counts only when it quotes the idea's words, is shown on the angle screen
+  ("[read by the model from 'bounce back' - M if wrong]"), and M fixes it. `ops intent-check`.
+- **#1096** "turn it around - reasons for hope" is hope + plan: both tables, both shapes.
+- **#1095** a hope or plan run counts the facts that back it ("Facts for your hope: N of M") and,
+  under two, makes one search for the subject's positives.
+- **Cursor:** `docs/cursor_brief_2026-10.md` "Start here" holds the paste prompt; #1097 in B1.
+
+**Verify:** `python -m unittest tests.test_two_asks tests.test_model_stance_read tests.test_stance_research tests.test_intent_eval`;
+`py -m scripts.ops intent-check --table` on the PC (the real model).
+
+## Previous — 2026-10-10 (Claude Code): wave 69 #1094 #1090 #1093 #1091 #1092 (your idea, heard once and kept)
 
 Planned with the operator ("anything else we can plan when it comes to topic to angle
 miscommunication?"): a read of 6b5f648 found the idea still misheard four ways after wave 68.
@@ -45,26 +60,6 @@ stance is **neutral analysis**; a take only when asked by name.
 
 **Verify:** `python -m unittest tests.test_operator_stance tests.test_idea_angle_guard tests.test_claim_and_publish_guards`;
 `py -m scripts.ops regressions`; then rerun "Chargers Hopeium going into week 5".
-
-## Previous — 2026-10-09 (Claude Code): wave 67 #1008 #1009 #1010 #1013 #1014 (runs 119-120)
-
-The operator, afk: "make sure the to do list is updated ... can we work towards the next 5?". The
-to-do list was current; Claude reads its ticks each session (no notification on a change). The
-roadmap's five, the defects runs 119-120 exposed:
-
-- **#1010** a chosen chapter is written: the trim used the Long ceiling on Extended (run 120 lost
-  chapter 5 and the closer); now the Extended ceiling, the closer kept, a missing chapter written once
-  from the facts or left out and said so; Shorts need 20 s.
-- **#1008** stale angles ("by 2025", "UFC 305") dropped before the menu, with a "! N angles dropped"
-  line; the angle prompt and the video title carry the date check.
-- **#1009** chapter titles come from the chapter and are checked ("Chapter N retitled" on the card).
-- **#1014** no per-angle signal fetch (`VARIANT_SIGNAL_RESCORE` brings it back); the judge sees facts
-  and today's date; a shared score prints once.
-- **#1013** `ops verify-claim --run-id N`: confirm a flagged claim with a source (or reject it) and
-  the hold lifts - no re-render; go-public names it when it refuses.
-
-**Verify:** `python -m unittest tests.test_chapters_complete tests.test_angle_dates tests.test_chapter_titles_checked tests.test_angle_scores_signal tests.test_verify_claim`;
-`py -m scripts.ops regressions`; `py -m scripts.ops verify-claim --run-id 120`.
 
 ## Pipeline order (operator)
 
@@ -140,7 +135,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Run 125:** wave 68; **topic -> angle:** wave 69 - see planning_log 2026-10-10. **Next:** #1089 · #1007 · #1095 · #1006 · #1021; #1088 is an operator call; #1097 is Cursor's. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Run 125:** wave 68; **topic -> angle:** waves 69-70 - see planning_log 2026-10-10. **Next:** #1007 · #1021 · #1006 · #1011 · #1060; #1088 is an operator call; #1097 is Cursor's. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

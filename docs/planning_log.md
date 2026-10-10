@@ -17,6 +17,75 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - wave 70: slang read, two asks, research for the stance; Cursor's prompt
+
+**Prompt (verbatim):** the operator quoted wave 69's "not done" list - "#1089, next wave: slang the
+cue words don't know, like "bounce back", still reads as neutral. For now, press M to fix it.
+#1095, #1096: research aimed at your stance, and ideas that ask for two things, are filed but not
+built. #1097, for Cursor: a mode drop-down in the desktop app. Typing M already works there. and
+provide an updated cursor prompt to feed directly after this".
+
+**Picked:** asked whether to add #1007 and #1021 to make five; the operator chose **just the
+three** - #1096, #1089, #1095 (cheapest first) - plus the Cursor prompt.
+
+**Shipped:**
+
+1. **#1096 an idea with two asks.**
+   - `core.angle_intent.intents_in` reads every ask in table order. `IntentRead.also` keeps the second, from either the topic or the thoughts.
+   - The angles take 3 frames from the first ask's table and 2 from the second's. The script prompt adds the second ask's shape (`_ALSO_LINES`), and the run records `intent_also`.
+   - On ecd737c, "How the Chargers turn it around - reasons for hope" read hope only (first match wins, `core/angle_intent._detect`).
+   - 7 tests, 6 failed first (1 control).
+2. **#1089 a stance read beyond the cue words.**
+   - `resolve_intent` tries the cue words first. Only when every text reads neutral does it make one cheap model read (`model_read`), and that read counts only when it quotes the idea's own words (`model_read_from_reply`).
+   - Discovery makes the read and keeps it in `meta["intent_read"]`. The angles, the angle screen ("[read by the model from 'bounce back' - M if wrong]") and the run reuse it.
+   - An M correction records `intent_detected`.
+   - `ops intent-check` shows how an idea reads; `--table` runs every idea on record live.
+   - `STANCE_MODEL_READ=false` turns the model read off. The suite turns it off by default.
+   - 11 tests, 11 failed first.
+   - #1094's two slang rows now run through it and are enforced.
+3. **#1095 research that serves the stance.**
+   - `core/facts/stance_support.py` counts the fact lines that back a hope or plan idea (`stance_support`, recorded on the run and printed under the facts preview).
+   - Under two lines, it makes one stance search for the subject's name (not the slang - the first replay searched "Chargers Hopeium positives") and keeps the results that name the subject and back the stance.
+   - Measured in the run itself; no run-125 snapshot is in this container.
+   - 8 tests, 8 failed first.
+4. **Cursor's prompt.**
+   - `docs/cursor_brief_2026-10.md` gets a dated "Start here" block holding the exact paste prompt.
+   - Rule 2 now says to start from the latest wave commit (it said wave 66).
+   - The ownership table now names the files changed in waves 69-70.
+   - B1 names the functions #1097 calls.
+
+**Found on the way:**
+- **Four guard tests caught gaps:** an undeclared `ops` argument, two new env flags missing from `.env.example`, the command reference not regenerated, and four mypy errors in the new module (fixed; 121 = baseline).
+- **Filed:** #1098 (your M corrections and the model's phrases become cue words).
+
+**Totals:**
+- 27 new tests, 26 observed failing on ecd737c before their fix (1 control).
+- 5 regression-corpus cases, all failing on ecd737c (141 held).
+
+**Proof** (`scratchpad/rerun_70.py`, through ecd737c and through this wave):
+
+| Check | ecd737c | This wave |
+|---|---|---|
+| "Bolts bounce back week 5" | `default` (cue words only) | `hope [model: bounce back]` (mocked reply) |
+| Model reply quoting words the idea lacks | - | `default` |
+| "turn it around - reasons for hope" | hope only, no plan frame, no plan line | hope + plan in the read, the frames and the script |
+| Hope run whose facts are all losses | no count, no search | one search for "Los Angeles Chargers positives good news", "Facts for your hope: 1 of 3 lines" |
+
+**Not done, deliberately:**
+- Stance words in auto-research's page ranking.
+- The real model's agreement on the table: run `ops intent-check --table` on the PC.
+- #1007 and #1021 are next.
+
+**Audit:**
+- ruff and format clean; mypy 121, equal to the baseline.
+- Suite: 5,072 tests OK in default, reverse and shuffle order, with "data/ and output/ untouched".
+- `ops regressions`: 141 of 141.
+- Every new symbol has a production caller; 0 network attempts.
+
+**Count:** 357 open, 974 done, highest #1098 (`ops roadmap-index`).
+
+---
+
 ## 2026-10-10 (Claude Code) - wave 69: your idea, heard once and kept
 
 **Prompt:** the operator approved the plan in the entry below ("anything else we can plan when it

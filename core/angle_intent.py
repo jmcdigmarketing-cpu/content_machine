@@ -14,8 +14,12 @@ overridden is the wrong kind of magic.
 
 from __future__ import annotations
 
+import json
+import os
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
+
+from core import process_state
 
 ANGLE_REACTION = "reaction"
 ANGLE_DEFAULT = "default"
@@ -235,33 +239,47 @@ _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
-def _detect(topic: str | None) -> tuple[str, str]:
-    """(intent, the cue that set it) - "" for the cue when nothing did."""
+def _asks(topic: str | None) -> list[tuple[str, str]]:
+    """Every (intent, cue) the text asks for, in table order - the reaction cues, then the
+    cue tables, one cue per intent (#1096)."""
     text = (topic or "").strip()
     if not text:
-        return ANGLE_DEFAULT, ""
+        return []
     low = text.lower()
-
-    for cue in _REACTION_CUES:
-        if cue in low:
-            return ANGLE_REACTION, cue
-
+    out: list[tuple[str, str]] = []
+    reaction = next((cue for cue in _REACTION_CUES if cue in low), "")
+    if reaction:
+        out.append((ANGLE_REACTION, reaction))
     for intent, cues in _INTENT_CUES:
         if intent == ANGLE_HOPE and _NO_HOPE.search(text):
             continue
-        for cue in cues:
-            if cue in low:
-                return intent, cue.strip()
-
+        cue = next((c for c in cues if c in low), "")
+        if cue:
+            out.append((intent, cue.strip()))
+    if out:
+        return out
     # A question is asking, not reacting — "is it really that incredible?". Checked
     # after the cue tables, because "how does X work?" is a question *and* an
     # explainer, and the explainer reading is the useful one.
     if _QUESTION.search(text):
-        return ANGLE_DEFAULT, ""
+        return []
     for word in _SUPERLATIVES:
         if word in low and _SHOUTING.search(text):
-            return ANGLE_REACTION, word
-    return ANGLE_DEFAULT, ""
+            return [(ANGLE_REACTION, word)]
+    return []
+
+
+def intents_in(text: str | None) -> list[str]:
+    """Every intent ``text`` asks for, in table order (#1096). Run 125's sibling: "How the
+    Chargers turn it around - reasons for hope" asks for hope AND a plan; first match wins
+    kept only the hope."""
+    return [intent for intent, _cue in _asks(text)]
+
+
+def _detect(topic: str | None) -> tuple[str, str]:
+    """(intent, the cue that set it) - "" for the cue when nothing did."""
+    asks = _asks(topic)
+    return asks[0] if asks else (ANGLE_DEFAULT, "")
 
 
 def detect_angle_intent(topic: str | None) -> str:
@@ -280,9 +298,33 @@ class IntentRead:
     intent: str = ANGLE_DEFAULT
     source: str = "default"
     cue: str = ""
+    # #1096: the second thing the idea asks for ("turn it around" beside "reasons for hope").
+    also: str = ""
+    also_cue: str = ""
+    # #1089: what was read before the operator changed it - the correction, for the record.
+    detected: str = ""
 
     def features(self) -> dict[str, str]:
-        return {"angle_intent": self.intent, "intent_source": self.source, "intent_cue": self.cue}
+        out = {
+            "angle_intent": self.intent,
+            "intent_source": self.source,
+            "intent_cue": self.cue,
+            "intent_also": self.also,
+        }
+        if self.detected:
+            out["intent_detected"] = self.detected
+        return out
+
+    def as_dict(self) -> dict[str, str]:
+        return asdict(self)
+
+
+def intent_read_from(data: object) -> IntentRead | None:
+    """An `IntentRead` back from `as_dict()` (a discovery's `meta["intent_read"]`), or None."""
+    if not isinstance(data, dict) or str(data.get("intent") or "") not in ALL_INTENTS:
+        return None
+    names = {f.name for f in fields(IntentRead)}
+    return IntentRead(**{k: str(v or "") for k, v in data.items() if k in names})
 
 
 def read_intent(*texts: str | None) -> IntentRead:
@@ -290,20 +332,102 @@ def read_intent(*texts: str | None) -> IntentRead:
     names one (#1091). Until 2026-10-10 each stage re-read it from its own text: the angle
     screen and the angles read topic then thoughts, the run record the topic only, the
     research brief the seed only - so a hope idea typed as thoughts ran as hope and was
-    recorded as neutral."""
-    for text in texts:
-        intent, cue = _detect(text)
-        if intent != ANGLE_DEFAULT:
-            return IntentRead(intent, "cue", cue)
-    return IntentRead()
+    recorded as neutral. #1096: the next different ask, in any of the texts, is ``also``."""
+    asks = [ask for text in texts for ask in _asks(text)]
+    if not asks:
+        return IntentRead()
+    intent, cue = asks[0]
+    also, also_cue = next(((i, c) for i, c in asks[1:] if i != intent), ("", ""))
+    return IntentRead(intent, "cue", cue, also, also_cue)
 
 
 def operator_intent(intent: str, detected: IntentRead | None = None) -> IntentRead:
-    """The mode the operator chose on the angle screen (#1092); the detected cue is kept."""
+    """The mode the operator chose on the angle screen (#1092); the detected cue is kept.
+    One mode: a second ask read from the idea does not survive the operator's choice."""
     if intent not in ALL_INTENTS:
         raise ValueError(f"unknown angle mode: {intent}")
     cue = detected.cue if detected and detected.intent == intent else ""
-    return IntentRead(intent, "operator", cue)
+    return IntentRead(intent, "operator", cue, detected=detected.intent if detected else "")
+
+
+# #1089: slang the cue tables have never seen ("bounce back", "is HIM") fell to neutral. The
+# model is asked only when every text reads neutral, and its answer counts only when it quotes
+# the idea's own words - so the angle screen can say what it read and from where, and M fixes it.
+_MODEL_MODES = {"hope": ANGLE_HOPE, "take": ANGLE_TAKE, "plan": ANGLE_PLAN}
+_MODEL_PROMPT = (
+    "What is the creator asking for in this short-video idea? Answer with JSON only: "
+    '{{"mode": "hope" | "take" | "plan" | "neutral", "phrase": "<the 1-5 words of the idea '
+    'that say so, copied exactly>"}}. hope = they want the positives, reasons for optimism '
+    "(slang counts: 'bounce back', 'we're so back'); take = they state or ask for an opinion to "
+    "argue ('is HIM', 'is cooked'); plan = they ask what has to happen; neutral = none of "
+    "these.\n\nIdea: {idea}"
+)
+_MODEL_READS: dict[str, tuple[str, str]] = {}
+_JSON_OBJECT = re.compile(r"\{.*\}", re.S)
+
+
+def model_read_from_reply(idea: str, reply: str | None) -> tuple[str, str]:
+    """(intent, phrase) from the model's reply, or (default, "") - pure (#1089). The phrase must
+    be the idea's own words: a read that cannot point at what it read is not shown."""
+    match = _JSON_OBJECT.search(reply or "")
+    try:
+        data = json.loads(match.group(0)) if match else {}
+    except ValueError:
+        data = {}
+    if not isinstance(data, dict):
+        return ANGLE_DEFAULT, ""
+    intent = _MODEL_MODES.get(str(data.get("mode") or "").strip().lower(), "")
+    phrase = _plain(str(data.get("phrase") or "")).strip(" \"'.,!?")
+    if not intent or not phrase or len(phrase.split()) > 6:
+        return ANGLE_DEFAULT, ""
+    if phrase.lower() not in _plain(idea).lower():
+        return ANGLE_DEFAULT, ""
+    return intent, phrase
+
+
+def model_read_enabled() -> bool:
+    return os.getenv("STANCE_MODEL_READ", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def model_read(idea: str | None) -> IntentRead | None:
+    """One cheap model read of ``idea``, once per idea per process; None when it reads neutral,
+    is off, or the model is down. Never raises."""
+    text = _plain(idea)
+    if not text or not model_read_enabled():
+        return None
+    if text not in _MODEL_READS:
+        try:
+            from core import llm_router
+
+            reply = llm_router.complete(
+                _MODEL_PROMPT.format(idea=text[:400]),
+                tier="cheap",
+                temperature=0.0,
+                max_tokens=60,
+                stage="intent",
+            )
+        except Exception:
+            return None  # a missing read is neutral, never a failed run
+        _MODEL_READS[text] = model_read_from_reply(text, reply)
+    intent, phrase = _MODEL_READS[text]
+    return IntentRead(intent, "model", phrase) if intent != ANGLE_DEFAULT else None
+
+
+def reset_model_reads() -> None:
+    _MODEL_READS.clear()
+
+
+process_state.register_reset("core.angle_intent", reset_model_reads)
+
+
+def resolve_intent(*texts: str | None) -> IntentRead:
+    """`read_intent`, then - only when every text reads neutral - the model's read of the
+    operator's words (#1089). The run's one read: discovery makes it, the rest reuse it."""
+    read = read_intent(*texts)
+    if read.intent != ANGLE_DEFAULT:
+        return read
+    words = " ".join(_plain(t) for t in texts if _plain(t))
+    return model_read(words) or read
 
 
 _INTENT_NOTES = {
@@ -384,8 +508,12 @@ def angle_intent_note(intent: str | IntentRead) -> str:
     detail = _INTENT_NOTES.get(key) or _INTENT_NOTES[ANGLE_DEFAULT]
     if read and read.source == "operator":
         detail = f"{detail} [you chose it]"
+    elif read and read.source == "model":
+        detail = f"{detail} [read by the model from '{read.cue}' - M if wrong]"  # #1089
     elif read and read.cue:
         detail = f"{detail} [from '{read.cue}']"
+    if read and read.also:
+        detail = f"{detail} + {read.also} [from '{read.also_cue}']"  # #1096
     return f"Angle mode: {detail}"
 
 

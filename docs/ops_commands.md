@@ -84,6 +84,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `ingest-clips` | Copy capture clips into video/backgrounds (dry-run default; --apply remuxes) |
 | `init-db` | Create SQL tables (Postgres) |
 | `intelligence-report` | Content Intelligence Report (signals + brief + competitors, no render) |
+| `intent-check` | How an idea reads - the cue words, else one model read (#1089); --table runs every idea on record (tests/fixtures/intent_eval.json) and counts the ones that read as recorded |
 | `intro-waveform` | Draw a waveform of the intro sting and print duration vs the 2.15s offset (--path audio) |
 | `learn-schedule` | Show static vs learned post slots |
 | `lightbox` | Thumbnail lightbox for the last Pillow thumb |

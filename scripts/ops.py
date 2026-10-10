@@ -2468,6 +2468,52 @@ def cmd_rollback_publish(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "intent-check",
+    "How an idea reads - the cue words, else one model read (#1089); --table runs every idea "
+    "on record (tests/fixtures/intent_eval.json) and counts the ones that read as recorded",
+)
+def cmd_intent_check(args: argparse.Namespace) -> int:
+    import json
+    from pathlib import Path
+
+    from core.angle_intent import (
+        angle_intent_note,
+        intents_in,
+        model_read_enabled,
+        resolve_intent,
+    )
+
+    typed = str(getattr(args, "target", None) or getattr(args, "topic", "") or "").strip()
+    ideas = [typed] if typed else []
+    rows: list[dict] = []
+    if getattr(args, "table", False):
+        table = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "intent_eval.json"
+        rows = list(json.loads(table.read_text(encoding="utf-8")).get("rows") or [])
+    if not ideas and not rows:
+        print('intent-check needs an idea ("Bolts bounce back week 5") or --table.')
+        return 2
+    if not model_read_enabled():
+        print("  (STANCE_MODEL_READ is off - cue words only)")
+    for idea in ideas:
+        read = resolve_intent(idea)
+        print(f"  {idea}\n    {angle_intent_note(read)}  [{read.source}]")
+        asks = intents_in(idea)
+        if len(asks) > 1:
+            print(f"    asks for: {' + '.join(asks)}")  # #1096
+    if rows:
+        held = 0
+        for row in rows:
+            read = resolve_intent(str(row.get("idea") or ""))
+            ok = read.intent == row.get("intent")
+            held += ok
+            mark = "ok  " if ok else "MISS"
+            print(f"  {mark} {row.get('idea')!s:<52} {read.intent:<13} want {row.get('intent')}"
+                  f"  [{read.source}{': ' + read.cue if read.cue else ''}]")  # fmt: skip
+        print(f"  {held} of {len(rows)} read as recorded")
+    return 0
+
+
+@_register(
     "verify-claim",
     "List, confirm (--claim N --source URL) or reject (--claim N --reject) a held run's "
     "flagged claims - no re-render; dry-run default, --apply writes (#1013)",
@@ -3041,6 +3087,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--source",
         default=None,
         help="ingest: URL / PDF path / YouTube link; verify-claim: where the claim is confirmed",
+    )
+    parser.add_argument(
+        "--table",
+        action="store_true",
+        help="intent-check: run every idea on record (tests/fixtures/intent_eval.json)",
     )
     parser.add_argument(
         "--claim", type=int, default=None, help="verify-claim: the flagged claim's number"

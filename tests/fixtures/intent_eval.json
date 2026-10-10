@@ -1,5 +1,5 @@
 {
-  "_doc": "#1094: how every idea the operator has typed must read, and which angles it keeps or drops. tests/test_intent_eval.py runs it. Every complaint about the angles adds a row here. A row with `needs` waits for that backlog item and is enforced the moment the item is ticked.",
+  "_doc": "#1094: how every idea the operator has typed must read, and which angles it keeps or drops. tests/test_intent_eval.py runs it. Every complaint about the angles adds a row here. A row with `needs` waits for that backlog item and is enforced the moment the item is ticked. A row with `phrase` is read by the model (#1089): the test replays the model naming that phrase; `py -m scripts.ops intent-check --table` asks the real one.",
   "rows": [
     {"idea": "GTA 6 Extended look reactions, looks great!", "source": "run 73", "intent": "reaction"},
     {"idea": "GTA 6 looks amazing!!!", "source": "run 73", "intent": "reaction"},
@@ -71,7 +71,7 @@
     {"idea": "Is there any hope for the Jets?", "source": "#1094 (any hope read as no hope)", "intent": "hope"},
     {"idea": "The Jets don't have any hope", "source": "#1094", "intent": "default"},
     {"idea": "No hope for the Jets", "source": "#1084", "intent": "default"},
-    {"idea": "Bolts bounce back week 5", "source": "#1094 (slang the cue list has never seen)", "intent": "hope", "needs": "1089"},
-    {"idea": "Herbert is HIM", "source": "#1094 (slang the cue list has never seen)", "intent": "take", "needs": "1089"}
+    {"idea": "Bolts bounce back week 5", "source": "#1094 (slang the cue list has never seen)", "intent": "hope", "needs": "1089", "phrase": "bounce back"},
+    {"idea": "Herbert is HIM", "source": "#1094 (slang the cue list has never seen)", "intent": "take", "needs": "1089", "phrase": "is HIM"}
   ]
 }

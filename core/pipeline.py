@@ -644,12 +644,20 @@ def run_discovery(
         sum(1 for t in _recent if _anchor and _anchor.lower() in t.lower()) if _anchor else 0
     )
 
+    # #1089: the run's one intent read - the cue words, else one cheap model read - made here
+    # so the angles, the angle screen and the script all use it.
+    from core.angle_intent import resolve_intent
+
+    run_read = resolve_intent(topic, brief)
+
     _report("Fetching signals & variants")
     variant_report: dict[str, Any] = {}  # #1008: angles dropped for a stale date
     variant_kwargs: dict[str, Any] = {
         "channel_id": channel_id,
         "repeat_count": repeat_count,
         "report": variant_report,
+        "intent": run_read.intent,
+        "also": run_read.also,
     }
     if brief:
         variant_kwargs["brief"] = brief
@@ -681,6 +689,7 @@ def run_discovery(
         meta["unscored_on_seed"] = scoring_meta["unscored_on_seed"]
     if variant_report.get("angles_dropped"):
         meta["angles_dropped"] = list(variant_report["angles_dropped"])
+    meta["intent_read"] = run_read.as_dict()  # #1089
     # #811: which signals missed the discovery deadline. `meta`, not `timings` —
     # the intelligence report sums that dict and prints every key as seconds (#813).
     if deadline and deadline.get("dropped"):
@@ -747,6 +756,8 @@ def regenerate_angles(
         evaluated, discovery.input_topic, discovery.brief, discovery.base_signals, meta
     )
     meta["angle_mode"] = intent
+    if hasattr(intent_read, "as_dict"):
+        meta["intent_read"] = intent_read.as_dict()
     return replace(
         discovery,
         evaluated=evaluated,
@@ -1010,6 +1021,14 @@ def run_pipeline(
     else:
         result.timings.update(discovery.timings)
         channel_id = discovery.channel_id
+    if not isinstance(intent_read, IntentRead):
+        # #1089: discovery made the run's one read (the model's, when no cue word matched).
+        from core.angle_intent import intent_read_from
+
+        found = intent_read_from((discovery.meta or {}).get("intent_read"))
+        if found is not None:
+            run_intent = found
+            result.angle_intent = run_intent.intent
 
     result.channel_id = channel_id
     input_topic = discovery.input_topic
@@ -1127,6 +1146,17 @@ def run_pipeline(
         best_signals, topic=input_topic or content_topic, event_report=event_research_report
     )
 
+    # #1095: a hope or plan idea counts the facts that back it, and looks for them when thin.
+    from core.facts.stance_support import attach_stance_research
+
+    best_signals, stance_report = attach_stance_research(
+        best_signals,
+        intent=run_intent.intent,
+        topic=input_topic or content_topic,
+        angle=str(best_topic),
+        key_facts=list(key_facts or []),
+    )
+
     logger.info("Building research brief for: %s", best_topic)
     t_brief = time.perf_counter()
     research_brief = build_research_brief(
@@ -1159,6 +1189,7 @@ def run_pipeline(
         own_idea=own_idea,  # #1016: angle 1, the operator's own idea - no take pushed on it
         chapter_angles=angles if len(angles) >= 2 else None,  # #1010
         intent=run_intent.intent,  # #1091
+        intent_also=run_intent.also,  # #1096
         **voice_kwargs,
     )
     if content.get("script_mode") == "unconfirmed":  # #339: drafts, review, dossier read it
@@ -1199,6 +1230,8 @@ def run_pipeline(
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:
         result.features.update(run_intent.features())  # #1091: the intent used, its source and cue
+    if stance_report:
+        result.features["stance_support"] = stance_report  # #1095
     if event_research_report is not None:
         result.features["event_research"] = event_research_report
     if entity_research_report is not None:

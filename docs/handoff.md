@@ -53,29 +53,29 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `78ef37a` + the wave 69 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `ecd737c` + the wave 70 commit (`git log -1`) ·
 **Tree:** clean after the commit.
 
-**Read before editing:** the run's intent is read ONCE now - `core.angle_intent.read_intent(topic,
-thoughts)` -> `IntentRead(intent, source, cue)`, made at `main.py`'s angle screen and passed as
-`run_pipeline(intent_read=)`; every stage keeps `intent or <its own read>` as the fallback. "M" on
-the angle screen changes it (`MODE_KEYS`, `core.pipeline.regenerate_angles`). A take that states its
-side (`stated_side`) is argued, never countered; `stance_flip(text, intent, idea=)` never counts the
-operator's own words. `tests/fixtures/intent_eval.json` is the table every angle complaint adds a
-row to. mypy **121**.
+**Read before editing:** the run's intent is read ONCE, in discovery -
+`core.angle_intent.resolve_intent(topic, thoughts)`: the cue words, else (every text neutral) one
+cheap model read that counts only when it quotes the idea (`model_read_from_reply`). It is kept in
+`discovery.meta["intent_read"]` (`intent_read_from`); `main._screen_intent` and `run_pipeline`
+reuse it - never call the model again. `IntentRead.also` is a second ask (#1096). A hope/plan run
+counts its backing facts (`core/facts/stance_support.py`, `features["stance_support"]`). The suite
+sets `STANCE_MODEL_READ` and `STANCE_RESEARCH` false; their tests turn them on. mypy **121**.
 
-**Cursor, shared files touched (wave 69):** `desktop/session.py` (`angle_mode_line` reads
-`read_intent` - same signature); `docs/cursor_brief_2026-10.md` B1 and `docs/desktop_app.md` name
-the mode chooser as **#1097** (a drop-down; "M" already works through the ask bridge).
+**Cursor:** `docs/cursor_brief_2026-10.md` has a "Start here (2026-10-10)" block - the prompt the
+operator pastes. Shared files touched in wave 70: `main.py` (`_screen_intent`, the stance line under
+the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_stance_research`),
+`.env.example` (two flags). #1097 (the mode drop-down) is yours.
 
 **Defects first:**
-- The operator's `go-public --apply` on 2026-10-10 published CGFtzpiA1so without naming it; they are
-  asked to check which video it was.
-- Run 120's confirmation source is the word "LINK"; `verify-claim --run-id 120` lists it again.
-- #1088 (the established-franchise critique pivot) is an operator call.
+- CGFtzpiA1so (made public by `go-public` with no id on 2026-10-10) - the operator is to check it.
+- Run 120's confirmation source is "LINK"; `verify-claim --run-id 120` lists it again.
+- #1088 is an operator call.
 
-**Shipped:** wave 69 - #1094 #1090 #1093 #1091 #1092. Highest #1097. Next:
-**#1089 · #1007 · #1095 · #1006 · #1021**.
+**Shipped:** wave 70 - #1096 #1089 #1095 + Cursor's prompt. Highest #1098. Next:
+**#1007 · #1021 · #1006 · #1011 · #1060**.
 
 ## Slot — Cursor
 

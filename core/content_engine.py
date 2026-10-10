@@ -199,6 +199,20 @@ UNCONFIRMED_BLOCK = (
 )
 
 
+# #1096: the shape a second ask adds to the script (core.angle_intent's intent names).
+_ALSO_LINES = {
+    "plan": "what has to change first - lay that path out, in order, beside the main point",
+    "hope": "for reasons for hope - give the real ones the facts support",
+    "list": "for a ranked list - structure the body as a ranked list",
+    "explainer": "how it works - explain the mechanism where it matters",
+    "tutorial": "how to do it - show the steps in order",
+    "comparison": "for a comparison - set the two side by side",
+    "retrospective": "to look back - say how it got here",
+    "reaction": "for a first reaction - open on what stood out",
+    "take": "for a take - commit to the side the facts support",
+}
+
+
 def _build_prompts(
     *,
     topic: str,
@@ -222,13 +236,18 @@ def _build_prompts(
     uncovered_event: str = "",
     script_mode: str = "standard",
     own_idea: bool = False,
+    intent_also: str = "",
 ) -> tuple[str, str]:
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
 
-    from core.angle_intent import ANGLE_HOPE, ANGLE_PLAN, ANGLE_TAKE, CALM_INTENTS, intent_of
+    from core.angle_intent import ANGLE_HOPE, ANGLE_PLAN, ANGLE_TAKE, CALM_INTENTS, read_intent
 
-    resolved_intent = intent or intent_of(seed_topic or topic, creative_brief)
+    if intent:
+        resolved_intent, also = intent, intent_also
+    else:
+        _read = read_intent(seed_topic or topic, creative_brief)
+        resolved_intent, also = _read.intent, _read.also
     calm = resolved_intent in CALM_INTENTS
     if resolved_intent == ANGLE_HOPE:
         # #1084 (run 125): "Chargers Hopeium going into week 5" asks for the positives.
@@ -388,6 +407,10 @@ def _build_prompts(
             "- Close on a SPECIFIC line - the implication or the thing to watch. NEVER the "
             'generic "what do you think? drop your thoughts in the comments".'
         )
+
+    if also in _ALSO_LINES and also != resolved_intent:
+        # #1096: "turn it around - reasons for hope" asks for a plan as well as the hope.
+        user_take += f"\n- The idea also asks {_ALSO_LINES[also]}."
 
     retention_rule = ""
     if preset.choice in ("2", "3"):
@@ -1683,15 +1706,20 @@ def generate_content_package(
     own_idea: bool = False,
     chapter_angles: list[str] | None = None,
     intent: str = "",
+    intent_also: str = "",
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
     angle_headline, drop_shorts_tags = _content_tag_helpers()
-    from core.angle_intent import intent_of
+    from core.angle_intent import read_intent
 
     # #1016: the operator's brief counts when the angle and seed carry no intent.
     # #1091: the run's intent, read once at the angle screen, when the caller has it.
-    resolved_intent = intent or intent_of(seed_topic or topic, creative_brief)
+    if intent:
+        resolved_intent, resolved_also = intent, intent_also
+    else:
+        _read = read_intent(seed_topic or topic, creative_brief)
+        resolved_intent, resolved_also = _read.intent, _read.also  # #1096
     clean_key_facts_early = _sanitize_key_facts(key_facts)
     script_brief = build_script_brief(
         topic,
@@ -1801,6 +1829,7 @@ def generate_content_package(
         uncovered_event=_uncovered,
         script_mode=_mode,
         own_idea=own_idea,
+        intent_also=resolved_also,
     )
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude

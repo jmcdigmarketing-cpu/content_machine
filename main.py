@@ -397,6 +397,15 @@ def _parse_angle_choice(
     return "one", best_default
 
 
+def _screen_intent(discovery, topic: str, creative_brief: str):
+    """The run's intent for the angle screen: the one discovery read (#1089), else the cue
+    words of the topic and thoughts (a discovery cached before wave 70 carries none)."""
+    from core.angle_intent import intent_read_from, read_intent
+
+    found = intent_read_from((getattr(discovery, "meta", None) or {}).get("intent_read"))
+    return found if found is not None else read_intent(topic, creative_brief)
+
+
 def _change_angle_mode(discovery, intent_read):
     """#1092: "M" on the angle screen - pick the mode; the angles are written again from the
     signals in hand (no new discovery). The choice is recorded as the operator's. If the
@@ -718,10 +727,10 @@ def _run_new_video_flow_body(
     display_outlier(get_competitor_outlier(discovery.base_signals))
 
     from core.angle_intent import angle_intent_note as _intent_note
-    from core.angle_intent import read_intent as _read_intent
 
-    # #1091: read once, here, and carried to the script, the title and the run record.
-    intent_read = _read_intent(topic, creative_brief)
+    # #1091: read once and carried to the script, the title and the run record; #1089: the
+    # discovery made the read (the model's, when no cue word matched) - no second call here.
+    intent_read = _screen_intent(discovery, topic, creative_brief)
 
     # #1016: angle 1 is the operator's own idea, worded for search; Enter keeps it.
     from apis.topic_variants import idea_angle
@@ -926,6 +935,11 @@ def _run_new_video_flow_body(
             best_topic, best_signals, channel_id=channel_id, seed_topic=topic
         )
         display_fact_preview(_facts_preview, print_fn=print)
+        from core.facts.stance_support import stance_note
+
+        _stance_line = stance_note((result.features or {}).get("stance_support"))  # #1095
+        if _stance_line:
+            print(f"  {_stance_line}")
 
         _ungrounded = result.features.get("ungrounded_entities") or []
         needs_grounding_review = display_grounding_report(

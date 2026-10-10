@@ -290,11 +290,13 @@ def generate_variants(
     brief: str = "",
     report: dict | None = None,
     intent: str = "",
+    also: str = "",
 ):
     """Five editorial angles for ``topic``. ``brief`` is the operator's own thoughts
     (run 77) — they reach the angle prompt and choose the frame when the seed names none.
     ``report`` receives ``angles_dropped`` (#1008) when given. ``intent`` (#1092): the mode
-    the operator chose on the angle screen - read from the topic and thoughts when not given."""
+    the operator chose on the angle screen - read from the topic and thoughts when not given.
+    ``also`` (#1096): a second ask; its table gives two of the five frames."""
     extract_entities(topic)
     topic_lower = topic.lower()
 
@@ -356,23 +358,29 @@ def generate_variants(
     # topic string never reached this decision. Run 77: the ask lives in the typed
     # thoughts once the search seed is just "GTA 6".
     if not intent:
-        intent = detect_angle_intent(topic)
-        if intent == ANGLE_DEFAULT and brief:
-            intent = detect_angle_intent(brief)
+        from core.angle_intent import read_intent
+
+        read = read_intent(topic, brief)
+        intent, also = read.intent, read.also
     if intent in INTENT_ANGLES:
         from core.angle_intent import stated_side
 
         table = intent
         if intent == ANGLE_TAKE and (stated_side(topic) or stated_side(brief)):
             table = TAKE_STATED  # #1090
+        frames = list(INTENT_ANGLES[table])
+        if also in INTENT_ANGLES and also != intent:
+            # #1096: three frames from the first ask, two from the second.
+            frames = frames[:3] + [f for f in INTENT_ANGLES[also] if f not in frames][:2]
         return generate_ai_titles(
             topic,
-            INTENT_ANGLES[table],
+            frames,
             channel_id=channel_id,
             is_established=is_established,
             intent=intent,
             brief=brief,
             report=report,
+            also=also,
         )
 
     # The gaming templates need a gaming TOPIC, not just a gaming channel: run 98's
@@ -518,6 +526,7 @@ def generate_ai_angles(
     intent=None,
     brief: str = "",
     report: dict | None = None,
+    also: str = "",
 ):
     from core.facts.event_dates import run_date
 
@@ -565,6 +574,10 @@ def generate_ai_angles(
     side_idea = next((t for t in (str(topic or ""), thoughts) if stated_side(t)), "")
     lens_key = TAKE_STATED if intent == ANGLE_TAKE and side_idea else intent
     lens_examples = _LENS_EXAMPLES.get(lens_key, _LENS_EXAMPLES[ANGLE_DEFAULT])
+    if also in _LENS_EXAMPLES and also != intent:  # #1096: the second ask's lenses too
+        mixed = [p.strip() for p in lens_examples.split(",")][:3]
+        mixed += [p.strip() for p in _LENS_EXAMPLES[also].split(",")][:2]
+        lens_examples = ", ".join(mixed)
     stance = stance_rule(intent, side_idea)  # #1084: the operator's stance, before the rules
     stance_block = f"\n{stance}\n" if stance else ""
 
@@ -641,6 +654,7 @@ def generate_ai_titles(
     intent=None,
     brief: str = "",
     report: dict | None = None,
+    also: str = "",
 ):
     """Back-compat alias — returns editorial angles, not publishable titles."""
     return generate_ai_angles(
@@ -651,6 +665,7 @@ def generate_ai_titles(
         intent=intent,
         brief=brief,
         report=report,
+        also=also,
     )
 
 

@@ -8,6 +8,19 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 70 — slang read, two asks, research for the stance - 2026-10-10
+
+*mypy 121; ruff 0.15.8 clean; corpus 141 of 141.*
+
+- **#1089** An idea the cue words can't read ("Bolts bounce back week 5", "Herbert is HIM") gets
+  one cheap model read. It counts only when it quotes your words, the angle screen says so ("read by
+  the model from 'bounce back' - M if wrong"), and `ops intent-check` shows how any idea reads.
+- **#1096** An idea that asks for two things ("turn it around - reasons for hope") gets both: angles
+  from both, and the script told about the second.
+- **#1095** A hope or plan video counts the facts that back it ("Facts for your hope: 3 of 22") and,
+  when there are none, searches once for the positives.
+- **Cursor's brief** has a "Start here" prompt to paste.
+
 ### Wave 69 — your idea, heard once and kept - 2026-10-10
 
 *mypy 121; ruff 0.15.8 clean; corpus 136 of 136.*

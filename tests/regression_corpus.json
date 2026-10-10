@@ -2330,6 +2330,90 @@
       },
       "source": "6b5f648 recorded a hope run typed as thoughts as default - read from the angle text alone",
       "why": "the run is labelled with the intent it ran under"
+    },
+    {
+      "id": "two-asks-both-read",
+      "item": 1096,
+      "call": "core.angle_intent:intents_in",
+      "args": [
+        "How the Chargers turn it around - reasons for hope"
+      ],
+      "expect": {
+        "includes_all": [
+          "hope",
+          "plan"
+        ]
+      },
+      "source": "filed 2026-10-10, measured on ecd737c: first match wins, the plan ask was lost",
+      "why": "an idea that asks for hope and a plan gets both"
+    },
+    {
+      "id": "model-read-needs-the-ideas-words",
+      "item": 1089,
+      "call": "core.angle_intent:model_read_from_reply",
+      "args": [
+        "Bolts bounce back week 5",
+        "{\"mode\": \"hope\", \"phrase\": \"comeback\"}"
+      ],
+      "select": 0,
+      "expect": {
+        "equals": "default"
+      },
+      "source": "#1089 (planned 2026-10-10): slang the cue words miss gets one model read",
+      "why": "a model read counts only when it quotes the idea's own words - so the screen can show it"
+    },
+    {
+      "id": "model-read-slang-sibling",
+      "item": 1089,
+      "call": "core.angle_intent:model_read_from_reply",
+      "args": [
+        "Bolts bounce back week 5",
+        "{\"mode\": \"hope\", \"phrase\": \"bounce back\"}"
+      ],
+      "select": 0,
+      "expect": {
+        "equals": "hope"
+      },
+      "source": "ecd737c read 'Bolts bounce back week 5' as neutral",
+      "why": "slang that quotes the idea is read"
+    },
+    {
+      "id": "hope-facts-counted",
+      "item": 1095,
+      "call": "core.facts.stance_support:stance_lines",
+      "args": [
+        [
+          "Joey Bosa returns from injury this week.",
+          "The Chargers lost 27-10 to the Chiefs."
+        ],
+        "hope"
+      ],
+      "expect": {
+        "equals": [
+          "Joey Bosa returns from injury this week."
+        ]
+      },
+      "source": "run 125: the facts were the record and the losses; nothing counted what backed the hope",
+      "why": "a return is a reason for hope; a loss is not"
+    },
+    {
+      "id": "plan-facts-counted-sibling",
+      "item": 1095,
+      "call": "core.facts.stance_support:stance_lines",
+      "args": [
+        [
+          "The Chargers need to win 8 of their remaining 13 games.",
+          "The Chargers lost 27-10."
+        ],
+        "plan"
+      ],
+      "expect": {
+        "equals": [
+          "The Chargers need to win 8 of their remaining 13 games."
+        ]
+      },
+      "source": "sibling of the hope count, for run 124's plan idea",
+      "why": "what has to happen backs a plan idea"
     }
   ]
 }

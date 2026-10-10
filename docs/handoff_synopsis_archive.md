@@ -7,6 +7,26 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-09 (Claude Code): wave 67 #1008 #1009 #1010 #1013 #1014 (runs 119-120)
+
+The operator, afk: "make sure the to do list is updated ... can we work towards the next 5?". The
+to-do list was current; Claude reads its ticks each session (no notification on a change). The
+roadmap's five, the defects runs 119-120 exposed:
+
+- **#1010** a chosen chapter is written: the trim used the Long ceiling on Extended (run 120 lost
+  chapter 5 and the closer); now the Extended ceiling, the closer kept, a missing chapter written once
+  from the facts or left out and said so; Shorts need 20 s.
+- **#1008** stale angles ("by 2025", "UFC 305") dropped before the menu, with a "! N angles dropped"
+  line; the angle prompt and the video title carry the date check.
+- **#1009** chapter titles come from the chapter and are checked ("Chapter N retitled" on the card).
+- **#1014** no per-angle signal fetch (`VARIANT_SIGNAL_RESCORE` brings it back); the judge sees facts
+  and today's date; a shared score prints once.
+- **#1013** `ops verify-claim --run-id N`: confirm a flagged claim with a source (or reject it) and
+  the hold lifts - no re-render; go-public names it when it refuses.
+
+**Verify:** `python -m unittest tests.test_chapters_complete tests.test_angle_dates tests.test_chapter_titles_checked tests.test_angle_scores_signal tests.test_verify_claim`;
+`py -m scripts.ops regressions`; `py -m scripts.ops verify-claim --run-id 120`.
+
 ## Previous — 2026-10-09 (Claude Code): wave 66 #1016 #1001-#1005 #1003 #1012 #1017 #1018 (run 124's idea)
 
 The operator's run 124 ("How the 0-4 chargers can turn it around this year") was "a good video,

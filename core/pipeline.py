@@ -1528,10 +1528,10 @@ def run_media_only(
     except Exception as exc:
         logger.debug("footage context skipped: %s", exc)
     # #988: what opens the video - the channel intro, or straight into the hook.
-    from video.channel_intro import intro_for_run, opening_record, resolve_intro_path
+    from video.channel_intro import intro_for_run, opening_after_render
 
     with_intro = intro_for_run(channel_id, content_run_id)
-    _, background = render_vertical_video(
+    _, background, intro_landed = render_vertical_video(
         mp3_path,
         topic,
         mp4_filename,
@@ -1561,16 +1561,14 @@ def run_media_only(
 
             # #994: when the first caption appears, from the subtitle file the render burned.
             first_cue = first_cue_seconds(subtitle_beside(mp4_path))
-            opening = opening_record(
-                channel_id, with_intro, resolve_intro_path(channel_id), first_cue=first_cue
-            )
+            opening = opening_after_render(channel_id, intro_landed, first_cue=first_cue)
             merge_quality(content_run_id, {"opening": opening})
             if opening.get("late_first_caption"):
                 logger.warning(
                     "first caption %.2f s after the %s - no words on screen while viewers decide "
                     "to swipe (FIRST_CAPTION_MAX_S)",
                     float(first_cue or 0),
-                    "intro" if with_intro else "start",
+                    "intro" if intro_landed else "start",
                 )
         except Exception as exc:
             logger.debug("opening record skipped: %s", exc)
@@ -1594,7 +1592,7 @@ def run_media_only(
         from core.first_frame import render_check as first_frame_render_check
         from scripts.probe_sync import intro_offset_seconds
 
-        no_intro = render_preset == "draft" or not with_intro
+        no_intro = render_preset == "draft" or not intro_landed
         offset = 0.0 if no_intro else intro_offset_seconds(channel_id)
         frame_check = inspect_video(mp4_path, intro_offset=offset)
         if frame_check is not None:
@@ -1611,7 +1609,7 @@ def run_media_only(
         from core.caption_contrast import render_check as contrast_render_check
         from scripts.probe_sync import grab_frame, intro_offset_seconds
 
-        no_intro = render_preset == "draft" or not with_intro
+        no_intro = render_preset == "draft" or not intro_landed
         offset = 0.0 if no_intro else intro_offset_seconds(channel_id)
         with _tmp.TemporaryDirectory() as tmp:
             still = os.path.join(tmp, "contrast.png")

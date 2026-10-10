@@ -256,7 +256,7 @@ class TestLongFormVoicePolicy(unittest.TestCase):
                 patch.object(pipeline, "media_paths_for_topic", return_value=(mp3, "a.mp4", mp4)),
                 patch("core.tts_char_cap.tts_char_cap_reason", return_value=""),
                 patch.object(pipeline, "generate_audio") as audio,
-                patch.object(pipeline, "render_vertical_video", return_value=(None, None)),
+                patch.object(pipeline, "render_vertical_video", return_value=(None, None, False)),
                 patch.object(pipeline, "update_content_run_media"),
                 patch.object(pipeline, "record_render_assets"),
                 patch("core.run_trace.update_trace"),

@@ -217,6 +217,20 @@ def first_caption_limit() -> float:
         return 0.5
 
 
+def opening_after_render(
+    channel_id: str | None,
+    landed: bool,
+    first_cue: float | None = None,
+) -> dict:
+    """#999: record an intro only when the prepend actually landed.
+
+    A requested intro that raised is not an intro, and the first caption is not
+    shifted by the intro length.
+    """
+    path = resolve_intro_path(channel_id) if landed else None
+    return opening_record(channel_id, bool(landed), path, first_cue=first_cue)
+
+
 def opening_record(
     channel_id: str | None,
     with_intro: bool,

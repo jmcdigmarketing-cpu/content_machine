@@ -160,7 +160,7 @@ class TestTechnicalQCPipelineWiring(unittest.TestCase):
                 patch.object(
                     pipeline,
                     "render_vertical_video",
-                    return_value=(os.path.basename(mp4), "owned"),
+                    return_value=(os.path.basename(mp4), "owned", False),
                 ),
                 patch.object(pipeline, "update_content_run_media"),
                 patch.object(pipeline, "record_render_assets"),

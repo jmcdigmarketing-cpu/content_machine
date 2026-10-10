@@ -79,7 +79,7 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `eed3404` plus the #1044 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `99f732e` plus the #999 commit ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
@@ -92,9 +92,9 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - `voice_delivery` and `tts_model` are registered and not started.
 - #1038 and the #217 editor stay open.
 - Enter on the Shorts offer now cuts and queues.
-- A freeze that runs to the end of the file has a start and no duration. It is
-  reported. The length of that open stretch is not known.
+- A freeze to the end of the file has a start and no duration.
 
-**Shipped:** #1053 `eed3404`. #1044: stretches longer than 0.5s keep their start.
-A 0.35s black stretch and a 0.40s freeze were dropped. 2 tests failed first.
-Next: #999 failed intro. `core/pipeline.py` gets a handoff note before the edit.
+**Shipped:** #999. A raised prepend is not stored as an intro. The first caption
+stays at the subtitle cue, and the first-frame sample stays at 0. 2 tests failed
+first. Next: #1067 the new-video intent card, then #1097. `main.py` gets a
+handoff note before the angle-step payload change.

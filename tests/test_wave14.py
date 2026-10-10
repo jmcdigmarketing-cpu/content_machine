@@ -61,7 +61,7 @@ class TestTtsGraceAndForce(unittest.TestCase):
                 return_value=("a.mp3", "v.mp4", "out/v.mp4"),
             ),
             patch.object(pipeline, "generate_audio") as tts,
-            patch.object(pipeline, "render_vertical_video", return_value=("v", "bg")),
+            patch.object(pipeline, "render_vertical_video", return_value=("v", "bg", False)),
             patch.object(pipeline, "update_content_run_media"),
             patch.object(pipeline, "record_render_assets"),
             patch("core.run_features.load_features", return_value={}),

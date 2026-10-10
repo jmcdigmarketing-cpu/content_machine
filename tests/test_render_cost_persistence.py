@@ -195,7 +195,7 @@ class TestRunMediaOnlyPersists(unittest.TestCase):
                 pipeline, "media_paths_for_topic", return_value=("a.mp3", "v.mp4", "out/v.mp4")
             ),
             patch.object(pipeline, "generate_audio"),
-            patch.object(pipeline, "render_vertical_video", return_value=("v", "bg")),
+            patch.object(pipeline, "render_vertical_video", return_value=("v", "bg", False)),
             patch.object(pipeline, "update_content_run_media"),
             patch.object(pipeline, "record_render_assets"),
             patch("core.run_features.load_features", return_value=stored),
@@ -238,7 +238,7 @@ class TestRunMediaOnlyPersists(unittest.TestCase):
                 pipeline, "media_paths_for_topic", return_value=("a.mp3", "v.mp4", "out/v.mp4")
             ),
             patch.object(pipeline, "generate_audio"),
-            patch.object(pipeline, "render_vertical_video", return_value=("v", "bg")),
+            patch.object(pipeline, "render_vertical_video", return_value=("v", "bg", False)),
             patch.object(pipeline, "update_content_run_media"),
             patch.object(pipeline, "record_render_assets"),
             patch("core.run_features.load_features", side_effect=OSError("db down")),

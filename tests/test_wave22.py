@@ -383,7 +383,7 @@ class TestPreviewRender(unittest.TestCase):
                 video_dir.mkdir(parents=True, exist_ok=True)
                 target = video_dir / out
                 target.write_bytes(b"mp4")
-                return str(target), "bg"
+                return str(target), "bg", False
 
             with patch("video.render_video.render_vertical_video", side_effect=fake_render):
                 path = fast_cut.render_preview(str(audio), "GTA 6", "tapin", out_dir=str(out_dir))

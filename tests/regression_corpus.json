@@ -2428,6 +2428,22 @@
         "equals": "owned gameplay (operator capture)"
       },
       "why": "footage-add rewrote the folder license string, so an owned folder was labelled third-party"
+    },
+    {
+      "id": "failed-intro-is-not-an-intro",
+      "item": 999,
+      "source": "a failed prepend was stored as an intro and the first caption moved by about 2.15s",
+      "call": "video.channel_intro:opening_after_render",
+      "args": ["tapin", false, 0.2],
+      "expect": {
+        "equals": {
+          "intro": false,
+          "intro_seconds": 0.0,
+          "first_caption_s": 0.2,
+          "late_first_caption": false
+        }
+      },
+      "why": "growth's intro split counted a video that has no intro"
     }
   ]
 }

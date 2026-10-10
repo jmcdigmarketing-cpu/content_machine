@@ -105,7 +105,7 @@ class TestBoothDebugDetails(unittest.TestCase):
             command_callback("intro_attempt", intro)
             command_callback("intro_success", intro)
             command_callback("outro_attempt", ["ffmpeg", "-i", "broken.mp4", "out.mp4"])
-            return "out.mp4", None
+            return "out.mp4", None, False
 
         with (
             patch.dict(

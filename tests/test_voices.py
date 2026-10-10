@@ -479,7 +479,7 @@ class RenderVoicesTests(unittest.TestCase):
                 ),
                 patch("core.tts_char_cap.tts_char_cap_reason", return_value=""),
                 patch.object(pipeline, "generate_audio") as audio,
-                patch.object(pipeline, "render_vertical_video", return_value=(None, None)),
+                patch.object(pipeline, "render_vertical_video", return_value=(None, None, False)),
                 patch(
                     "core.voice.plan.plan_for_run",
                     return_value=({"narrator": "voiceB", "cohost": "voiceC"}, ["seg"]),

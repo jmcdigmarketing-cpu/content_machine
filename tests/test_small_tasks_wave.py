@@ -185,7 +185,7 @@ class TestThumbnailSafeArea(unittest.TestCase):
                 patch.object(
                     pipeline,
                     "render_vertical_video",
-                    return_value=("output/video/publish.mp4", "background"),
+                    return_value=("output/video/publish.mp4", "background", False),
                 ),
                 patch("assets.flux_thumbnail.generate_thumbnail", return_value=thumb),
                 patch(
@@ -301,7 +301,7 @@ class TestDraftRenderPreset(unittest.TestCase):
             patch.object(
                 pipeline,
                 "render_vertical_video",
-                return_value=("output/video/publish_preview.mp4", "background"),
+                return_value=("output/video/publish_preview.mp4", "background", False),
             ) as render,
             patch.object(pipeline, "update_content_run_media") as update,
             patch.object(pipeline, "record_render_assets") as record,

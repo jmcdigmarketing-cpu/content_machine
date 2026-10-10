@@ -238,7 +238,7 @@ class TestRenderWithBed(_RenderHarness):
             "core.music.generate_bed",
             return_value=ProviderResult.success("music", "musicgen", data=bed),
         ) as gen:
-            output_path, _asset = self._render()
+            output_path, _asset, _intro = self._render()
         gen.assert_called_once_with("upbeat", self.duration)
         self.assertEqual(self.run_mock.call_count, 1)
         cmd = self.run_mock.call_args[0][0]

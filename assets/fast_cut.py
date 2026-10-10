@@ -637,7 +637,7 @@ def render_preview(
         script = " ".join(str(w.get("word") or "") for w in words)
     # A bare filename: render_vertical_video joins it under its own video folder and returns
     # the real path (a full path here nested it: video/output/tapin/preview/...).
-    output, _background = render_vertical_video(
+    output, _background, _intro = render_vertical_video(
         copy, topic, f"{stem}.mp4", script.strip() or topic, channel_id
     )
     return str(output)

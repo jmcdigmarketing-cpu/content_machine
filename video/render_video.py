@@ -667,6 +667,8 @@ def render_vertical_video(
     from video.channel_intro import prepend_channel_intro, resolve_intro_path
 
     # #988: with_intro=False (INTRO_TEST=alternate) renders this video without the intro.
+    # #999: the third return is whether the prepend landed. A raised prepend is not an intro.
+    intro_landed = False
     if render_preset != "draft" and with_intro is not False and resolve_intro_path(channel_id):
         stage("Prepending channel intro...")
         try:
@@ -675,6 +677,7 @@ def render_vertical_video(
                 channel_id=channel_id,
                 command_callback=command_callback,
             )
+            intro_landed = True
             if progress:
                 progress.note("Channel intro prepended")
         except Exception as e:
@@ -722,7 +725,7 @@ def render_vertical_video(
     if progress:
         progress.done(f"Video saved: {output_path}")
     logger.info("Video saved: %s", output_path)
-    return output_path, asset
+    return output_path, asset, intro_landed
 
 
 def _render_extra_formats(

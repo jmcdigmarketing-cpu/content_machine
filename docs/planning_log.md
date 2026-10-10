@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #999 a failed intro is not an intro
+
+**Prompt:** Phase A7. `render_vertical_video` returns whether the prepend landed. The pipeline passes that boolean into the opening record. A raised prepend is not an intro, and the first caption is not shifted by the intro length.
+
+**Decision:** The third return is true only after `prepend_channel_intro` returns. `opening_after_render` records that flag. The first-frame and caption-contrast samples use it too, so a failed prepend is read at 0 rather than at the intro offset.
+
+**Shipped:** 2 tests failed first. Storing the requested flag instead recorded `intro` true. A cue at 0.2s stays at 0.2s.
+
 ## 2026-10-10 (Cursor) - #1044 black and freeze start times
 
 **Prompt:** Phase A6. A black or frozen stretch longer than 0.5s should be reported with its start time. Both filters use `d=0.5`.

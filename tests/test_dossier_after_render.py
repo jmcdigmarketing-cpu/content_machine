@@ -30,7 +30,7 @@ def _render(content_run_id):
             ),
             patch("core.tts_char_cap.tts_char_cap_reason", return_value=""),
             patch.object(pipeline, "generate_audio"),
-            patch.object(pipeline, "render_vertical_video", return_value=(None, None)),
+            patch.object(pipeline, "render_vertical_video", return_value=(None, None, False)),
             patch("core.voice.plan.plan_for_run", return_value=({"narrator": "vA"}, None)),
             patch("core.tts.last_run_voices", return_value={"narrator": "vA"}),
             patch("core.run_features.load_features", return_value={}),

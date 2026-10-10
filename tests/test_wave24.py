@@ -396,7 +396,7 @@ class TestShortPreview(unittest.TestCase):
             trimmed.append((path, seconds))
 
         def fake_render(copy, topic, name, script, channel_id):
-            return os.path.join(os.path.dirname(copy), "..", "video", name), None
+            return os.path.join(os.path.dirname(copy), "..", "video", name), None, False
 
         with (
             patch.object(fast_cut, "_trim_audio", side_effect=fake_trim),
@@ -422,7 +422,7 @@ class TestShortPreview(unittest.TestCase):
             patch.object(fast_cut, "_trim_audio") as trim,
             patch(
                 "video.render_video.render_vertical_video",
-                side_effect=lambda c, t, n, s, ch: (n, None),
+                side_effect=lambda c, t, n, s, ch: (n, None, False),
             ),
         ):
             fast_cut.render_preview(audio, "GTA", "tapin", out_dir=work)

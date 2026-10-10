@@ -433,6 +433,18 @@ def resolve_tts_config(channel_id: str | None = None) -> tuple[str, str]:
     """Return (voice_id, model_id) for channel - the run's voice for the active role."""
     profile = get_channel_profile(channel_id)
     model_id = profile.tts_model_id or DEFAULT_MODEL
+    try:
+        from core.experiment_levers import tts_model_for_arm
+        from core.experiments import next_arm
+
+        picked = next_arm(resolve_channel_id(channel_id), kind="tts_model")
+    except Exception as exc:
+        logger.debug("tts model experiment skipped: %s", exc)
+        picked = None
+    if picked:
+        chosen = tts_model_for_arm(picked[1])
+        if chosen:
+            model_id = chosen
     role = _active_role
     if _run_voices is not None:
         pinned = _run_voices.get(role) or ""

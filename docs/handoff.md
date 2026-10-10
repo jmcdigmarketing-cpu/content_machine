@@ -79,7 +79,7 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `95d89c8` plus the #1037 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `9357870` plus the #1038 commit (`git log -1`) ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
@@ -89,10 +89,8 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - No brand font file is in the repo. A bright Flux picture is left without text.
 - Thumbnail auto-pick runs only when `THUMBNAIL_SCORER_ENABLED` is on.
 - A script with no blank line is still one TTS request.
-- `voice_delivery` is registered and read, and it is not started. The operator
-  starts it. Until then every channel uses its `tts` numbers.
+- `voice_delivery` and `tts_model` are registered and not started.
+- #1038 is not done. The arm is wired. The operator has not heard three scripts.
 
-**Shipped:** #1036 `95d89c8`. #1037: stability, style, and similarity_boost from
-`config/channels.json` are on the ElevenLabs settings object. Expressive arm
-sends style 0.45. 3 tests failed first. Next: #1038 model arm. The operator's
-blind pick stays open.
+**Shipped:** #1037 `9357870`. #1038: an active `v3` arm makes `resolve_tts_config`
+return `eleven_v3`. 2 tests failed first. Next: #217 lexicon on the paragraph path.

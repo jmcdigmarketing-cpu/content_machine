@@ -98,6 +98,14 @@ _LEVERS: dict[str, dict] = {
             "expressive": "stability 0.35, similarity_boost 0.80, style 0.45",
         },
     },
+    "tts_model": {
+        "description": "ElevenLabs model. The blind pick on three scripts is still open.",
+        "kind": "tts_model",
+        "arms": {
+            "multilingual_v2": "eleven_multilingual_v2",
+            "v3": "eleven_v3",
+        },
+    },
 }
 
 
@@ -126,3 +134,14 @@ def voice_delivery_overrides(arm: str) -> dict[str, float]:
     if arm != "expressive":
         return {}
     return {"stability": 0.35, "similarity_boost": 0.80, "style": 0.45}
+
+
+def tts_model_for_arm(arm: str) -> str:
+    """Model id for a tts_model arm. Empty when the arm is unknown.
+
+    The operator's blind pick between these two, on three scripts, is still open.
+    """
+    return {
+        "multilingual_v2": "eleven_multilingual_v2",
+        "v3": "eleven_v3",
+    }.get(arm, "")

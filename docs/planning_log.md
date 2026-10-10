@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1038 model arm wired, pick still open
+
+**Prompt:** Phase A4. The request should be able to name `eleven_multilingual_v2` or the newer model. The operator's blind listen cannot be done in this run.
+
+**Decision:** Lever `tts_model`, kind `tts_model`, arms `multilingual_v2` and `v3` (`eleven_v3`). `resolve_tts_config` uses the active arm. Nothing starts the experiment. The backlog line stays open until the operator picks.
+
+**Shipped:** 2 tests failed first. The request stayed on `eleven_multilingual_v2` when the v3 arm was active. It now returns `eleven_v3`. No experiment still returns the channel model.
+
 ## 2026-10-10 (Cursor) - #1037 channel voice settings
 
 **Prompt:** Phase A4. Send stability, style, and similarity_boost from each channel's `tts` block, and register a two-arm experiment.

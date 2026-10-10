@@ -152,6 +152,8 @@ COMMON_CAPITALISED = (
             "june", "july", "august", "september", "october", "november", "december",
             # Run 132: "Long-term outlook" was looked up as long-term potentiation.
             "long", "term", "short", "outlook",
+            # #1104: "Lose the next one" is a verb, not a name.
+            "lose", "lost", "win", "wins",
         }
     )
 )  # fmt: skip
@@ -341,6 +343,10 @@ def subject_terms(topic: str, *, limit: int = 4) -> list[str]:
     return out[:limit]
 
 
+# A short word that starts a place, not a person. "San Antonio" must not be searched as Antonio.
+_PLACE_PARTICLES = frozenset({"san", "los", "las", "saint", "st", "new"})
+
+
 def subject_markers(terms: list[str]) -> list[str]:
     """The words that say a text is about these names.
 
@@ -369,6 +375,9 @@ def subject_markers(terms: list[str]) -> list[str]:
             add(words[-1])
             continue
         parts = [part for word in words for part in word.split("-") if part]
+        # #1104: "San Antonio" is the place. "Antonio" alone is a different person.
+        if any(part.lower() in _PLACE_PARTICLES for part in parts):
+            continue
         for part in parts if len(parts) > 1 else []:  # "Netflix-only" -> "Netflix"
             if len(part) >= 4 and part.lower() not in COMMON_CAPITALISED:
                 add(part)

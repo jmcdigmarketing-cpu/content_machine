@@ -54,17 +54,16 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**2026-10-10** shipped the previous five (#1007, #1021, #1006, #1011, #1060) and the rest of that
-engine list (#1098, #1082, #1024, #1022, #1023, #1026, #1027, #1028, #1030, #1032), plus the three
-breaks from runs 131-133 (#1099, #1100, #1101). `py -m scripts.ops roadmap-index`: backlog open
-333, done 801, highest #1104. The next five are the three defects those runs left, then the
-cheapest open Next items that are not an operator call:
+**2026-10-10** shipped the previous five (#1102, #1103, #1104, #1045, #1052).
+`py -m scripts.ops roadmap-index`: backlog open 328, done 806, numbered open 276, highest
+open #1088. The list changed because those five are done. The next five are the cheapest
+open small items that are not an operator call, with the live chapter-title cut first:
 
-1. **#1102 an all-angles file named after chapters were left out** `[S]` - run 133.
-2. **#1103 a Topuria description cited UFC Vegas 122** `[S]` - run 132.
-3. **#1104 grounding splits "San Antonio" and flags "Lose"** `[S]` - run 132.
-4. **#1045 visual variety** `[S]` - a per-clip cap, no reuse within the last N videos.
-5. **#1052 Shorts packaging** `[S]` - a Short gets its own title and hashtags.
+1. **#1080 a chapter title ends mid-phrase** `[S]` - run 119's last-resort label.
+2. **#1081 the seasonal calendar's UFC 322 date** `[S]` - the seed says 2026.
+3. **#1066 fix a published description without a re-upload** `[S]` - run 119.
+4. **#1083 a confirmed claim becomes a fact** `[S]`.
+5. **#1072 cost per published minute** `[S]`.
 
 **#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
 #1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),

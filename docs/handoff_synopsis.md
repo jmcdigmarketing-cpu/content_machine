@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: the next fifteen, plus runs 131-133
+# Handoff synopsis — 2026-10-10: the next five (runs 132-133 leftovers, clip cap, Short tags)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Cursor): the next fifteen, plus runs 131-133
+## Last wave — 2026-10-10 (Cursor): the next five
+
+The previous five shipped. The file name now counts the chapters that were cut
+(#1102): one of five is "NBA award predictions", five of five still says "all 5
+angles". A public source on a fighter topic has to name that fighter (#1103);
+a card-only topic still cites the card. "Lose" is not a name and "San Antonio"
+is one marker (#1104). One source file stays at 2 shots while another is free,
+and a remembered clip is left out when another exists (#1045). A chapter Short's
+tags come from its own title, so the hype-train chapter carries `#hype` (#1052).
+
+`roadmap-index`: backlog open 328, done 806, numbered open 276, highest open
+#1088. Next: #1080, #1081, #1066, #1083, #1072.
+
+## Previous — 2026-10-10 (Cursor): the next fifteen, plus runs 131-133
 
 Runs 131-133 were healthy renders that still warned or looked up the wrong thing.
 #1099 drops a hyphenated ordinary phrase from who's who. #1100 puts a font file on
@@ -47,25 +60,6 @@ The operator picked the three left from wave 69's list, and asked for a fresh Cu
 
 **Verify:** `python -m unittest tests.test_two_asks tests.test_model_stance_read tests.test_stance_research tests.test_intent_eval`;
 `py -m scripts.ops intent-check --table` on the PC (the real model).
-
-## Previous — 2026-10-10 (Claude Code): wave 69 #1094 #1090 #1093 #1091 #1092 (your idea, heard once and kept)
-
-Planned with the operator ("anything else we can plan when it comes to topic to angle
-miscommunication?"): a read of 6b5f648 found the idea still misheard four ways after wave 68.
-
-- **#1090** a verdict you state ("Jets are doomed", "hot take: Herbert is elite") is a take with a
-  side: the angles, script and title argue it; an angle that negates it is dropped; your own words
-  never count against you (wave 68 had dropped "Why the Jets are doomed after week 4").
-- **#1091** the intent is read once (`core.angle_intent.read_intent`) and carried to the brief,
-  script, title and run record (`angle_intent`, `intent_source`, `intent_cue`).
-- **#1092** "M = change mode" on the angle screen - the angles are rewritten from the signals in
-  hand (`core.pipeline.regenerate_angles`). Desktop chooser: #1097.
-- **#1093** hook, title, Long close and the idea check keep the stance.
-- **#1094** `tests/fixtures/intent_eval.json` - every idea on record and how it must read; "any
-  hope" is no longer read as "no hope".
-
-**Verify:** `python -m unittest tests.test_intent_eval tests.test_own_take tests.test_stance_last_pass tests.test_one_intent tests.test_angle_mode`;
-`py -m scripts.ops regressions`; then type "Jets are doomed" and "Bolts bounce back week 5" (M -> h).
 
 ## Pipeline order (operator)
 
@@ -141,7 +135,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1102 · #1103 · #1104 · #1045 · #1052. #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #1080 · #1081 · #1066 · #1083 · #1072. #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

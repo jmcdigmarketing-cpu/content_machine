@@ -39,6 +39,7 @@ import subprocess
 import tempfile
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from itertools import pairwise
 from typing import TYPE_CHECKING, Any
 
 from core.logging import get_logger
@@ -195,7 +196,9 @@ def cut_points(
         cut = _boundary(start, length)
         if previous is not None and abs(cut - start - previous) < _LENGTH_GAP:
             # The snap pulled this shot back onto the last one's length: step away from it.
-            want = previous + _LENGTH_GAP if previous + _LENGTH_GAP <= hi else previous - _LENGTH_GAP
+            want = (
+                previous + _LENGTH_GAP if previous + _LENGTH_GAP <= hi else previous - _LENGTH_GAP
+            )
             retry = _boundary(start, want)
             cut = retry if abs(retry - start - previous) >= _LENGTH_GAP else round(start + want, 3)
         previous = float(cut) - start
@@ -228,28 +231,64 @@ def cut_points(
     return bounds
 
 
+# #1045: one source file, however many 30 s windows it was split into.
+_CLIP_USES_PER_VIDEO = 2
+
+
 def plan_shots(
     bounds: list[float],
     clips: list[str],
     *,
     durations: dict[str, float] | None = None,
     rng: random.Random | None = None,
+    group_of=None,
+    per_group: int = 0,
 ) -> list[tuple[str, float, float]]:
-    """(clip, in-point, length) per shot: the pool in rotation, never a clip twice in a row."""
+    """(clip, in-point, length) per shot: the pool in rotation, never a clip twice in a row.
+
+    ``per_group`` caps how many shots one source file can take while another file is
+    still under the cap. Past that, a shot repeats rather than leaving a gap.
+    """
     rng = rng or random.Random()
     pool = list(dict.fromkeys(c for c in clips if c))
     if not pool:
         return []
+
+    def _group(clip: str) -> str:
+        return group_of(clip) if group_of else clip
+
     order: list[str] = []
+    uses: dict[str, int] = {}
     shots: list[tuple[str, float, float]] = []
-    for a, b in zip(bounds, bounds[1:], strict=False):
+    for a, b in pairwise(bounds):
         length = max(0.1, b - a)
         if not order:
             order = pool[:]
             rng.shuffle(order)
             if shots and len(order) > 1 and order[0] == shots[-1][0]:
                 order.append(order.pop(0))
-        clip = order.pop(0)
+        last = shots[-1][0] if shots else ""
+
+        def _ok(clip: str, *, over: bool, repeat: bool, last_clip: str = last) -> bool:
+            if not repeat and last_clip and clip == last_clip and len(pool) > 1:
+                return False
+            if over or per_group <= 0:
+                return True
+            return uses.get(_group(clip), 0) < per_group
+
+        choice = next((c for c in order if _ok(c, over=False, repeat=False)), None)
+        if choice is None:
+            choice = next((c for c in pool if _ok(c, over=False, repeat=False)), None)
+        # A file still under the cap beats repeating one that is already over it.
+        if choice is None:
+            choice = next((c for c in pool if _ok(c, over=False, repeat=True)), None)
+        if choice is None:
+            choice = next((c for c in order if _ok(c, over=True, repeat=False)), None)
+        if choice is None:
+            choice = order[0]
+        order = [c for c in order if c != choice]
+        uses[_group(choice)] = uses.get(_group(choice), 0) + 1
+        clip = choice
         clip_len = (durations or {}).get(clip)
         room = (float(clip_len) - length) if clip_len else 0.0
         start = round(rng.uniform(0.0, room), 3) if room > 0.2 else 0.0
@@ -293,11 +332,16 @@ def plan_windowed_shots(
     In-points come from the first half of each window, so two neighbouring windows of one
     long file never start their shots less than half a window (15 s) apart.
     """
-    longest = max((b - a for a, b in zip(bounds, bounds[1:], strict=False)), default=0.0)
-    lengths = {
-        k: (w[2] / 2 + longest if k != w[0] else w[2]) for k, w in windows.items() if w[2]
-    }
-    planned = plan_shots(bounds, keys, durations=lengths, rng=rng)
+    longest = max((b - a for a, b in pairwise(bounds)), default=0.0)
+    lengths = {k: (w[2] / 2 + longest if k != w[0] else w[2]) for k, w in windows.items() if w[2]}
+    planned = plan_shots(
+        bounds,
+        keys,
+        durations=lengths,
+        rng=rng,
+        group_of=lambda key: windows[key][0],
+        per_group=_CLIP_USES_PER_VIDEO,
+    )
     return [
         (windows[key][0], round(windows[key][1] + start, 3), length)
         for key, start, length in planned
@@ -312,9 +356,7 @@ def build_shot_command(clip: str, start: float, length: float, output: str) -> l
     kept = max(0.2, 1.0 - top - bottom)
     # Even height and offset so libx264's yuv420p never sees an odd row count.
     band = (
-        f"crop=iw:trunc(ih*{kept:.4f}/2)*2:0:trunc(ih*{top:.4f}/2)*2,"
-        if (top + bottom) > 0
-        else ""
+        f"crop=iw:trunc(ih*{kept:.4f}/2)*2:0:trunc(ih*{top:.4f}/2)*2," if (top + bottom) > 0 else ""
     )
     return [
         "ffmpeg",
@@ -370,6 +412,17 @@ def _probe(path: str) -> float | None:
         return None
 
 
+def pool_without_recent(
+    clips: list[str], remembered: set[str], *, limit: int = _MAX_POOL
+) -> list[str]:
+    """Clips not used in the remembered window, or the whole list when that is all there is.
+
+    #1045. Fast cut used to sort a recent clip to the end and still play it.
+    """
+    fresh = [c for c in clips if os.path.normcase(os.path.abspath(c)) not in remembered]
+    return (fresh or list(clips))[:limit]
+
+
 def _clip_pool(topic: str, channel_id: str | None) -> list[str]:
     from assets.category import detect_category
     from assets.local_provider import LocalAssetProvider
@@ -379,7 +432,7 @@ def _clip_pool(topic: str, channel_id: str | None) -> list[str]:
         from assets.clip_memory import recent
 
         seen = set(recent())
-        clips.sort(key=lambda c: os.path.normcase(os.path.abspath(c)) in seen)
+        return pool_without_recent(clips, seen)
     except Exception as exc:
         logger.debug("clip memory ordering skipped: %s", exc)
     return clips[:_MAX_POOL]

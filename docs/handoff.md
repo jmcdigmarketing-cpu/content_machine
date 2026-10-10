@@ -79,25 +79,18 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `3ef604d` · **Tree:** this wave is
+**Written:** 2026-10-10 · **HEAD at write:** `c52b470` · **Tree:** this wave is
 uncommitted until the commit that follows. Leave `docs/startup_powershell.md`.
 Leave `.agents/` and `.codex/` untracked.
 
 **Defects first:**
-- #1102 run 133's file is named `all_5_angles` after chapters were left out.
-- #1103 run 132's description sources are UFC Vegas 122 pages.
-- #1104 grounding splits "San Antonio" and flags "Lose".
 - #1088 is still an operator call.
-- A real startup now reads ESPN boards for best bets (`BEST_BET_SCHEDULE`).
-- B1 leftovers still open: footage-licence is a fixture, no brand font, the
-  thumbnail scorer is off unless enabled, `voice_delivery` and `tts_model` are
-  not started, #1038 and #217 stay open.
+- #1080 a chapter title still ends mid-phrase (run 119). Next, not built.
+- A first public-source filter also dropped the Rockstar URL on a GTA topic.
+  The shipped check is the fighter's last name only.
 
-**Shipped:** runs 131-133 (#1099 #1100 #1101) and the fifteen
-(#1006 #1011 #1098 #1082 #1032 #1007 #1021 #1060 #1024 #1022 #1023 #1026
-#1027 #1028 #1030). Each new test failed first. The suite then failed on
-three older pins; those stay: league words are vault families only (the
-search seed is unchanged), the model-path fixtures use a phrase the cues
-still miss, and a purse's inner number is not a second finding. mypy 109.
-Next: #1102 #1103 #1104 #1045 #1052. Shared files: `main.py`,
-`core/pipeline.py`, `core/content_engine.py`, `.env.example`.
+**Shipped:** #1102 #1103 #1104 #1045 #1052. Seven new tests failed first
+(`kept_angle_topic` missing, `Lose` flagged, `Antonio` split, the Vegas URL
+in the scored sources, one file took 7 shots, `pool_without_recent` missing,
+the Short's tags were `GTA6`). The league-only source test passed before the
+fix. Next: #1080 #1081 #1066 #1083 #1072. Shared file: `core/pipeline.py`.

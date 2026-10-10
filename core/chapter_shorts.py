@@ -127,9 +127,20 @@ def parse_chapter_selection(text: str, count: int) -> list[int]:
     return out
 
 
+def short_tags(title: str) -> list[str]:
+    """Tags for a Short, from its own title. The long video's tags are not reused (#1052)."""
+    from apis.topic_tokens import content_tokens
+
+    return content_tokens(title, min_len=4)[:5]
+
+
 def _short_description(span: ChapterSpan, channel_id: str, parent_title: str) -> str:
     lead = " ".join(" ".join(_SENTENCE_RE.split(span.text)[:2]).split()[:45]).strip()
+    tags = short_tags(span.title)
+    hashtags = " ".join(f"#{tag}" for tag in tags)
     body = f"{lead}\n\nFrom the full video: {parent_title}".strip()
+    if hashtags:
+        body = f"{body}\n\n{hashtags}"
     try:
         from core.description_extras import apply_description_extras
 
@@ -277,10 +288,6 @@ def cut_chapter_shorts(
     chapters, spans, text = _record_spans(record, script)
     if not chapters or not spans or not source or not os.path.isfile(source) or not text.strip():
         return []
-    try:
-        tags = json.loads(record.tags_json or "[]")
-    except (TypeError, ValueError):
-        tags = []
     stem = os.path.splitext(os.path.basename(source))[0][:60]
     wanted = indices if indices is not None else list(range(len(spans)))
 
@@ -364,7 +371,7 @@ def cut_chapter_shorts(
             variants=[],
             title=span.title[:100],
             description=_short_description(span, record.channel_id, record.title or ""),
-            tags_json=json.dumps(tags),
+            tags_json=json.dumps(short_tags(span.title)),
             script=span.text,
             mp4_path=dest,
             features={

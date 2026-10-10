@@ -337,6 +337,22 @@ def _names_the_subject(
     return bool(topic_distinctive & _distinctive_tokens(text))
 
 
+def _shares_specific_subject(topic_families: set[str], note_text: str) -> bool:
+    """True when a public citation may name this note.
+
+    A topic that names a fighter requires the note to name that fighter. Sharing the
+    league is not enough (#1103). A topic that does not name one of those fighters
+    is unchanged, so a GTA note is not dropped for lacking the word GTA.
+    """
+    from core.channel_context import _SUBJECT_ANCHORS
+
+    people = {name.split()[-1] for name in _SUBJECT_ANCHORS}
+    named = set(topic_families) & people
+    if not named:
+        return True
+    return bool(_anchor_families(note_text) & named)
+
+
 def _anchor_families(text: str) -> set[str]:
     try:
         from core.channel_context import anchor_families
@@ -551,6 +567,13 @@ def load_fact_records(
             ):
                 # #1017: run 124's eight uncertain facts named nothing the topic names.
                 off_subject += 1
+                continue
+
+            # #1103: a public source has to name the person or team, not only the league.
+            # Run 132 cited UFC Vegas 122 on a Topuria idea. Sharing "UFC" is not enough.
+            if relevance_policy == "public" and not _shares_specific_subject(
+                topic_families, f"{note.stem} {note.headings} {bullet}"
+            ):
                 continue
 
             record = FactRecord(

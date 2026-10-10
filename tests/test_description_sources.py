@@ -98,6 +98,56 @@ class TestVaultRelevance(unittest.TestCase):
         self.assertNotIn("https://example.com/marvel-rivals-season-9", urls)
 
 
+_TOPURIA = "Long-term outlook: Can Illia Topuria adapt before UFC's next title cycle?"
+
+_VEGAS = """---
+tier: link
+channel: tapin
+source: https://example.com/ufc-vegas-122
+verified_at: 2026-10-01
+---
+
+- UFC Vegas 122 co-main went to a decision.
+"""
+
+_TOPURIA_NOTE = """---
+tier: link
+channel: tapin
+source: https://example.com/illia-topuria
+verified_at: 2026-10-01
+---
+
+- Illia Topuria is the featherweight champion.
+"""
+
+
+class TestRun132Sources(unittest.TestCase):
+    """#1103: a Topuria description cited UFC Vegas 122 pages."""
+
+    def test_a_card_that_does_not_name_the_fighter_is_not_a_source(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name) / "vault" / "tapin" / "_sources"
+        root.mkdir(parents=True)
+        (root / "ufc-vegas-122.md").write_text(_VEGAS, encoding="utf-8")
+        (root / "illia-topuria.md").write_text(_TOPURIA_NOTE, encoding="utf-8")
+        corpus = "Illia Topuria UFC featherweight champion. UFC title cycle. UFC Vegas 122."
+        with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": str(Path(tmp.name) / "vault")}):
+            urls = collect_source_urls(channel_id="tapin", topic=_TOPURIA, relevance_corpus=corpus)
+        tmp.cleanup()
+        self.assertNotIn("https://example.com/ufc-vegas-122", urls)
+        self.assertIn("https://example.com/illia-topuria", urls)
+
+    def test_a_league_topic_can_still_cite_the_card(self):
+        tmp = tempfile.TemporaryDirectory()
+        root = Path(tmp.name) / "vault" / "tapin" / "_sources"
+        root.mkdir(parents=True)
+        (root / "ufc-vegas-122.md").write_text(_VEGAS, encoding="utf-8")
+        with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": str(Path(tmp.name) / "vault")}):
+            urls = collect_source_urls(channel_id="tapin", topic="UFC Vegas 122 breakdown")
+        tmp.cleanup()
+        self.assertIn("https://example.com/ufc-vegas-122", urls)
+
+
 class TestOperatorUrlsAreUnaffected(unittest.TestCase):
     """A URL the operator pasted for this run is theirs to publish."""
 

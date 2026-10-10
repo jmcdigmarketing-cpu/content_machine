@@ -17,6 +17,25 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - next 5
+
+**Prompt:** next 5
+
+**Picked:** the roadmap's recommended five (#1102, #1103, #1104, #1045, #1052). All five were still open and none was parked. They differ from a cheapest-open scan only in that the roadmap had already ordered the three live-run defects ahead of the two packaging items.
+
+**Shipped:**
+1. #1102 the file name counts the chapters that were cut. `kept_angle_topic("NBA award predictions - all 5 angles", 5, 1)` does not contain "all 5". Five of five still says "all 5 angles".
+2. #1103 a public source on a topic that names Topuria has to name Topuria. The Vegas 122 URL is out. A topic that only names the card still cites it. A GTA note that never says "GTA" is still cited.
+3. #1104 "Lose" and "Win" are not names. "San Antonio" is one marker. "New York" does not add York. "Wolverine Rage" still adds Wolverine.
+4. #1045 one source file stays at 2 shots while another file is under 2. A remembered clip is left out when another clip exists, and kept when it is the only one. One long file still fills every shot.
+5. #1052 a chapter Short's tags come from its own title. The GTA hype-train chapter is tagged with "hype", and the description carries `#hype`. The parent tag `GTA6` is gone. The title was already the chapter's.
+
+**Findings:** `core/pipeline.py:1071` set `best_topic` to "all N angles" before `drop_thin_chapters`; the file name is taken from that string later. `core/obsidian_facts.py:574` is the public path: scored mode rated a Vegas bullet confident on a shared "ufc". A first filter that dropped every non-league family also dropped the Rockstar URL on a GTA topic (`tests/test_description_sources.py`); the shipped check is the fighter's last name only (`core/obsidian_facts.py:340`). `core/facts/grounding.py:298` is where "lose" joined the mononym skip. `apis/topic_tokens.py:379` is the place-particle skip that stopped "Antonio" and "York". `assets/fast_cut.py:343` passes the per-file cap into `plan_shots`; skipping the previous key alone still let one file reach 5 shots while the other was at 2, so a third pass repeats the last key before it fail-opens. `assets/fast_cut.py:435` feeds `recent()` into the pool. `core/chapter_shorts.py:374` had been writing the parent `tags_json`.
+
+**Not done:** #1088 (operator call). #1025 (Later). #1029 (needs stayed-share history). #1038 (the operator's blind listen). Desktop B2 (#1068, #1064).
+
+**Audit:** `py -m scripts.ops roadmap-index` — backlog open 328, done 806, numbered open 276, highest open #1088. Seven new tests failed first: ImportError `kept_angle_topic`; `Lose` in the flagged names; `subject_markers` returned `Antonio`; the Vegas URL was in the scored public sources; one file took 7 of 8 shots; ImportError `pool_without_recent`; the Short's tags were `GTA6`. A guard that returned the pool unfiltered kept the remembered clip, then the filter was restored. The league-only source control passed before the fix and is not a fail-first.
+
 ## 2026-10-10 (Cursor) - next fifteen, plus the three breaks from runs 131-133
 
 **Prompt:** Intake today's three TapIn runs, fix the three breaks they measured, then build the roadmap's next fifteen open items, cheapest first. Leave #1088 for the operator.

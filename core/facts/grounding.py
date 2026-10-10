@@ -294,6 +294,11 @@ _MONONYM_SKIP = _COMMON_WORDS | {
     "honestly",
     "frankly",
     "obviously",
+    # #1104: sentence-initial verbs. "Lose the next one" is not a fighter.
+    "lose",
+    "lost",
+    "win",
+    "wins",
     "start",
     "read",
     "compare",

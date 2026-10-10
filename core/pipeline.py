@@ -1252,6 +1252,7 @@ def run_pipeline(
             chapter_lines,
             drop_thin_chapters,
             features_from_chapters,
+            kept_angle_topic,
             locate_chapters,
             trim_chapter_openers,
         )
@@ -1281,6 +1282,8 @@ def run_pipeline(
                     "%d chapter(s) under %d words folded back", len(thin), MIN_CHAPTER_WORDS
                 )
             spoken = count_spoken_words(result.script)
+            best_topic = kept_angle_topic(best_topic, len(angles), len(chapters))
+            result.topic = best_topic  # #1102: the file is named for the chapters that were cut
             result.features["all_angles"] = True
             result.features["angle_chapters"] = features_from_chapters(chapters)
             # Sentence-labelled chapters ("1:16 That's the whole story") become the angles.

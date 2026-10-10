@@ -31,6 +31,22 @@ class SubjectTermsTests(unittest.TestCase):
         self.assertIn("Chargers", subject_markers(subject_terms(TOPIC)))
         self.assertEqual(subject_terms("best budget gaming mice"), [])
 
+    def test_san_antonio_is_not_split_into_antonio(self):
+        """#1104: a place prefix is not a name, so the city is not searched as Antonio."""
+        from apis.topic_tokens import name_phrases, subject_markers
+
+        self.assertEqual(subject_markers(["San Antonio"]), ["San Antonio"])
+        self.assertNotIn("York", subject_markers(["New York"]))
+        self.assertIn("Wolverine", subject_markers(["Wolverine Rage"]))
+        names = name_phrases(
+            "Lose the next one in San Antonio. The NBA slate is set.",
+            max_words=5,
+            connectors=True,
+        )
+        self.assertNotIn("Lose", names)
+        self.assertIn("San Antonio", names)
+        self.assertNotIn("Win", name_phrases("Win the division. The NBA slate is set."))
+
 
 def _articles(*titles):
     return {"status": "ok", "articles": [

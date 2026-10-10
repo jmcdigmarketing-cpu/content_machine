@@ -590,6 +590,19 @@ def chapters_from_features(rows: object) -> list[AngleChapter]:
     return out
 
 
+def kept_angle_topic(topic: str, asked: int, kept: int) -> str:
+    """The render name. ``all N angles`` only when N chapters were actually cut (#1102).
+
+    Run 133 asked for five and the file was ``all_5_angles`` after four were left out.
+    """
+    base = re.sub(r"\s*-\s*all \d+ angles$", "", (topic or "").strip())
+    if asked >= 2 and kept == asked and kept >= 2:
+        return f"{base} - all {kept} angles"
+    if kept > 1:
+        return f"{base} - {kept} angles"
+    return base
+
+
 def chapter_card_lines(features: dict[str, Any] | None) -> list[str]:
     """Run-card lines: chapters retitled (#1009), written or left out (#1010)."""
     feats = features or {}

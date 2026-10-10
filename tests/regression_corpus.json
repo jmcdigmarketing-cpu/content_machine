@@ -2459,6 +2459,54 @@
         "includes_all": ["Illia Topuria"]
       },
       "why": "a hyphen kept Long-term out of the common-word list, so Wikidata resolved it"
+    },
+    {
+      "id": "run133-filename-counts-chapters-kept",
+      "item": 1102,
+      "source": "run 133: the file was all_5_angles after four chapters were left out",
+      "call": "core.angle_chapters:kept_angle_topic",
+      "args": ["NBA award predictions - all 5 angles", 5, 1],
+      "expect": {
+        "contains": "NBA award predictions",
+        "not_contains": "all 5"
+      },
+      "why": "the render name counted the angles asked for, not the chapters in the cut"
+    },
+    {
+      "id": "run132-lose-is-not-a-name",
+      "item": 1104,
+      "source": "run 132: grounding flagged the word Lose",
+      "call": "core.facts.grounding:find_ungrounded_entities",
+      "args": [
+        "Lose the next one in San Antonio. The NBA slate is set.",
+        "The Spurs play in San Antonio."
+      ],
+      "expect": {
+        "excludes_any": ["Lose", "Antonio"]
+      },
+      "why": "a sentence-initial verb was a mononym, and a place was reported as its second word"
+    },
+    {
+      "id": "run132-lose-is-not-a-lookup-name",
+      "item": 1104,
+      "source": "run 132; sibling of the grounding mononym",
+      "call": "apis.topic_tokens:name_phrases",
+      "args": ["Lose the next one in San Antonio. The NBA slate is set."],
+      "kwargs": {"max_words": 5, "connectors": true},
+      "expect": {
+        "excludes_any": ["Lose", "Antonio"],
+        "includes_all": ["San Antonio"]
+      },
+      "why": "the same sentence was a name lookup, so Lose and Antonio were searched"
+    },
+    {
+      "id": "run132-san-antonio-is-one-place",
+      "item": 1104,
+      "source": "run 132; subject_markers split the place",
+      "call": "apis.topic_tokens:subject_markers",
+      "args": [["San Antonio"]],
+      "expect": {"equals": ["San Antonio"]},
+      "why": "San was too short to be a marker, so the search became Antonio"
     }
   ]
 }

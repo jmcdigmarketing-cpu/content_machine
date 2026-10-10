@@ -303,9 +303,28 @@ class TestCutChapterShorts(unittest.TestCase):
         first = rec.call_args_list[0].kwargs
         self.assertEqual(first["status"], "rendered")
         self.assertEqual(first["title"], RUN78_HEADLINES[0])
+        # #1052: the Short's tags and hashtags come from its own title, not the long video.
+        short_tags = json.loads(first["tags_json"])
+        self.assertNotIn("GTA6", short_tags)
+        self.assertIn("hype", [tag.lower() for tag in short_tags])
+        self.assertIn("#hype", first["description"].lower())
         self.assertEqual(first["features"]["parent_run_id"], 78)
         self.assertEqual(rec.call_args_list[1].kwargs["features"]["chapter_index"], 2)
         self.assertTrue(os.path.isfile(made[1].mp4_path))
+
+
+class TestKeptAngleName(unittest.TestCase):
+    """#1102: run 133's file was named all_5_angles after four chapters were left out."""
+
+    def test_the_file_name_counts_the_chapters_that_were_cut(self):
+        from core.angle_chapters import kept_angle_topic
+
+        named = kept_angle_topic("NBA award predictions - all 5 angles", 5, 1)
+        slug = "".join(c for c in named if c.isalnum() or c == " ").replace(" ", "_").lower()
+        self.assertNotIn("all_5_angles", slug)
+        self.assertNotIn("all 5", named)
+        kept = kept_angle_topic("NBA award predictions - all 5 angles", 5, 5)
+        self.assertIn("all 5 angles", kept)
 
 
 class TestAngleMenuChoice(unittest.TestCase):

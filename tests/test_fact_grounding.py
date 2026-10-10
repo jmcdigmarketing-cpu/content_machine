@@ -102,6 +102,15 @@ class TestFindUngrounded(unittest.TestCase):
         facts = "VERIFIED FACTS:\n- Smart roster moves matter."
         self.assertIn("Art Walker", find_ungrounded_entities(script, facts))
 
+    def test_lose_and_san_antonio_stay_whole(self):
+        """#1104: run 132 flagged the verb Lose. San Antonio is one place."""
+        script = "Lose the next one in San Antonio. The NBA slate is set."
+        facts = "The Spurs play in San Antonio."
+        flagged = find_ungrounded_entities(script, facts)
+        self.assertNotIn("Lose", flagged)
+        self.assertNotIn("Antonio", flagged)
+        self.assertNotIn("San Antonio", flagged)
+
     def test_common_transition_words_not_flagged_as_mononyms(self):
         script = (
             "Meanwhile, Rookie of the Year is wide open. Bottom line: the Thunder look fragile."

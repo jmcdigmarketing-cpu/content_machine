@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TextIO
 
-from core.angle_intent import angle_intent_note, detect_angle_intent
+from core.angle_intent import angle_intent_note, read_intent
 from core.ask import reset_backend, set_backend
 from core.ask_bridge import AskBridge, BridgeBackend, set_current_bridge
 from core.emit import reset_emit, set_emit
@@ -23,7 +23,7 @@ logger = get_logger("desktop.session")
 
 def angle_mode_line(topic: str) -> str:
     """Operator-facing intent for the angle strip — real detector, not a second lexicon."""
-    return angle_intent_note(detect_angle_intent(topic))
+    return angle_intent_note(read_intent(topic))  # #1091: says what set the mode
 
 
 def facts_from_paste(text: str) -> list[str]:

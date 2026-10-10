@@ -3,7 +3,7 @@ import os
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any
 
@@ -490,6 +490,62 @@ def variant_fallback_note(meta: dict[str, Any], *, total: int) -> str:
     )
 
 
+def _editorial_scores(
+    evaluated: list[tuple[str, float, dict[str, Any]]],
+    topic: str,
+    brief: str,
+    base_signals: dict[str, Any],
+    meta: dict[str, Any],
+) -> tuple[dict[str, float], dict[str, float]]:
+    """(angle_scores, angle_fact_fit) for the scored angles; `meta` gets `angle_spread`.
+
+    Editorial ranking of the angle text, scored over the whole candidate set at once
+    (distinctness is relative), so it runs after the loop rather than inside
+    `_score_variant`. ANGLE_LLM_JUDGE (default on) adds one cheap-tier call that
+    blends a thesis-fit score in; off, the ranking is deterministic and network-free.
+    Fail-open: a missing editorial score costs a tiebreaker, never the run.
+    """
+    angle_scores: dict[str, float] = {}
+    signal_fact_lines: list[str] = []
+    try:
+        from core.angle_fact_fit import fact_lines
+        from core.signal_facts import format_signal_facts
+
+        signal_fact_lines = fact_lines(format_signal_facts(base_signals))
+    except Exception as exc:
+        logger.debug("signal fact lines skipped: %s", exc)
+    try:
+        from core.angle_ranker import rank_angles, score_spread
+        from core.facts.event_dates import run_date
+        from core.providers import flag_enabled
+
+        # #1014: the judge sees the facts in hand and today's date, not the thesis alone.
+        angle_scores = rank_angles(
+            [v for v, *_ in evaluated],
+            seed_topic=f"{topic}. {brief}" if brief else topic,
+            llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
+            facts=signal_fact_lines,
+            today=run_date().isoformat(),
+        )
+        meta["angle_spread"] = score_spread(angle_scores)
+    except Exception as exc:
+        logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
+
+    # #849: fact-fit from the facts already in hand - no network, measured only.
+    angle_fact_fit: dict[str, float] = {}
+    try:
+        from core.angle_fact_fit import fact_fit
+
+        angle_fact_fit = fact_fit(
+            [v for v, *_ in evaluated],
+            signal_fact_lines,
+            seed_topic=topic,
+        )
+    except Exception as exc:
+        logger.debug("fact-fit skipped: %s", exc)
+    return angle_scores, angle_fact_fit
+
+
 def run_discovery(
     topic: str,
     variant_limit: int = 5,
@@ -631,49 +687,7 @@ def run_discovery(
         meta["discovery_dropped"] = ", ".join(deadline["dropped"])
         meta["discovery_deadline_s"] = float(deadline.get("budget_s") or 0.0)
 
-    # Editorial ranking of the angle text, scored over the whole candidate set at once
-    # (distinctness is relative), so it runs after the loop rather than inside
-    # `_score_variant`. ANGLE_LLM_JUDGE (default on) adds one cheap-tier call that
-    # blends a thesis-fit score in; off, the ranking is deterministic and network-free.
-    # Fail-open: a missing editorial score costs a tiebreaker, never the run.
-    angle_scores: dict[str, float] = {}
-    signal_fact_lines: list[str] = []
-    try:
-        from core.angle_fact_fit import fact_lines
-        from core.signal_facts import format_signal_facts
-
-        signal_fact_lines = fact_lines(format_signal_facts(base_signals))
-    except Exception as exc:
-        logger.debug("signal fact lines skipped: %s", exc)
-    try:
-        from core.angle_ranker import rank_angles, score_spread
-        from core.facts.event_dates import run_date
-        from core.providers import flag_enabled
-
-        # #1014: the judge sees the facts in hand and today's date, not the thesis alone.
-        angle_scores = rank_angles(
-            [v for v, *_ in evaluated],
-            seed_topic=f"{topic}. {brief}" if brief else topic,
-            llm_judge=flag_enabled("ANGLE_LLM_JUDGE", default=True),
-            facts=signal_fact_lines,
-            today=run_date().isoformat(),
-        )
-        meta["angle_spread"] = score_spread(angle_scores)
-    except Exception as exc:
-        logger.warning("Angle ranking skipped (%s) — variants keep the composite tie", exc)
-
-    # #849: fact-fit from the facts already in hand - no network, measured only.
-    angle_fact_fit: dict[str, float] = {}
-    try:
-        from core.angle_fact_fit import fact_fit
-
-        angle_fact_fit = fact_fit(
-            [v for v, *_ in evaluated],
-            signal_fact_lines,
-            seed_topic=topic,
-        )
-    except Exception as exc:
-        logger.debug("fact-fit skipped: %s", exc)
+    angle_scores, angle_fact_fit = _editorial_scores(evaluated, topic, brief, base_signals, meta)
 
     # Persist this run's cache hit/miss counters for the reliability dashboard (O8).
     try:
@@ -697,6 +711,50 @@ def run_discovery(
     )
     _store_discovery_cache(result)
     return result
+
+
+def regenerate_angles(
+    discovery: DiscoveryResult, intent_read: Any, *, variant_limit: int = 5
+) -> DiscoveryResult:
+    """The angle list again, under the mode the operator chose on the angle screen (#1092).
+
+    The signals already fetched are kept: one cheap call for the angles (plus the judge's when
+    ANGLE_LLM_JUDGE is on), no new discovery. Not cached - the discovery cache key does not
+    carry the mode, so the next run on this topic starts from its own read.
+    """
+    intent = str(getattr(intent_read, "intent", "") or "")
+    report: dict[str, Any] = {}
+    variants = generate_variants(
+        discovery.input_topic,
+        channel_id=discovery.channel_id,
+        brief=discovery.brief,
+        report=report,
+        intent=intent,
+    )
+    evaluated, raw_scores, scoring_meta = collect_scored_variants(
+        variants[:variant_limit],
+        discovery.channel_id,
+        discovery.base_signals,
+        discovery.input_topic,
+    )
+    stale = ("angles_dropped", "variant_scoring_fallback", "unscored_on_seed", "angle_spread")
+    meta = {k: v for k, v in (discovery.meta or {}).items() if k not in stale}
+    if scoring_meta.get("fallback"):
+        meta["variant_scoring_fallback"] = scoring_meta["fallback"]
+    if report.get("angles_dropped"):
+        meta["angles_dropped"] = list(report["angles_dropped"])
+    angle_scores, angle_fact_fit = _editorial_scores(
+        evaluated, discovery.input_topic, discovery.brief, discovery.base_signals, meta
+    )
+    meta["angle_mode"] = intent
+    return replace(
+        discovery,
+        evaluated=evaluated,
+        raw_scores=raw_scores,
+        angle_scores=angle_scores,
+        angle_fact_fit=angle_fact_fit,
+        meta=meta,
+    )
 
 
 def finalize_run_observability() -> None:
@@ -922,6 +980,7 @@ def run_pipeline(
     voice_mode: str = "single",
     own_idea: bool = False,
     own_topic: str = "",
+    intent_read: Any = None,
 ) -> PipelineResult:
     """
     End-to-end content pipeline without CLI I/O.
@@ -930,9 +989,15 @@ def run_pipeline(
     channel_id = resolve_channel_id(channel_id or (discovery.channel_id if discovery else None))
     result = PipelineResult(topic=topic, score=0.0, signals={}, channel_id=channel_id)
     result.menu_path = menu_path
-    from core.angle_intent import detect_angle_intent
+    from core.angle_intent import IntentRead, read_intent
 
-    result.angle_intent = detect_angle_intent(topic)
+    # #1091: the intent is read once - at the angle screen when the caller has it (and the
+    # operator may have changed it there, #1092), else from the topic, then their thoughts.
+    # It was the topic alone here, so a hope idea typed as thoughts was recorded as neutral.
+    run_intent = (
+        intent_read if isinstance(intent_read, IntentRead) else read_intent(topic, creative_brief)
+    )
+    result.angle_intent = run_intent.intent
 
     if discovery is None:
         from core.run_mode import guard_before_discovery
@@ -1071,6 +1136,7 @@ def run_pipeline(
         seed_topic=input_topic,
         # #850: the brief frames the script; it must see what the operator pasted.
         key_facts=list(key_facts or []) or None,
+        intent=run_intent.intent,  # #1091: it read the seed alone, never the operator's thoughts
     )
     result.timings["research_brief"] = time.perf_counter() - t_brief
 
@@ -1092,6 +1158,7 @@ def run_pipeline(
         research_need=research_need,
         own_idea=own_idea,  # #1016: angle 1, the operator's own idea - no take pushed on it
         chapter_angles=angles if len(angles) >= 2 else None,  # #1010
+        intent=run_intent.intent,  # #1091
         **voice_kwargs,
     )
     if content.get("script_mode") == "unconfirmed":  # #339: drafts, review, dossier read it
@@ -1119,6 +1186,7 @@ def run_pipeline(
         fact_source="manual" if key_facts else "signals",
         vault_relevance_audit=vault_relevance_audit,
         signals=best_signals,
+        intent=run_intent.intent,
     )
     result.features["voice_mode"] = voice_mode
     if content.get("speaker_turns"):
@@ -1130,7 +1198,7 @@ def run_pipeline(
     if result.menu_path:
         result.features["menu_path"] = str(result.menu_path)
     if result.angle_intent:
-        result.features["angle_intent"] = result.angle_intent
+        result.features.update(run_intent.features())  # #1091: the intent used, its source and cue
     if event_research_report is not None:
         result.features["event_research"] = event_research_report
     if entity_research_report is not None:

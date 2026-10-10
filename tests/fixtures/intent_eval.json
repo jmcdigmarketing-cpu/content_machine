@@ -1,0 +1,77 @@
+{
+  "_doc": "#1094: how every idea the operator has typed must read, and which angles it keeps or drops. tests/test_intent_eval.py runs it. Every complaint about the angles adds a row here. A row with `needs` waits for that backlog item and is enforced the moment the item is ticked.",
+  "rows": [
+    {"idea": "GTA 6 Extended look reactions, looks great!", "source": "run 73", "intent": "reaction"},
+    {"idea": "GTA 6 looks amazing!!!", "source": "run 73", "intent": "reaction"},
+    {"idea": "UFC week 2", "source": "run 99", "intent": "default"},
+    {"idea": "NBA preseason hot takes", "source": "run 113", "intent": "take"},
+    {"idea": "Seahawks Chargers week 4", "source": "run 118", "intent": "default"},
+    {"idea": "How the 0-4 chargers can turn it around this year", "source": "run 124", "intent": "plan"},
+    {
+      "idea": "Chargers Hopeium going into week 5",
+      "source": "run 125",
+      "intent": "hope",
+      "keep": [
+        "Herbert's deep ball is back",
+        "Why the doubters are wrong about Herbert's next four games"
+      ],
+      "drop": [
+        "Chargers' Hopeium masks deeper roster flaws beneath surface optimism",
+        "Critics question whether Chargers' Hopeium stems from genuine progress or fan denial",
+        "Week 5 showdown could validate or shatter Chargers' fragile Hopeium narrative",
+        "Chargers' Hopeium reflects fanbase desperation amid mounting pressure and low expectations"
+      ]
+    },
+    {"idea": "World Cup and Rodri Hot takes", "source": "operator", "intent": "take"},
+    {"idea": "Is Tua overrated?", "source": "#1084", "intent": "take"},
+    {"idea": "Game of the year 2027 predictions", "source": "operator 2026-10-06 (#1007 will read an award race)", "intent": "default"},
+    {"idea": "how does the offside rule actually work", "source": "#533", "intent": "explainer"},
+    {"idea": "top 5 heavyweights", "source": "#533", "intent": "list"},
+    {
+      "idea": "Chargers week 5",
+      "source": "#1084",
+      "intent": "default",
+      "keep": ["What the Chargers' week 5 matchup turns on"],
+      "drop": ["Chargers fans are in denial about this roster"]
+    },
+    {
+      "idea": "SEC fraud charges against the exchange",
+      "source": "#1084",
+      "intent": "default",
+      "keep": ["SEC fraud charges against the exchange, explained"]
+    },
+    {
+      "idea": "Jets are doomed",
+      "source": "#1090",
+      "intent": "take",
+      "keep": ["Why the Jets are doomed after week 4"],
+      "drop": ["Why the Jets aren't doomed yet"]
+    },
+    {"idea": "Tua is washed", "source": "#1090", "intent": "take"},
+    {
+      "idea": "Chargers are cooked",
+      "source": "#1090",
+      "intent": "take",
+      "keep": ["Three numbers that say the Chargers are cooked"],
+      "drop": ["Why the Chargers aren't cooked yet"]
+    },
+    {
+      "idea": "Chargers hot take: Herbert is elite",
+      "source": "#1090",
+      "intent": "take",
+      "keep": ["Herbert's elite numbers through week 4"],
+      "drop": ["Why Herbert isn't elite", "The myth of Herbert the elite quarterback"]
+    },
+    {
+      "idea": "Chargers fans in denial going into week 5",
+      "source": "#1090",
+      "intent": "default",
+      "keep": ["Why Chargers fans are in denial going into week 5"]
+    },
+    {"idea": "Is there any hope for the Jets?", "source": "#1094 (any hope read as no hope)", "intent": "hope"},
+    {"idea": "The Jets don't have any hope", "source": "#1094", "intent": "default"},
+    {"idea": "No hope for the Jets", "source": "#1084", "intent": "default"},
+    {"idea": "Bolts bounce back week 5", "source": "#1094 (slang the cue list has never seen)", "intent": "hope", "needs": "1089"},
+    {"idea": "Herbert is HIM", "source": "#1094 (slang the cue list has never seen)", "intent": "take", "needs": "1089"}
+  ]
+}

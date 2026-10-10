@@ -112,7 +112,7 @@ The daily driver: one window that makes a video without PowerShell.
   `AskBridge` (no `input()`)
 - Output pane from `emit()` plus a stdout tee so `print(script)` still shows
 - Discovery progress via `DiscoverySpinner.report` -> the bridge
-- Angle mode from `core.angle_intent` on the topic box
+- Angle mode from `core.angle_intent` on the topic box (wave 69: with the cue that set it; "M" at the angle prompt changes it - a drop-down is #1097)
 - The five safety gates as Override / Stop; Proceed as Approve / Regenerate / Reject
 
 **Exit:** `py -m desktop` after `pip install -e ".[app]"`. Without PySide6 the

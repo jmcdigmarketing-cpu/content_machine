@@ -15,6 +15,7 @@ overridden is the wrong kind of magic.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 ANGLE_REACTION = "reaction"
 ANGLE_DEFAULT = "default"
@@ -94,8 +95,13 @@ _REACTION_CUES = (
 # A bare superlative counts only when the operator is plainly excited, which in
 # practice means shouting. "GTA 6 looks amazing!!!" yes; "is GTA 6 amazing?" no.
 _SUPERLATIVES = ("amazing", "incredible", "insane", "unreal", "stunning", "gorgeous")
-# #1084: "no hope" / "hopeless" is not asking for hope.
-_NO_HOPE = re.compile(r"\b(?:no|lost|zero|without|any)\s+hope\b|\bhopeless", re.I)
+# #1084: "no hope" / "hopeless" is not asking for hope. #1094: "any hope" only after a
+# negation - "Is there any hope for the Jets?" asks for it; "they don't have any hope" does not.
+_NO_HOPE = re.compile(
+    r"\b(?:no|lost|zero|without)\s+(?:any\s+)?hope\b|\bhopeless"
+    r"|(?:n't|\bnot|\bnever)\s+(?:\w+\s+){0,2}any\s+hope\b",
+    re.I,
+)
 _SHOUTING = re.compile(r"!!|[A-Z]{4,}")
 _QUESTION = re.compile(r"\?")
 
@@ -121,6 +127,22 @@ _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "my take",
             "controversial",
             "is it over",
+            # #1090: the operator's own verdict, stated. "Jets are doomed" read neutral, and the
+            # neutral mockery filter then dropped the angle that agreed with it. Phrases, not
+            # bare words: "is done" is news ("the trade is done"), "elite" alone is a tier.
+            "is washed",
+            "are washed",
+            "washed up",
+            "is cooked",
+            "are cooked",
+            "is doomed",
+            "are doomed",
+            "is elite",
+            "are elite",
+            "is the goat",
+            "is finished",
+            "are finished",
+            "is a bust",
         ),
     ),
     (
@@ -213,30 +235,75 @@ _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
-def detect_angle_intent(topic: str | None) -> str:
-    """The frame the operator asked for, read from the topic they typed."""
+def _detect(topic: str | None) -> tuple[str, str]:
+    """(intent, the cue that set it) - "" for the cue when nothing did."""
     text = (topic or "").strip()
     if not text:
-        return ANGLE_DEFAULT
+        return ANGLE_DEFAULT, ""
     low = text.lower()
 
-    if any(cue in low for cue in _REACTION_CUES):
-        return ANGLE_REACTION
+    for cue in _REACTION_CUES:
+        if cue in low:
+            return ANGLE_REACTION, cue
 
     for intent, cues in _INTENT_CUES:
         if intent == ANGLE_HOPE and _NO_HOPE.search(text):
             continue
-        if any(cue in low for cue in cues):
-            return intent
+        for cue in cues:
+            if cue in low:
+                return intent, cue.strip()
 
     # A question is asking, not reacting — "is it really that incredible?". Checked
     # after the cue tables, because "how does X work?" is a question *and* an
     # explainer, and the explainer reading is the useful one.
     if _QUESTION.search(text):
-        return ANGLE_DEFAULT
-    if any(word in low for word in _SUPERLATIVES) and _SHOUTING.search(text):
-        return ANGLE_REACTION
-    return ANGLE_DEFAULT
+        return ANGLE_DEFAULT, ""
+    for word in _SUPERLATIVES:
+        if word in low and _SHOUTING.search(text):
+            return ANGLE_REACTION, word
+    return ANGLE_DEFAULT, ""
+
+
+def detect_angle_intent(topic: str | None) -> str:
+    """The frame the operator asked for, read from the topic they typed."""
+    return _detect(topic)[0]
+
+
+@dataclass(frozen=True)
+class IntentRead:
+    """The run's intent, read once (#1091) - with where it came from, for the record.
+
+    ``source``: "cue" (a cue word in the operator's text), "default" (none - neutral
+    analysis), "operator" (changed on the angle screen, #1092). ``cue``: the words that set it.
+    """
+
+    intent: str = ANGLE_DEFAULT
+    source: str = "default"
+    cue: str = ""
+
+    def features(self) -> dict[str, str]:
+        return {"angle_intent": self.intent, "intent_source": self.source, "intent_cue": self.cue}
+
+
+def read_intent(*texts: str | None) -> IntentRead:
+    """The intent of the first of ``texts`` (the topic, then the operator's thoughts) that
+    names one (#1091). Until 2026-10-10 each stage re-read it from its own text: the angle
+    screen and the angles read topic then thoughts, the run record the topic only, the
+    research brief the seed only - so a hope idea typed as thoughts ran as hope and was
+    recorded as neutral."""
+    for text in texts:
+        intent, cue = _detect(text)
+        if intent != ANGLE_DEFAULT:
+            return IntentRead(intent, "cue", cue)
+    return IntentRead()
+
+
+def operator_intent(intent: str, detected: IntentRead | None = None) -> IntentRead:
+    """The mode the operator chose on the angle screen (#1092); the detected cue is kept."""
+    if intent not in ALL_INTENTS:
+        raise ValueError(f"unknown angle mode: {intent}")
+    cue = detected.cue if detected and detected.intent == intent else ""
+    return IntentRead(intent, "operator", cue)
 
 
 _INTENT_NOTES = {
@@ -279,9 +346,46 @@ def format_for_intent(intent: str) -> str:
     return intent
 
 
-def angle_intent_note(intent: str) -> str:
-    """One operator-facing line for the angle screen. cp1252-safe (candidate 250)."""
-    detail = _INTENT_NOTES.get(intent) or _INTENT_NOTES[ANGLE_DEFAULT]
+# #1092: the modes the operator can pick on the angle screen, by key. cp1252-safe.
+MODE_KEYS: dict[str, tuple[str, str]] = {
+    "n": (ANGLE_DEFAULT, "neutral analysis"),
+    "h": (ANGLE_HOPE, "hope - reasons for optimism"),
+    "t": (ANGLE_TAKE, "take - argue a side"),
+    "p": (ANGLE_PLAN, "plan - what has to happen"),
+    "e": (ANGLE_EXPLAINER, "explainer"),
+    "u": (ANGLE_TUTORIAL, "tutorial / how-to"),
+    "l": (ANGLE_LIST, "list / ranking"),
+    "c": (ANGLE_COMPARISON, "comparison"),
+    "b": (ANGLE_RETROSPECTIVE, "looking back"),
+    "r": (ANGLE_REACTION, "reaction"),
+}
+
+
+def mode_menu_lines() -> list[str]:
+    """The angle-screen mode menu, one line per mode (#1092)."""
+    return [f"{key}) {label}" for key, (_intent, label) in MODE_KEYS.items()]
+
+
+def mode_for_key(key: str | None) -> str:
+    """The intent a mode key names, or "" (#1092). The intent's own name works too."""
+    raw = (key or "").strip().lower()
+    if raw in MODE_KEYS:
+        return MODE_KEYS[raw][0]
+    if raw == "neutral":
+        return ANGLE_DEFAULT
+    return raw if raw in ALL_INTENTS else ""
+
+
+def angle_intent_note(intent: str | IntentRead) -> str:
+    """One operator-facing line for the angle screen. cp1252-safe (candidate 250).
+    Given an `IntentRead`, it also says what set the mode (#1091)."""
+    read = intent if isinstance(intent, IntentRead) else None
+    key = read.intent if read else str(intent)
+    detail = _INTENT_NOTES.get(key) or _INTENT_NOTES[ANGLE_DEFAULT]
+    if read and read.source == "operator":
+        detail = f"{detail} [you chose it]"
+    elif read and read.cue:
+        detail = f"{detail} [from '{read.cue}']"
     return f"Angle mode: {detail}"
 
 
@@ -326,24 +430,84 @@ _DERISION = (
 )
 
 
-def stance_flip(text: str, intent: str) -> str:
+# #1090: a take that states its side ("Herbert is elite") is argued, not countered.
+_CLAIM = re.compile(r"\b(?:is|are|was|were)\s+(.+)$", re.I)
+_CLAUSE_SPLIT = re.compile(r"[:.!;\n]")
+_NEGATORS = frozenset({"not", "isnt", "arent", "wasnt", "werent", "never", "no", "aint", "hardly"})
+_COUNTER = ("myth", "mirage", "the case against", "not so fast", "overrated", "fraud")
+
+
+def _plain(text: str | None) -> str:
+    return " ".join((text or "").replace("\u2019", "'").split())
+
+
+def stated_side(idea: str | None) -> list[str]:
+    """The words of the verdict a take idea states, or [] (#1090).
+
+    "Chargers hot take: Herbert is elite" -> ["elite"]; "Jets are doomed" -> ["doomed"]. A
+    question ("Is Tua overrated?") or a request for takes in general ("NBA preseason hot
+    takes") states no side - the angles may argue any.
+    """
+    text = _plain(idea)
+    if not text or "?" in text or detect_angle_intent(text) != ANGLE_TAKE:
+        return []
+    from apis.topic_tokens import content_tokens
+
+    for clause in _CLAUSE_SPLIT.split(text):
+        match = _CLAIM.search(clause)
+        if not match:
+            continue
+        subject = set(content_tokens(clause[: match.start()]))
+        words = [
+            t
+            for t in content_tokens(match.group(1), min_len=3)
+            if t not in _NEGATORS and t not in subject
+        ]
+        if words:
+            return words[:3]
+    return []
+
+
+def _against_side(text: str, idea: str) -> str:
+    """Why ``text`` argues against the side ``idea`` states, or "" (#1090)."""
+    side = stated_side(idea)
+    if not side:
+        return ""
+    from apis.topic_tokens import content_tokens
+
+    tokens = content_tokens(text)
+    for index, token in enumerate(tokens):
+        window = tokens[max(0, index - 3) : index]
+        if token in side and any(t in _NEGATORS for t in window):
+            return f"'{' '.join([*window, token])}' argues against your take"
+    low, idea_low = text.lower(), _plain(idea).lower()
+    for word in _COUNTER:
+        if re.search(rf"\b{re.escape(word)}", low) and word not in idea_low:
+            return f"'{word}' argues against your take"
+    return ""
+
+
+def stance_flip(text: str, intent: str, *, idea: str = "") -> str:
     """Why ``text`` knocks the stance of an idea read as ``intent``, or "" (#1084).
 
-    A take the operator asked for is never a flip; a hopeful idea is flipped by doubt or
-    mockery; any other idea by mockery only.
+    A hopeful idea is flipped by doubt or mockery; a neutral one by mockery only; a take by
+    an angle that argues against the side it states (#1090). A word the idea itself uses is
+    never a flip - "Chargers fans in denial" keeps "why Chargers fans are in denial".
     """
+    low = _plain(text).lower()
     if intent == ANGLE_TAKE:
-        return ""
+        return _against_side(low, idea)
     words = _DOUBT if intent == ANGLE_HOPE else _DERISION
-    low = (text or "").lower()
+    idea_low = _plain(idea).lower()
     for word in words:
-        if re.search(rf"\b{re.escape(word)}", low):
+        pattern = rf"\b{re.escape(word)}"
+        if re.search(pattern, low) and not re.search(pattern, idea_low):
             stance = "a hopeful idea" if intent == ANGLE_HOPE else "a neutral one"
             return f"'{word}' knocks {stance}"
     return ""
 
 
-def stance_rule(intent: str) -> str:
+def stance_rule(intent: str, idea: str = "") -> str:
     """The STANCE line every prompt that writes for this idea carries (#1084)."""
     if intent == ANGLE_HOPE:
         return (
@@ -353,7 +517,13 @@ def stance_rule(intent: str) -> str:
             "the hope - no 'critics', 'denial', 'fragile', 'masks', 'reality check'."
         )
     if intent == ANGLE_TAKE:
-        return ""
+        if not stated_side(idea):
+            return ""
+        return (
+            f'STANCE: the operator\'s own take is "{_plain(idea)}". Every angle argues THAT '
+            "side with facts - never the opposite, never a counter-take, never 'actually it "
+            "isn't'."
+        )
     return (
         "STANCE: neutral analysis - what happened, what it means, what to watch. No "
         "contrarian counter-take, no hot take and no mocking the fans or the subject; the "

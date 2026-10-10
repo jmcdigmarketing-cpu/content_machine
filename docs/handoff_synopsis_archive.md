@@ -7,6 +7,28 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-09 (Claude Code): wave 66 #1016 #1001-#1005 #1003 #1012 #1017 #1018 (run 124's idea)
+
+The operator's run 124 ("How the 0-4 chargers can turn it around this year") was "a good video,
+just not what i intended"; they will rerun the same idea. Asked: speed 1.05, stock only as a last
+resort, angle 1 = "100% the intention of my idea ... worded with more seo velocity", Cursor both
+(media first). Correction: run 119's "19-0 with 8 KOs and 10 submissions" is right (a decision win).
+
+- **#1016** angle 1 is your idea worded for search, Enter keeps it (option 1 and 5); no take pushed
+  onto it; `plan` intent; the script checked against the idea (`KEEP_TO_IDEA`).
+- **#1001 #1002 #1005 #1004** "yes" is a yes; lower-case teams are names ("Los Angeles Chargers");
+  no who's-who for "Next"/"People"; news and auto-research search the subject.
+- **#1003** ESPN NFL: record, standing, next game, dated, at signal tier.
+- **#1012 #1017** pasted page junk dropped at `Fact N`; an uncertain vault fact must name the subject.
+- **#1018** a hook must be a fact: history superlatives and stock openers rebuilt from facts; the
+  hook pass is on by default.
+- Riders: **#1000** flagged render never scheduled public, **#1019** CC BY credits, **#1020**
+  `local_first` (TapIn), speed 1.05. The next 100: optimization_plan_2026-10.md; Cursor:
+  cursor_brief_2026-10.md.
+
+**Verify:** `python -m unittest tests.test_idea_stays_yours tests.test_hooks_solid_ground tests.test_typed_fact_filter tests.test_uncertain_vault_subject tests.test_subject_names tests.test_subject_queries tests.test_espn_nfl tests.test_flagged_schedule tests.test_local_first_footage tests.test_footage_credits tests.test_seed_prompt_yes`;
+`py -m scripts.ops regressions`; then rerun the Chargers idea and press Enter on angle 1.
+
 ## Previous — 2026-10-08 (Claude Code): wave 65 #996 #992 #998 #997 #994 (a careful ads budget)
 
 The operator spent $40 on ads in about four days and wants spending "calculated and worth it":

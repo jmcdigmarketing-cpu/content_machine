@@ -53,14 +53,20 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `6b5f648` + a docs-only planning commit (`git log -1`) ·
-**Tree:** clean after the commit. Wave 69 is being built next, on top of it.
+**Written:** 2026-10-10 · **HEAD at write:** `78ef37a` + the wave 69 commit (`git log -1`) ·
+**Tree:** clean after the commit.
 
-**Read before editing:** the default intent is **neutral analysis** (the operator, 2026-10-10); the
-take machinery lives under `ANGLE_TAKE`. `core.angle_intent.stance_flip` / `stance_rule` are the one
-place stance is judged. mypy **121**. Planned 2026-10-10 (planning_log): #1090-#1096, topic -> angle
-miscommunication - #1090 is a regression from wave 68's own neutral default ("Jets are doomed" loses
-the angle that agrees with it).
+**Read before editing:** the run's intent is read ONCE now - `core.angle_intent.read_intent(topic,
+thoughts)` -> `IntentRead(intent, source, cue)`, made at `main.py`'s angle screen and passed as
+`run_pipeline(intent_read=)`; every stage keeps `intent or <its own read>` as the fallback. "M" on
+the angle screen changes it (`MODE_KEYS`, `core.pipeline.regenerate_angles`). A take that states its
+side (`stated_side`) is argued, never countered; `stance_flip(text, intent, idea=)` never counts the
+operator's own words. `tests/fixtures/intent_eval.json` is the table every angle complaint adds a
+row to. mypy **121**.
+
+**Cursor, shared files touched (wave 69):** `desktop/session.py` (`angle_mode_line` reads
+`read_intent` - same signature); `docs/cursor_brief_2026-10.md` B1 and `docs/desktop_app.md` name
+the mode chooser as **#1097** (a drop-down; "M" already works through the ask bridge).
 
 **Defects first:**
 - The operator's `go-public --apply` on 2026-10-10 published CGFtzpiA1so without naming it; they are
@@ -68,8 +74,8 @@ the angle that agrees with it).
 - Run 120's confirmation source is the word "LINK"; `verify-claim --run-id 120` lists it again.
 - #1088 (the established-franchise critique pivot) is an operator call.
 
-**Shipped:** wave 68 - #1084 #1085 #1033(TapIn) #1086 #1087. Highest #1096. Next (wave 69):
-**#1094 · #1090 · #1093 · #1091 · #1092**.
+**Shipped:** wave 69 - #1094 #1090 #1093 #1091 #1092. Highest #1097. Next:
+**#1089 · #1007 · #1095 · #1006 · #1021**.
 
 ## Slot — Cursor
 

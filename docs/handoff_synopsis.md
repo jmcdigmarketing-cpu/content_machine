@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: wave 68, your stance kept, a take only when asked
+# Handoff synopsis — 2026-10-10: wave 69, your idea heard once and kept
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,26 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): wave 68 #1084 #1085 #1033 #1086 #1087 (run 125)
+## Last wave — 2026-10-10 (Claude Code): wave 69 #1094 #1090 #1093 #1091 #1092 (your idea, heard once and kept)
+
+Planned with the operator ("anything else we can plan when it comes to topic to angle
+miscommunication?"): a read of 6b5f648 found the idea still misheard four ways after wave 68.
+
+- **#1090** a verdict you state ("Jets are doomed", "hot take: Herbert is elite") is a take with a
+  side: the angles, script and title argue it; an angle that negates it is dropped; your own words
+  never count against you (wave 68 had dropped "Why the Jets are doomed after week 4").
+- **#1091** the intent is read once (`core.angle_intent.read_intent`) and carried to the brief,
+  script, title and run record (`angle_intent`, `intent_source`, `intent_cue`).
+- **#1092** "M = change mode" on the angle screen - the angles are rewritten from the signals in
+  hand (`core.pipeline.regenerate_angles`). Desktop chooser: #1097.
+- **#1093** hook, title, Long close and the idea check keep the stance.
+- **#1094** `tests/fixtures/intent_eval.json` - every idea on record and how it must read; "any
+  hope" is no longer read as "no hope".
+
+**Verify:** `python -m unittest tests.test_intent_eval tests.test_own_take tests.test_stance_last_pass tests.test_one_intent tests.test_angle_mode`;
+`py -m scripts.ops regressions`; then type "Jets are doomed" and "Bolts bounce back week 5" (M -> h).
+
+## Previous — 2026-10-10 (Claude Code): wave 68 #1084 #1085 #1033 #1086 #1087 (run 125)
 
 Run 125, "Chargers Hopeium going into week 5", asked for points of hope and got five takes against
 it; the operator: "why am i still getting hot takes on all videos". Decided: a topic that names no
@@ -46,28 +65,6 @@ roadmap's five, the defects runs 119-120 exposed:
 
 **Verify:** `python -m unittest tests.test_chapters_complete tests.test_angle_dates tests.test_chapter_titles_checked tests.test_angle_scores_signal tests.test_verify_claim`;
 `py -m scripts.ops regressions`; `py -m scripts.ops verify-claim --run-id 120`.
-
-## Previous — 2026-10-09 (Claude Code): wave 66 #1016 #1001-#1005 #1003 #1012 #1017 #1018 (run 124's idea)
-
-The operator's run 124 ("How the 0-4 chargers can turn it around this year") was "a good video,
-just not what i intended"; they will rerun the same idea. Asked: speed 1.05, stock only as a last
-resort, angle 1 = "100% the intention of my idea ... worded with more seo velocity", Cursor both
-(media first). Correction: run 119's "19-0 with 8 KOs and 10 submissions" is right (a decision win).
-
-- **#1016** angle 1 is your idea worded for search, Enter keeps it (option 1 and 5); no take pushed
-  onto it; `plan` intent; the script checked against the idea (`KEEP_TO_IDEA`).
-- **#1001 #1002 #1005 #1004** "yes" is a yes; lower-case teams are names ("Los Angeles Chargers");
-  no who's-who for "Next"/"People"; news and auto-research search the subject.
-- **#1003** ESPN NFL: record, standing, next game, dated, at signal tier.
-- **#1012 #1017** pasted page junk dropped at `Fact N`; an uncertain vault fact must name the subject.
-- **#1018** a hook must be a fact: history superlatives and stock openers rebuilt from facts; the
-  hook pass is on by default.
-- Riders: **#1000** flagged render never scheduled public, **#1019** CC BY credits, **#1020**
-  `local_first` (TapIn), speed 1.05. The next 100: optimization_plan_2026-10.md; Cursor:
-  cursor_brief_2026-10.md.
-
-**Verify:** `python -m unittest tests.test_idea_stays_yours tests.test_hooks_solid_ground tests.test_typed_fact_filter tests.test_uncertain_vault_subject tests.test_subject_names tests.test_subject_queries tests.test_espn_nfl tests.test_flagged_schedule tests.test_local_first_footage tests.test_footage_credits tests.test_seed_prompt_yes`;
-`py -m scripts.ops regressions`; then rerun the Chargers idea and press Enter on angle 1.
 
 ## Pipeline order (operator)
 
@@ -132,7 +129,7 @@ Setup path (fresh machine): `py -m scripts.ops all-setup --channel tapin`.
 
 The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the standing context.
 
-1. **Operator:** `git pull`, `pip install -e ".[app]"`; in ElevenLabs lower Stability (~35-45) and raise Style (~20-30) on the TapIn voices; rerun the Chargers idea (Enter on angle 1); record Madden / UFC 5 gameplay (`ops footage-add`) - stock is now a last resort; confirm runs 119 and 120's claims with `ops verify-claim --run-id N` (run 119's chapter line: Studio by hand), then `go-public`; hand Cursor `docs/cursor_brief_2026-10.md`; `ops spend add` for what was paid; `CONTENT_CHANNEL_ID=tapin` and `youtube.oauth_setup --channel tapin` if not done; Buffer for TikTok and Instagram (#968); the Reporting API (#951); `ops backfill all --apply` if `ops backfill` agrees.
+1. **Operator:** `git pull`, `pip install -e ".[app]"`; in ElevenLabs lower Stability (~35-45) and raise Style (~20-30) on the TapIn voices; rerun the Chargers idea (Enter on angle 1), then try "M" on the angle screen; record Madden / UFC 5 gameplay (`ops footage-add`) - stock is now a last resort; confirm runs 119 and 120's claims with `ops verify-claim --run-id N` (run 119's chapter line: Studio by hand), then `go-public`; hand Cursor `docs/cursor_brief_2026-10.md`; `ops spend add` for what was paid; `CONTENT_CHANNEL_ID=tapin` and `youtube.oauth_setup --channel tapin` if not done; Buffer for TikTok and Instagram (#968); the Reporting API (#951); `ops backfill all --apply` if `ops backfill` agrees.
 2. **Product next (by epic, backlog.md "Epics"):** #849 fact-fit waits on 5+ measured runs (E1)
    · #863's call prints itself at ten runs (E3).
 3. **Structural:** #914 emoji font off Windows · #459 dead code (operator call) · #975 the organic rate on a real boosted video.
@@ -143,7 +140,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Run 125:** wave 68 - see planning_log 2026-10-10. **Next:** #1007 · #1006 · #1011 · #1060 · #1089; #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Run 125:** wave 68; **topic -> angle:** wave 69 - see planning_log 2026-10-10. **Next:** #1089 · #1007 · #1095 · #1006 · #1021; #1088 is an operator call; #1097 is Cursor's. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

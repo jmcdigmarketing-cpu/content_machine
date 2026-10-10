@@ -17,6 +17,80 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - wave 69: your idea, heard once and kept
+
+**Prompt:** the operator approved the plan in the entry below ("anything else we can plan when it
+comes to topic to angle miscommunication?"), built test-first in the plan's order, cheapest first.
+**Picked:** #1094 #1090 #1093 #1091 #1092 - the roadmap's next five as rewritten by that entry.
+
+**Shipped:**
+
+1. **#1094 the intent eval table.**
+   - `tests/fixtures/intent_eval.json` holds 24 ideas: runs 73, 99, 113, 118, 124 and 125, the operator's other ideas on record, the #1090 verdicts and the near misses. Each row gives the intent it must read as and the angles it must keep or drop.
+   - `tests/test_intent_eval.py` runs every row. A row with `needs` is enforced the moment that backlog item is ticked; "Bolts bounce back week 5" and "Herbert is HIM" wait on #1089.
+   - It found `_NO_HOPE` (`core/angle_intent.py`) reading "Is there any hope for the Jets?" as "no hope". "Any hope" now counts as a negation only after not, n't or never.
+   - 4 tests, 2 failed first.
+2. **#1090 your own take is argued, not countered.**
+   - Opinion phrases read as a take: "are doomed", "is washed", "are cooked", "is elite", "is the goat", "is finished", "is a bust".
+   - `stated_side()` reads the side a take states. That take gets its own angle table (`take_stated`) and lens, a STANCE line naming it, and an "argue THAT side" line in the script and the title.
+   - `stance_flip(..., idea=)` drops an angle that negates the side ("isn't elite", "the myth of"). It never counts a word the operator used.
+   - 10 tests, 8 failed first; the 2 that passed are controls for "hot takes" with no side.
+3. **#1093 the stance kept to the last pass.**
+   - "Closing take" is in the Long line only for a take.
+   - The hook rewrite carries `stance_rule` and refuses a flipped opener.
+   - `_keep_to_idea` asks about the stance. Its free `_stance_slip` fails an opening or closing line that knocks the stance without paying for a call.
+   - `generate_title` asks once more, then falls back to a safe line.
+   - 6 tests, 6 failed first.
+4. **#1091 one intent per run.**
+   - `read_intent()` returns an `IntentRead` (intent, source, cue). `main.py` reads it once at the angle screen; `run_pipeline(intent_read=)` passes it to the research brief, the script, the title and `build_features` / `classify_angle`, and to the follow-up Shorts.
+   - The run records `angle_intent`, `intent_source` and `intent_cue`.
+   - The angle screen says what set the mode: "[from 'hopeium']".
+   - 6 tests, 5 failed first; 1 control: `_build_prompts` already took `intent`.
+5. **#1092 change the mode on the angle screen.**
+   - "M = change mode" lists ten modes by key. The test caught tutorial missing from the first draft.
+   - `core.pipeline.regenerate_angles` writes the angles again from the signals in hand: one cheap call, no discovery, not cached.
+   - The change is recorded as `intent_source = operator`. If the rewrite fails, the old angles stay and the script still follows the chosen mode.
+   - The angle ranking moved into `_editorial_scores`, shared with `run_discovery`.
+   - 6 tests, 6 failed first.
+
+**Totals:**
+- 32 new tests, 27 observed failing before their fix (5 controls).
+- 7 regression-corpus cases, all 7 failing on 6b5f648 (136 held).
+- No older test changed expectation.
+
+**Proof** (`scratchpad/rerun_stance.py`, through 6b5f648 and through this wave):
+
+| Check | 6b5f648 | This wave |
+|---|---|---|
+| "Jets are doomed": intent | `default` | `take` |
+| "Jets are doomed": angles kept | 2 of 4 (both "doomed" lines dropped, the agreeing one too) | 3 of 4 (only "aren't doomed yet" dropped) |
+| "hot take: Herbert is elite": counter-take asked | yes | no |
+| "hot take: Herbert is elite": own-side STANCE line | no | yes |
+| "hot take: Herbert is elite": "Why Herbert isn't elite" | kept | dropped |
+| Option-5 hope run, recorded intent | `default` | `hope` |
+| Option-5 hope run, intent given to brief and script | none | `hope` |
+| Long hope prompt says "closing take" | yes | no |
+| Title "...Is Fan Denial..." | kept | replaced |
+| "Is there any hope for the Jets?" | `default` | `hope` |
+
+`scratchpad/rerun_125.py` still shows all of wave 68's results.
+
+**Not done, deliberately:**
+- **#1089** (a stance read beyond the cue words) is next. It comes after the mode key, so a read can be corrected on screen.
+- **A desktop mode drop-down** is filed as #1097 for Cursor's desktop lane. The desktop run already answers "M" through its ask bridge, and its strip shows the cue.
+- **Angle 1** keeps its own read for its stance check after a mode change.
+- **#1095 and #1096** are as filed.
+
+**Audit:**
+- ruff and format clean; mypy 121, equal to the baseline.
+- Suite: 5,045 tests OK in default, reverse and shuffle order, with "data/ and output/ untouched".
+- `ops regressions`: 136 of 136.
+- Every new symbol has a production caller; 0 network attempts.
+
+**Count:** 359 open, 971 done, highest #1097 (`ops roadmap-index`).
+
+---
+
 ## 2026-10-10 (Claude Code) - planning: what else can mishear the idea (topic -> angle)
 
 **Prompt (verbatim):** "anything else we can plan when it comes to topic to angle miscommunication?"

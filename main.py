@@ -397,6 +397,29 @@ def _parse_angle_choice(
     return "one", best_default
 
 
+def _change_angle_mode(discovery, intent_read):
+    """#1092: "M" on the angle screen - pick the mode; the angles are written again from the
+    signals in hand (no new discovery). The choice is recorded as the operator's. If the
+    angles cannot be rewritten, the mode still applies to the script and the title."""
+    from core.angle_intent import mode_for_key, mode_menu_lines, operator_intent
+    from core.pipeline import regenerate_angles
+
+    print("  Angle mode:")
+    for line in mode_menu_lines():
+        print(f"    {line}")
+    picked = mode_for_key(ask_choice("  Mode (Enter = keep this one): "))
+    if not picked or picked == intent_read.intent:
+        return discovery, intent_read
+    chosen = operator_intent(picked, intent_read)
+    print("  Writing the angles again in that mode...")
+    try:
+        return regenerate_angles(discovery, chosen), chosen
+    except Exception as exc:  # the angles in hand still stand
+        logger.warning("angle regeneration failed: %s", exc)
+        print("  ! Could not write new angles - these stay; the script follows your mode.")
+        return discovery, chosen
+
+
 def _typed_idea(
     *, topic: str, creative_brief: str, seed_topic: str | None, from_best_bet: bool
 ) -> str:
@@ -414,6 +437,7 @@ def _make_fresh_angle_shorts(
     channel_id: str,
     creative_brief: str,
     key_facts: list[str] | None,
+    intent_read=None,
 ) -> list[int]:
     """Write a Medium script per chosen angle, show the drafts, render only on one yes."""
     from core.angle_chapters import angle_headline
@@ -432,6 +456,7 @@ def _make_fresh_angle_shorts(
             creative_brief=creative_brief,
             key_facts=key_facts or None,
             menu_path="1",
+            intent_read=intent_read,  # #1091: the mode of the run they came from
         )
         if not (draft.script or "").strip() or not draft.run_id:
             print("    ! No script came back — skipped.")
@@ -482,6 +507,7 @@ def _offer_angle_shorts(
     channel_id: str,
     creative_brief: str,
     key_facts: list[str] | None,
+    intent_read=None,
 ) -> None:
     """After an all-angles render: cut chapters into Shorts, or write fresh ones (run 78)."""
     from core.angle_chapters import chapters_from_features
@@ -527,6 +553,7 @@ def _offer_angle_shorts(
             channel_id=channel_id,
             creative_brief=creative_brief,
             key_facts=key_facts,
+            intent_read=intent_read,
         )
         titles = {}
     if not run_ids:
@@ -690,15 +717,11 @@ def _run_new_video_flow_body(
 
     display_outlier(get_competitor_outlier(discovery.base_signals))
 
-    from core.angle_intent import ANGLE_DEFAULT as _ANGLE_DEFAULT
     from core.angle_intent import angle_intent_note as _intent_note
-    from core.angle_intent import detect_angle_intent as _detect_intent
+    from core.angle_intent import read_intent as _read_intent
 
-    _intent = _detect_intent(topic)
-    if _intent == _ANGLE_DEFAULT and creative_brief:
-        _intent = _detect_intent(creative_brief)
-    # #1084: always said - "neutral analysis" is a mode the operator can change by asking.
-    print(f"  {_intent_note(_intent)}")
+    # #1091: read once, here, and carried to the script, the title and the run record.
+    intent_read = _read_intent(topic, creative_brief)
 
     # #1016: angle 1 is the operator's own idea, worded for search; Enter keeps it.
     from apis.topic_variants import idea_angle
@@ -708,34 +731,40 @@ def _run_new_video_flow_body(
         from_best_bet=from_best_bet,
     )  # fmt: skip
     idea_line = idea_angle(typed_idea, channel_id) if typed_idea else ""
-    best_default = display_variants(
-        discovery.evaluated,
-        channel_id=channel_id,
-        raw_scores=discovery.raw_scores,
-        angle_scores=discovery.angle_scores,
-        own_idea=None if idea_line else seed_topic,
-        idea_angle=idea_line or None,
-    )
     from core.pipeline import angles_dropped_note, variant_fallback_note
 
-    note = variant_fallback_note(discovery.meta or {}, total=len(discovery.evaluated))
-    if note:
-        print(f"  ! {note}")  # #932
-    dropped_note = angles_dropped_note(discovery.meta)
-    if dropped_note:
-        print(f"  ! {dropped_note}")  # #1008
+    while True:
+        # #1084: always said - "neutral analysis" is a mode; #1092: M changes it here.
+        print(f"  {_intent_note(intent_read)}")
+        best_default = display_variants(
+            discovery.evaluated,
+            channel_id=channel_id,
+            raw_scores=discovery.raw_scores,
+            angle_scores=discovery.angle_scores,
+            own_idea=None if idea_line else seed_topic,
+            idea_angle=idea_line or None,
+        )
+        note = variant_fallback_note(discovery.meta or {}, total=len(discovery.evaluated))
+        if note:
+            print(f"  ! {note}")  # #932
+        dropped_note = angles_dropped_note(discovery.meta)
+        if dropped_note:
+            print(f"  ! {dropped_note}")  # #1008
 
-    angle_count = len(discovery.evaluated)
-    if idea_line:
-        prompt = f"\n  Choose 1-{angle_count + 1} (Enter = your idea"
-    else:
-        prompt = f"\n  Choose 1-{angle_count} (Enter = best"
-        if seed_topic:
-            prompt += ", 0 = your idea"
-    if angle_count >= 2:
-        prompt += ", A = all angles in one long video"
-    prompt += "): "
-    choice = ask_choice(prompt)
+        angle_count = len(discovery.evaluated)
+        if idea_line:
+            prompt = f"\n  Choose 1-{angle_count + 1} (Enter = your idea"
+        else:
+            prompt = f"\n  Choose 1-{angle_count} (Enter = best"
+            if seed_topic:
+                prompt += ", 0 = your idea"
+        if angle_count >= 2:
+            prompt += ", A = all angles in one long video"
+        prompt += ", M = change mode): "
+        choice = ask_choice(prompt)
+        if choice.strip().lower() != "m":
+            break
+        discovery, intent_read = _change_angle_mode(discovery, intent_read)
 
     mode, variant_index = _parse_angle_choice(
         choice, angle_count, best_default, allow_own=bool(seed_topic), idea_first=bool(idea_line)
@@ -841,6 +870,7 @@ def _run_new_video_flow_body(
             voice_mode=voice_mode,
             own_idea=mode == "own",  # #1016: angle 1 - no take pushed onto your idea
             own_topic=best_topic if mode == "own" else "",
+            intent_read=intent_read,  # #1091
         )
 
         print()
@@ -1185,6 +1215,7 @@ def _run_new_video_flow_body(
                     channel_id=channel_id,
                     creative_brief=creative_brief,
                     key_facts=key_facts,
+                    intent_read=intent_read,
                 )
             return
         if upload_plan.youtube_publish_at:
@@ -1240,6 +1271,7 @@ def _run_new_video_flow_body(
             channel_id=channel_id,
             creative_brief=creative_brief,
             key_facts=key_facts,
+            intent_read=intent_read,
         )
 
 

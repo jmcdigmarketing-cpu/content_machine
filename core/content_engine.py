@@ -321,6 +321,18 @@ def _build_prompts(
         )
     elif resolved_intent == ANGLE_TAKE:
         # #1084: the take machinery - only when the operator asks for a take by name.
+        # #1090: when their idea states the side ("Herbert is elite"), that is the side.
+        from core.angle_intent import stated_side
+
+        side_idea = next(
+            (t for t in (creative_brief, seed_topic, topic) if t and stated_side(t)), ""
+        )
+        own_side = (
+            f'- The operator\'s own take is "{" ".join(side_idea.split())}". Argue THAT side '
+            "with the facts - never the opposite, never a counter-take.\n"
+            if side_idea
+            else ""
+        )
         voice_take = (
             '- NO both-sidesing. Do NOT write "some argue X, while others believe Y". '
             "State what YOU think and why."
@@ -344,6 +356,7 @@ def _build_prompts(
             'not "just released" or "biggest update yet" language.\n'
             "- TAKE A SIDE. Commit to one clear stance or prediction — do not both-sides it "
             '("maybe a comeback, maybe a decline"). Pick the more interesting read and argue it.\n'
+            f"{own_side}"
             '- Cut hedging and filler ("only time will tell", "the narrative is far from over", '
             '"could be a turning point"). Every sentence advances the take.\n'
             "- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a "
@@ -588,6 +601,10 @@ You must:
         else ""
     )
 
+    # #1093: "closing take" was in every Long prompt, whatever the operator asked for.
+    long_close = (
+        "closing take" if resolved_intent == ANGLE_TAKE else "a closing line that answers the idea"
+    )
     user_prompt = f"""
 TODAY: {today}
 
@@ -610,7 +627,7 @@ ACTIVE SIGNALS (scores):
 INSTRUCTIONS:
 - Script length: REQUIRED {min_words}-{max_words} words (~{preset.duration_hint()} when spoken).
 - Open with a punchy hook sentence under 12 words (no "Today/Let's/In this video").
-- If Long format: structure as hook → context → analysis → implications → closing take.
+- If Long format: structure as hook → context → analysis → implications → {long_close}.
 {user_take}
 - Do NOT write the YouTube title — title is generated in a separate pass after facts + script.
 - Generate a concise SEO description (hook first line, call-to-action last line).
@@ -786,7 +803,12 @@ def _hook_problems(
 
 
 def _hook_variants(
-    script: str, *, channel_id: str = "", grounding_text: str = ""
+    script: str,
+    *,
+    channel_id: str = "",
+    grounding_text: str = "",
+    intent: str = "",
+    idea: str = "",
 ) -> tuple[str, dict[str, Any]]:
     """
     Opt-in (HOOK_REGEN_ENABLED=true): ask for `HOOK_VARIANTS` (#987, default 3) new first
@@ -795,8 +817,11 @@ def _hook_variants(
     prompt then also quotes the openers that held viewers best). A variant is kept only if it
     outranks the current opener, passes the scorer, and adds no name or number the script does
     not already have. Returns the script and the variants tried, for the pass's ledger row.
+    #1093: with ``intent``, the prompt carries the idea's STANCE line and an opener that knocks
+    it ("masks", "denial" on a hope idea; "isn't elite" on "Herbert is elite") is refused.
     """
     from analytics.hook_learning import rank_openers, regen_guidance
+    from core.angle_intent import stance_flip, stance_rule
     from core.hook_score import hook_regen_enabled, score_hook, score_script_hook
 
     extra: dict[str, Any] = {"variants": [], "picked": ""}
@@ -833,6 +858,9 @@ def _hook_variants(
             "them is allowed; a claim they do not state is not (no 'only one in history', "
             f"no 'never before').\nVERIFIED FACTS:\n{facts_excerpt}"
         )
+    stance = stance_rule(intent, idea) if intent else ""
+    if stance:
+        system_prompt += f"\n{stance}"
     if guidance:
         held = "\n".join(f"- {hook}" for hook in guidance.get("examples") or [])
         notes = [
@@ -875,8 +903,11 @@ def _hook_variants(
         row: dict[str, Any] = {"opener": opener, "score": score}
         words = set(content_tokens(opener))
         opener_problems = _hook_problems(opener, grounding_text, recent_openers=recent)
+        flip = stance_flip(opener, intent, idea=idea) if intent else ""
         if opener_problems:
             row["refused"] = "; ".join(opener_problems)
+        elif flip:
+            row["refused"] = f"knocks the idea's stance ({flip})"
         elif not problems and _new_specifics(script, opener):
             row["refused"] = "new specifics (a name or number the script does not have)"
         elif words and any(len(words & s) >= 0.8 * len(words) for s in later):
@@ -1127,21 +1158,62 @@ def _keep_to_idea_enabled() -> bool:
     return os.getenv("KEEP_TO_IDEA", "true").strip().lower() not in ("0", "false", "no", "off")
 
 
+# #1093: what "keeps its stance" means, per intent (core.angle_intent's ANGLE_HOPE /
+# ANGLE_TAKE / ANGLE_DEFAULT). A take asks it only when the idea states its side.
+_STANCE_ASKS = {
+    "hope": "it makes the case for hope - it never doubts, mocks or debunks the hope",
+    "take": "it argues the creator's own side - never the opposite",
+    "default": "it stays neutral analysis - no hot take and no mockery",
+}
+
+
+def _stance_slip(text: str, intent: str, idea: str) -> str:
+    """#1093: the opening or closing line knocks the idea's stance - a free check, before
+    the paid one."""
+    from core.angle_intent import stance_flip
+
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text or "") if s.strip()]
+    for label, sentence in (("opening", sentences[:1]), ("closing", sentences[-1:])):
+        reason = stance_flip(sentence[0], intent, idea=idea) if sentence else ""
+        if reason:
+            return f"the {label} line knocks the idea's stance ({reason})"
+    return ""
+
+
 def _keep_to_idea(
-    script: str, idea: str, *, min_words: int, max_words: int, grounding_text: str = ""
+    script: str,
+    idea: str,
+    *,
+    min_words: int,
+    max_words: int,
+    grounding_text: str = "",
+    intent: str = "",
 ) -> tuple[str, dict[str, Any]]:
     """#1016: does the script answer the operator's idea? One cheap check; on "no", one
     rewrite that answers it with the same facts, kept only when the check then says yes
     and the length holds. Returns (script, extra) - `extra` lands on the pass ledger row,
-    which the report card prints."""
+    which the report card prints. #1093: the check asks about the idea's stance too, and an
+    opening or closing line that knocks it fails without a call."""
+    from core.angle_intent import ANGLE_TAKE, intent_of, stated_side
+
     idea = " ".join((idea or "").split())
     if not idea or not script.strip():
         return script, {}
 
+    kind = intent or intent_of(idea)
+    stance_ask = _STANCE_ASKS.get(kind, "")
+    if kind == ANGLE_TAKE and not stated_side(idea):
+        stance_ask = ""
+
     def _check(text: str) -> tuple[bool, str]:
+        slip = _stance_slip(text, kind, idea)
+        if slip:
+            return False, slip
         payload = _call_content_llm(
             "You check whether a short video script answers the creator's idea as asked "
-            "(not a different question, not a hot take on something else). "
+            "(not a different question, not a hot take on something else)"
+            + (f" and keeps its stance: {stance_ask}" if stance_ask else "")
+            + ". "
             'Return JSON only: {"answers": true|false, "missing": "<what it fails to answer>"}',
             f"IDEA:\n{idea}\n\nSCRIPT:\n{text}",
             temperature=0.0,
@@ -1161,8 +1233,9 @@ def _keep_to_idea(
     extra: dict[str, Any] = {"answers_idea": False, "missing_before": missing}
     try:
         payload = _call_content_llm(
-            "Rewrite this short video script so it answers the creator's idea as asked. "
-            "Use ONLY the facts already in the script and the VERIFIED FACTS; add no new "
+            "Rewrite this short video script so it answers the creator's idea as asked"
+            + (f" and keeps its stance: {stance_ask}" if stance_ask else "")
+            + ". Use ONLY the facts already in the script and the VERIFIED FACTS; add no new "
             "name, number or claim. Keep the voice and roughly the length. "
             'Return JSON only: {"script": "..."}',
             f"IDEA:\n{idea}\n\nWHAT IT FAILS TO ANSWER:\n{missing}\n\n"
@@ -1609,6 +1682,7 @@ def generate_content_package(
     research_need: dict[str, Any] | None = None,
     own_idea: bool = False,
     chapter_angles: list[str] | None = None,
+    intent: str = "",
 ):
     min_words, max_words = word_range
     channel_id = channel_id or "default"
@@ -1616,7 +1690,8 @@ def generate_content_package(
     from core.angle_intent import intent_of
 
     # #1016: the operator's brief counts when the angle and seed carry no intent.
-    resolved_intent = intent_of(seed_topic or topic, creative_brief)
+    # #1091: the run's intent, read once at the angle screen, when the caller has it.
+    resolved_intent = intent or intent_of(seed_topic or topic, creative_brief)
     clean_key_facts_early = _sanitize_key_facts(key_facts)
     script_brief = build_script_brief(
         topic,
@@ -1816,7 +1891,13 @@ def generate_content_package(
         script_passes,
         "improve_hook",
         script,
-        lambda text: _hook_variants(text, channel_id=channel_id, grounding_text=grounding_text),
+        lambda text: _hook_variants(
+            text,
+            channel_id=channel_id,
+            grounding_text=grounding_text,
+            intent=resolved_intent,
+            idea=creative_brief or seed_topic or topic,
+        ),
         disabled=not hook_regen_enabled(),
     )
 
@@ -1854,6 +1935,7 @@ def generate_content_package(
             min_words=min_words,
             max_words=max_words,
             grounding_text=grounding_text,
+            intent=resolved_intent,
         ),
         disabled=not (_keep_to_idea_enabled() and (creative_brief or "").strip()),
     )
@@ -2104,6 +2186,7 @@ def generate_content_package(
         key_facts=key_facts,
         channel_id=channel_id,
         brief=creative_brief,
+        intent=resolved_intent,
     )
 
     # Candidate 321: the title is the last thing generated and was the only operator-
@@ -2136,6 +2219,7 @@ def generate_content_package(
             key_facts=None,
             channel_id=channel_id,
             brief=creative_brief,
+            intent=resolved_intent,
         )
         retry_check = (
             check_title_script_consistency(retry, script, topic=topic)

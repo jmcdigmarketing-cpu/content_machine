@@ -53,13 +53,16 @@ def _clean_angle_lines(
     topic: str = "",
     dropped: list[dict] | None = None,
     intent: str = "",
+    idea: str = "",
 ) -> list[str]:
     """Angle lines out of an LLM reply: no preamble, lens labels, markdown, or label prefix.
 
     #1008: an angle that predicts a year that has passed, or names a numbered event that has
     happened (and the topic does not), is dropped here with its reason in ``dropped``.
     #1084: with ``intent``, so is an angle that knocks the idea's stance (run 125: "masks
-    deeper roster flaws", "fan denial" for an idea asking for hope).
+    deeper roster flaws", "fan denial" for an idea asking for hope). #1090: ``idea`` is the
+    operator's words (topic and thoughts) - a word they used is never a flip, and a take that
+    states its side drops an angle arguing the other.
     """
     from core.angle_intent import stance_flip
     from core.facts.event_dates import stale_angle_reason
@@ -89,7 +92,7 @@ def _clean_angle_lines(
         if len(text.split()) < 2 or text in out:
             continue
         reason = stale_angle_reason(text, topic=topic) or (
-            stance_flip(text, intent) if intent else ""
+            stance_flip(text, intent, idea=idea or topic) if intent else ""
         )
         if reason:
             logger.info("Angle dropped (%s): %s", reason, text)
@@ -147,6 +150,10 @@ _REACTION_ANGLES = [
     "what_this_means_next",
 ]
 
+# #1090: the angle-table key for a take that states its side. Not an intent - the idea still
+# reads `take`; only the frames and the lens differ.
+TAKE_STATED = "take_stated"
+
 # #533. One table per detected intent. Every pre-existing non-reaction table
 # contained `controversy` or `community_controversy`, so a calm idea could only
 # come back as a take — see docs/idea_quality_diagnosis.md. None of these frames
@@ -168,6 +175,15 @@ INTENT_ANGLES = {
         "controversy",
         "impact_analysis",
         "long_term_outlook",
+    ],
+    # #1090: a take that states its side ("Herbert is elite") - every frame argues that side.
+    # The general take table above asks for a counter-take, which is the operator's opposite.
+    TAKE_STATED: [
+        "the_case_for_the_take",
+        "the_strongest_evidence",
+        "the_stat_that_proves_it",
+        "the_objection_answered",
+        "what_it_means_next",
     ],
     # #1016: an idea asking what has to happen. No controversy frame, no counter-take.
     ANGLE_PLAN: [
@@ -216,6 +232,10 @@ INTENT_ANGLES = {
 
 
 _LENS_EXAMPLES = {
+    TAKE_STATED: (
+        "the core case for the operator's take, the strongest evidence for it, the stat that "
+        "proves it, the common objection answered, what it means next"
+    ),
     # #1084: neutral analysis - "a contrarian counter-take" made every topic a take.
     ANGLE_DEFAULT: (
         "a factual read, what changed, a forward look grounded in the facts, a "
@@ -269,10 +289,12 @@ def generate_variants(
     repeat_count: int = 0,
     brief: str = "",
     report: dict | None = None,
+    intent: str = "",
 ):
     """Five editorial angles for ``topic``. ``brief`` is the operator's own thoughts
     (run 77) — they reach the angle prompt and choose the frame when the seed names none.
-    ``report`` receives ``angles_dropped`` (#1008) when given."""
+    ``report`` receives ``angles_dropped`` (#1008) when given. ``intent`` (#1092): the mode
+    the operator chose on the angle screen - read from the topic and thoughts when not given."""
     extract_entities(topic)
     topic_lower = topic.lower()
 
@@ -333,13 +355,19 @@ def generate_variants(
     # three reaction-shaped topics in a row were steered into critique because the
     # topic string never reached this decision. Run 77: the ask lives in the typed
     # thoughts once the search seed is just "GTA 6".
-    intent = detect_angle_intent(topic)
-    if intent == ANGLE_DEFAULT and brief:
-        intent = detect_angle_intent(brief)
+    if not intent:
+        intent = detect_angle_intent(topic)
+        if intent == ANGLE_DEFAULT and brief:
+            intent = detect_angle_intent(brief)
     if intent in INTENT_ANGLES:
+        from core.angle_intent import stated_side
+
+        table = intent
+        if intent == ANGLE_TAKE and (stated_side(topic) or stated_side(brief)):
+            table = TAKE_STATED  # #1090
         return generate_ai_titles(
             topic,
-            INTENT_ANGLES[intent],
+            INTENT_ANGLES[table],
             channel_id=channel_id,
             is_established=is_established,
             intent=intent,
@@ -385,6 +413,7 @@ def generate_variants(
         angle_types,
         channel_id=channel_id,
         is_established=is_established,
+        intent=intent,  # #1092: a "neutral" the operator chose stays neutral
         brief=brief,
         report=report,
     )
@@ -529,10 +558,14 @@ def generate_ai_angles(
 
     # Every frame still needs five distinct lenses, but "contrarian counter-take"
     # is not one of them unless the operator actually asked for a take.
-    lens_examples = _LENS_EXAMPLES.get(intent, _LENS_EXAMPLES[ANGLE_DEFAULT])
-    from core.angle_intent import stance_rule
+    from core.angle_intent import stance_rule, stated_side
 
-    stance = stance_rule(intent)  # #1084: the operator's stance, before the rules
+    # #1090: the operator's words, for the stance check; the clause that states a side, if any.
+    idea = " ".join(t for t in (str(topic or "").strip(), thoughts) if t)
+    side_idea = next((t for t in (str(topic or ""), thoughts) if stated_side(t)), "")
+    lens_key = TAKE_STATED if intent == ANGLE_TAKE and side_idea else intent
+    lens_examples = _LENS_EXAMPLES.get(lens_key, _LENS_EXAMPLES[ANGLE_DEFAULT])
+    stance = stance_rule(intent, side_idea)  # #1084: the operator's stance, before the rules
     stance_block = f"\n{stance}\n" if stance else ""
 
     prompt = f"""
@@ -574,7 +607,9 @@ Return exactly {len(angle_types)} angle lines.
         logger.warning("Variant LLM unavailable (%s) — using heuristic angles", exc)
         return _heuristic_angles(topic, angle_types)
 
-    clean = _clean_angle_lines(raw, angle_types, topic=topic, dropped=dropped, intent=intent)
+    clean = _clean_angle_lines(
+        raw, angle_types, topic=topic, dropped=dropped, intent=intent, idea=idea
+    )
     if len(clean) < _MIN_REAL_ANGLES:
         # One re-ask, not a loop: run 77 kept 3 of 5 lines as junk, leaving 2 real angles.
         try:
@@ -586,7 +621,7 @@ Return exactly {len(angle_types)} angle lines.
                 max_tokens=400,
             )
             for line in _clean_angle_lines(
-                retry, angle_types, topic=topic, dropped=dropped, intent=intent
+                retry, angle_types, topic=topic, dropped=dropped, intent=intent, idea=idea
             ):
                 if line not in clean:
                     clean.append(line)
@@ -673,7 +708,7 @@ def idea_rewording_problem(idea: str, candidate: str) -> str:
         return f"added a number the idea does not have: {added[0]}"
     if "?" in text and "?" not in plain:
         return "added a question the idea does not ask"
-    return stale_angle_reason(text) or stance_flip(text, intent_of(plain))  # #1084
+    return stale_angle_reason(text) or stance_flip(text, intent_of(plain), idea=plain)  # #1084
 
 
 def idea_angle(idea: str, channel_id: str | None = None) -> str:

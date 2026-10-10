@@ -2221,6 +2221,115 @@
         "contains": "placeholder"
       },
       "why": "a confirmation needs a real link or a description of where it was seen"
+    },
+    {
+      "id": "own-verdict-reads-as-take",
+      "item": 1090,
+      "call": "core.angle_intent:detect_angle_intent",
+      "args": [
+        "Jets are doomed"
+      ],
+      "expect": {
+        "equals": "take"
+      },
+      "source": "planned 2026-10-10, measured on 6b5f648: 'Jets are doomed' read neutral",
+      "why": "an idea that states the operator's verdict asks for that take, argued"
+    },
+    {
+      "id": "own-verdict-angle-kept",
+      "item": 1090,
+      "call": "core.angle_intent:stance_flip",
+      "args": [
+        "Why the Jets are doomed after week 4",
+        "default"
+      ],
+      "kwargs": {
+        "idea": "Jets are doomed"
+      },
+      "expect": {
+        "falsy": true
+      },
+      "source": "6b5f648 dropped this angle: \"'doomed' knocks a neutral one\"",
+      "why": "a word the operator used is never a flip"
+    },
+    {
+      "id": "own-take-countered",
+      "item": 1090,
+      "call": "core.angle_intent:stance_flip",
+      "args": [
+        "Why Herbert isn't elite",
+        "take"
+      ],
+      "kwargs": {
+        "idea": "Chargers hot take: Herbert is elite"
+      },
+      "expect": {
+        "contains": "argues against"
+      },
+      "source": "6b5f648: nothing flipped a take, and the take table asked for a contrarian counter-take",
+      "why": "a take that states its side is argued, never countered (run 124's complaint)"
+    },
+    {
+      "id": "any-hope-asks-for-hope",
+      "item": 1094,
+      "call": "core.angle_intent:detect_angle_intent",
+      "args": [
+        "Is there any hope for the Jets?"
+      ],
+      "expect": {
+        "equals": "hope"
+      },
+      "source": "the #1094 eval table on 6b5f648: _NO_HOPE read 'any hope' as 'no hope'",
+      "why": "'any hope' is a negation only after not / n't / never"
+    },
+    {
+      "id": "closing-line-mocks-the-hope",
+      "item": 1093,
+      "call": "core.content_engine:_stance_slip",
+      "args": [
+        "Herbert threw for 300 yards. Chargers fans are in denial.",
+        "hope",
+        "Chargers Hopeium going into week 5"
+      ],
+      "expect": {
+        "contains": "closing line"
+      },
+      "source": "planned 2026-10-10: _keep_to_idea checked the question, never the stance",
+      "why": "the script's opening and closing lines keep the idea's stance"
+    },
+    {
+      "id": "title-hook-stance-sibling",
+      "item": 1093,
+      "call": "core.angle_intent:stance_flip",
+      "args": [
+        "Chargers Hopeium Is Fan Denial Going Into Week 5",
+        "hope"
+      ],
+      "kwargs": {
+        "idea": "Chargers Hopeium going into week 5"
+      },
+      "expect": {
+        "truthy": true
+      },
+      "source": "sibling of #1084 for the title and hook passes, which had no check after the prompt",
+      "why": "a title or opener that calls the hope denial is refused"
+    },
+    {
+      "id": "run-intent-labels-the-run",
+      "item": 1091,
+      "call": "core.run_features:classify_angle",
+      "args": [
+        "Herbert's deep ball is back",
+        ""
+      ],
+      "kwargs": {
+        "intent": "hope"
+      },
+      "expect": {
+        "equals": "hope"
+      },
+      "source": "6b5f648 recorded a hope run typed as thoughts as default - read from the angle text alone",
+      "why": "the run is labelled with the intent it ran under"
     }
   ]
 }

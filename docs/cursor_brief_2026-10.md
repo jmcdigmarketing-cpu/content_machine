@@ -118,7 +118,7 @@ Technical QC flags a black or frozen stretch longer than 0.5 s, with the timesta
 
 | Order | Item | Done means |
 |---|---|---|
-| B1 | #1067 the new-video page with an intent card | type an idea; angle 1 is your idea worded for search (`apis.topic_variants.idea_angle`), the intent read (`core.angle_intent`), Enter keeps it |
+| B1 | #1067 the new-video page with an intent card (+ #1097) | type an idea; angle 1 is your idea worded for search (`apis.topic_variants.idea_angle`), the intent read (`core.angle_intent.read_intent` - intent, source, the cue that set it), Enter keeps it. Wave 69: the mode can be changed (`MODE_KEYS`; the CLI's "M" prompt, which the ask bridge already carries) and the angles rewritten from the signals in hand (`core.pipeline.regenerate_angles`) - a drop-down here is #1097 |
 | B2 | #1068 + #1064 the review room confirms claims and goes public | each flagged claim with its sources; confirm, fix or cut; `go-public` from the window. The engine half shipped in wave 67 (#1013): call `core.facts.claim_confirm` (`run_flagged_claims`, `confirm_claim`, `reject_claim`) - the same functions `ops verify-claim` uses |
 | B3 | #161 the publish calendar | a week view of queued and scheduled uploads, cadence guardrail visible |
 | B4 | #157 the clip librarian | search, licence, anti-repeat and per-clip performance over `data/clip_index.json` |

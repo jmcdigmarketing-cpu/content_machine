@@ -8,6 +8,24 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 69 — your idea, heard once and kept - 2026-10-10
+
+*mypy 121; ruff 0.15.8 clean; corpus 136 of 136.*
+
+- **#1090** A verdict you type ("Jets are doomed", "Tua is washed", "hot take: Herbert is elite")
+  is a take with a side: the angles, the script and the title argue it, and an angle arguing the
+  opposite ("Why Herbert isn't elite") is dropped. Your own words never count against you - wave 68
+  had dropped "Why the Jets are doomed after week 4" as mockery.
+- **#1092** "M = change mode" on the angle screen: pick neutral, hope, take, plan, explainer,
+  tutorial, list, comparison, looking back or reaction, and the angles are written again from the
+  signals already fetched.
+- **#1091** The mode is read once, shown with the word that set it ("[from 'hopeium']"), and used by
+  the brief, the script, the title and the run record (`intent_source`, `intent_cue`).
+- **#1093** The hook rewrite, the title, the Long close and the idea check keep the stance; a title
+  that calls the hope "denial" is asked for again.
+- **#1094** Every idea on record is pinned to how it must read; "Is there any hope for the Jets?"
+  reads as hope.
+
 ### Wave 68 — your stance kept; a take only when you ask - 2026-10-10
 
 *mypy 121; ruff 0.15.8 clean; corpus 129 of 129.*

@@ -48,29 +48,30 @@ is left is below.
 |---|---|---|
 | 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode, **#977** checked against later runs, **#1003** NFL from ESPN, **#1004** news searches the subject, **#1002** lowercase teams, **#1012** pasted junk out, **#1017** uncertain vault facts must name the subject | **#1011** a stale signal record · **#1022** every league + injuries · **#1024** stale best bets |
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
-| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport, **#1005** no who's-who for common words, **#1016** your idea stays yours, **#1008** stale angles dropped before the menu, **#1014** angles scored without a per-angle fetch, **#1084** your stance kept - neutral by default, a take only when asked | **#1090-#1094** your idea heard once and kept · **#1089** stance beyond the lexicon · **#1007** award races · **#1006** video games read as gaming |
+| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport, **#1005** no who's-who for common words, **#1016** your idea stays yours, **#1008** stale angles dropped before the menu, **#1014** angles scored without a per-angle fetch, **#1084** your stance kept - neutral by default, a take only when asked, **#1090-#1094** your idea heard once and kept | **#1089** stance beyond the lexicon · **#1007** award races · **#1095** research for the stance · **#1006** video games read as gaming |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out, **#1020** stock only as a last resort, **#1019** CC BY credits | thumbnails **#1047**, the voice **#1035**, licensed footage **#1040** (Cursor) · #786 your footage (operator) |
 | 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers, **#988** the intro measured, **#959** what each ad campaign bought, **#992** paid subscribers, **#998** after the ads | #975 the organic rate on a real boosted video · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 68 (2026-10-10)** answered run 125 (a hope idea came back as five takes against it): your
-stance is kept and a topic with no stance is neutral analysis - a take only when asked by name. The
-operator then asked what else could go wrong between the topic and the angles; a read of 6b5f648
-found four more ways (planning_log 2026-10-10), two of them from wave 68's own neutral default. They
-come first - the most repeated complaint on record (runs 73, 77, 113, 124, 125). **Wave 69, "your
-idea, heard once and kept":**
+**Wave 69 (2026-10-10)** heard the operator's idea once and kept it to the last pass: a verdict
+you state is argued, not countered (#1090 - "Jets are doomed" lost its own angle under wave 68);
+the intent is read once and recorded as used (#1091); "M = change mode" on the angle screen
+(#1092); the hook, title, Long close and idea check keep the stance (#1093); and every idea on
+record is pinned in an eval table (#1094). Next, the rest of the topic -> angle theme, then the
+"Now" horizon:
 
-1. **#1094 the intent eval table** `[S]` - every idea you have typed, pinned to how it must read.
-2. **#1090 your own take is argued, not countered** `[S]` - "Jets are doomed" lost its agreeing angle.
-3. **#1093 the stance kept to the last pass** `[S]` - the hook, the title, the Long close, the check.
-4. **#1091 one intent per run, recorded as used** `[M]` - read nine times, recorded from the wrong text.
-5. **#1092 change the mode on the angle screen** `[M]` - promised in the code, never built.
+1. **#1089 a stance read beyond the lexicon** `[M]` - #1094's waiting rows are its test.
+2. **#1007 an award race is a race** `[M]` - "Game of the year 2027" became one game.
+3. **#1095 research that serves the stance** `[M]` - measure run 125's snapshot first.
+4. **#1006 video games and mods read as gaming** `[S]` - run 120 ran seven off-domain signals.
+5. **#1021 angle-pick learning** `[M]` - #1092 now records the operator's mode choices.
 
-Then wave 70: **#1089** stance beyond the lexicon · **#1007** award races · **#1095** research that
-serves the stance · **#1006** games read as gaming · **#1021** angle-pick learning, with **#1088**
-asked of the operator; after that **#1011 #1060 #1024 #1022 #1082**. Cursor runs phase A meanwhile
-(**#1040 #1041 #1047 #1048 #1035 #1036 #1053 #1044**). Wave 69's visible item: "M = change mode".
+Then **#1088** (the established-franchise critique pivot - an operator call) · **#1011** stale
+record · **#1060** post time per sport · **#1024** stale best bets · **#1022** · **#1082** ·
+**#1096**; Cursor: **#1097** (the desktop mode chooser) beside phase A (**#1040 #1041 #1047 #1048
+#1035 #1036 #1053 #1044**). Wave 70's visible item: the angle screen says why it read your idea
+the way it did, even without a cue word.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.

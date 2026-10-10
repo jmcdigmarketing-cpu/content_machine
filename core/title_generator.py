@@ -212,10 +212,13 @@ def generate_title(
     key_facts: list[str] | None = None,
     channel_id: str = "default",
     brief: str = "",
+    intent: str = "",
 ) -> str:
     """Generate a fact-grounded title from the finished script + operator facts.
 
-    `brief` (#1016): the operator's own idea - the title promises what it asks."""
+    `brief` (#1016): the operator's own idea - the title promises what it asks. `intent`
+    (#1091): the run's intent, read once; read from the seed and brief when not given. #1093:
+    a title that knocks the idea's stance is asked for once more, then falls back."""
     hook = _hook_line(script)
     facts = facts_for_prompt(key_facts)
     facts_block = (
@@ -229,15 +232,22 @@ def generate_title(
         if plain_brief
         else ""
     )
-    from core.angle_intent import ANGLE_HOPE, ANGLE_TAKE, intent_of
+    from core.angle_intent import ANGLE_HOPE, ANGLE_TAKE, intent_of, stance_flip, stated_side
 
     # #1084: the title keeps the operator's stance - run 125 asked for hope.
-    stance = intent_of(seed_topic or topic, brief)
+    stance = intent or intent_of(seed_topic or topic, brief)
+    idea = " ".join(t for t in (brief, seed_topic or topic) if t)
+    side_idea = next((t for t in (brief, seed_topic, topic) if t and stated_side(t)), "")
     stance_line = (
         "STANCE: the operator asked for reasons for hope - the title promises them; never "
         "doubts, mocks or calls the hope denial.\n"
         if stance == ANGLE_HOPE
-        else ""
+        else (
+            f'STANCE: the operator\'s own take is "{" ".join(side_idea.split())}" - the title '
+            "argues it, never the opposite.\n"
+            if side_idea
+            else ""
+        )
         if stance == ANGLE_TAKE
         else "STANCE: neutral - no hot take and no mockery in the title.\n"
     )
@@ -284,6 +294,19 @@ Title:"""
         if retry is not None:
             title = _clean_title(retry, fallback=fallback, angle=topic)
     title = _repair_title_to_angle(title, topic, fallback=fallback)
+    flip = stance_flip(title, stance, idea=idea)
+    if flip:
+        # #1093: the stance line is in the prompt; this is the check after it.
+        logger.info("Title knocks the idea's stance (%s): %r - asking once more", flip, title)
+        retry = _complete_or_none(
+            prompt + f"\n(Not this - it knocks the operator's stance, {flip}: {title})\nTitle:",
+            temperature=0.35,
+            max_tokens=48,
+        )
+        again = _clean_title(retry, fallback=fallback, angle=topic) if retry else fallback
+        again = _repair_title_to_angle(again, topic, fallback=fallback)
+        safe = [t for t in (again, fallback, (seed_topic or topic)[:70]) if t]
+        title = next((t for t in safe if not stance_flip(t, stance, idea=idea)), safe[-1])
     logger.debug("Generated title: %s", title)
     return title
 

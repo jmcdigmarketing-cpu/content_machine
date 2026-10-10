@@ -47,7 +47,7 @@ def classify_title_structure(title: str) -> str:
     return "statement"
 
 
-def classify_angle(topic: str, recommended_format: str = "") -> str:
+def classify_angle(topic: str, recommended_format: str = "", *, intent: str = "") -> str:
     """Analytics label for a topic.
 
     Generation (`detect_angle_intent`) is the source of truth when it names a
@@ -57,7 +57,7 @@ def classify_angle(topic: str, recommended_format: str = "") -> str:
     """
     from core.angle_intent import ANGLE_DEFAULT, ANGLE_TAKE, detect_angle_intent
 
-    intent = detect_angle_intent(topic)
+    intent = intent or detect_angle_intent(topic)  # #1091: the run's own, when given
     # #1084: a take is a stance, not a label - "is a fraud" keeps its finer keyword label.
     if intent not in (ANGLE_DEFAULT, ANGLE_TAKE):
         return intent
@@ -103,8 +103,10 @@ def build_features(
     fact_source: str = "",
     vault_relevance_audit: list[dict[str, Any]] | None = None,
     signals: dict[str, Any] | None = None,
+    intent: str = "",
 ) -> dict[str, Any]:
-    """Assemble the normalized feature dict for a content run."""
+    """Assemble the normalized feature dict for a content run. ``intent`` (#1091): the run's
+    intent, read once; without it, read from ``topic``."""
     pkg = content_package or {}
     title = str(pkg.get("title") or "")
     script = str(pkg.get("script") or "")
@@ -132,8 +134,8 @@ def build_features(
         "domains": resolve_domains(topic, channel_id, key_facts=key_facts or None, signals=signals),
         "format": preset.label,
         "length_preset": preset.choice,
-        "angle": classify_angle(topic, recommended_format),
-        "angle_intent": _angle_intent(topic),
+        "angle": classify_angle(topic, recommended_format, intent=intent),
+        "angle_intent": intent or _angle_intent(topic),
         "title_structure": classify_title_structure(title),
         "title": title,
         "title_direction": title_direction,

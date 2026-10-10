@@ -2134,6 +2134,93 @@
         "equals": []
       },
       "why": "a confirmed claim stops counting against the run - the hold lifts without paying for the voice again"
+    },
+    {
+      "id": "run125-hopium-is-hope",
+      "item": 1084,
+      "source": "run 125 (2026-10-10): 'Chargers Hopeium going into week 5' - the operator asking for points of hope",
+      "call": "core.angle_intent:detect_angle_intent",
+      "args": [
+        "Chargers Hopeium going into week 5"
+      ],
+      "expect": {
+        "equals": "hope"
+      },
+      "why": "an idea asking for hope is read as hope, not as a topic to take a side on"
+    },
+    {
+      "id": "run125-stance-flips-dropped",
+      "item": 1084,
+      "source": "run 125 (2026-10-10): 'Chargers Hopeium going into week 5' - the operator asking for points of hope; all five angles knocked it",
+      "call": "apis.topic_variants:_clean_angle_lines",
+      "args": [
+        "Chargers' Hopeium masks deeper roster flaws beneath surface optimism\nCritics question whether Chargers' Hopeium stems from genuine progress or fan denial\nWeek 5 showdown could validate or shatter Chargers' fragile Hopeium narrative\nChargers' Hopeium reflects fanbase desperation amid mounting pressure and low expectations\nAnalyzing how Chargers' Hopeium influences betting lines and community discourse",
+        []
+      ],
+      "kwargs": {
+        "topic": "Chargers Hopeium going into week 5",
+        "intent": "hope"
+      },
+      "expect": {
+        "equals": [
+          "Analyzing how Chargers' Hopeium influences betting lines and community discourse"
+        ]
+      },
+      "why": "an angle that doubts or mocks the operator's hope never reaches the menu"
+    },
+    {
+      "id": "neutral-default-is-analysis",
+      "item": 1084,
+      "source": "sibling of run 125: the default intent was the take machinery (short_debate)",
+      "call": "core.angle_intent:format_for_intent",
+      "args": [
+        "default"
+      ],
+      "expect": {
+        "equals": "analysis"
+      },
+      "why": "the operator's decision 2026-10-10: no stance named means neutral analysis"
+    },
+    {
+      "id": "neutral-derision-flips",
+      "item": 1084,
+      "source": "sibling of run 125: 'fan denial' on a topic that asked for no take",
+      "call": "core.angle_intent:stance_flip",
+      "args": [
+        "Chargers fans are in denial about this roster",
+        "default"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "mocking the fans is a take the operator did not ask for"
+    },
+    {
+      "id": "run125-angle1-added-year",
+      "item": 1085,
+      "source": "run 125 (2026-10-10): 'Chargers Hopeium going into week 5' - the operator asking for points of hope; angle 1 came back with '2023: What's The Question?'",
+      "call": "apis.topic_variants:idea_rewording_problem",
+      "args": [
+        "Chargers Hopeium going into week 5",
+        "Los Angeles Chargers Hopeium Into Week 5 2023: What's The Question?"
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "angle 1 is the idea worded for search - it adds no year, number or question"
+    },
+    {
+      "id": "run120-placeholder-source",
+      "item": 1086,
+      "source": "2026-10-10 on the PC: verify-claim recorded --source \"LINK\" as run 120's source",
+      "call": "core.facts.claim_confirm:source_problem",
+      "args": [
+        "LINK"
+      ],
+      "expect": {
+        "contains": "placeholder"
+      },
+      "why": "a confirmation needs a real link or a description of where it was seen"
     }
   ]
 }

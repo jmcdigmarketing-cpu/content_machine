@@ -2490,12 +2490,14 @@ def cmd_verify_claim(args: argparse.Namespace) -> int:
         for row in rows:
             kind = f"[{row.claim_type}] " if row.claim_type else ""
             bar = "blocks" if row.blocking else "warns only"
+            if row.needs_source:
+                bar = "confirmed with a placeholder source - confirm again with the real link"
             print(f"  {row.number}. {kind}{row.claim}  ({bar})")
             if row.found_in:
                 print(f"     this run's own research says: {row.found_in[:200]}")
         print(
             f"  Confirm: py -m scripts.ops verify-claim --run-id {run_id} --claim N "
-            '--source "LINK" --apply'
+            '--source "https://...the page that says it" --apply'
         )
         print(f"  Reject:  py -m scripts.ops verify-claim --run-id {run_id} --claim N --reject")
         return 0
@@ -2548,6 +2550,12 @@ def cmd_go_public(args: argparse.Namespace) -> int:
     )
     print(f"{result.status}: {result.detail}")
     if result.status == "dry_run":
+        # #1087: name what would go public, not just its id.
+        print(f"  Would make public: {result.label}")
+        if len(result.holds) > 1:
+            print(f"  {len(result.holds)} unlisted holds - --apply needs the video id:")
+            for hold in result.holds:
+                print(f"    {hold}")
         print(
             f"  Nothing was sent to YouTube. Re-run with --apply to make {result.video_id} public."
         )

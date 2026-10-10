@@ -30,10 +30,18 @@ ANGLE_RETROSPECTIVE = "retrospective"
 # #1016 (run 124): "How the 0-4 chargers can turn it around this year" asks what has to
 # happen. It was `default`, so the prompt said "TAKE A SIDE" and the angles were takes.
 ANGLE_PLAN = "plan"
+# #1084 (run 125): "Chargers Hopeium going into week 5" asks for the positives - the points
+# of hope. It was `default`, and every angle came back knocking the hope.
+ANGLE_HOPE = "hope"
+# #1084: the operator's decision (2026-10-10) - a take only when asked for. Until then the
+# take machinery WAS `default`, so every topic without a cue word got one.
+ANGLE_TAKE = "take"
 
 ALL_INTENTS = (
     ANGLE_REACTION,
     ANGLE_PLAN,
+    ANGLE_HOPE,
+    ANGLE_TAKE,
     ANGLE_EXPLAINER,
     ANGLE_LIST,
     ANGLE_TUTORIAL,
@@ -47,6 +55,7 @@ ALL_INTENTS = (
 CALM_INTENTS = frozenset(
     {
         ANGLE_PLAN,
+        ANGLE_HOPE,
         ANGLE_EXPLAINER,
         ANGLE_LIST,
         ANGLE_TUTORIAL,
@@ -85,6 +94,8 @@ _REACTION_CUES = (
 # A bare superlative counts only when the operator is plainly excited, which in
 # practice means shouting. "GTA 6 looks amazing!!!" yes; "is GTA 6 amazing?" no.
 _SUPERLATIVES = ("amazing", "incredible", "insane", "unreal", "stunning", "gorgeous")
+# #1084: "no hope" / "hopeless" is not asking for hope.
+_NO_HOPE = re.compile(r"\b(?:no|lost|zero|without|any)\s+hope\b|\bhopeless", re.I)
 _SHOUTING = re.compile(r"!!|[A-Z]{4,}")
 _QUESTION = re.compile(r"\?")
 
@@ -96,6 +107,41 @@ _QUESTION = re.compile(r"\?")
 # pins it. Ordered: the first match wins, so the more specific frames are checked
 # before the more general ones.
 _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        # #1084: asked for by name - checked first, so "hot take: how can they fix it" stays one.
+        ANGLE_TAKE,
+        (
+            "hot take",
+            "overrated",
+            "underrated",
+            "frauds",
+            "a fraud",
+            "debate",
+            "unpopular opinion",
+            "my take",
+            "controversial",
+            "is it over",
+        ),
+    ),
+    (
+        # #1084: "hopium" is the operator's word for optimism, not mockery.
+        ANGLE_HOPE,
+        (
+            "hopium",
+            "hopeium",
+            "hope",
+            "positives",
+            "bright spot",
+            "reasons to believe",
+            "reason to believe",
+            "optimis",
+            "silver lining",
+            "good news",
+            "what's going right",
+            "whats going right",
+            "upside",
+        ),
+    ),
     (
         ANGLE_PLAN,
         (
@@ -178,6 +224,8 @@ def detect_angle_intent(topic: str | None) -> str:
         return ANGLE_REACTION
 
     for intent, cues in _INTENT_CUES:
+        if intent == ANGLE_HOPE and _NO_HOPE.search(text):
+            continue
         if any(cue in low for cue in cues):
             return intent
 
@@ -192,6 +240,11 @@ def detect_angle_intent(topic: str | None) -> str:
 
 
 _INTENT_NOTES = {
+    ANGLE_DEFAULT: (
+        "neutral analysis - a take only when you ask ('hot take', 'overrated', 'debate')"
+    ),
+    ANGLE_HOPE: "hope (read from your idea) - every angle a reason for optimism; no hot take",
+    ANGLE_TAKE: "take (you asked for one) - angles argue a side",
     ANGLE_PLAN: "plan (read from your idea) - answers what has to happen; no hot take",
     ANGLE_REACTION: "reaction (read from your topic) - analysis/critique framings suppressed",
     ANGLE_EXPLAINER: "explainer (read from your topic) - take/controversy framings suppressed",
@@ -216,15 +269,93 @@ def intent_of(*texts: str | None) -> str:
 def format_for_intent(intent: str) -> str:
     """Research-brief `recommended_format` for a detected intent.
 
-    `default` stays `short_debate` — that is the take machinery, and it is
-    correct when the operator did not ask for another frame.
+    #1084: `default` is neutral `analysis`; `short_debate` - the take machinery - is only
+    for a take the operator asked for. (It was the default until 2026-10-10.)
     """
-    if intent == ANGLE_DEFAULT or intent not in ALL_INTENTS:
+    if intent == ANGLE_TAKE:
         return "short_debate"
+    if intent == ANGLE_DEFAULT or intent not in ALL_INTENTS:
+        return "analysis"
     return intent
 
 
 def angle_intent_note(intent: str) -> str:
     """One operator-facing line for the angle screen. cp1252-safe (candidate 250)."""
-    detail = _INTENT_NOTES.get(intent)
-    return f"Angle mode: {detail}" if detail else "Angle mode: standard"
+    detail = _INTENT_NOTES.get(intent) or _INTENT_NOTES[ANGLE_DEFAULT]
+    return f"Angle mode: {detail}"
+
+
+# #1084: words that doubt, mock or knock what a hopeful idea asked to celebrate. Run 125's
+# angles: "masks deeper roster flaws", "critics question ... fan denial", "shatter ... fragile",
+# "fanbase desperation". Phrases where a bare word is ambiguous ("the critical matchup",
+# "why the doubters are wrong" are reasons for hope).
+_DOUBT = (
+    "mask",
+    "flaw",
+    "denial",
+    "desperat",
+    "fragile",
+    "shatter",
+    "critics question",
+    "critics say",
+    "critics argue",
+    "delusion",
+    "false hope",
+    "wishful",
+    "mirage",
+    "overrated",
+    "fraud",
+    "doomed",
+    "exposed",
+    "copium",
+    "reality check",
+    "smoke and mirrors",
+    "too good to be true",
+)
+# Mockery of what people believe - a hot take on a neutral topic nobody asked for. Kept narrow
+# on purpose: "fraud" and "collapse" are facts in a finance story.
+_DERISION = (
+    "denial",
+    "delusion",
+    "desperat",
+    "copium",
+    "mirage",
+    "overrated",
+    "doomed",
+    "smoke and mirrors",
+)
+
+
+def stance_flip(text: str, intent: str) -> str:
+    """Why ``text`` knocks the stance of an idea read as ``intent``, or "" (#1084).
+
+    A take the operator asked for is never a flip; a hopeful idea is flipped by doubt or
+    mockery; any other idea by mockery only.
+    """
+    if intent == ANGLE_TAKE:
+        return ""
+    words = _DOUBT if intent == ANGLE_HOPE else _DERISION
+    low = (text or "").lower()
+    for word in words:
+        if re.search(rf"\b{re.escape(word)}", low):
+            stance = "a hopeful idea" if intent == ANGLE_HOPE else "a neutral one"
+            return f"'{word}' knocks {stance}"
+    return ""
+
+
+def stance_rule(intent: str) -> str:
+    """The STANCE line every prompt that writes for this idea carries (#1084)."""
+    if intent == ANGLE_HOPE:
+        return (
+            "STANCE: the operator is asking for reasons for HOPE. Slang like 'hopium' or "
+            "'hopeium' is their word for optimism, not mockery. Every angle is a different, "
+            "fact-checkable reason for optimism. Never question, debunk, psychoanalyse or mock "
+            "the hope - no 'critics', 'denial', 'fragile', 'masks', 'reality check'."
+        )
+    if intent == ANGLE_TAKE:
+        return ""
+    return (
+        "STANCE: neutral analysis - what happened, what it means, what to watch. No "
+        "contrarian counter-take, no hot take and no mocking the fans or the subject; the "
+        "operator asks by name when they want a take."
+    )

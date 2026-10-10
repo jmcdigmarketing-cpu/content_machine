@@ -55,15 +55,18 @@ def classify_angle(topic: str, recommended_format: str = "") -> str:
     intent is `default`, so `"GTA 6 looks amazing!!!"` is `reaction` here too
     (#661) rather than `general`.
     """
-    from core.angle_intent import ANGLE_DEFAULT, detect_angle_intent
+    from core.angle_intent import ANGLE_DEFAULT, ANGLE_TAKE, detect_angle_intent
 
     intent = detect_angle_intent(topic)
-    if intent != ANGLE_DEFAULT:
+    # #1084: a take is a stance, not a label - "is a fraud" keeps its finer keyword label.
+    if intent not in (ANGLE_DEFAULT, ANGLE_TAKE):
         return intent
     text = f"{topic} {recommended_format}".lower()
     for label, words in _ANGLE_KEYWORDS:
         if any(w in text for w in words):
             return label
+    if intent == ANGLE_TAKE:
+        return ANGLE_TAKE
     if recommended_format:
         return recommended_format.lower()
     return "general"

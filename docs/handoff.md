@@ -53,29 +53,27 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-09 · **HEAD at write:** `1b43610` + the wave 67 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `3b88098` + the wave 68 commit (`git log -1`) ·
 **Tree:** clean after the commit.
 
-**Read before editing:** angles are scored on the seed's signals now (`pipeline._seed_score_variant`;
-`VARIANT_SIGNAL_RESCORE=true` is the old per-angle fetch); stale angles drop in
-`topic_variants._clean_angle_lines` via `core/facts/event_dates`; chapter titles are chosen by
-`angle_chapters.choose_chapter_title` and stored with `title_source`/`title_note`; the trim uses
-`content_engine._trim_to_cap`. The parent hold has one rule, `go_public.override_held` - patch it
-there. mypy **121**.
+**Read before editing:** the default intent is **neutral analysis** now (the operator, 2026-10-10);
+the take machinery lives under `ANGLE_TAKE` and runs only when the topic asks by name. Hope is
+`ANGLE_HOPE` (calm). `core.angle_intent.stance_flip` / `stance_rule` are the one place stance is
+judged - the angle cleaner, angle 1's check (`idea_rewording_problem`) and the prompts use them.
+`format_for_intent(default)` is `analysis`. mypy **121**.
 
-**Cursor, in your files (wave 67):** `core/chapter_shorts.py` gained `SHORTS_MIN_SECONDS = 20`
-(your A5 figure) and its verdict text - nothing else. A5's remaining work is unchanged. B2's engine
-half is `core.facts.claim_confirm` (the brief says so).
+**Cursor, shared files touched (wave 68):** `config/channels.json` - TapIn's persona perspective and
+audience lines only. Nothing in your files.
 
 **Defects first:**
-- The ESPN fixture is still the documented shape, not a live capture (#1022 / record-payloads).
-- Run 119's published description still says "UFC 305 ..." - fixed in new runs, not old ones
-  (#1066); its claims can now be confirmed with `ops verify-claim`.
-- `docs/decisions.md` is at its 800-line ceiling; decisions go in planning_log.
+- The operator's `go-public --apply` on 2026-10-10 published CGFtzpiA1so without naming it; they are
+  asked to check which video it was (not a gate-held run - those are refused).
+- Run 120's confirmation source is the word "LINK"; `verify-claim --run-id 120` now lists it again
+  for a real link.
+- #1088 (the established-franchise critique pivot) is an operator call; decisions.md is at its cap.
 
-**Shipped:** wave 67 - #1008 #1009 #1010 #1013 #1014 (+ the title's past-year check, the corpus
-runner's `select: 0`). Filed #1080-#1083. Highest #1083. Next:
-**#1007 · #1006 · #1011 · #1033 · #1060**.
+**Shipped:** wave 68 - #1084 #1085 #1033(TapIn) #1086 #1087. Highest #1089. Next:
+**#1007 · #1006 · #1011 · #1060 · #1089**.
 
 ## Slot — Cursor
 

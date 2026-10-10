@@ -91,13 +91,19 @@ class TestIntentReplay(unittest.TestCase):
         for topic in (
             "GTA 6",
             "GTA week 2",
-            "World Cup and Rodri Hot takes",
             "UFC returns to Qatar in November",
             "Khamzat Chimaev reveals details about injuries requiring time off, plans to challenge for UFC middleweight title again",
             "is it really that amazing?",
         ):
             with self.subTest(topic=topic):
                 self.assertEqual(detect_angle_intent(topic), ANGLE_DEFAULT)
+
+    def test_a_hot_take_ask_is_a_take(self) -> None:
+        """#1084: "default" was the take machinery, so a hot-take ask stayed default above.
+        Default is neutral analysis now (operator, 2026-10-10); a take is asked for by name."""
+        from core.angle_intent import ANGLE_TAKE
+
+        self.assertEqual(detect_angle_intent("World Cup and Rodri Hot takes"), ANGLE_TAKE)
 
     def test_breakdown_is_still_not_an_explainer(self) -> None:
         """The established-critique pivot lives on this string."""

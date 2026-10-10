@@ -229,11 +229,23 @@ def generate_title(
         if plain_brief
         else ""
     )
+    from core.angle_intent import ANGLE_HOPE, ANGLE_TAKE, intent_of
+
+    # #1084: the title keeps the operator's stance - run 125 asked for hope.
+    stance = intent_of(seed_topic or topic, brief)
+    stance_line = (
+        "STANCE: the operator asked for reasons for hope - the title promises them; never "
+        "doubts, mocks or calls the hope denial.\n"
+        if stance == ANGLE_HOPE
+        else ""
+        if stance == ANGLE_TAKE
+        else "STANCE: neutral - no hot take and no mockery in the title.\n"
+    )
     prompt = f"""Write ONE YouTube Shorts title for this video.
 
 EDITORIAL ANGLE: {topic}
 SEED TOPIC: {seed_topic or topic}
-{idea_line}SCRIPT HOOK: {hook or topic}
+{idea_line}{stance_line}SCRIPT HOOK: {hook or topic}
 
 OPERATOR FACTS (title must not contradict these):
 {facts_block}

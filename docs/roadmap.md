@@ -48,26 +48,26 @@ is left is below.
 |---|---|---|
 | 1 recency | key facts + vault, claim verifier + title check, grounding gate, thin-facts stop, "no champion from memory", future-date drop, single-source flag, auto-research, **#895** guard, **#899** event research, **#558** past-event previews retire, **#589** second provider on an empty answer, **#860** facts room + **#548** confidence per fact, **#910** links read at once, **#911** confidence in the dossier, **#342** corrections lower a source's weight, **#917** conflicts name the section that lost, **#551** elapsed-time arithmetic (**#978** titles and descriptions too), **#339** unconfirmed mode, **#977** checked against later runs, **#1003** NFL from ESPN, **#1004** news searches the subject, **#1002** lowercase teams, **#1012** pasted junk out, **#1017** uncertain vault facts must name the subject | **#1011** a stale signal record · **#1022** every league + injuries · **#1024** stale best bets |
 | 2 API fragility | fail-visible handlers, breakers + quota governor, `ops reliability`, nightly signal canary, seven dead signals retired (**#854**), discovery deadline + cancel, **#385** + **#906** all 18 JSON signals pinned, **#626** contract tests, **#905** `ops record-payloads`, **#908** incidents say why, **#386** `ops replay` from saved signals, **#575** + **#588** `ops signal-audit`, **#921** no network in the suite, **#585** usefulness at discovery, **#574** skips you approve, **#591** seconds per signal, **#586** `ops signal-diff`, **#930** the suite never reads your keys | record real payloads on the PC (operator) |
-| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport, **#1005** no who's-who for common words, **#1016** your idea stays yours, **#1008** stale angles dropped before the menu, **#1014** angles scored without a per-angle fetch | **#1006** video games read as gaming · **#1007** award races |
+| 3 relevance | RAWG current-era + relevance, Twitch/fan-out hygiene, domain from the topic, **#896** sports teams, **#897** odds, **#931** a lowercase overview seeds on known names, **#946** athlete names read as their sport, **#1005** no who's-who for common words, **#1016** your idea stays yours, **#1008** stale angles dropped before the menu, **#1014** angles scored without a per-angle fetch, **#1084** your stance kept - neutral by default, a take only when asked | **#1006** video games read as gaming · **#1007** award races · **#1089** stance beyond the lexicon |
 | 4 visuals | word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out, **#1020** stock only as a last resort, **#1019** CC BY credits | thumbnails **#1047**, the voice **#1035**, licensed footage **#1040** (Cursor) · #786 your footage (operator) |
 | 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers, **#988** the intro measured, **#959** what each ad campaign bought, **#992** paid subscribers, **#998** after the ads | #975 the organic rate on a real boosted video · more measured videos |
 
 ### Recommended next five (non-app)
 
-**Wave 67 (2026-10-09)** shipped the runs 119-120 five (#1008 #1009 #1010 #1013 #1014): angles and
-chapter titles are date- and fact-checked, a chosen chapter is written, a flagged claim is
-confirmed without a re-render (`ops verify-claim`), and angles are scored without a per-angle
-fetch. What is left of the 100-plan's "Now" horizon on the engine side is next:
+**Wave 68 (2026-10-10)** answered run 125 ("Chargers Hopeium going into week 5" came back as five
+takes against the hope): #1084 your stance is kept and a topic with no stance is neutral analysis -
+a take only when asked by name; #1085 angle 1 adds no year or question; #1033 TapIn's persona; and
+#1086 #1087 make `verify-claim` and `go-public` safe. Next, the rest of the "Now" horizon:
 
 1. **#1007 an award race is a race** `[M]` - "Game of the year 2027" became one game.
 2. **#1006 video games and mods read as gaming** `[S]` - run 120 ran seven off-domain signals.
 3. **#1011 a signal's stale record loses to today's facts** `[S]` - run 119's 18-0-0.
-4. **#1033 channel personas from the operator's words** `[S]` - the line the operator sees most.
-5. **#1060 post time learned per sport** `[M]` - NFL and UFC audiences are not one slot.
+4. **#1060 post time learned per sport** `[M]` - NFL and UFC audiences are not one slot.
+5. **#1089 a stance read beyond the lexicon** `[M]` - slang the cue list has never seen.
 
-Then **#1024** stale best bets · **#1022** one ESPN client · **#1082** numbered events beyond UFC;
-Cursor runs phase A meanwhile (**#1040 #1041 #1047 #1048 #1035 #1036 #1053 #1044**). Wave 68's
-visible item: #1033, the persona every script opens with.
+Then **#1088** (the established-franchise critique pivot - an operator call) · **#1024** stale best
+bets · **#1022** one ESPN client · **#1082**; Cursor runs phase A meanwhile (**#1040 #1041 #1047
+#1048 #1035 #1036 #1053 #1044**). Wave 69's visible item: #1007 on the angle menu.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.

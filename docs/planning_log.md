@@ -17,6 +17,79 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - wave 68: run 125, the operator's stance kept; a take only when asked
+
+**Prompt (verbatim, with the PC session pasted):** *"why am i still getting hot takes on all videos
+and seperate angles that are mis interpreting the original prompt. chargers hopeium entering week 5
+is me asking for positives to focus on moving into week 5, points of hope. and the system \took that
+data and took a crap. I brought this up in runs previous, edit the backlog and make sure this is at
+least adressed in future waves"*. **Asked:** file it, then build it now; a topic that names no stance
+is **neutral analysis** (the operator's answer, recorded here because decisions.md is at its cap).
+
+**Run 125, measured** ("Chargers Hopeium going into week 5", cancelled at the angle menu):
+- angle 1 - "your idea, worded for search" - was "Los Angeles Chargers Hopeium Into Week 5 2023:
+  What's The Question?": wave 66's own `idea_angle` prompt asked for "the year if it is implied"
+  with no date and to "keep its question" on an idea with none (`apis/topic_variants.py`);
+- the five generated angles all knocked the hope: "masks deeper roster flaws", "Critics question
+  ... fan denial", "shatter ... fragile Hopeium narrative", "fanbase desperation", "betting lines";
+- `core/angle_intent.detect_angle_intent` read the idea as `default`, and `default` was the take on
+  every layer: `_LENS_EXAMPLES[default]` "a contrarian counter-take"; `controversy` /
+  `community_controversy` in the default tables; `core/content_engine._build_prompts`' default
+  branch "TAKE A SIDE ... Build to a strong closing line - a hot take"; `_maybe_inject_insight` "an
+  opinion ... the audience can agree or argue with"; `format_for_intent(default)` `short_debate`
+  (the brief's controversy score and "Debate angles"); TapIn's persona "calls it straight" for fans
+  "who want the real take" (`config/channels.json`). The take was the default, so it was on all
+  videos - which is what the operator said.
+- History: raised on runs 73, 77 and 124. Wave 66 fixed angle 1 only and recorded "the other angles
+  may regenerate" as leave to keep takes there - a misreading of "it can regenerate".
+
+**Same session, two commands made safe:** `verify-claim --source "LINK" --apply` recorded the
+placeholder as run 120's source (the to-do list showed LINK as the place to paste the link), and
+`go-public --apply` with no id published "the newest unlisted hold", CGFtzpiA1so, naming neither
+run nor title. It cannot have been a gate-held run (those are refused); the operator is asked to
+check which video it was.
+
+**Shipped (wave 68), tests written first and watched failing on 3b88098:**
+1. **#1086** - `source_problem` refuses a placeholder; a placeholder-sourced confirmation is listed
+   again; the run's signal snapshot counts as its research. 5 tests, 5 failed first.
+2. **#1087** - the go-public dry run and result name the run and title; with several holds and no
+   id, `--apply` is refused and the holds listed. 3 tests, 3 failed first.
+3. **#1085** - `idea_rewording_problem`: no added number, year (the current one only for "this
+   year"), question, stale date or stance flip; the prompt carries today's date. 7 tests, 6 failed
+   first (1 control).
+4. **#1084** - `ANGLE_HOPE` and `ANGLE_TAKE`; neutral analysis by default on every layer (angle
+   lenses and tables, a STANCE line, the script prompt, the insight beat, the title, the angle judge,
+   the brief, `core/opportunity_angles`); `stance_flip` drops an angle that knocks the idea's stance;
+   the new-video flow always prints the angle mode. With **#1033**: TapIn's persona from this
+   feedback. 17 tests, 16 failed first (1 control).
+
+**Totals:** 32 new tests, 30 observed failing before their fix (2 controls); 6 regression-corpus
+cases, all failing on 3b88098 (129 held). Older tests changed expectation, each with the reason in
+place: `test_script_prompt_filler` and `test_idea_stays_yours` (a take is asked for by name; the
+default is neutral), `test_intent_replay` ("Hot takes" is `take`, not `default`),
+`test_idea_stays_yours` (the clock is pinned - the current year is the one year angle 1 may add).
+`classify_angle` keeps its finer keyword labels for a take ("is a fraud" stays `fraud`).
+
+**Proof** (`scratchpad/rerun_125.py`, run 125's inputs through 3b88098 and through this wave):
+intent `default` -> `hope`; run 125's five angles kept 5 -> 1 (4 dropped: "'mask' / 'denial' /
+'fragile' / 'desperat' knocks a hopeful idea"); angle 1 "... 2023: What's The Question?" -> the idea as
+typed; the angle prompt's "contrarian" True -> False, a STANCE line False -> True; the script
+prompt's "TAKE A SIDE" and hot-take close True -> False for hope and for a topic with no stance; the
+go-public dry run "an id only" -> "run N - title (id)"; source "LINK" accepted -> refused.
+
+**Not done, deliberately:** the established-franchise critique pivot (a gaming topic covered three
+times) is a recorded, test-pinned decision - filed as #1088 for the operator; stance is read from cue
+words, so slang the list has never seen falls to neutral (#1089, next wave); MoneyWise's persona has
+no operator feedback and is unchanged. Live check: the operator reruns the Chargers hope idea.
+
+**Audit:** ruff and format clean; mypy 121 = baseline; suite 5,013 OK in default, reverse and
+shuffle order, "data/ and output/ untouched"; `ops regressions` 129 of 129; every new symbol has a
+production caller; 0 network attempts.
+
+**Count:** 356 open, 966 done, highest #1089 (`ops roadmap-index`).
+
+---
+
 ## 2026-10-09 (Claude Code) - wave 67: angles and chapters checked, a claim confirmed without a re-render
 
 **Prompt (verbatim):** *"make sure the to do list is updated, you can't see the to do list? is it a

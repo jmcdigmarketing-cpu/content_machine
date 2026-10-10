@@ -7,10 +7,12 @@ from core.angle_intent import (
     ANGLE_COMPARISON,
     ANGLE_DEFAULT,
     ANGLE_EXPLAINER,
+    ANGLE_HOPE,
     ANGLE_LIST,
     ANGLE_PLAN,
     ANGLE_REACTION,
     ANGLE_RETROSPECTIVE,
+    ANGLE_TAKE,
     ANGLE_TUTORIAL,
     detect_angle_intent,
 )
@@ -45,13 +47,21 @@ def _lens_names() -> frozenset[str]:
 
 
 def _clean_angle_lines(
-    raw: str, angle_types, *, topic: str = "", dropped: list[dict] | None = None
+    raw: str,
+    angle_types,
+    *,
+    topic: str = "",
+    dropped: list[dict] | None = None,
+    intent: str = "",
 ) -> list[str]:
     """Angle lines out of an LLM reply: no preamble, lens labels, markdown, or label prefix.
 
     #1008: an angle that predicts a year that has passed, or names a numbered event that has
     happened (and the topic does not), is dropped here with its reason in ``dropped``.
+    #1084: with ``intent``, so is an angle that knocks the idea's stance (run 125: "masks
+    deeper roster flaws", "fan denial" for an idea asking for hope).
     """
+    from core.angle_intent import stance_flip
     from core.facts.event_dates import stale_angle_reason
 
     labels = {str(t).strip().lower() for t in angle_types or ()}
@@ -78,7 +88,9 @@ def _clean_angle_lines(
         text = _drop_angle_frame(text)
         if len(text.split()) < 2 or text in out:
             continue
-        reason = stale_angle_reason(text, topic=topic)
+        reason = stale_angle_reason(text, topic=topic) or (
+            stance_flip(text, intent) if intent else ""
+        )
         if reason:
             logger.info("Angle dropped (%s): %s", reason, text)
             if dropped is not None:
@@ -141,6 +153,22 @@ _REACTION_ANGLES = [
 # asks what is broken; that is the point.
 INTENT_ANGLES = {
     ANGLE_REACTION: _REACTION_ANGLES,
+    # #1084: the operator asked for the positives. Every frame is a reason for hope.
+    ANGLE_HOPE: [
+        "the_strongest_reason_for_hope",
+        "the_player_trending_up",
+        "the_matchup_that_opens_up",
+        "the_stat_that_says_its_fixable",
+        "what_to_watch_for_next",
+    ],
+    # #1084: the take machinery, now only when the operator asks for a take by name.
+    ANGLE_TAKE: [
+        "primary_storyline",
+        "contrarian_counter_take",
+        "controversy",
+        "impact_analysis",
+        "long_term_outlook",
+    ],
     # #1016: an idea asking what has to happen. No controversy frame, no counter-take.
     ANGLE_PLAN: [
         "the_plan_that_answers_it",
@@ -188,7 +216,17 @@ INTENT_ANGLES = {
 
 
 _LENS_EXAMPLES = {
+    # #1084: neutral analysis - "a contrarian counter-take" made every topic a take.
     ANGLE_DEFAULT: (
+        "a factual read, what changed, a forward look grounded in the facts, a "
+        "human/stakes angle, an analytical breakdown"
+    ),
+    ANGLE_HOPE: (
+        "the strongest reason for hope in the facts, the player or unit trending up, the "
+        "matchup or stretch of schedule that opens up, the stat that says it is fixable, what "
+        "to watch for that would confirm it"
+    ),
+    ANGLE_TAKE: (
         "a factual read, a contrarian counter-take, a forward prediction, a "
         "human/stakes angle, an analytical breakdown"
     ),
@@ -324,18 +362,20 @@ def generate_variants(
                 "is_it_still_worth_playing",  # retention / health of the game
             ]
         else:
+            # #1084: no `community_controversy` / "take" frame unless a take is asked for.
             angle_types = [
                 "patch_or_update_hook",
-                "meta_or_balance_take",
+                "meta_or_balance_read",
                 "underrated_feature",
-                "community_controversy",
+                "community_sentiment",
                 "long_term_outlook",
             ]
     else:
+        # #1084: neutral analysis by default - `controversy` is the take table's.
         angle_types = [
             "primary_storyline",
             "underrated_angle",
-            "controversy",
+            "what_to_watch",
             "impact_analysis",
             "long_term_outlook",
         ]
@@ -490,13 +530,17 @@ def generate_ai_angles(
     # Every frame still needs five distinct lenses, but "contrarian counter-take"
     # is not one of them unless the operator actually asked for a take.
     lens_examples = _LENS_EXAMPLES.get(intent, _LENS_EXAMPLES[ANGLE_DEFAULT])
+    from core.angle_intent import stance_rule
+
+    stance = stance_rule(intent)  # #1084: the operator's stance, before the rules
+    stance_block = f"\n{stance}\n" if stance else ""
 
     prompt = f"""
 You are generating editorial ANGLES for a short-form video — NOT YouTube titles.
 
 Topic:
 {topic}
-{thoughts_block}{freshness_block}
+{thoughts_block}{stance_block}{freshness_block}
 {competitor_block}
 
 Angle types (direction only — do NOT paste these labels verbatim):
@@ -530,7 +574,7 @@ Return exactly {len(angle_types)} angle lines.
         logger.warning("Variant LLM unavailable (%s) — using heuristic angles", exc)
         return _heuristic_angles(topic, angle_types)
 
-    clean = _clean_angle_lines(raw, angle_types, topic=topic, dropped=dropped)
+    clean = _clean_angle_lines(raw, angle_types, topic=topic, dropped=dropped, intent=intent)
     if len(clean) < _MIN_REAL_ANGLES:
         # One re-ask, not a loop: run 77 kept 3 of 5 lines as junk, leaving 2 real angles.
         try:
@@ -541,7 +585,9 @@ Return exactly {len(angle_types)} angle lines.
                 temperature=0.7,
                 max_tokens=400,
             )
-            for line in _clean_angle_lines(retry, angle_types, topic=topic, dropped=dropped):
+            for line in _clean_angle_lines(
+                retry, angle_types, topic=topic, dropped=dropped, intent=intent
+            ):
                 if line not in clean:
                     clean.append(line)
         except Exception as exc:
@@ -589,22 +635,68 @@ def _idea_words(text: str) -> set[str]:
     return {t for t in content_tokens(text) if t not in COMMON_CAPITALISED}
 
 
+_NUMBER_RE = re.compile(r"\d+")
+_PRESENT_CUE = re.compile(r"\b(?:this (?:year|season)|right now|now|currently)\b", re.I)
+
+
+def idea_rewording_problem(idea: str, candidate: str) -> str:
+    """Why ``candidate`` is not ``idea`` worded for search, or "" when it is (#1016, #1085).
+
+    Refused: a rewording that drops more than 40% of the idea's words, adds a take, adds a
+    year, number or question the idea does not have (run 125: "... Into Week 5 2023: What's
+    The Question?"), or names a past year or event (#1008). The one number it may add is the
+    current year, for an idea that says "this year" / "this season" / "now".
+    """
+    from core.angle_intent import intent_of, stance_flip
+    from core.facts.event_dates import run_date, stale_angle_reason
+
+    plain = " ".join((idea or "").split())
+    text = " ".join((candidate or "").split())
+    if not text:
+        return "empty"
+    wanted = _idea_words(plain)
+    kept = len(wanted & _idea_words(text)) / len(wanted) if wanted else 1.0
+    if kept < _IDEA_KEEP:
+        return f"kept {kept:.0%} of the idea's words"
+    added_take = [
+        m.group(0).lower()
+        for m in _TAKE_MARKERS.finditer(text)
+        if not re.search(rf"\b{re.escape(m.group(0))}\b", plain, re.I)
+    ]
+    if added_take:
+        return f"added a take: {', '.join(added_take)}"
+    numbers = set(_NUMBER_RE.findall(plain))
+    if _PRESENT_CUE.search(plain):
+        numbers.add(str(run_date().year))
+    added = [n for n in _NUMBER_RE.findall(text) if n not in numbers]
+    if added:
+        return f"added a number the idea does not have: {added[0]}"
+    if "?" in text and "?" not in plain:
+        return "added a question the idea does not ask"
+    return stale_angle_reason(text) or stance_flip(text, intent_of(plain))  # #1084
+
+
 def idea_angle(idea: str, channel_id: str | None = None) -> str:
     """#1016: the operator's idea worded for search - angle 1, the one Enter keeps.
 
     "100% the intention of my idea, maybe just worded with more seo velocity" (operator,
-    2026-10-08). One cheap call; the rewording is refused - and the idea kept word for word
-    - when it drops more than 40% of the idea's words, adds a take ("done", "overrated",
-    "the end") the idea did not have, or turns into a different question. Never raises.
+    2026-10-08). One cheap call; the rewording is refused - and the idea kept word for word -
+    when `idea_rewording_problem` finds anything. #1085: the prompt no longer asks for "the
+    year if it is implied" (with no date given, run 125 got 2023) or to "keep its question"
+    (an idea with none got "What's The Question?"). Never raises.
     """
+    from core.facts.event_dates import run_date
+
     plain = " ".join((idea or "").split())
     if not plain:
         return ""
     prompt = (
-        "Reword this YouTube video idea as a title-style angle with stronger search "
-        "phrasing (names in full, the year if it is implied). Keep its question, its "
-        "subject and its stance EXACTLY - add no opinion, prediction, claim or new "
-        "question. Under 90 characters. Return the angle line only.\n\n"
+        f"Today is {run_date().isoformat()}. Reword this YouTube video idea as a title-style "
+        "angle with stronger search phrasing (team and player names in full). Keep its "
+        "subject, its stance and the operator's own words (slang included) EXACTLY - add no "
+        "opinion, prediction or claim, and no year, number or question the idea does not "
+        f'already have ("this year" may become {run_date().year}). Under 90 characters. '
+        "Return the angle line only.\n\n"
         f"Idea: {plain}"
     )
     try:
@@ -618,19 +710,8 @@ def idea_angle(idea: str, channel_id: str | None = None) -> str:
     candidate = line[0].strip().strip("\"'").strip() if line else ""
     if not candidate or len(candidate) > 110:
         return plain
-    wanted = _idea_words(plain)
-    kept = len(wanted & _idea_words(candidate)) / len(wanted) if wanted else 1.0
-    added_take = [
-        m.group(0).lower()
-        for m in _TAKE_MARKERS.finditer(candidate)
-        if not re.search(rf"\b{re.escape(m.group(0))}\b", plain, re.I)
-    ]
-    if kept < _IDEA_KEEP or added_take:
-        logger.info(
-            "idea angle refused (kept %.0f%% of the idea's words%s): %r",
-            kept * 100,
-            f", added {added_take}" if added_take else "",
-            candidate,
-        )
+    problem = idea_rewording_problem(plain, candidate)
+    if problem:
+        logger.info("idea angle refused (%s): %r", problem, candidate)
         return plain
     return candidate

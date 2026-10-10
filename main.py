@@ -697,8 +697,8 @@ def _run_new_video_flow_body(
     _intent = _detect_intent(topic)
     if _intent == _ANGLE_DEFAULT and creative_brief:
         _intent = _detect_intent(creative_brief)
-    if _intent != _ANGLE_DEFAULT:
-        print(f"  {_intent_note(_intent)}")
+    # #1084: always said - "neutral analysis" is a mode the operator can change by asking.
+    print(f"  {_intent_note(_intent)}")
 
     # #1016: angle 1 is the operator's own idea, worded for search; Enter keeps it.
     from apis.topic_variants import idea_angle

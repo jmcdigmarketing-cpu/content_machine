@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from core.logging import get_logger
@@ -27,6 +27,16 @@ class GoPublicResult:
     status: str
     detail: str = ""
     video_id: str = ""
+    # #1087: what is about to go public - the operator saw only an id (CGFtzpiA1so).
+    run_id: int | None = None
+    title: str = ""
+    holds: list[str] = field(default_factory=list)
+
+    @property
+    def label(self) -> str:
+        run = f"run {self.run_id}" if self.run_id else "a run not on record"
+        title = f' - "{self.title}"' if self.title else ""
+        return f"{run}{title} ({self.video_id})"
 
 
 def go_public_plan(video_id: str) -> dict[str, Any]:
@@ -44,6 +54,31 @@ def override_held(run_id: int | None) -> bool:
         return bool(parent and load_features(int(parent)).get("grounding_override"))
     except (TypeError, ValueError):
         return False
+
+
+def _run_title(run_id: int | None) -> str:
+    """The run's title from its record, or "" (#1087)."""
+    if not run_id:
+        return ""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        record = get_content_run_repository().get(int(run_id))
+        return str(getattr(record, "title", "") or "")
+    except Exception as exc:
+        logger.debug("go-public: title for run %s unavailable: %s", run_id, exc)
+        return ""
+
+
+def _holds(rows: list) -> list:
+    """Unlisted uploads with a video id, newest first."""
+    held = [
+        r
+        for r in (rows or [])
+        if str(getattr(r, "youtube_video_id", "") or "").strip()
+        and str(r.privacy_status or "").lower() == "unlisted"
+    ]
+    return sorted(held, key=lambda r: int(getattr(r, "id", 0) or 0), reverse=True)
 
 
 def _find(rows: list, video_id: str):
@@ -79,6 +114,28 @@ def apply_go_public(
     if record is None and not video_id:
         return GoPublicResult("invalid", f"No unlisted upload on record for {channel_id}")
     target = video_id or str(record.youtube_video_id).strip()
+    run_id = record.content_run_id if record is not None else None
+    title = _run_title(run_id)
+    # #1087: with no id and more than one hold, "the newest" is a guess the operator never
+    # saw - list them on the dry run, and refuse to send until one is named.
+    holds = (
+        [
+            f"{str(r.youtube_video_id).strip()} (run {r.content_run_id}: "
+            f"{_run_title(r.content_run_id) or 'untitled'})"
+            for r in _holds(rows)
+        ]
+        if not video_id
+        else []
+    )
+    if len(holds) > 1 and not dry_run:
+        return GoPublicResult(
+            "invalid",
+            f"{len(holds)} unlisted holds - name the one to publish: " + "; ".join(holds),
+            target,
+            holds=holds,
+            run_id=run_id,
+            title=title,
+        )
     if record is not None and override_held(record.content_run_id):
         return GoPublicResult(
             "refused",
@@ -86,19 +143,27 @@ def apply_go_public(
             "unlisted until the flagged claim is fixed (#754) - confirm or reject it with: "
             f"py -m scripts.ops verify-claim --run-id {record.content_run_id}",
             target,
+            run_id=run_id,
+            title=title,
         )
     body = go_public_plan(target)
     if dry_run:
-        return GoPublicResult("dry_run", json.dumps(body), target)
+        return GoPublicResult(
+            "dry_run", json.dumps(body), target, holds=holds, run_id=run_id, title=title
+        )
     if os.getenv("YOUTUBE_UPLOAD_ENABLED", "").lower() not in ("1", "true", "yes"):
         return GoPublicResult(
-            "blocked", "YOUTUBE_UPLOAD_ENABLED is not true; nothing was sent", target
+            "blocked",
+            "YOUTUBE_UPLOAD_ENABLED is not true; nothing was sent",
+            target,
+            run_id=run_id,
+            title=title,
         )
     from publishing.snippet_update import manage_scope_problem
 
     problem = manage_scope_problem(channel_id)
     if problem:
-        return GoPublicResult("blocked", problem, target)
+        return GoPublicResult("blocked", problem, target, run_id=run_id, title=title)
     try:
         from youtube.oauth import get_youtube_service
 
@@ -108,10 +173,14 @@ def apply_go_public(
         from publishing.snippet_update import edit_error_text
 
         logger.warning("go-public update failed: %s", exc)
-        return GoPublicResult("error", edit_error_text(exc, channel_id), target)
+        return GoPublicResult(
+            "error", edit_error_text(exc, channel_id), target, run_id=run_id, title=title
+        )
     if record is not None:
         try:
             repo.update(record.id, {"privacy_status": "public"})
         except Exception as exc:
             logger.warning("go-public: publish log not updated: %s", exc)
-    return GoPublicResult("updated", f"{target} is public", target)
+    result = GoPublicResult("updated", "", target, run_id=run_id, title=title)
+    result.detail = f"{result.label} is public"
+    return result

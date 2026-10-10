@@ -288,12 +288,18 @@ def _cheap_judge(
         context += f"Today is {today}.\n"
     if known:
         context += "Facts in hand:\n" + "\n".join(f"- {line[:200]}" for line in known) + "\n"
+    # #1084: and whether it keeps the operator's stance - run 125's angles knocked an idea
+    # that asked for hope ("masks deeper roster flaws", "fan denial").
+    stance = (
+        "whether it keeps the operator's stance (an angle that doubts or mocks a hopeful "
+        "idea, or turns a neutral one into a hot take, scores near 0)"
+    )
     criteria = (
-        "how well it answers the operator's thesis questions"
+        f"how well it answers the operator's thesis questions and {stance}"
         if not context
         else "how well it answers the operator's thesis questions, whether the facts in hand "
-        "can back it, and whether it is current (a year that has passed predicted, or an "
-        "event that has happened treated as upcoming, scores near 0)"
+        "can back it, whether it is current (a year that has passed predicted, or an "
+        f"event that has happened treated as upcoming, scores near 0), and {stance}"
     )
     prompt = (
         f"Score each angle 0-1 for {criteria}. "

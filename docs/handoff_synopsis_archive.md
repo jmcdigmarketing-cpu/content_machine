@@ -7,6 +7,24 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-08 (Claude Code): wave 65 #996 #992 #998 #997 #994 (a careful ads budget)
+
+The operator spent $40 on ads in about four days and wants spending "calculated and worth it":
+a $20 monthly ceiling, nothing new until the Oct 24 decision; the campaign was still spending
+(advice: stop it in Studio today; the to-do list says so first).
+
+- **#996** `ADS_MONTHLY_CAP`: "Ads this month: $40.00 of your $20.00 cap - over; no new campaign
+  until Nov 1" in `ops spend`, `ops promotions`, `ops status`, Home, and startup when over.
+  `ADS_MAX_PER_SUB`: stop once a paid subscriber costs more, also mid-campaign.
+- **#992** `ops spend result --entry N --subs N [--amount CHARGED]`: the campaign page's
+  subscribers; `ops promotions` shows the cost per paid subscriber; the charge counts in the total.
+- **#998** before -> during -> after the ads: did organic views hold once they stopped.
+- **#997** "Worth promoting": at most two videos that held organic viewers, a test sized to the cap.
+- **#994** the first caption time on the run card; LATE after 0.5 s (`FIRST_CAPTION_MAX_S`).
+
+**Verify:** `python -m unittest tests.test_ads_cap tests.test_campaign_result tests.test_after_the_ads tests.test_promote_candidates tests.test_first_caption`;
+`py -m scripts.ops spend`; `py -m scripts.ops promotions`.
+
 ## Previous — 2026-10-06 (Claude Code): wave 64 #989 #959 #988 #987 #977 (the ads test)
 
 The recommended five, with #959 pulled forward: the operator keeps the ads until Oct 24 as a

@@ -12,6 +12,15 @@ import os
 from apis.draft_policy import determine_draft_status
 from config.channels import resolve_channel_id
 
+# #1084: the neutral default of apis/topic_variants - `controversy` is for a take asked for.
+NEUTRAL_ANGLE_TYPES = (
+    "primary_storyline",
+    "underrated_angle",
+    "what_to_watch",
+    "impact_analysis",
+    "long_term_outlook",
+)
+
 
 def _draft_angle_types(topic: str) -> list[str]:
     topic_lower = topic.lower()
@@ -55,17 +64,7 @@ def _draft_angle_types(topic: str) -> list[str]:
 
 def angle_type_labels(topic: str) -> list[str]:
     """Human-readable angle seeds (underscore labels → spaced phrases)."""
-    draft = _draft_angle_types(topic)
-    if draft:
-        types = draft
-    else:
-        types = [
-            "primary_storyline",
-            "underrated_angle",
-            "controversy",
-            "impact_analysis",
-            "long_term_outlook",
-        ]
+    types = _draft_angle_types(topic) or list(NEUTRAL_ANGLE_TYPES)
     return [t.replace("_", " ") for t in types]
 
 
@@ -87,17 +86,7 @@ def recommended_angles(
     if use_llm:
         from apis.topic_variants import generate_ai_titles
 
-        draft = _draft_angle_types(topic)
-        if draft:
-            angle_types = draft
-        else:
-            angle_types = [
-                "primary_storyline",
-                "underrated_angle",
-                "controversy",
-                "impact_analysis",
-                "long_term_outlook",
-            ]
+        angle_types = _draft_angle_types(topic) or list(NEUTRAL_ANGLE_TYPES)
         return generate_ai_titles(topic, angle_types, channel_id=channel_id)
 
     _ = domain  # reserved for domain-specific angle packs later

@@ -77,10 +77,23 @@ class TestScriptPromptFiller(unittest.TestCase):
         self.assertNotIn("Build to a strong closing line", blob)
         self.assertIn("explainer", blob.lower())
 
-    def test_default_topic_still_orders_a_take(self):
+    def test_default_topic_is_neutral_and_a_take_is_asked_for(self):
+        """#1084 (operator, 2026-10-10): a topic that names no stance is neutral analysis -
+        this test pinned the old default ("TAKE A SIDE" on any topic without a cue word).
+        The take is still there for a topic that asks for one."""
+        from core.content_engine import _build_prompts
+
         system, user = _build("2")
         blob = f"{system}\n{user}"
-        self.assertIn("TAKE A SIDE", blob)
+        self.assertNotIn("TAKE A SIDE", blob)
+        self.assertIn("neutral analysis", blob)
+        system, user = _build_prompts(
+            topic="Test topic hot take", signals={}, min_words=150, max_words=300,
+            today="2026-06-22", channel_id="tapin", script_brief="Be punchy.", seo_block="",
+            signal_facts="No structured facts available.", signal_summary="", brief_block="",
+            length_choice="2", key_facts=None,
+        )  # fmt: skip
+        self.assertIn("TAKE A SIDE", f"{system}\n{user}")
 
 
 if __name__ == "__main__":

@@ -226,11 +226,35 @@ def _build_prompts(
     preset = get_length_preset(length_choice)
     length_note = length_system_addendum(preset)
 
-    from core.angle_intent import ANGLE_PLAN, CALM_INTENTS, intent_of
+    from core.angle_intent import ANGLE_HOPE, ANGLE_PLAN, ANGLE_TAKE, CALM_INTENTS, intent_of
 
     resolved_intent = intent or intent_of(seed_topic or topic, creative_brief)
     calm = resolved_intent in CALM_INTENTS
-    if resolved_intent == ANGLE_PLAN:
+    if resolved_intent == ANGLE_HOPE:
+        # #1084 (run 125): "Chargers Hopeium going into week 5" asks for the positives.
+        voice_take = (
+            "- The operator asked for reasons for HOPE ('hopium' is their word for optimism, "
+            "not mockery). Make that case honestly: say where things stand once, then the real "
+            "reasons for optimism, each tied to a verified fact. Never mock the hope, never call "
+            "it denial or cope, never pivot to why it is wrong."
+        )
+        framing_take = (
+            "- Shape the script as hook (the most surprising reason for hope - a verified fact) "
+            "→ where it stands, in one line → the reasons for hope, strongest first, each with "
+            "its fact → what to watch for that would prove it → payoff."
+        )
+        must_close = (
+            "- Close on the strongest reason to believe, or the one thing to watch that would "
+            "prove it - not a hot take, not a reality check, not a comment-bait question."
+        )
+        user_take = (
+            "- FORMAT is hope: every beat is a reason for optimism backed by a verified fact. Do "
+            "NOT write a reality check, a contrarian take or a 'but realistically' turn.\n"
+            "- Cut hedging and filler. Every sentence is a reason or its evidence.\n"
+            '- Close on a SPECIFIC line. NEVER "what do you think? drop your thoughts in the '
+            'comments".'
+        )
+    elif resolved_intent == ANGLE_PLAN:
         # #1016 (run 124): "how can the 0-4 Chargers turn it around" asks for a plan.
         voice_take = (
             "- Answer the question asked. Do not invent a controversy, do not argue a "
@@ -295,7 +319,8 @@ def _build_prompts(
             '- Close on a SPECIFIC line. NEVER "what do you think? drop your thoughts in the '
             'comments".'
         )
-    else:
+    elif resolved_intent == ANGLE_TAKE:
+        # #1084: the take machinery - only when the operator asks for a take by name.
         voice_take = (
             '- NO both-sidesing. Do NOT write "some argue X, while others believe Y". '
             "State what YOU think and why."
@@ -323,6 +348,32 @@ def _build_prompts(
             '"could be a turning point"). Every sentence advances the take.\n'
             "- Close on a SPECIFIC line — a concrete prediction, a named stakes question, or a "
             'sharp opinion. NEVER the generic "what do you think? drop your thoughts in the comments".'
+        )
+
+    else:
+        # #1084: the operator's decision (2026-10-10) - a topic that names no stance gets
+        # neutral analysis. This branch was the take until then: "TAKE A SIDE ... a hot take".
+        voice_take = (
+            "- Be clear and fair: say what is true and why it matters; give an opinion only "
+            "where the facts carry it. Do NOT invent a controversy, do NOT force a hot take, do "
+            "NOT write a contrarian counter-take, and never mock the fans or the subject."
+        )
+        framing_take = (
+            "- The EDITORIAL ANGLE is the spine; facts are what carry it. Shape the script as "
+            "hook → what happened / where it stands → what it means → what to watch next. A "
+            "viewer should walk away knowing what matters and why."
+        )
+        must_close = (
+            "- Close on the most important implication or the specific thing to watch next - "
+            "not a hot take and not a comment-bait question."
+        )
+        user_take = (
+            "- FORMAT is neutral analysis: what happened, what it means, what to watch. Do NOT "
+            "take a side the facts do not support and do NOT write a hot take.\n"
+            '- Cut hedging and filler ("only time will tell", "the narrative is far from over", '
+            '"could be a turning point"). Every sentence carries a fact or what it means.\n'
+            "- Close on a SPECIFIC line - the implication or the thing to watch. NEVER the "
+            'generic "what do you think? drop your thoughts in the comments".'
         )
 
     retention_rule = ""
@@ -1146,9 +1197,10 @@ def _maybe_inject_insight(
     pay nothing. Also no-op for calm intents (#660) — an explainer without a
     take is the assignment, not a defect.
     """
-    from core.angle_intent import CALM_INTENTS, detect_angle_intent
+    from core.angle_intent import ANGLE_TAKE, CALM_INTENTS, detect_angle_intent
 
-    if own_idea or (intent or detect_angle_intent(topic)) in CALM_INTENTS:
+    kind = intent or detect_angle_intent(topic)
+    if own_idea or kind in CALM_INTENTS:
         return script  # #1016: the operator's own idea is not given a take it did not have
     if not _insight_injection_enabled():
         return script
@@ -1157,10 +1209,19 @@ def _maybe_inject_insight(
     if has_insight(script):
         return script
 
+    # #1084: a take only when the operator asked for one; otherwise the beat says what the
+    # facts mean ("what this means", "here's why") - the authenticity gate counts both.
+    beat = (
+        "clear opinion, prediction, or 'why this matters' take of 1-2 sentences, in "
+        "the creator's voice, that the audience can agree or argue with"
+        if kind == ANGLE_TAKE
+        else "clear 'what this means', 'here's why it matters' or 'what to watch' beat of "
+        "1-2 sentences, in the creator's voice - not a contrarian hot take, and nothing that "
+        "knocks the video's angle"
+    )
     system_prompt = (
         "You add exactly ONE original-insight beat to a short-form video script: a "
-        "clear opinion, prediction, or 'why this matters' take of 1-2 sentences, in "
-        "the creator's voice, that the audience can agree or argue with. Base it ONLY "
+        f"{beat}. Base it ONLY "
         "on the VERIFIED FACTS — do NOT invent any new name, team, trade, number, or "
         "result, and do NOT present a rumor or prediction as a fact. Keep everything "
         "else intact and keep the length and flow; place the beat where it lands best "

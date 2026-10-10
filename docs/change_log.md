@@ -8,6 +8,23 @@ Initial changelog summarizing major modifications present in the codebase as of 
 
 ## [Unreleased] — Content OS evolution (2026)
 
+### Wave 68 — your stance kept; a take only when you ask - 2026-10-10
+
+*mypy 121; ruff 0.15.8 clean; corpus 129 of 129.*
+
+- **#1084** An idea asking for hope ("Chargers Hopeium going into week 5", "bright spots",
+  "reasons to believe") gets reasons for hope - in the angles, the script, the title. An angle that
+  doubts or mocks it ("masks flaws", "fan denial") is dropped before the menu. A topic with no stance
+  is neutral analysis - what happened, what it means, what to watch; a take only when you ask for
+  one ("hot take", "overrated", "debate"). The angle screen always says which mode it read.
+- **#1033** TapIn's persona: "knows the facts and says what they mean", for fans "who want the real
+  story" (was "calls it straight" / "the real take").
+- **#1085** Angle 1 - your idea worded for search - adds no year, number or question.
+- **#1086** `verify-claim` refuses a placeholder source ("LINK") and lists a claim confirmed with
+  one again; it also finds the claim in the run's saved signals.
+- **#1087** `go-public` says which run and title it would publish; with more than one held video,
+  `--apply` needs the video id.
+
 ### Wave 67 — angles and chapters checked; a claim confirmed without a re-render - 2026-10-09
 
 *mypy 121; ruff 0.15.8 clean; corpus 123 of 123.*

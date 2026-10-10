@@ -23,7 +23,7 @@ thumbnail), so progress is visible rather than internal.
 
 ---
 
-## A — Your idea, read right (8)
+## A — Your idea, read right (11)
 
 | # | Item | Size | Owner | Horizon |
 |---|---|---|---|---|
@@ -34,6 +34,9 @@ thumbnail), so progress is visible rather than internal.
 | #1007 | An award race is a race, not a title | M | C | Now |
 | #1006 | Game titles with a league name read as gaming | M | C | Now |
 | #1008 | Angles get the date and past-event checks | M | C | Done (wave 67) |
+| #1084 | Your stance kept: neutral by default, a take only when asked, hope read as hope | L | C | Done (wave 68) |
+| #1085 | Angle 1 adds no year, number or question | S | C | Done (wave 68) |
+| #1089 | A stance read beyond the lexicon | M | C | Now |
 | #1021 | Angle-pick learning: weight the frames the operator keeps choosing | M | C | Next |
 
 ## B — Live, dated data (8)
@@ -72,7 +75,7 @@ thumbnail), so progress is visible rather than internal.
 | #1031 | Structure templates per intent | M | C | Next |
 | #546 | Script length from the facts available | M | C | Next |
 | #1032 | The closer pays off the hook | S | C | Next |
-| #1033 | Channel personas rewritten from the operator's words | S | C | Now |
+| #1033 | Channel personas rewritten from the operator's words | S | C | Done (wave 68, TapIn) |
 | #1034 | A read-aloud pass before TTS | M | C | Later |
 | #54 | Pattern-interrupt pacing at the measured cliff | L | C | Later |
 
@@ -138,7 +141,7 @@ thumbnail), so progress is visible rather than internal.
 | #1062 | Predicted vs actual per run | M | C | Later |
 | #1063 | A competitor outlier watch | M | C | Later |
 
-## J — Publishing safety (5)
+## J — Publishing safety (7)
 
 | # | Item | Size | Owner | Horizon |
 |---|---|---|---|---|
@@ -147,6 +150,8 @@ thumbnail), so progress is visible rather than internal.
 | #1065 | A pre-publish checklist gate | M | C | Next |
 | #434 | A Content-ID pre-check | M | C | Later |
 | #1066 | Fix a published description without a re-upload | S | C | Next |
+| #1086 | `verify-claim` refuses a placeholder source | S | C | Done (wave 68) |
+| #1087 | `go-public` names what it publishes | S | C | Done (wave 68) |
 
 ## K — The desktop application (10)
 
@@ -201,9 +206,11 @@ thumbnail), so progress is visible rather than internal.
    wave 68 (the roadmap took the five runs 119-120 exposed).
 2. **Cursor phase A (media):** #1040, #1041, #1047, #1048, #1035 + #1036, #1053, #1044 -
    the operator's complaints about stock, thumbnails and the voice, in that order.
-3. **Wave 68 (Claude):** #1007, #1006, #1011, #1033, #1060 - the rest of the "Now" horizon.
-   Then #1024, #1022 and #1082 (numbered events beyond UFC, filed in wave 67).
-4. **Cursor phase B (the app):** #1067, #1068, #1064, then #161, #157, #1070, #451.
+3. **Wave 68 (Claude) - done 2026-10-10:** run 125 jumped the queue (CLAUDE.md: a live-run
+   defect does) - #1084 the operator's stance, #1085, #1033 (TapIn), #1086, #1087.
+4. **Wave 69 (Claude):** #1007, #1006, #1011, #1060, #1089. Then #1088 (an operator call), #1024,
+   #1022, #1082.
+5. **Cursor phase B (the app):** #1067, #1068, #1064, then #161, #157, #1070, #451.
 
 ## What this plan is not
 

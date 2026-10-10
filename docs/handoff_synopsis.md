@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-09: wave 67, angles and chapters checked
+# Handoff synopsis — 2026-10-10: wave 68, your stance kept, a take only when asked
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-09 (Claude Code): wave 67 #1008 #1009 #1010 #1013 #1014 (runs 119-120)
+## Last wave — 2026-10-10 (Claude Code): wave 68 #1084 #1085 #1033 #1086 #1087 (run 125)
+
+Run 125, "Chargers Hopeium going into week 5", asked for points of hope and got five takes against
+it; the operator: "why am i still getting hot takes on all videos". Decided: a topic that names no
+stance is **neutral analysis**; a take only when asked by name.
+
+- **#1084** hope read as hope (`ANGLE_HOPE`), a take only on request (`ANGLE_TAKE`); neutral by
+  default in the angle lenses and tables, a STANCE line, the script prompt, the insight beat, the
+  title, the angle judge and the brief; an angle that knocks the idea's stance is dropped before the
+  menu. **#1033** TapIn's persona no longer promises "the real take".
+- **#1085** angle 1 adds no year (it said 2023), number or question.
+- **#1086** `verify-claim` refuses "LINK"; **#1087** `go-public` names the run and title, and needs
+  the id when several videos are held.
+
+**Verify:** `python -m unittest tests.test_operator_stance tests.test_idea_angle_guard tests.test_claim_and_publish_guards`;
+`py -m scripts.ops regressions`; then rerun "Chargers Hopeium going into week 5".
+
+## Previous — 2026-10-09 (Claude Code): wave 67 #1008 #1009 #1010 #1013 #1014 (runs 119-120)
 
 The operator, afk: "make sure the to do list is updated ... can we work towards the next 5?". The
 to-do list was current; Claude reads its ticks each session (no notification on a change). The
@@ -51,24 +68,6 @@ resort, angle 1 = "100% the intention of my idea ... worded with more seo veloci
 
 **Verify:** `python -m unittest tests.test_idea_stays_yours tests.test_hooks_solid_ground tests.test_typed_fact_filter tests.test_uncertain_vault_subject tests.test_subject_names tests.test_subject_queries tests.test_espn_nfl tests.test_flagged_schedule tests.test_local_first_footage tests.test_footage_credits tests.test_seed_prompt_yes`;
 `py -m scripts.ops regressions`; then rerun the Chargers idea and press Enter on angle 1.
-
-## Previous — 2026-10-08 (Claude Code): wave 65 #996 #992 #998 #997 #994 (a careful ads budget)
-
-The operator spent $40 on ads in about four days and wants spending "calculated and worth it":
-a $20 monthly ceiling, nothing new until the Oct 24 decision; the campaign was still spending
-(advice: stop it in Studio today; the to-do list says so first).
-
-- **#996** `ADS_MONTHLY_CAP`: "Ads this month: $40.00 of your $20.00 cap - over; no new campaign
-  until Nov 1" in `ops spend`, `ops promotions`, `ops status`, Home, and startup when over.
-  `ADS_MAX_PER_SUB`: stop once a paid subscriber costs more, also mid-campaign.
-- **#992** `ops spend result --entry N --subs N [--amount CHARGED]`: the campaign page's
-  subscribers; `ops promotions` shows the cost per paid subscriber; the charge counts in the total.
-- **#998** before -> during -> after the ads: did organic views hold once they stopped.
-- **#997** "Worth promoting": at most two videos that held organic viewers, a test sized to the cap.
-- **#994** the first caption time on the run card; LATE after 0.5 s (`FIRST_CAPTION_MAX_S`).
-
-**Verify:** `python -m unittest tests.test_ads_cap tests.test_campaign_result tests.test_after_the_ads tests.test_promote_candidates tests.test_first_caption`;
-`py -m scripts.ops spend`; `py -m scripts.ops promotions`.
 
 ## Pipeline order (operator)
 
@@ -144,7 +143,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Runs 119-120:** wave 67 - see planning_log 2026-10-09. **Next:** #1007 · #1006 · #1011 · #1033 · #1060. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Run 125:** wave 68 - see planning_log 2026-10-10. **Next:** #1007 · #1006 · #1011 · #1060 · #1089; #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

@@ -71,7 +71,8 @@ class ResearchBrief:
     def to_prompt_block(self) -> str:
         from core.angle_intent import CALM_INTENTS
 
-        calm = self.recommended_format in CALM_INTENTS
+        # #1084: neutral `analysis` is calm too - no controversy score, no debate angles.
+        calm = self.recommended_format in CALM_INTENTS or self.recommended_format == "analysis"
         lines = [
             "RESEARCH BRIEF (primary context — prefer over raw signal dumps):",
             f"Narrative: {self.narrative}",
@@ -151,12 +152,17 @@ def _fallback_brief(
     intent: str = "",
     key_facts: list[str] | None = None,
 ) -> ResearchBrief:
-    from core.angle_intent import CALM_INTENTS, detect_angle_intent, format_for_intent
+    from core.angle_intent import (
+        ANGLE_DEFAULT,
+        CALM_INTENTS,
+        detect_angle_intent,
+        format_for_intent,
+    )
 
     resolved = intent or detect_angle_intent(seed_topic or topic)
     facts = enrich_facts(topic, signals, channel_id=channel_id, seed_topic=seed_topic)
     script_rules = build_script_brief(topic, channel_id)
-    calm = resolved in CALM_INTENTS
+    calm = resolved in CALM_INTENTS or resolved == ANGLE_DEFAULT  # #1084: neutral default
     return ResearchBrief(
         topic=topic,
         narrative=f"Focus on the specific angle in the topic: {topic}",
@@ -266,9 +272,11 @@ Return JSON only:
         from core.angle_intent import ANGLE_DEFAULT, format_for_intent
 
         resolved = intent or ""
-        fmt = str(data.get("recommended_format", "short_debate"))
+        fmt = str(data.get("recommended_format", "analysis"))
         if resolved and resolved != ANGLE_DEFAULT:
             fmt = format_for_intent(resolved)
+        elif fmt == "short_debate":
+            fmt = "analysis"  # #1084: a debate only when the operator asks for a take
         return ResearchBrief(
             version=BRIEF_VERSION,
             topic=topic,

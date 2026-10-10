@@ -25,6 +25,7 @@ one rewrite when it does not.
 
 from __future__ import annotations
 
+import datetime
 import unittest
 from unittest.mock import patch
 
@@ -74,8 +75,14 @@ class PromptTests(unittest.TestCase):
         self.assertNotIn("hot take, implication", both)
         self.assertIn("answer the operator's idea as asked", both.lower())
 
-    def test_an_angle_the_operator_did_not_type_still_argues(self):
+    def test_an_angle_the_operator_did_not_type_argues_only_when_asked(self):
+        """#1084 (operator, 2026-10-10): a generated angle with no stance is neutral analysis;
+        this pinned the old default, where it was told to TAKE A SIDE. A take asked for by
+        name still argues."""
         system, user = _prompts(seed_topic="Chargers season", creative_brief="")
+        self.assertNotIn("TAKE A SIDE", system + user)
+        self.assertIn("neutral analysis", system + user)
+        system, user = _prompts(seed_topic="Chargers hot take", creative_brief="")
         self.assertIn("TAKE A SIDE", system + user)
 
     def test_no_insight_beat_on_your_idea(self):
@@ -92,7 +99,11 @@ class IdeaAngleTests(unittest.TestCase):
     def _angle(self, reply):
         from apis.topic_variants import idea_angle
 
-        with patch("core.llm_router.complete", side_effect=reply):
+        # #1085: "this year" may become the current year only - pin the clock.
+        with (
+            patch("core.llm_router.complete", side_effect=reply),
+            patch("core.facts.event_dates._today", return_value=datetime.date(2026, 10, 9)),
+        ):
             return idea_angle(IDEA, "tapin")
 
     def test_an_seo_rewording_is_kept(self):

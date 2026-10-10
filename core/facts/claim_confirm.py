@@ -43,6 +43,32 @@ class FlaggedClaim:
     claim_type: str
     blocking: bool
     found_in: str = ""
+    # #1086: confirmed earlier with a placeholder ("LINK") - listed again for a real source.
+    needs_source: bool = False
+
+
+# #1086: the to-do list showed `--source "LINK"`; the operator ran it as written and run
+# 120's confirmation recorded the word LINK as its source.
+_PLACEHOLDER_SOURCES = frozenset(
+    {"link", "url", "source", "todo", "tbd", "xxx", "here", "n/a", "na", "none", "http", "https"}
+)
+
+
+def source_problem(source: str | None) -> str:
+    """Why ``source`` cannot back a confirmation, or "" when it can (#1086).
+
+    A link (anything with "." or "/") or a description of two words or more ("ESPN
+    broadcast, Oct 5") is a source; a placeholder or a lone word is not.
+    """
+    text = " ".join((source or "").split())
+    if not text:
+        return "a confirmation needs --source: the link, or where you saw it"
+    bare = text.strip("\"'<>[](){} ").lower()
+    if bare in _PLACEHOLDER_SOURCES:
+        return f"'{text}' is a placeholder - paste the real link"
+    if " " not in text and "." not in text and "/" not in text:
+        return f"'{text}' is not a link or a description - paste the link, or say where you saw it"
+    return ""
 
 
 @dataclass
@@ -70,27 +96,75 @@ def _research_lines(features: dict[str, Any]) -> list[str]:
     return [str(line) for line in lines or [] if str(line).strip()]
 
 
-def flagged_claims(features: dict[str, Any] | None) -> list[FlaggedClaim]:
+def flagged_claims(
+    features: dict[str, Any] | None, *, research: list[str] | None = None
+) -> list[FlaggedClaim]:
     """The run's unsupported claims, numbered, each with the line of its own research that
-    already carries it (``found_in``) when there is one."""
+    already carries it (``found_in``) when there is one; ``research`` adds lines from outside
+    the features (the signal snapshot). A claim confirmed with a placeholder source is listed
+    after them, marked ``needs_source`` (#1086)."""
     feats = features or {}
     typed = typed_unsupported(feats.get("claim_verification"))
     if not typed:
         claims = [str(c) for c in feats.get("grounding_override_claims") or [] if str(c).strip()]
         types = list(feats.get("grounding_override_types") or [])
         typed = [(c, str(types[i]) if i < len(types) else "") for i, c in enumerate(claims)]
-    lines = _research_lines(feats)
-    out: list[FlaggedClaim] = []
-    for number, (claim, claim_type) in enumerate(typed, start=1):
+    lines = [*_research_lines(feats), *(research or [])]
+
+    def _found(claim: str) -> str:
         best = max(lines, key=lambda line: _coverage(claim, line), default="")
-        found = best if best and _coverage(claim, best) >= _FOUND_SHARE else ""
-        out.append(FlaggedClaim(number, claim, claim_type, claim_blocks(claim, claim_type), found))
+        return best if best and _coverage(claim, best) >= _FOUND_SHARE else ""
+
+    out: list[FlaggedClaim] = []
+    for claim, claim_type in typed:
+        out.append(
+            FlaggedClaim(
+                len(out) + 1, claim, claim_type, claim_blocks(claim, claim_type), _found(claim)
+            )
+        )
+    listed = {row.claim for row in out}
+    for row in feats.get("claims_confirmed") or []:
+        claim = str((row or {}).get("claim") or "").strip() if isinstance(row, dict) else ""
+        if claim and claim not in listed and source_problem(row.get("source")):
+            listed.add(claim)
+            out.append(FlaggedClaim(len(out) + 1, claim, "", False, _found(claim), True))
     return out
 
 
+def _snapshot_lines(run_id: int | None) -> list[str]:
+    """Text lines from the run's saved signal snapshot - the research it was written from
+    (#1086: run 120's claim was there, not in `auto_research.kept_lines`)."""
+    if not run_id:
+        return []
+    try:
+        from core.runs.replay import load_snapshot
+
+        signals = load_snapshot(int(run_id)) or {}
+    except Exception as exc:
+        logger.debug("snapshot for run %s unavailable: %s", run_id, exc)
+        return []
+    out: list[str] = []
+
+    def _walk(value: Any) -> None:
+        if isinstance(value, str):
+            if len(value.split()) >= 4:
+                out.append(value)
+        elif isinstance(value, dict):
+            for item in value.values():
+                _walk(item)
+        elif isinstance(value, list):
+            for item in value:
+                _walk(item)
+
+    for signal in signals.values():
+        if isinstance(signal, dict):
+            _walk(signal.get("data"))
+    return out[:400]
+
+
 def run_flagged_claims(run_id: int | None) -> list[FlaggedClaim]:
-    """`flagged_claims` for a stored run."""
-    return flagged_claims(load_features(run_id))
+    """`flagged_claims` for a stored run, its signal snapshot counted as its research."""
+    return flagged_claims(load_features(run_id), research=_snapshot_lines(run_id))
 
 
 def apply_confirmation(
@@ -133,8 +207,9 @@ def confirm_claim(
 ) -> ClaimResult:
     """Record the operator's confirmation of flagged claim ``number`` (1-based)."""
     source = (source or "").strip()
-    if not source:
-        return ClaimResult("invalid", "a confirmation needs --source (a link or where you saw it)")
+    problem = source_problem(source)
+    if problem:
+        return ClaimResult("invalid", problem)
     features, pick = _pick(run_id, number)
     if pick is None:
         return ClaimResult("invalid", f"run {run_id} has no flagged claim {number}")
@@ -151,7 +226,12 @@ def confirm_claim(
     )
     if dry_run:
         return result
-    confirmed = [*list(features.get("claims_confirmed") or [])]
+    # #1086: re-confirming a claim recorded with a placeholder replaces that entry.
+    confirmed = [
+        row
+        for row in features.get("claims_confirmed") or []
+        if not (isinstance(row, dict) and str(row.get("claim") or "").strip() == pick.claim)
+    ]
     confirmed.append(
         {
             "claim": pick.claim,

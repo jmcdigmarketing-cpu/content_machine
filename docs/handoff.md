@@ -79,7 +79,7 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `c550f7d` plus the #1035 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `3eeb16c` plus the #1036 commit (`git log -1`) ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
@@ -88,10 +88,9 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - Stock repeats when the cache has only one clip for that query.
 - No brand font file is in the repo. A bright Flux picture is left without text.
 - Thumbnail auto-pick runs only when `THUMBNAIL_SCORER_ENABLED` is on.
-- A script with no blank line is still one TTS request. Paragraph breaks are what
-  split the calls.
+- A script with no blank line is still one TTS request.
 
-**Shipped:** #1047 `9972f2a`, #1048 `c550f7d`. #1035: one request per paragraph,
-`previous_text` / `next_text` on the payload, cache key includes the neighbours.
-2 tests failed first (4 sentence calls, no neighbour text). Next: #1036 caption
-re-anchor.
+**Shipped:** #1035 `3eeb16c`. #1036: each segment is re-anchored so its first word
+is at 0, and the next paragraph starts at the previous last word. Measured before
+the fix: Beta started at 1.2s. 1 test failed first. Next: #1037 channel voice
+settings. `config/channels.json` is shared; the slot is written before that edit.

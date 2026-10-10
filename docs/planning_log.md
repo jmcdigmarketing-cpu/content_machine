@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1036 captions re-anchor at each paragraph
+
+**Prompt:** Phase A4. The joined word sidecar was drifting. The first word of the next paragraph should start when the previous paragraph's last word ends.
+
+**Decision:** `reanchor_word_timings` shifts each segment so its first word is at 0, and the join advances by that spoken span. The file duration is only used when a segment has no word timings. A leading gap inside a segment is not added again on top of the previous paragraph.
+
+**Shipped:** 1 test failed first: Beta started at 1.2s. It now starts at 1.0s, and Gamma at 1.6s.
+
 ## 2026-10-10 (Cursor) - #1035 one request per paragraph
 
 **Prompt:** Phase A4. Stop voicing each sentence alone. Send the neighbouring paragraphs on the ElevenLabs request, and cache the paragraph with those neighbours.

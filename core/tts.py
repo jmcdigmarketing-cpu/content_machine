@@ -798,6 +798,35 @@ def offset_word_timings(words: list[dict[str, Any]], offset: float) -> list[dict
     return shifted
 
 
+def reanchor_word_timings(
+    words: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], float]:
+    """Move a segment so its first word starts at 0. The span is that word's run.
+
+    A leading gap, or a file that keeps going after the last word, must not
+    push the next paragraph later than this segment actually spoke.
+    """
+    origins: list[float] = []
+    for item in words or []:
+        if not isinstance(item, dict) or item.get("start") is None:
+            continue
+        try:
+            origins.append(float(item["start"]))
+        except (TypeError, ValueError):
+            continue
+    origin = min(origins) if origins else 0.0
+    anchored = offset_word_timings(words, -origin)
+    ends: list[float] = []
+    for item in anchored:
+        if item.get("end") is None:
+            continue
+        try:
+            ends.append(float(item["end"]))
+        except (TypeError, ValueError):
+            continue
+    return anchored, (max(ends) if ends else 0.0)
+
+
 def segment_audio_duration(path: str) -> float:
     """Prefer the sidecar's last end time; ffprobe if the sidecar is missing."""
     sidecar = path + ".words.json"
@@ -946,11 +975,15 @@ def _write_concat_word_sidecar(
                     chunk = [w for w in loaded if isinstance(w, dict)]
             except (OSError, ValueError):
                 chunk = []
-        shifted = offset_word_timings(chunk, offset)
+        anchored, span = reanchor_word_timings(chunk)
+        shifted = offset_word_timings(anchored, offset)
         if tag and roles is not None and i < len(roles):
             shifted = [dict(w, role=roles[i]) for w in shifted]
         merged.extend(shifted)
-        offset += segment_audio_duration(path)
+        # The next paragraph starts when this one stopped speaking. The file
+        # duration includes silence after the last word, so it is only the
+        # fallback for a segment that has no word timings.
+        offset += span if span else segment_audio_duration(path)
     try:
         with open(dest + ".words.json", "w", encoding="utf-8") as f:
             json.dump(merged, f)

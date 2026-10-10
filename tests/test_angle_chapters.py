@@ -295,7 +295,7 @@ class TestCutChapterShorts(unittest.TestCase):
                 chapter_shorts, "record_content_run", side_effect=lambda **kw: next(ids)
             ) as rec,
         ):
-            made = chapter_shorts.cut_chapter_shorts(78, indices=[0, 2])
+            made = chapter_shorts.cut_chapter_shorts(78, indices=[0, 2], output_root=tmp)
 
         self.assertEqual([m.run_id for m in made], [100, 101])
         self.assertEqual(len(calls), 2)

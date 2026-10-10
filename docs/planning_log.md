@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1053 chapter Shorts re-hook and queue
+
+**Prompt:** Phase A5. Draw the chapter's strongest sentence at the start, name the long video on an end card, write `output/<channel>/shorts/`, and make Enter queue the cut. The 20s minimum already shipped. Do not build #1054.
+
+**Decision:** The ffmpeg command draws the longest sentence for the first 2.5s and the long video's title for the last 2s. The file goes under `<output>/<channel>/shorts/`. Tests pass a temp root so the operator's `output/` is not written. Enter on the offer is a cut. Enter on the queue prompt queues.
+
+**Shipped:** 2 tests failed first (no `strongest_sentence`, and Enter still read a line and skipped). The cut test's command contains the sentence and the long title.
+
 ## 2026-10-10 (Cursor) - #217 lexicon on the paragraph path
 
 **Prompt:** Phase A4. The paragraph path must call `apply_pronunciation_lexicon` before the provider. No new editor.

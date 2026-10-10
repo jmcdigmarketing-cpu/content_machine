@@ -221,11 +221,36 @@ def chapter_report(run_id: int, *, script: str | None = None) -> list[str]:
         return []
 
 
+def strongest_sentence(text: str) -> str:
+    """The sentence with the most words. That is the re-hook on the Short."""
+    parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text or "") if part.strip()]
+    if not parts:
+        return (text or "").strip()
+    return max(parts, key=lambda part: (len(part.split()), len(part)))
+
+
+def _drawtext(text: str) -> str:
+    cleaned = (text or "").replace("\\", "").replace("'", "").replace(":", "\\:")
+    return cleaned.replace("%", "%%")
+
+
+def _shorts_dir(channel_id: str | None, output_root: str | None) -> str:
+    if output_root:
+        root = os.path.join(output_root, channel_id or "default", "shorts")
+    else:
+        from core.output_paths import channel_output_root
+
+        root = os.path.join(channel_output_root(channel_id), "shorts")
+    os.makedirs(root, exist_ok=True)
+    return root
+
+
 def cut_chapter_shorts(
     run_id: int,
     *,
     indices: list[int] | None = None,
     script: str | None = None,
+    output_root: str | None = None,
 ) -> list[ChapterShort]:
     """Cut the chosen chapters of a rendered all-angles run into Shorts. Never raises."""
     record = get_content_run_repository().get(int(run_id))
@@ -260,10 +285,18 @@ def cut_chapter_shorts(
                 )
             )
             continue
-        dest = os.path.join(os.path.dirname(source), f"{stem}_short{i + 1}.mp4")
+        dest = os.path.join(_shorts_dir(record.channel_id, output_root), f"{stem}_short{i + 1}.mp4")
+        rehook = _drawtext(strongest_sentence(span.text))
+        card = _drawtext(f"Full video: {record.title or ''}")
+        end_at = max(0.0, span.seconds - 2.0)
         argv = [
             "ffmpeg", "-y", "-loglevel", "error",
             "-ss", f"{span.start:.3f}", "-i", source, "-t", f"{span.seconds:.3f}",
+            "-vf",
+            (
+                f"drawtext=text='{rehook}':enable='lt(t,2.5)',"
+                f"drawtext=text='{card}':enable='gte(t,{end_at:.3f})'"
+            ),
             "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart",
             dest,

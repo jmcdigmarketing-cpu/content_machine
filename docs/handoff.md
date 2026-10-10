@@ -79,9 +79,8 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `1dca06f` plus the #217 commit (`git log -1`) ·
-**Tree:** `.agents/` and `.codex/` untracked; do not commit them. `core/chapter_shorts.py`
-is in progress for #1053 and is not part of this commit.
+**Written:** 2026-10-10 · **HEAD at write:** `e1bfcf2` plus the #1053 commit (`git log -1`) ·
+**Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
 - `footage-licence` replays a fixture. It does not search the network.
@@ -89,10 +88,13 @@ is in progress for #1053 and is not part of this commit.
 - Stock repeats when the cache has only one clip for that query.
 - No brand font file is in the repo. A bright Flux picture is left without text.
 - Thumbnail auto-pick runs only when `THUMBNAIL_SCORER_ENABLED` is on.
-- A script with no blank line is still one TTS request, and that single request
-  is not rewritten by the lexicon. Only the paragraph path is.
+- A one-paragraph script is not rewritten by the lexicon.
 - `voice_delivery` and `tts_model` are registered and not started.
 - #1038 and the #217 editor stay open.
+- Enter on the Shorts offer now cuts and queues. That is a behaviour change
+  from skip.
 
-**Shipped:** #1038 `1dca06f`. #217: the paragraph path speaks `Sal-killed` for
-`Salkilld`. 1 test failed first. Next: #1053. `main.py` is shared.
+**Shipped:** #217 `e1bfcf2`. #1053: re-hook and end card are on the ffmpeg
+command, the file is under `<channel>/shorts/`, Enter cuts and queues. 2 tests
+failed first. #1054 was not built. Next: #1044 black and frozen frames.
+`core/technical_qc.py` gets a handoff note before the edit.

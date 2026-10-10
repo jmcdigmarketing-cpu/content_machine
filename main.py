@@ -535,7 +535,9 @@ def _offer_angle_shorts(
         print(f"  {line}")
     print("  c = cut these chapters out of the long video (no extra voice cost)")
     print("  g = write + voice a fresh Short per angle (new hook, paid voice)")
-    pick = ask_choice("  Make Shorts? [c / g / Enter = skip]: ").strip().lower()
+    pick = ask_choice("  Make Shorts? [c / g / Enter = cut]: ").strip().lower()
+    if pick == "":
+        pick = "c"
     if pick not in ("c", "g"):
         return
     indices = parse_chapter_selection(
@@ -579,7 +581,7 @@ def _offer_spaced_queue(
     from analytics.post_timing import format_scheduled_local
     from core.spaced_queue import plan_spaced_uploads, queue_spaced_uploads
 
-    if not ask_confirm("  Queue them across the next open slots? [y/N]: ", default=False):
+    if not ask_confirm("  Queue them across the next open slots? [Y/n]: ", default=True):
         print("  Left on disk. Queue one with:")
         print(
             f"    py -m scripts.requeue_upload --channel {channel_id} --run-id {run_ids[0]} --queue"

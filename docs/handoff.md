@@ -79,7 +79,7 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `9473fa7` plus the #1041 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `b47acd4` plus the #1047 commit (`git log -1`) ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
@@ -88,8 +88,10 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - yt-dlp pin not re-measured.
 - Stock repeats when the cache has only one clip for that query. That is the
   "every candidate was used" case, not a second clip hiding.
+- No brand font file is in the repo. The plate uses arialbd.ttf when the OS has it,
+  otherwise Pillow's default font. A bright Flux picture is left without text and a
+  warning is logged.
 
-**Shipped:** #1040 in `9473fa7`. #1041: `choose_stock_path` skips this video and the
-last 8; Pexels, Pixabay, and Coverr use `stock_cache_hit`. The dossier prints
-`footage:`. Measured before the fix: the newest cached file was returned again.
-4 tests failed first. Next: #1047 thumbnails.
+**Shipped:** #1040 `9473fa7`, #1041 `b47acd4`. #1047: `compose_thumbnail` paints 3-5
+words, refuses contrast below 4.5, pastes a subject only when passed. Pillow and the
+Flux save call it. 4 tests failed first. Next: #1048 scorer pick.

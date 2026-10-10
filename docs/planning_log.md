@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1047 thumbnail headline is painted locally
+
+**Prompt:** Phase A3, first half. Thumbnails need a short headline, a cutout when a face exists, and a contrast check. Flux still must be asked for no text.
+
+**Decision:** `assets/thumbnail_compose.py` paints 3-5 words in arialbd (or the default font when that file is absent), with a dark stroke and a shadow, inside a 64px margin. It refuses when white text against the pixel behind the words is below 4.5 and writes nothing. A subject is pasted only when the caller passes an image. The Pillow fallback and the Flux save both call it, so the words are local either way.
+
+**Shipped:** 4 tests failed first because the module did not exist. A dark plate stays 1280x720 with the text box inside the margin. White on white writes no file.
+
 ## 2026-10-10 (Cursor) - #1041 stock does not repeat, and the card says so
 
 **Prompt:** Phase A2. When stock runs, match the scene, never the same clip twice in a video

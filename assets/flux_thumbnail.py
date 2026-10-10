@@ -151,6 +151,23 @@ def _download_image(url: str, dest_path: str) -> None:
         f.write(resp.content)
 
 
+def _overlay_local_headline(path: str, title: str) -> None:
+    """Paint the short headline onto a picture that was asked for with no text."""
+    from assets.thumbnail_compose import compose_thumbnail
+
+    try:
+        img = Image.open(path)
+    except OSError as exc:
+        logger.warning("thumbnail overlay skipped, image unreadable: %s", exc)
+        return
+    plate = compose_thumbnail(img, title, path)
+    if plate.refused:
+        logger.warning(
+            "thumbnail overlay refused (%s); left the picture without text",
+            plate.refused,
+        )
+
+
 def _flux_thumbnail(
     topic: str, title: str, output_dir: str, *, filename: str, style_directive: str = ""
 ) -> ThumbnailResult:
@@ -203,6 +220,7 @@ def _flux_thumbnail(
 
         image_url = _poll_flux_result(polling_url, api_key, on_wait=_flux_wait)
         _download_image(image_url, out_path)
+        _overlay_local_headline(out_path, title)
         logger.info("Flux thumbnail saved: %s", out_path)
         return ThumbnailResult(
             path=out_path,
@@ -448,6 +466,7 @@ def _pillow_thumbnail(
     filename: str,
     channel_id: str | None = None,
     variant: str = "text_on",
+    subject_path: str | None = None,
 ) -> ThumbnailResult:
     os.makedirs(output_dir, exist_ok=True)
     width, height = 1280, 720
@@ -464,59 +483,37 @@ def _pillow_thumbnail(
     draw.rectangle([(0, height - 12), (width, height)], fill=accent)
 
     display = (title or topic).strip()[:80]
-    try:
-        font_lg = ImageFont.truetype("arialbd.ttf", 58)
-        font_sm = ImageFont.truetype("arial.ttf", 28)
-    except OSError:
-        try:
-            font_lg = ImageFont.truetype("arial.ttf", 52)
-            font_sm = ImageFont.load_default()
-        except OSError:
-            font_lg = ImageFont.load_default()
-            font_sm = font_lg
-
-    wrapped = []
-    words = display.split()
-    line = ""
-    for word in words:
-        candidate = f"{line} {word}".strip()
-        if len(candidate) > 22:
-            if line:
-                wrapped.append(line)
-            line = word
-        else:
-            line = candidate
-    if line:
-        wrapped.append(line)
-    if not wrapped:
-        wrapped = [display[:22] or "Video"]
-
-    if variant == "face_forward":
-        # Deterministic local fallback that remains visibly distinct from text_on:
-        # a subject-led composition with the copy held to the left.
+    if variant == "face_forward" and not subject_path:
+        # No cutout was passed. Keep a drawn figure so this arm stays distinct
+        # from the text plate; a real face replaces it when the caller has one.
         draw.ellipse((760, 90, 1260, 590), fill=accent, outline=(255, 255, 255), width=8)
         draw.ellipse((900, 165, 1120, 385), fill=bg_bottom)
         draw.rounded_rectangle((845, 360, 1175, 680), radius=90, fill=bg_bottom)
-    y = height // 2 - len(wrapped) * 34
-    for text_line in wrapped[:4]:
-        bbox = draw.textbbox((0, 0), text_line, font=font_lg)
-        tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
-        x = max(40, (640 - tw) // 2) if variant == "face_forward" else (width - tw) // 2
-        draw.rectangle(
-            [(x - 14, y - 10), (x + tw + 14, y + th + 10)],
-            fill=(0, 0, 0),
-        )
-        draw.text((x, y), text_line, fill=(255, 255, 255), font=font_lg)
-        y += 64
 
     from config.channels import resolve_channel_id
 
     if resolve_channel_id(channel_id) == "tapin":
-        draw.text((24, height - 48), "TAPIN", fill=(255, 255, 255), font=font_sm)
+        try:
+            font_sm = ImageFont.truetype("arial.ttf", 28)
+        except OSError:
+            font_sm = ImageFont.load_default()
+        draw.text((72, height - 80), "TAPIN", fill=(255, 255, 255), font=font_sm)
 
+    subject = None
+    if subject_path and os.path.isfile(subject_path):
+        subject = Image.open(subject_path)
     out_path = os.path.join(output_dir, filename)
-    img.save(out_path, "JPEG", quality=92)
+    from assets.thumbnail_compose import compose_thumbnail
+
+    plate = compose_thumbnail(img, display or "Video", out_path, subject=subject)
+    if plate.refused:
+        logger.warning("thumbnail plate refused (%s) for %s", plate.refused, display[:40])
+        return ThumbnailResult(
+            path=None,
+            status="refused",
+            detail=f"unreadable plate ({plate.refused})",
+            provider="pillow",
+        )
     size_kb = max(1, os.path.getsize(out_path) // 1024)
     return ThumbnailResult(
         path=out_path,
@@ -624,6 +621,7 @@ def generate_thumbnail(
     content_run_id: int | None = None,
     channel_id: str | None = None,
     grade_letter: str | None = None,
+    subject_path: str | None = None,
 ) -> ThumbnailResult:
     """
     One thumbnail per render (Flux if configured, always Pillow as usable fallback).
@@ -646,7 +644,12 @@ def generate_thumbnail(
         run_tag = f"run{content_run_id}" if content_run_id else "thumb"
         pillow_name = _thumbnail_basename(title, topic, suffix=f"pillow_{run_tag}")
         return _pillow_thumbnail(
-            topic, title, output_dir, filename=pillow_name, channel_id=channel_id
+            topic,
+            title,
+            output_dir,
+            filename=pillow_name,
+            channel_id=channel_id,
+            subject_path=subject_path,
         )
 
     selected = (os.getenv("THUMBNAIL_PROVIDER") or "").strip().lower()
@@ -665,7 +668,12 @@ def generate_thumbnail(
     flux_name = _thumbnail_basename(title, topic, suffix=f"flux_{run_tag}")
 
     pillow = _pillow_thumbnail(
-        topic, title, output_dir, filename=pillow_name, channel_id=channel_id
+        topic,
+        title,
+        output_dir,
+        filename=pillow_name,
+        channel_id=channel_id,
+        subject_path=subject_path,
     )
     primary = pillow
 

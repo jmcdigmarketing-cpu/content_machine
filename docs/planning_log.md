@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1037 channel voice settings
+
+**Prompt:** Phase A4. Send stability, style, and similarity_boost from each channel's `tts` block, and register a two-arm experiment.
+
+**Decision:** The channel numbers replace the voice's saved ones when they are set. `voice_delivery` is a `voice` kind lever: `steady` keeps the channel block, `expressive` sends stability 0.35, similarity_boost 0.80, style 0.45. Nothing starts that experiment; the operator does. Speed 1.0 with no channel numbers still sends no settings object.
+
+**Shipped:** 3 tests failed first (no `tts_stability`, unknown lever, no `channel_id`). The shipped TapIn block is what the request carries.
+
 ## 2026-10-10 (Cursor) - #1036 captions re-anchor at each paragraph
 
 **Prompt:** Phase A4. The joined word sidecar was drifting. The first word of the next paragraph should start when the previous paragraph's last word ends.

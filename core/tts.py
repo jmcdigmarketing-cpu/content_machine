@@ -352,14 +352,52 @@ def speech_speed(channel_id: str | None = None) -> float:
     return round(min(_SPEED_MAX, max(_SPEED_MIN, value)), 3)
 
 
-def _elevenlabs_voice_settings(client, voice_id: str, speed: float):
+def _channel_voice_overlay(channel_id: str | None) -> dict[str, float]:
+    """stability, style, and similarity_boost from the channel, then the voice arm."""
+    if not channel_id:
+        return {}
+    try:
+        profile = get_channel_profile(channel_id)
+    except Exception as exc:
+        logger.debug("channel voice settings skipped: %s", exc)
+        return {}
+    values: dict[str, float] = {}
+    for key, attr in (
+        ("stability", "tts_stability"),
+        ("style", "tts_style"),
+        ("similarity_boost", "tts_similarity_boost"),
+    ):
+        raw = getattr(profile, attr, None)
+        if raw is None:
+            continue
+        try:
+            values[key] = float(raw)
+        except (TypeError, ValueError):
+            continue
+    try:
+        from core.experiment_levers import voice_delivery_overrides
+        from core.experiments import next_arm
+
+        picked = next_arm(channel_id, kind="voice")
+    except Exception as exc:
+        logger.debug("voice experiment skipped: %s", exc)
+        return values
+    if picked:
+        values.update(voice_delivery_overrides(picked[1]))
+    return values
+
+
+def _elevenlabs_voice_settings(client, voice_id: str, speed: float, channel_id: str | None = None):
     """The voice's own saved settings with only `speed` replaced; None at 1.0 (#890).
 
     A settings object with nothing but `speed` could reset stability and similarity to
     the API defaults, so the saved ones are read once per voice (a free call). If that
-    read fails the speed goes alone, and the log says so once.
+    read fails the speed goes alone, and the log says so once. Channel `tts` then
+    sets stability, style, and similarity_boost (#1037). An active voice_delivery
+    experiment can replace those three.
     """
-    if speed == 1.0:
+    overlay = _channel_voice_overlay(channel_id)
+    if speed == 1.0 and not overlay:
         return None
     try:
         from elevenlabs import VoiceSettings
@@ -380,7 +418,7 @@ def _elevenlabs_voice_settings(client, voice_id: str, speed: float):
         saved.pop("speed", None)
         _saved_voice_settings[voice_id] = saved
     try:
-        return VoiceSettings(**{**saved, "speed": speed})
+        return VoiceSettings(**{**saved, "speed": speed, **overlay})
     except Exception as exc:
         logger.debug("voice settings rejected, speed only: %s", exc)
         return VoiceSettings(speed=speed)
@@ -1170,7 +1208,9 @@ def synthesize_to_path(
             # Word-level timestamps (free from the same TTS call) power accurate /
             # karaoke captions (video/caption_timing). Best-effort — any failure falls
             # back to the plain stream, so captions revert to the proportional estimate.
-            settings = _elevenlabs_voice_settings(client, voice_id, speech_speed(channel_id))
+            settings = _elevenlabs_voice_settings(
+                client, voice_id, speech_speed(channel_id), channel_id
+            )
             extra = {"voice_settings": settings} if settings is not None else {}
             if _word_timestamps_enabled() and _save_word_timestamps(
                 client,

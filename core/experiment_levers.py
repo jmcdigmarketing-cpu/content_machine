@@ -90,6 +90,14 @@ _LEVERS: dict[str, dict] = {
             ),
         },
     },
+    "voice_delivery": {
+        "description": "ElevenLabs stability, style, and similarity",
+        "kind": "voice",
+        "arms": {
+            "steady": "use the channel tts stability, style, and similarity_boost",
+            "expressive": "stability 0.35, similarity_boost 0.80, style 0.45",
+        },
+    },
 }
 
 
@@ -111,3 +119,10 @@ def directive(lever: str, arm: str) -> str:
 
 def kind(lever: str) -> str:
     return _LEVERS.get(lever, {}).get("kind", "script")
+
+
+def voice_delivery_overrides(arm: str) -> dict[str, float]:
+    """Numbers the expressive arm sends. Steady keeps the channel block."""
+    if arm != "expressive":
+        return {}
+    return {"stability": 0.35, "similarity_boost": 0.80, "style": 0.45}

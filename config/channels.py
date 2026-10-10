@@ -36,6 +36,10 @@ class ChannelProfile:
     tts_rotate: bool = False
     # #890: speaking pace, 0.7-1.2 (ElevenLabs' range); None means the 0.95 default.
     tts_speed: float | None = None
+    # #1037: sent on the ElevenLabs voice_settings object. None keeps the saved voice.
+    tts_stability: float | None = None
+    tts_style: float | None = None
+    tts_similarity_boost: float | None = None
     # Optional per-channel LOCAL TTS voice(s) for the TTS_PROVIDER chain (Pillar 6 voice
     # variety, core/tts.resolve_local_voice). Value semantics depend on the active local
     # provider: Piper -> a .onnx path, Kokoro -> a voice name, XTTS -> a speaker wav. A
@@ -142,6 +146,9 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             tts_voice_pool=voice_pool,
             tts_rotate=bool(tts.get("rotate", cfg.get("tts_rotate", False))),
             tts_speed=_optional_float(tts.get("speed")),
+            tts_stability=_optional_float(tts.get("stability")),
+            tts_style=_optional_float(tts.get("style")),
+            tts_similarity_boost=_optional_float(tts.get("similarity_boost")),
             local_tts_voice=local_voice,
             local_tts_voices=local_voices,
             background_mode=str(cfg.get("background_mode", "hybrid")).lower(),

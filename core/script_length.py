@@ -127,6 +127,15 @@ def split_spoken_sentences(script: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
+_PARAGRAPH_SPLIT = re.compile(r"(?:\r?\n)[ \t]*(?:\r?\n)")
+
+
+def split_spoken_paragraphs(script: str) -> list[str]:
+    """Blank-line paragraphs. A single block stays one request."""
+    chunks = _PARAGRAPH_SPLIT.split((script or "").strip())
+    return [c.strip() for c in chunks if c.strip()]
+
+
 def trim_overlength(
     script: str,
     *,

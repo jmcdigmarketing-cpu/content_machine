@@ -219,7 +219,7 @@ class MultiVoiceSynthTests(unittest.TestCase):
 
         calls = []
 
-        def fake_synth(spoken, alt, path, channel_id, key, *, allow_piper_mix=True):
+        def fake_synth(spoken, alt, path, channel_id, key, *, allow_piper_mix=True, **kwargs):
             calls.append((spoken, tts.resolve_tts_config(channel_id)[0], allow_piper_mix))
             with open(path, "wb") as f:
                 f.write(b"x")
@@ -549,7 +549,7 @@ class SpokenVoicesTests(GovernorCase):
     def test_the_sentence_loop_resolves_each_role_once(self):
         from core import tts
 
-        def fake_synth(spoken, alt, path, channel_id, key, *, allow_piper_mix=True):
+        def fake_synth(spoken, alt, path, channel_id, key, *, allow_piper_mix=True, **kwargs):
             with open(path, "wb") as f:
                 f.write(b"x")
             return path

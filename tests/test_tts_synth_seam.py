@@ -142,7 +142,7 @@ class TestSentenceCache(unittest.TestCase):
         tts._last_cache_fraction = 0.0
 
     def test_two_sentences_call_the_seam_once_each(self):
-        script = "First sentence. Second sentence."
+        script = "First sentence.\n\nSecond sentence."
         calls: list[str] = []
 
         def fake_seam(spoken, spoken_for_alt, output_path, channel_id, cache_key, **kwargs):
@@ -178,7 +178,7 @@ class TestSentenceCache(unittest.TestCase):
         """A 50% char hit must not report a full cache hit (which meters $0)."""
         a = "AAAAAAAAAA."
         b = "BBBBBBBBBB."
-        script = f"{a} {b}"
+        script = f"{a}\n\n{b}"
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = os.path.join(tmp, "cache")
             env = {
@@ -186,7 +186,7 @@ class TestSentenceCache(unittest.TestCase):
                 "TTS_CACHE_DIR": cache_dir,
                 "TTS_PROVIDER": "elevenlabs",
             }
-            key_a = tts.tts_cache_key(a, "elevenlabs", "")
+            key_a = tts.tts_cache_key(tts.paragraph_cache_text(a, "", b), "elevenlabs", "")
             src = os.path.join(tmp, "a.mp3")
             with open(src, "wb") as f:
                 f.write(b"aaa")
@@ -260,7 +260,7 @@ class TestSentenceCache(unittest.TestCase):
         from core import tts_char_cap
 
         a, b = "AAAAAAAAAA.", "BBBBBBBBBB."
-        script = f"{a} {b}"
+        script = f"{a}\n\n{b}"
 
         def fake_seam(spoken, spoken_for_alt, output_path, channel_id, cache_key, **kwargs):
             with open(output_path, "wb") as f:

@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1035 one request per paragraph
+
+**Prompt:** Phase A4. Stop voicing each sentence alone. Send the neighbouring paragraphs on the ElevenLabs request, and cache the paragraph with those neighbours.
+
+**Decision:** Blank-line paragraphs are the unit. A paragraph that contains two sentences is one request. `previous_text` and `next_text` are omitted when that side does not exist. The per-segment cache key is `paragraph_cache_text`, so a sentence-only key does not hit. The joined-file cache key is unchanged.
+
+**Shipped:** 2 tests failed first (4 calls instead of 3, and no `paragraph_cache_text`). The sentence-cache tests that counted two sentences in one block now use a blank line, because that block is one paragraph.
+
 ## 2026-10-10 (Cursor) - #1048 the higher thumbnail score is the pick
 
 **Prompt:** Phase A3, second half. When two thumbnails exist, the scorer picks the higher one. `pick-thumbnail` stays the operator override.

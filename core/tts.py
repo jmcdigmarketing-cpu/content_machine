@@ -515,6 +515,20 @@ def tts_cache_key(text: str, provider: str, voice: str = "") -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def paragraph_cache_text(text: str, previous: str, following: str) -> str:
+    """The paragraph plus the paragraphs on either side. Not the sentence alone."""
+    return f"{previous}\n<paragraph>\n{text}\n</paragraph>\n{following}"
+
+
+def _neighbor_kwargs(previous: str, following: str) -> dict[str, str]:
+    extra: dict[str, str] = {}
+    if previous:
+        extra["previous_text"] = previous
+    if following:
+        extra["next_text"] = following
+    return extra
+
+
 def _tts_cache_paths(key: str) -> tuple[str, str]:
     root = tts_cache_dir()
     mp3 = os.path.join(root, f"{key}.mp3")
@@ -729,42 +743,36 @@ def _generate_audio(script, output_path, channel_id: str | None = None, segments
         print(f"[TTS] Channel: {channel_id} | cache hit")
         return output_path
 
-    from core.script_length import split_spoken_sentences
+    from core.script_length import split_spoken_paragraphs
 
-    # Gated on the cache it exists to serve. TTS_CACHE is ON by default, so a normal
-    # render is voiced one sentence per call and joined with ffmpeg: each sentence is
-    # read without its neighbours (no previous/next-text stitching), which is where
-    # the operator's "robotic" seams come from (2026-10-08; the Cursor brief's A4 moves
-    # this to paragraph calls). With TTS_CACHE=false splitting buys nothing, so the
-    # whole script goes in one call.
-    sents = split_spoken_sentences(spoken) if tts_cache_enabled() else []
-    alts = split_spoken_sentences(spoken_for_alt) if tts_cache_enabled() else []
-    if len(sents) == len(alts) and len(sents) > 1 and ffmpeg_concat_ready():
+    # One request per paragraph, with the paragraphs on either side sent as
+    # previous_text / next_text. A sentence-only call is what made the seams
+    # sound robotic (2026-10-08). With TTS_CACHE=false the whole script is one call.
+    paras = split_spoken_paragraphs(spoken) if tts_cache_enabled() else []
+    alts = split_spoken_paragraphs(spoken_for_alt) if tts_cache_enabled() else []
+    if len(paras) == len(alts) and len(paras) > 1 and ffmpeg_concat_ready():
         try:
             return _generate_by_sentences(
-                sents,
+                paras,
                 alts,
                 output_path,
                 channel_id,
                 cache_key,
                 _record_actual,
+                unit="paragraph",
             )
         except Exception as exc:
-            # The segments were already synthesized and billed. Falling back
-            # re-synthesizes the whole script, so the provider is charged roughly
-            # twice -- and recording only the second pass would erase the first
-            # from `tts_actual_chars`, which is the #657 defect again.
             spent = int(getattr(exc, "spent_chars", 0) or 0)
             if spent:
                 logger.warning(
-                    "sentence TTS concat failed after billing %d char(s); "
+                    "paragraph TTS concat failed after billing %d char(s); "
                     "the whole script is being re-synthesized, so this render is "
                     "billed twice: %s",
                     spent,
                     exc,
                 )
             else:
-                logger.warning("sentence TTS cache failed - synthesizing whole script: %s", exc)
+                logger.warning("paragraph TTS cache failed - synthesizing whole script: %s", exc)
             _record_actual(spent + len(spoken_for_alt))
             return synthesize_to_path(spoken, spoken_for_alt, output_path, channel_id, cache_key)
 
@@ -958,8 +966,13 @@ def _generate_by_sentences(
     whole_cache_key: str,
     record_actual,
     roles: list[str] | None = None,
+    unit: str = "sentence",
 ) -> str:
-    """Synthesize segments, then concat. `roles[i]` is segment i's voice role (#884)."""
+    """Synthesize segments, then concat. `roles[i]` is segment i's voice role (#884).
+
+    Each segment's cache key is the text plus the segments on either side, and the
+    provider request carries those as previous_text / next_text.
+    """
     global _last_cache_hit, _last_cache_fraction
     provider = _resolve_tts_provider()
     paths: list[str] = []
@@ -973,15 +986,30 @@ def _generate_by_sentences(
             seg = f"{output_path}.seg{i}.mp3"
             tmp_paths.append(seg)
             role = roles[i] if roles else ROLE_NARRATOR
+            previous = sents[i - 1] if i else ""
+            following = sents[i + 1] if i + 1 < len(sents) else ""
             with voice_role(role):
                 if role not in cache_voice:
                     cache_voice[role] = _tts_cache_voice(channel_id)
-                key = tts_cache_key(alt, provider, cache_voice[role])
+                key = tts_cache_key(
+                    paragraph_cache_text(alt, previous, following),
+                    provider,
+                    cache_voice[role],
+                )
                 if tts_cache_lookup(key, seg):
                     _note_voice_spoken()
                     cached_chars += len(alt)
                 else:
-                    synthesize_to_path(sent, alt, seg, channel_id, key, allow_piper_mix=False)
+                    synthesize_to_path(
+                        sent,
+                        alt,
+                        seg,
+                        channel_id,
+                        key,
+                        allow_piper_mix=False,
+                        previous_text=previous,
+                        next_text=following,
+                    )
                     synth_chars += len(alt)
             paths.append(seg)
         try:
@@ -998,10 +1026,10 @@ def _generate_by_sentences(
         _last_cache_hit = _last_cache_fraction >= 1.0
         record_actual(synth_chars)
         if _last_cache_hit:
-            print(f"[TTS] Channel: {channel_id} | cache hit (sentences)")
+            print(f"[TTS] Channel: {channel_id} | cache hit ({unit}s)")
         else:
             pct = f"{_last_cache_fraction:.0%}"
-            print(f"[TTS] Channel: {channel_id} | sentence cache {pct}")
+            print(f"[TTS] Channel: {channel_id} | {unit} cache {pct}")
         return output_path
     finally:
         for path in tmp_paths:
@@ -1020,6 +1048,8 @@ def synthesize_to_path(
     cache_key: str,
     *,
     allow_piper_mix: bool = True,
+    previous_text: str = "",
+    next_text: str = "",
 ) -> str:
     """Write synthesized audio for one text blob. Callers own cache lookup + actuals.
 
@@ -1110,7 +1140,14 @@ def synthesize_to_path(
             settings = _elevenlabs_voice_settings(client, voice_id, speech_speed(channel_id))
             extra = {"voice_settings": settings} if settings is not None else {}
             if _word_timestamps_enabled() and _save_word_timestamps(
-                client, voice_id, model_id, spoken, output_path, **extra
+                client,
+                voice_id,
+                model_id,
+                spoken,
+                output_path,
+                voice_settings=settings,
+                previous_text=previous_text,
+                next_text=next_text,
             ):
                 print(
                     f"[TTS] Channel: {channel_id} | Voice: {voice_id} | "
@@ -1126,6 +1163,7 @@ def synthesize_to_path(
                 model_id=model_id,
                 text=spoken,
                 **extra,
+                **_neighbor_kwargs(previous_text, next_text),
             )
             with open(output_path, "wb") as f:
                 for chunk in audio:
@@ -1733,7 +1771,14 @@ def _word_timestamps_enabled() -> bool:
 
 
 def _save_word_timestamps(
-    client, voice_id, model_id, script, output_path, voice_settings=None
+    client,
+    voice_id,
+    model_id,
+    script,
+    output_path,
+    voice_settings=None,
+    previous_text: str = "",
+    next_text: str = "",
 ) -> bool:
     """Convert with character alignment, write the MP3 + a word-timing sidecar.
 
@@ -1747,6 +1792,7 @@ def _save_word_timestamps(
             model_id=model_id,
             text=script,
             **extra,
+            **_neighbor_kwargs(previous_text, next_text),
         )
         audio_b64 = getattr(result, "audio_base_64", None) or getattr(result, "audio_base64", None)
         alignment = getattr(result, "alignment", None) or getattr(

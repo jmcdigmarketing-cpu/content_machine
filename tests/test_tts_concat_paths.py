@@ -105,7 +105,7 @@ class TestAMultiSentenceRenderPaysOnce(unittest.TestCase):
         tts._last_piper_mix = False
 
     def test_each_sentence_is_synthesized_once_and_billed_once(self) -> None:
-        script = "First sentence here. Second sentence here."
+        script = "First sentence here.\n\nSecond sentence here."
         seam_calls: list[str] = []
         recorded: list[int] = []
 

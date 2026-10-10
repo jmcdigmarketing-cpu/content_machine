@@ -406,6 +406,14 @@ def _screen_intent(discovery, topic: str, creative_brief: str):
     return found if found is not None else read_intent(topic, creative_brief)
 
 
+def _ask_angle(discovery, prompt: str) -> str:
+    """#1097: the angle choice carries the discovery read for the desktop mode list."""
+    from core.ask import ask_choice
+
+    meta = getattr(discovery, "meta", None) or {}
+    return ask_choice(prompt, payload=meta.get("intent_read"))
+
+
 def _change_angle_mode(discovery, intent_read):
     """#1092: "M" on the angle screen - pick the mode; the angles are written again from the
     signals in hand (no new discovery). The choice is recorded as the operator's. If the
@@ -772,7 +780,7 @@ def _run_new_video_flow_body(
         if angle_count >= 2:
             prompt += ", A = all angles in one long video"
         prompt += ", M = change mode): "
-        choice = ask_choice(prompt)
+        choice = _ask_angle(discovery, prompt)
         if choice.strip().lower() != "m":
             break
         discovery, intent_read = _change_angle_mode(discovery, intent_read)

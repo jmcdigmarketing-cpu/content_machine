@@ -79,8 +79,9 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `43f68e0` plus the #1067 commit ·
-**Tree:** `.agents/` and `.codex/` untracked; do not commit them.
+**Written:** 2026-10-10 · **HEAD at write:** `6347801` plus the #1097 commit ·
+**Tree:** `.agents/` and `.codex/` untracked. `docs/startup_powershell.md` is
+modified (the project path) and is not mine; leave it.
 
 **Defects first:**
 - `footage-licence` replays a fixture. It does not search the network.
@@ -94,9 +95,8 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - Enter on the Shorts offer now cuts and queues.
 - A freeze to the end of the file has a start and no duration.
 - The intent card calls `idea_angle` on the UI thread when the topic field
-  finishes editing. That is one cheap call, the same one the run makes again
-  on the worker.
+  finishes editing.
 
-**Shipped:** #999 `43f68e0`. #1067: the new-video card shows angle 1 and the
-read. Enter starts the run with the typed idea. 2 tests failed first. Next:
-#1097. `main.py` gets a handoff note before the angle-step payload change.
+**Shipped:** #1067 `6347801`. #1097: the angle step lists the ten modes. A change
+sends `m`, then the mode key. The card shows the discovery read. 3 tests failed
+first. This run stops at B1. B2-B6 stay.

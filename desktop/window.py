@@ -55,6 +55,8 @@ class RunWindow(QMainWindow):
         self._log_lock = threading.Lock()
         self._log_seen = 0
         self._pending: AskRequest | None = None
+        self._pending_mode_key = ""
+        self._mode_key = ""
         self._worker: threading.Thread | None = None
         self._done_box: list[BaseException | None] = []
 
@@ -136,6 +138,11 @@ class RunWindow(QMainWindow):
         self.angle_list.itemClicked.connect(self._pick_angle)
         self.angle_list.hide()
         layout.addWidget(self.angle_list)
+        self.mode_box = QComboBox()
+        self.mode_box.setObjectName("mode_box")
+        self.mode_box.hide()
+        self.mode_box.currentIndexChanged.connect(self._mode_picked)
+        layout.addWidget(self.mode_box)
 
         btns = QHBoxLayout()
         self.ask_input = QLineEdit()
@@ -321,6 +328,11 @@ class RunWindow(QMainWindow):
                 self.empty_state.setText(empty_state_copy())
 
     def _show_request(self, req: AskRequest) -> None:
+        if self._pending_mode_key and "Mode (Enter = keep" in (req.prompt or ""):
+            key = self._pending_mode_key
+            self._pending_mode_key = ""
+            self._bridge.submit(key)
+            return
         self._pending = req
         if req.kind == "facts_room":
             # #860: one table for every pasted line, link and vault match.
@@ -349,6 +361,8 @@ class RunWindow(QMainWindow):
             else:
                 self.ask_input.setPlaceholderText("1-5, or Enter for default")
                 self._set_ask_enabled(text=True)
+            if req.gate == "angles":
+                self._show_angle_modes(req.payload)
         else:
             self.prompt_label.setText(req.prompt.strip() or "(input)")
             self._set_ask_enabled(text=True)
@@ -372,10 +386,44 @@ class RunWindow(QMainWindow):
             self.angle_list.show()
         else:
             self.angle_list.hide()
+            self.mode_box.hide()
         if not enabled:
             self.prompt_label.setText("")
             self.ask_input.clear()
             self.angle_list.clear()
+
+    def _show_angle_modes(self, payload: object) -> None:
+        from core.angle_intent import MODE_KEYS, intent_read_from
+
+        read = intent_read_from(payload)
+        if read is not None:
+            self.intent_card.setText(
+                f"Intent: {read.intent}\nSource: {read.source}\nCue: {read.cue or 'none'}"
+            )
+            self._card_idea = None
+        self._mode_key = ""
+        self.mode_box.blockSignals(True)
+        self.mode_box.clear()
+        current = 0
+        for i, (key, (intent, label)) in enumerate(MODE_KEYS.items()):
+            self.mode_box.addItem(f"{key}) {label}", key)
+            if read is not None and intent == read.intent:
+                current = i
+                self._mode_key = key
+        if not self._mode_key:
+            self._mode_key = "n"
+        self.mode_box.setCurrentIndex(current)
+        self.mode_box.blockSignals(False)
+        self.mode_box.show()
+
+    def _mode_picked(self, index: int) -> None:
+        if self._pending is None or self._pending.gate != "angles":
+            return
+        key = self.mode_box.itemData(index)
+        if not key or str(key) == self._mode_key:
+            return
+        self._pending_mode_key = str(key)
+        self._submit("m")
 
     def _pick_angle(self, item: QListWidgetItem) -> None:
         row = self.angle_list.row(item)

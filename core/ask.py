@@ -45,8 +45,10 @@ def reset_backend() -> None:
     set_backend(TerminalBackend())
 
 
-def ask_text(prompt: str = "") -> str:
-    return _backend.ask_text(prompt)
+def ask_text(prompt: str = "", *, payload: object = None) -> str:
+    if payload is None:
+        return _backend.ask_text(prompt)
+    return _backend.ask_text(prompt, payload=payload)
 
 
 def ask_confirm(prompt: str, *, default: bool = False) -> bool:
@@ -57,9 +59,9 @@ def ask_confirm(prompt: str, *, default: bool = False) -> bool:
     return raw in ("y", "yes")
 
 
-def ask_choice(prompt: str) -> str:
+def ask_choice(prompt: str, *, payload: object = None) -> str:
     """Raw choice string; caller interprets digits / empty / 0."""
-    return ask_text(prompt).strip()
+    return ask_text(prompt, payload=payload).strip()
 
 
 process_state.register_reset("core.ask", reset_backend)  # #827

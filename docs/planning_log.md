@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1097 angle-step mode drop-down
+
+**Prompt:** Phase B1. The desktop angle step offers the mode keys and answers the existing M path. The card shows the discovery read. Do not edit `core/angle_intent.py`.
+
+**Decision:** The angle choice carries `discovery.meta["intent_read"]` on the ask payload. The drop-down lists `MODE_KEYS`. A change submits `m`, then the mode key. `mode_for_key` already turns that key into the intent string `operator_intent` wants.
+
+**Shipped:** 3 tests failed first. A real angle prompt (`Choose 1-6 ... M = change mode`) was classified as plain text. Picking `p` now sends `m` then `p`.
+
 ## 2026-10-10 (Cursor) - #1067 new-video intent card
 
 **Prompt:** Phase B1. The run window shows angle 1 and the intent read before discovery. Enter on the topic keeps that idea.

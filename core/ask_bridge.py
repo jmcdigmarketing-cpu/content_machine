@@ -65,7 +65,7 @@ def classify_prompt(prompt: str) -> tuple[str, str | None]:
     if FACT_PROMPT_NEEDLE in text and "Fact " in text:
         return ("fact", None)
     stripped = text.strip()
-    if stripped.startswith("Choose 1-5"):
+    if stripped.startswith("Choose 1-5") or "M = change mode" in text:
         return ("choice", "angles")
     if stripped.startswith("Select 1-4"):
         return ("choice", "length")
@@ -137,7 +137,7 @@ class AskBridge:
         with self._progress_lock:
             return self._progress
 
-    def ask_text(self, prompt: str = "") -> str:
+    def ask_text(self, prompt: str = "", *, payload: Any = None) -> str:
         if self._closed:
             raise KeyboardInterrupt
         kind, gate = classify_prompt(prompt)
@@ -145,7 +145,7 @@ class AskBridge:
             return self._fact_lines.pop(0)
         if kind == "fact" and self._auto_end_facts:
             return ""
-        req = AskRequest(prompt=prompt, kind=kind, gate=gate)
+        req = AskRequest(prompt=prompt, kind=kind, gate=gate, payload=payload)
         self._requests.put(req)
         answer = self._answers.get()
         if answer is _CANCEL:
@@ -174,8 +174,8 @@ class BridgeBackend(Backend):
     def __init__(self, bridge: AskBridge) -> None:
         self.bridge = bridge
 
-    def ask_text(self, prompt: str = "") -> str:
-        return self.bridge.ask_text(prompt)
+    def ask_text(self, prompt: str = "", *, payload: Any = None) -> str:
+        return self.bridge.ask_text(prompt, payload=payload)
 
 
 _current: AskBridge | None = None

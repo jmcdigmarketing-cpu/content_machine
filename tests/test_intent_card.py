@@ -60,3 +60,77 @@ class TestIntentCard(unittest.TestCase):
             window.topic.returnPressed.emit()
         start.assert_called_once()
         self.assertEqual(start.call_args.kwargs["topic"], idea)
+
+    def test_the_angle_step_dropdown_sends_m_then_the_mode_key(self):
+        from core.ask_bridge import AskRequest
+        from desktop.window import RunWindow
+
+        window = RunWindow()
+        self.addCleanup(window.close)
+        window._show_request(
+            AskRequest(
+                prompt="\n  Choose 1-6 (Enter = your idea, M = change mode): ",
+                kind="choice",
+                gate="angles",
+                payload={
+                    "intent": "hope",
+                    "source": "model",
+                    "cue": "reasons for hope",
+                    "also": "",
+                    "also_cue": "",
+                    "detected": "",
+                },
+            )
+        )
+        text = window.intent_card.text()
+        self.assertIn("Intent: hope", text)
+        self.assertIn("Source: model", text)
+        self.assertIn("Cue: reasons for hope", text)
+        keys = [window.mode_box.itemData(i) for i in range(window.mode_box.count())]
+        self.assertEqual(keys, ["n", "h", "t", "p", "e", "u", "l", "c", "b", "r"])
+        window.mode_box.setCurrentIndex(keys.index("p"))
+        self.assertEqual(window._bridge._answers.get_nowait(), "m")
+        window._show_request(AskRequest(prompt="  Mode (Enter = keep this one): ", kind="text"))
+        self.assertEqual(window._bridge._answers.get_nowait(), "p")
+
+
+class TestAngleAskPayload(unittest.TestCase):
+    def test_the_real_angle_prompt_is_the_angle_choice(self):
+        from core.ask_bridge import classify_prompt
+
+        kind, gate = classify_prompt("\n  Choose 1-6 (Enter = your idea, M = change mode): ")
+        self.assertEqual((kind, gate), ("choice", "angles"))
+
+    def test_the_angle_ask_puts_the_discovery_read_on_the_payload(self):
+        import threading
+        from types import SimpleNamespace
+
+        import main
+        from core.ask import reset_backend, set_backend
+        from core.ask_bridge import AskBridge, BridgeBackend
+
+        bridge = AskBridge()
+        set_backend(BridgeBackend(bridge))
+        self.addCleanup(reset_backend)
+        discovery = SimpleNamespace(
+            meta={
+                "intent_read": {
+                    "intent": "plan",
+                    "source": "model",
+                    "cue": "turn it around",
+                }
+            }
+        )
+        seen: dict = {}
+
+        def answer() -> None:
+            req = bridge.wait_request(timeout=2)
+            seen["payload"] = None if req is None else req.payload
+            bridge.submit("1")
+
+        threading.Thread(target=answer).start()
+        got = main._ask_angle(discovery, "\n  Choose 1-6 (Enter = your idea, M = change mode): ")
+        self.assertEqual(got, "1")
+        self.assertEqual(seen["payload"]["intent"], "plan")
+        self.assertEqual(seen["payload"]["source"], "model")
+        self.assertEqual(seen["payload"]["cue"], "turn it around")

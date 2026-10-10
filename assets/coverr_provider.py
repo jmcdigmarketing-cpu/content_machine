@@ -14,7 +14,7 @@ import re
 import requests
 
 from assets.base import AssetProvider
-from assets.catalog import find_cached, register
+from assets.catalog import register, stock_cache_hit
 from assets.download import CACHE_DIR, download_file, safe_filename
 from assets.types import AssetResult
 from config.settings import get_settings
@@ -66,7 +66,7 @@ class CoverrAssetProvider(AssetProvider):
         from assets.category import search_query
 
         query = search_query(topic, category, channel_id)
-        cached = find_cached(query, self.name)
+        cached = stock_cache_hit(query, self.name)
         if cached:
             return AssetResult(path=cached, provider=self.name, query=query, source_id="cached")
 
@@ -102,6 +102,9 @@ class CoverrAssetProvider(AssetProvider):
                 download_file(link, dest)
                 title = str(hit.get("title") or "Coverr")
                 register(dest, self.name, vid, query, f"Video from Coverr: {title}")
+                from assets.clip_memory import note_used
+
+                note_used(dest)
                 return AssetResult(
                     path=dest,
                     provider=self.name,

@@ -19,6 +19,7 @@ from core.logging import get_logger
 logger = get_logger("assets.clip_memory")
 
 _recent: deque[str] = deque(maxlen=8)
+_this_video: list[str] = []
 CLIP_MEMORY_FILE = os.path.join(DATA_DIR, "clip_memory.json")
 
 
@@ -68,6 +69,41 @@ def record(path: str) -> None:
 
 def reset() -> None:
     _recent.clear()
+    _this_video.clear()
+
+
+def begin_video() -> None:
+    """A new render. Clips from the previous video stay in the last-N memory."""
+    _this_video.clear()
+
+
+def note_used(path: str) -> None:
+    """This video used `path`, and later videos should avoid it too."""
+    if not path:
+        return
+    _this_video.append(_norm(path))
+    record(path)
+
+
+def choose_stock_path(
+    candidates: Iterable[str], *, used_in_video: Iterable[str] | None = None
+) -> str | None:
+    """A stock path not used in this video and not in the last N, else a repeat.
+
+    A repeat happens only when every candidate was already used (this video, or
+    the remembered window when none of them are free). The first eligible path
+    wins so two scenes do not depend on random.
+    """
+    paths = [p for p in candidates if p]
+    if not paths:
+        return None
+    now = {_norm(p) for p in (used_in_video if used_in_video is not None else _this_video)}
+    remembered = {_norm(p) for p in recent()}
+    fresh = [p for p in paths if _norm(p) not in now and _norm(p) not in remembered]
+    if fresh:
+        return fresh[0]
+    not_now = [p for p in paths if _norm(p) not in now]
+    return (not_now or paths)[0]
 
 
 def pick_unseen(candidates: Iterable[str], *, rng: random.Random | None = None) -> str | None:

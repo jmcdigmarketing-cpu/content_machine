@@ -17,6 +17,21 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1041 stock does not repeat, and the card says so
+
+**Prompt:** Phase A2. When stock runs, match the scene, never the same clip twice in a video
+or in the last N videos, and label it on the run card.
+
+**Decision:** Scene matching already calls `get_stock_background_asset`. The hole was the
+cache: `find_cached` always returned the newest file, and the dossier never stored
+`footage_label`. `choose_stock_path` skips clips used in this video and the last 8.
+It repeats only when every candidate was used. The pipeline stores `footage_quality`
+and the dossier prints it.
+
+**Shipped:** `stock_cache_hit` on Pexels, Pixabay, and Coverr. 4 tests failed first
+(the names were not imported). A render calls `begin_video` so the next video keeps
+the memory but not the "this video" list.
+
 ## 2026-10-10 (Cursor) - #1040 licensed footage, folder licence kept
 
 **Prompt:** Phase A of `docs/cursor_brief_2026-10.md`, A1 first. The 2026-09-20 slot:

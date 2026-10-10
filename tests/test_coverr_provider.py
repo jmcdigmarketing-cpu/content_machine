@@ -71,10 +71,13 @@ class TestCoverrSearch(unittest.TestCase):
         response.status_code = 200
         response.json.return_value = payload
         dest = os.path.join("assets", "cache", "coverr_ok1.mp4")
+        from assets.clip_memory import reset
+
+        self.addCleanup(reset)
 
         with (
             patch.dict(os.environ, {"COVERR_API_KEY": "test-coverr-key"}, clear=False),
-            patch("assets.coverr_provider.find_cached", return_value=None),
+            patch("assets.coverr_provider.stock_cache_hit", return_value=None),
             patch("assets.coverr_provider.requests.get", return_value=response) as get,
             patch("assets.coverr_provider.download_file", return_value=dest) as dl,
             patch("assets.coverr_provider.register") as reg,

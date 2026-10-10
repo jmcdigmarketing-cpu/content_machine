@@ -3,7 +3,7 @@ import os
 import requests
 
 from assets.base import AssetProvider
-from assets.catalog import find_cached, register
+from assets.catalog import register, stock_cache_hit
 from assets.download import CACHE_DIR, download_file, safe_filename
 from assets.types import AssetResult
 from config.settings import get_settings
@@ -24,7 +24,7 @@ class PixabayAssetProvider(AssetProvider):
         from assets.category import search_query
 
         query = search_query(topic, category, channel_id)
-        cached = find_cached(query, self.name)
+        cached = stock_cache_hit(query, self.name)
         if cached:
             return AssetResult(path=cached, provider=self.name, query=query, source_id="cached")
 
@@ -47,11 +47,7 @@ class PixabayAssetProvider(AssetProvider):
                 if is_abstract_stock_text(meta):
                     continue
                 videos = hit.get("videos") or {}
-                pick = (
-                    videos.get("medium")
-                    or videos.get("small")
-                    or videos.get("tiny")
-                )
+                pick = videos.get("medium") or videos.get("small") or videos.get("tiny")
                 if not pick or not pick.get("url"):
                     continue
 
@@ -60,6 +56,9 @@ class PixabayAssetProvider(AssetProvider):
                 download_file(pick["url"], dest)
                 user = hit.get("user", "Pixabay")
                 register(dest, self.name, vid, query, f"Video by {user} on Pixabay")
+                from assets.clip_memory import note_used
+
+                note_used(dest)
                 return AssetResult(
                     path=dest,
                     provider=self.name,

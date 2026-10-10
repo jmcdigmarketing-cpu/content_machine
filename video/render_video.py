@@ -426,6 +426,9 @@ def render_vertical_video(
     except Exception as exc:
         logger.debug("word timings for owned beats skipped: %s", exc)
         words = None
+    from assets.clip_memory import begin_video
+
+    begin_video()
     try:
         # #782: a new shot every 2-3 s from the topic's game folder, cut on phrase ends.
         # The operator rejected three drafts for holding each shot for ~25 s.

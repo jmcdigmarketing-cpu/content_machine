@@ -40,6 +40,29 @@ def register(path: str, provider: str, source_id: str, query: str, attribution: 
     _save(data)
 
 
+def cached_paths(query: str, provider: str) -> list[str]:
+    """Every on-disk clip registered for this query, oldest first."""
+    data = _load()
+    q = query.lower().strip()
+    found: list[str] = []
+    for entry in data.get("entries", []):
+        if entry.get("provider") == provider and entry.get("query", "").lower() == q:
+            path = entry.get("path")
+            if path and os.path.isfile(path) and path not in found:
+                found.append(path)
+    return found
+
+
+def stock_cache_hit(query: str, provider: str) -> str | None:
+    """The cached stock clip for this query that this video has not already used (#1041)."""
+    from assets.clip_memory import choose_stock_path, note_used
+
+    chosen = choose_stock_path(cached_paths(query, provider))
+    if chosen:
+        note_used(chosen)
+    return chosen
+
+
 def find_cached(query: str, provider: str):
     data = _load()
     q = query.lower().strip()

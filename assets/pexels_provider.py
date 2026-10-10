@@ -3,7 +3,7 @@ import os
 import requests
 
 from assets.base import AssetProvider
-from assets.catalog import find_cached, register
+from assets.catalog import register, stock_cache_hit
 from assets.download import CACHE_DIR, download_file, safe_filename
 from assets.types import AssetResult
 from config.settings import get_settings
@@ -24,7 +24,7 @@ class PexelsAssetProvider(AssetProvider):
         from assets.category import search_query
 
         query = search_query(topic, category, channel_id)
-        cached = find_cached(query, self.name)
+        cached = stock_cache_hit(query, self.name)
         if cached:
             return AssetResult(path=cached, provider=self.name, query=query, source_id="cached")
 
@@ -50,9 +50,7 @@ class PexelsAssetProvider(AssetProvider):
                     continue
                 files = video.get("video_files") or []
                 vertical = [
-                    f
-                    for f in files
-                    if f.get("height", 0) >= f.get("width", 0) and f.get("link")
+                    f for f in files if f.get("height", 0) >= f.get("width", 0) and f.get("link")
                 ]
                 pick = vertical[0] if vertical else (files[0] if files else None)
                 if not pick:
@@ -66,6 +64,9 @@ class PexelsAssetProvider(AssetProvider):
                 download_file(pick["link"], dest)
                 user = video.get("user", {}).get("name", "Pexels")
                 register(dest, self.name, vid, query, f"Video by {user} on Pexels")
+                from assets.clip_memory import note_used
+
+                note_used(dest)
                 return AssetResult(
                     path=dest,
                     provider=self.name,

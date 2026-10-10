@@ -1548,6 +1548,12 @@ def run_media_only(
         from core.description_extras import persist_footage_credits
 
         persist_footage_credits(content_run_id, background.credits)
+    if content_run_id and background is not None:
+        # #1041: the run card says stock or owned. The render already printed it.
+        from assets.manager import footage_quality
+        from core.run_quality import merge_quality
+
+        merge_quality(content_run_id, footage_quality(background))
     if content_run_id and render_preset != "draft":
         try:
             from core.run_quality import merge_quality

@@ -79,16 +79,17 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `52822fe` plus the #1040 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `9473fa7` plus the #1041 commit (`git log -1`) ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
-- `footage-licence` replays a fixture. It does not search Commons, Archive, or NASA
-  over the network. Twitch, Football, and AI stay empty until a fixture is applied.
-- yt-dlp pin not re-measured this session.
+- `footage-licence` replays a fixture. It does not search the network. Twitch, Football,
+  and AI stay empty until a fixture is applied.
+- yt-dlp pin not re-measured.
+- Stock repeats when the cache has only one clip for that query. That is the
+  "every candidate was used" case, not a second clip hiding.
 
-**Shipped:** #1040. `footage-add` keeps an existing folder licence and writes
-`<clip>.license.yaml`. Measured before the fix: owned Fortnite became `CC BY 4.0`.
-`ops footage-licence --catalogue commons|archive|cc0 --fixture ... --niche --subject`.
-Refuses a missing, non-commercial, or copyrighted hit and writes nothing for it.
-Next: #1041 stock anti-repeat.
+**Shipped:** #1040 in `9473fa7`. #1041: `choose_stock_path` skips this video and the
+last 8; Pexels, Pixabay, and Coverr use `stock_cache_hit`. The dossier prints
+`footage:`. Measured before the fix: the newest cached file was returned again.
+4 tests failed first. Next: #1047 thumbnails.

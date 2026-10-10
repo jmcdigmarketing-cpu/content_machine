@@ -126,6 +126,12 @@ def _publish_for_run(run_id: int, channel_id: str) -> dict[str, Any]:
     return {}
 
 
+def footage_card_line(quality: dict[str, Any]) -> str:
+    """The dossier line for the background label (#1041). Empty when none was stored."""
+    label = str((quality or {}).get("footage") or "").strip()
+    return f"  footage: {label}" if label else ""
+
+
 def render_dossier(run_id: int) -> str:
     """One joined, human-readable view of a single run."""
     try:
@@ -183,6 +189,9 @@ def render_dossier(run_id: int) -> str:
                     lines.append(f"  LATE: no words on screen for {after:.2f} s {where}")
                 else:
                     lines.append(f"  first caption {after:.2f} s {where}")
+        footage = footage_card_line(quality)
+        if footage:
+            lines.append(footage)
         if quality.get("script_mode") == "unconfirmed":  # #339
             lines.append("  script mode: unconfirmed (fresh topic, thin facts - claims labelled)")
         if quality.get("competitor_title_duplicate"):

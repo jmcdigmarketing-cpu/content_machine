@@ -28,6 +28,11 @@ VALID_BACKGROUND_MODES = ("hybrid", "stock", "local", "local_first")
 _STOCK_PROVIDERS = frozenset({"pexels", "pixabay", "coverr"})
 
 
+def footage_quality(asset: AssetResult) -> dict[str, str]:
+    """What the run card stores about the background (#1041)."""
+    return {"footage": footage_label(asset)}
+
+
 def footage_label(asset: AssetResult) -> str:
     """#1020: what the background is, in the operator's words (printed by the render)."""
     provider = str(getattr(asset, "provider", "") or "")

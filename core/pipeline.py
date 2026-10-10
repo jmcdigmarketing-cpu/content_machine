@@ -1770,6 +1770,21 @@ def run_media_only(
                     **({"technical_qc": technical_qc_data} if technical_qc_data else {}),
                 },
             )
+            if len(thumbnail_candidates) >= 2:
+                from assets.thumbnail_scorer import choose_higher_thumbnail
+
+                picked = choose_higher_thumbnail(
+                    content_run_id,
+                    thumbnail_candidates,
+                    topic=topic,
+                    channel_id=channel_id,
+                )
+                if picked:
+                    progress.note(
+                        "Thumbnail auto-pick "
+                        f"{picked.get('arm') or picked.get('path')} "
+                        "(pick-thumbnail still overrides)"
+                    )
             update_trace(
                 content_run_id,
                 {

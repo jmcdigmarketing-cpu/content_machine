@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1048 the higher thumbnail score is the pick
+
+**Prompt:** Phase A3, second half. When two thumbnails exist, the scorer picks the higher one. `pick-thumbnail` stays the operator override.
+
+**Decision:** `choose_higher_thumbnail` ranks the two paths and calls `pick_thumbnail`, so the feature write is the same one the operator command uses. A pick already on the run is left alone. With no supplied scores, scoring runs only when `THUMBNAIL_SCORER_ENABLED` is on, and a disabled scorer returns without a warning. The pipeline calls this after it stores the dual candidates.
+
+**Shipped:** 2 tests failed first (`ImportError`). The 81-score file was the persisted path. The operator pick test did not call `merge_features`.
+
 ## 2026-10-10 (Cursor) - #1047 thumbnail headline is painted locally
 
 **Prompt:** Phase A3, first half. Thumbnails need a short headline, a cutout when a face exists, and a contrast check. Flux still must be asked for no text.

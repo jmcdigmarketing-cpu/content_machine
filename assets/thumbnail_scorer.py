@@ -212,6 +212,54 @@ def score_thumbnail(
     return result
 
 
+def choose_higher_thumbnail(
+    content_run_id: int,
+    candidates: list,
+    *,
+    topic: str,
+    channel_id: Optional[str] = None,
+    scores: Optional[dict] = None,
+) -> Optional[dict]:
+    """Pick the higher-scoring of two candidates through ``pick_thumbnail``.
+
+    ``scores`` is a path-to-overall map. When it is omitted, each file is scored
+    with ``score_thumbnail``, which stays off unless the scorer is enabled.
+    An existing pick is left alone so ``pick-thumbnail`` remains the override.
+    """
+    usable = [item for item in candidates if isinstance(item, dict) and item.get("path")]
+    if len(usable) < 2:
+        return None
+    from core.thumbnail_pick import chosen_thumbnail, pick_thumbnail
+
+    if chosen_thumbnail(content_run_id):
+        return None
+    if scores is None and not _scorer_enabled():
+        return None
+
+    ranked: list[tuple[float, dict]] = []
+    for item in usable:
+        path = str(item["path"])
+        if scores is not None:
+            if path not in scores:
+                return None
+            overall = float(scores[path])
+        else:
+            scored = score_thumbnail(
+                path,
+                topic,
+                channel_id,
+                persist=False,
+                content_run_id=content_run_id,
+            )
+            if scored is None:
+                logger.warning("thumbnail auto-pick skipped; %s has no score", path)
+                return None
+            overall = float(scored.overall)
+        ranked.append((overall, item))
+    winner = max(ranked, key=lambda pair: pair[0])
+    return pick_thumbnail(content_run_id, str(winner[1]["path"]), channel_id=channel_id)
+
+
 def maybe_score_after_render(
     *,
     thumbnail_path: str,

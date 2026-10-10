@@ -79,19 +79,19 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `b47acd4` plus the #1047 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `9972f2a` plus the #1048 commit (`git log -1`) ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
 - `footage-licence` replays a fixture. It does not search the network. Twitch, Football,
   and AI stay empty until a fixture is applied.
 - yt-dlp pin not re-measured.
-- Stock repeats when the cache has only one clip for that query. That is the
-  "every candidate was used" case, not a second clip hiding.
+- Stock repeats when the cache has only one clip for that query.
 - No brand font file is in the repo. The plate uses arialbd.ttf when the OS has it,
-  otherwise Pillow's default font. A bright Flux picture is left without text and a
-  warning is logged.
+  otherwise Pillow's default font. A bright Flux picture is left without text.
+- Thumbnail auto-pick runs only when `THUMBNAIL_SCORER_ENABLED` is on. Off, the
+  operator still uses `pick-thumbnail`, and that path logs no warning.
 
-**Shipped:** #1040 `9473fa7`, #1041 `b47acd4`. #1047: `compose_thumbnail` paints 3-5
-words, refuses contrast below 4.5, pastes a subject only when passed. Pillow and the
-Flux save call it. 4 tests failed first. Next: #1048 scorer pick.
+**Shipped:** #1040 `9473fa7`, #1041 `b47acd4`, #1047 `9972f2a`. #1048: the higher of
+two scores is written by `pick_thumbnail`. An existing pick is left alone. 2 tests
+failed first. Next: #1035 paragraph TTS.

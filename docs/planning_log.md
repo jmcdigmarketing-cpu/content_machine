@@ -17,6 +17,40 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - wave 72: local links and owned footage (the next six)
+
+**Prompts:** "ensure the system is properly linked to the files on site out of cloud, and next 5" ·
+"ensure clips are pulled from the correct folders instead of relying on worse stock clips. continue with last plan" ·
+"next 6"
+
+**Picked:** not the roadmap's five. The first plan carried #1006 #1011 #1060 #1007 #1021; Cursor
+shipped all five before the build started, and the list that replaced them (#1080 #1081 #1066
+#1083 #1072) is named in Cursor's slot as its next. The six are what the operator asked for in
+words and nobody had built. Two operator answers: a gaming topic with no footage of its own gets
+**mixed owned gameplay**; stock stays a **last resort** on TapIn.
+
+**Shipped:**
+1. #1105 a folder name matches whole words, all of them. "Game of the year 2027 predictions" no longer cuts Red Dead Redemption 2.
+2. #1106 a sport's video game cuts its sport's footage ("FC 26", "2K27"); "WWE 2K26" is not NBA 2K.
+3. #1107 a gaming topic with no folder cuts a mix of owned games, never a sport game's, before stock.
+4. #1108 clip ingest reads `Videos\Captures` and skips a OneDrive placeholder. The EA FC recording is imported.
+5. #1109 the Desktop shortcut is written to the Desktop Windows shows.
+6. #1110 `ops doctor` fails on a missing or OneDrive vault and on sync-conflict copies in `data/`.
+
+**Findings, with file:line:**
+- `assets/local_provider.py:131` (before): `tok in hay` over 3+ letter tokens. 7 of 7 probes wrong, and the keyword step runs before alias and domain.
+- `core/owned_beats.py:35` (before): `tok in blob` over the whole path and source. "World Cup" -> 27 GTA V clips (the "open world" directory); "box office" -> 36 NBA 2K clips ("Xbox" in the capture name). It runs when fast cut makes nothing, which is the unmatched case.
+- `assets/clip_ingest.py:72`: no `Videos\Captures`. `gaming/sports/EA Sports FC` held two PNGs and no clip.
+- `core/win_shell.py:156`: `%USERPROFILE%\Desktop`; the registry says `OneDrive\Desktop`.
+- `data/`: `signal_cache-DESKTOP-TB7HIU2.json` (27 MB) and `youtube_quota-DESKTOP-TB7HIU2.json` from 2026-06-19, three orphan `signal_cache_*.tmp`. Deleted on the operator's approval.
+- #1060's filed evidence was a length label (`core/length_recommender.py:175`), not a post-time one - found verifying the first plan; Cursor's fix measured the same thing.
+
+**Not done:** #1111 "the steep price" still names Steep. #1112 the gaps report has no run context, so a neutral soccer angle shows as a mix there. `local_first` and the stock providers are unchanged. MoneyWise keeps hybrid stock. Nothing pushed: `main` is ahead of origin.
+
+**Audit:** 28 new tests in `tests/test_owned_footage_links.py`; 24 failed or errored on unmodified code (11 failures, 13 errors). Four are guards that passed before: the fallback Desktop, the fuller name, the capture names, and no mix under a sport topic. 14 corpus cases, 162 of 162 held. Suite 5154 -> 5182, forward and reversed. ruff and format clean. mypy 109 == baseline. Callers: `known_folder` <- `desktop_dir`, `default_source_dirs`; `sport_of_game` <- `_game_sport_choose_folder` <- `choose_footage`; `mix_folders` / `mixed_clips` <- `footage_choice`, `candidate_clips` <- `fast_cut._clip_pool`; `wants_footage` <- `footage_gaps`; `empty_footage_folders` <- `gather` <- `ops doctor`.
+
+**Proof:** `ops doctor` before the cleanup: `[FAIL] workspace: sync-conflict copies in data/ ...; note: no clips in EA Sports FC`. `ops ingest-clips`: 17 capture files, 16 imported, 1 matched -> copied. 26 rendered runs replayed: 16 keep their folder, 8 with none now mix, 2 soccer runs (61, 98) now reach EA Sports FC.
+
 ## 2026-10-10 (Cursor) - next 5
 
 **Prompt:** next 5

@@ -237,6 +237,38 @@ _GAME_FRANCHISES = [
 ]
 
 
+# A sport's video game, and the sport whose footage folder holds it. "career mode" and
+# "ultimate team" belong to several of these games, so they name no sport here.
+# 2K also publishes wrestling, golf, hockey and tennis: a bare "2K26" is the NBA game only
+# when none of those is named.
+_OTHER_2K_RE = re.compile(r"\b(?:wwe|pga|nhl|topspin|lego)\s+2k")
+_GAME_SPORTS = (
+    (re.compile(r"\bnba\s*2k\d{0,2}\b|\b2k\d{2}\b"), "nba"),
+    (re.compile(r"\bmadden\b|\bnfl\s*2k\d{0,2}\b"), "nfl"),
+    (re.compile(r"\bufc\s+[1-5]\b"), "ufc"),
+    (re.compile(r"\bea\s+(?:sports\s+)?fc\b|\b(?:fifa|fc)\s?\d{2}\b"), "soccer"),
+)
+
+
+def sport_of_game(topic: str) -> str:
+    """The sport a sport video game plays ("NBA 2K25" -> nba, "FIFA 24" -> soccer), else "".
+
+    The topic's domain stays gaming (#1006); this is for picking its footage folder.
+    """
+    low = (topic or "").lower()
+    if names_other_2k(low):
+        return ""
+    for pattern, sport in _GAME_SPORTS:
+        if pattern.search(low):
+            return sport
+    return ""
+
+
+def names_other_2k(topic: str) -> bool:
+    """ "WWE 2K26 roster": a 2K game that is not the basketball one."""
+    return bool(_OTHER_2K_RE.search((topic or "").lower()))
+
+
 def _learned_game_names() -> frozenset[str]:
     """#876: names confirmed as games by past runs; checked last, after every sport."""
     try:

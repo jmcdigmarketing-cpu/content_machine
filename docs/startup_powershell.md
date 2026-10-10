@@ -5,7 +5,7 @@
 Run everything from the project root:
 
 ```powershell
-cd C:\Users\jonma\OneDrive\Desktop\content_machine
+cd C:\dev\content_machine
 ```
 
 Optional (recommended each new terminal):
@@ -73,7 +73,7 @@ steps (free hosting, TikTok's URL check) are in `docs/platform_publish_setup.md`
 **Terminal 1 — create content (interactive)**
 
 ```powershell
-cd C:\Users\jonma\OneDrive\Desktop\content_machine
+cd C:\dev\content_machine
 .\.venv\Scripts\Activate.ps1
 py main.py
 ```
@@ -105,7 +105,7 @@ In the CLI: channel **TapIn (2)** → **Create new video (1)** → topic → var
 **Terminal 2 — process upload/render jobs (leave running)**
 
 ```powershell
-cd C:\Users\jonma\OneDrive\Desktop\content_machine
+cd C:\dev\content_machine
 .\.venv\Scripts\Activate.ps1
 py -m jobs.worker --loop 30
 ```

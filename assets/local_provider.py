@@ -10,8 +10,10 @@ A topic draws footage from one folder, chosen in this order (`choose_footage`):
 
 Nothing else (#955). The chain used to end in the model shown the trademark-stripped stock
 rewrite, then `random.choice` over every game folder: the Wemby Short cut UFC 5 fighters and
-the Clair Obscur Short cut Madden. An unmatched topic now gets no local clips, so the render
-takes stock B-roll or a plain branded background - never another game. The decision is kept
+the Clair Obscur Short cut Madden. An unmatched topic gets no folder. If it is about games it
+cuts a mix of the owned game folders (`mix_folders`, the operator's call of 2026-10-10: owned
+footage before stock); a sport, film or finance topic takes stock B-roll or a plain branded
+background - never another sport. The decision is kept
 per topic for the process (fast cut and the hybrid fallback read one choice) and recorded on
 the background asset as `footage:<how>:<folder>` for `ops footage-gaps`.
 """
@@ -19,6 +21,7 @@ the background asset as `footage:<how>:<folder>` for `ops footage-gaps`.
 import json
 import os
 import random
+import re
 
 from typing import Optional
 
@@ -128,31 +131,54 @@ def _get_subfolders(base_path):
 _GENERIC_FOLDER_NAMES = frozenset({"gaming", "sports", "general", "video", "backgrounds"})
 
 
+_EDITION_TOKEN = re.compile(r"^(?:\d+|[ivx]+)$")
+_BARE_2K = re.compile(r"^2k\d{2}$")
+
+
+def _folder_words(name: str) -> list[str]:
+    """The words that must all be in a topic for it to name this folder's game.
+
+    Edition marks go ("GTA V" -> gta, "Madden 26" -> madden) so "GTA 6" and "Madden NFL 27"
+    still find last year's footage; category words go ("EA Sports FC" -> ea, fc).
+    """
+    from apis.topic_tokens import content_tokens
+
+    return [
+        tok
+        for tok in content_tokens(name)
+        if tok not in _GENERIC_FOLDER_NAMES and not _EDITION_TOKEN.match(tok)
+    ]
+
+
 def _keyword_choose_folder(topic: str, folders: list[str]) -> str | None:
-    """Pick a library folder whose name appears in the original topic.
+    """Pick the library folder the original topic names, whole words only.
 
     Stock-query rewrite turns "Fortnite reload" into "video game gameplay
-    esports", so this must run on the operator topic — not the rewrite.
+    esports", so this must run on the operator topic - not the rewrite.
+
+    Every word of the folder name must be a word of the topic. One word, matched inside
+    another, used to be enough: "Game of the year 2027 predictions" (p-red-ictions) cut
+    Red Dead Redemption 2, "Lakers rivals" cut Marvel Rivals, "Black Friday" cut Black Ops.
     """
-    hay = (topic or "").lower()
-    if not hay or not folders:
+    from apis.topic_tokens import content_tokens
+
+    from apis.topic_scorer import names_other_2k
+
+    said = set(content_tokens(topic or ""))
+    if not said or not folders:
         return None
-    scored: list[tuple[int, str]] = []
+    other_2k = names_other_2k(topic or "")
+    scored: list[tuple[int, int, str]] = []
     for folder in folders:
-        name = os.path.basename(folder).lower().replace("_", " ").replace("-", " ").strip()
-        if not name or name in _GENERIC_FOLDER_NAMES:
-            continue
-        if name in hay:
-            scored.append((len(name), folder))
-            continue
-        tokens = [tok for tok in name.split() if len(tok) >= 3 and tok not in _GENERIC_FOLDER_NAMES]
-        hits = [tok for tok in tokens if tok in hay]
-        if hits:
-            scored.append((max(len(tok) for tok in hits), folder))
+        words = _folder_words(os.path.basename(folder))
+        if other_2k and len(words) == 1 and _BARE_2K.match(words[0]):
+            continue  # "WWE 2K26 roster" is not the NBA 2K26 folder
+        if words and all(word in said for word in words):
+            scored.append((len(words), sum(len(w) for w in words), folder))
     if not scored:
         return None
-    scored.sort(key=lambda item: item[0], reverse=True)
-    return scored[0][1]
+    scored.sort(key=lambda item: item[:2], reverse=True)
+    return scored[0][2]
 
 
 def _alias_choose_folder(topic: str, folders: list[str], channel_id=None) -> str | None:
@@ -170,9 +196,18 @@ def _alias_choose_folder(topic: str, folders: list[str], channel_id=None) -> str
         return None
     hay = (topic or "").lower()
     by_name = {os.path.basename(f).casefold(): f for f in folders}
+    try:
+        from apis.topic_scorer import names_other_2k
+
+        other_2k = names_other_2k(hay)
+    except Exception as exc:
+        logger.debug("2K check skipped: %s", exc)
+        other_2k = False
     for row in rows:
         if not _matches(hay, [str(k) for k in row.get("keys") or []]):
             continue
+        if other_2k and str(row.get("domain") or "") == "nba":
+            continue  # "WWE 2K26" carries the Basketball row's "2k26" key
         for name in row.get("footage") or []:
             folder = by_name.get(str(name).casefold())
             if folder:
@@ -194,6 +229,19 @@ def _domain_choose_folder(topic: str, folders: list[str], channel_id=None) -> st
         logger.debug("footage by domain skipped: %s", exc)
         return None
     return _folder_for_domain(domain, folders, channel_id)
+
+
+def _game_sport_choose_folder(topic: str, folders: list[str], channel_id=None) -> str | None:
+    """A sport's video game cuts that sport's footage: "FIFA 24" reads gaming, names no
+    folder and no playlist key, and the Football row says `footage: ["EA Sports FC"]`."""
+    try:
+        from apis.topic_scorer import sport_of_game
+
+        sport = sport_of_game(topic or "")
+    except Exception as exc:
+        logger.debug("footage by game sport skipped: %s", exc)
+        return None
+    return _folder_for_domain(sport, folders, channel_id)
 
 
 def _folder_for_domain(domain: str, folders: list[str], channel_id=None) -> str | None:
@@ -267,11 +315,12 @@ sport because it looks similar.
 def choose_footage(
     topic: str, folders: list[str], channel_id=None, *, use_llm: bool = True
 ) -> tuple[str | None, str]:
-    """(folder, how) - how is keyword / alias / domain / seed / run-domain / llm - or
-    (None, "none"). `seed` and `run-domain` come from `set_footage_context` (#962)."""
+    """(folder, how) - how is keyword / alias / game-sport / domain / seed / run-domain /
+    llm - or (None, "none"). `seed` and `run-domain` come from `set_footage_context` (#962)."""
     for how, pick in (
         ("keyword", lambda: _keyword_choose_folder(topic, folders)),
         ("alias", lambda: _alias_choose_folder(topic, folders, channel_id)),
+        ("game-sport", lambda: _game_sport_choose_folder(topic, folders, channel_id)),
         ("domain", lambda: _domain_choose_folder(topic, folders, channel_id)),
     ):
         folder = pick()
@@ -340,11 +389,82 @@ def _remember(
     _choices[(topic or "", str(channel_id or ""), folders)] = choice
 
 
+_MIX_DOMAINS = frozenset({"gaming", "neutral"})
+
+
+def _sport_footage_names(channel_id=None) -> set[str]:
+    """Folder names a sport's playlist row claims (UFC 5, Madden 26, 2k26, EA Sports FC)."""
+    try:
+        from core.playlists import playlist_map
+
+        rows = playlist_map(channel_id or "tapin")
+    except Exception as exc:
+        logger.debug("sport footage names skipped: %s", exc)
+        return set()
+    return {
+        str(name).casefold()
+        for row in rows
+        if str(row.get("domain") or "")
+        for name in row.get("footage") or []
+    }
+
+
+def mix_folders(topic: str, folders: list[str], channel_id=None) -> list[str]:
+    """The owned game folders a topic that names no owned game may cut from, or [].
+
+    The operator, 2026-10-10: mixed owned gameplay rather than stock. Only for a topic about
+    games - its own words, its run's idea and its run's sport all read gaming, or read
+    nothing on a gaming channel. A sport, a film or a finance topic gets [] (another sport
+    behind it is the #955 defect), and a sport's game footage is never in the mix.
+    """
+    try:
+        from apis.topic_scorer import infer_topic_domain
+        from config.channels import get_channel_profile, resolve_channel_id
+
+        seed, run_domain = _contexts.get(topic or "", ("", ""))
+        read = {infer_topic_domain(topic or ""), run_domain or "neutral"}
+        if seed:
+            read.add(infer_topic_domain(seed))
+        if not read <= _MIX_DOMAINS:
+            return []
+        if "gaming" not in read:
+            profile = get_channel_profile(resolve_channel_id(channel_id))
+            if str(profile.domain or "") != "gaming":
+                return []
+    except Exception as exc:
+        logger.debug("footage mix skipped: %s", exc)
+        return []
+    sport = _sport_footage_names(channel_id)
+    return [f for f in sorted(folders) if os.path.basename(f).casefold() not in sport]
+
+
+def _folder_clips(folder: str) -> list[str]:
+    return [
+        os.path.join(folder, f)
+        for f in sorted(os.listdir(folder))
+        if f.lower().endswith((".mp4", ".mov"))
+    ]
+
+
+def mixed_clips(folders: list[str]) -> list[str]:
+    """One clip from each folder in turn, so the head of the list is as many games as there
+    are (fast cut takes the first twelve)."""
+    stacks = [_folder_clips(folder) for folder in folders]
+    out: list[str] = []
+    for row in range(max((len(stack) for stack in stacks), default=0)):
+        out.extend(stack[row] for stack in stacks if row < len(stack))
+    return out
+
+
 def footage_choice(topic: str, folders: list[str], channel_id=None) -> tuple[str | None, str]:
-    """`choose_footage`, decided once per topic and library for the process."""
+    """`choose_footage`, decided once per topic and library for the process. A topic with no
+    folder of its own that may take the mix is recorded as (None, "mix")."""
     key = (topic or "", str(channel_id or ""), tuple(folders))
     if key not in _choices:
-        _remember(topic, channel_id, tuple(folders), choose_footage(topic, folders, channel_id))
+        choice = choose_footage(topic, folders, channel_id)
+        if choice[0] is None and len(mix_folders(topic, folders, channel_id)) >= 2:
+            choice = (None, "mix")
+        _remember(topic, channel_id, tuple(folders), choice)
     return _choices[key]
 
 
@@ -377,27 +497,27 @@ class LocalAssetProvider(AssetProvider):
         if not os.path.exists(BASE_VIDEO_DIR):
             return None, "none"
 
-        category_path = os.path.join(BASE_VIDEO_DIR, category)
-        if not os.path.exists(category_path):
-            category_path = BASE_VIDEO_DIR
-
-        candidate_folders = _get_subfolders(category_path) or _get_subfolders(BASE_VIDEO_DIR)
+        candidate_folders = self._folders(category)
         if not candidate_folders:
             return None, "none"
         return footage_choice(topic, candidate_folders, channel_id)
+
+    def _folders(self, category: str) -> list[str]:
+        category_path = os.path.join(BASE_VIDEO_DIR, category)
+        if not os.path.exists(category_path):
+            category_path = BASE_VIDEO_DIR
+        return _get_subfolders(category_path) or _get_subfolders(BASE_VIDEO_DIR)
 
     def candidate_clips(self, topic: str, category: str, channel_id=None) -> list[str]:
         """Every clip in the folder this topic picks (one game), for multi-shot backgrounds
         (#782). `find_video` draws its single clip from the same list. No folder matches ->
         [] (#955): never another game's footage."""
-        chosen_folder, _how = self.choose(topic, category, channel_id)
+        chosen_folder, how = self.choose(topic, category, channel_id)
+        if how == "mix":
+            return mixed_clips(mix_folders(topic, self._folders(category), channel_id))
         if not chosen_folder:
             return []
-        return [
-            os.path.join(chosen_folder, f)
-            for f in sorted(os.listdir(chosen_folder))
-            if f.lower().endswith((".mp4", ".mov"))
-        ]
+        return _folder_clips(chosen_folder)
 
     def find_video(self, topic: str, category: str, channel_id=None) -> Optional[AssetResult]:
         video_files = self.candidate_clips(topic, category, channel_id)

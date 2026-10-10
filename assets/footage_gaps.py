@@ -2,9 +2,9 @@
 
 `ops footage` lists the clips each playlist has. This reads the runs instead:
 
-- A rendered run whose background fell through to stock B-roll or a plain background had no
-  footage for its topic, so its playlist goes on the shopping list (while the chooser still
-  finds no folder for it).
+- A rendered run whose background fell through to stock B-roll, a plain background, or a mix
+  of other owned games had no footage for its topic, so its playlist goes on the shopping list
+  (while the chooser still finds no folder for it).
 - A run rendered before #955 recorded no footage choice. If its topic matches no folder by
   name or playlist key, its folder was picked by the model from a trademark-stripped query, or
   at random - the Wemby Short cut UFC 5 fighters. Those videos are listed with what the chooser
@@ -23,7 +23,15 @@ from core.logging import get_logger
 logger = get_logger("assets.footage_gaps")
 
 _LOCAL_PROVIDERS = frozenset({"local", "fast_cut", "hybrid", "owned"})
-_FELL_THROUGH = frozenset({"none", "plain"})
+# "mix": the topic named no owned game and cut a mix of the others - still a game to record.
+_FELL_THROUGH = frozenset({"none", "plain", "mix"})
+
+
+def wants_footage(recorded: tuple[str, str] | None, provider: str) -> bool:
+    """True when the run had no footage of its own subject: stock, plain, or the mix."""
+    if recorded is not None:
+        return recorded[0] in _FELL_THROUGH
+    return provider == "plain" or provider not in _LOCAL_PROVIDERS
 
 
 def _run_repo():
@@ -125,12 +133,7 @@ def footage_gaps(channel_id: str, *, limit: int = 60) -> dict[str, Any]:
                     "how": how,
                 }
             )
-        fell_through = (
-            (recorded is not None and recorded[0] in _FELL_THROUGH)
-            or provider == "plain"
-            or (recorded is None and provider not in _LOCAL_PROVIDERS)
-            or pre_955_local
-        )
+        fell_through = wants_footage(recorded, provider) or provider == "plain" or pre_955_local
         if fell_through and folder is None:
             name = _playlist(channel_id, topic)
             row = wanted.setdefault(name, {"playlist": name, "runs": [], "topics": []})
@@ -150,7 +153,7 @@ def footage_gap_lines(channel_id: str, *, limit: int = 60) -> list[str]:
         return [head, "  Every rendered topic had matching footage."]
     lines = [head]
     if report["wanted"]:
-        lines.append("  Record gameplay for (topics that had no matching footage):")
+        lines.append("  Record gameplay for (topics that had no footage of their own):")
         for row in report["wanted"]:
             count = len(row["runs"])
             examples = "; ".join(f'"{t}"' for t in row["topics"][:2])
@@ -166,7 +169,7 @@ def footage_gap_lines(channel_id: str, *, limit: int = 60) -> list[str]:
             now = (
                 f"now {row['now']} (by its {row['how']})"
                 if row["now"]
-                else "now no footage: stock or plain"
+                else "now no footage of its own: owned mix, stock or plain"
             )
             lines.append(f'    run {row["run_id"]:<5} "{row["topic"]}" ({row["used"]}) -> {now}')
     lines.append("  py -m scripts.ops footage lists the clips each playlist has.")

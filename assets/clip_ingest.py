@@ -75,7 +75,32 @@ def default_source_dirs() -> list[str]:
         os.path.join(home, "Videos", "NVIDIA"),
         os.path.join(home, "Videos", "NVIDIA Share"),
     ]
-    return [p for p in candidates if os.path.isdir(p)]
+    # Game Bar's own folder, under wherever Windows keeps Videos - it was never read.
+    try:
+        from core.win_shell import known_folder
+
+        videos = known_folder("My Video") or os.path.join(home, "Videos")
+    except Exception as exc:
+        logger.debug("videos folder lookup skipped: %s", exc)
+        videos = os.path.join(home, "Videos")
+    candidates.append(os.path.join(videos, "Captures"))
+    return list(dict.fromkeys(p for p in candidates if os.path.isdir(p)))
+
+
+# FILE_ATTRIBUTE_OFFLINE, RECALL_ON_OPEN, RECALL_ON_DATA_ACCESS: a OneDrive placeholder.
+_CLOUD_ONLY_BITS = 0x1000 | 0x40000 | 0x400000
+
+
+def cloud_only_attributes(attributes: int) -> bool:
+    return bool(int(attributes or 0) & _CLOUD_ONLY_BITS)
+
+
+def _file_attributes(path: str) -> int:
+    try:
+        return int(getattr(os.stat(path), "st_file_attributes", 0) or 0)
+    except OSError as exc:
+        logger.debug("file attributes skipped (%s): %s", path, exc)
+        return 0
 
 
 def _norm_name(text: str) -> str:
@@ -169,6 +194,17 @@ def plan_ingest(
         done = imported.get(os.path.normcase(os.path.abspath(src)))
         if done and os.path.isfile(done):
             rows.append(IngestRow(source=src, dest=done, status="imported"))
+            continue
+        if cloud_only_attributes(_file_attributes(src)):
+            # Opening it would make OneDrive download the whole recording mid-import.
+            rows.append(
+                IngestRow(
+                    source=src,
+                    dest=None,
+                    status="cloud-only",
+                    reason="in OneDrive, not downloaded to this PC",
+                )
+            )
             continue
         first = os.path.join(folder, Path(src).stem + ".mp4")
         leftover = os.path.isfile(first) and os.path.normcase(os.path.abspath(first)) not in indexed
@@ -681,6 +717,9 @@ def render_ingest(result: IngestResult) -> str:
     for row in result.rows:
         if row.status == "unmatched":
             lines.append(f"  unmatched  {row.source}")
+            continue
+        if row.status == "cloud-only":
+            lines.append(f"  cloud-only {row.source} ({row.reason})")
             continue
         dest = row.dest or ""
         folder = os.path.basename(os.path.dirname(dest)) if dest else ""

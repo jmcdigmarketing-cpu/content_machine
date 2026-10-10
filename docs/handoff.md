@@ -53,29 +53,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `ecd737c` + the wave 70 commit (`git log -1`) ·
-**Tree:** clean after the commit.
+**Written:** 2026-10-10 · **HEAD at write:** `f98054c` + the wave 72 commit (`git log -1`) ·
+**Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`.
 
-**Read before editing:** the run's intent is read ONCE, in discovery -
-`core.angle_intent.resolve_intent(topic, thoughts)`: the cue words, else (every text neutral) one
-cheap model read that counts only when it quotes the idea (`model_read_from_reply`). It is kept in
-`discovery.meta["intent_read"]` (`intent_read_from`); `main._screen_intent` and `run_pipeline`
-reuse it - never call the model again. `IntentRead.also` is a second ask (#1096). A hope/plan run
-counts its backing facts (`core/facts/stance_support.py`, `features["stance_support"]`). The suite
-sets `STANCE_MODEL_READ` and `STANCE_RESEARCH` false; their tests turn them on. mypy **121**.
+**Read before editing:** footage is chosen in `assets/local_provider.py` - keyword (whole words,
+every word of the folder name), alias, game-sport (`apis.topic_scorer.sport_of_game`), domain,
+seed, run-domain, llm. No folder and a topic about games -> `footage_choice` records
+`(None, "mix")` and `candidate_clips` returns one clip per owned game folder in turn; a sport,
+film or finance topic gets nothing and falls to stock. That is the operator's call of
+2026-10-10 and reverses #955 for the gaming case only - do not "fix" it back.
+`core/owned_beats.topic_clips` uses the same rule. `core.win_shell.known_folder` is where
+Desktop and Videos come from.
 
-**Cursor:** `docs/cursor_brief_2026-10.md` has a "Start here (2026-10-10)" block - the prompt the
-operator pastes. Shared files touched in wave 70: `main.py` (`_screen_intent`, the stance line under
-the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_stance_research`),
-`.env.example` (two flags). #1097 (the mode drop-down) is yours.
+**Cursor:** shared files touched: `apis/topic_scorer.py` (`sport_of_game`, `names_other_2k`,
+beside your `_VIDEO_GAME_RE`), `tests/regression_corpus.json` (14 cases appended),
+`docs/roadmap.md` (the next five are unchanged and yours). `assets/fast_cut.py` not touched.
 
 **Defects first:**
-- CGFtzpiA1so (made public by `go-public` with no id on 2026-10-10) - the operator is to check it.
-- Run 120's confirmation source is "LINK"; `verify-claim --run-id 120` lists it again.
-- #1088 is an operator call.
+- #1111 "the steep price of GPUs" still names the Steep folder.
+- #1112 `ops footage-gaps` has no run context, so a neutral soccer angle shows as a mix there.
+- `main` is ahead of origin. Nothing was pushed.
+- CGFtzpiA1so and run 120's "LINK" source are still the operator's to check.
 
-**Shipped:** wave 70 - #1096 #1089 #1095 + Cursor's prompt. Highest #1098. Next:
-**#1007 · #1021 · #1006 · #1011 · #1060**.
+**Shipped:** wave 72 - #1105 #1106 #1107 #1108 #1109 #1110. 24 of 28 new tests failed first; 4 are guards.
+Suite 5182, mypy 109. Highest #1112. Next: **#1080 · #1081 · #1066 · #1083 · #1072** (yours).
 
 ## Slot — Cursor
 

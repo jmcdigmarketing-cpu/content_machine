@@ -153,7 +153,34 @@ def start_menu_shortcut_path() -> str:
     return os.path.join(start_menu_dir(), SHORTCUT_NAME)
 
 
+_SHELL_FOLDERS_KEY = r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
+
+
+def known_folder(name: str) -> str:
+    """Where Windows keeps a profile folder ("Desktop", "My Video"), or "" when it cannot say.
+
+    OneDrive's folder backup moves Desktop under OneDrive; the profile's own Desktop folder
+    then still exists and Explorer never shows it. Empty off Windows and for an unknown name.
+    """
+    if os.name != "nt":
+        return ""
+    try:
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _SHELL_FOLDERS_KEY) as key:
+            value, _kind = winreg.QueryValueEx(key, name)
+    except OSError as exc:
+        logger.debug("known folder %s not read: %s", name, exc)
+        return ""
+    path = os.path.expandvars(str(value or "")).strip()
+    return path if path and os.path.isdir(path) else ""
+
+
 def desktop_dir() -> str:
+    """The Desktop Explorer shows (the booth shortcut sat in the profile folder, unseen)."""
+    shown = known_folder("Desktop")
+    if shown:
+        return shown
     home = os.environ.get("USERPROFILE") or os.path.expanduser("~")
     return os.path.join(home, "Desktop")
 

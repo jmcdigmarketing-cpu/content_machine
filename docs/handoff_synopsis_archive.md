@@ -7,6 +7,21 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Claude Code): wave 70 #1096 #1089 #1095 (slang read, two asks, research for the stance)
+
+The operator picked the three left from wave 69's list, and asked for a fresh Cursor prompt.
+
+- **#1089** an idea no cue word reads ("Bolts bounce back week 5") gets one cheap model read, made
+  once in discovery; it counts only when it quotes the idea's words, is shown on the angle screen
+  ("[read by the model from 'bounce back' - M if wrong]"), and M fixes it. `ops intent-check`.
+- **#1096** "turn it around - reasons for hope" is hope + plan: both tables, both shapes.
+- **#1095** a hope or plan run counts the facts that back it ("Facts for your hope: N of M") and,
+  under two, makes one search for the subject's positives.
+- **Cursor:** `docs/cursor_brief_2026-10.md` "Start here" holds the paste prompt; #1097 in B1.
+
+**Verify:** `python -m unittest tests.test_two_asks tests.test_model_stance_read tests.test_stance_research tests.test_intent_eval`;
+`py -m scripts.ops intent-check --table` on the PC (the real model).
+
 ## Previous — 2026-10-09 (Claude Code): wave 67 #1008 #1009 #1010 #1013 #1014 (runs 119-120)
 
 The operator, afk: "make sure the to do list is updated ... can we work towards the next 5?". The

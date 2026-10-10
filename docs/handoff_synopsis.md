@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: the next five (runs 132-133 leftovers, clip cap, Short tags)
+# Handoff synopsis — 2026-10-10: wave 72 (owned footage before stock, local links)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Cursor): the next five
+## Last wave — 2026-10-10 (Claude Code): wave 72 #1105-#1110 (owned footage, local links)
+
+The operator: "ensure the system is properly linked to the files on site out of cloud" and
+"ensure clips are pulled from the correct folders instead of relying on worse stock clips".
+A folder name now matches whole words, all of them (#1105): "Game of the year 2027
+predictions" no longer cuts Red Dead Redemption 2. A sport's video game cuts its sport's
+footage (#1106). A gaming topic with no folder cuts a mix of owned games before stock, never
+a sport game's and never under a sport or film topic (#1107, the operator's call - it
+reverses #955 for that case only). Clip ingest reads `Videos\Captures` and the EA FC
+recording is imported (#1108). The Desktop shortcut goes to the shown Desktop (#1109).
+`ops doctor` checks the vault and `data/` (#1110). Suite 5182; mypy 109.
+
+Filed open: #1111 (an ordinary word that is a game name), #1112 (the gaps report reads the
+run's sport). Next: #1080, #1081, #1066, #1083, #1072 (Cursor's).
+
+## Previous — 2026-10-10 (Cursor): the next five
 
 The previous five shipped. The file name now counts the chapters that were cut
 (#1102): one of five is "NBA award predictions", five of five still says "all 5
@@ -45,21 +60,6 @@ sentence is dropped once (#1030).
 
 Filed and left open: #1102, #1103, #1104. #1088 stays an operator call.
 `roadmap-index`: open 333, done 801, highest #1104.
-
-## Previous — 2026-10-10 (Claude Code): wave 70 #1096 #1089 #1095 (slang read, two asks, research for the stance)
-
-The operator picked the three left from wave 69's list, and asked for a fresh Cursor prompt.
-
-- **#1089** an idea no cue word reads ("Bolts bounce back week 5") gets one cheap model read, made
-  once in discovery; it counts only when it quotes the idea's words, is shown on the angle screen
-  ("[read by the model from 'bounce back' - M if wrong]"), and M fixes it. `ops intent-check`.
-- **#1096** "turn it around - reasons for hope" is hope + plan: both tables, both shapes.
-- **#1095** a hope or plan run counts the facts that back it ("Facts for your hope: N of M") and,
-  under two, makes one search for the subject's positives.
-- **Cursor:** `docs/cursor_brief_2026-10.md` "Start here" holds the paste prompt; #1097 in B1.
-
-**Verify:** `python -m unittest tests.test_two_asks tests.test_model_stance_read tests.test_stance_research tests.test_intent_eval`;
-`py -m scripts.ops intent-check --table` on the PC (the real model).
 
 ## Pipeline order (operator)
 

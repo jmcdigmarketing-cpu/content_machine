@@ -53,27 +53,23 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `3b88098` + the wave 68 commit (`git log -1`) ·
-**Tree:** clean after the commit.
+**Written:** 2026-10-10 · **HEAD at write:** `6b5f648` + a docs-only planning commit (`git log -1`) ·
+**Tree:** clean after the commit. Wave 69 is being built next, on top of it.
 
-**Read before editing:** the default intent is **neutral analysis** now (the operator, 2026-10-10);
-the take machinery lives under `ANGLE_TAKE` and runs only when the topic asks by name. Hope is
-`ANGLE_HOPE` (calm). `core.angle_intent.stance_flip` / `stance_rule` are the one place stance is
-judged - the angle cleaner, angle 1's check (`idea_rewording_problem`) and the prompts use them.
-`format_for_intent(default)` is `analysis`. mypy **121**.
-
-**Cursor, shared files touched (wave 68):** `config/channels.json` - TapIn's persona perspective and
-audience lines only. Nothing in your files.
+**Read before editing:** the default intent is **neutral analysis** (the operator, 2026-10-10); the
+take machinery lives under `ANGLE_TAKE`. `core.angle_intent.stance_flip` / `stance_rule` are the one
+place stance is judged. mypy **121**. Planned 2026-10-10 (planning_log): #1090-#1096, topic -> angle
+miscommunication - #1090 is a regression from wave 68's own neutral default ("Jets are doomed" loses
+the angle that agrees with it).
 
 **Defects first:**
 - The operator's `go-public --apply` on 2026-10-10 published CGFtzpiA1so without naming it; they are
-  asked to check which video it was (not a gate-held run - those are refused).
-- Run 120's confirmation source is the word "LINK"; `verify-claim --run-id 120` now lists it again
-  for a real link.
-- #1088 (the established-franchise critique pivot) is an operator call; decisions.md is at its cap.
+  asked to check which video it was.
+- Run 120's confirmation source is the word "LINK"; `verify-claim --run-id 120` lists it again.
+- #1088 (the established-franchise critique pivot) is an operator call.
 
-**Shipped:** wave 68 - #1084 #1085 #1033(TapIn) #1086 #1087. Highest #1089. Next:
-**#1007 · #1006 · #1011 · #1060 · #1089**.
+**Shipped:** wave 68 - #1084 #1085 #1033(TapIn) #1086 #1087. Highest #1096. Next (wave 69):
+**#1094 · #1090 · #1093 · #1091 · #1092**.
 
 ## Slot — Cursor
 

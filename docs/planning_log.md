@@ -17,6 +17,53 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - planning: what else can mishear the idea (topic -> angle)
+
+**Prompt (verbatim):** "anything else we can plan when it comes to topic to angle miscommunication?"
+
+**How:** plan mode, read-only, on 6b5f648 (wave 68, CI green). Every place the intent is read was
+traced from the angle screen to the title, and the intent table was run on phrasings the operator
+has not typed yet.
+
+**Found (measured, not guessed):**
+
+- **Your own opinion is countered (#1090).** Measured:
+  - "Jets are doomed", "Tua is washed" and "Chargers are cooked" read `default`.
+  - `core/angle_intent.stance_flip("Why the Jets are doomed after week 4", "default")` returns "'doomed' knocks a neutral one", so the angle that agrees with the operator is dropped. Wave 68's neutral default caused this.
+  - "Chargers hot take: Herbert is elite" reads `take`, but `apis/topic_variants.INTENT_ANGLES[ANGLE_TAKE]` still lists `contrarian_counter_take`, its lens asks for "a contrarian counter-take", `stance_rule(take)` is "", and nothing flips a take.
+  - This is run 124's complaint: "the system will take the hot take and change my idea away from my intention".
+- **The intent is read about nine times per run, from different text (#1091).**
+  - `main.py:697` and `apis/topic_variants.py:336`: topic, then brief.
+  - `core/pipeline.py:935`: topic only, and that becomes `features["angle_intent"]`.
+  - `core/research_brief.py:162`: seed only.
+  - Script and title: `intent_of(seed, brief)`.
+  - `core/run_features.classify_angle`: topic only.
+  - Option 5 (seed "Chargers week 5", brief "Chargers Hopeium going into week 5") runs as hope on every screen and is recorded as `default`.
+- **An override promised and never built (#1092).** `core/angle_intent.py:10-12`: "the operator is shown the result on the angle screen, and they can override it". There is no key.
+- **The last passes do not know the stance (#1093).**
+  - `core/content_engine.py:613` gives every Long script "closing take".
+  - The hook rewrite (`content_engine.py:818`) asks for "a contradiction", with no stance line.
+  - `_keep_to_idea` (`:1142`) checks the question, not the stance.
+  - `core/title_generator.py:234` has the stance line but no check after it.
+- **Unseen phrasings fall to neutral (#1089, measured by #1094).** "Bolts bounce back week 5" and "Can Herbert save the season" read `default`. "Is there any hope for the Jets?" also reads `default`, because `_NO_HOPE` counts "any hope" as no hope. No table pins how the operator's past ideas must read.
+- **Research does not look for what the stance needs (#1095).** It is to be measured on run 125's snapshot before anything is built.
+- **An idea with two asks keeps only the first (#1096).** Filed only.
+
+**Decided:** wave 69 is "your idea, heard once and kept":
+
+1. #1094 the eval table first (the measuring stick);
+2. #1090;
+3. #1093;
+4. #1091;
+5. #1092.
+
+#1006, #1011, #1060 and #1089 move back a wave. Reason: this is the most repeated complaint on record (runs 73, 77, 113, 124, 125), and #1090 is a regression from wave 68 itself.
+
+Wave 70 is #1089, #1007, #1095, #1006 and #1021, and #1088 goes to the operator.
+
+**Not done:**
+- **No LLM stance read yet (#1089).** It comes after #1091 and #1092, so the read happens once and the operator can correct it.
+
 ## 2026-10-10 (Claude Code) - wave 68: run 125, the operator's stance kept; a take only when asked
 
 **Prompt (verbatim, with the PC session pasted):** *"why am i still getting hot takes on all videos

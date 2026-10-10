@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #217 lexicon on the paragraph path
+
+**Prompt:** Phase A4. The paragraph path must call `apply_pronunciation_lexicon` before the provider. No new editor.
+
+**Decision:** Each paragraph and its neighbours are rewritten at the start of `_generate_by_sentences`. The caller's script string is unchanged, so captions keep the spelling. The editor UI stays open on #217.
+
+**Shipped:** 1 test failed first. The provider was handed `Salkilld wins the fight.` It is now `Sal-killed wins the fight.`
+
 ## 2026-10-10 (Cursor) - #1038 model arm wired, pick still open
 
 **Prompt:** Phase A4. The request should be able to name `eleven_multilingual_v2` or the newer model. The operator's blind listen cannot be done in this run.

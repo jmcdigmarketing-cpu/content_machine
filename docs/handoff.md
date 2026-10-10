@@ -79,8 +79,9 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `9357870` plus the #1038 commit (`git log -1`) ·
-**Tree:** `.agents/` and `.codex/` untracked; do not commit them.
+**Written:** 2026-10-10 · **HEAD at write:** `1dca06f` plus the #217 commit (`git log -1`) ·
+**Tree:** `.agents/` and `.codex/` untracked; do not commit them. `core/chapter_shorts.py`
+is in progress for #1053 and is not part of this commit.
 
 **Defects first:**
 - `footage-licence` replays a fixture. It does not search the network.
@@ -88,9 +89,10 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - Stock repeats when the cache has only one clip for that query.
 - No brand font file is in the repo. A bright Flux picture is left without text.
 - Thumbnail auto-pick runs only when `THUMBNAIL_SCORER_ENABLED` is on.
-- A script with no blank line is still one TTS request.
+- A script with no blank line is still one TTS request, and that single request
+  is not rewritten by the lexicon. Only the paragraph path is.
 - `voice_delivery` and `tts_model` are registered and not started.
-- #1038 is not done. The arm is wired. The operator has not heard three scripts.
+- #1038 and the #217 editor stay open.
 
-**Shipped:** #1037 `9357870`. #1038: an active `v3` arm makes `resolve_tts_config`
-return `eleven_v3`. 2 tests failed first. Next: #217 lexicon on the paragraph path.
+**Shipped:** #1038 `1dca06f`. #217: the paragraph path speaks `Sal-killed` for
+`Salkilld`. 1 test failed first. Next: #1053. `main.py` is shared.

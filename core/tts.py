@@ -728,8 +728,9 @@ def _generate_audio(script, output_path, channel_id: str | None = None, segments
         logger.debug("spoken-number expand skipped: %s", exc)
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
 
-    # Lexicon is for EARS (local TTS) only. Captions/retext keep `script` from the
-    # caller; ElevenLabs already handles names, so it gets the cleaned original.
+    # Captions/retext keep `script` from the caller. Local TTS rewrites the whole
+    # script here. The paragraph path rewrites each paragraph again before the
+    # provider, including ElevenLabs (#217). An empty lexicon returns the same string.
     local_spoken = spoken
     if is_local_tts_provider():
         local_spoken = apply_pronunciation_lexicon(spoken, channel_id)
@@ -1064,6 +1065,10 @@ def _generate_by_sentences(
     tmp_paths: list[str] = []
     # One cache voice per role, resolved once: a local voice pool picks per call.
     cache_voice: dict[str, str] = {}
+    # #217: the spoken paragraph, including the neighbours sent as context, uses
+    # the lexicon. The caller's script string is not this list.
+    sents = [apply_pronunciation_lexicon(part, channel_id) for part in sents]
+    alts = [apply_pronunciation_lexicon(part, channel_id) for part in alts]
     try:
         for i, (sent, alt) in enumerate(zip(sents, alts, strict=True)):
             seg = f"{output_path}.seg{i}.mp3"

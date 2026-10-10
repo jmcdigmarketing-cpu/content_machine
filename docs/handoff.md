@@ -79,7 +79,7 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `99f732e` plus the #999 commit ·
+**Written:** 2026-10-10 · **HEAD at write:** `43f68e0` plus the #1067 commit ·
 **Tree:** `.agents/` and `.codex/` untracked; do not commit them.
 
 **Defects first:**
@@ -93,8 +93,10 @@ the facts preview), `core/pipeline.py` (`resolve_intent` in discovery, `attach_s
 - #1038 and the #217 editor stay open.
 - Enter on the Shorts offer now cuts and queues.
 - A freeze to the end of the file has a start and no duration.
+- The intent card calls `idea_angle` on the UI thread when the topic field
+  finishes editing. That is one cheap call, the same one the run makes again
+  on the worker.
 
-**Shipped:** #999. A raised prepend is not stored as an intro. The first caption
-stays at the subtitle cue, and the first-frame sample stays at 0. 2 tests failed
-first. Next: #1067 the new-video intent card, then #1097. `main.py` gets a
-handoff note before the angle-step payload change.
+**Shipped:** #999 `43f68e0`. #1067: the new-video card shows angle 1 and the
+read. Enter starts the run with the typed idea. 2 tests failed first. Next:
+#1097. `main.py` gets a handoff note before the angle-step payload change.

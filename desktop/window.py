@@ -27,6 +27,7 @@ from desktop.session import (
     angle_mode_line,
     facts_from_drop,
     facts_meter_line,
+    intent_card_text,
     load_window_state,
     save_window_state,
     shutdown_worker,
@@ -79,11 +80,17 @@ class RunWindow(QMainWindow):
         self.topic = QLineEdit()
         self.topic.setPlaceholderText("The video idea — not a PowerShell one-liner")
         self.topic.textChanged.connect(self._refresh_angle)
+        self.topic.editingFinished.connect(self._refresh_intent_card)
+        self.topic.returnPressed.connect(self._start)
         row.addWidget(self.topic, 1)
         layout.addLayout(row)
 
         self.angle = QLabel("Angle mode: standard")
         layout.addWidget(self.angle)
+        self.intent_card = QLabel("")
+        self.intent_card.setObjectName("intent_card")
+        self.intent_card.setWordWrap(True)
+        layout.addWidget(self.intent_card)
 
         layout.addWidget(QLabel("Key facts (paste the article here — this is what run 73 needed)"))
         self.facts = QPlainTextEdit()
@@ -229,6 +236,13 @@ class RunWindow(QMainWindow):
     def _refresh_angle(self, text: str) -> None:
         self.angle.setText(angle_mode_line(text))
 
+    def _refresh_intent_card(self) -> None:
+        text = self.topic.text()
+        if text == getattr(self, "_card_idea", None):
+            return
+        self._card_idea = text
+        self.intent_card.setText(intent_card_text(text, self._channel_id()))
+
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         mime = event.mimeData()
         if mime is not None and (mime.hasUrls() or mime.hasText()):
@@ -253,6 +267,7 @@ class RunWindow(QMainWindow):
             self.progress.setText("Topic required.")
             self.empty_state.setText(empty_state_copy())
             return
+        self._refresh_intent_card()
         self.start_btn.setEnabled(False)
         self.output.clear()
         self._log.clear()

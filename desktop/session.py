@@ -26,6 +26,20 @@ def angle_mode_line(topic: str) -> str:
     return angle_intent_note(read_intent(topic))  # #1091: says what set the mode
 
 
+def intent_card_text(idea: str, channel_id: str | None = None) -> str:
+    """#1067: angle 1 and the read, before discovery. Enter keeps this idea."""
+    plain = " ".join((idea or "").split())
+    if not plain:
+        return ""
+    from apis.topic_variants import idea_angle
+
+    read = read_intent(plain)
+    angle = idea_angle(plain, channel_id)
+    return (
+        f"Angle 1: {angle}\nIntent: {read.intent}\nSource: {read.source}\nCue: {read.cue or 'none'}"
+    )
+
+
 def facts_from_paste(text: str) -> list[str]:
     return parse_pasted_block(text or "")
 

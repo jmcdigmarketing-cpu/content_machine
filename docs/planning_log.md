@@ -17,6 +17,14 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - #1067 new-video intent card
+
+**Prompt:** Phase B1. The run window shows angle 1 and the intent read before discovery. Enter on the topic keeps that idea.
+
+**Decision:** The card is filled when the topic field finishes editing, and again when the run starts. `idea_angle` supplies angle 1. `read_intent` supplies the intent, the source, and the cue. Enter calls the same start path the button uses, with the typed idea.
+
+**Shipped:** 2 tests failed first. The card had no widget, and Enter did not start the run.
+
 ## 2026-10-10 (Cursor) - #999 a failed intro is not an intro
 
 **Prompt:** Phase A7. `render_vertical_video` returns whether the prepend landed. The pipeline passes that boolean into the opening record. A raised prepend is not an intro, and the first caption is not shifted by the intro length.

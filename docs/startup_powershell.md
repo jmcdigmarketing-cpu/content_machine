@@ -2,6 +2,8 @@
 
 > **Class:** runbook · **Status:** living · **Reviewed:** 2026-09-20
 
+The order a video is made in, one command per step: [operator_guide.md](operator_guide.md).
+
 Run everything from the project root:
 
 ```powershell

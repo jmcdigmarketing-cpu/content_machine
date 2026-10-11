@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: wave 72 (owned footage before stock, local links)
+# Handoff synopsis — 2026-10-10: wave 73 (footage follow-ups, Shorts split, three decisions)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,20 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): wave 72 #1105-#1110 (owned footage, local links)
+## Last wave — 2026-10-10 (Claude Code): wave 73 #1111 #1112 #1054 #1061 #1076
+
+The operator chose the two footage follow-ups plus three, leaving the roadmap's five to
+Cursor. "The steep price of GPUs" no longer names the Steep folder (#1111). `ops footage-gaps`
+passes each run's idea and sport, so a World Cup angle is not called a gaming mix (#1112).
+`ops growth` compares Shorts cut from a chapter with Shorts made as Shorts once three of each
+have a full week - today 5 are cut and none is published (#1054). `ops weekly-report` opens
+with more of / less of / try next, each with its rate and n (#1061). One guide walks a video
+from the morning check to the numbers: [operator_guide.md](operator_guide.md) (#1076).
+
+Filed open: #1113 (best and worst video named by their upload note), #1114 (an old run with
+no stored sport). Next: #1080, #1081, #1066, #1083, #1072 (Cursor's).
+
+## Previous — 2026-10-10 (Claude Code): wave 72 #1105-#1110 (owned footage, local links)
 
 The operator: "ensure the system is properly linked to the files on site out of cloud" and
 "ensure clips are pulled from the correct folders instead of relying on worse stock clips".
@@ -37,29 +50,6 @@ tags come from its own title, so the hype-train chapter carries `#hype` (#1052).
 
 `roadmap-index`: backlog open 328, done 806, numbered open 276, highest open
 #1088. Next: #1080, #1081, #1066, #1083, #1072.
-
-## Previous — 2026-10-10 (Cursor): the next fifteen, plus runs 131-133
-
-Runs 131-133 were healthy renders that still warned or looked up the wrong thing.
-#1099 drops a hyphenated ordinary phrase from who's who. #1100 puts a font file on
-the chapter-Shorts drawtext and still cuts the chapter when the font is missing.
-#1101 ignores a black stretch that starts in the end-card tail.
-
-The fifteen: games with a league name read as gaming (#1006); an operator record
-beats a stale signal record (#1011); "bounce back" and "is him" are cues (#1098);
-WrestleMania, Super Bowl, and Madden editions expire like UFC numbers (#1082);
-the closer is rewritten once when it misses the hook (#1032); an award is a race
-(#1007); a kept angle frame leads the next prompt (#1021); the post-time line
-names the posts that chose the hour (#1060, measured as a mislabel first); a
-passed date and a 0-view topic leave the best-bet pool (#1024); NHL, MLB, college
-football, and soccer come with an injury line (#1022); this week's games can be
-a best bet (#1023); the run card names the fact and tier behind each claim
-(#1026); a UFC card that does not name the fighter is not an anchor (#1027);
-"own 26" and "39.5" stay only when the facts have them (#1028); a repeated
-sentence is dropped once (#1030).
-
-Filed and left open: #1102, #1103, #1104. #1088 stays an operator call.
-`roadmap-index`: open 333, done 801, highest #1104.
 
 ## Pipeline order (operator)
 

@@ -54,12 +54,9 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**2026-10-10 (Claude, wave 72)** shipped six the operator asked for outside this list: footage
-from the right folder and the PC's links (#1105-#1110) - a folder name matches whole words, a
-sport's game cuts its sport's footage, a gaming topic with no folder cuts a mix of owned games
-before stock, clip ingest reads `Videos\Captures`, the Desktop shortcut goes to the shown
-Desktop, and `ops doctor` checks the vault and `data/`. The five below are unchanged and are
-Cursor's next:
+**2026-10-10:** Claude's waves 72 and 73 were the operator's own asks, outside this list
+(#1105-#1110 owned footage and local links; #1111 #1112 #1054 #1061 #1076 - see
+[planning_log.md](planning_log.md)). The five below are unchanged and are Cursor's next:
 
 1. **#1080 a chapter title ends mid-phrase** `[S]` - run 119's last-resort label.
 2. **#1081 the seasonal calendar's UFC 322 date** `[S]` - the seed says 2026.
@@ -67,8 +64,9 @@ Cursor's next:
 4. **#1083 a confirmed claim becomes a fact** `[S]`.
 5. **#1072 cost per published minute** `[S]`.
 
-Then, from wave 72: **#1111** (an ordinary word that is a game name) · **#1112** (the gaps
-report reads the run's sport).
+Filed by wave 73: **#1113** (best and worst video named by their upload note) · **#1114** (an
+old run with no stored sport). For #1072: `ops weekly-report` already prints "cost per finished
+minute". The step-by-step: [operator_guide.md](operator_guide.md).
 
 **#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
 #1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),

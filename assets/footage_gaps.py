@@ -117,11 +117,16 @@ def footage_gaps(channel_id: str, *, limit: int = 60) -> dict[str, Any]:
         topic = str(getattr(run, "selected_topic", "") or getattr(run, "input_topic", "") or "")
         provider = str(getattr(background, "provider", "") or "")
         recorded = recorded_choice(getattr(background, "source_id", ""))
+        # #1112: the run's own idea and sport, as the render had them. Without them a World
+        # Cup angle that names no sport read as a gaming topic.
+        context = lp.footage_context_for_run(int(run.id))
         folder, how = (
-            lp.choose_footage(topic, folders, channel_id, use_llm=False)
+            lp.choose_footage(topic, folders, channel_id, use_llm=False, context=context)
             if folders
             else (None, "none")
         )
+        if folder is None and len(lp.mix_folders(topic, folders, channel_id, context=context)) >= 2:
+            how = "mix"
         pre_955_local = recorded is None and provider in _LOCAL_PROVIDERS
         if pre_955_local and how not in ("keyword", "alias"):
             at_risk.append(
@@ -166,11 +171,12 @@ def footage_gap_lines(channel_id: str, *, limit: int = 60) -> list[str]:
             "model-picked or random folder):"
         )
         for row in report["at_risk"]:
-            now = (
-                f"now {row['now']} (by its {row['how']})"
-                if row["now"]
-                else "now no footage of its own: owned mix, stock or plain"
-            )
+            if row["now"]:
+                now = f"now {row['now']} (by its {row['how']})"
+            elif row["how"] == "mix":
+                now = "now a mix of owned games"
+            else:
+                now = "now no footage of its own: stock or plain"
             lines.append(f'    run {row["run_id"]:<5} "{row["topic"]}" ({row["used"]}) -> {now}')
     lines.append("  py -m scripts.ops footage lists the clips each playlist has.")
     return lines

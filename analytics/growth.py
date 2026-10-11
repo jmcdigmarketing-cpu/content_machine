@@ -8,7 +8,8 @@ and the paid views (#954). This reads them together:
 - organic 7-day views: median, best and worst;
 - viewers who stay: median views of the third of videos with the highest stayed share against
   the lowest third - the size of the gap is what the first second is worth on this channel;
-- the Shorts-feed share; posting cadence over the last 28 days; the paid share of all views.
+- the Shorts-feed share; posting cadence over the last 28 days; the paid share of all views;
+- Shorts cut from a chapter against Shorts made as Shorts (#1054).
 
 `levers` ranks the three largest gaps, each with the number behind it and one change. A gap
 that is not there is not reported. Below `_MIN_VIDEOS` measured videos it says "collecting".
@@ -149,6 +150,89 @@ def intro_line(channel_id: str) -> str:
     )
 
 
+_SHORTS_MIN = 3
+_SHORT_PRESETS = frozenset({"1", "2"})
+
+
+def _features(run_id: Any) -> dict[str, Any]:
+    """The run's stored features, or {} without a run."""
+    if not run_id:
+        return {}
+    from storage.repositories.content_runs import get_content_run_repository
+
+    run = get_content_run_repository().get(int(run_id))
+    try:
+        features = json.loads(getattr(run, "features_json", None) or "{}") if run else {}
+    except (TypeError, ValueError):
+        return {}
+    return features if isinstance(features, dict) else {}
+
+
+def _cut_shorts_made(channel_id: str) -> int:
+    """Shorts cut from a long video's chapter, published or not."""
+    from storage.repositories.content_runs import get_content_run_repository
+
+    runs = get_content_run_repository().list_for_channel(channel_id) or []
+    return sum(1 for run in runs if '"short_source"' in (getattr(run, "features_json", "") or ""))
+
+
+def shorts_split(channel_id: str) -> dict[str, Any]:
+    """#1054: 7-day views and stayed share of Shorts cut from a chapter against Shorts made
+    as Shorts (a Short or Medium script that is not an all-angles video)."""
+    cut: list[dict[str, Any]] = []
+    native: list[dict[str, Any]] = []
+    for row in _rows(channel_id):
+        if row.get("views7") is None:
+            continue
+        features = _features(row.get("run_id"))
+        if features.get("short_source") == "chapter_cut":
+            cut.append(row)
+        elif (
+            str(features.get("length_preset") or "") in _SHORT_PRESETS
+            and not features.get("all_angles")
+            and not features.get("parent_run_id")
+        ):
+            native.append(row)
+    out: dict[str, Any] = {
+        "n_cut": len(cut),
+        "n_native": len(native),
+        "made_cut": _cut_shorts_made(channel_id),
+    }
+    for name, rows in (("cut", cut), ("native", native)):
+        if rows:
+            out[f"{name}_views"] = round(_median([float(r["views7"]) for r in rows]))
+        stayed = [float(r["stayed"]) for r in rows if r.get("stayed") is not None]
+        if stayed:
+            out[f"{name}_stayed"] = round(_median(stayed), 3)
+    return out
+
+
+def shorts_line(channel_id: str, split: dict[str, Any] | None = None) -> str:
+    split = split if split is not None else shorts_split(channel_id)
+    n_cut, n_native = split["n_cut"], split["n_native"]
+    if n_cut >= _SHORTS_MIN and n_native >= _SHORTS_MIN:
+
+        def side(name: str, n: int) -> str:
+            stayed = split.get(f"{name}_stayed")
+            held = f", {stayed:.0%} stayed" if stayed is not None else ""
+            return f"{split[f'{name}_views']:,} views in 7 days{held} (n={n})"
+
+        return (
+            f"Shorts: cut from a chapter {side('cut', n_cut)} vs made as a Short "
+            f"{side('native', n_native)}"
+        )
+    made = int(split.get("made_cut") or 0)
+    if made and not n_cut:
+        return (
+            f"Shorts: {made} cut from chapters, none published with a full week yet - "
+            f"the comparison needs {_SHORTS_MIN} (made as a Short: {n_native} measured)"
+        )
+    return (
+        f"Shorts: cut from a chapter {n_cut} measured, made as a Short {n_native} measured - "
+        f"the comparison needs {_SHORTS_MIN} of each"
+    )
+
+
 def _median(values: list[float]) -> float:
     return float(statistics.median(values)) if values else 0.0
 
@@ -190,6 +274,10 @@ def report(channel_id: str) -> dict[str, Any]:
         out["intro_split"] = intro_split(channel_id)  # #988
     except Exception as exc:
         logger.debug("intro split skipped: %s", exc)
+    try:
+        out["shorts_split"] = shorts_split(channel_id)  # #1054
+    except Exception as exc:
+        logger.debug("shorts split skipped: %s", exc)
     return out
 
 
@@ -239,6 +327,21 @@ def levers(rep: dict[str, Any]) -> list[dict[str, Any]]:
             f"swipe, those with it {intro['with']:.0%}. The intro spends the first second on a "
             "logo: set CHANNEL_INTRO_ENABLED=false (or keep it only at the end)."
         )})  # fmt: skip
+    shorts = rep.get("shorts_split") or {}
+    if (
+        shorts.get("n_cut", 0) >= _SHORTS_MIN
+        and shorts.get("n_native", 0) >= _SHORTS_MIN
+        and shorts.get("cut_views")
+        and shorts.get("native_views")
+    ):
+        low, high = sorted((shorts["cut_views"], shorts["native_views"]))
+        if high / max(1, low) >= 1.5:
+            better = "made as Shorts" if shorts["native_views"] > shorts["cut_views"] else "cut"
+            found.append({"key": "shorts", "score": high / max(1, low), "line": (
+                f"Shorts cut from a chapter got {shorts['cut_views']:,} views in 7 days "
+                f"(n={shorts['n_cut']}), Shorts made as Shorts {shorts['native_views']:,} "
+                f"(n={shorts['n_native']}). Put the next ones into the kind that wins: {better}."
+            )})  # fmt: skip
     return sorted(found, key=lambda lever: -lever["score"])[:3]
 
 
@@ -281,6 +384,10 @@ def render(channel_id: str) -> str:
         lines.append(f"  {intro_line(channel_id)}")  # #988
     except Exception as exc:
         logger.debug("intro line skipped: %s", exc)
+    try:
+        lines.append(f"  {shorts_line(channel_id, rep.get('shorts_split'))}")  # #1054
+    except Exception as exc:
+        logger.debug("shorts line skipped: %s", exc)
     try:
         from analytics.hook_learning import render_line
 

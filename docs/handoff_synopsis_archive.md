@@ -7,6 +7,29 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Cursor): the next fifteen, plus runs 131-133
+
+Runs 131-133 were healthy renders that still warned or looked up the wrong thing.
+#1099 drops a hyphenated ordinary phrase from who's who. #1100 puts a font file on
+the chapter-Shorts drawtext and still cuts the chapter when the font is missing.
+#1101 ignores a black stretch that starts in the end-card tail.
+
+The fifteen: games with a league name read as gaming (#1006); an operator record
+beats a stale signal record (#1011); "bounce back" and "is him" are cues (#1098);
+WrestleMania, Super Bowl, and Madden editions expire like UFC numbers (#1082);
+the closer is rewritten once when it misses the hook (#1032); an award is a race
+(#1007); a kept angle frame leads the next prompt (#1021); the post-time line
+names the posts that chose the hour (#1060, measured as a mislabel first); a
+passed date and a 0-view topic leave the best-bet pool (#1024); NHL, MLB, college
+football, and soccer come with an injury line (#1022); this week's games can be
+a best bet (#1023); the run card names the fact and tier behind each claim
+(#1026); a UFC card that does not name the fighter is not an anchor (#1027);
+"own 26" and "39.5" stay only when the facts have them (#1028); a repeated
+sentence is dropped once (#1030).
+
+Filed and left open: #1102, #1103, #1104. #1088 stays an operator call.
+`roadmap-index`: open 333, done 801, highest #1104.
+
 ## Previous — 2026-10-10 (Claude Code): wave 70 #1096 #1089 #1095 (slang read, two asks, research for the stance)
 
 The operator picked the three left from wave 69's list, and asked for a fresh Cursor prompt.

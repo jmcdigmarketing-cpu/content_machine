@@ -150,7 +150,32 @@ def _folder_words(name: str) -> list[str]:
     ]
 
 
-def _keyword_choose_folder(topic: str, folders: list[str]) -> str | None:
+def _written_as_name(topic: str, word: str) -> bool:
+    """True when `word` is capitalised somewhere other than the start of a sentence."""
+    for match in re.finditer(rf"\b{re.escape(word)}\b", topic or "", re.I):
+        before = (topic[: match.start()]).rstrip()
+        if match.group(0)[:1].isupper() and before and before[-1] not in ".!?:":
+            return True
+    return False
+
+
+def _plain_word_names_the_game(topic: str, word: str) -> bool:
+    """#1111: "the steep price of GPUs" is not the game Steep. A name that is also a plain
+    word counts when it is written as a name, or when the topic is about games."""
+    if _written_as_name(topic, word):
+        return True
+    try:
+        from apis.topic_scorer import infer_topic_domain
+
+        return infer_topic_domain(topic or "") == "gaming"
+    except Exception as exc:
+        logger.debug("plain-word game check skipped: %s", exc)
+        return True
+
+
+def _keyword_choose_folder(
+    topic: str, folders: list[str], *, file_name: bool = False
+) -> str | None:
     """Pick the library folder the original topic names, whole words only.
 
     Stock-query rewrite turns "Fortnite reload" into "video game gameplay
@@ -159,8 +184,9 @@ def _keyword_choose_folder(topic: str, folders: list[str]) -> str | None:
     Every word of the folder name must be a word of the topic. One word, matched inside
     another, used to be enough: "Game of the year 2027 predictions" (p-red-ictions) cut
     Red Dead Redemption 2, "Lakers rivals" cut Marvel Rivals, "Black Friday" cut Black Ops.
+    `file_name`: `topic` is a capture's file name, which is always the game's title.
     """
-    from apis.topic_tokens import content_tokens
+    from apis.topic_tokens import GAME_NAMES_THAT_ARE_WORDS, content_tokens
 
     from apis.topic_scorer import names_other_2k
 
@@ -173,6 +199,14 @@ def _keyword_choose_folder(topic: str, folders: list[str]) -> str | None:
         words = _folder_words(os.path.basename(folder))
         if other_2k and len(words) == 1 and _BARE_2K.match(words[0]):
             continue  # "WWE 2K26 roster" is not the NBA 2K26 folder
+        if (
+            not file_name
+            and len(words) == 1
+            and words[0] in GAME_NAMES_THAT_ARE_WORDS
+            and words[0] in said
+            and not _plain_word_names_the_game(topic or "", words[0])
+        ):
+            continue
         if words and all(word in said for word in words):
             scored.append((len(words), sum(len(w) for w in words), folder))
     if not scored:
@@ -313,10 +347,17 @@ sport because it looks similar.
 
 
 def choose_footage(
-    topic: str, folders: list[str], channel_id=None, *, use_llm: bool = True
+    topic: str,
+    folders: list[str],
+    channel_id=None,
+    *,
+    use_llm: bool = True,
+    context: tuple[str, str] | None = None,
 ) -> tuple[str | None, str]:
     """(folder, how) - how is keyword / alias / game-sport / domain / seed / run-domain /
-    llm - or (None, "none"). `seed` and `run-domain` come from `set_footage_context` (#962)."""
+    llm - or (None, "none"). `seed` and `run-domain` come from `set_footage_context` (#962),
+    or from `context` (seed, sport) when a report asks about a saved run (#1112) - that
+    writes nothing to the process."""
     for how, pick in (
         ("keyword", lambda: _keyword_choose_folder(topic, folders)),
         ("alias", lambda: _alias_choose_folder(topic, folders, channel_id)),
@@ -326,7 +367,7 @@ def choose_footage(
         folder = pick()
         if folder:
             return folder, how
-    seed, domain = _contexts.get(topic or "", ("", ""))
+    seed, domain = context if context is not None else _contexts.get(topic or "", ("", ""))
     if seed and seed != topic:
         for pick in (
             lambda: _keyword_choose_folder(seed, folders),
@@ -409,7 +450,13 @@ def _sport_footage_names(channel_id=None) -> set[str]:
     }
 
 
-def mix_folders(topic: str, folders: list[str], channel_id=None) -> list[str]:
+def mix_folders(
+    topic: str,
+    folders: list[str],
+    channel_id=None,
+    *,
+    context: tuple[str, str] | None = None,
+) -> list[str]:
     """The owned game folders a topic that names no owned game may cut from, or [].
 
     The operator, 2026-10-10: mixed owned gameplay rather than stock. Only for a topic about
@@ -421,7 +468,7 @@ def mix_folders(topic: str, folders: list[str], channel_id=None) -> list[str]:
         from apis.topic_scorer import infer_topic_domain
         from config.channels import get_channel_profile, resolve_channel_id
 
-        seed, run_domain = _contexts.get(topic or "", ("", ""))
+        seed, run_domain = context if context is not None else _contexts.get(topic or "", ("", ""))
         read = {infer_topic_domain(topic or ""), run_domain or "neutral"}
         if seed:
             read.add(infer_topic_domain(seed))

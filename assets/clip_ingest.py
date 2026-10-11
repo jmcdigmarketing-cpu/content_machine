@@ -144,7 +144,7 @@ def match_folder(filename: str, folders: list[str]) -> str | None:
             hit = _folder_by_basename(folders, folder_name)
             if hit:
                 return hit
-    return _keyword_choose_folder(stem, folders)
+    return _keyword_choose_folder(stem, folders, file_name=True)
 
 
 def _iter_source_files(source_dirs: list[str]) -> list[str]:

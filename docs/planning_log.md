@@ -17,6 +17,36 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - wave 73: footage follow-ups plus three
+
+**Prompt:** next 5
+
+**Picked:** asked which five, because the roadmap's list (#1080 #1081 #1066 #1083 #1072) is
+also what Cursor's slot names as its next. The operator chose "Footage follow-ups + three":
+#1111 and #1112 from wave 72, plus the three cheapest open items. No small item outside the
+roadmap five was buildable (#1015 waits on a PySide6 6.12.x that does not exist, #1038 on the
+operator's blind listen, #1079 and #1088 are operator calls), so the three are medium items that
+stay out of Cursor's files: #1054, #1061, #1076. #1051 was passed over: it sits on #1066.
+
+**Shipped:**
+1. #1112 the gaps report passes each run's idea and sport. Run 58 reads EA Sports FC, not a mix.
+2. #1111 "the steep price of GPUs" is not the game Steep; "Is Steep still worth playing" is.
+3. #1054 `ops growth` compares Shorts cut from a chapter with Shorts made as Shorts.
+4. #1061 the weekly report opens with more of / less of / try next, each with its number.
+5. #1076 `docs/operator_guide.md`, every command run.
+
+**Findings, with file:line:**
+- `analytics/weekly_report.py:159` (before): the "three decisions" were `next_actions[:3]`, in dimension order. On 39 videos that was two "more" lines and no "less" or "try".
+- `core/chapter_shorts.py:380`: 5 cut Shorts in the store, 0 published, so #1054 has nothing to compare yet and says so.
+- `analytics/growth.py:81`: the row title is the publish log's `detail` - a quota or schedule note. **#1113**
+- Run 59 has no stored topic domain. **#1114**
+- `ops weekly-report` already prints "cost per finished minute: $0.27 marginal, $0.49 allocated" - most of #1072.
+- `ops daily-brief` writes (competitor sync, SEO hints, vault dossiers); it was run once while checking the guide's commands.
+
+**Not done:** #1113, #1114. The "try next" line falls back to the thinnest winner when no value is under three videos - today that is `recap`. The plain-word game list is hand-kept (18 names).
+
+**Audit:** 29 new tests in three files; 25 failed or errored on the committed sources (5 failures, 20 errors), 4 are guards. 3 corpus cases, 165 of 165 held. ruff and format clean; mypy 109 == baseline. Callers: `_plain_word_names_the_game` <- `_keyword_choose_folder`; `context=` <- `footage_gaps`; `shorts_split` <- `report`, `shorts_line` <- `render`; `three_decisions` <- `operator_digest`, `_format_body`. Three files `ruff format assets` touched by accident were restored before the commit.
+
 ## 2026-10-10 (Claude Code) - wave 72: local links and owned footage (the next six)
 
 **Prompts:** "ensure the system is properly linked to the files on site out of cloud, and next 5" ·

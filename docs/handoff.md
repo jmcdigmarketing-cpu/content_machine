@@ -53,30 +53,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `f98054c` + the wave 72 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `90cb95d` + the wave 73 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`.
 
 **Read before editing:** footage is chosen in `assets/local_provider.py` - keyword (whole words,
-every word of the folder name), alias, game-sport (`apis.topic_scorer.sport_of_game`), domain,
-seed, run-domain, llm. No folder and a topic about games -> `footage_choice` records
-`(None, "mix")` and `candidate_clips` returns one clip per owned game folder in turn; a sport,
-film or finance topic gets nothing and falls to stock. That is the operator's call of
-2026-10-10 and reverses #955 for the gaming case only - do not "fix" it back.
-`core/owned_beats.topic_clips` uses the same rule. `core.win_shell.known_folder` is where
-Desktop and Videos come from.
+every word of the folder name; a plain-word name such as Steep needs a capital or a gaming
+topic), alias, game-sport, domain, seed, run-domain, llm. No folder and a topic about games ->
+`(None, "mix")`: one clip per owned game folder in turn. A sport, film or finance topic gets
+nothing and falls to stock. The operator's call of 2026-10-10; it reverses #955 for the gaming
+case only - do not "fix" it back. A report passes `context=(seed, sport)` and never
+`set_footage_context`. `weekly_report.three_decisions` ranks after shrinkage (#352).
 
-**Cursor:** shared files touched: `apis/topic_scorer.py` (`sport_of_game`, `names_other_2k`,
-beside your `_VIDEO_GAME_RE`), `tests/regression_corpus.json` (14 cases appended),
-`docs/roadmap.md` (the next five are unchanged and yours). `assets/fast_cut.py` not touched.
+**Cursor:** your five are untouched (#1080 #1081 #1066 #1083 #1072). For #1072:
+`ops weekly-report` already prints "cost per finished minute" - check before building.
+Shared files touched: `apis/topic_tokens.py` (`GAME_NAMES_THAT_ARE_WORDS`),
+`tests/regression_corpus.json` (3 cases appended), `docs/roadmap.md`, `docs/README.md`.
 
 **Defects first:**
-- #1111 "the steep price of GPUs" still names the Steep folder.
-- #1112 `ops footage-gaps` has no run context, so a neutral soccer angle shows as a mix there.
+- #1113 `ops growth` and the scoreboard name the best video by its upload note, not its title.
+- #1114 run 59 has no stored sport, so `ops footage-gaps` calls it a mix.
 - `main` is ahead of origin. Nothing was pushed.
 - CGFtzpiA1so and run 120's "LINK" source are still the operator's to check.
 
-**Shipped:** wave 72 - #1105 #1106 #1107 #1108 #1109 #1110. 24 of 28 new tests failed first; 4 are guards.
-Suite 5182, mypy 109. Highest #1112. Next: **#1080 · #1081 · #1066 · #1083 · #1072** (yours).
+**Shipped:** wave 73 - #1112 #1111 #1054 #1061 #1076. 25 of 29 new tests failed first; 4 are
+guards. Highest #1114. Next: **#1080 · #1081 · #1066 · #1083 · #1072** (yours).
 
 ## Slot — Cursor
 

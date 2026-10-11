@@ -74,6 +74,7 @@ def build_report(channel_id: str) -> dict[str, Any]:
     baseline = _avg([r["engaged_rate"] for r in rows])
 
     dimensions: dict[str, list[dict[str, Any]]] = {}
+    untested: list[dict[str, Any]] = []
     for dim in _DIMENSIONS:
         groups: dict[str, list[float]] = defaultdict(list)
         for r in rows:
@@ -93,6 +94,12 @@ def build_report(channel_id: str) -> dict[str, Any]:
         scored.sort(key=lambda g: g["avg"], reverse=True)
         if scored:
             dimensions[dim] = scored
+        # #1061: values with too few videos to score - what "try next" is picked from.
+        untested.extend(
+            {"dimension": dim, "value": value, "avg": _avg(rates), "n": len(rates)}
+            for value, rates in groups.items()
+            if len(rates) < _MIN_SAMPLES
+        )
 
     # Cost summary from whatever runs recorded it.
     costs = [
@@ -107,6 +114,7 @@ def build_report(channel_id: str) -> dict[str, Any]:
         "ready": True,
         "baseline": baseline,
         "dimensions": dimensions,
+        "untested": untested,
         "avg_cost": _avg(costs) if costs else None,
         "total_cost": round(sum(costs), 2) if costs else None,
     }
@@ -156,11 +164,100 @@ def build_next_actions(report: dict[str, Any], *, max_actions: int = 5) -> list[
     return actions[:max_actions]
 
 
+_TRY_PHRASES: dict[str, str] = {
+    "domain": "another {value} video",
+    "angle": "the '{value}' angle again",
+    "title_structure": "another {value} title",
+    "format": "another {value} video",
+    "fact_source": "facts via {value} again",
+    "upload_mode": "another {value} upload",
+}
+
+
+def _shrunk_delta(group: dict[str, Any]) -> float:
+    """The group's gap to the baseline after the recommenders' shrinkage (#352): four
+    pseudo-videos at the baseline, so three lucky videos do not outrank twelve good ones."""
+    from core.recommender_confidence import MODERATE_SAMPLES
+
+    n = int(group["n"])
+    return float(group["delta"]) * n / (n + MODERATE_SAMPLES)
+
+
+def three_decisions(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """#1061: more of / less of / try next, each {kind, dimension, value, line} with the
+    number it came from. A decision the numbers do not support is left out.
+
+    - more: the value furthest above the baseline after shrinkage;
+    - less: the value furthest below it;
+    - try: the best value with too few videos to score, else the thinnest winner.
+    """
+    if not report.get("ready"):
+        return []
+    from core.recommender_confidence import confidence_level
+
+    baseline = float(report.get("baseline") or 0.0)
+    groups = [
+        {**group, "dimension": dim}
+        for dim, rows in (report.get("dimensions") or {}).items()
+        for group in rows
+    ]
+
+    def measured(group: dict[str, Any]) -> str:
+        level = confidence_level(int(group["n"]))
+        note = "" if level == "high" else f", {level} confidence"
+        return f"{group['avg']:.0%} vs {baseline:.0%} baseline, n={group['n']}{note}"
+
+    out: list[dict[str, Any]] = []
+    winners = [g for g in groups if g["delta"] >= _ACTION_DELTA]
+    losers = [g for g in groups if g["delta"] <= -_ACTION_DELTA]
+    more = max(winners, key=_shrunk_delta, default=None)
+    if more:
+        phrase = _ACTION_PHRASES.get(more["dimension"], ("{value}", ""))[0]
+        out.append({
+            "kind": "more", "dimension": more["dimension"], "value": more["value"],
+            "line": f"More of: {phrase.format(value=more['value'])} ({measured(more)})",
+        })  # fmt: skip
+    less = min(losers, key=_shrunk_delta, default=None)
+    if less:
+        phrase = _ACTION_PHRASES.get(less["dimension"], ("", "{value}"))[1]
+        out.append({
+            "kind": "less", "dimension": less["dimension"], "value": less["value"],
+            "line": f"Less of: {phrase.format(value=less['value'])} ({measured(less)})",
+        })  # fmt: skip
+    untested = [u for u in report.get("untested") or [] if float(u["avg"]) > baseline]
+    trial = max(untested, key=lambda u: (float(u["avg"]), int(u["n"])), default=None)
+    if trial:
+        phrase = _TRY_PHRASES.get(trial["dimension"], "{value} again")
+        out.append({
+            "kind": "try", "dimension": trial["dimension"], "value": trial["value"],
+            "line": (
+                f"Try next: {phrase.format(value=trial['value'])} ({trial['avg']:.0%} on "
+                f"{trial['n']} video{'s' if trial['n'] != 1 else ''}, {baseline:.0%} baseline - "
+                f"too few to call; {_MIN_SAMPLES} makes it count)"
+            ),
+        })  # fmt: skip
+    else:
+        rest = [g for g in winners if g is not more]
+        thin = min(rest, key=lambda g: int(g["n"]), default=None)
+        if thin:
+            phrase = _TRY_PHRASES.get(thin["dimension"], "{value} again")
+            out.append({
+                "kind": "try", "dimension": thin["dimension"], "value": thin["value"],
+                "line": f"Try next: {phrase.format(value=thin['value'])} ({measured(thin)})",
+            })  # fmt: skip
+    return out
+
+
 def operator_digest(report: dict[str, Any], *, limit: int = 3) -> str:
-    """#452: at most three decisions this week. Empty when the report is not ready."""
+    """#452: at most three decisions this week. Empty when the report is not ready.
+
+    #1061: they are more of / less of / try next when the report has its dimensions; a
+    report carrying only `next_actions` keeps the capped list."""
     if not report.get("ready"):
         return ""
-    actions = [str(a) for a in (report.get("next_actions") or []) if str(a).strip()][:limit]
+    decided = [d["line"] for d in three_decisions(report)]
+    actions = decided or [str(a) for a in (report.get("next_actions") or []) if str(a).strip()]
+    actions = actions[:limit]
     if not actions:
         return ""
     channel = str(report.get("channel_id") or "this channel")
@@ -254,6 +351,11 @@ def _format_body(report: dict[str, Any]) -> str:
         f"  {report['n']} videos analyzed · baseline engagement {report['baseline']:.1%}",
         "",
     ]
+    decided = three_decisions(report)
+    if decided:
+        lines.append("  This week's three decisions:")
+        lines.extend(f"    {d['line']}" for d in decided)
+        lines.append("")
     for dim, groups in report["dimensions"].items():
         lines.append(f"  By {dim}:")
         for g in groups:

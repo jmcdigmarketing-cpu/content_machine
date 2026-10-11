@@ -52,6 +52,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 
 | Doc | |
 |---|---|
+| [operator_guide.md](operator_guide.md) | How a video gets made, step by step, one command each |
 | [debugging.md](debugging.md) | Operator troubleshooting, hallucination triage |
 | [startup_powershell.md](startup_powershell.md) | Windows/PowerShell command cheat-sheet |
 | [free_mode.md](free_mode.md) | Running at $0 |

@@ -136,6 +136,32 @@ NEWS_REGISTER_WORDS = frozenset(
 # Sunday ..." and Wikidata matched "Next" to NeXT; run 120's sentence-initial "People" became
 # "human", and "Game of the year" looked up "Game". A name that merely *contains* one of
 # them ("New York Jets", "Best Buy") keeps it.
+# #1111: game names that are also plain English words. "the steep price of GPUs" named the
+# Steep footage folder. A name here counts only when it is written as a name or the topic is
+# about games (`assets.local_provider._keyword_choose_folder`).
+GAME_NAMES_THAT_ARE_WORDS = frozenset(
+    {
+        "steep",
+        "control",
+        "prey",
+        "rust",
+        "portal",
+        "journey",
+        "inside",
+        "limbo",
+        "raft",
+        "stray",
+        "hades",
+        "destiny",
+        "halo",
+        "doom",
+        "payday",
+        "rage",
+        "brink",
+        "evolve",
+    }
+)
+
 COMMON_CAPITALISED = (
     FUNCTION_WORDS
     | NEWS_REGISTER_WORDS

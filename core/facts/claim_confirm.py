@@ -254,7 +254,52 @@ def confirm_claim(
             quality["claim_support_rate"] = verification["support_rate"]
     merge_quality(run_id, quality)
     logger.info("run %s: claim confirmed by the operator (%s): %s", run_id, source, pick.claim)
+    _save_confirmed_fact(run_id, pick.claim, source)
     return result
+
+
+def _save_confirmed_fact(run_id: int, claim: str, source: str) -> None:
+    """#1083: the next run's vault scan only sees a note, not the run's features."""
+    from core.obsidian_facts import _vault_path
+
+    if not _vault_path():
+        return
+    channel, topic = _run_subject(run_id)
+    if not channel or not topic:
+        logger.warning(
+            "run %s: confirmed claim not saved to the vault (no topic on the run)", run_id
+        )
+        return
+    from core.operator_facts import capture_facts_to_vault
+
+    path = capture_facts_to_vault(
+        channel,
+        topic,
+        [claim],
+        tier="operator",
+        origin="verify-claim",
+        sources=[source],
+    )
+    if not path:
+        logger.warning("run %s: confirmed claim not saved to the vault", run_id)
+
+
+def _run_subject(run_id: int) -> tuple[str, str]:
+    """(channel, topic) for the vault note. Topic is the selected one, else the input."""
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        run = get_content_run_repository().get(run_id)
+    except Exception as exc:
+        logger.warning(
+            "run %s: confirmed claim not saved; the run could not be read: %s", run_id, exc
+        )
+        return "", ""
+    if run is None:
+        return "", ""
+    channel = str(getattr(run, "channel_id", "") or "").strip()
+    topic = str(getattr(run, "selected_topic", "") or getattr(run, "input_topic", "") or "").strip()
+    return channel, topic
 
 
 def _script_for(run_id: int) -> str:

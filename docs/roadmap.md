@@ -54,20 +54,20 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**2026-10-10:** Claude's waves 72 and 73 were the operator's own asks, outside this list
-(#1105-#1110 owned footage and local links; #1111 #1112 #1054 #1061 #1076 - see
-[planning_log.md](planning_log.md)). The five below are unchanged and are Cursor's next:
+**2026-10-10** shipped the previous five (#1080, #1081, #1066, #1083, #1072).
+`py -m scripts.ops roadmap-index`: backlog open 320, done 827, numbered open 268, highest
+open #1117. The list changed because those five are done. #1115, #1116 and #1117 are still
+open and are the live defects; Claude's slot has them in progress, so they are not this
+list. The next five are the cheapest open small items that are not an operator call and
+not in that wave:
 
-1. **#1080 a chapter title ends mid-phrase** `[S]` - run 119's last-resort label.
-2. **#1081 the seasonal calendar's UFC 322 date** `[S]` - the seed says 2026.
-3. **#1066 fix a published description without a re-upload** `[S]` - run 119.
-4. **#1083 a confirmed claim becomes a fact** `[S]`.
-5. **#1072 cost per published minute** `[S]`.
+1. **#995 unconfirmed claims against the vault's corrections** `[S]`.
+2. **#990 an ops verb that prints the log** `[S]`.
+3. **#374 the premium tier for the hook only** `[S]`.
+4. **#400 measured words-per-second per voice** `[S]`.
+5. **#380 Apify cost per usable fact** `[S]`.
 
-Wave 74 (Claude, 2026-10-10) shipped **#1113 #1114 #1065 #1055 #1050** and filed **#1115**
-(a one-chapter video still stored as all-angles) · **#1116** (the subject's spelling against
-suggest) · **#1117** (the publish dry run and the trace). For #1072: `ops weekly-report` already
-prints "cost per finished minute". The step-by-step: [operator_guide.md](operator_guide.md).
+The step-by-step: [operator_guide.md](operator_guide.md).
 
 **#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
 #1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),

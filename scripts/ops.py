@@ -2521,6 +2521,36 @@ def cmd_rollback_publish(args: argparse.Namespace) -> int:
 
 
 @_register(
+    "fix-description",
+    "Replace one line of a published description without a re-upload "
+    "(dry-run default; --apply sends videos.update)",
+)
+def cmd_fix_description(args: argparse.Namespace) -> int:
+    from publishing.description_fix import apply_description_fix
+
+    video_id = (getattr(args, "target", None) or "").strip()
+    find = (getattr(args, "find", None) or "").strip()
+    replace = getattr(args, "replace", None)
+    if not video_id or not find or replace is None:
+        print(
+            "Usage: py -m scripts.ops fix-description <youtube-video-id> "
+            "--find TEXT --replace TEXT [--apply]"
+        )
+        return 2
+    result = apply_description_fix(
+        video_id,
+        find=find,
+        replace=replace,
+        channel_id=args.channel,
+        dry_run=not bool(getattr(args, "apply", False)),
+    )
+    print(f"{result.status}: {result.detail}")
+    if result.status == "dry_run":
+        print("  Nothing was sent to YouTube. Re-run with --apply to update the description.")
+    return 0 if result.status in ("dry_run", "updated") else 1
+
+
+@_register(
     "intent-check",
     "How an idea reads - the cue words, else one model read (#1089); --table runs every idea "
     "on record (tests/fixtures/intent_eval.json) and counts the ones that read as recorded",
@@ -3168,6 +3198,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="ingest: URL / PDF path / YouTube link; verify-claim: where the claim is confirmed",
     )
     parser.add_argument(
+        "--find",
+        default=None,
+        help="fix-description: the description line to replace",
+    )
+    parser.add_argument(
+        "--replace",
+        default=None,
+        help="fix-description: the line that replaces --find",
+    )
+    parser.add_argument(
         "--table",
         action="store_true",
         help="intent-check: run every idea on record (tests/fixtures/intent_eval.json)",
@@ -3315,8 +3355,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--apply",
         action="store_true",
         help=(
-            "artifacts / moat-backup / ingest-clips / rollback-publish / go-public / recategorize "
-            "/ verify-claim: actually delete, copy, remux, unlist, make public, re-file or record "
+            "artifacts / moat-backup / ingest-clips / rollback-publish / fix-description / "
+            "go-public / recategorize / verify-claim: actually delete, copy, remux, unlist, "
+            "update a description, make public, re-file or record "
             "(default is dry-run)"
         ),
     )

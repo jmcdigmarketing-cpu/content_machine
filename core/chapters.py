@@ -39,6 +39,7 @@ _LABEL_TAIL = frozenset(
         "not",
         "of",
         "on",
+        "only",
         "or",
         "our",
         "so",

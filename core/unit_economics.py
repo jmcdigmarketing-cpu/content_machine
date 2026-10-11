@@ -100,6 +100,8 @@ class VideoEconomics:
     # script at the voice's spoken pace); None when neither is known.
     minutes: float | None = None
     minutes_source: str = ""
+    # #1072: public videos only. An unlisted upload is finished, not published.
+    published: bool = False
 
     @property
     def rpm_usd(self) -> float | None:
@@ -236,6 +238,7 @@ def channel_economics(channel_id: str | None = None, *, limit: int = 25) -> Chan
                 domain=domains.get(row.content_run_id, ""),
                 minutes=minutes.get(row.content_run_id or 0, (None, ""))[0],
                 minutes_source=minutes.get(row.content_run_id or 0, (None, ""))[1],
+                published=str(getattr(row, "privacy_status", "") or "").strip().lower() == "public",
             )
         )
     return econ
@@ -277,6 +280,7 @@ def summary_lines(econ: ChannelEconomics) -> list[str]:
     if views > 0:
         lines.append(f"  ${econ.total_cost / views * 1000.0:.2f} / 1k views")
     lines.extend(minute_cost_lines(econ))
+    lines.extend(published_minute_lines(econ))
     lines.extend(domain_margin_lines(econ))
     return lines
 
@@ -295,6 +299,27 @@ def minute_cost_lines(econ: ChannelEconomics) -> list[str]:
         f"({minutes:.1f} min over {len(timed)} video(s); {rendered} measured from the render, "
         f"{len(timed) - rendered} estimated from words)"
     ]
+
+
+def published_minute_lines(econ: ChannelEconomics) -> list[str]:
+    """#1072: cost per minute that actually went public, and the return beside it."""
+    public = [v for v in econ.videos if v.published and v.minutes]
+    if not public:
+        return []
+    minutes = sum(float(v.minutes or 0) for v in public)
+    if minutes <= 0:
+        return []
+    cost = sum(v.cost_usd for v in public) / minutes
+    line = (
+        f"  cost per published minute: ${cost:.2f} marginal "
+        f"({minutes:.1f} min over {len(public)} public video(s))"
+    )
+    earned = [v for v in public if v.revenue_usd is not None]
+    earned_minutes = sum(float(v.minutes or 0) for v in earned)
+    if earned_minutes > 0:
+        returned = sum(float(v.revenue_usd or 0) for v in earned) / earned_minutes
+        line += f"; return ${returned:.2f}"
+    return [line]
 
 
 def domain_margin_lines(econ: ChannelEconomics) -> list[str]:

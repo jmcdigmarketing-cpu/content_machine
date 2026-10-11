@@ -314,5 +314,68 @@ class ManageScopeTests(unittest.TestCase):
         self.assertIn("500", edit_error_text(RuntimeError("HttpError 500"), "tapin"))
 
 
+CHAPTER = "2:21 UFC 305 adds Kamaru Usman vs Shavkat Rakhmonov fantasy matchup hype"
+REPLACEMENT = "2:21 The welterweight belt"
+
+
+class DescriptionFixTests(unittest.TestCase):
+    """#1066: fix a published description with videos.update, without unlisting or re-uploading."""
+
+    def _live(self):
+        live = dict(LIVE)
+        live["description"] = f"Intro.\n{CHAPTER}\n#ufc"
+        return live
+
+    def test_a_chapter_line_is_replaced_and_privacy_is_left_alone(self):
+        from publishing.description_fix import apply_description_fix
+
+        live = self._live()
+        service = _service({"abc": live})
+        with (
+            patch.dict(os.environ, {"YOUTUBE_UPLOAD_ENABLED": "true"}),
+            patch("youtube.oauth.get_youtube_service", return_value=service),
+        ):
+            result = apply_description_fix(
+                "abc",
+                find=CHAPTER,
+                replace=REPLACEMENT,
+                dry_run=False,
+            )
+        self.assertEqual(result.status, "updated", result.detail)
+        kwargs = service.videos.return_value.update.call_args.kwargs
+        self.assertEqual(kwargs["part"], "snippet")
+        body = kwargs["body"]
+        self.assertNotIn("status", body)
+        snippet = body["snippet"]
+        self.assertEqual(snippet["title"], live["title"])
+        self.assertEqual(snippet["categoryId"], "20")
+        self.assertIn(REPLACEMENT, snippet["description"])
+        self.assertNotIn("UFC 305", snippet["description"])
+        self.assertIn("Intro.", snippet["description"])
+
+    def test_a_dry_run_does_not_build_a_client(self):
+        from publishing.description_fix import apply_description_fix
+
+        with patch("youtube.oauth.get_youtube_service") as client:
+            result = apply_description_fix("abc", find=CHAPTER, replace=REPLACEMENT, dry_run=True)
+        client.assert_not_called()
+        self.assertEqual(result.status, "dry_run")
+        self.assertIn(REPLACEMENT, result.detail)
+
+    def test_a_missing_line_is_refused(self):
+        from publishing.description_fix import apply_description_fix
+
+        service = _service({"abc": self._live()})
+        with (
+            patch.dict(os.environ, {"YOUTUBE_UPLOAD_ENABLED": "true"}),
+            patch("youtube.oauth.get_youtube_service", return_value=service),
+        ):
+            result = apply_description_fix(
+                "abc", find="not in the description", replace="x", dry_run=False
+            )
+        self.assertEqual(result.status, "missing")
+        service.videos.return_value.update.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

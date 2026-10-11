@@ -65,6 +65,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `facts-room` | Rank pasted facts, links and vault lines by confidence (#860); --facts-file holds them |
 | `feature-report` | Recorded run features vs engaged rate, report-only (#357) |
 | `feeds` | Check every configured RSS feed — dead/stale sources starve grounding |
+| `fix-description` | Replace one line of a published description without a re-upload (dry-run default; --apply sends videos.update) |
 | `footage` | Gameplay folder per playlist niche (--apply measures each clip's text bands) |
 | `footage-add` | Import a gameplay file or folder (--path --game --licence [--source url] --apply) |
 | `footage-gaps` | What gameplay to record, and past videos that may show another game (#955) |

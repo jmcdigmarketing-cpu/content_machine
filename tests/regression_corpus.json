@@ -2527,6 +2527,15 @@
     {"id": "steep-capture-file-is-the-game", "item": 1111, "source": "sibling: ops ingest-clips matches file names through the same chooser", "call": "assets.clip_ingest:match_folder", "args": ["steep 2026-08-19 12-40-15.mp4", ["video/backgrounds/gaming/other/Steep", "video/backgrounds/gaming/open world/GTA V"]], "expect": {"equals": "video/backgrounds/gaming/other/Steep"}, "why": "a capture's file name is always the game's title, in any case"},
     {"id": "quota-note-is-not-a-title", "item": 1113, "source": "ops growth, 2026-10-10: best 968 (~8,400 units remaining today ...)", "call": "storage.repositories.publish_log:is_upload_note", "args": ["~8,400 units remaining today (1,600/10,000 used; ~101 per search; ~5 uploads left)"], "expect": {"truthy": true}, "why": "the publish log's detail was printed as the best video's title"},
     {"id": "schedule-note-is-not-a-title", "item": 1113, "source": "the scoreboard, 2026-10-10: best: YouTube scheduled publish at ...", "call": "storage.repositories.publish_log:is_upload_note", "args": ["YouTube scheduled publish at 2026-10-08T02:00:00.000Z (target visibility: unlisted) | thumbnails.set OK"], "expect": {"truthy": true}, "why": "sibling note shape; seven readers used detail as the title"},
-    {"id": "a-seeded-title-is-a-title", "item": 1113, "source": "must keep: seeded rows hold the title in detail", "call": "storage.repositories.publish_log:is_upload_note", "args": ["Wemby is already the best defender alive"], "expect": {"falsy": true}, "why": "a real title must not be thrown away as a note"}
+    {"id": "a-seeded-title-is-a-title", "item": 1113, "source": "must keep: seeded rows hold the title in detail", "call": "storage.repositories.publish_log:is_upload_note", "args": ["Wemby is already the best defender alive"], "expect": {"falsy": true}, "why": "a real title must not be thrown away as a note"},
+    {
+      "id": "run119-chapter-label-ends-on-the-belt",
+      "item": 1080,
+      "source": "run 119 replay: The welterweight belt is the only",
+      "call": "core.chapters:_label",
+      "args": ["The welterweight belt is the only fight left that means anything for him."],
+      "expect": {"equals": "The welterweight belt"},
+      "why": "the 40-character cut ended on only, which is not the noun"
+    }
   ]
 }

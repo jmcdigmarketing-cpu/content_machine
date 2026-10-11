@@ -57,6 +57,13 @@ class TestChapterLabelsEndOnAPhrase(unittest.TestCase):
 
         self.assertEqual(_label("Price is the whole story."), "Price is the whole story")
 
+    def test_run_119_last_resort_ends_on_the_noun(self):
+        """#1080: the 40-character cut of run 119's chapter was "The welterweight belt is the only"."""
+        from core.chapters import _label
+
+        sentence = "The welterweight belt is the only fight left that means anything for him."
+        self.assertEqual(_label(sentence), "The welterweight belt")
+
 
 # --- #749 franchise pages -----------------------------------------------------------
 

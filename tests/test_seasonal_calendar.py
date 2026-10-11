@@ -90,3 +90,20 @@ class TestSeasonalCalendar(unittest.TestCase):
         now = datetime(2026, 11, 14, tzinfo=timezone.utc)
         topics = [d["topic"] for d in due_topics("tapin", now=now)]
         self.assertNotIn("Expired New Year recap", topics)
+
+
+class TestShippedUfc322Date(unittest.TestCase):
+    """#1081: the shipped seed said UFC 322 was 2026-11-14. ESPN, MSG, and Wikipedia
+    date it 15 November 2025. This class does not patch the calendar path."""
+
+    def test_ufc_322_is_offered_on_the_day_it_happened(self):
+        from core.seasonal_calendar import due_topics
+
+        late = [
+            d["topic"] for d in due_topics("tapin", now=datetime(2026, 11, 14, tzinfo=timezone.utc))
+        ]
+        self.assertNotIn("UFC 322 card breakdown", late)
+        real = [
+            d["topic"] for d in due_topics("tapin", now=datetime(2025, 11, 15, tzinfo=timezone.utc))
+        ]
+        self.assertIn("UFC 322 card breakdown", real)

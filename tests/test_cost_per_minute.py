@@ -29,15 +29,34 @@ def _run(run_id, cost, *, seconds=None, words=0):
     )  # fmt: skip
 
 
-def _log(run_id):
+def _log(run_id, *, privacy="unlisted", revenue=None):
+    metrics = {}
+    if revenue is not None:
+        metrics["estimated_revenue_usd"] = revenue
     return SimpleNamespace(
-        id=run_id, content_run_id=run_id, youtube_video_id=f"v{run_id}", metrics_json="{}"
+        id=run_id,
+        content_run_id=run_id,
+        youtube_video_id=f"v{run_id}",
+        metrics_json=json.dumps(metrics),
+        privacy_status=privacy,
     )
 
 
 class MinutesTests(unittest.TestCase):
-    def _econ(self, runs):
+    def _econ(self, runs, *, public=(), revenue=None):
         from core import unit_economics
+
+        earned = revenue or {}
+
+        def logs(_channel):
+            return [
+                _log(
+                    r.id,
+                    privacy="public" if r.id in public else "unlisted",
+                    revenue=earned.get(r.id),
+                )
+                for r in runs
+            ]
 
         with (
             patch(
@@ -46,9 +65,7 @@ class MinutesTests(unittest.TestCase):
             ),
             patch(
                 "storage.repositories.publish_log.get_publish_log_repository",
-                return_value=SimpleNamespace(
-                    list_uploaded_for_channel=lambda c: [_log(r.id) for r in runs]
-                ),
+                return_value=SimpleNamespace(list_uploaded_for_channel=logs),
             ),
             patch("core.script_length.spoken_words_per_second", return_value=3.0),
         ):
@@ -75,6 +92,31 @@ class MinutesTests(unittest.TestCase):
 
         econ = self._econ([_run(3, 0.30)])
         self.assertNotIn("per finished minute", "\n".join(summary_lines(econ)))
+
+    def test_published_minute_leaves_out_an_unlisted_upload(self):
+        """#1072: finished minute counts every upload. Published minute is the public ones."""
+        from core.unit_economics import summary_lines
+
+        econ = self._econ(
+            [_run(1, 0.60, seconds=120), _run(2, 0.60, seconds=480)],
+            public={1},
+        )
+        text = "\n".join(summary_lines(econ))
+        self.assertIn("cost per finished minute: $0.12 marginal", text)
+        self.assertIn("cost per published minute: $0.30 marginal", text)
+        self.assertIn("2.0 min over 1 public", text)
+
+    def test_published_minute_names_the_return_when_revenue_exists(self):
+        from core.unit_economics import summary_lines
+
+        econ = self._econ(
+            [_run(1, 0.60, seconds=120)],
+            public={1},
+            revenue={1: 1.20},
+        )
+        text = "\n".join(summary_lines(econ))
+        self.assertIn("cost per published minute: $0.30 marginal", text)
+        self.assertIn("return $0.60", text)
 
 
 if __name__ == "__main__":

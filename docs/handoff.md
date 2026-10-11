@@ -77,21 +77,23 @@ suggest step after the title checks), `main.py` (`one_per_day=True`), `scripts/o
 
 **Shipped:** wave 74 - #1113 #1114 #1065 #1055 #1050. 44 of 47 new tests failed first.
 Suite 5258, mypy 109. Highest #1117. Next: **#1080 · #1081 · #1066 · #1083 · #1072** (yours).
+**In progress (Claude, waves 75-76, uncommitted):** #1115 #1116 #1117 #1075 #1058 #1062 #1034
+#1031 #1025 #1063 - skip these.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `c52b470` · **Tree:** this wave is
-uncommitted until the commit that follows. Leave `docs/startup_powershell.md`.
-Leave `.agents/` and `.codex/` untracked.
+**Written:** 2026-10-10 · **HEAD at write:** `adbc3c7` · **Tree:** this wave is
+uncommitted until the commit that follows. Leave `.agents/` and `.codex/`.
 
 **Defects first:**
 - #1088 is still an operator call.
-- #1080 a chapter title still ends mid-phrase (run 119). Next, not built.
-- A first public-source filter also dropped the Rockstar URL on a GTA topic.
-  The shipped check is the fighter's last name only.
+- #1115 #1116 #1117 are Claude's, in progress. Left alone, with the rest of
+  that note (#1075 #1058 #1062 #1034 #1031 #1025 #1063).
+- The suite failed on uncommitted `angles_asked` in `core/pipeline.py`.
+  That line is Claude's and is not in this commit.
 
-**Shipped:** #1102 #1103 #1104 #1045 #1052. Seven new tests failed first
-(`kept_angle_topic` missing, `Lose` flagged, `Antonio` split, the Vegas URL
-in the scored sources, one file took 7 shots, `pool_without_recent` missing,
-the Short's tags were `GTA6`). The league-only source test passed before the
-fix. Next: #1080 #1081 #1066 #1083 #1072. Shared file: `core/pipeline.py`.
+**Shipped:** #1080 #1081 #1066 #1083 #1072. Eight tests failed or errored
+first (UFC 322 offered on 2026-11-14, the label ended on "only", no published
+minute line, the vault had no fact, `description_fix` missing). The dry-run
+vault test was already empty. Next: #995 #990 #374 #400 #380. Shared file:
+`scripts/ops.py`.

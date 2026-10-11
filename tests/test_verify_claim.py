@@ -116,6 +116,65 @@ class FlaggedClaimTests(unittest.TestCase):
         self.assertEqual([r.claim for r in rows], [CLAIM])
 
 
+class ConfirmedFactTests(StoreCase):
+    """#1083: a confirmation is a vault fact the next run's scan can read."""
+
+    TOPIC = "Claude Opus 5.5"
+
+    def _run(self):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            channel_id="tapin", selected_topic=self.TOPIC, input_topic=self.TOPIC
+        )
+
+    def test_a_confirmed_claim_is_a_fact_the_next_run_can_read(self):
+        import os
+        import tempfile
+        from types import SimpleNamespace
+
+        from core.facts.claim_confirm import confirm_claim
+        from core.obsidian_facts import load_fact_records
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": tmp}),
+                patch(
+                    "storage.repositories.content_runs.get_content_run_repository",
+                    return_value=SimpleNamespace(get=lambda _run_id: self._run()),
+                ),
+            ):
+                confirm_claim(120, 1, source=SOURCE, dry_run=False)
+                records = load_fact_records(self.TOPIC, "tapin")
+        matched = [r for r in records if CLAIM in r.claim]
+        self.assertEqual(len(matched), 1, [r.claim for r in records])
+        self.assertEqual(matched[0].tier, "operator")
+        self.assertEqual(matched[0].trust_source, SOURCE)
+
+    def test_a_dry_run_does_not_save_the_fact(self):
+        import os
+        import tempfile
+        from pathlib import Path
+        from types import SimpleNamespace
+
+        from core.facts.claim_confirm import confirm_claim
+        from core.obsidian_facts import load_fact_records
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": tmp}),
+                patch(
+                    "storage.repositories.content_runs.get_content_run_repository",
+                    return_value=SimpleNamespace(get=lambda _run_id: self._run()),
+                ),
+            ):
+                confirm_claim(120, 1, source=SOURCE, dry_run=True)
+                records = load_fact_records(self.TOPIC, "tapin")
+                notes = list(Path(tmp).rglob("*.md"))
+        self.assertEqual(records, [])
+        self.assertEqual(notes, [])
+
+
 class ConfirmTests(StoreCase):
     def test_a_dry_run_writes_nothing(self):
         from core.facts.claim_confirm import confirm_claim

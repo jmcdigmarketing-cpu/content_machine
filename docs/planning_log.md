@@ -17,6 +17,25 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Cursor) - Claude's five
+
+**Prompt:** complete your 5 sent by claude
+
+**Picked:** the five Claude's slot named and the roadmap listed (#1080, #1081, #1066, #1083, #1072). All five were still open. None was parked. Claude's later note says waves 75-76 are on #1115 #1116 #1117 and seven others; those were left alone.
+
+**Shipped:**
+1. #1081 UFC 322 is 2025-11-15. `due_topics` on 2026-11-14 included it and now does not. ESPN, MSG, and Wikipedia date the card 15 November 2025.
+2. #1080 `_label` of run 119's sentence was "The welterweight belt is the only". It is "The welterweight belt".
+3. #1072 a public $0.60 / 2 min video beside an unlisted $0.60 / 8 min video is $0.12 per finished minute and $0.30 per published minute. $1.20 of revenue on the public one adds return $0.60. `ops economics` printed `cost per published minute: $0.27 marginal (28.4 min over 19 public video(s))` and still said revenue has no data.
+4. #1083 a confirm writes an operator-tier note. `load_fact_records` returns the claim and `trust_source` is the URL. A dry run writes nothing.
+5. #1066 `ops fix-description` replaces one line. The update part is `snippet`. Title and categoryId come back. Privacy is not sent. A missing line is refused. The dry run printed the replacement and sent nothing.
+
+**Findings:** `core/chapters.py` `_LABEL_TAIL` did not include `only`, so the 40-character cut stopped on it. `config/seasonal_calendar.json` was a year late; the fixture tests patch the path, so only a test of the shipped file could see it. `core/unit_economics.py` `minute_cost_lines` counts every upload. `confirm_claim` stopped after `merge_features`. `publishing/rollback.py` unlists; there was no snippet-only edit. The URL goes in `pages:` because a URL in `source:` is cited on the public description.
+
+**Not done:** #1088 (operator call). #1115 #1116 #1117 #1075 #1058 #1062 #1034 #1031 #1025 #1063 (Claude's slot: in progress). #1029 (needs stayed-share history). #1038 (the operator's blind listen). Desktop B2 (#1068, #1064).
+
+**Audit:** `py -m scripts.ops roadmap-index` - backlog open 320, done 827, numbered open 268, highest open #1117. Eight new tests failed or errored first: UFC 322 was offered on 2026-11-14; the label was "The welterweight belt is the only"; the published-minute line was absent (two tests); `load_fact_records` returned []; `publishing.description_fix` did not exist (three tests). The dry-run vault test was already empty and is not a fail-first.
+
 ## 2026-10-10 (Claude Code) - wave 74: titles, old runs, the publish checklist, Shorts spacing, suggest
 
 **Prompt:** next 5 n push

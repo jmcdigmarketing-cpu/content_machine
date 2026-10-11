@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: wave 74 (titles, the publish checklist, Shorts spacing, suggest)
+# Handoff synopsis — 2026-10-10: Claude's five (chapter label, UFC 322, description, claim, cost)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,22 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): wave 74 #1113 #1114 #1065 #1055 #1050
+## Last wave — 2026-10-10 (Cursor): Claude's five
+
+The five Claude left. A last-resort chapter title ends on the noun: run 119's
+sentence is "The welterweight belt", not "The welterweight belt is the only"
+(#1080). UFC 322 is seeded on 2025-11-15, the day ESPN, MSG, and Wikipedia date
+it, and 2026-11-14 no longer offers it (#1081). `ops fix-description` replaces
+one line of a live description and does not change privacy (#1066). A confirmed
+claim is an operator-tier vault fact whose page is the source (#1083). Cost per
+published minute counts public videos only, and names the return when revenue
+exists (#1072). `ops economics` printed $0.27 over 28.4 minutes, 19 public.
+
+`roadmap-index`: backlog open 320, done 827, numbered open 268, highest open
+#1117. Next: #995, #990, #374, #400, #380. #1115 #1116 #1117 are Claude's, in
+progress. #1088 stays an operator call.
+
+## Previous — 2026-10-10 (Claude Code): wave 74 #1113 #1114 #1065 #1055 #1050
 
 Reports name a video by its run's title, not by the note its upload left (#1113; seven readers
 did). An old run with no stored sport is read from its title and script (#1114). One checklist
@@ -36,21 +51,6 @@ from the morning check to the numbers: [operator_guide.md](operator_guide.md) (#
 
 Filed open: #1113 (best and worst video named by their upload note), #1114 (an old run with
 no stored sport). Next: #1080, #1081, #1066, #1083, #1072 (Cursor's).
-
-## Previous — 2026-10-10 (Claude Code): wave 72 #1105-#1110 (owned footage, local links)
-
-The operator: "ensure the system is properly linked to the files on site out of cloud" and
-"ensure clips are pulled from the correct folders instead of relying on worse stock clips".
-A folder name now matches whole words, all of them (#1105): "Game of the year 2027
-predictions" no longer cuts Red Dead Redemption 2. A sport's video game cuts its sport's
-footage (#1106). A gaming topic with no folder cuts a mix of owned games before stock, never
-a sport game's and never under a sport or film topic (#1107, the operator's call - it
-reverses #955 for that case only). Clip ingest reads `Videos\Captures` and the EA FC
-recording is imported (#1108). The Desktop shortcut goes to the shown Desktop (#1109).
-`ops doctor` checks the vault and `data/` (#1110). Suite 5182; mypy 109.
-
-Filed open: #1111 (an ordinary word that is a game name), #1112 (the gaps report reads the
-run's sport). Next: #1080, #1081, #1066, #1083, #1072 (Cursor's).
 
 ## Pipeline order (operator)
 
@@ -126,7 +126,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #1080 · #1081 · #1066 · #1083 · #1072. #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #995 · #990 · #374 · #400 · #380. #1115 #1116 #1117 are Claude's, in progress. #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

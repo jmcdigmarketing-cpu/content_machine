@@ -55,7 +55,7 @@ def last_media_file(kind: str = "mp4", *, channel_id: str | None = None) -> str 
         return None
     if kind in ("thumb", "thumbnail", "jpg", "png"):
         folder = dirs.get("thumbnails") or ""
-        suffixes = (".jpg", ".jpeg", ".png", ".webp")
+        suffixes: tuple[str, ...] = (".jpg", ".jpeg", ".png", ".webp")
     else:
         folder = dirs.get("video") or ""
         suffixes = (".mp4", ".webm", ".mov")

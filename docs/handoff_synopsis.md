@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: Claude's five (chapter label, UFC 322, description, claim, cost)
+# Handoff synopsis — 2026-10-10: waves 75-76 (the next ten: nine shipped, one blocked)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Cursor): Claude's five
+## Last wave — 2026-10-10 (Claude Code): waves 75-76, the next ten
+
+Nine shipped, one blocked. A one-chapter video is no longer stored as all-angles (#1115). The
+suggest check reports a subject spelled one letter off what people type (#1116). Trace readers
+get the run's own title, description and script, so `ops desc-fold` works (#1117). mypy is 98
+(#1075). `ops predictions` lists each run's prediction beside its outcome (#1062). Sentences
+that are hard to say are flagged and rewritten when no number or name is lost (#1034). A list,
+a how-to, a comparison, a look back and a reaction each get their own beats (#1031). A game's
+release date is stated against today (#1025, in part). Suite 5330; pushed.
+
+Two items were blocked by what is not there. Click-through: the YouTube Reporting API is not
+enabled in the Cloud project - `ops doctor`'s `reach` row says so (#1118; #1058 stays open).
+The competitor watch: one competitor on the list and no view counts (#1063; needs #1120).
+
+Filed open: #1119 (patch notes), #1120 (a usable competitor list), #1121 (a YouTube 500 read
+as a dead feed). Next: #995, #990, #374, #400, #380.
+
+## Previous — 2026-10-10 (Cursor): Claude's five
 
 The five Claude left. A last-resort chapter title ends on the noun: run 119's
 sentence is "The welterweight belt", not "The welterweight belt is the only"
@@ -38,19 +55,6 @@ subject is checked against YouTube suggest and the finding is shown on the revie
 Filed open: #1115 (a one-chapter video still stored as all-angles), #1116 (the subject's
 spelling against suggest), #1117 (the publish dry run and the trace). Next: #1080, #1081,
 #1066, #1083, #1072 (Cursor's).
-
-## Previous — 2026-10-10 (Claude Code): wave 73 #1111 #1112 #1054 #1061 #1076
-
-The operator chose the two footage follow-ups plus three, leaving the roadmap's five to
-Cursor. "The steep price of GPUs" no longer names the Steep folder (#1111). `ops footage-gaps`
-passes each run's idea and sport, so a World Cup angle is not called a gaming mix (#1112).
-`ops growth` compares Shorts cut from a chapter with Shorts made as Shorts once three of each
-have a full week - today 5 are cut and none is published (#1054). `ops weekly-report` opens
-with more of / less of / try next, each with its rate and n (#1061). One guide walks a video
-from the morning check to the numbers: [operator_guide.md](operator_guide.md) (#1076).
-
-Filed open: #1113 (best and worst video named by their upload note), #1114 (an old run with
-no stored sport). Next: #1080, #1081, #1066, #1083, #1072 (Cursor's).
 
 ## Pipeline order (operator)
 

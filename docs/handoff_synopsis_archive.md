@@ -7,6 +7,19 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Claude Code): wave 73 #1111 #1112 #1054 #1061 #1076
+
+The operator chose the two footage follow-ups plus three, leaving the roadmap's five to
+Cursor. "The steep price of GPUs" no longer names the Steep folder (#1111). `ops footage-gaps`
+passes each run's idea and sport, so a World Cup angle is not called a gaming mix (#1112).
+`ops growth` compares Shorts cut from a chapter with Shorts made as Shorts once three of each
+have a full week - today 5 are cut and none is published (#1054). `ops weekly-report` opens
+with more of / less of / try next, each with its rate and n (#1061). One guide walks a video
+from the morning check to the numbers: [operator_guide.md](operator_guide.md) (#1076).
+
+Filed open: #1113 (best and worst video named by their upload note), #1114 (an old run with
+no stored sport). Next: #1080, #1081, #1066, #1083, #1072 (Cursor's).
+
 ## Previous — 2026-10-10 (Cursor): the next five
 
 The previous five shipped. The file name now counts the chapters that were cut

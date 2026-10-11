@@ -2536,6 +2536,11 @@
       "args": ["The welterweight belt is the only fight left that means anything for him."],
       "expect": {"equals": "The welterweight belt"},
       "why": "the 40-character cut ended on only, which is not the noun"
-    }
+    },
+    {"id": "an-unreleased-game-is-not-out", "item": 1025, "source": "2026-10-10: the RAWG line said released 2026-11-19 and nothing more", "call": "core.signal_facts:release_note", "args": ["2026-11-19", "2026-10-10"], "expect": {"contains": "NOT out yet"}, "why": "a future date read as a release left the arithmetic to the model"},
+    {"id": "run119-record-line-is-hard-to-say", "item": 1034, "source": "run 119's script", "call": "core.script_craft:hard_to_say", "args": ["Shavkat Rakhmonov is 18-0-0 with 8 KO and 10 SUB."], "expect": {"truthy": true}, "why": "a run of numbers was voiced as written"},
+    {"id": "one-score-is-easy-to-say", "item": 1034, "source": "must keep", "call": "core.script_craft:hard_to_say", "args": ["The Chargers lost 27-10 on Sunday."], "expect": {"falsy": true}, "why": "one score in a sentence is not a number string"},
+    {"id": "run133-one-chapter-is-not-all-angles", "item": 1115, "source": "run 133 kept one of five chapters", "call": "core.angle_chapters:is_all_angles", "args": [1], "expect": {"falsy": true}, "why": "the run was stored as all-angles and asked for a chapter list"},
+    {"id": "run132-illia-is-spelled-ilia", "item": 1116, "source": "run 132's title against YouTube suggest", "call": "core.title_generator:_subject_spelling", "args": ["Illia Topuria", ["ilia topuria", "ilia topuria highlights", "ilia topuria walkout"]], "expect": {"equals": {"typed": "illia", "searched": "ilia"}}, "why": "the title spelled the fighter's name one letter off what people type"}
   ]
 }

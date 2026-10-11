@@ -603,6 +603,15 @@ def kept_angle_topic(topic: str, asked: int, kept: int) -> str:
     return base
 
 
+def is_all_angles(kept: int) -> bool:
+    """#1115: a video is an all-angles video only while two or more chapters were cut.
+
+    Run 133 kept one of five; it was stored as all-angles, so the publish checklist asked
+    it for a chapter list and the Shorts comparison read it as long-form.
+    """
+    return int(kept or 0) >= 2
+
+
 def chapter_card_lines(features: dict[str, Any] | None) -> list[str]:
     """Run-card lines: chapters retitled (#1009), written or left out (#1010)."""
     feats = features or {}

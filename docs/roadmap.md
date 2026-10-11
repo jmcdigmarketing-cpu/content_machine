@@ -56,10 +56,10 @@ is left is below.
 
 **2026-10-10** shipped the previous five (#1080, #1081, #1066, #1083, #1072).
 `py -m scripts.ops roadmap-index`: backlog open 320, done 827, numbered open 268, highest
-open #1117. The list changed because those five are done. #1115, #1116 and #1117 are still
-open and are the live defects; Claude's slot has them in progress, so they are not this
-list. The next five are the cheapest open small items that are not an operator call and
-not in that wave:
+open #1117. The list changed because those five are done. Claude's waves 75-76 then closed
+#1115 #1116 #1117 #1075 #1062 #1034 #1031 and #1025 (in part), found #1058 and #1063 blocked
+(#1118, #1120), and filed #1119 and #1121. The next five are the cheapest open small items
+that are not an operator call:
 
 1. **#995 unconfirmed claims against the vault's corrections** `[S]`.
 2. **#990 an ops verb that prints the log** `[S]`.
@@ -67,7 +67,8 @@ not in that wave:
 4. **#400 measured words-per-second per voice** `[S]`.
 5. **#380 Apify cost per usable fact** `[S]`.
 
-The step-by-step: [operator_guide.md](operator_guide.md).
+The step-by-step: [operator_guide.md](operator_guide.md). **Operator:** enable the YouTube
+Reporting API in Google Cloud Console - `ops doctor`'s `reach` row fails until then (#1118).
 
 **#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
 #1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),

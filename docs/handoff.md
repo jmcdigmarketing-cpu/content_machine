@@ -53,32 +53,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `8069a82` + the wave 74 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `4616fee` + the waves 75-76 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
-**Read before editing:** a video's name comes from `publish_log.video_title(row)` - never
-`row.detail`, which is the upload's note (a test fails on a new reader). `publishing/prepublish.py`
-runs inside `YouTubePublisher.publish` before any API call; add a check there, not a new gate.
-Footage: `assets/local_provider.py` (whole words; a topic about games with no folder cuts the
-owned mix - the operator's call, do not "fix" it back). `TITLE_SUGGEST` is `off` in the suite
-and `report` for the operator; `reword` is opt-in on purpose.
+**Read before editing:** a trace has no title, description or script - use
+`review_booth.trace_run(trace)`. A video's name is `publish_log.video_title(row)`. A stored
+feature key needs a reader (`tests/test_persisted_keys_read`). `READ_ALOUD_REWRITE` and
+`TITLE_SUGGEST` are off in the suite. mypy baseline is **98**. Run `ruff check --fix` on named
+files only: on the whole repo it rewrites the other agent's open files.
 
-**Cursor:** your five are untouched (#1080 #1081 #1066 #1083 #1072). Shared files touched:
-`core/pipeline.py` (two lines: `features["title_suggest"]`), `core/content_engine.py` (the
-suggest step after the title checks), `main.py` (`one_per_day=True`), `scripts/ops.py`
-(`publish-dry-run`, `chapters`), `publishing/youtube_publisher.py` (the checklist call),
-`tests/__init__.py`, `.env.example`, `tests/regression_corpus.json`.
+**Cursor:** shared files touched: `core/pipeline.py` (`is_all_angles`, `features["read_aloud"]`),
+`core/content_engine.py` (the read-aloud pass, the beats line in the calm branch),
+`scripts/ops.py` (`desc-fold`, `free-cost`, `publish-dry-run`, `competitor-health`),
+`tests/__init__.py` (two flags, the reach store), `.env.example`, `tests/regression_corpus.json`
+(5 cases), `mypy_baseline.txt`.
 
 **Defects first:**
-- #1115 run 133 is stored as all-angles with one chapter and no 0:00 list.
-- #1116 run 132's title spells "Illia"; suggest and the facts say "Ilia".
-- #1117 `last_trace` has no title or mp4 path.
+- `ops doctor` now FAILs on `reach`: the YouTube Reporting API is not enabled in the Cloud
+  project. The operator's step; #1058 waits on it.
+- #1063 is blocked: one competitor on the list, no view counts (#1120).
+- #1121 a YouTube 500 on the competitor feed reads as "dead or wrong UC id".
 - CGFtzpiA1so and run 120's "LINK" source are still the operator's to check.
 
-**Shipped:** wave 74 - #1113 #1114 #1065 #1055 #1050. 44 of 47 new tests failed first.
-Suite 5258, mypy 109. Highest #1117. Next: **#1080 · #1081 · #1066 · #1083 · #1072** (yours).
-**In progress (Claude, waves 75-76, uncommitted):** #1115 #1116 #1117 #1075 #1058 #1062 #1034
-#1031 #1025 #1063 - skip these.
+**Shipped:** waves 75-76 - #1115 #1116 #1117 #1075 #1118 #1062 #1034 #1031 #1025. 56 of 61 new
+tests failed first. Suite 5330, mypy 98. Highest #1121. Next: **#995 · #990 · #374 · #400 · #380**.
 
 ## Slot — Cursor
 

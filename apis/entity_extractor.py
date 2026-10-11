@@ -2,7 +2,12 @@ import re
 
 
 def extract_entities(topic):
-    entities = {"year": None, "team": None, "league": None, "game_title": None}
+    entities: dict[str, str | None] = {
+        "year": None,
+        "team": None,
+        "league": None,
+        "game_title": None,
+    }
 
     year_match = re.search(r"(19|20)\d{2}", topic)
     if year_match:

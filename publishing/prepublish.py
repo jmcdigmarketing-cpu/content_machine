@@ -100,7 +100,12 @@ def _credits(request: PublishRequest, run: Any | None) -> Check:
 
 
 def _chapters(request: PublishRequest, run: Any | None) -> Check:
-    if not _features(run).get("all_angles"):
+    features = _features(run)
+    if not features.get("all_angles"):
+        asked = int(features.get("angles_asked") or 0)
+        if asked >= 2:
+            # #1115: one chapter was kept, so it goes out as a single-angle video.
+            return Check("chapters", True, f"one of {asked} angles kept - no chapter list needed")
         return Check("chapters", True, "not an all-angles video")
     if "0:00" in (request.description or ""):
         return Check("chapters", True, "chapter list starts at 0:00")

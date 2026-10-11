@@ -59,6 +59,42 @@ def last_reviewable_trace(channel_id: str | None = None) -> dict[str, Any] | Non
     return drafted or (traces[0] if traces else None)
 
 
+def trace_run(trace: dict[str, Any] | None) -> dict[str, Any]:
+    """The trace with its run's own copy beside it (#1117).
+
+    A trace holds `run_id`, timings, cost and quality - not the title, description, script,
+    file path, tags or features. Readers that asked the trace for those got nothing: `ops
+    desc-fold` always said "No description on the last run". What the trace has wins.
+    """
+    out = dict(trace or {})
+    run_id = out.get("content_run_id") or out.get("run_id")
+    if not run_id:
+        return out
+    try:
+        import json
+
+        from storage.repositories.content_runs import get_content_run_repository
+
+        run = get_content_run_repository().get(int(run_id))
+        if run is None:
+            return out
+        fields = {
+            "title": str(getattr(run, "title", "") or ""),
+            "description": str(getattr(run, "description", "") or ""),
+            "script": str(getattr(run, "script_preview", "") or ""),
+            "mp4_path": str(getattr(run, "mp4_path", "") or ""),
+            "tags": json.loads(getattr(run, "tags_json", "") or "[]"),
+            "features": json.loads(getattr(run, "features_json", "") or "{}"),
+        }
+    except Exception as exc:
+        logger.debug("trace run %s not read: %s", run_id, exc)
+        return out
+    for key, value in fields.items():
+        if value and not out.get(key):
+            out[key] = value
+    return out
+
+
 def _run_label(run_id: Any) -> str:
     if run_id is None or run_id == "":
         return "(last render)"

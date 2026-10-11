@@ -306,6 +306,16 @@ def _build_prompts(
             "Shape the script as hook → how it works → the detail people get wrong → payoff. "
             "A viewer should walk away understanding the mechanism, not remembering a stance."
         )
+        from core.angle_intent import beats_for
+
+        shape = beats_for(resolved_intent)
+        if shape:
+            # #1031: a list, a how-to, a comparison, a look back and a reaction are not
+            # explainers; each gets its own beats.
+            framing_take = (
+                f"- FORMAT is {resolved_intent}; facts are what carry it. Shape the script as "
+                f"{shape}. Do not turn it into an explainer or a debate."
+            )
         must_close = (
             "- Close with the mechanism, the misconception, or the practical implication — "
             "not a hot take and not a comment-bait question."
@@ -2167,6 +2177,20 @@ def generate_content_package(
         lambda s: _maybe_drop_contrast_frames(s, min_words=min_words, max_words=max_words),
         disabled=not _contrast_rewrite_enabled(),
     )
+    # #1034: what a voice will stumble on - number strings, parentheticals, stacked names.
+    from core.script_craft import read_aloud_enabled, read_aloud_pass
+
+    read_aloud_box: dict[str, Any] = {}
+
+    def _read_aloud(s: str) -> str:
+        out, read_aloud_box["report"] = read_aloud_pass(
+            s, lambda system, user: _call_content_llm(system, user, temperature=0.3, tier="cheap")
+        )
+        return out
+
+    script = run_script_pass(
+        script_passes, "read_aloud", script, _read_aloud, disabled=not read_aloud_enabled()
+    )
 
     quote_check = check_quote_attribution(script, corpus.factual_text)
     quote_payload = quote_check.to_dict()
@@ -2417,6 +2441,7 @@ def generate_content_package(
         "lower_thirds": lower_thirds,
         "persona_lint": persona_hits,
         "cta_summary": cta_report,
+        "read_aloud": read_aloud_box.get("report") or {},
         "sentence_rhythm": rhythm_hits,
         "script_passes": script_passes,
         "chapters_written": chapters_box,  # #1010

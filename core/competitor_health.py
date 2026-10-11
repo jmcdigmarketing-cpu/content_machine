@@ -39,6 +39,7 @@ class CompetitorCheck:
 class CompetitorHealth:
     channel_id: str
     checks: list[CompetitorCheck] = field(default_factory=list)
+    coverage: list[str] = field(default_factory=list)  # #1063: what the watch is missing
 
     @property
     def ok(self) -> bool:
@@ -65,6 +66,34 @@ def _videos_by_id(snapshot: dict[str, Any]) -> dict[str, list]:
         if cid:
             out[cid] = videos if isinstance(videos, list) else []
     return out
+
+
+WATCH_MIN_COMPETITORS = 3
+
+
+def watch_coverage_lines(snapshot: dict[str, Any] | None) -> list[str]:
+    """#1063: why a competitor outlier watch cannot run on the stored list, or [].
+
+    An outlier is a video ahead of its own channel's median views. That needs several
+    channels in the niche and a view count per video; the RSS sync stores neither.
+    """
+    rows = [r for r in (snapshot or {}).get("competitors") or [] if isinstance(r, dict)]
+    if not rows:
+        return ["outlier watch: competitors never synced (py -m scripts.ops competitor-sync)"]
+    lines: list[str] = []
+    if len(rows) < WATCH_MIN_COMPETITORS:
+        plural = "s" if len(rows) != 1 else ""
+        lines.append(
+            f"outlier watch: {len(rows)} competitor{plural} on the list - it needs "
+            f"{WATCH_MIN_COMPETITORS} or more in the channel's own niche (config/channels.json)"
+        )
+    videos = [v for r in rows for v in r.get("recent_videos") or [] if isinstance(v, dict)]
+    if videos and not any(v.get("views") is not None for v in videos):
+        lines.append(
+            f"outlier watch: no view counts on {len(videos)} stored video(s) - the RSS sync "
+            "returns titles and dates only"
+        )
+    return lines
 
 
 def inspect_competitors(
@@ -140,6 +169,7 @@ def render_report(report: CompetitorHealth) -> str:
         who = check.label or check.youtube_channel_id or "?"
         detail = f" — {check.detail}" if check.detail else ""
         lines.append(f"  [{mark}] {who}{detail}")
+    lines.extend(f"  {line}" for line in report.coverage)
     return "\n".join(lines)
 
 

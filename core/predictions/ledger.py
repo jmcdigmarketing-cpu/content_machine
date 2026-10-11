@@ -359,6 +359,71 @@ def _error_line_views(label: str, errors: list[float]) -> str:
     )
 
 
+def prediction_line(
+    entry: dict[str, Any] | None, *, rate: float | None = None, log_views: float | None = None
+) -> str:
+    """#1062: one run's frozen prediction beside what happened, or "" with no prediction.
+
+    "predicted 30% engaged (+/-8pp), got 22% - inside the band; ~210 views in 7 days, got 53".
+    """
+    import math
+
+    entry = entry or {}
+    engaged = entry.get("engaged_rate") or {}
+    views = entry.get("views_7d") or {}
+    parts: list[str] = []
+    if engaged.get("rate") is not None:
+        band = float(engaged.get("band") or 0.0)
+        text = f"predicted {float(engaged['rate']):.0%} engaged (+/-{band * 100:.0f}pp)"
+        if rate is not None:
+            verdict = "inside" if abs(float(rate) - float(engaged["rate"])) <= band else "outside"
+            text += f", got {float(rate):.0%} - {verdict} the band"
+        parts.append(text)
+    if views.get("log_views") is not None:
+        text = f"~{math.expm1(float(views['log_views'])):,.0f} views in 7 days"
+        if log_views is not None:
+            text += f", got {math.expm1(float(log_views)):,.0f}"
+        parts.append(text)
+    if not parts:
+        return ""
+    line = "; ".join(parts)
+    if rate is None and log_views is None:
+        line += " - not measured yet"
+    if entry.get("backfilled"):
+        line += " (fitted after the fact)"
+    return line
+
+
+def _runs(channel_id: str) -> list[Any]:
+    from storage.repositories.content_runs import get_content_run_repository
+
+    return list(get_content_run_repository().list_for_channel(channel_id) or [])
+
+
+def _engaged_outcomes(channel_id: str) -> dict[int, float]:
+    from core.engagement_predictor import run_engagement_map
+
+    return dict(run_engagement_map(channel_id))
+
+
+def run_lines(channel_id: str, *, limit: int = 10) -> list[str]:
+    """The newest runs that carry a frozen prediction, each with its outcome when measured."""
+    rates = _engaged_outcomes(channel_id)
+    views = _views_outcomes(channel_id)
+    lines: list[str] = []
+    for run in sorted(_runs(channel_id), key=lambda r: -int(r.id)):
+        line = prediction_line(
+            stored(int(run.id)), rate=rates.get(int(run.id)), log_views=views.get(int(run.id))
+        )
+        if not line:
+            continue
+        title = str(getattr(run, "title", "") or "")[:44]
+        lines.append(f"run {run.id} {title} - {line}")
+        if len(lines) >= limit:
+            break
+    return lines
+
+
 def report_lines(channel_id: str) -> list[str]:
     """`ops predictions`: each recommender's frozen claim against what happened."""
     from core.grade_calibration import _pearson, n_for_significance
@@ -466,6 +531,14 @@ def report_lines(channel_id: str) -> list[str]:
             if r is not None
             else f"  grade vs engaged rate: undefined (n={len(graded)}; no variance)"
         )
+    try:
+        per_run = run_lines(channel_id)  # #1062
+    except Exception as exc:
+        logger.debug("per-run predictions skipped: %s", exc)
+        per_run = []
+    if per_run:
+        lines.append("  Per run (newest first):")
+        lines.extend(f"    {line}" for line in per_run)
     return lines
 
 

@@ -1252,6 +1252,7 @@ def run_pipeline(
             chapter_lines,
             drop_thin_chapters,
             features_from_chapters,
+            is_all_angles,
             kept_angle_topic,
             locate_chapters,
             trim_chapter_openers,
@@ -1284,7 +1285,8 @@ def run_pipeline(
             spoken = count_spoken_words(result.script)
             best_topic = kept_angle_topic(best_topic, len(angles), len(chapters))
             result.topic = best_topic  # #1102: the file is named for the chapters that were cut
-            result.features["all_angles"] = True
+            result.features["all_angles"] = is_all_angles(len(chapters))
+            result.features["angles_asked"] = len(angles)
             result.features["angle_chapters"] = features_from_chapters(chapters)
             # Sentence-labelled chapters ("1:16 That's the whole story") become the angles.
             result.description = _replace_chapter_lines(
@@ -1321,6 +1323,8 @@ def run_pipeline(
     result.features["operator_quote_used"] = bool(content.get("operator_quote_used"))
     result.features["persona_lint"] = list(content.get("persona_lint") or [])
     result.features["cta_summary"] = dict(content.get("cta_summary") or {})
+    if content.get("read_aloud"):
+        result.features["read_aloud"] = dict(content["read_aloud"])  # #1034
     result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]

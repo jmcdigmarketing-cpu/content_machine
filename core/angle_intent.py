@@ -476,6 +476,38 @@ _INTENT_NOTES = {
 }
 
 
+# #1031: the shape of the script for the calm intents that are not an explainer. They all
+# used the explainer's ("how it works -> the detail people get wrong"), so a ranking was asked
+# to explain a mechanism. Hope, plan, take and the operator's own idea have theirs in
+# `core.content_engine._build_prompts`.
+BEATS: dict[str, str] = {
+    ANGLE_LIST: (
+        "hook → the criteria you rank by → the picks from the bottom up, each with the "
+        "fact that earns its place → the top pick and why it beats the rest"
+    ),
+    ANGLE_TUTORIAL: (
+        "hook → what you need before you start → the steps in order, one action each → "
+        "the mistake that undoes it → the result"
+    ),
+    ANGLE_COMPARISON: (
+        "hook → what both are for → where each one wins, with the fact behind it → "
+        "who should pick which"
+    ),
+    ANGLE_RETROSPECTIVE: (
+        "hook → what it was at the time → what it changed, with the evidence → "
+        "what did not last → where it stands now"
+    ),
+    ANGLE_REACTION: (
+        "hook → what happened, in order → what stands out and why → what it means next"
+    ),
+}
+
+
+def beats_for(intent: str) -> str:
+    """The beat line for an intent that has its own shape, else ""."""
+    return BEATS.get(intent or "", "")
+
+
 def intent_of(*texts: str | None) -> str:
     """The first non-default intent among `texts` (the angle, the seed, the operator's
     brief), else default. #1016: a script whose angle said nothing kept the take push

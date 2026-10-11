@@ -38,6 +38,33 @@ def _today() -> str:
     return date.today().isoformat()
 
 
+def release_note(released: str, today: str) -> str:
+    """#1025: a release date against today - "releases 2026-11-19 (in 40 days - NOT out
+    yet)", "released 2026-09-30 (10 days ago)". The date alone left the arithmetic to the
+    model, which calls an unreleased game out. An unreadable date is passed through."""
+    from datetime import date
+
+    text = str(released or "").strip()
+    if not text:
+        return ""
+    try:
+        when, now = date.fromisoformat(text[:10]), date.fromisoformat(today[:10])
+    except ValueError:
+        return f"released {text}"
+    days = (when - now).days
+    if days > 0:
+        return f"releases {text} (in {days} day{'s' if days != 1 else ''} - NOT out yet)"
+    ago = -days
+    if ago == 0:
+        return f"released {text} (today)"
+    if ago < 60:
+        return f"released {text} ({ago} day{'s' if ago != 1 else ''} ago)"
+    if ago < 365:
+        return f"released {text} ({ago // 30} months ago)"
+    years = ago // 365
+    return f"released {text} ({years} year{'s' if years != 1 else ''} ago)"
+
+
 def format_signal_facts(signals: dict[str, Any]) -> str:
     lines = []
     demand: list[str] = []
@@ -123,10 +150,10 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                 lines.append("News headlines:\n" + headlines)
 
         elif name == "sports" and isinstance(data, list):
-            teams = [
+            named = [
                 t.get("strTeam") or t.get("strAlternate") for t in data[:3] if isinstance(t, dict)
             ]
-            teams = [t for t in teams if t]
+            teams = [str(t) for t in named if t]
             if teams:
                 lines.append(f"sports teams (API): {', '.join(teams)}")
 
@@ -175,18 +202,18 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
                     continue
                 parts = [f"RAWG: {name_g}"]
                 if game.get("released"):
-                    parts.append(f"released {game['released']}")
+                    parts.append(release_note(str(game["released"]), _today()))
                 if game.get("rating"):
                     parts.append(f"rating {game['rating']}")
                 genres = [
-                    g.get("name")
+                    str(g.get("name"))
                     for g in (game.get("genres") or [])[:3]
                     if isinstance(g, dict) and g.get("name")
                 ]
                 if genres:
                     parts.append("genres: " + ", ".join(genres))
                 tags = [
-                    t.get("name")
+                    str(t.get("name"))
                     for t in (game.get("tags") or [])[:5]
                     if isinstance(t, dict) and t.get("name")
                 ]
@@ -233,6 +260,8 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
             if posts:
                 post_lines = []
                 for p in posts[:6]:
+                    if not isinstance(p, dict):
+                        continue
                     title = (p.get("title") or "").strip()
                     sub = p.get("subreddit") or ""
                     ups = p.get("ups") or 0

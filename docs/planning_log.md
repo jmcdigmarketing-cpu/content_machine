@@ -17,6 +17,42 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - waves 75-76: the next ten
+
+**Prompt:** next 10 n push
+
+**Picked:** asked whether to take the roadmap's five, since Cursor had not started them across
+three waves; the operator said they stay Cursor's (Cursor shipped them during this wave,
+`4616fee`). The ten: my three filed follow-ups (#1115 #1116 #1117) and seven medium items
+outside Cursor's files. Two offered items were swapped after measuring - #1059 (only 5 of 43
+videos carry `stayed_share`) and #1049 (its CTR is not stored).
+
+**Shipped (nine):**
+1. #1115 a one-chapter video is not stored as all-angles.
+2. #1116 the subject's spelling is checked against suggest ("Illia" / "ilia").
+3. #1117 a trace reader gets the run's title, description and script; `ops desc-fold` works.
+4. #1075 mypy 109 -> 98.
+5. #1118 (from #1058) the reach sync records why there is no click-through; `ops doctor` shows it.
+6. #1062 `ops predictions` lists each run's prediction beside what it got.
+7. #1034 sentences that are hard to say are flagged, and rewritten when nothing is lost.
+8. #1031 list, tutorial, comparison, retrospective and reaction each get their own beats.
+9. #1025 a game's release date is stated against today.
+
+**Blocked (one):** #1063 - one competitor on the list, no view counts stored. The health report
+says so; #1120 is what it needs.
+
+**Findings, with file:line:**
+- `analytics/reach_report.py:204` (before): `service is None -> return ""`. And the real cause: HTTP 403, "YouTube Reporting API has not been used in project ... or it is disabled". #1049 and #1058 call the CTR "stored, unused"; none was ever stored.
+- `scripts/ops.py` `cmd_desc_fold`, `cmd_free_cost`, `core/win_notify.py:438`: read `description`, `script`, `features` from a trace that has `run_id` and none of them.
+- `core/content_engine.py:300` (before): every calm intent took "how it works -> the detail people get wrong".
+- `core/pipeline.py:1287` (before): `all_angles = True` whatever `drop_thin_chapters` kept.
+- `tests/test_persisted_keys_read` caught `angles_asked` stored with no reader; the publish checklist reads it now.
+- `ruff check . --fix` run on the whole repo while Cursor had files open is a hazard - it fixes their half-written files too. Lint fixes go to named files.
+
+**Not done:** #1119 patch notes; #1120 the competitor list; #1121 a YouTube 500 read as a dead feed. `publish_windows`, `analyst_accuracy` and the `requests` params errors are the next cheap mypy ones. One commit covers both waves - their edits share files and hunks cannot be staged apart here.
+
+**Audit:** 63 new tests in seven files plus two added after the persisted-keys guard fired; 56 of the first 61 failed or errored on the committed sources (11 failures, 45 errors), 5 are guards. 5 corpus cases, 174 of 174 held. ruff and format clean; mypy 98, baseline lowered from 109. Callers: `is_all_angles` <- pipeline; `_subject_spelling` <- `suggest_check`; `trace_run` <- three ops commands and the tray; `status` <- `ops doctor`, `_record` <- `sync_reach`; `run_lines` <- `report_lines`; `read_aloud_pass` <- `content_engine` via `run_script_pass`; `beats_for` <- `_build_prompts`; `release_note` <- `format_signal_facts`; `watch_coverage_lines` <- `ops competitor-health`.
+
 ## 2026-10-10 (Cursor) - Claude's five
 
 **Prompt:** complete your 5 sent by claude

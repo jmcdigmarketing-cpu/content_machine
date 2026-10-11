@@ -69,6 +69,9 @@ os.environ["KEEP_TO_IDEA"] = "false"
 os.environ["STANCE_MODEL_READ"] = "false"
 # #1050: the title check asks YouTube suggest once per run - never in tests.
 os.environ["TITLE_SUGGEST"] = "off"
+# #1034: the read-aloud pass makes one cheap call when a sentence is hard to say; a test
+# that wants it turns it on, so no other test's scripted replies shift.
+os.environ["READ_ALOUD_REWRITE"] = "false"
 # #1095: a hope or plan run with no supporting fact makes one stance search; never in tests.
 os.environ["STANCE_RESEARCH"] = "false"
 # #899: event research reads Wikipedia / Google News on a recency miss - never in tests.
@@ -157,6 +160,7 @@ from unittest.mock import patch
 import config.competitors as _competitors
 import config.paths as _paths
 from analytics import mailbag as _mailbag
+from analytics import reach_report as _reach_report
 from apis import cache_manager as _cache_manager
 from apis import youtube_quota as _youtube_quota
 from core import correction_dossier as _correction_dossier
@@ -211,6 +215,8 @@ _SUITE_STORE_PATCHES = (
     patch.object(_negative_facts, "STORE_PATH", Path(_suite_store("negative_facts.json"))),
     patch.object(_counterfactual, "STORE_PATH", Path(_suite_store("counterfactual.json"))),
     patch.object(_retraction_watch, "STAMP_PATH", _suite_store("retraction_toast.json")),
+    # #1058: the reach sync now records what it found, so it writes even with no sign-in.
+    patch.object(_reach_report, "REACH_TEMPLATE", _suite_store("reach_{channel}.json")),
     patch.object(
         _correction_dossier,
         "STAMP_PATH_TEMPLATE",

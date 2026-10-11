@@ -112,7 +112,7 @@ A held run is refused until its claim is confirmed or rejected (step 3). Policy 
 py -m scripts.ops sync-metrics --channel tapin
 py -m scripts.ops growth --channel tapin          # where the views go, the three biggest gaps
 py -m scripts.ops weekly-report --channel tapin   # more of / less of / try next
-py -m scripts.ops predictions --channel tapin     # what was predicted vs what happened
+py -m scripts.ops predictions --channel tapin     # each run's prediction beside what it got
 ```
 
 `weekly-report` opens with three decisions, each with the number behind it. `growth` compares

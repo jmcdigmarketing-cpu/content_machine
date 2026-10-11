@@ -139,6 +139,15 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         add("secrets", True, f"n/a ({type(exc).__name__})")
 
     try:
+        from analytics import reach_report
+
+        reach_ok, reach_line = reach_report.status(channel_id)  # #1058
+        add("reach", reach_ok, reach_line)
+    except Exception as exc:
+        logger.debug("doctor reach skipped: %s", exc)
+        add("reach", True, f"n/a ({type(exc).__name__})")
+
+    try:
         from core import workspace_hazards
 
         hazards = workspace_hazards.gather()

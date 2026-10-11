@@ -184,12 +184,18 @@ def cmd_channel_go_live(args: argparse.Namespace) -> int:
 )
 def cmd_competitor_health(args: argparse.Namespace) -> int:
     from analytics.youtube_rss import fetch_channel_uploads_rss
-    from core.competitor_health import inspect_competitors, render_report
+    from core.competitor_health import (
+        _load_snapshot,
+        inspect_competitors,
+        render_report,
+        watch_coverage_lines,
+    )
 
     report = inspect_competitors(
         args.channel,
         fetch=lambda cid: fetch_channel_uploads_rss(cid, max_results=4),
     )
+    report.coverage = watch_coverage_lines(_load_snapshot(args.channel))  # #1063
     print(render_report(report))
     return 0 if report.ok else 1
 
@@ -2437,9 +2443,9 @@ def cmd_free_cost(args: argparse.Namespace) -> int:
     script = ""
     cost = None
     try:
-        from core.review_booth import last_trace
+        from core.review_booth import last_trace, trace_run
 
-        trace = last_trace(args.channel)
+        trace = trace_run(last_trace(args.channel))
         if trace:
             script = str(trace.get("script") or "")
             raw = trace.get("cost")
@@ -2462,9 +2468,9 @@ def cmd_desc_fold(args: argparse.Namespace) -> int:
 
     description = ""
     try:
-        from core.review_booth import last_trace
+        from core.review_booth import last_trace, trace_run
 
-        trace = last_trace(args.channel)
+        trace = trace_run(last_trace(args.channel))
         if trace:
             description = str(trace.get("description") or "")
     except Exception as exc:
@@ -2718,25 +2724,15 @@ def cmd_publish_dry_run(args: argparse.Namespace) -> int:
     file_path = "out.mp4"
     run_id = None
     try:
-        from core.review_booth import last_trace
+        from core.review_booth import last_trace, trace_run
 
-        trace = last_trace(args.channel)
+        trace = trace_run(last_trace(args.channel))
         if trace:
             title = str(trace.get("title") or title)
             description = str(trace.get("description") or "")
             file_path = str(trace.get("mp4_path") or file_path)
             tags = list(trace.get("tags") or [])
             run_id = trace.get("content_run_id") or trace.get("run_id")
-            if run_id:
-                # The trace keeps the run's id, not its copy: read what would be uploaded.
-                from storage.repositories.content_runs import get_content_run_repository
-
-                run = get_content_run_repository().get(int(run_id))
-                if run is not None:
-                    title = str(run.title or title)
-                    description = str(run.description or description)
-                    file_path = str(run.mp4_path or file_path)
-                    tags = tags or list(json.loads(run.tags_json or "[]"))
     except Exception as exc:
         from core.logging import get_logger
 

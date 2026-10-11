@@ -197,12 +197,62 @@ def merge_into_metrics(channel_id: str) -> int:
     return updated
 
 
+_ENABLE_LINE = (
+    "enable the YouTube Reporting API in Google Cloud Console (same sign-in), then sync again"
+)
+
+
+def _record(channel_id: str, status: str, detail: str = "") -> None:
+    """Keep what the last sync found, so `ops doctor` can say it without a network call."""
+    data = load(channel_id)
+    data["last_status"] = status
+    data["last_detail"] = detail[:200]
+    data["checked"] = date.today().isoformat()
+    _save(channel_id, data)
+
+
+def status(channel_id: str) -> tuple[bool, str]:
+    """(ok, line) from the last sync - why there are, or are not, click-through numbers.
+
+    #1058: for months there were none and nothing said why: the Reporting API was never
+    enabled in the Cloud project, and the one line that said so sat inside `sync-metrics`.
+    """
+    data = load(channel_id)
+    last = str(data.get("last_status") or "")
+    when = str(data.get("checked") or "")
+    if not last:
+        return False, "click-through: never synced (py -m scripts.ops sync-metrics)"
+    if last == "no_service":
+        return False, (
+            f"click-through: no analytics sign-in as of {when} "
+            "(py -m youtube.oauth_setup --channel <id>)"
+        )
+    if last == "api_disabled":
+        return False, f"click-through: {_ENABLE_LINE} (seen {when})"
+    if last == "error":
+        return (
+            False,
+            f"click-through: the reach report failed on {when} ({data.get('last_detail')})",
+        )
+    videos = len(data.get("videos") or {})
+    if last == "waiting" or not videos:
+        since = str(data.get("job_created") or when)
+        return True, (
+            f"click-through: report job running since {since}, no daily file yet "
+            "(YouTube writes the first within about two days)"
+        )
+    return True, f"click-through: {videos} video(s) with impressions, synced {when}"
+
+
 def sync_reach(channel_id: str) -> str:
     """Create the job if needed, collect new daily reports, merge; one line for the sync."""
     from youtube.oauth import get_youtube_reporting_service
 
     service = get_youtube_reporting_service(channel_id)
     if service is None:
+        # The sync stays quiet here (it runs with YouTube switched off too); the doctor's
+        # `reach` row is where this is said.
+        _record(channel_id, "no_service")
         return ""
     try:
         ensure_job(service, channel_id)
@@ -210,15 +260,16 @@ def sync_reach(channel_id: str) -> str:
     except Exception as exc:
         message = str(exc)
         if any(
-            k in message for k in ("accessNotConfigured", "has not been used", "SERVICE_DISABLED")
+            k in message
+            for k in ("accessNotConfigured", "has not been used", "SERVICE_DISABLED", "is disabled")
         ):
-            return (
-                "  Click-through: enable the YouTube Reporting API in Google Cloud Console "
-                "(same sign-in), then sync again (#951)"
-            )
+            _record(channel_id, "api_disabled")
+            return f"  Click-through: {_ENABLE_LINE} (#951)"
         logger.debug("reach report skipped: %s", exc)
+        _record(channel_id, "error", message)
         return f"  Click-through: the reach report is unavailable ({message[:120]})"
     merged = merge_into_metrics(channel_id)
+    _record(channel_id, "ok" if load(channel_id).get("videos") else "waiting")
     return (
         f"  Click-through: {new} new daily report(s); {merged} video(s) with impressions "
         "and CTR (ops packaging)"

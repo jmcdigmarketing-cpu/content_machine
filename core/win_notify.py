@@ -433,9 +433,9 @@ def last_domain_label(channel_id: str | None = None) -> str:
         return ""
     try:
         from apis.topic_scorer import infer_domain
-        from core.review_booth import last_trace
+        from core.review_booth import last_trace, trace_run
 
-        trace = last_trace(channel_id) or {}
+        trace = trace_run(last_trace(channel_id))
         topic = str(trace.get("selected_topic") or trace.get("input_topic") or "")
         domain = str(trace.get("domain") or "")
         feats = trace.get("features") or {}

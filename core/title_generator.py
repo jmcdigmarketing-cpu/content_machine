@@ -338,6 +338,40 @@ def _suggest_fetch(phrase: str) -> list[str] | None:
     return youtube_suggestions(phrase)
 
 
+def _one_edit_apart(a: str, b: str) -> bool:
+    """True when `a` and `b` differ by one inserted, dropped or changed letter."""
+    if a == b or abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) > len(b):
+        a, b = b, a
+    i = 0
+    while i < len(a) and a[i] == b[i]:
+        i += 1
+    return a[i:] == b[i + 1 :] if len(a) < len(b) else a[i + 1 :] == b[i + 1 :]
+
+
+def _subject_spelling(subject: str, suggestions: list[str]) -> dict[str, str] | None:
+    """#1116: a word of the subject that most suggestions spell one letter differently.
+
+    Run 132's title said "Illia Topuria"; people type "ilia topuria".
+    """
+    from apis.topic_tokens import content_tokens
+
+    rows = [set(content_tokens(text)) for text in suggestions]
+    for word in content_tokens(subject, min_len=4):
+        if any(word in row for row in rows):
+            continue
+        counts: dict[str, int] = {}
+        for row in rows:
+            for other in row:
+                if _one_edit_apart(word, other):
+                    counts[other] = counts.get(other, 0) + 1
+        best = max(counts, key=lambda k: counts[k], default="")
+        if best and counts[best] * 2 > len(rows):
+            return {"typed": word, "searched": best}
+    return None
+
+
 def suggest_check(title: str, topic: str, *, fetch=None) -> dict:
     """#1050: is the title worded the way people search its subject?
 
@@ -358,20 +392,36 @@ def suggest_check(title: str, topic: str, *, fetch=None) -> dict:
         return {"status": "none", "subject": subject}
     own = set(content_tokens(subject))
     said = set(content_tokens(title, min_len=3)) - own
+    spelling = _subject_spelling(subject, found)
+    extra = {"spelling": spelling} if spelling else {}
     for suggestion in found:
         if said & (set(content_tokens(suggestion, min_len=3)) - own):
-            return {"status": "searched", "subject": subject, "match": suggestion}
-    return {"status": "unsearched", "subject": subject, "suggestions": list(found[:5])}
+            return {"status": "searched", "subject": subject, "match": suggestion, **extra}
+    return {
+        "status": "unsearched",
+        "subject": subject,
+        "suggestions": list(found[:5]),
+        **extra,
+    }
 
 
 def suggest_line(report: dict) -> str:
     """One line for the review screen, or "" when there is no verdict to show."""
     status = report.get("status")
+    spelling = report.get("spelling") or {}
+    spelt = (
+        f' - people spell "{spelling["typed"]}" as "{spelling["searched"]}"'
+        if spelling.get("typed") and spelling.get("searched")
+        else ""
+    )
     if status == "searched":
-        return f'Title: people search "{report["match"]}" - the title uses those words'
+        return f'Title: people search "{report["match"]}" - the title uses those words{spelt}'
     if status == "unsearched":
         typed = "; ".join(report.get("suggestions") or [])
-        return f'Title: nobody types its wording after "{report["subject"]}" - people type: {typed}'
+        return (
+            f'Title: nobody types its wording after "{report["subject"]}" - '
+            f"people type: {typed}{spelt}"
+        )
     return ""
 
 

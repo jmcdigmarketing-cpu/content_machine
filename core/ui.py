@@ -1860,6 +1860,15 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
     except Exception as exc:
         logger.debug("title suggest line skipped: %s", exc)
 
+    read_aloud = features.get("read_aloud") or {}
+    if read_aloud.get("flagged"):
+        # #1034: what the voice will stumble on, and how much of it was rewritten.
+        print_fn(
+            f"\n  Read-aloud: {read_aloud['flagged']} sentence(s) hard to say "
+            f"({', '.join(read_aloud.get('why') or [])}); "
+            f"{read_aloud.get('rewritten', 0)} rewritten"
+        )
+
     # Candidate 321 — the title used to be the one string no check read.
     title_warnings = features.get("title_warnings") or []
     if title_warnings:

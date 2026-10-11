@@ -146,6 +146,8 @@ os.environ["ANGLE_LLM_JUDGE"] = "false"
 os.environ["COMPETITOR_SYNC_ON_DISCOVERY"] = "false"
 # #1023: best bets read ESPN boards. The suite stubs that fetch; a real run does not.
 os.environ["BEST_BET_SCHEDULE"] = "false"
+# #400: measured words-per-second must not read or write the operator's voice_pace.json.
+os.environ["VOICE_PACE_FILE"] = ""
 
 # Redirect the four operator stores tests/CLAUDE.md forbids writing. Per-test
 # patches still nest inside these. Bound names (not only config.paths) must move

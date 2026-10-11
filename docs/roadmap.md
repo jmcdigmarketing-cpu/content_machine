@@ -54,25 +54,25 @@ is left is below.
 
 ### Recommended next five (non-app)
 
-**2026-10-10** shipped the previous five (#1080, #1081, #1066, #1083, #1072).
-`py -m scripts.ops roadmap-index`: backlog open 320, done 827, numbered open 268, highest
-open #1117. The list changed because those five are done. Claude's waves 75-76 then closed
-#1115 #1116 #1117 #1075 #1062 #1034 #1031 and #1025 (in part), found #1058 and #1063 blocked
-(#1118, #1120), and filed #1119 and #1121. The next five are the cheapest open small items
-that are not an operator call:
+**2026-10-10.** Shipped #990, #400, #380, #995, #374 (Cursor). `roadmap-index`: open 310,
+done 841, numbered open 258, highest #1121. The list changed because those five are done.
+The next five are the cheapest open small items that are not an operator call. #1121 is
+the newest filed defect. #462 is the hole the log reader left: a line still cannot name
+its run.
 
-1. **#995 unconfirmed claims against the vault's corrections** `[S]`.
-2. **#990 an ops verb that prints the log** `[S]`.
-3. **#374 the premium tier for the hook only** `[S]`.
-4. **#400 measured words-per-second per voice** `[S]`.
-5. **#380 Apify cost per usable fact** `[S]`.
+1. **#1121 a YouTube 500 is not a dead channel** `[S]`.
+2. **#462 run id on each log line** `[S]`.
+3. **#404 breath and dead-air trim** `[S]`.
+4. **#388 backoff jitter** `[S]`.
+5. **#409 per-channel brand-safety lexicon** `[S]`.
 
 The step-by-step: [operator_guide.md](operator_guide.md). **Operator:** enable the YouTube
 Reporting API in Google Cloud Console - `ops doctor`'s `reach` row fails until then (#1118).
 
 **#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
 #1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),
-desktop B2 (#1068, #1064).
+#1015 (waits on PySide), #975 (waiting on a boosted video), desktop B2 (#1068, #1064).
+#1119 and #1120 are medium.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.

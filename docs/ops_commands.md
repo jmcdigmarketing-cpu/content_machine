@@ -92,6 +92,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `lightbox` | Thumbnail lightbox for the last Pillow thumb |
 | `list` | List all operator commands |
 | `list-uploads` | Rendered MP4s not yet on YouTube |
+| `log` | Print the last lines of the log, and the warnings in them (#990) |
 | `log-override` | Record that a recommendation was ignored (--topic offered, --source chosen) |
 | `mailbag` | Read viewers' questions on your newest uploads and cluster them (#114) |
 | `migrate-layout` | Move root runtime files into data/ and config/secrets/ |

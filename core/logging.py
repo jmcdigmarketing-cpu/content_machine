@@ -87,6 +87,36 @@ def get_logger(name=None):
     return logging.getLogger("content_machine")
 
 
+def tail_log(n: int = 40) -> dict:
+    """Last ``n`` lines of the log file, and the WARNING lines among them (#990).
+
+    A missing file, a blank ``CONTENT_LOG_FILE``, or an unreadable file is an empty
+    result. Nothing is logged: an absent log is not a failed run.
+    """
+    path = log_file_path()
+    empty = {"path": path or "", "lines": [], "warnings": []}
+    if not path or not os.path.isfile(path):
+        return empty
+    try:
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            lines = handle.read().splitlines()
+    except OSError:
+        return empty
+    count = n if n and n > 0 else 40
+    tail = lines[-count:]
+    warnings = [line for line in tail if " [WARNING] " in line]
+    return {"path": path, "lines": tail, "warnings": warnings}
+
+
+def log_link_text(n: int = 40) -> str:
+    """The Costs-page line: the log path and the latest warning, or none."""
+    got = tail_log(n)
+    path = got["path"] or "(log off)"
+    if got["warnings"]:
+        return f"{path} - {got['warnings'][-1]}"
+    return f"{path} - no warnings in the log"
+
+
 def detach_log_file() -> None:
     """Remove the log file handler (`ops test` runs the suite in-process: no data/ writes)."""
     app = logging.getLogger("content_machine")

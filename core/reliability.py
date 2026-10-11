@@ -423,6 +423,100 @@ def _apify_cache_dollars_saved(by_prefix: dict[str, Any]) -> float:
     return round(hits * _rate("COST_APIFY_PER_RUN", 0.02), 4)
 
 
+def apify_fact_yield(signals: dict[str, Any] | None, script: str) -> list[dict[str, Any]]:
+    """Dollars per fact a billed Apify signal actually put in the script (#380).
+
+    The run's Apify total is unchanged. A signal that was billed and grounded
+    nothing says so, instead of dividing by zero. A free backend costs nothing.
+    Competitor and other "NOT facts" blocks are popularity, not facts.
+    """
+    from core.cost_meter import _APIFY_SIGNALS, _rate
+    from core.signal_facts import format_signal_facts
+
+    rate = _rate("COST_APIFY_PER_RUN", 0.02)
+    rows: list[dict[str, Any]] = []
+    for name in _APIFY_SIGNALS:
+        signal = (signals or {}).get(name) or {}
+        if not signal.get("active"):
+            continue
+        backend = str((signal.get("data") or {}).get("backend") or "apify")
+        cost = round(rate, 4) if backend == "apify" else 0.0
+        try:
+            block = format_signal_facts({name: signal})
+        except Exception as exc:
+            logger.debug("apify yield facts skipped for %s: %s", name, exc)
+            block = ""
+        usable = 0 if "NOT facts" in block else _usable_fact_lines(block, script or "")
+        if cost == 0.0:
+            line = f"{name}: $0.00 (free backend)"
+            per_fact: float | None = 0.0
+        elif usable == 0:
+            line = f"{name}: ${cost:.2f} and no usable fact"
+            per_fact = None
+        else:
+            per_fact = round(cost / usable, 4)
+            line = f"{name}: ${per_fact:.2f} per usable fact ({usable})"
+        rows.append(
+            {
+                "signal": name,
+                "cost": cost,
+                "usable": usable,
+                "per_fact": per_fact,
+                "line": line,
+            }
+        )
+    return rows
+
+
+def _usable_fact_lines(block: str, script: str) -> int:
+    import re
+
+    from apis.topic_tokens import title_phrases
+
+    candidates = [
+        line.strip()
+        for line in (block or "").splitlines()
+        if line.strip().startswith("-") or line.strip().startswith("•")
+    ]
+    count = 0
+    for line in candidates:
+        names = [phrase.lower() for phrase in title_phrases(line)]
+        low = script.lower()
+        if any(name and name in low for name in names):
+            count += 1
+            continue
+        if any(
+            re.search(rf"(?<!\d){re.escape(token)}(?!\d)", script)
+            for token in (item.rstrip(".,") for item in re.findall(r"\d[\d.,]*", line))
+            if token
+        ):
+            count += 1
+    return count
+
+
+def stored_apify_yield(channel_id: str) -> list[dict[str, Any]]:
+    """The latest run's `features["apify_yield"]`, or [] when nothing stored it."""
+    import json
+
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        runs = list(get_content_run_repository().list_for_channel(channel_id) or [])
+    except Exception as exc:
+        logger.debug("apify yield unreadable: %s", exc)
+        return []
+    if not runs:
+        return []
+    run = max(runs, key=lambda row: int(getattr(row, "id", 0) or 0))
+    raw = getattr(run, "features_json", None) or "{}"
+    try:
+        features = json.loads(raw) if isinstance(raw, str) else {}
+    except (TypeError, ValueError):
+        return []
+    rows = features.get("apify_yield") if isinstance(features, dict) else None
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
 def render(data: dict[str, Any] | None = None) -> str:
     """Format the snapshot as an operator-facing multi-line report."""
     data = data or gather()
@@ -449,6 +543,9 @@ def render(data: dict[str, Any] | None = None) -> str:
     lines.append(f"  budget  : {_budget_line(None, ap.get('budget'))}")
     if ap.get("persisted_exhausted") and ap.get("next_reset"):
         lines.append(f"  reset   : cycle resets {str(ap['next_reset'])[:16]} UTC (auto re-enable)")
+    for row in data.get("apify_yield") or []:
+        if isinstance(row, dict) and row.get("line"):
+            lines.append(f"  yield   : {row['line']}")
 
     llm = data.get("llm", {})
     lines.append("LLM")

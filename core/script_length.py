@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -203,17 +204,120 @@ def trim_overlength(
 
 
 def spoken_words_per_second(channel_id: str | None = None) -> float:
-    """Words per second at the voice's pace (#893): the nominal rate times `speech_speed`.
+    """Words per second at the voice's pace (#893, #400).
 
     Time estimates - chapter lines, the description's duration, the review readout -
     divide by this. The presets keep `WORDS_PER_SECOND`: they size scripts, not runs.
+    Once a voice has three measured renders, those replace the nominal rate.
     """
     try:
         from core.tts import speech_speed
 
-        return WORDS_PER_SECOND * speech_speed(channel_id)
+        nominal = WORDS_PER_SECOND * speech_speed(channel_id)
     except Exception:
-        return WORDS_PER_SECOND
+        nominal = WORDS_PER_SECOND
+    measured = measured_wps(_narrator_voice_id(channel_id))
+    return measured if measured else nominal
+
+
+PACE_MIN_SAMPLES = 3
+
+
+def pace_store_path() -> str:
+    """`VOICE_PACE_FILE`. Unset is `data/voice_pace.json`; blank turns measuring off."""
+    raw = os.environ.get("VOICE_PACE_FILE")
+    if raw is None:
+        from config.paths import DATA_DIR
+
+        return os.path.join(DATA_DIR, "voice_pace.json")
+    return raw.strip()
+
+
+def _pace_of(words: list) -> float | None:
+    starts: list[float] = []
+    ends: list[float] = []
+    count = 0
+    for word in words or []:
+        if not isinstance(word, dict):
+            continue
+        if not str(word.get("word") or "").strip():
+            continue
+        try:
+            starts.append(float(word.get("start", 0)))
+            ends.append(float(word.get("end", 0)))
+        except (TypeError, ValueError):
+            return None
+        count += 1
+    if count < 1 or not ends:
+        return None
+    span = max(ends) - min(starts)
+    if span <= 0:
+        return None
+    return count / span
+
+
+def _load_pace(path: str) -> dict:
+    if not path or not os.path.isfile(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as handle:
+            loaded = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def record_pace(voice_id: str, words: list) -> float | None:
+    """Remember one render's words per second for `voice_id`. None when it cannot."""
+    voice = (voice_id or "").strip()
+    rate = _pace_of(words)
+    path = pace_store_path()
+    if not voice or rate is None or not path:
+        return None
+    data = _load_pace(path)
+    samples = [float(item) for item in (data.get(voice) or []) if _is_number(item)]
+    samples.append(round(rate, 4))
+    data[voice] = samples[-20:]
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(data, handle)
+    except OSError:
+        return None
+    return rate
+
+
+def _is_number(item) -> bool:
+    try:
+        float(item)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+def measured_wps(voice_id: str) -> float | None:
+    """Median words per second once `PACE_MIN_SAMPLES` exist for this voice."""
+    voice = (voice_id or "").strip()
+    path = pace_store_path()
+    if not voice or not path:
+        return None
+    samples = [float(item) for item in (_load_pace(path).get(voice) or []) if _is_number(item)]
+    if len(samples) < PACE_MIN_SAMPLES:
+        return None
+    ordered = sorted(samples)
+    mid = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
+def _narrator_voice_id(channel_id: str | None) -> str:
+    try:
+        from config.channels import get_channel_profile
+
+        return str(getattr(get_channel_profile(channel_id), "tts_voice_id", "") or "")
+    except Exception:
+        return ""
 
 
 def estimate_duration_seconds(script: str, *, wps: float = WORDS_PER_SECOND) -> float:

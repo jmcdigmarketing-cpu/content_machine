@@ -7,6 +7,20 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Claude Code): wave 74 #1113 #1114 #1065 #1055 #1050
+
+Reports name a video by its run's title, not by the note its upload left (#1113; seven readers
+did). An old run with no stored sport is read from its title and script (#1114). One checklist
+runs before every upload: a title YouTube would reject or a dropped footage credit refuses it,
+disclosure and chapters warn (#1065; `ops publish-dry-run` prints it). Shorts cut from one
+video go out one a day and `ops chapters --run-id N` shows the plan (#1055). The title's
+subject is checked against YouTube suggest and the finding is shown on the review screen;
+`TITLE_SUGGEST=reword` is opt-in (#1050). Suite 5258; mypy 109. Pushed to origin.
+
+Filed open: #1115 (a one-chapter video still stored as all-angles), #1116 (the subject's
+spelling against suggest), #1117 (the publish dry run and the trace). Next: #1080, #1081,
+#1066, #1083, #1072 (Cursor's).
+
 ## Previous — 2026-10-10 (Claude Code): wave 73 #1111 #1112 #1054 #1061 #1076
 
 The operator chose the two footage follow-ups plus three, leaving the roadmap's five to

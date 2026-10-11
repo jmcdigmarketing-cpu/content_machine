@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from core.chrome import build_qss, look_flags
 from core.cost_tower import TowerRow, amount_text
+from core.logging import log_link_text
 
 _COLUMNS = ("Lane", "Item", "Used / Limit", "State", "Resets")
 
@@ -40,6 +41,9 @@ class CostWindow(QMainWindow):
         brand.setObjectName("title_brand")
         layout.addWidget(brand)
         layout.addWidget(QLabel("Read-only. UNKNOWN means no reading, never zero."))
+        self.log_label = QLabel(log_link_text())
+        self.log_label.setWordWrap(True)
+        layout.addWidget(self.log_label)
         self.table = QTableWidget(0, len(_COLUMNS))
         self.table.setHorizontalHeaderLabels(list(_COLUMNS))
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)

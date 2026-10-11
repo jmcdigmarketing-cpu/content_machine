@@ -672,6 +672,23 @@ def generate_audio(
             return _generate_audio(script, output_path, channel_id=channel_id, segments=segments)
     finally:
         _last_voices = dict(_voices_spoken)
+        _record_spoken_pace(output_path)
+
+
+def _record_spoken_pace(output_path: str) -> None:
+    """#400: one sample of the narrator voice that this render actually spoke."""
+    voice = _voices_spoken.get(ROLE_NARRATOR) or ""
+    if not voice or not output_path:
+        return
+    try:
+        from core.script_length import record_pace
+        from video.subtitles import load_word_timings
+
+        words = load_word_timings(output_path)
+        if words:
+            record_pace(voice, words)
+    except Exception as exc:
+        logger.debug("voice pace skipped: %s", exc)
 
 
 def _spoken_text(text: str) -> str:

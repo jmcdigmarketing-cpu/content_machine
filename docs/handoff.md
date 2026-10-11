@@ -80,18 +80,20 @@ tests failed first. Suite 5330, mypy 98. Highest #1121. Next: **#995 · #990 · 
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `adbc3c7` · **Tree:** this wave is
+**Written:** 2026-10-10 · **HEAD at write:** `85ce1d2` · **Tree:** this wave is
 uncommitted until the commit that follows. Leave `.agents/` and `.codex/`.
 
 **Defects first:**
+- The first full suite (5347) failed the env lint: `VOICE_PACE_FILE` was read
+  and not in `.env.example`. Documented beside `TTS_SPEED`.
+- #374 changes the script a healthy run writes. Two calls by default. Set
+  `SCRIPT_BODY_TIER=premium` for the old single call.
+- `ops log --limit 15` printed one warning: YouTube RSS returned 500. That is
+  #1121, still open.
 - #1088 is still an operator call.
-- #1115 #1116 #1117 are Claude's, in progress. Left alone, with the rest of
-  that note (#1075 #1058 #1062 #1034 #1031 #1025 #1063).
-- The suite failed on uncommitted `angles_asked` in `core/pipeline.py`.
-  That line is Claude's and is not in this commit.
 
-**Shipped:** #1080 #1081 #1066 #1083 #1072. Eight tests failed or errored
-first (UFC 322 offered on 2026-11-14, the label ended on "only", no published
-minute line, the vault had no fact, `description_fix` missing). The dry-run
-vault test was already empty. Next: #995 #990 #374 #400 #380. Shared file:
-`scripts/ops.py`.
+**Shipped:** #990 #400 #380 #995 #374. 16 of 17 new tests failed or errored
+first. The restore-flag test was already one premium call. mypy 98.
+`roadmap-index`: open 310, done 841, numbered open 258, highest #1121.
+Next: #1121 #462 #404 #388 #409. Shared: `scripts/ops.py`, `core/pipeline.py`,
+`core/content_engine.py`, `tests/__init__.py`, `.env.example`.

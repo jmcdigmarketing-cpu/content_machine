@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: waves 75-76 (the next ten: nine shipped, one blocked)
+# Handoff synopsis — 2026-10-10: log, pace, yield, vault, hook (#990 #400 #380 #995 #374)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,27 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): waves 75-76, the next ten
+## Last wave — 2026-10-10 (Cursor): #990 #400 #380 #995 #374
+
+`ops log` prints the last lines of `data/logs/content_machine.log` and the warnings in
+them, and the Costs page shows the same line (#990). `ops log --limit 15` printed one
+warning: YouTube RSS returned 500. Three renders at 2.4 words per second for TapIn's
+voice make the spoken rate 2.4; fewer than three stay on 3.3 times the speech speed,
+and the length presets still use 3.3 (#400). A billed fact the script uses costs $0.02
+per usable fact; no overlap prints "$0.02 and no usable fact"; a free backend is $0.00
+(#380). The Apify total is unchanged. With no later run, a vault correction contradicts
+"Jon Jones beat Tom Aspinall at UFC 321" and an operator fact confirms the Silksong
+sales sentence (#995). A script is two calls by default: premium for the first two
+sentences, cheap for the rest. `SCRIPT_BODY_TIER=premium` is the old single call. An
+empty hook warns once. A hook response that already contains a script is the package
+(#374). This changes the script a healthy run writes. 16 of 17 new tests failed or
+errored first. The first full run was 5347 tests and failed the env lint:
+`VOICE_PACE_FILE` was not in `.env.example`. It is documented now. mypy 98.
+`roadmap-index`: open 310, done 841, numbered open 258, highest #1121.
+
+Next: #1121, #462, #404, #388, #409.
+
+## Previous — 2026-10-10 (Claude Code): waves 75-76, the next ten
 
 Nine shipped, one blocked. A one-chapter video is no longer stored as all-angles (#1115). The
 suggest check reports a subject spelled one letter off what people type (#1116). Trace readers
@@ -41,20 +61,6 @@ exists (#1072). `ops economics` printed $0.27 over 28.4 minutes, 19 public.
 `roadmap-index`: backlog open 320, done 827, numbered open 268, highest open
 #1117. Next: #995, #990, #374, #400, #380. #1115 #1116 #1117 are Claude's, in
 progress. #1088 stays an operator call.
-
-## Previous — 2026-10-10 (Claude Code): wave 74 #1113 #1114 #1065 #1055 #1050
-
-Reports name a video by its run's title, not by the note its upload left (#1113; seven readers
-did). An old run with no stored sport is read from its title and script (#1114). One checklist
-runs before every upload: a title YouTube would reject or a dropped footage credit refuses it,
-disclosure and chapters warn (#1065; `ops publish-dry-run` prints it). Shorts cut from one
-video go out one a day and `ops chapters --run-id N` shows the plan (#1055). The title's
-subject is checked against YouTube suggest and the finding is shown on the review screen;
-`TITLE_SUGGEST=reword` is opt-in (#1050). Suite 5258; mypy 109. Pushed to origin.
-
-Filed open: #1115 (a one-chapter video still stored as all-angles), #1116 (the subject's
-spelling against suggest), #1117 (the publish dry run and the trace). Next: #1080, #1081,
-#1066, #1083, #1072 (Cursor's).
 
 ## Pipeline order (operator)
 
@@ -130,7 +136,7 @@ The live list is [roadmap.md](roadmap.md) "Recommended next five"; this is the s
    to rewrite or archive. One OAuth consent then `ops playlists --apply`; gameplay files for
    the empty niches (#786); remote branch deletions this environment cannot do.
 
-**Next:** #995 · #990 · #374 · #400 · #380. #1115 #1116 #1117 are Claude's, in progress. #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
+**Next:** #1121 · #462 · #404 · #388 · #409. #1088 is an operator call. **Oct 24:** the ads decision - does November get one $20 test (`ops promotions`). **Parked / excluded:** Benable bot · Edge TTS as default (§28).
 
 ---
 

@@ -682,6 +682,7 @@ def _call_content_llm(
     *,
     temperature: float = 0.65,
     tier: str = "premium",
+    stage: str = "script",
 ) -> dict[str, Any] | None:
     # Final script/title/description is the product → premium tier by default.
     return complete_json(
@@ -690,8 +691,78 @@ def _call_content_llm(
         tier=tier,
         temperature=temperature,
         max_tokens=3000,
-        stage="script",
+        stage=stage,
     )
+
+
+def _two_sentences(text: str) -> str:
+    parts = [
+        part.strip() for part in re.split(r"(?<=[.!?])\s+", (text or "").strip()) if part.strip()
+    ]
+    if len(parts) < 2:
+        return ""
+    return " ".join(parts[:2])
+
+
+def _script_body_tier() -> str:
+    """#374. ``premium`` is one call for the whole script. Anything else is cheap."""
+    tier = os.getenv("SCRIPT_BODY_TIER", "cheap").strip().lower() or "cheap"
+    return tier if tier in ("cheap", "extract", "premium") else "cheap"
+
+
+def _script_package(
+    system_prompt: str, user_prompt: str, temperature: float
+) -> dict[str, Any] | None:
+    """Premium writes the first two sentences. The rest of the script is cheap (#374).
+
+    A response that already carries a script (no hook) is the package: one call, no
+    warning. An empty hook warns once and falls back to the single premium call.
+    """
+    if _script_body_tier() == "premium":
+        return _call_content_llm(
+            system_prompt, user_prompt, temperature=temperature, tier="premium", stage="script"
+        )
+    hook_user = (
+        user_prompt + "\n\nWrite ONLY the first two sentences of the script (the hook). "
+        'Return JSON only: {"hook": "sentence one. sentence two."}'
+    )
+    hook_payload = _call_content_llm(
+        system_prompt, hook_user, temperature=temperature, tier="premium", stage="script_hook"
+    )
+    if (
+        isinstance(hook_payload, dict)
+        and hook_payload.get("script")
+        and not _two_sentences(str(hook_payload.get("hook") or ""))
+    ):
+        return hook_payload
+    hook = (
+        _two_sentences(str(hook_payload.get("hook") or ""))
+        if isinstance(hook_payload, dict)
+        else ""
+    )
+    if not hook:
+        logger.warning("Premium hook was empty; the whole script is one premium call")
+        return _call_content_llm(
+            system_prompt, user_prompt, temperature=temperature, tier="premium", stage="script"
+        )
+    body_user = (
+        user_prompt + "\n\nThe first two sentences are fixed. Start the script with them "
+        "verbatim, then write the rest of the script, the description and the tags.\n"
+        f"LOCKED HOOK:\n{hook}"
+    )
+    payload = _call_content_llm(
+        system_prompt,
+        body_user,
+        temperature=temperature,
+        tier=_script_body_tier(),
+        stage="script_body",
+    )
+    if isinstance(payload, dict) and payload.get("script"):
+        script = str(payload["script"]).strip()
+        if not script.startswith(hook):
+            payload = dict(payload)
+            payload["script"] = f"{hook} {script}".strip()
+    return payload
 
 
 def _script_pass_snapshot(script: str) -> dict[str, Any]:
@@ -1850,7 +1921,7 @@ def generate_content_package(
 
     # Short: tighter temperature for punchy focus; Extended: slightly more creative latitude
     temperature = 0.55 if length_choice == "1" else (0.72 if length_choice == "4" else 0.68)
-    payload = _call_content_llm(system_prompt, user_prompt, temperature=temperature)
+    payload = _script_package(system_prompt, user_prompt, temperature)
 
     if not (isinstance(payload, dict) and payload.get("script")):
         logger.warning("LLM returned non-JSON content package; using raw fallback")

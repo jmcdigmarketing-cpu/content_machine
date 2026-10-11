@@ -1037,6 +1037,14 @@ def cmd_reliability(args: argparse.Namespace) -> int:
             return 1
         print(f"VACUUM {result['path']}: {result['before']} -> {result['after']} bytes")
     data = gather()
+    try:
+        from core.reliability import stored_apify_yield
+
+        data["apify_yield"] = stored_apify_yield(getattr(args, "channel", "") or "tapin")
+    except Exception as exc:
+        from core.logging import get_logger
+
+        get_logger("scripts.ops").debug("apify yield not loaded: %s", exc)
     chunks = [render(data)]
     # Recording on view means the trend builds itself — no separate job to forget.
     try:
@@ -2396,6 +2404,25 @@ def cmd_title_card(args: argparse.Namespace) -> int:
     from core.title_card_wrap import write_title_card_still
 
     print(write_title_card_still(text, dest, max_lines=2))
+    return 0
+
+
+@_register("log", "Print the last lines of the log, and the warnings in them (#990)")
+def cmd_log(args: argparse.Namespace) -> int:
+    from core.logging import tail_log
+
+    count = int(getattr(args, "limit", 0) or 0) or 40
+    got = tail_log(count)
+    path = got["path"] or "(log off)"
+    if not got["lines"]:
+        print(f"{path} - no warnings in the log")
+        return 0
+    print("\n".join(got["lines"]))
+    if got["warnings"]:
+        print(f"--- warnings ({len(got['warnings'])}) ---")
+        print("\n".join(got["warnings"]))
+    else:
+        print("--- no warnings in the log ---")
     return 0
 
 

@@ -17,6 +17,35 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 - next five (#990 #400 #380 #995 #374)
+
+**Prompt.** "Next five: #990, #400, #380, #995, #374. Implement the plan as specified."
+
+**Picked.** The five both mailbox slots named, cheapest first. Cursor's brief (A1-A7 and the new-video page) was already on `85ce1d2`. Desktop B2 #1064 and #1068 stayed off, as the roadmap already said they are not next.
+
+**Shipped.**
+
+1. **#990.** `tail_log` reads `data/logs/content_machine.log`. `ops log` prints the last lines and the warnings in them. The Costs page shows the same line. A missing file is empty and does not warn. `ops log --limit 15` printed one warning: `YouTube RSS UCBJycsmduvYEL83R_U4JriQ returned 500`.
+2. **#400.** Three renders at 2.4 words per second for TapIn's voice make `spoken_words_per_second("tapin")` return 2.4. Before the fix that same render estimated 3.465 (`3.3 * 1.05`). Fewer than three samples stay on the nominal rate. The length presets still divide by 3.3. `generate_audio` records the narrator voice that spoke.
+3. **#380.** A billed reddit line "Jon Jones 19-0" that the script uses costs $0.02 per usable fact. The same spend with no overlap prints "$0.02 and no usable fact". A free backend is $0.00. A competitor title is not a fact. `ops reliability` prints the rows the pipeline stored. The Apify total is unchanged.
+4. **#995.** With no later run, the negative fact "Jon Jones beat Tom Aspinall at UFC 321" contradicts that labelled sentence, and the operator fact "Team Cherry sold 2 million copies of Silksong" confirms the sales sentence. Before the change both were open.
+5. **#374.** The script is two calls by default: premium for the first two sentences, cheap for the rest, and the script starts with the hook. An empty hook warns once and the whole script is one premium call. `SCRIPT_BODY_TIER=premium` restores the old single call. A hook response that already contains a script is the package, so a caller that returns the old shape is not billed twice. This changes the script a healthy run writes.
+
+**Fail first.** 16 of the 17 new tests failed or errored on the unmodified code. The `SCRIPT_BODY_TIER=premium` test was already one premium call, so it is not counted.
+
+**Findings.**
+
+- `core/content_engine.py` `_script_package`: a model that ignores the hook instruction and returns a `script` is used as the package. One warning only when the hook is empty.
+- `core/script_length.py` `spoken_words_per_second`: the measured median replaces the nominal rate only at three samples, and only for the channel's configured narrator voice.
+- `core/reliability.py` `apify_fact_yield`: zero usable facts is a sentence, not a division by zero.
+- `analytics/unconfirmed_check.py` `_correction_hits`: a correction that restates the labelled sentence is contradicted, and is not also fed in as confirming evidence.
+
+**Deliberately not done.** #1121 (the 500 the log just printed), #462, #404, #388, #409. #1088, #1038, #1015, #975, #459, #914, #1064, #1068, #1119, #1120.
+
+**Audit.** ruff clean on the files touched. mypy 98 == baseline 98. First full suite: 5347 tests, 2 failures, both `VOICE_PACE_FILE` missing from `.env.example`. Documented beside `TTS_SPEED`. Env lint then passed. `git status --short data/` empty.
+
+**Next five:** #1121, #462, #404, #388, #409.
+
 ## 2026-10-10 (Claude Code) - waves 75-76: the next ten
 
 **Prompt:** next 10 n push

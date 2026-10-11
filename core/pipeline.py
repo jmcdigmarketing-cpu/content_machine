@@ -1347,6 +1347,12 @@ def run_pipeline(
         script=result.script, signals=best_signals, rendered=False
     )
     try:
+        from core.reliability import apify_fact_yield
+
+        result.features["apify_yield"] = apify_fact_yield(best_signals, result.script or "")
+    except Exception as exc:
+        logger.debug("apify yield skipped: %s", exc)
+    try:
         from assets.flux_thumbnail import expected_provider
 
         thumb_provider: str | None = expected_provider(None)

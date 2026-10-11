@@ -90,6 +90,37 @@ class CheckTests(unittest.TestCase):
         got = self._check(runs)
         self.assertEqual(got["open"], 3)
 
+    def test_the_vault_resolves_a_claim_before_a_later_run(self):
+        # #995: a correction that restates the claim contradicts it, and an operator
+        # fact that carries the claim's numbers and names confirms it. No later run.
+        import os
+        import tempfile
+        from pathlib import Path
+
+        from core import negative_facts
+
+        runs = [_run(10, "UFC and Silksong week", script=SCRIPT, mode="unconfirmed")]
+        with tempfile.TemporaryDirectory() as tmp:
+            vault = Path(tmp) / "vault"
+            note = vault / "tapin" / "_operator_facts"
+            note.mkdir(parents=True)
+            (note / "silksong.md").write_text(
+                "---\nchannel: tapin\ntags: [facts, operator]\ntier: operator\n---\n"
+                "# Silksong\n- Team Cherry sold 2 million copies of Silksong\n",
+                encoding="utf-8",
+            )
+            store = Path(tmp) / "negative_facts.json"
+            with (
+                patch.object(negative_facts, "STORE_PATH", store),
+                patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": str(vault)}),
+            ):
+                negative_facts.record_negative("ufc", "Jon Jones beat Tom Aspinall at UFC 321")
+                got = self._check(runs)
+        verdicts = {row["claim"][:20]: row["verdict"] for row in got["rows"]}
+        self.assertEqual(verdicts["Early reports say Jo"], "contradicted")
+        self.assertEqual(verdicts["Reportedly Team Cher"], "confirmed")
+        self.assertEqual(verdicts["Not confirmed yet: S"], "open")
+
     def test_standard_runs_are_not_counted(self):
         got = self._check([_run(10, "Silksong", script=SCRIPT, mode="standard")])
         self.assertEqual(got["runs"], 0)

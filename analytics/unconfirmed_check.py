@@ -3,12 +3,12 @@
 Wave 61 (#339) writes a fresh topic with thin facts in unconfirmed mode: what is not confirmed is
 said with a label ("not confirmed yet", "early reports say", "reportedly") instead of dropped.
 This checks afterwards whether those labelled claims turned out true. For each run written in
-that mode it takes the labelled sentences and reads the facts of *later* runs on the same subject
-(a shared name, `apis.topic_tokens.title_phrases`):
+that mode it takes the labelled sentences and reads, when they share a subject name:
 
-- contradicted - `core.facts.conflicts.find_fact_conflicts` finds the later facts disagreeing;
-- confirmed - every number and name in the claim (label stripped) is in the later facts;
-- open - otherwise, including a claim with nothing specific to check.
+- the facts of *later* runs on the same subject;
+- the vault's corrections (`core.negative_facts`, #342) - a conflict or a restatement
+  contradicts the claim;
+- the operator's own vault facts - the same confirm / contradict rules as later runs.
 """
 
 from __future__ import annotations
@@ -90,6 +90,52 @@ def verdict_for(claim: str, later_facts: str) -> str:
     return "open"
 
 
+def _shares(subject: set[str], text: str) -> bool:
+    return bool(subject and subject & _subject(text))
+
+
+def _operator_lines(topic: str, channel_id: str, subject: set[str]) -> str:
+    """Operator facts that name the run's subject. Empty vault is not a warning."""
+    try:
+        from core.obsidian_facts import load_facts
+
+        lines = [line for line in load_facts(topic, channel_id, limit=40) if _shares(subject, line)]
+    except Exception as exc:
+        logger.debug("operator facts unavailable for unconfirmed check: %s", exc)
+        return ""
+    return "\n".join(lines)
+
+
+def _correction_text(subject: set[str]) -> str:
+    """#342 corrections that name the run's subject."""
+    try:
+        from core.negative_facts import all_records
+
+        lines = [
+            str(row.get("claim") or "")
+            for row in all_records()
+            if _shares(subject, str(row.get("claim") or ""))
+        ]
+    except Exception as exc:
+        logger.debug("corrections unavailable for unconfirmed check: %s", exc)
+        return ""
+    return "\n".join(line for line in lines if line.strip())
+
+
+def _correction_hits(claim: str, corrections: str) -> bool:
+    """A correction that conflicts with the claim, or restates it, walks it back."""
+    if not corrections.strip():
+        return False
+    from core.facts.conflicts import find_fact_conflicts
+
+    stripped = strip_label(claim)
+    if find_fact_conflicts([stripped], corrections):
+        return True
+    specifics = _specifics(stripped)
+    low = corrections.lower()
+    return bool(specifics) and all(item.lower() in low for item in specifics)
+
+
 def _runs(channel_id: str) -> list[Any]:
     from storage.repositories.content_runs import get_content_run_repository
 
@@ -108,9 +154,15 @@ def check(channel_id: str) -> dict[str, Any]:
         later = [
             _facts(r) for r in runs if int(r.id) > int(run.id) and subject & _subject(_topic(r))
         ]
-        evidence = "\n".join(f for f in later if f)
+        operator = _operator_lines(_topic(run), channel_id, subject)
+        corrections = _correction_text(subject)
+        evidence = "\n".join(part for part in ("\n".join(f for f in later if f), operator) if part)
         for claim in labelled_claims(str(getattr(run, "script", "") or "")):
-            found = verdict_for(claim, evidence)
+            found = (
+                "contradicted"
+                if _correction_hits(claim, corrections)
+                else verdict_for(claim, evidence)
+            )
             out["claims"] += 1
             out[found] += 1
             out["rows"].append({"run_id": run.id, "claim": claim, "verdict": found})
@@ -129,7 +181,7 @@ def render_lines(channel_id: str) -> list[str]:
     lines = [
         f"  Unconfirmed mode (#977): {got['runs']} run(s), {got['claims']} labelled claim(s) - "
         f"{got['confirmed']} confirmed, {got['contradicted']} contradicted, {got['open']} still "
-        "open (judged by later runs on the same subject)"
+        "open (judged by later runs, vault corrections and operator facts)"
     ]
     for row in [r for r in got["rows"] if r["verdict"] == "contradicted"][:3]:
         lines.append(f"    contradicted, run #{row['run_id']}: {row['claim'][:110]}")

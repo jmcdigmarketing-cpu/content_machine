@@ -67,6 +67,8 @@ os.environ["HOOK_REGEN_ENABLED"] = "false"
 os.environ["KEEP_TO_IDEA"] = "false"
 # #1089: an idea no cue word reads gets one model call in discovery; the tests of it turn it on.
 os.environ["STANCE_MODEL_READ"] = "false"
+# #1050: the title check asks YouTube suggest once per run - never in tests.
+os.environ["TITLE_SUGGEST"] = "off"
 # #1095: a hope or plan run with no supporting fact makes one stance search; never in tests.
 os.environ["STANCE_RESEARCH"] = "false"
 # #899: event research reads Wikipedia / Google News on a recency miss - never in tests.

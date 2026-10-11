@@ -87,7 +87,11 @@ def _packaging(metrics: dict[str, Any]) -> dict[str, Any]:
 def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Video]:
     """Every live video of the channel, newest first. Never raises."""
     try:
-        from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+        from storage.repositories.publish_log import (
+            get_publish_log_repository,
+            is_seeded,
+            video_title,
+        )
 
         rows = get_publish_log_repository().list_timed_outcomes(channel_id)
     except Exception as exc:
@@ -117,7 +121,7 @@ def channel_videos(channel_id: str, *, include_seeded: bool = True) -> list[Vide
         out.append(
             Video(
                 video_id=video_id,
-                title=str(getattr(row, "detail", "") or "").strip() or "(untitled)",
+                title=video_title(row),
                 published_at=published_at,
                 views=views,
                 engaged_rate=float(rate) if isinstance(rate, (int, float)) else None,

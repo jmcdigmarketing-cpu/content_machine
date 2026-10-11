@@ -77,3 +77,27 @@ def get_autocomplete_data(topic):
             status=status,
             status_detail=detail,
         )
+
+
+def youtube_suggestions(phrase: str) -> list[str] | None:
+    """What people type into YouTube after `phrase` (#1050), or None when it cannot be read.
+
+    Not a discovery signal: one lookup per run, at title time, on the title's subject. The
+    signal above asks Google about the whole topic sentence and mostly comes back empty.
+    Never raises.
+    """
+    query = _suggest_query(phrase)
+    if not query:
+        return None
+    try:
+        response = requests.get(
+            "https://suggestqueries.google.com/complete/search",
+            params={"client": "firefox", "ds": "yt", "q": query},
+            timeout=6,
+        )
+        if response.status_code != 200:
+            return None
+        found = response.json()[1]
+    except Exception:
+        return None
+    return [str(item).strip().lower() for item in found if str(item).strip()][:10]

@@ -152,6 +152,8 @@ def recent_lines(
     cutoff = since or (_now() - timedelta(days=days))
     found: list[tuple[datetime, str]] = []
     try:
+        from storage.repositories.publish_log import video_title
+
         for row in _repo().list_uploaded_for_channel(channel_id) or []:
             verdict = _metrics(row).get("first_day")
             if not isinstance(verdict, dict) or verdict.get("verdict") not in ("low", "high"):
@@ -162,7 +164,7 @@ def recent_lines(
                 continue
             when = when if when.tzinfo else when.replace(tzinfo=timezone.utc)
             if when >= cutoff:
-                title = str(getattr(row, "detail", "") or getattr(row, "youtube_video_id", ""))
+                title = video_title(row, fallback=str(getattr(row, "youtube_video_id", "")))
                 found.append((when, line(title, verdict)))
     except Exception as exc:
         logger.debug("first-day lines skipped: %s", exc)

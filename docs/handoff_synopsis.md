@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: wave 73 (footage follow-ups, Shorts split, three decisions)
+# Handoff synopsis — 2026-10-10: wave 74 (titles, the publish checklist, Shorts spacing, suggest)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,21 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): wave 73 #1111 #1112 #1054 #1061 #1076
+## Last wave — 2026-10-10 (Claude Code): wave 74 #1113 #1114 #1065 #1055 #1050
+
+Reports name a video by its run's title, not by the note its upload left (#1113; seven readers
+did). An old run with no stored sport is read from its title and script (#1114). One checklist
+runs before every upload: a title YouTube would reject or a dropped footage credit refuses it,
+disclosure and chapters warn (#1065; `ops publish-dry-run` prints it). Shorts cut from one
+video go out one a day and `ops chapters --run-id N` shows the plan (#1055). The title's
+subject is checked against YouTube suggest and the finding is shown on the review screen;
+`TITLE_SUGGEST=reword` is opt-in (#1050). Suite 5258; mypy 109. Pushed to origin.
+
+Filed open: #1115 (a one-chapter video still stored as all-angles), #1116 (the subject's
+spelling against suggest), #1117 (the publish dry run and the trace). Next: #1080, #1081,
+#1066, #1083, #1072 (Cursor's).
+
+## Previous — 2026-10-10 (Claude Code): wave 73 #1111 #1112 #1054 #1061 #1076
 
 The operator chose the two footage follow-ups plus three, leaving the roadmap's five to
 Cursor. "The steep price of GPUs" no longer names the Steep folder (#1111). `ops footage-gaps`
@@ -37,19 +51,6 @@ recording is imported (#1108). The Desktop shortcut goes to the shown Desktop (#
 
 Filed open: #1111 (an ordinary word that is a game name), #1112 (the gaps report reads the
 run's sport). Next: #1080, #1081, #1066, #1083, #1072 (Cursor's).
-
-## Previous — 2026-10-10 (Cursor): the next five
-
-The previous five shipped. The file name now counts the chapters that were cut
-(#1102): one of five is "NBA award predictions", five of five still says "all 5
-angles". A public source on a fighter topic has to name that fighter (#1103);
-a card-only topic still cites the card. "Lose" is not a name and "San Antonio"
-is one marker (#1104). One source file stays at 2 shots while another is free,
-and a remembered clip is left out when another exists (#1045). A chapter Short's
-tags come from its own title, so the hype-train chapter carries `#hype` (#1052).
-
-`roadmap-index`: backlog open 328, done 806, numbered open 276, highest open
-#1088. Next: #1080, #1081, #1066, #1083, #1072.
 
 ## Pipeline order (operator)
 

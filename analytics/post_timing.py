@@ -142,7 +142,11 @@ def _collect_timed_samples(
 ) -> list[tuple[str, datetime, float]]:
     """(domain, published_at, engaged rate) per measured video; `exclude_run_id` leaves one
     video out so a claim about it is not fitted on its own outcome (#560)."""
-    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+    from storage.repositories.publish_log import (
+        get_publish_log_repository,
+        is_seeded,
+        video_title,
+    )
 
     samples: list[tuple[str, datetime, float]] = []
     for row in get_publish_log_repository().list_timed_outcomes(channel_id):
@@ -158,7 +162,7 @@ def _collect_timed_samples(
         engagement = _outcome(row)
         if engagement is None or engagement <= 0:
             continue
-        domain = _domain_from_metrics(row.metrics_json, row.detail, channel_id)
+        domain = _domain_from_metrics(row.metrics_json, video_title(row, fallback=""), channel_id)
         samples.append((domain, when, engagement))
     return samples
 

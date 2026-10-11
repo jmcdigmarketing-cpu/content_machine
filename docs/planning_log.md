@@ -17,6 +17,36 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - wave 74: titles, old runs, the publish checklist, Shorts spacing, suggest
+
+**Prompt:** next 5 n push
+
+**Picked:** the same split as wave 73 - the roadmap's five stay Cursor's. Mine: the two
+follow-ups I filed (#1113, #1114) and the three cheapest open items outside Cursor's files
+(#1065, #1055, #1050). Passed over: #1073 - `ops signal-audit --skip` already retires a signal on
+the operator's call (decisions §19), and `trends` is cited in 0 of 18 scripts while feeding the
+topic score, so demoting on "cited" would be wrong; #1051 (on top of Cursor's #1066); #1077 (a
+wave of its own).
+
+**Shipped:**
+1. #1113 a video is named by its run's title. Seven readers used the upload note.
+2. #1114 an old run's sport is read from its title and script when none was stored.
+3. #1065 one pre-publish checklist; a bad title or a dropped footage credit refuses the upload.
+4. #1055 chapter Shorts go one a day; `ops chapters` prints the plan.
+5. #1050 the title's subject is checked against YouTube suggest; report by default, reword opt-in.
+
+**Findings, with file:line:**
+- `analytics/growth.py:82`, `core/success/videos.py:120`, `analytics/first_day.py:165`, `analytics/packaging.py:120`, `analytics/sync_metrics.py:136,141`, `analytics/upload_queue.py:151`: `detail` as the title. `analytics/post_timing.py:161` inferred a domain from it.
+- #1055 was mostly #757: `core/spaced_queue.plan_spaced_uploads` already stops at the cap. The gap was two slots on one day.
+- `apis/autocomplete_api.py`: the signal asks Google about the whole topic sentence and is empty for most runs; `youtube_suggestions` asks YouTube (`ds=yt`) about the title's subject.
+- Run 133: `all_angles` true, one chapter, no 0:00 list. **#1115**
+- Run 132's title: "Illia"; suggest: "ilia". **#1116**
+- `ops publish-dry-run` built its request from trace keys that do not exist. **#1117**
+
+**Not done:** `TITLE_SUGGEST=reword` is built and tested but off - the operator's most repeated complaint is a title that moved off their idea. The checklist's disclosure and chapter checks warn; they do not block. #1115 #1116 #1117.
+
+**Audit:** 62 new tests in five files (47 run against the committed sources: 44 failed or errored, 3 are guards). 3 corpus cases, 168 of 168 held. Suite 5211 -> 5258. ruff and format clean; mypy 110 on the first pass (an `int | None` in `_uploaded_run_ids`), fixed to 109 == baseline. Callers: `video_title` <- seven readers; `checklist`, `block_reason` <- `YouTubePublisher.publish`, `render` <- `ops publish-dry-run`; `one_per_day` <- `main._offer_spaced_queue`, `shorts_plan_lines` <- `ops chapters`; `apply_suggest` <- `content_engine`, `suggest_line` <- `ui.display_fact_engine_report`; `youtube_suggestions` <- `_suggest_fetch`.
+
 ## 2026-10-10 (Claude Code) - wave 73: footage follow-ups plus three
 
 **Prompt:** next 5

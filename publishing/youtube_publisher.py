@@ -606,6 +606,29 @@ class YouTubePublisher(Publisher):
         except Exception as exc:
             logger.debug("shorts eligibility skipped: %s", exc)
 
+        try:
+            from publishing import prepublish
+
+            # #1065: the finished upload looked at once, as a whole, before any API call.
+            checks = prepublish.checklist(
+                request, channel_id=channel_id, content_run_id=content_run_id
+            )
+            for check in checks:
+                if not check.ok and not check.blocks:
+                    logger.warning("pre-publish: %s", check.detail)
+                    print(f"  ! pre-publish: {check.detail}")
+            reason = prepublish.block_reason(checks)
+        except Exception as exc:
+            logger.warning("pre-publish checklist skipped: %s", exc)
+            reason = ""
+        if reason:
+            return PublishResult(
+                video_id=None,
+                status="blocked",
+                detail=reason,
+                platform=PLATFORM_YOUTUBE,
+            )
+
         if _dry_run_enabled():
             body = redact_publish_payload(dry_run_insert_body(request, channel_id=channel_id))
             return PublishResult(

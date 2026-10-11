@@ -153,5 +153,56 @@ class RunContextTests(unittest.TestCase):
         self.assertIn("now no footage of its own: stock or plain", "\n".join(lines))
 
 
+class OldRunSportTests(unittest.TestCase):
+    """#1114: run 59 stored no topic domain and its idea ("France vs England 3rd Place Game.
+    ABSOLUTE BANGER") names no sport, so the gaps report called a World Cup video a gaming
+    mix. Its own title says Mbappe."""
+
+    def _context(self, run):
+        from assets import local_provider as lp
+
+        repo = SimpleNamespace(get=lambda rid: run)
+        with patch(
+            "storage.repositories.content_runs.get_content_run_repository", return_value=repo
+        ):
+            return lp.footage_context_for_run(59)
+
+    def test_the_title_names_the_sport_when_the_idea_does_not(self):
+        run = SimpleNamespace(
+            input_topic="France vs England 3rd Place Game. ABSOLUTE BANGER",
+            title="Mbappe Breaks Record but England Wins 6-4 Third-Place Thriller",
+            script_preview="",
+            features_json='{"domain": "gaming"}',
+        )
+        self.assertEqual(self._context(run)[1], "soccer")
+
+    def test_the_script_names_the_sport_when_nothing_else_does(self):
+        run = SimpleNamespace(
+            input_topic="that third place game was a banger",
+            title="A meaningless classic",
+            script_preview="France and England traded goals all night. Mbappe scored twice.",
+            features_json="{}",
+        )
+        self.assertEqual(self._context(run)[1], "soccer")
+
+    def test_a_script_about_games_does_not_invent_a_sport(self):
+        run = SimpleNamespace(
+            input_topic="steam machine pricing",
+            title="If Steam Machine costs more",
+            script_preview="Valve has not said what the Steam Machine will cost.",
+            features_json="{}",
+        )
+        self.assertIn(self._context(run)[1], ("", "gaming"))
+
+    def test_the_stored_domain_still_wins(self):
+        run = SimpleNamespace(
+            input_topic="x",
+            title="Mbappe again",
+            script_preview="",
+            features_json='{"domains": {"topic": "ufc"}}',
+        )
+        self.assertEqual(self._context(run)[1], "ufc")
+
+
 if __name__ == "__main__":
     unittest.main()

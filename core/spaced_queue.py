@@ -15,7 +15,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from analytics.post_timing import planned_post_time
 from core.cadence import cadence_status
@@ -34,21 +35,48 @@ class SpacedSlot:
     privacy: str = ""  # what it was queued as; "" until queued
 
 
+def _channel_tz(channel_id: str) -> ZoneInfo:
+    try:
+        from analytics.post_timing import get_post_schedule
+
+        return ZoneInfo(get_post_schedule(channel_id).timezone)
+    except Exception as exc:
+        logger.debug("channel timezone skipped: %s", exc)
+        return ZoneInfo("America/New_York")
+
+
+def _end_of_local_day(when: datetime, tz: ZoneInfo) -> datetime:
+    """The last moment of `when`'s day in the channel's own timezone, in UTC."""
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    local = when.astimezone(tz)
+    midnight = datetime.combine(local.date() + timedelta(days=1), time.min, tzinfo=tz)
+    return midnight.astimezone(timezone.utc) - timedelta(seconds=1)
+
+
 def plan_spaced_uploads(
     items: list[tuple[int, str]],
     *,
     channel_id: str,
     topic: str = "",
     reserve: int = 0,
+    one_per_day: bool = False,
+    not_on: datetime | None = None,
 ) -> list[SpacedSlot]:
     """One open slot per run, in order, until the cadence window is full.
 
     `reserve` holds slots for uploads this session already queued (the long video).
+    `one_per_day` (#1055): the Shorts cut from one video go out on different days - a day
+    with two open slots (Saturday 11am and 7pm) took two of them. `not_on` leaves that
+    day (the long video's) alone as well.
     """
     status = cadence_status(channel_id)
     room = max(0, status.cap - status.total - max(0, reserve))
     out: list[SpacedSlot] = []
     after: datetime | None = None
+    tz = _channel_tz(channel_id) if one_per_day else None
+    if tz is not None and not_on is not None:
+        after = _end_of_local_day(not_on, tz)
     for index, (run_id, title) in enumerate(items):
         if index >= room:
             out.append(
@@ -60,7 +88,7 @@ def plan_spaced_uploads(
             )
             continue
         when = planned_post_time(channel_id, topic, run_id=int(run_id), after=after)
-        after = when
+        after = _end_of_local_day(when, tz) if tz is not None else when
         out.append(SpacedSlot(run_id=int(run_id), title=str(title), publish_at=when))
     return out
 

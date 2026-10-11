@@ -2284,6 +2284,21 @@ def generate_content_package(
                 priority_facts=clean_key_facts,
                 topic=topic,
             )
+    # #1050: the finished title against what people type. `report` (the default) records
+    # it; `reword` keeps a new wording only when the two checks above still hold for it.
+    from core.title_generator import apply_suggest
+
+    def _title_still_holds(candidate: str) -> bool:
+        lint = lint_title_grounding(
+            candidate,
+            facts_text=corpus.factual_text,
+            priority_facts=clean_key_facts,
+            topic=topic,
+        )
+        fits = check_title_script_consistency(candidate, script, topic=topic)
+        return len(lint) <= len(title_warnings) and fits.get("status") != "failed"
+
+    title, title_suggest = apply_suggest(title, seed_topic or topic, accept=_title_still_holds)
     _tsc_warnings = title_script_check.get("warnings")
     title_script_warnings = list(_tsc_warnings) if isinstance(_tsc_warnings, list) else []
     if title_script_warnings:
@@ -2354,6 +2369,7 @@ def generate_content_package(
     return {
         "title": title,
         "title_warnings": title_warnings,
+        "title_suggest": title_suggest,
         "title_script_check": title_script_check,
         "script": script,
         "speaker_turns": speaker_turns,

@@ -90,6 +90,53 @@ SEED_SOURCE = "tapin_seed"
 SEED_ID_PREFIX = "seed_"
 
 
+# #1113: what an upload writes into `detail` - a quota line, a schedule line, an API step.
+_UPLOAD_NOTE_STARTS = (
+    "~",
+    "youtube scheduled publish",
+    "videos.insert",
+    "videos.update",
+    "thumbnails.set",
+    "review hold",
+    "uploaded",
+    "upload ",
+)
+
+
+def is_upload_note(text: str) -> bool:
+    """True when `detail` is the note an upload left, not a video's title."""
+    low = (text or "").strip().lower()
+    return bool(low) and (low.startswith(_UPLOAD_NOTE_STARTS) or "units remaining" in low)
+
+
+def _run_repo() -> Any:
+    from storage.repositories.content_runs import get_content_run_repository
+
+    return get_content_run_repository()
+
+
+def video_title(record: Any, *, fallback: str = "(untitled)") -> str:
+    """The video's title: its run's, else its run's topic, else a seeded row's `detail`.
+
+    Every real upload's `detail` is the upload's note ("~8,400 units remaining today ...",
+    "YouTube scheduled publish at ..."); reports printed that as the best video's name.
+    """
+    run_id = getattr(record, "content_run_id", None)
+    if run_id:
+        try:
+            run = _run_repo().get(int(run_id))
+        except Exception:
+            run = None
+        for field in ("title", "selected_topic", "input_topic"):
+            text = str(getattr(run, field, "") or "").strip() if run is not None else ""
+            if text:
+                return text
+    detail = str(getattr(record, "detail", "") or "").strip()
+    if detail and not is_upload_note(detail):
+        return detail
+    return fallback
+
+
 def is_seeded(record: Any) -> bool:
     """True for a row `analytics/seed_tapin` imported (#927): a historical video whose
     publish time the seed invented, not one this machine published."""

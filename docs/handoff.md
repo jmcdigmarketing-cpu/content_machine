@@ -53,30 +53,30 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `90cb95d` + the wave 73 commit (`git log -1`) ·
-**Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`.
+**Written:** 2026-10-10 · **HEAD at write:** `8069a82` + the wave 74 commit (`git log -1`) ·
+**Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
-**Read before editing:** footage is chosen in `assets/local_provider.py` - keyword (whole words,
-every word of the folder name; a plain-word name such as Steep needs a capital or a gaming
-topic), alias, game-sport, domain, seed, run-domain, llm. No folder and a topic about games ->
-`(None, "mix")`: one clip per owned game folder in turn. A sport, film or finance topic gets
-nothing and falls to stock. The operator's call of 2026-10-10; it reverses #955 for the gaming
-case only - do not "fix" it back. A report passes `context=(seed, sport)` and never
-`set_footage_context`. `weekly_report.three_decisions` ranks after shrinkage (#352).
+**Read before editing:** a video's name comes from `publish_log.video_title(row)` - never
+`row.detail`, which is the upload's note (a test fails on a new reader). `publishing/prepublish.py`
+runs inside `YouTubePublisher.publish` before any API call; add a check there, not a new gate.
+Footage: `assets/local_provider.py` (whole words; a topic about games with no folder cuts the
+owned mix - the operator's call, do not "fix" it back). `TITLE_SUGGEST` is `off` in the suite
+and `report` for the operator; `reword` is opt-in on purpose.
 
-**Cursor:** your five are untouched (#1080 #1081 #1066 #1083 #1072). For #1072:
-`ops weekly-report` already prints "cost per finished minute" - check before building.
-Shared files touched: `apis/topic_tokens.py` (`GAME_NAMES_THAT_ARE_WORDS`),
-`tests/regression_corpus.json` (3 cases appended), `docs/roadmap.md`, `docs/README.md`.
+**Cursor:** your five are untouched (#1080 #1081 #1066 #1083 #1072). Shared files touched:
+`core/pipeline.py` (two lines: `features["title_suggest"]`), `core/content_engine.py` (the
+suggest step after the title checks), `main.py` (`one_per_day=True`), `scripts/ops.py`
+(`publish-dry-run`, `chapters`), `publishing/youtube_publisher.py` (the checklist call),
+`tests/__init__.py`, `.env.example`, `tests/regression_corpus.json`.
 
 **Defects first:**
-- #1113 `ops growth` and the scoreboard name the best video by its upload note, not its title.
-- #1114 run 59 has no stored sport, so `ops footage-gaps` calls it a mix.
-- `main` is ahead of origin. Nothing was pushed.
+- #1115 run 133 is stored as all-angles with one chapter and no 0:00 list.
+- #1116 run 132's title spells "Illia"; suggest and the facts say "Ilia".
+- #1117 `last_trace` has no title or mp4 path.
 - CGFtzpiA1so and run 120's "LINK" source are still the operator's to check.
 
-**Shipped:** wave 73 - #1112 #1111 #1054 #1061 #1076. 25 of 29 new tests failed first; 4 are
-guards. Highest #1114. Next: **#1080 · #1081 · #1066 · #1083 · #1072** (yours).
+**Shipped:** wave 74 - #1113 #1114 #1065 #1055 #1050. 44 of 47 new tests failed first.
+Suite 5258, mypy 109. Highest #1117. Next: **#1080 · #1081 · #1066 · #1083 · #1072** (yours).
 
 ## Slot — Cursor
 

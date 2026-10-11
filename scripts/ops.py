@@ -1486,19 +1486,24 @@ def cmd_retire_renders(args: argparse.Namespace) -> int:
 
 @_register("chapters", "All-angles chapter report: placement path, length, Shorts cap (#755)")
 def cmd_chapters(args: argparse.Namespace) -> int:
-    from core.chapter_shorts import chapter_report
+    from core import chapter_shorts as _shorts
 
     run_id = int(getattr(args, "run_id", 0) or 0)
     if not run_id:
         print("chapters needs --run-id N")
         return 2
-    lines = chapter_report(run_id)
+    lines = _shorts.chapter_report(run_id)
     if not lines:
         print(f"Run {run_id} has no angle chapters (not an all-angles render).")
         return 1
     print(f"Chapters for run {run_id}:")
     for line in lines:
         print(f"  {line}")
+    plan = _shorts.shorts_plan_lines(run_id)
+    if plan:
+        print("Shorts plan (one a day, inside the cadence cap - nothing is queued here):")
+        for line in plan:
+            print(f"  {line}")
     return 0
 
 
@@ -2681,6 +2686,7 @@ def cmd_publish_dry_run(args: argparse.Namespace) -> int:
     description = ""
     tags: list[str] = []
     file_path = "out.mp4"
+    run_id = None
     try:
         from core.review_booth import last_trace
 
@@ -2690,6 +2696,17 @@ def cmd_publish_dry_run(args: argparse.Namespace) -> int:
             description = str(trace.get("description") or "")
             file_path = str(trace.get("mp4_path") or file_path)
             tags = list(trace.get("tags") or [])
+            run_id = trace.get("content_run_id") or trace.get("run_id")
+            if run_id:
+                # The trace keeps the run's id, not its copy: read what would be uploaded.
+                from storage.repositories.content_runs import get_content_run_repository
+
+                run = get_content_run_repository().get(int(run_id))
+                if run is not None:
+                    title = str(run.title or title)
+                    description = str(run.description or description)
+                    file_path = str(run.mp4_path or file_path)
+                    tags = tags or list(json.loads(run.tags_json or "[]"))
     except Exception as exc:
         from core.logging import get_logger
 
@@ -2703,6 +2720,15 @@ def cmd_publish_dry_run(args: argparse.Namespace) -> int:
     )
     body = redact_publish_payload(dry_run_insert_body(req, channel_id=args.channel))
     print(json.dumps(body, indent=2))
+    from publishing import prepublish
+
+    print("Pre-publish checklist (#1065):")
+    for line in prepublish.render(
+        prepublish.checklist(
+            req, channel_id=args.channel, content_run_id=int(run_id) if run_id else None
+        )
+    ):
+        print(line)
     return 0
 
 

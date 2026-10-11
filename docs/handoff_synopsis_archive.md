@@ -7,6 +7,19 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Cursor): the next five
+
+The previous five shipped. The file name now counts the chapters that were cut
+(#1102): one of five is "NBA award predictions", five of five still says "all 5
+angles". A public source on a fighter topic has to name that fighter (#1103);
+a card-only topic still cites the card. "Lose" is not a name and "San Antonio"
+is one marker (#1104). One source file stays at 2 shots while another is free,
+and a remembered clip is left out when another exists (#1045). A chapter Short's
+tags come from its own title, so the hype-train chapter carries `#hype` (#1052).
+
+`roadmap-index`: backlog open 328, done 806, numbered open 276, highest open
+#1088. Next: #1080, #1081, #1066, #1083, #1072.
+
 ## Previous — 2026-10-10 (Cursor): the next fifteen, plus runs 131-133
 
 Runs 131-133 were healthy renders that still warned or looked up the wrong thing.

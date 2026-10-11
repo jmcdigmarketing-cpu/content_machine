@@ -601,6 +601,7 @@ def _offer_spaced_queue(
         channel_id=channel_id,
         topic=topic,
         reserve=1,
+        one_per_day=True,  # #1055: two Shorts from one video never share a day
     )
     queued = queue_spaced_uploads(plan, channel_id=channel_id)
     for slot in plan:

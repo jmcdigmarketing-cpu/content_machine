@@ -136,7 +136,7 @@ def list_queue_entries(channel_id: str) -> list[QueueEntry]:
                 )
             )
 
-    from storage.repositories.publish_log import get_publish_log_repository
+    from storage.repositories.publish_log import get_publish_log_repository, video_title
 
     plog = get_publish_log_repository()
     if hasattr(plog, "list_future_scheduled"):
@@ -148,7 +148,7 @@ def list_queue_entries(channel_id: str) -> list[QueueEntry]:
                 QueueEntry(
                     source="youtube",
                     ref_id=row.id,
-                    title=row.detail[:60] if row.detail else f"run {row.content_run_id}",
+                    title=video_title(row, fallback=f"run {row.content_run_id}")[:60],
                     publish_at=when,
                     status=row.status,
                     content_run_id=row.content_run_id,

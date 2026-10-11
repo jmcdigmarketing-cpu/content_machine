@@ -11,7 +11,7 @@ import argparse
 
 from analytics.youtube_metrics import _analytics_enabled, refresh_publish_metrics
 from config.channels import resolve_channel_id
-from storage.repositories.publish_log import get_publish_log_repository
+from storage.repositories.publish_log import get_publish_log_repository, video_title
 
 
 def _probe_analytics_api(channel_id: str) -> tuple[bool, str]:
@@ -133,12 +133,12 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     started = first_day._now()
     synced = 0
     for row in rows:
-        title = (row.detail or "").strip() or "(untitled)"
+        title = video_title(row)
         result = refresh_publish_metrics(
             content_run_id=row.content_run_id,
             youtube_video_id=row.youtube_video_id,
             channel_id=channel_id,
-            title=row.detail or "",
+            title=video_title(row, fallback=""),
             publish_log_id=row.id,
         )
         mark = "✓" if result else "·"

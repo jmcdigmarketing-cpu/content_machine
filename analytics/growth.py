@@ -64,7 +64,7 @@ def _published(row: Any) -> datetime | None:
 def _rows(channel_id: str) -> list[dict[str, Any]]:
     from analytics.packaging import packaging_figures
     from core.success.target import views_7d
-    from storage.repositories.publish_log import is_seeded
+    from storage.repositories.publish_log import is_seeded, video_title
 
     out: list[dict[str, Any]] = []
     for row in _repo().list_uploaded_for_channel(channel_id) or []:
@@ -79,7 +79,7 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
         except (TypeError, ValueError):
             views, paid = 0, 0
         out.append({
-            "title": str(getattr(row, "detail", "") or row.youtube_video_id)[:60],
+            "title": video_title(row, fallback=str(row.youtube_video_id))[:60],
             "video_id": str(row.youtube_video_id),  # #997: which one to promote
             "published": published,
             "views7": views_7d(metrics, published) if published else None,

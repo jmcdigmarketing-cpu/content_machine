@@ -6,6 +6,7 @@ once operator key facts and the script hook exist.
 
 from __future__ import annotations
 
+import os
 import re
 
 from core.llm_router import complete
@@ -323,3 +324,89 @@ def _complete_or_none(prompt: str, *, temperature: float, max_tokens: int) -> st
     except Exception as exc:
         logger.warning("Title LLM unavailable (%s) — using the script hook", exc)
         return None
+
+
+def suggest_mode() -> str:
+    """`TITLE_SUGGEST`: off | report (default) | reword."""
+    raw = (os.getenv("TITLE_SUGGEST", "") or "").strip().lower()
+    return raw if raw in ("off", "report", "reword") else "report"
+
+
+def _suggest_fetch(phrase: str) -> list[str] | None:
+    from apis.autocomplete_api import youtube_suggestions
+
+    return youtube_suggestions(phrase)
+
+
+def suggest_check(title: str, topic: str, *, fetch=None) -> dict:
+    """#1050: is the title worded the way people search its subject?
+
+    {status, subject, match | suggestions}. `searched`: a suggestion shares a word with the
+    title beyond the subject's own. `unsearched`: none does - `suggestions` is what people
+    type instead. `none` / `unavailable` / `no_subject` are not verdicts.
+    """
+    from apis.topic_tokens import content_tokens, subject_terms
+
+    subjects = subject_terms(title) or subject_terms(topic)
+    if not subjects:
+        return {"status": "no_subject"}
+    subject = subjects[0]
+    found = (fetch or _suggest_fetch)(subject)
+    if found is None:
+        return {"status": "unavailable", "subject": subject}
+    if not found:
+        return {"status": "none", "subject": subject}
+    own = set(content_tokens(subject))
+    said = set(content_tokens(title, min_len=3)) - own
+    for suggestion in found:
+        if said & (set(content_tokens(suggestion, min_len=3)) - own):
+            return {"status": "searched", "subject": subject, "match": suggestion}
+    return {"status": "unsearched", "subject": subject, "suggestions": list(found[:5])}
+
+
+def suggest_line(report: dict) -> str:
+    """One line for the review screen, or "" when there is no verdict to show."""
+    status = report.get("status")
+    if status == "searched":
+        return f'Title: people search "{report["match"]}" - the title uses those words'
+    if status == "unsearched":
+        typed = "; ".join(report.get("suggestions") or [])
+        return f'Title: nobody types its wording after "{report["subject"]}" - people type: {typed}'
+    return ""
+
+
+def apply_suggest(title: str, topic: str, *, accept=None) -> tuple[str, dict]:
+    """(title, report) after the suggest check. `report` mode leaves the title alone.
+
+    `reword` asks once for the title in the words people type and keeps it only if it is
+    then `searched` and `accept(candidate)` - the caller's own checks - says yes.
+    """
+    mode = suggest_mode()
+    if mode == "off" or not (title or "").strip():
+        return title, {}
+    try:
+        report = suggest_check(title, topic)
+    except Exception as exc:
+        logger.debug("title suggest check skipped: %s", exc)
+        return title, {}
+    if mode != "reword" or report.get("status") != "unsearched":
+        return title, report
+    typed = "; ".join(report["suggestions"])
+    retry = _complete_or_none(
+        "Reword this YouTube title so it uses the words people search. Keep every fact and "
+        f"the same claim; change only the wording. Under 70 characters.\nTitle: {title}\n"
+        f"People search: {typed}\nTitle only:",
+        temperature=0.3,
+        max_tokens=48,
+    )
+    candidate = _clean_title(retry, fallback=title, angle=topic) if retry else title
+    if not candidate or candidate == title:
+        return title, report
+    try:
+        again = suggest_check(candidate, topic)
+        if again.get("status") == "searched" and (accept is None or accept(candidate)):
+            logger.info("Title reworded to a searched phrase: %r -> %r", title, candidate)
+            return candidate, {**again, "reworded_from": title}
+    except Exception as exc:
+        logger.debug("title reword check skipped: %s", exc)
+    return title, report

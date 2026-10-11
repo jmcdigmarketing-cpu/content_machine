@@ -96,7 +96,11 @@ def _arm(run_id: int | None) -> str:
 def packaging_lines(channel_id: str, *, limit: int = _LIMIT) -> list[str]:
     """`ops packaging`: the recent videos with their packaging numbers."""
     try:
-        from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+        from storage.repositories.publish_log import (
+            get_publish_log_repository,
+            is_seeded,
+            video_title,
+        )
 
         rows = [
             r
@@ -117,7 +121,7 @@ def packaging_lines(channel_id: str, *, limit: int = _LIMIT) -> list[str]:
         figures = packaging_figures(metrics if isinstance(metrics, dict) else {})
         if not figure_text(figures):
             continue
-        title = (row.detail or "").strip() or "(untitled)"
+        title = video_title(row)
         entry = (title, figures, _arm(row.content_run_id))
         (shorts if figures.get("short") else longs).append(entry)
     if not shorts and not longs:

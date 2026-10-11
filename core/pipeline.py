@@ -1309,6 +1309,8 @@ def run_pipeline(
     result.features["tier_warnings"] = content.get("tier_warnings") or []
     # Candidate 321: title claim check (generated after every other gate has passed).
     result.features["title_warnings"] = content.get("title_warnings") or []
+    if content.get("title_suggest"):
+        result.features["title_suggest"] = dict(content["title_suggest"])  # #1050
     result.features["fact_conflicts"] = content.get("fact_conflicts") or []
     result.features["fact_conflicts_dropped"] = int(content.get("fact_conflicts_dropped") or 0)
     result.features["disputed"] = bool(content.get("disputed"))

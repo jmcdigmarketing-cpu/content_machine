@@ -1851,6 +1851,15 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
             print_fn(f"    · {warning}")
         needs_review = True
 
+    try:
+        from core.title_generator import suggest_line
+
+        searched = suggest_line(features.get("title_suggest") or {})  # #1050
+        if searched:
+            print_fn(f"\n  {searched}")
+    except Exception as exc:
+        logger.debug("title suggest line skipped: %s", exc)
+
     # Candidate 321 — the title used to be the one string no check read.
     title_warnings = features.get("title_warnings") or []
     if title_warnings:

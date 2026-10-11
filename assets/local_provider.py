@@ -417,7 +417,15 @@ def footage_context_for_run(content_run_id: int | None) -> tuple[str, str]:
         stored = (features.get("domains") or {}) if isinstance(features, dict) else {}
         domain = str(stored.get("topic") or "") if isinstance(stored, dict) else ""
         if not domain or domain == "neutral":
-            domain = infer_topic_domain(seed)
+            # #1114: a run from before #866 stored no topic domain, and its idea may name
+            # no sport - "France vs England 3rd Place Game" even reads gaming, for "Game".
+            # A sport named by its idea, its title or its script wins; else the first read.
+            from apis.topic_scorer import _SPORT_NAME_DOMAINS
+
+            texts = (seed, getattr(run, "title", ""), getattr(run, "script_preview", ""))
+            reads = [infer_topic_domain(str(text or "")) for text in texts]
+            sports = [read for read in reads if read in _SPORT_NAME_DOMAINS]
+            domain = (sports or [read for read in reads if read != "neutral"] or ["neutral"])[0]
         return seed, "" if domain == "neutral" else domain
     except Exception as exc:
         logger.debug("footage context for run %s skipped: %s", content_run_id, exc)

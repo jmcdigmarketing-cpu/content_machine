@@ -232,6 +232,68 @@ def chapter_report(run_id: int, *, script: str | None = None) -> list[str]:
         return []
 
 
+def _uploaded_run_ids(channel_id: str) -> set[int]:
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    rows = get_publish_log_repository().list_uploaded_for_channel(channel_id) or []
+    ids = (getattr(row, "content_run_id", None) for row in rows)
+    return {int(run_id) for run_id in ids if run_id}
+
+
+def unpublished_shorts(parent_run_id: int) -> list[tuple[int, str]]:
+    """(run id, title) of the Shorts cut from `parent_run_id` that are not on YouTube."""
+    repo = get_content_run_repository()
+    parent = repo.get(int(parent_run_id))
+    if parent is None:
+        return []
+    done = _uploaded_run_ids(parent.channel_id)
+    found: list[tuple[int, str]] = []
+    for run in repo.list_for_channel(parent.channel_id) or []:
+        try:
+            features = json.loads(getattr(run, "features_json", "") or "{}")
+        except (TypeError, ValueError):
+            continue
+        if (
+            isinstance(features, dict)
+            and features.get("short_source") == "chapter_cut"
+            and int(features.get("parent_run_id") or 0) == int(parent_run_id)
+            and int(run.id) not in done
+        ):
+            found.append((int(run.id), str(getattr(run, "title", "") or "")))
+    return sorted(found)
+
+
+def shorts_plan_lines(parent_run_id: int) -> list[str]:
+    """#1055: when each unpublished Short cut from this video would go - one a day, inside
+    the cadence cap. A plan only; nothing is queued. [] when there is nothing to plan."""
+    try:
+        from analytics.post_timing import format_scheduled_local
+        from core import spaced_queue
+
+        parent = get_content_run_repository().get(int(parent_run_id))
+        items = unpublished_shorts(parent_run_id)
+        if parent is None or not items:
+            return []
+        plan = spaced_queue.plan_spaced_uploads(
+            items,
+            channel_id=parent.channel_id,
+            topic=str(getattr(parent, "selected_topic", "") or ""),
+            one_per_day=True,
+        )
+        lines = []
+        for slot in plan:
+            when = (
+                format_scheduled_local(slot.publish_at, parent.channel_id)
+                if slot.publish_at
+                else f"not this week - {slot.skipped}"
+            )
+            lines.append(f"[{slot.run_id}] {slot.title[:60]} - {when}")
+        return lines
+    except Exception as exc:
+        logger.debug("shorts plan unavailable for run %s: %s", parent_run_id, exc)
+        return []
+
+
 def strongest_sentence(text: str) -> str:
     """The sentence with the most words. That is the re-hook on the Short."""
     parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text or "") if part.strip()]

@@ -64,9 +64,10 @@ is left is below.
 4. **#1083 a confirmed claim becomes a fact** `[S]`.
 5. **#1072 cost per published minute** `[S]`.
 
-Filed by wave 73: **#1113** (best and worst video named by their upload note) · **#1114** (an
-old run with no stored sport). For #1072: `ops weekly-report` already prints "cost per finished
-minute". The step-by-step: [operator_guide.md](operator_guide.md).
+Wave 74 (Claude, 2026-10-10) shipped **#1113 #1114 #1065 #1055 #1050** and filed **#1115**
+(a one-chapter video still stored as all-angles) · **#1116** (the subject's spelling against
+suggest) · **#1117** (the publish dry run and the trace). For #1072: `ops weekly-report` already
+prints "cost per finished minute". The step-by-step: [operator_guide.md](operator_guide.md).
 
 **#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
 #1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),

@@ -86,6 +86,7 @@ The video stack: [video_creation_stack.md](video_creation_stack.md).
 ```powershell
 py -m scripts.ops booth --channel tapin           # play the last render, grade, cost
 py -m scripts.ops batch-review --channel tapin    # the 05:00 overnight drafts, in one pass
+py -m scripts.ops chapters --run-id 79             # chapters, and when its Shorts would go
 py -m scripts.ops technical-qc --path outputideo.mp4   # black frames, frozen stretches, loudness
 ```
 
@@ -96,6 +97,7 @@ dry run until `--apply`, and it names what it will publish.
 
 ```powershell
 py -m scripts.ops status --channel tapin
+py -m scripts.ops publish-dry-run --channel tapin   # the upload body and the pre-publish checklist
 py -m scripts.ops go-public --channel tapin            # what would go public
 py -m scripts.ops go-public --channel tapin --apply
 py -m scripts.ops recommend-time --channel tapin       # the slot, and how many posts back it

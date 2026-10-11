@@ -53,33 +53,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `eb31eb3` + the waves 77-78 commit (`git log -1`) ·
+**Written:** 2026-10-11 · **HEAD at write:** `007832d` + the waves 79-80 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
-**Read before editing:** a description block is attached with `description_extras.join_blocks`
-and nowhere else. The Steam signal makes up to four requests (two store looks, one news). An
-idle signal is skipped through `_skip_signals` (`SIGNAL_DEMOTION=false` to stop it). A test
-that reaches `apis.net_probe.online` fails the suite's network guard - stub it. mypy baseline
-**98**. `ruff check --fix` on named files only.
+**Read before editing:** `privacy_status` in the publish log is only as fresh as the last
+`ops sync-metrics` - ask `analytics.privacy_sync`, not the row, when it matters. A module
+started with `ops._run_module` gets `PYTHONIOENCODING`; a new entry point run by Task Scheduler
+needs `ensure_utf8_stdout()`. `OVERNIGHT_RENDERS=0` is set for the whole suite - a test of the
+render step sets its own limit and stubs `_render`. The header has eight parts now
+(`_hdr_week`, `_hdr_shelf`); tests that pin it patch both. mypy baseline **98**.
 
-**Cursor:** #1121 and #462 are yours and untouched. For #1121: on 10-10 the feed answered
-**404** for a known-good channel id, not only 500 (#1125) - `fetch_channel_uploads_rss` still
-returns [] for both; I added only the `views` field there. Shared files I touched:
-`scripts/ops.py` (`competitors`, `competitor-health`), `.env.example` (`SIGNAL_DEMOTION`),
-`tests/regression_corpus.json` (10 cases), `apis/register_signals.py` (`_skip_signals`).
-`core/pipeline.py` and `main.py` were not touched.
+**Cursor:** #1121 and #462 are still yours and untouched. Shared files I touched:
+`config/channels.json` (`overnight.renders: 2` on tapin, `parked: true` on moneywise - both the
+operator's calls), `config/channels.py` (two profile fields, `active_channel_ids`),
+`scripts/ops.py` (`worker-task`, `shelf`, `overnight-plan`, `_child_env`), `tests/__init__.py`
+(one env line), `.env.example`, `core/ui.py` (the channel picker skips a parked channel).
+`main.py`, `core/pipeline.py` and `desktop/` were not touched - `desktop/launch.py:57` still
+lists every channel, parked or not.
 
 **Defects first:**
-- The Reporting API is still off in project 581798456680, two days after it was ticked on.
-  `ops doctor` prints the link. #1058 waits on it.
-- #1063 has nothing to find: one channel on the list. The shortlist is kept for the operator.
-- My first count of unuploaded renders was 13; 11 were already retired. It is 2.
-- #1125 the feed 404s for every channel · #1126 15 runs stuck at "scheduled" · #1127 the NFL
-  search returns soccer. 4 of 113 new tests were not run before their code (shortlist sizes).
+- Waves 77-78 reported 32 public videos and a shelf of 7. Wrong: all 43 are public (#1128).
+  The operator found it. Docs and both pages are corrected.
+- Run 132's public upload has been pending since 10-10 9:30 pm; no worker task is installed.
+- Tonight's 5:00 am run will render two drafts (136, 123) and spend ElevenLabs characters.
+- #1136 runs 92 and 119 are public with a flagged claim never confirmed. #1139 only 2 of 31
+  waiting drafts are clean. The Reporting API is still off.
 
-**Shipped:** waves 77-78 - #1122 #1123 #1124 #393 #1088 #1120 #1063 #1119 #1051 #1073. 100 of
-113 new tests observed failing first. Suite 5460, mypy 98, corpus 184. Highest #1127.
-**Next is a ship stage, not a wave** (roadmap.md): only live-run defects get built.
+**Shipped:** waves 79-80 - #1128 #1126 #1129 #1130 #1131 #1132 #1133 #1134 #1135 #1127 and the
+first half of #1078. 68 of 71 new tests observed failing first. Suite 5531, mypy 98, corpus
+188. Highest #1139. **Still a ship stage** (roadmap.md): only live-run defects get built.
 
 ## Slot — Cursor
 

@@ -71,6 +71,22 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("Pending-jobs count unavailable: %s", exc)
 
     try:
+        from core.batch_review import drafts_line
+
+        waiting = drafts_line(channel_id)  # #1132
+        if waiting:
+            lines.append(waiting)
+    except Exception as exc:
+        logger.debug("drafts line skipped: %s", exc)
+
+    try:
+        from core.job_queue import list_active_jobs, overdue_lines
+
+        lines.extend(overdue_lines(list_active_jobs(), channel_id))  # #1129
+    except Exception as exc:
+        logger.debug("overdue uploads skipped: %s", exc)
+
+    try:
         from core.stale_renders import shelf, shelf_lines
 
         lines.extend(shelf_lines(channel_id, shelf(channel_id)))  # #1122
@@ -239,9 +255,12 @@ def _hdr_uploads() -> str:
 
 
 def _hdr_queue(channel_id: str) -> str:
-    from core.job_queue import channel_queue_text, list_active_jobs
+    from core.job_queue import channel_queue_text, list_active_jobs, overdue_short
 
-    return channel_queue_text(list_active_jobs(), channel_id)  # #989: this channel's jobs
+    jobs = list_active_jobs()
+    text = channel_queue_text(jobs, channel_id)  # #989: this channel's jobs
+    late = overdue_short(jobs, channel_id)  # #1129
+    return f"{text} ({late})" if late else text
 
 
 def _hdr_last(channel_id: str) -> str:
@@ -265,6 +284,17 @@ def _hdr_last(channel_id: str) -> str:
     return f"last video {max(0, views):,} views"
 
 
+def _hdr_week(channel_id: str) -> str:
+    """#1133: "week 2 of 3-5" - uploads in the last seven days plus those scheduled, against
+    the floor and the cap the operator set."""
+    from core.cadence import cadence_status, weekly_target
+
+    status = cadence_status(channel_id)
+    target = min(weekly_target(), status.cap)
+    band = f"{target}-{status.cap}" if status.cap > target else str(target)
+    return f"week {status.total} of {band}"
+
+
 def _hdr_shelf(channel_id: str) -> str:
     from core.stale_renders import shelf, shelf_short
 
@@ -280,6 +310,7 @@ def header_line(channel_id: str) -> str:
         _hdr_uploads,
         lambda: _hdr_queue(channel_id),
         lambda: _hdr_last(channel_id),
+        lambda: _hdr_week(channel_id),
         lambda: _hdr_shelf(channel_id),
     )
     parts: list[str] = []

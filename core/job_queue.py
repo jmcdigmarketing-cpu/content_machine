@@ -3,14 +3,78 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from typing import Any
 
 from storage.repositories.jobs import JobRecord, JobRepository, get_job_repository
 
+# What `analytics.queue_manager.cancel_queue_slots` writes on a job the operator removed.
+REMOVED_BY_OPERATOR = "Removed from publish queue by operator"
+OVERDUE_GRACE_MINUTES = 10
+
+
+def removed_by_operator(job: JobRecord) -> bool:
+    """A job the operator took out of the queue. It is stored as failed, and it is not waiting
+    on anything (#1129: two removed in June were still "queue 3" in October)."""
+    return job.status == "failed" and (job.last_error or "").strip() == REMOVED_BY_OPERATOR
+
 
 def list_active_jobs(repo: JobRepository | None = None) -> list[JobRecord]:
     store = repo or get_job_repository()
-    return store.list_active_jobs()
+    return [job for job in store.list_active_jobs() if not removed_by_operator(job)]
+
+
+def overdue_uploads(
+    jobs: list[JobRecord] | None, *, now: datetime | None = None
+) -> list[JobRecord]:
+    """Pending uploads whose time has passed - nothing is sending them (#1129).
+
+    Run 132 was queued public for 9:30 pm on 2026-10-10 and was still pending the next day:
+    uploads go out only while `jobs.worker` runs, and no line said it was not.
+    """
+    from storage.repositories.jobs import _parse_scheduled_at
+
+    clock = now or datetime.now(timezone.utc)
+    late: list[JobRecord] = []
+    for job in jobs or []:
+        if job.job_type != "upload" or job.status != "pending":
+            continue
+        due = _parse_scheduled_at(job.scheduled_at)
+        if due is not None and (clock - due).total_seconds() > OVERDUE_GRACE_MINUTES * 60:
+            late.append(job)
+    return late
+
+
+def _local(job: JobRecord) -> str:
+    from storage.repositories.jobs import _parse_scheduled_at
+
+    due = _parse_scheduled_at(job.scheduled_at)
+    if due is None:
+        return "?"
+    return due.astimezone().strftime("%b %d %I:%M %p").replace(" 0", " ")
+
+
+def overdue_short(jobs: list[JobRecord] | None, channel_id: str) -> str:
+    """The header's words: "1 upload overdue - ops worker", or ""."""
+    late = [j for j in overdue_uploads(jobs) if j.channel_id == channel_id]
+    if not late:
+        return ""
+    noun = "upload" if len(late) == 1 else "uploads"
+    return f"{len(late)} {noun} overdue - ops worker"
+
+
+def overdue_lines(jobs: list[JobRecord] | None, channel_id: str) -> list[str]:
+    """One line per overdue upload for `ops status`, with the command that sends it."""
+    out: list[str] = []
+    for job in overdue_uploads(jobs):
+        if job.channel_id != channel_id:
+            continue
+        out.append(
+            f"Upload overdue: run {job.content_run_id} was due {_local(job)} and nothing is "
+            "sending uploads - py -m scripts.ops worker   "
+            "(always on: py -m scripts.ops worker-task --install)"
+        )
+    return out
 
 
 def display_status(job: JobRecord) -> str:

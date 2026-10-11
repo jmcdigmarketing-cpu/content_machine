@@ -165,6 +165,12 @@ def sync_channel(channel_id: str | None = None, *, limit: int = 3) -> int:
     if counts:
         stored = youtube_metrics.store_lifetime_views(live, counts)
         print(f"  Lifetime views: {stored} video(s)")
+    # #1128: each video's privacy as YouTube has it now - a scheduled upload turns public at
+    # its slot and a held one is made public in Studio, and the record never asked again.
+    from analytics import privacy_sync
+
+    for line in privacy_sync.sync_lines(privacy_sync.sync_privacy(channel_id)):
+        print(f"  {line}")
     # #934: the whole channel's views by day, for the goal's scoreboard.
     from core.success.goals import sync_channel_views
 
@@ -211,6 +217,9 @@ def main():
         help="Newest videos to sync besides every one younger than SYNC_YOUNG_DAYS (default 3)",
     )
     args = parser.parse_args()
+    from core.console_encoding import ensure_utf8_stdout
+
+    ensure_utf8_stdout()  # #1135: run directly under a redirect, the check mark killed it
     raise SystemExit(sync_channel(args.channel, limit=args.limit))
 
 

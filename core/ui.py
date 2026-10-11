@@ -1992,10 +1992,19 @@ def preferred_channel(ids: list[str]) -> str:
 def prompt_channel_selection(*, print_fn=emit, input_fn=ask_text) -> str:
     """Interactive channel picker; returns resolved channel_id."""
     profiles = get_channel_profiles()
-    ids = list_channel_ids()
+    # #1134: a parked channel is not offered; `--channel <id>` still reaches it.
+    from config.channels import active_channel_ids, parked_channel_ids
+
+    # A parked channel named in CONTENT_CHANNEL_ID was asked for on purpose: it is listed.
+    wanted = (os.getenv("CONTENT_CHANNEL_ID") or "").strip()
+    parked = [cid for cid in parked_channel_ids() if cid != wanted]
+    ids = [cid for cid in list_channel_ids() if cid not in parked] or active_channel_ids()
     default_id = preferred_channel(ids)
 
     subsection("Channel", print_fn)
+    if parked and len(ids) < len(profiles):
+        names = ", ".join(profiles[cid].name for cid in parked)
+        print_fn(f'  Parked, not listed: {names} (channels.json "parked")')
     default_index = ids.index(default_id) if default_id in ids else 0
     for i, cid in enumerate(ids, start=1):
         profile = profiles[cid]

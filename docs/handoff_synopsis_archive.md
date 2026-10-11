@@ -7,6 +7,23 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Claude Code): waves 75-76, the next ten
+
+Nine shipped, one blocked. A one-chapter video is no longer stored as all-angles (#1115). The
+suggest check reports a subject spelled one letter off what people type (#1116). Trace readers
+get the run's own title, description and script, so `ops desc-fold` works (#1117). mypy is 98
+(#1075). `ops predictions` lists each run's prediction beside its outcome (#1062). Sentences
+that are hard to say are flagged and rewritten when no number or name is lost (#1034). A list,
+a how-to, a comparison, a look back and a reaction each get their own beats (#1031). A game's
+release date is stated against today (#1025, in part). Suite 5330; pushed.
+
+Two items were blocked by what is not there. Click-through: the YouTube Reporting API is not
+enabled in the Cloud project - `ops doctor`'s `reach` row says so (#1118; #1058 stays open).
+The competitor watch: one competitor on the list and no view counts (#1063; needs #1120).
+
+Filed open: #1119 (patch notes), #1120 (a usable competitor list), #1121 (a YouTube 500 read
+as a dead feed). Next: #995, #990, #374, #400, #380.
+
 ## Previous — 2026-10-10 (Cursor): Claude's five
 
 The five Claude left. A last-resort chapter title ends on the noun: run 119's

@@ -87,7 +87,8 @@ marked *date not recorded*; the operator's dates go in the slot below.
 | 10-10 | The repo moves off OneDrive to `C:\dev`; waves 72-74: footage from the right owned folder, mixed owned gameplay before stock, one name for a video, a checklist before every upload | git |
 | 10-10 | Waves 75-76: why click-through was never stored (the Reporting API is off), a read-aloud pass, a script shape per intent, mypy 98 | git |
 | 10-10 | Waves 77-78: finished videos that are not public get a line (7 on the shelf), who stayed on 39 of 43 videos, a competitor shortlist and outlier watch, Steam patch notes, idle signals run one run in three | git |
-| 10-10 | **The operator sets a ship stage:** two weeks aimed at videos going public, not features. 129 runs had made 32 public videos | doc |
+| 10-10 | **The operator sets a ship stage:** two weeks aimed at videos going public, not features. (The count given that day, 32 public, was wrong - see 10-11) | doc |
+| 10-11 | **The record was wrong.** Asked about three "unlisted" videos the operator answers "all 3 were published"; YouTube says all 43 are public. Waves 79-80: privacy read back from YouTube, an overdue upload named, a scheduled task for the upload worker, overnight renders two clean drafts a night (the operator's call), MoneyWise parked | git |
 
 ## Live runs that changed the code
 

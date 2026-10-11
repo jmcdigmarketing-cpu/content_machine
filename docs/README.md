@@ -34,6 +34,7 @@ edited after · `archived` = superseded, kept for the reasoning.
 |---|---|
 | [architecture.md](architecture.md) | Pipeline, modules, data flow |
 | [decisions.md](decisions.md) | ADR-lite. §18, §24, §25, §26 are required reading |
+| [decisions_2026-10.md](decisions_2026-10.md) | Decisions 40 onward: overnight may render (§40), a parked channel (§41) |
 | [vault.md](vault.md) | The Obsidian vault end to end: layout, tiers, what is read back, ops verbs |
 | [credit_efficiency.md](credit_efficiency.md) | Credit, quota and spend efficiency (O1–O12) |
 | [llm_provider_strategy.md](llm_provider_strategy.md) | Router tiers, providers, what each adds |

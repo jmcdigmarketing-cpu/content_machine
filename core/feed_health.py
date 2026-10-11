@@ -231,6 +231,13 @@ def cached_warnings() -> list[str]:
         ]
     except Exception as exc:
         logger.debug("configured-feed filter skipped: %s", exc)
+    try:
+        from config.channels import parked_feed_scopes
+
+        parked = parked_feed_scopes()  # #1134: a parked channel's feeds are not a failure
+        results = [row for row in results if str(row.get("scope") or "") not in parked]
+    except Exception as exc:
+        logger.debug("parked-feed filter skipped: %s", exc)
     if not results:
         return []
     out = warnings(results)

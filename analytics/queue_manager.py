@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from analytics.post_timing import format_scheduled_local
 from analytics.upload_queue import QueueEntry, list_queue_entries
 from config.channels import resolve_channel_id
+from core.job_queue import REMOVED_BY_OPERATOR
 from core.logging import get_logger
 from storage.repositories.content_runs import get_content_run_repository
 from storage.repositories.jobs import get_job_repository
@@ -260,7 +261,7 @@ def cancel_queue_slots(
     channel_id: str,
     slot_numbers: list[int],
     *,
-    reason: str = "Removed from publish queue by operator",
+    reason: str = REMOVED_BY_OPERATOR,
 ) -> list[int]:
     """
     Cancel queue slots by 1-based index (same order as list_queue_entries / main.py display).

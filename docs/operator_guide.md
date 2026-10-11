@@ -106,10 +106,19 @@ py -m scripts.ops recommend-time --channel tapin       # the slot, and how many 
 A held run is refused until its claim is confirmed or rejected (step 3). Policy trouble:
 [policy_incident_runbook.md](policy_incident_runbook.md).
 
-**The shelf.** The startup header ends "N finished, not public" when anything is waiting, and
-`ops status` says what: uploads still unlisted (how many only need `go-public`, how many are
-held for a claim and need `verify-claim` first) and renders never uploaded (recent ones to
-upload, old ones to `retire-renders`).
+**The shelf.** The startup header ends "N finished, not public" when anything is waiting.
+`py -m scripts.ops shelf` lists each one with what it waits on and the exact command: a render
+that is queued (the worker sends it), a render never uploaded (queue it, or retire an old one),
+an upload still unlisted (`go-public`, or `verify-claim` first when it is held for a claim).
+
+**Uploads go out on their own** once this is run, one time:
+`py -m scripts.ops worker-task --install`. It sends queued uploads every 15 minutes while you
+are signed in to Windows. Without it they wait for `py -m scripts.ops worker`, and the header
+says "1 upload overdue" when one has.
+
+**Mornings.** Overnight (5:00 am) writes drafts and renders up to two clean ones, queued
+unlisted. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest
+wait; `py -m scripts.ops batch-review` is where you decide those.
 
 ## 7. Read the numbers
 

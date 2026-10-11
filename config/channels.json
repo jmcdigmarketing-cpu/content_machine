@@ -24,6 +24,7 @@
     "tapin": {
       "name": "TapIn Media",
       "domain": "gaming",
+      "overnight": {"renders": 2},
       "extra_domains": ["soccer"],
       "persona": {
         "perspective": "a plugged-in gaming, UFC and football fan who knows the facts and says what they mean",
@@ -144,6 +145,7 @@
     "moneywise": {
       "name": "MoneyWise",
       "domain": "finance",
+      "parked": true,
       "persona": {
         "perspective": "someone who reads the filing, the print, or the fine print before having an opinion - and says plainly what it means for a normal paycheck",
         "tone": "calm, plain-spoken, mildly sceptical of hype - explains, never sells",

@@ -191,12 +191,59 @@ def niche_queries(channel_id: str, *, limit: int = 4) -> list[str]:
     return list(dict.fromkeys(queries))[:limit]
 
 
+def niche_keys(channel_id: str) -> dict[str, list[str]]:
+    """{search: that niche's own words} (#1127). "NFL news" brought back the league's channel
+    and four soccer "football news" channels; a candidate must use one of the niche's words."""
+    try:
+        from config.paths import ROOT_DIR
+
+        with open(os.path.join(ROOT_DIR, "config", "playlists.json"), encoding="utf-8") as fh:
+            rows = json.load(fh).get(channel_id) or []
+    except (OSError, ValueError, AttributeError):
+        return {}
+    if isinstance(rows, dict):
+        rows = rows.get("playlists") or []
+    out: dict[str, list[str]] = {}
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("name"):
+            continue
+        keys = [str(k).lower() for k in row.get("keys") or [] if str(k).strip()]
+        if row.get("domain"):
+            out[f"{str(row['name']).split('/')[0].strip()} news"] = keys
+        elif str(row.get("name")).lower() == "gaming":
+            out["gaming news"] = keys
+    return out
+
+
+def on_niche(text: str, keys: list[str] | None) -> bool:
+    """True when `text` uses one of the niche's words as a whole word (or no words are set)."""
+    if not keys:
+        return True
+    lowered = f" {str(text or '').lower()} "
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(key)}(?![a-z0-9])", lowered) for key in keys)
+
+
+def from_shortlist(channel_id: str, name: str) -> dict[str, Any] | None:
+    """A kept shortlist row by its channel name - exact first, then the only partial match -
+    so `competitors add --name "Full Mount MMA"` needs no id pasted."""
+    wanted = " ".join(str(name or "").lower().split())
+    if not wanted:
+        return None
+    _searched, rows = load_shortlist(channel_id)
+    exact = [r for r in rows if str(r.get("title", "")).lower() == wanted]
+    if exact:
+        return exact[0]
+    partial = [r for r in rows if wanted in str(r.get("title", "")).lower()]
+    return partial[0] if len(partial) == 1 else None
+
+
 def suggest(
     channel_id: str,
     service: Any,
     *,
     queries: list[str] | None = None,
-    per_query: int = 5,
+    per_query: int = 10,
+    keys: dict[str, list[str]] | None = None,
 ) -> list[dict[str, Any]]:
     """Channels YouTube returns for each niche search, minus the ones already listed.
 
@@ -222,9 +269,12 @@ def suggest(
             cid = str((item.get("id") or {}).get("channelId") or snippet.get("channelId") or "")
             if not cid or cid in have:
                 continue
-            have.add(cid)
-            about = " ".join(str(snippet.get("description") or "").split())[:80]
             title = " ".join(str(snippet.get("title") or cid).split())
+            description = " ".join(str(snippet.get("description") or "").split())
+            if not on_niche(f"{title} {description}", (keys or {}).get(query)):
+                continue  # #1127: off the niche (soccer under an NFL search)
+            have.add(cid)
+            about = description[:80]
             out.append({"id": cid, "title": title, "about": about, "query": query})
     return _with_sizes(service, out)
 

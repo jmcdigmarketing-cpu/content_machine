@@ -53,10 +53,23 @@ def _register(name: str, help_text: str):
     return decorator
 
 
+def _child_env() -> dict[str, str]:
+    """The child's environment, with its output forced to UTF-8 (#1135).
+
+    `ops` reconfigures its own stdout (#767); a module it starts is a new process, and under
+    a pipe, a redirect or Task Scheduler its stdout is cp1252. `ops sync-metrics | ...` died
+    on the first video's check mark on 2026-10-11 - before any number was stored. One place
+    covers every module `ops` runs.
+    """
+    env = dict(os.environ)
+    env.setdefault("PYTHONIOENCODING", "utf-8:replace")
+    return env
+
+
 def _run_module(module: str, *args: str) -> int:
     cmd = [sys.executable, "-m", module, *args]
     print(f"\n>> {' '.join(cmd)}")
-    return subprocess.call(cmd)
+    return subprocess.call(cmd, env=_child_env())
 
 
 @_register("migrate-layout", "Move root runtime files into data/ and config/secrets/")
@@ -232,6 +245,19 @@ def cmd_competitors(args: argparse.Namespace) -> int:
     if action not in ("suggest", "add"):
         print("Usage: competitors [list|suggest|add --source ID --name LABEL|remove --source ID]")
         return 2
+    if action == "add" and not source:
+        # #1127: a name from the kept shortlist needs no id and no lookup.
+        row = competitor_list.from_shortlist(channel, str(getattr(args, "name", "") or ""))
+        if row is None:
+            print("  No channel by that name on the kept shortlist. See it:")
+            print(f"    py -m scripts.ops competitors suggest --channel {channel}")
+            return 1
+        if not competitor_list.add(channel, row["id"], row["title"]):
+            print(f"  Already on the list: {row['title']} [{row['id']}]")
+            return 0
+        print(f"  Added: {row['title']} [{row['id']}]")
+        print(f"  Next: py -m scripts.ops competitor-sync --force --channel {channel}")
+        return 0
     if action == "suggest" and not getattr(args, "force", False):
         searched, kept = competitor_list.load_shortlist(channel)
         if kept:
@@ -257,7 +283,9 @@ def cmd_competitors(args: argparse.Namespace) -> int:
         return 1
     if action == "suggest":
         print(f"Competitor shortlist - {channel} ({units} of the day's YouTube units)")
-        rows = competitor_list.suggest(channel, service, queries=queries)
+        rows = competitor_list.suggest(
+            channel, service, queries=queries, keys=competitor_list.niche_keys(channel)
+        )
         if rows:
             competitor_list.save_shortlist(channel, rows)
         print("\n".join(competitor_list.suggestion_lines(channel, rows)))
@@ -1595,6 +1623,55 @@ def cmd_chapters(args: argparse.Namespace) -> int:
         print("Shorts plan (one a day, inside the cadence cap - nothing is queued here):")
         for line in plan:
             print(f"  {line}")
+    return 0
+
+
+@_register(
+    "worker-task",
+    "Send queued uploads every 15 minutes via Task Scheduler (--install / --remove) (#1130)",
+)
+def cmd_worker_task(args: argparse.Namespace) -> int:
+    from core import nightly_task
+
+    if getattr(args, "install", False):
+        code, out = nightly_task.run_schtasks(nightly_task.worker_install_argv())
+        print(out or f"schtasks exit {code}")
+        if code == 0:
+            print(
+                f"Installed: one upload-worker pass every {nightly_task.WORKER_EVERY_MINUTES} "
+                "minutes while you are signed in to Windows. It writes "
+                "data\\logs\\worker_task.log. Remove: py -m scripts.ops worker-task --remove"
+            )
+        return 0 if code == 0 else 1
+    if getattr(args, "remove", False):
+        code, out = nightly_task.run_schtasks(nightly_task.worker_remove_argv())
+        print(out or f"schtasks exit {code}")
+        return 0 if code == 0 else 1
+    ok, line = nightly_task.worker_doctor(str(getattr(args, "channel", "") or "tapin"))
+    print(
+        f"Upload worker task: {'installed' if nightly_task.worker_installed() else 'not installed'}"
+    )
+    print(f"  {line}")
+    if not nightly_task.worker_installed():
+        print("  Install: py -m scripts.ops worker-task --install")
+    return 0 if ok else 1
+
+
+@_register("overnight-plan", "What tonight's overnight would render, and why the rest wait (#1078)")
+def cmd_overnight_plan(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.batch_review import unattended_plan_lines
+
+    print("\n".join(unattended_plan_lines(resolve_channel_id(getattr(args, "channel", None)))))
+    return 0
+
+
+@_register("shelf", "Finished videos that are not public, each with its command (#1131)")
+def cmd_shelf(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.stale_renders import shelf_report
+
+    print("\n".join(shelf_report(resolve_channel_id(getattr(args, "channel", None)))))
     return 0
 
 

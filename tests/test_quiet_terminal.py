@@ -29,6 +29,8 @@ PARTS = {
     "_hdr_uploads": "~5 uploads left",
     "_hdr_queue": "queue 2",
     "_hdr_last": "last video 480 views",
+    "_hdr_week": "",  # #1133 and #1122 added parts; these tests pin the six above
+    "_hdr_shelf": "",
 }
 
 

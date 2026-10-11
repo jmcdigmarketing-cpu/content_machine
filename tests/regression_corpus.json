@@ -2770,6 +2770,88 @@
         "equals": "7 finished, not public"
       },
       "why": "no line the operator reads each morning said finished videos were waiting"
+    },
+    {
+      "id": "a-video-made-public-since-upload-is-drift",
+      "item": 1128,
+      "source": "2026-10-11: the log said 32 public, YouTube said 43",
+      "call": "analytics.privacy_sync:drift",
+      "args": [
+        {
+          "a": "unlisted",
+          "b": "public",
+          "c": "private"
+        },
+        {
+          "a": "public",
+          "b": "public",
+          "c": "public"
+        }
+      ],
+      "expect": {
+        "equals": {
+          "a": [
+            "unlisted",
+            "public"
+          ],
+          "c": [
+            "private",
+            "public"
+          ]
+        }
+      },
+      "why": "a scheduled upload turns public at its slot and the record never asked again"
+    },
+    {
+      "id": "an-empty-privacy-answer-changes-nothing",
+      "item": 1128,
+      "source": "must keep",
+      "call": "analytics.privacy_sync:drift",
+      "args": [
+        {
+          "a": "public"
+        },
+        {
+          "a": ""
+        }
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "an answer with no status must not rewrite the record"
+    },
+    {
+      "id": "a-soccer-channel-is-not-on-the-nfl-niche",
+      "item": 1127,
+      "source": "'NFL news' returned four soccer channels on 2026-10-10",
+      "call": "analytics.competitor_list:on_niche",
+      "args": [
+        "Daily Football News - Manchester United updates",
+        [
+          "nfl",
+          "touchdown"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "football is two sports; the niche's own words tell them apart"
+    },
+    {
+      "id": "nfl-inside-another-word-is-not-the-niche",
+      "item": 1127,
+      "source": "sibling: substring matching, the shape #1105 fixed for folder names",
+      "call": "analytics.competitor_list:on_niche",
+      "args": [
+        "Infloor heating tips",
+        [
+          "nfl"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a niche word must stand alone"
     }
   ]
 }

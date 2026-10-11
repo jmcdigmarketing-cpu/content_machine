@@ -56,14 +56,129 @@ def shelf(channel_id: str, *, days: int = STALE_DAYS) -> dict[str, int]:
     from scripts.requeue_upload import list_recyclable
 
     renders = list_recyclable(channel_id)
-    stale = 0
+    waiting = _queued_runs(channel_id)
+    stale = queued = 0
     for run in renders:
+        if int(run.id) in waiting:  # #1131: queued is waiting on the worker, not on a decision
+            queued += 1
+            continue
         age = render_age_days(run)
         if age is not None and age >= days:
             stale += 1
     held = unlisted_holds(channel_id)
     claim = sum(1 for row in held if override_held(getattr(row, "content_run_id", None)))
-    return {"renders": len(renders), "stale": stale, "unlisted": len(held), "claim": claim}
+    return {
+        "renders": len(renders),
+        "stale": stale,
+        "queued": queued,
+        "unlisted": len(held),
+        "claim": claim,
+    }
+
+
+def _queued_runs(channel_id: str) -> dict[int, Any]:
+    """{run id: its pending upload job} - a render that is queued is not "never uploaded"."""
+    try:
+        from core.job_queue import list_active_jobs
+
+        return {
+            int(job.content_run_id): job
+            for job in list_active_jobs()
+            if job.job_type == "upload"
+            and job.status == "pending"
+            and job.channel_id == channel_id
+            and job.content_run_id
+        }
+    except Exception as exc:
+        logger.debug("queued uploads not read: %s", exc)
+        return {}
+
+
+def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any]]:
+    """One row per finished video that is not public, with the exact command (#1131).
+
+    `ops status` gave counts and placeholders ("VIDEO_ID", "--run-id N"). Each row here has the
+    run, the title, how old it is, what it is waiting on and the command with the id filled in.
+    """
+    from publishing.go_public import override_held, unlisted_holds
+    from scripts.requeue_upload import list_recyclable
+
+    rows: list[dict[str, Any]] = []
+    queued = _queued_runs(channel_id)
+    for run in list_recyclable(channel_id):
+        age = render_age_days(run)
+        base = {
+            "run_id": int(run.id),
+            "title": str(getattr(run, "title", "") or "(untitled)"),
+            "age_days": age,
+        }
+        if int(run.id) in queued:
+            rows.append(
+                dict(
+                    base,
+                    state="queued, waiting for the worker",
+                    command="py -m scripts.ops worker",
+                )
+            )
+        elif age is not None and age >= days:
+            rows.append(
+                dict(
+                    base,
+                    state=f"rendered {age:.0f} days ago, never uploaded",
+                    command=f"py -m scripts.ops retire-renders --channel {channel_id} "
+                    f"--run-id {run.id} --apply",
+                )
+            )
+        else:
+            rows.append(
+                dict(
+                    base,
+                    state="rendered, never uploaded",
+                    command=f"py -m scripts.requeue_upload --channel {channel_id} "
+                    f"--run-id {run.id} --queue",
+                )
+            )
+    for row in unlisted_holds(channel_id):
+        run_id = getattr(row, "content_run_id", None)
+        held = override_held(run_id)
+        rows.append(
+            {
+                "run_id": int(run_id) if run_id else 0,
+                "title": _upload_title(row),
+                "age_days": None,
+                "state": "unlisted, held for a claim" if held else "unlisted on YouTube",
+                "command": (
+                    f"py -m scripts.ops verify-claim --run-id {run_id}"
+                    if held
+                    else f"py -m scripts.ops go-public {row.youtube_video_id} "
+                    f"--channel {channel_id} --apply"
+                ),
+            }
+        )
+    return rows
+
+
+def _upload_title(row: Any) -> str:
+    try:
+        from storage.repositories.publish_log import video_title
+
+        return video_title(row)
+    except Exception as exc:
+        logger.debug("shelf title unavailable: %s", exc)
+        return "(untitled)"
+
+
+def shelf_report(channel_id: str) -> list[str]:
+    """`ops shelf`."""
+    rows = shelf_rows(channel_id)
+    if not rows:
+        return [f"Shelf - {channel_id}: every finished video is public."]
+    lines = [f"Shelf - {channel_id}: {len(rows)} finished video(s) not public"]
+    for row in rows:
+        lines.append(f"  run {row['run_id']}  {row['title'][:70]}")
+        lines.append(f"      {row['state']}")
+        lines.append(f"      {row['command']}")
+    return lines
 
 
 def shelf_total(counts: dict[str, int]) -> int:
@@ -84,11 +199,15 @@ def shelf_lines(channel_id: str, counts: dict[str, int], *, days: int = STALE_DA
             parts.append(f"{claim} held for a claim - py -m scripts.ops verify-claim --run-id N")
         out.append(f"Unlisted, not public: {unlisted} video(s) ({'; '.join(parts)})")
     renders, stale = int(counts.get("renders") or 0), int(counts.get("stale") or 0)
+    queued = int(counts.get("queued") or 0)
     if renders:
         parts = []
-        if renders - stale:
+        if queued:
+            parts.append(f"{queued} queued, waiting for the worker - py -m scripts.ops worker")
+        if renders - stale - queued:
             parts.append(
-                f"{renders - stale} recent - py -m scripts.requeue_upload --channel {channel_id}"
+                f"{renders - stale - queued} recent - "
+                f"py -m scripts.requeue_upload --channel {channel_id}"
             )
         if stale:
             parts.append(

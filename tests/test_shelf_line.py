@@ -21,11 +21,12 @@ def _row(run_id, privacy="unlisted", video_id="vid"):
 
 
 class ShelfCountTests(unittest.TestCase):
-    def _shelf(self, renders, ages, rows, overrides=()):
+    def _shelf(self, renders, ages, rows, overrides=(), queued=None):
         from core import stale_renders
 
         with (
             patch("scripts.requeue_upload.list_recyclable", return_value=renders),
+            patch.object(stale_renders, "_queued_runs", return_value=queued or {}),
             patch.object(stale_renders, "render_age_days", side_effect=lambda run: ages[run.id]),
             patch("publishing.go_public.unlisted_holds", return_value=rows),
             patch("publishing.go_public.override_held", side_effect=lambda rid: rid in overrides),
@@ -37,11 +38,26 @@ class ShelfCountTests(unittest.TestCase):
         got = self._shelf(
             renders, {1: 120.0, 114: 31.0, 132: 0.5}, [_row(92), _row(98), _row(119)], (92, 119)
         )
-        self.assertEqual(got, {"renders": 3, "stale": 2, "unlisted": 3, "claim": 2})
+        self.assertEqual(got, {"renders": 3, "stale": 2, "queued": 0, "unlisted": 3, "claim": 2})
+
+    def test_a_queued_render_is_counted_as_queued_whatever_its_age(self):
+        """#1131: run 132 was queued for upload and the shelf called it never uploaded."""
+        renders = [SimpleNamespace(id=132), SimpleNamespace(id=114), SimpleNamespace(id=59)]
+        got = self._shelf(renders, {132: 90.0, 114: 5.0, 59: 80.0}, [], queued={132: object()})
+        self.assertEqual(got, {"renders": 3, "stale": 1, "queued": 1, "unlisted": 0, "claim": 0})
+
+    def test_the_line_sends_a_queued_render_to_the_worker(self):
+        from core.stale_renders import shelf_lines
+
+        (line,) = shelf_lines(
+            "tapin", {"renders": 2, "stale": 0, "queued": 1, "unlisted": 0, "claim": 0}
+        )
+        self.assertIn("1 queued, waiting for the worker - py -m scripts.ops worker", line)
+        self.assertIn("1 recent - py -m scripts.requeue_upload --channel tapin", line)
 
     def test_a_render_with_no_file_age_is_not_called_stale(self):
         got = self._shelf([SimpleNamespace(id=5)], {5: None}, [])
-        self.assertEqual(got, {"renders": 1, "stale": 0, "unlisted": 0, "claim": 0})
+        self.assertEqual(got, {"renders": 1, "stale": 0, "queued": 0, "unlisted": 0, "claim": 0})
 
     def test_unlisted_holds_reads_only_unlisted_rows_with_a_video(self):
         from publishing import go_public
@@ -94,6 +110,7 @@ class WhereItIsShownTests(unittest.TestCase):
             patch.object(status, "_hdr_uploads", return_value=""),
             patch.object(status, "_hdr_queue", return_value=""),
             patch.object(status, "_hdr_last", return_value=""),
+            patch.object(status, "_hdr_week", return_value=""),
             patch("core.stale_renders.shelf", return_value=self.COUNTS),
         ):
             self.assertEqual(
@@ -110,6 +127,7 @@ class WhereItIsShownTests(unittest.TestCase):
             patch.object(status, "_hdr_uploads", return_value=""),
             patch.object(status, "_hdr_queue", return_value=""),
             patch.object(status, "_hdr_last", return_value=""),
+            patch.object(status, "_hdr_week", return_value=""),
             patch("core.stale_renders.shelf", return_value={}),
         ):
             self.assertEqual(status.header_line("tapin"), "TapIn")

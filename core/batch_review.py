@@ -353,3 +353,178 @@ def review_drafts(
             _write_review(slotted, publish_at=str(slot.publish_at), privacy=privacy)
     print_fn(f"  Queued {len(summary.queued)}. Run the worker: py -m jobs.worker --loop 30")
     return summary
+
+
+# ---- #1078: a render nobody is watching (operator, 2026-10-11: "yes, up to 2 a night") ------
+#
+# Overnight wrote drafts every night and rendered none, by a recorded rule; 69 runs had stopped
+# at `proceed_video=False`. The rule is reversed for a channel that sets `overnight.renders`.
+# An unattended render takes only a draft a person would wave through: nothing unsupported,
+# nothing flagged, still current. It is queued **unlisted, now** - never public - so the
+# operator's step in the morning is to watch it and run `go-public`.
+
+
+_LENS_LABEL_RE = re.compile(
+    r"^(?:contrarian|hot take|take|explainer|prediction|recap|analysis|angle)\s*:\s*", re.I
+)
+
+
+def drafts_line(channel_id: str, *, root: str | None = None) -> str:
+    """#1132: the drafts waiting, split into what overnight will take and what needs a person.
+
+    69 runs had stopped at a draft and no line the operator reads said any were waiting.
+    """
+    eligible, skipped = unattended_candidates(channel_id, root=root)
+    total = len(eligible) + len(skipped)
+    if not total:
+        return ""
+    limit = unattended_limit(channel_id)
+    stale = sum(1 for _draft, why in skipped if "past its window" in why)
+    parts = []
+    if eligible and limit > 0:
+        parts.append(f"{len(eligible)} could render overnight ({limit} a night)")
+    elif eligible:
+        parts.append(f"{len(eligible)} clean")
+    if len(skipped) - stale:
+        parts.append(f"{len(skipped) - stale} need you")
+    if stale:
+        parts.append(f"{stale} past their window")
+    return (
+        f"Drafts waiting: {total} - {', '.join(parts)}: "
+        f"py -m scripts.ops batch-review --channel {channel_id}"
+    )
+
+
+def unattended_limit(channel_id: str) -> int:
+    """How many drafts overnight may render: `OVERNIGHT_RENDERS` when set, else the channel's
+    `overnight.renders`. 0 means none."""
+    raw = os.getenv("OVERNIGHT_RENDERS", "").strip()
+    if raw:
+        try:
+            return max(0, int(raw))
+        except ValueError:
+            return 0
+    try:
+        from config.channels import get_channel_profile
+
+        return max(0, int(getattr(get_channel_profile(channel_id), "overnight_renders", 0) or 0))
+    except Exception as exc:
+        logger.debug("overnight render limit unreadable: %s", exc)
+        return 0
+
+
+def unattended_block_reason(draft: PendingDraft) -> str:
+    """Why a draft must wait for a person, or "" when it may render unattended."""
+    meta = draft.meta
+    if draft.decision:
+        return f"already {draft.decision}"
+    if _blocking_claims(draft):
+        return "a claim is not supported"
+    verdict = str(meta.get("authenticity_verdict") or "ok").strip().lower()
+    if verdict != "ok":
+        return f"authenticity check says {verdict}"
+    if meta.get("fact_conflicts"):
+        return "its facts conflict"
+    if meta.get("ungrounded_entities"):
+        return "it names something the facts do not"
+    if str(meta.get("hook_verdict") or "").strip().lower() == "weak":
+        return "weak hook"
+    label = _LENS_LABEL_RE.match(draft.title.strip())
+    if label:
+        # Run 116's draft was titled "Contrarian: Spain's World Cup win ..." - the angle's
+        # label, pasted in front of the title. A person fixes that; overnight must not ship it.
+        return f'its title starts with a label ("{label.group(0).strip()}")'
+    age = draft_age_days(meta)
+    if age is not None and age > freshness_window_days(meta):
+        return f"{age:.0f} days old, past its window"
+    return ""
+
+
+def unattended_candidates(
+    channel_id: str, *, root: str | None = None
+) -> tuple[list[PendingDraft], list[tuple[PendingDraft, str]]]:
+    """(drafts that may render, best hook first then newest; the rest with their reason)."""
+    eligible: list[PendingDraft] = []
+    skipped: list[tuple[PendingDraft, str]] = []
+    for draft in pending_drafts(channel_id, root=root):
+        reason = unattended_block_reason(draft)
+        if reason:
+            skipped.append((draft, reason))
+        else:
+            eligible.append(draft)
+
+    def rank(draft: PendingDraft) -> tuple[float, float]:
+        try:
+            hook = float(draft.meta.get("hook_score") or 0)
+        except (TypeError, ValueError):
+            hook = 0.0
+        age = draft_age_days(draft.meta)
+        return (-hook, age if age is not None else 1e9)
+
+    return sorted(eligible, key=rank), skipped
+
+
+def _queue_unlisted(run_id: int, channel_id: str) -> int:
+    from analytics.queue_manager import requeue_content_run
+
+    return requeue_content_run(run_id, channel_id, privacy_status="unlisted")
+
+
+def render_unattended(
+    channel_id: str,
+    limit: int,
+    *,
+    root: str | None = None,
+    render: Callable[[PendingDraft, bool], bool] | None = None,
+    queue: Callable[[int, str], int] | None = None,
+) -> dict[str, Any]:
+    """Render up to `limit` eligible drafts and queue each one unlisted.
+
+    Returns {rendered, queued, failed: [(run, why)], waiting: [(run, why)]}. A draft that
+    fails to render keeps its place for the operator; nothing is ever queued public.
+    """
+    out: dict[str, Any] = {"rendered": [], "queued": [], "failed": [], "waiting": []}
+    if limit <= 0:
+        return out
+    eligible, skipped = unattended_candidates(channel_id, root=root)
+    out["waiting"] = [(d.run_id, why) for d, why in skipped]
+    for draft in eligible[:limit]:
+        try:
+            (render or _render)(draft, False)
+        except Exception as exc:
+            logger.warning("overnight render of run %s failed: %s", draft.run_id, exc)
+            out["failed"].append((draft.run_id, str(exc)[:120]))
+            continue
+        _write_review(draft, decision="rendered", override=False, by="overnight")
+        out["rendered"].append(draft.run_id)
+        try:
+            (queue or _queue_unlisted)(draft.run_id, channel_id)
+            out["queued"].append(draft.run_id)
+        except Exception as exc:
+            logger.warning("overnight upload of run %s not queued: %s", draft.run_id, exc)
+            out["failed"].append((draft.run_id, f"rendered, not queued: {str(exc)[:90]}"))
+    return out
+
+
+def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[str]:
+    """`ops overnight-plan`: what tonight would render, and why the rest wait."""
+    limit = unattended_limit(channel_id)
+    eligible, skipped = unattended_candidates(channel_id, root=root)
+    lines = [f"Overnight render plan - {channel_id}: up to {limit} a night"]
+    if limit <= 0:
+        lines.append("  Overnight is render-free for this channel (overnight.renders is 0).")
+    for draft in eligible[: max(limit, 0)]:
+        lines.append(f"  would render: run {draft.run_id}  {draft.title[:70]}")
+    for draft in eligible[max(limit, 0) :]:
+        lines.append(f"  next in line: run {draft.run_id}  {draft.title[:70]}")
+    if not eligible:
+        lines.append("  No draft qualifies tonight.")
+    reasons: dict[str, int] = {}
+    for _draft, why in skipped:
+        key = "past its window" if "past its window" in why else why
+        reasons[key] = reasons.get(key, 0) + 1
+    if reasons:
+        told = ", ".join(f"{n} {why}" for why, n in sorted(reasons.items(), key=lambda kv: -kv[1]))
+        lines.append(f"  Waiting for you ({len(skipped)}): {told}")
+        lines.append(f"  Review them: py -m scripts.ops batch-review --channel {channel_id}")
+    return lines

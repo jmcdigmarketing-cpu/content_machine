@@ -103,6 +103,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `negative-fact` | Record a walked-back claim so a later run cannot re-assert it (--topic franchise) |
 | `next` | One action to take now across gates, quota, and vault decay |
 | `overnight` | Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5) |
+| `overnight-plan` | What tonight's overnight would render, and why the rest wait (#1078) |
 | `package-audit` | Build the wheel and sdist; flag secrets, tokens or operator paths (#640) |
 | `packaging` | Shorts stayed / feed share, long-form impressions and CTR, per recent video (#951) |
 | `paid-signals` | Attribute tiktok_trends / youtube_competitors lift; recommend keep/disable (no catalog write) |
@@ -149,6 +150,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `selftest` | Run every safety gate against fixtures; show which are armed here (#630) |
 | `sendto-facts` | Install Explorer Send-to shortcut targeting facts.txt |
 | `seo-refresh` | Refresh trending tag hints (YouTube + RSS) |
+| `shelf` | Finished videos that are not public, each with its command (#1131) |
 | `shell` | Localhost FastAPI operator shell (GET only; no TTS/Apify/publish) |
 | `shortcut` | Start Menu + Desktop shortcuts that open the Content OS app (#982) |
 | `signal-audit` | Which signals feed the script, and which return frozen payloads (#575 #588) |
@@ -186,4 +188,5 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `why-slow` | Rank last-run phase timings (slowest first) |
 | `winners` | The channel's top videos by views, as the script prompt sees them (#937) |
 | `worker` | Process one upload/render job (or use --loop N) |
+| `worker-task` | Send queued uploads every 15 minutes via Task Scheduler (--install / --remove) (#1130) |
 | `ypp` | YPP readiness: YouTube's own numbers with ads excluded, disclosure, cadence |

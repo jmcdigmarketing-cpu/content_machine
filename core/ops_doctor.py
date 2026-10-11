@@ -139,6 +139,15 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         add("secrets", True, f"n/a ({type(exc).__name__})")
 
     try:
+        from core import nightly_task
+
+        uploads_ok, uploads_line = nightly_task.worker_doctor(channel_id)  # #1130
+        add("uploads", uploads_ok, uploads_line)
+    except Exception as exc:
+        logger.debug("doctor uploads skipped: %s", exc)
+        add("uploads", True, f"n/a ({type(exc).__name__})")
+
+    try:
         from analytics import reach_report
 
         reach_ok, reach_line = reach_report.status(channel_id)  # #1058

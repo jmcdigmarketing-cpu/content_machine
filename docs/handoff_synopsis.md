@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-10: the shelf, who stayed, competitors, patch notes (waves 77-78)
+# Handoff synopsis — 2026-10-11: the record matches YouTube; uploads and mornings (waves 79-80)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,29 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-10 (Claude Code): waves 77-78, the next ten
+## Last wave — 2026-10-11 (Claude Code): waves 79-80, the record and the last mile
+
+**The numbers in the entry below were wrong.** All 43 videos are public; the log said 32
+because a video's privacy was written at upload and never read back (#1128). The operator
+found it. The metrics sync now asks YouTube and corrected 11 rows; the shelf is 2, not 7.
+
+What was really in the way: a queued upload nothing was sending (run 132, due 9:30 pm on
+10-10) and 69 drafts nobody rendered. The header names an overdue upload and
+`ops worker-task --install` makes a scheduled task send them every 15 minutes (#1129 #1130;
+the install line is the operator's). `ops shelf` lists each unpublished video with its exact
+command (#1131). Overnight renders up to 2 clean drafts and queues them unlisted - the
+operator's call, reversing "render-free" (#1078 first half, decisions_2026-10.md §40); `ops
+overnight-plan` shows tonight's two and why 29 wait. `ops status` counts the drafts (#1132),
+the header says "week 4 of 3-5" (#1133), MoneyWise is parked (#1134, decisions_2026-10.md §41),
+competitor searches keep to the niche's own words and `add --name` needs no id (#1127).
+`ops sync-metrics` no longer dies under a pipe or a scheduled task (#1135).
+
+Suite 5460 -> 5531, mypy 98, corpus 188. `roadmap-index`: open 308, done 861,
+highest #1139. Filed open: #1136 (runs 92 and 119 are public with a claim never confirmed),
+#1137 (the header's last video reads 0 views), #1138 (a label in a draft title), #1139 (2 of
+31 drafts are clean).
+
+## Previous — 2026-10-10 (Claude Code): waves 77-78, the next ten
 
 Ten shipped. Finished videos that are not public now have a line: the startup header ends
 "7 finished, not public" and `ops status` lists 5 unlisted uploads (2 held for a claim) and 2
@@ -50,23 +72,6 @@ errored first. The first full run was 5347 tests and failed the env lint:
 `roadmap-index`: open 310, done 841, numbered open 258, highest #1121.
 
 Next: #1121, #462, #404, #388, #409.
-
-## Previous — 2026-10-10 (Claude Code): waves 75-76, the next ten
-
-Nine shipped, one blocked. A one-chapter video is no longer stored as all-angles (#1115). The
-suggest check reports a subject spelled one letter off what people type (#1116). Trace readers
-get the run's own title, description and script, so `ops desc-fold` works (#1117). mypy is 98
-(#1075). `ops predictions` lists each run's prediction beside its outcome (#1062). Sentences
-that are hard to say are flagged and rewritten when no number or name is lost (#1034). A list,
-a how-to, a comparison, a look back and a reaction each get their own beats (#1031). A game's
-release date is stated against today (#1025, in part). Suite 5330; pushed.
-
-Two items were blocked by what is not there. Click-through: the YouTube Reporting API is not
-enabled in the Cloud project - `ops doctor`'s `reach` row says so (#1118; #1058 stays open).
-The competitor watch: one competitor on the list and no view counts (#1063; needs #1120).
-
-Filed open: #1119 (patch notes), #1120 (a usable competitor list), #1121 (a YouTube 500 read
-as a dead feed). Next: #995, #990, #374, #400, #380.
 
 ## Pipeline order (operator)
 

@@ -4,7 +4,7 @@
 
 Why the load-bearing choices are the way they are. Code says *what*; this says
 *why* — so a future change (or a future Claude session) doesn't "fix" something
-that was deliberate. Newest near the bottom. Keep entries short.
+that was deliberate. Newest near the bottom; 40 onward: [decisions_2026-10.md](decisions_2026-10.md).
 
 ---
 

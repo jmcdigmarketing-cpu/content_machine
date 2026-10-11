@@ -17,6 +17,58 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-11 (Claude Code) - waves 79-80: the record was wrong; uploads and mornings
+
+**Prompt:** next 10 n push, update docs, 6 questinos or decisions for me? update artifacts too, any missed utilizations or efficiencies? whats next to take the next step as a project?
+
+**A correction first.** Waves 77-78 reported 32 public videos, 5 still unlisted and "7 finished, not public", and the ship stage was set on those numbers. Asked what to do with three of the "unlisted" ones, the operator answered **"all 3 were published"**. One read of YouTube: all 43 are public. `privacy_status` was written at upload and never read back - a scheduled upload goes up private and turns public at its slot, a held one is made public in Studio. Eleven rows were wrong, and so was every figure I took from them, the shelf line I had just shipped, the roadmap, the Story page and the Back-Home List. Found by the operator, not by me: I measured the record and called it the channel.
+
+**Measured before picking (read-only):** job 54 (run 132, public, due 9:30 pm on 10-10) still pending - nothing starts the worker; "queue 3" was that job plus two removed in June; 69 drafts at `proceed_video=False`, a 5:00 am task writing more each night; 0 uploads scheduled ahead; 31 drafts waiting, of which 13 have an unsupported claim, 6 an authenticity "review", 6 are past their window.
+
+**Decisions (operator, AskUserQuestion):** queued uploads go out automatically · overnight may render up to 2 a night, unlisted (reverses "render-free", decisions_2026-10.md §40) · MoneyWise parked (decisions_2026-10.md §41) · the old unlisted videos: "all 3 were published".
+
+**Shipped:**
+1. #1128 privacy is read back from YouTube in the metrics sync; 11 rows corrected.
+2. #1126 a run whose video is public is `published` (12 moved).
+3. #1129 a removed job is not active; an overdue upload is named on the header and in `ops status`.
+4. #1130 `ops worker-task --install | --remove`; an `uploads` row in `ops doctor`. Not installed by me.
+5. #1131 `ops shelf` - each unpublished video with its exact command; a queued render is "queued".
+6. #1078 (first half) overnight renders up to the channel's limit and queues unlisted; `ops overnight-plan`.
+7. #1132 the drafts line in `ops status`.
+8. #1133 "week 4 of 3-5" on the header.
+9. #1134 MoneyWise parked: the picker skips it, the doctor stops failing on its feed.
+10. #1127 competitor searches filtered by the niche's own words; `competitors add --name`.
+11. #1135 (found on the way) `ops sync-metrics` died on a check mark under any pipe or scheduled task.
+
+**Findings, with file:line:**
+- `publishing/youtube_publisher.py:480` writes `privacy_status` once; nothing else wrote it except `go_public.py:188`. Readers that were wrong: `core/unit_economics.py:241` (published = public), `publishing/go_public.py:79` (holds), `core/review_booth.py:498`, my `core/stale_renders.shelf`.
+- `scripts/ops.py:56` `_run_module`: `subprocess.call(cmd)` with no encoding; the child's stdout is cp1252 under a pipe. `analytics/sync_metrics.py:146` prints a check mark.
+- `storage/repositories/jobs.py:347`: active = pending, running, failed - a job the operator removed is stored as failed.
+- `core/overnight.py`: drafts only. `core/batch_review._render` was reachable only from the interactive review.
+- Run 116's draft title: "Contrarian: Spain's World Cup win ..." - the angle label in the title (#1138).
+- Runs 92 and 119 were rendered past the fact gate and are public (#1136).
+
+**Not done:** the worker task is not installed and run 132's upload is not sent - both are the operator's line. The competitor shortlist was not re-searched (100 units a niche); the filter is proved on fixtures. #1078's review queue in the app is open.
+
+**Audit:** 71 new tests in six files; 68 observed failing or erroring on the committed sources, 1 is a guard, 2 (the queued count on the shelf line) were written with their code. 4 corpus cases, 188 of 188 held. ruff and format clean; mypy at or under 98. Suite 5460 -> 5531, forward and reversed. Every new function has a production caller.
+
+**Proof:**
+```
+Privacy: 11 video(s) are public on YouTube and the record said otherwise - corrected (run 98, run 55, run 19, run 92, run 93, run 41, run 119, run 72 and 3 more)
+Run status: 12 run(s) were still "scheduled" - now published        record now: {'public': 43}
+TapIn Media - sign-in ok - queue 1 (1 upload overdue - ops worker) - week 4 of 3-5 - 2 finished, not public
+Shelf - tapin: 2 finished video(s) not public
+  run 132  Topuria's outlook: Can he adapt before UFC's next title cycle?   queued, waiting for the worker
+  run 114  Shevchenko demands immediate title shot ...                      py -m scripts.requeue_upload --channel tapin --run-id 114 --queue
+Overnight render plan - tapin: up to 2 a night
+  would render: run 136  Houston's offense adapts without Stroud ...
+  would render: run 123  Messi's World Cup hat trick exposes Argentina's midfield dependency
+  Waiting for you (29): 13 a claim is not supported, 6 past its window, 6 authenticity check says review, ...
+[FAIL] uploads: 1 upload(s) overdue and nothing has sent them - py -m scripts.ops worker-task --install
+```
+
+**Next:** the ship stage in [roadmap.md](roadmap.md). Open for the operator: #1136 (two public videos with unconfirmed claims) and whether the weekly floor moves from 3 to 5.
+
 ## 2026-10-10 (Claude Code) - waves 77-78: the next ten, and the ship stage
 
 **Prompt:** next 10 n push, update docs, 6 questinos or decisions for me? update artifacts too, any missed utilizations or efficiencies? whats next to take the next step as a project?

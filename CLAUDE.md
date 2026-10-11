@@ -20,7 +20,7 @@ recommended length + post-time) and a 2026-policy compliance layer (authenticity
 check, AI disclosure, cadence guardrail).
 
 Channels (`config/channels.json`): `tapin` (gaming/UFC shorts), `moneywise`
-(finance). Full picture: [README.md](README.md) and
+(finance - parked since 2026-10-11, [docs/decisions_2026-10.md](docs/decisions_2026-10.md) §41). Full picture: [README.md](README.md) and
 [docs/architecture.md](docs/architecture.md).
 
 **Every doc is indexed in [docs/README.md](docs/README.md)** — start there rather than

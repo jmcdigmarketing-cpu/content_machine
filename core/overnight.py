@@ -65,6 +65,8 @@ class OvernightResult:
     pause_line: str = ""
     canary_line: str = ""
     post_publish_line: str = ""
+    # #1078: what the unattended render did - {rendered, queued, failed, waiting}.
+    renders: dict[str, Any] = field(default_factory=dict)
 
 
 def run_overnight(
@@ -180,6 +182,17 @@ def _run_overnight_body(
     except Exception as exc:
         logger.debug("overnight dossier step skipped: %s", exc)
 
+    # #1078 (operator, 2026-10-11): overnight may render. Only when the channel says how
+    # many, only drafts nothing is flagged on, and every one is queued unlisted.
+    try:
+        from core.batch_review import render_unattended, unattended_limit
+
+        limit = unattended_limit(channel)
+        if limit > 0:
+            result.renders = render_unattended(channel, limit)
+    except Exception as exc:
+        logger.warning("overnight render step did not run: %s", exc)
+
     try:
         from core.channel_health import build_health, health_line
 
@@ -263,6 +276,25 @@ def _run_overnight_body(
     return result
 
 
+def render_lines(result: OvernightResult) -> list[str]:
+    """#1078: what was rendered overnight and what to do with it, or []."""
+    done = result.renders or {}
+    lines: list[str] = []
+    rendered = [int(r) for r in done.get("rendered") or []]
+    if rendered:
+        runs = ", ".join(f"run {r}" for r in rendered)
+        lines.append(
+            f"Rendered overnight: {len(rendered)} ({runs}), queued unlisted - watch each, "
+            f"then: py -m scripts.ops go-public --channel {result.channel_id}"
+        )
+    for run_id, why in done.get("failed") or []:
+        lines.append(f"Not rendered: run {run_id} ({why})")
+    if done and not rendered and not done.get("failed"):
+        waiting = len(done.get("waiting") or [])
+        lines.append(f"Nothing rendered overnight: no draft qualified ({waiting} wait for you)")
+    return lines
+
+
 def render_overnight(result: OvernightResult) -> str:
     from core.batch_generation import render_summary
 
@@ -290,6 +322,7 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(render_summary(result.outcomes).strip())
     except Exception:
         lines.append(f"{result.drafted}/{result.requested} drafts saved")
+    lines.extend(render_lines(result))
     lines.append("")
     lines.append(f"Dossiers written to vault: {result.dossiers}")
     if result.corrections:

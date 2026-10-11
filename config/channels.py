@@ -16,6 +16,14 @@ _CHANNELS_FILE = CHANNELS_FILE
 _LEGACY_CHANNELS = os.path.join(ROOT_DIR, "channels.json")
 
 
+def _overnight_renders(cfg: dict) -> int:
+    block = cfg.get("overnight")
+    try:
+        return max(0, int((block or {}).get("renders") or 0)) if isinstance(block, dict) else 0
+    except (TypeError, ValueError):
+        return 0
+
+
 @dataclass
 class ChannelProfile:
     id: str
@@ -29,6 +37,11 @@ class ChannelProfile:
     asset_provider_order: tuple | None = None
     output_subdir: str | None = None
     privacy_status_default: str = "private"
+    # #1078 (operator, 2026-10-11): how many drafts `ops overnight` may render and queue
+    # unlisted. channels.json "overnight": {"renders": N}; 0 keeps overnight render-free.
+    overnight_renders: int = 0
+    # #1134: a channel that is set up and not being worked (channels.json "parked": true).
+    parked: bool = False
     tts_voice_id: str | None = None
     tts_model_id: str | None = None
     tts_voice_pool: dict[str, int] | None = None
@@ -141,6 +154,8 @@ def get_channel_profiles() -> dict[str, ChannelProfile]:
             asset_provider_order=order,
             output_subdir=cfg.get("output_subdir") or cid,
             privacy_status_default=str(cfg.get("privacy_status_default", "private")),
+            overnight_renders=_overnight_renders(cfg),
+            parked=bool(cfg.get("parked", False)),
             tts_voice_id=tts.get("voice_id") or cfg.get("tts_voice_id"),
             tts_model_id=tts.get("model_id") or cfg.get("tts_model_id"),
             tts_voice_pool=voice_pool,
@@ -196,3 +211,33 @@ def get_channel_profile(channel_id: str | None = None) -> ChannelProfile:
 
 def list_channel_ids() -> list[str]:
     return list(get_channel_profiles().keys())
+
+
+def active_channel_ids() -> list[str]:
+    """Every channel that is being worked (#1134): the list minus the parked ones."""
+    return [cid for cid, profile in get_channel_profiles().items() if not profile.parked]
+
+
+def parked_channel_ids() -> list[str]:
+    return [cid for cid, profile in get_channel_profiles().items() if profile.parked]
+
+
+def parked_feed_scopes() -> set[str]:
+    """Feed scopes that belong only to parked channels: a parked channel's own SEO feeds, and
+    a domain no working channel covers. MoneyWise is parked and had made no video; its dead
+    Yahoo Finance feed was failing `ops doctor` for the channel that is being worked."""
+    profiles = get_channel_profiles()
+    working: set[str] = set()
+    for profile in profiles.values():
+        if not profile.parked:
+            working.add(profile.domain)
+            working.update(profile.extra_domains)
+    scopes: set[str] = set()
+    for cid, profile in profiles.items():
+        if not profile.parked:
+            continue
+        scopes.add(f"seo:{cid}")
+        for domain in (profile.domain, *profile.extra_domains):
+            if domain not in working:
+                scopes.add(f"domain:{domain}")
+    return scopes

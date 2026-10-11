@@ -54,30 +54,32 @@ is left is below.
 
 ### The stage: ship (2026-10-11 to 10-25)
 
-**Operator, 2026-10-10:** the stage after waves 77-78 is videos going public, not new
-features. Measured that day: 129 TapIn runs, 32 public videos; 5 uploads still unlisted and
-2 renders never uploaded (`ops status` lists them, the startup header counts them, #1122);
-MoneyWise has 0 runs. Four targets, each with the line that shows it:
+**Operator, 2026-10-10:** videos going public, not new features. **Corrected 2026-10-11:** the
+numbers this stage was set on were read from a record that never asked YouTube again. All 43
+videos are public (the log said 32); the shelf is 2, not 7 (#1128). What was really in the way:
+a queued upload nothing was sending, and 69 drafts nobody rendered. Where each target stands:
 
-1. **Clear the shelf** - `ops status`: confirm or cut runs 92 and 119's claims
-   (`verify-claim`), `go-public` the three that are only waiting, upload or retire the two renders.
-2. **Five public a week** - the header's last-video line and `ops scoreboard`; two a week now.
-3. **Click-through flowing** - `ops doctor`'s `reach` row prints the link that enables the
-   Reporting API in the right Google project (#1123); numbers follow in about two days.
-4. **The intro test on** - `INTRO_TEST=alternate` in `.env`; who stayed is now on 39 of 43
-   videos (#1124), so `ops growth` can answer it.
+1. **Uploads go out on their own** - `py -m scripts.ops worker-task --install` (one line, the
+   operator's; #1130). Until then the header says "1 upload overdue" (run 132).
+2. **Videos ready each morning** - overnight renders up to 2 clean drafts and queues them
+   unlisted (#1078, the operator's call); `ops overnight-plan` shows tonight's. Watch, then
+   `go-public`. Only 2 of 31 waiting drafts were clean - the yield is the limit (#1139).
+3. **The week against 3-5** - on the header ("week 4 of 3-5" on 10-11).
+4. **Click-through flowing** - `ops doctor`'s `reach` row prints the link (#1123). Still off.
+5. **The intro test on** - `INTRO_TEST=alternate` in `.env`; who stayed is on 39 of 43 videos.
 
-During the stage only a defect a live run exposes gets built. **Approve the competitor
-shortlist** (`ops competitors suggest`, kept for 7 days) and the outlier watch has data (#1063).
+During the stage only a defect a live run exposes gets built. **MoneyWise is parked** (#1134).
+Operator calls open: runs 92 and 119 are public with a flagged claim never confirmed (#1136);
+the competitor shortlist (`ops competitors suggest`, then `add --name`).
 
 ### Recommended next five (non-app)
 
-**2026-10-10.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel
-(now also a 404 from every channel, #1125) · **#462** run id on each log line · **#404**
-breath and dead-air trim · **#388** backoff jitter · **#409** per-channel brand-safety
-lexicon. `roadmap-index` after waves 77-78: open 306, done 851, numbered open 254, highest
-#1127. Claude's waves closed #393 #1088 #1120 #1063 #1119 #1051 #1073 and new #1122 #1123
-#1124; filed #1125 #1126 #1127. The step-by-step: [operator_guide.md](operator_guide.md).
+**2026-10-11.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
+404 from every channel, #1125) · **#462** run id on each log line · **#404** breath and
+dead-air trim · **#388** backoff jitter · **#409** per-channel brand-safety lexicon.
+`roadmap-index` after waves 79-80: open 308, done 861, numbered open 256, highest #1139.
+Claude's waves closed #1126 #1127 and new #1128-#1135, built the first half of #1078, and
+filed #1136-#1139. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

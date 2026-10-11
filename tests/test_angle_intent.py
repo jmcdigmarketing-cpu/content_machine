@@ -31,6 +31,12 @@ RUN73_TOPICS = (
     "GTA 6 looks amazing!!!",
 )
 
+# #1088 (operator, 2026-10-10: "neutral unless I ask"): a game covered three times or more
+# keeps the staleness pivot - prediction, how it has changed - and loses the two frames that
+# were a verdict nobody asked for.
+VERDICT_LABELS = {"whats_broken_needs_fixing", "is_it_still_worth_playing"}
+STALENESS_LABELS = {"upcoming_content_predictions", "meta_evolution_analysis"}
+
 # Angle labels that a reaction video must never be steered into.
 CRITIQUE_LABELS = {
     "whats_broken_needs_fixing",
@@ -91,7 +97,20 @@ class TestAngleTypesFollowIntent(unittest.TestCase):
         """The established pivot is right for genuinely repeated coverage — it
         must not be collateral damage."""
         types = self._angle_types_for("GTA 6 meta breakdown", repeat_count=5)
-        self.assertTrue(CRITIQUE_LABELS.intersection(types), types)
+        self.assertTrue(STALENESS_LABELS.issubset(types), types)
+
+    def test_an_established_coverage_topic_gets_no_verdict_it_did_not_ask_for(self):
+        """#1088: neutral unless asked - the same rule every other topic has had since #1084."""
+        types = self._angle_types_for("GTA 6 meta breakdown", repeat_count=5)
+        self.assertEqual(VERDICT_LABELS.intersection(types), set(), types)
+        self.assertEqual(len(types), 5)
+
+    def test_a_take_asked_for_on_an_established_game_is_still_a_take(self):
+        from apis.topic_variants import INTENT_ANGLES, TAKE_STATED
+
+        # "is overrated" states a side, so it is the stated-take table (#1090).
+        types = self._angle_types_for("hot take: GTA 6 is overrated", repeat_count=5)
+        self.assertEqual(types, list(INTENT_ANGLES[TAKE_STATED]))
 
 
 class TestPromptDropsTheCritiqueInstruction(unittest.TestCase):
@@ -118,7 +137,13 @@ class TestPromptDropsTheCritiqueInstruction(unittest.TestCase):
 
     def test_non_reaction_established_topic_still_gets_the_freshness_guard(self):
         prompt = self._prompt_for("GTA 6 meta breakdown", is_established=True)
-        self.assertIn("CRITIQUE", prompt)
+        self.assertIn("that angle is stale", prompt)
+
+    def test_the_freshness_guard_asks_for_no_critique(self):
+        """#1088: it told the model to "focus on ... CRITIQUE" for every repeat game."""
+        prompt = self._prompt_for("GTA 6 meta breakdown", is_established=True)
+        self.assertNotIn("CRITIQUE", prompt)
+        self.assertIn("no verdict on the game unless the idea asks for one", prompt)
 
 
 class TestIntentsBeyondReaction(unittest.TestCase):
@@ -170,10 +195,11 @@ class TestIntentsBeyondReaction(unittest.TestCase):
         self.assertTrue(seen["types"])
         self.assertEqual(CRITIQUE_LABELS.intersection(seen["types"]), set(), seen["types"])
 
-    def test_the_established_critique_pivot_still_survives(self):
+    def test_the_established_staleness_pivot_still_survives(self):
         """Guard against exactly the collateral damage this change invites: a
         loose explainer cue capturing 'breakdown' would silently kill the
-        staleness guard, which is correct for genuinely repeated coverage."""
+        staleness guard, which is correct for genuinely repeated coverage.
+        (#1088 took the verdict frames out of it; the pivot itself stays.)"""
         seen: dict[str, list[str]] = {}
 
         def _capture(t, angle_types, **kwargs):
@@ -184,7 +210,8 @@ class TestIntentsBeyondReaction(unittest.TestCase):
             topic_variants.generate_variants(
                 "GTA 6 meta breakdown", channel_id="tapin", repeat_count=5
             )
-        self.assertTrue(CRITIQUE_LABELS.intersection(seen["types"]), seen["types"])
+        self.assertTrue(STALENESS_LABELS.issubset(seen["types"]), seen["types"])
+        self.assertEqual(VERDICT_LABELS.intersection(seen["types"]), set(), seen["types"])
 
     def test_every_intent_has_a_table_and_an_operator_note(self):
         """A detectable intent with no table would silently fall back to the take

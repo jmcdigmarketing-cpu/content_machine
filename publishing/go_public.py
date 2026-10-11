@@ -81,6 +81,13 @@ def _holds(rows: list) -> list:
     return sorted(held, key=lambda r: int(getattr(r, "id", 0) or 0), reverse=True)
 
 
+def unlisted_holds(channel_id: str) -> list:
+    """Every upload on the channel that is still unlisted, newest first (#1122)."""
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    return _holds(get_publish_log_repository().list_uploaded_for_channel(channel_id) or [])
+
+
 def _find(rows: list, video_id: str):
     rows = [r for r in (rows or []) if str(getattr(r, "youtube_video_id", "") or "").strip()]
     if video_id:

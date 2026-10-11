@@ -53,30 +53,33 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-10 · **HEAD at write:** `4616fee` + the waves 75-76 commit (`git log -1`) ·
+**Written:** 2026-10-10 · **HEAD at write:** `eb31eb3` + the waves 77-78 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
-**Read before editing:** a trace has no title, description or script - use
-`review_booth.trace_run(trace)`. A video's name is `publish_log.video_title(row)`. A stored
-feature key needs a reader (`tests/test_persisted_keys_read`). `READ_ALOUD_REWRITE` and
-`TITLE_SUGGEST` are off in the suite. mypy baseline is **98**. Run `ruff check --fix` on named
-files only: on the whole repo it rewrites the other agent's open files.
+**Read before editing:** a description block is attached with `description_extras.join_blocks`
+and nowhere else. The Steam signal makes up to four requests (two store looks, one news). An
+idle signal is skipped through `_skip_signals` (`SIGNAL_DEMOTION=false` to stop it). A test
+that reaches `apis.net_probe.online` fails the suite's network guard - stub it. mypy baseline
+**98**. `ruff check --fix` on named files only.
 
-**Cursor:** shared files touched: `core/pipeline.py` (`is_all_angles`, `features["read_aloud"]`),
-`core/content_engine.py` (the read-aloud pass, the beats line in the calm branch),
-`scripts/ops.py` (`desc-fold`, `free-cost`, `publish-dry-run`, `competitor-health`),
-`tests/__init__.py` (two flags, the reach store), `.env.example`, `tests/regression_corpus.json`
-(5 cases), `mypy_baseline.txt`.
+**Cursor:** #1121 and #462 are yours and untouched. For #1121: on 10-10 the feed answered
+**404** for a known-good channel id, not only 500 (#1125) - `fetch_channel_uploads_rss` still
+returns [] for both; I added only the `views` field there. Shared files I touched:
+`scripts/ops.py` (`competitors`, `competitor-health`), `.env.example` (`SIGNAL_DEMOTION`),
+`tests/regression_corpus.json` (10 cases), `apis/register_signals.py` (`_skip_signals`).
+`core/pipeline.py` and `main.py` were not touched.
 
 **Defects first:**
-- `ops doctor` now FAILs on `reach`: the YouTube Reporting API is not enabled in the Cloud
-  project. The operator's step; #1058 waits on it.
-- #1063 is blocked: one competitor on the list, no view counts (#1120).
-- #1121 a YouTube 500 on the competitor feed reads as "dead or wrong UC id".
-- CGFtzpiA1so and run 120's "LINK" source are still the operator's to check.
+- The Reporting API is still off in project 581798456680, two days after it was ticked on.
+  `ops doctor` prints the link. #1058 waits on it.
+- #1063 has nothing to find: one channel on the list. The shortlist is kept for the operator.
+- My first count of unuploaded renders was 13; 11 were already retired. It is 2.
+- #1125 the feed 404s for every channel · #1126 15 runs stuck at "scheduled" · #1127 the NFL
+  search returns soccer. 4 of 113 new tests were not run before their code (shortlist sizes).
 
-**Shipped:** waves 75-76 - #1115 #1116 #1117 #1075 #1118 #1062 #1034 #1031 #1025. 56 of 61 new
-tests failed first. Suite 5330, mypy 98. Highest #1121. Next: **#995 · #990 · #374 · #400 · #380**.
+**Shipped:** waves 77-78 - #1122 #1123 #1124 #393 #1088 #1120 #1063 #1119 #1051 #1073. 100 of
+113 new tests observed failing first. Suite 5460, mypy 98, corpus 184. Highest #1127.
+**Next is a ship stage, not a wave** (roadmap.md): only live-run defects get built.
 
 ## Slot — Cursor
 

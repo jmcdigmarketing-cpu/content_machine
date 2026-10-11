@@ -107,6 +107,31 @@ def _get_youtube_service(channel_id: str):
     return get_youtube_service(channel_id)
 
 
+def _attach_views(service, videos: list[dict[str, Any]]) -> None:
+    """#1120: a view count per video on the API path - one `videos.list` for up to 50 ids,
+    the third of the `_API_UNITS` a fetch already books. The feed carries counts of its own;
+    on 2026-10-10 it answered 404 for every channel and this path ran with none."""
+    ids = [str(v.get("video_id") or "") for v in videos if v.get("video_id")]
+    if not ids:
+        return
+    try:
+        reply = service.videos().list(part="statistics", id=",".join(ids[:50])).execute()
+    except Exception as exc:
+        logger.warning("Competitor view counts not read: %s", exc)
+        return
+    counts = {
+        str(item.get("id")): (item.get("statistics") or {}).get("viewCount")
+        for item in reply.get("items") or []
+    }
+    for video in videos:
+        raw = counts.get(str(video.get("video_id") or ""))
+        try:
+            if raw is not None:
+                video["views"] = int(raw)
+        except (TypeError, ValueError):
+            continue
+
+
 def fetch_channel_recent_videos_api(
     service,
     youtube_channel_id: str,
@@ -145,6 +170,7 @@ def fetch_channel_recent_videos_api(
                     "source": "youtube_api",
                 }
             )
+        _attach_views(service, videos)
         return videos
     except Exception as exc:
         logger.warning("Competitor API fetch failed for %s: %s", youtube_channel_id, exc)

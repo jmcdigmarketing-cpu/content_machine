@@ -151,7 +151,7 @@ class RegistryRunTests(unittest.TestCase):
         ]
         with patch.object(backfills, "REGISTRY", tuple(fakes)):
             backfills.run_backfills("tapin", ["all"], apply=True)
-        self.assertEqual(order, ["features", "cost", "quality", "angles", "view-curve"])
+        self.assertEqual(order, ["features", "cost", "quality", "angles", "view-curve", "stayed"])
 
 
 class VerbTests(unittest.TestCase):

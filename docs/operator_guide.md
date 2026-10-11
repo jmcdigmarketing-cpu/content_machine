@@ -106,6 +106,11 @@ py -m scripts.ops recommend-time --channel tapin       # the slot, and how many 
 A held run is refused until its claim is confirmed or rejected (step 3). Policy trouble:
 [policy_incident_runbook.md](policy_incident_runbook.md).
 
+**The shelf.** The startup header ends "N finished, not public" when anything is waiting, and
+`ops status` says what: uploads still unlisted (how many only need `go-public`, how many are
+held for a claim and need `verify-claim` first) and renders never uploaded (recent ones to
+upload, old ones to `retire-renders`).
+
 ## 7. Read the numbers
 
 ```powershell
@@ -117,6 +122,14 @@ py -m scripts.ops predictions --channel tapin     # each run's prediction beside
 
 `weekly-report` opens with three decisions, each with the number behind it. `growth` compares
 Shorts cut from a chapter with Shorts made as Shorts once three of each have a full week.
+
+**Once, for older videos:** `py -m scripts.ops backfill stayed --apply` asks YouTube who stayed
+past the swipe on videos synced before that number existed.
+
+**Topics with demand.** `py -m scripts.ops competitors suggest` prints channels in your niches
+with their size (it adds nothing, and re-reading it for a week costs no quota);
+`competitors add --source <id>` approves one; `competitor-sync --force` then stores their
+videos with view counts, and `competitor-health` lists any at three times that channel's median.
 
 ## Money
 

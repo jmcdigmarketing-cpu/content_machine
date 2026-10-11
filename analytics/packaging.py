@@ -150,3 +150,92 @@ def packaging_lines(channel_id: str, *, limit: int = _LIMIT) -> list[str]:
         )
         lines += [f'    "{t}" {figure_text(f)}{arm}' for t, f, arm in longs]
     return lines
+
+
+# ---- #1124: the stayed share for videos synced before it existed --------------------------
+
+
+def _stored(row: Any) -> dict[str, Any]:
+    try:
+        metrics = json.loads(getattr(row, "metrics_json", None) or "{}")
+    except (TypeError, ValueError):
+        return {}
+    return metrics if isinstance(metrics, dict) else {}
+
+
+def _views(metrics: dict[str, Any]) -> int:
+    try:
+        return int(float(metrics.get("views") or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def needs_stayed(row: Any) -> bool:
+    """A real video with views for a stored period and no engaged views beside them.
+
+    Measured 2026-10-10: 5 of 43 videos carried a stayed share. The sync has asked for
+    engaged views since #951, but it only revisits young videos (#918), so the 38 synced
+    before then were never asked - and every reader of "who stayed" ran on five.
+    """
+    if not str(getattr(row, "youtube_video_id", "") or "").strip():
+        return False
+    from storage.repositories.publish_log import is_seeded
+
+    if is_seeded(row):
+        return False
+    metrics = _stored(row)
+    if "engaged_views" in metrics:
+        return False
+    return (
+        _views(metrics) > 0
+        and bool(metrics.get("period_start"))
+        and bool(metrics.get("period_end"))
+    )
+
+
+def stayed_stale(run: Any) -> bool:
+    """A content run whose live video has views and no stayed share."""
+    try:
+        from publishing.idempotency import idempotency_key
+        from storage.repositories.publish_log import get_publish_log_repository
+
+        row = get_publish_log_repository().find_by_idempotency(
+            idempotency_key(int(run.id), str(getattr(run, "channel_id", "") or ""))
+        )
+    except Exception as exc:
+        logger.debug("stayed stale check skipped: %s", exc)
+        return False
+    return row is not None and needs_stayed(row)
+
+
+def backfill_stayed(channel_id: str, apply: bool, force: bool) -> dict[str, int]:
+    """Ask for engaged views over the period each video's stored views cover, so the share
+    is of the same starts. Network only with `apply`; `force` is accepted and changes
+    nothing - a video that has the number is never asked twice."""
+    from analytics import youtube_metrics
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    repo = get_publish_log_repository()
+    rows = list(repo.list_uploaded_for_channel(channel_id) or [])
+    todo = [r for r in rows if needs_stayed(r)]
+    updated = 0
+    if apply:
+        for row in todo:
+            metrics = _stored(row)
+            engaged = youtube_metrics.fetch_engaged_views(
+                row.youtube_video_id,
+                channel_id=channel_id,
+                start=str(metrics["period_start"]),
+                end=str(metrics["period_end"]),
+            )
+            if engaged is None:
+                from youtube.oauth import sign_in_problem
+
+                if sign_in_problem(channel_id):
+                    break  # every other video would be refused the same way (#961)
+                continue
+            metrics["engaged_views"] = int(engaged)
+            metrics["stayed_share"] = round(min(1.0, int(engaged) / _views(metrics)), 4)
+            repo.update(row.id, {"metrics_json": json.dumps(metrics)})
+            updated += 1
+    return {"runs": len(rows), "stale": len(todo), "would_update": len(todo), "updated": updated}

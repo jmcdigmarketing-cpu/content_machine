@@ -115,6 +115,7 @@ def build_report(channel_id: str) -> dict[str, Any]:
         "baseline": baseline,
         "dimensions": dimensions,
         "untested": untested,
+        "shelf": _shelf(channel_id),
         "avg_cost": _avg(costs) if costs else None,
         "total_cost": round(sum(costs), 2) if costs else None,
     }
@@ -181,6 +182,33 @@ def _shrunk_delta(group: dict[str, Any]) -> float:
 
     n = int(group["n"])
     return float(group["delta"]) * n / (n + MODERATE_SAMPLES)
+
+
+def _shelf(channel_id: str) -> dict[str, int]:
+    """Finished videos that are not public (#1122), or {} when they cannot be counted."""
+    try:
+        from core.stale_renders import shelf
+
+        return shelf(channel_id)
+    except Exception as exc:
+        logger.debug("weekly report: shelf not read: %s", exc)
+        return {}
+
+
+def shelf_decision(report: dict[str, Any]) -> str:
+    """The line that goes before the three decisions: publish what is finished first."""
+    from core.stale_renders import shelf_total
+
+    counts = report.get("shelf") or {}
+    total = shelf_total(counts)
+    if not total:
+        return ""
+    return (
+        f"First: {total} finished video(s) are not public "
+        f"({int(counts.get('unlisted') or 0)} unlisted, "
+        f"{int(counts.get('renders') or 0)} never uploaded) - "
+        "py -m scripts.ops status lists them."
+    )
 
 
 def three_decisions(report: dict[str, Any]) -> list[dict[str, Any]]:
@@ -262,6 +290,9 @@ def operator_digest(report: dict[str, Any], *, limit: int = 3) -> str:
         return ""
     channel = str(report.get("channel_id") or "this channel")
     lines = [f"This week's three decisions ({channel}):", ""]
+    first = shelf_decision(report)
+    if first:
+        lines.extend([first, ""])
     lines.extend(f"{i}. {action}" for i, action in enumerate(actions, 1))
     return "\n".join(lines)
 
@@ -351,6 +382,9 @@ def _format_body(report: dict[str, Any]) -> str:
         f"  {report['n']} videos analyzed · baseline engagement {report['baseline']:.1%}",
         "",
     ]
+    first = shelf_decision(report)
+    if first:
+        lines.extend([f"  {first}", ""])
     decided = three_decisions(report)
     if decided:
         lines.append("  This week's three decisions:")

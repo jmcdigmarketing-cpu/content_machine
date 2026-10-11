@@ -7,6 +7,21 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Cursor): Claude's five
+
+The five Claude left. A last-resort chapter title ends on the noun: run 119's
+sentence is "The welterweight belt", not "The welterweight belt is the only"
+(#1080). UFC 322 is seeded on 2025-11-15, the day ESPN, MSG, and Wikipedia date
+it, and 2026-11-14 no longer offers it (#1081). `ops fix-description` replaces
+one line of a live description and does not change privacy (#1066). A confirmed
+claim is an operator-tier vault fact whose page is the source (#1083). Cost per
+published minute counts public videos only, and names the return when revenue
+exists (#1072). `ops economics` printed $0.27 over 28.4 minutes, 19 public.
+
+`roadmap-index`: backlog open 320, done 827, numbered open 268, highest open
+#1117. Next: #995, #990, #374, #400, #380. #1115 #1116 #1117 are Claude's, in
+progress. #1088 stays an operator call.
+
 ## Previous — 2026-10-10 (Claude Code): wave 74 #1113 #1114 #1065 #1055 #1050
 
 Reports name a video by its run's title, not by the note its upload left (#1113; seven readers

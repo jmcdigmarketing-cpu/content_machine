@@ -85,13 +85,14 @@ def watch_coverage_lines(snapshot: dict[str, Any] | None) -> list[str]:
         plural = "s" if len(rows) != 1 else ""
         lines.append(
             f"outlier watch: {len(rows)} competitor{plural} on the list - it needs "
-            f"{WATCH_MIN_COMPETITORS} or more in the channel's own niche (config/channels.json)"
+            f"{WATCH_MIN_COMPETITORS} or more in the channel's own niche "
+            "(py -m scripts.ops competitors suggest)"
         )
     videos = [v for r in rows for v in r.get("recent_videos") or [] if isinstance(v, dict)]
     if videos and not any(v.get("views") is not None for v in videos):
         lines.append(
-            f"outlier watch: no view counts on {len(videos)} stored video(s) - the RSS sync "
-            "returns titles and dates only"
+            f"outlier watch: no view counts on {len(videos)} stored video(s) - sync again "
+            "(py -m scripts.ops competitor-sync --force); the feed carries them since #1120"
         )
     return lines
 

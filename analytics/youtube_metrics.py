@@ -173,6 +173,19 @@ def fetch_daily_views(
     return _fetch_views_by_day(youtube_video_id, service, start, end)
 
 
+def fetch_engaged_views(
+    youtube_video_id: str, *, channel_id: str | None = None, start: str, end: str
+) -> int | None:
+    """A video's engaged views between two dates - `ops backfill stayed` asks for the
+    period its stored views cover (#1124)."""
+    if not _analytics_enabled():
+        return None
+    service = get_youtube_analytics_service(resolve_channel_id(channel_id))
+    if not service:
+        return None
+    return _fetch_engaged_views(youtube_video_id, service, start, end)
+
+
 def fetch_channel_daily_views(
     *, channel_id: str | None = None, start: str, end: str
 ) -> list[list[Any]] | None:

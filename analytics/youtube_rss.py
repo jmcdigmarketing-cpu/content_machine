@@ -17,6 +17,8 @@ logger = get_logger("analytics.youtube_rss")
 
 ATOM = "http://www.w3.org/2005/Atom"
 YT = "http://www.youtube.com/xml/schemas/2015"
+MEDIA = "http://search.yahoo.com/mrss/"
+_VIEWS = f"{{{MEDIA}}}group/{{{MEDIA}}}community/{{{MEDIA}}}statistics"
 FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 
 
@@ -52,14 +54,21 @@ def fetch_channel_uploads_rss(
         video_id = (vid_el.text or "").strip() if vid_el is not None else ""
         if not title:
             continue
-        videos.append(
-            {
-                "video_id": video_id,
-                "title": title,
-                "published_at": published,
-                "source": "youtube_rss",
-            }
-        )
+        video: dict[str, Any] = {
+            "video_id": video_id,
+            "title": title,
+            "published_at": published,
+            "source": "youtube_rss",
+        }
+        # #1120: the feed has carried a view count all along (media:statistics); the
+        # outlier watch needs it and it costs no quota.
+        stats = entry.find(_VIEWS)
+        try:
+            if stats is not None and stats.get("views") is not None:
+                video["views"] = int(stats.get("views") or 0)
+        except (TypeError, ValueError):
+            pass
+        videos.append(video)
         if len(videos) >= max_results:
             break
     return videos

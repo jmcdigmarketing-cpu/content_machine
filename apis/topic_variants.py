@@ -451,13 +451,16 @@ def generate_variants(
 
     if profile and profile.domain == "gaming" and infer_topic_domain(topic) == "gaming":
         if is_established:
-            # Topic has been covered multiple times — pivot to analysis/prediction
+            # Topic has been covered multiple times - pivot to analysis/prediction.
+            # #1088 (operator, 2026-10-10): neutral unless asked. The two frames that were a
+            # verdict ("whats_broken_needs_fixing", "is_it_still_worth_playing") are gone; a
+            # take on a repeat game comes from the take table, when the idea asks for one.
             angle_types = [
-                "whats_broken_needs_fixing",  # current patch complaints
+                "what_changed_since_launch",  # what is different now, stated not judged
                 "upcoming_content_predictions",  # roadmap / leaks / future heroes
                 "meta_evolution_analysis",  # how the game has changed over time
                 "community_wishlist",  # what players want next
-                "is_it_still_worth_playing",  # retention / health of the game
+                "where_the_game_stands_now",  # players, updates, what is confirmed next
             ]
         else:
             # #1084: no `community_controversy` / "take" frame unless a take is asked for.
@@ -618,16 +621,16 @@ def generate_ai_angles(
     freshness_block = ""
     if intent is None:
         intent = detect_angle_intent(topic)
-    # "Focus on CRITIQUE" contradicts every frame the operator can actually ask
-    # for - a reaction, an explainer, a tutorial and a ranking are all steered
-    # wrong by it. Only an unlabelled topic keeps the staleness pivot, which is
-    # correct for genuinely repeated coverage ("GTA 6 meta breakdown").
+    # Only an unlabelled topic keeps the staleness pivot, which is correct for genuinely
+    # repeated coverage ("GTA 6 meta breakdown"). #1088: it no longer asks for critique -
+    # a verdict nobody asked for is what #1084 took out of every other topic.
     if is_established and intent == ANGLE_DEFAULT:
         freshness_block = (
             "\nFRESHNESS CONTEXT: This game/franchise has been covered multiple times "
             "on this channel already. DO NOT use 'just released', 'biggest update yet', "
             "or 'what you need to know' framing — that angle is stale.\n"
-            "Instead: focus on ANALYSIS, PREDICTION, COMMUNITY debate, or CRITIQUE.\n"
+            "Instead: focus on ANALYSIS, PREDICTION, or what the COMMUNITY is asking for. "
+            "Stay neutral: no verdict on the game unless the idea asks for one.\n"
         )
 
     # Every frame still needs five distinct lenses, but "contrarian counter-take"

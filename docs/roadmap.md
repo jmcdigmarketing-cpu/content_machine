@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-10
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-11
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -52,27 +52,36 @@ is left is below.
 | 4 visuals | **#1105-#1107** footage from the right folder and owned before stock, word-timed karaoke, auto-placed, ~2.5 s cuts from owned gameplay, clip bands, multi-voice, **#506** second-voice colour, **#411** ducked music bed, **#503** entrance (TapIn pop, MoneyWise fade), **#504** emoji drawn from an emoji font, **#955** footage matches the topic or stays out, **#1020** stock only as a last resort, **#1019** CC BY credits | thumbnails **#1047**, the voice **#1035**, licensed footage **#1040** (Cursor) · #786 your footage (operator) |
 | 5 volume | sample counts, 95% intervals, confidence tags, recency weighting, shrinkage in all three recommenders (**#352**), **#559** prediction frozen at publish, **#113** `ops predictions`, **#357** `ops feature-report`, **#909** + **#913** every best-bet pick scored, **#915** scheduled videos counted, **#916** + **#912** the used slot scored and an off-slot test, **#560** forward-only error bars, **#563** time to 100 views, **#918** young videos synced, **#564** views floor, **#598** scheduled vs immediate, **#919** an experiment per kind, **#920** one labelled measure, **#566** title lift, **#428** tag lift, **#565** retention diff, **#579** cost vs return, **#567** a randomised publish hour, **#570** `ops analytics-diff`, **#927** seeded history deduped and out of post time, **#929** every measured run counts, **#934** a views goal and its pace, **#935** your verdicts against the views, **#938** the recommenders aim at 7-day views, **#940** comparable views per video, **#954** organic only - ads out of every number, **#951** stayed / feed share and CTR, **#957** organic engaged rate, **#49** first-day alert, **#945** views prediction, **#985** which openers held viewers, **#988** the intro measured, **#959** what each ad campaign bought, **#992** paid subscribers, **#998** after the ads | #975 the organic rate on a real boosted video · more measured videos |
 
+### The stage: ship (2026-10-11 to 10-25)
+
+**Operator, 2026-10-10:** the stage after waves 77-78 is videos going public, not new
+features. Measured that day: 129 TapIn runs, 32 public videos; 5 uploads still unlisted and
+2 renders never uploaded (`ops status` lists them, the startup header counts them, #1122);
+MoneyWise has 0 runs. Four targets, each with the line that shows it:
+
+1. **Clear the shelf** - `ops status`: confirm or cut runs 92 and 119's claims
+   (`verify-claim`), `go-public` the three that are only waiting, upload or retire the two renders.
+2. **Five public a week** - the header's last-video line and `ops scoreboard`; two a week now.
+3. **Click-through flowing** - `ops doctor`'s `reach` row prints the link that enables the
+   Reporting API in the right Google project (#1123); numbers follow in about two days.
+4. **The intro test on** - `INTRO_TEST=alternate` in `.env`; who stayed is now on 39 of 43
+   videos (#1124), so `ops growth` can answer it.
+
+During the stage only a defect a live run exposes gets built. **Approve the competitor
+shortlist** (`ops competitors suggest`, kept for 7 days) and the outlier watch has data (#1063).
+
 ### Recommended next five (non-app)
 
-**2026-10-10.** Shipped #990, #400, #380, #995, #374 (Cursor). `roadmap-index`: open 310,
-done 841, numbered open 258, highest #1121. The list changed because those five are done.
-The next five are the cheapest open small items that are not an operator call. #1121 is
-the newest filed defect. #462 is the hole the log reader left: a line still cannot name
-its run.
+**2026-10-10.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel
+(now also a 404 from every channel, #1125) · **#462** run id on each log line · **#404**
+breath and dead-air trim · **#388** backoff jitter · **#409** per-channel brand-safety
+lexicon. `roadmap-index` after waves 77-78: open 306, done 851, numbered open 254, highest
+#1127. Claude's waves closed #393 #1088 #1120 #1063 #1119 #1051 #1073 and new #1122 #1123
+#1124; filed #1125 #1126 #1127. The step-by-step: [operator_guide.md](operator_guide.md).
 
-1. **#1121 a YouTube 500 is not a dead channel** `[S]`.
-2. **#462 run id on each log line** `[S]`.
-3. **#404 breath and dead-air trim** `[S]`.
-4. **#388 backoff jitter** `[S]`.
-5. **#409 per-channel brand-safety lexicon** `[S]`.
-
-The step-by-step: [operator_guide.md](operator_guide.md). **Operator:** enable the YouTube
-Reporting API in Google Cloud Console - `ops doctor`'s `reach` row fails until then (#1118).
-
-**#1088** stays an operator call (a thrice-covered game and the critique pivot). Not next:
-#1025 (Later), #1029 (needs stayed-share history), #1038 (the operator's blind listen),
+Not next:
+#1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),
 #1015 (waits on PySide), #975 (waiting on a boosted video), desktop B2 (#1068, #1064).
-#1119 and #1120 are medium.
 
 Parked for an operator call: **#459** dead-code sweep (it would remove reddit's free backend).
 **#914** (an emoji font off Windows) waits on whether renders ever leave the PC.
@@ -96,48 +105,7 @@ live TTS run, check that `ops reliability` reports TTS-cache hits rather than `0
 **Dropped from this list** (stay open): **#730** (operator call) · **#728** (no clip) ·
 **#628** · **#731** · #952's direct APIs (Buffer instead) · Ollama. **#739 is closed, not dropped** - measured and rejected.
 
-**Closed 2026-09-20 (wave 30):** **#817 #818 #822 #739 #823**. Filed open: **#824 #825 #826**.
-Two items closed *without* a behaviour change because the measurement said not to (#822, #739);
-#817 closed because its filed text was wrong. `ops backfill-quality` applied on the operator's
-call - 87 rows, and backfilled grades are stamped so calibration cannot read them as evidence
-the rubric held.
-
-**Closed 2026-09-20 (wave 29):** **#808 #805 #561 #803 #811**, plus wave 28's **#813 #814 #815
-#816**. `QUALITY_VERSION` v3 -> v4; **`GRADE_VERSION` unchanged at v4**. `DISCOVERY_DEADLINE_S`
-unset by default. Style recurrence report-only (#821).
-
-**Closed 2026-09-20 (wave 27):** **#806 #807 #810 #812 #802**. igdb/steam 1/33 is a documented
-known gap, not a §19 zero. Hedge density remains grade-only. Authenticity gate stays binary.
-Overnight stays render-free. Retention apply stays off unless the env is set.
-
-**Closed 2026-09-20 (wave 26):** **#799 #800 #801 #809 #804**. `GRADE_VERSION` v3 → v4.
-
-**Filed 2026-09-20 (wave 25, documentation):** **#799 #800 #801 #802 #803** (script) - **#804
-#805 #806 #807 #808** (grading) - **#809 #810 #811 #812** (resources).
-
-**Closed 2026-09-19 (wave 24):** **#792 #793 #795 #796 #797 #798**. Narrowed **#788**.
-
-**Closed 2026-09-19 (wave 23):** **#785 #787 #600 #789 #790 #791**. Narrowed **#786**; filed open **#788**.
-
-**Closed 2026-09-19 (wave 22):** **#782 #783 #784 #601 #781**. Filed open: **#785 #786**.
-
-**Closed 2026-09-18 (wave 21):** **#779 #771 #780**. Filed open: **#781**.
-
-**Closed, waves 8-20 (2026-09-10 to 09-17):** waves 20 **#775 #776 #770 #773 #774 #777** · 19
-**#755 #627 #769 #763 #764 #766 #765 #767 #768 #772** · 18 **#760 #762 #761 #345 #756 #749** · 17
-**#754 #757 #758 #543 #759** · 16 **#750 #751 #752 #753 #732** · 15 **#534 #748 #746 #747 #738** ·
-14 **#740 #742 #741 #743 #667 #745 #744** (archive: [run_76.md](run_76.md)) · 13 **#734 #735 #736
-#737** · 12 **#733 #630 #640** · 11 **#729 #631 #636 #639 #727** · 10 **#719 #720 #724 #725 #726
-#158** · 9 **#716 #723 #722 #721 #718**. Full detail in
-[roadmap_archive.md](roadmap_archive.md).
-
-**RETIRED 2026-09-09 — #153 caption choreography.** Operator: *"i dont need to
-see the caption timing, i dont want to do that manually."* Karaoke ASS hashed
-identical with no sidecar. **Do not rebuild the timeline UI.**
-
-**Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700**
-`claim_next` - **#699** `surfaces` - **#112** correction dossier - **#151**
-brand-kit.
+Closed-wave notes for waves 8-30: [roadmap_archive.md](roadmap_archive.md).
 
 ---
 

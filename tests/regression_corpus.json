@@ -2541,6 +2541,235 @@
     {"id": "run119-record-line-is-hard-to-say", "item": 1034, "source": "run 119's script", "call": "core.script_craft:hard_to_say", "args": ["Shavkat Rakhmonov is 18-0-0 with 8 KO and 10 SUB."], "expect": {"truthy": true}, "why": "a run of numbers was voiced as written"},
     {"id": "one-score-is-easy-to-say", "item": 1034, "source": "must keep", "call": "core.script_craft:hard_to_say", "args": ["The Chargers lost 27-10 on Sunday."], "expect": {"falsy": true}, "why": "one score in a sentence is not a number string"},
     {"id": "run133-one-chapter-is-not-all-angles", "item": 1115, "source": "run 133 kept one of five chapters", "call": "core.angle_chapters:is_all_angles", "args": [1], "expect": {"falsy": true}, "why": "the run was stored as all-angles and asked for a chapter list"},
-    {"id": "run132-illia-is-spelled-ilia", "item": 1116, "source": "run 132's title against YouTube suggest", "call": "core.title_generator:_subject_spelling", "args": ["Illia Topuria", ["ilia topuria", "ilia topuria highlights", "ilia topuria walkout"]], "expect": {"equals": {"typed": "illia", "searched": "ilia"}}, "why": "the title spelled the fighter's name one letter off what people type"}
+    {"id": "run132-illia-is-spelled-ilia", "item": 1116, "source": "run 132's title against YouTube suggest", "call": "core.title_generator:_subject_spelling", "args": ["Illia Topuria", ["ilia topuria", "ilia topuria highlights", "ilia topuria walkout"]], "expect": {"equals": {"typed": "illia", "searched": "ilia"}}, "why": "the title spelled the fighter's name one letter off what people type"},
+    {
+      "id": "reporting-api-403-names-the-project",
+      "item": 1123,
+      "source": "ticked enabled on 10-08, still disabled on 10-10",
+      "call": "analytics.reach_report:enable_link",
+      "args": [
+        "<HttpError 403 when requesting https://youtubereporting.googleapis.com/v1/jobs?alt=json returned \"YouTube Reporting API has not been used in project 123456789012 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/youtubereporting.googleapis.com/overview?project=123456789012 then retry.\">"
+      ],
+      "expect": {
+        "equals": "https://console.developers.google.com/apis/api/youtubereporting.googleapis.com/overview?project=123456789012"
+      },
+      "why": "the generic line named no project, so the API was enabled somewhere else"
+    },
+    {
+      "id": "hades-ii-update-is-searched-as-hades-ii",
+      "item": 1119,
+      "source": "the Steam signal was inactive for 'Hades II update' on 2026-10-10",
+      "call": "apis.steam_api:name_terms",
+      "args": [
+        "Hades II update"
+      ],
+      "expect": {
+        "equals": [
+          "Hades II"
+        ]
+      },
+      "why": "the store matches the term against game names; one extra word found nothing"
+    },
+    {
+      "id": "a-question-about-a-game-is-searched-by-its-name",
+      "item": 1119,
+      "source": "sibling of hades-ii-update: a sentence-length topic",
+      "call": "apis.steam_api:name_terms",
+      "args": [
+        "Is Counter-Strike 2 still worth playing?"
+      ],
+      "expect": {
+        "includes_all": [
+          "Counter-Strike 2"
+        ]
+      },
+      "why": "the typed question is not a game's name"
+    },
+    {
+      "id": "an-old-patch-is-marked-not-recent",
+      "item": 1119,
+      "source": "Hades II's newest note on 2026-10-10 was from July",
+      "call": "core.signal_facts:patch_note_line",
+      "args": [
+        "Hades II",
+        {
+          "title": "Hotfix 5",
+          "date": "2026-07-28"
+        },
+        "2026-10-10"
+      ],
+      "expect": {
+        "contains": "2 months ago - NOT recent"
+      },
+      "why": "a bare date lets the model call a months-old patch the latest update"
+    },
+    {
+      "id": "sources-are-not-glued-under-the-disclosure",
+      "item": 1051,
+      "source": "10 of 10 run descriptions with sources (runs 93-133)",
+      "call": "core.description_extras:join_blocks",
+      "args": [
+        "Body.",
+        [
+          "Made with AI-assisted narration and editing.",
+          "Sources:\nhttps://x"
+        ]
+      ],
+      "expect": {
+        "equals": "Body.\n\nMade with AI-assisted narration and editing.\n\nSources:\nhttps://x"
+      },
+      "why": "the blocks were joined with one newline"
+    },
+    {
+      "id": "a-never-active-signal-is-idle",
+      "item": 1073,
+      "source": "sports 0 of 9 and twitch 0 of 5 on TapIn's last 20 runs",
+      "call": "core.runs.signal_audit:idle_from_rows",
+      "args": [
+        [
+          {
+            "signal": "sports",
+            "runs": 9,
+            "active": 0,
+            "fed": 0
+          },
+          {
+            "signal": "trends",
+            "runs": 20,
+            "active": 18,
+            "fed": 0
+          }
+        ]
+      ],
+      "expect": {
+        "equals": {
+          "sports": 9
+        }
+      },
+      "why": "trends is active and moves the score, so it must never be demoted"
+    },
+    {
+      "id": "two-runs-is-too-few-to-call-a-signal-idle",
+      "item": 1073,
+      "source": "must keep",
+      "call": "core.runs.signal_audit:idle_from_rows",
+      "args": [
+        [
+          {
+            "signal": "earnings",
+            "runs": 2,
+            "active": 0,
+            "fed": 0
+          }
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a signal gated off most topics has not had the chance to be active"
+    },
+    {
+      "id": "three-signals-down-is-not-the-internet",
+      "item": 393,
+      "source": "must keep",
+      "call": "apis.net_probe:looks_offline",
+      "args": [
+        {
+          "news": {
+            "connected": false,
+            "active": false,
+            "status": "unavailable",
+            "status_detail": "Max retries exceeded (NameResolutionError)"
+          },
+          "steam": {
+            "connected": false,
+            "active": false,
+            "status": "unavailable",
+            "status_detail": "Max retries exceeded (NameResolutionError)"
+          },
+          "rawg": {
+            "connected": false,
+            "active": false,
+            "status": "unavailable",
+            "status_detail": "Max retries exceeded (NameResolutionError)"
+          },
+          "trends": {
+            "connected": true,
+            "active": true,
+            "status": "ok",
+            "status_detail": ""
+          },
+          "youtube": {
+            "connected": true,
+            "active": true,
+            "status": "ok",
+            "status_detail": ""
+          }
+        }
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a few hosts failing is those hosts, and must stay their own incidents"
+    },
+    {
+      "id": "an-even-channel-has-no-breakout",
+      "item": 1063,
+      "source": "the one watched channel on 2026-10-10: 5.2M to 13.4M views, median 8.3M",
+      "call": "analytics.competitor_context:outliers",
+      "args": [
+        {
+          "competitors": [
+            {
+              "label": "MKBHD",
+              "recent_videos": [
+                {
+                  "video_id": "a",
+                  "title": "A",
+                  "views": 5249818
+                },
+                {
+                  "video_id": "b",
+                  "title": "B",
+                  "views": 5655104
+                },
+                {
+                  "video_id": "c",
+                  "title": "C",
+                  "views": 10749370
+                },
+                {
+                  "video_id": "d",
+                  "title": "D",
+                  "views": 13392952
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "2.6x the lowest video is not 3x the channel's median"
+    },
+    {
+      "id": "the-header-counts-what-is-not-public",
+      "item": 1122,
+      "source": "5 unlisted uploads and 2 unuploaded renders on 2026-10-10",
+      "call": "core.stale_renders:shelf_short",
+      "args": [
+        {
+          "renders": 2,
+          "stale": 0,
+          "unlisted": 5,
+          "claim": 2
+        }
+      ],
+      "expect": {
+        "equals": "7 finished, not public"
+      },
+      "why": "no line the operator reads each morning said finished videos were waiting"
+    }
   ]
 }

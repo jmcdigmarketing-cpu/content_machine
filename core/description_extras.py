@@ -179,6 +179,58 @@ def format_sources_block(urls: list[str] | None) -> str:
     return "\n".join(lines)
 
 
+# #1051: what sits under the body, in the one order every writer uses. "notes" is the
+# single-line block: AI disclosure, finance and affiliate disclaimers, CTAs.
+BLOCK_ORDER = ("notes", "sources", "chapters", "footage")
+_CHAPTER_START = re.compile(r"^\d{1,2}:\d{2}(?::\d{2})?\s+\S", re.M)
+
+
+def join_blocks(body: str, blocks: list[str]) -> str:
+    """The body, then each block that has text, with one blank line between them.
+
+    Three writers each joined their own piece their own way, and the one that wrote most of
+    it joined with a single newline - so on every video with sources (10 of the last 40),
+    "Sources:" sat glued under the AI disclosure line. This is the only place a block is
+    attached to a description.
+    """
+    parts = [str(p).strip("\n") for p in [body, *blocks] if p and str(p).strip()]
+    return "\n\n".join(parts)
+
+
+def block_order(description: str, channel_id: str) -> list[str]:
+    """The `BLOCK_ORDER` names found in a description, in the order they appear."""
+    text = description or ""
+    found: dict[str, int] = {}
+    disclosure = ai_disclosure_line(channel_id)
+    if disclosure and disclosure in text:
+        found["notes"] = text.index(disclosure)
+    for name, needle in (("sources", "Sources:"), ("footage", "Footage:")):
+        match = re.search(rf"^{needle}", text, re.M)
+        if match:
+            found[name] = match.start()
+    chapter = _CHAPTER_START.search(text)
+    if chapter:
+        found["chapters"] = chapter.start()
+    return [name for name, _at in sorted(found.items(), key=lambda kv: kv[1])]
+
+
+def layout_problem(description: str, channel_id: str) -> str:
+    """Why a description's blocks are not laid out as `join_blocks` lays them, or "".
+
+    Out of order, or a block glued to the line above it (no blank line before it).
+    """
+    text = description or ""
+    order = block_order(text, channel_id)
+    expected = [name for name in BLOCK_ORDER if name in order]
+    if order != expected:
+        return f"blocks are in the order {' > '.join(order)}; expected {' > '.join(expected)}"
+    for name, pattern in (("sources", r"^Sources:"), ("footage", r"^Footage:")):
+        match = re.search(pattern, text, re.M)
+        if match and match.start() and not text[: match.start()].endswith("\n\n"):
+            return f'"{name.capitalize()}:" is glued to the line above it'
+    return ""
+
+
 def apply_description_extras(
     description: str,
     channel_id: str,
@@ -204,7 +256,9 @@ def apply_description_extras(
     except Exception as exc:
         logger.debug("description betting-cta strip skipped: %s", exc)
     body = ensure_seo_first_line(body, title).rstrip()
-    additions: list[str] = []
+    additions: list[str] = []  # the single-line notes
+    sources_block = ""
+    chapters_block = ""
 
     disclosure = ai_disclosure_line(channel_id)
     if disclosure and disclosure not in body:
@@ -232,22 +286,20 @@ def apply_description_extras(
                 relevance_corpus=relevance_corpus,
             )
         block = format_sources_block(urls)
-        if block and "Sources:" not in body and block not in additions:
-            additions.append(block)
+        if block and "Sources:" not in body:
+            sources_block = block
 
     try:
         from core.chapters import chapter_block
 
         chapters = chapter_block(script, duration=duration_s, length_choice=length_choice)
-        if chapters and "0:00" not in body and chapters not in additions:
-            additions.append(chapters)
+        if chapters and "0:00" not in body:
+            chapters_block = chapters
     except Exception as exc:
         logger.debug("chapter timestamps skipped: %s", exc)
 
-    if not additions:
-        return body
-    tail = "\n".join(additions)
-    return f"{body}\n\n{tail}" if body else tail
+    # #1051: BLOCK_ORDER, a blank line between blocks.
+    return join_blocks(body, ["\n".join(additions), sources_block, chapters_block])
 
 
 def add_footage_credits(description: str, credits: list[str] | None) -> str:
@@ -256,8 +308,7 @@ def add_footage_credits(description: str, credits: list[str] | None) -> str:
     body = (description or "").rstrip()
     if not lines or "Footage:" in body:
         return body
-    block = "Footage:\n" + "\n".join(lines)
-    return f"{body}\n\n{block}" if body else block
+    return join_blocks(body, ["Footage:\n" + "\n".join(lines)])
 
 
 def persist_footage_credits(run_id: int | None, credits: list[str] | None) -> str | None:

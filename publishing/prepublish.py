@@ -112,6 +112,17 @@ def _chapters(request: PublishRequest, run: Any | None) -> Check:
     return Check("chapters", False, "an all-angles video with no 0:00 chapter list")
 
 
+def _layout(request: PublishRequest, channel_id: str) -> Check:
+    """#1051: the blocks under the body are in the builder's order, a blank line apart."""
+    from core.description_extras import block_order, layout_problem
+
+    problem = layout_problem(request.description or "", channel_id)
+    if problem:
+        return Check("layout", False, problem)
+    found = block_order(request.description or "", channel_id)
+    return Check("layout", True, " > ".join(found) if found else "no blocks under the body")
+
+
 def _made_for_kids(request: PublishRequest, channel_id: str) -> Check:
     from publishing.youtube_publisher import build_video_status
 
@@ -139,6 +150,7 @@ def checklist(
         lambda: _disclosure(request, channel_id),
         lambda: _credits(request, run),
         lambda: _chapters(request, run),
+        lambda: _layout(request, channel_id),
         lambda: _made_for_kids(request, channel_id),
     )
     out: list[Check] = []

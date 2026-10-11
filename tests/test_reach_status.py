@@ -83,6 +83,66 @@ class SyncRecordsWhatHappenedTests(_ReachCase):
         self.assertEqual(reach_report.load("tapin")["last_status"], "ok")
 
 
+GOOGLE_403 = (
+    "<HttpError 403 when requesting https://youtubereporting.googleapis.com/v1/jobs?alt=json "
+    'returned "YouTube Reporting API has not been used in project 123456789012 before or it is '
+    "disabled. Enable it by visiting https://console.developers.google.com/apis/api/"
+    'youtubereporting.googleapis.com/overview?project=123456789012 then retry.". Details: '
+    "\"[{'reason': 'SERVICE_DISABLED'}]\">"
+)
+LINK = (
+    "https://console.developers.google.com/apis/api/youtubereporting.googleapis.com"
+    "/overview?project=123456789012"
+)
+
+
+class EnableLinkTests(_ReachCase):
+    """#1123: ticked "enabled" on 10-08, still disabled on 10-10 - the line named no project."""
+
+    def test_the_link_is_read_out_of_googles_answer(self):
+        from analytics.reach_report import enable_link
+
+        self.assertEqual(enable_link(GOOGLE_403), LINK)
+
+    def test_an_answer_with_no_link_gives_none(self):
+        from analytics.reach_report import enable_link
+
+        self.assertEqual(enable_link("accessNotConfigured"), "")
+        self.assertEqual(enable_link(""), "")
+
+    def test_the_sync_stores_and_prints_the_link(self):
+        from analytics import reach_report
+
+        service = MagicMock()
+        service.jobs.return_value.list.return_value.execute.side_effect = RuntimeError(GOOGLE_403)
+        line = self._sync(service)
+        self.assertIn(LINK, line)
+        self.assertIn("123456789012", line)
+        self.assertEqual(reach_report.load("tapin")["last_detail"], LINK)
+
+    def test_the_doctor_line_carries_the_link(self):
+        from analytics import reach_report
+
+        service = MagicMock()
+        service.jobs.return_value.list.return_value.execute.side_effect = RuntimeError(GOOGLE_403)
+        self._sync(service)
+        ok, line = reach_report.status("tapin")
+        self.assertFalse(ok)
+        self.assertIn(LINK, line)
+        self.assertIn("press Enable", line)
+
+    def test_a_disabled_answer_without_a_link_keeps_the_plain_line(self):
+        from analytics import reach_report
+
+        service = MagicMock()
+        service.jobs.return_value.list.return_value.execute.side_effect = RuntimeError(
+            "accessNotConfigured"
+        )
+        line = self._sync(service)
+        self.assertIn("enable the YouTube Reporting API in Google Cloud Console", line)
+        self.assertEqual(reach_report.load("tapin")["last_detail"], "")
+
+
 class StatusLineTests(_ReachCase):
     def _line(self, data):
         from analytics import reach_report

@@ -813,6 +813,34 @@ def _keyless_candidates(
     return out
 
 
+def _competitor_outlier_candidates(
+    channel_id: str, *, allowed: set[str], exclude: set[str], seen_local: set[str], limit: int = 3
+) -> list[dict]:
+    """#1063: a watched channel's breakout video as a topic candidate, labelled with the
+    channel and how far ahead of its median it is. Reads the stored snapshot - no network.
+    Vetted like every other headline (on-brand domain, not a repeat, not a deal)."""
+    try:
+        from analytics.competitor_context import load_competitor_snapshot, outliers
+
+        rows = outliers(load_competitor_snapshot(channel_id))[:limit]
+    except Exception as exc:
+        logger.debug("competitor outliers skipped: %s", exc)
+        return []
+    out: list[dict] = []
+    for row in rows:
+        cand = _consider_candidate(
+            row["title"],
+            f"{row['label']} breakout, {row['ratio']:.1f}x their median",
+            allowed=allowed,
+            exclude=exclude,
+            seen_local=seen_local,
+            published=_parse_pubdate(row.get("published_at")),
+        )
+        if cand:
+            out.append(cand)
+    return out
+
+
 def _fresh_candidates(
     channel_id: str,
     *,
@@ -860,6 +888,12 @@ def _fresh_candidates(
                         pool.append(cand)
         except Exception as exc:
             logger.debug("_fetch_feed skipped: %s", exc)
+
+    pool.extend(
+        _competitor_outlier_candidates(
+            channel_id, allowed=allowed, exclude=exclude, seen_local=seen_local
+        )
+    )
 
     # Opt-in keyless signal breadth (reddit-free / youtube-free), $0, fail-open.
     pool.extend(

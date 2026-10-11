@@ -1268,3 +1268,50 @@ detector · **#341** retraction-watch (last-run).
 **Closed 2026-09-07 (Stage 3 honesty):** **#679 #680 #674 #681 #682**;
 **#607** ElevenLabs import defer; **#335** source-diversity floor; **#671**
 visual angle list; Stage 3 review room **#168+#209**; **#416** owned beat cuts.
+
+---
+
+## Closed-wave notes, waves 8-30 (moved from roadmap.md on 2026-10-11)
+
+**Closed 2026-09-20 (wave 30):** **#817 #818 #822 #739 #823**. Filed open: **#824 #825 #826**.
+Two items closed *without* a behaviour change because the measurement said not to (#822, #739);
+#817 closed because its filed text was wrong. `ops backfill-quality` applied on the operator's
+call - 87 rows, and backfilled grades are stamped so calibration cannot read them as evidence
+the rubric held.
+
+**Closed 2026-09-20 (wave 29):** **#808 #805 #561 #803 #811**, plus wave 28's **#813 #814 #815
+#816**. `QUALITY_VERSION` v3 -> v4; **`GRADE_VERSION` unchanged at v4**. `DISCOVERY_DEADLINE_S`
+unset by default. Style recurrence report-only (#821).
+
+**Closed 2026-09-20 (wave 27):** **#806 #807 #810 #812 #802**. igdb/steam 1/33 is a documented
+known gap, not a §19 zero. Hedge density remains grade-only. Authenticity gate stays binary.
+Overnight stays render-free. Retention apply stays off unless the env is set.
+
+**Closed 2026-09-20 (wave 26):** **#799 #800 #801 #809 #804**. `GRADE_VERSION` v3 → v4.
+
+**Filed 2026-09-20 (wave 25, documentation):** **#799 #800 #801 #802 #803** (script) - **#804
+#805 #806 #807 #808** (grading) - **#809 #810 #811 #812** (resources).
+
+**Closed 2026-09-19 (wave 24):** **#792 #793 #795 #796 #797 #798**. Narrowed **#788**.
+
+**Closed 2026-09-19 (wave 23):** **#785 #787 #600 #789 #790 #791**. Narrowed **#786**; filed open **#788**.
+
+**Closed 2026-09-19 (wave 22):** **#782 #783 #784 #601 #781**. Filed open: **#785 #786**.
+
+**Closed 2026-09-18 (wave 21):** **#779 #771 #780**. Filed open: **#781**.
+
+**Closed, waves 8-20 (2026-09-10 to 09-17):** waves 20 **#775 #776 #770 #773 #774 #777** · 19
+**#755 #627 #769 #763 #764 #766 #765 #767 #768 #772** · 18 **#760 #762 #761 #345 #756 #749** · 17
+**#754 #757 #758 #543 #759** · 16 **#750 #751 #752 #753 #732** · 15 **#534 #748 #746 #747 #738** ·
+14 **#740 #742 #741 #743 #667 #745 #744** (archive: [run_76.md](run_76.md)) · 13 **#734 #735 #736
+#737** · 12 **#733 #630 #640** · 11 **#729 #631 #636 #639 #727** · 10 **#719 #720 #724 #725 #726
+#158** · 9 **#716 #723 #722 #721 #718**. Full detail in
+[roadmap_archive.md](roadmap_archive.md).
+
+**RETIRED 2026-09-09 — #153 caption choreography.** Operator: *"i dont need to
+see the caption timing, i dont want to do that manually."* Karaoke ASS hashed
+identical with no sidecar. **Do not rebuild the timeline UI.**
+
+**Closed 2026-09-09 (defect + kit wave):** **#701** weekend clock - **#700**
+`claim_next` - **#699** `surfaces` - **#112** correction dossier - **#151**
+brand-kit.

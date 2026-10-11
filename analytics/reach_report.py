@@ -24,6 +24,7 @@ import csv
 import io
 import json
 import os
+import re
 from datetime import date
 from typing import Any
 
@@ -202,6 +203,33 @@ _ENABLE_LINE = (
 )
 
 
+_ACTIVATION_URL = re.compile(
+    r"https://console\.developers\.google\.com/apis/api/youtubereporting\.googleapis\.com"
+    r"/overview\?project=\d+"
+)
+
+
+def enable_link(message: str) -> str:
+    """The page Google's own 403 says enables the API, for the project the sign-in uses (#1123).
+
+    The operator ticked "turn on the Reporting API" on 2026-10-08 and the sync still answered
+    disabled on 10-10: the API is on per Cloud project, the generic line named none, and the
+    answer carries the exact link.
+    """
+    found = _ACTIVATION_URL.search(message or "")
+    return found.group(0) if found else ""
+
+
+def _enable_line(link: str) -> str:
+    if not link:
+        return _ENABLE_LINE
+    project = link.rsplit("=", 1)[-1]
+    return (
+        f"the YouTube Reporting API is off in the Google project this sign-in uses "
+        f"({project}) - open {link} , press Enable, then sync again"
+    )
+
+
 def _record(channel_id: str, status: str, detail: str = "") -> None:
     """Keep what the last sync found, so `ops doctor` can say it without a network call."""
     data = load(channel_id)
@@ -228,7 +256,8 @@ def status(channel_id: str) -> tuple[bool, str]:
             "(py -m youtube.oauth_setup --channel <id>)"
         )
     if last == "api_disabled":
-        return False, f"click-through: {_ENABLE_LINE} (seen {when})"
+        link = enable_link(str(data.get("last_detail") or ""))
+        return False, f"click-through: {_enable_line(link)} (seen {when})"
     if last == "error":
         return (
             False,
@@ -263,8 +292,9 @@ def sync_reach(channel_id: str) -> str:
             k in message
             for k in ("accessNotConfigured", "has not been used", "SERVICE_DISABLED", "is disabled")
         ):
-            _record(channel_id, "api_disabled")
-            return f"  Click-through: {_ENABLE_LINE} (#951)"
+            link = enable_link(message)
+            _record(channel_id, "api_disabled", link)
+            return f"  Click-through: {_enable_line(link)} (#951)"
         logger.debug("reach report skipped: %s", exc)
         _record(channel_id, "error", message)
         return f"  Click-through: the reach report is unavailable ({message[:120]})"

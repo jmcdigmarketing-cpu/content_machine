@@ -86,6 +86,16 @@ def reason_of(status: str, detail: str | None) -> str:
     return "other"
 
 
+def _offline_names(signals: Any) -> list[str]:
+    try:
+        from apis.net_probe import looks_offline
+
+        return looks_offline(signals if isinstance(signals, dict) else {})
+    except Exception as exc:
+        logger.debug("offline check skipped: %s", exc)
+        return []
+
+
 def _age_days(last_at: float, now: float) -> float:
     return max(0.0, (now - last_at) / 86400.0)
 
@@ -104,8 +114,22 @@ def rank_incidents(
             ts = float(at) if at is not None else clock
         except (TypeError, ValueError):
             ts = clock
+        # #393: enough signals failing to connect in one run is the network, once.
+        offline = set(_offline_names(trace.get("signals")))
+        if offline:
+            row = buckets.setdefault(
+                "network:connection",
+                {"kind": "network", "name": "connection", "count": 0, "last_at": 0.0},
+            )
+            row["count"] += 1
+            reasons = row.setdefault("reasons", {})
+            why = f"{len(offline)} signals could not connect"
+            reasons[why] = reasons.get(why, 0) + 1
+            if ts >= float(row["last_at"]):
+                row["last_at"] = ts
+                row["last_status"] = "offline"
         for name, sig in (trace.get("signals") or {}).items():
-            if not isinstance(sig, dict):
+            if not isinstance(sig, dict) or name in offline:
                 continue
             status = str(sig.get("status") or "")
             if status not in _FAIL:

@@ -17,6 +17,54 @@ backlog itself lives in [roadmap.md](roadmap.md).
 
 ---
 
+## 2026-10-10 (Claude Code) - waves 77-78: the next ten, and the ship stage
+
+**Prompt:** next 10 n push, update docs, 6 questinos or decisions for me? update artifacts too, any missed utilizations or efficiencies? whats next to take the next step as a project?
+
+**Measured before picking (read-only):** 129 TapIn runs -> 32 public videos; 5 uploads still unlisted (runs 72 92 93 98 119, two held for a claim); 2 renders never uploaded (my first count was 13 - 11 were already retired); 69 drafts never rendered; MoneyWise 0 runs. `stayed_share` on 5 of 43 videos. The Reporting API ticked "on" on 10-08 and still 403 on 10-10. `INTRO_TEST` and `ADS_MONTHLY_CAP` not in `.env`. No scheduled task behind "Oct 24 - Claude will remind you". `ops list` starts in 0.14 s.
+
+**Decisions (operator, AskUserQuestion):** #1088 neutral unless asked · #1073 run an idle signal less often · competitors: I suggest, the operator approves · the next stage is a ship stage. The roadmap's five stayed Cursor's (it shipped them during planning, `eb31eb3`, and took #1121 and #462 next, so #1121 left my ten and #1124 took its place).
+
+**Shipped (ten):**
+1. #1122 the shelf line - finished videos that are not public, on the header, `ops status` and the weekly decisions.
+2. #1123 the Reporting API line names the project and prints Google's own enable link.
+3. #1124 `ops backfill stayed` - who stayed, on the videos the sync no longer revisits. Run: 5 -> 39 of 43.
+4. #393 the internet being down is one line and one incident, not seven.
+5. #1088 a thrice-covered game is neutral unless a take is asked for.
+6. #1120 `ops competitors suggest / add / remove / list`; view counts from the feed and the API path.
+7. #1063 the outlier watch - in `ops competitor-health` and as labelled best-bet candidates. No live breakout yet: one channel on the list.
+8. #1119 patch notes as dated facts from Steam; the store search asks again by the game's name.
+9. #1051 one place attaches a description's blocks, a blank line apart; a `layout` check before publish.
+10. #1073 a signal never active on 5+ of the last 20 runs sits out two runs in three.
+
+**Findings, with file:line:**
+- `core/status.py:73` (before): counted `list_recyclable` and never read `privacy_status` - five unlisted uploads were on no line.
+- `analytics/reach_report.py:264` (before): on SERVICE_DISABLED it recorded `api_disabled` with an empty detail; Google's message carries `...overview?project=581798456680`.
+- `analytics/youtube_metrics.py:548`: `engaged_views` is only written by a sync, and the sync skips settled videos, so 38 rows synced before 10-04 had none.
+- `core/description_extras.py:249` (before): `tail = "\n".join(additions)` - "Sources:" glued under the disclosure on 10 of 10 runs with sources.
+- `apis/steam_api.py:29` (before): `storesearch?term=<the whole topic>`; "Hades II update" and "Marvel Rivals season 10.5 changes" returned nothing.
+- `analytics/youtube_rss.py:46` (before): read title, date and id and dropped `media:statistics views`.
+- YouTube's feed returned 404 for a known-good channel id on 10-10 (500 earlier): #1125.
+- `core/runs/signal_audit.py`: `sports` 0 active of 9, `twitch` 0 of 5; the filed "news fed 0 of 4" is now 10 of 20.
+- `jobs/worker.py:94`: run status `scheduled` is never moved on - 15 runs (#1126).
+
+**Not done:** #456 stays open with its measurement (`import main` 1.28 s: pipeline 0.83, `requests` 0.36). #466 not verified. The competitor list itself - nothing is added until the operator runs an `add` line. Quota spent on three shortlist searches: about 1,200 of the day's 10,000 units (the third wrote the kept copy).
+
+**Audit:** 113 new tests in seven new files and two edited ones; 100 were observed failing or erroring on the committed sources, 9 are guards, and 4 (the shortlist's sizes and its kept copy) were written in the same change as their code and not run first. 10 corpus cases, 184 of 184 held. ruff and format clean; mypy 98 == baseline 98. Suite 5347 -> 5460, forward and reversed. `git status --short data/` empty. Every new function has a production caller.
+
+**Proof:**
+```
+TapIn Media - sign-in ok - spent: not entered - ~3 uploads left - queue 3 - last video 0 views - 7 finished, not public
+Unlisted, not public: 5 video(s) (3 ready - py -m scripts.ops go-public --channel tapin; 2 held for a claim - py -m scripts.ops verify-claim --run-id N)
+[FAIL] reach: click-through: the YouTube Reporting API is off in the Google project this sign-in uses (581798456680) - open https://console.developers.google.com/apis/api/youtubereporting.googleapis.com/overview?project=581798456680 , press Enable, then sync again
+stayed    34 behind, updated 34   -> videos with stayed_share: 39 of 43, median 0.2279
+Steam: Marvel Rivals update - "Marvel Rivals Version 20261009 Patch Notes - Season 10.5 Arrives", posted 2026-10-08 (2 days ago)
+Running 1 run in 3 until they feed a script (#1073): sports 0/9, twitch 0/5
+[warn] layout: "Sources:" is glued to the line above it     (run 133, stored before the fix)
+```
+
+**Next:** the ship stage in [roadmap.md](roadmap.md). Two decisions still open: which of the seven shelf videos go out, and whether overnight may render (the recorded decision is render-free).
+
 ## 2026-10-10 - next five (#990 #400 #380 #995 #374)
 
 **Prompt.** "Next five: #990, #400, #380, #995, #374. Implement the plan as specified."

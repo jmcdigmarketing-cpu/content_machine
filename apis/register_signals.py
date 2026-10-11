@@ -98,6 +98,14 @@ def _skip_signals(channel_id: str | None = None) -> set[str]:
         skip |= set(skipped_for(resolve_channel_id(channel_id)))
     except Exception as exc:
         logger.debug("operator signal skips unreadable: %s", exc)
+    try:
+        # #1073: a signal that was never active on its recent runs sits out two runs in three.
+        from config.channels import resolve_channel_id
+        from core.runs.signal_audit import demoted_now
+
+        skip |= demoted_now(resolve_channel_id(channel_id))
+    except Exception as exc:
+        logger.debug("signal demotion unreadable: %s", exc)
     return skip
 
 

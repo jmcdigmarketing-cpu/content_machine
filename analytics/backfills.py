@@ -169,6 +169,21 @@ def _view_curve_run(channel_id: str, apply: bool, force: bool) -> dict[str, int]
     return backfill(channel_id, apply, force)
 
 
+# ---- stayed: a live video synced before engaged views were asked for (#1124).
+
+
+def _stayed_stale(run: Any) -> bool:
+    from analytics.packaging import stayed_stale
+
+    return stayed_stale(run)
+
+
+def _stayed_run(channel_id: str, apply: bool, force: bool) -> dict[str, int]:
+    from analytics.packaging import backfill_stayed
+
+    return backfill_stayed(channel_id, apply, force)
+
+
 REGISTRY: tuple[Backfill, ...] = (
     Backfill(
         "features",
@@ -195,6 +210,14 @@ REGISTRY: tuple[Backfill, ...] = (
         lambda: "v1",
         _view_curve_stale,
         _view_curve_run,
+    ),
+    # #1124: who stayed past the swipe, for the videos the sync no longer revisits (network).
+    Backfill(
+        "stayed",
+        "the share of starts that stayed, on older videos",
+        lambda: "v1",
+        _stayed_stale,
+        _stayed_run,
     ),
 )
 

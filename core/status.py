@@ -71,16 +71,11 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("Pending-jobs count unavailable: %s", exc)
 
     try:
-        from scripts.requeue_upload import list_recyclable
+        from core.stale_renders import shelf, shelf_lines
 
-        recyclable = list_recyclable(channel_id)
-        if recyclable:
-            lines.append(
-                f"Rendered, not on YouTube: {len(recyclable)} video(s) — "
-                f"py -m scripts.requeue_upload --channel {channel_id}"
-            )
+        lines.extend(shelf_lines(channel_id, shelf(channel_id)))  # #1122
     except Exception as exc:
-        logger.debug("list_recyclable skipped: %s", exc)
+        logger.debug("shelf skipped: %s", exc)
 
     try:
         from core.cadence import cadence_status, target_line
@@ -270,8 +265,14 @@ def _hdr_last(channel_id: str) -> str:
     return f"last video {max(0, views):,} views"
 
 
+def _hdr_shelf(channel_id: str) -> str:
+    from core.stale_renders import shelf, shelf_short
+
+    return shelf_short(shelf(channel_id))  # #1122
+
+
 def header_line(channel_id: str) -> str:
-    """channel · sign-in · spent · uploads left · queue · last video's organic views."""
+    """channel · sign-in · spent · uploads left · queue · last video's views · the shelf."""
     readers = (
         lambda: _hdr_name(channel_id),
         lambda: _hdr_sign_in(channel_id),
@@ -279,6 +280,7 @@ def header_line(channel_id: str) -> str:
         _hdr_uploads,
         lambda: _hdr_queue(channel_id),
         lambda: _hdr_last(channel_id),
+        lambda: _hdr_shelf(channel_id),
     )
     parts: list[str] = []
     for read in readers:

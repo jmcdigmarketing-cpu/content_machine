@@ -113,9 +113,9 @@ _QUESTION = re.compile(r"\?")
 
 # Cues for the frames beyond reaction. Deliberately narrow, for one measured
 # reason: "GTA 6 meta breakdown" on an established franchise *should* keep the
-# staleness pivot into critique, so "breakdown" is not an explainer cue and
+# staleness pivot (neutral since #1088), so "breakdown" is not an explainer cue and
 # "review" is not a comparison cue. A loose lexicon here would silently disable a
-# guard that is correct — `test_the_established_critique_pivot_still_survives`
+# guard that is correct — `test_the_established_staleness_pivot_still_survives`
 # pins it. Ordered: the first match wins, so the more specific frames are checked
 # before the more general ones.
 _INTENT_CUES: tuple[tuple[str, tuple[str, ...]], ...] = (

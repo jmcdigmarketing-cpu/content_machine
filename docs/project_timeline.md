@@ -76,6 +76,19 @@ marked *date not recorded*; the operator's dates go in the slot below.
 | **2026-09-26** | The grand audit executed and waves 31-37 in one day: order-independent tests, the mypy ratchet, run 98 (TTS billed once, football as football), auto-research, `ops go-public`, the own review and the regression corpus, one domain per run | git |
 | 2026-09-26 | 3,686 tests, 142 ops commands, 81 docs, 443 source files, 200+ commits | git |
 
+## Era 5 — measure what reaches people (2026-10)
+
+| When | What | Evidence |
+|---|---|---|
+| 10-01 to 10-06 | Waves 51-64: no network in the suite, cost vs return, paid views apart from organic, one app window, the growth review, the intro measured, what the ads bought | git |
+| 10-08 | The $40 ad stopped; a monthly cap; runs 118-120 read back and 15 improvements filed | git |
+| 10-09 | Waves 66-67: the operator's idea stays theirs, NFL facts from ESPN, stale angles dropped, a claim confirmed without a re-render | git |
+| 10-10 | Waves 68-70: the operator's stance kept - hope read as hope, a take only when asked, slang read by the model | git |
+| 10-10 | The repo moves off OneDrive to `C:\dev`; waves 72-74: footage from the right owned folder, mixed owned gameplay before stock, one name for a video, a checklist before every upload | git |
+| 10-10 | Waves 75-76: why click-through was never stored (the Reporting API is off), a read-aloud pass, a script shape per intent, mypy 98 | git |
+| 10-10 | Waves 77-78: finished videos that are not public get a line (7 on the shelf), who stayed on 39 of 43 videos, a competitor shortlist and outlier watch, Steam patch notes, idle signals run one run in three | git |
+| 10-10 | **The operator sets a ship stage:** two weeks aimed at videos going public, not features. 129 runs had made 32 public videos | doc |
+
 ## Live runs that changed the code
 
 | Run | Date | What it exposed |

@@ -205,3 +205,70 @@ def competitor_angle_hints(channel_id: str, topic: str) -> list[str]:
         if len(title) > 20:
             hints.append(f"Competitor angle: {title[:90]}")
     return hints
+
+
+# ---- #1063: a competitor's video well ahead of its own channel is a topic with demand ------
+
+OUTLIER_RATIO = 3.0
+OUTLIER_MIN_VIDEOS = 4
+
+
+def _median(values: list[int]) -> float:
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    return float(ordered[mid]) if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
+def outliers(
+    snapshot: dict[str, Any] | None,
+    *,
+    ratio: float = OUTLIER_RATIO,
+    min_videos: int = OUTLIER_MIN_VIDEOS,
+) -> list[dict[str, Any]]:
+    """Stored competitor videos at `ratio` times their own channel's median views or more,
+    strongest first. A channel with fewer than `min_videos` counted videos has no median
+    worth being ahead of and is skipped."""
+    found: list[dict[str, Any]] = []
+    for comp in (snapshot or {}).get("competitors") or []:
+        if not isinstance(comp, dict):
+            continue
+        videos = [
+            v
+            for v in comp.get("recent_videos") or []
+            if isinstance(v, dict) and isinstance(v.get("views"), int) and v.get("title")
+        ]
+        if len(videos) < min_videos:
+            continue
+        median = _median([int(v["views"]) for v in videos])
+        if median <= 0:
+            continue
+        for video in videos:
+            times = int(video["views"]) / median
+            if times >= ratio:
+                found.append(
+                    {
+                        "label": str(comp.get("label") or comp.get("youtube_channel_id") or ""),
+                        "title": str(video["title"]).strip(),
+                        "views": int(video["views"]),
+                        "median": int(median),
+                        "ratio": round(times, 1),
+                        "published_at": str(video.get("published_at") or ""),
+                        "url": f"https://www.youtube.com/watch?v={video.get('video_id', '')}",
+                    }
+                )
+    return sorted(found, key=lambda row: -row["ratio"])
+
+
+def outlier_lines(snapshot: dict[str, Any] | None, *, limit: int = 5) -> list[str]:
+    """What `ops competitor-health` prints: each breakout with its channel and link."""
+    rows = outliers(snapshot)[:limit]
+    if not rows:
+        return []
+    lines = ["Breakout videos on the channels you watch (views against that channel's median):"]
+    for row in rows:
+        lines.append(
+            f"  {row['ratio']:.1f}x  {row['title']}  - {row['label']}, "
+            f"{row['views']:,} views (median {row['median']:,})"
+        )
+        lines.append(f"        {row['url']}")
+    return lines

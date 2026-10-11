@@ -38,6 +38,34 @@ def _today() -> str:
     return date.today().isoformat()
 
 
+def patch_note_line(game: str, note: Any, today: str) -> str:
+    """#1119: "Steam: Hades II update - "Patch 3 notes", posted 2026-10-03 (7 days ago)".
+
+    The date is stated against today for the same reason a release date is (#1025): a model
+    given "posted 2026-10-03" alone calls a months-old patch "the latest update". A note
+    dated after today, or with no readable date, is dropped rather than guessed at.
+    """
+    from datetime import date
+
+    if not isinstance(note, dict) or not game:
+        return ""
+    title = " ".join(str(note.get("title") or "").split())
+    try:
+        when, now = date.fromisoformat(str(note.get("date"))[:10]), date.fromisoformat(today[:10])
+    except ValueError:
+        return ""
+    ago = (now - when).days
+    if not title or ago < 0:
+        return ""
+    if ago == 0:
+        age = "today"
+    elif ago < 60:
+        age = f"{ago} day{'s' if ago != 1 else ''} ago"
+    else:
+        age = f"{ago // 30} months ago - NOT recent"
+    return f'Steam: {game} update - "{title}", posted {when.isoformat()} ({age})'
+
+
 def release_note(released: str, today: str) -> str:
     """#1025: a release date against today - "releases 2026-11-19 (in 40 days - NOT out
     yet)", "released 2026-09-30 (10 days ago)". The date alone left the arithmetic to the
@@ -192,6 +220,16 @@ def format_signal_facts(signals: dict[str, Any]) -> str:
             headlines = _format_headlines(data.get("headlines") or [])
             if headlines:
                 lines.append("Blog/RSS:\n" + headlines)
+
+        elif name == "steam" and isinstance(data, list):
+            # #1119: the developer's own update posts for the game the topic names, dated.
+            for game in data[:1]:
+                if not isinstance(game, dict):
+                    continue
+                for note in (game.get("patch_notes") or [])[:3]:
+                    line = patch_note_line(str(game.get("name") or ""), note, _today())
+                    if line:
+                        lines.append(line)
 
         elif name == "rawg" and isinstance(data, list):
             for game in data[:3]:

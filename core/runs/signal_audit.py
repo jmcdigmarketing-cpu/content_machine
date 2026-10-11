@@ -228,6 +228,10 @@ def report_lines(
             f"  never fed the prompt in {RETIRE_MIN_RUNS}+ runs (retirement candidates, "
             f"decisions §19): {', '.join(candidates)}"
         )
+    if channel_id:
+        demoted = demotion_line(channel_id)
+        if demoted:
+            lines.append(f"  {demoted}")
     frozen = frozen_signals(runs)
     if not frozen:
         lines.append("  frozen payloads: none")
@@ -290,6 +294,7 @@ _fed_cache: dict[str, dict[str, tuple[int, int]]] = {}
 
 def reset_cache() -> None:
     _fed_cache.clear()
+    _idle_cache.clear()
 
 
 def fed_counts(channel_id: str) -> dict[str, tuple[int, int]]:
@@ -318,7 +323,96 @@ def health_lines(channel_id: str, names: list[str]) -> list[str]:
     parts = [", ".join(f"{n} {f}/{r}" for n, f, r in fed)] if fed else []
     if never:
         parts.append("never: " + ", ".join(f"{n} 0/{counts[n][1]}" for n in never))
-    return [f"Fed the script (last {total} runs): " + " · ".join(p for p in parts if p)]
+    out = [f"Fed the script (last {total} runs): " + " · ".join(p for p in parts if p)]
+    demoted = demotion_line(channel_id)
+    if demoted:
+        out.append(demoted)
+    return out
+
+
+# ---- #1073: a signal that feeds nothing runs less often (operator, 2026-10-10) ------------
+#
+# "Feeds nothing" is measured, not listed: on `DEMOTE_MIN_RUNS` or more of the channel's last
+# `HEALTH_RUNS` recorded runs the signal was never active and never put a line in the prompt.
+# Never active also means it never moved the topic score (the composite reads active signals
+# only), so no scoring signal can be caught by this. Such a signal is left out of two runs in
+# three; on the third it runs, and the moment it is active once the demotion is over. Nothing
+# is switched off, and no breaker or budget is involved - it is a skip, like `--skip`.
+
+DEMOTE_MIN_RUNS = 5
+DEMOTE_EVERY = 3
+_idle_cache: dict[str, tuple[int, dict[str, int]]] = {}
+
+
+def demotion_enabled() -> bool:
+    return os.getenv("SIGNAL_DEMOTION", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def _latest_run_id() -> int:
+    from core import run_trace
+
+    newest = 0
+    for path in glob.glob(os.path.join(run_trace.TRACES_DIR, "*.signals.json")):
+        stem = os.path.basename(path).split(".", 1)[0]
+        if stem.isdigit():
+            newest = max(newest, int(stem))
+    return newest
+
+
+def idle_from_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """{signal: runs} for the signals that ran enough and were never active and never fed."""
+    return {
+        str(r["signal"]): int(r["runs"])
+        for r in rows
+        if int(r["runs"]) >= DEMOTE_MIN_RUNS and not r["fed"] and not r["active"]
+    }
+
+
+def idle_signals(channel_id: str) -> dict[str, int]:
+    """The channel's idle signals, recomputed when a new run has been recorded."""
+    latest = _latest_run_id()
+    cached = _idle_cache.get(channel_id)
+    if cached is None or cached[0] != latest:
+        try:
+            rows = contribution_rows(
+                load_runs(HEALTH_RUNS, channel_id=channel_id, with_scripts=False)
+            )
+            cached = (latest, idle_from_rows(rows))
+        except Exception as exc:
+            logger.debug("idle signals unavailable for %s: %s", channel_id, exc)
+            cached = (latest, {})
+        _idle_cache[channel_id] = cached
+    return cached[1]
+
+
+def full_turn(next_run: int) -> bool:
+    """Every `DEMOTE_EVERY`-th run asks every signal, idle or not."""
+    return next_run % DEMOTE_EVERY == 0
+
+
+def demoted_now(channel_id: str, *, next_run: int | None = None) -> set[str]:
+    """The idle signals to leave out of the run about to start; empty on a full turn."""
+    if not demotion_enabled():
+        return set()
+    idle = idle_signals(channel_id)
+    if not idle:
+        return set()
+    turn = next_run if next_run is not None else _latest_run_id() + 1
+    return set() if full_turn(turn) else set(idle)
+
+
+def demotion_line(channel_id: str) -> str:
+    """One line for `ops signal-audit` and the health screen, or ""."""
+    if not demotion_enabled():
+        return ""
+    idle = idle_signals(channel_id)
+    if not idle:
+        return ""
+    names = ", ".join(f"{name} 0/{runs}" for name, runs in sorted(idle.items()))
+    return (
+        f"Running 1 run in {DEMOTE_EVERY} until they feed a script (#1073): {names}"
+        "  [SIGNAL_DEMOTION=false runs them every time]"
+    )
 
 
 def reliability_line() -> str:

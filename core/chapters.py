@@ -189,7 +189,9 @@ def _replace_chapter_lines(description: str, old: str, new: str) -> str:
         replacement = new.splitlines()
         return "\n".join(lines[: indexes[0]] + replacement + lines[indexes[-1] + 1 :])
     if new and "0:00" not in description:
-        return f"{description.rstrip()}\n\n{new}".strip()
+        from core.description_extras import join_blocks
+
+        return join_blocks(description or "", [new])  # #1051: the one place blocks attach
     return description
 
 

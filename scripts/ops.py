@@ -195,9 +195,86 @@ def cmd_competitor_health(args: argparse.Namespace) -> int:
         args.channel,
         fetch=lambda cid: fetch_channel_uploads_rss(cid, max_results=4),
     )
-    report.coverage = watch_coverage_lines(_load_snapshot(args.channel))  # #1063
+    snapshot = _load_snapshot(args.channel)
+    report.coverage = watch_coverage_lines(snapshot)  # #1063
     print(render_report(report))
+    from analytics.competitor_context import outlier_lines
+
+    for line in outlier_lines(snapshot):
+        print(line)
     return 0 if report.ok else 1
+
+
+@_register(
+    "competitors",
+    "The channels the outlier watch follows: [list|suggest|add --source ID --name LABEL|"
+    "remove --source ID] (#1120)",
+)
+def cmd_competitors(args: argparse.Namespace) -> int:
+    from analytics import competitor_list
+    from config.channels import resolve_channel_id
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    action = str(getattr(args, "target", "") or "list").strip().lower()
+    source = str(getattr(args, "source", "") or "").strip()
+    if action == "list":
+        print(f"Competitors watched - {channel}")
+        print("\n".join(competitor_list.list_lines(channel)))
+        return 0
+    if action == "remove":
+        gone = competitor_list.remove(channel, source)
+        print(
+            f"  Removed: {', '.join(gone)}"
+            if gone
+            else f"  Nothing on the list matches {source!r}."
+        )
+        return 0 if gone else 1
+    if action not in ("suggest", "add"):
+        print("Usage: competitors [list|suggest|add --source ID --name LABEL|remove --source ID]")
+        return 2
+    if action == "suggest" and not getattr(args, "force", False):
+        searched, kept = competitor_list.load_shortlist(channel)
+        if kept:
+            print(f"Competitor shortlist - {channel} (searched {searched}; no quota spent)")
+            print("\n".join(competitor_list.suggestion_lines(channel, kept)))
+            print("  Search again: py -m scripts.ops competitors suggest --force")
+            return 0
+    from analytics.competitor_sync import _get_youtube_service
+
+    queries = competitor_list.niche_queries(channel)
+    units = (
+        competitor_list.SEARCH_UNITS * len(queries)
+        if action == "suggest"
+        else competitor_list.LOOKUP_UNITS
+    )
+    blocked = competitor_list.block_reason(units)
+    if blocked:
+        print(f"  Not run: {blocked}")
+        return 1
+    service = _get_youtube_service(channel)
+    if service is None:
+        print("  Not run: no YouTube API key or sign-in for this channel.")
+        return 1
+    if action == "suggest":
+        print(f"Competitor shortlist - {channel} ({units} of the day's YouTube units)")
+        rows = competitor_list.suggest(channel, service, queries=queries)
+        if rows:
+            competitor_list.save_shortlist(channel, rows)
+        print("\n".join(competitor_list.suggestion_lines(channel, rows)))
+        return 0
+    found = competitor_list.resolve(service, source)
+    if not found or not found.get("id"):
+        print(
+            f"  No YouTube channel found for {source!r} (a UC... id, an @handle or a channel URL)."
+        )
+        return 1
+    label = str(getattr(args, "name", "") or "").strip() or found["title"]
+    if not competitor_list.add(channel, found["id"], label):
+        print(f"  Already on the list: {label} [{found['id']}]")
+        return 0
+    print(f"  Added: {label} [{found['id']}]")
+    print(f"  Next: py -m scripts.ops competitor-sync --force --channel {channel}")
+    return 0
 
 
 @_register(

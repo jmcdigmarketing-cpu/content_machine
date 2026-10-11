@@ -43,6 +43,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `command-ref` | Write docs/ops_commands.md from the live ops list |
 | `competitor-health` | Flag dead/unverified competitor YouTube UC ids (RSS probe, no Data API) |
 | `competitor-sync` | Fetch recent videos from competitor channels |
+| `competitors` | The channels the outlier watch follows: [list\|suggest\|add --source ID --name LABEL\|remove --source ID] (#1120) |
 | `config-diff` | channels.json sha256 vs last-run fingerprint |
 | `contact-sheet` | 2x2 PNG collage of the last thumbnails (--path dest.png) |
 | `corrections` | Re-check published videos' sources and file a correction dossier |

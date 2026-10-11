@@ -631,6 +631,14 @@ def display_signal_health(
     from core.ui_theme import health_status, warn
 
     subsection("Signal health", print_fn)
+    try:
+        from apis.net_probe import offline_line
+
+        offline = offline_line(signals)  # #393: one line, not seven failures
+        if offline:
+            print_fn(f"  {warn(offline)}")
+    except Exception as exc:
+        logger.debug("network probe line skipped: %s", exc)
 
     active, issues, inactive = [], [], []
     all_names = list(SIGNAL_ORDER) + [n for n in signals if n not in SIGNAL_ORDER]

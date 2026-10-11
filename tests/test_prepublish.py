@@ -48,7 +48,8 @@ class ChecklistTests(unittest.TestCase):
     def test_a_clean_upload_passes_every_check(self):
         checks = self._checks(_request())
         self.assertEqual(
-            sorted(checks), ["chapters", "credits", "disclosure", "made_for_kids", "title"]
+            sorted(checks),
+            ["chapters", "credits", "disclosure", "layout", "made_for_kids", "title"],  # #1051
         )
         self.assertTrue(all(c.ok for c in checks.values()), checks)
 

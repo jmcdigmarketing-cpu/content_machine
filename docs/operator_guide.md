@@ -134,6 +134,13 @@ then walks the waiting drafts for a yes or no each. (`ops all` is the weekly bat
 review is not in it.) Run from a scheduled task or a pipe it skips the draft review and says
 so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
 
+`ops overnight-last` also says when overnight ran against its 5:00 AM start - late, or not at
+all when the PC was asleep. `py -m scripts.ops schedule-drafts --wake` prints the one line that
+lets the task wake the PC. Drafts past twice their window are set aside each night (nothing is
+deleted): `py -m scripts.ops batch-review --expired` lists them.
+`py -m scripts.ops recheck-claims` re-checks the waiting drafts' flagged claims against their
+own saved facts (`--apply` stores it).
+
 Overnight stops rendering while three finished videos are not public (`OVERNIGHT_SHELF_MAX`) -
 the plan says "Paused" and resumes by itself when the shelf drops. A draft about a scheduled
 game renders only before the game: once it has started, or when the draft already calls the

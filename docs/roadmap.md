@@ -86,12 +86,15 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
 404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
 dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
-`roadmap-index` after wave 85: open 310, done 888, numbered open 258; highest filed #1168.
+`roadmap-index` after wave 86: open 306, done 893, numbered open 254; highest filed #1169 (#1169 is new and open).
 Claude's waves 81-85 closed #1137-#1163. Wave 85 is the script your own idea gets: a typed
 idea is drafted as angle 1 and kept for review (#1159 - the proof drafts of 10-13 had been
 written from generated angles), names are read whole (#1160), an unbacked claim in the first
 sentence is repaired (#1161), a cut may leave a script 15% short (#1162), and one model writes
-the whole script again (#1163). Claude's next: #1164-#1168. The step-by-step:
+the whole script again (#1163). Wave 86 is what you read each morning: a re-check of the
+waiting drafts (#1164 - 14 of 29 flagged claims were backed by their own saved facts), the
+sign-in said once (#1165), a pulled run called pulled (#1166), when overnight really ran
+(#1167), and old drafts set aside (#1168). Claude has nothing claimed. The step-by-step:
 [operator_guide.md](operator_guide.md).
 
 Not next:

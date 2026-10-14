@@ -69,6 +69,8 @@ class OvernightResult:
     renders: dict[str, Any] = field(default_factory=dict)
     # #1154: the sign-in is dead, or about to be - on the one report read after a night away.
     sign_in_line: str = ""
+    # #1168: how many waiting drafts were set aside as past twice their window.
+    expired: int = 0
 
 
 def _sign_in_line(channel_id: str) -> str:
@@ -204,6 +206,15 @@ def _run_overnight_body(
     except Exception as exc:
         logger.debug("overnight dossier step skipped: %s", exc)
 
+    # #1168: drafts past twice their window leave the waiting count before anything renders.
+    try:
+        from core.batch_review import expire_enabled, expire_old_drafts
+
+        if expire_enabled():
+            result.expired = len(expire_old_drafts(channel))
+    except Exception as exc:
+        logger.debug("overnight draft expiry skipped: %s", exc)
+
     # #1078 (operator, 2026-10-11): overnight may render. Only when the channel says how
     # many, only drafts nothing is flagged on, and every one is queued unlisted.
     try:
@@ -316,6 +327,11 @@ def render_lines(result: OvernightResult) -> list[str]:
     elif done and not rendered and not done.get("failed"):
         waiting = len(done.get("waiting") or [])
         lines.append(f"Nothing rendered overnight: no draft qualified ({waiting} wait for you)")
+    if result.expired:
+        lines.append(
+            f"Set aside {result.expired} drafts past twice their window - "
+            "py -m scripts.ops batch-review --expired"
+        )
     return lines
 
 

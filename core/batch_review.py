@@ -401,6 +401,63 @@ def drafts_line(channel_id: str, *, root: str | None = None) -> str:
     )
 
 
+def expire_enabled() -> bool:
+    """`OVERNIGHT_EXPIRE_DRAFTS` (default on; the suite turns it off)."""
+    raw = os.getenv("OVERNIGHT_EXPIRE_DRAFTS", "true").strip().lower()
+    return raw not in ("0", "false", "no", "off")
+
+
+def expire_old_drafts(
+    channel_id: str, *, root: str | None = None, apply: bool = True
+) -> list[PendingDraft]:
+    """Set aside each waiting draft past twice its window (#1168; operator, 2026-10-13: "set
+    aside automatically"). Marked `expired` in its own record - nothing is deleted - so it
+    leaves the waiting count. 6 of 32 waiting drafts were past their window that day."""
+    old: list[PendingDraft] = []
+    for draft in pending_drafts(channel_id, root=root):
+        if draft.decision:
+            continue
+        age = draft_age_days(draft.meta)
+        window = freshness_window_days(draft.meta)
+        if age is None or age <= 2 * window:
+            continue
+        old.append(draft)
+        if apply:
+            _write_review(
+                draft,
+                decision="expired",
+                by="overnight",
+                reason=f"{age:.0f} days old, twice its {window:.0f}-day window",
+            )
+    return old
+
+
+def expired_lines(channel_id: str, *, root: str | None = None) -> list[str]:
+    """`ops batch-review --expired`: what overnight set aside."""
+    if root is None:
+        from core.batch_generation import _drafts_dir
+
+        root = _drafts_dir(channel_id)
+    rows: list[str] = []
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        names = []
+    for name in names:
+        try:
+            with open(os.path.join(root, name, "meta.json"), encoding="utf-8") as f:
+                meta = json.load(f)
+        except (OSError, ValueError):
+            continue
+        review = meta.get("review") if isinstance(meta, dict) else None
+        if not isinstance(review, dict) or review.get("decision") != "expired":
+            continue
+        title = str(meta.get("title") or meta.get("variant") or meta.get("topic") or "")
+        rows.append(f"  run {meta.get('run_id')}  {title[:70]}  ({review.get('reason', '')})")
+    head = f"Set aside - {channel_id}: {len(rows)} draft(s) past twice their window"
+    return [head + (" (nothing was deleted)" if rows else ""), *rows]
+
+
 def unattended_limit(channel_id: str) -> int:
     """How many drafts overnight may render: `OVERNIGHT_RENDERS` when set, else the channel's
     `overnight.renders`. 0 means none."""
@@ -656,7 +713,7 @@ def overnight_rendered_lines(
         waiting = drafts_line(channel_id, root=root)
         if waiting:
             lines.append(f"  {waiting}")
-        return lines
+        return [*lines, *_timing_lines()]
     shelf: dict[int, dict[str, Any]] = {}
     try:
         from core.stale_renders import shelf_rows
@@ -672,8 +729,23 @@ def overnight_rendered_lines(
             lines.append(f"      {where['state']}")
             lines.append(f"      {where['command']}")
         else:
-            lines.append("      not on the shelf: already public, or retired")
-    return lines
+            from core.stale_renders import gone_reason
+
+            gone = gone_reason(row["run_id"], channel_id)  # #1166
+            lines.append(f"      {gone or 'not on the shelf: already public, or retired'}")
+    return [*lines, *_timing_lines()]
+
+
+def _timing_lines() -> list[str]:
+    """#1167: the task ran late, or not at all."""
+    try:
+        from core.nightly_task import overnight_timing_line
+
+        line = overnight_timing_line()
+    except Exception as exc:
+        logger.debug("overnight timing unreadable: %s", exc)
+        line = ""
+    return [f"  {line}"] if line else []
 
 
 def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[str]:
@@ -682,6 +754,13 @@ def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[s
     eligible, skipped = unattended_candidates(channel_id, root=root)
     lines = [f"Overnight render plan - {channel_id}: up to {limit} a night"]
     paused = shelf_pause(channel_id) if limit > 0 else ""
+    old = expire_old_drafts(channel_id, root=root, apply=False) if expire_enabled() else []
+    if old:  # #1168
+        plural = len(old) != 1
+        lines.append(
+            f"  Tonight sets aside {len(old)} draft{'s' if plural else ''} past twice "
+            f"{'their' if plural else 'its'} window (py -m scripts.ops batch-review --expired)"
+        )
     if limit <= 0:
         lines.append("  Overnight is render-free for this channel (overnight.renders is 0).")
     if paused:

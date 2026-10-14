@@ -95,6 +95,13 @@ def _revoked_message(channel_id: str) -> str:
     )
 
 
+def short_sign_in(channel_id: str | None = None) -> str:
+    """One line for an ended sign-in (#1165). `ops morning` printed the long message three
+    times, 300 characters each; it stays where it is read once (`sign_in_problem`)."""
+    cid = resolve_channel_id(channel_id)
+    return f"YouTube sign-in for {cid} has ended - sign in again: py -m youtube.oauth_setup --channel {cid}"
+
+
 def _reset_sign_in_problems() -> None:
     _SIGN_IN_PROBLEMS.clear()
 
@@ -135,7 +142,7 @@ def load_credentials(channel_id: str | None = None) -> Credentials | None:
                 return None
             message = _revoked_message(resolve_channel_id(channel_id))
             _SIGN_IN_PROBLEMS[path] = (_mtime(path), message)
-            logger.error("%s", message)
+            logger.error("%s", short_sign_in(channel_id))
             return None
         except Exception as e:
             logger.error("OAuth refresh failed: %s", e)

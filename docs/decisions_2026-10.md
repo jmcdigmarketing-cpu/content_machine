@@ -100,3 +100,12 @@ the idea's own wording, no generated angle, no experiment directive - and saves 
 that `batch-review` can render. **Why:** the command had passed the first *generated* angle
 and three scripts were reported to the operator as "your ideas" that were not written from
 them. A proof that does not take the operator's path proves nothing about it.
+
+## 51. Old drafts are set aside, not kept waiting (2026-10-14)
+**Decision:** at the start of each overnight run a waiting draft past twice its
+freshness window (2 days for news, 7 for the rest) is marked `expired` in its own record
+and leaves the waiting count. Nothing is deleted; `ops batch-review --expired` lists them.
+`OVERNIGHT_EXPIRE_DRAFTS=false` keeps every draft waiting. **Why:** the operator's call;
+the waiting count grew every night with drafts that would never render. **Consequence:**
+the first run sets aside about 20 of 35 - more than the 6 "past their window" the question
+named, because a draft blocked for a claim was counted under the claim, not its age.

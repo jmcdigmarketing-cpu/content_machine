@@ -7116,3 +7116,77 @@ Suite **5,689 -> 5,718**, forward and reversed. mypy **98**. Corpus **218 -> 225
 `roadmap-index`: open 310, done 888, highest filed #1168.
 
 Closed **#1159-#1163**. Next: **#1164-#1168**.
+
+## 2026-10-14 — wave 86 (Claude Code): what you read each morning, and what #1148 bought
+
+**Prompt:** the second half of the same "next 10".
+
+### Shipped
+
+1. **#1164** `ops recheck-claims` - each waiting draft's flagged claims, re-checked against the
+   facts its run saved; one call a draft; a claim can only be cleared.
+2. **#1165** the sign-in in one line wherever it is not the one place the full message is read.
+3. **#1166** a pulled run is called pulled, with the reason on its cancelled upload.
+4. **#1167** overnight's run against its start: late, or not at all; `schedule-drafts --wake`.
+5. **#1168** drafts past twice their window are set aside at the start of each overnight run.
+
+### Findings
+
+- **What #1148 bought, measured.** `ops recheck-claims --apply` on 10-14: 8 waiting drafts
+  inside their window, 14 of their 29 flagged claims backed by the facts the runs saved. Run
+  126 went from 1 to 0; 137 from 8 to 2; 138 from 5 to 2; 127 from 7 to 4; 135 from 4 to 3. The
+  three drafts written after the fix (143-145) did not move - the check that wrote them was
+  already the fixed one. The saved facts lack the research a run adds, so this undercounts.
+- **The overnight task did not run at 5:00 AM on 10-14.** `Last Run Time` stayed 10-13 4:45 PM
+  until the PC woke; it ran at 5:54 PM, while this wave was being built. It imported the code
+  as committed (`5272a71`), so it did not set drafts aside; its render step imported the new
+  `batch_review` and rendered run 126 - the draft my re-check had just cleared. Run 126 is
+  queued unlisted behind the dead sign-in; the shelf is 3, so tomorrow's run pauses.
+- **The same run's three game drafts narrate games not yet played** ("Seattle Seahawks miss
+  tackles as Denver Broncos convert short-yardage plays", game on 10-16). #1151's result words
+  did not see them; the flagged-title rule (#1150) held all three. Filed #1169.
+- **#1168 is larger than the question I asked.** I said 6 drafts were past their window; 20 of
+  35 are past twice theirs. A draft blocked for a claim was counted under the claim, so the
+  counts hid its age. Recorded in decisions_2026-10.md §51.
+- `tests/test_signin_health` held the closing line of a batch to repeat the fix command
+  (#971). It still does, in one line.
+- `core/runs/recheck.py` added one mypy error (an optional callable called); fixed to 98.
+
+### Deliberately not done
+
+- **#1169** - the angle prompt for schedule picks. The guard held; the cost is a wasted draft.
+- **Running `schedule-drafts --wake`.** It changes the operator's scheduled task.
+
+### Audit
+
+28 tests in `tests/test_morning_read.py`. **27 of 28 failed or errored on a worktree at
+`5272a71`** (6 failures, 21 errors). Two corpus cases, 227 held. Callers: `recheck_lines` from
+`ops recheck-claims`; `short_sign_in` from `load_credentials`, `_run_batch` and
+`status_summary._sign_in`; `gone_reason` from `overnight_rendered_lines`; `run_state` in the
+recent-runs list; `overnight_timing_line` via `_timing_lines`; `expire_old_drafts` from the
+overnight body and `unattended_plan_lines`; `expired_lines` from `batch-review --expired`.
+
+### Proof
+
+```
+Recheck - tapin: waiting drafts with unbacked claims (stored)
+  run 126: 1 unbacked -> 0  Ben Affleck Gets Destroyed by 12-Year-Olds in Fort
+  run 137: 8 unbacked -> 2  Cleveland Cavaliers' Roster Moves Changed Their Se
+  run 138: 5 unbacked -> 2  Knicks' half-court offense vs Toronto's new-look s
+  8 draft(s) checked: 14 of 29 unbacked claims are backed by the facts the run saved
+
+Overnight - tapin: rendered 2 in the last 48 hours
+  run 139  Oklahoma City's young core flexes growth in statement win over Indiana
+      pulled - Pulled 2026-10-13: states a result for a game not yet played (operator's call)
+  Overnight ran at 5:54 PM on Oct 14, 13 hours after its 5:00 AM start - the PC was asleep at 5:00 AM: py -m scripts.ops schedule-drafts --wake
+
+Overnight render plan - tapin: up to 2 a night
+  Tonight sets aside 20 drafts past twice their window (py -m scripts.ops batch-review --expired)
+```
+
+Suite **5,718 -> 5746**, forward and reversed. mypy **98**. Corpus **225 -> 227**.
+`roadmap-index`: open 306, done 893, numbered open 254; highest filed #1169.
+
+Closed **#1164-#1168**. Filed **#1169**. Claude has nothing claimed. Cursor's five unchanged:
+**#1121 - #462 - #404 - #388 - #409**. The operator's: sign in, the consent screen, the upload
+task, #1136.

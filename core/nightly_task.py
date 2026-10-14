@@ -17,6 +17,8 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from datetime import datetime, timedelta
+from typing import Any
 
 from core.logging import get_logger
 
@@ -71,6 +73,106 @@ def remove_argv() -> list[str]:
 
 def query_argv() -> list[str]:
     return ["schtasks", "/Query", "/TN", TASK_NAME, "/FO", "LIST"]
+
+
+def query_verbose_argv() -> list[str]:
+    return [*query_argv(), "/V"]
+
+
+_WHEN_FORMATS = (
+    "%m/%d/%Y %I:%M:%S %p",
+    "%m/%d/%Y %H:%M:%S",
+    "%d/%m/%Y %H:%M:%S",
+    "%Y-%m-%d %H:%M:%S",
+)
+_CLOCK_FORMATS = ("%I:%M:%S %p", "%H:%M:%S", "%I:%M %p", "%H:%M")
+
+
+def _when(raw: str) -> datetime | None:
+    for fmt in _WHEN_FORMATS:
+        try:
+            return datetime.strptime(raw.strip(), fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def task_times(text: str) -> dict[str, Any]:
+    """{last, next, start} from `schtasks /Query /V` - two datetimes and the daily (hour,
+    minute) - each None when it cannot be read."""
+    out: dict[str, Any] = {"last": None, "next": None, "start": None}
+    for line in (text or "").splitlines():
+        key, _, value = line.partition(":")
+        key, value = key.strip().lower(), value.strip()
+        if key == "last run time":
+            out["last"] = _when(value)
+        elif key == "next run time":
+            out["next"] = _when(value)
+        elif key == "start time" and out["start"] is None:
+            for fmt in _CLOCK_FORMATS:
+                try:
+                    clock = datetime.strptime(value, fmt)
+                except ValueError:
+                    continue
+                out["start"] = (clock.hour, clock.minute)
+                break
+    return out
+
+
+def _clock(when: datetime) -> str:
+    return when.strftime("%I:%M %p").lstrip("0")
+
+
+def missed_line(times: dict[str, Any], *, now: datetime) -> str:
+    """What the operator should know about the last run, or "" when it ran on time (#1167).
+
+    The task is set for 5:00 AM. On 2026-10-13 it ran at 4:45 PM and on 10-14 it did not run:
+    Task Scheduler waits for the PC to be awake. Nothing said so, and the morning's drafts and
+    renders were simply not there.
+    """
+    last, start = times.get("last"), times.get("start")
+    if last is None or start is None:
+        return ""
+    due = now.replace(hour=start[0], minute=start[1], second=0, microsecond=0)
+    if due > now:
+        due -= timedelta(days=1)
+    fix = "py -m scripts.ops schedule-drafts --wake"
+    if last < due - timedelta(minutes=5):
+        return (
+            f"Overnight did not run at {_clock(due)} on {due:%b %d} - it last ran "
+            f"{last:%b %d} {_clock(last)}. The PC was off or asleep then: {fix}"
+        )
+    late = (last - due).total_seconds() / 3600
+    if late >= 1:
+        return (
+            f"Overnight ran at {_clock(last)} on {last:%b %d}, {round(late)} hours after its "
+            f"{_clock(due)} start - the PC was asleep at {_clock(due)}: {fix}"
+        )
+    return ""
+
+
+def overnight_timing_line(*, now: datetime | None = None) -> str:
+    """`missed_line` for the installed task. `NIGHTLY_TASK_QUERY=false` (the suite) skips it."""
+    if os.getenv("NIGHTLY_TASK_QUERY", "true").strip().lower() in ("0", "false", "no", "off"):
+        return ""
+    code, out = run_schtasks(query_verbose_argv())
+    if code != 0 or not out:
+        return ""
+    return missed_line(task_times(out), now=now or datetime.now())
+
+
+def wake_lines() -> list[str]:
+    """`schedule-drafts --wake`: the line that lets the task wake the PC. Printed, not run -
+    it changes the operator's scheduled task."""
+    folder, _, name = TASK_NAME.rpartition(chr(92))
+    task_path = chr(92) + folder + chr(92)
+    return [
+        "Let the overnight task wake the PC - run this once in PowerShell:",
+        f"  $t = Get-ScheduledTask -TaskPath '{task_path}' -TaskName '{name}'; "
+        "$t.Settings.WakeToRun = $true; Set-ScheduledTask -InputObject $t",
+        "Windows also needs wake timers on: Power Options > Change plan settings > Change "
+        "advanced power settings > Sleep > Allow wake timers > Enable.",
+    ]
 
 
 def run_schtasks(argv: list[str]) -> tuple[int, str]:

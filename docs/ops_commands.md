@@ -127,6 +127,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `queue-panel` | Stage 3 job queue (drag-reorder; requires pip install -e ".[app]") |
 | `reback-short` | Re-render a voiced Short over today's background, $0 (--path mp3 --topic) |
 | `recategorize` | Re-file uploaded videos under their run's YouTube category (#873; dry-run default; --apply sends) |
+| `recheck-claims` | Re-check waiting drafts' unbacked claims with the fixed checker (#1164; dry run, --apply) |
 | `recommend-length` | Recommend video length from engagement history |
 | `recommend-time` | Recommend next post time from engagement history |
 | `record-payloads` | Record each pinned signal's live response into its contract fixture; --apply writes (#905) |

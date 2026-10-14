@@ -1586,6 +1586,12 @@ def cmd_studio_deleted(args: argparse.Namespace) -> int:
 def cmd_batch_review(args: argparse.Namespace) -> int:
     from core.batch_review import drafts_line, review_drafts
 
+    if getattr(args, "expired", False):  # #1168
+        from core.batch_review import expired_lines
+
+        print("\n".join(expired_lines(args.channel)))
+        return 0
+
     def no_console() -> int:
         print(
             "batch-review asks for a yes per draft - run "
@@ -1714,6 +1720,19 @@ def cmd_overnight_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register(
+    "recheck-claims",
+    "Re-check waiting drafts' unbacked claims with the fixed checker (#1164; dry run, --apply)",
+)
+def cmd_recheck_claims(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.runs.recheck import recheck_lines
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    print("\n".join(recheck_lines(channel, apply=bool(getattr(args, "apply", False)))))
+    return 0
+
+
 @_register("overnight-last", "What overnight rendered lately and where each one is now (#1140)")
 def cmd_overnight_last(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
@@ -1758,6 +1777,9 @@ def cmd_schedule_drafts(args: argparse.Namespace) -> int:
     from core import nightly_task
 
     channel = str(getattr(args, "channel", "") or "tapin")
+    if getattr(args, "wake", False):  # #1167
+        print("\n".join(nightly_task.wake_lines()))
+        return 0
     if getattr(args, "install", False):
         code, out = nightly_task.run_schtasks(nightly_task.install_argv(channel))
         print(out or f"schtasks exit {code}")
@@ -3216,7 +3238,10 @@ def _run_batch(name: str, args: argparse.Namespace) -> int:
                 return code
             failures.append((step, code))
     if skipped:
-        print(f"\n{name}: skipped {', '.join(skipped)} - {sign_in}")
+        # #1165: the fix again at the end (#971), in one line - the long message is said above.
+        from youtube.oauth import short_sign_in
+
+        print(f"\n{name}: skipped {', '.join(skipped)} - {short_sign_in(args.channel)}")
     if failures:
         named = ", ".join(f"{step} (exit {code})" for step, code in failures)
         print(f"\n{name}: {len(failures)} of {len(ran)} steps reported a problem: {named}")
@@ -3745,6 +3770,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--remove", action="store_true", help="schedule-drafts: delete the nightly task"
+    )
+    parser.add_argument(
+        "--wake",
+        action="store_true",
+        help="schedule-drafts: print the line that lets the nightly task wake the PC",
+    )
+    parser.add_argument(
+        "--expired",
+        action="store_true",
+        help="batch-review: list the drafts overnight set aside as too old",
     )
     parser.add_argument(
         "--target",

@@ -53,42 +53,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-13 · **HEAD at write:** `2623ee8` + the wave 85 commit (`git log -1`) ·
+**Written:** 2026-10-14 · **HEAD at write:** `5272a71` + the wave 86 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
-**Read before editing:** the overnight task runs the working tree - keep it importable.
-Never patch a `.py` file through a shell heredoc (it eats backslashes; `MarkupTests` fails on
-a control character). `generate_draft(own_idea=True)` is the operator's angle 1: index -1,
-`idea_angle`, no experiment directive. A flagged claim is matched to its sentence by
-`script_craft.claim_sentences` (possessives off; two sentences in a row count) - not by
-`claim_confirm._coverage` alone. `OVERNIGHT_SHELF_MAX` is 0 for the suite. mypy **98**.
+**Read before editing:** the overnight task runs the working tree and catches up when the PC
+wakes - it started at 5:54 PM on 10-14 in the middle of this wave. Keep the tree importable;
+never patch `.py` through a heredoc. The suite pins `NIGHTLY_TASK_QUERY=false` and
+`OVERNIGHT_EXPIRE_DRAFTS=false` (never query the operator's task or set aside their drafts),
+with `OVERNIGHT_SHELF_MAX=0` and `OVERNIGHT_RENDERS=0`. A draft's record may now say
+`review.decision = "expired"`. mypy **98**.
 
-**Cursor - two of yours changed by the operator's call:**
-- **`SCRIPT_BODY_TIER` defaults to `premium` again** (#1163, decisions_2026-10.md §48). #374's
-  split is `SCRIPT_BODY_TIER=cheap`. In `tests/test_hook_tier.py` the helper's default is now
-  `"cheap"`, so your tests of the split ask for it by name; nothing else there changed.
-- `authenticity.payoff_closer` (#1032) reports and no longer edits the script (wave 83).
-#1121 #462 #404 #388 #409 are still yours and untouched. Other shared files this wave:
-`core/content_engine.py` (a `repair_hook` pass after `cut_unsupported`; `_hook_variants` takes
-`unbacked=`), `core/facts/grounding.py` (`_CAP`, sentence openers), `apis/topic_tokens.py`
-(four words on `COMMON_CAPITALISED`), `core/batch_generation.py`, `core/batch_review.py`.
+**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. Your #374 split is
+`SCRIPT_BODY_TIER=cheap` since wave 85 (the operator's call), and `payoff_closer` (#1032)
+reports only since wave 83. Shared files this wave: `scripts/ops.py` (`recheck-claims`,
+`--wake`, `--expired`, the batch's closing sign-in line), `youtube/oauth.py`
+(`short_sign_in`), `core/batch_review.py`, `core/overnight.py`, `core/status.py`,
+`core/status_summary.py`, `core/stale_renders.py`, `core/nightly_task.py`, `tests/__init__.py`,
+`.env.example`.
 
 **Defects first:**
-- **My wave 83 proof was wrong**: the three "own idea" drafts were written from generated
-  angles (`variant_index=0`). Fixed and re-run as runs 143-145; none came back clean (2, 1, 1
-  unbacked claims).
-- My first sentence-opener rule skipped "LeBron was traded" and broke a frozen grounding
-  verdict. Narrowed before commit.
-- **The YouTube sign-in expired 2026-10-13.** Nothing uploads or syncs until the operator signs
-  in. #1136 is still open.
+- **The YouTube sign-in ended 2026-10-13.** Nothing uploads or syncs; the shelf is 3 (132, 126,
+  114), so overnight pauses until it drops. The stored numbers are of 10-11.
+- The overnight task does not run at 5:00 AM when the PC sleeps (10-14: 5:54 PM).
+- The 10-14 run's game drafts narrate games not yet played (#1169, open); the title check held.
+- I asked about 6 old drafts; the rule sets aside about 20 the first night (decision §51).
 
-**Shipped:** wave 85 - #1159-#1163. 22 of 29 new tests failed or errored on HEAD first. Suite
-5718, mypy 98, corpus 225. Highest filed #1168.
+**Shipped:** waves 85-86 - #1159-#1168. 27 of 28 wave 86 tests failed or errored on HEAD
+first. Suite 5746, mypy 98, corpus 227. Highest filed #1169.
 
-**In progress (wave 86, claimed 2026-10-13):** #1164-#1168 - a recheck of waiting drafts, the
-sign-in said once, a pulled run called pulled, when overnight ran, old drafts set aside. Shared
-files: `scripts/ops.py`, `youtube/oauth.py`, `core/batch_review.py`, `core/overnight.py`,
-`core/status.py`, `core/nightly_task.py`.
+**In progress:** nothing claimed.
 
 ## Slot — Cursor
 

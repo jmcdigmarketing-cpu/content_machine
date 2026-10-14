@@ -199,6 +199,9 @@ os.environ["OVERNIGHT_PAUSE_FILE"] = _suite_store("overnight.paused")
 os.environ["OVERNIGHT_RENDERS"] = "0"
 # #1152: the shelf limit reads the operator's own finished videos. A test of it sets its own.
 os.environ["OVERNIGHT_SHELF_MAX"] = "0"
+# #1167 / #1168: never query the operator's scheduled task or set aside their drafts.
+os.environ["NIGHTLY_TASK_QUERY"] = "false"
+os.environ["OVERNIGHT_EXPIRE_DRAFTS"] = "false"
 os.environ["CONTENT_WINDOW_STATE"] = _suite_store("window_state.json")
 os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
 

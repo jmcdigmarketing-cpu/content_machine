@@ -146,7 +146,7 @@ def build_status_lines(channel_id: str) -> list[str]:
     runs = get_content_run_repository().list_for_channel(channel_id)[:5]
     lines.append(f"Recent content runs: {len(runs)} shown")
     for run in runs:
-        lines.append(f"  - [{run.id}] {run.status:8} {(run.title or run.selected_topic)[:40]}")
+        lines.append(f"  - [{run.id}] {run_state(run):8} {(run.title or run.selected_topic)[:40]}")
 
     try:
         import os
@@ -221,6 +221,19 @@ def build_status_lines(channel_id: str) -> list[str]:
         logger.debug("auto-research verdict line skipped: %s", exc)
 
     return lines
+
+
+def run_state(run: object) -> str:
+    """A run's status, or "retired" when it was retired (#1166 - run 139 read "rendered")."""
+    import json
+
+    try:
+        features = json.loads(getattr(run, "features_json", None) or "{}")
+    except (TypeError, ValueError):
+        features = {}
+    if isinstance(features, dict) and features.get("retired_at"):
+        return "retired"
+    return str(getattr(run, "status", "") or "")
 
 
 # #986: one header line at startup instead of six. Each reader fails open; an empty part is

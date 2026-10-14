@@ -59,6 +59,10 @@ def _sign_in(channel_id: str) -> str:
 
     problem = sign_in_status(channel_id)
     if problem:
+        if len(problem) > 120:  # #1165: the long one is printed once, above
+            from youtube.oauth import short_sign_in
+
+            return f"Sign-in: {short_sign_in(channel_id)}"
         return f"Sign-in: {problem}"
     reminder = sign_in_reminder(channel_id)  # #974
     return f"Sign-in: ok ({channel_id}) - {reminder}" if reminder else f"Sign-in: ok ({channel_id})"

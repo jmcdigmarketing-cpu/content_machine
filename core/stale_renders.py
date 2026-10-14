@@ -199,6 +199,42 @@ def shelf_report(channel_id: str) -> list[str]:
     return lines
 
 
+def gone_reason(run_id: int, channel_id: str) -> str:
+    """Why a finished run is off the shelf, when the record says (#1166): the reason its
+    upload was cancelled, or the day it was retired. "" when neither is on record.
+
+    Runs 136 and 139 were pulled on 2026-10-13 with a reason on the cancelled job, and
+    `ops overnight-last` said "already public, or retired".
+    """
+    import json
+
+    try:
+        from core.job_queue import list_active_jobs
+
+        for job in list_active_jobs():
+            error = str(getattr(job, "last_error", "") or "")
+            if (
+                int(getattr(job, "content_run_id", 0) or 0) == int(run_id)
+                and getattr(job, "channel_id", "") == channel_id
+                and getattr(job, "job_type", "") == "upload"
+                and error.startswith("Pulled")
+            ):
+                return f"pulled - {error}"
+    except Exception as exc:
+        logger.debug("pulled reason unreadable for run %s: %s", run_id, exc)
+    try:
+        from storage.repositories.content_runs import get_content_run_repository
+
+        run = get_content_run_repository().get(int(run_id))
+        features = json.loads(getattr(run, "features_json", None) or "{}") if run else {}
+        stamp = str(features.get("retired_at") or "") if isinstance(features, dict) else ""
+        if stamp:
+            return f"retired on {stamp[:10]}"
+    except Exception as exc:
+        logger.debug("retire stamp unreadable for run %s: %s", run_id, exc)
+    return ""
+
+
 def shelf_total(counts: dict[str, int]) -> int:
     return int(counts.get("renders") or 0) + int(counts.get("unlisted") or 0)
 

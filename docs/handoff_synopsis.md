@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-13: the script your own idea gets (wave 85)
+# Handoff synopsis — 2026-10-14: your own idea's script, and the morning screen (waves 85-86)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,7 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-13 (Claude Code): wave 85, your own idea's script
+## Last wave — 2026-10-14 (Claude Code): waves 85-86, your own idea's script and the morning
 
 **A correction to the entry below.** The three "drafts of your own ideas" in wave 83 were
 written from generated angles: `ops script-check --idea` passed the first generated angle, not
@@ -30,9 +30,17 @@ and keeps it as a draft `batch-review` can render (decisions_2026-10.md §50).
 The corrected drafts (runs 143-145) are waiting in `batch-review`: 2, 1 and 1 unbacked claims,
 each named. None clean; yesterday's generated-angle version of the hope idea had 4.
 
+**Wave 86 (10-14), the morning screen.** `ops recheck-claims` re-checked the waiting drafts:
+14 of 29 flagged claims were backed by their own saved facts (#1164; run 126 became clean). The
+sign-in is one line except where it is read in full (#1165). A pulled run says pulled and why
+(#1166). `ops overnight-last` says when overnight ran - on 10-14 the 5:00 AM run did not start
+until 5:54 PM (#1167; `schedule-drafts --wake` prints the fix). Drafts past twice their window
+are set aside each night, about 20 of 35 the first time (#1168, §51). That 5:54 PM run rendered
+run 126; three new game drafts narrate games not yet played and wait (filed #1169).
+
 **Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`); publish the
-consent screen; `ops worker-task --install`. Suite 5689 -> 5718, mypy 98, corpus 225.
-Next: #1164-#1168 (wave 86).
+consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5689 -> 5746,
+mypy 98, corpus 227. Claude has nothing claimed.
 
 ## Previous — 2026-10-13 (Claude Code): waves 83-84, the 10-13 overnight run
 

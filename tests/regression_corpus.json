@@ -3473,6 +3473,36 @@
         "equals": "premium"
       },
       "why": "operator, 2026-10-13: the better model writes the whole script"
+    },
+    {
+      "id": "the-task-start-is-read-from-schtasks",
+      "item": 1167,
+      "source": "2026-10-14: the 5:00 AM run never started and nothing said so",
+      "call": "core.nightly_task:task_times",
+      "args": [
+        "Next Run Time:   10/15/2026 5:00:00 AM\nLast Run Time:   10/13/2026 4:45:39 PM\nStart Time:      5:00:00 AM\n"
+      ],
+      "select": "start",
+      "expect": {
+        "equals": [
+          5,
+          0
+        ]
+      },
+      "why": "the late or missing run is judged against the task's own start time"
+    },
+    {
+      "id": "an-ended-sign-in-is-one-line",
+      "item": 1165,
+      "source": "2026-10-13: ops morning printed the 300-character message three times",
+      "call": "youtube.oauth:short_sign_in",
+      "args": [
+        "tapin"
+      ],
+      "expect": {
+        "contains": "py -m youtube.oauth_setup --channel tapin"
+      },
+      "why": "the long explanation is said once; every other place says the fix in a line"
     }
   ]
 }

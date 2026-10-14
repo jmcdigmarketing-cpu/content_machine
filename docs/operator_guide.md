@@ -116,6 +116,12 @@ an upload still unlisted (`go-public`, or `verify-claim` first when it is held f
 are signed in to Windows. Without it they wait for `py -m scripts.ops worker`, and the header
 says "1 upload overdue" when one has.
 
+**The YouTube sign-in ends every 7 days** while the Google consent screen is in Testing. From
+day 5 the header, `ops status` and the overnight report say how many days are left; once it
+has ended they say "sign in" instead of "run the worker". Renew with
+`py -m youtube.oauth_setup --channel tapin`. Publishing the consent screen ends the weekly
+expiry ([platform_publish_setup.md](platform_publish_setup.md)).
+
 **Mornings.** Overnight (5:00 am) writes drafts and renders up to two clean ones, queued
 unlisted. One command does the morning:
 

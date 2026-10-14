@@ -158,6 +158,21 @@ def sign_in_status(channel_id: str | None = None) -> str:
     return ""
 
 
+def signed_out(channel_id: str | None = None) -> bool:
+    """True when the channel's sign-in cannot send or read anything (#1153).
+
+    2026-10-13: the sign-in had expired and every line about a waiting upload still said to
+    run the worker. Where live YouTube calls are forbidden (the suite) it never asks.
+    """
+    if live_youtube_forbidden():
+        return False
+    try:
+        return bool(sign_in_status(channel_id))
+    except Exception as exc:
+        logger.debug("sign-in state unreadable: %s", exc)
+        return False
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -173,13 +188,14 @@ def _signed_in_at(path: str) -> str:
 
 def _reminder_days() -> float:
     try:
-        return float(os.getenv("SIGN_IN_REMINDER_DAYS", "6") or 6)
+        return float(os.getenv("SIGN_IN_REMINDER_DAYS", "5") or 5)
     except ValueError:
-        return 6.0
+        return 5.0
 
 
 def sign_in_reminder(channel_id: str | None = None) -> str:
-    """#974: "" unless the channel's sign-in is `SIGN_IN_REMINDER_DAYS` (6) days old or more.
+    """#974: "" unless the channel's sign-in is `SIGN_IN_REMINDER_DAYS` (5) days old or more.
+    #1154: it was 6 - one day's notice, and the 2026-10-13 expiry passed unread.
 
     A Testing-mode consent screen ends a sign-in after 7 days (#961). The age comes from the
     `signed_in_at` stamp a fresh sign-in writes (a refresh rewrites the file, so its mtime
@@ -200,9 +216,16 @@ def sign_in_reminder(channel_id: str | None = None) -> str:
     age = (_now() - when).total_seconds() / 86400
     if age < limit:
         return ""
+    left = 7 - age
+    if left >= 1:
+        remaining = f"about {round(left)} days left"
+    elif left > 0:
+        remaining = "less than a day left"
+    else:
+        remaining = "it is past that"
     return (
         f"YouTube sign-in for {cid} is {int(age)} days old - a Testing-mode sign-in stops at 7 "
-        f"days; renew now: py -m youtube.oauth_setup --channel {cid} "
+        f"days ({remaining}); renew now: py -m youtube.oauth_setup --channel {cid} "
         "(SIGN_IN_REMINDER_DAYS=0 once the consent screen is published)"
     )
 

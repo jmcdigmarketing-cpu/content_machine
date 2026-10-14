@@ -67,9 +67,11 @@ def _kind(reason: str) -> str:
         "points missing",
         "label",
         "hard to say",
+        "said twice",
     ):
         if key in reason:
             return {
+                "said twice": "a thing said twice",
                 "claim(s) the facts": "a claim the facts do not support",
                 "knocks the stance": "a sentence knocks the stance",
                 "points missing": "one of your points is missing",

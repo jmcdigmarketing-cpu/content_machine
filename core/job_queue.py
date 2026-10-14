@@ -54,20 +54,40 @@ def _local(job: JobRecord) -> str:
     return due.astimezone().strftime("%b %d %I:%M %p").replace(" 0", " ")
 
 
+def _signed_out(channel_id: str) -> bool:
+    """#1153: with the sign-in dead the worker cannot send - the line names the sign-in."""
+    try:
+        from youtube.oauth import signed_out
+
+        return signed_out(channel_id)
+    except Exception:
+        return False
+
+
 def overdue_short(jobs: list[JobRecord] | None, channel_id: str) -> str:
     """The header's words: "1 upload overdue - ops worker", or ""."""
     late = [j for j in overdue_uploads(jobs) if j.channel_id == channel_id]
     if not late:
         return ""
     noun = "upload" if len(late) == 1 else "uploads"
-    return f"{len(late)} {noun} overdue - ops worker"
+    fix = "sign in" if _signed_out(channel_id) else "ops worker"
+    return f"{len(late)} {noun} overdue - {fix}"
 
 
 def overdue_lines(jobs: list[JobRecord] | None, channel_id: str) -> list[str]:
     """One line per overdue upload for `ops status`, with the command that sends it."""
     out: list[str] = []
-    for job in overdue_uploads(jobs):
-        if job.channel_id != channel_id:
+    late = [job for job in overdue_uploads(jobs) if job.channel_id == channel_id]
+    if not late:
+        return out
+    signed_out = _signed_out(channel_id)
+    for job in late:
+        if signed_out:
+            out.append(
+                f"Upload overdue: run {job.content_run_id} was due {_local(job)} and the "
+                "YouTube sign-in has expired - sign in first: "
+                f"py -m youtube.oauth_setup --channel {channel_id}"
+            )
             continue
         out.append(
             f"Upload overdue: run {job.content_run_id} was due {_local(job)} and nothing is "

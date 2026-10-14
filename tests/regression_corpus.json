@@ -3227,6 +3227,136 @@
         "equals": "its game time is not known"
       },
       "why": "operator: render only before the game - not knowing is not before"
+    },
+    {
+      "id": "run136-a-fact-told-twice",
+      "item": 1155,
+      "source": "run 136, rendered 2026-10-13: the same streak and shutout, five sentences apart",
+      "call": "core.script_craft:said_twice",
+      "args": [
+        "Houston has won three straight against Tennessee, including a shutout last season. The Titans rank 29th on defense. Houston has dominated this matchup, winning three straight, including a shutout last season."
+      ],
+      "expect": {
+        "equals": [
+          "Houston has dominated this matchup, winning three straight, including a shutout last season."
+        ]
+      },
+      "why": "a second telling that names nothing new is cut, or named by the script check"
+    },
+    {
+      "id": "run128-the-other-fighters-line-is-not-a-repeat",
+      "item": 1155,
+      "source": "measured before the cut shipped: a looser rule flagged this pair",
+      "call": "core.script_craft:said_twice",
+      "args": [
+        "Allen entered on a three-fight win streak, ranked sixth in the division. Duncan entered on a five-fight win streak, ranked twelfth in the division."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a new name or a new number is a new fact, however alike the sentences"
+    },
+    {
+      "id": "a-coin-picture-is-not-a-source",
+      "item": 1157,
+      "source": "2026-10-13: 50 of 71 stored source links; six warnings a night",
+      "call": "core.source_diversity:is_page_url",
+      "args": [
+        "https://coin-images.coingecko.com/coins/images/20612/thumb/GN_UVm3d_400x400.jpg"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a picture counted as an outlet and was read as an article by the correction scan"
+    },
+    {
+      "id": "a-quoted-link-is-read-without-its-quote",
+      "item": 1157,
+      "source": "run 120's stored sources: a last.fm link ending in a double quote",
+      "call": "core.source_diversity:clean_urls",
+      "args": [
+        [
+          "https://www.last.fm/music/Agust+D/_/People\""
+        ]
+      ],
+      "expect": {
+        "equals": [
+          "https://www.last.fm/music/Agust+D/_/People"
+        ]
+      },
+      "why": "the link came out of a signal's raw data with the quote attached"
+    },
+    {
+      "id": "script-blocks-are-not-article-text",
+      "item": 1157,
+      "source": "d1776a0: the pattern held a backspace where a word boundary was meant",
+      "call": "core.correction_dossier:strip_markup",
+      "args": [
+        "<script>var corrected = 1;</script><p>The Cavaliers won.</p>"
+      ],
+      "expect": {
+        "not_contains": "corrected"
+      },
+      "why": "a page's code said 'corrected' and the scan read it as retraction language"
+    },
+    {
+      "id": "run142-the-lens-name-is-not-the-angle",
+      "item": 1158,
+      "source": "run 142 (2026-10-13): the title opened 'Factual'",
+      "call": "apis.topic_variants:_clean_angle_lines",
+      "args": [
+        "Factual read: \"NBA Finals and Awards Predictions: A Season in Preview",
+        []
+      ],
+      "kwargs": {
+        "topic": "NBA preseason"
+      },
+      "expect": {
+        "equals": [
+          "NBA Finals and Awards Predictions: A Season in Preview"
+        ]
+      },
+      "why": "the prompt's lens name came back written in front of the angle"
+    },
+    {
+      "id": "a-subject-before-a-colon-is-not-a-lens",
+      "item": 1158,
+      "source": "must keep: run 140's own angle",
+      "call": "apis.topic_variants:_clean_angle_lines",
+      "args": [
+        "Chargers Hopeium: Herbert's deep ball is back",
+        []
+      ],
+      "kwargs": {
+        "topic": "Chargers"
+      },
+      "expect": {
+        "equals": [
+          "Chargers Hopeium: Herbert's deep ball is back"
+        ]
+      },
+      "why": "only the prompt's own lens names are dropped"
+    },
+    {
+      "id": "the-paid-line-counts-the-daily-rows",
+      "item": 1156,
+      "source": "2026-10-13: 'paid: 0% of all views' beside 4,544 paid views in ops ypp",
+      "call": "analytics.growth:paid_line",
+      "args": [
+        {
+          "paid_share": 0.08,
+          "paid": {
+            "views": 573,
+            "videos": 1,
+            "of": 43,
+            "channel_90d": 4544
+          }
+        }
+      ],
+      "expect": {
+        "contains": "573 paid views on 1 of 43 videos"
+      },
+      "why": "one paid number, and what YouTube counts beyond it"
     }
   ]
 }

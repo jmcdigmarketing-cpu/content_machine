@@ -61,6 +61,18 @@ def _published(row: Any) -> datetime | None:
     return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
 
 
+def _daily_paid(metrics: dict[str, Any]) -> int:
+    """The paid views in a video's daily rows (#1156). `paid_views` is the 28-day window's
+    count and was on 5 of 43 videos; the daily rows were on 41."""
+    total = 0
+    for item in metrics.get("daily_paid_views") or []:
+        try:
+            total += int(float(item[1]))
+        except (TypeError, ValueError, IndexError, KeyError):
+            continue
+    return total
+
+
 def _rows(channel_id: str) -> list[dict[str, Any]]:
     from analytics.packaging import packaging_figures
     from core.success.target import views_7d
@@ -78,6 +90,11 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             paid = int(float(metrics.get("paid_views") or 0))
         except (TypeError, ValueError):
             views, paid = 0, 0
+        paid = max(paid, _daily_paid(metrics))  # #1156
+        try:
+            lifetime = int(float(metrics.get("lifetime_views") or 0))
+        except (TypeError, ValueError):
+            lifetime = 0
         try:
             subs = int(float(metrics.get("subscribers_gained") or 0))
         except (TypeError, ValueError):
@@ -91,6 +108,7 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             "feed": figures.get("feed"),
             "views": views,
             "paid": paid,
+            "all_views": max(views, lifetime, paid),
             "subs": subs,
             "run_id": getattr(row, "content_run_id", None),
         })  # fmt: skip
@@ -273,8 +291,15 @@ def report(channel_id: str) -> dict[str, Any]:
                               tzinfo=timezone.utc)  # fmt: skip
     recent = [r for r in rows if r["published"] and r["published"] >= cutoff]
     out["per_week"] = round(len(recent) / (_WINDOW_DAYS / 7), 2)
-    total = sum(r["views"] for r in rows)
-    out["paid_share"] = round(sum(r["paid"] for r in rows) / total, 4) if total else 0.0
+    total = sum(r["all_views"] for r in rows)
+    paid_views = sum(r["paid"] for r in rows)
+    out["paid_share"] = round(paid_views / total, 4) if total else 0.0
+    out["paid"] = {  # #1156
+        "views": paid_views,
+        "videos": sum(1 for r in rows if r["paid"] > 0),
+        "of": len(rows),
+        "channel_90d": _channel_paid(channel_id),
+    }
     brought = sorted((r for r in rows if r["subs"] > 0), key=lambda r: -r["subs"])
     out["subscribers"] = {  # #1146
         "total": sum(r["subs"] for r in rows),
@@ -291,6 +316,47 @@ def report(channel_id: str) -> dict[str, Any]:
     except Exception as exc:
         logger.debug("shorts split skipped: %s", exc)
     return out
+
+
+def _channel_paid(channel_id: str) -> int | None:
+    """YouTube's own count of paid Shorts views in 90 days, from the sync (`ops ypp`)."""
+    try:
+        from core.ypp_readiness import load_ypp_numbers
+
+        numbers = load_ypp_numbers(channel_id) or {}
+    except Exception:
+        return None
+    value = numbers.get("shorts_paid_90d")
+    return int(value) if isinstance(value, (int, float)) else None
+
+
+def paid_line(rep: dict[str, Any]) -> str:
+    """#1156: what was paid for, in one number that agrees with `ops ypp`.
+
+    Seen 2026-10-13: this report said "paid: 0% of all views" while `ops ypp` counted 4,544
+    paid Shorts views. Both are said: what the synced videos hold, and what YouTube counts
+    for the channel beyond them. Where the rest ran is not known from here - the daily paid
+    rows start on the day a video was first synced for them.
+    """
+    paid = rep.get("paid") or {}
+    views, videos, of = (int(paid.get(k) or 0) for k in ("views", "videos", "of"))
+    raw = paid.get("channel_90d")
+    channel = int(raw) if isinstance(raw, int) else 0
+    beyond = channel - views if channel > views else 0
+    if not views and not beyond:
+        return "paid: none"
+    line = (
+        f"paid: {views:,} paid views on {videos} of {of} videos "
+        f"({float(rep.get('paid_share') or 0):.0%} of their views)"
+        if views
+        else f"paid: none on these {of} videos"
+    )
+    if beyond:
+        line += (
+            f". YouTube counts {channel:,} paid Shorts views in 90 days - {beyond:,} "
+            "of them are not in these videos' synced days"
+        )
+    return line
 
 
 def subscriber_line(rep: dict[str, Any]) -> str:
@@ -403,7 +469,7 @@ def render(channel_id: str) -> str:
     if "feed_share" in rep:
         lines.append(f"  from the Shorts feed: {rep['feed_share']:.0%} of organic views")
     lines.append(f"  posting: {rep['per_week']:.1f} a week over the last {_WINDOW_DAYS} days")
-    lines.append(f"  paid: {rep['paid_share']:.0%} of all views")
+    lines.append(f"  {paid_line(rep)}")
     told = subscriber_line(rep)
     if told:
         lines.append(f"  {told}")

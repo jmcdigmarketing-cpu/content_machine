@@ -6,6 +6,11 @@ import re
 from urllib.parse import urlparse
 
 _URL = re.compile(r"https?://[^\s\]>)]+", re.I)
+_URL_TAIL = "\"'}),.;"
+_NOT_A_PAGE_RE = re.compile(
+    r"\.(?:jpe?g|png|gif|webp|svg|ico|mp4|webm|m3u8|css|js)(?:$|[?#])", re.I
+)
+_MEDIA_HOST_RE = re.compile(r"(?:^|[.-])(?:cdn|static|img|images?|media)(?:[.-]|\d)", re.I)
 _NEWS_CUES = re.compile(
     r"\b("
     r"20\d{2}|january|february|march|april|june|july|august|september|"
@@ -31,8 +36,34 @@ def unique_domains(urls: list[str]) -> frozenset[str]:
     return frozenset(d for d in (registrable_domain(u) for u in urls if u) if d)
 
 
+def is_page_url(url: str) -> bool:
+    """False for a picture, a media file, a CDN host or a template with braces (#1157).
+
+    50 of 71 stored source links were of this kind - coin images, Twitch box art, last.fm
+    thumbnails read out of a signal's raw data. Each counted as an outlet, and the nightly
+    correction scan tried to read each one as an article.
+    """
+    text = str(url or "")
+    if not text.lower().startswith(("http://", "https://")) or "{" in text or "%7b" in text.lower():
+        return False
+    parsed = urlparse(text)
+    if _NOT_A_PAGE_RE.search(parsed.path or ""):
+        return False
+    return not _MEDIA_HOST_RE.search(parsed.netloc or "")
+
+
+def clean_urls(urls: list[str]) -> list[str]:
+    """`urls` without the quote or brace a raw-data line left on the end, pages only."""
+    out: list[str] = []
+    for raw in urls or []:
+        url = str(raw or "").strip().rstrip(_URL_TAIL)
+        if url and is_page_url(url) and url not in out:
+            out.append(url)
+    return out
+
+
 def urls_from_text(text: str) -> list[str]:
-    return _URL.findall(text or "")
+    return clean_urls(_URL.findall(text or ""))
 
 
 def is_news_shaped(topic: str) -> bool:

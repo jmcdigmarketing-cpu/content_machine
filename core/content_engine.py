@@ -2253,7 +2253,7 @@ def generate_content_package(
     # #1139 (operator: "cut it, tell me which"): what the rewrite could not support is cut.
     from core.script_craft import cut_unsupported, cut_unsupported_enabled, hold_stance
 
-    cut_box: dict[str, list[str]] = {"claims": [], "stance": []}
+    cut_box: dict[str, list[str]] = {"claims": [], "stance": [], "repeats": []}
 
     def _run_cut(s: str):
         ver = ver_box["v"]
@@ -2357,6 +2357,16 @@ def generate_content_package(
         return (new, {"cut": len(cut)}) if cut else s
 
     script = run_script_pass(script_passes, "hold_stance", script, _run_hold)
+
+    # #1155: run 136 said one fact twice, five sentences apart. The second telling goes.
+    def _run_repeats(s: str):
+        from core.script_craft import drop_repeats
+
+        new, cut = drop_repeats(s, min_words=min_words)
+        cut_box["repeats"] = cut
+        return (new, {"cut": len(cut)}) if cut else s
+
+    script = run_script_pass(script_passes, "drop_repeats", script, _run_repeats)
 
     # Odds rewrite can add words ("will win" -> "is favored to win"); trim after
     # that so a post-trim cap check cannot refuse a script we just made fit.
@@ -2528,7 +2538,7 @@ def generate_content_package(
         thoughts=creative_brief or "",
         intent=resolved_intent,
         unsupported=_blocking(verification_payload),
-        cut=[*cut_box["claims"], *cut_box["stance"]],
+        cut=[*cut_box["claims"], *cut_box["stance"], *cut_box["repeats"]],
     )
 
     return {

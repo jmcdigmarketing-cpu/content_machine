@@ -138,10 +138,13 @@ def _claims_and_sources(run: Any) -> tuple[list[dict], list[str]]:
     # `claim_verification` is None on every run generated before the verifier ran,
     # and `claims` is absent on every run generated before this wave persisted it.
     claims = (verification.get("claims") or []) if isinstance(verification, dict) else []
-    sources = features.get("source_urls") or []
+    from core.source_diversity import clean_urls
+
+    # #1157: runs stored before the links were cleaned still hold pictures and quoted tails.
+    sources = clean_urls([str(u) for u in features.get("source_urls") or []])
     return (
         [c for c in claims if isinstance(c, dict)],
-        [str(u) for u in sources if str(u).strip()][:_MAX_SOURCES_PER_RUN],
+        sources[:_MAX_SOURCES_PER_RUN],
     )
 
 
@@ -151,7 +154,9 @@ def _severity_for(claim: dict, body_lc: str) -> str:
     return "medium"
 
 
-_SCRIPT_STYLE_RE = re.compile(r"<(script|style).*?</>", re.I | re.S)
+# The pattern here held a backspace and a \x01 where \b and \1 were meant (d1776a0), so no
+# script or style block was ever removed and their code counted as article text.
+_SCRIPT_STYLE_RE = re.compile(r"<(script|style)\b.*?</\1>", re.I | re.S)
 _TAG_RE = re.compile(r"<[^>]+>")
 
 

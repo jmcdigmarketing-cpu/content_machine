@@ -6949,3 +6949,81 @@ Suite **5,595 -> 5,650**, forward and reversed. mypy **98**. Corpus **201 -> 210
 `roadmap-index`: open 311, done 877, highest #1158.
 
 Closed **#1148-#1152**. Filed **#1158**. Next: **#1153-#1158**.
+
+## 2026-10-13 — wave 84 (Claude Code): the sign-in, a fact told twice, one paid number, real sources
+
+**Prompt:** the same "next 10" - the second half. Six items shipped, not five: #1158 was found
+by the proof drafts of wave 83 and was small.
+
+### Shipped
+
+1. **#1153** with the sign-in dead, every line about a waiting upload names the sign-in.
+2. **#1154** the 7-day reminder starts on day 5, says the days left, and leads the overnight
+   report.
+3. **#1155** a fact told twice is cut when the length holds, and named by the script check.
+4. **#1156** `ops growth` prints one paid number that agrees with `ops ypp`.
+5. **#1157** source links are pages only, read without the quote a raw-data line left on them.
+6. **#1158** an angle no longer keeps the prompt's lens name.
+
+### Findings
+
+- **#1154 was filed as missing and mostly existed.** `youtube.oauth.sign_in_reminder` (#974)
+  has warned from day 6 since the token carried `signed_in_at`. The token was stamped
+  2026-10-06 23:27 UTC; it died on schedule on 10-13. The reminder was on the header,
+  `ops status` and `ops all`, and not on the overnight report - the one thing a person away
+  from the PC reads. I read the code before building; the plan had not.
+- **`core/job_queue.overdue_lines`, `core/stale_renders.shelf_rows` / `shelf_lines`** said
+  "py -m scripts.ops worker" whatever the sign-in's state. The worker would have failed.
+- **`analytics/growth._rows`** read `paid_views`, the 28-day window's count, stored on 5 of 43
+  videos and 0 on all five. The daily paid rows held 573 on one video. YouTube's channel
+  number for 90 days is 4,544; where the other 3,971 ran is not known from stored data.
+- **`core/source_diversity.urls_from_text`** read links out of signal facts that include raw
+  JSON lines (last.fm, CoinGecko, Twitch). 50 of 71 stored links over 29 runs were pictures,
+  CDN hosts, templates with braces, or ended in a quote. Each counted as an outlet for the
+  single-source check, so a one-outlet story could read as corroborated. None reached a
+  stored description.
+- **`core/correction_dossier.py:154` (d1776a0), found while scanning for my own mistake.** The
+  pattern meant to remove script and style blocks held a backspace and a \x01 where `\b` and
+  `\1` were written. It had never matched: a page's JavaScript counted as article text, and
+  a variable named "corrected" was retraction language. Same cause as mine below.
+- **Self-inflicted, twice: a heredoc ate my backslashes.** A patch written through a shell
+  heredoc turned `\b` into a backspace in `core/script_craft.py` and `\n` into a newline
+  inside a string in a test. Both were caught by a failing test within minutes. Patches go
+  through a script file now, and `MarkupTests` fails on a control character in any source.
+- **The first repeat rule was too loose and was measured before it cut anything.** "70% of
+  the shorter sentence's words" flagged 8 sentences on the newest 34 scripts; 5 were not
+  repeats - "Duncan entered on a five-fight win streak" after Allen's line, a callback
+  ("That's how you go 0-4"), three lines adding a fact about the same subject. The rule that
+  shipped asks that the later sentence names nothing new and flags 2 (runs 136 and 120).
+- **My first paid line asserted a cause** ("on a video this log does not have"). Reworded to
+  what is known.
+
+### Deliberately not done
+
+- **Skipping the render when the sign-in is dead.** The shelf limit already bounds it, and a
+  render waiting on a sign-in is still a video ready in the morning.
+- **A toast for the sign-in.** The operator is away from the PC; the report is what is read.
+- **Cleaning the stored links in old runs.** They are cleaned where they are read.
+
+### Audit
+
+39 tests in `tests/test_sign_in_and_numbers.py`. **36 of 39 failed or errored on a worktree
+at `ed6213f`** (15 failures, 21 errors); the three that passed pin wording that must not
+change when signed in. Eight corpus cases, 218 held. Callers: `signed_out` in `job_queue` and
+`stale_renders`; `_sign_in_line` in `run_overnight`; `drop_repeats` as an engine pass and
+`said_twice` in `script_check`; `paid_line` in `growth.render`; `clean_urls` in
+`urls_from_text` and the correction scan; `_is_lens_name` in `_clean_angle_lines`.
+
+### Proof
+
+```
+  Upload overdue: run 132 was due Oct 10 8:30 PM and the YouTube sign-in has expired - sign in first: py -m youtube.oauth_setup --channel tapin
+  Rendered, not on YouTube: 2 video(s) (1 queued, the sign-in has expired - py -m youtube.oauth_setup --channel tapin; 1 recent - ...)
+  paid: 573 paid views on 1 of 43 videos (8% of their views). YouTube counts 4,544 paid Shorts views in 90 days - 3,971 of them are not in these videos' synced days
+```
+
+Suite **5,650 -> 5,689**, forward and reversed. mypy **98**. Corpus **210 -> 218**.
+`roadmap-index`: open 305, done 883; highest filed #1158, highest open #1136.
+
+Closed **#1153-#1158**. Claude has nothing claimed. Cursor's five unchanged:
+**#1121 - #462 - #404 - #388 - #409**. Still open and the operator's: **#1136**.

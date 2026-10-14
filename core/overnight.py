@@ -67,6 +67,25 @@ class OvernightResult:
     post_publish_line: str = ""
     # #1078: what the unattended render did - {rendered, queued, failed, waiting}.
     renders: dict[str, Any] = field(default_factory=dict)
+    # #1154: the sign-in is dead, or about to be - on the one report read after a night away.
+    sign_in_line: str = ""
+
+
+def _sign_in_line(channel_id: str) -> str:
+    """What is wrong with the channel's YouTube sign-in, or that it is about to end, or "".
+
+    #1154: the 7-day reminder (#974) was on the header, `ops status` and `ops all`. The sign-in
+    expired on 2026-10-13 with the overnight report - the one thing read that day - silent.
+    """
+    try:
+        from youtube import oauth
+
+        if oauth.live_youtube_forbidden():
+            return ""
+        return str(oauth.sign_in_status(channel_id) or oauth.sign_in_reminder(channel_id) or "")
+    except Exception as exc:
+        logger.debug("overnight sign-in line skipped: %s", exc)
+        return ""
 
 
 def run_overnight(
@@ -82,6 +101,9 @@ def run_overnight(
 
     channel = resolve_channel_id(channel_id)
     result = OvernightResult(channel_id=channel)
+    result.sign_in_line = _sign_in_line(channel)
+    if result.sign_in_line:
+        logger.warning("%s", result.sign_in_line)
 
     try:
         from core.overnight_pause import is_paused
@@ -301,6 +323,8 @@ def render_overnight(result: OvernightResult) -> str:
     from core.batch_generation import render_summary
 
     lines = [f"Overnight operator — {result.channel_id}", "=" * 44]
+    if result.sign_in_line:
+        lines.append(f"Sign-in: {result.sign_in_line}")
     if result.pause_line:
         lines.append(result.pause_line)
         lines.append("Nothing drafted. Resume from the tray before the next scheduled run.")

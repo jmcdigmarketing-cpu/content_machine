@@ -94,6 +94,15 @@ def _queued_runs(channel_id: str) -> dict[int, Any]:
         return {}
 
 
+def _signed_out(channel_id: str) -> bool:
+    try:
+        from youtube.oauth import signed_out
+
+        return signed_out(channel_id)
+    except Exception:
+        return False
+
+
 def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any]]:
     """One row per finished video that is not public, with the exact command (#1131).
 
@@ -105,6 +114,7 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
 
     rows: list[dict[str, Any]] = []
     queued = _queued_runs(channel_id)
+    signed_out = bool(queued) and _signed_out(channel_id)  # #1153
     for run in list_recyclable(channel_id):
         age = render_age_days(run)
         base = {
@@ -112,7 +122,15 @@ def shelf_rows(channel_id: str, *, days: int = STALE_DAYS) -> list[dict[str, Any
             "title": str(getattr(run, "title", "") or "(untitled)"),
             "age_days": age,
         }
-        if int(run.id) in queued:
+        if int(run.id) in queued and signed_out:
+            rows.append(
+                dict(
+                    base,
+                    state="queued - the YouTube sign-in has expired",
+                    command=f"py -m youtube.oauth_setup --channel {channel_id}",
+                )
+            )
+        elif int(run.id) in queued:
             rows.append(
                 dict(
                     base,
@@ -202,7 +220,12 @@ def shelf_lines(channel_id: str, counts: dict[str, int], *, days: int = STALE_DA
     queued = int(counts.get("queued") or 0)
     if renders:
         parts = []
-        if queued:
+        if queued and _signed_out(channel_id):
+            parts.append(
+                f"{queued} queued, the sign-in has expired - "
+                f"py -m youtube.oauth_setup --channel {channel_id}"
+            )
+        elif queued:
             parts.append(f"{queued} queued, waiting for the worker - py -m scripts.ops worker")
         if renders - stale - queued:
             parts.append(

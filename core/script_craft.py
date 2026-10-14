@@ -326,6 +326,72 @@ def points_used(script: str, points: list[str]) -> tuple[list[str], list[str]]:
     return used, missing
 
 
+_REPEAT_MIN_WORDS = 5
+_REPEAT_SHARE = 0.7
+_SIGN_OFF_RE = re.compile(r"^tap in for more\.?$", re.I)
+_CALLBACK_RE = re.compile(r"^(?:that['\u2019]s|that is|this is|which is|and that|so that)\b", re.I)
+_NUMBER_WORDS = frozenset({
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+    "twelve", "twenty", "thirty", "forty", "fifty", "first", "second", "third", "fourth", "fifth",
+})  # fmt: skip
+
+
+def _specifics(sentence: str, words: set[str]) -> set[str]:
+    """The names and numbers a sentence states: content words written with a capital, digits,
+    and number words."""
+    capitals = {
+        re.sub(r"['\u2019]", "", w.lower()) for w in re.findall(r"\b[A-Z][\w'\u2019-]*", sentence)
+    }
+    return {w for w in words if w in capitals or w[:1].isdigit() or w in _NUMBER_WORDS}
+
+
+def said_twice(script: str) -> list[str]:
+    """The sentences that tell a fact the script has already told (#1155).
+
+    Run 136, rendered 2026-10-13: "Houston has won three straight against Tennessee,
+    including a shutout last season." and, five sentences on, "Houston has dominated this
+    matchup, winning three straight, including a shutout last season." A sentence is a second
+    telling when 70% of its content words are in an earlier one, it has five or more, and it
+    names nothing the earlier one did not: no new name, no new number.
+
+    Measured on the newest 34 scripts before it was let near a cut. A looser rule flagged
+    eight: a parallel line about the other fighter ("Duncan entered on a five-fight win
+    streak" after "Allen entered on a three-fight"), a callback ("That's how you go 0-4"),
+    and lines that shared a subject and added a fact. Those are not repeats and are left.
+    """
+    from apis.topic_tokens import content_tokens
+
+    seen: list[tuple[set[str], set[str]]] = []
+    repeats: list[str] = []
+    for sentence in script_sentences(script):
+        text = sentence.strip()
+        if _SIGN_OFF_RE.match(text):
+            continue
+        words = set(content_tokens(text))
+        named = _specifics(text, words)
+        again = (
+            len(words) >= _REPEAT_MIN_WORDS
+            and not _CALLBACK_RE.match(text)
+            and any(
+                len(words & earlier) >= _REPEAT_SHARE * len(words) and named <= earlier_named
+                for earlier, earlier_named in seen
+            )
+        )
+        if again:
+            repeats.append(sentence)
+        else:
+            seen.append((words, named))
+    return repeats
+
+
+def drop_repeats(script: str, *, min_words: int, max_cut: int = 2) -> tuple[str, list[str]]:
+    """Cut the second telling of a fact, while the script keeps its length. (script, cut)."""
+    repeats = said_twice(script)[:max_cut]
+    if not repeats:
+        return script, []
+    return drop_sentences(script, repeats, min_words=min_words)
+
+
 def script_check(
     *,
     script: str,
@@ -360,6 +426,9 @@ def script_check(
     hard = len(hard_to_say(script))
     if hard:
         why.append(f"{hard} sentence(s) hard to say")
+    twice = len(said_twice(script))
+    if twice:
+        why.append(f"{twice} thing{'s' if twice > 1 else ''} said twice")  # #1155
     return {
         "ok": not why,
         "why": why,

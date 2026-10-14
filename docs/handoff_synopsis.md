@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-13: what overnight rendered, and why drafts were blocked (wave 83)
+# Handoff synopsis — 2026-10-13: what overnight rendered, and why drafts were blocked (waves 83-84)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,7 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-13 (Claude Code): wave 83, the 10-13 overnight run
+## Last wave — 2026-10-13 (Claude Code): waves 83-84, the 10-13 overnight run
 
 Overnight rendered two videos on 10-13 and both were wrong. Run 139 was titled and written as
 a Thunder win over Indiana before the game; run 136 previewed a Texans game two days after it
@@ -37,10 +37,19 @@ plan 6 of 8 claims backed by named sources, 2 flagged; the hope kept its stance 
 flagged. `ops script-check --idea "..."` is the command (the guide said `--idea`, the parser
 only knew `--topic`; both work now).
 
+**Wave 84, the same day's smaller findings (#1153-#1158).** With the sign-in dead, an
+overdue upload says "sign in", not "run the worker". The 7-day reminder already existed
+(#974); it now starts on day 5, says the days left and leads the overnight report. A fact
+told twice is cut or named (run 136). `ops growth` prints one paid number that agrees with
+`ops ypp`. 50 of 71 stored source links were pictures or ended in a quote - cleaned where
+they are read. An angle no longer keeps its lens name ("Factual read:", run 142). Found on the
+way: the correction scan's script/style pattern held a backspace where `\b` was meant and
+had never matched.
+
 **Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`) - it expired
 10-13 and nothing uploads or syncs; publish the consent screen so it stops expiring weekly;
-`ops worker-task --install`. Suite 5595 -> 5650, mypy 98, corpus 201 -> 210. Open next:
-#1153-#1157 (wave 84).
+`ops worker-task --install`. Suite 5595 -> 5689, mypy 98, corpus 201 -> 218. Claude has
+nothing claimed.
 
 ## Previous — 2026-10-13 (Claude Code): waves 81-82, the script that comes out and where the channel stands
 

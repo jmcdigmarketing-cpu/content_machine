@@ -47,6 +47,18 @@ def _lens_names() -> frozenset[str]:
     )
 
 
+def _is_lens_name(head: str) -> bool:
+    """#1158: run 142's angle came back as `Factual read: "NBA Finals ...` and its title
+    opened "Factual"; run 137's opened "What Changed:". The prompt lists its lenses and a
+    model wrote one in front of the angle. Two words or more, so a subject before a colon
+    ("Chargers: ...") is never taken for one."""
+    key = " ".join(str(head or "").strip().strip('"').lower().split())
+    if len(key.split()) < 2:
+        return False
+    names = _lens_names()
+    return key in names or any(name.startswith(key + " ") for name in names)
+
+
 def _clean_angle_lines(
     raw: str,
     angle_types,
@@ -82,8 +94,12 @@ def _clean_angle_lines(
         if not text or text.endswith(":") or _PREAMBLE_RE.match(text) or _is_label(text):
             continue
         head, sep, rest = text.partition(":")
-        if sep and rest.strip() and (_is_label(head) or _LABEL_HEAD_RE.match(head.strip())):
-            text = rest.strip()
+        if (
+            sep
+            and rest.strip()
+            and (_is_label(head) or _LABEL_HEAD_RE.match(head.strip()) or _is_lens_name(head))
+        ):
+            text = rest.strip().strip('"').strip()
         # Run 78: "GTA 6's Online Economy: A $1 Billion Opportunity? (Forward prediction) - …"
         # — the lens example from the prompt came back as a label inside the angle.
         text = _LENS_PAREN_RE.sub(

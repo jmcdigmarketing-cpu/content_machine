@@ -86,11 +86,12 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
 404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
 dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
-`roadmap-index` after wave 83: open 311, done 877, numbered open 259, highest #1158.
-Claude's waves 81-83 closed #1137-#1152: a finished-script check, `ops morning`, the
-monetization numbers that read 0, and the five causes of the 10-13 overnight run. The main
-one: drafts were blocked because the claim check cited the research brief (#1148). Claude's
-next: #1153-#1158. The step-by-step: [operator_guide.md](operator_guide.md).
+`roadmap-index` after wave 84: open 305, done 883, numbered open 253; highest filed #1158, highest open #1136.
+Claude's waves 81-84 closed #1137-#1158: a finished-script check, `ops morning`, the
+monetization numbers that read 0, the causes of the 10-13 overnight run - the main one:
+drafts were blocked because the claim check cited the research brief (#1148) - and what that
+day showed about the sign-in, repeats, the paid number and source links. Claude has nothing
+claimed. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

@@ -255,6 +255,18 @@ def generate_draft(
     )
     out.fact_conflicts = len(result.features.get("fact_conflicts") or [])
 
+    # #1151: a schedule pick knows when its game is; say so, and say when the draft already
+    # calls the result.
+    event_at = _game_start(topic, best_bet)
+    unplayed = ""
+    if event_at:
+        from core.facts.event_dates import game_started, unplayed_result
+
+        if game_started(event_at) is False:
+            unplayed = unplayed_result(str(result.title or ""), topic) or unplayed_result(
+                result.script, topic
+            )
+
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     folder = os.path.join(_drafts_dir(channel_id), f"{stamp}-{_slug(best_topic)}")
     os.makedirs(folder, exist_ok=True)
@@ -279,6 +291,10 @@ def generate_draft(
         "hook_verdict": out.hook_verdict,
         "authenticity_verdict": out.authenticity_verdict,
         "script_clean": result.features.get("script_clean"),  # #1143
+        # #1150: run 139's title was flagged and overnight rendered it - the flag stopped here.
+        "title_warnings": list(result.features.get("title_warnings") or []),
+        "event_at": event_at or None,  # #1151
+        "unplayed_result": unplayed or None,
         "fact_count": fact_count,
         "ungrounded_entities": out.ungrounded,
         "tier_warnings": result.features.get("tier_warnings") or [],
@@ -296,6 +312,25 @@ def generate_draft(
 
     out.path, out.ok, out.seconds = folder, True, round(time.time() - started, 1)
     return out
+
+
+def _game_start(topic: str, best_bet: dict | None) -> str:
+    """The start of the game `topic` names when the pick came off the schedule, else ""."""
+    offered = (best_bet or {}).get("offered") or []
+    if not any(
+        isinstance(option, dict)
+        and option.get("topic") == topic
+        and option.get("source") == "schedule"
+        for option in offered
+    ):
+        return ""
+    try:
+        from core.seasonal_calendar import event_start
+
+        return str(event_start(topic) or "")
+    except Exception as exc:
+        logger.debug("game start unavailable for %r: %s", topic, exc)
+        return ""
 
 
 def run_batch(

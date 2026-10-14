@@ -3095,6 +3095,138 @@
         "contains": "2 from 43 videos"
       },
       "why": "subscribers lead the 1,000 and the report counted views only"
+    },
+    {
+      "id": "run137-a-score-in-the-facts-is-not-unsupported",
+      "item": 1148,
+      "source": "run 137 (2026-10-13): the claim check said 9 of 9 unsupported; this line was in the run's saved facts",
+      "call": "core.claim_verifier:carried_by_facts",
+      "args": [
+        "The Cavs beat Orlando 119-105 on October 11.",
+        [
+          "Summary: The Cleveland Cavaliers defeated the Orlando Magic with a final score of 119-105 on October 11, 2026. James Harden led the Cavaliers with 24 points, while Evan Mobley and Donovan Mitchell contributed 14 and 13 points."
+        ]
+      ],
+      "expect": {
+        "contains": "119-105"
+      },
+      "why": "a numbered claim one fact line carries word for word is supported whatever the model said"
+    },
+    {
+      "id": "the-reverse-result-is-not-carried",
+      "item": 1148,
+      "source": "must keep: both names and the score are on the line",
+      "call": "core.claim_verifier:carried_by_facts",
+      "args": [
+        "Orlando beat the Cavaliers 119-105 on October 11.",
+        [
+          "Summary: The Cleveland Cavaliers defeated the Orlando Magic with a final score of 119-105 on October 11, 2026. James Harden led the Cavaliers with 24 points, while Evan Mobley and Donovan Mitchell contributed 14 and 13 points."
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the second look reads which side won, not only which words are present"
+    },
+    {
+      "id": "run128-a-number-in-a-name-pins-nothing",
+      "item": 1148,
+      "source": "measured 2026-10-13 on run 128: 'UFC Vegas 122' matched a headline that only named the event",
+      "call": "core.claim_verifier:carried_by_facts",
+      "args": [
+        "Allen entered UFC Vegas 122 on a three-fight win streak.",
+        [
+          "- UFC Vegas 122 Results: Allen vs. Duncan (MMA Fighting)"
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "the first count of 21 carried claims was names and title numbers sharing a line"
+    },
+    {
+      "id": "run138-no-word-is-appended-to-the-last-line",
+      "item": 1149,
+      "source": "run 138 (2026-10-13): 'The answer will come tonight on torontos.'",
+      "call": "core.authenticity:payoff_closer",
+      "args": [
+        "The Knicks' half-court offense meets Toronto's new-look spacing. Kawhi's return is expected to bring a three-point-heavy approach. The answer will come tonight."
+      ],
+      "select": 0,
+      "expect": {
+        "not_contains": "on torontos"
+      },
+      "why": "a sentence is not repaired by adding a lowercased hook word to it"
+    },
+    {
+      "id": "run136-the-rendered-last-line",
+      "item": 1149,
+      "source": "run 136, rendered 2026-10-13: 'in convincing fashion on tennessee. Tap in for more.'",
+      "call": "core.authenticity:payoff_closer",
+      "args": [
+        "Houston has won three straight against Tennessee, including a shutout last season. I expect the Texans to emerge victorious in convincing fashion. Tap in for more."
+      ],
+      "select": 0,
+      "expect": {
+        "not_contains": "on tennessee"
+      },
+      "why": "the sibling shape: the sign-off after the payoff"
+    },
+    {
+      "id": "run139-a-result-before-the-game",
+      "item": 1151,
+      "source": "run 139 (2026-10-13): titled as a win hours before tip-off, and rendered",
+      "call": "core.facts.event_dates:unplayed_result",
+      "args": [
+        "Oklahoma City's young core flexes growth in statement win over Indiana Pacers",
+        "Indiana Pacers at Oklahoma City Thunder"
+      ],
+      "expect": {
+        "contains": "win over Indiana"
+      },
+      "why": "a title that calls a game not yet played waits for a person"
+    },
+    {
+      "id": "history-between-the-sides-is-not-a-result",
+      "item": 1151,
+      "source": "must keep: run 136's own true line",
+      "call": "core.facts.event_dates:unplayed_result",
+      "args": [
+        "Houston has won three straight against Tennessee, including a shutout last season.",
+        "Houston Texans at Tennessee Titans"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a preview may say what happened before"
+    },
+    {
+      "id": "a-sentence-with-at-is-not-a-fixture",
+      "item": 1151,
+      "source": "sibling: the fixture reader decides which drafts wait",
+      "call": "core.facts.event_dates:fixture_sides",
+      "args": [
+        "Fans mad at Ubisoft over the delay"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "only a topic named the way a schedule names a game is a game draft"
+    },
+    {
+      "id": "run138-a-game-draft-with-no-time-waits",
+      "item": 1151,
+      "source": "drafts 135, 137, 138 were written before the start was recorded",
+      "call": "core.batch_review:game_block_reason",
+      "args": [
+        {
+          "topic": "New York Knicks at Toronto Raptors"
+        }
+      ],
+      "expect": {
+        "equals": "its game time is not known"
+      },
+      "why": "operator: render only before the game - not knowing is not before"
     }
   ]
 }

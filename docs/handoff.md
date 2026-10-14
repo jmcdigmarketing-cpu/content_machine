@@ -53,38 +53,41 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-13 · **HEAD at write:** `57a4e5f` + the waves 81-82 commit (`git log -1`) ·
+**Written:** 2026-10-13 · **HEAD at write:** `14246cd` + the wave 83 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
 **Read before editing:** the overnight task runs the working tree - keep it importable between
-edits; it ran waves 81-82 uncommitted and wrote runs 137-139. On Windows `sys.stdin.isatty()`
-is true for the NUL device: use `scripts.ops._has_console()` before any prompt in a batch.
-YouTube writes content types `shorts` / `videoOnDemand` - compare through
-`youtube_metrics._content_type`. A draft's finished-script check is `script_clean` on the run
-and in the draft record; `unattended_block_reason` reads it. mypy baseline **98**.
+edits. The claim check is **not shown the research brief** (`verify_claims` drops `weak_lines`
+from the list it numbers); a blocking claim citing a line it was not shown is unsupported.
+`OVERNIGHT_SHELF_MAX` is 0 for the whole suite (`tests/__init__.py`) - a test of the shelf
+limit sets its own and injects `shelf=`. A draft record now carries `title_warnings`,
+`event_at`, `unplayed_result`; `unattended_block_reason` takes `now=`. mypy baseline **98**.
 
-**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. Shared files I touched:
-`core/content_engine.py` (two passes after `rewrite_claims`: `cut_unsupported`, `hold_stance`;
-`strip_label` on the title; `script_clean` in the package), `core/pipeline.py`, `core/ui.py`,
-`core/batch_generation.py`, `scripts/ops.py` (`morning`, `overnight-last`, `script-check`,
-`_has_console`, a flush in `_run_module`), `.env.example` (`CUT_UNSUPPORTED`).
+**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. **I changed your
+`authenticity.payoff_closer` (#1032):** it appended " on " and a lowercased hook word - run 136
+was rendered ending "in convincing fashion on tennessee." It now returns the script unchanged
+with `closer_answered` False; your test in `tests/test_style_recurrence.py` is renamed and
+asserts that. Other shared files: `core/claim_verifier.py`, `core/batch_generation.py`,
+`core/batch_review.py`, `core/seasonal_calendar.py`, `core/facts/event_dates.py`,
+`core/overnight.py`, `scripts/ops.py` (`--idea` is an alias of `--topic`), `.env.example`,
+`tests/__init__.py` (one env line).
 
 **Defects first:**
-- **The YouTube sign-in expired 2026-10-13** (`invalid_grant`). Nothing uploads or syncs until
-  the operator runs `py -m youtube.oauth_setup --channel tapin`. The stored numbers are of 10-11.
-- Overnight rendered two wrong videos on 10-13 (run 139: a win written before the game, its
-  title flagged; run 136: a preview two days late, last line "on tennessee"). Both pulled -
-  jobs 56 and 57 cancelled, renders retired. The causes are open: #1148-#1152.
-- Your `authenticity.payoff_closer` (#1032) wrote that last line. I will change it in #1149.
-- My first `ops ypp` pace line was wrong as labelled; fixed before this commit (#1144).
+- **The YouTube sign-in expired 2026-10-13.** Nothing uploads or syncs until the operator runs
+  `py -m youtube.oauth_setup --channel tapin`. Stored numbers are of 10-11.
+- My plan said 21 of 50 blocked claims were in the facts word for word. Wrong: that matcher
+  counted names sharing a line. The one that shipped carries 3. The real cause was the brief.
+- The guide said `script-check --idea`; the parser knew only `--topic`. Fixed.
+- Run 142's title opened "Factual" - the angle kept its lens name. Open: #1158.
 - #1136 runs 92 and 119 are still public with a claim never confirmed.
 
-**Shipped:** waves 81-82 - #1137 #1138 #1139 #1140-#1147. 58 of 64 new tests failed or errored
-on HEAD first. Suite 5595, mypy 98, corpus 201. Highest #1157. Still a ship stage.
+**Shipped:** wave 83 - #1148 #1149 #1150 #1151 #1152. 50 of 55 new tests failed or errored on
+HEAD first. Suite 5650, mypy 98, corpus 210. Highest #1158. Still a ship stage.
 
-**In progress (waves 83-84, claimed 2026-10-13):** #1148-#1157, all from the 10-13 run. Shared
-files I will touch: `core/authenticity.py`, `core/claim_verifier.py`, `core/batch_generation.py`,
-`core/batch_review.py`, `scripts/ops.py`, `youtube/oauth.py`, `.env.example`.
+**In progress (wave 84, claimed 2026-10-13):** #1153-#1158. Shared files I will touch:
+`core/job_queue.py`, `core/stale_renders.py`, `youtube/oauth.py`, `core/overnight.py`,
+`core/script_craft.py`, `core/content_engine.py`, `analytics/growth.py`,
+`core/source_diversity.py`, `core/correction_dossier.py`, `apis/topic_variants.py`.
 
 ## Slot — Cursor
 

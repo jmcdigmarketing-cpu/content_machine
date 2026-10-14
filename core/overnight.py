@@ -289,7 +289,9 @@ def render_lines(result: OvernightResult) -> list[str]:
         )
     for run_id, why in done.get("failed") or []:
         lines.append(f"Not rendered: run {run_id} ({why})")
-    if done and not rendered and not done.get("failed"):
+    if done.get("paused"):  # #1152
+        lines.append(f"Overnight rendering paused: {done['paused']}")
+    elif done and not rendered and not done.get("failed"):
         waiting = len(done.get("waiting") or [])
         lines.append(f"Nothing rendered overnight: no draft qualified ({waiting} wait for you)")
     return lines

@@ -197,6 +197,8 @@ os.environ["OVERNIGHT_PAUSE_FILE"] = _suite_store("overnight.paused")
 # #1078: overnight may render when a channel says so (tapin: 2). Never from a test - a test of
 # the render step sets its own limit and stubs the render.
 os.environ["OVERNIGHT_RENDERS"] = "0"
+# #1152: the shelf limit reads the operator's own finished videos. A test of it sets its own.
+os.environ["OVERNIGHT_SHELF_MAX"] = "0"
 os.environ["CONTENT_WINDOW_STATE"] = _suite_store("window_state.json")
 os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
 

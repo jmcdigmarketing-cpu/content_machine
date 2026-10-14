@@ -257,6 +257,13 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     mode = mode_note(meta.get("research"))  # #339
     if mode:
         print_fn(f"    ~ {mode}")
+    for warning in (meta.get("title_warnings") or [])[:2]:  # #1150
+        print_fn(f"    ! title: {warning}")
+    game = game_block_reason(meta)  # #1151
+    if game:
+        print_fn(f"    ! {game}")
+        if meta.get("unplayed_result"):
+            print_fn(f"      {str(meta['unplayed_result'])[:140]}")
     blocking = _blocking_claims(draft)
     for claim in blocking[:3]:
         print_fn(f"    ! unsupported: {claim}")
@@ -376,7 +383,9 @@ def drafts_line(channel_id: str, *, root: str | None = None) -> str:
     limit = unattended_limit(channel_id)
     stale = sum(1 for _draft, why in skipped if "past its window" in why)
     parts = []
-    if eligible and limit > 0:
+    if eligible and limit > 0 and shelf_pause(channel_id):
+        parts.append(f"{len(eligible)} clean (overnight is paused: the shelf is full)")
+    elif eligible and limit > 0:
         parts.append(f"{len(eligible)} could render overnight ({limit} a night)")
     elif eligible:
         parts.append(f"{len(eligible)} clean")
@@ -408,7 +417,65 @@ def unattended_limit(channel_id: str) -> int:
         return 0
 
 
-def unattended_block_reason(draft: PendingDraft) -> str:
+def shelf_max() -> int:
+    """`OVERNIGHT_SHELF_MAX` (default 3; 0 = no limit): overnight renders nothing while this
+    many finished videos are not public (#1152, operator 2026-10-13: "pause at 3 waiting")."""
+    raw = os.getenv("OVERNIGHT_SHELF_MAX", "3").strip()
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 3
+
+
+def shelf_waiting(channel_id: str) -> int:
+    """How many finished videos are not public - the rows `ops shelf` lists."""
+    try:
+        from core.stale_renders import shelf_rows
+
+        return len(shelf_rows(channel_id))
+    except Exception as exc:
+        logger.debug("shelf not read for the overnight limit: %s", exc)
+        return 0
+
+
+def shelf_pause(channel_id: str, *, waiting: int | None = None) -> str:
+    """Why overnight is not rendering, or "" when the shelf has room.
+
+    2026-10-13: four finished videos were waiting, no upload task was installed and the
+    sign-in had expired; overnight would have rendered two more that night and every night.
+    """
+    limit = shelf_max()
+    if limit <= 0:
+        return ""
+    count = shelf_waiting(channel_id) if waiting is None else waiting
+    if count < limit:
+        return ""
+    return (
+        f"{count} finished videos are waiting (overnight stops at {limit}) - "
+        f"py -m scripts.ops shelf --channel {channel_id}"
+    )
+
+
+def game_block_reason(meta: dict[str, Any], *, now: datetime | None = None) -> str:
+    """#1151 (operator, 2026-10-13: "render only before the game"). "" for a draft that is
+    not about a scheduled game."""
+    from core.facts.event_dates import fixture_sides, game_started
+
+    event_at = str(meta.get("event_at") or "")
+    if not event_at:
+        # A draft written before the start was recorded: a topic named like a fixture waits.
+        return "its game time is not known" if fixture_sides(str(meta.get("topic") or "")) else ""
+    started = game_started(event_at, now=now)
+    if started is None:
+        return "its game time is not known"
+    if started:
+        return f"its game has started ({event_at[:16].replace('T', ' ')} UTC)"
+    if meta.get("unplayed_result"):
+        return "it states a result for a game not yet played"
+    return ""
+
+
+def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None) -> str:
     """Why a draft must wait for a person, or "" when it may render unattended."""
     meta = draft.meta
     if draft.decision:
@@ -428,6 +495,11 @@ def unattended_block_reason(draft: PendingDraft) -> str:
     if isinstance(check, dict) and check.get("ok") is False:
         reasons = check.get("why") or ["not clean"]
         return f"script check: {reasons[0]}"  # #1143
+    if meta.get("title_warnings"):
+        return "its title says something the facts do not"  # #1150
+    game = game_block_reason(meta, now=now)
+    if game:
+        return game
     from core.title_generator import title_label
 
     label = title_label(draft.title)
@@ -478,18 +550,25 @@ def render_unattended(
     root: str | None = None,
     render: Callable[[PendingDraft, bool], bool] | None = None,
     queue: Callable[[int, str], int] | None = None,
+    shelf: Callable[[str], int] | None = None,
 ) -> dict[str, Any]:
     """Render up to `limit` eligible drafts and queue each one unlisted.
 
-    Returns {rendered, queued, failed: [(run, why)], waiting: [(run, why)]}. A draft that
-    fails to render keeps its place for the operator; nothing is ever queued public.
+    Returns {rendered, queued, failed: [(run, why)], waiting: [(run, why)], paused}. A draft
+    that fails to render keeps its place for the operator; nothing is ever queued public.
+    `paused` (#1152) says why it stopped when finished videos are already waiting.
     """
     out: dict[str, Any] = {"rendered": [], "queued": [], "failed": [], "waiting": []}
     if limit <= 0:
         return out
     eligible, skipped = unattended_candidates(channel_id, root=root)
     out["waiting"] = [(d.run_id, why) for d, why in skipped]
+    on_shelf = (shelf or shelf_waiting)(channel_id) if shelf_max() > 0 else 0
     for draft in eligible[:limit]:
+        paused = shelf_pause(channel_id, waiting=on_shelf)
+        if paused:
+            out["paused"] = paused
+            break
         try:
             (render or _render)(draft, False)
         except Exception as exc:
@@ -498,6 +577,7 @@ def render_unattended(
             continue
         _write_review(draft, decision="rendered", override=False, by="overnight")
         out["rendered"].append(draft.run_id)
+        on_shelf += 1
         try:
             (queue or _queue_unlisted)(draft.run_id, channel_id)
             out["queued"].append(draft.run_id)
@@ -567,6 +647,10 @@ def overnight_rendered_lines(
         lines = [f"Overnight - {channel_id}: nothing rendered in the last {hours:.0f} hours."]
         if unattended_limit(channel_id) <= 0:
             lines.append("  Overnight is render-free for this channel (overnight.renders is 0).")
+        else:
+            paused = shelf_pause(channel_id)
+            if paused:
+                lines.append(f"  Paused: {paused}")
         waiting = drafts_line(channel_id, root=root)
         if waiting:
             lines.append(f"  {waiting}")
@@ -595,17 +679,23 @@ def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[s
     limit = unattended_limit(channel_id)
     eligible, skipped = unattended_candidates(channel_id, root=root)
     lines = [f"Overnight render plan - {channel_id}: up to {limit} a night"]
+    paused = shelf_pause(channel_id) if limit > 0 else ""
     if limit <= 0:
         lines.append("  Overnight is render-free for this channel (overnight.renders is 0).")
-    for draft in eligible[: max(limit, 0)]:
+    if paused:
+        lines.append(f"  Paused: {paused}")
+    take = 0 if paused else max(limit, 0)
+    for draft in eligible[:take]:
         lines.append(f"  would render: run {draft.run_id}  {draft.title[:70]}")
-    for draft in eligible[max(limit, 0) :]:
+    for draft in eligible[take:]:
         lines.append(f"  next in line: run {draft.run_id}  {draft.title[:70]}")
     if not eligible:
         lines.append("  No draft qualifies tonight.")
     reasons: dict[str, int] = {}
     for _draft, why in skipped:
         key = "past its window" if "past its window" in why else why
+        if why.startswith("its game has started"):
+            key = "its game has started"
         reasons[key] = reasons.get(key, 0) + 1
     if reasons:
         told = ", ".join(f"{n} {why}" for why, n in sorted(reasons.items(), key=lambda kv: -kv[1]))

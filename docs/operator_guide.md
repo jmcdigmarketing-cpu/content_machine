@@ -128,6 +128,11 @@ then walks the waiting drafts for a yes or no each. (`ops all` is the weekly bat
 review is not in it.) Run from a scheduled task or a pipe it skips the draft review and says
 so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
 
+Overnight stops rendering while three finished videos are not public (`OVERNIGHT_SHELF_MAX`) -
+the plan says "Paused" and resumes by itself when the shelf drops. A draft about a scheduled
+game renders only before the game: once it has started, or when the draft already calls the
+result, it waits for you. So does a draft whose title the title check flagged.
+
 **Is the script clean?** Each draft's review screen carries one line: the stance held, your
 typed points used, no claim the facts do not back, nothing hard to say, no label in the title,
 and any sentence that was cut. `py -m scripts.ops script-check --channel tapin` counts it over

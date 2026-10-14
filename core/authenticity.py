@@ -274,11 +274,16 @@ _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
 
 def payoff_closer(script: str) -> tuple[str, dict[str, Any]]:
-    """Rewrite the payoff once when it shares no word with the hook (#1032).
+    """Say whether the payoff shares a word with the hook (#1032). The script is not changed.
 
-    "Tap in for more" is the sign-off, not the payoff. The returned dict is the
-    pre-rewrite verdict: ``closer_answered`` is false when a rewrite was needed.
-    A second call on the rewritten script does not rewrite again.
+    "Tap in for more" is the sign-off, not the payoff. ``closer_answered`` is false when the
+    last line names nothing the first one did.
+
+    #1149: this used to append " on " and the hook's longest word to the payoff. The word came
+    from `content_tokens`, lowercased and with its apostrophe gone, so run 138 ended "The
+    answer will come tonight on torontos." and run 136 - rendered - "in convincing fashion on
+    tennessee." A sentence cannot be repaired by adding a word to it; the verdict is kept and
+    the line is left as written.
     """
     from apis.topic_tokens import content_tokens
 
@@ -295,12 +300,7 @@ def payoff_closer(script: str) -> tuple[str, dict[str, Any]]:
     pay_tokens = {tok for tok in content_tokens(sentences[payoff_at]) if len(tok) >= 4}
     if not hook_tokens or hook_tokens & pay_tokens:
         return script, verdict
-    subject = max(hook_tokens, key=len)
-    body = sentences[payoff_at].rstrip()
-    if body.endswith("."):
-        body = body[:-1]
-    sentences[payoff_at] = f"{body} on {subject}."
-    return " ".join(sentences), {"closer_answered": False, "rewritten": True}
+    return script, {"closer_answered": False, "rewritten": False}
 
 
 def _semantic_enabled() -> bool:

@@ -212,6 +212,92 @@ def _other_numbered_event(text: str, fact_lines: list[str], day: datetime.date) 
     return ""
 
 
+# ---- #1151: a draft about a scheduled game -------------------------------------------------
+#
+# 2026-10-13: overnight wrote "Oklahoma City's young core flexes growth in statement win over
+# Indiana Pacers" hours before the game, and rendered a Texans preview two days after kick-off.
+
+_FIXTURE_RE = re.compile(
+    r"^(?P<away>(?:[A-Z0-9][\w.'&-]*\s+){1,4})(?:at|vs\.?|@)\s+"
+    r"(?P<home>[A-Z0-9][\w.'&-]*(?:\s+[A-Z0-9][\w.'&-]*){0,3})$"
+)
+_RESULT_RE = re.compile(
+    r"\b(?:beat|beats|defeated|defeats|won|win over|victory over|statement win|routed|crushed|"
+    r"dissected|dominated|blew out|blowout|swept|edged|upset|outlasted|topped|downed|lost to|"
+    r"loss to|fell to|falls to)\b",
+    re.I,
+)
+_HISTORY_RE = re.compile(
+    r"\b(?:19|20)\d{2}\b|\blast (?:season|year|week|month|time|night)\b|\byears? ago\b|"
+    r"\bstraight\b|\bin a row\b|\bsince\b|\bGame \d\b|\bFinals?\b|\bprevious(?:ly)?\b|"
+    r"\bhistory\b|\ball-time\b|\bcareer\b",
+    re.I,
+)
+_NOT_YET_RE = re.compile(
+    r"\?|\b(?:will|would|could|can|might|may|if|whether|should|must|expect(?:s|ed)?|"
+    r"needs? to|looks? to|looking to|hop(?:e|es|ing)|chance|predict(?:s|ion)?|pick|"
+    r"to beat|to win)\b",
+    re.I,
+)
+_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def fixture_sides(topic: str) -> tuple[str, str] | None:
+    """("Indiana Pacers", "Oklahoma City Thunder") for a topic named the way a schedule names
+    a game - "A at B", every word of both sides capitalised - else None."""
+    found = _FIXTURE_RE.match(str(topic or "").strip())
+    if not found:
+        return None
+    return found.group("away").strip(), found.group("home").strip()
+
+
+def game_started(event_at: str, *, now: datetime.datetime | None = None) -> bool | None:
+    """True once the game has started, False before, None when `event_at` cannot be read.
+    A board day with no hour counts as started once that day is over."""
+    raw = str(event_at or "").strip()
+    if not raw:
+        return None
+    moment = now or datetime.datetime.now(datetime.timezone.utc)
+    try:
+        if len(raw) <= 10:
+            return moment.date() > datetime.date.fromisoformat(raw)
+        when = datetime.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=datetime.timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.astimezone()
+    return moment >= when
+
+
+def _side_words(side: str) -> set[str]:
+    return {word.lower() for word in re.findall(r"[A-Za-z0-9]+", side) if len(word) >= 4}
+
+
+def unplayed_result(text: str, topic: str) -> str:
+    """The sentence of `text` that states a result between the two sides `topic` names, or "".
+
+    For a game that has not been played. A sentence counts when it names both sides and uses
+    a result word ("win over", "dissected") with nothing marking it as history ("last
+    season", a year, "three straight") or as still to come ("will", "if", a question).
+    """
+    sides = fixture_sides(topic)
+    if not sides:
+        return ""
+    away, home = _side_words(sides[0]), _side_words(sides[1])
+    for sentence in _SENTENCE_RE.split(str(text or "")):
+        line = sentence.strip()
+        if not line or not _RESULT_RE.search(line):
+            continue
+        if _HISTORY_RE.search(line) or _NOT_YET_RE.search(line):
+            continue
+        words = {word.lower() for word in re.findall(r"[A-Za-z0-9]+", line)}
+        if words & away and words & home:
+            return line
+    return ""
+
+
 def stale_angle_reason(
     angle: str, *, today: datetime.date | str | None = None, facts: str = "", topic: str = ""
 ) -> str:

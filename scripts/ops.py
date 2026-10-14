@@ -3528,8 +3528,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--topic",
+        "--idea",  # script-check: the operator's word for it, and what the guide says
+        dest="topic",
         default="",
-        help="Topic for intelligence-report (required) or tapology-test",
+        help="Topic for intelligence-report (required) or tapology-test; "
+        'script-check: --idea "your idea" writes one draft and checks it',
     )
     parser.add_argument(
         "--no-brief",

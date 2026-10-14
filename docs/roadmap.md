@@ -65,7 +65,8 @@ no upload task is installed. Where each target stands:
 3. **Videos ready each morning** - overnight renders up to 2 clean drafts, queued unlisted;
    `py -m scripts.ops morning` is the morning (#1140). On 10-13 it rendered two and both were
    wrong (a game written as won before it was played; a preview rendered two days late). Both
-   were pulled; the fixes are #1148-#1152.
+   were pulled and the causes are fixed (#1148-#1152, wave 83): a game draft renders before
+   its game or waits, a flagged title waits, and overnight stops at 3 finished videos waiting.
 4. **The week against 3-5** - on the header.
 5. **Click-through flowing** - `ops doctor`'s `reach` row prints the link (#1123). Still off.
 6. **The intro test on** - `INTRO_TEST=alternate` in `.env`.
@@ -85,10 +86,11 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
 404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
 dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
-`roadmap-index` after waves 81-82: open 315, done 872, numbered open 263, highest #1157.
-Claude's waves closed #1137 #1138 #1139 and new #1140-#1147 (a finished-script check,
-`ops morning`, the monetization numbers that read 0), and filed #1148-#1157 from the 10-13
-overnight run - Claude's next ten. The step-by-step: [operator_guide.md](operator_guide.md).
+`roadmap-index` after wave 83: open 311, done 877, numbered open 259, highest #1158.
+Claude's waves 81-83 closed #1137-#1152: a finished-script check, `ops morning`, the
+monetization numbers that read 0, and the five causes of the 10-13 overnight run. The main
+one: drafts were blocked because the claim check cited the research brief (#1148). Claude's
+next: #1153-#1158. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

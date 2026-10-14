@@ -94,8 +94,23 @@ def _board_today() -> date:
     return date.today()
 
 
-def topics_from_board(league: str, board: dict[str, Any], *, today: date) -> list[tuple[str, str]]:
-    """Games on this board that have not been played and fall inside the next week."""
+# #1151: each coming game's start, as its board wrote it. The week fetch fills it; a draft
+# written from a schedule pick reads it, so the draft knows when its game is.
+_STARTS: dict[str, str] = {}
+
+
+def event_start(topic: str) -> str:
+    """When the scheduled game named `topic` starts (the board's ISO time), or ""."""
+    return _STARTS.get(str(topic or "").strip(), "")
+
+
+def topics_from_board(
+    league: str, board: dict[str, Any], *, today: date, starts: dict[str, str] | None = None
+) -> list[tuple[str, str]]:
+    """Games on this board that have not been played and fall inside the next week.
+
+    `starts` (#1151) collects each kept game's start time by name.
+    """
     horizon = today + _WEEK
     topics: list[tuple[str, str]] = []
     for event in (board or {}).get("events") or []:
@@ -113,15 +128,19 @@ def topics_from_board(league: str, board: dict[str, Any], *, today: date) -> lis
         if completed or when < today or when > horizon:
             continue
         topics.append((name, league))
+        if starts is not None:
+            starts[name] = str(event.get("date") or "")
     return topics
 
 
-def week_topics(boards: dict[str, Any], *, today: date) -> list[tuple[str, str]]:
+def week_topics(
+    boards: dict[str, Any], *, today: date, starts: dict[str, str] | None = None
+) -> list[tuple[str, str]]:
     """Coming games plus award dates still inside the window."""
     topics: list[tuple[str, str]] = []
     for league, board in (boards or {}).items():
         if isinstance(board, dict):
-            topics.extend(topics_from_board(str(league), board, today=today))
+            topics.extend(topics_from_board(str(league), board, today=today, starts=starts))
     for when, name, domain in AWARD_DATES:
         if today <= when <= today + _AWARD_WINDOW:
             topics.append((name, domain))
@@ -148,4 +167,4 @@ def fetch_week_topics() -> list[tuple[str, str]]:
             boards[league] = get_scoreboard(league)
         except Exception as exc:
             logger.debug("scoreboard skipped for %s: %s", league, exc)
-    return week_topics(boards, today=today)
+    return week_topics(boards, today=today, starts=_STARTS)

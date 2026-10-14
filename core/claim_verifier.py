@@ -23,6 +23,7 @@ Behavior contract:
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -51,6 +52,7 @@ class VerifiedClaim:
     citation_line: str = ""  # the fact line that backs a supported claim
     claim_type: str = ""  # #345 - result|award|stat|date|schedule|rumor|opinion|other
     tier: str = ""  # #1026 - operator | signal | web | brief | context, or ""
+    by: str = ""  # #1148 - "match": the model said no and a fact line carries it
 
 
 @dataclass
@@ -64,6 +66,9 @@ class ClaimVerification:
     pre_rewrite_total: int = 0
     script_pre_rewrite: str = ""
     script_post_rewrite: str = ""
+    # #1148: how many fact lines the check was sent, and how many did not fit its budget.
+    facts_given: int = 0
+    facts_left_out: int = 0
 
     @property
     def total(self) -> int:
@@ -109,10 +114,16 @@ class ClaimVerification:
                     "citation_line": (c.citation_line or "")[:200],
                     "type": c.claim_type,
                     "tier": c.tier,
+                    **({"by": c.by} if c.by else {}),
                 }
                 for c in self.claims[:_MAX_CLAIMS]
             ],
         }
+        matched = sum(1 for c in self.claims if c.by == "match")
+        if matched:
+            out["matched"] = matched  # #1148
+        if self.facts_given or self.facts_left_out:
+            out["facts"] = {"given": self.facts_given, "left_out": self.facts_left_out}
         # #345 - aligned with `unsupported`; each type has its own grounding bar. Only
         # present when the verifier typed its claims, so an untyped run keeps its shape.
         if any(c.claim_type for c in self.claims):
@@ -171,12 +182,207 @@ def override_features(verification_dict: dict[str, Any] | None) -> dict[str, Any
     }
 
 
+_NUMBER_RE = re.compile(r"\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)*")
+_WORD_RE = re.compile(r"[a-z0-9][a-z0-9'-]*")
+_POSSESSIVE_RE = re.compile(r"['\u2019]s\b")
+_CLAUSE_RE = re.compile(r"[.;|!?]\s+|,\s+|\s+(?:and|but|while)\s+", re.I)
+_NEGATION_RE = re.compile(r"\b(?:not|never|no|without|nor)\b|n['\u2019]t\b", re.I)
+_WIN_RE = re.compile(
+    r"\b(?:beat|beats|defeated|defeats|topped|edged|downed|routed|crushed|swept|outlasted|"
+    r"upset|won over|win over|victory over)\b",
+    re.I,
+)
+_LOSE_RE = re.compile(r"\b(?:lost to|loses to|loss to|fell to|falls to|dropped to)\b", re.I)
+
+
+def _plain(text: str) -> str:
+    return _POSSESSIVE_RE.sub("", str(text or ""))
+
+
+def _words(text: str) -> set[str]:
+    """Lowercase words, a hyphenated one also as its parts ("re-signed": re, signed)."""
+    out: set[str] = set()
+    for word in _WORD_RE.findall(_plain(text).lower()):
+        out.add(word)
+        out.update(part for part in re.split(r"[-']", word) if part)
+    return out
+
+
+def _numbers(text: str) -> list[str]:
+    return [m.group(0) for m in _NUMBER_RE.finditer(_plain(text).replace(",", ""))]
+
+
+def _has_number(text: str, number: str) -> bool:
+    return bool(
+        re.search(rf"(?<![\d.-]){re.escape(number)}(?![\d-]|\.\d)", str(text).replace(",", ""))
+    )
+
+
+def _stem(word: str) -> str:
+    for suffix in ("ing", "ed", "es", "s"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            return word[: -len(suffix)]
+    return word
+
+
+def _same_name(wanted: str, found: str) -> bool:
+    """`wanted` from the claim against a word of the fact: the same, or a short plural
+    nickname of it ("cavs" for "cavaliers")."""
+    if wanted == found:
+        return True
+    return (
+        wanted.endswith("s")
+        and 3 < len(wanted) <= 5
+        and len(found) > len(wanted)
+        and found.startswith(wanted[:-1])
+    )
+
+
+def _claim_parts(claim: str) -> tuple[list[str], list[str], list[str], list[str]]:
+    """(numbers, the ones that pin a fact, names, other content words) of a claim.
+
+    A name is a content word the claim writes with a capital. A number pins a fact when it is
+    a score or record ("119-105"), a decimal, or a count that does not sit in a name: the 4 of
+    "Modern Warfare 4" and the 122 of "UFC Vegas 122" are part of a title and pin nothing.
+    """
+    from apis.topic_tokens import content_tokens
+
+    text = _plain(claim).replace(",", "")
+    numbers: list[str] = []
+    pins: list[str] = []
+    for found in _NUMBER_RE.finditer(text):
+        number = found.group(0)
+        numbers.append(number)
+        before = text[: found.start()].split()
+        in_a_name = bool(before) and before[-1][:1].isupper() and len(before) > 1
+        if "-" in number or "." in number or not in_a_name:
+            pins.append(number)
+    capitals = {w.lower() for w in re.findall(r"\b[A-Z][\w-]*", text)}
+    names: list[str] = []
+    others: list[str] = []
+    for token in content_tokens(text):
+        if token[:1].isdigit():
+            continue
+        (names if token in capitals else others).append(token)
+    return numbers, pins, names, others
+
+
+def _winner_side(text: str) -> set[str] | None:
+    """The words on the winning side of a result verb in `text`, None when it states none."""
+    plain = _plain(text)
+    win, lose = _WIN_RE.search(plain), _LOSE_RE.search(plain)
+    found = win or lose
+    if not found:
+        return None
+    return _words(plain[: found.start()]) if win else _words(plain[found.end() :])
+
+
+_TOKEN_RE = re.compile(r"[A-Za-z0-9][\w.'-]*")
+
+
+def _paired(part: str, number: str, names: list[str]) -> bool:
+    """False when `part` holds several numbers of `number`'s shape and the nearest capital
+    word to this one is not one of the claim's names - "Knicks (0-3) at Raptors (1-1)" gives
+    the Raptors 1-1, not 0-3."""
+    tokens = _TOKEN_RE.findall(_plain(part).replace(",", ""))
+    shaped = [
+        t for t in tokens if _NUMBER_RE.fullmatch(t.strip(".")) and ("-" in t) == ("-" in number)
+    ]
+    if len(set(shaped)) < 2:
+        return True
+    at = next((i for i, t in enumerate(tokens) if t.strip(".") == number), None)
+    if at is None:
+        return True
+    capitals = [(abs(i - at), t.lower()) for i, t in enumerate(tokens) if t[:1].isupper()]
+    if not capitals:
+        return True
+    nearest = min(distance for distance, _word in capitals)
+    return any(
+        _same_name(name, word.strip(".'"))
+        for distance, word in capitals
+        if distance == nearest
+        for name in names
+    )
+
+
+def _carries(
+    claim: str, part: str, numbers: list[str], pins: list[str], names: list[str], others: list[str]
+) -> bool:
+    words = _words(part)
+    if not all(_has_number(part, number) for number in numbers):
+        return False
+    if not all(any(_same_name(name, word) for word in words) for name in names):
+        return False
+    if not all(_paired(part, number, names) for number in pins):
+        return False
+    claimed, stated = _winner_side(claim), _winner_side(part)
+    if others:
+        stems = {_stem(word) for word in words}
+        shared = any(_stem(word) in stems for word in others)
+        # "beat" and "defeated" share no stem; the result check below reads those.
+        if not shared and (claimed is None or stated is None):
+            return False
+    if bool(_NEGATION_RE.search(claim)) != bool(_NEGATION_RE.search(part)):
+        return False
+    if claimed is not None:
+        winners = [name for name in names if name in claimed]
+        if stated is None or not winners:
+            return False
+        if not all(any(_same_name(name, word) for word in stated) for name in winners):
+            return False
+    return True
+
+
+def carried_by_facts(claim: str, fact_lines: list[str], *, weak: set[str] | None = None) -> str:
+    """The fact line that carries a numbered `claim` word for word, or "" (#1148).
+
+    A second look that cannot vary, for a claim the model called unsupported: every number and
+    every name of the claim inside one clause of one fact line, a word of the claim's own
+    there too, the same side winning, the same yes or no. Measured on 13 recorded drafts it
+    carries 3 of 50 blocking claims: two scores and a stat line.
+
+    It is narrow on purpose. A claim with no number that pins a fact stays with the model:
+    two names sharing a line is not a claim ("re-signed" and "added" sat in one sentence about
+    three players). `weak` lines (#966, the model-written brief) carry nothing.
+    """
+    numbers, pins, names, others = _claim_parts(claim)
+    if not pins or not names:
+        return ""
+    for line in fact_lines:
+        text = str(line or "").strip()
+        if not text or (weak and _weak_key(text) in weak):
+            continue
+        if any(
+            _carries(claim, part, numbers, pins, names, others) for part in _CLAUSE_RE.split(text)
+        ):
+            return text
+    return ""
+
+
+def _quoted_first(lines: list[str], script: str) -> list[str]:
+    """`lines` with those sharing a number with the script moved to the front, order kept."""
+    wanted = [n for n in dict.fromkeys(_numbers(script)) if len(n) > 1]
+    if not wanted:
+        return lines
+    first = [ln for ln in lines if any(_has_number(ln, number) for number in wanted)]
+    if not first:
+        return lines
+    chosen = set(first)
+    return first + [ln for ln in lines if ln not in chosen]
+
+
 def _numbered_facts(
     facts_text: str,
     *,
     priority_facts: list[str] | None = None,
+    script: str = "",
 ) -> list[str]:
-    """Build the numbered fact list; operator key facts come first (never truncated away)."""
+    """Build the numbered fact list; operator key facts come first (never truncated away).
+
+    `script` (#1148): when the facts do not all fit the budget, the lines that share a number
+    with the script are packed before the rest. The writer's prompt has no such budget, so a
+    fact past it could be written into a script and never shown to the check.
+    """
     seen: set[str] = set()
     numbered: list[str] = []
     used = 0
@@ -198,16 +404,24 @@ def _numbered_facts(
         seen.add(key)
         _add(ln)
 
-    for ln in (facts_text or "").splitlines():
-        ln = ln.strip()
-        if not ln:
-            continue
+    rest = [ln.strip() for ln in (facts_text or "").splitlines() if ln.strip()]
+    if script and used + sum(len(ln) for ln in rest) > _max_fact_chars():
+        rest = _quoted_first(rest, script)
+    for ln in rest:
         key = ln.lower()[:120]
         if key in seen:
             continue
         seen.add(key)
         _add(ln)
     return numbered
+
+
+def _fact_line_total(facts_text: str, priority_facts: list[str] | None) -> int:
+    """How many distinct fact lines there were to send, by `_numbered_facts`' own key."""
+    keys = {str(raw or "").strip().lower()[:120] for raw in priority_facts or []}
+    keys |= {ln.strip().lower()[:120] for ln in (facts_text or "").splitlines()}
+    keys.discard("")
+    return len(keys)
 
 
 def _weak_key(line: str) -> str:
@@ -237,9 +451,25 @@ def verify_claims(
     if not (script or "").strip() or not (facts_text or "").strip():
         return None
 
-    facts = _numbered_facts(facts_text, priority_facts=priority_facts)
+    weak = {_weak_key(line) for line in weak_lines or () if _weak_key(line)}
+    # #1148: the brief is model-written, so it is not shown as a fact to cite. Run 137's brief
+    # restated the score and the signings; the model cited the brief for each and the #966
+    # rule below then called all of them unsupported, with the sources two lines away.
+    sourced = "\n".join(
+        ln for ln in facts_text.splitlines() if not (weak and _weak_key(ln) in weak)
+    )
+    if sourced.strip():
+        facts_text = sourced
+    facts = _numbered_facts(facts_text, priority_facts=priority_facts, script=script)
     if not facts:
         return None
+    left_out = max(0, _fact_line_total(facts_text, priority_facts) - len(facts))
+    if left_out:
+        logger.info(
+            "Claim verifier: %d fact line(s) did not fit the %d-character budget",
+            left_out,
+            _max_fact_chars(),
+        )
     facts_block = "\n".join(f"{i}. {ln}" for i, ln in enumerate(facts, 1))
 
     system_prompt = (
@@ -264,8 +494,6 @@ def verify_claims(
     from core.claim_types import claim_blocks, normalize_type
     from core.llm_router import complete_json
 
-    weak = {_weak_key(line) for line in weak_lines or () if _weak_key(line)}
-
     try:
         payload = complete_json(
             user_prompt,
@@ -281,7 +509,10 @@ def verify_claims(
     if not isinstance(raw_claims, list):
         return None
 
-    verification = ClaimVerification()
+    verification = ClaimVerification(facts_given=len(facts), facts_left_out=left_out)
+    # #1148: every fact line, not only those that fit - a line left out can still carry.
+    every_line = [str(raw or "").strip() for raw in priority_facts or []]
+    every_line += [ln.strip() for ln in facts_text.splitlines() if ln.strip()]
     for item in raw_claims[:_MAX_CLAIMS]:
         if not isinstance(item, dict):
             continue
@@ -304,6 +535,21 @@ def verify_claims(
             and claim_blocks(claim, claim_type)
         ):
             supported, citation, tier = False, "", ""  # #966: the brief alone backs nothing strict
+        if (
+            supported
+            and isinstance(raw_citation, int)
+            and not 1 <= raw_citation <= len(facts)
+            and claim_blocks(claim, claim_type)
+        ):
+            # #1148: it cites a line it was not shown. With the brief off the list, that is
+            # how "the brief said so" arrives - and a made-up citation backs nothing either way.
+            supported = False
+        by = ""
+        if not supported:
+            carried = carried_by_facts(claim, every_line, weak=weak)
+            if carried:
+                supported, citation, by = True, carried, "match"
+                tier = str((line_tiers or {}).get(carried) or "")
         verification.claims.append(
             VerifiedClaim(
                 claim=claim,
@@ -311,6 +557,7 @@ def verify_claims(
                 citation_line=citation,
                 claim_type=claim_type,
                 tier=tier,
+                by=by,
             )
         )
     if not verification.claims:
@@ -350,6 +597,19 @@ def display_claim_verification(verification_dict: dict[str, Any] | None, *, prin
         density_note = f" (hedge density {float(density_raw):.1f}/100w)"
     for line in _provenance_lines(verification_dict):
         print_fn(line)
+    matched = int(verification_dict.get("matched") or 0)
+    if matched:  # #1148
+        print_fn(
+            f"  {matched} found word for word in the facts after the checker said no "
+            "(marked 'match')."
+        )
+    facts = verification_dict.get("facts")
+    if isinstance(facts, dict) and int(facts.get("left_out") or 0):
+        given, left = int(facts.get("given") or 0), int(facts.get("left_out") or 0)
+        print_fn(
+            f"  ! {left} of {given + left} fact lines did not fit the checker's budget - a "
+            "claim resting on one of them reads as unsupported."
+        )
     if not unsupported:
         print_fn(
             f"  [ok] Claim check: {supported}/{total} factual claim(s) backed by the facts."

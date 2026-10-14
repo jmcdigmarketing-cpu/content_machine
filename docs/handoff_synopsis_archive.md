@@ -7,6 +7,27 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Claude Code): waves 77-78, the next ten
+
+Ten shipped. Finished videos that are not public now have a line: the startup header ends
+"7 finished, not public" and `ops status` lists 5 unlisted uploads (2 held for a claim) and 2
+renders never uploaded, each with its command (#1122). The Reporting API line names the Google
+project and prints the link that enables it (#1123) - it was ticked "on" two days earlier and
+is still off. `ops backfill stayed --apply` put "who stayed" on 39 of 43 videos, from 5
+(#1124). The internet being down reads as one line and one incident (#393). A game covered
+three times or more is neutral unless a take is asked for (#1088, the operator's call).
+`ops competitors suggest` prints a sized shortlist per niche and keeps it; `add` approves one;
+stored competitor videos carry view counts (#1120). The outlier watch reads them - nothing to
+find until channels are approved (#1063). Steam patch notes are dated facts, and the Steam
+lookup asks again by the game's name (#1119). One function attaches a description's blocks,
+a blank line apart (#1051). A signal never active on 5+ of the last 20 runs sits out two runs
+in three: today `sports` and `twitch` (#1073; `SIGNAL_DEMOTION=false` turns it off).
+
+Suite 5347 -> 5460, mypy 98, corpus 184. `roadmap-index`: open 306, done 851,
+highest #1127. Filed open: #1125 (YouTube's feed 404s for every channel), #1126 (15 runs stuck
+at "scheduled"), #1127 (the NFL search returns soccer). **The next stage is a ship stage**
+(roadmap.md): clear the shelf, five public a week, click-through flowing, the intro test on.
+
 ## Previous — 2026-10-10 (Cursor): #990 #400 #380 #995 #374
 
 `ops log` prints the last lines of `data/logs/content_machine.log` and the warnings in

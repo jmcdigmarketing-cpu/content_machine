@@ -47,3 +47,33 @@ ten videos. Asked again when either side has thirty.
 the drafts). `ops all` stays the weekly batch and does not call it. **Why:** the operator asked
 why the morning review was not in `ops all`; it was in no batch at all. A daily step inside a
 weekly batch would either run weekly or make the weekly one ask a yes per draft.
+
+## 45. A game draft renders before its game or waits (2026-10-13)
+**Decision:** a draft written from a schedule pick carries its game's start (`event_at`).
+Overnight leaves it for a person once the game has started, when its title or script states a
+result for a game not yet played, and when its start is not known - a topic named like a
+fixture ("A at B") with no time waits too. **Why:** on 10-13 overnight rendered two game
+drafts and both were wrong - run 139 called a Thunder win hours before tip-off, run 136
+previewed a Texans game two days after it was played. The operator chose "render only before
+the game" over never rendering them and over not drafting them. **Consequence:** a result is
+read by words ("win over", "dissected") with history ("last season", a year) and what is still
+to come ("will", "if", a question) left out. It misses a result said another way; the claim
+check and the title check are still behind it.
+
+## 46. Overnight stops at three finished videos waiting (2026-10-13)
+**Decision:** `OVERNIGHT_SHELF_MAX` (default 3; 0 = no limit). Overnight renders nothing while
+that many finished videos are not public, and stops mid-run when a render reaches it.
+**Why:** four were waiting on 10-13 with no upload task installed and an expired sign-in;
+decision 40 would have added two a night and spent the voice characters for each. The
+operator's call. **Consequence:** rendering resumes on its own when the shelf drops - a video
+goes public, or is retired.
+
+## 47. The research brief is not evidence (2026-10-13)
+**Decision:** the claim check is not shown the research brief as a fact it can cite. The brief
+still frames the script. **Why:** the brief is written by a model from the same facts. When it
+restated them, the checker cited the brief as the plainest line, and the rule that a brief
+"backs nothing strict on its own" (#966) then called every one of those claims unsupported -
+5 of 5 on a replay of run 137, with the sources two lines away. That, not thin facts, is most
+of why drafts were blocked. **Consequence:** a claim only the brief carries is unsupported, as
+#966 intended. When the brief is the only text there is, it is still shown and still backs
+nothing strict.

@@ -186,20 +186,17 @@ class StockPhraseTests(unittest.TestCase):
 
 
 class CloserPayoffTests(unittest.TestCase):
-    def test_a_closer_that_ignores_the_hook_is_rewritten_once(self):
+    def test_a_closer_that_ignores_the_hook_is_said_and_left_alone(self):
+        """#1149 (was "is rewritten once"): the rewrite appended " on " and a lowercased hook
+        word - this script came back ending "starts Sunday on turnovers." Runs 136 and 138
+        ended "on tennessee." and "on torontos."."""
         from core.authenticity import payoff_closer
 
         script = "Ten turnovers buried the Chargers. The path back starts Sunday. Tap in for more."
-        rewritten, verdict = payoff_closer(script)
+        unchanged, verdict = payoff_closer(script)
         self.assertFalse(verdict["closer_answered"])
-        self.assertTrue(verdict["rewritten"])
-        self.assertTrue(
-            any(word in rewritten.lower() for word in ("turnovers", "chargers", "buried"))
-        )
-        self.assertIn("Tap in for more", rewritten)
-        again, second = payoff_closer(rewritten)
-        self.assertTrue(second["closer_answered"])
-        self.assertEqual(again, rewritten)
+        self.assertFalse(verdict["rewritten"])
+        self.assertEqual(unchanged, script)
 
     def test_a_closer_that_names_the_hook_stays(self):
         from core.authenticity import payoff_closer

@@ -6846,3 +6846,106 @@ Script check - tapin, newest 30 scripts: 13 clean
 
 Closed **#1137 #1138 #1139 #1140-#1147**. Filed open **#1148-#1157** - Claude's next ten.
 Cursor's five unchanged: **#1121 - #462 - #404 - #388 - #409**.
+
+## 2026-10-13 — wave 83 (Claude Code): what overnight rendered, and why drafts were blocked
+
+**Prompt (verbatim):** "next 10". Plan mode; four answers taken before building: "Pull both
+(Recommended)" for runs 139 and 136, "Render only before the game (Recommended)", "Pause at 3
+waiting (Recommended)", "Yes, three drafts (Recommended)".
+
+**What was picked and why:** nothing from the roadmap's five (Cursor's). Every item came from
+the 2026-10-13 overnight run, measured read-only before planning: two videos rendered, both
+wrong; a claim check that called nine true claims unsupported; an expired sign-in; four
+finished videos waiting.
+
+### Shipped
+
+1. **#1148** the claim check no longer reads the research brief as a fact, plus a narrow
+   word-for-word second look, a packing order, and a count of what the check was sent.
+2. **#1149** `payoff_closer` reports and changes nothing.
+3. **#1150** a flagged title blocks the unattended render.
+4. **#1151** a game draft carries its game's start; overnight holds it after the start, when
+   it calls the result first, or when the time is unknown.
+5. **#1152** overnight stops at 3 finished videos waiting (`OVERNIGHT_SHELF_MAX`).
+
+Runs 139 and 136 were pulled first: upload jobs 56 and 57 cancelled through
+`queue_manager.cancel_queue_entry`, both renders retired.
+
+### Findings
+
+- **`core/claim_verifier.py` `verify_claims` - the cause of most blocked drafts.** Replayed on
+  run 137's stored script and saved facts, the verifier backed 6 of 9 claims. Replayed again
+  with two brief lines restating the facts on the list, it cited the brief for 5 claims, and
+  `#966` ("the brief alone backs nothing strict") turned all 5 into unsupported with an empty
+  citation: 2 of 10 held. The brief is written from the facts, so it is the plainest line on
+  the list and the model picks it. A good brief made a run look ungrounded. The run's check
+  was sent 3,865 tokens, which matches facts plus brief. The log has the same shape on six
+  earlier runs (8/8, 7/7, 11/12, 5/6, 9/9, 6/6 unsupported).
+- **My first measurement was wrong and the plan repeated it.** "21 of 50 blocking claims have
+  every name and number on one fact line" came from a matcher that stripped trailing letters
+  and counted names sharing a line. Runs 128 and 129 showed it: "UFC Vegas 122" and "Modern
+  Warfare 4" matched headlines that only named the event and the game. The matcher that
+  shipped reads numbers that pin a fact, one clause, the side that won and yes-or-no; it
+  carries 3 of the 50. The root-cause fix above is what moves the number, and its size on old
+  drafts was not measured - that would take a model call per draft.
+- **`core/authenticity.py:302` `payoff_closer` (#1032, Cursor's)** appended `" on " +` the
+  hook's longest `content_tokens` word - lowercased, apostrophe gone. Run 136 was rendered
+  with it. Its own test asserted only that a hook word appeared.
+- **`core/batch_generation.py:280`** - `title_warnings` was on the run and not in the draft
+  record, so `unattended_block_reason` could not see run 139's flag.
+- **`core/seasonal_calendar.topics_from_board`** read each event's date to filter it and threw
+  the date away; nothing downstream knew when a game was.
+- **`scripts/ops.py`** - the guide and the backlog said `script-check --idea "..."`; the parser
+  knew only `--topic`. The first proof run printed usage three times and wrote nothing.
+  `--idea` is an alias now.
+- **`tests/test_status_from_memory.py`** failed on the first full run: a fake model citing
+  line 3 of a list that now has 2. A blocking claim whose citation names a line that was not
+  shown is unsupported - which is how "only the brief said so" now arrives.
+- **Run 142's title opened "Factual"**: the angle was `Factual read: "NBA Finals ...` - the
+  prompt's lens name written in front of the angle. Filed #1158.
+
+### Deliberately not done
+
+- **Re-checking the 15 blocked drafts.** One model call each and most are near the end of
+  their window. New drafts are checked the new way.
+- **A word-for-word look at claims with no number.** "Re-signed" and "added" sat in one
+  sentence about three players; names sharing a line is not a claim.
+- **Rewriting the closer with a model** (#1032's intent). A defect was removed; nothing was
+  added in a ship stage.
+
+### Audit
+
+55 tests in `tests/test_overnight_guard.py` and one changed in `tests/test_style_recurrence.py`.
+**50 of 55 failed or errored on a worktree at `14246cd`** (9 failures, 41 errors); the five
+that passed pin what must not change. Nine corpus cases, 210
+held. Every new function has a production caller: `carried_by_facts` and `_quoted_first` in
+`verify_claims`; `event_start` and `unplayed_result` in `generate_draft`; `game_block_reason`,
+`shelf_pause` in `unattended_block_reason`, `render_unattended`, the plan and the review
+screen. Fields traced: `event_at`, `unplayed_result`, `title_warnings` written by
+`generate_draft`, read by `game_block_reason` / `unattended_block_reason` / `_show`; `matched`
+and `facts` written by `to_dict`, read by `display_claim_verification`.
+
+### Proof
+
+Three live drafts of the operator's ideas (model calls, no voice, runs 140-142):
+
+```
+Chargers Hopeium going into week 5            read as hope     Script check: 1 to look at - 4 claim(s) the facts do not support
+How the chargers can still make the superbowl  read as plan     Script check: 1 to look at - 2 claim(s) the facts do not support
+NBA finals and award predictions preseason     read as default  Script check: clean
+```
+
+The plan draft: 6 of 8 claims backed, each citing a source line (ESPN record, four web
+headlines), none the brief. Its two flagged claims were not cut: the one sentence found would
+have taken the script from 168 words to 148, under its minimum.
+
+```
+Overnight render plan - tapin: up to 2 a night        (OVERNIGHT_SHELF_MAX=2 to show it)
+  Paused: 2 finished videos are waiting (overnight stops at 2) - py -m scripts.ops shelf --channel tapin
+  next in line: run 123  Messi's World Cup hat trick exposes Argentina's midfield dependency
+```
+
+Suite **5,595 -> 5,650**, forward and reversed. mypy **98**. Corpus **201 -> 210**.
+`roadmap-index`: open 311, done 877, highest #1158.
+
+Closed **#1148-#1152**. Filed **#1158**. Next: **#1153-#1158**.

@@ -53,35 +53,38 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-11 · **HEAD at write:** `007832d` + the waves 79-80 commit (`git log -1`) ·
+**Written:** 2026-10-13 · **HEAD at write:** `57a4e5f` + the waves 81-82 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
-**Read before editing:** `privacy_status` in the publish log is only as fresh as the last
-`ops sync-metrics` - ask `analytics.privacy_sync`, not the row, when it matters. A module
-started with `ops._run_module` gets `PYTHONIOENCODING`; a new entry point run by Task Scheduler
-needs `ensure_utf8_stdout()`. `OVERNIGHT_RENDERS=0` is set for the whole suite - a test of the
-render step sets its own limit and stubs `_render`. The header has eight parts now
-(`_hdr_week`, `_hdr_shelf`); tests that pin it patch both. mypy baseline **98**.
+**Read before editing:** the overnight task runs the working tree - keep it importable between
+edits; it ran waves 81-82 uncommitted and wrote runs 137-139. On Windows `sys.stdin.isatty()`
+is true for the NUL device: use `scripts.ops._has_console()` before any prompt in a batch.
+YouTube writes content types `shorts` / `videoOnDemand` - compare through
+`youtube_metrics._content_type`. A draft's finished-script check is `script_clean` on the run
+and in the draft record; `unattended_block_reason` reads it. mypy baseline **98**.
 
-**Cursor:** #1121 and #462 are still yours and untouched. Shared files I touched:
-`config/channels.json` (`overnight.renders: 2` on tapin, `parked: true` on moneywise - both the
-operator's calls), `config/channels.py` (two profile fields, `active_channel_ids`),
-`scripts/ops.py` (`worker-task`, `shelf`, `overnight-plan`, `_child_env`), `tests/__init__.py`
-(one env line), `.env.example`, `core/ui.py` (the channel picker skips a parked channel).
-`main.py`, `core/pipeline.py` and `desktop/` were not touched - `desktop/launch.py:57` still
-lists every channel, parked or not.
+**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. Shared files I touched:
+`core/content_engine.py` (two passes after `rewrite_claims`: `cut_unsupported`, `hold_stance`;
+`strip_label` on the title; `script_clean` in the package), `core/pipeline.py`, `core/ui.py`,
+`core/batch_generation.py`, `scripts/ops.py` (`morning`, `overnight-last`, `script-check`,
+`_has_console`, a flush in `_run_module`), `.env.example` (`CUT_UNSUPPORTED`).
 
 **Defects first:**
-- Waves 77-78 reported 32 public videos and a shelf of 7. Wrong: all 43 are public (#1128).
-  The operator found it. Docs and both pages are corrected.
-- Run 132's public upload has been pending since 10-10 9:30 pm; no worker task is installed.
-- Tonight's 5:00 am run will render two drafts (136, 123) and spend ElevenLabs characters.
-- #1136 runs 92 and 119 are public with a flagged claim never confirmed. #1139 only 2 of 31
-  waiting drafts are clean. The Reporting API is still off.
+- **The YouTube sign-in expired 2026-10-13** (`invalid_grant`). Nothing uploads or syncs until
+  the operator runs `py -m youtube.oauth_setup --channel tapin`. The stored numbers are of 10-11.
+- Overnight rendered two wrong videos on 10-13 (run 139: a win written before the game, its
+  title flagged; run 136: a preview two days late, last line "on tennessee"). Both pulled -
+  jobs 56 and 57 cancelled, renders retired. The causes are open: #1148-#1152.
+- Your `authenticity.payoff_closer` (#1032) wrote that last line. I will change it in #1149.
+- My first `ops ypp` pace line was wrong as labelled; fixed before this commit (#1144).
+- #1136 runs 92 and 119 are still public with a claim never confirmed.
 
-**Shipped:** waves 79-80 - #1128 #1126 #1129 #1130 #1131 #1132 #1133 #1134 #1135 #1127 and the
-first half of #1078. 68 of 71 new tests observed failing first. Suite 5531, mypy 98, corpus
-188. Highest #1139. **Still a ship stage** (roadmap.md): only live-run defects get built.
+**Shipped:** waves 81-82 - #1137 #1138 #1139 #1140-#1147. 58 of 64 new tests failed or errored
+on HEAD first. Suite 5595, mypy 98, corpus 201. Highest #1157. Still a ship stage.
+
+**In progress (waves 83-84, claimed 2026-10-13):** #1148-#1157, all from the 10-13 run. Shared
+files I will touch: `core/authenticity.py`, `core/claim_verifier.py`, `core/batch_generation.py`,
+`core/batch_review.py`, `scripts/ops.py`, `youtube/oauth.py`, `.env.example`.
 
 ## Slot — Cursor
 

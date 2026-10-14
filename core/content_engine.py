@@ -1319,6 +1319,15 @@ def _keep_to_idea(
         slip = _stance_slip(text, kind, idea)
         if slip:
             return False, slip
+        # #1142: the operator's own points, before the paid check - a point they typed that
+        # the script does not carry is the script not answering them.
+        from core.script_craft import points_used, thought_points
+
+        _used, lost = points_used(text, thought_points(idea))
+        if lost:
+            return False, "the creator's own points are missing: " + "; ".join(
+                p[:120] for p in lost[:3]
+            )
         payload = _call_content_llm(
             "You check whether a short video script answers the creator's idea as asked "
             "(not a different question, not a hot take on something else)"
@@ -2241,6 +2250,41 @@ def generate_content_package(
         disabled=not _claim_regen_enabled(),
     )
     verification = ver_box["v"]
+    # #1139 (operator: "cut it, tell me which"): what the rewrite could not support is cut.
+    from core.script_craft import cut_unsupported, cut_unsupported_enabled, hold_stance
+
+    cut_box: dict[str, list[str]] = {"claims": [], "stance": []}
+
+    def _run_cut(s: str):
+        ver = ver_box["v"]
+        if ver is None or not ver.unsupported or _mode == "unconfirmed":
+            return s
+        from core.claim_types import blocking_unsupported
+        from core.claim_verifier import verify_claims
+
+        blocking = blocking_unsupported(ver.to_dict())
+        new, cut = cut_unsupported(s, blocking, min_words=min_words)
+        if not cut:
+            return s
+        re_check = verify_claims(
+            new, corpus.factual_text, topic=topic, priority_facts=clean_key_facts,
+            weak_lines=brief_lines, line_tiers=line_tiers,
+        )  # fmt: skip
+        if re_check is None or len(blocking_unsupported(re_check.to_dict())) >= len(blocking):
+            return s
+        re_check.rewritten = ver.rewritten
+        re_check.pre_rewrite_unsupported = ver.pre_rewrite_unsupported or len(ver.unsupported)
+        re_check.pre_rewrite_total = ver.pre_rewrite_total or ver.total
+        re_check.script_pre_rewrite = ver.script_pre_rewrite
+        re_check.script_post_rewrite = ver.script_post_rewrite
+        ver_box["v"] = re_check
+        cut_box["claims"] = cut
+        return new, {"cut": len(cut)}
+
+    script = run_script_pass(
+        script_passes, "cut_unsupported", script, _run_cut, disabled=not cut_unsupported_enabled()
+    )
+    verification = ver_box["v"]
     script = run_script_pass(
         script_passes,
         "drop_contrast_frames",
@@ -2303,6 +2347,17 @@ def generate_content_package(
         lambda text, recent=_recent: rewrite_repeated(text, recent),
     )
 
+    # #1141: the stance holds on every sentence of the finished script - it was read on the
+    # first and last line only, and before five later passes had rewritten the script.
+    def _run_hold(s: str):
+        new, cut = hold_stance(
+            s, resolved_intent, creative_brief or seed_topic, min_words=min_words
+        )
+        cut_box["stance"] = cut
+        return (new, {"cut": len(cut)}) if cut else s
+
+    script = run_script_pass(script_passes, "hold_stance", script, _run_hold)
+
     # Odds rewrite can add words ("will win" -> "is favored to win"); trim after
     # that so a post-trim cap check cannot refuse a script we just made fit.
     script, trimmed_n = _trim_to_cap(
@@ -2320,7 +2375,7 @@ def generate_content_package(
         logger.debug("script craft skipped: %s", exc)
         rhythm_hits = []
 
-    from core.title_generator import generate_title
+    from core.title_generator import generate_title, strip_label
 
     title = generate_title(
         script=script,
@@ -2331,6 +2386,7 @@ def generate_content_package(
         brief=creative_brief,
         intent=resolved_intent,
     )
+    title = strip_label(title)  # #1138: "Contrarian: ..." - the angle's label is not a title
 
     # Candidate 321: the title is the last thing generated and was the only operator-
     # facing string no check ever read. Verified here (not at publish time) so the
@@ -2461,6 +2517,20 @@ def generate_content_package(
     if isinstance(verification_payload, dict):
         verification_payload["hedge_density"] = density
 
+    # #1143: the finished script against what the operator asked for, in one result.
+    from core.claim_types import blocking_unsupported as _blocking
+    from core.script_craft import script_check
+
+    script_clean = script_check(
+        script=script,
+        title=title,
+        idea=creative_brief or seed_topic,
+        thoughts=creative_brief or "",
+        intent=resolved_intent,
+        unsupported=_blocking(verification_payload),
+        cut=[*cut_box["claims"], *cut_box["stance"]],
+    )
+
     return {
         "title": title,
         "title_warnings": title_warnings,
@@ -2513,6 +2583,7 @@ def generate_content_package(
         "persona_lint": persona_hits,
         "cta_summary": cta_report,
         "read_aloud": read_aloud_box.get("report") or {},
+        "script_clean": script_clean,
         "sentence_rhythm": rhythm_hits,
         "script_passes": script_passes,
         "chapters_written": chapters_box,  # #1010

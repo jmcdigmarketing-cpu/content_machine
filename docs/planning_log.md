@@ -6739,3 +6739,110 @@ Bottom-band persistence (#739)
 Closed **#817 #818 #822 #739 #823**. Filed open **#824 #825 #826**. Next five:
 **#826 · #821 · #820 · #824 · #819**.
 
+
+## 2026-10-13 — waves 81-82 (Claude Code): a clean script, a morning command, honest monetization numbers
+
+**Prompt (2026-10-11, verbatim):** "why is morning revie not in script ops all? next 10, anything
+for me? make sure it can output a clean script matching what i have recently expressed. what
+next for the project and how can it catch up to others, and get closer to monetization".
+Then "continue with the last prompt please and thank you", then on 10-13 "next 10".
+
+**Answers taken before building:** clean means "my idea and stance rules", "nothing
+unsupported", "my typed thoughts, used closely"; a sentence still unsupported is "cut it, tell
+me which"; "keep the mix"; "a new ops morning". Cursor's five were left alone.
+
+### Why the morning review was not in `ops all`
+
+`ops all` is `all-checks` + `all-analytics` + `all-review` - the weekly batch
+(`scripts/ops.py` `BATCHES`). `batch-review` was in no batch and `daily-brief` did not call it.
+Nobody had built a morning.
+
+### Shipped
+
+Wave 81 - the script that comes out: **#1139** cut what cannot be backed (at most two
+sentences, length kept, verified again, listed and stored); **#1141** the stance on every
+sentence after the last pass; **#1142** typed thoughts as points, counted; **#1143** one stored
+check of the finished script, one review line, `ops script-check`; **#1138** no angle label in
+a title.
+
+Wave 82 - mornings and the numbers: **#1140** `ops morning` and `ops overnight-last`;
+**#1147** content types as YouTube writes them; **#1144** the path in `ops ypp`; **#1146**
+subscribers per video; **#1137** "not measured yet". **#1145** (lean toward UFC) not built -
+the operator kept the mix.
+
+### Findings
+
+- **`analytics/youtube_metrics.py`** - `LONG_FORM_TYPES` and the Shorts compare used
+  `SHORTS` / `VIDEO_ON_DEMAND`. The API answers `shorts` / `videoOnDemand`. Every row missed,
+  so `ops ypp` printed 0 Shorts views and 0 hours from the day #954 added it. Nothing failed.
+- **`scripts/ops.py` `cmd_batch_review`** - `ops morning` run through a pipe died with
+  `EOFError`. `sys.stdin.isatty()` is true for Windows' NUL device, which is what a scheduled
+  task has for stdin. `_real_console` asks `GetConsoleMode`. The same guard in
+  `cmd_review_week` (#944) had the same hole.
+- **`scripts/ops.py` `_run_module`** - a child's output printed above the "== batch: step"
+  line naming it, because the parent's buffer was not flushed before the child wrote.
+- **`core/ypp_readiness.path_lines` (self-inflicted, caught before commit)** - the first live
+  print said "+16.0 a week ... about 13 months" under "At the current pace (ads excluded)".
+  The channel's net was 64 in 28 days; `ops growth` counted 2 from the 43 videos; YouTube
+  counted 4,544 paid Shorts views and no campaign is entered. YouTube's subscriber total cannot
+  be split by traffic source, so the line now says the three numbers and both paces (13 months
+  if the other 62 keep coming; 36 years on the videos alone).
+- **The 10-13 overnight run** (this code, uncommitted, run by the scheduled task): run 139 was
+  titled and written as a Thunder win over Indiana before the game; the title check flagged it
+  and the flag never reached the draft record. Run 136 previewed a game two days after it was
+  played and its last line ended "on tennessee" (`core/authenticity.py:302`). Run 137's claim
+  check said 9 of 9 unsupported while the run's saved facts carry the score, the scorer and
+  the signings. Filed #1148-#1157. Runs 139 and 136 were pulled - upload jobs 56 and 57
+  cancelled, both renders retired (the operator's call).
+
+### Deliberately not done
+
+- **A niche lean** (#1145) - the operator kept the mix.
+- **The live drafts.** The command was stopped once on 10-11; the operator approved three on
+  10-13. They run after wave 83, so the proof is of the system as it will stand.
+- **A sync.** The sign-in expired on 10-13; the stored numbers are of 10-11.
+
+### Audit
+
+64 behavioural tests in two new modules (`tests/test_script_clean.py` 34,
+`tests/test_morning.py` 30). **58 of 64 failed or errored on a worktree at `57a4e5f`** with
+the editable finder removed (11 failures, 47 errors). The six that passed pin behaviour that
+must not change (a neutral script has no slips, a subject before a colon stays, numbers
+stored before the pace have no path). Thirteen corpus cases added, 201 held.
+
+The cut pass on recorded drafts, no model call: run 130 loses "The game caps you at three
+Legendary Pokemon per lineup." (201 words to 191); run 129 loses the sentence carrying the DMZ
+claim (229 to 206); run 122 one sentence (199 to 165). Runs 124-126 lose nothing - the claim's
+sentence is the hook or is not found, and the draft stays blocked.
+
+Every new function has a production caller: `script_check` and `cut_unsupported` in
+`content_engine.generate_content_package`; `check_run`, `recorded_lines`, `draft_lines` in
+`ops script-check`; `overnight_rendered_lines` in `ops overnight-last`; `path_lines` and
+`_video_subscribers` in `inspect_ypp`; `subscriber_line` in `growth.render`; `_has_console`
+in `cmd_batch_review` and `cmd_review_week`. `script_clean` is written by the engine and read
+by `unattended_block_reason`, the review screen and `ops script-check`.
+
+### Proof
+
+Suite **5,531 -> 5,595**, forward and reversed. mypy **98**, unchanged. ruff and format clean.
+`git status --short data/` empty. Corpus **188 -> 201**. `roadmap-index`: open 315, done 872,
+highest #1157.
+
+```
+YPP / membership checklist - tapin [NOT YET]
+  [FAIL] ypp_threshold: 69/1,000 subscribers - 10/4,000 long-form watch hours (12 months) or 1,797/10,000,000 Shorts views (90 days), ads excluded; 4,544 paid Shorts views not counted (as of 2026-10-11)
+  At the pace of the last 28 days:
+    Subscribers: +64 in the last 28 days, +16.0 a week. 931 to go is about 13 months at that pace.
+      But the 43 videos account for 2 of the 64, and YouTube counts 4,544 paid Shorts views in 90 days. If the other 62 came from ads, the pace lasts only while the ads run: on the videos alone (+0.5 a week) it is about 36 years. Enter the campaign to split it: py -m scripts.ops spend add --kind ads
+    Shorts path: 10,000,000 views inside 90 days is 777,778 a week. The channel does 147 a week (ads excluded), 0.02% of it.
+    Long-form path: 4,000 hours inside 12 months is 77 hours a week. The channel does 0.2 (ads excluded).
+
+Script check - tapin, newest 30 scripts: 13 clean
+   13  a claim the facts do not support
+    6  a sentence hard to say
+    1  a sentence knocks the stance
+    1  a label in the title
+```
+
+Closed **#1137 #1138 #1139 #1140-#1147**. Filed open **#1148-#1157** - Claude's next ten.
+Cursor's five unchanged: **#1121 - #462 - #404 - #388 - #409**.

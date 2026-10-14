@@ -44,6 +44,8 @@ class YppCheck:
 class YppReport:
     channel_id: str
     checks: list[YppCheck] = field(default_factory=list)
+    # #1144: how far each bar is at the pace of the last four weeks.
+    path: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -135,6 +137,112 @@ def threshold_from_numbers(numbers: dict[str, Any]) -> YppCheck:
     )
 
 
+def _span(weeks: float) -> str:
+    """A wait in the unit a person would say it in."""
+    if weeks < 9:
+        return f"about {max(1, round(weeks))} weeks"
+    if weeks < 104:
+        return f"about {round(weeks / 4.345)} months"
+    return f"about {round(weeks / 52.18)} years"
+
+
+def _bought_pace_line(
+    numbers: dict[str, Any], from_videos: dict[str, Any] | None, weeks: float, left: int
+) -> str:
+    """The second subscriber line, or "" when nothing says the pace was bought.
+
+    Live, 2026-10-13: the channel gained 64 in 28 days and the line said "about 13 months"
+    under "ads excluded". Its 43 videos accounted for 2 and YouTube counted 4,544 paid Shorts
+    views. YouTube's subscriber total cannot be split by where the viewer came from, so the
+    line says the three numbers it has and the pace the videos hold on their own.
+    """
+    net = numbers.get("subs_net_28d")
+    paid = int(numbers.get("shorts_paid_90d") or 0)
+    if not from_videos or paid <= 0 or not isinstance(net, (int, float)):
+        return ""
+    videos = int(from_videos.get("videos") or 0)
+    own = int(from_videos.get("total") or 0)
+    if not videos or own >= net:
+        return ""
+    alone = (
+        f"(+{own / weeks:.1f} a week) it is {_span(left / (own / weeks))}"
+        if own > 0
+        else "it is never reached"
+    )
+    return (
+        f"  But the {videos} videos account for {own} of the {int(net)}, and YouTube counts "
+        f"{paid:,} paid Shorts views in 90 days. If the other {int(net) - own} came from ads, "
+        f"the pace lasts only while the ads run: on the videos alone {alone}. Enter the "
+        "campaign to split it: py -m scripts.ops spend add --kind ads"
+    )
+
+
+def path_lines(numbers: dict[str, Any], *, from_videos: dict[str, Any] | None = None) -> list[str]:
+    """How far each bar is at the pace of the last four weeks (#1144), or [].
+
+    Operator, 2026-10-11: "how can it ... get closer to monetization". The check said NOT YET
+    and nothing said how far. The subscriber bar is a total, so it has a date at a pace. The
+    two view bars are rates - 10,000,000 Shorts views inside any 90 days, 4,000 hours inside
+    any 12 months - so each is said as a weekly rate against the channel's own. When the
+    honest answer is years, it says years.
+
+    `from_videos` is `analytics.growth`'s {"total", "videos"}: the subscribers the synced
+    videos brought, for the pace that does not depend on an ad budget.
+    """
+    if "subs_net_28d" not in numbers and "shorts_views_28d" not in numbers:
+        return []
+    days = int(numbers.get("pace_days") or 28)
+    weeks = days / 7.0
+    lines: list[str] = []
+    subs, net = numbers.get("subscribers"), numbers.get("subs_net_28d")
+    if isinstance(subs, int) and isinstance(net, (int, float)):
+        left = SUBSCRIBERS_TARGET - subs
+        per_week = float(net) / weeks
+        if left <= 0:
+            lines.append(f"Subscribers: the {SUBSCRIBERS_TARGET:,} is met ({subs:,}).")
+        elif per_week <= 0:
+            lines.append(
+                f"Subscribers: {int(net):+d} net in the last {days} days. {left:,} to go is "
+                "never reached at that pace."
+            )
+        else:
+            lines.append(
+                f"Subscribers: {int(net):+d} in the last {days} days, +{per_week:.1f} a week. "
+                f"{left:,} to go is {_span(left / per_week)} at that pace."
+            )
+            bought = _bought_pace_line(numbers, from_videos, weeks, left)
+            if bought:
+                lines.append(bought)
+    recent = numbers.get("shorts_views_28d")
+    if isinstance(recent, (int, float)):
+        need = SHORTS_VIEWS_TARGET / (90 / 7.0)
+        have = float(recent) / weeks
+        lines.append(
+            f"Shorts path: {SHORTS_VIEWS_TARGET:,} views inside 90 days is {need:,.0f} a week. "
+            f"The channel does {have:,.0f} a week (ads excluded), {have / need:.2%} of it."
+        )
+    hours = numbers.get("long_hours_365d")
+    if isinstance(hours, (int, float)):
+        lines.append(
+            f"Long-form path: {WATCH_HOURS_TARGET:,.0f} hours inside 12 months is "
+            f"{WATCH_HOURS_TARGET / 52:,.0f} hours a week. The channel does "
+            f"{float(hours) / 52:.1f} (ads excluded)."
+        )
+    return lines
+
+
+def _video_subscribers(channel_id: str) -> dict[str, Any] | None:
+    """What the synced videos brought, from `ops growth`'s own count (#1146)."""
+    try:
+        from analytics.growth import report
+
+        subs = report(channel_id).get("subscribers")
+    except Exception as exc:
+        logger.debug("ypp video subscribers skipped: %s", exc)
+        return None
+    return subs if isinstance(subs, dict) else None
+
+
 def _estimated_threshold(cid: str, metrics_rows: list[dict[str, Any]] | None) -> YppCheck:
     """From the synced videos when YouTube's numbers are not stored yet; labelled an estimate."""
     rows = metrics_rows
@@ -183,10 +291,14 @@ def inspect_ypp(
     cid = resolve_channel_id(channel_id)
     report = YppReport(channel_id=cid)
 
+    from_videos: dict[str, Any] | None = None
     if numbers is None and metrics_rows is None:
         numbers = load_ypp_numbers(cid)
+        # Read beside the stored numbers only: a caller passing its own numbers is a test.
+        from_videos = _video_subscribers(cid) if numbers else None
     if numbers:
         report.checks.append(threshold_from_numbers(numbers))
+        report.path = path_lines(numbers, from_videos=from_videos)
     else:
         report.checks.append(_estimated_threshold(cid, metrics_rows))
 
@@ -233,4 +345,7 @@ def render_report(report: YppReport) -> str:
     for c in report.checks:
         mark = "PASS" if c.ok else "FAIL"
         lines.append(f"  [{mark}] {c.name}: {c.detail}")
+    if report.path:
+        lines.append("  At the pace of the last 28 days:")
+        lines.extend(f"    {line}" for line in report.path)
     return "\n".join(lines)

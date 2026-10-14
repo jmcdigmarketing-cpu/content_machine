@@ -1868,6 +1868,15 @@ def display_fact_engine_report(features: dict, *, print_fn=emit) -> bool:
     except Exception as exc:
         logger.debug("title suggest line skipped: %s", exc)
 
+    try:
+        from core.script_craft import script_check_line
+
+        checked = script_check_line(features.get("script_clean"))  # #1143
+        if checked:
+            print_fn(f"\n  {checked}")
+    except Exception as exc:
+        logger.debug("script check line skipped: %s", exc)
+
     read_aloud = features.get("read_aloud") or {}
     if read_aloud.get("flagged"):
         # #1034: what the voice will stumble on, and how much of it was rewritten.

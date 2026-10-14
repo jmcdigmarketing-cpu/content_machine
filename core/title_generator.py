@@ -205,6 +205,27 @@ def _drop_frame(title: str, angle: str) -> str:
     return cut
 
 
+# #1138: an angle's label pasted in front of the title ("Contrarian: Spain's World Cup win ...",
+# run 116). Stripped where the title is written; `title_label` names it for the checks.
+_LABEL_RE = re.compile(
+    r"^(?:contrarian|hot take|take|explainer|prediction|recap|analysis|angle)\s*:\s*", re.I
+)
+
+
+def title_label(title: str) -> str:
+    found = _LABEL_RE.match((title or "").strip())
+    return found.group(0).strip() if found else ""
+
+
+def strip_label(title: str) -> str:
+    """The title without a leading angle label, its first letter capitalised."""
+    text = (title or "").strip()
+    rest = _LABEL_RE.sub("", text, count=1).strip()
+    if not rest or rest == text:
+        return text
+    return rest[0].upper() + rest[1:]
+
+
 def generate_title(
     *,
     script: str,

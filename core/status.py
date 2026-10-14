@@ -278,6 +278,15 @@ def _hdr_last(channel_id: str) -> str:
     row = max(rows, key=lambda r: str(getattr(r, "published_at", "") or ""))
     try:
         metrics = json.loads(row.metrics_json or "{}")
+        if not isinstance(metrics, dict):
+            return ""
+        if metrics.get("views") is None:
+            # #1137: the 28-day window has not been read for this video yet. "0 views" said
+            # it had been read and nobody came.
+            lifetime = metrics.get("lifetime_views")
+            if lifetime is None:
+                return "last video not measured yet"
+            return f"last video {max(0, int(lifetime)):,} views so far"
         views = int(metrics.get("views") or 0) - int(metrics.get("paid_views") or 0)
     except (TypeError, ValueError):
         return ""

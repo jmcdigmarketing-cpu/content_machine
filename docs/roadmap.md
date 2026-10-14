@@ -1,6 +1,6 @@
 # Content OS — roadmap
 
-> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-11
+> **Class:** plan · **Status:** living · **Reviewed:** 2026-10-13
 
 **What to do now.** The full inventory, the desktop programme, and the history live
 in their own files — this one stays short enough to read at the start of every
@@ -54,32 +54,41 @@ is left is below.
 
 ### The stage: ship (2026-10-11 to 10-25)
 
-**Operator, 2026-10-10:** videos going public, not new features. **Corrected 2026-10-11:** the
-numbers this stage was set on were read from a record that never asked YouTube again. All 43
-videos are public (the log said 32); the shelf is 2, not 7 (#1128). What was really in the way:
-a queued upload nothing was sending, and 69 drafts nobody rendered. Where each target stands:
+**Operator, 2026-10-10:** videos going public, not new features. All 43 videos are public
+(#1128). **As of 2026-10-13 nothing can go out:** the YouTube sign-in expired that evening and
+no upload task is installed. Where each target stands:
 
-1. **Uploads go out on their own** - `py -m scripts.ops worker-task --install` (one line, the
-   operator's; #1130). Until then the header says "1 upload overdue" (run 132).
-2. **Videos ready each morning** - overnight renders up to 2 clean drafts and queues them
-   unlisted (#1078, the operator's call); `ops overnight-plan` shows tonight's. Watch, then
-   `go-public`. Only 2 of 31 waiting drafts were clean - the yield is the limit (#1139).
-3. **The week against 3-5** - on the header ("week 4 of 3-5" on 10-11).
-4. **Click-through flowing** - `ops doctor`'s `reach` row prints the link (#1123). Still off.
-5. **The intro test on** - `INTRO_TEST=alternate` in `.env`; who stayed is on 39 of 43 videos.
+1. **Sign in, and stop it expiring weekly** - `py -m youtube.oauth_setup --channel tapin`, then
+   publish the Google consent screen (it is in Testing, which ends a sign-in after 7 days).
+2. **Uploads go out on their own** - `py -m scripts.ops worker-task --install` (one line, the
+   operator's; #1130). Run 132 has been queued since 10-10.
+3. **Videos ready each morning** - overnight renders up to 2 clean drafts, queued unlisted;
+   `py -m scripts.ops morning` is the morning (#1140). On 10-13 it rendered two and both were
+   wrong (a game written as won before it was played; a preview rendered two days late). Both
+   were pulled; the fixes are #1148-#1152.
+4. **The week against 3-5** - on the header.
+5. **Click-through flowing** - `ops doctor`'s `reach` row prints the link (#1123). Still off.
+6. **The intro test on** - `INTRO_TEST=alternate` in `.env`.
+
+**Where the channel stands** (`ops ypp`, numbers of 10-11): 69 of 1,000 subscribers; 1,797
+organic Shorts views in 90 days against 10,000,000 (147 a week against 777,778); 10 long-form
+hours against 4,000. The 43 videos brought 2 subscribers. The near goal is the first 1,000
+subscribers, not the Partner Programme.
 
 During the stage only a defect a live run exposes gets built. **MoneyWise is parked** (#1134).
 Operator calls open: runs 92 and 119 are public with a flagged claim never confirmed (#1136);
-the competitor shortlist (`ops competitors suggest`, then `add --name`).
+the competitor shortlist (`ops competitors suggest`, then `add --name`); the ad campaign
+YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --kind ads`.
 
 ### Recommended next five (non-app)
 
-**2026-10-11.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
-404 from every channel, #1125) · **#462** run id on each log line · **#404** breath and
-dead-air trim · **#388** backoff jitter · **#409** per-channel brand-safety lexicon.
-`roadmap-index` after waves 79-80: open 308, done 861, numbered open 256, highest #1139.
-Claude's waves closed #1126 #1127 and new #1128-#1135, built the first half of #1078, and
-filed #1136-#1139. The step-by-step: [operator_guide.md](operator_guide.md).
+**2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
+404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
+dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
+`roadmap-index` after waves 81-82: open 315, done 872, numbered open 263, highest #1157.
+Claude's waves closed #1137 #1138 #1139 and new #1140-#1147 (a finished-script check,
+`ops morning`, the monetization numbers that read 0), and filed #1148-#1157 from the 10-13
+overnight run - Claude's next ten. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

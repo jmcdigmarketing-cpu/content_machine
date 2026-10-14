@@ -200,3 +200,184 @@ def read_aloud_pass(script: str, call) -> tuple[str, dict[str, Any]]:
         out = out.replace(old, new, 1)
         report["rewritten"] += 1
     return out, report
+
+
+# ---- the finished script, checked as a whole (#1139 #1141 #1142 #1143) --------------------
+#
+# Operator, 2026-10-11: a clean script keeps "my idea and stance rules", has "nothing
+# unsupported", and uses "my typed thoughts, closely". Each of those was checked somewhere -
+# the stance on the first and last sentence only, the idea before five later passes rewrote
+# the script, the claims with one rewrite and then a block. These are the free, deterministic
+# halves: what to cut, what slipped, which of the operator's points are missing.
+
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+CUT_MAX = 2
+POINT_SHARE = 0.6
+
+
+def script_sentences(text: str) -> list[str]:
+    return [s.strip() for s in _SENTENCE_SPLIT.split(text or "") if s.strip()]
+
+
+def drop_sentences(script: str, doomed: list[str], *, min_words: int) -> tuple[str, list[str]]:
+    """Remove the given sentences and keep the paragraphs. The first sentence - the hook - is
+    never removed, and nothing is when the script would fall under `min_words`."""
+    sentences = script_sentences(script)
+    first = sentences[0] if sentences else ""
+    out, cut = script, []
+    for sentence in doomed:
+        if not sentence or sentence == first or sentence not in out:
+            continue
+        out = out.replace(sentence, "", 1)
+        cut.append(sentence)
+    if not cut:
+        return script, []
+    out = re.sub(r"[ \t]{2,}", " ", out)
+    out = re.sub(r"[ \t]+\n", "\n", out)
+    out = re.sub(r"\n[ \t]+", "\n", out)
+    out = re.sub(r"\n{3,}", "\n\n", out).strip()
+    if len(out.split()) < min_words:
+        return script, []
+    return out, cut
+
+
+def claim_sentences(script: str, claims: list[str]) -> list[str]:
+    """The sentences that carry each claim - the same word share `ops verify-claim` cuts by."""
+    from core.facts.claim_confirm import _SENTENCE_SHARE, _coverage
+
+    found: list[str] = []
+    for claim in claims:
+        for sentence in script_sentences(script):
+            if sentence not in found and _coverage(str(claim), sentence) >= _SENTENCE_SHARE:
+                found.append(sentence)
+    return found
+
+
+def cut_unsupported_enabled() -> bool:
+    return os.getenv("CUT_UNSUPPORTED", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def cut_unsupported(
+    script: str, claims: list[str], *, min_words: int, max_cut: int = CUT_MAX
+) -> tuple[str, list[str]]:
+    """#1139 (operator: "cut it, tell me which"): after the one rewrite, a sentence that still
+    carries a claim the facts do not support is removed.
+
+    13 of 31 waiting drafts were blocked by an unsupported claim, 9 of them by one sentence.
+    At most `max_cut` sentences go; more than that is a script to look at, not to trim. The
+    hook is never cut. Returns (script, the sentences cut).
+    """
+    doomed = claim_sentences(script, claims)
+    if not doomed or len(doomed) > max_cut:
+        return script, []
+    return drop_sentences(script, doomed, min_words=min_words)
+
+
+def stance_slips(script: str, intent: str, idea: str) -> list[tuple[str, str]]:
+    """#1141: every sentence that knocks the idea's stance, with why - not only the first and
+    last line, which is all that was read before."""
+    if not intent:
+        return []
+    from core.angle_intent import stance_flip
+
+    out: list[tuple[str, str]] = []
+    for sentence in script_sentences(script):
+        why = stance_flip(sentence, intent, idea=idea)
+        if why:
+            out.append((sentence, why))
+    return out
+
+
+def hold_stance(script: str, intent: str, idea: str, *, min_words: int) -> tuple[str, list[str]]:
+    """Cut the sentence(s) past the opener that knock the stance. More than `CUT_MAX` is left
+    for the idea check to report; the hook is the opening check's to fix."""
+    slips = [sentence for sentence, _why in stance_slips(script, intent, idea)]
+    if not slips or len(slips) > CUT_MAX:
+        return script, []
+    return drop_sentences(script, slips, min_words=min_words)
+
+
+def thought_points(thoughts: str) -> list[str]:
+    """#1142: the operator's own points - each line, sentence or ';' clause of what they
+    typed that has three or more content words. One point is a topic, not a list: []."""
+    from apis.topic_tokens import content_tokens
+    from core.experiment_levers import is_directive
+
+    if is_directive(thoughts or ""):  # an experiment's instruction, not the operator's words
+        return []
+    parts = re.split(r"[\n;]+|(?<=[.!?])\s+", thoughts or "")
+    points = [p.strip(" -*\t") for p in parts]
+    points = [p for p in points if len(content_tokens(p)) >= 3]
+    return points if len(points) >= 2 else []
+
+
+def points_used(script: str, points: list[str]) -> tuple[list[str], list[str]]:
+    """(used, missing): a point is used when `POINT_SHARE` of its content words are in the
+    script. Words come from `apis.topic_tokens`, as everywhere else."""
+    from apis.topic_tokens import content_tokens
+
+    have = set(content_tokens(script))
+    used: list[str] = []
+    missing: list[str] = []
+    for point in points:
+        want = set(content_tokens(point))
+        share = len(want & have) / len(want) if want else 1.0
+        (used if share >= POINT_SHARE else missing).append(point)
+    return used, missing
+
+
+def script_check(
+    *,
+    script: str,
+    title: str = "",
+    idea: str = "",
+    thoughts: str = "",
+    intent: str = "",
+    unsupported: list[str] | None = None,
+    cut: list[str] | None = None,
+) -> dict[str, Any]:
+    """#1143: the finished script against what the operator asked for, in one result.
+
+    {ok, why: [...], points: {total, used, missing}, cut: [...]}. `ok` is what an unattended
+    render requires.
+    """
+    from core.title_generator import title_label
+
+    why: list[str] = []
+    blocking = [str(c) for c in unsupported or []]
+    if blocking:
+        why.append(f"{len(blocking)} claim(s) the facts do not support")
+    slips = stance_slips(script, intent, idea or thoughts)
+    if slips:
+        why.append(f"a sentence knocks the stance ({slips[0][1]})")
+    points = thought_points(thoughts)
+    used, missing = points_used(script, points)
+    if missing:
+        why.append(f'{len(missing)} of your {len(points)} points missing: "{missing[0][:70]}"')
+    label = title_label(title)
+    if label:
+        why.append(f'the title starts with a label ("{label}")')
+    hard = len(hard_to_say(script))
+    if hard:
+        why.append(f"{hard} sentence(s) hard to say")
+    return {
+        "ok": not why,
+        "why": why,
+        "points": {"total": len(points), "used": len(used), "missing": missing[:3]},
+        "cut": [str(c) for c in cut or []],
+    }
+
+
+def script_check_line(check: dict[str, Any] | None) -> str:
+    """One line for the review screen, or "" when there is no check."""
+    if not isinstance(check, dict) or "ok" not in check:
+        return ""
+    parts = ["clean" if check.get("ok") else f"{len(check.get('why') or [])} to look at"]
+    parts.extend(str(w) for w in check.get("why") or [])
+    points = check.get("points") or {}
+    if points.get("total") and not points.get("missing"):
+        parts.append(f"your points: {points.get('used')} of {points.get('total')} used")
+    cut = check.get("cut") or []
+    if cut:
+        parts.append(f'cut {len(cut)} sentence(s): "{str(cut[0])[:70]}"')
+    return "Script check: " + " - ".join(parts)

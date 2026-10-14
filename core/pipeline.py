@@ -1325,6 +1325,8 @@ def run_pipeline(
     result.features["cta_summary"] = dict(content.get("cta_summary") or {})
     if content.get("read_aloud"):
         result.features["read_aloud"] = dict(content["read_aloud"])  # #1034
+    if content.get("script_clean"):
+        result.features["script_clean"] = dict(content["script_clean"])  # #1143
     result.features["sentence_rhythm"] = list(content.get("sentence_rhythm") or [])
     if content.get("claim_verification"):
         result.features["claim_verification"] = content["claim_verification"]

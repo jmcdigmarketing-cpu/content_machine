@@ -1,6 +1,6 @@
 # Operator guide — how a video gets made
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-10
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-13
 
 One pass through the machine, in the order it happens. Each step names the one command and
 links the doc that goes deeper. Run everything from `C:\dev\content_machine`; the PowerShell
@@ -117,14 +117,29 @@ are signed in to Windows. Without it they wait for `py -m scripts.ops worker`, a
 says "1 upload overdue" when one has.
 
 **Mornings.** Overnight (5:00 am) writes drafts and renders up to two clean ones, queued
-unlisted. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest
-wait; `py -m scripts.ops batch-review` is where you decide those.
+unlisted. One command does the morning:
+
+```powershell
+py -m scripts.ops morning --channel tapin
+```
+
+It syncs the numbers, says what overnight rendered and where each one is now, lists the shelf,
+then walks the waiting drafts for a yes or no each. (`ops all` is the weekly batch; the morning
+review is not in it.) Run from a scheduled task or a pipe it skips the draft review and says
+so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
+
+**Is the script clean?** Each draft's review screen carries one line: the stance held, your
+typed points used, no claim the facts do not back, nothing hard to say, no label in the title,
+and any sentence that was cut. `py -m scripts.ops script-check --channel tapin` counts it over
+the newest 30 scripts; `--idea "..."` writes one draft of your idea with no voice and prints its
+check.
 
 ## 7. Read the numbers
 
 ```powershell
 py -m scripts.ops sync-metrics --channel tapin
-py -m scripts.ops growth --channel tapin          # where the views go, the three biggest gaps
+py -m scripts.ops growth --channel tapin          # where the views go, which videos brought a subscriber
+py -m scripts.ops ypp --channel tapin             # the Partner Programme bars, and how far each is at this pace
 py -m scripts.ops weekly-report --channel tapin   # more of / less of / try next
 py -m scripts.ops predictions --channel tapin     # each run's prediction beside what it got
 ```

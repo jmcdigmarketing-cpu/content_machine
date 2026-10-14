@@ -2852,6 +2852,249 @@
         "falsy": true
       },
       "why": "a niche word must stand alone"
+    },
+    {
+      "id": "ypp-content-type-as-youtube-writes-it",
+      "item": 1147,
+      "source": "2026-10-11: ops ypp said 0 Shorts views and 0 hours; YouTube answers videoOnDemand",
+      "call": "analytics.youtube_metrics:_content_type",
+      "args": [
+        "videoOnDemand"
+      ],
+      "expect": {
+        "equals": "videoondemand"
+      },
+      "why": "the code compared with the documented spelling and every row missed"
+    },
+    {
+      "id": "ypp-content-type-documented-spelling",
+      "item": 1147,
+      "source": "sibling: the spelling YouTube's documentation uses",
+      "call": "analytics.youtube_metrics:_content_type",
+      "args": [
+        "VIDEO_ON_DEMAND"
+      ],
+      "expect": {
+        "equals": "videoondemand"
+      },
+      "why": "both spellings are one content type"
+    },
+    {
+      "id": "run116-label-off-the-title",
+      "item": 1138,
+      "source": "run 116: the draft was titled 'Contrarian: Spain's World Cup win ...'",
+      "call": "core.title_generator:strip_label",
+      "args": [
+        "Contrarian: Spain's World Cup win was never in doubt"
+      ],
+      "expect": {
+        "equals": "Spain's World Cup win was never in doubt"
+      },
+      "why": "an angle's label is not part of a title"
+    },
+    {
+      "id": "a-subject-before-a-colon-stays",
+      "item": 1138,
+      "source": "must keep",
+      "call": "core.title_generator:strip_label",
+      "args": [
+        "Chargers: what week 5 means"
+      ],
+      "expect": {
+        "equals": "Chargers: what week 5 means"
+      },
+      "why": "a subject before a colon is the title, not a label"
+    },
+    {
+      "id": "stance-knocked-mid-script",
+      "item": 1141,
+      "source": "2026-10-11: 2 of 45 stored scripts knock the idea's stance mid-script",
+      "call": "core.script_craft:stance_slips",
+      "args": [
+        "The Chargers have real reasons for hope this week. Herbert's line is finally healthy. Honestly the hope is fan denial and nothing more. The defense ranks fourth in pressure rate.",
+        "hope",
+        "Chargers Hopeium going into week 5"
+      ],
+      "select": 0,
+      "expect": {
+        "includes_all": [
+          "Honestly the hope is fan denial and nothing more."
+        ]
+      },
+      "why": "the stance was checked on the first and last sentence only"
+    },
+    {
+      "id": "a-hopeful-script-has-no-slips",
+      "item": 1141,
+      "source": "must keep",
+      "call": "core.script_craft:stance_slips",
+      "args": [
+        "Herbert's line is finally healthy. The defense ranks fourth in pressure rate.",
+        "hope",
+        "Chargers Hopeium going into week 5"
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a sentence that keeps the stance is never cut"
+    },
+    {
+      "id": "one-unsupported-sentence-is-cut",
+      "item": 1139,
+      "source": "2026-10-11: 9 of 13 blocked drafts were blocked by one sentence",
+      "call": "core.script_craft:cut_unsupported",
+      "args": [
+        "Topuria is the champion at two weights. He beat Volkanovski in 2024. He has 40 knockouts in the UFC. His next fight is not booked. The division waits on him now and that is the story this month for everyone.",
+        [
+          "Topuria has 40 knockouts in the UFC."
+        ]
+      ],
+      "kwargs": {
+        "min_words": 10
+      },
+      "select": 1,
+      "expect": {
+        "equals": [
+          "He has 40 knockouts in the UFC."
+        ]
+      },
+      "why": "operator: cut it, tell me which"
+    },
+    {
+      "id": "a-cut-never-shortens-below-the-minimum",
+      "item": 1139,
+      "source": "must keep",
+      "call": "core.script_craft:cut_unsupported",
+      "args": [
+        "Topuria is the champion. He has 40 knockouts in the UFC. He waits.",
+        [
+          "Topuria has 40 knockouts in the UFC."
+        ]
+      ],
+      "kwargs": {
+        "min_words": 200
+      },
+      "select": 1,
+      "expect": {
+        "equals": []
+      },
+      "why": "a script cut below its length is a different defect"
+    },
+    {
+      "id": "a-point-the-script-skipped-is-named",
+      "item": 1142,
+      "source": "operator, 2026-10-11: my typed thoughts, used closely",
+      "call": "core.script_craft:points_used",
+      "args": [
+        "The Chargers offensive line is finally healthy, and Herbert has time to throw. That changes the deep game.",
+        [
+          "the oline is finally healthy.",
+          "herbert has time to throw now.",
+          "the schedule gets easier after the bye"
+        ]
+      ],
+      "select": 1,
+      "expect": {
+        "equals": [
+          "the schedule gets easier after the bye"
+        ]
+      },
+      "why": "a typed point the script does not carry must be named, not lost"
+    },
+    {
+      "id": "a-labelled-title-is-not-a-clean-script",
+      "item": 1143,
+      "source": "run 116",
+      "call": "core.script_craft:script_check",
+      "kwargs": {
+        "script": "The Chargers offensive line is finally healthy. Herbert has time.",
+        "title": "Contrarian: The Chargers are fine",
+        "idea": "Chargers Hopeium going into week 5",
+        "intent": "hope"
+      },
+      "select": "ok",
+      "expect": {
+        "equals": false
+      },
+      "why": "overnight renders only a script the check calls clean"
+    },
+    {
+      "id": "a-bought-pace-is-not-the-channels-pace",
+      "item": 1144,
+      "source": "2026-10-13: ops ypp printed '+16.0 a week ... about 13 months' under 'ads excluded'",
+      "call": "core.ypp_readiness:path_lines",
+      "args": [
+        {
+          "as_of": "2026-10-11",
+          "shorts_views_90d": 1797,
+          "shorts_paid_90d": 4544,
+          "long_hours_365d": 10.1,
+          "subscribers": 69,
+          "shorts_views_28d": 589,
+          "subs_net_28d": 64,
+          "pace_days": 28
+        }
+      ],
+      "kwargs": {
+        "from_videos": {
+          "total": 2,
+          "videos": 43
+        }
+      },
+      "select": 1,
+      "expect": {
+        "contains": "about 36 years"
+      },
+      "why": "64 gained, 2 from the videos, 4,544 paid views: both paces are said"
+    },
+    {
+      "id": "the-shorts-bar-is-a-weekly-rate",
+      "item": 1144,
+      "source": "sibling: 10,000,000 in 90 days is a rate, not a total to save up for",
+      "call": "core.ypp_readiness:path_lines",
+      "args": [
+        {
+          "as_of": "2026-10-11",
+          "shorts_views_90d": 1797,
+          "shorts_paid_90d": 4544,
+          "long_hours_365d": 10.1,
+          "subscribers": 69,
+          "shorts_views_28d": 589,
+          "subs_net_28d": 64,
+          "pace_days": 28
+        }
+      ],
+      "select": 1,
+      "expect": {
+        "contains": "777,778 a week"
+      },
+      "why": "a rolling 90-day bar has no date at a pace; it has a rate"
+    },
+    {
+      "id": "which-videos-brought-a-subscriber",
+      "item": 1146,
+      "source": "2026-10-11: 43 videos, 2 subscribers",
+      "call": "analytics.growth:subscriber_line",
+      "args": [
+        {
+          "subscribers": {
+            "total": 2,
+            "videos_with": 2,
+            "videos": 43,
+            "top": [
+              {
+                "title": "The Hood Isn't a Tank",
+                "subs": 1,
+                "views": 127
+              }
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "contains": "2 from 43 videos"
+      },
+      "why": "subscribers lead the 1,000 and the report counted views only"
     }
   ]
 }

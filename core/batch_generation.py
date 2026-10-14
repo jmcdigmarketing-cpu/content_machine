@@ -278,6 +278,7 @@ def generate_draft(
         "hook_score": out.hook_score,
         "hook_verdict": out.hook_verdict,
         "authenticity_verdict": out.authenticity_verdict,
+        "script_clean": result.features.get("script_clean"),  # #1143
         "fact_count": fact_count,
         "ungrounded_entities": out.ungrounded,
         "tier_warnings": result.features.get("tier_warnings") or [],

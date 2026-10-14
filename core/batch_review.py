@@ -364,11 +364,6 @@ def review_drafts(
 # operator's step in the morning is to watch it and run `go-public`.
 
 
-_LENS_LABEL_RE = re.compile(
-    r"^(?:contrarian|hot take|take|explainer|prediction|recap|analysis|angle)\s*:\s*", re.I
-)
-
-
 def drafts_line(channel_id: str, *, root: str | None = None) -> str:
     """#1132: the drafts waiting, split into what overnight will take and what needs a person.
 
@@ -429,11 +424,17 @@ def unattended_block_reason(draft: PendingDraft) -> str:
         return "it names something the facts do not"
     if str(meta.get("hook_verdict") or "").strip().lower() == "weak":
         return "weak hook"
-    label = _LENS_LABEL_RE.match(draft.title.strip())
+    check = meta.get("script_clean")
+    if isinstance(check, dict) and check.get("ok") is False:
+        reasons = check.get("why") or ["not clean"]
+        return f"script check: {reasons[0]}"  # #1143
+    from core.title_generator import title_label
+
+    label = title_label(draft.title)
     if label:
         # Run 116's draft was titled "Contrarian: Spain's World Cup win ..." - the angle's
         # label, pasted in front of the title. A person fixes that; overnight must not ship it.
-        return f'its title starts with a label ("{label.group(0).strip()}")'
+        return f'its title starts with a label ("{label}")'
     age = draft_age_days(meta)
     if age is not None and age > freshness_window_days(meta):
         return f"{age:.0f} days old, past its window"
@@ -504,6 +505,89 @@ def render_unattended(
             logger.warning("overnight upload of run %s not queued: %s", draft.run_id, exc)
             out["failed"].append((draft.run_id, f"rendered, not queued: {str(exc)[:90]}"))
     return out
+
+
+OVERNIGHT_LOOKBACK_HOURS = 48.0
+
+
+def overnight_rendered(
+    channel_id: str,
+    *,
+    root: str | None = None,
+    hours: float = OVERNIGHT_LOOKBACK_HOURS,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """The drafts overnight rendered in the last `hours`, newest first (#1140).
+
+    `render_unattended` writes `review.by = "overnight"` on each one; nothing read it back, so
+    the morning after there was no line saying what had been made while nobody watched.
+    """
+    if root is None:
+        from core.batch_generation import _drafts_dir
+
+        root = _drafts_dir(channel_id)
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return []
+    moment = now or datetime.now()
+    out: list[dict[str, Any]] = []
+    for name in names:
+        try:
+            with open(os.path.join(root, name, "meta.json"), encoding="utf-8") as f:
+                meta = json.load(f)
+        except (OSError, ValueError):
+            continue
+        review = meta.get("review") if isinstance(meta, dict) else None
+        if not isinstance(review, dict) or review.get("by") != "overnight":
+            continue
+        if review.get("decision") != "rendered" or not meta.get("run_id"):
+            continue
+        try:
+            at = datetime.fromisoformat(str(review.get("at") or ""))
+        except ValueError:
+            continue
+        if (moment - at).total_seconds() > hours * 3600:
+            continue
+        title = str(meta.get("title") or meta.get("variant") or meta.get("topic") or "")
+        out.append({"run_id": int(meta["run_id"]), "title": title, "at": at})
+    return sorted(out, key=lambda row: row["at"], reverse=True)
+
+
+def overnight_rendered_lines(
+    channel_id: str,
+    *,
+    root: str | None = None,
+    hours: float = OVERNIGHT_LOOKBACK_HOURS,
+    now: datetime | None = None,
+) -> list[str]:
+    """`ops overnight-last`: what overnight rendered lately and where each one is now."""
+    rows = overnight_rendered(channel_id, root=root, hours=hours, now=now)
+    if not rows:
+        lines = [f"Overnight - {channel_id}: nothing rendered in the last {hours:.0f} hours."]
+        if unattended_limit(channel_id) <= 0:
+            lines.append("  Overnight is render-free for this channel (overnight.renders is 0).")
+        waiting = drafts_line(channel_id, root=root)
+        if waiting:
+            lines.append(f"  {waiting}")
+        return lines
+    shelf: dict[int, dict[str, Any]] = {}
+    try:
+        from core.stale_renders import shelf_rows
+
+        shelf = {int(row["run_id"]): row for row in shelf_rows(channel_id)}
+    except Exception as exc:
+        logger.debug("overnight-last: shelf unreadable: %s", exc)
+    lines = [f"Overnight - {channel_id}: rendered {len(rows)} in the last {hours:.0f} hours"]
+    for row in rows:
+        lines.append(f"  run {row['run_id']}  {row['title'][:70]}")
+        where = shelf.get(row["run_id"])
+        if where:
+            lines.append(f"      {where['state']}")
+            lines.append(f"      {where['command']}")
+        else:
+            lines.append("      not on the shelf: already public, or retired")
+    return lines
 
 
 def unattended_plan_lines(channel_id: str, *, root: str | None = None) -> list[str]:

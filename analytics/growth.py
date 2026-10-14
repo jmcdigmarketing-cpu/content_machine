@@ -78,6 +78,10 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             paid = int(float(metrics.get("paid_views") or 0))
         except (TypeError, ValueError):
             views, paid = 0, 0
+        try:
+            subs = int(float(metrics.get("subscribers_gained") or 0))
+        except (TypeError, ValueError):
+            subs = 0
         out.append({
             "title": video_title(row, fallback=str(row.youtube_video_id))[:60],
             "video_id": str(row.youtube_video_id),  # #997: which one to promote
@@ -87,6 +91,7 @@ def _rows(channel_id: str) -> list[dict[str, Any]]:
             "feed": figures.get("feed"),
             "views": views,
             "paid": paid,
+            "subs": subs,
             "run_id": getattr(row, "content_run_id", None),
         })  # fmt: skip
     return out
@@ -270,6 +275,13 @@ def report(channel_id: str) -> dict[str, Any]:
     out["per_week"] = round(len(recent) / (_WINDOW_DAYS / 7), 2)
     total = sum(r["views"] for r in rows)
     out["paid_share"] = round(sum(r["paid"] for r in rows) / total, 4) if total else 0.0
+    brought = sorted((r for r in rows if r["subs"] > 0), key=lambda r: -r["subs"])
+    out["subscribers"] = {  # #1146
+        "total": sum(r["subs"] for r in rows),
+        "videos_with": len(brought),
+        "videos": len(rows),
+        "top": [{"title": r["title"], "subs": r["subs"], "views": r["views"]} for r in brought[:3]],
+    }
     try:
         out["intro_split"] = intro_split(channel_id)  # #988
     except Exception as exc:
@@ -279,6 +291,26 @@ def report(channel_id: str) -> dict[str, Any]:
     except Exception as exc:
         logger.debug("shorts split skipped: %s", exc)
     return out
+
+
+def subscriber_line(rep: dict[str, Any]) -> str:
+    """#1146: which videos brought a subscriber. It is the number that leads the 1,000, and
+    the report counted views only. The count is each video's own synced 28-day window."""
+    subs = rep.get("subscribers") or {}
+    videos = int(subs.get("videos") or 0)
+    if not videos:
+        return ""
+    total = int(subs.get("total") or 0)
+    if total <= 0:
+        return f"subscribers: none of {videos} videos brought one in its synced window"
+    top = "; ".join(
+        f"{row['subs']} from {row['title']} ({int(row['views']):,} views)"
+        for row in subs.get("top") or []
+    )
+    return (
+        f"subscribers: {total} from {videos} videos - {int(subs.get('videos_with') or 0)} "
+        f"brought any: {top}"
+    )
 
 
 def levers(rep: dict[str, Any]) -> list[dict[str, Any]]:
@@ -372,6 +404,9 @@ def render(channel_id: str) -> str:
         lines.append(f"  from the Shorts feed: {rep['feed_share']:.0%} of organic views")
     lines.append(f"  posting: {rep['per_week']:.1f} a week over the last {_WINDOW_DAYS} days")
     lines.append(f"  paid: {rep['paid_share']:.0%} of all views")
+    told = subscriber_line(rep)
+    if told:
+        lines.append(f"  {told}")
     try:
         from analytics.promotions import status_line
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -201,8 +202,23 @@ def fetch_channel_daily_views(
 # #954: what YouTube calls paid traffic. Promotion views, watch time and subscribers do not
 # count toward YPP, and a boosted video is not a winner the recommenders should chase.
 PAID_SOURCES = frozenset({"ADVERTISING"})
-# creatorContentType values whose watch time counts toward YPP's 4,000 public hours.
-LONG_FORM_TYPES = frozenset({"VIDEO_ON_DEMAND", "LIVE_STREAM"})
+
+
+def _content_type(value: Any) -> str:
+    """One spelling for a `creatorContentType` (#1147).
+
+    YouTube's documentation writes `SHORTS` / `VIDEO_ON_DEMAND` / `LIVE_STREAM`; its responses
+    write `shorts` / `videoOnDemand` / `liveStream`. The code compared with the documented
+    spelling, so `ops ypp` said 0 Shorts views and 0 hours from the day it was added.
+    """
+    return re.sub(r"[^a-z]", "", str(value or "").lower())
+
+
+SHORTS_TYPE = "shorts"
+# The content types whose watch time counts toward YPP's 4,000 public hours.
+LONG_FORM_TYPES = frozenset({"videoondemand", "livestream"})
+# #1144: the window the pace is read over.
+PACE_DAYS = 28
 
 
 def _named_rows(resp: dict[str, Any]) -> list[dict[str, Any]]:
@@ -348,11 +364,42 @@ def _by_source_and_type(
     out: dict[tuple[str, str], float] = {}
     for row in _named_rows(resp or {}):
         try:
-            key = (str(row["insightTrafficSourceType"]), str(row["creatorContentType"]))
+            key = (
+                str(row["insightTrafficSourceType"]),
+                _content_type(row["creatorContentType"]),
+            )
             out[key] = out.get(key, 0.0) + float(row[metric])
         except (KeyError, TypeError, ValueError):
             continue
     return out
+
+
+def _subscriber_change(service: Any, start_date: str, end_date: str) -> int | None:
+    """Subscribers gained less subscribers lost over the range, or None (#1144)."""
+    try:
+        resp = (
+            service.reports()
+            .query(
+                ids="channel==MINE",
+                startDate=start_date,
+                endDate=end_date,
+                metrics="subscribersGained,subscribersLost",
+            )
+            .execute()
+        )
+    except Exception as exc:
+        logger.debug("subscriber change failed: %s", exc)
+        return None
+    names = {str(h.get("name") or "") for h in (resp or {}).get("columnHeaders") or []}
+    if "subscribersGained" not in names:
+        return None
+    net = 0.0
+    for row in _named_rows(resp or {}):
+        try:
+            net += float(row.get("subscribersGained") or 0) - float(row.get("subscribersLost") or 0)
+        except (TypeError, ValueError):
+            continue
+    return int(net)
 
 
 def _subscriber_count(channel_id: str) -> int | None:
@@ -400,7 +447,7 @@ def fetch_ypp_numbers(
         return None
     out: dict[str, Any] = {"as_of": end.isoformat()}
     if views is not None:
-        shorts = {k: v for k, v in views.items() if k[1] == "SHORTS"}
+        shorts = {k: v for k, v in views.items() if k[1] == SHORTS_TYPE}
         out["shorts_views_90d"] = int(sum(v for k, v in shorts.items() if k[0] not in PAID_SOURCES))
         out["shorts_paid_90d"] = int(sum(v for k, v in shorts.items() if k[0] in PAID_SOURCES))
     if minutes is not None:
@@ -409,6 +456,17 @@ def fetch_ypp_numbers(
         )
         out["long_hours_365d"] = round(organic / 60.0, 1)
     out["subscribers"] = _subscriber_count(cid)
+    # #1144: the last four weeks, so `ops ypp` can say how far each bar is at this pace.
+    pace_start = (end - timedelta(days=PACE_DAYS)).isoformat()
+    recent = _by_source_and_type(service, pace_start, end.isoformat(), "views")
+    if recent is not None:
+        out["shorts_views_28d"] = int(
+            sum(v for k, v in recent.items() if k[1] == SHORTS_TYPE and k[0] not in PAID_SOURCES)
+        )
+    net = _subscriber_change(service, pace_start, end.isoformat())
+    if net is not None:
+        out["subs_net_28d"] = net
+    out["pace_days"] = PACE_DAYS
     return out
 
 

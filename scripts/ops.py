@@ -69,7 +69,36 @@ def _child_env() -> dict[str, str]:
 def _run_module(module: str, *args: str) -> int:
     cmd = [sys.executable, "-m", module, *args]
     print(f"\n>> {' '.join(cmd)}")
+    # Under a pipe this process buffers what it prints and the child does not share the
+    # buffer: a batch step's output came out above the "== batch: step" line naming it.
+    sys.stdout.flush()
     return subprocess.call(cmd, env=_child_env())
+
+
+def _real_console() -> bool:
+    """Windows: False when stdin is the NUL device. `isatty()` is true for NUL, and NUL is
+    what a scheduled task or a detached shell has for stdin (#1140)."""
+    if sys.platform != "win32":  # the check mypy reads, so Linux CI skips the Windows calls
+        return True
+    try:
+        import ctypes
+        import msvcrt
+
+        mode = ctypes.c_ulong()
+        handle = msvcrt.get_osfhandle(sys.stdin.fileno())
+        return bool(
+            ctypes.windll.kernel32.GetConsoleMode(ctypes.c_void_p(handle), ctypes.byref(mode))
+        )
+    except Exception:
+        return True
+
+
+def _has_console() -> bool:
+    """True when a person can answer a prompt."""
+    try:
+        return bool(sys.stdin.isatty()) and _real_console()
+    except (AttributeError, ValueError):
+        return False
 
 
 @_register("migrate-layout", "Move root runtime files into data/ and config/secrets/")
@@ -725,7 +754,7 @@ def cmd_review_week(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
     from core.success.review import run_review
 
-    if getattr(args, "_batch", False) and not sys.stdin.isatty():
+    if getattr(args, "_batch", False) and not _has_console():
         # #944: a batch run from a scheduler has nobody to answer the ratings.
         print("review-week asks for your ratings - run py -m scripts.ops review-week in a console.")
         return 0
@@ -1555,9 +1584,28 @@ def cmd_studio_deleted(args: argparse.Namespace) -> int:
 
 @_register("batch-review", "Review waiting drafts in one pass; render the yeses; space them (#760)")
 def cmd_batch_review(args: argparse.Namespace) -> int:
-    from core.batch_review import review_drafts
+    from core.batch_review import drafts_line, review_drafts
 
-    summary = review_drafts(args.channel)
+    def no_console() -> int:
+        print(
+            "batch-review asks for a yes per draft - run "
+            f"py -m scripts.ops batch-review --channel {args.channel} in a console."
+        )
+        waiting = drafts_line(args.channel)
+        if waiting:
+            print(f"  {waiting}")
+        return 0
+
+    batch = bool(getattr(args, "_batch", False))
+    if batch and not _has_console():
+        # #1140: `ops morning` from a scheduled task or a pipe. The review asks a yes per draft.
+        return no_console()
+    try:
+        summary = review_drafts(args.channel)
+    except EOFError:
+        # Nobody answered. Every decision is written as it is made, so nothing is lost.
+        print("\n  The question got no answer - nothing more was decided.")
+        return no_console() if batch else 1
     print(
         f"\nReview: {len(summary.accepted)} accepted, {len(summary.rejected)} rejected, "
         f"{len(summary.later)} later; {len(summary.rendered)} rendered, "
@@ -1663,6 +1711,36 @@ def cmd_overnight_plan(args: argparse.Namespace) -> int:
     from core.batch_review import unattended_plan_lines
 
     print("\n".join(unattended_plan_lines(resolve_channel_id(getattr(args, "channel", None)))))
+    return 0
+
+
+@_register("overnight-last", "What overnight rendered lately and where each one is now (#1140)")
+def cmd_overnight_last(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core import batch_review
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    print("\n".join(batch_review.overnight_rendered_lines(channel)))
+    return 0
+
+
+@_register(
+    "script-check",
+    'Is the finished script clean? Recorded runs, or --topic "an idea" for a new draft (#1143)',
+)
+def cmd_script_check(args: argparse.Namespace) -> int:
+    """No argument: the check over the channel's recent recorded scripts. `--topic "idea"`:
+    write one draft for that idea (model calls, no voice, no render) and print its script
+    and its check."""
+    from config.channels import resolve_channel_id
+    from core.runs import script_report
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    idea = str(getattr(args, "topic", "") or "").strip()
+    if idea:
+        print("\n".join(script_report.draft_lines(channel, idea)))
+        return 0
+    print("\n".join(script_report.recorded_lines(channel, limit=int(args.limit or 30))))
     return 0
 
 
@@ -3017,8 +3095,15 @@ BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
         False,
     ),
     "daily-brief": (
-        "Morning one-shot: scoreboard, fresh data, coach ideas, quota health, queue",
+        "The day's numbers: scoreboard, fresh data, coach ideas, quota health, queue",
         ("scoreboard", "daily-sync", "coach", "health", "reliability", "status"),
+        False,
+    ),
+    # #1140 (operator, 2026-10-11: "why is morning review not in ops all?"): `all` is the
+    # weekly batch and the draft review was in none. The operator chose a batch of its own.
+    "morning": (
+        "The morning review: fresh numbers, what overnight rendered, the shelf, the drafts",
+        ("sync-metrics", "overnight-last", "shelf", "batch-review"),
         False,
     ),
     "all": (

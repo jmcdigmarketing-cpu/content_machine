@@ -7,6 +7,26 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-10 (Cursor): #990 #400 #380 #995 #374
+
+`ops log` prints the last lines of `data/logs/content_machine.log` and the warnings in
+them, and the Costs page shows the same line (#990). `ops log --limit 15` printed one
+warning: YouTube RSS returned 500. Three renders at 2.4 words per second for TapIn's
+voice make the spoken rate 2.4; fewer than three stay on 3.3 times the speech speed,
+and the length presets still use 3.3 (#400). A billed fact the script uses costs $0.02
+per usable fact; no overlap prints "$0.02 and no usable fact"; a free backend is $0.00
+(#380). The Apify total is unchanged. With no later run, a vault correction contradicts
+"Jon Jones beat Tom Aspinall at UFC 321" and an operator fact confirms the Silksong
+sales sentence (#995). A script is two calls by default: premium for the first two
+sentences, cheap for the rest. `SCRIPT_BODY_TIER=premium` is the old single call. An
+empty hook warns once. A hook response that already contains a script is the package
+(#374). This changes the script a healthy run writes. 16 of 17 new tests failed or
+errored first. The first full run was 5347 tests and failed the env lint:
+`VOICE_PACE_FILE` was not in `.env.example`. It is documented now. mypy 98.
+`roadmap-index`: open 310, done 841, numbered open 258, highest #1121.
+
+Next: #1121, #462, #404, #388, #409.
+
 ## Previous — 2026-10-10 (Claude Code): waves 75-76, the next ten
 
 Nine shipped, one blocked. A one-chapter video is no longer stored as all-angles (#1115). The

@@ -50,7 +50,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
 | `crosspost` | Buffer pack for TikTok + Instagram: [list \| done --run-id N] (#968) |
-| `daily-brief` | Morning one-shot: scoreboard, fresh data, coach ideas, quota health, queue |
+| `daily-brief` | The day's numbers: scoreboard, fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `dedupe-seed` | Duplicate seeded history from re-seeding (#927); --apply removes |
 | `demonetization` | estimatedRevenue cliff vs channel baseline (missing is unmeasured) |
@@ -99,10 +99,12 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `migrate-layout` | Move root runtime files into data/ and config/secrets/ |
 | `migrate-schema` | Apply incremental DDL on existing Postgres |
 | `moat-backup` | Plan pg_dump + vault + traces backup (secrets excluded; dry-run) |
+| `morning` | The morning review: fresh numbers, what overnight rendered, the shelf, the drafts |
 | `mutate-gates` | Mutation-test the publish/grounding gates; list untested mutants (#627) |
 | `negative-fact` | Record a walked-back claim so a later run cannot re-assert it (--topic franchise) |
 | `next` | One action to take now across gates, quota, and vault decay |
 | `overnight` | Overnight operator — best-bet drafts + grade + vault dossiers (Pillar 5) |
+| `overnight-last` | What overnight rendered lately and where each one is now (#1140) |
 | `overnight-plan` | What tonight's overnight would render, and why the rest wait (#1078) |
 | `package-audit` | Build the wheel and sdist; flag secrets, tokens or operator paths (#640) |
 | `packaging` | Shorts stayed / feed share, long-form impressions and CTR, per recent video (#951) |
@@ -145,6 +147,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `run-window` | Stage 2 Qt run window (requires pip install -e ".[app]") |
 | `schedule-drafts` | Nightly overnight drafts via Task Scheduler (--install / --remove) |
 | `scoreboard` | The goal's scoreboard: views so far, pace needed vs pace now (#934) |
+| `script-check` | Is the finished script clean? Recorded runs, or --topic "an idea" for a new draft (#1143) |
 | `secrets-doctor` | Keys present/missing/placeholder (never prints values) |
 | `seed` | Seed TapIn performance + publish history |
 | `selftest` | Run every safety gate against fixtures; show which are armed here (#630) |

@@ -125,6 +125,20 @@ def directive(lever: str, arm: str) -> str:
     return _LEVERS.get(lever, {}).get("arms", {}).get(arm, "")
 
 
+def is_directive(text: str) -> bool:
+    """True when `text` is one of the levers' own prompt directives (#1142). A batch draft
+    passes its experiment's directive where an interactive run passes the operator's typed
+    thoughts, and only the second is a list of the operator's points."""
+    wanted = " ".join(str(text or "").split())
+    if not wanted:
+        return False
+    return any(
+        " ".join(directive(lever, arm).split()) == wanted
+        for lever in levers()
+        for arm in arms(lever)
+    )
+
+
 def kind(lever: str) -> str:
     return _LEVERS.get(lever, {}).get("kind", "script")
 

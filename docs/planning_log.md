@@ -7027,3 +7027,92 @@ Suite **5,650 -> 5,689**, forward and reversed. mypy **98**. Corpus **210 -> 218
 
 Closed **#1153-#1158**. Claude has nothing claimed. Cursor's five unchanged:
 **#1121 - #462 - #404 - #388 - #409**. Still open and the operator's: **#1136**.
+
+## 2026-10-13 — wave 85 (Claude Code): the script your own idea gets
+
+**Prompt (verbatim):** "next 10", 40 minutes after waves 81-84. No overnight run had happened
+since, so the day's live output was read again. Answers taken before building: "The better
+model (Recommended)", "Cut within 15% (Recommended)", "Both (Recommended)" for the model
+calls, "Set aside automatically (Recommended)".
+
+### A correction first
+
+The report for wave 83 said three live drafts were written from the operator's own ideas. They
+were written from generated angles. `core/runs/script_report._own_idea_draft` passed
+`variant_index=0`; `chosen_variant` reads that as the first generated angle, and only `-1` as
+the operator's idea (`main.py:800`). Run 140's angle was "Herbert's deep-ball accuracy jumps
+to league-leading clip" - a claim no fact backed - and the script was built on it. Run 142's
+was `Factual read: "NBA Finals ...`. The verdicts I reported (one clean, two flagged) were of
+those scripts, not of what angle 1 writes.
+
+### Shipped
+
+1. **#1159** `ops script-check --idea` goes through `generate_draft(own_idea=True)`: the
+   idea's own wording, index -1, no experiment directive, and a draft `batch-review` can render.
+2. **#1160** a capital inside a name belongs to it; a sentence opener that is plainly a word
+   is not a name.
+3. **#1161** a `repair_hook` pass rebuilds a first sentence that carries an unbacked claim.
+4. **#1162** the cut may leave a script at 85% of its minimum.
+5. **#1163** `SCRIPT_BODY_TIER` defaults to `premium`.
+
+### Findings
+
+- **`core/content_engine.py:709`** - since #374 the script body went to the cheap tier. Runs
+  134-142: OpenRouter's free model wrote 6 bodies, a local `llama3.1:8b` wrote 3 (136, 137,
+  138). Run 136 is the one overnight rendered. Cost per run: $0.008-$0.015 before, $0.006-
+  $0.014 after. The saving was about a fifth of a cent.
+- **`core/facts/grounding.py:28` `_CAP`** allowed no capital inside a word, so `_PHRASE`
+  matched "Court Mc" and stopped, and reported the fragment as a name the facts lack. Drafts
+  107 and 134 waited for a person on "Court Mc" and "Vonta Smith".
+- **My first fix for sentence openers broke a frozen verdict.** Skipping every word that only
+  opens a sentence also skipped "LeBron was traded to the Lakers" -
+  `tests/test_grounding_corpus` caught it. The rule that shipped needs the word to be on
+  `topic_tokens.COMMON_CAPITALISED` or a gerund or participle followed by a function word. It
+  clears 13 of 35 stored false names; "Stalled drives", "Patience" and "Twelve" remain.
+- **Found on the corrected drafts (runs 143-145), in my own cut:** two flagged claims had no
+  sentence found for them. Run 145's hook was "Wemby's +200 for MVP" and the claim "Wemby has
+  +200 odds for MVP." - the possessive and an auxiliary put the word share at 0.4 against
+  0.75. Run 144 told its claim across two sentences ("Third, use Jake Browning. They signed
+  the former Bengals QB"). `script_craft.claim_sentences` now reads possessives off, accepts a
+  slightly lower share when every name and number is there, and takes two sentences in a row.
+- **`tests/test_next15`** failed on the first full run: the backlog named a command that is
+  built in the next wave. The open item no longer backticks it.
+- **mypy went to 105**: a `**dict` of keyword arguments to `run_pipeline`. Explicit arguments.
+
+### Deliberately not done
+
+- **A second set of live drafts** after the `claim_sentences` fix. Three were approved; the
+  fix is shown on the stored scripts instead, and the hook rebuild itself was not run live.
+- **Changing what `ops verify-claim --reject` cuts.** It shares `_coverage`; only the unattended
+  cut reads the new matcher.
+
+### Audit
+
+29 tests in `tests/test_own_idea_script.py`; two of mine in `tests/test_script_clean.py`
+rewritten to the new shape, one helper default in Cursor's `tests/test_hook_tier.py` changed
+so its tests of the split ask for it by name. **22 of 29 failed or errored on a worktree at
+`2623ee8`** (13 failures, 9 errors). Seven corpus cases, 225 held. Callers: `generate_draft(
+own_idea=True)` from `_own_idea_draft` from `ops script-check`; `hook_claims` and
+`_hook_variants(unbacked=)` from the `repair_hook` pass; `short_by` written by `script_check`,
+read by `script_check_line`; `own_idea` in the draft record, read by `batch_review._show`.
+
+### Proof
+
+Three live drafts of the same ideas, the operator's path this time (runs 143-145, no voice):
+
+```
+Chargers Hopeium going into week 5        angle 1: the idea, word for word    2 claims unbacked (4 on 10-13's generated angle); one stance-knocking sentence cut
+How the chargers can still make the ...   angle 1: the idea, word for word    1 claim unbacked (2)
+NBA finals and award predictions ...      angle 1: "NBA Finals & Award Predictions: 2027 Preseason Picks"   1 claim unbacked, in the first sentence
+```
+
+None came back clean. Each is one or two named sentences from clean. The matcher fixed after
+them, applied to the stored scripts with no model call: run 144's claim is now found across
+its two sentences and both would be cut (212 words to 191); run 145's is found in the first
+sentence, which the repair pass would rebuild; run 143's two cuts would leave it under 85% of
+its minimum and are still refused.
+
+Suite **5,689 -> 5,718**, forward and reversed. mypy **98**. Corpus **218 -> 225**.
+`roadmap-index`: open 310, done 888, highest filed #1168.
+
+Closed **#1159-#1163**. Next: **#1164-#1168**.

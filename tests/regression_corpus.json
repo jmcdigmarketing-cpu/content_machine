@@ -3357,6 +3357,122 @@
         "contains": "573 paid views on 1 of 43 videos"
       },
       "why": "one paid number, and what YouTube counts beyond it"
+    },
+    {
+      "id": "run107-a-capital-inside-a-name",
+      "item": 1160,
+      "source": "draft 107 waited for a person on 'Court Mc' (Court McGee)",
+      "call": "core.facts.grounding:extract_entities",
+      "args": [
+        "Court McGee defies retirement talk ahead of his fight at UFC 332."
+      ],
+      "expect": {
+        "includes_all": [
+          "Court McGee"
+        ],
+        "excludes_any": [
+          "Court Mc"
+        ]
+      },
+      "why": "a name stopped at its inner capital and the fragment was called ungrounded"
+    },
+    {
+      "id": "run134-devonta-smith-is-in-the-facts",
+      "item": 1160,
+      "source": "draft 134 waited on 'Vonta Smith'",
+      "call": "core.facts.grounding:find_ungrounded_entities",
+      "args": [
+        "DeVonta Smith was traded by the Eagles in the offseason.",
+        "The Eagles traded DeVonta Smith in the offseason."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "sibling of run 107: the same split, one capital further in"
+    },
+    {
+      "id": "run140-a-sentences-first-word-is-not-a-name",
+      "item": 1160,
+      "source": "run 140 (2026-10-13): 'Script names 1 specific(s) not in the facts: Losing'",
+      "call": "core.facts.grounding:find_ungrounded_entities",
+      "args": [
+        "Losing a starting tackle to injured reserve hurts in the playoffs.",
+        "The Chargers lost Rashawn Slater to injured reserve."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a gerund that opens a sentence is capitalised and names nothing"
+    },
+    {
+      "id": "a-name-that-opens-a-sentence-is-still-checked",
+      "item": 1160,
+      "source": "must keep: the frozen grounding verdict 'lebron-ungrounded'",
+      "call": "core.facts.grounding:find_ungrounded_entities",
+      "args": [
+        "LeBron was traded to the Lakers.",
+        "The Lakers made a trade in the offseason."
+      ],
+      "expect": {
+        "includes_all": [
+          "LeBron"
+        ]
+      },
+      "why": "the first version of this fix skipped every sentence opener and lost this"
+    },
+    {
+      "id": "run140-the-claim-sits-in-the-first-sentence",
+      "item": 1161,
+      "source": "run 140 (2026-10-13): the hook was the unbacked claim; the cut never touches the hook",
+      "call": "core.script_craft:hook_claims",
+      "args": [
+        "Herbert leads the league in deep-ball accuracy, and the Chargers are 0-5. That contradiction is the entire Hopeium case. Adding a veteran QB is insurance that keeps Herbert fresh for the throws that matter.",
+        [
+          "Herbert leads the league in deep-ball accuracy.",
+          "The Chargers are adding a veteran QB."
+        ]
+      ],
+      "expect": {
+        "equals": [
+          "Herbert leads the league in deep-ball accuracy."
+        ]
+      },
+      "why": "a claim in the first sentence has to be found before the hook can be rebuilt"
+    },
+    {
+      "id": "run141-a-cut-a-little-under-the-minimum",
+      "item": 1162,
+      "source": "run 141 (2026-10-13): one cut left 148 of 150 words and was refused",
+      "call": "core.script_craft:cut_unsupported",
+      "args": [
+        "The Chargers are winless this year. The line held up well again on Sunday afternoon. He has 40 knockouts in the UFC. Slater is out.",
+        [
+          "Topuria has 40 knockouts in the UFC."
+        ]
+      ],
+      "kwargs": {
+        "min_words": 20
+      },
+      "select": 1,
+      "expect": {
+        "equals": [
+          "He has 40 knockouts in the UFC."
+        ]
+      },
+      "why": "operator: cut within 15% - a clean script two words short beats a flagged one"
+    },
+    {
+      "id": "the-body-is-written-by-the-better-model",
+      "item": 1163,
+      "source": "runs 134-142: a free small model wrote every script body",
+      "call": "core.content_engine:_script_body_tier",
+      "env": {
+        "SCRIPT_BODY_TIER": ""
+      },
+      "expect": {
+        "equals": "premium"
+      },
+      "why": "operator, 2026-10-13: the better model writes the whole script"
     }
   ]
 }

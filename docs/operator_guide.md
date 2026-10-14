@@ -142,8 +142,9 @@ result, it waits for you. So does a draft whose title the title check flagged.
 **Is the script clean?** Each draft's review screen carries one line: the stance held, your
 typed points used, no claim the facts do not back, nothing hard to say, no label in the title,
 and any sentence that was cut. `py -m scripts.ops script-check --channel tapin` counts it over
-the newest 30 scripts; `--idea "..."` writes one draft of your idea with no voice and prints its
-check.
+the newest 30 scripts; `--idea "..."` writes one draft of your idea - as angle 1, your idea
+itself, not a generated angle - with no voice, prints its check, and leaves it waiting in
+`batch-review` for a yes.
 
 ## 7. Read the numbers
 

@@ -235,6 +235,8 @@ def _show(draft: PendingDraft, index: int, total: int, print_fn: Callable[..., A
     made = f"  made {age:.0f}d ago" if age is not None else ""
     print_fn(f"\n  [{index}/{total}] {draft.title}  (run {draft.run_id}){made}")
     print_fn(f"    angle: {draft.topic}")
+    if meta.get("own_idea"):  # #1159
+        print_fn("    your own idea, written as angle 1")
     hook = meta.get("hook_score")
     print_fn(
         f"    hook {hook if hook is not None else 'n/a'} ({meta.get('hook_verdict') or 'n/a'})"

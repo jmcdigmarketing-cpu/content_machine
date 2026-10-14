@@ -53,39 +53,42 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-13 · **HEAD at write:** `ed6213f` + the wave 84 commit (`git log -1`) ·
+**Written:** 2026-10-13 · **HEAD at write:** `2623ee8` + the wave 85 commit (`git log -1`) ·
 **Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
-**Read before editing:** the overnight task runs the working tree - keep it importable between
-edits. **Never patch a `.py` file through a shell heredoc**: it turns `\b` into a backspace
-and `\1` into a control character without a word. It did it to me twice today and to
-`core/correction_dossier.py` in d1776a0 (a pattern that never matched for weeks).
-`tests/test_sign_in_and_numbers.MarkupTests` fails on any source file holding one. The claim
-check is not shown the research brief. `OVERNIGHT_SHELF_MAX` is 0 for the suite.
-`youtube.oauth.signed_out()` is always False where live YouTube calls are forbidden (the
-suite) - patch `core.job_queue._signed_out` / `core.stale_renders._signed_out`. mypy **98**.
+**Read before editing:** the overnight task runs the working tree - keep it importable.
+Never patch a `.py` file through a shell heredoc (it eats backslashes; `MarkupTests` fails on
+a control character). `generate_draft(own_idea=True)` is the operator's angle 1: index -1,
+`idea_angle`, no experiment directive. A flagged claim is matched to its sentence by
+`script_craft.claim_sentences` (possessives off; two sentences in a row count) - not by
+`claim_confirm._coverage` alone. `OVERNIGHT_SHELF_MAX` is 0 for the suite. mypy **98**.
 
-**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. I changed your
-`authenticity.payoff_closer` (#1032) in wave 83 - it reports and no longer edits the script.
-Shared files this wave: `core/content_engine.py` (one pass after `hold_stance`:
-`drop_repeats`), `apis/topic_variants.py` (`_is_lens_name` in `_clean_angle_lines`),
-`core/source_diversity.py` (`urls_from_text` returns pages only), `youtube/oauth.py`
-(`signed_out`; the reminder starts on day 5), `core/job_queue.py`, `core/stale_renders.py`,
-`core/overnight.py`, `analytics/growth.py`, `.env.example`.
+**Cursor - two of yours changed by the operator's call:**
+- **`SCRIPT_BODY_TIER` defaults to `premium` again** (#1163, decisions_2026-10.md §48). #374's
+  split is `SCRIPT_BODY_TIER=cheap`. In `tests/test_hook_tier.py` the helper's default is now
+  `"cheap"`, so your tests of the split ask for it by name; nothing else there changed.
+- `authenticity.payoff_closer` (#1032) reports and no longer edits the script (wave 83).
+#1121 #462 #404 #388 #409 are still yours and untouched. Other shared files this wave:
+`core/content_engine.py` (a `repair_hook` pass after `cut_unsupported`; `_hook_variants` takes
+`unbacked=`), `core/facts/grounding.py` (`_CAP`, sentence openers), `apis/topic_tokens.py`
+(four words on `COMMON_CAPITALISED`), `core/batch_generation.py`, `core/batch_review.py`.
 
 **Defects first:**
-- **The YouTube sign-in expired 2026-10-13.** Nothing uploads or syncs until the operator runs
-  `py -m youtube.oauth_setup --channel tapin`. Stored numbers are of 10-11.
-- My first repeat rule flagged 8 sentences on 34 scripts and 5 were not repeats. It was
-  measured before it could cut anything; the rule that shipped flags 2.
-- My first paid line said the rest ran "on a video this log does not have". Not known - the
-  daily paid rows start when a video was first synced. It says that now.
-- #1154 was filed as missing and mostly existed (#974). #1136 is still open.
+- **My wave 83 proof was wrong**: the three "own idea" drafts were written from generated
+  angles (`variant_index=0`). Fixed and re-run as runs 143-145; none came back clean (2, 1, 1
+  unbacked claims).
+- My first sentence-opener rule skipped "LeBron was traded" and broke a frozen grounding
+  verdict. Narrowed before commit.
+- **The YouTube sign-in expired 2026-10-13.** Nothing uploads or syncs until the operator signs
+  in. #1136 is still open.
 
-**Shipped:** wave 84 - #1153-#1158. 36 of 39 new tests failed or errored on HEAD first. Suite
-5689, mypy 98, corpus 218. Highest filed #1158; highest open #1136.
+**Shipped:** wave 85 - #1159-#1163. 22 of 29 new tests failed or errored on HEAD first. Suite
+5718, mypy 98, corpus 225. Highest filed #1168.
 
-**In progress:** nothing claimed.
+**In progress (wave 86, claimed 2026-10-13):** #1164-#1168 - a recheck of waiting drafts, the
+sign-in said once, a pulled run called pulled, when overnight ran, old drafts set aside. Shared
+files: `scripts/ops.py`, `youtube/oauth.py`, `core/batch_review.py`, `core/overnight.py`,
+`core/status.py`, `core/nightly_task.py`.
 
 ## Slot — Cursor
 

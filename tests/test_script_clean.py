@@ -400,29 +400,31 @@ class ScriptReportTests(unittest.TestCase):
         self.assertIn("run 6:", "\n".join(lines))  # the newest fault is named first
 
     def test_a_new_draft_prints_its_script_and_its_check(self):
-        from types import SimpleNamespace
-
+        from core.batch_generation import DraftOutcome
         from core.runs import script_report
 
-        result = SimpleNamespace(
-            script=SCRIPT,
+        # #1159: the command now writes a real draft; it reads the draft's outcome.
+        result = DraftOutcome(
+            topic="Chargers hope in week five",
+            ok=True,
             title="The Chargers' schedule turns",
             run_id=140,
-            features={"script_clean": {"ok": True, "why": [], "points": {}, "cut": []}},
+            script=SCRIPT,
+            script_clean={"ok": True, "why": [], "points": {}, "cut": []},
         )
         with patch.object(script_report, "_own_idea_draft", return_value=result):
             text = "\n".join(script_report.draft_lines("tapin", "Chargers hope in week five"))
         self.assertIn("Idea:  Chargers hope in week five", text)
         self.assertIn("Their next three opponents are a combined 3-9.", text)
         self.assertIn("Script check: clean", text)
-        self.assertIn("run 140, no render", text)
+        self.assertIn("run 140, no voice, no render", text)
 
     def test_no_draft_says_why(self):
         from core.runs import script_report
 
         with patch.object(script_report, "_own_idea_draft", return_value=None):
             lines = script_report.draft_lines("tapin", "an idea")
-        self.assertIn("no angles came back", lines[0])
+        self.assertIn("the pipeline wrote no script", lines[0])
         with patch.object(script_report, "_own_idea_draft", side_effect=RuntimeError("no model")):
             lines = script_report.draft_lines("tapin", "an idea")
         self.assertIn("RuntimeError: no model", lines[0])

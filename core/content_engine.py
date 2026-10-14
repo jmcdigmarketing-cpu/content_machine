@@ -705,9 +705,15 @@ def _two_sentences(text: str) -> str:
 
 
 def _script_body_tier() -> str:
-    """#374. ``premium`` is one call for the whole script. Anything else is cheap."""
-    tier = os.getenv("SCRIPT_BODY_TIER", "cheap").strip().lower() or "cheap"
-    return tier if tier in ("cheap", "extract", "premium") else "cheap"
+    """``premium`` (the default) is one call for the whole script; ``cheap`` or ``extract``
+    is #374's split - a premium hook and a cheaper body.
+
+    #1163 (operator, 2026-10-13: "the better model"): #374 had made cheap the default. From
+    run 134 a free model wrote every body - a local 8B one on runs 136-138, 136 being the one
+    rendered - and a run cost about a cent before and after.
+    """
+    tier = os.getenv("SCRIPT_BODY_TIER", "premium").strip().lower() or "premium"
+    return tier if tier in ("cheap", "extract", "premium") else "premium"
 
 
 def _script_package(
@@ -913,6 +919,7 @@ def _hook_variants(
     grounding_text: str = "",
     intent: str = "",
     idea: str = "",
+    unbacked: list[str] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     """
     Opt-in (HOOK_REGEN_ENABLED=true): ask for `HOOK_VARIANTS` (#987, default 3) new first
@@ -936,6 +943,8 @@ def _hook_variants(
         return script, extra
     recent = _recent_openers(channel_id) if channel_id else []
     problems = _hook_problems(current.hook, grounding_text, recent_openers=recent)
+    # #1161: what the claim check said the first sentence states and the facts do not.
+    problems = [*problems, *(f"it states what the facts do not: {c}" for c in unbacked or [])]
     if problems:
         extra["problems"] = problems
     guidance: dict[str, Any] = {}
@@ -2285,6 +2294,49 @@ def generate_content_package(
         script_passes, "cut_unsupported", script, _run_cut, disabled=not cut_unsupported_enabled()
     )
     verification = ver_box["v"]
+
+    # #1161: the cut never touches the first sentence, so a claim there stayed. The hook is
+    # rebuilt once from the facts and kept only when the check then finds fewer.
+    def _run_hook_repair(s: str):
+        ver = ver_box["v"]
+        if ver is None or _mode == "unconfirmed":
+            return s
+        from core.claim_types import blocking_unsupported
+        from core.claim_verifier import verify_claims
+        from core.script_craft import hook_claims
+
+        blocking = blocking_unsupported(ver.to_dict())
+        in_hook = hook_claims(s, blocking)
+        if not in_hook:
+            return s
+        new, _tried = _hook_variants(
+            s,
+            channel_id=channel_id,
+            grounding_text=grounding_text,
+            intent=resolved_intent,
+            idea=creative_brief or seed_topic or topic,
+            unbacked=in_hook,
+        )
+        if new == s:
+            return s, {"hook_claims": len(in_hook)}
+        re_check = verify_claims(
+            new, corpus.factual_text, topic=topic, priority_facts=clean_key_facts,
+            weak_lines=brief_lines, line_tiers=line_tiers,
+        )  # fmt: skip
+        if re_check is None or len(blocking_unsupported(re_check.to_dict())) >= len(blocking):
+            return s, {"hook_claims": len(in_hook)}
+        re_check.rewritten = ver.rewritten
+        re_check.pre_rewrite_unsupported = ver.pre_rewrite_unsupported or len(ver.unsupported)
+        re_check.pre_rewrite_total = ver.pre_rewrite_total or ver.total
+        re_check.script_pre_rewrite = ver.script_pre_rewrite
+        re_check.script_post_rewrite = ver.script_post_rewrite
+        ver_box["v"] = re_check
+        return new, {"hook_claims": len(in_hook), "repaired": True}
+
+    script = run_script_pass(
+        script_passes, "repair_hook", script, _run_hook_repair, disabled=not hook_regen_enabled()
+    )
+    verification = ver_box["v"]
     script = run_script_pass(
         script_passes,
         "drop_contrast_frames",
@@ -2539,6 +2591,8 @@ def generate_content_package(
         intent=resolved_intent,
         unsupported=_blocking(verification_payload),
         cut=[*cut_box["claims"], *cut_box["stance"], *cut_box["repeats"]],
+        # #1162: only a cut of an unbacked sentence may leave a script under its minimum.
+        short_by=max(0, min_words - count_spoken_words(script)) if cut_box["claims"] else 0,
     )
 
     return {

@@ -180,6 +180,8 @@ COMMON_CAPITALISED = (
             "long", "term", "short", "outlook",
             # #1104: "Lose the next one" is a verb, not a name.
             "lose", "lost", "win", "wins",
+            # #1160: sentence openers the grounding check reported as names (runs 93, 99).
+            "expect", "guess", "sounds", "tweaks",
         }
     )
 )  # fmt: skip

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+from itertools import pairwise
 from typing import Any
 
 _SENTENCE = re.compile(r"[^.!?]+[.!?]+")
@@ -212,6 +213,8 @@ def read_aloud_pass(script: str, call) -> tuple[str, dict[str, Any]]:
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 CUT_MAX = 2
+# #1162: a cut of an unbacked sentence may leave the script this share of its minimum.
+CUT_FLOOR_SHARE = 0.85
 POINT_SHARE = 0.6
 
 
@@ -241,15 +244,44 @@ def drop_sentences(script: str, doomed: list[str], *, min_words: int) -> tuple[s
     return out, cut
 
 
-def claim_sentences(script: str, claims: list[str]) -> list[str]:
-    """The sentences that carry each claim - the same word share `ops verify-claim` cuts by."""
+_POSSESSIVE_RE = re.compile(r"['’]s\b")
+
+
+def _carries_claim(claim: str, text: str) -> bool:
+    """True when `text` says `claim`: the share of the claim's words `ops verify-claim` cuts
+    by, read with possessives off - or, a little under that share, every name and number of
+    the claim. Run 145: "Wemby has +200 odds for MVP." was the first sentence, "Wemby's +200
+    for MVP", and was not found; so it was neither cut nor repaired."""
+    from apis.topic_tokens import content_tokens
     from core.facts.claim_confirm import _SENTENCE_SHARE, _coverage
 
+    if _coverage(claim, text) >= _SENTENCE_SHARE:
+        return True
+    plain = _POSSESSIVE_RE.sub("", claim)
+    wanted = set(content_tokens(plain, min_len=3))
+    have = set(content_tokens(_POSSESSIVE_RE.sub("", text), min_len=3))
+    if not wanted:
+        return False
+    share = len(wanted & have) / len(wanted)
+    if share >= _SENTENCE_SHARE:
+        return True
+    named = _specifics(plain, wanted)
+    return share >= 0.6 and bool(named) and named <= have
+
+
+def claim_sentences(script: str, claims: list[str]) -> list[str]:
+    """The sentences that carry each claim. A claim told across two sentences in a row takes
+    both (run 144: "Third, use Jake Browning. They signed the former Bengals QB")."""
+    sentences = script_sentences(script)
     found: list[str] = []
     for claim in claims:
-        for sentence in script_sentences(script):
-            if sentence not in found and _coverage(str(claim), sentence) >= _SENTENCE_SHARE:
-                found.append(sentence)
+        hits = [s for s in sentences if _carries_claim(str(claim), s)]
+        if not hits:
+            for first, second in pairwise(sentences):
+                if _carries_claim(str(claim), f"{first} {second}"):
+                    hits = [first, second]
+                    break
+        found.extend(s for s in hits if s not in found)
     return found
 
 
@@ -270,7 +302,20 @@ def cut_unsupported(
     doomed = claim_sentences(script, claims)
     if not doomed or len(doomed) > max_cut:
         return script, []
-    return drop_sentences(script, doomed, min_words=min_words)
+    # #1162 (operator, 2026-10-13: "cut within 15%"): run 141's one cut left 148 words against
+    # a 150 minimum and was refused, so a script with an unbacked sentence waited instead.
+    return drop_sentences(script, doomed, min_words=int(min_words * CUT_FLOOR_SHARE))
+
+
+def hook_claims(script: str, claims: list[str]) -> list[str]:
+    """The claims that sit in the script's first sentence (#1161). The cut never touches the
+    hook, so a claim there was never repaired: 8 of the newest 40 runs carried one."""
+    sentences = script_sentences(script)
+    if not sentences:
+        return []
+    return [
+        str(claim) for claim in claims or [] if sentences[0] in claim_sentences(script, [claim])
+    ]
 
 
 def stance_slips(script: str, intent: str, idea: str) -> list[tuple[str, str]]:
@@ -401,6 +446,7 @@ def script_check(
     intent: str = "",
     unsupported: list[str] | None = None,
     cut: list[str] | None = None,
+    short_by: int = 0,
 ) -> dict[str, Any]:
     """#1143: the finished script against what the operator asked for, in one result.
 
@@ -429,12 +475,15 @@ def script_check(
     twice = len(said_twice(script))
     if twice:
         why.append(f"{twice} thing{'s' if twice > 1 else ''} said twice")  # #1155
-    return {
+    check: dict[str, Any] = {
         "ok": not why,
         "why": why,
         "points": {"total": len(points), "used": len(used), "missing": missing[:3]},
         "cut": [str(c) for c in cut or []],
     }
+    if short_by > 0:
+        check["short_by"] = int(short_by)  # #1162: a cut left it under its minimum
+    return check
 
 
 def script_check_line(check: dict[str, Any] | None) -> str:
@@ -449,4 +498,7 @@ def script_check_line(check: dict[str, Any] | None) -> str:
     cut = check.get("cut") or []
     if cut:
         parts.append(f'cut {len(cut)} sentence(s): "{str(cut[0])[:70]}"')
+    short = int(check.get("short_by") or 0)
+    if short:
+        parts.append(f"{short} words under its minimum after the cut")
     return "Script check: " + " - ".join(parts)

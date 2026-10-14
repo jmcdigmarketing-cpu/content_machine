@@ -7,6 +7,28 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-11 (Claude Code): waves 79-80, the record and the last mile
+
+**The numbers in the entry below were wrong.** All 43 videos are public; the log said 32
+because a video's privacy was written at upload and never read back (#1128). The operator
+found it. The metrics sync now asks YouTube and corrected 11 rows; the shelf is 2, not 7.
+
+What was really in the way: a queued upload nothing was sending (run 132, due 9:30 pm on
+10-10) and 69 drafts nobody rendered. The header names an overdue upload and
+`ops worker-task --install` makes a scheduled task send them every 15 minutes (#1129 #1130;
+the install line is the operator's). `ops shelf` lists each unpublished video with its exact
+command (#1131). Overnight renders up to 2 clean drafts and queues them unlisted - the
+operator's call, reversing "render-free" (#1078 first half, decisions_2026-10.md §40); `ops
+overnight-plan` shows tonight's two and why 29 wait. `ops status` counts the drafts (#1132),
+the header says "week 4 of 3-5" (#1133), MoneyWise is parked (#1134, decisions_2026-10.md §41),
+competitor searches keep to the niche's own words and `add --name` needs no id (#1127).
+`ops sync-metrics` no longer dies under a pipe or a scheduled task (#1135).
+
+Suite 5460 -> 5531, mypy 98, corpus 188. `roadmap-index`: open 308, done 861,
+highest #1139. Filed open: #1136 (runs 92 and 119 are public with a claim never confirmed),
+#1137 (the header's last video reads 0 views), #1138 (a label in a draft title), #1139 (2 of
+31 drafts are clean).
+
 ## Previous — 2026-10-10 (Claude Code): waves 77-78, the next ten
 
 Ten shipped. Finished videos that are not public now have a line: the startup header ends

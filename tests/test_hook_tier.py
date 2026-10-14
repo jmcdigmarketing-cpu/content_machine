@@ -17,7 +17,9 @@ BODY = f"{HOOK} The division changed after that one loss and the rest of the car
 
 
 class HookTierTests(unittest.TestCase):
-    def _generate(self, fake, *, body_tier: str | None = None):
+    def _generate(self, fake, *, body_tier: str | None = "cheap"):
+        # #1163 (Claude, 2026-10-13): the default is premium again by the operator's call, so
+        # these tests of the #374 split now ask for it by name.
         from core import content_engine as ce
 
         env = {

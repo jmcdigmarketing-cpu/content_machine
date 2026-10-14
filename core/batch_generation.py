@@ -53,6 +53,9 @@ class DraftOutcome:
     error: str = ""
     seconds: float = 0.0
     reused: bool = False  # #760 - an unreviewed draft for this topic already existed
+    # #1159: what `ops script-check --idea` prints - the script and its finished-script check.
+    script: str = ""
+    script_clean: dict | None = None
 
 
 def _slug(topic: str, max_len: int = 40) -> str:
@@ -151,41 +154,59 @@ def generate_draft(
     *,
     key_facts: list[str] | None = None,
     best_bet: dict | None = None,
+    own_idea: bool = False,
 ) -> DraftOutcome:
     """One headless draft: discovery → best variant → script → saved folder.
 
     ``key_facts`` (optional) are shared operator ground truth applied to this
     topic — same ``run_pipeline(key_facts=)`` path as ``auto_generate --facts-file``.
     ``best_bet`` is the topic's `pick_record` when the batch took it from the best bets.
+
+    ``own_idea`` (#1159): `topic` is an idea the operator typed. It is written the way angle
+    1 writes it in `main.py` - `idea_angle`'s wording, index -1, the idea as the brief, no
+    generated angle and no experiment directive. `ops script-check --idea` had passed index
+    0, the first generated angle: runs 140-142 were reported as the operator's ideas and were
+    written from angles a model made up.
     """
     from core.pipeline import run_discovery, run_pipeline
 
     out = DraftOutcome(topic=topic)
     started = time.time()
 
-    discovery = run_discovery(topic, channel_id=channel_id)
-    if not discovery.evaluated:
-        out.error = "discovery returned no scored variants"
-        return out
-    # The one ranking rule — this used to `max` on the displayed score alone and
-    # so picked arbitrarily whenever the composites tied, which is every run.
-    from core.pipeline import best_variant_index
-
-    variant_index = best_variant_index(
-        discovery.evaluated, discovery.raw_scores, discovery.angle_scores
+    discovery = (
+        run_discovery(topic, channel_id=channel_id, brief=topic)
+        if own_idea
+        else run_discovery(topic, channel_id=channel_id)
     )
-    best_topic, best_score, best_signals = discovery.evaluated[variant_index]
-    out.variant, out.score = best_topic, float(best_score or 0)
-
-    # Active script-lever A/B experiment: the least-used arm's directive
-    # shapes this draft (thumbnail levers apply at render, not here).
     experiment: tuple[str, str, str] | None = None
-    try:
-        from core.experiments import next_arm
+    if own_idea:
+        from apis.topic_variants import idea_angle
 
-        experiment = next_arm(channel_id, kind="script")
-    except Exception as exc:
-        logger.debug("next_arm skipped: %s", exc)
+        variant_index = -1
+        best_topic = idea_angle(topic, channel_id) or topic
+        best_score, best_signals = 0.0, discovery.base_signals
+    else:
+        if not discovery.evaluated:
+            out.error = "discovery returned no scored variants"
+            return out
+        # The one ranking rule — this used to `max` on the displayed score alone and
+        # so picked arbitrarily whenever the composites tied, which is every run.
+        from core.pipeline import best_variant_index
+
+        variant_index = best_variant_index(
+            discovery.evaluated, discovery.raw_scores, discovery.angle_scores
+        )
+        best_topic, best_score, best_signals = discovery.evaluated[variant_index]
+
+        # Active script-lever A/B experiment: the least-used arm's directive
+        # shapes this draft (thumbnail levers apply at render, not here).
+        try:
+            from core.experiments import next_arm
+
+            experiment = next_arm(channel_id, kind="script")
+        except Exception as exc:
+            logger.debug("next_arm skipped: %s", exc)
+    out.variant, out.score = best_topic, float(best_score or 0)
 
     from core.facts.selection import select_headless_facts
     from core.vault.relevance import build_relevance_corpus
@@ -200,10 +221,12 @@ def generate_draft(
         length_choice=length_choice,
         proceed_video=False,
         channel_id=channel_id,
-        creative_brief=experiment[2] if experiment else "",
+        creative_brief=topic if own_idea else (experiment[2] if experiment else ""),
         key_facts=packed,
         relevance_corpus=corpus,
         best_bet=best_bet,
+        own_idea=own_idea,
+        own_topic=best_topic if own_idea else "",
     )
     # #779: a script-only run always comes back aborted with "proceed_video=False" - the
     # pipeline records that as "drafted". Treating it as a failure kept 0 of 3 drafts on
@@ -213,6 +236,8 @@ def generate_draft(
         out.error = result.abort_reason or "pipeline produced no script"
         return out
     out.title, out.run_id = result.title, result.run_id
+    out.script = str(result.script or "")
+    out.script_clean = result.features.get("script_clean")
 
     if experiment:
         lever, arm, _ = experiment
@@ -286,6 +311,7 @@ def generate_draft(
         "title": result.title,
         "run_id": result.run_id,
         "channel_id": channel_id,
+        "own_idea": bool(own_idea),  # #1159
         "length_choice": length_choice,
         "hook_score": out.hook_score,
         "hook_verdict": out.hook_verdict,
@@ -368,8 +394,11 @@ def run_batch(
                 continue
             try:
                 pick = (picks or {}).get(topic)
-                extra = {"best_bet": pick} if pick else {}
-                outcomes.append(generate_draft(topic, channel_id, key_facts=key_facts, **extra))
+                if pick:
+                    outcome = generate_draft(topic, channel_id, key_facts=key_facts, best_bet=pick)
+                else:
+                    outcome = generate_draft(topic, channel_id, key_facts=key_facts)
+                outcomes.append(outcome)
             except Exception as exc:
                 logger.warning("Draft failed for %r: %s", topic, exc)
                 outcomes.append(DraftOutcome(topic=topic, error=str(exc)))

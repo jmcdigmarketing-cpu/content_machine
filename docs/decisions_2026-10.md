@@ -77,3 +77,26 @@ restated them, the checker cited the brief as the plainest line, and the rule th
 of why drafts were blocked. **Consequence:** a claim only the brief carries is unsupported, as
 #966 intended. When the brief is the only text there is, it is still shown and still backs
 nothing strict.
+
+## 48. One model writes the whole script (2026-10-13)
+**Decision:** `SCRIPT_BODY_TIER` defaults to `premium` again: one call writes the hook and the
+body. `cheap` restores the split of #374. **Why:** the operator's call, on the measurement.
+From run 134 a free-tier model wrote every body - a local 8B model on runs 136-138, 136 being
+the one rendered (a fact told twice, a garbled last line). A run cost about a cent before the
+split and about a cent after it. **Consequence:** roughly $0.002 more per script. This
+reverses a default the other agent set; the split is one setting away.
+
+## 49. An unbacked sentence is cut even when the script ends a little short (2026-10-13)
+**Decision:** the cut of #1139 may leave a script at 85% of its minimum length. The stored
+check says how many words short it is, and the review line prints it. Cuts made for stance or
+repetition keep the strict minimum. **Why:** run 141's one cut left 148 words against 150 and
+was refused, so the draft waited with the sentence in it. The operator chose a clean script
+two words short over a flagged one. **Consequence:** a video can run a few seconds under its
+length preset. Never by more than 15%.
+
+## 50. A typed idea is drafted as angle 1 and kept (2026-10-13)
+**Decision:** `ops script-check --idea` writes the idea the way angle 1 does in `main.py` -
+the idea's own wording, no generated angle, no experiment directive - and saves it as a draft
+that `batch-review` can render. **Why:** the command had passed the first *generated* angle
+and three scripts were reported to the operator as "your ideas" that were not written from
+them. A proof that does not take the operator's path proves nothing about it.

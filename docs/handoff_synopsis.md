@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-13: what overnight rendered, and why drafts were blocked (waves 83-84)
+# Handoff synopsis — 2026-10-13: the script your own idea gets (wave 85)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,31 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-13 (Claude Code): waves 83-84, the 10-13 overnight run
+## Last wave — 2026-10-13 (Claude Code): wave 85, your own idea's script
+
+**A correction to the entry below.** The three "drafts of your own ideas" in wave 83 were
+written from generated angles: `ops script-check --idea` passed the first generated angle, not
+angle 1. Fixed (#1159): the command now writes the idea itself, the way Enter on angle 1 does,
+and keeps it as a draft `batch-review` can render (decisions_2026-10.md §50).
+
+- **One model writes the whole script again (#1163, §48).** Since #374 a free small model had
+  written every body - a local 8B one on the run overnight rendered. The operator's call.
+- **Names are read whole (#1160).** "Court Mc", "Vonta Smith" and a sentence's first word
+  ("Losing") had been reported as names the facts lack; two drafts waited on that alone.
+- **An unbacked claim in the first sentence is repaired (#1161)** - the hook is rebuilt from
+  the facts once and kept only when the check then finds fewer.
+- **A cut may leave a script 15% short (#1162, §49)**; the review line says how short.
+- Found on the corrected drafts and fixed: a flagged claim's sentence was not found when it
+  used a possessive ("Wemby's +200") or ran across two sentences.
+
+The corrected drafts (runs 143-145) are waiting in `batch-review`: 2, 1 and 1 unbacked claims,
+each named. None clean; yesterday's generated-angle version of the hope idea had 4.
+
+**Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`); publish the
+consent screen; `ops worker-task --install`. Suite 5689 -> 5718, mypy 98, corpus 225.
+Next: #1164-#1168 (wave 86).
+
+## Previous — 2026-10-13 (Claude Code): waves 83-84, the 10-13 overnight run
 
 Overnight rendered two videos on 10-13 and both were wrong. Run 139 was titled and written as
 a Thunder win over Indiana before the game; run 136 previewed a Texans game two days after it
@@ -83,28 +107,6 @@ The claim check called nine true claims unsupported on run 137. The YouTube sign
 
 Suite 5531 -> 5595, mypy 98, corpus 188 -> 201. `roadmap-index`: open 315, done 872,
 highest #1157. Decisions: decisions_2026-10.md §42-§44.
-
-## Previous — 2026-10-11 (Claude Code): waves 79-80, the record and the last mile
-
-**The numbers in the entry below were wrong.** All 43 videos are public; the log said 32
-because a video's privacy was written at upload and never read back (#1128). The operator
-found it. The metrics sync now asks YouTube and corrected 11 rows; the shelf is 2, not 7.
-
-What was really in the way: a queued upload nothing was sending (run 132, due 9:30 pm on
-10-10) and 69 drafts nobody rendered. The header names an overdue upload and
-`ops worker-task --install` makes a scheduled task send them every 15 minutes (#1129 #1130;
-the install line is the operator's). `ops shelf` lists each unpublished video with its exact
-command (#1131). Overnight renders up to 2 clean drafts and queues them unlisted - the
-operator's call, reversing "render-free" (#1078 first half, decisions_2026-10.md §40); `ops
-overnight-plan` shows tonight's two and why 29 wait. `ops status` counts the drafts (#1132),
-the header says "week 4 of 3-5" (#1133), MoneyWise is parked (#1134, decisions_2026-10.md §41),
-competitor searches keep to the niche's own words and `add --name` needs no id (#1127).
-`ops sync-metrics` no longer dies under a pipe or a scheduled task (#1135).
-
-Suite 5460 -> 5531, mypy 98, corpus 188. `roadmap-index`: open 308, done 861,
-highest #1139. Filed open: #1136 (runs 92 and 119 are public with a claim never confirmed),
-#1137 (the header's last video reads 0 views), #1138 (a label in a draft title), #1139 (2 of
-31 drafts are clean).
 
 ## Pipeline order (operator)
 

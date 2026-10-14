@@ -114,25 +114,11 @@ def recorded_lines(channel_id: str, *, limit: int = 30) -> list[str]:
 
 
 def _own_idea_draft(channel_id: str, idea: str) -> Any:
-    """One script for the operator's own idea, the way angle 1 writes it: their words as the
-    brief, no take pushed onto it, stopped before the voice."""
-    from core.batch_generation import _length_choice
-    from core.pipeline import run_discovery, run_pipeline
+    """One draft of the operator's own idea, written the way angle 1 writes it and kept where
+    `batch-review` reads (#1159). It used to pass index 0 - the first generated angle."""
+    from core.batch_generation import generate_draft
 
-    discovery = run_discovery(idea, channel_id=channel_id, brief=idea)
-    if not discovery.evaluated:
-        return None
-    return run_pipeline(
-        idea,
-        discovery=discovery,
-        variant_index=0,
-        length_choice=_length_choice(channel_id, idea),
-        proceed_video=False,
-        channel_id=channel_id,
-        creative_brief=idea,
-        own_idea=True,
-        own_topic=idea,
-    )
+    return generate_draft(idea, channel_id, own_idea=True)
 
 
 def draft_lines(channel_id: str, idea: str) -> list[str]:
@@ -141,22 +127,21 @@ def draft_lines(channel_id: str, idea: str) -> list[str]:
     from core.script_craft import script_check_line
 
     try:
-        result = _own_idea_draft(channel_id, idea)
+        out = _own_idea_draft(channel_id, idea)
     except Exception as exc:
         return [f"No draft for {idea!r}: {type(exc).__name__}: {exc}"]
-    script = str(getattr(result, "script", "") or "") if result is not None else ""
-    if not script.strip():
-        why = getattr(result, "abort_reason", "") if result is not None else "no angles came back"
-        return [f"No draft for {idea!r}: {why or 'the pipeline wrote no script'}"]
-    features = getattr(result, "features", None) or {}
-    check = features.get("script_clean")
-    lines = [
+    script = str(getattr(out, "script", "") or "")
+    if not getattr(out, "ok", False) or not script.strip():
+        why = getattr(out, "error", "") or "the pipeline wrote no script"
+        return [f"No draft for {idea!r}: {why}"]
+    return [
         f"Idea:  {idea}",
-        f"Read as: {intent_of(idea) or 'neutral'}   (run {getattr(result, 'run_id', '?')}, no render)",
-        f"Title: {getattr(result, 'title', '')}",
+        f"Read as: {intent_of(idea) or 'neutral'}   (run {out.run_id}, no voice, no render)",
+        f"Angle 1: {out.variant}",
+        f"Title: {out.title}",
         "",
         script.strip(),
         "",
-        script_check_line(check) or "Script check: not stored for this run",
+        script_check_line(out.script_clean) or "Script check: not stored for this run",
+        f"Waiting for you: py -m scripts.ops batch-review --channel {channel_id}   ({out.path})",
     ]
-    return lines

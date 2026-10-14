@@ -22,11 +22,14 @@ from __future__ import annotations
 
 import re
 
-from apis.topic_tokens import FUNCTION_WORDS
+from apis.topic_tokens import COMMON_CAPITALISED, FUNCTION_WORDS
 
 # Initial-capital word (excludes ALL-CAPS acronyms, which are usually known).
 # Hyphenated compounds count as ONE word: "Take-Two", "Spider-Man", "Jean-Luc".
-_CAP = r"[A-Z][a-z]+(?:-[A-Z]?[a-z]+)*"
+# #1160: a capital inside the word belongs to it - "McGee", "DeVonta", "TikTok". Without
+# that the phrase stopped at the inner capital and "Court Mc", "Vonta Smith" and "the Tik"
+# were reported as names the facts lack (runs 107, 134, 102).
+_CAP = r"(?<![A-Za-z])[A-Z][a-z]+(?:[A-Z][a-z]+)*(?:-[A-Z]?[a-z]+)*"
 # Lowercase connectors allowed *inside* a single proper-noun phrase
 # ("Need for Speed", "Lord of the Rings"). Deliberately excludes "and"/"vs"/etc.
 # which join *separate* entities ("Emma Frost and Black Widow" → two phrases).
@@ -266,6 +269,9 @@ _LEADING_STOPWORDS = frozenset(
 _TOKEN = re.compile(r"[a-z0-9.]+")
 # Distinctive mononyms common in sports scripts (LeBron, Kawhi, Giannis…).
 _MONONYM = re.compile(r"\b([A-Z][A-Za-z']{3,})\b")
+# Where a sentence starts: the text's first capital, and one after ., ! or ? (a closing quote
+# or bracket may sit between).
+_SENTENCE_START = re.compile(r"(?:^|[.!?][\"'\u201d\u2019)]*\s+|\n\s*)(?=[A-Z])")
 _SPORTS_CONTEXT_RE = re.compile(
     r"\b(?:nba|nfl|mlb|nhl|ufc|wnba|"
     r"traded|trade|trades|signing|signed|draft|offseason|playoffs|playoff|"
@@ -440,10 +446,25 @@ def _extract_mononyms(text: str, *, covered_spans: list[tuple[int, int]]) -> lis
         return []
     out: list[str] = []
     seen: set[str] = set()
+    # #1160: a word capitalised only because it opens a sentence - "Losing a starting tackle"
+    # (run 140), "Make no mistake", "Adding a veteran". Skipped when it never appears inside a
+    # sentence and is plainly a word: on the shared list of words a sentence capitalises, or a
+    # gerund or participle followed by a function word. "LeBron was traded" and "Manning threw"
+    # open a sentence too and are still checked.
+    starts = {m.end() for m in _SENTENCE_START.finditer(text or "")}
+    inside = {m.group(1).lower() for m in _MONONYM.finditer(text or "") if m.start() not in starts}
     for match in _MONONYM.finditer(text or ""):
         start, end = match.span()
         if any(start >= s and end <= e for s, e in covered_spans):
             continue
+        word = match.group(1).lower()
+        if start in starts and word not in inside:
+            following = re.match(r"\s+([A-Za-z']+)", (text or "")[end:])
+            next_word = following.group(1).lower() if following else ""
+            if word in COMMON_CAPITALISED or (
+                word.endswith(("ing", "ed")) and next_word in FUNCTION_WORDS
+            ):
+                continue
         # #972: "Miami's" is Miami; "You're" and "Somebody" are not names (run 113).
         name = re.sub(r"['’]s$", "", match.group(1))
         key = name.lower()

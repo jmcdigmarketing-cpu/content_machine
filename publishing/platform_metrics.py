@@ -46,6 +46,69 @@ def get_row(channel_id: str, run_id: str, platform: str) -> dict[str, Any] | Non
     return row if isinstance(row, dict) else None
 
 
+def _utc_hour(stamp: Any) -> int | None:
+    if not stamp:
+        return None
+    text = str(stamp).replace("Z", "+00:00")
+    try:
+        when = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return when.astimezone(timezone.utc).hour
+
+
+def _length_choice(run: Any) -> str:
+    try:
+        timings = json.loads(getattr(run, "timings_json", "") or "{}")
+    except (TypeError, ValueError):
+        return ""
+    if not isinstance(timings, dict):
+        return ""
+    choice = str(timings.get("length_preset") or "")
+    return choice if choice in {"1", "2", "3", "4"} else ""
+
+
+def _stored_metrics(
+    node: dict[str, Any], state: dict[str, Any], run_id: str, channel_id: str
+) -> dict[str, Any]:
+    """The metric row plus the hour, domain and length the recommender reads."""
+    from publishing import crosspost
+
+    stored = {key: value for key, value in node.items() if key != "id"}
+    hour = _utc_hour(state.get("sent_at") or state.get("due_at"))
+    if hour is not None:
+        stored["hour"] = hour
+    run = None
+    try:
+        run = crosspost._content_run(int(run_id))
+    except (TypeError, ValueError):
+        run = None
+    except Exception as exc:
+        logger.debug("platform metrics run %s: %s", run_id, type(exc).__name__)
+        run = None
+    if run is None:
+        return stored
+    domain = str(getattr(run, "domain", "") or "").strip()
+    if not domain:
+        try:
+            from core.engagement import safe_infer_domain
+
+            domain = str(
+                safe_infer_domain(str(getattr(run, "input_topic", "") or ""), channel_id) or ""
+            )
+        except Exception as exc:
+            logger.debug("platform metrics domain %s: %s", run_id, type(exc).__name__)
+            domain = ""
+    if domain:
+        stored["domain"] = domain
+    length = _length_choice(run)
+    if length:
+        stored["length"] = length
+    return stored
+
+
 def refresh(
     channel_id: str,
     *,
@@ -101,7 +164,7 @@ def refresh(
                 continue
             slot = rows.setdefault(str(rid), {})
             if isinstance(slot, dict):
-                slot[service] = {key: value for key, value in node.items() if key != "id"}
+                slot[service] = _stored_metrics(node, state, str(rid), channel_id)
     store["fetched_on"] = day
     _save(channel_id, store)
     return []

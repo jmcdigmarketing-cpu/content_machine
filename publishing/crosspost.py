@@ -460,12 +460,20 @@ def _due_of(state: dict[str, Any]) -> datetime | None:
     return _stamp(state.get("due_at"))
 
 
-def _next_due(channel_id: str, topic: str, service: str, posts: dict[str, Any], now: datetime):
-    due = _suggested_slot(channel_id, topic)
-    if due.tzinfo is None:
-        due = due.replace(tzinfo=timezone.utc)
-    if due < now + _LEAD:
-        due = now + _LEAD
+def _next_due(
+    channel_id: str, topic: str, service: str, posts: dict[str, Any], now: datetime
+) -> tuple[datetime, str]:
+    from publishing.platform_recommend import hour_choice
+
+    hour, note = hour_choice(channel_id, service)
+    if hour is None:
+        due = _suggested_slot(channel_id, topic)
+        if due.tzinfo is None:
+            due = due.replace(tzinfo=timezone.utc)
+        if due < now + _LEAD:
+            due = now + _LEAD
+    else:
+        due = _at_utc_hour(hour, now + _LEAD)
     taken = []
     for entry in posts.values():
         state = entry.get(service) if isinstance(entry, dict) else None
@@ -475,7 +483,16 @@ def _next_due(channel_id: str, topic: str, service: str, posts: dict[str, Any], 
                 taken.append(when)
     while any(abs(due - other) < _MIN_GAP for other in taken):
         due += timedelta(days=1)
-    return due
+    return due, note
+
+
+def _at_utc_hour(hour: int, after: datetime) -> datetime:
+    """The next UTC time at `hour:00` that is not before `after`."""
+    moment = after.astimezone(timezone.utc) if after.tzinfo else after.replace(tzinfo=timezone.utc)
+    candidate = moment.replace(hour=int(hour), minute=0, second=0, microsecond=0)
+    if candidate < moment:
+        candidate += timedelta(days=1)
+    return candidate
 
 
 def _adopt(org_id: str, buffer_channel: str, state: dict[str, Any]) -> dict[str, Any] | None:
@@ -664,10 +681,10 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 if marked and moment - marked < _SENDING_GRACE:
                     lines.append(f"  run {run_id} {label}: waiting to see whether Buffer made it")
                     continue
-            due = _next_due(channel_id, topic, service, posts, moment)
+            due, note = _next_due(channel_id, topic, service, posts, moment)
             if not apply:
                 lines.append(
-                    f"  would schedule run {run_id} on {label} for {_local(due, channel_id)}"
+                    f"  would schedule run {run_id} on {label} for {_local(due, channel_id)} - {note}"
                 )
                 continue
             try:
@@ -880,6 +897,12 @@ def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:
             else:
                 detail = f" - {state.get('error')}" if state.get("error") else ""
                 lines.append(f"      {label}: {kind}{detail}")
+    from publishing.platform_recommend import learning_line
+
+    for service in PLATFORMS:
+        learned = learning_line(channel_id, service)
+        if learned:
+            lines.append(f"  {learned}")
     return lines
 
 

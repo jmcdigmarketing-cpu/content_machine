@@ -90,8 +90,7 @@ class RecommendTests(unittest.TestCase):
             )
 
         run = SimpleNamespace(
-            domain="ufc",
-            input_topic="UFC",
+            input_topic="hello",
             timings_json='{"length_preset": "2"}',
         )
         with (
@@ -107,6 +106,10 @@ class RecommendTests(unittest.TestCase):
                 os.path.join(tmp, "platform_metrics_{channel}.json"),
             ),
             patch("publishing.crosspost._content_run", return_value=run),
+            patch(
+                "core.run_features.load_features",
+                return_value={"domains": {"effective": "ufc"}},
+            ),
             patch.dict(os.environ, {"BUFFER_API_KEY": "k"}),
         ):
             crosspost.save_channels("tapin", "org", {"tiktok": "tt1"})

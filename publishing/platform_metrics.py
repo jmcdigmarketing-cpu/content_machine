@@ -70,9 +70,7 @@ def _length_choice(run: Any) -> str:
     return choice if choice in {"1", "2", "3", "4"} else ""
 
 
-def _stored_metrics(
-    node: dict[str, Any], state: dict[str, Any], run_id: str, channel_id: str
-) -> dict[str, Any]:
+def _stored_metrics(node: dict[str, Any], state: dict[str, Any], run_id: str) -> dict[str, Any]:
     """The metric row plus the hour, domain and length the recommender reads."""
     from publishing import crosspost
 
@@ -92,14 +90,11 @@ def _stored_metrics(
         return stored
     domain = str(getattr(run, "domain", "") or "").strip()
     if not domain:
-        try:
-            from core.engagement import safe_infer_domain
+        from core.run_features import run_domain
 
-            domain = str(
-                safe_infer_domain(str(getattr(run, "input_topic", "") or ""), channel_id) or ""
-            )
-        except Exception as exc:
-            logger.debug("platform metrics domain %s: %s", run_id, type(exc).__name__)
+        try:
+            domain = run_domain(int(run_id))
+        except (TypeError, ValueError):
             domain = ""
     if domain:
         stored["domain"] = domain
@@ -164,7 +159,7 @@ def refresh(
                 continue
             slot = rows.setdefault(str(rid), {})
             if isinstance(slot, dict):
-                slot[service] = _stored_metrics(node, state, str(rid), channel_id)
+                slot[service] = _stored_metrics(node, state, str(rid))
     store["fetched_on"] = day
     _save(channel_id, store)
     return []

@@ -3402,6 +3402,9 @@ def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply
         print(f"R2 self-test - {problem or 'ok: put, link and delete worked'}")
         return 0 if not problem else 1
     if action == "status":
+        from publishing.platform_metrics import refresh
+
+        refresh(channel)
         lines = crosspost.status_lines(channel)
         missing = crosspost.setup_missing(channel)
         print("\n".join(lines or [f"Through Buffer - {channel}: nothing sent yet"]))

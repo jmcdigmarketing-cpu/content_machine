@@ -247,3 +247,69 @@ def find_posts(organization_id: str, channel_id: str, **kw: Any) -> list[dict[st
     data = graphql(query, variables, **kw)
     edges = ((data.get("posts") or {}).get("edges")) or []
     return [dict(edge.get("node") or {}) for edge in edges if isinstance(edge, dict)]
+
+
+_METRIC_NAMES = {
+    "views": "views",
+    "likes": "likes",
+    "comments": "comments",
+    "shares": "shares",
+    "saves": "saves",
+}
+
+
+def parse_metrics_node(node: dict[str, Any]) -> dict[str, Any]:
+    """Buffer's metric list, plus views/likes/comments/shares/saves.
+
+    No ``metricsUpdatedAt`` means Buffer has not measured the post. A value of 0
+    in that case is not a measurement (#1195).
+    """
+    raw = node.get("metrics")
+    raw_items = raw if isinstance(raw, list) else []
+    buffer: dict[str, Any] = {}
+    for item in raw_items:
+        if isinstance(item, dict) and item.get("name") is not None:
+            buffer[str(item["name"])] = item.get("value")
+    updated = node.get("metricsUpdatedAt")
+    measured = bool(updated)
+    mapped: dict[str, Any] = {}
+    if measured:
+        for name, value in buffer.items():
+            key = _METRIC_NAMES.get(str(name).strip().lower())
+            if key:
+                mapped[key] = value
+    return {
+        "id": str(node.get("id") or ""),
+        "measured": measured,
+        "metrics_updated_at": str(updated) if updated else "",
+        "views": mapped.get("views") if measured else None,
+        "likes": mapped.get("likes") if measured else None,
+        "comments": mapped.get("comments") if measured else None,
+        "shares": mapped.get("shares") if measured else None,
+        "saves": mapped.get("saves") if measured else None,
+        "buffer": buffer,
+    }
+
+
+def channel_post_metrics(organization_id: str, channel_id: str, **kw: Any) -> list[dict[str, Any]]:
+    """One ``posts`` query for a channel, asking for metrics. ``find_posts`` does not."""
+    query = (
+        "query Posts($input: PostsInput!) { posts(input: $input, first: 50) { "
+        "edges { node { id metricsUpdatedAt metrics { name type unit value } } } } }"
+    )
+    variables = {
+        "input": {
+            "organizationId": organization_id,
+            "filter": {"channelIds": [channel_id], "status": ["sent"]},
+        }
+    }
+    data = graphql(query, variables, **kw)
+    edges = ((data.get("posts") or {}).get("edges")) or []
+    out: list[dict[str, Any]] = []
+    for edge in edges:
+        if not isinstance(edge, dict):
+            continue
+        node = edge.get("node") or {}
+        if isinstance(node, dict):
+            out.append(parse_metrics_node(node))
+    return out

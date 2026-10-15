@@ -833,6 +833,18 @@ def cancel(channel_id: str, run_id: int) -> list[str]:
     return lines or [f"Run {run_id} has nothing scheduled in Buffer."]
 
 
+def _views_suffix(channel_id: str, run_id: Any, service: str) -> str:
+    """Views from today's metrics store. Unmeasured is not printed as zero (#1195)."""
+    from publishing.platform_metrics import get_row
+
+    row = get_row(channel_id, str(run_id), service)
+    if not row:
+        return ""
+    if not row.get("measured") or row.get("views") is None:
+        return "  not measured yet"
+    return f"  {int(row['views'])} views"
+
+
 def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:
     """Each video sent through Buffer, newest first, and where it is on each platform."""
     posts = _load(channel_id).get("posts") or {}
@@ -863,7 +875,8 @@ def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:
                 when = _local(due, channel_id) if due else "a slot"
                 lines.append(f"      {label}: scheduled for {when}")
             elif kind == "sent":
-                lines.append(f"      {label}: sent {state.get('link') or ''}".rstrip())
+                suffix = _views_suffix(channel_id, rid, service)
+                lines.append(f"      {label}: sent {state.get('link') or ''}{suffix}".rstrip())
             else:
                 detail = f" - {state.get('error')}" if state.get("error") else ""
                 lines.append(f"      {label}: {kind}{detail}")
@@ -900,6 +913,12 @@ def step(channel_id: str) -> list[str]:
             f"Crosspost - {channel_id}: TikTok and Instagram wait on " + ", ".join(missing),
         ]
     lines: list[str] = []
+    try:
+        from publishing.platform_metrics import refresh
+
+        refresh(channel_id)
+    except Exception as exc:
+        logger.warning("platform metrics refresh failed: %s", type(exc).__name__)
     for part in (sync_status, send_due):
         try:
             lines.extend(part(channel_id))

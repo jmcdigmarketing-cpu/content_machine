@@ -792,6 +792,55 @@ def overnight_rendered(
     return sorted(out, key=lambda row: row["at"], reverse=True)
 
 
+def _run_record(run_id: int) -> Any:
+    from storage.repositories.content_runs import get_content_run_repository
+
+    return get_content_run_repository().get(int(run_id))
+
+
+def _publish_row(run_id: int, channel_id: str) -> Any:
+    from storage.repositories.publish_log import get_publish_log_repository
+
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id):
+        if getattr(row, "content_run_id", None) == int(run_id):
+            return row
+    return None
+
+
+def video_lines(run_id: int, channel_id: str) -> list[str]:
+    """#1192: where a rendered video is - its file, its YouTube link (Studio's page while it is
+    not public), and TikTok/Instagram. [] when nothing can be read."""
+    out: list[str] = []
+    try:
+        run = _run_record(run_id)
+        path = str(getattr(run, "mp4_path", "") or "") if run is not None else ""
+        if path:
+            from config.paths import ROOT_DIR
+
+            # The record keeps it relative to the repo; the operator needs where it is.
+            full = path if os.path.isabs(path) else os.path.normpath(os.path.join(ROOT_DIR, path))
+            out.append(f"file: {full}" + ("" if os.path.isfile(full) else "  (no longer on disk)"))
+        row = _publish_row(run_id, channel_id)
+        video = str(getattr(row, "youtube_video_id", "") or "") if row is not None else ""
+        if video:
+            privacy = str(getattr(row, "privacy_status", "") or "").strip().lower()
+            if privacy == "public":
+                out.append(f"YouTube: https://youtu.be/{video} (public)")
+            else:
+                out.append(
+                    f"YouTube: https://studio.youtube.com/video/{video}/edit "
+                    f"({privacy or 'not public'} - open it signed in)"
+                )
+        from publishing.crosspost import run_state_line
+
+        state = run_state_line(channel_id, run_id)
+        if state:
+            out.append(state)
+    except Exception as exc:
+        logger.debug("video lines for run %s unreadable: %s", run_id, exc)
+    return out
+
+
 def overnight_rendered_lines(
     channel_id: str,
     *,
@@ -823,6 +872,7 @@ def overnight_rendered_lines(
     lines = [f"Overnight - {channel_id}: rendered {len(rows)} in the last {hours:.0f} hours"]
     for row in rows:
         lines.append(f"  run {row['run_id']}  {row['title'][:70]}")
+        lines.extend(f"      {line}" for line in video_lines(row["run_id"], channel_id))  # #1192
         where = shelf.get(row["run_id"])
         if where:
             lines.append(f"      {where['state']}")

@@ -138,6 +138,14 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         logger.debug("doctor secrets skipped: %s", exc)
         add("secrets", True, f"n/a ({type(exc).__name__})")
 
+    try:  # #1193: lines python-dotenv skips, by number only
+        from core import secrets_doctor
+
+        bad_lines = secrets_doctor.env_file_problems()
+        add("env-file", not bad_lines, secrets_doctor.env_file_line(bad_lines) or "ok")
+    except Exception as exc:
+        logger.debug("doctor env-file skipped: %s", exc)
+
     try:  # #1190: TikTok and Instagram through Buffer - informational, never a failure
         from publishing import buffer_api, crosspost
 

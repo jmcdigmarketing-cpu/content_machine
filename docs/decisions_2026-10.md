@@ -143,3 +143,12 @@ covers these platforms too), "new videos only", "automatic from the start". **Co
 nothing goes to TikTok or Instagram until a video goes public on YouTube; a video taken down
 on YouTube has its scheduled Buffer posts deleted; `CROSSPOST_AUTO=false` stops it all.
 The manual Buffer pack (#968) stays for a video sent by hand.
+
+## 55. At most two of five best bets are games (2026-10-14)
+**Decision:** this week's games come after the headline and channel-history picks, at most
+`BEST_BET_SCHEDULE_MAX` (2) in five; more only when nothing else is left. The overnight batch
+drafts from the same list, so its three take one game. **Why:** the operator's call - "ideas are
+only game previews": #1023 put the games first and five NFL fixtures filled the start menu and
+9 of 9 overnight drafts. **Consequence:** this changes the batch mix kept "as is" earlier the
+same day (§52 stands: a game drafted is drafted as a preview). `BEST_BET_SCHEDULE_MAX=0` keeps
+games out unless typed.

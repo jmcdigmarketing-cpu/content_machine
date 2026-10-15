@@ -15,6 +15,14 @@ this page is the order, the files and the definition of done.
 
 ---
 
+## Also offered (2026-10-14) - an initiative to lead
+
+The operator chose a second, larger piece for Cursor to lead once TikTok and Instagram posting
+shipped (wave 89): **learning per platform** from what TikTok and Instagram make of each video
+(#1194-#1199). Its order, files, definition of done and its own paste-ready prompt are in
+[initiative_cross_platform.md](initiative_cross_platform.md). The operator says whether it comes
+before or after Phase A.
+
 ## Start here (2026-10-10) - the prompt to paste into Cursor
 
 Nothing in Phase A has started (your last commit is 2026-09-20). Claude shipped waves 66-70 since;

@@ -19,10 +19,15 @@ link). It runs at the end of `go-public --apply`, in `ops morning` (`crosspost-s
 the overnight report; `ops crosspost status` / `send` / `cancel` / `channels` / `selftest`.
 Nothing can go out yet: the R2 keys are not in `.env`.
 
+**Wave 90, what you raised.** At most 2 of 5 best bets are games (#1191, §55); `py main.py`
+menu 6 shows the overnight videos with their files and links (#1192); unreadable `.env` lines
+are named by number (#1193). **Offered to Cursor:** #1194, learning per platform from TikTok and
+Instagram results - `docs/initiative_cross_platform.md`.
+
 **Still the operator's:** the R2 keys and `.env` lines 35-36; `crosspost selftest` and
 `crosspost channels --apply`; the 2 overdue uploads (`ops worker`); the consent screen;
-`ops worker-task --install`; `schedule-drafts --wake`. Suite 5780 -> 5811, mypy 98, corpus
-242. Claude has #1191-#1193 claimed (wave 90).
+`ops worker-task --install`; `schedule-drafts --wake`; whether Cursor starts #1194. Suite
+5780 -> 5823, mypy 98, corpus 244. Claude has nothing claimed.
 
 ## Previous — 2026-10-14 (Claude Code): waves 87-88, what overnight drafts and the morning
 

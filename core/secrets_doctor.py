@@ -7,6 +7,7 @@ logs. Nested try. File presence only for OAuth — token contents are not read.
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 from core.logging import get_logger
@@ -45,6 +46,56 @@ _PLACEHOLDERS = frozenset(
         "placeholder",
     }
 )
+
+
+_ENV_LINE = re.compile(r"^\s*(export\s+)?[A-Za-z_][A-Za-z0-9_.]*\s*=")
+
+
+def env_file_problems(path: str | None = None) -> list[int]:
+    """Line numbers of `.env` that are not NAME=value (#1193). Never reads out a value.
+
+    2026-10-14: python-dotenv printed "could not parse statement starting at line 34" and "36"
+    on every start; lines 35-36 began "Client" - pasted text with no NAME=, so whatever they
+    held reached no setting, and nothing said which lines or what to do.
+    """
+    if path is None:
+        from config.paths import ROOT_DIR
+
+        path = os.getenv("ENV_LINT_FILE", "").strip() or os.path.join(ROOT_DIR, ".env")
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = f.read()
+    except OSError:
+        return []
+    bad: list[int] = []
+    quote = ""
+    for number, raw in enumerate(text.splitlines(), 1):
+        line = raw.strip()
+        if quote:  # inside a quoted value that runs over lines
+            if quote in line:
+                quote = ""
+            continue
+        if not line or line.startswith("#"):
+            continue
+        if not _ENV_LINE.match(raw):
+            bad.append(number)
+            continue
+        value = raw.split("=", 1)[1].strip()
+        if value[:1] in ("'", '"') and value.count(value[0]) == 1:
+            quote = value[0]
+    return bad
+
+
+def env_file_line(lines: list[int]) -> str:
+    """The fix for `env_file_problems`, naming lines by number only."""
+    if not lines:
+        return ""
+    many = len(lines) > 1
+    numbers = ", ".join(str(n) for n in lines)
+    return (
+        f".env line{'s' if many else ''} {numbers} {'are' if many else 'is'} not NAME=value - "
+        f"nothing reads {'them' if many else 'it'}; give each a NAME= or delete it"
+    )
 
 
 def classify_secret(value: str | None) -> str:

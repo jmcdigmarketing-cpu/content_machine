@@ -122,6 +122,10 @@ Setting it up once (the Buffer key, the R2 bucket keys, the channel ids) is in
 [platform_publish_setup.md](platform_publish_setup.md); `py -m scripts.ops crosspost status`
 shows each video on each platform, `crosspost cancel --run-id N` takes one back.
 
+**A `.env` line that is not NAME=value** is skipped - python-dotenv warns "could not parse".
+The startup header and `ops doctor` name such lines by number (never their content); give each
+a `NAME=` or delete it.
+
 **The YouTube sign-in ends every 7 days** while the Google consent screen is in Testing. From
 day 5 the header, `ops status` and the overnight report say how many days are left; once it
 has ended they say "sign in" instead of "run the worker". Renew with
@@ -141,6 +145,11 @@ then walks the waiting drafts for a yes or no each. When the YouTube sign-in has
 "Sign in to YouTube now?" first - `y` opens Google's page, and the sync runs once you are back. (`ops all` is the weekly batch; the morning
 review is not in it.) Run from a scheduled task or a pipe it skips the draft review and says
 so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
+
+**Where are the overnight videos?** `py main.py`, then **6) Overnight videos and drafts**: each
+video of the last week with the full path of its mp4 (open it from File Explorer), its YouTube
+link - Studio's page while it is unlisted, so open it signed in - and its TikTok/Instagram state,
+then the drafts waiting for you. `ops overnight-last` prints the same lines.
 
 `ops overnight-last` also says when overnight ran against its 5:00 AM start - late, or not at
 all when the PC was asleep. `py -m scripts.ops schedule-drafts --wake` prints the one line that

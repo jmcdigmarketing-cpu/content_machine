@@ -7368,3 +7368,52 @@ doctor row. Suite **5,780 -> 5811**, forward and reversed. mypy **98**. Corpus 2
 defect in a feature wave).
 
 Closed **#1185-#1190**. Filed **#1191-#1193** (wave 90, claimed). Cursor's five unchanged.
+
+## 2026-10-14/15 — wave 90 (Claude Code): what you raised, and an initiative for Cursor
+
+**Prompt:** the second half of the Buffer plan, then (after an interrupt) "continue where you
+left off, but also create a big initiative for cursor to lead. maybe a L or XL on backlog? just
+ideas". Offered four (cross-platform learning, long-form watch hours, series and formats, visual
+quality); the operator chose cross-platform learning.
+
+### Shipped
+
+1. **#1191** two games of five best bets (`best_bet.with_games`, decision §55). Live, after:
+   Rakhmonov's arc, two gaming headlines, two NFL games; the batch's three take one game.
+2. **#1192** start menu 6, "Overnight videos and drafts": each video's full mp4 path, its YouTube
+   link (Studio while unlisted), TikTok/Instagram - then the drafts. Live: runs 126, 136, 139
+   with their files under `C:\dev\content_machine\output\tapin\video`.
+3. **#1193** `.env` lines that are not NAME=value, by number: "lines 35, 36" in the header and
+   the doctor's `env-file` row.
+
+### Filed for Cursor
+
+**#1194 `[XL]`** one video, three feeds - #1195 metrics back from Buffer, #1196 per-platform
+recommenders, #1197 captions and first lines per platform, #1198 the weekly section, #1199
+platform health. Brief and paste-ready prompt: `docs/initiative_cross_platform.md`; a pointer
+in `cursor_brief_2026-10.md`. Offered, not assigned: Phase A of the media brief is still
+unstarted and the operator says which comes first.
+
+### Findings
+
+- The first full run failed two startup-header tests: the new check read the operator's real
+  `.env` - which has the two bad lines. The suite now points it at its own file
+  (`ENV_LINT_FILE`).
+- The relative mp4 path the run record keeps would not open from a shortcut; the menu prints it
+  joined to the repo root.
+- A Bash heredoc of mine (building a patch script) turned `\n` into real newlines again; caught
+  by parsing the script before running it, and fixed with the editor.
+- The session ended mid-suite; the run was repeated in full.
+
+### Audit
+
+12 tests in `tests/test_ideas_and_menu.py`. **12 of 12 failed or errored on a worktree at
+`a10d971`** (2 failures, 10 errors). Two corpus cases (244 held). Callers: `with_games` from
+`get_best_bets` (start menu, overnight batch, coach); `video_lines` from
+`overnight_rendered_lines` (`ops overnight-last`, menu 6); `run_state_line` from `video_lines`;
+`env_file_problems`/`env_file_line` from `main._print_startup` and the doctor.
+
+Suite **5,811 -> 5823**, forward and reversed. mypy **98**.
+`roadmap-index`: open 315, done 914, numbered open 263; highest filed #1199.
+
+Closed **#1191-#1193**. Filed **#1194-#1199** (Cursor's, offered). Claude has nothing claimed.

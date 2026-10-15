@@ -790,6 +790,21 @@ def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:
     return lines
 
 
+def run_state_line(channel_id: str, run_id: int) -> str:
+    """One line: where a run stands on TikTok and Instagram; '' when it was never sent."""
+    entry = (_load(channel_id).get("posts") or {}).get(str(run_id))
+    if not isinstance(entry, dict):
+        return ""
+    bits = []
+    for service in PLATFORMS:
+        state = entry.get(service)
+        if isinstance(state, dict) and state.get("state"):
+            kind = str(state["state"])
+            link = f" {state['link']}" if kind == "sent" and state.get("link") else ""
+            bits.append(f"{_LABEL[service]} {kind}{link}")
+    return ("TikTok / Instagram: " + ", ".join(bits)) if bits else ""
+
+
 def step(channel_id: str) -> list[str]:
     """The automatic round (`ops morning`, overnight, go-public): read back, then send. []
     when switched off or Buffer is not set up at all."""

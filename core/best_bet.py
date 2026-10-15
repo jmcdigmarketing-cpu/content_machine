@@ -8,6 +8,7 @@ franchise continuity (e.g. Marvel Rivals on TapIn).
 
 from __future__ import annotations
 
+import os
 import random
 import re
 from dataclasses import dataclass
@@ -946,6 +947,35 @@ def pick_record(options: list[Any], picked: int | None, *, by: str = "operator")
     }
 
 
+def schedule_share() -> int:
+    """Games per five best bets (`BEST_BET_SCHEDULE_MAX`, default 2; 0 = none)."""
+    try:
+        return max(0, int(os.getenv("BEST_BET_SCHEDULE_MAX", "2") or 2))
+    except ValueError:
+        return 2
+
+
+def with_games(
+    others: list[BestBetResult], games: list[BestBetResult], n: int
+) -> list[BestBetResult]:
+    """`n` best bets: the headline and channel-history picks first, then this week's games -
+    at most `schedule_share()` in five (#1191) - then more of either only to fill.
+
+    Operator, 2026-10-14: "ideas are only game previews". #1023 put the week's games first, and
+    with five NFL games on the board they filled every slot - and the overnight batch, which
+    drafts the top three, drafted only games (9 of 9 since 10-11).
+    """
+    share = schedule_share()
+    cap = 0 if not share or not games else max(1, n * share // 5)
+    cap = min(cap, len(games), n)
+    out = list(others[: n - cap]) + list(games[:cap])
+    if len(out) < n:
+        out += list(others[n - cap :])[: n - len(out)]
+    if len(out) < n and share:
+        out += list(games[cap:])[: n - len(out)]
+    return out[:n]
+
+
 def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
     """
     Up to `n` DISTINCT topic options, best first.
@@ -995,11 +1025,12 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
 
     options: list[BestBetResult] = []
     seen: set[str] = set(recent)
-    for topic, domain in scheduled:  # #1023
+    games: list[BestBetResult] = []  # #1023; placed by `with_games` (#1191)
+    for topic, domain in scheduled:
         key = normalize_seed_topic(topic).lower()
-        if not key or key in seen or len(options) >= n:
+        if not key or key in seen or len(games) >= n:
             continue
-        options.append(
+        games.append(
             BestBetResult(
                 topic=topic,
                 domain=domain,
@@ -1053,7 +1084,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
             if anchor:
                 used_anchors.add(anchor)
             if len(options) >= n:
-                return options[:n]
+                return with_games(options, games, n)
     except Exception as exc:
         logger.debug("seasonal calendar skipped: %s", exc)
 
@@ -1218,7 +1249,7 @@ def get_best_bets(channel_id: str, n: int = 5) -> list[BestBetResult]:
         if cont and normalize_seed_topic(cont.topic).lower() not in seen:
             options.append(cont)
 
-    return options[:n]
+    return with_games(options, games, n)
 
 
 def display_best_bet(result: BestBetResult) -> None:

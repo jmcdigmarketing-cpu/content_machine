@@ -3712,6 +3712,38 @@
         "falsy": true
       },
       "why": "a shared name is a setup, not a repeat"
+    },
+    {
+      "id": "two-of-five-best-bets-are-games-by-default",
+      "item": 1191,
+      "source": "start menu 2026-10-14: five NFL fixtures as the five best bets",
+      "call": "core.best_bet:schedule_share",
+      "env": {
+        "BEST_BET_SCHEDULE_MAX": ""
+      },
+      "expect": {
+        "equals": 2
+      },
+      "why": "games came first and filled every slot, and overnight drafted only games"
+    },
+    {
+      "id": "env-lines-named-by-number-not-content",
+      "item": 1193,
+      "source": "python-dotenv on 2026-10-14: 'could not parse statement starting at line 34'",
+      "call": "core.secrets_doctor:env_file_line",
+      "args": [
+        [
+          35,
+          36
+        ]
+      ],
+      "expect": {
+        "includes_all": [
+          "35, 36",
+          "NAME=value"
+        ]
+      },
+      "why": "the warning named no line the operator could fix"
     }
   ]
 }

@@ -204,6 +204,8 @@ os.environ["NIGHTLY_TASK_QUERY"] = "false"
 os.environ["OVERNIGHT_EXPIRE_DRAFTS"] = "false"
 # #1190: never post to the operator's TikTok or Instagram. A test of the round sets it itself.
 os.environ["CROSSPOST_AUTO"] = "false"
+# #1193: the startup line check reads a .env; never the operator's.
+os.environ["ENV_LINT_FILE"] = _suite_store("env_lint.env")
 os.environ["CONTENT_WINDOW_STATE"] = _suite_store("window_state.json")
 os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
 

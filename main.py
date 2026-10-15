@@ -142,6 +142,14 @@ def _print_startup(channel_id: str) -> None:
             print(f"  ! YouTube: {format_uploads_left()}")
     except Exception as exc:
         logger.debug("uploads-left startup line skipped: %s", exc)
+    try:  # #1193: .env lines python-dotenv skips, by number
+        from core.secrets_doctor import env_file_line, env_file_problems
+
+        _env_line = env_file_line(env_file_problems())
+        if _env_line:
+            print(f"  ! {_env_line}")
+    except Exception as exc:
+        logger.debug("env-file startup line skipped: %s", exc)
     try:  # #996: only when this month's ads reached ADS_MONTHLY_CAP
         from core.money.ledger import ads_budget_line, ads_over_cap
 
@@ -202,6 +210,9 @@ def main():
     if startup_mode == "intelligence_report":
         _run_intelligence_report_flow(channel_id)
         return
+    if startup_mode == "overnight_review":
+        _run_overnight_review(channel_id)
+        return
     if startup_mode == "sync_analytics":
         from analytics.sync_metrics import sync_channel
 
@@ -219,6 +230,18 @@ def main():
         return
 
     _run_new_video_flow(channel_id)
+
+
+def _run_overnight_review(channel_id: str) -> None:
+    """#1192: the week's overnight videos - file, YouTube link, where each stands - then
+    the drafts waiting for a yes or no."""
+    from core.batch_review import overnight_rendered_lines, review_drafts
+
+    section("Overnight videos and drafts")
+    for line in overnight_rendered_lines(channel_id, hours=7 * 24):
+        print(line)
+    print()
+    review_drafts(channel_id)
 
 
 def _apply_cost_mode_interactive() -> bool:

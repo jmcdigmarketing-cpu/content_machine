@@ -2980,6 +2980,8 @@ def cmd_go_public(args: argparse.Namespace) -> int:
         dry_run=not bool(getattr(args, "apply", False)),
     )
     print(f"{result.status}: {result.detail}")
+    for line in result.crosspost:  # #1190
+        print(line)
     if result.status == "dry_run":
         # #1087: name what would go public, not just its id.
         print(f"  Would make public: {result.label}")
@@ -3135,7 +3137,14 @@ BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
     # weekly batch and the draft review was in none. The operator chose a batch of its own.
     "morning": (
         "The morning review: fresh numbers, what overnight rendered, the shelf, the drafts",
-        ("sync-metrics", "overnight-last", "shelf", "corrections-open", "batch-review"),
+        (
+            "sync-metrics",
+            "crosspost-send",
+            "overnight-last",
+            "shelf",
+            "corrections-open",
+            "batch-review",
+        ),
         False,
     ),
     "all": (
@@ -3289,17 +3298,28 @@ for _batch_name, (_batch_help, _steps, _stop) in BATCHES.items():
     _register(_batch_name, _batch_help)(_batch_command(_batch_name))
 
 
-@_register("crosspost", "Buffer pack for TikTok + Instagram: [list | done --run-id N] (#968)")
+@_register(
+    "crosspost",
+    "TikTok + Instagram through Buffer: [channels | send | status | cancel | selftest | list | "
+    "done] (#968, #1188)",
+)
 def cmd_crosspost(args: argparse.Namespace) -> int:
-    """`ops crosspost` packs the newest rendered videos; `crosspost list`; `crosspost done
-    --run-id N` marks one posted."""
+    """`ops crosspost` packs the newest rendered videos for Buffer's app; `channels`,
+    `send`, `status`, `cancel --run-id N` and `selftest` go through Buffer's API (#1188);
+    `list`; `done --run-id N` marks a hand-posted one."""
     from config.channels import resolve_channel_id
     from publishing import crosspost
 
     channel = resolve_channel_id(getattr(args, "channel", None))
     action = str(getattr(args, "target", "") or "").strip().lower()
+    apply = bool(getattr(args, "apply", False))
+    if action in ("channels", "send", "status", "cancel", "selftest"):
+        return _crosspost_api(action, channel, args, apply=apply)
     if action == "list":
         print("\n".join(crosspost.waiting_lines(channel)))
+        api = crosspost.status_lines(channel)
+        if api:
+            print("\n".join(["", *api]))
         return 0
     if action == "done":
         run_id = int(getattr(args, "run_id", 0) or 0)
@@ -3323,6 +3343,84 @@ def cmd_crosspost(args: argparse.Namespace) -> int:
     print(
         "  Open each folder: video.mp4 + tiktok.txt / instagram.txt into Buffer, slot.txt says when."
     )
+    return 0
+
+
+def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply: bool) -> int:
+    """The Buffer API verbs of `ops crosspost` (#1187-#1189)."""
+    from publishing import buffer_api, crosspost, video_host
+
+    if action == "selftest":
+        problem = video_host.self_test()
+        print(f"R2 self-test - {problem or 'ok: put, link and delete worked'}")
+        return 0 if not problem else 1
+    if action == "status":
+        lines = crosspost.status_lines(channel)
+        missing = crosspost.setup_missing(channel)
+        print("\n".join(lines or [f"Through Buffer - {channel}: nothing sent yet"]))
+        if missing:
+            print("  Not set up yet: " + ", ".join(missing))
+        return 0
+    if action == "cancel":
+        run_id = int(getattr(args, "run_id", 0) or 0)
+        if not run_id:
+            print("crosspost cancel needs the run: py -m scripts.ops crosspost cancel --run-id N")
+            return 2
+        print("\n".join(crosspost.cancel(channel, run_id)))
+        return 0
+    if action == "channels":
+        try:
+            orgs = buffer_api.organizations()
+            if not orgs:
+                print("Buffer: no organization on this key.")
+                return 1
+            org = orgs[0]
+            rows = buffer_api.channels(str(org.get("id")))
+        except buffer_api.BufferError as exc:
+            print(f"Buffer: {exc.kind} - {exc.message}")
+            return 1
+        print(f"Buffer - {org.get('name')}: {len(rows)} channel(s)")
+        print("\n".join(crosspost.channel_lines(rows)))
+        picked, notes = crosspost.choose_channels(rows)
+        for note in notes:
+            print(f"  ! {note}")
+        if not picked:
+            return 1
+        if apply:
+            crosspost.save_channels(channel, str(org.get("id")), picked)
+            print(f"Kept for {channel}: " + ", ".join(f"{k} {v}" for k, v in picked.items()))
+        else:
+            print("Re-run with --apply to keep these ids for " + channel + ".")
+        return 0
+    missing = crosspost.setup_missing(channel)
+    if missing:
+        print(f"Crosspost - {channel}: waits on " + ", ".join(missing))
+        return 1
+    lines = [*crosspost.sync_status(channel), *crosspost.send_due(channel, apply=apply)]
+    print("\n".join(lines or [f"Crosspost - {channel}: nothing new is public on YouTube"]))
+    if not apply:
+        print("  Nothing was sent. Re-run with --apply to schedule it.")
+    return 0
+
+
+@_register(
+    "crosspost-send",
+    "Send each video made public on YouTube to TikTok and Instagram through Buffer (#1190)",
+)
+def cmd_crosspost_send(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from publishing import crosspost
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    lines = crosspost.step(channel)
+    if not lines:
+        why = (
+            "off (CROSSPOST_AUTO=false)"
+            if not crosspost.auto_enabled()
+            else "nothing new is public on YouTube, or Buffer is not set up"
+        )
+        lines = [f"Crosspost - {channel}: {why}"]
+    print("\n".join(lines))
     return 0
 
 

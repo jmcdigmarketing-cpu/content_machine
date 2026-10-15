@@ -18,6 +18,21 @@ caption. What was packed and what the operator marked posted is kept in
     py -m scripts.ops crosspost              pack the newest rendered videos not packed yet
     py -m scripts.ops crosspost list         packed, not marked posted
     py -m scripts.ops crosspost done --run-id N
+
+**Through the API (#1188, operator 2026-10-14).** With `BUFFER_API_KEY`, the R2 keys
+(`video_host`) and the Buffer channel ids (`crosspost channels --apply`), a video goes to
+TikTok and Instagram on its own once it is public on YouTube - the operator's watch-before-
+public covers these platforms too. Only videos made public after it was switched on: the first
+run records what was already public (`buffer.baseline`). Each platform gets one post a day at
+the channel's suggested slot; the AI label is on and the caption keeps the disclosure line.
+`createPost` has no idempotency key, so a call is marked `sending` before it is made, and one
+that got no answer is looked for in Buffer before it is ever sent again.
+
+    py -m scripts.ops crosspost channels [--apply]   Buffer's channels; --apply keeps the ids
+    py -m scripts.ops crosspost send [--apply]       what would be scheduled; --apply sends
+    py -m scripts.ops crosspost status               each video on each platform
+    py -m scripts.ops crosspost cancel --run-id N    delete its scheduled posts
+    py -m scripts.ops crosspost selftest             put and delete 1 KB in the R2 bucket
 """
 
 from __future__ import annotations
@@ -246,16 +261,28 @@ def _stamp(value: Any) -> datetime | None:
 
 
 def week_counts(channel_id: str, *, days: int = 7, now: datetime | None = None) -> tuple[int, int]:
-    """#979: (packed, posted) in the last `days` days, from the stored stamps."""
+    """#979: (packed, posted) in the last `days` days, from the stored stamps. A video sent
+    through the API (#1189) counts as packed when it was scheduled and posted when it was sent."""
     cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=days)
     packed = posted = 0
-    for entry in (_load(channel_id).get("runs") or {}).values():
+    data = _load(channel_id)
+    for entry in (data.get("runs") or {}).values():
         if not isinstance(entry, dict):
             continue
         when = _stamp(entry.get("packed"))
         packed += bool(when and when >= cutoff)
         when = _stamp(entry.get("posted"))
         posted += bool(when and when >= cutoff)
+    for entry in (data.get("posts") or {}).values():
+        if not isinstance(entry, dict):
+            continue
+        states: list[dict[str, Any]] = [
+            s for s in (entry.get(p) for p in PLATFORMS) if isinstance(s, dict)
+        ]
+        scheduled = [_stamp(s.get("at")) for s in states if s.get("post_id")]
+        sent = [_stamp(s.get("sent_at")) for s in states if s.get("state") == "sent"]
+        packed += any(w and w >= cutoff for w in scheduled)
+        posted += any(w and w >= cutoff for w in sent)
     return packed, posted
 
 
@@ -281,4 +308,503 @@ def waiting_lines(channel_id: str) -> list[str]:
         reel = "" if entry.get("reel_ok", True) else "  (TikTok only - too long for a Reel)"
         lines.append(f"  run {rid}: {entry.get('title', '')}{reel}")
         lines.append(f"    {entry.get('folder', '')}")
+    return lines
+
+
+# ---- through the Buffer API (#1187-#1190) --------------------------------------------------------
+
+PLATFORMS = ("tiktok", "instagram")
+_LABEL = {"tiktok": "TikTok", "instagram": "Instagram"}
+_CHANNEL_ENV = {"tiktok": "BUFFER_TIKTOK_CHANNEL_ID", "instagram": "BUFFER_INSTAGRAM_CHANNEL_ID"}
+_LIVE = ("scheduled", "sending", "retry")  # states that still need the hosted copy
+_MIN_GAP = timedelta(hours=20)  # one post a day per platform
+_LEAD = timedelta(minutes=15)
+# A create call with no answer: Buffer makes a post at once, so one not found this long after
+# the call was never made, and may be sent.
+_SENDING_GRACE = timedelta(minutes=10)
+# A presigned link lasts 7 days; a post is scheduled only inside 6, so Buffer can still fetch
+# the video at its slot. A public bucket address (`R2_PUBLIC_BASE_URL`) does not expire.
+_LINK_HORIZON = timedelta(days=6)
+
+
+def auto_enabled() -> bool:
+    return os.getenv("CROSSPOST_AUTO", "true").strip().lower() not in ("0", "false", "no", "off")
+
+
+def buffer_channel_ids(channel_id: str) -> dict[str, str]:
+    """{"tiktok": id, "instagram": id} - `BUFFER_TIKTOK_CHANNEL_ID` / `BUFFER_INSTAGRAM_CHANNEL_ID`
+    when set, else what `crosspost channels --apply` stored."""
+    stored = _load(channel_id).get("buffer") or {}
+    out: dict[str, str] = {}
+    for service in PLATFORMS:
+        value = os.getenv(_CHANNEL_ENV[service], "").strip()
+        value = value or str(stored.get(service) or "").strip()
+        if value:
+            out[service] = value
+    return out
+
+
+def save_channels(channel_id: str, organization_id: str, picked: dict[str, str]) -> None:
+    data = _load(channel_id)
+    block = data.setdefault("buffer", {})
+    block["organization_id"] = organization_id
+    block.update({k: v for k, v in picked.items() if k in PLATFORMS})
+    _save(channel_id, data)
+
+
+def choose_channels(rows: list[dict[str, Any]]) -> tuple[dict[str, str], list[str]]:
+    """One usable TikTok and one Instagram channel from Buffer's list, and what is wrong."""
+    picked: dict[str, str] = {}
+    notes: list[str] = []
+    for service in PLATFORMS:
+        label = _LABEL[service]
+        found = [r for r in rows if str(r.get("service") or "").lower() == service]
+        usable = [r for r in found if not r.get("isDisconnected") and not r.get("isLocked")]
+        if not found:
+            notes.append(f"no {label} channel in Buffer - connect one at publish.buffer.com")
+            continue
+        if not usable:
+            notes.append(
+                f"{label} ({found[0].get('name')}) is disconnected or locked in Buffer - reconnect it"
+            )
+            continue
+        if len(usable) > 1:
+            ids = ", ".join(f"{r.get('name')} {r.get('id')}" for r in usable)
+            notes.append(f"{len(usable)} {label} channels ({ids}) - set {_CHANNEL_ENV[service]}")
+            continue
+        row = usable[0]
+        picked[service] = str(row.get("id"))
+        if row.get("isQueuePaused"):
+            notes.append(f"{label}'s queue is paused in Buffer - scheduled posts will not go out")
+        if service == "instagram" and str(row.get("type") or "").lower() in ("profile", "personal"):
+            notes.append(
+                "Instagram is a personal profile - Buffer posts Reels only from a Professional "
+                "(Business or Creator) account"
+            )
+    return picked, notes
+
+
+def channel_lines(rows: list[dict[str, Any]]) -> list[str]:
+    out = []
+    for row in rows:
+        flags = [
+            word
+            for word, key in (
+                ("disconnected", "isDisconnected"),
+                ("locked", "isLocked"),
+                ("queue paused", "isQueuePaused"),
+            )
+            if row.get(key)
+        ]
+        flag = f"  [{', '.join(flags)}]" if flags else ""
+        out.append(
+            f"  {row.get('service') or '':<10} {row.get('name') or ''} "
+            f"({row.get('type') or ''}){flag}  id {row.get('id')}"
+        )
+    return out
+
+
+def setup_missing(channel_id: str) -> list[str]:
+    """What still has to be set before a video can go out through Buffer."""
+    from publishing import buffer_api, video_host
+
+    out: list[str] = []
+    if not buffer_api.configured():
+        out.append("BUFFER_API_KEY")
+    if not video_host.configured():
+        out.extend(video_host.missing())
+    if not buffer_channel_ids(channel_id):
+        out.append("the Buffer channel ids (py -m scripts.ops crosspost channels --apply)")
+    return out
+
+
+def _public_runs(channel_id: str) -> list[tuple[int, str]]:
+    """(run id, YouTube id) of each video public on YouTube, as the publish log says."""
+    from storage.repositories.publish_log import get_publish_log_repository, is_seeded
+
+    out: dict[int, str] = {}
+    for row in get_publish_log_repository().list_uploaded_for_channel(channel_id):
+        run_id = getattr(row, "content_run_id", None)
+        if not run_id or is_seeded(row):
+            continue
+        if str(getattr(row, "privacy_status", "") or "").strip().lower() != "public":
+            continue
+        out[int(run_id)] = str(getattr(row, "youtube_video_id", "") or "")
+    return sorted(out.items())
+
+
+def _content_run(run_id: int) -> Any:
+    from storage.repositories.content_runs import get_content_run_repository
+
+    return get_content_run_repository().get(int(run_id))
+
+
+def _thumbnail_ms(channel_id: str) -> int:
+    """A frame one second past the channel intro, so the cover is not the intro card."""
+    try:
+        from config.channels import get_channel_profile
+
+        offset = float(get_channel_profile(channel_id).intro_offset_seconds or 0.0)
+    except Exception:
+        offset = 0.0
+    return int((offset + 1.0) * 1000)
+
+
+def _due_of(state: dict[str, Any]) -> datetime | None:
+    return _stamp(state.get("due_at"))
+
+
+def _next_due(channel_id: str, topic: str, service: str, posts: dict[str, Any], now: datetime):
+    due = _suggested_slot(channel_id, topic)
+    if due.tzinfo is None:
+        due = due.replace(tzinfo=timezone.utc)
+    if due < now + _LEAD:
+        due = now + _LEAD
+    taken = []
+    for entry in posts.values():
+        state = entry.get(service) if isinstance(entry, dict) else None
+        if isinstance(state, dict) and state.get("state") in ("scheduled", "sending"):
+            when = _due_of(state)
+            if when:
+                taken.append(when)
+    while any(abs(due - other) < _MIN_GAP for other in taken):
+        due += timedelta(days=1)
+    return due
+
+
+def _adopt(org_id: str, buffer_channel: str, state: dict[str, Any]) -> dict[str, Any] | None:
+    """The post a `sending` mark made, when Buffer has it: same due time, same caption start."""
+    from publishing import buffer_api
+
+    want = _due_of(state)
+    start = str(state.get("text_start") or "")
+    for post in buffer_api.find_posts(org_id, buffer_channel):
+        when = _stamp(str(post.get("dueAt") or "").replace("Z", "+00:00"))
+        if want and when and abs(when - want) < timedelta(minutes=1):
+            if str(post.get("text") or "").startswith(start):
+                return post
+    return None
+
+
+def _now_text(now: datetime) -> str:
+    return now.isoformat(timespec="seconds")
+
+
+def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None) -> list[str]:
+    """Schedule on TikTok and Instagram each video made public on YouTube since this was
+    switched on. `apply=False` says what it would do and writes nothing."""
+    from publishing import buffer_api, video_host
+
+    moment = now or datetime.now(timezone.utc)
+    data = _load(channel_id)
+    block = data.setdefault("buffer", {})
+    public = _public_runs(channel_id)
+    if not block.get("since"):
+        if not apply:
+            return [
+                f"Crosspost - {channel_id}: not switched on yet; videos public now stay as they are"
+            ]
+        block["since"] = _now_text(moment)
+        block["baseline"] = sorted(run_id for run_id, _ in public)
+        _save(channel_id, data)
+        return [
+            f"Crosspost - {channel_id}: switched on. {len(public)} video(s) already public stay "
+            "as they are; each one made public from now goes to TikTok and Instagram."
+        ]
+    baseline = {int(x) for x in block.get("baseline") or []}
+    ids = buffer_channel_ids(channel_id)
+    org_id = str(block.get("organization_id") or "")
+    posts = data.setdefault("posts", {})
+    lines: list[str] = []
+    for run_id, _video in public:
+        if run_id in baseline:
+            continue
+        entry = posts.get(str(run_id)) or {}
+        todo = [
+            s for s in PLATFORMS
+            if s in ids and (entry.get(s) or {}).get("state") in (None, "", "sending", "retry")
+        ]  # fmt: skip
+        if not todo:
+            continue
+        run = _content_run(run_id)
+        path = str(getattr(run, "mp4_path", "") or "") if run is not None else ""
+        if not path or not os.path.isfile(path):
+            lines.append(f"  ! run {run_id}: the rendered mp4 is not on disk - nothing to post")
+            continue
+        text = caption(run)
+        title = str(getattr(run, "title", "") or "")
+        topic = str(getattr(run, "input_topic", "") or getattr(run, "selected_topic", "") or "")
+        seconds = _duration(path)
+        limit = reel_max_seconds()
+        if apply:
+            entry = posts.setdefault(str(run_id), {})
+            entry["title"] = title
+        for service in todo:
+            label = _LABEL[service]
+            state = dict(entry.get(service) or {})
+            if service == "instagram" and seconds is not None and seconds > limit:
+                if apply:
+                    entry[service] = {
+                        "state": "skipped",
+                        "error": f"{seconds:.0f}s, longer than a Reel ({limit:.0f}s)",
+                        "at": _now_text(moment),
+                    }
+                    _save(channel_id, data)
+                lines.append(
+                    f"  run {run_id} {label}: skipped - {seconds:.0f}s is longer than a Reel"
+                )
+                continue
+            if state.get("state") == "sending":
+                try:
+                    found = _adopt(org_id, ids[service], state) if org_id else None
+                except buffer_api.BufferError as exc:
+                    lines.append(f"  ! run {run_id} {label}: could not check Buffer ({exc.kind})")
+                    continue
+                except Exception as exc:
+                    lines.append(
+                        f"  ! run {run_id} {label}: Buffer did not answer ({type(exc).__name__})"
+                    )
+                    return lines
+                if found:
+                    if apply:
+                        entry[service] = {
+                            **state,
+                            "state": "scheduled",
+                            "post_id": str(found.get("id")),
+                        }
+                        _save(channel_id, data)
+                    lines.append(f"  run {run_id} {label}: found in Buffer, scheduled")
+                    continue
+                marked = _stamp(state.get("at"))
+                if marked and moment - marked < _SENDING_GRACE:
+                    lines.append(f"  run {run_id} {label}: waiting to see whether Buffer made it")
+                    continue
+            due = _next_due(channel_id, topic, service, posts, moment)
+            if video_host.link_expires(moment) and due > moment + _LINK_HORIZON:
+                lines.append(
+                    f"  run {run_id} {label}: the next free slot is {_local(due, channel_id)} - it "
+                    "waits for a slot within the week its link lasts"
+                )
+                continue
+            if not apply:
+                lines.append(
+                    f"  would schedule run {run_id} on {label} for {_local(due, channel_id)}"
+                )
+                continue
+            expires = _stamp(entry.get("url_expires"))
+            try:
+                if not entry.get("object_key"):
+                    key = video_host.object_key(channel_id, run_id, path)
+                    entry["url"] = video_host.host(path, key)
+                    entry["object_key"] = key
+                    entry["url_expires"] = video_host.link_expires(moment)
+                elif expires and expires < due + timedelta(hours=1):
+                    entry["url"] = video_host.link(str(entry["object_key"]))
+                    entry["url_expires"] = video_host.link_expires(moment)
+            except Exception as exc:
+                lines.append(
+                    f"  ! run {run_id}: the video could not be hosted ({type(exc).__name__})"
+                )
+                _save(channel_id, data)
+                return lines
+            entry[service] = {
+                "state": "sending",
+                "due_at": due.isoformat(),
+                "text_start": text[:60],
+                "at": _now_text(moment),
+            }
+            _save(channel_id, data)  # the mark goes down before the call
+            try:
+                post = buffer_api.create_video_post(
+                    ids[service],
+                    text=text,
+                    video_url=str(entry["url"]),
+                    due_at=due,
+                    service=service,
+                    thumbnail_ms=_thumbnail_ms(channel_id),
+                )
+            except buffer_api.BufferError as exc:
+                if exc.kind == "input":
+                    entry[service] = {
+                        "state": "error",
+                        "error": exc.message,
+                        "at": _now_text(moment),
+                    }
+                    _save(channel_id, data)
+                    lines.append(f"  ! run {run_id} {label}: Buffer refused it - {exc.message}")
+                    continue
+                entry[service] = {**entry[service], "state": "retry", "error": exc.message}
+                _save(channel_id, data)
+                if exc.kind == "auth":
+                    lines.append(
+                        "  ! Buffer key rejected - check BUFFER_API_KEY "
+                        "(publish.buffer.com/settings/api); nothing more is sent this run"
+                    )
+                    return lines
+                if exc.kind == "rate_limited":
+                    lines.append("  ! Buffer's request limit - the rest waits for the next run")
+                    return lines
+                lines.append(f"  ! run {run_id} {label}: {exc.message} - tried again next run")
+                continue
+            except Exception as exc:
+                lines.append(
+                    f"  ! run {run_id} {label}: Buffer did not answer ({type(exc).__name__}) - it "
+                    "is looked for in Buffer before it is sent again"
+                )
+                return lines
+            entry[service] = {
+                "state": "scheduled",
+                "post_id": str(post.get("id") or ""),
+                "due_at": due.isoformat(),
+                "text_start": text[:60],
+                "at": _now_text(moment),
+            }
+            _save(channel_id, data)
+            lines.append(f"  run {run_id} {label}: scheduled for {_local(due, channel_id)}")
+    return lines
+
+
+def _remove_copy_when_done(entry: dict[str, Any]) -> bool:
+    from publishing import video_host
+
+    if not entry.get("object_key") or entry.get("object_removed"):
+        return False
+    if any((entry.get(s) or {}).get("state") in _LIVE for s in PLATFORMS):
+        return False
+    if video_host.remove(str(entry["object_key"])):
+        entry["object_removed"] = _now_text(datetime.now(timezone.utc))
+        return True
+    return False
+
+
+def sync_status(channel_id: str) -> list[str]:
+    """Read each scheduled post back: sent (with its link), Buffer's error, or still due. A
+    video no longer public on YouTube has its scheduled posts deleted."""
+    from publishing import buffer_api
+
+    data = _load(channel_id)
+    posts = data.get("posts") or {}
+    if not posts:
+        return []
+    public = {run_id for run_id, _ in _public_runs(channel_id)}
+    lines: list[str] = []
+    for rid, entry in posts.items():
+        if not isinstance(entry, dict):
+            continue
+        for service in PLATFORMS:
+            state = entry.get(service)
+            if not isinstance(state, dict) or state.get("state") != "scheduled":
+                continue
+            label = _LABEL[service]
+            post_id = str(state.get("post_id") or "")
+            try:
+                if int(rid) not in public:
+                    buffer_api.delete_post(post_id)
+                    state.update(state="cancelled", error="no longer public on YouTube")
+                    lines.append(f"  run {rid} {label}: cancelled - no longer public on YouTube")
+                    continue
+                post = buffer_api.get_post(post_id)
+            except buffer_api.BufferError as exc:
+                if exc.kind == "auth":
+                    _save(channel_id, data)
+                    return [*lines, "  ! Buffer key rejected - check BUFFER_API_KEY"]
+                logger.info("crosspost sync %s %s: %s", rid, service, exc.message)
+                continue
+            except Exception as exc:
+                logger.info("crosspost sync %s %s: %s", rid, service, type(exc).__name__)
+                continue
+            status = str(post.get("status") or "")
+            if status == "sent":
+                state.update(
+                    state="sent",
+                    sent_at=str(post.get("sentAt") or ""),
+                    link=str(post.get("externalLink") or ""),
+                )
+                lines.append(f"  run {rid} {label}: sent {state['link']}".rstrip())
+            elif status == "error":
+                message = str(
+                    ((post.get("error") or {}).get("message")) or "Buffer reported an error"
+                )
+                state.update(state="error", error=message)
+                lines.append(f"  ! run {rid} {label}: Buffer could not post it - {message}")
+        _remove_copy_when_done(entry)
+    _save(channel_id, data)
+    return lines
+
+
+def cancel(channel_id: str, run_id: int) -> list[str]:
+    """Delete a video's scheduled Buffer posts."""
+    from publishing import buffer_api
+
+    data = _load(channel_id)
+    entry = (data.get("posts") or {}).get(str(run_id))
+    if not isinstance(entry, dict):
+        return [f"Run {run_id} was never sent through Buffer."]
+    lines = []
+    for service in PLATFORMS:
+        state = entry.get(service)
+        if not isinstance(state, dict) or state.get("state") not in ("scheduled", "sending"):
+            continue
+        label = _LABEL[service]
+        try:
+            if state.get("post_id"):
+                buffer_api.delete_post(str(state["post_id"]))
+        except buffer_api.BufferError as exc:
+            lines.append(f"  ! run {run_id} {label}: not cancelled - {exc.message}")
+            continue
+        state.update(state="cancelled", error="cancelled by the operator")
+        lines.append(f"  run {run_id} {label}: cancelled")
+    _remove_copy_when_done(entry)
+    _save(channel_id, data)
+    return lines or [f"Run {run_id} has nothing scheduled in Buffer."]
+
+
+def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:
+    """Each video sent through Buffer, newest first, and where it is on each platform."""
+    posts = _load(channel_id).get("posts") or {}
+    rows = sorted(
+        ((rid, e) for rid, e in posts.items() if isinstance(e, dict)),
+        key=lambda item: int(item[0]) if str(item[0]).isdigit() else 0,
+        reverse=True,
+    )
+    if not rows:
+        return []
+    lines = [f"Through Buffer - {channel_id}: TikTok and Instagram"]
+    for rid, entry in rows[:limit]:
+        lines.append(f"  run {rid}  {str(entry.get('title') or '')[:70]}")
+        for service in PLATFORMS:
+            state = entry.get(service)
+            if not isinstance(state, dict):
+                continue
+            label = _LABEL[service]
+            kind = str(state.get("state") or "")
+            if kind == "scheduled":
+                due = _due_of(state)
+                when = _local(due, channel_id) if due else "a slot"
+                lines.append(f"      {label}: scheduled for {when}")
+            elif kind == "sent":
+                lines.append(f"      {label}: sent {state.get('link') or ''}".rstrip())
+            else:
+                detail = f" - {state.get('error')}" if state.get("error") else ""
+                lines.append(f"      {label}: {kind}{detail}")
+    return lines
+
+
+def step(channel_id: str) -> list[str]:
+    """The automatic round (`ops morning`, overnight, go-public): read back, then send. []
+    when switched off or Buffer is not set up at all."""
+    from publishing import buffer_api
+
+    if not auto_enabled() or not buffer_api.configured():
+        return []
+    missing = setup_missing(channel_id)
+    if missing:
+        return [f"Crosspost - {channel_id}: TikTok and Instagram wait on " + ", ".join(missing)]
+    lines: list[str] = []
+    for part in (sync_status, send_due):
+        try:
+            lines.extend(part(channel_id))
+        except Exception as exc:
+            logger.warning("crosspost %s failed: %s", part.__name__, exc)
+            lines.append(f"  ! crosspost {part.__name__} failed: {type(exc).__name__}")
     return lines

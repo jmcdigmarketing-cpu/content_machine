@@ -71,6 +71,8 @@ class OvernightResult:
     sign_in_line: str = ""
     # #1168: how many waiting drafts were set aside as past twice their window.
     expired: int = 0
+    # #1190: what went to TikTok and Instagram through Buffer.
+    crosspost_line: str = ""
 
 
 def _sign_in_line(channel_id: str) -> str:
@@ -131,6 +133,17 @@ def run_overnight(
     finally:
         _probe_signals(result)
         _post_publish(result)
+        _crosspost(result)
+
+
+def _crosspost(result: OvernightResult) -> None:
+    """#1190: videos made public since the last run go to TikTok and Instagram."""
+    try:
+        from publishing.crosspost import step
+
+        result.crosspost_line = "\n".join(step(result.channel_id))
+    except Exception as exc:
+        logger.debug("overnight crosspost skipped: %s", exc)
 
 
 def _post_publish(result: OvernightResult) -> None:
@@ -360,6 +373,8 @@ def render_overnight(result: OvernightResult) -> str:
             lines.append(result.canary_line)
         if result.post_publish_line:
             lines.append(result.post_publish_line)
+        if result.crosspost_line:
+            lines.append(result.crosspost_line)
         _append_tts_cache_line(lines)
         _append_retention_line(lines)
         return "\n".join(lines)
@@ -385,6 +400,8 @@ def render_overnight(result: OvernightResult) -> str:
         lines.append(result.canary_line)
     if result.post_publish_line:
         lines.append(result.post_publish_line)
+    if result.crosspost_line:
+        lines.append(result.crosspost_line)
     _append_tts_cache_line(lines)
     _append_retention_line(lines)
     lines.append(

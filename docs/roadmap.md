@@ -86,7 +86,7 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
 404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
 dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
-`roadmap-index` after wave 88: open 309, done 905, numbered open 257; highest filed #1184.
+`roadmap-index` after wave 89: open 312, done 911, numbered open 260; highest filed #1193.
 Claude's waves 81-85 closed #1137-#1163. Wave 85 is the script your own idea gets: a typed
 idea is drafted as angle 1 and kept for review (#1159 - the proof drafts of 10-13 had been
 written from generated angles), names are read whole (#1160), an unbacked claim in the first
@@ -102,8 +102,9 @@ starts (#1173). Wave 88 is what you see in the morning: a correction is checked 
 against a page about it (#1174), open corrections are one line each in `ops morning` (#1175),
 the morning offers the sign-in (#1176, decision §53), `c` in `batch-review` cuts the flagged
 sentences and says why when it cannot (#1177), and the thumbnail keeps its title on a dark
-plate (#1178). Two opener defects from the proof drafts are fixed (#1179-#1180). Claude has
-nothing claimed. The step-by-step:
+plate (#1178). Two opener defects from the proof drafts are fixed (#1179-#1180). Wave 89 sends
+each video made public on YouTube to TikTok and Instagram through Buffer's API (#1185-#1190,
+decision §54). Claude's next: #1191-#1193 (wave 90). The step-by-step:
 [operator_guide.md](operator_guide.md).
 
 Not next:

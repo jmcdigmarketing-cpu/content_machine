@@ -50,7 +50,8 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `corrections-open` | Open correction notes on published videos, one line each (#1175) |
 | `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
-| `crosspost` | Buffer pack for TikTok + Instagram: [list \| done --run-id N] (#968) |
+| `crosspost` | TikTok + Instagram through Buffer: [channels \| send \| status \| cancel \| selftest \| list \| done] (#968, #1188) |
+| `crosspost-send` | Send each video made public on YouTube to TikTok and Instagram through Buffer (#1190) |
 | `daily-brief` | The day's numbers: scoreboard, fresh data, coach ideas, quota health, queue |
 | `daily-sync` | Daily competitor + SEO refresh (run once per day) |
 | `dedupe-seed` | Duplicate seeded history from re-seeding (#927); --apply removes |

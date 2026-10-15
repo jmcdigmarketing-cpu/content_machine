@@ -7320,3 +7320,51 @@ Suite **5,759 -> 5780**, forward and reversed. mypy **98**.
 Closed **#1174-#1180**. Filed **#1183-#1184**. Claude has nothing claimed. Cursor's five
 unchanged: **#1121 - #462 - #404 - #388 - #409**. The operator's: sign in (now offered by
 `ops morning`), the consent screen, the upload task, `schedule-drafts --wake`, #1136.
+
+## 2026-10-14 — wave 89 (Claude Code): TikTok and Instagram through the Buffer API
+
+**Prompt:** "notice the newly added buffer api key, generate a plan to integrate for automated
+instagram and tiktok posting". Answers: R2 (already set up) hosts the video; a video goes once
+it is public on YouTube; new videos only; automatic from the start. The same answer pasted a
+terminal session - the sign-in is back; `.env` lines 35-36 cannot be parsed; every best bet is
+a game; the overnight videos cannot be found (wave 90).
+
+### Shipped
+
+1. **#1185** `publishing/buffer_api.py` - Buffer's GraphQL API (read from developers.buffer.com
+   that evening): `createPost` scheduled with `customScheduled` + `dueAt`, `aiAssisted`, the
+   video as a link with a thumbnail frame past the intro, Instagram as a Reel shared to the
+   feed. HTTP 200 for nearly everything, so errors are read from the body.
+2. **#1186** `publishing/video_host.py` - R2 through boto3 (pinned 1.43.114, installed with the
+   plan's approval): Buffer takes no uploads.
+3. **#1187** `ops crosspost channels [--apply]`.
+4. **#1188** `crosspost.send_due` - new videos only, one a day per platform, inside the week a
+   presigned link lasts; `createPost` has no idempotency key, so a call is marked first and an
+   unanswered one is looked for before it is ever sent again.
+5. **#1189** `crosspost.sync_status`, `crosspost cancel`.
+6. **#1190** at the end of `go-public --apply`, in `ops morning`, in the overnight report.
+
+### Findings
+
+- **Two changes from the approved plan.** The channel ids are kept in
+  `data/crosspost_<channel>.json` (this machine's account), not `config/channels.json`; a post
+  is scheduled only within 6 days, so the 7-day link still works at its slot.
+- **No R2 keys are in `.env`** although R2 is set up - so nothing can go out yet; the step
+  says so ("waits on R2_ACCOUNT_ID, ..."). `.env` lines 35-36 begin "Client" and python-dotenv
+  skips them; whatever they hold reaches no setting.
+- **Buffer, read-only on 10-14:** the key works; one organization, two channels - TikTok `tapinmedia47` (account) and Instagram `tapinmedia03` (business, so Reels can go out). A read of the TikTok channel's posts found 4, sent from Buffer's own composer. The channel ids are not kept yet: `crosspost channels --apply` is the operator's.
+- An interrupted shell command of mine (two lint fixes) was rejected by the operator, yet both
+  fixes were in the files afterwards; they are what was committed. Every later patch went
+  through a Write-tool script.
+
+### Audit
+
+31 tests in `tests/test_buffer_crosspost.py`. **31 of 31 failed or errored on a worktree at
+`eea67d1`** (1 failure, 30 errors). Older tests changed: `test_morning` (the step list). Callers:
+`step` from `go_public.apply_go_public`, `cmd_crosspost_send` (in `morning`) and
+`overnight._crosspost`; `send_due`/`sync_status`/`cancel`/`status_lines` from `ops crosspost`;
+`video_host.host`/`link`/`remove` from `send_due`/`sync_status`; `setup_missing` from the
+doctor row. Suite **5,780 -> 5811**, forward and reversed. mypy **98**. Corpus 242 (no live
+defect in a feature wave).
+
+Closed **#1185-#1190**. Filed **#1191-#1193** (wave 90, claimed). Cursor's five unchanged.

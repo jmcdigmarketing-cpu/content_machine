@@ -7,6 +7,47 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-13 (Claude Code): waves 83-84, the 10-13 overnight run
+
+Overnight rendered two videos on 10-13 and both were wrong. Run 139 was titled and written as
+a Thunder win over Indiana before the game; run 136 previewed a Texans game two days after it
+was played and ended "in convincing fashion on tennessee." The operator pulled both (upload
+jobs 56 and 57 cancelled, renders retired). Five fixes, each from that run:
+
+- **Why drafts were blocked (#1148).** Not thin facts. When the research brief restated the
+  facts, the claim checker cited the brief, and the rule that a brief backs nothing strict
+  (#966) called every such claim unsupported: 5 of 5 on a replay of run 137, with the sources
+  two lines away. The brief is no longer shown to the check as a fact to cite
+  (decisions_2026-10.md §47). A narrow second look carries a numbered claim that one fact line
+  states (3 of 50 recorded blocking claims). The stored check says how many fact lines it was
+  sent.
+- **"on torontos" (#1149).** `payoff_closer` appended a lowercased hook word to the last line.
+  It reports now and changes nothing. Cursor's pass.
+- **A flagged title blocks the overnight render (#1150)** - the flag never reached the draft.
+- **A game draft renders before its game or waits (#1151, §45).** The board's start time is on
+  the draft; a result stated before the game, a game already started, or a fixture with no
+  known time all wait for a person.
+- **Overnight stops at 3 finished videos waiting (#1152, §46)** - `OVERNIGHT_SHELF_MAX`.
+
+Three live drafts of the operator's own ideas (no voice): the prediction came back clean; the
+plan 6 of 8 claims backed by named sources, 2 flagged; the hope kept its stance with 4 claims
+flagged. `ops script-check --idea "..."` is the command (the guide said `--idea`, the parser
+only knew `--topic`; both work now).
+
+**Wave 84, the same day's smaller findings (#1153-#1158).** With the sign-in dead, an
+overdue upload says "sign in", not "run the worker". The 7-day reminder already existed
+(#974); it now starts on day 5, says the days left and leads the overnight report. A fact
+told twice is cut or named (run 136). `ops growth` prints one paid number that agrees with
+`ops ypp`. 50 of 71 stored source links were pictures or ended in a quote - cleaned where
+they are read. An angle no longer keeps its lens name ("Factual read:", run 142). Found on the
+way: the correction scan's script/style pattern held a backspace where `\b` was meant and
+had never matched.
+
+**Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`) - it expired
+10-13 and nothing uploads or syncs; publish the consent screen so it stops expiring weekly;
+`ops worker-task --install`. Suite 5595 -> 5689, mypy 98, corpus 201 -> 218. Claude has
+nothing claimed.
+
 ## Previous — 2026-10-13 (Claude Code): waves 81-82, the script that comes out and where the channel stands
 
 Built 10-11, landed 10-13. The overnight task runs the working tree, so this code wrote runs

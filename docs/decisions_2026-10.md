@@ -131,3 +131,15 @@ someone else. The sign-in had been dead two days with the fix printed each morni
 **Consequence:** the older notes are counted on the morning screen, not listed, and not
 rewritten. A nameless retraction notice no longer files - it was pinned on the run's first
 claim and recorded that claim as reversed.
+
+## 54. TikTok and Instagram go out through Buffer once a video is public on YouTube (2026-10-14)
+**Decision:** with `BUFFER_API_KEY`, the R2 keys and the Buffer channel ids set, each video
+made public on YouTube is scheduled on TikTok and on Instagram (a Reel shared to the feed)
+through Buffer's API, automatically, one post a day per platform at the suggested slot, the AI
+label on. Only videos made public after it is first set up; the 43 already public are left.
+R2 hosts the video because Buffer fetches media from a link. **Why:** the operator's calls -
+"once public on YouTube" (the watch-before-public that pulled two wrong videos on 10-13 then
+covers these platforms too), "new videos only", "automatic from the start". **Consequence:**
+nothing goes to TikTok or Instagram until a video goes public on YouTube; a video taken down
+on YouTube has its scheduled Buffer posts deleted; `CROSSPOST_AUTO=false` stops it all.
+The manual Buffer pack (#968) stays for a video sent by hand.

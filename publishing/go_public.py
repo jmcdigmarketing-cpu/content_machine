@@ -31,6 +31,8 @@ class GoPublicResult:
     run_id: int | None = None
     title: str = ""
     holds: list[str] = field(default_factory=list)
+    # #1190: what went to TikTok and Instagram once it was public.
+    crosspost: list[str] = field(default_factory=list)
 
     @property
     def label(self) -> str:
@@ -190,4 +192,10 @@ def apply_go_public(
             logger.warning("go-public: publish log not updated: %s", exc)
     result = GoPublicResult("updated", "", target, run_id=run_id, title=title)
     result.detail = f"{result.label} is public"
+    try:  # #1190 (operator, 2026-10-14): once public on YouTube, to TikTok and Instagram
+        from publishing import crosspost
+
+        result.crosspost = crosspost.step(channel_id)
+    except Exception as exc:
+        logger.warning("go-public: crosspost skipped: %s", exc)
     return result

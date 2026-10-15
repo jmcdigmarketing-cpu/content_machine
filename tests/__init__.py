@@ -202,6 +202,8 @@ os.environ["OVERNIGHT_SHELF_MAX"] = "0"
 # #1167 / #1168: never query the operator's scheduled task or set aside their drafts.
 os.environ["NIGHTLY_TASK_QUERY"] = "false"
 os.environ["OVERNIGHT_EXPIRE_DRAFTS"] = "false"
+# #1190: never post to the operator's TikTok or Instagram. A test of the round sets it itself.
+os.environ["CROSSPOST_AUTO"] = "false"
 os.environ["CONTENT_WINDOW_STATE"] = _suite_store("window_state.json")
 os.environ["CONTENT_UI_MASCOT_STAMP"] = _suite_store("mascot_shown_day.txt")
 

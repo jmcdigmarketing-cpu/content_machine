@@ -53,33 +53,36 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-14 · **HEAD at write:** `f797d98` + the wave 88 commit (`git log -1`) ·
-**Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
+**Written:** 2026-10-14 · **HEAD at write:** `eea67d1` + the wave 89 commit (`git log -1`) ·
+**Tree:** after the commit, untracked `.agents/`, `.codex/` and my `tests/test_ideas_and_menu.py`
+(wave 90, not yet built). Pushed.
 
-**Read before editing:** the overnight task runs the working tree and catches up when the PC
-wakes. Keep the tree importable; never patch `.py` through a heredoc - and the guard test now
-reads `docs/`, `assets/` and `tests/` too. `ops morning` may now call `input()` (the sign-in
-offer) - only with a console, and only in `morning`. A correction note now carries
-`CHECKED_LINE`; one without it is from before #1174. mypy **98**.
+**Read before editing:** TikTok and Instagram now go out through Buffer's API
+(`publishing/buffer_api.py`, `publishing/video_host.py`, the API half of
+`publishing/crosspost.py`). The suite pins `CROSSPOST_AUTO=false` - never post to the
+operator's accounts from a test; `BUFFER_API_KEY` and `R2_SECRET_ACCESS_KEY` are blanked by the
+suite's `_SECRET_NAME` rule. `data/crosspost_<channel>.json` now holds `buffer` (ids, `since`,
+`baseline`) and `posts` (per run, per platform: state, post id, due, link). `createPost` has
+no idempotency key - keep the "mark before the call" order. boto3 is a new pinned dependency.
+mypy **98**.
 
 **Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. Shared files this wave:
-`scripts/ops.py` (`corrections-open`, the sign-in offer in `_run_batch`), `core/batch_review.py`
-(`c`, `why_not_cut`), `core/content_engine.py` (`with_full_stop`, `says_next_sentence` in
-`_hook_variants`), `core/correction_dossier.py`, `core/overnight.py`,
-`assets/thumbnail_compose.py`, `assets/flux_thumbnail.py`. Seven older correction tests' pages
-now name their subject (`test_wave5_defects`, `test_review6_defects`, `test_next15_wave`).
+`publishing/crosspost.py`, `publishing/go_public.py` (`GoPublicResult.crosspost`),
+`scripts/ops.py` (`crosspost` verbs, `crosspost-send` in `morning`), `core/overnight.py`,
+`core/ops_doctor.py`, `pyproject.toml`, `requirements.txt`, `.env.example`, `tests/__init__.py`.
 
 **Defects first:**
-- **The YouTube sign-in ended 2026-10-13.** `ops morning` now offers it; nothing uploads or
-  syncs until then, and overnight pauses while the shelf is 3.
-- Open: #1181 (a title said "Denver Loss Angeles"), #1182 (a game run's stored domain reads
-  neutral), #1183 (four-word thumbnail headline), #1184 (a correction note written each scan).
-- Empty folders under `C:\c\Users\...` from my sample render; the operator's to delete.
+- Nothing can go to TikTok or Instagram yet: the R2 keys are not in `.env`. `.env` lines 35-36
+  begin "Client" and are skipped by python-dotenv.
+- Buffer itself answers: TikTok `tapinmedia47` and Instagram `tapinmedia03` (business).
 
-**Shipped:** waves 87-88 - #1169-#1180. 8 of 13 and 17 of 21 tests failed or errored on HEAD
-first. Suite 5780, mypy 98, corpus 242. Highest filed #1184.
+**Shipped:** wave 89 - #1185-#1190. 31 of 31 tests failed or errored on `eea67d1` first.
+Suite 5811, mypy 98, corpus 242. Highest filed #1193.
 
-**In progress:** nothing claimed.
+**In progress:** wave 90 claimed - #1191 two games of five best bets (`core/best_bet.py`),
+#1192 overnight videos in `py main.py` (`core/ui.py`, `main.py`, `core/batch_review.py`), #1193
+unparsed `.env` lines named (`core/secrets_doctor.py`, `core/ops_doctor.py`, `main.py`); then an
+initiative offered to Cursor (#1194, cross-platform learning).
 
 ## Slot — Cursor
 

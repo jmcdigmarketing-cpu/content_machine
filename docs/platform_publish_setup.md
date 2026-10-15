@@ -1,14 +1,14 @@
 # Platform publishing setup
 
-> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-05
+> **Class:** runbook · **Status:** living · **Reviewed:** 2026-10-14
 
 ## Current scope (this phase)
 
 | Platform | Status |
 |----------|--------|
 | **YouTube** | Supported — `publishing.YouTubePublisher` + worker `upload` jobs |
-| **TikTok** | **Through Buffer (Phase M, #968)** — the operator schedules the pack Content OS makes; no TikTok app (its review refuses personal apps - caveat below) |
-| **Instagram** | **Through Buffer (Phase M, #968)** — same pack; Instagram must be a Professional (Creator or Business) account for Buffer to post Reels. A direct Graph API publisher (#952) stays parked as an option |
+| **TikTok** | **Through Buffer's API (#1185-#1190)** — scheduled automatically once the video is public on YouTube; no TikTok app (its review refuses personal apps - caveat below). The hand-made pack (#968) still works |
+| **Instagram** | **Through Buffer's API (#1185-#1190)** — a Reel shared to the feed, same rule; Instagram must be a Professional (Creator or Business) account. A direct Graph API publisher (#952) stays parked |
 | **Facebook** | Not planned |
 
 Videos include your channel intro first (`video/intro/channel_intro.mp4`). See `video/intro/README.md`.
@@ -74,14 +74,36 @@ realistic routes (#952). Instagram differs: an app used only by people with a ro
 Standard Access, without App Review or Business Verification
 ([Instagram content publishing](https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/content-publishing)).
 
-## TikTok & Instagram through Buffer (operator, 2026-10-05)
+## TikTok & Instagram through Buffer (operator, 2026-10-05; API 2026-10-14)
 
 Buffer schedules TikToks and Instagram Reels and posts them with the PC off, so no developer app,
-token or policy page is needed for either. Once #968 ships, the crosspost verb writes a
-folder per rendered video (mp4, `tiktok.txt`, `instagram.txt`, `slot.txt`); upload it in Buffer
-for each channel at the suggested slot, then mark it posted with the verb's done flag. Turn on
-each platform's own AI-generated label in Buffer's composer where offered - the caption carries
-the disclosure line either way. The direct-API notes below are kept for the parked #952.
+token or policy page is needed for either. Since 2026-10-14 Content OS does it through Buffer's
+API (decisions_2026-10.md §54): **a video goes to both once it is public on YouTube**, new
+videos only, one post a day per platform at the suggested slot, the AI label on and the
+disclosure line in the caption.
+
+Set up once:
+
+1. In Buffer, connect TikTok and Instagram (Instagram as a Professional account).
+2. `.env`: `BUFFER_API_KEY` (publish.buffer.com/settings/api), and for the R2 bucket that hosts
+   each video while Buffer fetches it: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+   `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (an R2 API token with Object Read & Write on that
+   bucket). `R2_PUBLIC_BASE_URL` only for a public bucket or custom domain; without it each video
+   gets a 7-day presigned link and is scheduled inside that week.
+3. `py -m scripts.ops crosspost selftest` (puts and deletes 1 KB in the bucket), then
+   `py -m scripts.ops crosspost channels --apply` (keeps the TikTok and Instagram channel ids).
+
+Then: `go-public --apply` schedules it on both; `ops morning` (`crosspost-send`) and the
+overnight run read back what Buffer did and send anything new. `py -m scripts.ops crosspost
+status` shows each video on each platform; `crosspost send` is the dry run of the next round
+(`--apply` sends); `crosspost cancel --run-id N` deletes its scheduled posts.
+`CROSSPOST_AUTO=false` stops the automatic round. Buffer's free plan allows 250 API requests a
+day; a round uses about one per post plus one per scheduled post to read back.
+
+The hand-made pack still exists: `py -m scripts.ops crosspost` writes a folder per rendered
+video (mp4, `tiktok.txt`, `instagram.txt`, `slot.txt`) for Buffer's composer, and
+`crosspost done --run-id N` marks it posted. The direct-API notes below are kept for the parked
+#952.
 
 ## TikTok & Instagram direct APIs (parked, #952)
 

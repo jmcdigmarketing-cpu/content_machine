@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-14: what overnight drafts, and what you see in the morning (waves 87-88)
+# Handoff synopsis — 2026-10-14: TikTok and Instagram through Buffer, and what you raised (waves 89-90)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,21 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-14 (Claude Code): waves 87-88, what overnight drafts and the morning
+## Last wave — 2026-10-14 (Claude Code): waves 89-90, TikTok and Instagram through Buffer
+
+**Wave 89.** Each video made public on YouTube now goes to TikTok and Instagram through
+Buffer's API (#1185-#1190, decisions_2026-10.md §54): new videos only, one post a day per
+platform at the suggested slot, the AI label on. R2 hosts the video (Buffer fetches from a
+link). It runs at the end of `go-public --apply`, in `ops morning` (`crosspost-send`) and in
+the overnight report; `ops crosspost status` / `send` / `cancel` / `channels` / `selftest`.
+Nothing can go out yet: the R2 keys are not in `.env`.
+
+**Still the operator's:** the R2 keys and `.env` lines 35-36; `crosspost selftest` and
+`crosspost channels --apply`; the 2 overdue uploads (`ops worker`); the consent screen;
+`ops worker-task --install`; `schedule-drafts --wake`. Suite 5780 -> 5811, mypy 98, corpus
+242. Claude has #1191-#1193 claimed (wave 90).
+
+## Previous — 2026-10-14 (Claude Code): waves 87-88, what overnight drafts and the morning
 
 **Wave 87, what overnight drafts.** The operator keeps the schedule in the batch; a scheduled
 game ahead is now drafted as a preview (#1169, decisions_2026-10.md §52) - the first one, run 152
@@ -66,47 +80,6 @@ run 126; three new game drafts narrate games not yet played and wait (filed #116
 **Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`); publish the
 consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5689 -> 5746,
 mypy 98, corpus 227. Claude has nothing claimed.
-
-## Previous — 2026-10-13 (Claude Code): waves 83-84, the 10-13 overnight run
-
-Overnight rendered two videos on 10-13 and both were wrong. Run 139 was titled and written as
-a Thunder win over Indiana before the game; run 136 previewed a Texans game two days after it
-was played and ended "in convincing fashion on tennessee." The operator pulled both (upload
-jobs 56 and 57 cancelled, renders retired). Five fixes, each from that run:
-
-- **Why drafts were blocked (#1148).** Not thin facts. When the research brief restated the
-  facts, the claim checker cited the brief, and the rule that a brief backs nothing strict
-  (#966) called every such claim unsupported: 5 of 5 on a replay of run 137, with the sources
-  two lines away. The brief is no longer shown to the check as a fact to cite
-  (decisions_2026-10.md §47). A narrow second look carries a numbered claim that one fact line
-  states (3 of 50 recorded blocking claims). The stored check says how many fact lines it was
-  sent.
-- **"on torontos" (#1149).** `payoff_closer` appended a lowercased hook word to the last line.
-  It reports now and changes nothing. Cursor's pass.
-- **A flagged title blocks the overnight render (#1150)** - the flag never reached the draft.
-- **A game draft renders before its game or waits (#1151, §45).** The board's start time is on
-  the draft; a result stated before the game, a game already started, or a fixture with no
-  known time all wait for a person.
-- **Overnight stops at 3 finished videos waiting (#1152, §46)** - `OVERNIGHT_SHELF_MAX`.
-
-Three live drafts of the operator's own ideas (no voice): the prediction came back clean; the
-plan 6 of 8 claims backed by named sources, 2 flagged; the hope kept its stance with 4 claims
-flagged. `ops script-check --idea "..."` is the command (the guide said `--idea`, the parser
-only knew `--topic`; both work now).
-
-**Wave 84, the same day's smaller findings (#1153-#1158).** With the sign-in dead, an
-overdue upload says "sign in", not "run the worker". The 7-day reminder already existed
-(#974); it now starts on day 5, says the days left and leads the overnight report. A fact
-told twice is cut or named (run 136). `ops growth` prints one paid number that agrees with
-`ops ypp`. 50 of 71 stored source links were pictures or ended in a quote - cleaned where
-they are read. An angle no longer keeps its lens name ("Factual read:", run 142). Found on the
-way: the correction scan's script/style pattern held a backspace where `\b` was meant and
-had never matched.
-
-**Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`) - it expired
-10-13 and nothing uploads or syncs; publish the consent screen so it stops expiring weekly;
-`ops worker-task --install`. Suite 5595 -> 5689, mypy 98, corpus 201 -> 218. Claude has
-nothing claimed.
 
 ## Pipeline order (operator)
 

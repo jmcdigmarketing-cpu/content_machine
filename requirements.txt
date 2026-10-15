@@ -12,6 +12,7 @@ openai==2.33.0
 google-api-python-client==2.196.0
 google-auth==2.52.0
 requests==2.32.4
+boto3==1.43.114
 beautifulsoup4==4.14.3
 imageio-ffmpeg==0.6.0
 elevenlabs==2.45.0

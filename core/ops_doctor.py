@@ -138,6 +138,20 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
         logger.debug("doctor secrets skipped: %s", exc)
         add("secrets", True, f"n/a ({type(exc).__name__})")
 
+    try:  # #1190: TikTok and Instagram through Buffer - informational, never a failure
+        from publishing import buffer_api, crosspost
+
+        if buffer_api.configured():
+            missing = crosspost.setup_missing(channel_id)
+            add(
+                "crosspost",
+                True,
+                "TikTok + Instagram through Buffer: "
+                + ("ready" if not missing else "waits on " + ", ".join(missing)),
+            )
+    except Exception as exc:
+        logger.debug("doctor crosspost skipped: %s", exc)
+
     try:
         from core import nightly_task
 

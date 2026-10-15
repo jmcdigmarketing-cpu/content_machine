@@ -83,10 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
-404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
-dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
-`roadmap-index` after wave 91: open 317, done 920, numbered open 265; highest filed #1207.
+**2026-10-15.** #1121, #1125, #462, #404, #388 and #409 are done, so the list is the initiative the operator already
+chose. **#1195** one posts query per channel, views stored, a missing measurement is not zero.
+**#1196** domain, length and post time per feed, YouTube's hour until that feed has four
+samples, and `send_due` uses the hour. **#1197** two caption arms from sentences already in
+the script, winner and interval per platform. **#1198** which feed liked what, in the weekly
+report and the growth page. **#1199** the morning names a Buffer error, a paused queue, a
+disconnected channel, and a request count near the daily cap.
+`roadmap-index`: open 311, done 926, numbered open 259; highest filed #1206.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),

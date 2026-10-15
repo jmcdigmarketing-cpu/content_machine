@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import threading
 import time
@@ -170,6 +171,61 @@ def _cooldown_seconds() -> int:
         return 900
 
 
+def jittered_cooldown(
+    seconds: int, *, now: float | None = None, rng: random.Random | None = None
+) -> float:
+    """Half to one-and-a-half of the base, so two 429s do not wake together (#388)."""
+    start = time.time() if now is None else now
+    if seconds <= 0:
+        return start
+    roll = (rng or random).uniform(0.5, 1.5)
+    return start + seconds * roll
+
+
+# Signals that hit one host. #41 caps the pool; this caps the host. Unmapped
+# signals stay on the pool cap only.
+_SIGNAL_HOSTS = {
+    "youtube": "youtube",
+    "youtube_comments": "youtube",
+    "youtube_competitors": "youtube",
+}
+_HOST_SLOTS: dict[str, threading.BoundedSemaphore] = {}
+_HOST_SLOT_LIMIT: int | None = None
+_HOST_SLOT_LOCK = threading.Lock()
+
+
+def host_concurrency() -> int:
+    raw = os.getenv("DISCOVERY_HOST_CONCURRENCY", "2").strip()
+    try:
+        limit = int(float(raw))
+    except ValueError:
+        return 2
+    return max(1, limit)
+
+
+def _host_semaphore(host: str) -> threading.BoundedSemaphore:
+    global _HOST_SLOT_LIMIT
+    limit = host_concurrency()
+    with _HOST_SLOT_LOCK:
+        if limit != _HOST_SLOT_LIMIT:
+            _HOST_SLOTS.clear()
+            _HOST_SLOT_LIMIT = limit
+        sem = _HOST_SLOTS.get(host)
+        if sem is None:
+            sem = threading.BoundedSemaphore(limit)
+            _HOST_SLOTS[host] = sem
+        return sem
+
+
+def in_host_slot(name: str, fn, /, *args, **kwargs):
+    """Run ``fn`` under the host cap when ``name`` shares a host. Otherwise just call it."""
+    host = _SIGNAL_HOSTS.get(name)
+    if host is None:
+        return fn(*args, **kwargs)
+    with _host_semaphore(host):
+        return fn(*args, **kwargs)
+
+
 def _is_empty_200_inactive(name: str, result: dict[str, Any]) -> bool:
     """Tapology-class 200+nothing, not a healthy topic-miss INACTIVE.
 
@@ -196,7 +252,7 @@ def _record_signal_health(name: str, result: dict[str, Any]) -> None:
         secs = _cooldown_seconds()
         if secs <= 0:
             return
-        until = time.time() + secs
+        until = jittered_cooldown(secs)
         with _BREAKER_LOCK:
             _COOLDOWN_UNTIL[name] = max(_COOLDOWN_UNTIL.get(name, 0.0), until)
         logger.warning(
@@ -802,7 +858,7 @@ def _reset_base_seconds() -> None:
 
 def _timed_fetch(name, func, topic, pinned):
     started = time.perf_counter()
-    got_name, data = _fetch_one(name, func, topic, pinned)
+    got_name, data = in_host_slot(name, _fetch_one, name, func, topic, pinned)
     return got_name, data, time.perf_counter() - started
 
 
@@ -823,8 +879,11 @@ def _fetch_all(
     budget = _discovery_deadline()
     run_deadline.reset()
     executor = ThreadPoolExecutor(max_workers=workers)
+    from core.logging import submit_in_run
+
     futures = {
-        executor.submit(_timed_fetch, name, func, topic, pinned): name for name, func in sources
+        submit_in_run(executor, _timed_fetch, name, func, topic, pinned): name
+        for name, func in sources
     }
     try:
         for future in as_completed(futures, timeout=budget):

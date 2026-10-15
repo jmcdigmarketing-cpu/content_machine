@@ -225,7 +225,7 @@ def cmd_channel_go_live(args: argparse.Namespace) -> int:
     "Flag dead/unverified competitor YouTube UC ids (RSS probe, no Data API)",
 )
 def cmd_competitor_health(args: argparse.Namespace) -> int:
-    from analytics.youtube_rss import fetch_channel_uploads_rss
+    from analytics.youtube_rss import probe_channel_feed
     from core.competitor_health import (
         _load_snapshot,
         inspect_competitors,
@@ -235,7 +235,7 @@ def cmd_competitor_health(args: argparse.Namespace) -> int:
 
     report = inspect_competitors(
         args.channel,
-        fetch=lambda cid: fetch_channel_uploads_rss(cid, max_results=4),
+        fetch=lambda cid: probe_channel_feed(cid, max_results=4),
     )
     snapshot = _load_snapshot(args.channel)
     report.coverage = watch_coverage_lines(snapshot)  # #1063

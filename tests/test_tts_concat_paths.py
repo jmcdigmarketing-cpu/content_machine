@@ -135,7 +135,8 @@ class TestAMultiSentenceRenderPaysOnce(unittest.TestCase):
                 tts.generate_audio(script, dest, channel_id="tapin")
             self.assertTrue(os.path.isfile(dest))
         self.assertEqual(len(seam_calls), 2, f"re-synthesized after the join: {seam_calls}")
-        self.assertEqual(len(fake.calls), 1)
+        concat_calls = [cmd for cmd in fake.calls if "concat" in cmd]
+        self.assertEqual(len(concat_calls), 1, fake.calls)
         self.assertEqual(len(recorded), 1)
         self.assertLessEqual(recorded[0], len(script), "billed more characters than the script")
 

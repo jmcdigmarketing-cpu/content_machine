@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-15: hand posts, the morning in ops all, Buffer's public address (waves 91-92)
+# Handoff synopsis — 2026-10-15: a 500 is not a dead channel, run ids on the log, brand file, jitter, dead air
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,36 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-15 (Claude Code): waves 91-92, TikTok/Instagram and the morning
+## Last wave — 2026-10-15 (Cursor): the five left from 10-10
+
+A YouTube 500, and a 404 from every competitor channel, was reported as a dead UC id, and the
+sync then spent 3 Data API units per channel (#1121, #1125). The probe now keeps the HTTP
+status. When every channel returns 404 or 5xx, `ops competitor-health` prints one "channel
+feed is down" line and `sync_competitors` records `feed_down` and makes no Data API call. A
+200 with no videos is still a dead id. One 404 beside a 200 is still that id.
+
+Log lines written after `record_content_run` include `run=<id>` and still contain ` [WARNING] `
+(#462). The id does not exist before that, so discovery lines stay unbound. This interpreter's
+pool does not copy context; discovery submits through `submit_in_run`.
+
+`config/brand_safety/tapin.txt` drops a sentence containing "guaranteed profit", "deposit bonus"
+or "risk-free bet" (#409). "fan favorite" and "lock it in" stay. A one-word line is not a phrase.
+A channel with no file is unchanged.
+
+A 429 cooldown is half to one-and-a-half of 900s, so two signals that trip together do not share
+a wake time (#388). `youtube`, `youtube_comments` and `youtube_competitors` share one host cap
+(`DISCOVERY_HOST_CONCURRENCY`, default 2). Trip statuses and the Apify breaker are unchanged.
+
+After the sentence concat, leading and trailing silence are removed and an internal gap longer
+than 0.4s shrinks to 0.15s (#404). Word timings move by the seconds removed. Missing ffmpeg
+leaves the file unchanged and logs nothing at warning.
+
+**Next:** #1195-#1199, one video on three feeds. New tests errored on import before the functions
+existed. Re-run: 5861 passed. Claude's untracked `tests/test_arc_and_titles.py` is wave 92
+and is not in this commit. mypy 96, corpus 250. Live: `ops competitor-health --channel tapin`
+printed Marques Brownlee, 4 recent via rss.
+
+## Previous — 2026-10-15 (Claude Code): waves 91-92, TikTok/Instagram and the morning
 
 **Wave 91.** A video posted by hand in Buffer is found and left on that platform (#1200, §57 -
 Topuria, Chargers and Minecraft were); `crosspost done` records one (#1201); the worker starts
@@ -42,31 +71,6 @@ Instagram results - `docs/initiative_cross_platform.md`.
 `crosspost channels --apply`; the 2 overdue uploads (`ops worker`); the consent screen;
 `ops worker-task --install`; `schedule-drafts --wake`; whether Cursor starts #1194. Suite
 5780 -> 5823, mypy 98, corpus 244. Claude has nothing claimed.
-
-## Previous — 2026-10-14 (Claude Code): waves 87-88, what overnight drafts and the morning
-
-**Wave 87, what overnight drafts.** The operator keeps the schedule in the batch; a scheduled
-game ahead is now drafted as a preview (#1169, decisions_2026-10.md §52) - the first one, run 152
-(Ravens at Browns, 10-18), says "watch the inactive list before kickoff", no score. A game name
-knows its sport, so Last.fm, MusicBrainz and SEC filings stay off it (#1170); the claim check
-reads twice the facts (#1171); a topic with no RSS feed is `inactive`, not a tripped key (#1172);
-a game draft is set aside once its game starts (#1173).
-
-The operator's three ideas, drafted again: two clean, one with a sentence hard to say - yesterday
-2, 1 and 1 unbacked claims. Clean is not good: run 150's new opener has no full stop (#1179), run
-149's says the next sentence again (#1180) and its title reads "Denver Loss Angeles" (#1181).
-
-**Wave 88, the morning.** A correction is checked only against a page that names the claim
-(#1174): the 32 notes on file covered 5 pairs, 4 read against pictures and 1 against an article
-about someone else, and the rule files none of them. `ops morning` lists open corrections one
-line each (#1175) and offers the sign-in when it has ended (#1176, §53). `c` in `batch-review`
-cuts the flagged sentences and says why when it cannot (#1177) - on a copy, run 144 comes out
-with no flagged claim. Thumbnail words go on a dark plate, not nowhere (#1178). The two opener
-defects are fixed (#1179-#1180).
-
-**Still the operator's:** sign in (`ops morning` now asks); publish the consent screen;
-`ops worker-task --install`; `schedule-drafts --wake`. Suite 5746 -> 5780, mypy 98, corpus
-242. Claude has nothing claimed.
 
 ## Pipeline order (operator)
 

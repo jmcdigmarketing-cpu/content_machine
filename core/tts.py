@@ -1125,6 +1125,12 @@ def _generate_by_sentences(
             # it rather than report only its own synthesis.
             exc.spent_chars = synth_chars  # type: ignore[attr-defined]
             raise
+        try:
+            from core.voice.dead_air import trim_dead_air
+
+            trim_dead_air(output_path)
+        except Exception as exc:
+            logger.warning("dead-air trim failed: %s", exc)
         tts_cache_store(whole_cache_key, output_path)
         total = cached_chars + synth_chars
         _last_cache_fraction = (cached_chars / total) if total else 0.0

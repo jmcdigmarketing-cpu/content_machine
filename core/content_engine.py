@@ -2401,10 +2401,13 @@ def generate_content_package(
         )
 
     try:
-        from core.odds_language import apply_odds_language
+        from core.odds_language import apply_brand_lexicon, apply_odds_language
 
         script, odds_notes = apply_odds_language(script, topic=topic)
         for note in odds_notes:
+            logger.info("%s", note)
+        script, brand_notes = apply_brand_lexicon(script, channel_id=channel_id or "")
+        for note in brand_notes:
             logger.info("%s", note)
     except Exception as exc:
         logger.debug("odds language skipped: %s", exc)

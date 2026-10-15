@@ -88,20 +88,20 @@ headline (`assets/thumbnail_compose.py`), #1206 old descriptions re-laid at uplo
 
 ## Slot — Cursor
 
-**Written:** 2026-10-10 · **HEAD at write:** `85ce1d2` · **Tree:** this wave is
+**Written:** 2026-10-15 · **HEAD at write:** `ecd2327` · **Tree:** this wave is
 uncommitted until the commit that follows. Leave `.agents/` and `.codex/`.
 
 **Defects first:**
-- The first full suite (5347) failed the env lint: `VOICE_PACE_FILE` was read
-  and not in `.env.example`. Documented beside `TTS_SPEED`.
-- #374 changes the script a healthy run writes. Two calls by default. Set
-  `SCRIPT_BODY_TIER=premium` for the old single call.
-- `ops log --limit 15` printed one warning: YouTube RSS returned 500. That is
-  #1121, still open.
-- #1088 is still an operator call.
+- The run id does not exist until `record_content_run`, so discovery lines
+  before that stay unbound. `submit_in_run` only helps work submitted after.
+- Missing ffmpeg leaves the concat mp3 unchanged (debug, not a warning).
+- The first full suite failed `check_command_ref` while wave 91's
+  `docs/ops_commands.md` was still stale. It matches now. Re-run: 5861 passed.
+  `tests/test_arc_and_titles.py` is Claude's, untracked, still importing names
+  that do not exist. It is not in this commit.
 
-**Shipped:** #990 #400 #380 #995 #374. 16 of 17 new tests failed or errored
-first. The restore-flag test was already one premium call. mypy 98.
-`roadmap-index`: open 310, done 841, numbered open 258, highest #1121.
-Next: #1121 #462 #404 #388 #409. Shared: `scripts/ops.py`, `core/pipeline.py`,
-`core/content_engine.py`, `tests/__init__.py`, `.env.example`.
+**Shipped:** #1121 #1125 #462 #409 #388 #404. New tests errored on import
+before the functions existed. mypy 96 (baseline lowered from 98). Corpus 250.
+`roadmap-index`: open 311, done 926, numbered open 259, highest #1206.
+Next: #1195 #1196 #1197 #1198 #1199. Shared this wave: `scripts/ops.py`,
+`.env.example`, `docs/backlog.md`, `tests/regression_corpus.json`.

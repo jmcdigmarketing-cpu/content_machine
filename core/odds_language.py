@@ -1,7 +1,8 @@
-"""Odds voice (#126) + advertiser-safe betting CTAs (#127).
+"""Odds voice (#126) + advertiser-safe betting CTAs (#127) + brand lexicon (#409).
 
 Odds-derived scripts must say "market" / "favored", never "will win".
 Gambling CTAs are stripped. Default-on; suite sets both flags false.
+The brand file is a per-channel phrase list, not that odds pass.
 Distinct from the name pronunciation lexicon.
 """
 
@@ -9,6 +10,7 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 
 from core.logging import get_logger
 
@@ -75,6 +77,49 @@ def strip_betting_ctas(text: str) -> tuple[str, int]:
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
     return cleaned, n
+
+
+def lexicon_path(channel_id: str) -> Path:
+    from config.paths import ROOT_DIR
+
+    safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in (channel_id or ""))
+    return Path(ROOT_DIR) / "config" / "brand_safety" / f"{safe}.txt"
+
+
+def lexicon_phrases(channel_id: str) -> list[str]:
+    """Phrases from the channel's file. A one-word line is not a phrase."""
+    path = lexicon_path(channel_id)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    phrases: list[str] = []
+    for raw in text.splitlines():
+        line = raw.split("#", 1)[0].strip().lower()
+        if not line or " " not in line:
+            continue
+        phrases.append(line)
+    return phrases
+
+
+def apply_brand_lexicon(script: str, *, channel_id: str) -> tuple[str, list[str]]:
+    """Drop a sentence that contains a channel phrase. Never raises."""
+    text = script or ""
+    phrases = lexicon_phrases(channel_id)
+    if not text or not phrases:
+        return text, []
+    sentences = [part for part in re.split(r"(?<=[.!?])\s+", text.strip()) if part]
+    kept: list[str] = []
+    dropped = 0
+    for sentence in sentences:
+        lowered = sentence.lower()
+        if any(phrase in lowered for phrase in phrases):
+            dropped += 1
+            continue
+        kept.append(sentence)
+    if not dropped:
+        return text, []
+    return " ".join(kept).strip(), [f"brand-safety: dropped {dropped} sentence(s)"]
 
 
 def apply_odds_language(script: str, *, topic: str = "") -> tuple[str, list[str]]:

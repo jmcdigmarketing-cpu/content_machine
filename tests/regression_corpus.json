@@ -3746,6 +3746,53 @@
       "why": "the warning named no line the operator could fix"
     },
     {
+      "id": "youtube-rss-500-is-not-a-dead-channel",
+      "item": 1121,
+      "source": "ops competitor-health, 2026-10-10: YouTube RSS returned HTTP 500",
+      "call": "core.competitor_health:feed_check_detail",
+      "args": [
+        500,
+        0
+      ],
+      "expect": {
+        "contains": "500",
+        "not_contains": "dead or wrong"
+      },
+      "why": "the report called YouTube's 500 a dead or wrong UC id"
+    },
+    {
+      "id": "youtube-feed-404-on-every-channel-is-down",
+      "item": 1125,
+      "source": "competitor-sync, 2026-10-10: feeds/videos.xml answered 404 for every channel",
+      "call": "core.competitor_health:feed_wide_down",
+      "args": [
+        [
+          404,
+          404
+        ]
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "a 404 from every channel spent 3 Data API units each and was read as a dead id"
+    },
+    {
+      "id": "youtube-feed-404-beside-a-live-channel-is-that-id",
+      "item": 1125,
+      "source": "must keep: one 404 next to a channel that answered",
+      "call": "core.competitor_health:feed_wide_down",
+      "args": [
+        [
+          404,
+          200
+        ]
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a 404 beside a live feed is that channel, not the whole feed"
+    },
+    {
       "id": "topuria-hand-post-is-this-video",
       "item": 1200,
       "source": "Buffer, 2026-10-11: Topuria posted to TikTok by hand, opening with its first line",

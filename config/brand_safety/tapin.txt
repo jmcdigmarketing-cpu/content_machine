@@ -1,0 +1,7 @@
+# Phrases a TapIn sentence must not carry (#409). One phrase per line.
+# A sentence containing the phrase is dropped. A single word is ignored.
+# The odds pass still strips "bet now" and the other betting CTAs; this list
+# is the rest. "fan favorite" and "lock it in" are ordinary gaming copy.
+guaranteed profit
+deposit bonus
+risk-free bet

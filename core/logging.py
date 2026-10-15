@@ -1,8 +1,11 @@
+import contextvars
 import logging
 import os
 import sys
+from concurrent.futures import Executor
 
 _CONFIGURED = False
+_RUN_ID: contextvars.ContextVar[str] = contextvars.ContextVar("cm_run_id", default="")
 
 _QUIET_LIBRARIES = (
     "googleapiclient",
@@ -12,6 +15,38 @@ _QUIET_LIBRARIES = (
     "urllib3",
     "google",
 )
+
+
+class _RunFormatter(logging.Formatter):
+    """A bound run inserts ``run=<id> `` after the level. Unbound lines stay as they were."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        run = _RUN_ID.get()
+        record.run_prefix = f"run={run} " if run else ""
+        return super().format(record)
+
+
+def bind_run(run_id: int | str | None) -> contextvars.Token[str]:
+    """Log lines on this context, and on work submitted via ``submit_in_run``, name the run."""
+    text = "" if run_id in (None, "") else str(run_id)
+    return _RUN_ID.set(text)
+
+
+def clear_run(token: contextvars.Token[str] | None = None) -> None:
+    if token is None:
+        _RUN_ID.set("")
+        return
+    _RUN_ID.reset(token)
+
+
+def submit_in_run(executor: Executor, fn, /, *args, **kwargs):
+    """Submit ``fn`` with the caller's run id. This interpreter's pool does not copy it."""
+    ctx = contextvars.copy_context()
+
+    def _call(*a, **kw):
+        return ctx.run(fn, *a, **kw)
+
+    return executor.submit(_call, *args, **kwargs)
 
 
 def setup_logging(level=None):
@@ -25,10 +60,14 @@ def setup_logging(level=None):
 
     logging.basicConfig(
         level=level,
-        format="%(asctime)s [%(levelname)s] %(message)s",
+        format="%(asctime)s [%(levelname)s] %(run_prefix)s%(message)s",
         datefmt="%H:%M:%S",
         stream=sys.stdout,
     )
+    console = _RunFormatter("%(asctime)s [%(levelname)s] %(run_prefix)s%(message)s", "%H:%M:%S")
+    for handler in logging.getLogger().handlers:
+        if type(handler) is logging.StreamHandler and handler.level == logging.NOTSET:
+            handler.setFormatter(console)
 
     quiet = os.getenv("CONTENT_QUIET_LOGS", "true").lower() in ("1", "true", "yes")
     if quiet:
@@ -71,7 +110,10 @@ def attach_log_file(path: str) -> logging.Handler:
     handler._cm_log_file = True  # type: ignore[attr-defined]
     handler.setLevel(logging.INFO)
     handler.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s", "%Y-%m-%d %H:%M:%S")
+        _RunFormatter(
+            "%(asctime)s [%(levelname)s] %(run_prefix)s%(name)s: %(message)s",
+            "%Y-%m-%d %H:%M:%S",
+        )
     )
     app = logging.getLogger("content_machine")
     app.addHandler(handler)

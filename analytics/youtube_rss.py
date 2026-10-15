@@ -7,6 +7,7 @@ https://www.youtube.com/feeds/videos.xml?channel_id=UC...
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
 from typing import Any
 
 import requests
@@ -22,13 +23,21 @@ _VIEWS = f"{{{MEDIA}}}group/{{{MEDIA}}}community/{{{MEDIA}}}statistics"
 FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 
 
-def fetch_channel_uploads_rss(
+@dataclass(frozen=True)
+class FeedProbe:
+    """Videos plus the HTTP status. An empty list alone cannot tell a dead id from a 500."""
+
+    videos: list[dict[str, Any]]
+    status: int | None
+
+
+def probe_channel_feed(
     youtube_channel_id: str,
     *,
     max_results: int = 8,
     timeout: int = 12,
-) -> list[dict[str, Any]]:
-    """Recent uploads from the public Atom feed (unquota'd)."""
+) -> FeedProbe:
+    """Recent uploads, and the status YouTube actually returned (#1121, #1125)."""
     url = FEED_URL.format(channel_id=youtube_channel_id)
     try:
         response = requests.get(
@@ -36,13 +45,17 @@ def fetch_channel_uploads_rss(
             timeout=timeout,
             headers={"User-Agent": "ContentMachine/1.0 (competitor-rss)"},
         )
-        if response.status_code != 200:
-            logger.warning("YouTube RSS %s returned %s", youtube_channel_id, response.status_code)
-            return []
+    except Exception as exc:
+        logger.warning("YouTube RSS parse failed for %s: %s", youtube_channel_id, exc)
+        return FeedProbe([], None)
+    if response.status_code != 200:
+        logger.warning("YouTube RSS %s returned %s", youtube_channel_id, response.status_code)
+        return FeedProbe([], int(response.status_code))
+    try:
         root = ET.fromstring(response.content)
     except Exception as exc:
         logger.warning("YouTube RSS parse failed for %s: %s", youtube_channel_id, exc)
-        return []
+        return FeedProbe([], int(response.status_code))
 
     videos: list[dict[str, Any]] = []
     for entry in root.findall(f"{{{ATOM}}}entry"):
@@ -71,4 +84,14 @@ def fetch_channel_uploads_rss(
         videos.append(video)
         if len(videos) >= max_results:
             break
-    return videos
+    return FeedProbe(videos, 200)
+
+
+def fetch_channel_uploads_rss(
+    youtube_channel_id: str,
+    *,
+    max_results: int = 8,
+    timeout: int = 12,
+) -> list[dict[str, Any]]:
+    """Recent uploads from the public Atom feed (unquota'd)."""
+    return probe_channel_feed(youtube_channel_id, max_results=max_results, timeout=timeout).videos

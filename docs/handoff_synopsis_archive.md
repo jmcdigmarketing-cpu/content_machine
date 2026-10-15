@@ -7,6 +7,31 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-14 (Claude Code): waves 87-88, what overnight drafts and the morning
+
+**Wave 87, what overnight drafts.** The operator keeps the schedule in the batch; a scheduled
+game ahead is now drafted as a preview (#1169, decisions_2026-10.md §52) - the first one, run 152
+(Ravens at Browns, 10-18), says "watch the inactive list before kickoff", no score. A game name
+knows its sport, so Last.fm, MusicBrainz and SEC filings stay off it (#1170); the claim check
+reads twice the facts (#1171); a topic with no RSS feed is `inactive`, not a tripped key (#1172);
+a game draft is set aside once its game starts (#1173).
+
+The operator's three ideas, drafted again: two clean, one with a sentence hard to say - yesterday
+2, 1 and 1 unbacked claims. Clean is not good: run 150's new opener has no full stop (#1179), run
+149's says the next sentence again (#1180) and its title reads "Denver Loss Angeles" (#1181).
+
+**Wave 88, the morning.** A correction is checked only against a page that names the claim
+(#1174): the 32 notes on file covered 5 pairs, 4 read against pictures and 1 against an article
+about someone else, and the rule files none of them. `ops morning` lists open corrections one
+line each (#1175) and offers the sign-in when it has ended (#1176, §53). `c` in `batch-review`
+cuts the flagged sentences and says why when it cannot (#1177) - on a copy, run 144 comes out
+with no flagged claim. Thumbnail words go on a dark plate, not nowhere (#1178). The two opener
+defects are fixed (#1179-#1180).
+
+**Still the operator's:** sign in (`ops morning` now asks); publish the consent screen;
+`ops worker-task --install`; `schedule-drafts --wake`. Suite 5746 -> 5780, mypy 98, corpus
+242. Claude has nothing claimed.
+
 ## Previous — 2026-10-14 (Claude Code): waves 85-86, your own idea's script and the morning
 
 **A correction to the entry below.** The three "drafts of your own ideas" in wave 83 were

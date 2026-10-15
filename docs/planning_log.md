@@ -7462,3 +7462,63 @@ a public address; a far slot is still scheduled - the presigned link and its 6-d
 gone), `test_morning` (`all` ends with the morning). Suite 5861 (5823 + my 38; Cursor's uncommitted tests ran with it). mypy 98.
 
 Closed **#1200-#1204, #1207**. Filed **#1205-#1206** (wave 92, claimed).
+
+## 2026-10-15 — Cursor: the five left on 10-10 (#1121, #1125, #462, #409, #388, #404)
+
+**Prompt:** "Let's play some catch up. Claude left you some work, could you complete it for me?"
+The operator then chose the five first, then the cross-platform initiative.
+
+### Picked
+
+The roadmap's five, safest first: #1121 with #1125, #462, #409, #388, #404. Same list the
+roadmap already named. The initiative (#1195-#1199) is next and is not in this commit.
+
+### Shipped
+
+1. **#1121 #1125** `probe_channel_feed` keeps the HTTP status (`analytics/youtube_rss.py`).
+   A 5xx is "YouTube's error, not the channel id" (`core/competitor_health.py` `feed_check_detail`).
+   When every probe is 404 or 5xx, health prints one "channel feed is down" line and
+   `sync_competitors` (`analytics/competitor_sync.py`) records `feed_down` and returns before
+   any Data API call. A 200 with no entries is still "dead or wrong". One 404 beside a 200
+   still falls back, and only that id. `ops competitor-health` passes the probe, not the list
+   wrapper (`scripts/ops.py`).
+2. **#462** `bind_run` after `record_content_run` (`core/pipeline.py`); the formatter still
+   emits ` [WARNING] ` (`core/logging.py`). Unbound lines are unchanged. Discovery submits
+   through `submit_in_run` because this interpreter's pool does not copy context.
+3. **#409** `config/brand_safety/tapin.txt`, applied beside the odds pass
+   (`core/content_engine.py`, `apply_brand_lexicon` in `core/odds_language.py`). A sentence
+   containing a phrase is dropped and the note counts how many. A one-word line is ignored.
+4. **#388** `jittered_cooldown` is half to one-and-a-half of the 900s cooldown
+   (`apis/register_signals.py`). The three YouTube signals share `in_host_slot`
+   (`DISCOVERY_HOST_CONCURRENCY`, default 2). Unmapped signals are not capped. Trip statuses,
+   persistence and the Apify breaker are unchanged.
+5. **#404** after concat, `trim_dead_air` (`core/voice/dead_air.py`, called from `core/tts.py`)
+   drops leading and trailing silence and shortens an internal gap longer than 0.4s to 0.15s.
+   Word timings shift by the time removed. Missing ffmpeg leaves the file and logs at debug.
+
+### Findings
+
+- `fetch_channel_uploads_rss` returned `[]` on any non-200, so health could not tell a 500
+  from an empty channel. The list wrapper still returns `.videos`; health and the sync call
+  the probe.
+- The run id is assigned inside `_finalize_run`, after discovery has already logged. Binding
+  earlier would name a run that has no row. Left that way on purpose.
+- The host cap is only the three YouTube signal names. A new signal on the same host is
+  uncapped until it is added to `_SIGNAL_HOSTS`.
+- Fail-first was import errors: `FeedProbe`, `bind_run`, `apply_brand_lexicon`,
+  `jittered_cooldown` / `in_host_slot`, and `core.voice.dead_air` did not exist. Not assertion
+  failures against the old functions.
+
+### Not done
+
+#1195-#1199. Wave 92 (#1205, #1181, #1182, #1183, #1206) is Claude's.
+
+### Audit
+
+New tests: `tests/test_feed_down.py`, `tests/test_run_log.py`, `tests/test_brand_lexicon.py`,
+`tests/test_host_cap.py`, `tests/test_dead_air.py`, plus three corpus cases (247 -> 250).
+Each new module or function errored on import before the change. `git status --short data/`
+empty. mypy 96, baseline lowered from 98. `roadmap-index`: open 311, done 926, numbered open
+259; highest filed #1206.
+
+Closed **#1121, #1125, #462, #409, #388, #404**. Next **#1195-#1199**.

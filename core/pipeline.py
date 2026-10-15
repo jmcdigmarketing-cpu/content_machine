@@ -860,7 +860,31 @@ def _finalize_run(
         features=result.features or {},
     )
     result.run_id = run_id
+    from core.logging import bind_run, clear_run
 
+    _run_token = bind_run(run_id)
+    try:
+        _finish_recorded_run(
+            channel_id=channel_id,
+            input_topic=input_topic,
+            result=result,
+            discovery=discovery,
+            status=status,
+            run_id=run_id,
+        )
+    finally:
+        clear_run(_run_token)
+
+
+def _finish_recorded_run(
+    *,
+    channel_id: str,
+    input_topic: str,
+    result: PipelineResult,
+    discovery: DiscoveryResult,
+    status: str,
+    run_id: int,
+) -> None:
     # Pillar 1 (Run Ledger): persist the quality scores every path used to
     # print-and-discard, then drop the full per-run trace. Both fail-open.
     quality: dict[str, Any] = {}
@@ -1222,6 +1246,7 @@ def run_pipeline(
         vault_relevance_audit=vault_relevance_audit,
         signals=best_signals,
         intent=run_intent.intent,
+        input_topic=input_topic,
     )
     result.features["voice_mode"] = voice_mode
     if content.get("speaker_turns"):

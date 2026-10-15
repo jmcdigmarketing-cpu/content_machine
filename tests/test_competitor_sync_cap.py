@@ -32,14 +32,15 @@ class TestCompetitorSyncCap(unittest.TestCase):
 
     def test_blocked_api_does_not_record_usage(self):
         from analytics import competitor_sync as cs
+        from analytics.youtube_rss import FeedProbe
 
         env = {"COMPETITOR_SYNC_MAX_UNITS": "3", "COMPETITOR_SYNC_RESERVE_UNITS": "0"}
         with (
             patch.dict(os.environ, env, clear=False),
             patch.object(cs, "_rss_enabled", return_value=True),
             patch(
-                "analytics.youtube_rss.fetch_channel_uploads_rss",
-                return_value=[],
+                "analytics.youtube_rss.probe_channel_feed",
+                return_value=FeedProbe([], 200),
             ),
             patch.object(cs, "_sync_api_units", 3),
             patch("apis.youtube_quota.record_usage") as rec,

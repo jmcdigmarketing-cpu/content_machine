@@ -183,15 +183,22 @@ def fetch_channel_recent_videos(
     *,
     service=None,
     max_results: int = 8,
+    skip_rss: bool = False,
 ) -> list[dict[str, Any]]:
-    """RSS first (free), API fallback."""
-    global _sync_api_units
-    if _rss_enabled():
-        from analytics.youtube_rss import fetch_channel_uploads_rss
+    """RSS first (free), API fallback.
 
-        videos = fetch_channel_uploads_rss(youtube_channel_id, max_results=max_results)
-        if videos:
-            return videos
+    ``skip_rss`` is for a channel already probed: a feed-wide outage never reaches
+    here, and a 5xx does not spend Data API units (#1121).
+    """
+    global _sync_api_units
+    if _rss_enabled() and not skip_rss:
+        from analytics.youtube_rss import probe_channel_feed
+
+        probe = probe_channel_feed(youtube_channel_id, max_results=max_results)
+        if probe.videos:
+            return probe.videos
+        if probe.status is not None and probe.status >= 500:
+            return []
 
     blocked = youtube_api_fallback_block_reason()
     if blocked:
@@ -227,26 +234,59 @@ def sync_competitors(channel_id: str) -> dict[str, Any]:
                 "error": "youtube not configured",
             }
 
-    snapshot = {
+    snapshot: dict[str, Any] = {
         "channel_id": channel_id,
         "synced_at": datetime.now(timezone.utc).isoformat(),
         "sync_method": "youtube_rss" if _rss_enabled() else "youtube_api",
         "competitors": [],
     }
 
+    probes = None
+    if _rss_enabled():
+        from analytics.youtube_rss import probe_channel_feed
+        from core.competitor_health import feed_wide_down
+
+        probes = {comp["id"]: probe_channel_feed(comp["id"], max_results=8) for comp in channels}
+        statuses = [probes[comp["id"]].status for comp in channels]
+        if feed_wide_down(statuses):
+            raw_status = statuses[0]
+            snapshot["feed_down"] = int(raw_status) if raw_status is not None else 0
+            for comp in channels:
+                snapshot["competitors"].append(
+                    {
+                        "youtube_channel_id": comp["id"],
+                        "label": comp["label"],
+                        "recent_videos": [],
+                        "feed_status": probes[comp["id"]].status,
+                    }
+                )
+            ensure_data_dir()
+            path = competitors_data_path(channel_id)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(snapshot, f, indent=2)
+            return snapshot
+
     for comp in channels:
-        videos = fetch_channel_recent_videos(
-            channel_id,
-            comp["id"],
-            service=service,
-        )
-        snapshot["competitors"].append(
-            {
-                "youtube_channel_id": comp["id"],
-                "label": comp["label"],
-                "recent_videos": videos,
-            }
-        )
+        probe = probes[comp["id"]] if probes is not None else None
+        if probe is not None and probe.videos:
+            videos = list(probe.videos)
+        elif probe is not None and probe.status is not None and probe.status >= 500:
+            videos = []
+        else:
+            videos = fetch_channel_recent_videos(
+                channel_id,
+                comp["id"],
+                service=service,
+                skip_rss=probe is not None,
+            )
+        row: dict[str, Any] = {
+            "youtube_channel_id": comp["id"],
+            "label": comp["label"],
+            "recent_videos": videos,
+        }
+        if probe is not None and not videos and probe.status is not None and probe.status >= 500:
+            row["feed_status"] = probe.status
+        snapshot["competitors"].append(row)
 
     ensure_data_dir()
     path = competitors_data_path(channel_id)

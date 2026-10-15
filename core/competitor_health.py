@@ -14,6 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from analytics.youtube_rss import FeedProbe
 from config.competitors import (
     competitors_config_path,
     competitors_data_path,
@@ -24,7 +25,7 @@ from core.logging import get_logger
 logger = get_logger("core.competitor_health")
 
 _UC = re.compile(r"^UC[\w-]{22}$")
-Fetch = Callable[[str], list[dict[str, Any]]]
+Fetch = Callable[[str], list[dict[str, Any]] | FeedProbe]
 
 
 @dataclass
@@ -40,10 +41,39 @@ class CompetitorHealth:
     channel_id: str
     checks: list[CompetitorCheck] = field(default_factory=list)
     coverage: list[str] = field(default_factory=list)  # #1063: what the watch is missing
+    feed_down: bool = False  # #1125: every probe failed the same way; not N dead ids
 
     @property
     def ok(self) -> bool:
+        if self.feed_down:
+            return False
         return bool(self.checks) and all(c.ok for c in self.checks)
+
+
+def feed_check_detail(status: int | None, n_videos: int, *, source: str = "rss") -> str:
+    """What one channel's probe means. A 5xx is YouTube's, not a dead id (#1121)."""
+    if n_videos:
+        return f"{n_videos} recent via {source}"
+    if status is not None and int(status) >= 500:
+        return f"YouTube feed returned HTTP {int(status)} (YouTube's error, not the channel id)"
+    if status is not None and int(status) != 200:
+        return f"YouTube feed returned HTTP {int(status)}"
+    return f"empty {source} (dead or wrong UC id)"
+
+
+def feed_wide_down(statuses: list[int | None]) -> bool:
+    """True when every probed channel got a 404 or a 5xx (#1125).
+
+    A 404 beside a channel that answered 200 is that id, not the feed.
+    """
+    if not statuses:
+        return False
+    return all(s is not None and (int(s) == 404 or int(s) >= 500) for s in statuses)
+
+
+def channel_feed_down_line(status: int, n: int) -> str:
+    plural = "s" if n != 1 else ""
+    return f"YouTube's channel feed is down (HTTP {int(status)} on {n} channel{plural})"
 
 
 def _load_snapshot(channel_id: str) -> dict[str, Any]:
@@ -65,6 +95,20 @@ def _videos_by_id(snapshot: dict[str, Any]) -> dict[str, list]:
         videos = row.get("recent_videos") or []
         if cid:
             out[cid] = videos if isinstance(videos, list) else []
+    return out
+
+
+def _status_by_id(snapshot: dict[str, Any]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for row in snapshot.get("competitors") or []:
+        if not isinstance(row, dict) or row.get("feed_status") is None:
+            continue
+        cid = str(row.get("youtube_channel_id") or "")
+        try:
+            if cid:
+                out[cid] = int(row["feed_status"])
+        except (TypeError, ValueError):
+            continue
     return out
 
 
@@ -113,6 +157,7 @@ def inspect_competitors(
         else ({} if fetch is not None else _load_snapshot(channel_id))
     )
     by_id = _videos_by_id(snap)
+    status_by_id = _status_by_id(snap)
     report = CompetitorHealth(channel_id=channel_id)
     if not comps:
         report.checks.append(
@@ -121,6 +166,17 @@ def inspect_competitors(
             )
         )
         return report
+    if fetch is None and snap.get("feed_down"):
+        try:
+            status = int(snap["feed_down"])
+        except (TypeError, ValueError):
+            status = 0
+        report.feed_down = True
+        report.checks.append(
+            CompetitorCheck("", "YouTube", False, channel_feed_down_line(status, len(comps)))
+        )
+        return report
+    probed: list[tuple[dict[str, str], Any]] = []
     for comp in comps:
         cid = str(comp.get("id") or "")
         label = str(comp.get("label") or cid)
@@ -130,18 +186,16 @@ def inspect_competitors(
                 CompetitorCheck(cid, label, False, "id is not a UC + 22-char YouTube channel id")
             )
             continue
-        videos: list = []
-        source = "snapshot"
         if fetch is not None:
             try:
-                videos = list(fetch(cid) or [])
-                source = "rss"
+                probed.append((comp, _coerce_probe(fetch(cid))))
             except Exception as exc:
                 logger.debug("competitor RSS probe skipped for %s: %s", cid, exc)
                 report.checks.append(CompetitorCheck(cid, label, False, f"rss probe failed: {exc}"))
-                continue
-        elif cid in by_id:
+            continue
+        if cid in by_id:
             videos = by_id[cid]
+            stored = status_by_id.get(cid)
         else:
             if missing_snapshot_ok:
                 continue
@@ -150,16 +204,50 @@ def inspect_competitors(
                 detail = f"{detail}; {note}"
             report.checks.append(CompetitorCheck(cid, label, False, detail))
             continue
-        if videos:
-            report.checks.append(
-                CompetitorCheck(cid, label, True, f"{len(videos)} recent via {source}")
-            )
-            continue
-        detail = f"empty {source} (dead or wrong UC id)"
-        if note:
-            detail = f"{detail}; {note}"
-        report.checks.append(CompetitorCheck(cid, label, False, detail))
+        _append_video_check(report, cid, label, note, videos, "snapshot", stored)
+    if probed and feed_wide_down([probe.status for _comp, probe in probed]):
+        report.feed_down = True
+        status = int(probed[0][1].status)
+        report.checks.append(
+            CompetitorCheck("", "YouTube", False, channel_feed_down_line(status, len(probed)))
+        )
+        return report
+    for comp, probe in probed:
+        cid = str(comp.get("id") or "")
+        label = str(comp.get("label") or cid)
+        note = str(comp.get("note") or "")
+        # A 404 next to a channel that answered is that id. A 5xx never is.
+        status = 200 if probe.status == 404 else probe.status
+        _append_video_check(report, cid, label, note, list(probe.videos), "rss", status)
     return report
+
+
+def _coerce_probe(got: Any) -> Any:
+    from analytics.youtube_rss import FeedProbe
+
+    if isinstance(got, FeedProbe):
+        return got
+    return FeedProbe(list(got or []), 200)
+
+
+def _append_video_check(
+    report: CompetitorHealth,
+    cid: str,
+    label: str,
+    note: str,
+    videos: list,
+    source: str,
+    status: int | None,
+) -> None:
+    if videos:
+        report.checks.append(
+            CompetitorCheck(cid, label, True, f"{len(videos)} recent via {source}")
+        )
+        return
+    detail = feed_check_detail(status, 0, source=source)
+    if note:
+        detail = f"{detail}; {note}"
+    report.checks.append(CompetitorCheck(cid, label, False, detail))
 
 
 def render_report(report: CompetitorHealth) -> str:

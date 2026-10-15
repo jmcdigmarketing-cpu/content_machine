@@ -3905,6 +3905,47 @@
         "contains": "editing.\n\nSources:"
       },
       "why": "a description written before the builder fix went out as stored"
+    },
+    {
+      "id": "contender-series-headline-is-the-feeds-domain",
+      "item": 1208,
+      "source": "best bets 2026-10-15: trending on MMA Fighting now, nba averages 168 views",
+      "call": "core.best_bet:_consider_candidate",
+      "args": [
+        "The next Sean O'Malley: Ranking the best prospects from Season 10 of Contender Series",
+        "MMA Fighting"
+      ],
+      "kwargs": {
+        "allowed": ["gaming", "ufc", "nba"],
+        "exclude": [],
+        "seen_local": [],
+        "feed_domains": ["ufc", "mma"]
+      },
+      "select": "domain",
+      "expect": {
+        "equals": "ufc"
+      },
+      "why": "Contender Series matched the NBA word contender, and the MMA feed tag was ignored"
+    },
+    {
+      "id": "contender-series-without-a-feed-tag-stays-nba",
+      "item": 1208,
+      "source": "the same headline with no feed tag still matches the word contender",
+      "call": "core.best_bet:_consider_candidate",
+      "args": [
+        "The next Sean O'Malley: Ranking the best prospects from Season 10 of Contender Series",
+        "somewhere"
+      ],
+      "kwargs": {
+        "allowed": ["gaming", "ufc", "nba"],
+        "exclude": [],
+        "seen_local": []
+      },
+      "select": "domain",
+      "expect": {
+        "equals": "nba"
+      },
+      "why": "the keyword list is unchanged; only a tagged feed overrides it"
     }
   ]
 }

@@ -83,13 +83,14 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-15.** #1194-#1199 are done, so the list is the defects a run already showed.
-**#1208** an MMA headline was ranked on NBA's numbers. **#1184** a correction note is
-written again on every scan. **#1209** the Buffer request count dies with the process, so a
-later morning never sees the day's other calls. **#456** `import main` was measured at 1.28s
-and nothing fails when that doubles. **#392** `ops doctor` cannot tell "we broke it" from
-"they are down".
-`roadmap-index`: open 302, done 937, numbered open 250; highest filed #1209.
+**2026-10-15.** #1184, #1209, #1208, #456 and #392 are done. The list is the hole this
+wave left and four small checks that are still open.
+**#1215** an untagged Contender Series headline is still ranked as NBA, because the word
+"contender" matches before UFC. **#514** the intro sting overlaps the first caption.
+**#418** a bounded zoom can still soften a 1080x1920 frame, and nothing checks.
+**#463** the benches exist and nothing fails when they regress. **#545** a correction
+note never becomes a "what I got wrong" beat in the next script.
+`roadmap-index`: open 298, done 942, numbered open 246; highest filed #1215.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),

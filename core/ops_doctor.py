@@ -2,7 +2,8 @@
 
 One command: free-stack readiness + feeds snapshot + oauth scopes (file only,
 no token refresh) + quota snapshot + caption/TTS + CUDA probe. Nested try so
-an optional import cannot wipe the rest. No extra HTTP vs cached probes.
+an optional import cannot wipe the rest. The Apify status page is the one
+extra HTTP call (#392); everything else stays on cached probes.
 """
 
 from __future__ import annotations
@@ -14,8 +15,66 @@ from core.logging import get_logger
 
 logger = get_logger("core.ops_doctor")
 
+APIFY_STATUS_URL = "https://status.apify.com/api/v2/status.json"
+# Paid Apify signals (apis/register_signals._APIFY_PAID_SIGNALS). OpenRouter's
+# status page answered 403, so it is not a second feed.
+_APIFY_SIGNALS = frozenset({"reddit", "twitter", "tiktok_trends", "youtube_competitors"})
 
-def gather(channel_id: str = "tapin") -> dict[str, Any]:
+
+def _indicator(body: Any) -> str:
+    if not isinstance(body, dict):
+        return ""
+    status = body.get("status")
+    if not isinstance(status, dict):
+        return ""
+    return str(status.get("indicator") or "").lower()
+
+
+def vendor_line(body: Any, local_failures: set[str] | None = None) -> tuple[bool, str]:
+    """Apify's status page against our last signal failures. A fetch that returned
+    nothing is not a warning: we cannot tell who is down."""
+    indicator = _indicator(body)
+    ours = {str(name) for name in (local_failures or set())} & _APIFY_SIGNALS
+    if indicator in ("major", "critical"):
+        return False, "Apify: they are down"
+    if indicator == "none" and ours:
+        return False, "Apify: we broke it"
+    if indicator == "none":
+        return True, "Apify: operational"
+    if not indicator:
+        return True, "Apify: status page unreachable"
+    return True, f"Apify: {indicator}"
+
+
+def _fetch_status(url: str) -> Any:
+    if os.getenv("DOCTOR_STATUS_OFF", "").strip().lower() in ("1", "true", "yes", "on"):
+        return {"status": {"indicator": "none", "description": "All Systems Operational"}}
+    import requests
+
+    resp = requests.get(url, timeout=5)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _local_signal_failures(channel_id: str) -> set[str]:
+    try:
+        from core.incident_ledger import rank_incidents
+        from core.review_booth import last_trace
+
+        trace = last_trace(channel_id) or {}
+        rows = rank_incidents([trace] if trace else [])
+    except Exception as exc:
+        logger.debug("vendor status local failures skipped: %s", type(exc).__name__)
+        return set()
+    return {row.name for row in rows if row.kind == "signal"}
+
+
+def gather(
+    channel_id: str = "tapin",
+    *,
+    status_fetch: Any = None,
+    local_failures: set[str] | None = None,
+) -> dict[str, Any]:
     out: dict[str, Any] = {"channel_id": channel_id, "checks": []}
 
     def add(name: str, ok: bool, detail: str) -> None:
@@ -210,10 +269,34 @@ def gather(channel_id: str = "tapin") -> dict[str, Any]:
     try:
         from core.startup_budget import budget_for
 
-        add("startup_budget", True, f"core.chrome <= {budget_for('core.chrome'):.1f}s")
+        add(
+            "startup_budget",
+            True,
+            f"core.chrome <= {budget_for('core.chrome'):.1f}s; "
+            f"main <= {budget_for('main'):.2f}s; "
+            f"core.pipeline <= {budget_for('core.pipeline'):.2f}s",
+        )
     except Exception as exc:
         logger.debug("doctor startup budget skipped: %s", exc)
         add("startup_budget", True, f"n/a ({type(exc).__name__})")
+
+    try:
+        failures = (
+            set(local_failures)
+            if local_failures is not None
+            else _local_signal_failures(channel_id)
+        )
+        fetch = status_fetch or _fetch_status
+        try:
+            body = fetch(APIFY_STATUS_URL)
+        except Exception as exc:
+            logger.debug("apify status page: %s", type(exc).__name__)
+            body = None
+        ok, detail = vendor_line(body, failures)
+        add("apify_status", ok, detail)
+    except Exception as exc:
+        logger.debug("doctor vendor status skipped: %s", type(exc).__name__)
+        add("apify_status", True, f"n/a ({type(exc).__name__})")
 
     return out
 

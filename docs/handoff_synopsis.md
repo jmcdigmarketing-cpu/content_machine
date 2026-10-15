@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-15: one video, three feeds
+# Handoff synopsis — 2026-10-15: five defects
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-15 (Cursor): one video, three feeds (#1194-#1199)
+## Last wave — 2026-10-15 (Cursor): five defects (#1184, #1209, #1208, #456, #392)
+
+An open correction was written again the next day. The second scan now leaves the file
+and returns nothing, so the overnight warning does not fire again. A closed note still
+gets a new file (#1184). The Buffer request count is a date-keyed file: a later process
+with the memory counter at 0 still prints `210/250`, and yesterday does not count (#1209).
+
+The Contender Series headline was `trending on MMA Fighting now` and `nba averages`,
+because the word "contender" matches the NBA list. A feed with one domain wins. The line
+is `ufc averages`. The same title with no feed tag stays `nba` (#1208, #1215).
+
+`import main` and `core.pipeline` fail when they pass double the 2026-10-10 times (2.56s
+and 1.66s). Watched fail at 0.94s against a 0.01s budget (#456). `ops doctor` says
+`Apify: they are down` or `Apify: we broke it`. OpenRouter's status page answered 403.
+Live: `Apify: operational` (#392).
+
+**Next:** #1215 #514 #418 #463 #545.
+
+## Previous — 2026-10-15 (Cursor): one video, three feeds (#1194-#1199)
 
 Buffer's posts came back with no views. One `posts` query per channel now asks for metrics,
 and a post with no `metricsUpdatedAt` is unmeasured, not zero (#1195). `ops crosspost status`
@@ -54,25 +72,6 @@ leaves the file unchanged and logs nothing at warning.
 existed. Re-run: 5861 passed. Claude's untracked `tests/test_arc_and_titles.py` is wave 92
 and is not in this commit. mypy 96, corpus 250. Live: `ops competitor-health --channel tapin`
 printed Marques Brownlee, 4 recent via rss.
-
-## Previous — 2026-10-15 (Claude Code): waves 91-92, TikTok/Instagram and the morning
-
-**Wave 91.** A video posted by hand in Buffer is found and left on that platform (#1200, §57 -
-Topuria, Chargers and Minecraft were); `crosspost done` records one (#1201); the worker starts
-the crosspost round after a public upload (#1202); `ops morning` and `ops all` offer queued
-uploads (#1203); `ops all` ends with the morning (#1204, §56). The live Buffer draft found that
-Buffer cannot read a presigned R2 link (HEAD answers 403): the video is read from the bucket's
-public address now (#1207, §58). Crossposting switched on (44 videos left as they are).
-
-**Wave 92.** The arc's counter stays out of the topic (#1205 - run 153 was "Shavkat Rakhmonov
-week 4"); a title that breaks a place name is written again (#1181); a game run is keyed by its
-game (#1182); the thumbnail keeps a whole phrase (#1183); old descriptions are laid out at
-upload (#1206). Filed #1208.
-
-**Still the operator's:** `R2_PUBLIC_BASE_URL` (public access on the bucket) and `.env` lines
-35-36; then `crosspost selftest`; the consent screen; `ops worker-task --install`;
-`schedule-drafts --wake`; whether Cursor starts #1194. Suite 5861 (5823 + my 38; Cursor's uncommitted tests ran with it), mypy 98. Claude has
-#1205, #1181, #1182, #1183, #1206 claimed (wave 92).
 
 ## Pipeline order (operator)
 

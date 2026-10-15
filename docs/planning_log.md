@@ -7611,3 +7611,47 @@ New tests errored on import before each module or function existed. `git status 
 empty. mypy 96. `roadmap-index`: open 302, done 937, numbered open 250; highest filed #1209.
 
 Closed **#1194-#1199**. Next **#1208 #1184 #1209 #456 #392**.
+
+## 2026-10-15 — Cursor: five defects (#1184, #1209, #1208, #456, #392)
+
+**Prompt:** "The next five are #1208, #1184, #1209, #456, and #392. Nothing was pushed.
+.agents/ and .codex/ are still untracked. complete these"
+
+### Picked
+
+Same five, cheapest first: #1184, #1209, #1208, #456, #392.
+
+### Shipped
+
+1. **#1184** a second day's scan of an open video and claim writes no file and returns
+   nothing. A closed note still gets a new file. Watched two files become the failure.
+2. **#1209** `REQUESTS_FILE` keeps the UTC day and the count. Memory at 0 still printed
+   `210/250`. Yesterday did not. The suite redirects the file.
+3. **#1208** MMA Fighting's tags win over the word "contender". The line said `nba averages`
+   before the change and `ufc averages` after. No tag stays `nba`.
+4. **#456** ceilings 2.56s and 1.66s. Watched `main` at 0.94s fail a 0.01s budget. Doctor
+   names both.
+5. **#392** Apify status page. OpenRouter answered 403 and is not included. Live doctor:
+   `Apify: operational`.
+
+### Findings
+
+- The live title matches NBA on "contender", not on "Season" or "Ranking". Filed **#1215**
+  for the untagged case the test now pins. #1210-#1214 are Claude's, claimed in their
+  slot and not written here.
+- `core/best_bet.py` around the NBA key list; `publishing/buffer_api.py` `requests_made`;
+  `core/correction_dossier.py` `_open_pair_exists`; `core/ops_doctor.py` `vendor_line`.
+
+### Not done
+
+#1215, #514, #418, #463, #545. #1136 stays the operator's.
+
+### Audit
+
+Each new test failed first (two note files; an empty morning line; `nba averages`; 0.94s
+not less than 0.01; `vendor_line` missing). Two corpus cases. `git status --short data/`
+empty. mypy and the suite count go in the slot after they are measured.
+`roadmap-index`: open 298, done 942, numbered open 246; highest filed #1215.
+
+Closed **#1184 #1209 #1208 #456 #392**. Next **#1215 #514 #418 #463 #545**.
+

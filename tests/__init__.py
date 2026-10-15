@@ -101,6 +101,8 @@ os.environ["RECOMMEND_TARGET"] = "engaged"
 # units are below the upload reserve.
 os.environ["COMPETITOR_SYNC_MAX_UNITS"] = "0"
 os.environ["COMPETITOR_SYNC_RESERVE_UNITS"] = "0"
+# #392: the suite must not call Apify's status page. A real `ops doctor` leaves this unset.
+os.environ["DOCTOR_STATUS_OFF"] = "1"
 # C9: do not open googleapis HTTPS (discovery warmup / unclosed SSLSocket).
 os.environ["CONTENT_SKIP_YOUTUBE_WARMUP"] = "1"
 os.environ["CONTENT_FORBID_LIVE_YOUTUBE"] = "1"
@@ -180,6 +182,7 @@ from core.runs import signal_skips as _signal_skips
 from core.success import goals as _goals
 from core.success import review as _review
 from core.success import verdicts as _verdicts
+from publishing import buffer_api as _buffer_api
 from storage.repositories import channel_memory as _channel_memory
 from storage.repositories import performance_memory as _performance_memory
 from storage.repositories import publish_log as _publish_log
@@ -244,6 +247,7 @@ _SUITE_STORE_PATCHES = (
     # #892: the measured run wrote these five data/ stores and output/video subtitles.
     patch.object(_operator_minutes, "MINUTES_FILE", _suite_store("operator_minutes.json")),
     patch.object(_incident_ledger, "INCIDENTS_FILE", _suite_store("incidents.json")),
+    patch.object(_buffer_api, "REQUESTS_FILE", _suite_store("buffer_requests.json")),
     patch.object(_paths, "RELIABILITY_HISTORY_FILE", _suite_store("reliability_history.json")),
     patch.object(_competitors, "DATA_DIR", _SUITE_DATA_TMP),
     patch.object(_channel_memory, "MEMORY_DIR", _suite_store("channel_memory")),

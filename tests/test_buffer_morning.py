@@ -6,9 +6,11 @@ Not configured: the line is absent and nothing is logged at warning.
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 
@@ -108,3 +110,39 @@ class MorningBufferTests(unittest.TestCase):
         ):
             crosspost.save_channels("tapin", "org1", {"tiktok": "tt1"})
             self.assertEqual(morning_line("tapin"), "")
+
+    def test_a_later_process_sees_todays_calls_and_not_yesterdays(self):
+        from publishing.buffer_api import graphql, morning_line, requests_made
+
+        today = datetime.now(timezone.utc).date().isoformat()
+        yesterday = (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
+
+        def post(url, **kw):
+            return _Resp({"data": {"account": {"organizations": []}}})
+
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch(
+                "publishing.crosspost.CROSSPOST_TEMPLATE",
+                os.path.join(tmp, "crosspost_{channel}.json"),
+            ),
+            patch(
+                "publishing.buffer_api.REQUESTS_FILE",
+                os.path.join(tmp, "buffer_requests.json"),
+                create=True,
+            ),
+            patch("publishing.buffer_api._REQUESTS", 0),
+            patch.dict(os.environ, {"BUFFER_API_KEY": "k"}),
+        ):
+            path = os.path.join(tmp, "buffer_requests.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump({"day": today, "count": 210}, handle)
+            self.assertIn("210/250", morning_line("tapin"))
+
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump({"day": yesterday, "count": 210}, handle)
+            self.assertNotIn("Buffer requests", morning_line("tapin"))
+
+            before = requests_made()
+            graphql("query { account { organizations { id } } }", post=post)
+            self.assertEqual(requests_made(), before + 1)

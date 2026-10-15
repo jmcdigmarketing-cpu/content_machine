@@ -67,6 +67,13 @@ def _enter_all(stack: ExitStack, *, mock_secrets: bool) -> None:
         patch("core.workspace_hazards.gather", return_value={"hazards": [], "onedrive": False})
     )
     stack.enter_context(patch("core.workspace_hazards.render", return_value="workspace: ok"))
+    stack.enter_context(
+        patch(
+            "core.ops_doctor._fetch_status",
+            return_value={"status": {"indicator": "none"}},
+        )
+    )
+    stack.enter_context(patch("core.ops_doctor._local_signal_failures", return_value=set()))
 
 
 class TestOpsDoctor(unittest.TestCase):
@@ -78,6 +85,9 @@ class TestOpsDoctor(unittest.TestCase):
         self.assertIn("feeds", names)
         self.assertIn("cuda", names)
         self.assertIn("nvenc", names)
+        budget = next(c for c in data["checks"] if c["name"] == "startup_budget")
+        self.assertIn("main <= 2.56s", budget["detail"])
+        self.assertIn("core.pipeline <= 1.66s", budget["detail"])
         self.assertIn("ram", names)
         self.assertIn("secrets", names)
         self.assertIn("workspace", names)

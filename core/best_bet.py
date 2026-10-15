@@ -715,6 +715,23 @@ def _is_commerce_headline(title: str) -> bool:
     return any(m in t for m in _COMMERCE_MARKERS)
 
 
+def _domain_for_feed(word_domain: str, feed_domains: list[str] | None) -> str:
+    """A single-domain feed wins when the headline's words name something else.
+
+    `mma` and `ufc` are one domain. An untagged source, or a feed tagged with
+    more than one domain, keeps the word domain.
+    """
+    tags = {str(d).strip().lower() for d in (feed_domains or []) if str(d).strip()}
+    if not tags:
+        return word_domain
+    folded = {"ufc" if tag == "mma" else tag for tag in tags}
+    if word_domain in tags or word_domain in folded:
+        return word_domain
+    if len(folded) == 1:
+        return next(iter(folded))
+    return word_domain
+
+
 def _consider_candidate(
     title: str,
     source: str,
@@ -723,6 +740,7 @@ def _consider_candidate(
     exclude: set[str],
     seen_local: set[str],
     published: datetime | None = None,
+    feed_domains: list[str] | None = None,
 ) -> dict | None:
     """Vet a headline into a candidate dict, or None when it's empty, a duplicate, off-brand,
     or a commerce/deal headline. Shared by the RSS and keyless-signal candidate loops."""
@@ -731,13 +749,15 @@ def _consider_candidate(
     t = (title or "").strip()
     if not t:
         return None
+    if not isinstance(seen_local, set):
+        seen_local = set(seen_local)
     key = normalize_seed_topic(t).lower()
     if key in exclude or key in seen_local:
         return None
     # #851: the headline's own domain. `infer_domain(t)` looked channel-free but resolved
     # the missing channel through CONTENT_CHANNEL_ID, so on a PC pinned to tapin every
     # keyword-less headline read "gaming" and passed.
-    domain = infer_topic_domain(t)
+    domain = _domain_for_feed(infer_topic_domain(t), feed_domains)
     if domain not in allowed:
         return None
     # Drop product/deal/affiliate headlines — commerce, not video topics.
@@ -884,6 +904,7 @@ def _fresh_candidates(
                         exclude=exclude,
                         seen_local=seen_local,
                         published=_parse_pubdate(row.get("published")),
+                        feed_domains=list(feed.get("domains") or []),
                     )
                     if cand:
                         pool.append(cand)

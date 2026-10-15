@@ -304,6 +304,8 @@ def scan_published_for_corrections(
                         f"Publish a pinned comment or community post correcting: {text}"
                     ),
                 )
+                if _open_pair_exists(channel_id, dossier.video_id, text, severity):
+                    break
                 found.append(dossier)
                 if store is not None and has_retraction:
                     try:
@@ -338,6 +340,42 @@ def _reports_dir(channel_id: str) -> str:
 _NOTE_VIDEO = re.compile(r"\*\*Video:\*\* (\S+)")
 _NOTE_SOURCE = re.compile(r"\*\*Source:\*\* (\S+)")
 _NOTE_CLAIM = re.compile(r"^## (.+)$", re.M)
+
+
+def _open_pair_exists(channel_id: str, video_id: str, claim: str, severity: str) -> bool:
+    """An open note already covers this video, claim, and severity.
+
+    A later scan that only repeats the same finding writes nothing. A stricter
+    finding (a retraction after a vanished claim) still writes.
+    """
+    folder = _reports_dir(channel_id)
+    if not folder or not os.path.isdir(folder):
+        return False
+    want_video = video_id or "(unknown)"
+    want_claim = (claim or "(claim not recorded)").strip()
+    ranks = {"low": 1, "medium": 2, "high": 3}
+    want_rank = ranks.get(severity, 1)
+    for name in os.listdir(folder):
+        if "_correction-" not in name or not name.endswith(".md"):
+            continue
+        try:
+            with open(os.path.join(folder, name), encoding="utf-8") as handle:
+                text = handle.read()
+        except OSError:
+            continue
+        if "**Status:** open" not in text:
+            continue
+        video = _NOTE_VIDEO.search(text)
+        found = _NOTE_CLAIM.search(text)
+        if (video.group(1) if video else "") != want_video:
+            continue
+        if (found.group(1).strip() if found else "") != want_claim:
+            continue
+        noted = re.search(r"\*\*Severity:\*\* (\w+)", text)
+        noted_rank = ranks.get(noted.group(1).lower(), 3) if noted else 3
+        if noted_rank >= want_rank:
+            return True
+    return False
 
 
 def open_correction_lines(channel_id: str, *, reports_dir: str | None = None) -> list[str]:

@@ -18,12 +18,14 @@ The key is never logged or put in an error message.
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
+from config.paths import DATA_DIR
 from core.logging import get_logger
 
 logger = get_logger("publishing.buffer_api")
@@ -75,16 +77,55 @@ def _error_from_body(errors: list[dict[str, Any]]) -> BufferError:
 _REQUESTS = 0
 DAILY_REQUEST_CAP = 250
 NEAR_DAILY_CAP = 200
+REQUESTS_FILE = os.path.join(DATA_DIR, "buffer_requests.json")
+
+
+def _utc_day() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def _stored_count() -> tuple[str, int]:
+    try:
+        with open(REQUESTS_FILE, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return "", 0
+    if not isinstance(data, dict):
+        return "", 0
+    try:
+        count = int(data.get("count") or 0)
+    except (TypeError, ValueError):
+        count = 0
+    return str(data.get("day") or ""), max(0, count)
+
+
+def _write_count(day: str, count: int) -> None:
+    try:
+        folder = os.path.dirname(REQUESTS_FILE)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+        with open(REQUESTS_FILE, "w", encoding="utf-8") as handle:
+            json.dump({"day": day, "count": count}, handle)
+    except OSError as exc:
+        logger.warning("buffer request count not saved: %s", type(exc).__name__)
 
 
 def requests_made() -> int:
-    """GraphQL calls this process has made. The free plan allows 250 a day (#1199)."""
-    return _REQUESTS
+    """GraphQL calls stored for today. The free plan allows 250 a day (#1199, #1209)."""
+    day, count = _stored_count()
+    if day != _utc_day():
+        return 0
+    return count
 
 
 def _count_request() -> None:
     global _REQUESTS
     _REQUESTS += 1
+    day, count = _stored_count()
+    today = _utc_day()
+    if day != today:
+        count = 0
+    _write_count(today, count + 1)
 
 
 def graphql(

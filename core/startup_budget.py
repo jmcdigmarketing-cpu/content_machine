@@ -15,6 +15,9 @@ from config.paths import ROOT_DIR
 _DEFAULT_BUDGET_S = 5.0
 _BUDGETS_S = {
     "core.chrome": 5.0,
+    # #456: double the 2026-10-10 measurement (import main 1.28s, core.pipeline 0.83s).
+    "main": 2.56,
+    "core.pipeline": 1.66,
 }
 
 

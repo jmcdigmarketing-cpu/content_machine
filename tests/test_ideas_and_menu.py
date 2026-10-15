@@ -168,7 +168,14 @@ class EnvFileTests(unittest.TestCase):
     def test_the_doctor_flags_it(self):
         from core import ops_doctor
 
-        with patch("core.secrets_doctor.env_file_problems", return_value=[35, 36]):
+        with (
+            patch("core.secrets_doctor.env_file_problems", return_value=[35, 36]),
+            patch(
+                "core.ops_doctor._fetch_status",
+                return_value={"status": {"indicator": "none"}},
+            ),
+            patch("core.ops_doctor._local_signal_failures", return_value=set()),
+        ):
             checks = {c["name"]: c for c in ops_doctor.gather("tapin")["checks"]}
         self.assertFalse(checks["env-file"]["ok"])
         self.assertIn("35, 36", checks["env-file"]["detail"])

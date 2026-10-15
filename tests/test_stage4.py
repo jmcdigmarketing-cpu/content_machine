@@ -302,6 +302,16 @@ class TestStartupBudget(unittest.TestCase):
         self.assertLess(elapsed, budget_for("core.chrome"))
         self.assertGreaterEqual(elapsed, 0.0)
 
+    def test_main_and_pipeline_stay_under_double_the_measured_import(self):
+        """#456: import main was 1.28s and core.pipeline 0.83s. Double is the ceiling."""
+        from core.startup_budget import budget_for, measure_import_fresh
+
+        for module in ("main", "core.pipeline"):
+            elapsed = measure_import_fresh(module)
+            self.assertLess(elapsed, budget_for(module), f"{module} took {elapsed:.2f}s")
+        self.assertEqual(budget_for("main"), 2.56)
+        self.assertEqual(budget_for("core.pipeline"), 1.66)
+
 
 class TestEnvFingerprint(unittest.TestCase):
     def test_same_keys_different_values_hash_the_same_and_never_embed_secrets(self):

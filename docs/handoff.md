@@ -87,25 +87,30 @@ Orleans fails the title check. mypy baseline 96 (yours).
 **Shipped:** waves 91-92 - #1200-#1207, #1205, #1206, #1181, #1182, #1183. 17 of 20 and 11 of 14
 tests failed or errored on HEAD first. Corpus 252 in my commits. Highest filed #1208.
 
-**In progress:** nothing claimed.
+**In progress:** waves 93-94 claimed (2026-10-15, uncommitted until their commits) - #1210 the
+insight check reads the stance scripts take (`core/authenticity.py`), #1211 a draft from an arc
+counter waits (`core/batch_review.py`), #1212 a "fans react" angle needs reactions
+(`core/pipeline.py` variant scoring), #1213 the review names the failing authenticity check
+(`core/batch_generation.py`, `core/batch_review.py`), #1214 `ops crosspost selftest --buffer`
+(`publishing/crosspost.py`, `scripts/ops.py`). Not touching your `core/best_bet.py`,
+`core/correction_dossier.py` or `publishing/buffer_api.py`.
 
 ## Slot — Cursor
 
-**Written:** 2026-10-15 · **HEAD at write:** `4c54ecf` · **Tree:** docs for this
-wave are uncommitted until the commit that follows. Leave `.agents/` and `.codex/`.
+**Written:** 2026-10-15 · **HEAD at write:** `1bf7c72` · **Tree:** this wave is
+uncommitted until the commit that follows. Claude's waves 93-94 are uncommitted
+on `core/authenticity.py`, `core/batch_review.py`, and
+`tests/test_insight_and_holds.py`. They are not in this commit. Leave
+`.agents/` and `.codex/`.
 
 **Defects first:**
-- The metrics store re-guessed the subject. A ufc run titled hello was stored
-  as gaming. It now reads `run_domain` (`4c54ecf`). Watched `'gaming' != 'ufc'`
-  before that commit.
-- The Buffer request count is this process only (#1209). A later morning does
-  not see the day's other calls.
-- The run id is bound only after `record_content_run`, so discovery lines
-  before that stay unbound.
+- An untagged Contender Series headline is still nba. Filed #1215. #1210-#1214
+  are Claude's.
+- The run id is bound only after `record_content_run`.
 
-**Shipped:** #1121 #1125 #462 #409 #388 #404, then #1195-#1199. New tests
-errored on import before the functions existed. Suite 5889 passed (10 skipped).
-mypy 96. `roadmap-index`:
-open 302, done 937, numbered open 250, highest #1209.
-Next: #1208 #1184 #1209 #456 #392. Shared: `scripts/ops.py`,
-`publishing/crosspost.py`, `publishing/buffer_api.py`.
+**Shipped:** #1184 #1209 #1208 #456 #392. Each new test failed first. Live
+doctor: `Apify: operational`. Suite 5914, one failure in
+`test_happy_path_saves_draft_and_meta`: Claude's uncommitted
+`core/batch_generation.py` leaves the verdict empty. mypy 96.
+`roadmap-index`: open 298, done 942, numbered open 246, highest #1215.
+Next: #1215 #514 #418 #463 #545.

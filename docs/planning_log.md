@@ -7563,3 +7563,51 @@ Closed **#1121, #1125, #462, #409, #388, #404**. Next **#1195-#1199**.
 `YouTubePublisher.publish`. Suite 5875 forward / 5878 reversed in the working tree with Cursor's tests (one of theirs, mid-build, failed reversed).
 
 Closed **#1205, #1206, #1181, #1182, #1183**. Filed **#1208**. Claude has nothing claimed.
+
+## 2026-10-15 — Cursor: one video, three feeds (#1195-#1199)
+
+**Prompt:** "Let's play some catch up. Claude left you some work, could you complete it for me?"
+The operator chose the five first, then this initiative. The five shipped in the commit before
+these. This entry is the initiative.
+
+### Picked
+
+#1195 then #1196 then #1197 then #1198 then #1199, one commit each. Same order as
+`docs/initiative_cross_platform.md`.
+
+### Shipped
+
+1. **#1195** `channel_post_metrics` (`publishing/buffer_api.py`) is one posts query per channel.
+   `publishing/platform_metrics.py` stores views by run and platform. No `metricsUpdatedAt` is
+   unmeasured, not zero. `ops crosspost status` prints the views. The morning round asks once
+   the setup is complete.
+2. **#1196** the row keeps the UTC hour, the domain and the length. Under 4 samples the line
+   names YouTube and `send_due` keeps YouTube's slot. At 4, `hour_choice` picks the hour with
+   the best shrunk mean and `send_due` uses that datetime.
+3. **#1197** `caption_texts` swaps the first sentence to the front and adds no words.
+   `random_arm` is seeded by the run id (`caption_tiktok`, `caption_instagram`). The report
+   uses `evaluate` and `confidence_interval`.
+4. **#1198** `feed_lines` is a section of the weekly report and a row of growth. An empty store
+   says there are no platform results yet.
+5. **#1199** `morning_line` on `ops morning` / `ops all`. `graphql` counts each call.
+
+### Findings
+
+- The request count is this process only. Filed **#1209**.
+- The metrics store called `safe_infer_domain`, so a ufc run titled "hello" was stored as
+  gaming. Watched `'gaming' != 'ufc'` before the change. The row now reads `run_domain`
+  (`4c54ecf`).
+- One `git commit` without a path included Claude's staged wave 92 files. It was not pushed.
+  `git reset --soft HEAD~1` put those files back, and the metrics commit named only its own
+  files. Claude's wave 92 is `ddc33d9`.
+
+### Not done
+
+#1208, #1184, #1209, #456, #392.
+
+### Audit
+
+New tests errored on import before each module or function existed. `git status --short data/`
+empty. mypy 96. `roadmap-index`: open 302, done 937, numbered open 250; highest filed #1209.
+
+Closed **#1194-#1199**. Next **#1208 #1184 #1209 #456 #392**.

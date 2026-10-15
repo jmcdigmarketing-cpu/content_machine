@@ -83,14 +83,13 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 
 ### Recommended next five (non-app)
 
-**2026-10-15.** #1121, #1125, #462, #404, #388 and #409 are done, so the list is the initiative the operator already
-chose. **#1195** one posts query per channel, views stored, a missing measurement is not zero.
-**#1196** domain, length and post time per feed, YouTube's hour until that feed has four
-samples, and `send_due` uses the hour. **#1197** two caption arms from sentences already in
-the script, winner and interval per platform. **#1198** which feed liked what, in the weekly
-report and the growth page. **#1199** the morning names a Buffer error, a paused queue, a
-disconnected channel, and a request count near the daily cap.
-`roadmap-index` after Cursor's five and Claude's wave 92: open 307, done 931, numbered open 255; highest filed #1208.
+**2026-10-15.** #1194-#1199 are done, so the list is the defects a run already showed.
+**#1208** an MMA headline was ranked on NBA's numbers. **#1184** a correction note is
+written again on every scan. **#1209** the Buffer request count dies with the process, so a
+later morning never sees the day's other calls. **#456** `import main` was measured at 1.28s
+and nothing fails when that doubles. **#392** `ops doctor` cannot tell "we broke it" from
+"they are down".
+`roadmap-index`: open 302, done 937, numbered open 250; highest filed #1209.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),

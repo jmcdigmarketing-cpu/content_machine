@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-15: a 500 is not a dead channel, run ids on the log, brand file, jitter, dead air
+# Handoff synopsis — 2026-10-15: one video, three feeds
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,23 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-15 (Cursor): the five left from 10-10
+## Last wave — 2026-10-15 (Cursor): one video, three feeds (#1194-#1199)
+
+Buffer's posts came back with no views. One `posts` query per channel now asks for metrics,
+and a post with no `metricsUpdatedAt` is unmeasured, not zero (#1195). `ops crosspost status`
+prints the views. Four measured TikTok hours move that feed's due time; two stay on YouTube's
+hour and the line says so (#1196). Each platform's caption is either the caption or the same
+words with the script's first sentence first; the report names a winner and the views interval
+only once every arm has enough samples (#1197). The weekly report and growth name the views,
+the best video, and what that feed preferred; an empty store says there are no platform results
+yet (#1198). `ops morning` prints a Buffer error, a paused queue, a disconnected channel, and
+the request count near 250 a day. The count is this process (#1199, #1209).
+
+**Next:** #1208 #1184 #1209 #456 #392. New tests errored on import before the functions existed.
+Suite 5889 passed (10 skipped). A ufc run titled hello was stored as gaming until the row
+read `run_domain` (`4c54ecf`).
+
+## Previous — 2026-10-15 (Cursor): the five left from 10-10
 
 A YouTube 500, and a 404 from every competitor channel, was reported as a dead UC id, and the
 sync then spent 3 Data API units per channel (#1121, #1125). The probe now keeps the HTTP
@@ -57,25 +73,6 @@ upload (#1206). Filed #1208.
 35-36; then `crosspost selftest`; the consent screen; `ops worker-task --install`;
 `schedule-drafts --wake`; whether Cursor starts #1194. Suite 5861 (5823 + my 38; Cursor's uncommitted tests ran with it), mypy 98. Claude has
 #1205, #1181, #1182, #1183, #1206 claimed (wave 92).
-
-## Previous — 2026-10-14 (Claude Code): waves 89-90, TikTok and Instagram through Buffer
-
-**Wave 89.** Each video made public on YouTube now goes to TikTok and Instagram through
-Buffer's API (#1185-#1190, decisions_2026-10.md §54): new videos only, one post a day per
-platform at the suggested slot, the AI label on. R2 hosts the video (Buffer fetches from a
-link). It runs at the end of `go-public --apply`, in `ops morning` (`crosspost-send`) and in
-the overnight report; `ops crosspost status` / `send` / `cancel` / `channels` / `selftest`.
-Nothing can go out yet: the R2 keys are not in `.env`.
-
-**Wave 90, what you raised.** At most 2 of 5 best bets are games (#1191, §55); `py main.py`
-menu 6 shows the overnight videos with their files and links (#1192); unreadable `.env` lines
-are named by number (#1193). **Offered to Cursor:** #1194, learning per platform from TikTok and
-Instagram results - `docs/initiative_cross_platform.md`.
-
-**Still the operator's:** the R2 keys and `.env` lines 35-36; `crosspost selftest` and
-`crosspost channels --apply`; the 2 overdue uploads (`ops worker`); the consent screen;
-`ops worker-task --install`; `schedule-drafts --wake`; whether Cursor starts #1194. Suite
-5780 -> 5823, mypy 98, corpus 244. Claude has nothing claimed.
 
 ## Pipeline order (operator)
 

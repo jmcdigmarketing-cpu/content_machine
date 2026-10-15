@@ -23,9 +23,17 @@ The operator's three ideas, drafted again: two clean, one with a sentence hard t
 2, 1 and 1 unbacked claims. Clean is not good: run 150's new opener has no full stop (#1179), run
 149's says the next sentence again (#1180) and its title reads "Denver Loss Angeles" (#1181).
 
-**Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`); publish the
-consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5746 -> 5759,
-mypy 98, corpus 232. Claude has #1174-#1180 claimed (wave 88).
+**Wave 88, the morning.** A correction is checked only against a page that names the claim
+(#1174): the 32 notes on file covered 5 pairs, 4 read against pictures and 1 against an article
+about someone else, and the rule files none of them. `ops morning` lists open corrections one
+line each (#1175) and offers the sign-in when it has ended (#1176, §53). `c` in `batch-review`
+cuts the flagged sentences and says why when it cannot (#1177) - on a copy, run 144 comes out
+with no flagged claim. Thumbnail words go on a dark plate, not nowhere (#1178). The two opener
+defects are fixed (#1179-#1180).
+
+**Still the operator's:** sign in (`ops morning` now asks); publish the consent screen;
+`ops worker-task --install`; `schedule-drafts --wake`. Suite 5746 -> 5780, mypy 98, corpus
+242. Claude has nothing claimed.
 
 ## Previous — 2026-10-14 (Claude Code): waves 85-86, your own idea's script and the morning
 

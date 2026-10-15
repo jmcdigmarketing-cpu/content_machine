@@ -416,11 +416,11 @@ class TestVanishedClaimSimilarity(unittest.TestCase):
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
                 vanished = self._scan(
                     vault,
-                    "Tonight's card is postponed. Weather delay in Las Vegas.",
+                    "Jones and Pereira: tonight's card is postponed. Weather delay in Las Vegas.",
                 )
                 retracted = self._scan(
                     vault,
-                    "We regret this retraction: the earlier report was wrong.",
+                    "We regret this retraction: the earlier report on Jones and Pereira was wrong.",
                 )
         self.assertEqual(len(vanished), 1)
         self.assertEqual(vanished[0].severity, "medium")

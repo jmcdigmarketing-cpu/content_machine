@@ -13,6 +13,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 MARGIN = 64
 MIN_CONTRAST = 4.5
+# #1178: how dark the plate behind the words is (0-1). 4 of 8 thumbnails had gone out with no
+# words because one sampled pixel was too light for white text.
+PLATE_DARKNESS = 0.72
 _TEXT = (255, 255, 255)
 _STROKE = (0, 0, 0)
 _STROKE_PX = 3
@@ -28,6 +31,7 @@ class ThumbnailPlate:
     text_box: tuple[int, int, int, int]
     contrast: float
     refused: str = ""
+    backed: bool = False  # #1178: the words sit on a dark plate
 
 
 def headline_words(title: str) -> list[str]:
@@ -77,15 +81,24 @@ def compose_thumbnail(
 
     A subject image is pasted only when the caller passes one. White (or any
     colour) whose contrast against the pixels behind the words is below
-    ``min_contrast`` is refused and nothing is written.
+    ``min_contrast`` gets a dark plate behind it (#1178); only when even the plate
+    cannot reach it is the overlay refused and nothing written.
     """
     img = base.convert("RGB").copy()
     width, height = img.size
     words = headline_words(title) or ["Video"]
     line = " ".join(words)
     sample = img.getpixel((max(MARGIN, width // 4), height // 2))
-    ratio = contrast_ratio(_TEXT, tuple(sample[:3]))
+    rgb = tuple(sample[:3])
+    ratio = contrast_ratio(_TEXT, rgb)
     empty = (0, 0, 0, 0)
+    backed = False
+    if ratio < min_contrast:
+        keep = 1.0 - PLATE_DARKNESS
+        behind = (int(rgb[0] * keep), int(rgb[1] * keep), int(rgb[2] * keep))
+        backed_ratio = contrast_ratio(_TEXT, behind)
+        if backed_ratio >= min_contrast:
+            ratio, backed = backed_ratio, True
     if ratio < min_contrast:
         return ThumbnailPlate(
             path="",
@@ -122,6 +135,14 @@ def compose_thumbnail(
     y = max(MARGIN + pad, (height - th) // 2)
     if y + th + pad > height - MARGIN:
         y = max(MARGIN + pad, height - MARGIN - pad - th)
+    if backed:
+        overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        ImageDraw.Draw(overlay).rectangle(
+            (x - pad * 4, y - pad * 3, x + tw + pad * 4, y + th + pad * 4),
+            fill=(0, 0, 0, int(255 * PLATE_DARKNESS)),
+        )
+        img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+        draw = ImageDraw.Draw(img)
     # Shadow, then a dark stroke, then the fill. The stroke is what keeps a
     # light photo from swallowing the letters when the sampled pixel passed.
     draw.text((x + 3, y + 3), line, fill=(0, 0, 0), font=font)
@@ -146,4 +167,5 @@ def compose_thumbnail(
         margin=MARGIN,
         text_box=text_box,
         contrast=ratio,
+        backed=backed,
     )

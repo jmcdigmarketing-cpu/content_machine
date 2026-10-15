@@ -125,6 +125,96 @@ def _write_review(draft: PendingDraft, **review: Any) -> None:
         logger.warning("review not saved for %s: %s", draft.folder, exc)
 
 
+def _draft_min_words(draft: PendingDraft) -> int:
+    try:
+        from core.script_length import get_length_preset
+
+        return int(get_length_preset(draft.length_choice).min_words)
+    except Exception:
+        return 0
+
+
+def _rewrite_script(folder: str, script: str) -> None:
+    path = os.path.join(folder, "draft.md")
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    head, found, rest = text.partition(_SCRIPT_HEADING)
+    if not found:
+        return
+    tail = rest.split("\n## ", 1)
+    after = f"\n\n## {tail[1]}" if len(tail) > 1 else "\n"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(f"{head}{_SCRIPT_HEADING}\n\n{script.strip()}{after}")
+
+
+def why_not_cut(script: str, claims: list[str], min_words: int) -> str:
+    """Why `cut_unsupported` left `script` as it was - one reason, the first that applies.
+
+    Runs 143 and 145 (2026-10-14, on copies): one cut would have left 143 under its 127-word
+    floor, and 145's claim sat in the first sentence. "Opens the script, cannot be found, or too
+    short" said neither.
+    """
+    from core.script_craft import CUT_FLOOR_SHARE, CUT_MAX, claim_sentences, script_sentences
+
+    doomed = claim_sentences(script, claims)
+    if not doomed:
+        return "the flagged claims are not found in any sentence - edit draft.md or reject it"
+    if len(doomed) > CUT_MAX:
+        return f"they take {len(doomed)} sentences and at most {CUT_MAX} are cut - edit draft.md"
+    first = (script_sentences(script) or [""])[0]
+    if all(sentence == first for sentence in doomed):
+        return "the claim is in the first sentence, which is never cut - edit draft.md"
+    floor = int(min_words * CUT_FLOOR_SHARE)
+    return f"the cut would leave it under {floor} words"
+
+
+def _cut_flagged(draft: PendingDraft, blocking: list[str], print_fn: Callable[..., Any]) -> bool:
+    """#1177 (operator: "cut it, tell me which"): cut the sentences that carry the draft's
+    flagged claims, by the same rule overnight uses, and store the script and its check."""
+    from core.claim_types import blocking_unsupported
+    from core.script_craft import claim_sentences, cut_unsupported, script_check
+
+    min_words = _draft_min_words(draft)
+    new, cut = cut_unsupported(draft.script, blocking, min_words=min_words)
+    if not cut:
+        print_fn(f"    nothing was cut: {why_not_cut(draft.script, blocking, min_words)}")
+        return False
+    gone = {c for c in blocking if set(claim_sentences(draft.script, [c])) & set(cut)}
+    ver = dict(draft.meta.get("claim_verification") or {})
+    old = list(ver.get("unsupported") or [])
+    types = ver.get("unsupported_types")
+    if isinstance(types, list) and len(types) == len(old):
+        ver["unsupported_types"] = [t for c, t in zip(old, types, strict=True) if c not in gone]
+    ver["unsupported"] = [c for c in old if c not in gone]
+    stored = draft.meta.get("script_clean")
+    previous: dict[str, Any] = stored if isinstance(stored, dict) else {}
+    check = script_check(
+        script=new,
+        title=str(draft.meta.get("title") or ""),
+        idea=str(draft.meta.get("topic") or ""),
+        unsupported=blocking_unsupported(ver),
+        cut=[*(previous.get("cut") or []), *cut],
+    )
+    draft.meta["claim_verification"] = ver
+    draft.meta["script_clean"] = check
+    _rewrite_script(draft.folder, new)
+    draft.script = new
+    with open(os.path.join(draft.folder, "meta.json"), "w", encoding="utf-8") as f:
+        json.dump(draft.meta, f, indent=2, default=str)
+    if draft.run_id:
+        from core.run_features import merge_features
+
+        merge_features(draft.run_id, {"claim_verification": ver, "script_clean": check})
+    for sentence in cut:
+        print_fn(f"    cut: {sentence}")
+    return True
+
+
+def _render_prompt(can_cut: bool) -> str:
+    cut_offer = " / c = cut the flagged sentences" if can_cut else ""
+    return f"  Render it? [y / n = reject / Enter = later / q = stop{cut_offer}]: "
+
+
 def _blocking_claims(draft: PendingDraft) -> list[str]:
     from core.claim_types import blocking_unsupported
 
@@ -307,7 +397,16 @@ def review_drafts(
                 print_fn("    Left for later.")
                 summary.later.append(draft.run_id)
                 continue
-        answer = ask("  Render it? [y / n = reject / Enter = later / q = stop]: ").strip().lower()
+        can_cut = bool(blocking)
+        answer = ask(_render_prompt(can_cut)).strip().lower()
+        while answer == "c" and can_cut:  # #1177
+            if _cut_flagged(draft, blocking, print_fn):
+                blocking = _blocking_claims(draft)
+                from core.script_craft import script_check_line
+
+                print_fn(f"    {script_check_line(draft.meta.get('script_clean'))}")
+            can_cut = False  # one cut takes every sentence it can; a second finds the same
+            answer = ask(_render_prompt(can_cut)).strip().lower()
         if answer == "q":
             break
         if answer == "n":

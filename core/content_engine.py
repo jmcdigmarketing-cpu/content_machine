@@ -1011,6 +1011,7 @@ def _hook_variants(
 
     tail = script.split(current.hook, 1)[1] if current.hook in script else script
     later = [set(content_tokens(s)) for s in re.split(r"(?<=[.!?])\s+", tail) if s.strip()]
+    following = next((s for s in re.split(r"(?<=[.!?])\s+", tail) if s.strip()), "")
     best = ""
     for opener, score in rank_openers(openers, guidance):
         row: dict[str, Any] = {"opener": opener, "score": score}
@@ -1026,6 +1027,8 @@ def _hook_variants(
         elif words and any(len(words & s) >= 0.8 * len(words) for s in later):
             # Live check: the kept opener restated the next sentence, so the voice said it twice.
             row["refused"] = "repeats a later sentence of the script"
+        elif says_next_sentence(opener, following):
+            row["refused"] = "says the next sentence again"
         elif not score_hook(opener).passed:
             row["refused"] = "below the hook threshold"
         elif score <= baseline:
@@ -1035,6 +1038,7 @@ def _hook_variants(
         extra["variants"].append(row)
     if not best:
         return script, extra
+    best = with_full_stop(best)
     extra["picked"] = best
     rest = script.strip()[len(current.hook) :] if script.strip().startswith(current.hook) else ""
     if not rest:
@@ -1042,6 +1046,32 @@ def _hook_variants(
         rest = script[index + len(current.hook) :] if index >= 0 else script
     logger.info("Hook variant kept (#987): %s", best)
     return best + rest, extra
+
+
+def with_full_stop(sentence: str) -> str:
+    """`sentence` ending in a full stop, question or exclamation mark (#1179). Run 150's new
+    opener came back without one and the voice ran it into the next: "...17 second-half points
+    last game The Chargers' Super Bowl path is insane"."""
+    text = (sentence or "").strip()
+    if not text or re.search(r"[.!?][\"'\u201d\u2019)]*$", text):
+        return text
+    return text + "."
+
+
+def says_next_sentence(opener: str, following: str) -> bool:
+    """True when a new opener says the sentence right after it again (#1180).
+
+    Run 149: "Jim Harbaugh took the blame personally after a 23-17 loss to Denver." then "Los
+    Angeles lost 23-17 to Denver in Week 5, and Harbaugh stood up and took the blame himself." -
+    6 of the opener's 10 words. A later sentence needs 80% to count as a repeat; said back to
+    back, 60% is already heard twice.
+    """
+    from apis.topic_tokens import content_tokens
+
+    words = set(content_tokens(opener or ""))
+    if not words:
+        return False
+    return len(words & set(content_tokens(following or ""))) >= 0.6 * len(words)
 
 
 def _maybe_improve_hook(script: str, *, channel_id: str = "") -> str:

@@ -421,13 +421,17 @@ class MarkupTests(unittest.TestCase):
         self.assertNotIn("retracted", text)
 
     def test_no_source_file_holds_a_control_character(self):
-        """A heredoc turns a backslash-b into a backspace without a word. Twice now."""
+        """A heredoc turns a backslash-b into a backspace without a word. Twice now - and in
+        the docs too: `output\\video.mp4` in the operator guide and the planning log's own note
+        on this bug lost their backslashes (found 2026-10-14), so docs, assets and tests are
+        read as well."""
         import glob
 
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         held = []
         for pattern in ("core/**/*.py", "apis/**/*.py", "analytics/**/*.py", "youtube/**/*.py",
-                        "scripts/**/*.py", "publishing/**/*.py", "video/**/*.py", "main.py"):  # fmt: skip
+                        "scripts/**/*.py", "publishing/**/*.py", "video/**/*.py", "main.py",
+                        "assets/**/*.py", "tests/**/*.py", "docs/**/*.md", "*.md"):  # fmt: skip
             for path in glob.glob(os.path.join(root, pattern), recursive=True):
                 with open(path, encoding="utf-8", errors="replace") as f:
                     text = f.read()

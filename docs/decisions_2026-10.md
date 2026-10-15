@@ -119,3 +119,15 @@ points. **Why:** 9 of 9 batch drafts since 10-11 were schedule games, and the 10
 back as recaps of games two days away; the title check held them, but each cost a run.
 **Consequence:** a generated angle that still narrates the game is held by the title check, as
 before. The first draft under the rule (run 152, Ravens at Browns, game on 10-18) is a preview.
+
+## 53. The morning shows open corrections and offers the sign-in (2026-10-14)
+**Decision:** `ops morning` lists each open correction note once - video, claim, page - and,
+when the YouTube sign-in has ended and a person is at the console, asks whether to sign in now
+(Google's page opens; the sync runs after). Both are the operator's calls. A correction is
+checked only against a page that names the claim's subject, retractions included. **Why:**
+32 notes sat in the vault's `_reports` folder that no screen showed, and none of them was about
+its claim: 4 of 5 pairs had been read against pictures, the fifth against an article about
+someone else. The sign-in had been dead two days with the fix printed each morning.
+**Consequence:** the older notes are counted on the morning screen, not listed, and not
+rewritten. A nameless retraction notice no longer files - it was pinned on the run's first
+claim and recorded that claim as reversed.

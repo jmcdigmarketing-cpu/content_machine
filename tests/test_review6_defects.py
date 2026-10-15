@@ -120,7 +120,9 @@ class TestUnreadableSourceIsNotAVanishedClaim(unittest.TestCase):
         from core.correction_dossier import _MAX_BODY_CHARS
 
         filler = "Navigation home login subscribe newsletter advertisement footer "
-        body = ("This story has been RETRACTED. " + filler * 200)[:_MAX_BODY_CHARS]
+        body = ("This story on Jones and Pereira has been RETRACTED. " + filler * 200)[
+            :_MAX_BODY_CHARS
+        ]
         self.assertGreaterEqual(len(body), _MAX_BODY_CHARS)
         with tempfile.TemporaryDirectory() as vault:
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
@@ -134,7 +136,7 @@ class TestUnreadableSourceIsNotAVanishedClaim(unittest.TestCase):
             with patch.dict(os.environ, {"OBSIDIAN_VAULT_PATH": vault}):
                 found = _scan(
                     vault,
-                    "Tonight's card is postponed after a weather delay in Las Vegas. "
+                    "Jones and Pereira: tonight's card is postponed after a weather delay in Las Vegas. "
                     "Officials confirmed the venue would reopen tomorrow morning and "
                     "that ticket holders will be contacted directly by the promoter "
                     "with rescheduling details for every affected bout on the card. "

@@ -87,7 +87,7 @@ The video stack: [video_creation_stack.md](video_creation_stack.md).
 py -m scripts.ops booth --channel tapin           # play the last render, grade, cost
 py -m scripts.ops batch-review --channel tapin    # the 05:00 overnight drafts, in one pass
 py -m scripts.ops chapters --run-id 79             # chapters, and when its Shorts would go
-py -m scripts.ops technical-qc --path outputideo.mp4   # black frames, frozen stretches, loudness
+py -m scripts.ops technical-qc --path output\video.mp4   # black frames, frozen stretches, loudness
 ```
 
 ## 6. Publish
@@ -129,8 +129,10 @@ unlisted. One command does the morning:
 py -m scripts.ops morning --channel tapin
 ```
 
-It syncs the numbers, says what overnight rendered and where each one is now, lists the shelf,
-then walks the waiting drafts for a yes or no each. (`ops all` is the weekly batch; the morning
+It syncs the numbers, says what overnight rendered and where each one is now, lists the shelf
+and any open correction on a published video (one line each; `ops corrections-open` alone),
+then walks the waiting drafts for a yes or no each. When the YouTube sign-in has ended it asks
+"Sign in to YouTube now?" first - `y` opens Google's page, and the sync runs once you are back. (`ops all` is the weekly batch; the morning
 review is not in it.) Run from a scheduled task or a pipe it skips the draft review and says
 so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
 
@@ -152,6 +154,11 @@ and any sentence that was cut. `py -m scripts.ops script-check --channel tapin` 
 the newest 30 scripts; `--idea "..."` writes one draft of your idea - as angle 1, your idea
 itself, not a generated angle - with no voice, prints its check, and leaves it waiting in
 `batch-review` for a yes.
+
+In `batch-review`, a draft with flagged claims offers `c`: it cuts the sentences that carry them
+(at most two, never the first, never under 85% of the length), names each sentence cut, stores
+the new script and its check, and asks again. When nothing can be cut it says why - often the
+claim is the first sentence, and then the fix is yours in `draft.md`.
 
 ## 7. Read the numbers
 

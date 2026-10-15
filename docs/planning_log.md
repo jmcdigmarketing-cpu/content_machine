@@ -4027,9 +4027,8 @@ batch middle layer - filed **#760** for the 3-5/week target. Caption items untou
 **Audit.** 26 new tests, all observed failing first (the loose "run_media_only passes the
 length" assertion was tightened after it passed, then re-run red). Suite **3,180 -> 3,206**;
 mypy **139**; ruff clean; `data/` untouched; every new symbol has a production caller. Two
-self-inflicted escaping bugs were caught here, not by the suite: a heredoc turned `
-` into
-real newlines inside a prompt string, and `` into literal backspace bytes in a regex - both
+self-inflicted escaping bugs were caught here, not by the suite: a heredoc turned `\n` into
+real newlines inside a prompt string, and `\b` into literal backspace bytes in a regex - both
 found by importing the module and printing the compiled pattern.
 
 **Brainstorm -> next five:** **#755 · #760 · #345 · #756 · #749**. Backlog **328 open /
@@ -7250,3 +7249,74 @@ Suite **5,746 -> 5759**, forward and reversed. mypy **98**.
 
 Closed **#1169-#1173**. Filed **#1174-#1182**. Claude has #1174-#1180 claimed for wave 88.
 Cursor's five unchanged: **#1121 - #462 - #404 - #388 - #409**.
+
+## 2026-10-14 — wave 88 (Claude Code): what you see in the morning
+
+**Prompt:** the second half of the same "next 10".
+
+### Shipped
+
+1. **#1174** a correction is checked only against a page that names most of the claim's names -
+   retractions included (see below). The note says a fact was blocked only when one was.
+2. **#1175** `ops corrections-open`, a step of `ops morning`: each open note once - video,
+   claim, page. Notes from before #1174 are counted.
+3. **#1176** `ops morning` asks "Sign in to YouTube now?" when the sign-in has ended and a
+   person is at the console; the overnight report's sign-in line is the short one.
+4. **#1177** `c` in `batch-review` cuts the flagged sentences, stores the script and its check,
+   asks again, and says which reason when nothing can be cut (`why_not_cut`).
+5. **#1178** the thumbnail's words go on a dark plate instead of being dropped.
+6. **#1179 - #1180** from the proof drafts: a kept opener gets its full stop; an opener that
+   says the very next sentence again is refused (60% of its words).
+
+### Findings
+
+- **The correction notes, measured.** 32 notes on file since 2026-09-17, for 5 video + claim
+  pairs - the scan writes the same note again each run (filed **#1184**). 4 of the 5 pairs had
+  been read against pictures (Twitch box art, a Last.fm image; stopped by #1157 on 10-13); the
+  fifth is run 119's Rakhmonov claim against an article about a security guard. Dry run of the
+  new rule (the scan's own fetch, nothing written): **0 of 5 would file.** `ops
+  corrections-open` today: "0 open", 5 older pairs counted.
+- **I widened #1174 past the plan's wording.** The plan said the subject rule gates "no longer
+  carries the claim". Seven older tests showed the retraction path files on a page that names
+  nobody, and pins it on the run's *first* claim - then records that claim as reversed, which
+  blocks it from future scripts. So a retraction also needs a page that names the claim. Those
+  tests' pages now name Jones and Pereira; what each asserts is unchanged (decision §53).
+- **What `c` does on the operator's three waiting drafts** (on copies; the drafts are
+  untouched): run 144 loses "Third, use Jake Browning." and the next sentence, 191 words, no
+  claim left flagged. Run 143's cut would leave it under its 127-word floor. Run 145's claim
+  ("Wemby has +200 odds for MVP.") is its first sentence. The first message ("opens the script,
+  cannot be found, or too short") named none of that; it now names the one that applies.
+- **Thumbnails.** 5 of the last 8 Flux pictures measured 1.01-1.95 against white at the sampled
+  pixel (the line is 4.5). With the plate, runs 126 and 132 measure 10.0 and 9.3. The headline
+  keeps four words - "Topuria's Outlook: Can He" (filed **#1183**).
+- **Two docs held control characters** from earlier heredocs: `output\video.mp4` in the
+  operator guide (since 10-10) and this log's own note on the heredoc bug. Fixed; the guard test
+  now reads docs, assets and tests as well as the source trees.
+- My sample render wrote to `C:\c\Users\...` (a `/c/...` path read by Windows Python as a
+  folder on C:). The images were moved; the empty folders are left - the removal of `C:\c` was
+  stopped by a safety check, and it is the operator's to delete.
+
+### Not done
+
+- The sign-in itself and `c` on the real drafts are the operator's: one opens Google's page, the
+  other rewrites drafts they have not seen.
+
+### Audit
+
+21 tests in `tests/test_morning_corrections.py`. **17 of 21 failed or errored on a worktree at
+`f797d98`** (9 failures, 8 errors); the 4 that passed guard what must not change (a page about
+the claim still files, a "no" skips the sync, no console asks nothing, a question keeps its
+mark). Older tests changed: 7 correction-scan tests (pages now name the subject),
+`test_thumbnail_compose` (white on white gets a plate, was refused), `test_morning` (the step
+list), the control-character guard (wider). Ten corpus cases, 242 held. Callers:
+`_page_is_about` from the scan; `open_correction_lines` from `ops corrections-open` (in
+`morning`); the sign-in offer in `_run_batch`; `why_not_cut` and `_cut_flagged` from the review
+loop; `backed` from `compose_thumbnail`, logged by `_overlay_local_headline`; `with_full_stop`
+and `says_next_sentence` from `_hook_variants` (both the hook pass and the #1161 repair).
+
+Suite **5,759 -> 5780**, forward and reversed. mypy **98**.
+`roadmap-index`: open 309, done 905, numbered open 257; highest filed #1184.
+
+Closed **#1174-#1180**. Filed **#1183-#1184**. Claude has nothing claimed. Cursor's five
+unchanged: **#1121 - #462 - #404 - #388 - #409**. The operator's: sign in (now offered by
+`ops morning`), the consent screen, the upload task, `schedule-drafts --wake`, #1136.

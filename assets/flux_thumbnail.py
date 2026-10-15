@@ -166,6 +166,8 @@ def _overlay_local_headline(path: str, title: str) -> None:
             "thumbnail overlay refused (%s); left the picture without text",
             plate.refused,
         )
+    elif plate.backed:  # #1178: was "refused (contrast)" on 4 of 8
+        logger.info("thumbnail headline set on a dark plate (contrast %.1f)", plate.contrast)
 
 
 def _flux_thumbnail(

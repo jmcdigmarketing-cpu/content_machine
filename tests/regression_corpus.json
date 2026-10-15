@@ -3571,6 +3571,147 @@
         "equals": 24000
       },
       "why": "the checker read less than the writer was given"
+    },
+    {
+      "id": "run119-a-claim-is-checked-only-against-a-page-about-it",
+      "item": 1174,
+      "source": "run 119's note: a Rakhmonov claim 'no longer carried' by an article about a former UFC security guard",
+      "call": "core.correction_dossier:_page_is_about",
+      "args": [
+        "Shavkat Rakhmonov posted '19-0 VS 19-0' on his TikTok.",
+        "former ufc security guard reacts to dana white's admitted bias ahead of the dwcs bout. it is completely blocked out, the guard said, describing fight week at the apex."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a page that never carried the claim cannot stop carrying it"
+    },
+    {
+      "id": "a-page-naming-the-claims-subject-is-its-page",
+      "item": 1174,
+      "source": "must keep: a page about Rakhmonov that never says TikTok is still about him",
+      "call": "core.correction_dossier:_page_is_about",
+      "args": [
+        "Shavkat Rakhmonov posted '19-0 VS 19-0' on his TikTok.",
+        "shavkat rakhmonov returns to training camp in dubai ahead of his bout."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "most of the claim's names, not every one"
+    },
+    {
+      "id": "no-vault-no-correction-lines",
+      "item": 1175,
+      "source": "ops morning on a machine with no vault",
+      "call": "core.correction_dossier:open_correction_lines",
+      "args": [
+        "tapin"
+      ],
+      "kwargs": {
+        "reports_dir": ""
+      },
+      "expect": {
+        "equals": []
+      },
+      "why": "the morning step says nothing rather than fail"
+    },
+    {
+      "id": "the-review-offers-the-cut-when-a-claim-is-flagged",
+      "item": 1177,
+      "source": "runs 143-145 waited one or two named sentences from clean",
+      "call": "core.batch_review:_render_prompt",
+      "args": [
+        true
+      ],
+      "expect": {
+        "contains": "c = cut the flagged sentences"
+      },
+      "why": "the operator's 'cut it, tell me which' from the review"
+    },
+    {
+      "id": "the-review-offers-no-cut-with-nothing-flagged",
+      "item": 1177,
+      "source": "sibling: a clean draft has nothing to cut",
+      "call": "core.batch_review:_render_prompt",
+      "args": [
+        false
+      ],
+      "expect": {
+        "not_contains": "c = cut"
+      },
+      "why": "an answer that does nothing is not offered"
+    },
+    {
+      "id": "run145-a-first-sentence-claim-says-why-it-stays",
+      "item": 1177,
+      "source": "run 145 on a copy (2026-10-14): 'Wemby has +200 odds for MVP.' opens the script",
+      "call": "core.batch_review:why_not_cut",
+      "args": [
+        "Wemby has +200 odds for MVP. He is the pick. The Spurs win 60 games this year.",
+        [
+          "Wemby has +200 odds for MVP."
+        ],
+        5
+      ],
+      "expect": {
+        "contains": "first sentence"
+      },
+      "why": "'opens the script, cannot be found, or too short' named no reason"
+    },
+    {
+      "id": "run150-an-opener-gets-its-full-stop",
+      "item": 1179,
+      "source": "run 150 (2026-10-14): '...17 second-half points last game The Chargers' Super Bowl path'",
+      "call": "core.content_engine:with_full_stop",
+      "args": [
+        "Justin Herbert threw for only 17 second-half points last game"
+      ],
+      "expect": {
+        "equals": "Justin Herbert threw for only 17 second-half points last game."
+      },
+      "why": "the voice ran the opener into the next sentence"
+    },
+    {
+      "id": "a-question-opener-keeps-its-mark",
+      "item": 1179,
+      "source": "must keep: an opener that already ends is left as it is",
+      "call": "core.content_engine:with_full_stop",
+      "args": [
+        "Can the Chargers still make the Super Bowl at 0-5?"
+      ],
+      "expect": {
+        "equals": "Can the Chargers still make the Super Bowl at 0-5?"
+      },
+      "why": "no '?.'"
+    },
+    {
+      "id": "run149-an-opener-that-says-the-next-sentence",
+      "item": 1180,
+      "source": "run 149 (2026-10-14): 'a 23-17 loss to Denver' said twice in a row",
+      "call": "core.content_engine:says_next_sentence",
+      "args": [
+        "Jim Harbaugh took the blame personally after a 23-17 loss to Denver.",
+        "Los Angeles lost 23-17 to Denver in Week 5, and Harbaugh stood up and took the blame himself."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "6 of 10 words, back to back"
+    },
+    {
+      "id": "an-opener-sharing-a-name-is-not-a-repeat",
+      "item": 1180,
+      "source": "must keep: an opener names who the next sentence is about",
+      "call": "core.content_engine:says_next_sentence",
+      "args": [
+        "Jim Harbaugh has never once started a season this badly.",
+        "Los Angeles lost 23-17 to Denver in Week 5, and Harbaugh stood up and took the blame himself."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a shared name is a setup, not a repeat"
     }
   ]
 }

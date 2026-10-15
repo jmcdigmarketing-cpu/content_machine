@@ -1733,6 +1733,16 @@ def cmd_recheck_claims(args: argparse.Namespace) -> int:
     return 0
 
 
+@_register("corrections-open", "Open correction notes on published videos, one line each (#1175)")
+def cmd_corrections_open(args: argparse.Namespace) -> int:
+    from config.channels import resolve_channel_id
+    from core.correction_dossier import open_correction_lines
+
+    channel = resolve_channel_id(getattr(args, "channel", None))
+    print("\n".join(open_correction_lines(channel) or [f"Open corrections - {channel}: none"]))
+    return 0
+
+
 @_register("overnight-last", "What overnight rendered lately and where each one is now (#1140)")
 def cmd_overnight_last(args: argparse.Namespace) -> int:
     from config.channels import resolve_channel_id
@@ -3125,7 +3135,7 @@ BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
     # weekly batch and the draft review was in none. The operator chose a batch of its own.
     "morning": (
         "The morning review: fresh numbers, what overnight rendered, the shelf, the drafts",
-        ("sync-metrics", "overnight-last", "shelf", "batch-review"),
+        ("sync-metrics", "overnight-last", "shelf", "corrections-open", "batch-review"),
         False,
     ),
     "all": (
@@ -3207,8 +3217,25 @@ def _run_batch(name: str, args: argparse.Namespace) -> int:
     skipped: list[str] = []
     if sign_in:
         print(f"\n== {name}: sign-in\n  ! {sign_in}")
+        if name == "morning" and _has_console():  # #1176 (operator: ask each morning)
+            try:
+                answer = input(
+                    "  Sign in to YouTube now? Google's page opens in your browser. [y/N]: "
+                )
+            except EOFError:
+                answer = ""
+            if answer.strip().lower() == "y":
+                try:
+                    from youtube.oauth import run_interactive_oauth
+
+                    run_interactive_oauth(getattr(args, "channel", None))
+                except Exception as exc:
+                    print(f"  ! the sign-in did not finish: {type(exc).__name__}: {exc}")
+                sign_in = _batch_sign_in(name, args)
+                print("  Signed in." if not sign_in else "  Still signed out.")
+    if sign_in:
         print(f"  The steps that need it ({', '.join(sorted(_SIGN_IN_STEPS))}) are skipped.")
-    else:
+    if not sign_in:
         reminder = _batch_sign_in_reminder(name, args)
         if reminder:  # #974: said before it expires; every step still runs
             print(f"\n== {name}: sign-in\n  ~ {reminder}")

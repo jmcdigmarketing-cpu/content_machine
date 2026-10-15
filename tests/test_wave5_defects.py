@@ -565,7 +565,8 @@ class TestCorrectionDossier(unittest.TestCase):
                     vault,
                     published=[self._published()],
                     run_lookup={75: self._run()},
-                    fetch=lambda url: "This report has been RETRACTED by the outlet.",
+                    # #1174: a page counts only when it names the claim's subject.
+                    fetch=lambda url: "This report on Jones and Pereira has been RETRACTED.",
                     negative_store=None,
                 )
                 self.assertEqual(len(found), 1)
@@ -595,7 +596,7 @@ class TestCorrectionDossier(unittest.TestCase):
                         self._published(run_id=76, video_id="bbb"),
                     ],
                     run_lookup={75: self._run(75), 76: self._run(76)},
-                    fetch=lambda url: "RETRACTED",
+                    fetch=lambda url: "RETRACTED: the report on Jones and Pereira.",
                     negative_store=None,
                 )
                 notes = sorted(e.name for e in os.scandir(os.path.join(vault, "tapin", "_reports")))
@@ -629,7 +630,7 @@ class TestCorrectionDossier(unittest.TestCase):
                     vault,
                     published=[self._published()],
                     run_lookup={75: self._run()},
-                    fetch=lambda url: "RETRACTED",
+                    fetch=lambda url: "RETRACTED: the report on Jones and Pereira.",
                     negative_store=lambda f, c, reason: recorded.append((f, c, reason)),
                 )
 
@@ -648,7 +649,7 @@ class TestCorrectionDossier(unittest.TestCase):
                         vault,
                         published=[self._published()],
                         run_lookup={75: self._run()},
-                        fetch=lambda url: "RETRACTED",
+                        fetch=lambda url: "RETRACTED: the report on Jones and Pereira.",
                         negative_store=None,
                     )
 

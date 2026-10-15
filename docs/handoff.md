@@ -53,35 +53,33 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-14 · **HEAD at write:** `ea9fe42` + the wave 87 commit (`git log -1`) ·
-**Tree:** clean after the commit apart from untracked `.agents/`, `.codex/` and my
-`tests/test_morning_corrections.py` (wave 88, not yet built). Pushed.
+**Written:** 2026-10-14 · **HEAD at write:** `f797d98` + the wave 88 commit (`git log -1`) ·
+**Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
 
 **Read before editing:** the overnight task runs the working tree and catches up when the PC
-wakes. Keep the tree importable; never patch `.py` through a heredoc. A schedule pick's brief
-now starts "This game has not been played yet" (`event_dates.PREVIEW_PREFIX`); `is_directive`
-treats it as the machine's, not the operator's. `CLAIM_FACT_CHAR_BUDGET` is new (24,000). mypy
-**98**.
+wakes. Keep the tree importable; never patch `.py` through a heredoc - and the guard test now
+reads `docs/`, `assets/` and `tests/` too. `ops morning` may now call `input()` (the sign-in
+offer) - only with a console, and only in `morning`. A correction note now carries
+`CHECKED_LINE`; one without it is from before #1174. mypy **98**.
 
 **Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. Shared files this wave:
-`apis/topic_scorer.py` (`_fixture_domain` - a neutral topic only), `apis/blog_rss_api.py` (one
-status), `core/batch_generation.py`, `core/claim_verifier.py`, `core/batch_review.py`,
-`core/experiment_levers.py`, `.env.example`.
+`scripts/ops.py` (`corrections-open`, the sign-in offer in `_run_batch`), `core/batch_review.py`
+(`c`, `why_not_cut`), `core/content_engine.py` (`with_full_stop`, `says_next_sentence` in
+`_hook_variants`), `core/correction_dossier.py`, `core/overnight.py`,
+`assets/thumbnail_compose.py`, `assets/flux_thumbnail.py`. Seven older correction tests' pages
+now name their subject (`test_wave5_defects`, `test_review6_defects`, `test_next15_wave`).
 
 **Defects first:**
-- **The YouTube sign-in ended 2026-10-13.** Nothing uploads or syncs; the shelf is 3, so
-  overnight pauses until it drops.
-- The `blog_rss` `no_key` trip of 10-14 17:55 is in `data/quota_state.json` until 23:55; left.
-- The proof drafts' openers: no full stop (#1179), the next sentence said twice (#1180).
+- **The YouTube sign-in ended 2026-10-13.** `ops morning` now offers it; nothing uploads or
+  syncs until then, and overnight pauses while the shelf is 3.
+- Open: #1181 (a title said "Denver Loss Angeles"), #1182 (a game run's stored domain reads
+  neutral), #1183 (four-word thumbnail headline), #1184 (a correction note written each scan).
+- Empty folders under `C:\c\Users\...` from my sample render; the operator's to delete.
 
-**Shipped:** wave 87 - #1169-#1173. 8 of 13 tests failed or errored on `ea9fe42` first. Suite
-5759, mypy 98, corpus 232. Highest filed #1182.
+**Shipped:** waves 87-88 - #1169-#1180. 8 of 13 and 17 of 21 tests failed or errored on HEAD
+first. Suite 5780, mypy 98, corpus 242. Highest filed #1184.
 
-**In progress:** wave 88 claimed - #1174 the correction scan reads a page only when it names the
-claim's subject, #1175 open corrections in `ops morning`, #1176 the morning offers to sign in,
-#1177 `batch-review` cuts flagged sentences, #1178 the thumbnail keeps its title, and #1179-#1180
-from the proof drafts. Files: `core/correction_dossier.py`, `scripts/ops.py`, `core/overnight.py`,
-`core/batch_review.py`, `assets/thumbnail_compose.py`, `core/content_engine.py` (hook pass).
+**In progress:** nothing claimed.
 
 ## Slot — Cursor
 

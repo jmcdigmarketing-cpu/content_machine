@@ -44,7 +44,8 @@ class TestThumbnailPlate(unittest.TestCase):
             with Image.open(dest) as saved:
                 self.assertEqual(saved.size, (1280, 720))
 
-    def test_white_on_white_is_refused_and_not_written(self):
+    def test_white_on_white_gets_a_dark_plate(self):
+        # #1178 (was "is refused and not written"): 4 of 8 thumbnails went out with no words.
         with tempfile.TemporaryDirectory() as tmp:
             dest = os.path.join(tmp, "bad.jpg")
             plate = compose_thumbnail(
@@ -52,8 +53,9 @@ class TestThumbnailPlate(unittest.TestCase):
                 "Knicks Beat Spurs Tonight",
                 dest,
             )
-            self.assertIn("contrast", plate.refused)
-            self.assertFalse(os.path.isfile(dest))
+            self.assertEqual(plate.refused, "")
+            self.assertTrue(plate.backed)
+            self.assertTrue(os.path.isfile(dest))
 
     def test_a_subject_image_is_pasted_inside_the_frame(self):
         with tempfile.TemporaryDirectory() as tmp:

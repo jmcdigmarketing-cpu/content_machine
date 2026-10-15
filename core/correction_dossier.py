@@ -29,8 +29,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
-from apis.topic_tokens import FUNCTION_WORDS
+from apis.topic_tokens import COMMON_CAPITALISED, FUNCTION_WORDS
 from config.paths import DATA_DIR
 from core.logging import get_logger
 
@@ -82,6 +83,11 @@ def correction_scan_stamp_path(channel_id: str) -> str:
     return STAMP_PATH_TEMPLATE.format(channel=safe or "default")
 
 
+# #1174: written into every note filed after a page had to name the claim's subject. A note
+# without it is from before, when every claim of a run was checked against every source.
+CHECKED_LINE = "- **Checked:** against a page that names the claim's subject"
+
+
 @dataclass
 class CorrectionDossier:
     """One reversal, joined all the way from live evidence back to the upload."""
@@ -96,8 +102,14 @@ class CorrectionDossier:
     suggested_correction: str
     status: str = "open"
     detected_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    negative_recorded: bool = False  # #1174: only a retraction records a reversed fact
 
     def render(self) -> str:
+        blocked = (
+            " The reversed claim is already blocked from future scripts via the negative-fact gate."
+            if self.negative_recorded
+            else ""
+        )
         return "\n".join(
             [
                 f"## {self.claim or '(claim not recorded)'}",
@@ -110,11 +122,11 @@ class CorrectionDossier:
                 f"- **Suggested correction:** {self.suggested_correction}",
                 f"- **Status:** {self.status}",
                 f"- **Detected:** {self.detected_at}",
+                CHECKED_LINE,
                 "",
                 "Nothing has been changed on YouTube. Publishing a correction, "
                 "editing the description, or taking the video down is an operator "
-                "decision. The reversed claim is already blocked from future "
-                "scripts via the negative-fact gate.",
+                f"decision.{blocked}",
             ]
         )
 
@@ -172,6 +184,24 @@ def _content_tokens(text: str) -> set[str]:
         for token in re.findall(r"[a-z0-9']+", strip_markup(text).lower())
         if len(token) > 2 and token not in _CLAIM_STOPWORDS
     }
+
+
+def _page_is_about(claim: str, body_lc: str) -> bool:
+    """True when the page names most of the names the claim does (#1174) - a page about
+    "Shavkat Rakhmonov" that never says "TikTok" is still about him.
+
+    The scan read each source page of a run against each claim of the run. Run 119's claim
+    "Shavkat Rakhmonov posted '19-0 VS 19-0' on his TikTok" was filed as no longer carried by
+    an article about a former UFC security guard - a page that never carried it. A claim with
+    no name is not checked: there is no telling which page was its source.
+    """
+    names = {
+        re.sub(r"['\u2019]s$", "", word).lower()
+        for word in re.findall(r"\b[A-Z][A-Za-z'\u2019-]{2,}", claim or "")
+    }
+    names -= COMMON_CAPITALISED
+    named = sum(1 for name in names if name in body_lc)
+    return bool(names) and named * 2 > len(names)
 
 
 def _claim_coverage(claim: str, body: str) -> float:
@@ -250,7 +280,7 @@ def scan_published_for_corrections(
                 continue
             for claim in claims:
                 text = str(claim.get("claim") or "").strip()
-                if not text:
+                if not text or not _page_is_about(text, body_lc):
                     continue
                 coverage = _claim_coverage(text, body)
                 if has_retraction:
@@ -275,7 +305,6 @@ def scan_published_for_corrections(
                     ),
                 )
                 found.append(dossier)
-                _write_note(dossier)
                 if store is not None and has_retraction:
                     try:
                         store(
@@ -283,14 +312,77 @@ def scan_published_for_corrections(
                             text,
                             f"source retracted after publish ({url}, video {dossier.video_id})",
                         )
+                        dossier.negative_recorded = True
                     except Exception as exc:
                         logger.warning("negative fact not recorded for %s: %s", text, exc)
+                _write_note(dossier)
                 break  # one dossier per source; the operator reads the page next
     # A completed clean scan is still work: stamp it so every overnight run
     # does not re-fetch the same published sources (#703). Individual source
     # failures remain WARNINGs above and are retried on the next due scan.
     write_stamp(stamp, now=now)
     return found
+
+
+def _reports_dir(channel_id: str) -> str:
+    try:
+        from core.obsidian_facts import _vault_path
+        from core.vault.dossiers import _REPORTS_DIR
+
+        vault = _vault_path()
+    except Exception:
+        return ""
+    return os.path.join(str(vault), channel_id, _REPORTS_DIR) if vault else ""
+
+
+_NOTE_VIDEO = re.compile(r"\*\*Video:\*\* (\S+)")
+_NOTE_SOURCE = re.compile(r"\*\*Source:\*\* (\S+)")
+_NOTE_CLAIM = re.compile(r"^## (.+)$", re.M)
+
+
+def open_correction_lines(channel_id: str, *, reports_dir: str | None = None) -> list[str]:
+    """`ops morning` (#1175): each open correction note once - video, claim, page. [] when
+    there are none. Notes from before #1174 are counted, not listed."""
+    folder = _reports_dir(channel_id) if reports_dir is None else reports_dir
+    if not folder or not os.path.isdir(folder):
+        return []
+    names = sorted(
+        (n for n in os.listdir(folder) if "_correction-" in n and n.endswith(".md")), reverse=True
+    )
+    seen: set[tuple[str, str]] = set()
+    rows: list[str] = []
+    older = 0
+    for name in names:
+        try:
+            with open(os.path.join(folder, name), encoding="utf-8") as f:
+                text = f.read()
+        except OSError:
+            continue
+        if "**Status:** open" not in text:
+            continue
+        video = _NOTE_VIDEO.search(text)
+        claim = _NOTE_CLAIM.search(text)
+        source = _NOTE_SOURCE.search(text)
+        key = (video.group(1) if video else name, claim.group(1).strip() if claim else "")
+        if key in seen:
+            continue
+        seen.add(key)
+        if CHECKED_LINE not in text:
+            older += 1
+            continue
+        host = urlparse(source.group(1)).netloc if source else ""
+        rows.append(f"  {key[0]}  {key[1][:80]}  ({host})")
+    if not rows and not older:
+        return []
+    out = [f"Open corrections - {channel_id}: {len(rows)} (nothing has been changed on YouTube)"]
+    out.extend(rows)
+    if older:
+        plural = "s" if older != 1 else ""
+        out.append(
+            f"  {older} older note{plural} from before a page had to name the claim's subject "
+            "- in the vault's _reports folder"
+        )
+    return out
 
 
 def _evidence_snippet(body: str) -> str:

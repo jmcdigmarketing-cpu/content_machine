@@ -84,7 +84,10 @@ def _sign_in_line(channel_id: str) -> str:
 
         if oauth.live_youtube_forbidden():
             return ""
-        return str(oauth.sign_in_status(channel_id) or oauth.sign_in_reminder(channel_id) or "")
+        problem = str(oauth.sign_in_status(channel_id) or "")
+        if len(problem) > 120:  # #1176: the full message is printed where it is read once
+            problem = oauth.short_sign_in(channel_id)
+        return problem or str(oauth.sign_in_reminder(channel_id) or "")
     except Exception as exc:
         logger.debug("overnight sign-in line skipped: %s", exc)
         return ""

@@ -47,6 +47,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | `config-diff` | channels.json sha256 vs last-run fingerprint |
 | `contact-sheet` | 2x2 PNG collage of the last thumbnails (--path dest.png) |
 | `corrections` | Re-check published videos' sources and file a correction dossier |
+| `corrections-open` | Open correction notes on published videos, one line each (#1175) |
 | `cost-panel` | Cost Control Tower panel (#158; requires pip install -e ".[app]") |
 | `cost-tower` | Every cost lane in one view: TTS, Apify, YouTube, LLM, free tiers (#158) |
 | `crosspost` | Buffer pack for TikTok + Instagram: [list \| done --run-id N] (#968) |

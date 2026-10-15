@@ -48,7 +48,7 @@ class MorningBatchTests(unittest.TestCase):
         self.assertIn("morning", ops.BATCHES)
         self.assertEqual(
             ops.batch_leaves("morning"),
-            ["sync-metrics", "overnight-last", "shelf", "batch-review"],
+            ["sync-metrics", "overnight-last", "shelf", "corrections-open", "batch-review"],
         )
 
     def test_ops_all_stays_weekly(self):

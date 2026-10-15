@@ -3291,6 +3291,13 @@ def _run_batch(name: str, args: argparse.Namespace) -> int:
         print(f"  The steps that need it ({', '.join(sorted(_SIGN_IN_STEPS))}) are skipped.")
     if name in _MORNING_BATCHES and not sign_in and _has_console():
         _offer_queued_uploads(getattr(args, "channel", None))
+    if name in _MORNING_BATCHES:
+        from config.channels import resolve_channel_id
+        from publishing.buffer_api import morning_line
+
+        line = morning_line(resolve_channel_id(getattr(args, "channel", None)))
+        if line:
+            print(f"\n== {name}: buffer\n  {line}")
     if not sign_in:
         reminder = _batch_sign_in_reminder(name, args)
         if reminder:  # #974: said before it expires; every step still runs

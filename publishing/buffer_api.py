@@ -72,6 +72,21 @@ def _error_from_body(errors: list[dict[str, Any]]) -> BufferError:
     return BufferError("unexpected", f"{code or 'error'}: {message}")
 
 
+_REQUESTS = 0
+DAILY_REQUEST_CAP = 250
+NEAR_DAILY_CAP = 200
+
+
+def requests_made() -> int:
+    """GraphQL calls this process has made. The free plan allows 250 a day (#1199)."""
+    return _REQUESTS
+
+
+def _count_request() -> None:
+    global _REQUESTS
+    _REQUESTS += 1
+
+
 def graphql(
     query: str,
     variables: dict[str, Any] | None = None,
@@ -90,12 +105,14 @@ def graphql(
         post = requests.post
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     payload = {"query": query, "variables": variables or {}}
+    _count_request()
     resp = post(ENDPOINT, json=payload, headers=headers, timeout=TIMEOUT_SECONDS)
     if getattr(resp, "status_code", 200) == 429:
         wait = _retry_after(resp)
         if wait > MAX_WAIT_SECONDS:
             raise BufferError("rate_limited", f"Buffer asks to wait {wait:.0f}s", wait)
         sleep(wait)
+        _count_request()
         resp = post(ENDPOINT, json=payload, headers=headers, timeout=TIMEOUT_SECONDS)
         if getattr(resp, "status_code", 200) == 429:
             raise BufferError("rate_limited", "Buffer's request limit", _retry_after(resp))
@@ -313,3 +330,58 @@ def channel_post_metrics(organization_id: str, channel_id: str, **kw: Any) -> li
         if isinstance(node, dict):
             out.append(parse_metrics_node(node))
     return out
+
+
+def morning_line(channel_id: str) -> str:
+    """Buffer errors, a paused queue, a disconnected channel, the request budget.
+
+    Empty when Buffer is not configured, and when nothing is wrong. Never logs:
+    a healthy morning stays quiet (#1199).
+    """
+    if not configured():
+        return ""
+    from publishing import crosspost
+
+    bits: list[str] = []
+    data = crosspost._load(channel_id)
+    posts = data.get("posts") or {}
+    labels = {"tiktok": "TikTok", "instagram": "Instagram"}
+    if isinstance(posts, dict):
+        for rid, entry in posts.items():
+            if not isinstance(entry, dict):
+                continue
+            for service, label in labels.items():
+                state = entry.get(service)
+                if isinstance(state, dict) and state.get("state") == "error":
+                    bits.append(
+                        f"run {rid} {label}: {state.get('error') or 'Buffer reported an error'}"
+                    )
+    org = str(
+        ((data.get("buffer") or {}) if isinstance(data.get("buffer"), dict) else {}).get(
+            "organization_id"
+        )
+        or ""
+    )
+    if org:
+        try:
+            rows = channels(org)
+        except BufferError as exc:
+            bits.append(f"Buffer error: {exc.kind}")
+            rows = []
+        except Exception as exc:
+            bits.append(f"Buffer error: {type(exc).__name__}")
+            rows = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            name = str(row.get("name") or row.get("service") or "channel")
+            if row.get("isQueuePaused"):
+                bits.append(f"{name} queue paused")
+            if row.get("isDisconnected"):
+                bits.append(f"{name} disconnected")
+    made = requests_made()
+    if made >= NEAR_DAILY_CAP:
+        bits.append(f"Buffer requests {made}/{DAILY_REQUEST_CAP} today")
+    if not bits:
+        return ""
+    return "Buffer: " + "; ".join(bits)

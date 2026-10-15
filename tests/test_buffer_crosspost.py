@@ -32,7 +32,7 @@ R2 = {
     "R2_ACCESS_KEY_ID": "id",
     "R2_SECRET_ACCESS_KEY": "secret",
     "R2_BUCKET": "videos",
-    "R2_PUBLIC_BASE_URL": "",
+    "R2_PUBLIC_BASE_URL": "https://pub-test.r2.dev",
 }
 
 
@@ -136,26 +136,18 @@ class VideoHostTests(unittest.TestCase):
         with open(self.mp4, "wb") as f:
             f.write(b"mp4")
 
-    def test_the_video_is_put_and_a_week_long_link_returned(self):
+    def test_the_video_is_put_and_its_public_address_returned(self):
+        # Was "a week-long link": a presigned link answers HEAD with 403 and Buffer refused it
+        # live on 2026-10-15 ("Video could not be read from its URL").
         from publishing import video_host
 
         client = MagicMock()
-        client.generate_presigned_url.return_value = "https://acct.r2/videos/k?X-Amz-Signature=s"
         with patch.dict(os.environ, R2):
-            url = video_host.host(self.mp4, "tapin/run5.mp4", client=client)
-        self.assertTrue(url.startswith("https://"))
+            url = video_host.host(self.mp4, "tapin/run5-ab12.mp4", client=client)
+        self.assertEqual(url, "https://pub-test.r2.dev/tapin/run5-ab12.mp4")
         args = client.upload_file.call_args
-        self.assertEqual(args.args[1:], ("videos", "tapin/run5.mp4"))
+        self.assertEqual(args.args[1:], ("videos", "tapin/run5-ab12.mp4"))
         self.assertEqual(args.kwargs["ExtraArgs"], {"ContentType": "video/mp4"})
-        self.assertEqual(client.generate_presigned_url.call_args.kwargs["ExpiresIn"], 7 * 86400)
-
-    def test_a_public_bucket_address_wins(self):
-        from publishing import video_host
-
-        client = MagicMock()
-        with patch.dict(os.environ, {**R2, "R2_PUBLIC_BASE_URL": "https://cdn.example.org/"}):
-            url = video_host.host(self.mp4, "tapin/run5.mp4", client=client)
-        self.assertEqual(url, "https://cdn.example.org/tapin/run5.mp4")
         client.generate_presigned_url.assert_not_called()
 
     def test_what_is_missing_is_named(self):
@@ -164,8 +156,9 @@ class VideoHostTests(unittest.TestCase):
         with patch.dict(os.environ, dict.fromkeys(R2, "")):
             self.assertEqual(
                 video_host.missing(),
-                ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"],
-            )
+                ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET",
+                 "R2_PUBLIC_BASE_URL"],
+            )  # fmt: skip
             self.assertFalse(video_host.configured())
 
     def test_a_logged_link_has_no_signature(self):
@@ -314,16 +307,17 @@ class SendTests(CrosspostCase):
         self.assertEqual(len(tiktok), 2)
         self.assertGreaterEqual(tiktok[1] - tiktok[0], timedelta(hours=20))
 
-    def test_a_slot_past_the_links_week_waits(self):
+    def test_a_far_slot_is_still_scheduled(self):
+        # Was "a slot past the link's week waits": the address is public now (2026-10-15,
+        # Buffer refused a presigned link) and does not expire.
         from publishing.crosspost import send_due
 
         send_due("tapin")
         self.public.append((113, "yt113"))
         far = datetime.now(timezone.utc) + timedelta(days=9)
         with patch("publishing.crosspost._suggested_slot", return_value=far):
-            lines = send_due("tapin")
-        self.create.assert_not_called()
-        self.assertIn("within the week", "\n".join(lines))
+            send_due("tapin")
+        self.assertEqual(self.create.call_count, 2)
 
     def test_missing_setup_is_named_and_nothing_sent(self):
         from publishing.crosspost import step

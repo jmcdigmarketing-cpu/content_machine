@@ -120,7 +120,9 @@ says "1 upload overdue" when one has.
 YouTube it is scheduled on both through Buffer - one a day per platform, the AI label on.
 Setting it up once (the Buffer key, the R2 bucket keys, the channel ids) is in
 [platform_publish_setup.md](platform_publish_setup.md); `py -m scripts.ops crosspost status`
-shows each video on each platform, `crosspost cancel --run-id N` takes one back.
+shows each video on each platform, `crosspost cancel --run-id N` takes one back. A video you
+posted by hand in Buffer is found and left on that platform; `crosspost done --run-id N` says so
+for both.
 
 **A `.env` line that is not NAME=value** is skipped - python-dotenv warns "could not parse".
 The startup header and `ops doctor` name such lines by number (never their content); give each
@@ -142,9 +144,10 @@ py -m scripts.ops morning --channel tapin
 It syncs the numbers, says what overnight rendered and where each one is now, lists the shelf
 and any open correction on a published video (one line each; `ops corrections-open` alone),
 then walks the waiting drafts for a yes or no each. When the YouTube sign-in has ended it asks
-"Sign in to YouTube now?" first - `y` opens Google's page, and the sync runs once you are back. (`ops all` is the weekly batch; the morning
-review is not in it.) Run from a scheduled task or a pipe it skips the draft review and says
-so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
+"Sign in to YouTube now?" first - `y` opens Google's page, and the sync runs once you are back.
+When uploads are queued and the upload task is not installed it asks "Send the N queued uploads
+now?". `ops all` ends with the same morning (decision §56). Run from a scheduled task or a pipe
+it skips the draft review and says so. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
 
 **Where are the overnight videos?** `py main.py`, then **6) Overnight videos and drafts**: each
 video of the last week with the full path of its mp4 (open it from File Explorer), its YouTube

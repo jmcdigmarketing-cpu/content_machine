@@ -3133,8 +3133,9 @@ BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
         ("scoreboard", "daily-sync", "coach", "health", "reliability", "status"),
         False,
     ),
-    # #1140 (operator, 2026-10-11: "why is morning review not in ops all?"): `all` is the
-    # weekly batch and the draft review was in none. The operator chose a batch of its own.
+    # #1140 (operator, 2026-10-11: "why is morning review not in ops all?"): the draft review
+    # was in no batch; the operator chose a batch of its own - and on 10-15 wanted it in
+    # `all` as well (#1204).
     "morning": (
         "The morning review: fresh numbers, what overnight rendered, the shelf, the drafts",
         (
@@ -3147,9 +3148,11 @@ BATCHES: dict[str, tuple[str, tuple[BatchStep, ...], bool]] = {
         ),
         False,
     ),
+    # #1204 (operator, 2026-10-15: "is morning ... included in script ops all??? that is what
+    # i want"): `all` ends with the morning, each step once - the draft review last.
     "all": (
-        "Everything: all-checks + all-analytics + all-review, each step once",
-        ("all-checks", "all-analytics", "all-review"),
+        "Everything: all-checks + all-analytics + all-review + the morning, each step once",
+        ("all-checks", "all-analytics", "all-review", "morning"),
         False,
     ),
 }
@@ -3194,6 +3197,48 @@ def batch_leaves(name: str) -> list[str]:
 _SIGN_IN_STEPS = frozenset({"sync-metrics", "backfill"})
 
 
+_MORNING_BATCHES = frozenset({"morning", "all"})
+
+
+def _queued_uploads(channel: str | None) -> int:
+    """Uploads due now and waiting for the worker (#1203)."""
+    from config.channels import resolve_channel_id
+    from core.job_queue import list_active_jobs, overdue_uploads
+
+    cid = resolve_channel_id(channel)
+    return sum(1 for job in overdue_uploads(list_active_jobs()) if job.channel_id == cid)
+
+
+def _worker_installed() -> bool:
+    from core.nightly_task import worker_installed
+
+    return worker_installed()
+
+
+def _offer_queued_uploads(channel: str | None) -> None:
+    """#1203 (operator, 2026-10-15: "offer each morning"): run 126 waited a day for the
+    worker. Asked only when something is waiting and the upload task is not installed."""
+    try:
+        waiting = _queued_uploads(channel)
+        if not waiting or _worker_installed():
+            return
+    except Exception:  # a convenience: the batch carries on without it
+        return
+    plural = "s" if waiting != 1 else ""
+    try:
+        answer = input(f"  Send the {waiting} queued upload{plural} now? [y/N]: ")
+    except EOFError:
+        answer = ""
+    if answer.strip().lower() != "y":
+        return
+    from jobs.worker import send_queued_uploads
+
+    sent = send_queued_uploads(waiting)
+    print(
+        f"  Sent {sent} of {waiting}. Every 15 minutes on its own: py -m scripts.ops worker-task --install"
+    )
+
+
 def _batch_sign_in(name: str, args: argparse.Namespace) -> str:
     """The sign-in problem for a batch that needs the sign-in, else "" (#971)."""
     if name == "all-setup" or not _SIGN_IN_STEPS & set(batch_leaves(name)):
@@ -3226,7 +3271,7 @@ def _run_batch(name: str, args: argparse.Namespace) -> int:
     skipped: list[str] = []
     if sign_in:
         print(f"\n== {name}: sign-in\n  ! {sign_in}")
-        if name == "morning" and _has_console():  # #1176 (operator: ask each morning)
+        if name in _MORNING_BATCHES and _has_console():  # #1176 (operator: ask each morning)
             try:
                 answer = input(
                     "  Sign in to YouTube now? Google's page opens in your browser. [y/N]: "
@@ -3244,6 +3289,8 @@ def _run_batch(name: str, args: argparse.Namespace) -> int:
                 print("  Signed in." if not sign_in else "  Still signed out.")
     if sign_in:
         print(f"  The steps that need it ({', '.join(sorted(_SIGN_IN_STEPS))}) are skipped.")
+    if name in _MORNING_BATCHES and not sign_in and _has_console():
+        _offer_queued_uploads(getattr(args, "channel", None))
     if not sign_in:
         reminder = _batch_sign_in_reminder(name, args)
         if reminder:  # #974: said before it expires; every step still runs
@@ -3394,6 +3441,9 @@ def _crosspost_api(action: str, channel: str, args: argparse.Namespace, *, apply
         return 0
     missing = crosspost.setup_missing(channel)
     if missing:
+        if apply and crosspost.buffer_channel_ids(channel):
+            for line in crosspost.switch_on(channel):
+                print(line)
         print(f"Crosspost - {channel}: waits on " + ", ".join(missing))
         return 1
     lines = [*crosspost.sync_status(channel), *crosspost.send_due(channel, apply=apply)]

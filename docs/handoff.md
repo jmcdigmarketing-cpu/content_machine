@@ -53,36 +53,38 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-15 · **HEAD at write:** `a10d971` + the wave 90 commit (`git log -1`) ·
-**Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
+**Written:** 2026-10-15 · **HEAD at write:** `3912225` + the wave 91 commit (`git log -1`) ·
+**Tree:** NOT clean - Cursor's uncommitted work is in it (logging, competitor sync, brand-safety
+lexicon, dead-air, host concurrency; new tests `test_brand_lexicon`, `test_feed_down`,
+`test_run_log`, `test_dead_air`). My commit carries my hunks only: `scripts/ops.py`,
+`docs/backlog.md`, `.env.example` and `tests/regression_corpus.json` hold both of ours, and I
+staged mine by hunk. Untracked `.agents/`, `.codex/` and my `tests/test_*` for wave 92 aside.
 
-**Read before editing:** TikTok and Instagram go out through Buffer's API since wave 89
-(`publishing/buffer_api.py`, `publishing/video_host.py`, the API half of
-`publishing/crosspost.py`); the suite pins `CROSSPOST_AUTO=false` and, since wave 90,
-`ENV_LINT_FILE` (the `.env` line check must never read the operator's file). Best bets place
-this week's games after the other picks, at most `BEST_BET_SCHEDULE_MAX` (2) in five
-(`best_bet.with_games`). mypy **98**. Patch scripts go through the Write tool - a Bash heredoc
-turned `\n` into newlines again in wave 90.
+**Cursor, read this:** before I saw you were working, one repo-wide `ruff check --fix` and
+`ruff format .` of mine ran over your in-progress files (layout only - e.g. `tests/test_run_log.py`
+was re-wrapped; its F841 / SIM222 were left for you). Nothing of yours is staged or committed by
+me. Shared files of mine this wave: `scripts/ops.py` (BATCHES `all` + `morning`, the queued-upload
+offer in `_run_batch`, `_crosspost_api`), `jobs/worker.py` (`_crosspost_after_upload`,
+`send_queued_uploads`), `publishing/crosspost.py`, `publishing/buffer_api.py` (`draft`),
+`publishing/video_host.py` (public address only). Your five and #1194-#1199 stay yours.
 
-**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. **Offered to you, the
-operator's choice of four:** #1194 `[XL]` one video, three feeds - learning per platform from
-TikTok and Instagram results (#1195-#1199). Brief, files, definition of done and a paste-ready
-prompt: `docs/initiative_cross_platform.md`; a pointer at the top of `cursor_brief_2026-10.md`.
-The operator says whether it comes before or after your Phase A. Shared files this wave:
-`core/best_bet.py`, `core/ui.py`, `main.py`, `core/batch_review.py`, `core/secrets_doctor.py`,
-`core/ops_doctor.py`, `publishing/crosspost.py` (`run_state_line`), `tests/__init__.py`,
-`.env.example`.
+**Read before editing:** `ops all` now ends with the morning (decision §56). Crossposting is
+switched on (`data/crosspost_tapin.json` `buffer.since`, 44 baseline runs); the automatic round
+leaves a video already posted by hand in Buffer (§57). Buffer reads the bucket's public address
+only - a presigned link answers HEAD with 403 and Buffer refuses it (§58). mypy **98**.
 
 **Defects first:**
-- Nothing can go to TikTok or Instagram yet: the R2 keys are not in `.env`, and the Buffer
-  channel ids are not kept (`crosspost channels --apply`). Buffer answers: TikTok
-  `tapinmedia47`, Instagram `tapinmedia03` (business).
-- `.env` lines 35-36 are not NAME=value; the header now says so.
+- Nothing goes to TikTok or Instagram until `R2_PUBLIC_BASE_URL` is set (public access on the
+  bucket). `.env` lines 35-36 still unparsed.
+- Overnight ran at 4:52 PM on 10-15 (the PC slept at 5:00 AM).
 
-**Shipped:** waves 89-90 - #1185-#1193. 31 of 31 and 12 of 12 tests failed or errored on HEAD
-first. Suite 5823, mypy 98, corpus 244. Highest filed #1199.
+**Shipped:** wave 91 - #1200-#1204, #1207. 17 of 20 tests failed or errored on `3912225` first.
+Suite 5861 with Cursor's uncommitted tests in it (one of theirs errored while its module was
+being written; mine all pass), mypy 98, corpus 247 in my commit (250 with Cursor's).
 
-**In progress:** nothing claimed.
+**In progress:** wave 92 claimed - #1205 the arc's week counter (`core/topic_graph.py`,
+`core/best_bet.py`), #1181 the lost "Los", #1182 a game run's stored domain, #1183 the thumbnail
+headline (`assets/thumbnail_compose.py`), #1206 old descriptions re-laid at upload.
 
 ## Slot — Cursor
 

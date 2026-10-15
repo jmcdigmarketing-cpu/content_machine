@@ -7417,3 +7417,48 @@ Suite **5,811 -> 5823**, forward and reversed. mypy **98**.
 `roadmap-index`: open 315, done 914, numbered open 263; highest filed #1199.
 
 Closed **#1191-#1193**. Filed **#1194-#1199** (Cursor's, offered). Claude has nothing claimed.
+
+## 2026-10-15 — wave 91 (Claude Code): TikTok/Instagram and the morning
+
+**Prompt:** "topuria went out manually thats my bad, next 10 as well". Answers: a hand post
+skips that platform only; the worker starts the round right away; the morning offers queued
+uploads - "is morning ... included in script ops all??? that is what i want"; the create call
+tested live with a Buffer draft.
+
+### Shipped
+
+1. **#1200** hand posts found in Buffer and left, per platform (§57).
+2. **#1201** `crosspost done` records a hand post for the automatic round.
+3. **#1202** the worker starts the round after an upload that goes out public.
+4. **#1203** `ops morning` / `ops all` offer to send queued uploads.
+5. **#1204** `ops all` ends with the morning (§56).
+6. **#1207** (found by the live draft) Buffer reads the bucket's public address (§58).
+
+### Findings
+
+- **The live draft failed, as it was meant to find out.** Buffer refused it: "Invalid post:
+  Video could not be read from its URL". The presigned link downloads (200) but answers HEAD
+  with 403, and Buffer's hosting guide says no signed or expiring links - R2 needs public
+  access. My wave 89 design was wrong and its self-test only made a link, never read it. Nothing
+  was created in Buffer; the 134 MB copy was removed. The self-test now reads the address with
+  HEAD and a ranged GET.
+- **Hand posts, live and read-only:** runs 132, 131 and 120 match their posts on both
+  platforms; run 153 (new Rakhmonov) does not match the Oct 7 Rakhmonov post.
+- **Switched on** at 22:43 UTC: 44 videos public, Topuria among them, are left. Nothing can be
+  sent until `R2_PUBLIC_BASE_URL` is set.
+- **Cursor is working in the same tree** (uncommitted: logging, competitor sync, the brand-safety
+  lexicon, three new test files). My repo-wide `ruff check --fix` / `ruff format .` ran over its
+  files once before I saw it - layout only, nothing staged for it. From then on I linted my own
+  files and committed my own hunks only (`scripts/ops.py` and `tests/regression_corpus.json`
+  carry both).
+- Not a defect, my mistake: a 900-character display cut made run 153's script look unfinished;
+  it ends "Tap in for more."
+
+### Audit
+
+20 tests in `tests/test_hand_posts_and_morning.py`. **17 of 20 failed or errored on a worktree at
+`3912225`** (7 failures, 10 errors). Older tests changed: `test_buffer_crosspost` (the host gives
+a public address; a far slot is still scheduled - the presigned link and its 6-day horizon are
+gone), `test_morning` (`all` ends with the morning). Suite 5861 (5823 + my 38; Cursor's uncommitted tests ran with it). mypy 98.
+
+Closed **#1200-#1204, #1207**. Filed **#1205-#1206** (wave 92, claimed).

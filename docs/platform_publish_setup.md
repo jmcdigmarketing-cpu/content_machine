@@ -88,13 +88,17 @@ Set up once:
 2. `.env`: `BUFFER_API_KEY` (publish.buffer.com/settings/api), and for the R2 bucket that hosts
    each video while Buffer fetches it: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
    `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (an R2 API token with Object Read & Write on that
-   bucket). `R2_PUBLIC_BASE_URL` only for a public bucket or custom domain; without it each video
-   gets a 7-day presigned link and is scheduled inside that week.
-3. `py -m scripts.ops crosspost selftest` (puts and deletes 1 KB in the bucket), then
-   `py -m scripts.ops crosspost channels --apply` (keeps the TikTok and Instagram channel ids).
+   bucket) and **`R2_PUBLIC_BASE_URL`** - Buffer reads the video from a public address, never a
+   signed link (§58). In Cloudflare: R2 -> the bucket -> Settings -> **Public Development URL**
+   -> Enable, and copy the `https://pub-....r2.dev` address (or connect a custom domain there).
+   Each video's name carries a random part and is removed once Buffer reports it sent.
+3. `py -m scripts.ops crosspost selftest` (puts 1 KB in the bucket, reads it back from the
+   public address the way Buffer does, deletes it), then `py -m scripts.ops crosspost channels
+   --apply` (keeps the TikTok and Instagram channel ids).
 
-Then: `go-public --apply` schedules it on both; `ops morning` (`crosspost-send`) and the
-overnight run read back what Buffer did and send anything new. `py -m scripts.ops crosspost
+Then: `go-public --apply` schedules it on both, and so does the worker when an upload goes out
+public; `ops morning` (`crosspost-send`) and the overnight run read back what Buffer did and send
+anything new. A video already posted by hand in Buffer is left on that platform (§57). `py -m scripts.ops crosspost
 status` shows each video on each platform; `crosspost send` is the dry run of the next round
 (`--apply` sends); `crosspost cancel --run-id N` deletes its scheduled posts.
 `CROSSPOST_AUTO=false` stops the automatic round. Buffer's free plan allows 250 API requests a

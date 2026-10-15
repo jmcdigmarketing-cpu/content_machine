@@ -58,10 +58,12 @@ class MorningBatchTests(unittest.TestCase):
             ],
         )
 
-    def test_ops_all_stays_weekly(self):
+    def test_ops_all_ends_with_the_morning(self):
+        # Was "ops all stays weekly" (#1140); the operator, 2026-10-15, wanted the morning in
+        # `all` (#1204).
         from scripts import ops
 
-        self.assertNotIn("batch-review", ops.batch_leaves("all"))
+        self.assertEqual(ops.batch_leaves("all")[-1], "batch-review")
 
     def test_the_draft_review_without_a_console_says_how_to_run_it(self):
         from scripts.ops import COMMANDS

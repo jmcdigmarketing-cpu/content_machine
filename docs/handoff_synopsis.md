@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-14: TikTok and Instagram through Buffer, and what you raised (waves 89-90)
+# Handoff synopsis — 2026-10-15: hand posts, the morning in ops all, Buffer's public address (waves 91-92)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,21 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-14 (Claude Code): waves 89-90, TikTok and Instagram through Buffer
+## Last wave — 2026-10-15 (Claude Code): waves 91-92, TikTok/Instagram and the morning
+
+**Wave 91.** A video posted by hand in Buffer is found and left on that platform (#1200, §57 -
+Topuria, Chargers and Minecraft were); `crosspost done` records one (#1201); the worker starts
+the crosspost round after a public upload (#1202); `ops morning` and `ops all` offer queued
+uploads (#1203); `ops all` ends with the morning (#1204, §56). The live Buffer draft found that
+Buffer cannot read a presigned R2 link (HEAD answers 403): the video is read from the bucket's
+public address now (#1207, §58). Crossposting switched on (44 videos left as they are).
+
+**Still the operator's:** `R2_PUBLIC_BASE_URL` (public access on the bucket) and `.env` lines
+35-36; then `crosspost selftest`; the consent screen; `ops worker-task --install`;
+`schedule-drafts --wake`; whether Cursor starts #1194. Suite 5861 (5823 + my 38; Cursor's uncommitted tests ran with it), mypy 98. Claude has
+#1205, #1181, #1182, #1183, #1206 claimed (wave 92).
+
+## Previous — 2026-10-14 (Claude Code): waves 89-90, TikTok and Instagram through Buffer
 
 **Wave 89.** Each video made public on YouTube now goes to TikTok and Instagram through
 Buffer's API (#1185-#1190, decisions_2026-10.md §54): new videos only, one post a day per
@@ -53,38 +67,6 @@ defects are fixed (#1179-#1180).
 **Still the operator's:** sign in (`ops morning` now asks); publish the consent screen;
 `ops worker-task --install`; `schedule-drafts --wake`. Suite 5746 -> 5780, mypy 98, corpus
 242. Claude has nothing claimed.
-
-## Previous — 2026-10-14 (Claude Code): waves 85-86, your own idea's script and the morning
-
-**A correction to the entry below.** The three "drafts of your own ideas" in wave 83 were
-written from generated angles: `ops script-check --idea` passed the first generated angle, not
-angle 1. Fixed (#1159): the command now writes the idea itself, the way Enter on angle 1 does,
-and keeps it as a draft `batch-review` can render (decisions_2026-10.md §50).
-
-- **One model writes the whole script again (#1163, §48).** Since #374 a free small model had
-  written every body - a local 8B one on the run overnight rendered. The operator's call.
-- **Names are read whole (#1160).** "Court Mc", "Vonta Smith" and a sentence's first word
-  ("Losing") had been reported as names the facts lack; two drafts waited on that alone.
-- **An unbacked claim in the first sentence is repaired (#1161)** - the hook is rebuilt from
-  the facts once and kept only when the check then finds fewer.
-- **A cut may leave a script 15% short (#1162, §49)**; the review line says how short.
-- Found on the corrected drafts and fixed: a flagged claim's sentence was not found when it
-  used a possessive ("Wemby's +200") or ran across two sentences.
-
-The corrected drafts (runs 143-145) are waiting in `batch-review`: 2, 1 and 1 unbacked claims,
-each named. None clean; yesterday's generated-angle version of the hope idea had 4.
-
-**Wave 86 (10-14), the morning screen.** `ops recheck-claims` re-checked the waiting drafts:
-14 of 29 flagged claims were backed by their own saved facts (#1164; run 126 became clean). The
-sign-in is one line except where it is read in full (#1165). A pulled run says pulled and why
-(#1166). `ops overnight-last` says when overnight ran - on 10-14 the 5:00 AM run did not start
-until 5:54 PM (#1167; `schedule-drafts --wake` prints the fix). Drafts past twice their window
-are set aside each night, about 20 of 35 the first time (#1168, §51). That 5:54 PM run rendered
-run 126; three new game drafts narrate games not yet played and wait (filed #1169).
-
-**Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`); publish the
-consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5689 -> 5746,
-mypy 98, corpus 227. Claude has nothing claimed.
 
 ## Pipeline order (operator)
 

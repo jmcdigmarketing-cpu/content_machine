@@ -150,6 +150,7 @@ def post_input(
     due_at: datetime,
     service: str,
     thumbnail_ms: int | None = None,
+    draft: bool = False,
 ) -> dict[str, Any]:
     """The `CreatePostInput` for one video: scheduled at `due_at`, published by Buffer, the AI
     label on - the captions carry the disclosure line too. Instagram gets a Reel that is also
@@ -175,6 +176,8 @@ def post_input(
     }
     if metadata:
         body["metadata"] = metadata
+    if draft:  # saved in Buffer, never published until someone schedules it there
+        body["saveToDraft"] = True
     return body
 
 
@@ -189,6 +192,7 @@ def create_video_post(
     due_at: datetime,
     service: str,
     thumbnail_ms: int | None = None,
+    draft: bool = False,
     **kw: Any,
 ) -> dict[str, Any]:
     """The scheduled post (`id`, `status`, `dueAt`); raises `BufferError("input", message)`
@@ -199,7 +203,7 @@ def create_video_post(
         "... on MutationError { message } } }"
     )
     body = post_input(channel_id, text=text, video_url=video_url, due_at=due_at,
-                      service=service, thumbnail_ms=thumbnail_ms)  # fmt: skip
+                      service=service, thumbnail_ms=thumbnail_ms, draft=draft)  # fmt: skip
     data = graphql(query, {"input": body}, **kw)
     result = data.get("createPost") or {}
     post = result.get("post") if isinstance(result, dict) else None

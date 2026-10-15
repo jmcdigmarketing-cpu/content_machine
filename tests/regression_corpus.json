@@ -3744,6 +3744,50 @@
         ]
       },
       "why": "the warning named no line the operator could fix"
+    },
+    {
+      "id": "topuria-hand-post-is-this-video",
+      "item": 1200,
+      "source": "Buffer, 2026-10-11: Topuria posted to TikTok by hand, opening with its first line",
+      "call": "publishing.crosspost:hand_post_matches",
+      "args": [
+        "Gaethje TKO'd Topuria at UFC Freedom 250 - and wrote the blueprint to beat him. #UFC #Topuria",
+        "Topuria's outlook: Can he adapt before UFC's next title cycle? Gaethje beat Topuria and wrote the blueprint. Fourth-round TKO at UFC Freedom 250, Topuria's first pro loss."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the automatic round would have posted a second copy"
+    },
+    {
+      "id": "a-hand-post-about-another-video-is-not-this-one",
+      "item": 1200,
+      "source": "must keep: the Chargers post is not Topuria's",
+      "call": "publishing.crosspost:hand_post_matches",
+      "args": [
+        "The Chargers are 0-4 for the first time since 2017, with the worst start in years.",
+        "Topuria's outlook: Can he adapt before UFC's next title cycle? Gaethje beat Topuria and wrote the blueprint. Fourth-round TKO at UFC Freedom 250, Topuria's first pro loss."
+      ],
+      "expect": {
+        "falsy": true
+      },
+      "why": "a wrong match would leave a platform without the video"
+    },
+    {
+      "id": "buffer-reads-the-buckets-public-address",
+      "item": 1207,
+      "source": "live draft, 2026-10-15: 'Video could not be read from its URL' on a presigned link",
+      "call": "publishing.video_host:link",
+      "args": [
+        "tapin/run132-ab12.mp4"
+      ],
+      "env": {
+        "R2_PUBLIC_BASE_URL": "https://pub-x.r2.dev"
+      },
+      "expect": {
+        "equals": "https://pub-x.r2.dev/tapin/run132-ab12.mp4"
+      },
+      "why": "a presigned link answers HEAD with 403 and Buffer refuses it"
     }
   ]
 }

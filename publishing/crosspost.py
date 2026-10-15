@@ -243,11 +243,20 @@ def pack_new(channel_id: str, *, limit: int = _PACK_LIMIT) -> list[Packed]:
 
 
 def mark_posted(channel_id: str, run_id: int) -> bool:
+    """The operator posted it by hand: the pack is marked posted, and the automatic round
+    (#1188) leaves it on both platforms (#1201 - run 132 answered "never packed")."""
     data = _load(channel_id)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     entry = (data.get("runs") or {}).get(str(run_id))
-    if not isinstance(entry, dict):
+    if isinstance(entry, dict):
+        entry["posted"] = now
+    elif _content_run(run_id) is None:
         return False
-    entry["posted"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    posts = data.setdefault("posts", {}).setdefault(str(run_id), {})
+    for service in ("tiktok", "instagram"):
+        state = posts.get(service)
+        if not isinstance(state, dict) or state.get("state") not in ("scheduled", "sent"):
+            posts[service] = {"state": "manual", "error": "posted by hand", "at": now}
     _save(channel_id, data)
     return True
 
@@ -322,9 +331,6 @@ _LEAD = timedelta(minutes=15)
 # A create call with no answer: Buffer makes a post at once, so one not found this long after
 # the call was never made, and may be sent.
 _SENDING_GRACE = timedelta(minutes=10)
-# A presigned link lasts 7 days; a post is scheduled only inside 6, so Buffer can still fetch
-# the video at its slot. A public bucket address (`R2_PUBLIC_BASE_URL`) does not expire.
-_LINK_HORIZON = timedelta(days=6)
 
 
 def auto_enabled() -> bool:
@@ -486,8 +492,64 @@ def _adopt(org_id: str, buffer_channel: str, state: dict[str, Any]) -> dict[str,
     return None
 
 
+def hand_post_matches(post_text: str, run_text: str) -> bool:
+    """True when a Buffer post is about this video (#1200): most of the words that open the
+    post are the video's own (its title, opening line or description).
+
+    The operator's hand posts open with the video's first line ("Gaethje TKO'd Topuria at UFC
+    Freedom 250 - and wrote the blueprint") as often as with its title.
+    """
+    from apis.topic_tokens import content_tokens
+
+    want = set(content_tokens(post_text or "", min_len=3)[:25])
+    if len(want) < 4:
+        return False
+    have = set(content_tokens(run_text or "", min_len=3))
+    return len(want & have) >= 0.6 * len(want)
+
+
+def _rendered_at(path: str) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(os.path.getmtime(path), timezone.utc)
+    except OSError:
+        return None
+
+
+def _hand_post(posts: list[dict[str, Any]], run_text: str, rendered: datetime | None):
+    """The Buffer post that already carries this video, made no earlier than a day before it
+    was rendered - an older post on the same subject is another video."""
+    for post in posts:
+        when = _stamp(str(post.get("sentAt") or post.get("dueAt") or "").replace("Z", "+00:00"))
+        if rendered and when and when < rendered - timedelta(days=1):
+            continue
+        if hand_post_matches(str(post.get("text") or ""), run_text):
+            return post
+    return None
+
+
 def _now_text(now: datetime) -> str:
     return now.isoformat(timespec="seconds")
+
+
+def switch_on(channel_id: str, *, now: datetime | None = None) -> list[str]:
+    """Record the moment crossposting starts and the videos already public then (they are
+    left alone - "new videos only"). [] when it was already on.
+
+    Done as soon as Buffer is set up, even while R2 is not: a video made public in between then
+    counts as new and goes once the bucket is ready.
+    """
+    data = _load(channel_id)
+    block = data.setdefault("buffer", {})
+    if block.get("since"):
+        return []
+    public = _public_runs(channel_id)
+    block["since"] = _now_text(now or datetime.now(timezone.utc))
+    block["baseline"] = sorted(run_id for run_id, _ in public)
+    _save(channel_id, data)
+    return [
+        f"Crosspost - {channel_id}: switched on. {len(public)} video(s) already public stay as "
+        "they are; each one made public from now goes to TikTok and Instagram."
+    ]
 
 
 def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None) -> list[str]:
@@ -496,26 +558,31 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
     from publishing import buffer_api, video_host
 
     moment = now or datetime.now(timezone.utc)
-    data = _load(channel_id)
-    block = data.setdefault("buffer", {})
-    public = _public_runs(channel_id)
-    if not block.get("since"):
+    if not (_load(channel_id).get("buffer") or {}).get("since"):
         if not apply:
             return [
                 f"Crosspost - {channel_id}: not switched on yet; videos public now stay as they are"
             ]
-        block["since"] = _now_text(moment)
-        block["baseline"] = sorted(run_id for run_id, _ in public)
-        _save(channel_id, data)
-        return [
-            f"Crosspost - {channel_id}: switched on. {len(public)} video(s) already public stay "
-            "as they are; each one made public from now goes to TikTok and Instagram."
-        ]
+        return switch_on(channel_id, now=moment)
+    data = _load(channel_id)
+    block = data.setdefault("buffer", {})
+    public = _public_runs(channel_id)
     baseline = {int(x) for x in block.get("baseline") or []}
     ids = buffer_channel_ids(channel_id)
     org_id = str(block.get("organization_id") or "")
     posts = data.setdefault("posts", {})
     lines: list[str] = []
+    in_buffer: dict[str, list[dict[str, Any]]] = {}  # #1200: read once per channel a round
+
+    def buffer_posts(service: str) -> list[dict[str, Any]]:
+        if service not in in_buffer:
+            try:
+                in_buffer[service] = buffer_api.find_posts(org_id, ids[service]) if org_id else []
+            except Exception as exc:
+                logger.info("crosspost: %s posts unread: %s", service, exc)
+                in_buffer[service] = []
+        return in_buffer[service]
+
     for run_id, _video in public:
         if run_id in baseline:
             continue
@@ -533,6 +600,10 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
             continue
         text = caption(run)
         title = str(getattr(run, "title", "") or "")
+        run_text = " ".join(
+            str(getattr(run, name, "") or "") for name in ("title", "script_preview", "description")
+        )
+        rendered = _rendered_at(path)
         topic = str(getattr(run, "input_topic", "") or getattr(run, "selected_topic", "") or "")
         seconds = _duration(path)
         limit = reel_max_seconds()
@@ -554,6 +625,20 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                     f"  run {run_id} {label}: skipped - {seconds:.0f}s is longer than a Reel"
                 )
                 continue
+            if state.get("state") != "sending":
+                hand = _hand_post(buffer_posts(service), run_text, rendered)
+                if hand:  # #1200 (operator: skip that platform only)
+                    if apply:
+                        entry[service] = {
+                            "state": "manual",
+                            "post_id": str(hand.get("id") or ""),
+                            "link": str(hand.get("externalLink") or ""),
+                            "error": "posted by hand in Buffer",
+                            "at": _now_text(moment),
+                        }
+                        _save(channel_id, data)
+                    lines.append(f"  run {run_id} {label}: already posted by hand in Buffer - left")
+                    continue
             if state.get("state") == "sending":
                 try:
                     found = _adopt(org_id, ids[service], state) if org_id else None
@@ -580,27 +665,16 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                     lines.append(f"  run {run_id} {label}: waiting to see whether Buffer made it")
                     continue
             due = _next_due(channel_id, topic, service, posts, moment)
-            if video_host.link_expires(moment) and due > moment + _LINK_HORIZON:
-                lines.append(
-                    f"  run {run_id} {label}: the next free slot is {_local(due, channel_id)} - it "
-                    "waits for a slot within the week its link lasts"
-                )
-                continue
             if not apply:
                 lines.append(
                     f"  would schedule run {run_id} on {label} for {_local(due, channel_id)}"
                 )
                 continue
-            expires = _stamp(entry.get("url_expires"))
             try:
-                if not entry.get("object_key"):
+                if not entry.get("object_key"):  # hosted once, at its public address
                     key = video_host.object_key(channel_id, run_id, path)
                     entry["url"] = video_host.host(path, key)
                     entry["object_key"] = key
-                    entry["url_expires"] = video_host.link_expires(moment)
-                elif expires and expires < due + timedelta(hours=1):
-                    entry["url"] = video_host.link(str(entry["object_key"]))
-                    entry["url_expires"] = video_host.link_expires(moment)
             except Exception as exc:
                 lines.append(
                     f"  ! run {run_id}: the video could not be hosted ({type(exc).__name__})"
@@ -762,8 +836,14 @@ def cancel(channel_id: str, run_id: int) -> list[str]:
 def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:
     """Each video sent through Buffer, newest first, and where it is on each platform."""
     posts = _load(channel_id).get("posts") or {}
+
+    def sent_by_round(entry: dict[str, Any]) -> bool:  # a hand post is the operator's own
+        return any(
+            isinstance(entry.get(s), dict) and entry[s].get("state") != "manual" for s in PLATFORMS
+        )
+
     rows = sorted(
-        ((rid, e) for rid, e in posts.items() if isinstance(e, dict)),
+        ((rid, e) for rid, e in posts.items() if isinstance(e, dict) and sent_by_round(e)),
         key=lambda item: int(item[0]) if str(item[0]).isdigit() else 0,
         reverse=True,
     )
@@ -814,7 +894,11 @@ def step(channel_id: str) -> list[str]:
         return []
     missing = setup_missing(channel_id)
     if missing:
-        return [f"Crosspost - {channel_id}: TikTok and Instagram wait on " + ", ".join(missing)]
+        started = switch_on(channel_id) if buffer_channel_ids(channel_id) else []
+        return [
+            *started,
+            f"Crosspost - {channel_id}: TikTok and Instagram wait on " + ", ".join(missing),
+        ]
     lines: list[str] = []
     for part in (sync_status, send_due):
         try:

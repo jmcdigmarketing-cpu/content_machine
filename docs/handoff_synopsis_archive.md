@@ -7,6 +7,38 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-14 (Claude Code): waves 85-86, your own idea's script and the morning
+
+**A correction to the entry below.** The three "drafts of your own ideas" in wave 83 were
+written from generated angles: `ops script-check --idea` passed the first generated angle, not
+angle 1. Fixed (#1159): the command now writes the idea itself, the way Enter on angle 1 does,
+and keeps it as a draft `batch-review` can render (decisions_2026-10.md §50).
+
+- **One model writes the whole script again (#1163, §48).** Since #374 a free small model had
+  written every body - a local 8B one on the run overnight rendered. The operator's call.
+- **Names are read whole (#1160).** "Court Mc", "Vonta Smith" and a sentence's first word
+  ("Losing") had been reported as names the facts lack; two drafts waited on that alone.
+- **An unbacked claim in the first sentence is repaired (#1161)** - the hook is rebuilt from
+  the facts once and kept only when the check then finds fewer.
+- **A cut may leave a script 15% short (#1162, §49)**; the review line says how short.
+- Found on the corrected drafts and fixed: a flagged claim's sentence was not found when it
+  used a possessive ("Wemby's +200") or ran across two sentences.
+
+The corrected drafts (runs 143-145) are waiting in `batch-review`: 2, 1 and 1 unbacked claims,
+each named. None clean; yesterday's generated-angle version of the hope idea had 4.
+
+**Wave 86 (10-14), the morning screen.** `ops recheck-claims` re-checked the waiting drafts:
+14 of 29 flagged claims were backed by their own saved facts (#1164; run 126 became clean). The
+sign-in is one line except where it is read in full (#1165). A pulled run says pulled and why
+(#1166). `ops overnight-last` says when overnight ran - on 10-14 the 5:00 AM run did not start
+until 5:54 PM (#1167; `schedule-drafts --wake` prints the fix). Drafts past twice their window
+are set aside each night, about 20 of 35 the first time (#1168, §51). That 5:54 PM run rendered
+run 126; three new game drafts narrate games not yet played and wait (filed #1169).
+
+**Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`); publish the
+consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5689 -> 5746,
+mypy 98, corpus 227. Claude has nothing claimed.
+
 ## Previous — 2026-10-13 (Claude Code): waves 83-84, the 10-13 overnight run
 
 Overnight rendered two videos on 10-13 and both were wrong. Run 139 was titled and written as

@@ -71,6 +71,39 @@ def _defer_for_quota(job, result) -> bool:
     return True
 
 
+def _crosspost_after_upload(job) -> None:
+    """#1202 (operator, 2026-10-15: "right away"): an upload that went out public is sent to
+    TikTok and Instagram now - the same round `go-public --apply` starts. A video still unlisted
+    or scheduled is not public, and the round leaves it."""
+    try:
+        from publishing.crosspost import step
+
+        for line in step(resolve_channel_id(job.channel_id)):
+            print(line)
+    except Exception as exc:
+        logger.warning("crosspost after upload %s skipped: %s", job.id, exc)
+
+
+def send_queued_uploads(limit: int) -> int:
+    """#1203: send up to `limit` queued uploads now - uploads only, never a render. Returns how
+    many were tried."""
+    from apis.youtube_quota import has_quota_for_upload
+
+    repo = get_job_repository()
+    tried = 0
+    while tried < limit and has_quota_for_upload():
+        job = repo.claim_next(job_type="upload")
+        if not job:
+            break
+        tried += 1
+        try:
+            _process_upload(job)
+        except Exception as e:
+            logger.exception("Upload job %s failed: %s", job.id, e)
+            repo.update(job.id, {"status": JOB_FAILED, "last_error": str(e)[:500]})
+    return tried
+
+
 def _finalize_upload_job(job, result) -> None:
     repo = get_job_repository()
 
@@ -93,6 +126,8 @@ def _finalize_upload_job(job, result) -> None:
         if job.content_run_id and result.video_id:
             run_status = "scheduled" if result.status == "scheduled" else "published"
             get_content_run_repository().update(job.content_run_id, {"status": run_status})
+        if result.status == "uploaded":
+            _crosspost_after_upload(job)
         return
 
     if result.status in UPLOAD_STATUS_TERMINAL_FAILURE:

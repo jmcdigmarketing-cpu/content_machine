@@ -86,30 +86,16 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
 404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
 dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
-`roadmap-index` after wave 90: open 315, done 914, numbered open 263; highest filed #1199.
-Claude's waves 81-85 closed #1137-#1163. Wave 85 is the script your own idea gets: a typed
-idea is drafted as angle 1 and kept for review (#1159 - the proof drafts of 10-13 had been
-written from generated angles), names are read whole (#1160), an unbacked claim in the first
-sentence is repaired (#1161), a cut may leave a script 15% short (#1162), and one model writes
-the whole script again (#1163). Wave 86 is what you read each morning: a re-check of the
-waiting drafts (#1164 - 14 of 29 flagged claims were backed by their own saved facts), the
-sign-in said once (#1165), a pulled run called pulled (#1166), when overnight really ran
-(#1167), and old drafts set aside (#1168). Wave 87 is what overnight drafts: a scheduled
-game ahead is drafted as a preview (#1169, decision §52), a game name knows its sport so music
-and filings signals stay off it (#1170), the claim check reads twice the facts (#1171), a topic
-with no RSS feed no longer trips the breaker (#1172), and a game draft is set aside once the game
-starts (#1173). Wave 88 is what you see in the morning: a correction is checked only
-against a page about it (#1174), open corrections are one line each in `ops morning` (#1175),
-the morning offers the sign-in (#1176, decision §53), `c` in `batch-review` cuts the flagged
-sentences and says why when it cannot (#1177), and the thumbnail keeps its title on a dark
-plate (#1178). Two opener defects from the proof drafts are fixed (#1179-#1180). Wave 89 sends
-each video made public on YouTube to TikTok and Instagram through Buffer's API (#1185-#1190,
-decision §54). Wave 90 is what the operator raised that evening: two games of five best bets
-(#1191, §55), the overnight videos in `py main.py` (#1192), unreadable `.env` lines named
-(#1193). Offered to Cursor: **#1194** learning per platform from TikTok and Instagram
-([initiative_cross_platform.md](initiative_cross_platform.md)). Claude has nothing claimed.
-The step-by-step:
-[operator_guide.md](operator_guide.md).
+`roadmap-index` after wave 91: open 317, done 920, numbered open 265; highest filed #1207.
+Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
+your own idea's script, the morning screen, game previews, corrections checked against their
+own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),
+the overnight videos in `py main.py`. Offered to Cursor: **#1194** learning per platform
+([initiative_cross_platform.md](initiative_cross_platform.md)). Wave 91: a hand post in Buffer
+is left on that platform (#1200, §57), the worker starts the crosspost round (#1202), the
+morning offers queued uploads (#1203), `ops all` ends with the morning (#1204, §56), Buffer
+reads the bucket's public address (#1207, §58). Claude's next: #1205, #1181, #1182, #1183,
+#1206 (wave 92). The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

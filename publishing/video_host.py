@@ -1,19 +1,24 @@
 """Where Buffer fetches a video from: Cloudflare R2 (#1186).
 
-Buffer takes no uploads - a video post names a public link and Buffer fetches it. R2 is
-S3-compatible, so `boto3` puts the mp4 in the operator's bucket and returns either a
-presigned link (valid 7 days, S3's longest) or, when `R2_PUBLIC_BASE_URL` is set (a public
-bucket or custom domain), the plain address. The copy stays until Buffer reports the post sent
-on every platform; `crosspost.sync_status` then removes it.
+Buffer takes no uploads - a video post names a public link and Buffer fetches it, at creation
+and again when the post goes out. R2 is S3-compatible, so `boto3` puts the mp4 in the
+operator's bucket and the link is the bucket's **public address** (`R2_PUBLIC_BASE_URL`: the
+bucket's r2.dev URL or a custom domain). The copy stays until Buffer reports the post sent on
+every platform; `crosspost.sync_status` then removes it.
 
-Keys: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, optional
-`R2_PUBLIC_BASE_URL`. A link written to a log loses its query string (`safe_url`), so no
-signature is ever stored in a log.
+Found live on 2026-10-15: a presigned link (the first design) downloads, but answers HEAD with
+403, and Buffer refused it - "Video could not be read from its URL". Buffer's hosting guide
+says the same: no signed or expiring links; for R2, public access on the bucket. Each file's
+name carries a random part, so a public address cannot be guessed from the run number.
+
+Keys: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`,
+`R2_PUBLIC_BASE_URL`.
 """
 
 from __future__ import annotations
 
 import os
+import secrets
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import quote, urlsplit, urlunsplit
@@ -22,8 +27,13 @@ from core.logging import get_logger
 
 logger = get_logger("publishing.video_host")
 
-REQUIRED = ("R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET")
-LINK_SECONDS = 7 * 86400
+REQUIRED = (
+    "R2_ACCOUNT_ID",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_BUCKET",
+    "R2_PUBLIC_BASE_URL",
+)
 
 
 def missing() -> list[str]:
@@ -52,43 +62,32 @@ def _client() -> Any:
 
 
 def safe_url(url: str) -> str:
-    """`url` without its query string - a presigned link's signature never reaches a log."""
+    """`url` without its query string, for a log."""
     parts = urlsplit(str(url or ""))
     return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
 
 def object_key(channel_id: str, run_id: int, path: str) -> str:
-    return f"{channel_id}/run{int(run_id)}-{os.path.basename(path)}"
+    """`tapin/run132-<random>.mp4` - public, so not guessable from the run number."""
+    ext = os.path.splitext(path)[1] or ".mp4"
+    return f"{channel_id}/run{int(run_id)}-{secrets.token_hex(8)}{ext}"
 
 
 def link(key: str, *, client: Any = None) -> str:
-    """A link Buffer can fetch `key` from: the public address, or a fresh 7-day presigned one."""
+    """The public address Buffer fetches `key` from."""
     base = os.getenv("R2_PUBLIC_BASE_URL", "").strip()
-    if base:
-        return f"{base.rstrip('/')}/{quote(key)}"
-    client = client or _client()
-    return str(
-        client.generate_presigned_url(
-            "get_object", Params={"Bucket": _bucket(), "Key": key}, ExpiresIn=LINK_SECONDS
-        )
-    )
+    if not base:
+        raise ValueError("R2_PUBLIC_BASE_URL is not set - Buffer needs the bucket's public address")
+    return f"{base.rstrip('/')}/{quote(key)}"
 
 
 def host(path: str, key: str, *, client: Any = None) -> str:
-    """Put the mp4 at `key` and return the link to it."""
+    """Put the mp4 at `key` and return its public address."""
     client = client or _client()
     client.upload_file(path, _bucket(), key, ExtraArgs={"ContentType": "video/mp4"})
-    url = link(key, client=client)
+    url = link(key)
     logger.info("video hosted for Buffer: %s", safe_url(url))
     return url
-
-
-def link_expires(now: datetime | None = None) -> str:
-    """When a link made now stops working; '' for a public address, which does not."""
-    if os.getenv("R2_PUBLIC_BASE_URL", "").strip():
-        return ""
-    moment = now or datetime.now(timezone.utc)
-    return datetime.fromtimestamp(moment.timestamp() + LINK_SECONDS, timezone.utc).isoformat()
 
 
 def remove(key: str, *, client: Any = None) -> bool:
@@ -100,16 +99,32 @@ def remove(key: str, *, client: Any = None) -> bool:
     return True
 
 
-def self_test(*, client: Any = None) -> str:
-    """Put, link and delete a 1 KB object. '' when all three worked, else what failed."""
+def self_test(*, client: Any = None, head: Any = None, get: Any = None) -> str:
+    """Put a 1 KB file, read it back from its public address the way Buffer does (HEAD, then a
+    ranged GET), and delete it. '' when all of it worked, else what failed."""
     if not configured():
         return "missing " + ", ".join(missing())
-    key = f"selftest/{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}.txt"
+    import requests
+
+    head = head or requests.head
+    get = get or requests.get
+    key = f"selftest/{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}.mp4"
     try:
         client = client or _client()
-        client.put_object(Bucket=_bucket(), Key=key, Body=b"x" * 1024, ContentType="text/plain")
-        link(key, client=client)
-        client.delete_object(Bucket=_bucket(), Key=key)
+        client.put_object(Bucket=_bucket(), Key=key, Body=b"x" * 1024, ContentType="video/mp4")
+        try:
+            url = link(key)
+            answer = head(url, timeout=30, allow_redirects=False)
+            if int(answer.status_code) != 200:
+                return (
+                    f"the public address answers {answer.status_code} to HEAD - Buffer cannot "
+                    "read it (is public access on for the bucket?)"
+                )
+            answer = get(url, timeout=30, headers={"Range": "bytes=0-99"})
+            if int(answer.status_code) not in (200, 206):
+                return f"the public address answers {answer.status_code} to GET"
+        finally:
+            client.delete_object(Bucket=_bucket(), Key=key)
     except Exception as exc:
         return f"{type(exc).__name__}: {str(exc)[:160]}"
     return ""

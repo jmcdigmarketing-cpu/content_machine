@@ -8,7 +8,7 @@ Generated from `scripts/ops.py` `COMMANDS` by `py -m scripts.ops command-ref`.
 | Command | What it does |
 | --- | --- |
 | `agents` | Agent hand-off: who signed what, and whether the mailbox is stale |
-| `all` | Everything: all-checks + all-analytics + all-review, each step once |
+| `all` | Everything: all-checks + all-analytics + all-review + the morning, each step once |
 | `all-analytics` | Seed, schedules, weights, sync metrics, views by day, scoreboard, predictions |
 | `all-checks` | Validate channels + unit tests + feed health |
 | `all-review` | The weekly review: sync, mailbag, scoreboard, reports, then rate the week |

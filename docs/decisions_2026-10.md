@@ -152,3 +152,26 @@ only game previews": #1023 put the games first and five NFL fixtures filled the 
 9 of 9 overnight drafts. **Consequence:** this changes the batch mix kept "as is" earlier the
 same day (§52 stands: a game drafted is drafted as a preview). `BEST_BET_SCHEDULE_MAX=0` keeps
 games out unless typed.
+
+## 56. `ops all` ends with the morning (2026-10-15)
+**Decision:** `ops all` is the weekly checks, analytics and review **and** the morning, each
+step once, the draft review last; `ops morning` stays as the morning alone. **Why:** the
+operator - "is morning ... included in script ops all??? that is what i want". It reverses the
+10-11 choice (#1140) of keeping `all` weekly. **Consequence:** `ops all` from a console ends by
+walking the waiting drafts; from a scheduled task or a pipe it skips them, as `morning` does.
+
+## 57. A video posted by hand skips that platform (2026-10-15)
+**Decision:** before scheduling, the automatic round reads the channel's recent Buffer posts; a
+post that opens with the video's own words, made after it was rendered, means that platform is
+done by hand and is left. The other platform still goes. `ops crosspost done --run-id N` marks a
+video done by hand on both. **Why:** the operator posts some videos in Buffer themselves
+(Topuria, Chargers, Minecraft, Rakhmonov) - "skip that platform only".
+
+## 58. Buffer reads each video from the bucket's public address (2026-10-15)
+**Decision:** R2 serves the video at the bucket's public address (`R2_PUBLIC_BASE_URL`: its
+r2.dev URL or a custom domain), under a name with a random part; no presigned links. **Why:**
+the live draft check (approved in the plan) - Buffer refused a presigned link, "Video could not
+be read from its URL": the link downloads but answers HEAD with 403, and Buffer fetches again
+when the post goes out. Buffer's hosting guide says the same. This corrects §54's mechanism, not
+its rule. **Consequence:** the operator turns on public access for the bucket; the copy is still
+removed once Buffer reports the post sent.

@@ -443,6 +443,17 @@ def levers(rep: dict[str, Any]) -> list[dict[str, Any]]:
     return sorted(found, key=lambda lever: -lever["score"])[:3]
 
 
+def _feed_rows(channel_id: str) -> list[str]:
+    """#1198: which feed liked what. Empty store says there are no results yet."""
+    try:
+        from publishing.platform_recommend import feed_lines
+
+        return [f"  {line}" for line in feed_lines(channel_id)]
+    except Exception as exc:
+        logger.debug("platform results skipped: %s", exc)
+        return []
+
+
 def render(channel_id: str) -> str:
     rep = report(channel_id)
     lines = [f"Growth - {channel_id} (organic views, ads taken out)"]
@@ -451,6 +462,7 @@ def render(channel_id: str) -> str:
             f"  collecting: {rep['n']} video(s) with a full first week; the report needs "
             f"{_MIN_VIDEOS} (py -m scripts.ops backfill view-curve --apply fills older ones)"
         )
+        lines.extend(_feed_rows(channel_id))
         return "\n".join(lines)
     lines.append(
         f"  7-day views: median {rep['median_views']:,} over {rep['n']} videos - best "
@@ -503,4 +515,5 @@ def render(channel_id: str) -> str:
         )
     for i, lever in enumerate(found, 1):
         lines.append(f"  {i}. {lever['line']}")
+    lines.extend(_feed_rows(channel_id))
     return "\n".join(lines)

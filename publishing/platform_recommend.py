@@ -70,3 +70,44 @@ def learning_line(channel_id: str, platform: str) -> str:
         f"{label}'s own picks ({len(rows)} samples): hour {_best(rows, 'hour')}, "
         f"domain {_best(rows, 'domain')}, length {_best(rows, 'length')}"
     )
+
+
+def feed_lines(channel_id: str) -> list[str]:
+    """Views, the best video, and what that feed preferred. Empty store says so."""
+    from publishing import crosspost
+    from publishing.platform_metrics import load
+
+    rows = load(channel_id).get("rows") or {}
+    if not isinstance(rows, dict) or not rows:
+        return ["No platform results yet."]
+    posts = crosspost._load(channel_id).get("posts") or {}
+    if not isinstance(posts, dict):
+        posts = {}
+    lines: list[str] = []
+    for platform, label in _LABEL.items():
+        total = 0
+        measured = 0
+        best_views = -1
+        best_title = ""
+        for rid, platforms in rows.items():
+            row = platforms.get(platform) if isinstance(platforms, dict) else None
+            if not isinstance(row, dict) or not row.get("measured") or row.get("views") is None:
+                continue
+            views = int(row["views"])
+            measured += 1
+            total += views
+            if views > best_views:
+                best_views = views
+                entry = posts.get(str(rid))
+                if isinstance(entry, dict) and entry.get("title"):
+                    best_title = str(entry["title"])
+                else:
+                    best_title = str(rid)
+        if not measured:
+            lines.append(f"{label}: not measured yet")
+            continue
+        lines.append(
+            f"{label}: {total} views, best {best_title} ({best_views} views). "
+            f"{learning_line(channel_id, platform)}"
+        )
+    return lines or ["No platform results yet."]

@@ -211,6 +211,17 @@ def queued_privacy_label(privacy_status: str, publish_at=None) -> str:
     return f"{privacy_status} -> {effective} first, for review"
 
 
+def laid_out_request(request: PublishRequest) -> PublishRequest:
+    """#1206: the request with its description's blocks laid out (`unglue_blocks`)."""
+    from core.description_extras import unglue_blocks
+
+    fixed = unglue_blocks(request.description or "")
+    if fixed == (request.description or ""):
+        return request
+    logger.info("description blocks laid out before the upload (#1206)")
+    return replace(request, description=fixed)
+
+
 def request_with_run_domain(request: PublishRequest, content_run_id: int | None) -> PublishRequest:
     """Carry the run's stored effective domain into the upload (#866).
 
@@ -606,6 +617,7 @@ class YouTubePublisher(Publisher):
         except Exception as exc:
             logger.debug("shorts eligibility skipped: %s", exc)
 
+        request = laid_out_request(request)  # #1206: before the checklist reads it
         try:
             from publishing import prepublish
 

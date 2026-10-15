@@ -7522,3 +7522,44 @@ empty. mypy 96, baseline lowered from 98. `roadmap-index`: open 311, done 926, n
 259; highest filed #1206.
 
 Closed **#1121, #1125, #462, #409, #388, #404**. Next **#1195-#1199**.
+
+## 2026-10-15 — wave 92 (Claude Code): what the drafts and uploads said
+
+**Prompt:** the second half of the same "next 10".
+
+### Shipped
+
+1. **#1205** the arc's counter out of the topic: run 153 came from "Shavkat Rakhmonov week 4" -
+   the 4 counts the channel's UFC videos. The seed is the subject; the best-bet line says "UFC
+   arc, video 4 → 5".
+2. **#1181** "Denver Loss Angeles": no log keeps the title before cleaning, so where "Los" went is
+   not known - most likely the model. A title that breaks Los Angeles, Las Vegas or New Orleans
+   now fails the title check and is written again once (first names such as Antonio or Diego
+   are left out - they are fighters).
+3. **#1182** a game run's stored domain from its game name when the angle names no sport.
+4. **#1183** the thumbnail's words are the title's first phrase: "Topuria's Outlook", not
+   "Topuria's Outlook: Can He".
+5. **#1206** a description's glued "Sources:" block laid out at upload.
+
+### Findings
+
+- Five older topic-graph tests held the "week N" naming; they now hold the subject and the count
+  in the line (`test_topic_graph`, `test_topic_graph_series`). `test_thumbnail_compose` held a
+  headline ending on "The".
+- The live best bets showed an MMA Fighting headline ranked on NBA's numbers. Filed **#1208**.
+- **Cursor committed in the same tree while this wave was open** (`fd6f32f`, its five, not yet
+  pushed). Its commit carried my one-line `core/pipeline.py` change (`input_topic=` to
+  `build_features`) without the parameter that takes it - every pipeline run would raise there.
+  This commit completes it; the two are pushed together. Its commit also set the mypy baseline
+  to 96, which wave 92 holds.
+
+### Audit
+
+14 tests in `tests/test_arc_and_titles.py`. **11 of 14 failed or errored on a worktree at
+`ecd2327`** (4 failures, 7 errors). Five corpus cases (252 held in my commit). Callers:
+`next_arc_topic` from `follow_up_seed` (best bets, overnight); `broken_place_name` from
+`check_title_script_consistency` (the title retry in `content_engine`); `input_topic` passed by
+`run_pipeline`; `headline_words` from `compose_thumbnail`; `laid_out_request` from
+`YouTubePublisher.publish`. Suite 5875 forward / 5878 reversed in the working tree with Cursor's tests (one of theirs, mid-build, failed reversed).
+
+Closed **#1205, #1206, #1181, #1182, #1183**. Filed **#1208**. Claude has nothing claimed.

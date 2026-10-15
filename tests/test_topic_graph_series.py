@@ -16,25 +16,25 @@ class NextArcTopicTests(unittest.TestCase):
 
         topic = next_arc_topic("UFC Contender Series: 5 contracts handed out", 1, "ufc")
         self.assertIn("Contender Series", topic)
-        self.assertIn("week 2", topic)
-        self.assertNotEqual(topic, "UFC week 2")
+        self.assertNotIn("week", topic.lower())  # #1205: the counter is the arc's, not the topic's
 
     def test_a_lower_case_topic_keeps_its_words(self):
         from core.topic_graph import next_arc_topic
 
         topic = next_arc_topic("ufc contender series recap", 1, "ufc")
         self.assertIn("contender series", topic.lower())
-        self.assertTrue(topic.endswith("week 2"))
+        self.assertNotIn("week", topic.lower())
 
-    def test_the_week_path_is_unchanged(self):
+    def test_a_week_in_the_last_topic_is_dropped(self):
+        # #1205 (was "the week path is unchanged"): run 153 drafted "Shavkat Rakhmonov week 4".
         from core.topic_graph import next_arc_topic
 
-        self.assertEqual(next_arc_topic("GTA 6 leak week 1", 1, "gta"), "GTA 6 leak week 2")
+        self.assertEqual(next_arc_topic("GTA 6 leak week 1", 1, "gta"), "GTA 6 leak")
 
     def test_an_empty_topic_still_gives_the_label(self):
         from core.topic_graph import next_arc_topic
 
-        self.assertEqual(next_arc_topic("", 1, "ufc"), "UFC week 2")
+        self.assertEqual(next_arc_topic("", 1, "ufc"), "UFC")
 
     def test_the_rationale_names_the_series(self):
         import json

@@ -13,10 +13,11 @@ from assets.thumbnail_compose import compose_thumbnail, headline_words
 
 class TestHeadlineWords(unittest.TestCase):
     def test_a_long_title_becomes_three_to_five_words(self):
+        # #1183: was ["The", "Knicks", "Beat", "The"] - a headline ending on "The".
         words = headline_words("The Knicks Beat The Spurs In Overtime Tonight")
         self.assertGreaterEqual(len(words), 3)
         self.assertLessEqual(len(words), 5)
-        self.assertEqual(words, ["The", "Knicks", "Beat", "The"])
+        self.assertEqual(words, ["The", "Knicks", "Beat", "The", "Spurs"])
 
 
 class TestThumbnailPlate(unittest.TestCase):

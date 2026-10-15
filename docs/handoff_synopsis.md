@@ -48,6 +48,11 @@ uploads (#1203); `ops all` ends with the morning (#1204, §56). The live Buffer 
 Buffer cannot read a presigned R2 link (HEAD answers 403): the video is read from the bucket's
 public address now (#1207, §58). Crossposting switched on (44 videos left as they are).
 
+**Wave 92.** The arc's counter stays out of the topic (#1205 - run 153 was "Shavkat Rakhmonov
+week 4"); a title that breaks a place name is written again (#1181); a game run is keyed by its
+game (#1182); the thumbnail keeps a whole phrase (#1183); old descriptions are laid out at
+upload (#1206). Filed #1208.
+
 **Still the operator's:** `R2_PUBLIC_BASE_URL` (public access on the bucket) and `.env` lines
 35-36; then `crosspost selftest`; the consent screen; `ops worker-task --install`;
 `schedule-drafts --wake`; whether Cursor starts #1194. Suite 5861 (5823 + my 38; Cursor's uncommitted tests ran with it), mypy 98. Claude has

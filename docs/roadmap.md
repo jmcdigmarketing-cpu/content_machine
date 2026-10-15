@@ -90,7 +90,7 @@ samples, and `send_due` uses the hour. **#1197** two caption arms from sentences
 the script, winner and interval per platform. **#1198** which feed liked what, in the weekly
 report and the growth page. **#1199** the morning names a Buffer error, a paused queue, a
 disconnected channel, and a request count near the daily cap.
-`roadmap-index`: open 311, done 926, numbered open 259; highest filed #1206.
+`roadmap-index` after Cursor's five and Claude's wave 92: open 307, done 931, numbered open 255; highest filed #1208.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),
@@ -98,8 +98,10 @@ the overnight videos in `py main.py`. Offered to Cursor: **#1194** learning per 
 ([initiative_cross_platform.md](initiative_cross_platform.md)). Wave 91: a hand post in Buffer
 is left on that platform (#1200, §57), the worker starts the crosspost round (#1202), the
 morning offers queued uploads (#1203), `ops all` ends with the morning (#1204, §56), Buffer
-reads the bucket's public address (#1207, §58). Claude's next: #1205, #1181, #1182, #1183,
-#1206 (wave 92). The step-by-step: [operator_guide.md](operator_guide.md).
+reads the bucket's public address (#1207, §58). Wave 92: the arc's counter out of the topic
+(#1205), a broken place name fails the title check (#1181), a game run keyed by its game
+(#1182), a whole phrase on the thumbnail (#1183), old descriptions laid out at upload (#1206).
+Claude has nothing claimed. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

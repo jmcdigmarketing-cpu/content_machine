@@ -214,6 +214,15 @@ def block_order(description: str, channel_id: str) -> list[str]:
     return [name for name, _at in sorted(found.items(), key=lambda kv: kv[1])]
 
 
+def unglue_blocks(description: str) -> str:
+    """A "Sources:" or "Footage:" block glued to the line above it gets its blank line (#1206).
+
+    Run 132's description was written on 10-10, before `join_blocks` laid the blocks out, and
+    went out on 10-15 with the pre-publish warning and the glue.
+    """
+    return re.sub(r"(?<=[^\n])\n(?=(?:Sources|Footage):)", "\n\n", description or "")
+
+
 def layout_problem(description: str, channel_id: str) -> str:
     """Why a description's blocks are not laid out as `join_blocks` lays them, or "".
 

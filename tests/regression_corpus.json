@@ -3835,6 +3835,76 @@
         "equals": "https://pub-x.r2.dev/tapin/run132-ab12.mp4"
       },
       "why": "a presigned link answers HEAD with 403 and Buffer refuses it"
+    },
+    {
+      "id": "run153-the-arc-counter-is-not-the-fighters-week",
+      "item": 1205,
+      "source": "overnight 2026-10-15: run 153 drafted from 'Shavkat Rakhmonov week 4'",
+      "call": "core.topic_graph:next_arc_topic",
+      "args": [
+        "Shavkat Rakhmonov week 3",
+        3,
+        "ufc"
+      ],
+      "expect": {
+        "equals": "Shavkat Rakhmonov"
+      },
+      "why": "the script said 'So week four is progress without a finish line'"
+    },
+    {
+      "id": "run149-a-title-that-lost-los",
+      "item": 1181,
+      "source": "run 149 (2026-10-14): '... After Denver Loss Angeles Stays Optimistic'",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Chargers Hopeium: Harbaugh's Bold Move After Denver Loss Angeles Stays Optimistic"
+      ],
+      "expect": {
+        "equals": "Los Angeles"
+      },
+      "why": "the title check passed it"
+    },
+    {
+      "id": "a-fighters-first-name-is-not-a-broken-place",
+      "item": 1181,
+      "source": "must keep: Antonio and Diego are names on this channel",
+      "call": "core.title_generator:broken_place_name",
+      "args": [
+        "Antonio Brown And Diego Lopes Walk Into A Bar"
+      ],
+      "expect": {
+        "equals": ""
+      },
+      "why": "a false break would rewrite a good title"
+    },
+    {
+      "id": "topuria-thumbnail-keeps-a-whole-phrase",
+      "item": 1183,
+      "source": "run 132's thumbnail: 'Topuria's Outlook: Can He'",
+      "call": "assets.thumbnail_compose:headline_words",
+      "args": [
+        "Topuria's Outlook: Can He Adapt Before UFC's Next Title Cycle?"
+      ],
+      "expect": {
+        "equals": [
+          "Topuria's",
+          "Outlook"
+        ]
+      },
+      "why": "four words cut a question in half"
+    },
+    {
+      "id": "run132-a-glued-sources-block-is-laid-out",
+      "item": 1206,
+      "source": "run 132's upload, 2026-10-15: '\"Sources:\" is glued to the line above it'",
+      "call": "core.description_extras:unglue_blocks",
+      "args": [
+        "Body.\n\nMade with AI-assisted narration and editing.\nSources:\nhttps://example.com/a"
+      ],
+      "expect": {
+        "contains": "editing.\n\nSources:"
+      },
+      "why": "a description written before the builder fix went out as stored"
     }
   ]
 }

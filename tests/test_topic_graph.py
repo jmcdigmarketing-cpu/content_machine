@@ -76,7 +76,10 @@ class TopicGraphCase(unittest.TestCase):
         self.assertTrue(bets)
         lead = bets[0]
         self.assertEqual(lead.source, "arc")
-        self.assertIn("week 2", lead.topic.lower())
+        # #1205: the arc moves on to video 2; the topic carries the subject, not the counter.
+        self.assertIn("gta 6 leak", lead.topic.lower())
+        self.assertNotIn("week", lead.topic.lower())
+        self.assertIn("1 → 2", lead.rationale)
         self.assertIn("gta", lead.topic.lower())
 
     def test_empty_graph_fails_open_to_existing_best_bets(self):

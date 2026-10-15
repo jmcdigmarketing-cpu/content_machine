@@ -104,9 +104,11 @@ def build_features(
     vault_relevance_audit: list[dict[str, Any]] | None = None,
     signals: dict[str, Any] | None = None,
     intent: str = "",
+    input_topic: str = "",
 ) -> dict[str, Any]:
     """Assemble the normalized feature dict for a content run. ``intent`` (#1091): the run's
-    intent, read once; without it, read from ``topic``."""
+    intent, read once; without it, read from ``topic``. ``input_topic`` (#1182): what the run
+    was started from - its domain is read when the angle names no sport."""
     pkg = content_package or {}
     title = str(pkg.get("title") or "")
     script = str(pkg.get("script") or "")
@@ -124,14 +126,26 @@ def build_features(
         title_direction = str(getattr(research_brief, "title_direction", "") or "")
         suggested_hook = str(getattr(research_brief, "suggested_hook", "") or "")
 
-    from apis.topic_scorer import infer_domain, resolve_domains
+    from apis.topic_scorer import infer_domain, infer_topic_domain, resolve_domains
 
     preset = get_length_preset(length_choice)
+    # #1182: run 152 (Ravens at Browns) was keyed neutral - its angle headline names no team the
+    # scorer reads as football; the game name it was started from does.
+    domain_topic = topic
+    if (
+        input_topic
+        and input_topic != topic
+        and infer_topic_domain(topic) == "neutral"
+        and infer_topic_domain(input_topic) != "neutral"
+    ):
+        domain_topic = input_topic
 
     features = {
-        "domain": infer_domain(topic, channel_id, key_facts=key_facts or None),
+        "domain": infer_domain(domain_topic, channel_id, key_facts=key_facts or None),
         # #866: what the run decided the topic is, for the upload path and reports.
-        "domains": resolve_domains(topic, channel_id, key_facts=key_facts or None, signals=signals),
+        "domains": resolve_domains(
+            domain_topic, channel_id, key_facts=key_facts or None, signals=signals
+        ),
         "format": preset.label,
         "length_preset": preset.choice,
         "angle": classify_angle(topic, recommended_format, intent=intent),

@@ -35,11 +35,25 @@ class ThumbnailPlate:
 
 
 def headline_words(title: str) -> list[str]:
-    """Three to five words. A longer title keeps the first four."""
+    """The title's first phrase, at most five words (#1183).
+
+    The first four words gave "Topuria's Outlook: Can He". A title that breaks within its first
+    five words (a colon, semicolon, comma or dash) keeps what comes before the break; otherwise
+    five words, never ending on a small word ("Ben Affleck Gets Destroyed by" -> "... Destroyed").
+    """
+    from apis.topic_tokens import FUNCTION_WORDS
+
     words = [w for w in (title or "").split() if w]
-    if len(words) > 5:
-        return words[:4]
-    return words
+    if len(words) <= 5:
+        return words
+    for i, word in enumerate(words[:5]):
+        dash_next = i + 1 < len(words) and words[i + 1] in ("-", "\u2013", "\u2014")
+        if i >= 1 and (word[-1] in ":;," or dash_next):
+            return [*words[:i], word.rstrip(":;,")]
+    head = words[:5]
+    while len(head) > 3 and head[-1].lower().strip(".,!?'") in FUNCTION_WORDS:
+        head.pop()
+    return head
 
 
 def contrast_ratio(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:

@@ -289,6 +289,16 @@ def check_title_script_consistency(
             "warnings": [],
             "total": 0,
         }
+    from core.title_generator import broken_place_name
+
+    broken = broken_place_name(title)
+    if broken:  # #1181: failed, so the title is written again once
+        return {
+            "status": "failed",
+            "passed": False,
+            "warnings": [f'the title breaks a name: "{broken}" has lost a word'],
+            "total": 1,
+        }
     try:
         from core.claim_verifier import verify_claims
 

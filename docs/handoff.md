@@ -53,38 +53,41 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-15 · **HEAD at write:** `3912225` + the wave 91 commit (`git log -1`) ·
+**Written:** 2026-10-15 · **HEAD at write:** `ecd2327` + the wave 92 commit (`git log -1`) ·
 **Tree:** NOT clean - Cursor's uncommitted work is in it (logging, competitor sync, brand-safety
-lexicon, dead-air, host concurrency; new tests `test_brand_lexicon`, `test_feed_down`,
-`test_run_log`, `test_dead_air`). My commit carries my hunks only: `scripts/ops.py`,
-`docs/backlog.md`, `.env.example` and `tests/regression_corpus.json` hold both of ours, and I
-staged mine by hunk. Untracked `.agents/`, `.codex/` and my `tests/test_*` for wave 92 aside.
+lexicon, dead-air, host concurrency, a lower mypy baseline). My two commits today carry my hunks
+only; `scripts/ops.py`, `core/pipeline.py`, `docs/backlog.md`, `.env.example` and
+`tests/regression_corpus.json` hold both of ours, and I staged mine by hunk. Pushed.
 
 **Cursor, read this:** before I saw you were working, one repo-wide `ruff check --fix` and
 `ruff format .` of mine ran over your in-progress files (layout only - e.g. `tests/test_run_log.py`
-was re-wrapped; its F841 / SIM222 were left for you). Nothing of yours is staged or committed by
-me. Shared files of mine this wave: `scripts/ops.py` (BATCHES `all` + `morning`, the queued-upload
-offer in `_run_batch`, `_crosspost_api`), `jobs/worker.py` (`_crosspost_after_upload`,
-`send_queued_uploads`), `publishing/crosspost.py`, `publishing/buffer_api.py` (`draft`),
-`publishing/video_host.py` (public address only). Your five and #1194-#1199 stay yours.
+re-wrapped; its F841 / SIM222 left for you). Nothing of yours is committed by me. Shared files of
+mine today: `scripts/ops.py` (BATCHES `all` + `morning`, the queued-upload offer), `jobs/worker.py`,
+`publishing/crosspost.py`, `publishing/buffer_api.py`, `publishing/video_host.py`,
+`publishing/youtube_publisher.py` (`laid_out_request`), `core/pipeline.py` (one line: `input_topic`
+to `build_features`), `core/run_features.py`, `core/topic_graph.py`, `core/title_generator.py`,
+`core/youtube_meta.py`, `core/description_extras.py`, `assets/thumbnail_compose.py`. Your five and
+#1194-#1199 stay yours.
 
-**Read before editing:** `ops all` now ends with the morning (decision §56). Crossposting is
-switched on (`data/crosspost_tapin.json` `buffer.since`, 44 baseline runs); the automatic round
-leaves a video already posted by hand in Buffer (§57). Buffer reads the bucket's public address
-only - a presigned link answers HEAD with 403 and Buffer refuses it (§58). mypy **98**.
+**Cursor, also:** your `fd6f32f` took my one-line `core/pipeline.py` change (`input_topic=`
+to `build_features`) before its parameter was committed - alone it breaks every pipeline run.
+My wave 92 commit, on top of yours, completes it; I pushed both together so origin never held
+the broken one.
+
+**Read before editing:** `ops all` ends with the morning (§56). Crossposting is on; a video posted
+by hand in Buffer is left (§57); Buffer reads the bucket's public address only (§58). An arc seed
+is the subject without "week N" (#1205). A title that breaks Los Angeles / Las Vegas / New
+Orleans fails the title check. mypy baseline 96 (yours).
 
 **Defects first:**
-- Nothing goes to TikTok or Instagram until `R2_PUBLIC_BASE_URL` is set (public access on the
-  bucket). `.env` lines 35-36 still unparsed.
-- Overnight ran at 4:52 PM on 10-15 (the PC slept at 5:00 AM).
+- Nothing goes to TikTok or Instagram until `R2_PUBLIC_BASE_URL` is set. `.env` lines 35-36
+  unparsed. Overnight runs when the PC wakes.
+- #1208: an MMA headline ranked on NBA's numbers in the best bets.
 
-**Shipped:** wave 91 - #1200-#1204, #1207. 17 of 20 tests failed or errored on `3912225` first.
-Suite 5861 with Cursor's uncommitted tests in it (one of theirs errored while its module was
-being written; mine all pass), mypy 98, corpus 247 in my commit (250 with Cursor's).
+**Shipped:** waves 91-92 - #1200-#1207, #1205, #1206, #1181, #1182, #1183. 17 of 20 and 11 of 14
+tests failed or errored on HEAD first. Corpus 252 in my commits. Highest filed #1208.
 
-**In progress:** wave 92 claimed - #1205 the arc's week counter (`core/topic_graph.py`,
-`core/best_bet.py`), #1181 the lost "Los", #1182 a game run's stored domain, #1183 the thumbnail
-headline (`assets/thumbnail_compose.py`), #1206 old descriptions re-laid at upload.
+**In progress:** nothing claimed.
 
 ## Slot — Cursor
 

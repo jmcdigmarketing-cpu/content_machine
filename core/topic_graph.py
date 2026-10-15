@@ -115,10 +115,16 @@ def arc_series_name(last_topic: str, family: str) -> str:
 
 
 def next_arc_topic(last_topic: str, ordinal: int, family: str) -> str:
-    nxt = ordinal + 1
-    if _WEEK_RE.search(last_topic or ""):
-        return _WEEK_RE.sub(f"week {nxt}", last_topic, count=1)
-    return f"{arc_series_name(last_topic, family)} week {nxt}"
+    """The arc's next topic: what it is about, without the arc's counter (#1205).
+
+    Run 153 (2026-10-15) was drafted from "Shavkat Rakhmonov week 4": the 4 counts the
+    channel's UFC videos, and the angle and the script read it as the fighter's - "Shavkat
+    Rakhmonov's week 4 performance", "So week four is progress without a finish line." The
+    counter stays in the arc record and the best-bet line; `record_published_topic` moves it on
+    from the record when a topic carries no week.
+    """
+    plain = re.sub(r"\s{2,}", " ", _WEEK_RE.sub("", last_topic or "")).strip(" -:,")
+    return arc_series_name(plain, family)
 
 
 def record_published_topic(channel_id: str, topic: str) -> None:
@@ -177,7 +183,5 @@ def follow_up_seed(channel_id: str):
         avg_engaged_rate=0.0,
         source="arc",
         supporting_runs=1,
-        rationale=(
-            f"continue {arc_series_name(last_topic, family)} (week {ordinal} → week {ordinal + 1})"
-        ),
+        rationale=f"continue {topic} ({_label(family)} arc, video {ordinal} → {ordinal + 1})",
     )

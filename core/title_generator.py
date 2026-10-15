@@ -181,6 +181,21 @@ def _fit_title(title: str, *, angle: str) -> str:
 
 _FRAME_CUT_MIN = 20
 
+# #1181: the second word of a place name that never stands alone in these titles, and the word
+# it needs before it. Run 149's title read "... After Denver Loss Angeles Stays Optimistic" and
+# passed every check. First names ("Antonio", "Diego", "Jose") are left out - they are fighters.
+_SPLIT_PLACES = {"Angeles": "Los", "Vegas": "Las", "Orleans": "New"}
+
+
+def broken_place_name(title: str) -> str:
+    """The place name a title has broken ("Los Angeles" for "Loss Angeles"), or ""."""
+    words = re.findall(r"[A-Za-z']+", title or "")
+    for i, word in enumerate(words):
+        first = _SPLIT_PLACES.get(word)
+        if first and (i == 0 or words[i - 1] != first):
+            return f"{first} {word}"
+    return ""
+
 
 def _clean_title(raw: str, *, fallback: str, angle: str = "") -> str:
     title = (raw or "").strip().strip('"').strip("'")

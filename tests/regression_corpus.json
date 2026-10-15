@@ -3503,6 +3503,74 @@
         "contains": "py -m youtube.oauth_setup --channel tapin"
       },
       "why": "the long explanation is said once; every other place says the fix in a line"
+    },
+    {
+      "id": "run146-a-schedule-name-is-its-sport",
+      "item": 1170,
+      "source": "run 146 (2026-10-14): Last.fm and MusicBrainz ran for Seahawks at Broncos",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Seattle Seahawks at Denver Broncos"
+      ],
+      "expect": {
+        "equals": "nfl"
+      },
+      "why": "a neutral topic runs every signal; the schedule's own naming says the sport"
+    },
+    {
+      "id": "a-team-word-in-a-game-title-is-not-the-sport",
+      "item": 1170,
+      "source": "must keep: is_nfl_topic reads 'Giants of the deep' as football",
+      "call": "apis.topic_scorer:infer_topic_domain",
+      "args": [
+        "Giants of the deep: a Subnautica guide"
+      ],
+      "expect": {
+        "not_contains": "nfl"
+      },
+      "why": "only two full team names make a fixture"
+    },
+    {
+      "id": "the-preview-brief-names-the-day",
+      "item": 1169,
+      "source": "overnight 2026-10-14: three game drafts came back as recaps",
+      "call": "core.facts.event_dates:preview_brief",
+      "args": [
+        "2026-10-16T00:15Z"
+      ],
+      "expect": {
+        "includes_all": [
+          "Oct 16",
+          "Never describe plays"
+        ]
+      },
+      "why": "the angles and the script are told the game is ahead"
+    },
+    {
+      "id": "the-preview-brief-is-not-the-operators-points",
+      "item": 1169,
+      "source": "sibling of #1142: a batch brief read as typed thoughts",
+      "call": "core.experiment_levers:is_directive",
+      "args": [
+        "This game has not been played yet - it is on Oct 16. Write a preview: the matchup, who is in form or hurt, what to watch and what is at stake. Never describe plays, a score or a result as if the game happened."
+      ],
+      "expect": {
+        "truthy": true
+      },
+      "why": "the script check counts the operator's points, not the machine's brief"
+    },
+    {
+      "id": "the-claim-check-reads-its-own-budget",
+      "item": 1171,
+      "source": "5 checks on 2026-10-13/14 left 17-21 fact lines out at 12,000 characters",
+      "call": "core.claim_verifier:_max_fact_chars",
+      "env": {
+        "CLAIM_FACT_CHAR_BUDGET": ""
+      },
+      "expect": {
+        "equals": 24000
+      },
+      "why": "the checker read less than the writer was given"
     }
   ]
 }

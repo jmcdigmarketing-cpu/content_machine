@@ -86,7 +86,7 @@ YouTube is counting (4,544 paid Shorts views) is not entered - `ops spend add --
 **2026-10-13.** Cursor's five, unchanged: **#1121** a YouTube 500 is not a dead channel (also a
 404 from every channel, #1125) - **#462** run id on each log line - **#404** breath and
 dead-air trim - **#388** backoff jitter - **#409** per-channel brand-safety lexicon.
-`roadmap-index` after wave 86: open 306, done 893, numbered open 254; highest filed #1169 (#1169 is new and open).
+`roadmap-index` after wave 87: open 314, done 898, numbered open 262; highest filed #1182 (#1174-#1182 open).
 Claude's waves 81-85 closed #1137-#1163. Wave 85 is the script your own idea gets: a typed
 idea is drafted as angle 1 and kept for review (#1159 - the proof drafts of 10-13 had been
 written from generated angles), names are read whole (#1160), an unbacked claim in the first
@@ -94,7 +94,11 @@ sentence is repaired (#1161), a cut may leave a script 15% short (#1162), and on
 the whole script again (#1163). Wave 86 is what you read each morning: a re-check of the
 waiting drafts (#1164 - 14 of 29 flagged claims were backed by their own saved facts), the
 sign-in said once (#1165), a pulled run called pulled (#1166), when overnight really ran
-(#1167), and old drafts set aside (#1168). Claude has nothing claimed. The step-by-step:
+(#1167), and old drafts set aside (#1168). Wave 87 is what overnight drafts: a scheduled
+game ahead is drafted as a preview (#1169, decision §52), a game name knows its sport so music
+and filings signals stay off it (#1170), the claim check reads twice the facts (#1171), a topic
+with no RSS feed no longer trips the breaker (#1172), and a game draft is set aside once the game
+starts (#1173). Claude's next: #1174-#1180 (wave 88). The step-by-step:
 [operator_guide.md](operator_guide.md).
 
 Not next:

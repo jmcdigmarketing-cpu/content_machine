@@ -194,7 +194,9 @@ class VerifierBackstopTests(unittest.TestCase):
         filler = [
             f"- Filler headline number {i} about something else entirely." for i in range(400)
         ]
-        verification, seen = self._verify("\n".join([*filler, SUMMARY]))
+        # The budget was 12,000 then; #1171 doubled it, so the test keeps the old one.
+        with patch("core.claim_verifier._max_fact_chars", return_value=12000):
+            verification, seen = self._verify("\n".join([*filler, SUMMARY]))
         self.assertIn("119-105", seen["prompt"])
         stored = verification.to_dict()
         self.assertGreater(stored["facts"]["left_out"], 0)

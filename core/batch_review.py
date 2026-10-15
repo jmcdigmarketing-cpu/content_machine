@@ -419,16 +419,16 @@ def expire_old_drafts(
             continue
         age = draft_age_days(draft.meta)
         window = freshness_window_days(draft.meta)
-        if age is None or age <= 2 * window:
+        game = game_block_reason(draft.meta)
+        if game.startswith("its game has started"):
+            reason = game  # #1173: a preview after its game can never render
+        elif age is None or age <= 2 * window:
             continue
+        else:
+            reason = f"{age:.0f} days old, twice its {window:.0f}-day window"
         old.append(draft)
         if apply:
-            _write_review(
-                draft,
-                decision="expired",
-                by="overnight",
-                reason=f"{age:.0f} days old, twice its {window:.0f}-day window",
-            )
+            _write_review(draft, decision="expired", by="overnight", reason=reason)
     return old
 
 

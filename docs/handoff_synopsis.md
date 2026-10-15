@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-14: your own idea's script, and the morning screen (waves 85-86)
+# Handoff synopsis — 2026-10-14: what overnight drafts, and what you see in the morning (waves 87-88)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,24 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-14 (Claude Code): waves 85-86, your own idea's script and the morning
+## Last wave — 2026-10-14 (Claude Code): waves 87-88, what overnight drafts and the morning
+
+**Wave 87, what overnight drafts.** The operator keeps the schedule in the batch; a scheduled
+game ahead is now drafted as a preview (#1169, decisions_2026-10.md §52) - the first one, run 152
+(Ravens at Browns, 10-18), says "watch the inactive list before kickoff", no score. A game name
+knows its sport, so Last.fm, MusicBrainz and SEC filings stay off it (#1170); the claim check
+reads twice the facts (#1171); a topic with no RSS feed is `inactive`, not a tripped key (#1172);
+a game draft is set aside once its game starts (#1173).
+
+The operator's three ideas, drafted again: two clean, one with a sentence hard to say - yesterday
+2, 1 and 1 unbacked claims. Clean is not good: run 150's new opener has no full stop (#1179), run
+149's says the next sentence again (#1180) and its title reads "Denver Loss Angeles" (#1181).
+
+**Still the operator's:** sign in (`py -m youtube.oauth_setup --channel tapin`); publish the
+consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Suite 5746 -> 5759,
+mypy 98, corpus 232. Claude has #1174-#1180 claimed (wave 88).
+
+## Previous — 2026-10-14 (Claude Code): waves 85-86, your own idea's script and the morning
 
 **A correction to the entry below.** The three "drafts of your own ideas" in wave 83 were
 written from generated angles: `ops script-check --idea` passed the first generated angle, not
@@ -82,39 +99,6 @@ had never matched.
 10-13 and nothing uploads or syncs; publish the consent screen so it stops expiring weekly;
 `ops worker-task --install`. Suite 5595 -> 5689, mypy 98, corpus 201 -> 218. Claude has
 nothing claimed.
-
-## Previous — 2026-10-13 (Claude Code): waves 81-82, the script that comes out and where the channel stands
-
-Built 10-11, landed 10-13. The overnight task runs the working tree, so this code wrote runs
-137-139 before it was committed.
-
-**The script.** A finished script is checked as a whole and the result is stored on the run
-(`script_clean`): the idea's stance held on every sentence, not two (#1141); the operator's
-typed points counted and the missing one named (#1142); one or two sentences the facts still
-do not back after the rewrite are cut and listed (#1139, the operator's "cut it, tell me
-which"); an angle's label never reaches a title (#1138). One line on the review screen;
-overnight renders only a clean one; `ops script-check` gives the rate over recorded scripts
-(13 of the newest 30) or writes one draft of an idea with no voice (#1143).
-
-**Mornings.** `ops morning` syncs, says what overnight rendered and where each one is, lists
-the shelf and walks the drafts (#1140) - `ops all` is weekly and never had it. Run live it
-crashed: on Windows `isatty()` is true for the NUL device, so a scheduled task looked like a
-console. It asks the console itself now.
-
-**The numbers.** `ops ypp` had read 0 since it was added - YouTube writes `shorts`, the code
-compared with `SHORTS` (#1147). Real: 69 subscribers, 1,797 organic Shorts views in 90 days,
-10 long-form hours. It now prints how far each bar is at the pace of the last 28 days (#1144)
-and `ops growth` says which videos brought a subscriber: 2 from 43 (#1146). The first live
-print of the pace was wrong as labelled (64 subscribers in 28 days under "ads excluded", with
-4,544 paid views counted and 2 from the videos); it says both paces now.
-
-**Found by the 10-13 overnight run, filed as #1148-#1157 (next):** two videos rendered and both
-were wrong - run 139 written as a win before the game, run 136 a preview rendered two days
-late with a last line ending "on tennessee". Both pulled (uploads cancelled, renders retired).
-The claim check called nine true claims unsupported on run 137. The YouTube sign-in expired.
-
-Suite 5531 -> 5595, mypy 98, corpus 188 -> 201. `roadmap-index`: open 315, done 872,
-highest #1157. Decisions: decisions_2026-10.md §42-§44.
 
 ## Pipeline order (operator)
 

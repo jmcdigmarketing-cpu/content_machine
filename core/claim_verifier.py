@@ -36,13 +36,18 @@ _MAX_UNSUPPORTED_KEPT = 10
 
 
 def _max_fact_chars() -> int:
-    """Same budget the script prompt packs — run 76's verifier dropped fact 75."""
-    try:
-        from core.operator_facts import operator_key_fact_char_budget
+    """The checker's own fact budget, `CLAIM_FACT_CHAR_BUDGET` (default 24,000 characters).
 
-        return operator_key_fact_char_budget()
-    except Exception:
-        return 12000
+    #1171: it used the script prompt's 12,000 (run 76's verifier had dropped fact 75 under a
+    smaller one). On 2026-10-13 and 10-14, 5 checks left 17-21 fact lines out. The writer's
+    prompt is not capped the same way, so the checker read less than the writer was given.
+    About 3,000 more input tokens a check.
+    """
+    raw = os.getenv("CLAIM_FACT_CHAR_BUDGET", "24000").strip()
+    try:
+        return max(4000, min(60000, int(raw)))
+    except ValueError:
+        return 24000
 
 
 @dataclass

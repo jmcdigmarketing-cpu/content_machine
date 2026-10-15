@@ -242,6 +242,28 @@ _NOT_YET_RE = re.compile(
 _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 
 
+PREVIEW_PREFIX = "This game has not been played yet"
+
+
+def preview_brief(event_at: str) -> str:
+    """The brief a scheduled game's draft is written to (#1169).
+
+    Overnight on 2026-10-14 drafted three NFL games two to four days ahead and all three came
+    back as recaps: "Seattle Seahawks miss tackles as Denver Broncos convert short-yardage
+    plays". Nothing told the angles or the script the game was ahead.
+    """
+    day = str(event_at or "")[:10]
+    try:
+        when = datetime.date.fromisoformat(day).strftime("%b %d").replace(" 0", " ")
+    except ValueError:
+        when = "soon"
+    return (
+        f"{PREVIEW_PREFIX} - it is on {when}. Write a preview: the matchup, who is in form or "
+        "hurt, what to watch and what is at stake. Never describe plays, a score or a result "
+        "as if the game happened."
+    )
+
+
 def fixture_sides(topic: str) -> tuple[str, str] | None:
     """("Indiana Pacers", "Oklahoma City Thunder") for a topic named the way a schedule names
     a game - "A at B", every word of both sides capitalised - else None."""

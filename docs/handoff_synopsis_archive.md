@@ -7,6 +7,39 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-13 (Claude Code): waves 81-82, the script that comes out and where the channel stands
+
+Built 10-11, landed 10-13. The overnight task runs the working tree, so this code wrote runs
+137-139 before it was committed.
+
+**The script.** A finished script is checked as a whole and the result is stored on the run
+(`script_clean`): the idea's stance held on every sentence, not two (#1141); the operator's
+typed points counted and the missing one named (#1142); one or two sentences the facts still
+do not back after the rewrite are cut and listed (#1139, the operator's "cut it, tell me
+which"); an angle's label never reaches a title (#1138). One line on the review screen;
+overnight renders only a clean one; `ops script-check` gives the rate over recorded scripts
+(13 of the newest 30) or writes one draft of an idea with no voice (#1143).
+
+**Mornings.** `ops morning` syncs, says what overnight rendered and where each one is, lists
+the shelf and walks the drafts (#1140) - `ops all` is weekly and never had it. Run live it
+crashed: on Windows `isatty()` is true for the NUL device, so a scheduled task looked like a
+console. It asks the console itself now.
+
+**The numbers.** `ops ypp` had read 0 since it was added - YouTube writes `shorts`, the code
+compared with `SHORTS` (#1147). Real: 69 subscribers, 1,797 organic Shorts views in 90 days,
+10 long-form hours. It now prints how far each bar is at the pace of the last 28 days (#1144)
+and `ops growth` says which videos brought a subscriber: 2 from 43 (#1146). The first live
+print of the pace was wrong as labelled (64 subscribers in 28 days under "ads excluded", with
+4,544 paid views counted and 2 from the videos); it says both paces now.
+
+**Found by the 10-13 overnight run, filed as #1148-#1157 (next):** two videos rendered and both
+were wrong - run 139 written as a win before the game, run 136 a preview rendered two days
+late with a last line ending "on tennessee". Both pulled (uploads cancelled, renders retired).
+The claim check called nine true claims unsupported on run 137. The YouTube sign-in expired.
+
+Suite 5531 -> 5595, mypy 98, corpus 188 -> 201. `roadmap-index`: open 315, done 872,
+highest #1157. Decisions: decisions_2026-10.md §42-§44.
+
 ## Previous — 2026-10-11 (Claude Code): waves 79-80, the record and the last mile
 
 **The numbers in the entry below were wrong.** All 43 videos are public; the log said 32

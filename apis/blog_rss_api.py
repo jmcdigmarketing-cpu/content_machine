@@ -7,7 +7,7 @@ Feeds: channel SEO profile + config/data_sources.json (global + per-domain).
 from __future__ import annotations
 
 from apis.rss_feeds import _anchor_phrases, _fetch_feed, _matches_topic, _topic_tokens
-from apis.signal_contract import STATUS_INACTIVE, STATUS_NO_KEY, STATUS_OK, make_signal
+from apis.signal_contract import STATUS_INACTIVE, STATUS_OK, make_signal
 from config.channels import resolve_channel_id
 from config.data_sources import rss_feeds_for_topic
 from config.settings import get_settings
@@ -18,11 +18,14 @@ def get_blog_rss_signal(topic: str):
     feeds = rss_feeds_for_topic(topic, channel_id)
 
     if not feeds:
+        # #1172: no feed for this topic's domain is a topic miss. It was "no key", which the
+        # session breaker trips on and persists: one NFL topic turned RSS off for the night
+        # and for the runs after it (2026-10-14).
         return make_signal(
-            connected=False,
+            connected=True,
             active=False,
-            status=STATUS_NO_KEY,
-            status_detail="No RSS feeds in config/seo or config/data_sources.json",
+            status=STATUS_INACTIVE,
+            status_detail="no RSS feed for this topic's domain (config/data_sources.json)",
         )
 
     tokens = _topic_tokens(topic)

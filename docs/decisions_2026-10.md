@@ -109,3 +109,13 @@ and leaves the waiting count. Nothing is deleted; `ops batch-review --expired` l
 the waiting count grew every night with drafts that would never render. **Consequence:**
 the first run sets aside about 20 of 35 - more than the 6 "past their window" the question
 named, because a draft blocked for a claim was counted under the claim, not its age.
+
+## 52. A scheduled game is drafted as a preview (2026-10-14)
+**Decision:** the schedule stays in the overnight batch as it is (the operator's call, "keep
+as is"). A schedule pick whose game is ahead is drafted from a brief that says the game has not
+been played, names the day, and asks for the matchup and what to watch - never plays or a
+score. The brief goes to the angles and to the script; it is not counted as the operator's
+points. **Why:** 9 of 9 batch drafts since 10-11 were schedule games, and the 10-14 three came
+back as recaps of games two days away; the title check held them, but each cost a run.
+**Consequence:** a generated angle that still narrates the game is held by the title check, as
+before. The first draft under the rule (run 152, Ravens at Browns, game on 10-18) is a preview.

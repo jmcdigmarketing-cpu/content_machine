@@ -173,11 +173,20 @@ def generate_draft(
     out = DraftOutcome(topic=topic)
     started = time.time()
 
-    discovery = (
-        run_discovery(topic, channel_id=channel_id, brief=topic)
-        if own_idea
-        else run_discovery(topic, channel_id=channel_id)
-    )
+    # #1151 / #1169: a schedule pick knows when its game is; ahead of it, the angles and the
+    # script are written as a preview.
+    event_at = _game_start(topic, best_bet)
+    from core.facts.event_dates import game_started, preview_brief
+
+    upcoming = bool(event_at) and game_started(event_at) is False
+    preview = preview_brief(event_at) if upcoming else ""
+
+    if own_idea:
+        discovery = run_discovery(topic, channel_id=channel_id, brief=topic)
+    elif preview:
+        discovery = run_discovery(topic, channel_id=channel_id, brief=preview)
+    else:
+        discovery = run_discovery(topic, channel_id=channel_id)
     experiment: tuple[str, str, str] | None = None
     if own_idea:
         from apis.topic_variants import idea_angle
@@ -221,7 +230,9 @@ def generate_draft(
         length_choice=length_choice,
         proceed_video=False,
         channel_id=channel_id,
-        creative_brief=topic if own_idea else (experiment[2] if experiment else ""),
+        creative_brief=topic
+        if own_idea
+        else "\n".join(part for part in (preview, experiment[2] if experiment else "") if part),
         key_facts=packed,
         relevance_corpus=corpus,
         best_bet=best_bet,
@@ -280,17 +291,14 @@ def generate_draft(
     )
     out.fact_conflicts = len(result.features.get("fact_conflicts") or [])
 
-    # #1151: a schedule pick knows when its game is; say so, and say when the draft already
-    # calls the result.
-    event_at = _game_start(topic, best_bet)
+    # #1151: say when the draft already calls the result of a game not yet played.
     unplayed = ""
-    if event_at:
-        from core.facts.event_dates import game_started, unplayed_result
+    if upcoming:
+        from core.facts.event_dates import unplayed_result
 
-        if game_started(event_at) is False:
-            unplayed = unplayed_result(str(result.title or ""), topic) or unplayed_result(
-                result.script, topic
-            )
+        unplayed = unplayed_result(str(result.title or ""), topic) or unplayed_result(
+            result.script, topic
+        )
 
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     folder = os.path.join(_drafts_dir(channel_id), f"{stamp}-{_slug(best_topic)}")

@@ -7190,3 +7190,63 @@ Suite **5,718 -> 5746**, forward and reversed. mypy **98**. Corpus **225 -> 227*
 Closed **#1164-#1168**. Filed **#1169**. Claude has nothing claimed. Cursor's five unchanged:
 **#1121 - #462 - #404 - #388 - #409**. The operator's: sign in, the consent screen, the upload
 task, #1136.
+
+## 2026-10-14 — wave 87 (Claude Code): what overnight drafts
+
+**Prompt:** "next 10" an hour after waves 85-86. Answers: the schedule stays in the batch as it
+is; open corrections on the morning screen, one line each; `ops morning` offers to sign in; four
+proof drafts (the three ideas again, one scheduled game).
+
+### Shipped
+
+1. **#1169** a scheduled game ahead is drafted to `event_dates.preview_brief` - not played yet,
+   the day, the matchup and what to watch, never plays or a score. Discovery and the script both
+   get it; `is_directive` keeps it out of the operator's points (decision §52).
+2. **#1170** `infer_topic_domain` reads two full team names ("Seattle Seahawks at Denver
+   Broncos") as that sport. A neutral topic ran every signal: run 146's trace carries `lastfm`,
+   `musicbrainz` and `sec_edgar`; run 152's carries none of them.
+3. **#1171** the claim check's own fact budget, `CLAIM_FACT_CHAR_BUDGET` (24,000); the script
+   prompt keeps 12,000.
+4. **#1172** `blog_rss` with no feed for the topic's domain is `inactive`, which does not trip.
+   The `no_key` trip of 17:55 persisted in `data/quota_state.json`; it expires at 23:55 on its own
+   and was left alone.
+5. **#1173** a game draft whose game has started is set aside by the overnight step (#1168).
+
+### The four proof drafts (model calls, no voice, no render)
+
+| run | what | check |
+|---|---|---|
+| 149 | your idea "Chargers Hopeium going into week 5" | clean |
+| 150 | your idea "How the chargers can still make the superbowl after starting 0-4" | clean |
+| 151 | your idea "NBA finals and award predictions preseason for the 2027 season" | 1 sentence hard to say |
+| 152 | scheduled game, Baltimore Ravens at Cleveland Browns (game 10-18) | 1 sentence hard to say |
+
+The same three ideas had 2, 1 and 1 unbacked claims yesterday (runs 143-145); today none. Run
+152 is a preview: "Watch the inactive list before kickoff - that's the real preview", no score,
+no unplayed result. Clean is not the same as good, and the drafts show it:
+
+- **Run 150's new opener has no full stop** - "...17 second-half points last game The Chargers'
+  Super Bowl path". The hook pass keeps a model's opener as given. Filed **#1179**.
+- **Run 149's new opener says the next sentence again** ("a 23-17 loss to Denver" twice). The
+  repeat rule wants 80% of the opener's words in one later sentence; these share 6 of 10. Filed
+  **#1180**.
+- **Run 149's title** reads "...After Denver Loss Angeles Stays Optimistic". The title check
+  passed it. Filed **#1181**, not traced.
+- **Run 152's stored domain** says neutral: the signals were gated by the game name, but
+  `features.domains` reads the angle headline. Filed **#1182**.
+
+### Audit
+
+13 tests in `tests/test_game_drafts.py`. **8 of 13 failed or errored on a worktree at `ea9fe42`**
+(6 failures, 2 errors); the 5 that passed guard what must not change (a game already started, a
+typed topic, "Giants of the deep", the script prompt's budget, `inactive` not tripping). One older
+test held the 12,000 budget (`test_overnight_guard`); it now pins its own. Five corpus cases,
+232 held. Callers: `preview_brief` from `generate_draft`; `_fixture_domain` from
+`infer_topic_domain` (gating, scoring); `_max_fact_chars` from `_verify`; the `inactive` status
+from `get_blog_rss_signal`; the started-game reason from `expire_old_drafts`.
+
+Suite **5,746 -> 5759**, forward and reversed. mypy **98**.
+`roadmap-index`: open 314, done 898, numbered open 262; highest filed #1182.
+
+Closed **#1169-#1173**. Filed **#1174-#1182**. Claude has #1174-#1180 claimed for wave 88.
+Cursor's five unchanged: **#1121 - #462 - #404 - #388 - #409**.

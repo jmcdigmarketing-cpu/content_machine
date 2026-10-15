@@ -636,7 +636,33 @@ def infer_topic_domain(topic, *, key_facts=None) -> str:
     Use this wherever the answer changes what is fetched or said about the topic.
     """
     domain = _infer_domain_from_text(topic or "", use_channel_profile=False)
+    if domain == "neutral":
+        domain = _fixture_domain(topic or "") or domain
     return _facts_override(domain, key_facts)
+
+
+_FIXTURE_RE = re.compile(r"^\s*(.+?)\s+(?:at|vs\.?|@)\s+(.+?)\s*$", re.I)
+
+
+def _fixture_domain(topic: str) -> str:
+    """ "nfl" or "nba" for a topic named the way a schedule names a game - two full team
+    names, "Seattle Seahawks at Denver Broncos" - else "" (#1170).
+
+    Run 146 read as neutral, and a neutral topic runs every signal: Last.fm and MusicBrainz
+    answered for a football game and filled the claim checker's fact list. Both sides must
+    be a full team name, so "Giants of the deep" and "Magic: The Gathering" stay what they are.
+    """
+    found = _FIXTURE_RE.match(topic or "")
+    if not found:
+        return ""
+    sides = {found.group(1).strip().lower(), found.group(2).strip().lower()}
+    from apis.nba_teams import NBA_TEAM_NAMES
+    from apis.nfl_entities import NFL_TEAM_NAMES
+
+    for domain, names in (("nfl", NFL_TEAM_NAMES), ("nba", NBA_TEAM_NAMES)):
+        if sides <= {str(name).lower() for name in names.values()}:
+            return domain
+    return ""
 
 
 def effective_domain(topic, channel_id=None, *, key_facts=None, signals=None) -> str:

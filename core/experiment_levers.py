@@ -132,6 +132,10 @@ def is_directive(text: str) -> bool:
     wanted = " ".join(str(text or "").split())
     if not wanted:
         return False
+    from core.facts.event_dates import PREVIEW_PREFIX
+
+    if wanted.startswith(PREVIEW_PREFIX):  # #1169: a scheduled game's preview brief
+        return True
     return any(
         " ".join(directive(lever, arm).split()) == wanted
         for lever in levers()

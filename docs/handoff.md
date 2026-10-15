@@ -53,35 +53,35 @@ nothing broken, say that explicitly rather than leaving it implied.
 
 ## Slot — Claude Code
 
-**Written:** 2026-10-14 · **HEAD at write:** `5272a71` + the wave 86 commit (`git log -1`) ·
-**Tree:** clean after the commit, apart from untracked `.agents/` and `.codex/`. Pushed.
+**Written:** 2026-10-14 · **HEAD at write:** `ea9fe42` + the wave 87 commit (`git log -1`) ·
+**Tree:** clean after the commit apart from untracked `.agents/`, `.codex/` and my
+`tests/test_morning_corrections.py` (wave 88, not yet built). Pushed.
 
 **Read before editing:** the overnight task runs the working tree and catches up when the PC
-wakes - it started at 5:54 PM on 10-14 in the middle of this wave. Keep the tree importable;
-never patch `.py` through a heredoc. The suite pins `NIGHTLY_TASK_QUERY=false` and
-`OVERNIGHT_EXPIRE_DRAFTS=false` (never query the operator's task or set aside their drafts),
-with `OVERNIGHT_SHELF_MAX=0` and `OVERNIGHT_RENDERS=0`. A draft's record may now say
-`review.decision = "expired"`. mypy **98**.
+wakes. Keep the tree importable; never patch `.py` through a heredoc. A schedule pick's brief
+now starts "This game has not been played yet" (`event_dates.PREVIEW_PREFIX`); `is_directive`
+treats it as the machine's, not the operator's. `CLAIM_FACT_CHAR_BUDGET` is new (24,000). mypy
+**98**.
 
-**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. Your #374 split is
-`SCRIPT_BODY_TIER=cheap` since wave 85 (the operator's call), and `payoff_closer` (#1032)
-reports only since wave 83. Shared files this wave: `scripts/ops.py` (`recheck-claims`,
-`--wake`, `--expired`, the batch's closing sign-in line), `youtube/oauth.py`
-(`short_sign_in`), `core/batch_review.py`, `core/overnight.py`, `core/status.py`,
-`core/status_summary.py`, `core/stale_renders.py`, `core/nightly_task.py`, `tests/__init__.py`,
-`.env.example`.
+**Cursor:** #1121 #462 #404 #388 #409 are still yours and untouched. Shared files this wave:
+`apis/topic_scorer.py` (`_fixture_domain` - a neutral topic only), `apis/blog_rss_api.py` (one
+status), `core/batch_generation.py`, `core/claim_verifier.py`, `core/batch_review.py`,
+`core/experiment_levers.py`, `.env.example`.
 
 **Defects first:**
-- **The YouTube sign-in ended 2026-10-13.** Nothing uploads or syncs; the shelf is 3 (132, 126,
-  114), so overnight pauses until it drops. The stored numbers are of 10-11.
-- The overnight task does not run at 5:00 AM when the PC sleeps (10-14: 5:54 PM).
-- The 10-14 run's game drafts narrate games not yet played (#1169, open); the title check held.
-- I asked about 6 old drafts; the rule sets aside about 20 the first night (decision §51).
+- **The YouTube sign-in ended 2026-10-13.** Nothing uploads or syncs; the shelf is 3, so
+  overnight pauses until it drops.
+- The `blog_rss` `no_key` trip of 10-14 17:55 is in `data/quota_state.json` until 23:55; left.
+- The proof drafts' openers: no full stop (#1179), the next sentence said twice (#1180).
 
-**Shipped:** waves 85-86 - #1159-#1168. 27 of 28 wave 86 tests failed or errored on HEAD
-first. Suite 5746, mypy 98, corpus 227. Highest filed #1169.
+**Shipped:** wave 87 - #1169-#1173. 8 of 13 tests failed or errored on `ea9fe42` first. Suite
+5759, mypy 98, corpus 232. Highest filed #1182.
 
-**In progress:** nothing claimed.
+**In progress:** wave 88 claimed - #1174 the correction scan reads a page only when it names the
+claim's subject, #1175 open corrections in `ops morning`, #1176 the morning offers to sign in,
+#1177 `batch-review` cuts flagged sentences, #1178 the thumbnail keeps its title, and #1179-#1180
+from the proof drafts. Files: `core/correction_dossier.py`, `scripts/ops.py`, `core/overnight.py`,
+`core/batch_review.py`, `assets/thumbnail_compose.py`, `core/content_engine.py` (hook pass).
 
 ## Slot — Cursor
 

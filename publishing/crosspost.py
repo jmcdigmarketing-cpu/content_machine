@@ -615,7 +615,6 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
         if not path or not os.path.isfile(path):
             lines.append(f"  ! run {run_id}: the rendered mp4 is not on disk - nothing to post")
             continue
-        text = caption(run)
         title = str(getattr(run, "title", "") or "")
         run_text = " ".join(
             str(getattr(run, name, "") or "") for name in ("title", "script_preview", "description")
@@ -642,6 +641,9 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                     f"  run {run_id} {label}: skipped - {seconds:.0f}s is longer than a Reel"
                 )
                 continue
+            from publishing.platform_captions import choose_caption
+
+            arm, text = choose_caption(channel_id, run, service)
             if state.get("state") != "sending":
                 hand = _hand_post(buffer_posts(service), run_text, rendered)
                 if hand:  # #1200 (operator: skip that platform only)
@@ -702,6 +704,7 @@ def send_due(channel_id: str, *, apply: bool = True, now: datetime | None = None
                 "state": "sending",
                 "due_at": due.isoformat(),
                 "text_start": text[:60],
+                "arm": arm,
                 "at": _now_text(moment),
             }
             _save(channel_id, data)  # the mark goes down before the call
@@ -903,6 +906,12 @@ def status_lines(channel_id: str, *, limit: int = 8) -> list[str]:
         learned = learning_line(channel_id, service)
         if learned:
             lines.append(f"  {learned}")
+    from publishing.platform_captions import caption_report
+
+    for service in PLATFORMS:
+        report = caption_report(channel_id, service)
+        if report:
+            lines.append(f"  {report}")
     return lines
 
 

@@ -106,6 +106,24 @@ _LEVERS: dict[str, dict] = {
             "v3": "eleven_v3",
         },
     },
+    "caption_tiktok": {
+        "description": "Which existing sentence leads the TikTok caption (#1197)",
+        "kind": "caption",
+        "arms": {
+            "caption": "CAPTION ARM: lead the TikTok caption with the title.",
+            "first_line": "CAPTION ARM: lead the TikTok caption with the script's first sentence.",
+        },
+    },
+    "caption_instagram": {
+        "description": "Which existing sentence leads the Instagram caption (#1197)",
+        "kind": "caption",
+        "arms": {
+            "caption": "CAPTION ARM: lead the Instagram caption with the title.",
+            "first_line": (
+                "CAPTION ARM: lead the Instagram caption with the script's first sentence."
+            ),
+        },
+    },
 }
 
 

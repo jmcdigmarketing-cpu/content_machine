@@ -4080,6 +4080,129 @@
         "equals": 3
       },
       "why": "the run and its draft must count the same facts"
+    },
+    {
+      "id": "run137-a-fixture-is-news",
+      "item": 1219,
+      "source": "2026-10-16: 'Cleveland Cavaliers at Orlando Magic' had the 7-day window",
+      "call": "core.batch_review:freshness_window_days",
+      "args": [
+        {
+          "topic": "Cleveland Cavaliers at Orlando Magic",
+          "title": "Cleveland Cavaliers' Roster Moves Changed Their Season Outlook"
+        }
+      ],
+      "expect": {
+        "equals": 2.0
+      },
+      "why": "a game's draft lingered a week"
+    },
+    {
+      "id": "run143-is-past-its-window",
+      "item": 1219,
+      "source": "2026-10-16: run 143 waited on 'a claim is not supported' at 2.8 days of 2",
+      "call": "core.batch_review:dead_reason",
+      "args": [
+        {
+          "topic": "Chargers Hopeium going into week 5",
+          "title": "Chargers Hopeium: Harbaugh's Pep Talk, McConkey's Return",
+          "created_at": "2026-10-13T21:30:00"
+        }
+      ],
+      "expect": {
+        "contains": "past its window"
+      },
+      "why": "the morning counted 1 draft past its window when 8 were"
+    },
+    {
+      "id": "an-evergreen-idea-keeps-its-week",
+      "item": 1219,
+      "source": "must keep: run 115, '12 Biggest GTA 6 Questions', is not news",
+      "call": "core.batch_review:freshness_window_days",
+      "args": [
+        {
+          "topic": "12 Biggest GTA 6 Questions",
+          "title": "GTA 6's Narrative Gaps"
+        }
+      ],
+      "expect": {
+        "equals": 7.0
+      },
+      "why": "the 2-day window is for news and games only"
+    },
+    {
+      "id": "anime-off-games-is-not-flagged",
+      "item": 1220,
+      "source": "ops health 2026-10-16: 'signal anime not-ok in the last 4 runs' (136-147)",
+      "call": "core.data_quality:_signal_checks",
+      "args": [
+        [
+          {
+            "run_id": 156,
+            "signals": {
+              "news": {
+                "status": "ok"
+              }
+            }
+          },
+          {
+            "run_id": 155,
+            "signals": {
+              "news": {
+                "status": "ok"
+              }
+            }
+          },
+          {
+            "run_id": 154,
+            "signals": {
+              "news": {
+                "status": "ok"
+              }
+            }
+          },
+          {
+            "run_id": 147,
+            "signals": {
+              "anime": {
+                "status": "unavailable"
+              }
+            }
+          },
+          {
+            "run_id": 146,
+            "signals": {
+              "anime": {
+                "status": "unavailable"
+              }
+            }
+          },
+          {
+            "run_id": 137,
+            "signals": {
+              "anime": {
+                "status": "unavailable"
+              }
+            }
+          },
+          {
+            "run_id": 136,
+            "signals": {
+              "anime": {
+                "status": "unavailable"
+              }
+            }
+          }
+        ]
+      ],
+      "expect": {
+        "equals": {
+          "streaks": {},
+          "high_failure": {},
+          "newest_failed": {}
+        }
+      },
+      "why": "a signal kept off games by #1170 stayed YELLOW for weeks"
     }
   ]
 }

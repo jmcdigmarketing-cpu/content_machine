@@ -7,6 +7,22 @@ Waves older than the newest three, and the July/August 2026 shipped-notes, moved
 
 ---
 
+## Previous — 2026-10-15 (Cursor): one video, three feeds (#1194-#1199)
+
+Buffer's posts came back with no views. One `posts` query per channel now asks for metrics,
+and a post with no `metricsUpdatedAt` is unmeasured, not zero (#1195). `ops crosspost status`
+prints the views. Four measured TikTok hours move that feed's due time; two stay on YouTube's
+hour and the line says so (#1196). Each platform's caption is either the caption or the same
+words with the script's first sentence first; the report names a winner and the views interval
+only once every arm has enough samples (#1197). The weekly report and growth name the views,
+the best video, and what that feed preferred; an empty store says there are no platform results
+yet (#1198). `ops morning` prints a Buffer error, a paused queue, a disconnected channel, and
+the request count near 250 a day. The count is this process (#1199, #1209).
+
+**Next:** #1208 #1184 #1209 #456 #392. New tests errored on import before the functions existed.
+Suite 5889 passed (10 skipped). A ufc run titled hello was stored as gaming until the row
+read `run_domain` (`4c54ecf`).
+
 ## Previous — 2026-10-15 (Cursor): the five left from 10-10
 
 A YouTube 500, and a 404 from every competitor channel, was reported as a dead UC id, and the

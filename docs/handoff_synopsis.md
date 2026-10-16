@@ -1,4 +1,4 @@
-# Handoff synopsis — 2026-10-15: why clean drafts waited, and the Buffer check (waves 93-94)
+# Handoff synopsis — 2026-10-16: what the morning said that was not so (waves 95-96)
 
 > **Class:** log · **Status:** frozen · **Reviewed:** 2026-10-09
 
@@ -10,7 +10,25 @@ GPT-6 playground review (2026-09-08, briefing-based): [gpt6_second_review_2026-0
 > [handoff_synopsis_archive.md](handoff_synopsis_archive.md); this file keeps the newest three
 > waves plus the standing operator sections (docs_standard.md §7).
 
-## Last wave — 2026-10-15 (Claude Code): waves 93-94, why clean drafts waited
+## Last wave — 2026-10-16 (Claude Code): waves 95-96, what the morning said that was not so
+
+**Wave 95.** Overnight woke with the PC at 4:30 PM, made run 156 and crashed at 4:32 (0xC0000374,
+heap corruption in ntdll, no traceback); the morning said it ran. It now says when it stopped,
+after how many drafts, why, and the command to run it again; `faulthandler` is on in overnight
+and the worker (#1216). Every run had recorded 0 facts - the pasted ones - so health read
+authenticity RED at 49; runs record `fact_lines` now, and the 14 recent ones were re-scored:
+GREEN, 89 (#1217).
+
+**Wave 96.** Every command printed dotenv's warning for line 34, which is blank; it names lines
+35, 36 and 39 now (#1218). The morning counted 1 draft past its window when 8 were; a dead draft
+says so first, and **n** sets it aside (#1219). Health no longer flags the anime signal from four
+old game runs (#1220).
+
+**Still the operator's:** `R2_PUBLIC_BASE_URL`; `.env` lines 35, 36, 39; run 126 waits for the
+worker; the consent screen; `ops worker-task --install`; `schedule-drafts --wake`. Overnight's
+other two drafts were not made today. Suite 5943, forward and reversed.
+
+## Previous — 2026-10-15 (Claude Code): waves 93-94, why clean drafts waited
 
 **Wave 93.** The authenticity check read clean drafts as neutral recaps - "Here's my call anyway.
 I'm taking the double" did not count as a take - so overnight rendered none of them. A
@@ -43,22 +61,6 @@ and 1.66s). Watched fail at 0.94s against a 0.01s budget (#456). `ops doctor` sa
 Live: `Apify: operational` (#392).
 
 **Next:** #1215 #514 #418 #463 #545.
-
-## Previous — 2026-10-15 (Cursor): one video, three feeds (#1194-#1199)
-
-Buffer's posts came back with no views. One `posts` query per channel now asks for metrics,
-and a post with no `metricsUpdatedAt` is unmeasured, not zero (#1195). `ops crosspost status`
-prints the views. Four measured TikTok hours move that feed's due time; two stay on YouTube's
-hour and the line says so (#1196). Each platform's caption is either the caption or the same
-words with the script's first sentence first; the report names a winner and the views interval
-only once every arm has enough samples (#1197). The weekly report and growth name the views,
-the best video, and what that feed preferred; an empty store says there are no platform results
-yet (#1198). `ops morning` prints a Buffer error, a paused queue, a disconnected channel, and
-the request count near 250 a day. The count is this process (#1199, #1209).
-
-**Next:** #1208 #1184 #1209 #456 #392. New tests errored on import before the functions existed.
-Suite 5889 passed (10 skipped). A ufc run titled hello was stored as gaming until the row
-read `run_domain` (`4c54ecf`).
 
 ## Pipeline order (operator)
 

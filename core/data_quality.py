@@ -45,6 +45,15 @@ def _signal_checks(traces: list[dict[str, Any]]) -> dict[str, Any]:
     rates: dict[str, dict[str, int]] = {}
     streaks: dict[str, int] = {}
     streak_open: dict[str, bool] = {}
+    newest_failed: dict[str, Any] = {}
+    # #1220: a signal that has not run in the newest few traces is not failing now. "anime" was
+    # flagged for weeks from four game runs (136, 137, 146, 147) after #1170 kept it off games.
+    ran_lately = {
+        name
+        for trace in traces[:STREAK_THRESHOLD]
+        for name in (trace.get("signals") or {})
+        if isinstance(trace.get("signals"), dict)
+    }
     for trace in traces:  # traces come newest-first
         for name, sig in (trace.get("signals") or {}).items():
             if not isinstance(sig, dict):
@@ -55,17 +64,30 @@ def _signal_checks(traces: list[dict[str, Any]]) -> dict[str, Any]:
             failed = status in _FAIL_STATUSES
             if failed:
                 bucket["failed"] += 1
+                newest_failed.setdefault(name, trace.get("run_id"))
             # Streak counts only while every newest trace so far failed.
             if streak_open.get(name, True):
                 if failed:
                     streaks[name] = streaks.get(name, 0) + 1
                 else:
                     streak_open[name] = False
-    flagged_streaks = {name: count for name, count in streaks.items() if count >= STREAK_THRESHOLD}
-    flagged_rates = {
-        name: b for name, b in rates.items() if b["seen"] >= 3 and (b["failed"] / b["seen"]) >= 0.5
+    flagged_streaks = {
+        name: count
+        for name, count in streaks.items()
+        if count >= STREAK_THRESHOLD and name in ran_lately
     }
-    return {"streaks": flagged_streaks, "high_failure": flagged_rates}
+    flagged_rates = {
+        name: b
+        for name, b in rates.items()
+        if b["seen"] >= 3 and (b["failed"] / b["seen"]) >= 0.5 and name in ran_lately
+    }
+    return {
+        "streaks": flagged_streaks,
+        "high_failure": flagged_rates,
+        "newest_failed": {
+            name: newest_failed.get(name) for name in (*flagged_streaks, *flagged_rates)
+        },
+    }
 
 
 def _join_checks(channel_id: str | None, limit: int = 25) -> dict[str, Any]:
@@ -130,8 +152,13 @@ def warnings(data: dict[str, Any] | None = None, *, channel_id: str | None = Non
     data = data or gather(channel_id)
     out: list[str] = []
     sig = data.get("signals") or {}
+    newest = sig.get("newest_failed") or {}
     for name, streak in sorted((sig.get("streaks") or {}).items()):
-        out.append(f"signal '{name}' not-ok in the last {streak} runs")
+        run = newest.get(name)
+        out.append(
+            f"signal '{name}' not-ok in the last {streak} runs"
+            + (f" (newest run {run})" if run else "")
+        )
     for name, bucket in sorted((sig.get("high_failure") or {}).items()):
         if name in (sig.get("streaks") or {}):
             continue

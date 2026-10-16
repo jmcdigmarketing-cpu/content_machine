@@ -90,7 +90,7 @@ wave left and four small checks that are still open.
 **#418** a bounded zoom can still soften a 1080x1920 frame, and nothing checks.
 **#463** the benches exist and nothing fails when they regress. **#545** a correction
 note never becomes a "what I got wrong" beat in the next script.
-`roadmap-index` after Claude's wave 95: open 300, done 949, numbered open 248; highest filed #1222.
+`roadmap-index` after Claude's waves 95-96: open 300, done 952, numbered open 248; highest filed #1222.
 Claude's waves 81-90 closed #1137-#1193 (the detail is in [planning_log.md](planning_log.md)):
 your own idea's script, the morning screen, game previews, corrections checked against their
 own page, TikTok and Instagram through Buffer's API (§54), two games of five best bets (§55),
@@ -100,8 +100,10 @@ hand posts left alone (§57), `ops all` ends with the morning (§56), Buffer rea
 public address (§58), a draft's stance counts as a take, the review names the failing check,
 `ops crosspost buffer-check`. Wave 95: an overnight run that stopped early is said, with its
 exit code and log (#1216 - Oct 16 crashed after one draft); a run records the facts it was
-written from, so health stopped reading authenticity RED (#1217). Claude has #1218-#1220
-claimed. The step-by-step: [operator_guide.md](operator_guide.md).
+written from, so health stopped reading authenticity RED (#1217). Wave 96: a `.env` warning
+names the right lines (#1218), a draft past its window says so first and "n" sets it aside
+(#1219), a signal no longer run is not flagged (#1220). Filed: #1221 (Cursor's), #1222. Claude
+has nothing claimed. The step-by-step: [operator_guide.md](operator_guide.md).
 
 Not next:
 #1025 (Later), #1029 (who stayed is on 39 videos since #1124 - after the ship stage), #1038 (the operator's blind listen),

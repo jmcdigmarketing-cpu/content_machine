@@ -1617,7 +1617,8 @@ def cmd_batch_review(args: argparse.Namespace) -> int:
         return no_console() if batch else 1
     print(
         f"\nReview: {len(summary.accepted)} accepted, {len(summary.rejected)} rejected, "
-        f"{len(summary.later)} later; {len(summary.rendered)} rendered, "
+        f"{len(summary.later)} later, {len(summary.expired)} set aside; "
+        f"{len(summary.rendered)} rendered, "
         f"{len(summary.queued)} queued"
     )
     return 0

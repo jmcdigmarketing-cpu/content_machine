@@ -7734,3 +7734,24 @@ read-only first; the overnight task was running when I looked (the PC woke at 4:
 the one that passed guards that an old run keeps its count. Corpus +4. Suite 5931, forward and reversed.
 
 Closed **#1216-#1217**. Filed **#1221** (Cursor) and **#1222**.
+
+## 2026-10-16 — wave 96 (Claude Code): what the morning counts
+
+### Shipped
+
+3. **#1218** dotenv's "line 34" (blank) is muted; every command says ".env lines 35, 36, 39 are
+   not NAME=value" once. My Back-Home List of 10-15 said 34 and 36 - corrected there.
+4. **#1219** a dead draft says so first. `ops overnight-plan` before: "1 past its window" of 21.
+   After: "10 past its window", "1 its game has started" (run 146, Seahawks at Broncos, started
+   00:15 UTC). **n** at "still current?" sets aside; Enter is still "later" (the wave 19 test
+   pins it, and it is the safer default). Fixture topics: 2 days.
+5. **#1220** `ops health` data quality: the anime warning is gone; what remains is "1 uploaded
+   video(s) with no metrics yet".
+
+### Audit
+
+`tests/test_windows_and_streaks.py` (12): **10 of 12 failed or errored on a worktree at
+`58dafb6`**; the 2 that passed guard a fresh draft naming its claim and an evergreen idea keeping
+its week. Corpus +4. Suite 5943, forward and reversed.
+
+Closed **#1218-#1220**. Claude has nothing claimed.

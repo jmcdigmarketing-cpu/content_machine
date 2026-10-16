@@ -125,9 +125,9 @@ shows each video on each platform, `crosspost cancel --run-id N` takes one back,
 posted by hand in Buffer is found and left on that platform; `crosspost done --run-id N` says so
 for both.
 
-**A `.env` line that is not NAME=value** is skipped - python-dotenv warns "could not parse".
-The startup header and `ops doctor` name such lines by number (never their content); give each
-a `NAME=` or delete it.
+**A `.env` line that is not NAME=value** is skipped. Every command names such lines once, by
+number (never their content) - the line `ops doctor` prints; python-dotenv's own warning, which
+named the line before a bad one, is no longer shown. Give each a `NAME=` or delete it.
 
 **The YouTube sign-in ends every 7 days** while the Google consent screen is in Testing. From
 day 5 the header, `ops status` and the overnight report say how many days are left; once it
@@ -154,7 +154,10 @@ code in words) and where its output is (`output\logs\overnight-last.log`), with 
 run it again. `py -m scripts.ops overnight-plan` shows what tonight would render and why the rest wait.
 Each reason is specific: "authenticity check says review (no take found)", "drafted from the
 arc counter" (a draft written from "week 4"), "its title breaks a name" - and the review screen
-names the failing check beside the verdict.
+names the failing check beside the verdict. A draft past its window, or whose game has
+started, says that first. Asked "still current?", **n** sets it aside (nothing is deleted;
+`py -m scripts.ops batch-review --expired` lists it) and Enter leaves it for later. A game's
+draft has the 2-day window of news.
 
 **Where are the overnight videos?** `py main.py`, then **6) Overnight videos and drafts**: each
 video of the last week with the full path of its mp4 (open it from File Explorer), its YouTube

@@ -67,6 +67,7 @@ class ReviewSummary:
     later: list[int] = field(default_factory=list)
     rendered: list[int] = field(default_factory=list)
     queued: list[int] = field(default_factory=list)
+    expired: list[int] = field(default_factory=list)  # #1219: "not current" - set aside
 
 
 def draft_script(folder: str) -> str:
@@ -291,6 +292,10 @@ def freshness_window_days(meta: dict[str, Any]) -> float:
     text = " ".join(str(meta.get(key) or "") for key in ("topic", "variant", "title"))
     if _NEWS_WORDS_RE.search(text):
         return _NEWS_WINDOW_DAYS
+    from core.facts.event_dates import fixture_sides
+
+    if fixture_sides(str(meta.get("topic") or "")):
+        return _NEWS_WINDOW_DAYS  # #1219: run 137, "Cleveland Cavaliers at Orlando Magic", had 7
     try:
         from core.publish_windows import is_ufc_topic
         from core.rumor_language import is_leak_topic
@@ -394,7 +399,22 @@ def review_drafts(
         blocking = _show(draft, index, len(drafts), print_fn)
         age = draft_age_days(draft.meta)
         if age is not None and age > freshness_window_days(draft.meta):
-            current = ask(f"  This is {age:.0f} days old - still current? [y/N]: ").strip().lower()
+            current = (
+                ask(
+                    f"  This is {age:.0f} days old - still current? "
+                    "[y / n = set it aside / Enter = later]: "
+                )
+                .strip()
+                .lower()
+            )
+            if current == "n":
+                # #1219: "no" left it for later, and it was back the next morning.
+                _write_review(
+                    draft, decision="expired", by="operator", reason=f"{age:.0f} days old"
+                )
+                print_fn("    Set aside - nothing is deleted (batch-review --expired lists it).")
+                summary.expired.append(draft.run_id)
+                continue
             if current != "y":
                 print_fn("    Left for later.")
                 summary.later.append(draft.run_id)
@@ -484,7 +504,7 @@ def drafts_line(channel_id: str, *, root: str | None = None) -> str:
     if not total:
         return ""
     limit = unattended_limit(channel_id)
-    stale = sum(1 for _draft, why in skipped if "past its window" in why)
+    stale = sum(1 for _draft, why in skipped if _is_dead(why))
     parts = []
     if eligible and limit > 0 and shelf_pause(channel_id):
         parts.append(f"{len(eligible)} clean (overnight is paused: the shelf is full)")
@@ -675,6 +695,9 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
     meta = draft.meta
     if draft.decision:
         return f"already {draft.decision}"
+    dead = dead_reason(meta, now=now)
+    if dead:  # #1219: checked first, so the count of drafts past their window is true
+        return dead
     if _blocking_claims(draft):
         return "a claim is not supported"
     verdict = str(meta.get("authenticity_verdict") or "ok").strip().lower()
@@ -710,10 +733,24 @@ def unattended_block_reason(draft: PendingDraft, *, now: datetime | None = None)
         # Run 116's draft was titled "Contrarian: Spain's World Cup win ..." - the angle's
         # label, pasted in front of the title. A person fixes that; overnight must not ship it.
         return f'its title starts with a label ("{label}")'
+    return ""
+
+
+def dead_reason(meta: dict[str, Any], *, now: datetime | None = None) -> str:
+    """#1219: why a draft can no longer be used - its game has started, or it is past its
+    window - else "". 2026-10-16: 8 of 21 waiting drafts were past their window and the morning
+    said 1, because the window was checked after the claims, the labels and the title."""
+    game = game_block_reason(meta, now=now)
+    if game.startswith("its game has started"):
+        return game
     age = draft_age_days(meta)
     if age is not None and age > freshness_window_days(meta):
         return f"{age:.0f} days old, past its window"
     return ""
+
+
+def _is_dead(why: str) -> bool:
+    return "past its window" in why or why.startswith("its game has started")
 
 
 def unattended_candidates(

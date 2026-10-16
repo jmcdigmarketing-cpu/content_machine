@@ -1,3 +1,4 @@
+import logging
 import os
 from functools import lru_cache
 
@@ -18,9 +19,37 @@ def _load_dotenv() -> None:
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
     if not os.path.isfile(path):
         return
+    load_env_file(path)
+
+
+def _not_dotenv_parse_warning(record: logging.LogRecord) -> bool:
+    return "could not parse" not in str(record.msg)
+
+
+def load_env_file(path: str) -> None:
+    """Load ``path`` into os.environ without overriding what is set (#1218).
+
+    python-dotenv's own "could not parse statement starting at line N" names the line *before*
+    a bad one - line 34 of the operator's .env is blank; the lines that are not NAME=value are
+    35, 36 and 39 - and it said so on every command. Its record is muted; the lines are named
+    once, by number, by the check `ops doctor` runs (`core/secrets_doctor`, #1193).
+    """
     from dotenv import load_dotenv
 
-    load_dotenv(path, override=False)
+    dotenv_log = logging.getLogger("dotenv.main")
+    dotenv_log.addFilter(_not_dotenv_parse_warning)
+    try:
+        load_dotenv(path, override=False)
+    finally:
+        dotenv_log.removeFilter(_not_dotenv_parse_warning)
+    try:
+        from core.secrets_doctor import env_file_line, env_file_problems
+
+        line = env_file_line(env_file_problems(path))
+    except Exception:
+        line = ""
+    if line:
+        logging.getLogger("config.settings").warning(line)
 
 
 _load_dotenv()
